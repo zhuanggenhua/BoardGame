@@ -136,6 +136,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ## 🎨 UI/UX 规范
 
 - **丰富审美**：使用渐变、阴影、微动画、毛玻璃效果。禁止使用单调色块。
+- **布局稳定性（强制）**：动态UI（如撤销按钮）必须使用 `absolute/fixed` 定位，禁止挤压已有布局。
 - **移动端适配**：
   - 使用 `dvh` 单位，适配刘海屏 (`safe-area-inset`)。
   - 触摸优化：最小点击区域 44px。

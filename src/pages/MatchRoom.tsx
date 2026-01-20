@@ -8,6 +8,7 @@ import { useDebug } from '../contexts/DebugContext';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
 import { useMatchStatus, leaveMatch } from '../hooks/useMatchStatus';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 import { SocketIO } from 'boardgame.io/multiplayer';
 
@@ -34,7 +35,9 @@ export const MatchRoom = () => {
 
     const [isLeaving, setIsLeaving] = useState(false);
     const [pendingDestroy, setPendingDestroy] = useState(false);
+    const [autoExitMessage, setAutoExitMessage] = useState<string | null>(null);
     const tutorialStartedRef = useRef(false);
+    const autoExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isTutorialRoute = window.location.pathname.endsWith('/tutorial');
 
@@ -66,6 +69,7 @@ export const MatchRoom = () => {
 
     // 使用房间状态 Hook（以真实玩家身份为准）
     const matchStatus = useMatchStatus(matchId, statusPlayerID);
+    const hostSlot = matchStatus.players.find(player => player.id === 0);
 
     useEffect(() => {
         if (!isTutorialRoute) return;
@@ -184,6 +188,31 @@ export const MatchRoom = () => {
         }
     }, [matchStatus.error, isTutorialRoute, navigate]);
 
+    // 房主销毁/离开导致座位清空时，非房主自动退出
+    useEffect(() => {
+        if (isTutorialRoute) return;
+        if (matchStatus.isLoading) return;
+        if (matchStatus.isHost) return;
+        if (!hostSlot || hostSlot.name) return;
+        if (autoExitMessage) return;
+
+        clearMatchCredentials();
+        if (matchId && statusPlayerID && credentials) {
+            void leaveMatch('TicTacToe', matchId, statusPlayerID, credentials);
+        }
+        setAutoExitMessage('房主已退出，房间已关闭，正在返回大厅…');
+        autoExitTimerRef.current = setTimeout(() => {
+            navigate('/');
+        }, 1600);
+
+        return () => {
+            if (autoExitTimerRef.current) {
+                clearTimeout(autoExitTimerRef.current);
+                autoExitTimerRef.current = null;
+            }
+        };
+    }, [autoExitMessage, clearMatchCredentials, credentials, hostSlot, matchId, matchStatus.isHost, matchStatus.isLoading, isTutorialRoute, navigate, statusPlayerID]);
+
     if (matchStatus.error && !isTutorialRoute) {
         return (
             <div className="w-full h-screen bg-black flex items-center justify-center">
@@ -207,12 +236,11 @@ export const MatchRoom = () => {
             {/* Top Left: Back Button */}
             <div className="absolute top-4 left-4 z-50">
                 <button
-                    onClick={handleExitRoom}
-                    disabled={isLeaving}
+                    onClick={() => navigate('/')}
                     className="bg-black/40 backdrop-blur-md text-white/90 px-4 py-2 rounded-full text-sm font-bold border border-white/10 hover:bg-white/10 hover:border-white/30 transition-all flex items-center gap-2 group disabled:opacity-50 shadow-lg"
                 >
                     <span className="group-hover:-translate-x-1 transition-transform">←</span>
-                    {isLeaving ? '离开中...' : '离开'}
+                    返回大厅
                 </button>
             </div>
 
@@ -265,6 +293,24 @@ export const MatchRoom = () => {
                 </div>
             )}
 
+            {autoExitMessage && !isTutorialRoute && (
+                <ConfirmModal
+                    open={!!autoExitMessage}
+                    title="自动退出提醒"
+                    description={autoExitMessage}
+                    confirmText="立即返回"
+                    showCancel={false}
+                    onConfirm={() => navigate('/')}
+                    onCancel={() => navigate('/')}
+                    tone="cool"
+                    panelClassName="bg-black/70 border border-white/10 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.35)] font-sans"
+                    titleClassName="text-white/80 text-sm font-semibold tracking-wide"
+                    descriptionClassName="text-white/70 text-base"
+                    actionsClassName="justify-center"
+                    confirmClassName="px-4 py-2 text-xs font-bold uppercase tracking-wider bg-white/10 text-white/80 hover:bg-white/20 rounded-full"
+                />
+            )}
+
             {/* Game Board - Full Screen */}
             <div className="w-full h-full">
                 {isTutorialRoute ? (
@@ -281,36 +327,14 @@ export const MatchRoom = () => {
             <TutorialOverlay />
 
             {pendingDestroy && (
-                <>
-                    <div
-                        onClick={handleCancelDestroy}
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
-                    />
-                    <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
-                        <div className="bg-[#fcfbf9] border border-[#e5e0d0] shadow-[0_10px_40px_rgba(0,0,0,0.35)] rounded-sm p-6 w-full max-w-sm text-center">
-                            <div className="text-xs text-[#8c7b64] font-bold uppercase tracking-wider mb-2">
-                                销毁房间
-                            </div>
-                            <div className="text-[#433422] font-bold text-base mb-5">
-                                确定要销毁房间吗？这将结束对局且无法恢复。
-                            </div>
-                            <div className="flex items-center justify-center gap-3">
-                                <button
-                                    onClick={handleCancelDestroy}
-                                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider border border-[#e5e0d0] text-[#433422] bg-[#fcfbf9] hover:bg-[#efede6] transition-colors rounded-[4px]"
-                                >
-                                    取消
-                                </button>
-                                <button
-                                    onClick={handleConfirmDestroy}
-                                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#433422] text-[#fcfbf9] hover:bg-[#2b2114] transition-colors rounded-[4px]"
-                                >
-                                    确认销毁
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </>
+                <ConfirmModal
+                    open={pendingDestroy}
+                    title="销毁房间"
+                    description="确定要销毁房间吗？这将结束对局且无法恢复。"
+                    onConfirm={handleConfirmDestroy}
+                    onCancel={handleCancelDestroy}
+                    tone="cool"
+                />
             )}
         </div>
     );

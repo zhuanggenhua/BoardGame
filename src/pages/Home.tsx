@@ -9,7 +9,8 @@ import { AuthModal } from '../components/auth/AuthModal';
 import { EmailBindModal } from '../components/auth/EmailBindModal';
 import { lobbySocket, type LobbyMatch } from '../services/lobbySocket';
 import { useNavigate } from 'react-router-dom';
-import { leaveMatch, rejoinMatch } from '../hooks/useMatchStatus';
+import { clearMatchCredentials, leaveMatch } from '../hooks/useMatchStatus';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 import clsx from 'clsx';
 
 export const Home = () => {
@@ -73,22 +74,8 @@ export const Home = () => {
                 return;
             }
 
-            // Priority 2: Check username
-            if (user) {
-                const myMatch = matches.find(m =>
-                    m.players.some(p => p.name === user.username)
-                );
-                setActiveMatch(myMatch || null);
-                if (myMatch) {
-                    const myPlayer = myMatch.players.find(p => p.name === user.username);
-                    setMyMatchRole(myPlayer ? { playerID: String(myPlayer.id) } : null);
-                } else {
-                    setMyMatchRole(null);
-                }
-            } else {
-                setActiveMatch(null);
-                setMyMatchRole(null);
-            }
+            setActiveMatch(null);
+            setMyMatchRole(null);
         });
 
         // Request initial state
@@ -112,19 +99,11 @@ export const Home = () => {
         let effectiveCredentials = credentials;
 
         if (!effectiveCredentials) {
-            if (!user?.username) {
-                alert('无法执行操作：缺少凭证，请进入对局后再试。');
-                return;
-            }
-
-            const rejoinResult = await rejoinMatch('TicTacToe', activeMatch.matchID, playerID, user.username);
-            if (!rejoinResult.success || !rejoinResult.credentials) {
-                alert('无法执行操作：重新获取凭证失败，请进入对局后再试。');
-                return;
-            }
-
-            effectiveCredentials = rejoinResult.credentials;
-            setMyMatchRole({ playerID, credentials: effectiveCredentials });
+            clearMatchCredentials(activeMatch.matchID);
+            setActiveMatch(null);
+            setMyMatchRole(null);
+            lobbySocket.requestRefresh();
+            return;
         }
 
         const isHost = playerID === '0';
@@ -140,7 +119,9 @@ export const Home = () => {
         if (!pendingAction) return;
         const success = await leaveMatch('TicTacToe', pendingAction.matchID, pendingAction.playerID, pendingAction.credentials);
         if (!success) {
-            alert('操作失败，请稍后重试。');
+            clearMatchCredentials(pendingAction.matchID);
+            setPendingAction(null);
+            lobbySocket.requestRefresh();
             return;
         }
         setPendingAction(null);
@@ -291,36 +272,14 @@ export const Home = () => {
             )}
 
             {pendingAction && (
-                <>
-                    <div
-                        onClick={handleCancelAction}
-                        className="fixed inset-0 bg-[#2b2114]/30 backdrop-blur-sm z-[60]"
-                    />
-                    <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
-                        <div className="bg-[#fcfbf9] border border-[#e5e0d0] shadow-[0_10px_40px_rgba(67,52,34,0.15)] rounded-sm p-6 w-full max-w-sm text-center font-serif">
-                            <div className="text-xs text-[#8c7b64] font-bold uppercase tracking-wider mb-2">
-                                {pendingAction.isHost ? '销毁房间' : '离开房间'}
-                            </div>
-                            <div className="text-[#433422] font-bold text-base mb-5">
-                                {pendingAction.isHost ? '确定要销毁房间吗？' : '确定要离开房间吗？'}
-                            </div>
-                            <div className="flex items-center justify-center gap-3">
-                                <button
-                                    onClick={handleCancelAction}
-                                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider border border-[#e5e0d0] text-[#433422] bg-[#fcfbf9] hover:bg-[#efede6] transition-colors rounded-[4px]"
-                                >
-                                    取消
-                                </button>
-                                <button
-                                    onClick={handleConfirmAction}
-                                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#433422] text-[#fcfbf9] hover:bg-[#2b2114] transition-colors rounded-[4px]"
-                                >
-                                    确认
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </>
+                <ConfirmModal
+                    open={!!pendingAction}
+                    title={pendingAction?.isHost ? '销毁房间' : '离开房间'}
+                    description={pendingAction?.isHost ? '确定要销毁房间吗？' : '确定要离开房间吗？'}
+                    onConfirm={handleConfirmAction}
+                    onCancel={handleCancelAction}
+                    tone="warm"
+                />
             )}
 
             {/* Modals */}

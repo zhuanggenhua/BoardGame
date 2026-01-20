@@ -7,6 +7,8 @@ import { GameDebugPanel } from '../../components/GameDebugPanel';
 import { GameControls } from '../../components/game/GameControls';
 import { useDebug } from '../../contexts/DebugContext';
 import { useTutorial } from '../../contexts/TutorialContext';
+import { useGameAudio } from '../../lib/audio/useGameAudio';
+import { TIC_TAC_TOE_AUDIO_CONFIG } from './audio.config';
 
 type Props = BoardProps<TicTacToeState>;
 
@@ -74,6 +76,9 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
     // Tutorial Integration
     const { isActive, currentStep, nextStep, registerMoveCallback } = useTutorial();
     const { setPlayerID } = useDebug();
+
+    // 音效系统
+    useGameAudio({ config: TIC_TAC_TOE_AUDIO_CONFIG, G, ctx, playerID });
 
     const undoHistory = G.sys?.history || [];
     const undoRequest = G.sys?.undoRequest;
@@ -333,7 +338,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
             </div>
 
             {/* Bottom Section - Scores & Status */}
-            <div className={`flex-none w-full max-w-2xl px-6 z-10 relative transition-all duration-300 ${(showPostGameActions || showUndoControls) ? 'pb-24' : 'pb-8'}`}>
+            <div className="flex-none w-full max-w-2xl px-6 z-10 relative pb-12">
                 <div className="flex justify-between items-center w-full text-center text-white/80 relative">
                     {/* Left Player (P0) */}
                     <div className="flex flex-col items-center gap-2 transition-all duration-300">
@@ -398,33 +403,35 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
                 </div>
             </div>
 
-            {/* Bottom Actions - Post Game / Undo */}
+            {/* Bottom Actions Area - Fixed/Floating to avoid layout shift */}
             {(showPostGameActions || showUndoControls) && (
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center animate-in fade-in slide-in-from-bottom-2 duration-300">
                     {showPostGameActions ? (
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={handlePlayAgain}
                                 disabled={isRematchLoading}
-                                className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/90 border border-white/20 hover:border-neon-blue/60 hover:text-neon-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/90 border border-white/20 hover:border-neon-blue/60 hover:text-neon-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-black/40 backdrop-blur-md"
                             >
                                 {isRematchLoading ? '创建中...' : '再来一局'}
                             </button>
                             <button
                                 onClick={() => navigate('/')}
-                                className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/70 border border-white/10 hover:border-white/40 hover:text-white transition-colors"
+                                className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/70 border border-white/10 hover:border-white/40 hover:text-white transition-colors bg-black/40 backdrop-blur-md"
                             >
                                 返回大厅
                             </button>
                         </div>
                     ) : (
-                        <GameControls G={G} ctx={ctx} moves={moves} playerID={playerID} />
+                        <div className="bg-black/40 backdrop-blur-md rounded-lg p-1">
+                            <GameControls G={G} ctx={ctx} moves={moves} playerID={playerID} />
+                        </div>
                     )}
                 </div>
             )}
 
             {/* Debug Panel - Overlay */}
-            <div className="fixed bottom-0 right-0 p-2 z-50 transition-opacity">
+            <div className="fixed bottom-0 right-0 p-2 z-50">
                 <GameDebugPanel G={G} ctx={ctx} moves={moves} events={events} playerID={playerID} />
             </div>
         </div>
