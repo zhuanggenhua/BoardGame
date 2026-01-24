@@ -7,11 +7,13 @@ import type {
 import { MONK_STATUS_EFFECTS } from './monk/statusEffects';
 import { MONK_ABILITIES } from './monk/abilities';
 import { getMonkStartingDeck } from './monk/cards';
-import { abilityManager, type AbilityContext } from '../../systems/AbilitySystem';
+import { abilityManager, type AbilityContext, type EffectResolutionContext, type AbilityEffect, type GameContext, type EffectResolutionConfig } from '../../systems/AbilitySystem';
+import DiceThroneGameV2 from './game-v2';
 
 const INITIAL_HEALTH = 50;
-const INITIAL_CP = 0;
+const INITIAL_CP = 10; // TODO: 测试完成后改回0
 const CP_MAX = 15;
+const HAND_LIMIT = 6;
 
 const PHASE_ORDER: DiceThroneState['turnPhase'][] = [
     'upkeep',
@@ -138,65 +140,6 @@ const enterRollPhase = (G: DiceThroneState, diceCount: number, rollLimit: number
     resetDice(G);
 };
 
-/**
- * 执行单个效果action
- */
-const executeEffectAction = (
-    G: DiceThroneState,
-    action: { type: string; target: string; value?: number; statusId?: string; customActionId?: string },
-    attackerId: string,
-    defenderId: string,
-    sourceAbilityId?: string
-): void => {
-    const attacker = G.players[attackerId];
-    const defender = G.players[defenderId];
-    const target = action.target === 'self' ? attacker : defender;
-    const targetId = action.target === 'self' ? attackerId : action.target === 'opponent' ? defenderId : undefined;
-
-    switch (action.type) {
-        case 'damage':
-            if (action.value && target) {
-                target.health = Math.max(0, target.health - action.value);
-                setLastEffectSource(G, targetId, sourceAbilityId);
-            }
-            break;
-        case 'heal':
-            if (action.value && target) {
-                target.health = Math.min(INITIAL_HEALTH, target.health + action.value);
-                setLastEffectSource(G, targetId, sourceAbilityId);
-            }
-            break;
-        case 'grantStatus':
-            if (action.statusId && action.value && target) {
-                const currentStacks = target.statusEffects[action.statusId] || 0;
-                const def = MONK_STATUS_EFFECTS.find(e => e.id === action.statusId);
-                const maxStacks = def?.stackLimit || 99;
-                target.statusEffects[action.statusId] = Math.min(currentStacks + action.value, maxStacks);
-                setLastEffectSource(G, targetId, sourceAbilityId);
-            }
-            break;
-        case 'removeStatus':
-            if (action.statusId && target) {
-                const removeAmount = action.value ?? target.statusEffects[action.statusId] ?? 0;
-                target.statusEffects[action.statusId] = Math.max(0, (target.statusEffects[action.statusId] || 0) - removeAmount);
-                setLastEffectSource(G, targetId, sourceAbilityId);
-            }
-            break;
-        case 'custom':
-            // 处理自定义效果（如冥想的动态效果）
-            if (action.customActionId === 'meditation-taiji') {
-                const taijiCount = getFaceCounts(getActiveDice(G)).taiji;
-                attacker.statusEffects.taiji = Math.min((attacker.statusEffects.taiji || 0) + taijiCount, 5);
-                setLastEffectSource(G, attackerId, sourceAbilityId);
-            } else if (action.customActionId === 'meditation-damage') {
-                const fistCount = getFaceCounts(getActiveDice(G)).fist;
-                defender.health = Math.max(0, defender.health - fistCount);
-                setLastEffectSource(G, defenderId, sourceAbilityId);
-            }
-            break;
-    }
-};
-
 const queueChoice = (
     G: DiceThroneState,
     playerId: string,
@@ -217,7 +160,7 @@ const queueChoice = (
 /**
  * 获取技能的所有效果
  */
-const getAbilityEffects = (abilityId: string): Array<{ description: string; action?: { type: string; target: string; value?: number; statusId?: string; customActionId?: string } }> => {
+const getAbilityEffects = (abilityId: string): AbilityEffect[] => {
     // 检查是否是变体ID
     for (const ability of MONK_ABILITIES) {
         if (ability.variants) {
@@ -229,6 +172,75 @@ const getAbilityEffects = (abilityId: string): Array<{ description: string; acti
         }
     }
     return [];
+};
+
+const abilityHasDamage = (abilityId: string): boolean => {
+    const effects = getAbilityEffects(abilityId);
+    const hasDamage = effects.some(effect => effect.action?.type === 'damage' && (effect.action.value ?? 0) > 0);
+    console.log('[DiceThrone][abilityHasDamage]', {
+        abilityId,
+        hasDamage,
+        effectTypes: effects.map(e => e.action?.type ?? 'text'),
+    });
+    return hasDamage;
+};
+
+/**
+ * 创建游戏上下文（新版 API）
+ * 实现 GameContext 接口，供 AbilityManager.resolveEffectsV2 使用
+ */
+const createGameContext = (G: DiceThroneState): GameContext => {
+    return {
+        applyDamage: (targetId: string, amount: number, sourceAbilityId?: string): number => {
+            const target = G.players[targetId];
+            if (!target) return 0;
+            const beforeHealth = target.health;
+            target.health = Math.max(0, target.health - amount);
+            setLastEffectSource(G, targetId, sourceAbilityId);
+            return Math.max(0, beforeHealth - target.health);
+        },
+        applyHeal: (targetId: string, amount: number, sourceAbilityId?: string): void => {
+            const target = G.players[targetId];
+            if (!target) return;
+            target.health = Math.min(INITIAL_HEALTH, target.health + amount);
+            setLastEffectSource(G, targetId, sourceAbilityId);
+        },
+        grantStatus: (targetId: string, statusId: string, stacks: number, sourceAbilityId?: string): void => {
+            const target = G.players[targetId];
+            if (!target) return;
+            const currentStacks = target.statusEffects[statusId] || 0;
+            const def = MONK_STATUS_EFFECTS.find(e => e.id === statusId);
+            const maxStacks = def?.stackLimit || 99;
+            target.statusEffects[statusId] = Math.min(currentStacks + stacks, maxStacks);
+            setLastEffectSource(G, targetId, sourceAbilityId);
+        },
+        removeStatus: (targetId: string, statusId: string, stacks?: number, sourceAbilityId?: string): void => {
+            const target = G.players[targetId];
+            if (!target) return;
+            const removeAmount = stacks ?? target.statusEffects[statusId] ?? 0;
+            target.statusEffects[statusId] = Math.max(0, (target.statusEffects[statusId] || 0) - removeAmount);
+            setLastEffectSource(G, targetId, sourceAbilityId);
+        },
+        getHealth: (targetId: string): number => {
+            return G.players[targetId]?.health ?? 0;
+        },
+        getStatusStacks: (targetId: string, statusId: string): number => {
+            return G.players[targetId]?.statusEffects[statusId] ?? 0;
+        },
+        executeCustomAction: (actionId: string, attackerId: string, defenderId: string, sourceAbilityId?: string): void => {
+            const attacker = G.players[attackerId];
+            const defender = G.players[defenderId];
+            if (actionId === 'meditation-taiji') {
+                const taijiCount = getFaceCounts(getActiveDice(G)).taiji;
+                attacker.statusEffects.taiji = Math.min((attacker.statusEffects.taiji || 0) + taijiCount, 5);
+                setLastEffectSource(G, attackerId, sourceAbilityId);
+            } else if (actionId === 'meditation-damage') {
+                const fistCount = getFaceCounts(getActiveDice(G)).fist;
+                defender.health = Math.max(0, defender.health - fistCount);
+                setLastEffectSource(G, defenderId, sourceAbilityId);
+            }
+        },
+    };
 };
 
 const resolveOffensivePreDefenseEffects = (G: DiceThroneState) => {
@@ -246,14 +258,23 @@ const resolveOffensivePreDefenseEffects = (G: DiceThroneState) => {
             defenderId,
             sourceAbilityId,
             effectTypes: effects.map(effect => effect.action?.type ?? 'text'),
+            timings: effects.map(effect => abilityManager.getEffectTiming(effect)),
         });
     }
-    for (const effect of effects) {
-        if (effect.action && effect.action.type !== 'damage') {
-            executeEffectAction(G, effect.action, attackerId, defenderId, sourceAbilityId);
-        }
-    }
 
+    // 使用新版 API 结算 preDefense 时机的效果
+    const resolutionCtx: EffectResolutionContext = {
+        attackerId,
+        defenderId,
+        sourceAbilityId,
+        damageDealt: 0,
+        attackerStatusEffects: G.players[attackerId]?.statusEffects,
+        defenderStatusEffects: G.players[defenderId]?.statusEffects,
+    };
+    const gameCtx = createGameContext(G);
+    abilityManager.resolveEffects(effects, 'preDefense', resolutionCtx, gameCtx);
+
+    // 特殊技能处理：禅忘的选择效果
     if (sourceAbilityId === 'zen-forget') {
         queueChoice(G, attackerId, sourceAbilityId, [
             { statusId: 'evasive', value: 1 },
@@ -265,7 +286,7 @@ const resolveOffensivePreDefenseEffects = (G: DiceThroneState) => {
 };
 
 /**
- * 结算攻击
+ * 结算攻击（使用条件系统）
  */
 const resolveAttack = (G: DiceThroneState, options?: { includePreDefense?: boolean }): void => {
     if (!G.pendingAttack) return;
@@ -277,35 +298,55 @@ const resolveAttack = (G: DiceThroneState, options?: { includePreDefense?: boole
     }
 
     const { attackerId, defenderId, sourceAbilityId, defenseAbilityId } = G.pendingAttack;
+    const bonusDamage = G.pendingAttack.bonusDamage ?? 0;
 
+    // 创建结算上下文
+    const resolutionCtx: EffectResolutionContext = {
+        attackerId,
+        defenderId,
+        sourceAbilityId: sourceAbilityId ?? '',
+        damageDealt: 0,
+        attackerStatusEffects: G.players[attackerId]?.statusEffects,
+        defenderStatusEffects: G.players[defenderId]?.statusEffects,
+    };
+
+    // 结算防御技能效果（使用新版 API）
+    const gameCtx = createGameContext(G);
     if (defenseAbilityId) {
         const defenseEffects = getAbilityEffects(defenseAbilityId);
-        for (const effect of defenseEffects) {
-            if (effect.action) {
-                executeEffectAction(G, effect.action, defenderId, attackerId, defenseAbilityId);
-            }
-        }
+        const defenseCtx: EffectResolutionContext = {
+            attackerId: defenderId,
+            defenderId: attackerId,
+            sourceAbilityId: defenseAbilityId,
+            damageDealt: 0,
+            attackerStatusEffects: G.players[defenderId]?.statusEffects,
+            defenderStatusEffects: G.players[attackerId]?.statusEffects,
+        };
+        // 防御技能统一使用 withDamage 时机结算
+        abilityManager.resolveEffects(defenseEffects, 'withDamage', defenseCtx, gameCtx);
+        abilityManager.resolveEffects(defenseEffects, 'postDamage', defenseCtx, gameCtx);
     }
 
+    // 结算进攻技能效果（使用新版 API）
     if (sourceAbilityId) {
         const effects = getAbilityEffects(sourceAbilityId);
-        const bonusDamage = G.pendingAttack.bonusDamage ?? 0;
-        let bonusApplied = false;
+        const config: EffectResolutionConfig = {
+            bonusDamage,
+            bonusDamageOnce: true,
+        };
 
-        for (const effect of effects) {
-            if (effect.action?.type === 'damage') {
-                const baseValue = effect.action.value ?? 0;
-                const totalValue = baseValue + (!bonusApplied ? bonusDamage : 0);
-                bonusApplied = true;
-                executeEffectAction(
-                    G,
-                    { ...effect.action, value: totalValue },
-                    attackerId,
-                    defenderId,
-                    sourceAbilityId
-                );
-            }
+        // 1. 结算 withDamage 时机的效果（伤害）
+        abilityManager.resolveEffects(effects, 'withDamage', resolutionCtx, gameCtx, config);
+
+        if (import.meta.env.DEV) {
+            console.info('[DiceThrone][Attack] damage resolved', {
+                sourceAbilityId,
+                damageDealt: resolutionCtx.damageDealt,
+            });
         }
+
+        // 2. 结算 postDamage 时机的效果（Then 语义，依赖 onHit 条件）
+        abilityManager.resolveEffects(effects, 'postDamage', resolutionCtx, gameCtx);
 
         // 记录激活的技能ID（用于UI动画）
         G.activatingAbilityId = sourceAbilityId;
@@ -397,6 +438,20 @@ export const DiceThroneGame: Game<DiceThroneState> = {
         activePlayers: { all: 'play' },
     },
 
+    endIf: ({ G }) => {
+        const playerIds = Object.keys(G.players);
+        const defeated = playerIds.filter(id => G.players[id]?.health <= 0);
+        if (defeated.length === 0) return undefined;
+        if (defeated.length === playerIds.length) {
+            return { draw: true };
+        }
+        if (defeated.length === 1) {
+            const winner = playerIds.find(id => id !== defeated[0]);
+            if (winner) return { winner };
+        }
+        return { draw: true };
+    },
+
     moves: {
         rollDice: ({ G, random, playerID }) => {
             if (G.turnPhase !== 'offensiveRoll' && G.turnPhase !== 'defensiveRoll') return;
@@ -463,13 +518,8 @@ export const DiceThroneGame: Game<DiceThroneState> = {
             } else if (face === 'palm') {
                 G.pendingAttack.bonusDamage = (G.pendingAttack.bonusDamage ?? 0) + 3;
             } else if (face === 'taiji') {
-                executeEffectAction(
-                    G,
-                    { type: 'grantStatus', target: 'self', statusId: 'taiji', value: 2 },
-                    G.activePlayerId,
-                    getNextPlayerId(G),
-                    G.pendingAttack.sourceAbilityId
-                );
+                const gameCtx = createGameContext(G);
+                gameCtx.grantStatus(G.activePlayerId, 'taiji', 2, G.pendingAttack.sourceAbilityId);
             } else if (face === 'lotus') {
                 queueChoice(G, G.activePlayerId, G.pendingAttack.sourceAbilityId, [
                     { statusId: 'evasive', value: 1 },
@@ -559,11 +609,17 @@ export const DiceThroneGame: Game<DiceThroneState> = {
             if (!G.rollConfirmed) return;
             if (!G.availableAbilityIds.includes(abilityId)) return;
 
+            if (G.pendingAttack?.sourceAbilityId === abilityId && G.pendingAttack.attackerId === G.activePlayerId) {
+                G.pendingAttack = null;
+                return;
+            }
+
             const defenderId = getNextPlayerId(G);
+            const isDefendable = abilityHasDamage(abilityId);
             G.pendingAttack = {
                 attackerId: G.activePlayerId,
                 defenderId,
-                isDefendable: true,
+                isDefendable,
                 sourceAbilityId: abilityId,
                 extraRoll: abilityId === 'taiji-combo' ? { resolved: false } : undefined,
             };
@@ -599,6 +655,31 @@ export const DiceThroneGame: Game<DiceThroneState> = {
             const [card] = player.hand.splice(cardIndex, 1);
             player.discard.push(card);
             player.cp = Math.min(CP_MAX, player.cp + 1);
+            // 记录最后售出的卡牌ID，用于撤回
+            G.lastSoldCardId = cardId;
+        },
+
+        /** 撤回售出的卡牌（仅限最后一张售出的卡牌） */
+        undoSellCard: ({ G, playerID }) => {
+            if (!isMoveAllowed(playerID, G.activePlayerId)) return;
+            if (!G.lastSoldCardId) return;
+            const player = G.players[G.activePlayerId];
+            const cardIndex = player.discard.findIndex(c => c.id === G.lastSoldCardId);
+            if (cardIndex === -1) return;
+            const [card] = player.discard.splice(cardIndex, 1);
+            player.hand.push(card);
+            player.cp = Math.max(0, player.cp - 1);
+            G.lastSoldCardId = undefined;
+        },
+
+        /** 将卡牌移动到手牌末尾（打出失败时调用） */
+        reorderCardToEnd: ({ G, playerID }, cardId: string) => {
+            if (!isMoveAllowed(playerID, G.activePlayerId)) return;
+            const player = G.players[G.activePlayerId];
+            const cardIndex = player.hand.findIndex(c => c.id === cardId);
+            if (cardIndex === -1 || cardIndex === player.hand.length - 1) return;
+            const [card] = player.hand.splice(cardIndex, 1);
+            player.hand.push(card);
         },
 
         /** 打出卡牌（根据时机检查） */
@@ -631,6 +712,9 @@ export const DiceThroneGame: Game<DiceThroneState> = {
             // 移除卡牌
             player.hand.splice(cardIndex, 1);
             player.discard.push(card);
+
+            // 打出卡牌后清除撤回状态（无法撤回之前售出的卡牌）
+            G.lastSoldCardId = undefined;
 
             // TODO: 执行卡牌效果（需要根据卡牌类型实现）
         },
@@ -690,13 +774,47 @@ export const DiceThroneGame: Game<DiceThroneState> = {
             player.statusEffects[option.statusId] = Math.min(currentStacks + option.value, maxStacks);
             setLastEffectSource(G, pendingChoice.playerId, pendingChoice.sourceAbilityId);
 
+            const choiceSourceAbilityId = pendingChoice.sourceAbilityId;
+            // 记录是否需要在清除选择后自动推进阶段（offensiveRoll 阶段的 preDefense 效果确认）
+            const shouldAutoAdvance = G.turnPhase === 'offensiveRoll' &&
+                G.pendingAttack &&
+                G.pendingAttack.preDefenseResolved &&
+                choiceSourceAbilityId === G.pendingAttack.sourceAbilityId;
+
             G.pendingChoice = null;
+
+            // 纯效果确认后自动进入下一阶段（防御投掷或 main2）
+            if (shouldAutoAdvance) {
+                console.log('[DiceThrone][ResolveChoice] 自动推进阶段', {
+                    isDefendable: G.pendingAttack?.isDefendable,
+                    sourceAbilityId: G.pendingAttack?.sourceAbilityId,
+                });
+                if (G.pendingAttack?.isDefendable) {
+                    // 可防御攻击，进入防御投掷阶段
+                    G.turnPhase = 'defensiveRoll';
+                    enterRollPhase(G, 4, 1);
+                    G.availableAbilityIds = getAvailableAbilityIds(G, G.pendingAttack.defenderId);
+                    console.log('[DiceThrone][ResolveChoice] -> defensiveRoll', {
+                        defenderId: G.pendingAttack.defenderId,
+                        availableAbilityIds: G.availableAbilityIds,
+                    });
+                } else {
+                    // 纯效果技能，结算后进入 main2
+                    resolveAttack(G, { includePreDefense: false });
+                    G.turnPhase = 'main2';
+                    console.log('[DiceThrone][ResolveChoice] -> main2 (纯效果已结算)');
+                }
+            }
         },
 
         advancePhase: ({ G, playerID }) => {
             if (!isMoveAllowed(playerID, G.activePlayerId)) return;
             if (G.pendingChoice) return;
             if (G.turnPhase === 'offensiveRoll' && G.pendingAttack?.extraRoll && !G.pendingAttack.extraRoll.resolved) return;
+            if (G.turnPhase === 'discard') {
+                const player = G.players[G.activePlayerId];
+                if (player.hand.length > HAND_LIMIT) return;
+            }
             const currentIndex = PHASE_ORDER.indexOf(G.turnPhase);
             let nextPhase = PHASE_ORDER[(currentIndex + 1) % PHASE_ORDER.length];
 
@@ -705,16 +823,26 @@ export const DiceThroneGame: Game<DiceThroneState> = {
             }
 
             if (G.turnPhase === 'offensiveRoll') {
+                console.log('[DiceThrone][Phase] offensiveRoll -> next', {
+                    hasPendingAttack: !!G.pendingAttack,
+                    isDefendable: G.pendingAttack?.isDefendable,
+                    sourceAbilityId: G.pendingAttack?.sourceAbilityId,
+                    preDefenseResolved: G.pendingAttack?.preDefenseResolved,
+                    hasPendingChoice: !!G.pendingChoice,
+                });
                 if (G.pendingAttack && G.pendingAttack.isDefendable) {
                     resolveOffensivePreDefenseEffects(G);
                     if (G.pendingChoice) return;
                     nextPhase = 'defensiveRoll';
+                    console.log('[DiceThrone][Phase] -> defensiveRoll (可防御攻击)');
                 } else if (G.pendingAttack) {
-                    // 不可防御攻击，直接结算
+                    // 不可防御攻击（纯效果），直接结算
+                    console.log('[DiceThrone][Phase] 纯效果技能，直接结算并进入 main2');
                     resolveAttack(G, { includePreDefense: true });
                     if (G.pendingChoice) return;
                     nextPhase = 'main2';
                 } else {
+                    console.log('[DiceThrone][Phase] 无攻击，直接进入 main2');
                     nextPhase = 'main2';
                 }
             }
@@ -754,10 +882,6 @@ export const DiceThroneGame: Game<DiceThroneState> = {
                 enterRollPhase(G, 4, 1);
                 if (G.pendingAttack) {
                     G.availableAbilityIds = getAvailableAbilityIds(G, G.pendingAttack.defenderId);
-                    console.log('[DiceThrone][Defense] enterPhase', {
-                        defenderId: G.pendingAttack.defenderId,
-                        availableAbilityIds: G.availableAbilityIds,
-                    });
                 }
             }
         },
@@ -765,4 +889,10 @@ export const DiceThroneGame: Game<DiceThroneState> = {
     },
 };
 
-export default DiceThroneGame;
+export default DiceThroneGameV2;
+
+// ============================================================================
+// 新引擎架构版本（使用 Domain Core + Systems）
+// ============================================================================
+export { DiceThroneGameV2 } from './game-v2';
+export type { DiceThroneCore } from './domain';

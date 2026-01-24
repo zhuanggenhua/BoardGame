@@ -3,7 +3,6 @@
  */
 
 export * from './types';
-export * from './UndoManager';
 export {
     // 注册表 API
     registerGameAssets,

@@ -8,7 +8,7 @@ const CORE_I18N_NAMESPACES = I18N_NAMESPACES.filter(
     (namespace: string) => !namespace.startsWith('game-'),
 );
 
-void i18n
+export const i18nInitPromise = i18n
     .use(Backend)
     .use(LanguageDetector)
     .use(initReactI18next)

@@ -5,9 +5,9 @@ import clsx from 'clsx';
 import { LobbyClient } from 'boardgame.io/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { lobbySocket, type LobbyMatch } from '../../services/lobbySocket';
-import { leaveMatch } from '../../hooks/useMatchStatus';
-import { ConfirmModal } from '../common/ConfirmModal';
-import { ModalBase } from '../common/ModalBase';
+import { leaveMatch } from '../../hooks/match/useMatchStatus';
+import { ConfirmModal } from '../common/overlays/ConfirmModal';
+import { ModalBase } from '../common/overlays/ModalBase';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { useToast } from '../../contexts/ToastContext';
 import { GAME_SERVER_URL } from '../../config/server';
@@ -35,14 +35,16 @@ interface GameDetailsModalProps {
     descriptionKey: string;
     thumbnail: ReactNode;
     closeOnBackdrop?: boolean;
+    /** 导航前调用，通知父组件不要清理 URL */
+    onNavigate?: () => void;
 }
 
-export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptionKey, thumbnail, closeOnBackdrop }: GameDetailsModalProps) => {
+export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptionKey, thumbnail, closeOnBackdrop, onNavigate }: GameDetailsModalProps) => {
     const navigate = useNavigate();
     const modalRef = useRef<HTMLDivElement>(null);
     const { user } = useAuth();
     const { t } = useTranslation('lobby');
-    const { openModal, closeModal, closeAll } = useModalStack();
+    const { openModal, closeModal } = useModalStack();
     const toast = useToast();
     const confirmModalIdRef = useRef<string | null>(null);
     const normalizedGameId = normalizeGameName(gameId);
@@ -80,7 +82,13 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     // 使用 WebSocket 订阅房间列表更新（替代轮询）
     useEffect(() => {
         if (isOpen) {
-            const handleStorage = () => setLocalStorageTick(t => t + 1);
+            let storageTimeout: NodeJS.Timeout;
+            const handleStorage = () => {
+                clearTimeout(storageTimeout);
+                storageTimeout = setTimeout(() => {
+                    setLocalStorageTick(t => t + 1);
+                }, 150);
+            };
             window.addEventListener('storage', handleStorage);
 
             // 订阅大厅更新（仅当前游戏）
@@ -110,6 +118,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             lobbySocket.requestRefresh(normalizedGameId);
 
             return () => {
+                clearTimeout(storageTimeout);
                 window.removeEventListener('storage', handleStorage);
                 unsubscribeMatches();
                 unsubscribeStatus();
@@ -132,14 +141,28 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             }
         }
         return null;
-    }, [localStorageTick, rooms]);
+    }, [localStorageTick]);
 
-    const buildGuestName = () => t('player.guest', { id: Math.floor(Math.random() * 9000) + 1000 });
+    const getGuestId = () => {
+        const key = 'guest_id';
+        const stored = localStorage.getItem(key);
+        if (stored) return stored;
+        const id = String(Math.floor(Math.random() * 9000) + 1000);
+        localStorage.setItem(key, id);
+        return id;
+    };
+
+    const getGuestName = () => t('player.guest', { id: getGuestId() });
 
 
     const handleTutorial = () => {
-        closeAll({ skipOnClose: true });
+        onNavigate?.();
         navigate(`/play/${gameId}/tutorial`);
+    };
+
+    const handleLocalPlay = () => {
+        onNavigate?.();
+        navigate(`/play/${gameId}/local`);
     };
 
     const handleCreateRoom = async () => {
@@ -148,7 +171,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         try {
             const numPlayers = 2;
             // 获取用户名或生成游客名
-            const playerName = user?.username || buildGuestName();
+            const playerName = user?.username || getGuestName();
 
             // 使用传入的 gameId
             const { matchID } = await lobbyClient.createMatch(gameId, { numPlayers });
@@ -164,12 +187,13 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 playerID: '0',
                 credentials: playerCredentials,
                 matchID,
-                gameName: gameId // 保存游戏名称
+                gameName: gameId, // 保存游戏名称
+                playerName,
             }));
 
             setLocalStorageTick(t => t + 1);
 
-            closeAll({ skipOnClose: true });
+            onNavigate?.();
             navigate(`/play/${gameId}/match/${matchID}?playerID=0`);
         } catch (error) {
             console.error('Failed to create match:', error);
@@ -183,14 +207,38 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         // 检查是否有已保存的凭证（重连场景）
         const savedCreds = localStorage.getItem(`match_creds_${matchID}`);
         if (savedCreds) {
-            const data = JSON.parse(savedCreds);
-            const storedGameName = data.gameName;
-            const roomGameName = normalizeGameName(overrideGameName || storedGameName) || normalizedGameId || 'tictactoe';
+            let data: { playerID?: string; gameName?: string; playerName?: string } | null = null;
+            try {
+                data = JSON.parse(savedCreds);
+            } catch {
+                data = null;
+            }
 
-            // 直接重连：让 server/client 侧用 credentials 校验
-            closeAll({ skipOnClose: true });
-            navigate(`/play/${roomGameName}/match/${matchID}?playerID=${data.playerID}`);
-            return;
+            if (data?.playerID) {
+                const storedGameName = data.gameName;
+                const roomGameName = normalizeGameName(overrideGameName || storedGameName) || normalizedGameId || 'tictactoe';
+                const storedPlayerName = data.playerName ?? user?.username ?? null;
+
+                try {
+                    const matchInfo = await lobbyClient.getMatch(roomGameName, matchID);
+                    const seat = matchInfo.players.find(p => String(p.id) === String(data?.playerID));
+                    const seatTakenByOther = !!(seat?.name && storedPlayerName && seat.name !== storedPlayerName);
+
+                    if (!seat || seatTakenByOther) {
+                        localStorage.removeItem(`match_creds_${matchID}`);
+                    } else {
+                        // 直接重连：让 server/client 侧用 credentials 校验
+                        onNavigate?.();
+                        navigate(`/play/${roomGameName}/match/${matchID}?playerID=${data.playerID}`);
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('校验本地凭据失败，改为重新加入', error);
+                    localStorage.removeItem(`match_creds_${matchID}`);
+                }
+            } else {
+                localStorage.removeItem(`match_creds_${matchID}`);
+            }
         }
 
         // 新加入逻辑需要从当前大厅列表拿到玩家占位信息
@@ -198,21 +246,29 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         if (!match) return;
 
         const roomGameName = normalizeGameName(overrideGameName || match.gameName) || normalizedGameId || 'tictactoe';
-        const player0 = match.players[0];
-        const player1 = match.players[1];
-
-        // 新加入逻辑：找一个空位
         let targetPlayerID = '';
-        if (!player0.name) targetPlayerID = '0';
-        else if (!player1.name) targetPlayerID = '1';
-        else {
-            toast.warning({ kind: 'i18n', key: 'error.roomFull', ns: 'lobby' });
+
+        try {
+            const matchInfo = await lobbyClient.getMatch(roomGameName, matchID);
+            const player0 = matchInfo.players.find(p => p.id === 0);
+            const player1 = matchInfo.players.find(p => p.id === 1);
+
+            // 新加入逻辑：找一个空位（以服务器最新数据为准）
+            if (!player0?.name) targetPlayerID = '0';
+            else if (!player1?.name) targetPlayerID = '1';
+            else {
+                toast.warning({ kind: 'i18n', key: 'error.roomFull', ns: 'lobby' });
+                return;
+            }
+        } catch (error) {
+            console.error('获取房间状态失败:', error);
+            toast.error({ kind: 'i18n', key: 'error.joinRoomFailed', ns: 'lobby' });
             return;
         }
 
         try {
             // 获取用户名或生成游客名
-            const playerName = user?.username || buildGuestName();
+            const playerName = user?.username || getGuestName();
 
             const { playerCredentials } = await lobbyClient.joinMatch(roomGameName, matchID, {
                 playerID: targetPlayerID,
@@ -223,12 +279,13 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 playerID: targetPlayerID,
                 credentials: playerCredentials,
                 matchID,
-                gameName: roomGameName
+                gameName: roomGameName,
+                playerName,
             }));
 
             setLocalStorageTick(t => t + 1);
 
-            closeAll({ skipOnClose: true });
+            onNavigate?.();
             navigate(`/play/${roomGameName}/match/${matchID}?playerID=${targetPlayerID}`);
         } catch (error) {
             console.error('Join failed:', error);
@@ -326,24 +383,36 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
     // 预处理带有凭据元数据的房间列表（全量）
     const allRoomItems = useMemo(() => {
+        if (rooms.length === 0) return [];
+
+        // 预先获取缓存的 creds 索引，避免在 map 中反复查询 localStorage.getItem
+        const credsMap = new Map<string, any>();
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith('match_creds_')) {
+                try {
+                    const matchID = key.replace('match_creds_', '');
+                    const raw = localStorage.getItem(key);
+                    if (raw) {
+                        credsMap.set(matchID, JSON.parse(raw));
+                    }
+                } catch { }
+            }
+        }
+
         return rooms.map(room => {
             const p0 = room.players[0]?.name;
             const p1 = room.players[1]?.name;
             const playerCount = (p0 ? 1 : 0) + (p1 ? 1 : 0);
             const isFull = playerCount >= 2;
 
-            const savedCreds = localStorage.getItem(`match_creds_${room.matchID}`);
+            const parsed = credsMap.get(room.matchID);
             let myPlayerID: string | null = null;
             let myCredentials: string | null = null;
 
-            if (savedCreds) {
-                try {
-                    const parsed = JSON.parse(savedCreds);
-                    if (parsed.matchID === room.matchID) {
-                        myPlayerID = parsed.playerID;
-                        myCredentials = parsed.credentials;
-                    }
-                } catch (e) { }
+            if (parsed && parsed.matchID === room.matchID) {
+                myPlayerID = parsed.playerID;
+                myCredentials = parsed.credentials;
             }
 
             const isUserRoom = user && (p0 === user.username || p1 === user.username);
@@ -363,7 +432,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 gameKey: normalizeGameName(room.gameName)
             };
         });
-    }, [rooms, user]);
+    }, [rooms, user, localStorageTick]);
 
     const roomItems = useMemo(() => {
         return allRoomItems.filter(room => room.gameKey === normalizedGameId);
@@ -407,19 +476,18 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 open={isOpen}
                 onClose={onClose}
                 closeOnBackdrop={closeOnBackdrop}
-                overlayClassName="z-40 bg-slate-900/40"
-                containerClassName="z-50 p-4"
+                containerClassName="p-4 sm:p-8"
             >
                 <div
                     ref={modalRef}
                     className="
                         bg-[#fcfbf9] pointer-events-auto 
                         w-full max-w-2xl 
-                        min-h-[450px] max-h-[90vh] md:h-[450px]
+                        h-auto max-h-[85vh]
                         rounded-sm shadow-[0_10px_40px_rgba(67,52,34,0.15)] 
                         flex flex-col md:flex-row 
                         border border-[#e5e0d0] relative 
-                        overflow-y-auto md:overflow-hidden custom-scrollbar
+                        overflow-hidden
                     "
                 >
                     {/* 装饰性边角 */}
@@ -429,27 +497,26 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-[#c0a080]" />
 
                     {/* 左侧面板 - 游戏信息 */}
-                    <div className="w-full md:w-2/5 bg-[#f3f0e6]/50 border-r border-[#e5e0d0] p-8 flex flex-col items-center text-center font-serif">
+                    <div className="w-full md:w-2/5 bg-[#f3f0e6]/50 border-b md:border-b-0 md:border-r border-[#e5e0d0] p-6 sm:p-8 flex flex-col items-center text-center font-serif shrink-0">
                         <div className="w-20 h-20 bg-[#fcfbf9] border border-[#e5e0d0] rounded-[4px] shadow-sm flex items-center justify-center text-4xl text-[#433422] font-bold mb-6 overflow-hidden">
                             {thumbnail}
                         </div>
-                        <h2 className="text-xl font-bold text-[#433422] mb-2 tracking-wide">{t(titleKey, { defaultValue: titleKey })}</h2>
+                        <h2 className="text-xl sm:text-2xl font-bold text-[#433422] mb-2 tracking-wide">{t(titleKey, { defaultValue: titleKey })}</h2>
                         <div className="h-px w-12 bg-[#c0a080] opacity-30 mb-4" />
-                        <p className="text-xs text-[#8c7b64] mb-8 leading-relaxed italic">
+                        <p className="text-xs sm:text-sm text-[#8c7b64] mb-8 leading-relaxed italic">
                             {t(descriptionKey, { defaultValue: descriptionKey })}
                         </p>
 
                         <div className="mt-auto w-full">
                             <button
-                                onClick={() => {
-                                    closeAll({ skipOnClose: true });
-                                    navigate(`/play/${gameId}/local`);
-                                }}
+                                type="button"
+                                onClick={handleLocalPlay}
                                 className="w-full py-2 px-4 bg-[#fcfbf9] border border-[#e5e0d0] text-[#433422] font-bold rounded-[4px] hover:bg-[#efede6] transition-all flex items-center justify-center gap-2 cursor-pointer text-xs mb-2"
                             >
                                 {t('actions.localPlay')}
                             </button>
                             <button
+                                type="button"
                                 onClick={handleTutorial}
                                 className="w-full py-2 px-4 bg-[#fcfbf9] border border-[#e5e0d0] text-[#433422] font-bold rounded-[4px] hover:bg-[#efede6] transition-all flex items-center justify-center gap-2 cursor-pointer text-xs"
                             >
@@ -459,7 +526,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     </div>
 
                     {/* 右侧面板 - 大厅/排行 */}
-                    <div className="flex-1 p-8 flex flex-col bg-[#fcfbf9] font-serif">
+                    <div className="flex-1 p-6 sm:p-8 flex flex-col bg-[#fcfbf9] font-serif overflow-hidden">
                         <div className="flex justify-between items-center mb-6">
                             <div className="flex gap-4">
                                 <button

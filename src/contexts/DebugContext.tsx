@@ -4,8 +4,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface DebugContextType {
     playerID: string | null;
     setPlayerID: (id: string | null) => void;
-    testMode: boolean;
-    setTestMode: (enabled: boolean) => void;
 }
 
 const DebugContext = createContext<DebugContextType | undefined>(undefined);
@@ -16,12 +14,6 @@ export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return localStorage.getItem('debug_playerID') || '0';
     });
 
-    const [testMode, setTestMode] = useState<boolean>(() => {
-        // 测试模式默认开启
-        const saved = localStorage.getItem('debug_testMode');
-        return saved === null ? true : saved === 'true';
-    });
-
     useEffect(() => {
         if (playerID) {
             localStorage.setItem('debug_playerID', playerID);
@@ -30,17 +22,10 @@ export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     }, [playerID]);
 
-    useEffect(() => {
-        localStorage.setItem('debug_testMode', String(testMode));
-    }, [testMode]);
-
-
     return (
         <DebugContext.Provider value={{
             playerID,
             setPlayerID,
-            testMode,
-            setTestMode
         }}>
             {children}
         </DebugContext.Provider>

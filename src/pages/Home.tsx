@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CategoryPills, type Category } from '../components/layout/CategoryPills';
@@ -9,10 +9,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from '../components/auth/AuthModal';
 import { EmailBindModal } from '../components/auth/EmailBindModal';
 import { useNavigate } from 'react-router-dom';
-import { clearMatchCredentials, leaveMatch } from '../hooks/useMatchStatus';
-import { ConfirmModal } from '../components/common/ConfirmModal';
-import { LanguageSwitcher } from '../components/common/LanguageSwitcher';
+import { clearMatchCredentials, destroyMatch, leaveMatch } from '../hooks/match/useMatchStatus';
+import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
+import { LanguageSwitcher } from '../components/common/i18n/LanguageSwitcher';
 import { useModalStack } from '../contexts/ModalStackContext';
+import { useUrlModal } from '../hooks/routing/useUrlModal';
 import clsx from 'clsx';
 import { LobbyClient } from 'boardgame.io/client';
 import { GAME_SERVER_URL } from '../config/server';
@@ -21,7 +22,7 @@ const lobbyClient = new LobbyClient({ server: GAME_SERVER_URL });
 
 export const Home = () => {
     const [activeCategory, setActiveCategory] = useState<Category>('All');
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [, setSearchParams] = useSearchParams();
     const [showUserMenu, setShowUserMenu] = useState(false);
     const navigate = useNavigate();
 
@@ -39,16 +40,34 @@ export const Home = () => {
     const { user, logout } = useAuth();
     const { openModal, closeModal } = useModalStack();
     const { t } = useTranslation(['lobby', 'auth']);
-    const selectedGameId = searchParams.get('game');
-    const selectedGame = useMemo(() => selectedGameId ? getGameById(selectedGameId) : null, [selectedGameId]);
     const filteredGames = useMemo(() => getGamesByCategory(activeCategory), [activeCategory]);
     const activePlayerCount = activeMatch?.players.filter(player => player.name).length ?? 0;
 
     const confirmModalIdRef = useRef<string | null>(null);
-    const gameDetailsModalIdRef = useRef<string | null>(null);
-    const gameDetailsGameIdRef = useRef<string | null>(null);
     const authModalIdRef = useRef<string | null>(null);
     const emailBindModalIdRef = useRef<string | null>(null);
+
+    const { navigateAwayRef: gameModalNavigateAwayRef } = useUrlModal({
+        paramKey: 'game',
+        getModalConfig: useCallback((gameId: string) => {
+            const game = getGameById(gameId);
+            if (!game) return null;
+            return {
+                render: ({ close, closeOnBackdrop }: { close: () => void; closeOnBackdrop: boolean }) => (
+                    <GameDetailsModal
+                        isOpen
+                        onClose={close}
+                        gameId={game.id}
+                        titleKey={game.titleKey}
+                        descriptionKey={game.descriptionKey}
+                        thumbnail={game.thumbnail}
+                        closeOnBackdrop={closeOnBackdrop}
+                        onNavigate={() => gameModalNavigateAwayRef.current()}
+                    />
+                ),
+            };
+        }, []),
+    });
 
     const handleGameClick = (id: string) => {
         if (id === 'assetslicer') {
@@ -56,10 +75,6 @@ export const Home = () => {
             return;
         }
         setSearchParams({ game: id });
-    };
-
-    const handleCloseModal = () => {
-        setSearchParams({});
     };
 
     const handleLogout = () => {
@@ -119,10 +134,13 @@ export const Home = () => {
     // 检查是否有活跃对局（基于 localStorage，跨游戏）
     useEffect(() => {
         const handleStorage = () => setLocalStorageTick(t => t + 1);
+        const handleCredentialsChange = () => setLocalStorageTick(t => t + 1);
         window.addEventListener('storage', handleStorage);
+        window.addEventListener('match-credentials-changed', handleCredentialsChange);
 
         return () => {
             window.removeEventListener('storage', handleStorage);
+            window.removeEventListener('match-credentials-changed', handleCredentialsChange);
         };
     }, []);
 
@@ -245,7 +263,9 @@ export const Home = () => {
             gameName = activeMatch.gameName;
         }
 
-        const success = await leaveMatch(gameName, pendingAction.matchID, pendingAction.playerID, pendingAction.credentials);
+        const success = pendingAction.isHost
+            ? await destroyMatch(gameName, pendingAction.matchID, pendingAction.playerID, pendingAction.credentials)
+            : await leaveMatch(gameName, pendingAction.matchID, pendingAction.playerID, pendingAction.credentials);
         if (!success) {
             // Keep state as-is so the user can retry or decide what to do next.
             return;
@@ -295,55 +315,6 @@ export const Home = () => {
         }
     }, [closeModal, handleCancelAction, handleConfirmAction, openModal, pendingAction]);
 
-    useEffect(() => {
-        if (import.meta.env.DEV) {
-            console.info('[Home] modal sync', {
-                search: window.location.search,
-                selectedGameId,
-                selectedGame: selectedGame?.id,
-                currentModalId: gameDetailsModalIdRef.current,
-                currentGameId: gameDetailsGameIdRef.current,
-            });
-        }
-
-        if (selectedGame && (gameDetailsGameIdRef.current !== selectedGame.id)) {
-            if (gameDetailsModalIdRef.current) {
-                closeModal(gameDetailsModalIdRef.current);
-                gameDetailsModalIdRef.current = null;
-            }
-            gameDetailsGameIdRef.current = selectedGame.id;
-            gameDetailsModalIdRef.current = openModal({
-                closeOnBackdrop: true,
-                closeOnEsc: true,
-                lockScroll: true,
-                onClose: () => {
-                    gameDetailsModalIdRef.current = null;
-                    gameDetailsGameIdRef.current = null;
-                    handleCloseModal();
-                },
-                render: ({ close, closeOnBackdrop }) => (
-                    <GameDetailsModal
-                        isOpen
-                        onClose={() => {
-                            close();
-                        }}
-                        gameId={selectedGame.id}
-                        titleKey={selectedGame.titleKey}
-                        descriptionKey={selectedGame.descriptionKey}
-                        thumbnail={selectedGame.thumbnail}
-                        closeOnBackdrop={closeOnBackdrop}
-                    />
-                ),
-            });
-        }
-
-        if (!selectedGame && gameDetailsModalIdRef.current) {
-            closeModal(gameDetailsModalIdRef.current);
-            gameDetailsModalIdRef.current = null;
-            gameDetailsGameIdRef.current = null;
-        }
-    }, [closeModal, handleCloseModal, openModal, selectedGame, selectedGameId]);
-
     return (
         <div className="min-h-screen bg-[#f3f0e6] text-[#433422] font-serif overflow-y-scroll flex flex-col items-center">
             <header className="w-full relative px-6 md:px-12 pt-5 md:pt-8 pb-4">
@@ -353,34 +324,44 @@ export const Home = () => {
                         <div className="relative">
                             <button
                                 onClick={() => setShowUserMenu(!showUserMenu)}
-                                className="group hover:text-[#2c2216] text-[#433422] flex items-center gap-2 cursor-pointer transition-colors px-4 py-2 rounded hover:bg-[#e8e4db]"
+                                className="group relative hover:text-[#2c2216] text-[#433422] flex items-center gap-2 cursor-pointer transition-colors px-2 py-1"
                             >
                                 <span className="font-bold text-sm tracking-tight">{user.username}</span>
+                                <span className="underline-center" />
                             </button>
                             {showUserMenu && (
                                 <div className="absolute top-[calc(100%+0.5rem)] right-0 bg-[#fefcf7] shadow-[0_8px_32px_rgba(67,52,34,0.12)] border border-[#d3ccba] rounded-sm py-2 px-2 z-50 min-w-[160px] animate-in fade-in slide-in-from-top-1">
                                     <button
                                         onClick={() => { setShowUserMenu(false); openEmailBind(); }}
-                                        className="relative w-full px-4 py-2 text-center cursor-pointer text-[#433422] font-bold text-xs hover:bg-[#f3f0e6] transition-colors"
+                                        className="group relative w-full px-4 py-3 text-center cursor-pointer text-[#433422] font-bold text-xs transition-colors"
                                     >
                                         <span className="relative z-10 flex items-center justify-center gap-2">
                                             {user?.emailVerified ? t('auth:menu.emailBound') : t('auth:menu.bindEmail')}
                                         </span>
+                                        <span className="absolute bottom-2 left-1/2 w-0 h-[1.5px] bg-[#433422]/20 transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
                                     </button>
-                                    <div className="h-px bg-[#e5e0d0] my-1 mx-2" />
+                                    <div className="h-px bg-[#e5e0d0] my-1 mx-4 opacity-50" />
                                     <button
                                         onClick={handleLogout}
-                                        className="relative w-full px-4 py-2 text-center cursor-pointer text-[#433422] font-bold text-xs hover:bg-[#f3f0e6] transition-colors"
+                                        className="group relative w-full px-4 py-3 text-center cursor-pointer text-[#8c7b64] hover:text-[#433422] font-bold text-xs transition-colors"
                                     >
                                         <span className="relative z-10">{t('auth:menu.logout')}</span>
+                                        <span className="absolute bottom-2 left-1/2 w-0 h-[1.5px] bg-[#433422]/20 transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
                                     </button>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="flex items-center gap-6">
-                            <button onClick={() => openAuth('login')} className="hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider translate-y-[1px]">{t('auth:menu.login')}</button>
-                            <button onClick={() => openAuth('register')} className="hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider translate-y-[1px]">{t('auth:menu.register')}</button>
+                            <button onClick={() => openAuth('login')} className="group relative hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider py-1">
+                                {t('auth:menu.login')}
+                                <span className="underline-center" />
+                            </button>
+                            <div className="w-[1px] h-3 bg-[#c0a080] opacity-30" />
+                            <button onClick={() => openAuth('register')} className="group relative hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider py-1">
+                                {t('auth:menu.register')}
+                                <span className="underline-center" />
+                            </button>
                         </div>
                     )}
                     <LanguageSwitcher />

@@ -38,12 +38,12 @@ interface ConfirmModalProps {
 }
 
 const baseTheme: Omit<ConfirmModalTheme, 'overlay'> = {
-    panel: 'bg-[#fcfbf9] border border-[#e5e0d0] shadow-[0_10px_40px_rgba(67,52,34,0.15)] rounded-sm p-6 w-full max-w-sm text-center font-serif pointer-events-auto',
-    title: 'text-xs text-[#8c7b64] font-bold uppercase tracking-wider mb-2',
-    description: 'text-[#433422] font-bold text-base mb-5',
+    panel: 'bg-[#fcfbf9] border border-[#e5e0d0] shadow-[0_10px_40px_rgba(67,52,34,0.15)] rounded-sm p-6 w-full text-center font-serif pointer-events-auto',
+    title: 'text-xs sm:text-sm text-[#8c7b64] font-bold uppercase tracking-wider mb-2',
+    description: 'text-[#433422] font-bold text-sm sm:text-base mb-5',
     actions: 'flex items-center justify-center gap-3',
-    confirmButton: 'px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#433422] text-[#fcfbf9] hover:bg-[#2b2114] transition-colors rounded-[4px]',
-    cancelButton: 'px-4 py-2 text-xs font-bold uppercase tracking-wider border border-[#e5e0d0] text-[#433422] bg-[#fcfbf9] hover:bg-[#efede6] transition-colors rounded-[4px]',
+    confirmButton: 'px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider bg-[#433422] text-[#fcfbf9] hover:bg-[#2b2114] transition-colors rounded-[4px]',
+    cancelButton: 'px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider border border-[#e5e0d0] text-[#433422] bg-[#fcfbf9] hover:bg-[#efede6] transition-colors rounded-[4px]',
 };
 
 const themeByTone: Record<ConfirmTone, ConfirmModalTheme> = {
@@ -92,11 +92,12 @@ export const ConfirmModal = ({
             onClose={onCancel}
             closeOnBackdrop={closeOnBackdrop}
             overlayClassName={clsx('z-[60]', mergedTheme.overlay, overlayClassName)}
-            containerClassName={clsx('z-[61] p-4', mergedTheme.container, containerClassName)}
+            containerClassName={clsx('z-[61] p-4 sm:p-6', mergedTheme.container, containerClassName)}
         >
             <div
                 className={clsx(
                     mergedTheme.panel,
+                    'max-w-[20rem] sm:max-w-sm p-5 sm:p-6',
                     panelClassName
                 )}
             >

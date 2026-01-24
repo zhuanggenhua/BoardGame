@@ -42,11 +42,11 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [isActive, setIsActive] = useState(false);
     const [manifest, setManifest] = useState<TutorialManifest | null>(null);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
-    const [moveCallback, setMoveCallback] = useState<((cellId: number) => void) | null>(null);
+    const moveCallbackRef = useRef<((cellId: number) => void) | null>(null);
     const executedAiStepsRef = useRef<Set<number>>(new Set());
 
     const registerMoveCallback = useCallback((callback: (cellId: number) => void) => {
-        setMoveCallback(() => callback);
+        moveCallbackRef.current = callback;
     }, []);
 
 
@@ -93,6 +93,8 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         const currentStep = manifest.steps[currentStepIndex];
 
+        const moveCallback = moveCallbackRef.current;
+
         if (currentStep.aiMove !== undefined && moveCallback) {
             if (executedAiStepsRef.current.has(currentStepIndex)) return;
             executedAiStepsRef.current.add(currentStepIndex);
@@ -114,7 +116,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 if (advanceTimer !== undefined) window.clearTimeout(advanceTimer);
             };
         }
-    }, [isActive, currentStepIndex, manifest, moveCallback]);
+    }, [isActive, currentStepIndex, manifest]);
 
     const value: TutorialContextType = {
         isActive,

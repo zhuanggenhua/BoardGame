@@ -1,21 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import type { BoardProps } from 'boardgame.io/react';
-import { LobbyClient } from 'boardgame.io/client';
-import type { TicTacToeState } from './game';
+import type { MatchState } from '../../engine/types';
+import type { TicTacToeCore } from './domain';
 import { GameDebugPanel } from '../../components/GameDebugPanel';
 import { GameControls } from '../../components/game/GameControls';
+import { EndgameOverlay } from '../../components/game/EndgameOverlay';
 import { useDebug } from '../../contexts/DebugContext';
 import { useTutorial } from '../../contexts/TutorialContext';
-import { useToast } from '../../contexts/ToastContext';
-import { useGameAudio } from '../../lib/audio/useGameAudio';
+import { useRematch } from '../../contexts/RematchContext';
+import { useGameAudio, playSound } from '../../lib/audio/useGameAudio';
 import { TIC_TAC_TOE_AUDIO_CONFIG } from './audio.config';
-import { GAME_SERVER_URL } from '../../config/server';
 
-type Props = BoardProps<TicTacToeState>;
-
-const lobbyClient = new LobbyClient({ server: GAME_SERVER_URL });
+type Props = BoardProps<MatchState<TicTacToeCore>>;
 
 type LocalScoreboard = {
     xWins: number;
@@ -23,6 +20,14 @@ type LocalScoreboard = {
 };
 
 const LOCAL_SCOREBOARD_KEY = 'tictactoe_scoreboard_v1';
+
+const clearLocalScoreboard = () => {
+    try {
+        localStorage.removeItem(LOCAL_SCOREBOARD_KEY);
+    } catch {
+        // ignore
+    }
+};
 
 const readLocalScoreboard = (): LocalScoreboard => {
     try {
@@ -46,6 +51,8 @@ const writeLocalScoreboard = (next: LocalScoreboard) => {
     }
 };
 
+const iconPopStyle: React.CSSProperties = { transformOrigin: 'center', transformBox: 'fill-box' };
+
 // SVG 图标组件 - X (霓虹风格)
 const IconX = ({ className }: { className?: string }) => (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={{ overflow: 'visible' }}>
@@ -54,12 +61,13 @@ const IconX = ({ className }: { className?: string }) => (
             stroke="currentColor"
             strokeWidth="4.5"
             strokeLinecap="round"
-            className="animate-[draw-stroke_0.3s_cubic-bezier(0.4,0,0.2,1)_forwards]"
-            style={{ strokeDasharray: 40, strokeDashoffset: 40 }}
+            className="animate-[icon-pop_0.2s_ease-out]"
+            style={iconPopStyle}
         />
         <style>{`
-            @keyframes draw-stroke {
-                to { stroke-dashoffset: 0; }
+            @keyframes icon-pop {
+                from { transform: scale(0.6); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
             }
         `}</style>
     </svg>
@@ -71,28 +79,40 @@ const IconO = ({ className }: { className?: string }) => (
             cx="12" cy="12" r="8"
             stroke="currentColor"
             strokeWidth="4.5"
-            className="animate-[draw-circle_0.4s_cubic-bezier(0.4,0,0.2,1)_forwards]"
-            style={{ strokeDasharray: 60, strokeDashoffset: 60 }}
+            className="animate-[icon-pop_0.24s_ease-out]"
+            style={iconPopStyle}
         />
         <style>{`
-            @keyframes draw-circle {
-                to { stroke-dashoffset: 0; }
+            @keyframes icon-pop {
+                from { transform: scale(0.6); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
             }
         `}</style>
     </svg>
 );
 
-export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerID, reset, matchData, matchID, credentials, isMultiplayer }) => {
+export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerID, reset, matchData, isMultiplayer }) => {
     const isGameOver = ctx.gameover;
     const isWinner = isGameOver?.winner !== undefined;
-    const currentPlayer = ctx.currentPlayer;
+    const coreCurrentPlayer = G.core.currentPlayer;
+    const currentPlayer = coreCurrentPlayer ?? ctx.currentPlayer;
     const isSpectator = playerID === null || playerID === undefined;
     const isPlayerTurn = isSpectator || currentPlayer === playerID;
-    const navigate = useNavigate();
     const { t } = useTranslation('game-tictactoe');
-    const toast = useToast();
-    const [isRematchLoading, setIsRematchLoading] = useState(false);
-    const [scoreboard, setScoreboard] = useState<LocalScoreboard>(() => readLocalScoreboard());
+
+    // 本地同屏(hotseat)模式：开始一局时清空本机累计，避免上一轮对战/联机残留造成“离谱分数”。
+    // 注意：多人联机的“再来一局”可能是新 match；我们只在本地同屏下清理。
+    const isHotseatLocal = !isMultiplayer && (playerID === null || playerID === undefined);
+    const didClearOnStartRef = useRef(false);
+
+    const [scoreboard, setScoreboard] = useState<LocalScoreboard>(() => {
+        if (isHotseatLocal && !didClearOnStartRef.current) {
+            didClearOnStartRef.current = true;
+            clearLocalScoreboard();
+            return { xWins: 0, oWins: 0 };
+        }
+        return readLocalScoreboard();
+    });
 
     // 获取玩家名称的辅助函数
     const getPlayerName = (pid: string) => {
@@ -107,31 +127,38 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
     const { isActive, currentStep, nextStep, registerMoveCallback } = useTutorial();
     const { setPlayerID } = useDebug();
 
-    // 音效系统
-    useGameAudio({ config: TIC_TAC_TOE_AUDIO_CONFIG, G, ctx });
+    // 重赛系统（多人模式使用 socket）
+    const { state: rematchState, vote: handleRematchVote, registerReset } = useRematch();
 
-    const undoHistory = G.sys?.history || [];
-    const undoRequest = G.sys?.undoRequest;
-    const isCurrentPlayer = playerID !== null && playerID !== undefined && playerID === ctx.currentPlayer;
+    // 注册 reset 回调（当双方都投票后由 socket 触发）
+    useEffect(() => {
+        if (isMultiplayer && reset) {
+            registerReset(reset);
+        }
+    }, [isMultiplayer, reset, registerReset]);
+
+    // 音效系统
+    useGameAudio({ config: TIC_TAC_TOE_AUDIO_CONFIG, G: G.core, ctx });
+
+    const undoHistory = G.sys?.undo?.snapshots || [];
+    const undoRequest = G.sys?.undo?.pendingRequest;
+    const isCurrentPlayer = playerID !== null && playerID !== undefined && playerID === currentPlayer;
     const canRequestUndo = undoHistory.length > 0 && !undoRequest && !isCurrentPlayer;
-    const canReviewUndo = !!undoRequest && undoRequest.requester !== playerID && isCurrentPlayer;
-    const isUndoRequester = undoRequest?.requester === playerID;
+    const canReviewUndo = !!undoRequest && undoRequest.requesterId !== playerID && isCurrentPlayer;
+    const isUndoRequester = undoRequest?.requesterId === playerID;
     const showUndoControls = !isGameOver && playerID !== null && playerID !== undefined && (canRequestUndo || canReviewUndo || isUndoRequester);
-    const showPostGameActions = !!isGameOver;
 
     // 追踪先前的激活状态（必须在顶层）
     const previousActiveRef = useRef(isActive);
-
     const isGameOverRef = useRef(isGameOver);
-    const cellsRef = useRef(G.cells);
+    const cellsRef = useRef(G.core.cells);
     const didCountResultRef = useRef(false);
 
-    // 为 AI 移动注册回调
     useEffect(() => {
         registerMoveCallback((cellId: number) => {
             if (isGameOverRef.current) return;
             if (cellsRef.current[cellId] !== null) return;
-            moves.clickCell(cellId);
+            moves.CLICK_CELL({ cellId });
         });
     }, [registerMoveCallback, moves]);
 
@@ -151,7 +178,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
         return null;
     };
 
-    const winningLine = getWinningLine(G.cells);
+    const winningLine = getWinningLine(G.core.cells);
 
     useEffect(() => {
         isGameOverRef.current = isGameOver;
@@ -178,8 +205,8 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
     }, [isGameOver, scoreboard]);
 
     useEffect(() => {
-        cellsRef.current = G.cells;
-    }, [G.cells]);
+        cellsRef.current = G.core.cells;
+    }, [G.core.cells]);
 
     useEffect(() => {
         if (!isActive) return;
@@ -189,50 +216,6 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
         }
     }, [isActive, currentPlayer, playerID, setPlayerID]);
 
-    // 开发环境下的点击调试日志
-    useEffect(() => {
-        if (!import.meta.env.DEV) return;
-
-        const handlePointerDown = (event: PointerEvent) => {
-            if (window.localStorage.getItem('debug_click') !== '1') return;
-            const target = event.target as HTMLElement | null;
-            const hit = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
-            const targetId = target?.getAttribute?.('data-tutorial-id') ?? target?.id;
-            const hitId = hit?.getAttribute?.('data-tutorial-id') ?? hit?.id;
-            console.info('[Board] pointerdown', {
-                target: target?.tagName,
-                targetId,
-                hit: hit?.tagName,
-                hitId,
-                isActive,
-                currentStep: currentStep?.id,
-                showMask: currentStep?.showMask,
-                playerID,
-                currentPlayer,
-                isGameOver
-            });
-        };
-
-        window.addEventListener('pointerdown', handlePointerDown, true);
-        return () => window.removeEventListener('pointerdown', handlePointerDown, true);
-    }, [isActive, currentStep, playerID, currentPlayer, isGameOver]);
-
-    // 记录点击被拦截的原因
-    const logClickBlock = (id: number, reason: string) => {
-        if (!import.meta.env.DEV) return;
-        if (window.localStorage.getItem('debug_click') !== '1') return;
-        console.info('[Board] click blocked', {
-            id,
-            reason,
-            isActive,
-            currentStep: currentStep?.id,
-            highlightTarget: currentStep?.highlightTarget,
-            playerID,
-            currentPlayer,
-            isGameOver
-        });
-    };
-
     const resetGame = useCallback(() => {
         if (typeof reset === 'function') {
             reset();
@@ -241,69 +224,26 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
         }
     }, [reset]);
 
-    const handlePlayAgain = useCallback(async () => {
-        if (!isMultiplayer) {
-            resetGame();
-            return;
-        }
-
-        if (isRematchLoading) return;
-
-        if (!matchID || !playerID || !credentials) {
-            toast.warning({ kind: 'i18n', key: 'rematch.missingInfo', ns: 'game-tictactoe' });
-            return;
-        }
-
-        setIsRematchLoading(true);
-        try {
-            const { nextMatchID } = await lobbyClient.playAgain('tictactoe', matchID, {
-                playerID,
-                credentials,
-            });
-
-            const playerName = getPlayerName(String(playerID));
-            const { playerCredentials } = await lobbyClient.joinMatch('tictactoe', nextMatchID, {
-                playerID: String(playerID),
-                playerName,
-            });
-
-            localStorage.removeItem(`match_creds_${matchID}`);
-            localStorage.setItem(`match_creds_${nextMatchID}`, JSON.stringify({
-                playerID: String(playerID),
-                credentials: playerCredentials,
-                matchID: nextMatchID,
-                gameName: 'tictactoe',
-            }));
-
-            navigate(`/play/tictactoe/match/${nextMatchID}?playerID=${playerID}`);
-        } catch (error) {
-            console.error('再来一局失败:', error);
-            toast.error({ kind: 'i18n', key: 'rematch.failed', ns: 'game-tictactoe' });
-        } finally {
-            setIsRematchLoading(false);
-        }
-    }, [isMultiplayer, isRematchLoading, matchID, playerID, credentials, resetGame, navigate, getPlayerName]);
-
     const onClick = (id: number) => {
-        if (isGameOver) return logClickBlock(id, 'gameover');
-        if (G.cells[id] !== null) return logClickBlock(id, 'occupied');
+        if (isGameOver) return;
+        if (G.core.cells[id] !== null) return;
 
-        if (!isPlayerTurn) return logClickBlock(id, 'not-your-turn');
+        if (!isPlayerTurn) return;
+
+        playSound('click');
 
         if (isActive) {
             if (currentStep?.requireAction) {
                 const targetId = `cell-${id}`;
-                if (currentStep.highlightTarget && currentStep.highlightTarget !== targetId) {
-                    return logClickBlock(id, 'not-highlight-target');
-                }
+                if (currentStep.highlightTarget && currentStep.highlightTarget !== targetId) return;
 
-                moves.clickCell(id);
+                moves.CLICK_CELL({ cellId: id });
                 nextStep();
             } else {
-                return logClickBlock(id, 'tutorial-no-action');
+                return;
             }
         } else {
-            moves.clickCell(id);
+            moves.CLICK_CELL({ cellId: id });
         }
     };
 
@@ -348,7 +288,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
                     </div>
 
                     <div className="grid grid-cols-3 grid-rows-3 h-full w-full" data-tutorial-id="board-grid">
-                        {G.cells.map((cell: string | null, id: number) => {
+                        {G.core.cells.map((cell: string | null, id: number) => {
                             const isWinningCell = winningLine?.includes(id);
                             const isOccupied = cell !== null;
                             const isTutorialTarget = isActive && currentStep?.highlightTarget === `cell-${id}`;
@@ -375,7 +315,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
                                     `}
                                 >
                                     <div className={`
-                                        w-[65%] h-[65%] transition-all duration-300 flex items-center justify-center
+                                        w-[65%] h-[65%] transition-transform transition-opacity duration-300 flex items-center justify-center
                                         ${isOccupied ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}
                                         ${isOccupied ? pieceGlow : ''}
                                         ${isWinningCell ? `scale-110 ${winningGlow} brightness-125 animate-pulse` : ''}
@@ -457,40 +397,28 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
                 </div>
             </div>
 
-            {/* 底部操作区域 - 绝对定位悬浮，不占据实际空间 */}
-            <div className="absolute bottom-2 left-0 w-full z-30 pointer-events-none">
-                {(showPostGameActions || showUndoControls) && (
+            {/* 底部操作区域 - 撤销控件（游戏进行中） */}
+            {showUndoControls && (
+                <div className="absolute bottom-2 left-0 w-full z-30 pointer-events-none">
                     <div className="flex items-center justify-center pointer-events-auto">
-                        <div className="flex items-center justify-center transition-all duration-300 transform translate-y-0">
-                            {showPostGameActions ? (
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={handlePlayAgain}
-                                        disabled={isRematchLoading}
-                                        className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/90 border border-white/20 hover:border-neon-blue/60 hover:text-neon-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-black/40 backdrop-blur-md"
-                                    >
-                                        {isRematchLoading ? t('rematch.creating') : t('rematch.playAgain')}
-                                    </button>
-                                    <button
-                                        onClick={() => navigate('/')}
-                                        className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/70 border border-white/10 hover:border-white/40 hover:text-white transition-colors bg-black/40 backdrop-blur-md"
-                                    >
-                                        {t('rematch.backToLobby')}
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="bg-black/40 backdrop-blur-md rounded-lg p-1 border border-white/5">
-                                    <GameControls G={G} ctx={ctx} moves={moves} playerID={playerID} />
-                                </div>
-                            )}
-                        </div>
+                        <GameControls G={G} ctx={ctx} moves={moves} playerID={playerID} />
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
-            {/* 调试面板 - 覆盖层 */}
+            {/* 统一结束页面遮罩 */}
+            <EndgameOverlay
+                isGameOver={!!isGameOver}
+                result={isGameOver}
+                playerID={playerID}
+                reset={reset}
+                isMultiplayer={isMultiplayer}
+                totalPlayers={matchData?.length}
+                rematchState={rematchState}
+                onVote={handleRematchVote}
+            />
             <div className="fixed bottom-0 right-0 p-2 z-50">
-                <GameDebugPanel G={G} ctx={ctx} moves={moves} events={events} playerID={playerID} />
+                <GameDebugPanel G={G} ctx={ctx} moves={moves} events={events} playerID={playerID} autoSwitch={!isMultiplayer} />
             </div>
         </div>
     );

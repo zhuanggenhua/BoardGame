@@ -1,7 +1,7 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useToast } from '../../contexts/ToastContext';
-import { ToastItem } from './ToastItem';
+import { ToastItem } from '../common/feedback/ToastItem';
 
 export const ToastViewport: React.FC = () => {
     const { toasts } = useToast();

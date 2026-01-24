@@ -5,8 +5,9 @@ import { AuthProvider } from './contexts/AuthContext';
 import { AudioProvider } from './contexts/AudioContext';
 import { ModalStackProvider } from './contexts/ModalStackContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { ModalStackRoot } from './components/common/ModalStackRoot';
-import { ToastViewport } from './components/common/ToastViewport';
+import { ModalStackRoot } from './components/system/ModalStackRoot';
+import { ToastViewport } from './components/system/ToastViewport';
+import { EngineNotificationListener } from './components/system/EngineNotificationListener';
 import { Home } from './pages/Home';
 import { MatchRoom } from './pages/MatchRoom';
 import { LocalMatchRoom } from './pages/LocalMatchRoom';
@@ -33,6 +34,7 @@ const App = () => {
                   </Routes>
                   <ModalStackRoot />
                   <ToastViewport />
+                  <EngineNotificationListener />
                 </BrowserRouter>
               </TutorialProvider>
             </DebugProvider>

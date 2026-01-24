@@ -2,6 +2,7 @@ import 'dotenv/config'; // 加载 .env
 import type { Game } from 'boardgame.io';
 import { Server as BoardgameServer, Origins } from 'boardgame.io/server';
 import { Server as IOServer, Socket as IOSocket } from 'socket.io';
+import bodyParser from 'koa-bodyparser';
 import { connectDB } from './src/server/db';
 import { MatchRecord } from './src/server/models/MatchRecord';
 import { GAME_SERVER_MANIFEST } from './src/games/manifest.server';
@@ -16,6 +17,25 @@ const LOBBY_EVENTS = {
     MATCH_ENDED: 'lobby:matchEnded',
     HEARTBEAT: 'lobby:heartbeat',
 } as const;
+
+// 重赛事件常量（与前端 matchSocket.ts 保持一致）
+const REMATCH_EVENTS = {
+    JOIN_MATCH: 'rematch:join',
+    LEAVE_MATCH: 'rematch:leave',
+    VOTE: 'rematch:vote',
+    STATE_UPDATE: 'rematch:stateUpdate',
+    TRIGGER_RESET: 'rematch:triggerReset',
+} as const;
+
+// 重赛投票状态（按 matchID 维护）
+interface RematchVoteState {
+    votes: Record<string, boolean>;
+    ready: boolean;
+    /** 递增版本号，确保客户端能丢弃旧状态，避免刷新/重连后回退 */
+    revision: number;
+}
+const rematchStateByMatch = new Map<string, RematchVoteState>();
+const matchSubscribers = new Map<string, Set<string>>(); // matchID -> Set<socketId>
 
 const LOBBY_ROOM = 'lobby:subscribers';
 const LOBBY_HEARTBEAT_INTERVAL = 15000;
@@ -170,6 +190,9 @@ const { app, db } = server;
 serverDb = db;
 const GAME_SERVER_PORT = Number(process.env.GAME_SERVER_PORT) || 18000;
 
+// 注意：不要启用全局 bodyParser。
+// boardgame.io 会自行解析 /games/* 的 body；全局启用会导致 request stream 被重复读取，触发 "stream is not readable"。
+
 // HTTP CORS：允许前端（Vite）跨端口访问本服务的 REST 接口（例如 /games/:game/leaderboard）。
 app.use(async (ctx, next) => {
     const requestOrigin = ctx.get('origin');
@@ -190,6 +213,67 @@ app.use(async (ctx, next) => {
     if (ctx.method === 'OPTIONS') {
         ctx.status = 204;
         return;
+    }
+
+    await next();
+});
+
+// 强制销毁房间（仅房主可用）
+// 注意：不要启用全局 bodyParser，否则会和 boardgame.io 自己的 body 解析冲突（create/join/leave 会 500）。
+// 因此在该路由内按需解析 body。
+app.use(async (ctx, next) => {
+    if (ctx.method === 'POST') {
+        const match = ctx.path.match(/^\/games\/([^/]+)\/([^/]+)\/destroy$/);
+        if (match) {
+            const gameNameFromUrl = match[1];
+            const matchID = match[2];
+
+            // 只在此路由读取 body，避免重复读取 request stream。
+            // bodyParser() 的类型签名与 boardgame.io 的 Koa Context 类型不完全匹配，这里用 any 规避类型噪音。
+            const parse = bodyParser();
+            await (parse as any)(ctx, async () => undefined);
+            const body = (ctx.request as any).body as { playerID?: string; credentials?: string } | undefined;
+            const playerID = body?.playerID;
+            const credentials = body?.credentials;
+
+            if (!playerID) {
+                ctx.throw(403, 'playerID is required');
+            }
+            if (!credentials) {
+                ctx.throw(403, 'credentials is required');
+            }
+
+            const { metadata } = await db.fetch(matchID, { metadata: true });
+            if (!metadata) {
+                ctx.throw(404, 'Match ' + matchID + ' not found');
+            }
+            // 经过上面的必填校验，这里 playerID 一定存在。
+            if (!metadata.players[playerID as string]) {
+                ctx.throw(404, 'Player ' + playerID + ' not found');
+            }
+
+            const isAuthorized = await app.context.auth.authenticateCredentials({
+                playerID: playerID as string,
+                credentials,
+                metadata,
+            });
+            if (!isAuthorized) {
+                ctx.throw(403, 'Invalid credentials ' + credentials);
+            }
+
+            await db.wipe(matchID);
+
+            const game = resolveGameFromUrl(gameNameFromUrl)
+                || resolveGameFromMatch({ gameName: metadata.gameName } as LobbyMatch);
+            if (game) {
+                emitMatchEnded(game, matchID);
+            }
+            matchSubscribers.delete(matchID);
+            rematchStateByMatch.delete(matchID);
+
+            ctx.body = {};
+            return;
+        }
     }
 
     await next();
@@ -706,7 +790,124 @@ server.run(GAME_SERVER_PORT).then(async (runningServers) => {
                 socket.leave(getLobbyRoomName(gameName));
             }
             socket.data.lobbyGameId = undefined;
+
+            // 清理重赛订阅
+            const matchId = socket.data.rematchMatchId as string | undefined;
+            if (matchId) {
+                matchSubscribers.get(matchId)?.delete(socket.id);
+                socket.leave(`rematch:${matchId}`);
+            }
+            socket.data.rematchMatchId = undefined;
+            socket.data.rematchPlayerId = undefined;
+
             console.log(`[LobbyIO] ${socket.id} 断开连接`);
+        });
+
+        // ========== 重赛投票事件处理 ==========
+
+        // 加入对局房间（订阅重赛状态）
+        socket.on(REMATCH_EVENTS.JOIN_MATCH, (payload?: { matchId?: string; playerId?: string }) => {
+            const { matchId, playerId } = payload || {};
+            if (!matchId || !playerId) {
+                console.warn(`[RematchIO] ${socket.id} 加入对局失败：缺少 matchId 或 playerId`);
+                return;
+            }
+
+            // 离开之前的对局
+            const prevMatchId = socket.data.rematchMatchId as string | undefined;
+            if (prevMatchId && prevMatchId !== matchId) {
+                matchSubscribers.get(prevMatchId)?.delete(socket.id);
+                socket.leave(`rematch:${prevMatchId}`);
+            }
+
+            // 加入新对局
+            socket.data.rematchMatchId = matchId;
+            socket.data.rematchPlayerId = playerId;
+            if (!matchSubscribers.has(matchId)) {
+                matchSubscribers.set(matchId, new Set());
+            }
+            matchSubscribers.get(matchId)!.add(socket.id);
+            socket.join(`rematch:${matchId}`);
+
+            // 确保有投票状态
+            if (!rematchStateByMatch.has(matchId)) {
+                rematchStateByMatch.set(matchId, { votes: {}, ready: false, revision: 0 });
+            }
+
+            // 发送当前状态
+            const state = rematchStateByMatch.get(matchId)!;
+            socket.emit(REMATCH_EVENTS.STATE_UPDATE, state);
+
+            console.log(`[RematchIO] ${socket.id} 加入对局 ${matchId} (玩家 ${playerId})`);
+        });
+
+        // 离开对局房间
+        socket.on(REMATCH_EVENTS.LEAVE_MATCH, () => {
+            const matchId = socket.data.rematchMatchId as string | undefined;
+            if (matchId) {
+                matchSubscribers.get(matchId)?.delete(socket.id);
+                socket.leave(`rematch:${matchId}`);
+
+                // 如果没有订阅者了，清理状态
+                if (matchSubscribers.get(matchId)?.size === 0) {
+                    matchSubscribers.delete(matchId);
+                    rematchStateByMatch.delete(matchId);
+                }
+            }
+            socket.data.rematchMatchId = undefined;
+            socket.data.rematchPlayerId = undefined;
+            console.log(`[RematchIO] ${socket.id} 离开对局`);
+        });
+
+        // 投票重赛
+        socket.on(REMATCH_EVENTS.VOTE, () => {
+            const matchId = socket.data.rematchMatchId as string | undefined;
+            const playerId = socket.data.rematchPlayerId as string | undefined;
+            if (!matchId || !playerId) {
+                console.warn(`[RematchIO] ${socket.id} 投票失败：未加入对局`);
+                return;
+            }
+
+            const state = rematchStateByMatch.get(matchId);
+            if (!state) {
+                console.warn(`[RematchIO] ${socket.id} 投票失败：对局状态不存在`);
+                return;
+            }
+
+            // 如果已经 ready，不再接受投票
+            if (state.ready) {
+                console.log(`[RematchIO] ${socket.id} 投票忽略：已准备重开`);
+                return;
+            }
+
+            // 切换投票状态（toggle）
+            const currentVote = state.votes[playerId] ?? false;
+            state.votes[playerId] = !currentVote;
+
+            // 检查是否双方都已投票
+            const votedPlayers = Object.entries(state.votes).filter(([, v]) => v).map(([p]) => p);
+            state.ready = votedPlayers.length >= 2;
+            state.revision += 1;
+
+            console.log(`[RematchIO] ${socket.id} 投票: ${playerId} -> ${state.votes[playerId]}, ready=${state.ready}, revision=${state.revision}`);
+
+            // 广播状态更新
+            lobbyIO?.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, state);
+
+            // 如果双方都已投票，通知房主触发 reset
+            if (state.ready) {
+                lobbyIO?.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.TRIGGER_RESET);
+                // 重置投票状态，为下一局做准备
+                setTimeout(() => {
+                    const currentState = rematchStateByMatch.get(matchId);
+                    if (currentState) {
+                        currentState.votes = {};
+                        currentState.ready = false;
+                        currentState.revision += 1;
+                        lobbyIO?.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, currentState);
+                    }
+                }, 1000);
+            }
         });
     });
 

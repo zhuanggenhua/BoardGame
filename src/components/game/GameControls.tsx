@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { UndoAwareState } from '../../core/UndoManager';
+import { UNDO_COMMANDS } from '../../engine';
+import type { MatchState } from '../../engine/types';
 
 interface GameControlsProps {
-    G: UndoAwareState & any;
+    G: MatchState<unknown>;
     ctx: any;
     moves: any;
     playerID: string | null;
@@ -13,16 +14,22 @@ export const GameControls: React.FC<GameControlsProps> = ({ G, ctx, moves, playe
     const { t } = useTranslation('game');
     if (!playerID) return null; // 观战者或未连接
 
-    const history = G.sys?.history || [];
-    const request = G.sys?.undoRequest;
+    const history = G.sys?.undo?.snapshots || [];
+    const request = G.sys?.undo?.pendingRequest;
 
     // 逻辑：
     // - '等待中' 的玩家（上一回合行动者）想要撤销 -> canRequest
     // - '当前行动' 的玩家（本回合行动者）需要批准 -> canReview
 
+    const coreCurrentPlayer = (G.core as { currentPlayer?: string | number } | undefined)?.currentPlayer;
+    const currentPlayer = coreCurrentPlayer ?? ctx.currentPlayer;
+    const normalizedCurrentPlayer = currentPlayer !== null && currentPlayer !== undefined
+        ? String(currentPlayer)
+        : null;
+
     // 检查是否在本地对战（通常没有绑定特定的 playerID 意味着热座模式，
     // 但在 boardgame.io 网络模式下，每个人都有特定的 ID）
-    const isCurrentPlayer = playerID === ctx.currentPlayer;
+    const isCurrentPlayer = normalizedCurrentPlayer !== null && playerID === normalizedCurrentPlayer;
 
     // 申请逻辑：
     // 你可以申请撤销，如果：
@@ -36,10 +43,22 @@ export const GameControls: React.FC<GameControlsProps> = ({ G, ctx, moves, playe
     // 1. 存在一个申请
     // 2. 你不是发起申请的人
     // 3. 你是当前行动玩家（你现在控制棋盘）
-    const canReview = !!request && request.requester !== playerID && isCurrentPlayer;
+    const canReview = !!request && request.requesterId !== playerID && isCurrentPlayer;
 
     // 检查玩家是否是申请者（用于显示等待状态）
-    const isRequester = request?.requester === playerID;
+    const isRequester = request?.requesterId === playerID;
+
+    // 临时日志：排查撤销按钮不显示及请求未同步问题
+    console.log('[UndoDebug]', {
+        playerID,
+        currentPlayer: normalizedCurrentPlayer,
+        isCurrentPlayer,
+        historyLen: history.length,
+        request,
+        canRequest,
+        canReview,
+        isRequester,
+    });
 
     if (isRequester) {
         return (
@@ -48,7 +67,7 @@ export const GameControls: React.FC<GameControlsProps> = ({ G, ctx, moves, playe
                     {t('controls.undo.waiting')}
                 </span>
                 <button
-                    onClick={() => moves.cancelRequest()}
+                    onClick={() => moves[UNDO_COMMANDS.CANCEL_UNDO]()}
                     className="px-3 py-1 bg-transparent border border-white/20 hover:bg-white/10 text-xs text-white/70 rounded transition-colors"
                 >
                     {t('controls.undo.cancel')}
@@ -68,13 +87,13 @@ export const GameControls: React.FC<GameControlsProps> = ({ G, ctx, moves, playe
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => moves.approveUndo()}
+                        onClick={() => moves[UNDO_COMMANDS.APPROVE_UNDO]()}
                         className="px-4 py-2 bg-neon-blue/20 hover:bg-neon-blue hover:text-black border border-neon-blue text-neon-blue rounded text-xs font-bold tracking-widest transition-all"
                     >
                         {t('controls.undo.approve')}
                     </button>
                     <button
-                        onClick={() => moves.rejectUndo()}
+                        onClick={() => moves[UNDO_COMMANDS.REJECT_UNDO]()}
                         className="px-4 py-2 bg-neon-pink/20 hover:bg-neon-pink hover:text-white border border-neon-pink text-neon-pink rounded text-xs font-bold tracking-widest transition-all"
                     >
                         {t('controls.undo.reject')}
@@ -89,7 +108,7 @@ export const GameControls: React.FC<GameControlsProps> = ({ G, ctx, moves, playe
     if (canRequest) {
         return (
             <button
-                onClick={() => moves.requestUndo()}
+                onClick={() => moves[UNDO_COMMANDS.REQUEST_UNDO]()}
                 className="group relative px-6 py-2 overflow-hidden rounded border border-white/10 bg-neon-void hover:border-neon-blue/50 transition-all"
             >
                 <div className="absolute inset-0 bg-neon-blue/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>

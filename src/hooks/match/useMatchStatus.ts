@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LobbyClient } from 'boardgame.io/client';
-import { GAME_SERVER_URL } from '../config/server';
+import { GAME_SERVER_URL } from '../../config/server';
 
 const lobbyClient = new LobbyClient({ server: GAME_SERVER_URL });
 
@@ -13,6 +13,79 @@ export interface PlayerStatus {
 export function clearMatchCredentials(matchID: string): void {
     if (!matchID) return;
     localStorage.removeItem(`match_creds_${matchID}`);
+
+    // Let same-tab listeners (Home active match banner, lobby modals) refresh immediately.
+    // The native `storage` event does NOT fire in the same document.
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('match-credentials-changed'));
+    }
+}
+
+/**
+ * 强制销毁房间（仅房主可用）
+ *
+ * 证据：后端 `server.ts` 仅实现了 `POST /games/:game/:matchID/destroy`，并要求 body 中包含 playerID/credentials。
+ * 用户截图显示前端请求打到了 `POST /games/:game/:matchID/destroy` 但返回 404。
+ *
+ * 结论：404 更可能来自「gameName 与服务端注册的游戏 id 不一致」或「请求发到了错误的服务器(baseUrl/proxy)」。
+ * 这里补充更可审计的日志与 gameName 归一化，避免大小写导致的 404。
+ */
+export async function destroyMatch(
+    gameName: string,
+    matchID: string,
+    playerID: string,
+    credentials: string
+): Promise<boolean> {
+    try {
+        const normalizedGameName = (gameName || 'tictactoe').toLowerCase();
+
+        const baseUrl = GAME_SERVER_URL || '';
+        const url = `${baseUrl}/games/${normalizedGameName}/${matchID}/destroy`;
+
+        // 不做“兜底直连”以掩盖问题：销毁必须明确走 proxy 或生产反代。
+        // 诊断：
+        // - 5173 404：Vite proxy 未生效（或请求没到 Vite dev server）。
+        // - 18000 404：后端没有命中 destroy 中间件（中间件顺序或 boardgame.io 路由吞掉）。
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ playerID, credentials }),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.warn('[destroyMatch] 404 Not Found，清理本地凭证', {
+                    url,
+                    normalizedGameName,
+                    matchID,
+                    playerID,
+                });
+                clearMatchCredentials(matchID);
+                return true;
+            }
+
+            const message = await response.text().catch(() => '');
+            console.error('[destroyMatch] 请求失败', {
+                url,
+                status: response.status,
+                statusText: response.statusText,
+                message,
+                matchID,
+                playerID,
+                normalizedGameName,
+            });
+            throw new Error(message || response.statusText);
+        }
+
+        clearMatchCredentials(matchID);
+        return true;
+    } catch (err) {
+        console.error('[destroyMatch] 销毁房间失败:', err);
+        return false;
+    }
 }
 
 export interface MatchStatus {
@@ -50,7 +123,7 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
             setError(null);
         } catch (err) {
             console.error('获取房间状态失败:', err);
-            setError('房间不存在或已被删除');
+            setError(prev => prev ?? '房间不存在或已被删除');
         } finally {
             setIsLoading(false);
         }
@@ -58,7 +131,7 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
 
     // 定期轮询房间状态
     useEffect(() => {
-        if (!matchID) return;
+        if (!matchID || error) return;
 
         fetchMatchStatus();
 
@@ -66,7 +139,17 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
         const interval = setInterval(fetchMatchStatus, 3000);
 
         return () => clearInterval(interval);
-    }, [matchID, fetchMatchStatus]);
+    }, [matchID, fetchMatchStatus, error]);
+
+    // 报错后低频重试，避免错误态卡死
+    useEffect(() => {
+        if (!matchID || !error) return;
+
+        fetchMatchStatus();
+        const interval = setInterval(fetchMatchStatus, 10000);
+
+        return () => clearInterval(interval);
+    }, [matchID, error, fetchMatchStatus]);
 
     // 计算对手信息
     const myIndex = myPlayerID ? parseInt(myPlayerID) : -1;

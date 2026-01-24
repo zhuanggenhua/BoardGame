@@ -87,7 +87,8 @@
       "title": "Destroy Room",
       "description": "Destroy this room? The match will end and cannot be restored.",
       "missingCredentials": "Cannot destroy room: missing credentials. Please refresh or rejoin.",
-      "notAllowed": "Cannot destroy room: permission or credential error."
+      "notAllowed": "Cannot destroy room: permission or credential error.",
+      "failed": "Failed to destroy the room: backend did not respond or the request failed. Please try again."
     },
     "autoExit": {
       "message": "Host left, the room is closed. Returning to lobby…",

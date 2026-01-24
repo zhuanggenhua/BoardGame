@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-import { useToast, type Toast, type ToastContent, type ToastTone } from '../../contexts/ToastContext';
+import { useToast, type Toast, type ToastContent, type ToastTone } from '../../../contexts/ToastContext';
 import clsx from 'clsx';
 
 const ToneIcons: Record<ToastTone, React.ReactNode> = {

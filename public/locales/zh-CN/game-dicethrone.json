@@ -101,13 +101,20 @@
   },
   "error": {
     "confirmRoll": "请先确认投掷结果",
-    "confirmDefenseRoll": "请先确认防御投掷结果"
+    "confirmDefenseRoll": "请先确认防御投掷结果",
+    "notYourTurn": "不是你的回合",
+    "notEnoughCp": "CP不足（需要{{required}}，当前{{current}}）",
+    "wrongPhaseForUpgrade": "只能在主要阶段升级卡牌",
+    "wrongPhaseForMain": "只能在主要阶段使用此卡",
+    "wrongPhaseForRoll": "只能在投掷阶段使用此卡",
+    "cannotPlayCard": "无法打出此卡"
   },
   "actions": {
     "resolveAttack": "结算攻击",
     "endDefense": "结束防御",
     "nextPhase": "下一阶段",
-    "closePreview": "关闭预览 ✕"
+    "closePreview": "关闭预览 ✕",
+    "undoSell": "撤回售出"
   },
   "layout": {
     "exitEdit": "🧱 退出布局编辑",
@@ -279,6 +286,16 @@
     "card-chi-shield": {
       "name": "气护体",
       "description": "花费2个太极标记，本次伤害减少4点"
+    },
+    "actions": {
+      "play": "打出",
+      "upgrade": "升级",
+      "sell": "售卖",
+      "discard": "弃牌"
+    },
+    "hints": {
+      "releaseToPlay": "松开打出",
+      "releaseToSell": "松开售卖"
     }
   }
 }

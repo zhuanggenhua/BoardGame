@@ -13,12 +13,11 @@
     "turnSuffix": "'s turn",
     "thinking": "Thinking..."
   },
-  "rematch": {
-    "missingInfo": "Cannot start a rematch: missing match info or credentials.",
-    "failed": "Rematch failed, please try again.",
-    "creating": "Creating...",
-    "playAgain": "Play again",
-    "backToLobby": "Back to lobby"
+  "error": {
+    "notYourTurn": "Not your turn",
+    "invalidCell": "Invalid cell position",
+    "cellOccupied": "Cell already occupied",
+    "unknownCommand": "Unknown command"
   },
   "tutorial": {
     "steps": {

@@ -9,14 +9,15 @@ interface DebugPanelProps {
     moves: any;
     events?: any;
     playerID?: string | null;
+    autoSwitch?: boolean;
     children?: React.ReactNode; // 支持自定义调试项
 }
 
-export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, events, playerID, children }) => {
+export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, events, playerID, autoSwitch = true, children }) => {
     const { t } = useTranslation('game');
     const [isOpen, setIsOpen] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState<'state' | 'actions' | 'controls'>('actions');
-    const { setPlayerID, testMode, setTestMode } = useDebug();
+    const { setPlayerID } = useDebug();
 
     // 动作参数的状态
     const [moveArgs, setMoveArgs] = useState<Record<string, string>>({});
@@ -28,15 +29,19 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
     };
 
     // 监听当前玩家变化，实现自动切换视角
+    // 优先使用领域内核的 currentPlayer（G.core.currentPlayer），回退到 ctx.currentPlayer
+    const coreCurrentPlayer = G?.core?.currentPlayer as string | undefined;
+    const activePlayer = coreCurrentPlayer ?? ctx.currentPlayer;
     React.useEffect(() => {
-        if (testMode && ctx.currentPlayer && ctx.currentPlayer !== playerID) {
+        if (!autoSwitch) return;
+        if (activePlayer && activePlayer !== playerID) {
             // 延迟一点切换，让用户看到上一步的结果
             const timer = setTimeout(() => {
-                setPlayerID(ctx.currentPlayer);
+                setPlayerID(activePlayer);
             }, 500);
             return () => clearTimeout(timer);
         }
-    }, [ctx.currentPlayer, testMode, setPlayerID, playerID]);
+    }, [activePlayer, setPlayerID, playerID, autoSwitch]);
 
     const executeMove = (moveName: string) => {
         const rawArg = moveArgs[moveName];
@@ -204,39 +209,6 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                         {/* 系统选项卡 */}
                         {activeTab === 'controls' && (
                             <div className="space-y-4">
-                                {/* 测试模式开关 */}
-                                <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex-1">
-                                            <h4 className="font-bold text-gray-700 text-sm mb-1">{t('debug.testMode.title')}</h4>
-                                            <p className="text-xs text-gray-500">{t('debug.testMode.description')}</p>
-                                        </div>
-                                        <button
-                                            onClick={() => setTestMode(!testMode)}
-                                            className={`relative w-14 h-7 rounded-full transition-all duration-300 shadow-inner ${testMode
-                                                ? 'bg-green-500 shadow-green-200'
-                                                : 'bg-gray-300 shadow-gray-200'
-                                                }`}
-                                        >
-                                            <span
-                                                className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${testMode ? 'translate-x-7' : 'translate-x-0'
-                                                    }`}
-                                            >
-                                                {testMode ? '✓' : ''}
-                                            </span>
-                                        </button>
-                                    </div>
-                                    <div className={`text-xs px-2 py-1.5 rounded mt-3 ${testMode
-                                        ? 'bg-green-50 text-green-700 border border-green-200'
-                                        : 'bg-gray-50 text-gray-600 border border-gray-200'
-                                        }`}>
-                                        {testMode
-                                            ? t('debug.testMode.enabled')
-                                            : t('debug.testMode.disabled')
-                                        }
-                                    </div>
-                                </div>
-
                                 <button
                                     onClick={() => { localStorage.removeItem('bgio_state'); window.location.reload(); }}
                                     className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95"
@@ -263,3 +235,5 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
         </>
     );
 };
+
+export default GameDebugPanel;

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ImgHTMLAttributes } from 'react';
-import { getOptimizedImageUrls } from '../../core/AssetLoader';
+import { getOptimizedImageUrls } from '../../../core/AssetLoader';
 
 type OptimizedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
     src: string;

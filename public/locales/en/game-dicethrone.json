@@ -93,17 +93,32 @@
     "rolling": "Rolling...",
     "roll": "Roll ({{current}}/{{total}})",
     "confirm": "Confirm Dice",
-    "confirmed": "Confirmed"
+    "confirmed": "Confirmed",
+    "bonusRoll": "Bonus Roll",
+    "bonusRolled": "Bonus Roll: {{value}} ({{face}})",
+    "face": {
+      "fist": "Fist",
+      "palm": "Palm",
+      "taiji": "Taiji",
+      "lotus": "Lotus"
+    }
   },
   "error": {
     "confirmRoll": "Please confirm the roll result first",
-    "confirmDefenseRoll": "Please confirm the defense roll first"
+    "confirmDefenseRoll": "Please confirm the defense roll first",
+    "notYourTurn": "Not your turn",
+    "notEnoughCp": "Not enough CP (need {{required}}, have {{current}})",
+    "wrongPhaseForUpgrade": "Can only upgrade cards in main phase",
+    "wrongPhaseForMain": "Can only use this card in main phase",
+    "wrongPhaseForRoll": "Can only use this card in roll phase",
+    "cannotPlayCard": "Cannot play this card"
   },
   "actions": {
     "resolveAttack": "Resolve Attack",
     "endDefense": "End Defense",
     "nextPhase": "Next Phase",
-    "closePreview": "Close Preview ✕"
+    "closePreview": "Close Preview ✕",
+    "undoSell": "Undo Sell"
   },
   "layout": {
     "exitEdit": "🧱 Exit Layout Edit",
@@ -271,6 +286,16 @@
     "card-chi-shield": {
       "name": "Chi Shield",
       "description": "Spend 2 Taiji tokens to reduce damage by 4 this attack"
+    },
+    "actions": {
+      "play": "Play",
+      "upgrade": "Upgrade",
+      "sell": "Sell",
+      "discard": "Discard"
+    },
+    "hints": {
+      "releaseToPlay": "Release to play",
+      "releaseToSell": "Release to sell"
     }
   }
 }

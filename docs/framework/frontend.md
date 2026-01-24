@@ -13,7 +13,6 @@ src/
 ├── core/                    # 框架核心（与具体游戏无关）
 │   ├── types.ts             # GameImplementation 等框架级类型
 │   ├── AssetLoader.ts       # 资源路径/预加载统一入口
-│   ├── UndoManager.ts       # 撤销管理器
 │   └── index.ts             # 框架核心导出
 ├── systems/                 # 通用游戏系统
 │   ├── StatusEffectSystem.ts
@@ -35,7 +34,7 @@ src/
 - **资源管理**：`src/core/AssetLoader.ts`
   - `assetsPath` / `getOptimizedImageUrls` / `buildOptimizedImageSet`
   - 资源注册表 API（可选）：`registerGameAssets` / `preloadGameAssets`
-- **撤销系统**：`src/core/UndoManager.ts`
+- **撤销系统**：`src/engine/systems/UndoSystem.ts`（通过 `createDefaultSystems` 启用）
 - **通用游戏系统**：`src/systems/StatusEffectSystem.ts`、`AbilitySystem.ts`
 - **动画组件库**：`src/components/common/animations/`
   - `FlyingEffect` / `ShakeContainer` / `PulseGlow` / `variants`
@@ -68,3 +67,4 @@ src/
 - **工具型能力** → 放 `lib/`
 
 > ⚠️ three / @react-three/fiber / drei 已安装但当前未接入代码；如需 3D 骰子，请先明确需求与性能目标。
+

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LANGUAGE_OPTIONS } from '../../lib/i18n/types';
+import { LANGUAGE_OPTIONS } from '../../../lib/i18n/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 
@@ -42,9 +42,9 @@ export const LanguageSwitcher = ({ className = '' }: LanguageSwitcherProps) => {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={clsx(
-                    'flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 cursor-pointer',
+                    'flex items-center justify-center w-7 h-7 rounded-full transition-all duration-300 cursor-pointer',
                     'bg-[#fefcf7] border border-[#d3ccba]',
-                    'hover:bg-[#e8e4db] hover:border-[#bdaf92]',
+                    'hover:border-[#433422] hover:scale-105 active:scale-95',
                     'text-sm leading-none'
                 )}
                 title={currentOption.label}
@@ -72,13 +72,14 @@ export const LanguageSwitcher = ({ className = '' }: LanguageSwitcherProps) => {
                                 key={option.code}
                                 onClick={() => handleLanguageChange(option.code)}
                                 className={clsx(
-                                    'w-full flex items-center gap-3 px-4 py-2 text-left cursor-pointer transition-colors',
+                                    'group relative w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer transition-colors',
                                     'text-[#433422] font-serif font-bold text-xs tracking-wider',
-                                    currentLanguage === option.code ? 'bg-[#e8e4db]' : 'hover:bg-[#f3f0e6]'
+                                    currentLanguage === option.code ? 'bg-[#f3f0e6]/50' : ''
                                 )}
                             >
                                 <span className="text-sm">{languageFlags[option.code]}</span>
-                                <span>{option.label}</span>
+                                <span className="relative z-10">{option.label}</span>
+                                <span className="underline-center h-[1px] w-[60%] left-[20%] group-hover:w-[60%] group-hover:left-[20%]" />
                                 {currentLanguage === option.code && (
                                     <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#433422]" />
                                 )}

@@ -13,6 +13,7 @@
 
     --shadow-neon-blue: 0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.3);
     --shadow-neon-pink: 0 0 10px rgba(188, 19, 254, 0.5), 0 0 20px rgba(188, 19, 254, 0.3);
+
 }
 
 @layer base {
@@ -43,8 +44,16 @@
     .no-scrollbar::-webkit-scrollbar {
         display: none;
     }
+
     .no-scrollbar {
-        -ms-overflow-style: none; /* IE and Edge */
-        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    /* 动态中心展开下划线 (需父级为 group relative) */
+    .underline-center {
+        @apply absolute bottom-0 left-1/2 w-0 h-[1.5px] bg-current transition-all duration-300 group-hover:w-full group-hover:left-0 pointer-events-none;
     }
 }

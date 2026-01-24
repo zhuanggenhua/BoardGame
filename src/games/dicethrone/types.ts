@@ -97,4 +97,6 @@ export interface DiceThroneState {
     statusDefinitions: StatusEffectDef[];
     activatingAbilityId?: string;
     lastEffectSourceByPlayerId?: Record<string, string | undefined>;
+    /** 最后一次售出的卡牌ID，用于撤回操作 */
+    lastSoldCardId?: string;
 }

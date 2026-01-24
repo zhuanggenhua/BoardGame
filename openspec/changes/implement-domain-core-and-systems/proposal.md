@@ -6,7 +6,7 @@
 - 游戏发现与单一权威清单：`scripts/generate_game_manifests.js` 扫描 `src/games/<id>/manifest.ts`，生成 `src/games/manifest.*.generated.*`，同时生成 i18n namespaces。
 - 服务端注册与大厅推送：`server.ts` 从 `GAME_SERVER_MANIFEST` 注册游戏，并维护 lobby socket 的缓存与推送。
 - 跨游戏能力已经出现共享代码雏形：
-  - 撤销：`src/core/UndoManager` 已被 `src/games/tictactoe/game.ts` 使用。
+  - 撤销：已迁移到 `src/engine/systems/UndoSystem.ts`（自动快照）。
   - 技能/效果：`src/systems/AbilitySystem` 已被 `src/games/dicethrone/game.ts` 使用。
 
 随着计划覆盖更多类型桌游（骰子对战、卡牌驱动、德式计分、隐藏信息/推理），平台能力将继续扩张（撤销、教程、回放/审计、统一 prompt/choice、成就、统计、AI 等）。如果这些能力继续散落在每个 `game.ts` 里，会导致维护成本急剧上升。
@@ -16,7 +16,7 @@
 
 平台能力的实现方式存在两个问题：
 
-- 依赖游戏自觉遵守约定（例如每个游戏都要记得在修改状态前调用 `UndoManager.saveSnapshot(G)`）。
+- 依赖游戏自觉遵守约定（旧的 `UndoManager.saveSnapshot(G)` 模式已被 `UndoSystem` 自动快照替代）。
 - 产生游戏特有结构（例如各自维护 `pendingChoice`、`availableAbilityIds` 等），导致同一平台能力出现 N 份实现且行为不一致。
 
 这会使得以下目标越来越难：
@@ -38,6 +38,33 @@
 - 不替换现有 manifest/registry 机制（继续使用 `generate_game_manifests.js` 作为权威清单来源）。
 - 不构建万能规则 DSL。
 - 不要求一次性迁移全部游戏；改造会分阶段推进。
+
+## UGC 可选能力（Phase 2）
+
+> UGC 作为可选扩展，不阻塞核心引擎化。以下能力在核心引擎完成后接入。
+
+### UGC 沙箱执行
+- UGC 规则代码**只在服务端执行**
+- 沙箱隔离：禁用 `require/fs/net/child_process/process.env`
+- 资源限制：内存上限、执行超时、CPU 配额
+- UGC 模块只暴露 Domain Core 契约
+
+### UGC 通用 UI
+- 第一阶段**不开放自定义 React 组件**
+- 提供平台通用 UI 组件（卡牌区、骰子区、计分轨、Prompt 面板、目标选择器）
+- UGC 游戏通过数据驱动通用 UI
+
+### UGC 资产绘制
+- 用户可**直接绘制**卡牌/Token 等素材（无需上传图片）
+- 提供 Canvas 绘制编辑器（卡牌框模板 + 文字/图形工具）
+- 绘制结果导出为 SVG/PNG，存储为资产 hash
+- 裁切参数数据化：`{ crop: { x, y, scale }, assetId }`
+
+### Effect DSL
+- 卡牌/技能效果走**数据驱动**而非代码
+- 提供 Effect Schema + 校验
+- AI 生成配置数据（JSON）而非代码
+- 效果执行由 `EffectSystem` 解释
 
 ## 方案概览
 

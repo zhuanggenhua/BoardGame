@@ -86,18 +86,46 @@ export type TriggerCondition =
     | CompositeTrigger;
 
 // ============================================================================
+// 效果触发时机与条件（条件系统核心）
+// ============================================================================
+
+/**
+ * 效果触发时机
+ * - immediate: 技能选定后立即触发（如纯增益技能）
+ * - preDefense: 进入防御阶段前触发（非伤害效果默认）
+ * - withDamage: 与伤害同时结算（伤害效果默认）
+ * - postDamage: 伤害结算后触发（Then 语义）
+ */
+export type EffectTiming = 'immediate' | 'preDefense' | 'withDamage' | 'postDamage';
+
+/**
+ * 效果触发条件
+ */
+export type EffectCondition =
+    | { type: 'always' }                              // 无条件触发
+    | { type: 'onHit'; minDamage?: number }           // 造成伤害时触发（Then 语义）
+    | { type: 'onMiss' }                              // 未命中时触发
+    | { type: 'hasStatus'; statusId: string; minStacks?: number }  // 拥有状态时触发
+    | { type: 'targetHasStatus'; statusId: string; minStacks?: number }; // 目标拥有状态时触发
+
+// ============================================================================
 // 技能效果类型
 // ============================================================================
 
 /**
  * 技能效果定义
  * 可以是程序化执行的 EffectAction，或纯文本描述
+ * 支持触发时机和条件（条件系统）
  */
 export interface AbilityEffect {
     /** 效果描述（供 UI 展示） */
     description: string;
     /** 可选的程序化执行定义 */
     action?: EffectAction;
+    /** 触发时机（默认：伤害效果为 withDamage，非伤害效果为 preDefense） */
+    timing?: EffectTiming;
+    /** 触发条件（默认：always） */
+    condition?: EffectCondition;
 }
 
 // ============================================================================
@@ -183,6 +211,32 @@ export interface AbilityDef {
 }
 
 // ============================================================================
+// 游戏上下文接口（抽象游戏状态操作）
+// ============================================================================
+
+/**
+ * 游戏上下文接口
+ * 游戏实现此接口以支持技能系统的通用效果执行
+ * 这是技能系统与具体游戏解耦的核心抽象
+ */
+export interface GameContext {
+    /** 对目标造成伤害，返回实际造成的伤害量 */
+    applyDamage(targetId: string, amount: number, sourceAbilityId?: string): number;
+    /** 对目标治疗 */
+    applyHeal(targetId: string, amount: number, sourceAbilityId?: string): void;
+    /** 给目标添加状态效果 */
+    grantStatus(targetId: string, statusId: string, stacks: number, sourceAbilityId?: string): void;
+    /** 移除目标的状态效果 */
+    removeStatus(targetId: string, statusId: string, stacks?: number, sourceAbilityId?: string): void;
+    /** 获取目标当前生命值 */
+    getHealth(targetId: string): number;
+    /** 获取目标状态效果层数 */
+    getStatusStacks(targetId: string, statusId: string): number;
+    /** 执行自定义效果（游戏特定逻辑） */
+    executeCustomAction?(actionId: string, attackerId: string, defenderId: string, sourceAbilityId?: string): void;
+}
+
+// ============================================================================
 // 技能管理器
 // ============================================================================
 
@@ -204,6 +258,35 @@ export interface AbilityContext {
     isUltimateActive?: boolean;
     /** 被禁用的标签（如终极期间禁用 instant） */
     blockedTags?: AbilityTag[];
+}
+
+/**
+ * 效果结算上下文（条件系统核心）
+ * 用于在效果结算过程中传递状态，如已造成的伤害量
+ */
+export interface EffectResolutionContext {
+    /** 攻击者 ID */
+    attackerId: string;
+    /** 防御者 ID */
+    defenderId: string;
+    /** 技能 ID */
+    sourceAbilityId: string;
+    /** 已造成的伤害量（用于 onHit 条件判断） */
+    damageDealt: number;
+    /** 攻击者状态效果 */
+    attackerStatusEffects?: Record<string, number>;
+    /** 防御者状态效果 */
+    defenderStatusEffects?: Record<string, number>;
+}
+
+/**
+ * 效果结算配置
+ */
+export interface EffectResolutionConfig {
+    /** 额外伤害（如太极增伤） */
+    bonusDamage?: number;
+    /** 是否只应用首次伤害的 bonusDamage */
+    bonusDamageOnce?: boolean;
 }
 
 /**
@@ -307,6 +390,133 @@ export class AbilityManager {
         }
 
         return available;
+    }
+
+    // ========================================================================
+    // 条件系统：效果过滤与条件检查
+    // ========================================================================
+
+    /**
+     * 获取指定时机的效果列表
+     */
+    getEffectsByTiming(effects: AbilityEffect[], timing: EffectTiming): AbilityEffect[] {
+        return effects.filter(effect => {
+            const effectTiming = this.getEffectTiming(effect);
+            return effectTiming === timing;
+        });
+    }
+
+    /**
+     * 获取效果的实际触发时机（应用默认值）
+     */
+    getEffectTiming(effect: AbilityEffect): EffectTiming {
+        if (effect.timing) return effect.timing;
+        // 默认时机：伤害效果为 withDamage，非伤害效果为 preDefense
+        if (effect.action?.type === 'damage') return 'withDamage';
+        return 'preDefense';
+    }
+
+    /**
+     * 检查效果条件是否满足
+     */
+    checkEffectCondition(effect: AbilityEffect, resolutionCtx: EffectResolutionContext): boolean {
+        const condition = effect.condition ?? { type: 'always' };
+        switch (condition.type) {
+            case 'always':
+                return true;
+            case 'onHit':
+                return resolutionCtx.damageDealt >= (condition.minDamage ?? 1);
+            case 'onMiss':
+                return resolutionCtx.damageDealt === 0;
+            case 'hasStatus':
+                return (resolutionCtx.attackerStatusEffects?.[condition.statusId] ?? 0) >= (condition.minStacks ?? 1);
+            case 'targetHasStatus':
+                return (resolutionCtx.defenderStatusEffects?.[condition.statusId] ?? 0) >= (condition.minStacks ?? 1);
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * 结算指定时机的所有效果（使用 GameContext）
+     * 返回本次结算造成的总伤害
+     */
+    resolveEffects(
+        effects: AbilityEffect[],
+        timing: EffectTiming,
+        resolutionCtx: EffectResolutionContext,
+        gameCtx: GameContext,
+        config?: EffectResolutionConfig
+    ): number {
+        let totalDamage = 0;
+        let bonusApplied = false;
+        const timedEffects = this.getEffectsByTiming(effects, timing);
+        
+        for (const effect of timedEffects) {
+            if (!effect.action) continue;
+            if (!this.checkEffectCondition(effect, resolutionCtx)) continue;
+            
+            const damage = this.executeEffect(
+                effect.action,
+                resolutionCtx,
+                gameCtx,
+                config && !bonusApplied ? config.bonusDamage : undefined
+            );
+            
+            if (damage > 0 && config?.bonusDamageOnce) {
+                bonusApplied = true;
+            }
+            
+            totalDamage += damage;
+            resolutionCtx.damageDealt += damage;
+        }
+        
+        return totalDamage;
+    }
+
+    /**
+     * 执行单个效果（内部方法）
+     * 通过 GameContext 接口调用游戏特定操作
+     */
+    private executeEffect(
+        action: EffectAction,
+        ctx: EffectResolutionContext,
+        gameCtx: GameContext,
+        bonusDamage?: number
+    ): number {
+        const { attackerId, defenderId, sourceAbilityId } = ctx;
+        const targetId = action.target === 'self' ? attackerId : defenderId;
+        
+        switch (action.type) {
+            case 'damage': {
+                const totalValue = (action.value ?? 0) + (bonusDamage ?? 0);
+                return gameCtx.applyDamage(targetId, totalValue, sourceAbilityId);
+            }
+            case 'heal': {
+                gameCtx.applyHeal(targetId, action.value ?? 0, sourceAbilityId);
+                return 0;
+            }
+            case 'grantStatus': {
+                if (action.statusId) {
+                    gameCtx.grantStatus(targetId, action.statusId, action.value ?? 1, sourceAbilityId);
+                }
+                return 0;
+            }
+            case 'removeStatus': {
+                if (action.statusId) {
+                    gameCtx.removeStatus(targetId, action.statusId, action.value, sourceAbilityId);
+                }
+                return 0;
+            }
+            case 'custom': {
+                if (action.customActionId && gameCtx.executeCustomAction) {
+                    gameCtx.executeCustomAction(action.customActionId, attackerId, defenderId, sourceAbilityId);
+                }
+                return 0;
+            }
+            default:
+                return 0;
+        }
     }
 
     /**

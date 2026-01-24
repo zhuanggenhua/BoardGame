@@ -17,5 +17,13 @@
   },
   "toast": {
     "close": "关闭"
+  },
+  "rematch": {
+    "playAgain": "再来一局",
+    "votePlayAgain": "再来一局",
+    "cancelVote": "取消投票",
+    "waitingForOpponent": "等待对手确认…",
+    "restarting": "双方已确认，重开中…",
+    "backToLobby": "返回大厅"
   }
 }

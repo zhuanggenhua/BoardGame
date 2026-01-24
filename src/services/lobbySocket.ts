@@ -110,6 +110,21 @@ class LobbySocketService {
         }
     }
 
+    private handleVersionRollback(version: number, context: string): boolean {
+        if (version < this.lobbyVersion) {
+            console.warn('[LobbySocket] 版本回退，强制刷新', {
+                context,
+                version,
+                current: this.lobbyVersion,
+            });
+            this.currentMatches = [];
+            this.lobbyVersion = -1;
+            this.requestRefresh();
+            return true;
+        }
+        return false;
+    }
+
     /**
      * 连接到大厅 Socket 服务
      */
@@ -165,6 +180,9 @@ class LobbySocketService {
 
         // 接收完整的房间列表更新
         this.socket.on(LOBBY_EVENTS.LOBBY_UPDATE, (payload: LobbySnapshotPayload) => {
+            if (this.handleVersionRollback(payload.version, 'snapshot')) {
+                return;
+            }
             if (!this.shouldAcceptVersion(payload.version, true)) {
                 console.log('[LobbySocket]', tLobbySocket('ignoreSnapshot', { version: payload.version }));
                 return;
@@ -178,6 +196,9 @@ class LobbySocketService {
 
         // 接收单个房间创建事件
         this.socket.on(LOBBY_EVENTS.MATCH_CREATED, (payload: LobbyMatchPayload) => {
+            if (this.handleVersionRollback(payload.version, 'matchCreated')) {
+                return;
+            }
             if (!this.shouldAcceptVersion(payload.version)) {
                 console.log('[LobbySocket]', tLobbySocket('ignoreMatchCreated', { version: payload.version, matchId: payload.match.matchID }));
                 return;
@@ -191,6 +212,9 @@ class LobbySocketService {
 
         // 接收单个房间更新事件（玩家加入/离开）
         this.socket.on(LOBBY_EVENTS.MATCH_UPDATED, (payload: LobbyMatchPayload) => {
+            if (this.handleVersionRollback(payload.version, 'matchUpdated')) {
+                return;
+            }
             if (!this.shouldAcceptVersion(payload.version)) {
                 console.log('[LobbySocket]', tLobbySocket('ignoreMatchUpdated', { version: payload.version, matchId: payload.match.matchID }));
                 return;
@@ -204,6 +228,9 @@ class LobbySocketService {
 
         // 接收房间结束事件
         this.socket.on(LOBBY_EVENTS.MATCH_ENDED, (payload: LobbyMatchEndedPayload) => {
+            if (this.handleVersionRollback(payload.version, 'matchEnded')) {
+                return;
+            }
             if (!this.shouldAcceptVersion(payload.version)) {
                 console.log('[LobbySocket]', tLobbySocket('ignoreMatchEnded', { version: payload.version, matchId: payload.matchID }));
                 return;
@@ -216,6 +243,9 @@ class LobbySocketService {
         });
 
         this.socket.on(LOBBY_EVENTS.HEARTBEAT, (payload: LobbyHeartbeatPayload) => {
+            if (this.handleVersionRollback(payload.version, 'heartbeat')) {
+                return;
+            }
             if (payload.version > this.lobbyVersion) {
                 console.log('[LobbySocket]', tLobbySocket('heartbeatStale', { version: payload.version, current: this.lobbyVersion }));
                 this.requestRefresh();

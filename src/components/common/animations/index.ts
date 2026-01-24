@@ -3,3 +3,4 @@ export * from './FlyingEffect';
 export * from './ShakeContainer';
 export * from './PulseGlow';
 export * from './variants';
+export * from './CardDrawAnimation';

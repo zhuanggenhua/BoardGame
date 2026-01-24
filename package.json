@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/generate_game_manifests.js",
+    "predev": "node scripts/clean_ports.js && node scripts/generate_game_manifests.js",
     "dev": "concurrently \"npm:dev:frontend\" \"npm:dev:api\" \"npm:dev:game\"",
     "dev:frontend": "vite",
     "dev:api": "tsx api-server.ts",
@@ -12,6 +12,7 @@
     "prebuild": "node scripts/generate_game_manifests.js",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "clean:ports": "node scripts/clean_ports.js",
     "generate:manifests": "node scripts/generate_game_manifests.js",
     "preview": "vite preview",
     "pdf:md": "node scripts/pdf_to_md.js",

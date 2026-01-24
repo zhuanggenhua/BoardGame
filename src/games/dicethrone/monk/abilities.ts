@@ -3,27 +3,33 @@
  * 使用通用 AbilitySystem
  */
 
-import type { AbilityDef, AbilityEffect } from '../../../systems/AbilitySystem';
+import type { AbilityDef, AbilityEffect, EffectTiming, EffectCondition } from '../../../systems/AbilitySystem';
 
 const abilityText = (id: string, field: 'name' | 'description') => `abilities.${id}.${field}`;
 const abilityEffectText = (id: string, field: string) => `abilities.${id}.effects.${field}`;
 
 // 辅助函数：创建伤害效果
-const damage = (value: number, description: string): AbilityEffect => ({
+const damage = (value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
     description,
     action: { type: 'damage', target: 'opponent', value },
+    timing: opts?.timing,
+    condition: opts?.condition,
 });
 
 // 辅助函数：创建状态效果
-const grantStatus = (statusId: string, value: number, description: string): AbilityEffect => ({
+const grantStatus = (statusId: string, value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
     description,
     action: { type: 'grantStatus', target: 'self', statusId, value },
+    timing: opts?.timing,
+    condition: opts?.condition,
 });
 
 // 辅助函数：给对手施加状态
-const inflictStatus = (statusId: string, value: number, description: string): AbilityEffect => ({
+const inflictStatus = (statusId: string, value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
     description,
     action: { type: 'grantStatus', target: 'opponent', statusId, value },
+    timing: opts?.timing,
+    condition: opts?.condition,
 });
 
 /**
@@ -74,8 +80,13 @@ export const MONK_ABILITIES: AbilityDef[] = [
         description: abilityText('harmony', 'description'),
         trigger: { type: 'smallStraight' },
         effects: [
+            // 伤害效果：默认 withDamage 时机
             damage(5, abilityEffectText('harmony', 'damage5')),
-            grantStatus('taiji', 2, abilityEffectText('harmony', 'gainTaiji2')),
+            // 然后获得太极：onHit 条件 + postDamage 时机
+            grantStatus('taiji', 2, abilityEffectText('harmony', 'gainTaiji2'), {
+                timing: 'postDamage',
+                condition: { type: 'onHit' },
+            }),
         ],
     },
     {
@@ -83,10 +94,15 @@ export const MONK_ABILITIES: AbilityDef[] = [
         name: abilityText('lotus-palm', 'name'),
         type: 'offensive',
         description: abilityText('lotus-palm', 'description'),
+        tags: ['unblockable'], // 不可防御标签
         trigger: { type: 'diceSet', faces: { lotus: 4 } },
         effects: [
             damage(5, abilityEffectText('lotus-palm', 'damage5')),
-            grantStatus('taiji', 5, abilityEffectText('lotus-palm', 'taijiCapMax')),
+            // 获得太极：onHit 条件 + postDamage 时机
+            grantStatus('taiji', 5, abilityEffectText('lotus-palm', 'taijiCapMax'), {
+                timing: 'postDamage',
+                condition: { type: 'onHit' },
+            }),
             { description: abilityEffectText('lotus-palm', 'unblockable') },
         ],
     },
@@ -124,8 +140,16 @@ export const MONK_ABILITIES: AbilityDef[] = [
         trigger: { type: 'largeStraight' },
         effects: [
             damage(7, abilityEffectText('calm-water', 'damage7')),
-            grantStatus('taiji', 2, abilityEffectText('calm-water', 'gainTaiji2')),
-            grantStatus('evasive', 1, abilityEffectText('calm-water', 'gainEvasive')),
+            // 然后获得太极：onHit 条件 + postDamage 时机
+            grantStatus('taiji', 2, abilityEffectText('calm-water', 'gainTaiji2'), {
+                timing: 'postDamage',
+                condition: { type: 'onHit' },
+            }),
+            // 然后获得闪避：onHit 条件 + postDamage 时机
+            grantStatus('evasive', 1, abilityEffectText('calm-water', 'gainEvasive'), {
+                timing: 'postDamage',
+                condition: { type: 'onHit' },
+            }),
         ],
     },
     {

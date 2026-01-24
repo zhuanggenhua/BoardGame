@@ -39,7 +39,7 @@ description: 添加新游戏到桌游平台的完整工作流程
 
 ### 1.1 模块化状态设计
 - **核心状态**：设计能最小化表达游戏局面的数据结构。
-- **悔棋兼容**：确保状态树包含 [UndoAwareState](cci:2://file:///d:/gongzuo/web/BordGame/src/games/common/UndoManager.ts:5:0-10:1) 必要的系统字段。
+- **悔棋兼容**：撤销由引擎系统自动注入 `G.sys`，无需手动实现 UndoAwareState。
 
 ### 1.2 动作原子化 (Moves)
 - **合法性校验**：每个动作必须先经过严格的非法操作检查。

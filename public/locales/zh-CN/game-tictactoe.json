@@ -13,12 +13,11 @@
     "turnSuffix": "的回合",
     "thinking": "思考中..."
   },
-  "rematch": {
-    "missingInfo": "无法再来一局：缺少对局信息或凭证。",
-    "failed": "再来一局失败，请稍后重试。",
-    "creating": "创建中...",
-    "playAgain": "再来一局",
-    "backToLobby": "返回大厅"
+  "error": {
+    "notYourTurn": "不是你的回合",
+    "invalidCell": "无效的格子位置",
+    "cellOccupied": "格子已被占用",
+    "unknownCommand": "未知命令"
   },
   "tutorial": {
     "steps": {

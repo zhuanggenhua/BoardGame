@@ -91,35 +91,29 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ## ⚠️ 重要教训 (Golden Rules)
 
+### Bug 教训文档（强制）
+- **修 bug 前必读**：
+  - 前端 bug：必须先检查 `docs/bugs/frontend.md`（目录 + 相关条目）
+  - 后端 bug：必须先检查 `docs/bugs/backend.md`（目录 + 相关条目）
+- **修复后总结规则（仅对修复次数 > 2 的 bug）**：当同一个 bug 需要多次往返才修好（修复尝试次数大于1次），在“确认修复成功”后必须把根因与防复发措施沉淀到对应文档：
+  - 前端：追加到 `docs/bugs/frontend.md`
+  - 后端：追加到 `docs/bugs/backend.md`
+  - 条目格式遵循文档内模板，确保包含：现象、根因、证据链、回归测试清单、防复发措施。
+  - 条目模板以 `docs/bugs/*.md` 中的「条目格式」为准，保持简洁精要。
+  - 高频可复发的具体教训优先沉淀到 bug 文档，避免长期占用上下文。
+
 ### React Hooks 规则（强制）
 > **禁止在条件语句或 return 之后调用 Hooks**。永远将 Hooks 置于组件顶部。
-
-### CSS 布局与父容器约束（强制）
-> **`overflow` 属性会被父级容器覆盖，导致子组件布局失效**。
-- 修改布局前必须使用 `grep_search` 检查所有父容器的 `overflow`、`height` 等属性。
-
-### 遮罩/层级排查规则（强制）
-> **先用 `elementsFromPoint` 证明“谁在最上层”，再改层级**；Portal 外层容器必须显式 `z-index`，否则会被页面正 `z-index` 覆盖。
-
-### 联机测试与网络
-- **WebSocket**：`vite.config.ts` 中 `hmr` 严禁设置自定义端口。
-- **HMR 错误**：出现 "Upgrade Required" 时，移除 `hmr: { port: ... }` 配置。
-- **端口占用**：使用 `taskkill /F /IM node.exe` 清理占用。
-
-### 高频交互规范
-- **Ref 优先**：`MouseMove` 等高频回调优先用 `useRef` 避开 `useState` 异步延迟导致的跳动。
-- **直操 DOM**：实时 UI 更新建议直接修改 `DOM.style` 绕过 React 渲染链以优化性能。
-- **状态卫生**：在 `window` 监听 `mouseup` 防止状态卡死；重置业务时同步清空相关 Ref。
-- **锚点算法**：建立 `anchorPoint` 逻辑处理坐标缩放与定位补偿，确保交互一致性。
 
 ### 动画/动效规范
 - **动画库已接入**：项目使用 **framer-motion**（`motion` / `AnimatePresence`）。
 - **通用动效组件**：`src/components/common/animations/` 下已有 `FlyingEffect`、`ShakeContainer`、`PulseGlow` 与 `variants`。
 - **优先复用原则**：新增动画优先复用/扩展上述组件或 framer-motion 变体，避免重复造轮子或引入平行动画库。
-
-### 框架文档索引
-- **前端框架封装**：`docs/framework/frontend.md`
-- **后端框架封装**：`docs/framework/backend.md`
+- **性能友好**：动效优先使用 `transform` / `opacity`，避免动画 `filter/backdrop-filter`、`box-shadow/text-shadow`、`color/border-color` 等高重绘属性。
+- **毛玻璃策略**：`backdrop-filter` 尽量保持静态；需要动效时只动遮罩层 `opacity`，避免在动画过程中改变 blur 半径。
+- **通用动效 hooks**：延迟渲染/延迟 blur 优先复用 `useDeferredRender` / `useDelayedBackdropBlur`，避免各处重复实现。
+- **颜色/阴影替代**：若需高亮变化，优先采用“叠层 + opacity”而非直接动画颜色/阴影。
+- **Hover 颜色复用**：按钮 hover 颜色变化优先使用通用 `HoverOverlayLabel`（叠层 + opacity）模式，减少重复实现。
 
 ### 文档索引与使用时机（强制）
 - **工具脚本文档**：`docs/tools.md`（涉及脚本使用、资源处理、图集扫描、联机模拟时必须先读）
@@ -129,6 +123,28 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **调试运行手册**：`docs/debugging/runbook.md`（线上/本地排障、错误定位、日志规范相关时必须先读）
 - **前端框架封装**：`docs/framework/frontend.md`（涉及前端架构/封装约定时必须先读）
 - **后端框架封装**：`docs/framework/backend.md`（涉及后端架构/封装约定时必须先读）
+
+### 新引擎系统注意事项（强制）
+- **系统注册**：新系统必须在 `src/engine/systems/` 实现，并在 `src/engine/systems/index.ts` 导出；如需默认启用，必须加入 `createDefaultSystems()`。
+- **状态结构**：系统新增状态必须写入 `SystemState` 并由系统 `setup()` 初始化；禁止把系统状态塞进 `core`。
+- **命令可枚举**：凡是系统命令（如 `UNDO_COMMANDS`），**必须加入每个游戏的 `commandTypes`**，否则 `moves` 不会注入。
+- **常量使用**：UI 触发系统命令必须使用 `UNDO_COMMANDS.*` 等常量，禁止硬编码字符串。
+- **重置清理**：需要 `reset()` 的系统必须保证状态在重开后回到初始值。
+
+### 重赛系统说明 
+- **多人模式**：重赛投票通过 **socket.io 房间层**实现（`RematchContext` + `matchSocket.ts`），**不走 boardgame.io move**，以绕过 `ctx.gameover` 后禁止 move 的限制。
+- **单人模式**：直接调用 `reset()` 函数。
+- **架构**：
+  - 服务端：`server.ts` 中的 `REMATCH_EVENTS` 事件处理
+  - 客户端：`src/services/matchSocket.ts` 服务 + `src/contexts/RematchContext.tsx` 上下文
+  - UI：`RematchActions` 组件通过 `useRematch()` hook 获取状态和投票回调
+- **为什么不用 move**：boardgame.io 在 `endIf` 返回 gameover 后会禁止所有 move，但我们需要保留 gameover 以支持对局回放/战绩记录。
+
+### i18n 配置方法（强制）
+- **通用 vs 游戏**：通用组件文案放 `public/locales/{lang}/common.json`；单游戏文案放 `public/locales/{lang}/game-<id>.json`。
+- **双语齐全**：新增文案必须同步补齐 `zh-CN` 与 `en`，禁止只写中文或遗漏英文。
+- **命名空间**：组件 `useTranslation` 必须使用正确 namespace；通用组件禁止引用 `game-*` namespace。
+- **清理同步**：删除或迁移文案时必须同步清理引用与旧 key。
 
 ---
 
@@ -142,10 +158,10 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 | 动画/动效 | framer-motion | motion/AnimatePresence + 通用动效组件 |
 | 国际化 | i18next + react-i18next | 多语言与懒加载词条 |
 | 音频 | howler | 统一音效/音乐管理 |
-| 实时通信 | socket.io-client | 游戏大厅/房间实时更新 |
-| 游戏引擎 | Boardgame.io | 状态机 + 网络同步 |
-| 后端 | Node.js (Koa) | API 服务 |
-| 数据库 | MongoDB | 用户/对局数据 |
+| 实时通信 | socket.io-client | 游戏大厅/房间实时更新及同步 |
+| 实时同步 | boardgame.io | 游戏状态机同步与持久化 |
+| 后端 | Node.js (Koa) | API 服务与 Socket.io 服务端 |
+| 数据库 | MongoDB | 用户数据、对局历史与房间持久化 |
 
 > 说明：`three` / `@react-three/fiber` / `@react-three/drei` 已安装但当前未接入代码，避免在未确认需求前启用。
 
@@ -191,10 +207,14 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ```
 src/
+├── engine/                  # 引擎层（Domain Core + Systems + Adapter）
+│   ├── types.ts             # 引擎核心类型（MatchState/Command/Event）
+│   ├── pipeline.ts          # Command/Event 执行管线
+│   ├── adapter.ts           # Boardgame.io 适配层
+│   └── systems/             # 引擎系统层（Undo/Prompt/Log 等）
 ├── core/                    # 框架核心（与具体游戏无关）
 │   ├── types.ts             # 框架级类型定义（GameImplementation 等）
 │   ├── AssetLoader.ts       # 资源加载器
-│   ├── UndoManager.ts       # 撤销管理器
 │   └── index.ts             # 模块导出
 ├── systems/                 # 通用游戏系统（可复用于多游戏）
 │   ├── StatusEffectSystem.ts # 状态效果系统（Buff/Debuff）
@@ -211,11 +231,11 @@ src/
 │       ├── types.ts
 │       ├── game.ts
 │       └── Board.tsx
-├── components/              # 通用 UI 组件
-├── contexts/                # React Context
-├── lib/                     # 通用工具（音频/i18n 等）
-├── pages/                   # 页面组件
-└── config/                  # 配置文件
+├── components/              # 通用 UI 组件（大厅、通宵、各类弹窗）
+├── contexts/                # 全局状态管理 (Toast/Modal/Audio/Auth/Tutorial/Debug)
+├── lib/                     # 底层服务库（AudioManager/i18n/LobbySocket）
+├── pages/                   # 页面入口 (Lobby/MatchRoom/Profile)
+└── config/                  # 后端配置、游戏规则常量
 ```
 
 ### 关键文件速查
@@ -244,12 +264,57 @@ src/
   - CSS 背景用 `buildOptimizedImageSet`。
   - `src` 可直接传相对路径（如 `dicethrone/images/...`），内部会自动补 `/assets/` 并转 `.avif/.webp`。
 
-## 🔊 音频资源与使用规范
+## 🧩 全局系统与服务 (Global Systems)
 
-- **资源根目录**：`public/assets/`；音频压缩输出放在同级 `compressed/` 子目录。
-- **压缩脚本**：`scripts/compress_audio.js` 只生成 `.ogg`（依赖 `ffmpeg`）。
-- **前端引用**：
-  - `AudioManager` 自动补 `/assets/`，可直接传相对路径（如 `common/audio/compressed/click.ogg`）。
+### 1. 通用 Context 系统 (`src/contexts/`)
+
+所有全局系统均通过 Context 提供 API，**禁止**在业务组件内直接操作底层的全局 Variable。
+
+- **Toast 通知系统 (`useToast`)**：
+    - `show/success/warning/error(content, options)`。
+    - 支持 `dedupeKey` 防抖，`error` 类型默认更长驻留。
+- **弹窗栈系统 (`useModalStack`)**：
+    - 采用类似路由的栈管理：`openModal`, `closeTop`, `replaceTop`, `closeAll`。
+    - **规范**：所有业务弹窗必须通过 `openModal` 唤起，禁止自行在组件内维护独立的 `isVisible` 状态。
+- **音频系统 (`useAudio` & `AudioManager`)**：
+    - 统一管理 BGM 与 SFX。
+    - **规范**：切换游戏时，必须通过 `stopBgm` 及 `playBgm` 重置音乐流。声音资源需经过 `compress_audio.js` 压缩。
+- **教学系统 (`useTutorial`)**：
+    - 基于 Manifest 的分步引导。支持 `highlightTarget` (通过 `data-tutorial-id`) 与 `aiMove` 模拟。
+- **认证系统 (`useAuth`)**：
+    - 管理 JWT 及 `localStorage` 同步。提供 `user` 状态与 `login/logout` 接口。
+- **调试系统 (`useDebug`)**：
+    - 运行时的 Player ID 模拟（0/1/Spectator）及 `testMode` 开关。
+
+### 2. 实时服务层 (`src/lib/` & `src/services/`)
+
+- **LobbySocket (`LobbySocketService`)**：
+    - 独立于 boardgame.io 的 WebSocket 通道，用于：
+        1. 大厅房间列表实时更新。
+        2. 房间内成员状态（在线/离线）同步。
+        3. 关键连接错误（`connect_error`）的上报。
+    - **规范**：组件销毁时必须取消订阅或在 Context 层面统一维护。
+- **服务系统 (`src/systems/`)**：
+    - **状态效果系统 (`StatusEffectSystem`)**：提供标准的 Buff/Debuff 生命周期管理、叠加逻辑及 UI 提示。
+    - **技能系统 (`AbilitySystem`)**：管理游戏技能的触发逻辑、前置条件校验及消耗结算。
+
+### 2.5 引擎层（`src/engine/`）
+
+- **Domain Core**：游戏规则以 Command/Event + Reducer 形式实现，确保确定性与可回放。
+- **Systems**：Undo/Prompt/Log 等跨游戏能力以 hook 管线方式参与执行。
+- **Adapter**：Boardgame.io moves 仅做输入翻译，规则主体在引擎层。
+- **统一状态**：`G.sys`（系统状态） + `G.core`（领域状态）。
+
+### 3. 通用 UI 系统
+
+- **GameHUD (`src/components/game/GameHUD.tsx`)**：
+    - 游戏的“浮动控制中心”。整合了：
+        1. 退出房间、撤销、设置。
+        2. 多人在线状态显示。
+        3. 音效控制入口。
+    - **规范**：新游戏接入必须包含 GameHUD 或其变体。
+
+---
 
 ## 🎨 UI/UX 规范 (General Paradigm)
 
@@ -262,40 +327,26 @@ src/
 - **PC 核心驱动 (PC-First)**：以 PC 端 (16:9) 为核心设计基准，追求极致的大屏沉浸感与专业级交互操作。
 - **场景自适应 (Scene-Centric)**：针对游戏内核进行自适应优化。移动端定位为“尽力兼容 (Best-effort Compatibility)”，优先保证核心功能可用。
 - **宽限度约束 (Constraints)**：平台/网页 UI 通过 `max-w-7xl` 等容器限制内容延展，确保视觉焦点集中。
-- **可读性底线 (Readability)**：文字禁止纯 `vw` 缩放。使用 `rem` 或 `clamp()` 设定物理最小值（12px/14px），保障任何分辨率下的交互可用性。
-- **混合单位策略 (Mixed Units)**：
-    - **`vw` (Viewport Width)**：**核心场景专用**。用于棋盘、核心容器等需要随视口宽度等比例缩放的“实体”对象，确保其在复杂嵌套下依然保持绝对比例。
-    - **`%` (Percentage)**：**局部布局专用**。用于容器内部的槽位、弹性区域，确保元素相对于父级的正确填充。
-    - **`px/rem` (Fixed/Scaled)**：**UI 细节专用**。用于圆角、边框、投影及文字底线，维持商业级的细节精致感。
+- **响应式策略指南 (Responsive Strategy Guidelines)**：
+    - **信息交互层 (UI & HUD)**：
+        - **场景**：大厅卡片、侧边栏、模态框、文字阅读区。
+        - **建议**：**稳定性优先**。推荐使用标准 `rem`，建议配合 `clamp()` 锁定物理最小值（12px/14px），保证全环境可读。
+    - **沉浸视效层 (Immersive & Board)**：
+        - **场景**：游戏棋盘、全屏背景、核心对战区域。
+        - **建议**：**比例优先**。推荐使用 `vw/vh`、`%` 或 `aspect-ratio`，确保游戏画面能完整填充用户视口，保持沉浸感。
+    - **布局流动层 (Layout Flow)**：
+        - **场景**：列表网格、工具栏排列。
+        - **建议**：**内容驱动**。利用 Flex/Grid 的自然流特性（如自动填充、自动换行）来适配屏幕宽度，而非依赖硬编码的断点控制。
 
 ### 3. 游戏 UI 特化范式 (Game-Centric Design)
 - **视角解耦 (Scene vs. HUD)**：
     - **场景层 (Scene)**：棋盘、卡片等核心实体，需通过 `anchorPoint` 处理坐标缩放，确保跨平台逻辑一致性。
-    - **UI 层 (HUD)**：状态信息、控制面板，以图层 (Overlay) 形式悬浮，避免挤压场景空间。
+    - **UI 层 (HUD)**：状态信息、控制面板，执行 Overlay 挂载逻辑。
 - **高度稳定性**：核心游戏区（棋盘/面板）**必须**使用明确高度约束（如 `h-[35vw]`）代替 `h-full`，彻底解耦父级 Flex 依赖。
 - **相位敏感性**：UI 必须清晰反馈当前“游戏相位”与“操作权限”，通过高亮合规动作 (Valid Actions) 降低认知负荷。
+- **拖拽回弹规则**：当需要回弹到原位时，**不要**关闭 `drag`，否则 `dragSnapToOrigin` 不会执行；应保持 `drag={true}` 并用 `dragListener` 控制是否可拖。
 
 ---
 
 
 ---
-
-## 📋 模板与清单
-
-### 1. ADR 模板 (Markdown)
-```markdown
-# ADR-NN: <标题>
-日期：YYYY-MM-DD | 状态：提议/通过
-## 背景：<描述问题>
-## 决策：<选定方案与理由>
-## 后果：<正负影响、迁移方案>
-```
-
-### 2. 验证清单
-- [ ] `npm run lint` & `tsc` 无报错。
-- [ ] 浏览器控制台无报错，多人视角核心流程完整走通。
-- [ ] 响应式布局自适应。
-
----
-
-*最后更新：2026-01-20*

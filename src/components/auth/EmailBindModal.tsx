@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { ModalBase } from '../common/ModalBase';
+import { ModalBase } from '../common/overlays/ModalBase';
 
 interface EmailBindModalProps {
     isOpen: boolean;
@@ -87,10 +87,9 @@ export const EmailBindModal = ({ isOpen, onClose, closeOnBackdrop }: EmailBindMo
             open={isOpen}
             onClose={onClose}
             closeOnBackdrop={closeOnBackdrop}
-            overlayClassName="z-50 bg-[#433422]/20"
-            containerClassName="z-50 p-4"
+            containerClassName="p-4 sm:p-6"
         >
-            <div className="bg-[#fcfbf9] pointer-events-auto w-full max-w-sm shadow-[0_10px_40px_rgba(67,52,34,0.1)] border border-[#e5e0d0] p-8 relative rounded-sm">
+            <div className="bg-[#fcfbf9] pointer-events-auto w-full max-w-[340px] sm:max-w-sm shadow-[0_10px_40px_rgba(67,52,34,0.1)] border border-[#e5e0d0] p-6 sm:p-8 relative rounded-sm">
                 {/* 装饰性边角 */}
                 <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-[#c0a080]" />
                 <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-[#c0a080]" />
@@ -128,7 +127,7 @@ export const EmailBindModal = ({ isOpen, onClose, closeOnBackdrop }: EmailBindMo
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-lg"
+                                className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-base sm:text-lg"
                                 placeholder={t('email.placeholder.address')}
                                 required
                                 autoFocus

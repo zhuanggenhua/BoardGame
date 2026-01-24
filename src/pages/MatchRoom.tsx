@@ -6,8 +6,9 @@ import { GAME_IMPLEMENTATIONS } from '../games/registry';
 import { useDebug } from '../contexts/DebugContext';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
-import { useMatchStatus, leaveMatch } from '../hooks/useMatchStatus';
-import { ConfirmModal } from '../components/common/ConfirmModal';
+import { RematchProvider } from '../contexts/RematchContext';
+import { useMatchStatus, destroyMatch, leaveMatch } from '../hooks/match/useMatchStatus';
+import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { useModalStack } from '../contexts/ModalStackContext';
 import { useToast } from '../contexts/ToastContext';
 import { SocketIO } from 'boardgame.io/multiplayer';
@@ -16,7 +17,7 @@ import { GameHUD } from '../components/game/GameHUD';
 
 
 export const MatchRoom = () => {
-    const { playerID: debugPlayerID } = useDebug();
+    const { playerID: debugPlayerID, setPlayerID } = useDebug();
     const { gameId, matchId } = useParams();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -47,7 +48,7 @@ export const MatchRoom = () => {
             board: impl.board,
             debug: false,
             numPlayers: 2,
-        });
+        }) as React.ComponentType<{ playerID?: string | null }>;
     }, [gameId]);
 
     const [isLeaving, setIsLeaving] = useState(false);
@@ -58,6 +59,7 @@ export const MatchRoom = () => {
     const autoExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const autoExitModalIdRef = useRef<string | null>(null);
     const tutorialModalIdRef = useRef<string | null>(null);
+    const errorToastRef = useRef<{ key: string; timestamp: number } | null>(null);
 
     const isTutorialRoute = window.location.pathname.endsWith('/tutorial');
 
@@ -121,12 +123,22 @@ export const MatchRoom = () => {
 
     const tutorialPlayerID = debugPlayerID ?? urlPlayerID ?? '0';
 
+    // 进入联机对局时，调试面板自动切换到自己对应的玩家视角
+    useEffect(() => {
+        if (isTutorialRoute) return;
+        if (!urlPlayerID) return;
+        if (debugPlayerID === urlPlayerID) return;
+        setPlayerID(urlPlayerID);
+    }, [debugPlayerID, isTutorialRoute, setPlayerID, urlPlayerID]);
+
     // 联机对局优先使用 URL playerID，避免调试默认值覆盖真实身份
     const effectivePlayerID = (isActive || isTutorialRoute)
         ? tutorialPlayerID
-        : (urlPlayerID ?? debugPlayerID ?? undefined);
+        : (urlPlayerID ?? undefined);
 
-    const statusPlayerID = urlPlayerID ?? debugPlayerID ?? null;
+    const statusPlayerID = isTutorialRoute
+        ? (urlPlayerID ?? debugPlayerID ?? null)
+        : (urlPlayerID ?? null);
 
     // 使用房间状态 Hook（以真实玩家身份为准）
     const matchStatus = useMatchStatus(gameId, matchId, statusPlayerID);
@@ -201,19 +213,13 @@ export const MatchRoom = () => {
         }
 
         if (!statusPlayerID || !credentials) {
-            clearMatchCredentials();
             navigate('/');
             return;
         }
 
-        setIsLeaving(true);
-        const success = await leaveMatch(gameId || 'tictactoe', matchId, statusPlayerID, credentials);
-        if (!success) {
-            toast.error({ kind: 'i18n', key: 'matchRoom.leaveFailed', ns: 'lobby' });
-            setIsLeaving(false);
-            return;
-        }
-        clearMatchCredentials();
+        // 需求：保留空房间 + 不释放座位。
+        // 因为 boardgame.io 的 /leave 在无人时会 wipe(matchID) 删除房间，
+        // 所以这里不调用 leaveMatch，也不清理本地凭证。
         navigate('/');
     };
 
@@ -224,8 +230,16 @@ export const MatchRoom = () => {
         }
 
         setIsLeaving(true);
-        // 调用 leaveMatch 会让 boardgame.io 检查是否删除房间
-        await leaveMatch(gameId || 'tictactoe', matchId, statusPlayerID, credentials);
+        const ok = await destroyMatch(gameId || 'tictactoe', matchId, statusPlayerID, credentials);
+        if (!ok) {
+            // 关键：销毁失败时不要清理本地凭证，也不要跳转。
+            // 否则会出现「后端房间仍存在 + 前端以为销毁了」的累加/脏数据问题。
+            toast.error({ kind: 'i18n', key: 'matchRoom.destroy.failed', ns: 'lobby' });
+            setIsLeaving(false);
+            return;
+        }
+
+        clearMatchCredentials();
         navigate('/');
     };
 
@@ -363,6 +377,20 @@ export const MatchRoom = () => {
         };
     }, [closeModal, destroyModalId]);
 
+    useEffect(() => {
+        if (!matchStatus.error || isTutorialRoute) return;
+        const key = `matchRoom.error.${gameId ?? 'unknown'}.${matchId ?? 'unknown'}`;
+        const now = Date.now();
+        const last = errorToastRef.current;
+        if (last && last.key === key && now - last.timestamp < 3000) return;
+        errorToastRef.current = { key, timestamp: now };
+        toast.error(
+            { kind: 'text', text: matchStatus.error },
+            { kind: 'i18n', key: 'error.serviceUnavailable.title', ns: 'lobby' },
+            { dedupeKey: key }
+        );
+    }, [gameId, isTutorialRoute, matchId, matchStatus.error, toast]);
+
     if (!isGameNamespaceReady) {
         return (
             <div className="w-full h-screen bg-black flex items-center justify-center">
@@ -372,12 +400,6 @@ export const MatchRoom = () => {
     }
 
     if (matchStatus.error && !isTutorialRoute) {
-        toast.error(
-            { kind: 'text', text: matchStatus.error },
-            { kind: 'i18n', key: 'error.serviceUnavailable.title', ns: 'lobby' },
-            { dedupeKey: `matchRoom.error.${gameId ?? 'unknown'}.${matchId ?? 'unknown'}` }
-        );
-
         return (
             <div className="w-full h-screen bg-black flex items-center justify-center">
                 <div className="text-center">
@@ -414,18 +436,24 @@ export const MatchRoom = () => {
             {/* 游戏棋盘 - 全屏 */}
             <div className="w-full h-full">
                 {isTutorialRoute ? (
-                    TutorialClient ? <TutorialClient /> : (
+                    TutorialClient ? <TutorialClient playerID={null} /> : (
                         <div className="w-full h-full flex items-center justify-center text-white/50">
                             {t('matchRoom.noTutorial')}
                         </div>
                     )
                 ) : (
                     GameClient ? (
-                        <GameClient
-                            playerID={effectivePlayerID}
-                            matchID={matchId}
-                            credentials={credentials}
-                        />
+                        <RematchProvider
+                            matchId={matchId}
+                            playerId={effectivePlayerID}
+                            isMultiplayer={true}
+                        >
+                            <GameClient
+                                playerID={effectivePlayerID}
+                                matchID={matchId}
+                                credentials={credentials}
+                            />
+                        </RematchProvider>
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/50">
                             {t('matchRoom.noClient')}

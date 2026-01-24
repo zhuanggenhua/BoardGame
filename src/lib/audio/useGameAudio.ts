@@ -103,9 +103,11 @@ export function useGameAudio<G extends { cells?: unknown[] }>({
     // 组件卸载时停止 BGM
     useEffect(() => {
         return () => {
+            // 使用 context 的 stopBgm 确保 React 状态同步
+            stopBgm();
             AudioManager.stopBgm();
         };
-    }, []);
+    }, [stopBgm]);
 
     // 监听游戏结束
     useEffect(() => {

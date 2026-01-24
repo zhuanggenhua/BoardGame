@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useMemo } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { useModalStack } from '../../contexts/ModalStackContext';
@@ -39,39 +39,53 @@ export const ModalStackRoot = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [closeTop, topEntry]);
 
-    // 栈内任意条目需要时锁定 body 滚动，并补偿滚动条宽度
+    // 控制滚动锁定状态，避免动画还没结束就解锁导致页面跳动
+    const [isLocked, setIsLocked] = useState(false);
+
+    useEffect(() => {
+        if (stack.length > 0) {
+            setIsLocked(true);
+        }
+    }, [stack.length]);
+
+    // 真正的 DOM 操作副作用
     useEffect(() => {
         if (typeof document === 'undefined') return;
-        const shouldLock = stack.some((entry) => entry.lockScroll !== false);
-        if (!shouldLock) return;
-        const previousOverflow = document.body.style.overflow;
-        const previousPadding = document.body.style.paddingRight;
+
+        if (!isLocked) {
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            return;
+        };
+
         const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
         document.body.style.overflow = 'hidden';
         if (scrollbarWidth > 0) {
             document.body.style.paddingRight = `${scrollbarWidth}px`;
         }
-        return () => {
-            document.body.style.overflow = previousOverflow;
-            document.body.style.paddingRight = previousPadding;
-        };
-    }, [stack]);
+
+        // 不需要 cleanup，因为我们依靠 isLocked 状态转换来清理
+    }, [isLocked]);
 
     if (!portalRoot) return null;
 
     return createPortal(
         // Portal 容器必须显式层级，否则处于 auto 层会被页面正 z-index 覆盖
         <div className="fixed inset-0 pointer-events-none" style={{ zIndex: DEFAULT_Z_INDEX }}>
-            <AnimatePresence>
+            <AnimatePresence
+                onExitComplete={() => {
+                    // 只有当栈彻底空了，才解除锁定
+                    if (stack.length === 0) {
+                        setIsLocked(false);
+                    }
+                }}
+            >
                 {stack.map((entry, index) => {
                     const isTop = index === stack.length - 1;
                     const zIndex = entry.zIndex ?? DEFAULT_Z_INDEX + index * 10;
                     return (
-                        <motion.div
+                        <div
                             key={entry.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
                             // 非栈顶禁止交互，只保留视觉层级
                             className="fixed inset-0"
                             style={{ zIndex, pointerEvents: isTop ? 'auto' : 'none' }}
@@ -80,7 +94,7 @@ export const ModalStackRoot = () => {
                                 close: () => closeModal(entry.id),
                                 closeOnBackdrop: entry.closeOnBackdrop ?? true,
                             })}
-                        </motion.div>
+                        </div>
                     );
                 })}
             </AnimatePresence>

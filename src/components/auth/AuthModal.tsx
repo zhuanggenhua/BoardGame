@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import clsx from 'clsx';
 import { useAuth } from '../../contexts/AuthContext';
-import { ModalBase } from '../common/ModalBase';
+import { ModalBase } from '../common/overlays/ModalBase';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -65,10 +66,9 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
             open={isOpen}
             onClose={onClose}
             closeOnBackdrop={closeOnBackdrop}
-            overlayClassName="z-50 bg-[#433422]/20 transition-colors"
-            containerClassName="z-50 p-4"
+            containerClassName="p-0"
         >
-            <div className="bg-[#fcfbf9] pointer-events-auto w-full max-w-sm shadow-[0_10px_40px_rgba(67,52,34,0.1)] border border-[#e5e0d0] p-8 relative rounded-sm">
+            <div className="bg-[#fcfbf9] pointer-events-auto w-[calc(100vw-2rem)] max-w-[400px] shadow-[0_10px_40px_rgba(67,52,34,0.1)] border border-[#e5e0d0] p-6 sm:p-10 relative rounded-sm mx-4">
                 {/* Decorative Corners */}
                 <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-[#c0a080]" />
                 <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-[#c0a080]" />
@@ -97,7 +97,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-lg"
+                            className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-sm sm:text-lg"
                             placeholder={t('placeholder.username')}
                             required
                             autoFocus
@@ -112,7 +112,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-lg"
+                            className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-sm sm:text-lg"
                             placeholder="••••"
                             required
                             minLength={4}
@@ -150,13 +150,29 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                     </button>
                 </form>
 
-                <div className="mt-6 text-center">
+                <div className="mt-6 flex items-center justify-center gap-4 text-sm font-serif italic pb-2">
                     <button
                         type="button"
-                        onClick={toggleMode}
-                        className="text-sm text-[#8c7b64] hover:text-[#433422] underline decoration-1 underline-offset-4 transition-colors cursor-pointer font-serif italic"
+                        onClick={() => mode === 'register' && toggleMode()}
+                        className={clsx(
+                            "group relative cursor-pointer transition-colors px-1 py-1",
+                            mode === 'login' ? "text-[#433422] font-bold" : "text-[#8c7b64] hover:text-[#433422]"
+                        )}
                     >
-                        {t(mode === 'login' ? 'login.toggle' : 'register.toggle')}
+                        <span className="relative z-10">{t('login.toggle_to_login', { defaultValue: '登入' })}</span>
+                        <span className="underline-center h-[1px] opacity-60" />
+                    </button>
+                    <div className="w-px h-3 bg-[#c0a080] opacity-40" />
+                    <button
+                        type="button"
+                        onClick={() => mode === 'login' && toggleMode()}
+                        className={clsx(
+                            "group relative cursor-pointer transition-colors px-1 py-1",
+                            mode === 'register' ? "text-[#433422] font-bold" : "text-[#8c7b64] hover:text-[#433422]"
+                        )}
+                    >
+                        <span className="relative z-10">{t('login.toggle_to_register', { defaultValue: '注册' })}</span>
+                        <span className="underline-center h-[1px] opacity-60" />
                     </button>
                 </div>
             </div>

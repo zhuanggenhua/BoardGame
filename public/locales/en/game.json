@@ -83,12 +83,6 @@
       "activePlayer": "Active Player",
       "gameState": "Game State (G)"
     },
-    "testMode": {
-      "title": "🧪 Test Mode",
-      "description": "Auto-switch perspective after actions",
-      "enabled": "✅ Enabled - auto switch perspective",
-      "disabled": "⏸️ Disabled - manual switch"
-    },
     "reset": {
       "button": "🔄 Reset Game (Reset)",
       "hintTitle": "💡 Tip",

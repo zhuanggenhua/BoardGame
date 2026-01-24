@@ -16,7 +16,4 @@ export const TIC_TAC_TOE_AUDIO_CONFIG: GameAudioConfig = {
         hover: { src: 'common/audio/compressed/hover.ogg', volume: 0.3 },
         click: { src: 'common/audio/compressed/click.ogg', volume: 0.5 },
     },
-    moves: {
-        clickCell: 'place_x', // 默认，实际根据 playerID 决定
-    },
 };

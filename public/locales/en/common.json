@@ -17,5 +17,13 @@
   },
   "toast": {
     "close": "Close"
+  },
+  "rematch": {
+    "playAgain": "Play Again",
+    "votePlayAgain": "Play Again",
+    "cancelVote": "Cancel Vote",
+    "waitingForOpponent": "Waiting for opponent...",
+    "restarting": "Both confirmed, restarting...",
+    "backToLobby": "Back to Lobby"
   }
 }
