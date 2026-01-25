@@ -54,9 +54,40 @@ nul
 # 浏览器测试录制（可选，根据需要调整）
 .agent/recordings/
 
-# public 下的大文件资源（只提交压缩/处理后的版本）
+# 资源与美术/音效（避免远程仓库体积膨胀；资源走对象存储/CDN）
+# - public/assets/ 下允许保留少量 demo/占位文件；如需提交请用更精确的白名单规则。
+# - 如果未来引入 assets manifest（推荐），请提交 manifest 文件，但不要提交大二进制资源。
+public/assets/
 public/**/*.png
 public/**/*.jpg
+public/**/*.jpeg
+public/**/*.gif
+public/**/*.webp
+public/**/*.avif
+public/**/*.tiff
+public/**/*.bmp
+public/**/*.ico
 public/**/*.wav
+public/**/*.ogg
+public/**/*.mp3
+public/**/*.flac
+public/**/*.m4a
+public/**/*.mp4
+public/**/*.webm
 
+# 可能的 3D/模型/动画/纹理素材
+public/**/*.glb
+public/**/*.gltf
+public/**/*.fbx
+public/**/*.obj
+public/**/*.mtl
+public/**/*.blend
+public/**/*.dae
+public/**/*.stl
+public/**/*.usdz
+public/**/*.ktx
+public/**/*.ktx2
+public/**/*.hdr
+
+# 本地资源缓存（不入仓）
 BordGameAsset

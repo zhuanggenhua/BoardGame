@@ -4,6 +4,7 @@
  */
 
 import type { AbilityCard } from '../types';
+import type { RandomFn } from '../../../engine/types';
 
 const cardText = (id: string, field: 'name' | 'description') => `cards.${id}.${field}`;
 
@@ -164,16 +165,13 @@ export const MONK_CARDS: AbilityCard[] = [
 /**
  * 获取僧侣初始牌库
  * 返回洗牌后的卡牌副本
+ * @param random 引擎层随机数生成器（确保回放确定性）
  */
-export const getMonkStartingDeck = (): AbilityCard[] => {
+export const getMonkStartingDeck = (random: RandomFn): AbilityCard[] => {
     // 复制所有卡牌
     const deck = MONK_CARDS.map(card => ({ ...card }));
-    // Fisher-Yates 洗牌
-    for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-    return deck;
+    // 使用引擎层的确定性洗牌
+    return random.shuffle(deck);
 };
 
 /**

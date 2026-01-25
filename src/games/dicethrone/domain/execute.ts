@@ -26,7 +26,6 @@ import type {
     TurnChangedEvent,
     ChoiceRequestedEvent,
 } from './types';
-import { CP_MAX } from './types';
 import {
     getAvailableAbilityIds,
     getRollerId,
@@ -37,6 +36,8 @@ import {
 import { MONK_ABILITIES } from '../monk/abilities';
 import { resolveAttack, resolveOffensivePreDefenseEffects } from './attack';
 import { reduce } from './reducer';
+import { resourceSystem } from '../../../systems/ResourceSystem';
+import { RESOURCE_IDS } from '../monk/resourceConfig';
 
 // ============================================================================
 // 辅助函数
@@ -295,13 +296,18 @@ export function execute(
                     actualCost = card.cpCost - 3;
                 }
                 
-                // CP 变化事件
+                // CP 变化事件（使用 ResourceSystem 保证边界）
+                const cpResult = resourceSystem.modify(
+                    { [RESOURCE_IDS.CP]: player.cp },
+                    RESOURCE_IDS.CP,
+                    -actualCost
+                );
                 const cpEvent: CpChangedEvent = {
                     type: 'CP_CHANGED',
                     payload: { 
                         playerId: state.activePlayerId, 
-                        delta: -actualCost,
-                        newValue: player.cp - actualCost,
+                        delta: cpResult.actualDelta,
+                        newValue: cpResult.newValue,
                     },
                     sourceCommandType: command.type,
                     timestamp,
@@ -428,13 +434,18 @@ export function execute(
             if (nextPhase === 'income') {
                 const player = state.players[state.activePlayerId];
                 if (player) {
-                    // CP +1
+                    // CP +1（使用 ResourceSystem 处理上限）
+                    const cpResult = resourceSystem.modify(
+                        { [RESOURCE_IDS.CP]: player.cp },
+                        RESOURCE_IDS.CP,
+                        1
+                    );
                     const cpEvent: CpChangedEvent = {
                         type: 'CP_CHANGED',
                         payload: { 
                             playerId: state.activePlayerId, 
-                            delta: 1,
-                            newValue: Math.min(CP_MAX, player.cp + 1),
+                            delta: cpResult.actualDelta,
+                            newValue: cpResult.newValue,
                         },
                         sourceCommandType: command.type,
                         timestamp,

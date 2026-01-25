@@ -181,9 +181,16 @@ export function createGameAdapter<
 
         setup: ({ ctx, random }): MatchState<TCore> => {
             const playerIds = ctx.playOrder as PlayerId[];
-            const seed = random.Shuffle(['a', 'b', 'c', 'd']).join('');
             
-            const core = domain.setup(playerIds, seed);
+            // 封装 boardgame.io 的 random 为引擎层 RandomFn
+            const randomFn: RandomFn = {
+                random: () => random.Number(),
+                d: (max: number) => random.Die(max),
+                range: (min: number, max: number) => min + Math.floor(random.Number() * (max - min + 1)),
+                shuffle: <T>(array: T[]): T[] => random.Shuffle([...array]),
+            };
+            
+            const core = domain.setup(playerIds, randomFn);
             const sys = createInitialSystemState(playerIds, systems, undefined);
 
             return { sys, core };
@@ -247,7 +254,7 @@ export function createReplayAdapter<
     const random = createSeededRandom(seed);
 
     return {
-        setup: (playerIds: PlayerId[]) => domain.setup(playerIds, seed),
+        setup: (playerIds: PlayerId[]) => domain.setup(playerIds, random),
         execute: (state: TCore, command: TCommand) => {
             const events = domain.execute(state, command, random);
             let newState = state;

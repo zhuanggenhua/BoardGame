@@ -180,7 +180,7 @@ export interface DomainCore<
     gameId: string;
 
     /** 初始化游戏状态 */
-    setup(playerIds: PlayerId[], seed?: string): TState;
+    setup(playerIds: PlayerId[], random: RandomFn): TState;
 
     /** 验证命令合法性 */
     validate(state: TState, command: TCommand): ValidationResult;

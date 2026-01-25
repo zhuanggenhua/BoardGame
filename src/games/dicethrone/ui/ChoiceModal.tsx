@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { ModalBase } from '../../../components/common/overlays/ModalBase';
 import { STATUS_EFFECT_META, getStatusEffectIconNode } from './statusEffects';
 import type { StatusIconAtlasConfig } from './statusEffects';
 
@@ -26,8 +27,12 @@ export const ChoiceModal = ({
     if (!choice) return null;
 
     return (
-        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-slate-900/95 border border-amber-500/40 backdrop-blur-xl p-[2vw] rounded-[1.6vw] shadow-2xl max-w-[32vw] flex flex-col items-center text-center gap-[1.5vw]">
+        <ModalBase
+            closeOnBackdrop={false}
+            overlayClassName="z-[1100] bg-black/70"
+            containerClassName="z-[1101]"
+        >
+            <div className="bg-slate-900/95 border border-amber-500/40 backdrop-blur-xl p-[2vw] rounded-[1.6vw] shadow-2xl max-w-[32vw] flex flex-col items-center text-center gap-[1.5vw] pointer-events-auto">
                 <div className="flex flex-col gap-[0.6vw]">
                     <h3 className="text-[1.2vw] font-black text-white">{t('choices.title')}</h3>
                     <p className="text-[0.9vw] text-slate-400 leading-relaxed px-[1vw]">{t(choice.title)}</p>
@@ -53,6 +58,6 @@ export const ChoiceModal = ({
                     })}
                 </div>
             </div>
-        </div>
+        </ModalBase>
     );
 };

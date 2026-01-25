@@ -6,9 +6,11 @@
 import type {
     DiceThroneCore,
     DiceThroneEvent,
+    DieFace,
 } from './types';
-import { CP_MAX, INITIAL_HEALTH } from './types';
-import { getAvailableAbilityIds } from './rules';
+import { getAvailableAbilityIds, getDieFace } from './rules';
+import { resourceSystem } from '../../../systems/ResourceSystem';
+import { RESOURCE_IDS } from '../monk/resourceConfig';
 
 // ============================================================================
 // 辅助函数
@@ -43,7 +45,12 @@ const handleDiceRolled: EventHandler<Extract<DiceThroneEvent, { type: 'DICE_ROLL
     let resultIndex = 0;
     newState.dice.slice(0, newState.rollDiceCount).forEach(die => {
         if (!die.isKept && resultIndex < results.length) {
-            die.value = results[resultIndex];
+            const value = results[resultIndex];
+            die.value = value;
+            // 同步更新符号
+            const face = getDieFace(value);
+            die.symbol = face;
+            die.symbols = [face];
             resultIndex++;
         }
     });
@@ -177,8 +184,11 @@ const handlePhaseChanged: EventHandler<Extract<DiceThroneEvent, { type: 'PHASE_C
  * 重置骰子
  */
 const resetDice = (state: DiceThroneCore): void => {
+    const initialFace = getDieFace(1);
     state.dice.forEach((die, index) => {
         die.value = 1;
+        die.symbol = initialFace;
+        die.symbols = [initialFace];
         die.isKept = index >= state.rollDiceCount;
     });
 };
@@ -214,7 +224,10 @@ const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'DAMAGE_D
     
     const target = newState.players[targetId];
     if (target) {
-        target.health = Math.max(0, target.health - actualDamage);
+        // 使用 ResourceSystem 计算生命值变更
+        const hpPool = { [RESOURCE_IDS.HP]: target.health };
+        const result = resourceSystem.modify(hpPool, RESOURCE_IDS.HP, -actualDamage);
+        target.health = result.newValue;
     }
     
     if (sourceAbilityId) {
@@ -237,7 +250,10 @@ const handleHealApplied: EventHandler<Extract<DiceThroneEvent, { type: 'HEAL_APP
     
     const target = newState.players[targetId];
     if (target) {
-        target.health = Math.min(INITIAL_HEALTH, target.health + amount);
+        // 使用 ResourceSystem 计算治疗（会自动限制在最大生命值）
+        const hpPool = { [RESOURCE_IDS.HP]: target.health };
+        const result = resourceSystem.modify(hpPool, RESOURCE_IDS.HP, amount);
+        target.health = result.newValue;
     }
 
     if (sourceAbilityId) {
@@ -349,7 +365,10 @@ const handleCardSold: EventHandler<Extract<DiceThroneEvent, { type: 'CARD_SOLD' 
         if (cardIndex !== -1) {
             const [card] = player.hand.splice(cardIndex, 1);
             player.discard.push(card);
-            player.cp = Math.min(CP_MAX, player.cp + cpGained);
+            // 使用 ResourceSystem 计算 CP 增加（自动限制上限）
+            const cpPool = { [RESOURCE_IDS.CP]: player.cp };
+            const result = resourceSystem.modify(cpPool, RESOURCE_IDS.CP, cpGained);
+            player.cp = result.newValue;
         }
     }
     
@@ -374,7 +393,10 @@ const handleSellUndone: EventHandler<Extract<DiceThroneEvent, { type: 'SELL_UNDO
         if (cardIndex !== -1) {
             const [card] = player.discard.splice(cardIndex, 1);
             player.hand.push(card);
-            player.cp = Math.max(0, player.cp - 1);
+            // 使用 ResourceSystem 计算 CP 减少（自动限制下限）
+            const cpPool = { [RESOURCE_IDS.CP]: player.cp };
+            const result = resourceSystem.modify(cpPool, RESOURCE_IDS.CP, -1);
+            player.cp = result.newValue;
         }
     }
     
@@ -399,7 +421,9 @@ const handleCardPlayed: EventHandler<Extract<DiceThroneEvent, { type: 'CARD_PLAY
         if (cardIndex !== -1) {
             const [card] = player.hand.splice(cardIndex, 1);
             player.discard.push(card);
-            player.cp -= cpCost;
+            // 使用 ResourceSystem 支付 CP
+            const cpPool = { [RESOURCE_IDS.CP]: player.cp };
+            player.cp = resourceSystem.pay(cpPool, { [RESOURCE_IDS.CP]: cpCost })[RESOURCE_IDS.CP];
         }
     }
     
@@ -446,7 +470,10 @@ const handleCpChanged: EventHandler<Extract<DiceThroneEvent, { type: 'CP_CHANGED
     
     const player = newState.players[playerId];
     if (player) {
-        player.cp = newValue;
+        // 使用 ResourceSystem 设置 CP（确保边界限制）
+        const cpPool = { [RESOURCE_IDS.CP]: player.cp };
+        const result = resourceSystem.setValue(cpPool, RESOURCE_IDS.CP, newValue);
+        player.cp = result.newValue;
     }
     
     return newState;

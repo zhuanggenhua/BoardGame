@@ -1,6 +1,6 @@
 import React from 'react';
 import type { BoardProps } from 'boardgame.io/react';
-import type { AbilityCard, TurnPhase } from './types';
+import type { AbilityCard, TurnPhase, DieFace } from './types';
 import type { MatchState } from '../../engine/types';
 import type { DiceThroneCore } from './domain';
 import { useTranslation } from 'react-i18next';
@@ -131,6 +131,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
     const [statusIconAtlas, setStatusIconAtlas] = React.useState<StatusIconAtlasConfig | null>(null);
     // 额外骰子投掷展示状态
     const [bonusDieValue, setBonusDieValue] = React.useState<number | undefined>(undefined);
+    const [bonusDieFace, setBonusDieFace] = React.useState<DieFace | undefined>(undefined);
     const [showBonusDie, setShowBonusDie] = React.useState(false);
     const prevBonusDieTimestampRef = React.useRef<number | undefined>(undefined);
     const manualViewModeRef = React.useRef<'self' | 'opponent'>('self');
@@ -321,6 +322,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
         // 检测新的额外投掷结果（通过 timestamp 判断是否是新的）
         if (bonusDie && bonusDie.timestamp !== prevTimestamp) {
             setBonusDieValue(bonusDie.value);
+            setBonusDieFace(bonusDie.face);
             setShowBonusDie(true);
             prevBonusDieTimestampRef.current = bonusDie.timestamp;
         }
@@ -611,6 +613,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
             {/* 额外骰子投掷展示 */}
             <BonusDieOverlay
                 value={bonusDieValue}
+                face={bonusDieFace}
                 isVisible={showBonusDie}
                 onClose={handleBonusDieClose}
                 locale={locale}

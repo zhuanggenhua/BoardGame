@@ -53,6 +53,33 @@
 
 ---
 
+## 阶段 3+：引擎层系统扩展
+
+### 3+.1 DiceSystem 引擎层
+- [x] 创建 `src/systems/DiceSystem/types.ts` - 骰面、骰子定义、实例、触发条件
+- [x] 创建 `src/systems/DiceSystem/DiceSystem.ts` - 注册、创建、掷骰、统计
+- [x] 创建 `src/games/dicethrone/monk/diceConfig.ts` - Monk 骰子定义
+- [x] 更新 DiceThrone `Die` 接口使用新系统
+- [x] 创建 `openspec/specs/dice-system/spec.md` - 规格文档
+
+### 3+.2 CardSystem 引擎层
+- [x] 创建 `src/systems/CardSystem/types.ts` - 卡牌定义、牌组、手牌区等通用类型
+- [x] 创建 `src/systems/CardSystem/CardSystem.ts` - 实现服务
+- [ ] 迁移 DiceThrone 使用 CardSystem（可选）
+
+### 3+.4 ResourceSystem 引擎层
+- [x] 创建 `src/systems/ResourceSystem/types.ts` - 资源定义、资源池、操作类型
+- [x] 创建 `src/systems/ResourceSystem/ResourceSystem.ts` - 实现服务
+- [ ] 迁移 DiceThrone 使用 ResourceSystem（可选）
+
+### 3+.3 确定性修复
+- [x] 修改 `DomainCore.setup` 签名接收 `RandomFn`
+- [x] 修改 `adapter.ts` 传递 `RandomFn` 给 `setup`
+- [x] 修改 `getMonkStartingDeck` 使用 `RandomFn.shuffle`
+- [x] 更新 TicTacToe 兼容新签名
+
+---
+
 ## 阶段 3：DiceThrone 迁移（详细任务）
 
 ### 3.1 领域内核骨架

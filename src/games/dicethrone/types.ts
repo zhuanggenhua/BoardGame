@@ -57,9 +57,21 @@ export interface AbilityCard {
     atlasIndex?: number;
 }
 
+/**
+ * 骰子实例
+ * 扩展自引擎层 DiceSystem 的 Die 接口
+ */
 export interface Die {
     id: number;
-    value: number; // 1-6
+    /** 骰子定义 ID（如 'monk-dice'） */
+    definitionId: string;
+    /** 当前点数 (1-6) */
+    value: number;
+    /** 当前主符号（从定义解析） */
+    symbol: DieFace | null;
+    /** 当前所有符号 */
+    symbols: string[];
+    /** 是否锁定（保留不重掷） */
     isKept: boolean;
 }
 

@@ -2,9 +2,11 @@
  * DiceThrone 领域内核
  */
 
-import type { DomainCore, GameOverResult, PlayerId } from '../../../engine/types';
+import type { DomainCore, GameOverResult, PlayerId, RandomFn } from '../../../engine/types';
 import { abilityManager } from '../../../systems/AbilitySystem';
-import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent, HeroState, Die } from './types';
+import { diceSystem } from '../../../systems/DiceSystem';
+import { resourceSystem } from '../../../systems/ResourceSystem';
+import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent, HeroState, Die, DieFace } from './types';
 import { INITIAL_HEALTH, INITIAL_CP } from './types';
 import { validateCommand } from './commands';
 import { execute } from './execute';
@@ -13,9 +15,17 @@ import { playerView } from './view';
 import { MONK_ABILITIES } from '../monk/abilities';
 import { MONK_STATUS_EFFECTS } from '../monk/statusEffects';
 import { getMonkStartingDeck } from '../monk/cards';
+import { monkDiceDefinition } from '../monk/diceConfig';
+import { monkResourceDefinitions } from '../monk/resourceConfig';
 
 // 初始化技能定义，供条件系统与高亮判定使用
 abilityManager.registerAbilities(MONK_ABILITIES);
+
+// 注册 Monk 骰子定义
+diceSystem.registerDefinition(monkDiceDefinition);
+
+// 注册 Monk 资源定义
+monkResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 
 // ============================================================================
 // 领域内核定义
@@ -24,11 +34,11 @@ abilityManager.registerAbilities(MONK_ABILITIES);
 export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, DiceThroneEvent> = {
     gameId: 'dicethrone',
 
-    setup: (playerIds: PlayerId[]): DiceThroneCore => {
+    setup: (playerIds: PlayerId[], random: RandomFn): DiceThroneCore => {
         const players: Record<PlayerId, HeroState> = {};
 
         for (const pid of playerIds) {
-            const deck = getMonkStartingDeck();
+            const deck = getMonkStartingDeck(random);
             const startingHand = deck.splice(0, 3);
 
             players[pid] = {
@@ -60,11 +70,13 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
             };
         }
 
-        const dice: Die[] = Array.from({ length: 5 }, (_, index) => ({
-            id: index,
-            value: 1,
-            isKept: false,
-        }));
+        const dice: Die[] = Array.from({ length: 5 }, (_, index) => {
+            const die = diceSystem.createDie('monk-dice', { id: index, initialValue: 1 });
+            return {
+                ...die,
+                symbol: die.symbol as DieFace | null,
+            };
+        });
 
         return {
             players,

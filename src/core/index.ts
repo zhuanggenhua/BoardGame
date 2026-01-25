@@ -3,6 +3,7 @@
  */
 
 export * from './types';
+export * from './ui';
 export {
     // 注册表 API
     registerGameAssets,

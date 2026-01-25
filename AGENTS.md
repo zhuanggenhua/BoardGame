@@ -135,6 +135,13 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **后端框架封装**：`docs/framework/backend.md`（涉及后端架构/封装约定时必须先读）
 
 ### 新引擎系统注意事项（强制）
+- **新机制先检查引擎**：实现新游戏机制（如骰子、卡牌、资源）前，必须先检查 `src/systems/` 是否已有对应系统；若无，必须先在引擎层抽象通用类型和接口，再在游戏层实现。原因：UGC 游戏需要复用这些能力。
+- **引擎层系统清单**：
+  - `DiceSystem` - 骰子定义/创建/掷骰/统计/触发条件
+  - `CardSystem` - 卡牌定义/牌组/手牌区/抽牌/弃牌/洗牌
+  - `ResourceSystem` - 资源定义/增减/边界/消耗检查
+  - `AbilitySystem` - 技能定义/触发条件/效果
+  - `StatusEffectSystem` - 状态效果/堆叠/持续时间
 - **系统注册**：新系统必须在 `src/engine/systems/` 实现，并在 `src/engine/systems/index.ts` 导出；如需默认启用，必须加入 `createDefaultSystems()`。
 - **状态结构**：系统新增状态必须写入 `SystemState` 并由系统 `setup()` 初始化；禁止把系统状态塞进 `core`。
 - **命令可枚举**：凡是系统命令（如 `UNDO_COMMANDS`），**必须加入每个游戏的 `commandTypes`**，否则 `moves` 不会注入。

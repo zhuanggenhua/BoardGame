@@ -20,8 +20,10 @@ import { HAND_LIMIT, PHASE_ORDER } from './types';
 
 /**
  * 根据骰子值获取骰面类型
+ * 优先使用 DiceSystem，兼容旧代码回退到硬编码映射
  */
 export const getDieFace = (value: number): DieFace => {
+    // 硬编码映射作为回退（兼容无 definitionId 的场景）
     if (value === 1 || value === 2) return 'fist';
     if (value === 3) return 'palm';
     if (value === 4 || value === 5) return 'taiji';
@@ -30,11 +32,13 @@ export const getDieFace = (value: number): DieFace => {
 
 /**
  * 统计活跃骰子的各骰面数量
+ * 优先使用 die.symbol，回退到 getDieFace
  */
 export const getFaceCounts = (dice: Die[]): Record<DieFace, number> => {
     return dice.reduce(
         (acc, die) => {
-            const face = getDieFace(die.value);
+            // 优先使用已解析的 symbol，回退到 getDieFace
+            const face = (die.symbol as DieFace) || getDieFace(die.value);
             acc[face] += 1;
             return acc;
         },

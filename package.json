@@ -18,7 +18,9 @@
     "pdf:md": "node scripts/pdf_to_md.js",
     "compress:images": "node scripts/compress_images.js",
     "compress:audio": "node scripts/compress_audio.js",
-    "atlas:scan": "node scripts/atlas_grid_scan.js"
+    "atlas:scan": "node scripts/atlas_grid_scan.js",
+    "test": "tsx src/games/**/__tests__/**/*.test.ts",
+    "test:tictactoe": "tsx src/games/tictactoe/__tests__/flow.test.ts"
   },
   "dependencies": {
     "@koa/cors": "^5.0.0",
