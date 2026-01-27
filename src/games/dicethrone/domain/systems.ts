@@ -31,6 +31,19 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
             let newState = state;
             const nextEvents: GameEvent[] = [];
 
+            // 检查是否需要自动推进阶段
+            const hasTokenResponseClosed = events.some(e => e.type === 'TOKEN_RESPONSE_CLOSED');
+            const hasInteractionCompleted = events.some(e => e.type === 'INTERACTION_COMPLETED');
+            const hasInteractionCancelled = events.some(e => e.type === 'INTERACTION_CANCELLED');
+
+            console.log('[DiceThroneEventSystem] afterEvents:', {
+                eventTypes: events.map(e => e.type),
+                hasTokenResponseClosed,
+                hasInteractionCompleted,
+                hasInteractionCancelled,
+                currentPhase: state.core.turnPhase,
+            });
+
             for (const event of events) {
                 const dtEvent = event as DiceThroneEvent;
                 
@@ -77,6 +90,37 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 }
             }
 
+            // 处理 TOKEN_RESPONSE_CLOSED 和交互完成事件的自动推进
+            if (hasTokenResponseClosed || hasInteractionCompleted || hasInteractionCancelled) {
+                const core = state.core;
+                
+                // 检查是否有阻塞条件
+                const hasActivePrompt = newState.sys.prompt?.current !== undefined;
+                const hasActiveResponseWindow = newState.sys.responseWindow?.current !== undefined;
+                const hasPendingInteraction = core.pendingInteraction !== undefined;
+                const hasPendingDamage = core.pendingDamage !== undefined;
+                
+                console.log('[DiceThroneEventSystem] Checking auto-continue conditions:', {
+                    hasActivePrompt,
+                    hasActiveResponseWindow,
+                    hasPendingInteraction,
+                    hasPendingDamage,
+                });
+                
+                // 只有在没有其他阻塞条件时才自动推进阶段
+                if (!hasActivePrompt && !hasActiveResponseWindow && !hasPendingInteraction && !hasPendingDamage) {
+                    console.log('[DiceThroneEventSystem] Auto-advancing phase from:', core.turnPhase);
+                    
+                    // 生成 PHASE_CHANGED 事件来推进阶段
+                    const followupEvents = buildAutoContinueEvents(core, random);
+                    if (followupEvents.length > 0) {
+                        nextEvents.push(...followupEvents);
+                    }
+                } else {
+                    console.log('[DiceThroneEventSystem] Auto-continue blocked');
+                }
+            }
+
             if (newState !== state || nextEvents.length > 0) {
                 return {
                     state: newState,
@@ -85,6 +129,50 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
             }
         },
     };
+}
+
+/**
+ * 构建自动继续事件（当 Token 响应关闭或交互完成后）
+ */
+function buildAutoContinueEvents(
+    core: DiceThroneCore,
+    random: RandomFn
+): DiceThroneEvent[] {
+    const followups: DiceThroneEvent[] = [];
+    
+    // 在 defensiveRoll 阶段，如果攻击已经结算，则推进到 main2
+    if (core.turnPhase === 'defensiveRoll' && !core.pendingAttack) {
+        const phaseEvent: PhaseChangedEvent = {
+            type: 'PHASE_CHANGED',
+            payload: {
+                from: core.turnPhase,
+                to: 'main2',
+                activePlayerId: core.activePlayerId,
+            },
+            sourceCommandType: 'AUTO_CONTINUE',
+            timestamp: now(),
+        };
+        followups.push(phaseEvent);
+        return followups;
+    }
+    
+    // 在 offensiveRoll 阶段，如果攻击已经结算且不可防御，则推进到 main2
+    if (core.turnPhase === 'offensiveRoll' && !core.pendingAttack) {
+        const phaseEvent: PhaseChangedEvent = {
+            type: 'PHASE_CHANGED',
+            payload: {
+                from: core.turnPhase,
+                to: 'main2',
+                activePlayerId: core.activePlayerId,
+            },
+            sourceCommandType: 'AUTO_CONTINUE',
+            timestamp: now(),
+        };
+        followups.push(phaseEvent);
+        return followups;
+    }
+    
+    return followups;
 }
 
 /**

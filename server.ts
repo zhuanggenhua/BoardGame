@@ -187,7 +187,11 @@ const RAW_WEB_ORIGINS = (process.env.WEB_ORIGINS || '')
     .map(s => s.trim())
     .filter(Boolean);
 
-const SERVER_ORIGINS = RAW_WEB_ORIGINS.length > 0 ? RAW_WEB_ORIGINS : [Origins.LOCALHOST];
+// boardgame.io 内置 CORS（@koa/cors）会把不允许的 Origin 写成空字符串，浏览器会直接报 CORS。
+// 默认 Origins.LOCALHOST 只匹配 localhost:*，不包含 127.0.0.1:*。
+// 开发环境下我们允许 localhost 与 127.0.0.1 的任意端口。
+const DEV_GAME_ORIGINS = [Origins.LOCALHOST, /127\.0\.0\.1:\d+/];
+const SERVER_ORIGINS = RAW_WEB_ORIGINS.length > 0 ? RAW_WEB_ORIGINS : DEV_GAME_ORIGINS;
 
 const DEV_LOBBY_CORS_ORIGINS = [
     'http://localhost:5173',

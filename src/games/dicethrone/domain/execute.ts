@@ -105,7 +105,24 @@ export function execute(
     const events: DiceThroneEvent[] = [];
     const timestamp = now();
 
-    // 系统命令只由系统层处理，领域层不生成事件
+    // 处理作弊命令：根据索引发牌
+    if (command.type === 'SYS_CHEAT_DEAL_CARD_BY_INDEX') {
+        const payload = (command as any).payload as { playerId: string; deckIndex: number };
+        const player = state.players[payload.playerId];
+        if (player && payload.deckIndex >= 0 && payload.deckIndex < player.deck.length) {
+            const card = player.deck[payload.deckIndex];
+            const event: CardDrawnEvent = {
+                type: 'CARD_DRAWN',
+                payload: { playerId: payload.playerId, cardId: card.id },
+                sourceCommandType: command.type,
+                timestamp,
+            };
+            events.push(event);
+        }
+        return events;
+    }
+
+    // 其他系统命令只由系统层处理，领域层不生成事件
     if (command.type.startsWith('SYS_')) {
         return events;
     }

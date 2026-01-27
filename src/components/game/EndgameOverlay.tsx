@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useDeferredRender } from '../../hooks/ui/useDeferredRender';
 import { useDelayedBackdropBlur } from '../../hooks/ui/useDelayedBackdropBlur';
+import { useMatchRoomExit } from '../../contexts/MatchRoomExitContext';
 import { RematchActions, type RematchActionsProps } from './RematchActions';
 
 export interface GameOverResult {
@@ -137,6 +138,7 @@ export function EndgameOverlay({
     const contentReady = useDeferredRender(shouldShow);
     const blurEnabled = useDelayedBackdropBlur(shouldShow, OVERLAY_FADE_MS);
     const prevGameOverRef = useRef(false);
+    const matchRoomExit = useMatchRoomExit();
 
     // 仅在 isGameOver 从 false → true 时触发显示，并冻结 result
     useEffect(() => {
@@ -167,6 +169,7 @@ export function EndgameOverlay({
         totalPlayers,
         rematchState,
         onVote,
+        onBackToLobby: matchRoomExit?.exitToLobby,
     };
 
     const overlayContent = (

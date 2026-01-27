@@ -28,6 +28,8 @@ export interface RematchActionsProps {
     rematchState?: RematchVoteState;
     /** 投票回调（多人模式，调用 socket.vote） */
     onVote?: () => void;
+    /** 返回大厅回调（多人模式应该在这里执行 leave/destroy），不传则仅导航 */
+    onBackToLobby?: () => void | Promise<void>;
 }
 
 export function RematchActions({
@@ -38,6 +40,7 @@ export function RematchActions({
     totalPlayers,
     rematchState,
     onVote,
+    onBackToLobby,
 }: RematchActionsProps): React.ReactElement {
     const { t } = useTranslation('common');
     const navigate = useNavigate();
@@ -72,6 +75,10 @@ export function RematchActions({
     };
 
     const handleBackToLobby = () => {
+        if (onBackToLobby) {
+            void onBackToLobby();
+            return;
+        }
         navigate('/');
     };
 
