@@ -98,6 +98,7 @@ export class FriendService {
 
     async searchUsers(currentUserId: string, query: string) {
         const keyword = query.trim();
+        
         if (!keyword) return [] as Array<{ id: string; username: string; status: 'none' | 'pending' | 'incoming' | 'accepted' } >;
 
         const users = await this.userModel
@@ -109,6 +110,7 @@ export class FriendService {
             .select('username')
             .lean();
 
+        
         if (users.length === 0) return [] as Array<{ id: string; username: string; status: 'none' | 'pending' | 'incoming' | 'accepted' }>;
 
         const userIds = users.map(user => user._id.toString());
@@ -152,6 +154,7 @@ export class FriendService {
     }
 
     async createRequest(userId: string, targetUserId: string): Promise<FriendRequestResult> {
+        
         if (userId === targetUserId) {
             return { ok: false, code: 'self' };
         }
@@ -161,6 +164,7 @@ export class FriendService {
             this.userModel.findById(targetUserId).select('username').lean(),
         ]);
 
+        
         if (!targetUser || !fromUser) {
             return { ok: false, code: 'userNotFound' };
         }

@@ -1,11 +1,17 @@
 {
   "controls": {
     "undo": {
-      "waiting": "Waiting for approval...",
-      "cancel": "Cancel",
+      "expand": "Expand Undo",
+      "collapse": "Collapse Undo",
+      "title": "Undo Control",
+      "waiting": "Waiting for opponent approval...",
+      "cancel": "Cancel Request",
       "opponentRequest": "Opponent requested undo",
+      "reviewHint": "Your opponent wants to undo their last move. Agree?",
       "approve": "Approve",
       "reject": "Reject",
+      "requestHint": "You can request to undo your last move",
+      "historyCount": "{{count}} move(s) available",
       "request": "Request Undo"
     }
   },
@@ -21,6 +27,7 @@
       "self": "You",
       "connected": "Connected",
       "waiting": "Waiting...",
+      "player": "Player {{id}}",
       "opponent": "Opponent",
       "offline": "Offline",
       "searching": "Searching",
@@ -55,6 +62,27 @@
   "debug": {
     "toggleTitle": "Dev Debug",
     "panelTitle": "🛠️ Debug Console",
+    "moves": {
+      "ROLL_DICE": "Roll Dice",
+      "ROLL_BONUS_DIE": "Roll Bonus Die",
+      "TOGGLE_DIE_LOCK": "Toggle Die Lock",
+      "CONFIRM_ROLL": "Confirm Roll",
+      "SELECT_ABILITY": "Select Ability",
+      "DRAW_CARD": "Draw Card",
+      "DISCARD_CARD": "Discard Card",
+      "SELL_CARD": "Sell Card",
+      "UNDO_SELL_CARD": "Undo Sell",
+      "REORDER_CARD_TO_END": "Reorder to End",
+      "PLAY_CARD": "Play Card",
+      "PLAY_UPGRADE_CARD": "Play Upgrade",
+      "RESOLVE_CHOICE": "Resolve Choice",
+      "ADVANCE_PHASE": "Advance Phase",
+      "RESPONSE_PASS": "Pass Response",
+      "SYS_CHEAT_SET_RESOURCE": "Set Resource",
+      "SYS_CHEAT_ADD_RESOURCE": "Add Resource",
+      "SYS_CHEAT_SET_PHASE": "Set Phase",
+      "SYS_CHEAT_SET_DICE": "Set Dice"
+    },
     "viewLabel": "View:",
     "spectator": "Spectator",
     "tabs": {
@@ -84,9 +112,13 @@
       "gameState": "Game State (G)"
     },
     "reset": {
-      "button": "🔄 Reset Game (Reset)",
+      "button": "🔄 Reset Game",
+      "newRoom": "🆕 New Room",
+      "creating": "Creating...",
+      "linkCopied": "New room link copied! Please share with your opponent.",
+      "shareLinkManually": "Please copy and share this link with your opponent:",
       "hintTitle": "💡 Tip",
-      "hintDescription": "Reset clears local cache and reloads the page."
+      "hintDescription": "Local mode: Reset starts a new game. Online mode: Create new room and copy link."
     },
     "tools": {
       "gameSpecific": "Game Specific Tools"

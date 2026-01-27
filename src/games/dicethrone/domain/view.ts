@@ -17,24 +17,34 @@ const hideCardContent = (card: AbilityCard): AbilityCard => ({
 });
 
 /**
+ * 补全缺失字段（向后兼容旧状态）
+ */
+const ensurePlayerFields = (player: HeroState): HeroState => ({
+    ...player,
+    upgradeCardByAbilityId: player.upgradeCardByAbilityId ?? {},
+});
+
+/**
  * 过滤玩家状态视图
  */
 const filterPlayerView = (
     player: HeroState,
     isOwner: boolean
 ): HeroState => {
+    const normalized = ensurePlayerFields(player);
+    
     if (isOwner) {
         // 自己的状态完全可见
-        return player;
+        return normalized;
     }
 
     // 对手：隐藏手牌内容、牌库内容
     return {
-        ...player,
-        hand: player.hand.map(hideCardContent),
-        deck: player.deck.map(hideCardContent),
+        ...normalized,
+        hand: normalized.hand.map(hideCardContent),
+        deck: normalized.deck.map(hideCardContent),
         // 弃牌堆公开可见
-        discard: player.discard,
+        discard: normalized.discard,
     };
 };
 

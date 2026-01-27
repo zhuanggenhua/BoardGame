@@ -1,12 +1,18 @@
 {
   "controls": {
     "undo": {
-      "waiting": "等待批准中...",
-      "cancel": "取消",
-      "opponentRequest": "对手请求撤销",
-      "approve": "接受",
+      "expand": "展开撤回",
+      "collapse": "收起撤回",
+      "title": "撤回操作",
+      "waiting": "等待对方批准...",
+      "cancel": "取消申请",
+      "opponentRequest": "对方请求撤回",
+      "reviewHint": "对方想要撤回上一步操作，是否同意？",
+      "approve": "同意",
       "reject": "拒绝",
-      "request": "撤销操作"
+      "requestHint": "可以请求撤回上一步操作",
+      "historyCount": "可撤回 {{count}} 步",
+      "request": "申请撤回"
     }
   },
   "hud": {
@@ -21,6 +27,7 @@
       "self": "本人",
       "connected": "已连接",
       "waiting": "等待中...",
+      "player": "玩家{{id}}",
       "opponent": "对手",
       "offline": "离线",
       "searching": "搜索中",
@@ -32,7 +39,8 @@
     "actions": {
       "destroy": "结束游戏并销毁房间",
       "leaveKeep": "离开房间 (保持开启)",
-      "backToLobby": "返回大厅"
+      "backToLobby": "返回大厅",
+      "social": "好友"
     },
     "toggle": {
       "collapse": "收起菜单",
@@ -55,6 +63,27 @@
   "debug": {
     "toggleTitle": "开发调试",
     "panelTitle": "🛠️ 调试控制台",
+    "moves": {
+      "ROLL_DICE": "掷骰子",
+      "ROLL_BONUS_DIE": "掷额外骰",
+      "TOGGLE_DIE_LOCK": "锁定骰子",
+      "CONFIRM_ROLL": "确认掷骰",
+      "SELECT_ABILITY": "选择技能",
+      "DRAW_CARD": "抽牌",
+      "DISCARD_CARD": "弃牌",
+      "SELL_CARD": "售卖卡牌",
+      "UNDO_SELL_CARD": "撤回售卖",
+      "REORDER_CARD_TO_END": "卡牌置底",
+      "PLAY_CARD": "打出卡牌",
+      "PLAY_UPGRADE_CARD": "升级卡牌",
+      "RESOLVE_CHOICE": "确认选择",
+      "ADVANCE_PHASE": "推进阶段",
+      "RESPONSE_PASS": "跳过响应",
+      "SYS_CHEAT_SET_RESOURCE": "设置资源",
+      "SYS_CHEAT_ADD_RESOURCE": "增加资源",
+      "SYS_CHEAT_SET_PHASE": "设置阶段",
+      "SYS_CHEAT_SET_DICE": "设置骰子"
+    },
     "viewLabel": "视角:",
     "spectator": "旁观",
     "tabs": {
@@ -84,9 +113,13 @@
       "gameState": "游戏状态 (G)"
     },
     "reset": {
-      "button": "🔄 重置游戏 (Reset)",
+      "button": "🔄 重置游戏",
+      "newRoom": "🆕 创建新房间",
+      "creating": "创建中...",
+      "linkCopied": "新房间链接已复制到剪贴板，请发送给对手！",
+      "shareLinkManually": "请复制以下链接发送给对手：",
       "hintTitle": "💡 提示",
-      "hintDescription": "重置操作将清除本地缓存并刷新页面。"
+      "hintDescription": "本地模式：重置将开始新局游戏。联机模式：创建新房间并复制链接。"
     },
     "tools": {
       "gameSpecific": "游戏专用工具"

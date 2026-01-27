@@ -139,4 +139,8 @@ export interface SpotlightSkeletonProps {
     showCloseButton?: boolean;
     /** 关闭按钮渲染函数 */
     renderCloseButton?: (onClose: () => void) => ReactNode;
+    /** 确认按钮延迟显示时间 (ms)，设置后会在 description 下方显示确认按钮 */
+    confirmButtonDelay?: number;
+    /** 确认按钮渲染函数 */
+    renderConfirmButton?: (onClose: () => void) => ReactNode;
 }

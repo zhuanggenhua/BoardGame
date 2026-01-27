@@ -40,6 +40,11 @@ export {
     // 便捷评估函数
     evaluateTriggerCondition,
     evaluateEffectCondition,
+    // 游戏扩展条件评估器（供游戏层注册使用）
+    evaluateDiceSet,
+    evaluateSmallStraight,
+    evaluateLargeStraight,
+    evaluatePhase,
 } from './conditions';
 
 // 类型定义

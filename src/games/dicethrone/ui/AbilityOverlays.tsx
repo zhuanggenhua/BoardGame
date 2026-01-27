@@ -4,6 +4,7 @@ import { buildLocalizedImageSet } from '../../../core';
 import { ASSETS } from './assets';
 import type { CardAtlasConfig } from './cardAtlas';
 import { getCardAtlasStyle } from './cardAtlas';
+import { MONK_CARDS } from '../monk/cards';
 
 const INITIAL_SLOTS = [
     { id: 'fist', index: 0, x: 0.1, y: 1.5, w: 20.8, h: 38.5 },
@@ -18,14 +19,31 @@ const INITIAL_SLOTS = [
 ];
 
 const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] }> = {
-    fist: { labelKey: 'abilitySlots.fist', ids: ['fist-technique-5', 'fist-technique-4', 'fist-technique-3'] },
-    chi: { labelKey: 'abilitySlots.chi', ids: ['zen-forget'] },
-    sky: { labelKey: 'abilitySlots.sky', ids: ['harmony'] },
-    lotus: { labelKey: 'abilitySlots.lotus', ids: ['lotus-palm'] },
-    combo: { labelKey: 'abilitySlots.combo', ids: ['taiji-combo'] },
-    lightning: { labelKey: 'abilitySlots.lightning', ids: ['thunder-strike'] },
-    calm: { labelKey: 'abilitySlots.calm', ids: ['calm-water'] },
-    meditate: { labelKey: 'abilitySlots.meditate', ids: ['meditation'] },
+    // 拳术：基础(3/4/5拳)、II级(2-3/2-4/2-5拳)、III级(3-3/3-4/3-5拳)
+    fist: { labelKey: 'abilitySlots.fist', ids: [
+        'fist-technique-5', 'fist-technique-4', 'fist-technique-3',
+        'fist-technique-2-5', 'fist-technique-2-4', 'fist-technique-2-3',
+        'fist-technique-3-5', 'fist-technique-3-4', 'fist-technique-3-3',
+    ] },
+    // 物我两忘：基础、II级
+    chi: { labelKey: 'abilitySlots.chi', ids: ['zen-forget', 'zen-forget-2'] },
+    // 天人合一：基础、II级
+    sky: { labelKey: 'abilitySlots.sky', ids: ['harmony', 'harmony-2'] },
+    // 莲花掌：基础、II级(4/5/3莲花)
+    lotus: { labelKey: 'abilitySlots.lotus', ids: [
+        'lotus-palm',
+        'lotus-palm-2-5', 'lotus-palm-2-4', 'lotus-palm-2-3',
+    ] },
+    // 太极连环掌：基础、II级
+    combo: { labelKey: 'abilitySlots.combo', ids: ['taiji-combo', 'taiji-combo-2'] },
+    // 雷霆万钧：基础、II级
+    lightning: { labelKey: 'abilitySlots.lightning', ids: ['thunder-strike', 'thunder-strike-2'] },
+    // 心如止水：基础、II级
+    calm: { labelKey: 'abilitySlots.calm', ids: ['calm-water', 'calm-water-2'] },
+    // 冒想：基础、II级、III级
+    meditate: { labelKey: 'abilitySlots.meditate', ids: ['meditation', 'meditation-2', 'meditation-3'] },
+    // 终极技能：超越（需要5莲花）
+    ultimate: { labelKey: 'abilitySlots.ultimate', ids: ['transcendence'] },
 };
 
 export const getAbilitySlotId = (abilityId: string) => {
@@ -48,16 +66,27 @@ const SLOT_TO_ABILITY_ID: Record<string, string> = {
     meditate: 'meditation',
 };
 
-// 升级卡图片映射: (abilityId, level) -> 卡牌 atlasIndex
-const UPGRADE_CARD_ATLAS_INDEX: Record<string, Record<number, number>> = {
-    'fist-technique': { 2: 13, 3: 14 },      // card-thrust-punch-2, card-thrust-punch-3
-    'meditation': { 2: 7, 3: 5 },            // card-meditation-2, card-meditation-3
-    'calm-water': { 2: 8 },                   // card-zen-fist-2
-    'thunder-strike': { 2: 9 },               // card-storm-assault-2
-    'taiji-combo': { 2: 10 },                 // card-combo-punch-2
-    'lotus-palm': { 2: 11 },                  // card-lotus-bloom-2
-    'harmony': { 2: 12 },                     // card-mahayana-2
-    'zen-forget': { 2: 15 },                  // card-contemplation-2
+/**
+ * 从卡牌定义中动态查找升级卡的 atlasIndex
+ * @param abilityId 目标技能 ID
+ * @param level 升级后的等级
+ * @returns 对应升级卡的 atlasIndex，未找到返回 undefined
+ */
+const getUpgradeCardAtlasIndex = (abilityId: string, level: number): number | undefined => {
+    for (const card of MONK_CARDS) {
+        if (card.type !== 'upgrade' || !card.effects) continue;
+        for (const effect of card.effects) {
+            const action = effect.action;
+            if (
+                action?.type === 'replaceAbility' &&
+                action.targetAbilityId === abilityId &&
+                action.newAbilityLevel === level
+            ) {
+                return card.atlasIndex;
+            }
+        }
+    }
+    return undefined;
 };
 
 export const AbilityOverlays = ({
@@ -140,7 +169,7 @@ export const AbilityOverlays = ({
                 const isResolved = resolveAbilityId(slot.id);
                 const baseAbilityId = SLOT_TO_ABILITY_ID[slot.id];
                 const level = baseAbilityId ? (abilityLevels?.[baseAbilityId] ?? 1) : 1;
-                const upgradeAtlasIndex = baseAbilityId ? UPGRADE_CARD_ATLAS_INDEX[baseAbilityId]?.[level] : undefined;
+                const upgradeAtlasIndex = baseAbilityId && level > 1 ? getUpgradeCardAtlasIndex(baseAbilityId, level) : undefined;
                 const mapping = ABILITY_SLOT_MAP[slot.id];
                 const slotLabel = mapping ? t(mapping.labelKey) : slot.id;
                 const isAbilitySelected = !isEditing && selectedAbilityId === isResolved;
@@ -200,11 +229,19 @@ export const AbilityOverlays = ({
                             </>
                         )}
                         {shouldHighlight && (
-                            <div className="absolute inset-0 rounded-lg border-[2px] border-amber-400/80 shadow-[0_0_24px_rgba(251,191,36,0.65)] pointer-events-none z-10" />
+                            <div className={`absolute inset-0 rounded-lg border-[2.5px] pointer-events-none z-10 animate-pulse ${
+                                isUltimate 
+                                    ? 'border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.8),0_0_40px_rgba(251,191,36,0.4),inset_0_0_15px_rgba(251,191,36,0.3)]' 
+                                    : 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.8),0_0_40px_rgba(34,211,238,0.4)]'
+                            }`} />
                         )}
                         {isAbilitySelected && (
-                            <div className="absolute inset-0 rounded-lg border-[4px] border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.8)] pointer-events-none z-10">
-                                <div className="absolute -inset-[2px] rounded-lg border-2 border-white/50 animate-pulse" />
+                            <div className={`absolute inset-0 rounded-lg border-[3px] pointer-events-none z-10 ${
+                                isUltimate
+                                    ? 'border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.9),0_0_50px_rgba(245,158,11,0.5)]'
+                                    : 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.9),0_0_50px_rgba(16,185,129,0.5)]'
+                            }`}>
+                                <div className="absolute -inset-[2px] rounded-lg border-2 border-white/60 animate-pulse" />
                             </div>
                         )}
                         {isEditing && (

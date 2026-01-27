@@ -27,7 +27,7 @@ export const HandArea = ({
     locale,
     atlas,
     currentPhase,
-    playerCp = 0,
+    playerCp: _playerCp = 0,
     onPlayCard,
     onSellCard,
     onError,
@@ -66,7 +66,6 @@ export const HandArea = ({
     const { t } = useTranslation('game-dicethrone');
     const [draggingCardId, setDraggingCardId] = React.useState<string | null>(null);
     const dragOffsetRef = React.useRef({ x: 0, y: 0 });
-    const dragReleaseTimerRef = React.useRef<number | null>(null);
     const draggingCardRef = React.useRef<AbilityCard | null>(null);
     const dragEndHandledRef = React.useRef(false);
     const [showSellHint, setShowSellHint] = React.useState(false);
@@ -99,7 +98,7 @@ export const HandArea = ({
         return next;
     }, []);
 
-    const resetDragValues = React.useCallback((cardId: string, source: 'drag' | 'window') => {
+    const resetDragValues = React.useCallback((cardId: string, _source: 'drag' | 'window') => {
         const values = dragValueMapRef.current.get(cardId);
         if (!values) return;
         animate(values.x, 0, { duration: 0.25, ease: 'easeOut' });
@@ -463,7 +462,7 @@ export const HandArea = ({
     };
 
     React.useEffect(() => {
-        const handlePointerEnd = (event: PointerEvent) => {
+        const handlePointerEnd = (_event: PointerEvent) => {
             if (!draggingCardRef.current || dragEndHandledRef.current) return;
             handleDragEnd(draggingCardRef.current, 'window');
         };
@@ -506,7 +505,8 @@ export const HandArea = ({
                         // 弃牌模式下禁用拖拽，改用点击
                         const canDrag = canInteract && isFlipped && !isReturning && !isDiscardMode;
                         const canClickDiscard = isDiscardMode && isFlipped && !isReturning;
-                        const isHovered = hoveredCardId === card.id && (canDrag || canClickDiscard) && !isDragging && !isReturning;
+                        // 动画期间（dealing/returning）统一禁用 hover
+                        const isHovered = hoveredCardId === card.id && (canDrag || canClickDiscard) && !isDragging && !isReturning && !isDealing;
                         const dragValues = getDragValues(card.id);
 
                                         return (
@@ -605,7 +605,7 @@ export const HandArea = ({
                                                 relative w-full h-full rounded-[0.8vw] shadow-2xl
                                                 ${isDragging ? 'ring-4 ring-amber-400 shadow-amber-500/50' : ''}
                                                 ${canClickDiscard && isHovered ? 'ring-4 ring-red-500 shadow-red-500/50' : ''}
-                                                ${canClickDiscard && !isHovered ? 'ring-2 ring-red-500/50 animate-pulse' : ''}
+                                                ${canClickDiscard && !isHovered ? 'ring-2 ring-red-500/50' : ''}
                                             `}
                                             style={{ transformStyle: 'preserve-3d' }}
                                             initial={{ rotateY: isFlipped ? 0 : 180 }}

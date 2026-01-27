@@ -24,6 +24,19 @@ import type {
 } from './types';
 import type { EngineSystem, GameSystemsConfig } from './systems/types';
 
+function sortSystems<TCore>(systems: EngineSystem<TCore>[]): EngineSystem<TCore>[] {
+    // 稳定排序：priority 越小越先执行；priority 相同按传入顺序
+    return systems
+        .map((system, index) => ({ system, index }))
+        .sort((a, b) => {
+            const pa = a.system.priority ?? 100;
+            const pb = b.system.priority ?? 100;
+            if (pa !== pb) return pa - pb;
+            return a.index - b.index;
+        })
+        .map((x) => x.system);
+}
+
 // ============================================================================
 // 管线配置
 // ============================================================================
@@ -61,6 +74,8 @@ export function createInitialSystemState(
     systems: EngineSystem[],
     matchId?: string
 ): SystemState {
+    const sortedSystems = sortSystems(systems);
+
     let sys: SystemState = {
         schemaVersion: 1,
         matchId,
@@ -79,12 +94,15 @@ export function createInitialSystemState(
             votes: {},
             ready: false,
         },
+        responseWindow: {
+            current: undefined,
+        },
         turnNumber: 0,
-        phase: undefined,
+        phase: '',
     };
 
-    // 让每个系统初始化自己的状态
-    for (const system of systems) {
+    // 让每个系统初始化自己的状态（按 priority 排序）
+    for (const system of sortedSystems) {
         if (system.setup) {
             const partial = system.setup(playerIds);
             sys = { ...sys, ...partial };
@@ -154,7 +172,9 @@ export function executePipeline<
     random: RandomFn,
     playerIds: PlayerId[]
 ): PipelineResult<TCore> {
-    const { domain, systems } = config;
+    const { domain } = config;
+    const systems = sortSystems(config.systems);
+
     let currentState = state;
     const allEvents: GameEvent[] = [];
     const preCommandEvents: GameEvent[] = [];
@@ -171,36 +191,100 @@ export function executePipeline<
 
     // 1. 执行 Systems.beforeCommand hooks
     for (const system of systems) {
-        if (system.beforeCommand) {
-            const result = system.beforeCommand(ctx);
-            if (result) {
-                if (result.halt) {
-                    return {
-                        success: !result.error,
-                        state: result.state ?? currentState,
-                        events: allEvents,
-                        error: result.error,
-                    };
+        if (!system.beforeCommand) continue;
+
+        const result = system.beforeCommand(ctx);
+        if (!result) continue;
+
+        // 先应用 state / events，再决定是否 halt
+        if (result.state) {
+            currentState = result.state;
+            ctx.state = currentState;
+        }
+        if (result.events && result.events.length > 0) {
+            allEvents.push(...result.events);
+            preCommandEvents.push(...result.events);
+        }
+
+        if (result.halt) {
+            // 有错误：立即返回，不再执行后续
+            if (result.error) {
+                return {
+                    success: false,
+                    state: currentState,
+                    events: allEvents,
+                    error: result.error,
+                };
+            }
+
+            // 无错误：命令被系统消费。此时需要：
+            // 1) 将系统产生的非 SYS_ 事件写入 core（确定性 reducer）
+            // 2) 仍然执行 afterEvents hooks（例如：打开响应窗口、记录日志）
+            // 注意：SYS_PHASE_CHANGED 需要传递给 reducer 以同步 core.turnPhase
+            const reducible = preCommandEvents.filter((e) => 
+                !e.type.startsWith('SYS_') || e.type === 'SYS_PHASE_CHANGED'
+            );
+            if (reducible.length > 0) {
+                let core = currentState.core;
+                for (const ev of reducible) {
+                    core = domain.reduce(core, ev as unknown as TEvent);
                 }
-                if (result.state) {
-                    currentState = result.state;
+                currentState = { ...currentState, core };
+                ctx.state = currentState;
+            }
+
+            ctx.events = [...preCommandEvents];
+
+            // 执行 afterEvents hooks
+            for (const s of systems) {
+                if (!s.afterEvents) continue;
+                const r = s.afterEvents(ctx);
+                if (r?.state) {
+                    currentState = r.state;
                     ctx.state = currentState;
                 }
-                if (result.events) {
-                    allEvents.push(...result.events);
-                    preCommandEvents.push(...result.events);
+                if (r?.events && r.events.length > 0) {
+                    allEvents.push(...r.events);
+                    systemEventsToReduce.push(...r.events);
                 }
             }
+
+            if (systemEventsToReduce.length > 0) {
+                // 注意：SYS_PHASE_CHANGED 需要传递给 reducer 以同步 core.turnPhase
+                const reducibleEvents = systemEventsToReduce.filter((e) => 
+                    !e.type.startsWith('SYS_') || e.type === 'SYS_PHASE_CHANGED'
+                );
+                if (reducibleEvents.length > 0) {
+                    let core = currentState.core;
+                    for (const ev of reducibleEvents) {
+                        core = domain.reduce(core, ev as unknown as TEvent);
+                    }
+                    currentState = { ...currentState, core };
+                    ctx.state = currentState;
+                }
+            }
+
+            return {
+                success: true,
+                state: currentState,
+                events: allEvents,
+            };
         }
     }
 
     // 2. Core.validate
     // 本地同屏：跳过权限校验，但保留规则校验（避免非法动作直通）
     if (command.skipValidation) {
-        const validation: ValidationResult = domain.validate(currentState.core, command);
+        const validation: ValidationResult = domain.validate(currentState, command);
         if (!validation.valid) {
             // 本地同屏允许越权操作，但不允许违反规则
             if (validation.error !== 'player_mismatch') {
+                console.warn('[Pipeline] 命令验证失败 (skipValidation=true):', {
+                    commandType: command.type,
+                    playerId: command.playerId,
+                    error: validation.error,
+                    payload: command.payload,
+                });
                 return {
                     success: false,
                     state: currentState,
@@ -210,8 +294,14 @@ export function executePipeline<
             }
         }
     } else {
-        const validation: ValidationResult = domain.validate(currentState.core, command);
+        const validation: ValidationResult = domain.validate(currentState, command);
         if (!validation.valid) {
+            console.warn('[Pipeline] 命令验证失败:', {
+                commandType: command.type,
+                playerId: command.playerId,
+                error: validation.error,
+                payload: command.payload,
+            });
             return {
                 success: false,
                 state: currentState,
@@ -222,7 +312,7 @@ export function executePipeline<
     }
 
     // 3. Core.execute -> 产生 Events
-    const events = domain.execute(currentState.core, command, random);
+    const events = domain.execute(currentState, command, random);
     ctx.events = [...preCommandEvents, ...events] as GameEvent[];
     allEvents.push(...events);
 
@@ -252,11 +342,14 @@ export function executePipeline<
     }
 
     if (systemEventsToReduce.length > 0) {
-        const reducibleEvents = systemEventsToReduce.filter((event) => !event.type.startsWith('SYS_'));
+        // 注意：SYS_PHASE_CHANGED 需要传递给 reducer 以同步 core.turnPhase
+        const reducibleEvents = systemEventsToReduce.filter((event) => 
+            !event.type.startsWith('SYS_') || event.type === 'SYS_PHASE_CHANGED'
+        );
         if (reducibleEvents.length > 0) {
             let core = currentState.core;
             for (const event of reducibleEvents) {
-                core = domain.reduce(core, event as TEvent);
+                core = domain.reduce(core, event as unknown as TEvent);
             }
             currentState = { ...currentState, core };
             ctx.state = currentState;

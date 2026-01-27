@@ -6,16 +6,18 @@ import type { CardAtlasConfig } from './cardAtlas';
 import { getCardAtlasStyle } from './cardAtlas';
 import { ASSETS } from './assets';
 
+
 export const DiscardPile = React.forwardRef<HTMLDivElement, {
     cards: AbilityCard[];
     locale?: string;
     atlas?: CardAtlasConfig;
-    onInspect?: (card: AbilityCard) => void;
+    /** 点击放大按钮时触发，传入弃牌堆卡片（按时间从新到旧排列） */
+    onInspectRecent?: (cards: AbilityCard[]) => void;
     canUndo?: boolean;
     onUndo?: () => void;
     isHighlighted?: boolean;
     showSellButton?: boolean;
-}>(({ cards, locale, atlas, onInspect, canUndo, onUndo, isHighlighted, showSellButton }, ref) => {
+}>(({ cards, locale, atlas, onInspectRecent, canUndo, onUndo, isHighlighted, showSellButton }, ref) => {
     const { t } = useTranslation('game-dicethrone');
     const topCard = cards[cards.length - 1];
 
@@ -24,11 +26,18 @@ export const DiscardPile = React.forwardRef<HTMLDivElement, {
         return getCardAtlasStyle(topCard.atlasIndex ?? 0, atlas);
     }, [topCard, atlas]);
 
+    /** 获取弃牌堆所有卡片用于预览（从新到旧排列，即最左边是最新弃置的） */
+    const getPreviewCards = React.useCallback(() => {
+        if (cards.length === 0) return [];
+        // 反转为从新到旧的顺序
+        return cards.slice().reverse();
+    }, [cards]);
+
     const handleClick = () => {
         if (canUndo && onUndo) {
             onUndo();
-        } else if (topCard && onInspect) {
-            onInspect(topCard);
+        } else if (topCard && onInspectRecent) {
+            onInspectRecent(getPreviewCards());
         }
     };
 
@@ -59,7 +68,7 @@ export const DiscardPile = React.forwardRef<HTMLDivElement, {
                     className="absolute top-[0.3vw] right-[0.3vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-300 shadow-xl border border-white/20 z-20"
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (topCard && onInspect) onInspect(topCard);
+                        if (onInspectRecent) onInspectRecent(getPreviewCards());
                     }}
                 >
                     <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">

@@ -6,7 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
-import type { PhaseInfo, PlayerPanelData } from '../../../core/ui';
+import type { PhaseInfo } from '../../../core/ui';
 
 // ============================================================================
 // PhaseIndicator 预设

@@ -67,9 +67,17 @@ export function RematchProvider({
             }
         });
 
+        // 订阅新房间通知（调试用）
+        const unsubNewRoom = matchSocket.subscribeNewRoom((url) => {
+            console.log('[RematchContext] 收到新房间通知，跳转到:', url);
+            // 跳转到新房间（作为玩家 1 加入）
+            window.location.href = `${url}?join=true`;
+        });
+
         return () => {
             unsubState();
             unsubReset();
+            unsubNewRoom();
             matchSocket.leaveMatch();
         };
     }, [isMultiplayer, matchId, playerId]);

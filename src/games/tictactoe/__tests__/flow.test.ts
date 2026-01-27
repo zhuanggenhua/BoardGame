@@ -149,8 +149,8 @@ const testCases: TestCase<TicTacToeExpectation>[] = [
 const runner = new GameTestRunner({
     domain: TicTacToeDomain,
     playerIds: ['0', '1'],
-    assertFn: assertTicTacToe,
-    visualizeFn: (state) => printBoard(state.cells),
+    assertFn: (state, expect: TicTacToeExpectation) => assertTicTacToe(state.core, expect),
+    visualizeFn: (state) => printBoard(state.core.cells),
     silent: true,
 });
 

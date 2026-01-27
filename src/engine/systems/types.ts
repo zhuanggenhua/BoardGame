@@ -6,7 +6,6 @@
  */
 
 import type {
-    Command,
     GameEvent,
     MatchState,
     PipelineContext,
@@ -139,11 +138,13 @@ export class SystemRegistry<TCore = unknown> {
 // ============================================================================
 
 export const SYSTEM_IDS = {
+    FLOW: 'flow',
     UNDO: 'undo',
     PROMPT: 'prompt',
     LOG: 'log',
     REMATCH: 'rematch',
     RESPONSE_WINDOW: 'responseWindow',
+    CHEAT: 'cheat',
 } as const;
 
 export type SystemId = (typeof SYSTEM_IDS)[keyof typeof SYSTEM_IDS];

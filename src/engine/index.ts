@@ -25,5 +25,8 @@ export {
 // 系统层
 export * from './systems';
 
+// Hooks
+export * from './hooks';
+
 // 测试工具
 export { GameTestRunner, type TestCase, type TestResult, type StateExpectation } from './testing';

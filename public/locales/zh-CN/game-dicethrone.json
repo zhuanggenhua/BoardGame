@@ -6,42 +6,67 @@
     },
     "upkeep": {
       "label": "1. 维持阶段",
-      "desc": ["解决可适用的状态效果"]
+      "desc": [
+        "解决可适用的状态效果"
+      ]
     },
     "income": {
       "label": "2. 收入阶段",
-      "desc": ["获得1CP", "抽一张卡牌"]
+      "desc": [
+        "获得1CP",
+        "抽一张卡牌"
+      ]
     },
     "main1": {
       "label": "3. 主要阶段(1)",
-      "desc": ["打出能力升级卡", "打出主要阶段行动卡", "出售卡牌(每张1CP)"]
+      "desc": [
+        "打出能力升级卡",
+        "打出主要阶段行动卡",
+        "出售卡牌(每张1CP)"
+      ]
     },
     "offensiveRoll": {
       "label": "4. 掷骰攻击阶段",
-      "desc": ["最多掷骰3次来启动一个技能"]
+      "desc": [
+        "最多掷骰3次来启动一个技能"
+      ]
     },
     "defensiveRoll": {
       "label": "5. 掷骰防御阶段",
-      "desc": ["你的对手掷一次骰来进行防御"]
+      "desc": [
+        "你的对手掷一次骰来进行防御"
+      ]
     },
     "main2": {
       "label": "6. 主要阶段(2)",
-      "desc": ["跟主要阶段(1)相同"]
+      "desc": [
+        "跟主要阶段(1)相同"
+      ]
     },
     "discard": {
       "label": "7. 弃牌阶段",
-      "desc": ["出售超过6张牌以上的卡牌"]
+      "desc": [
+        "出售超过6张牌以上的卡牌"
+      ]
     }
   },
   "statusEffects": {
-    "evasive": {
-      "name": "闪避",
+    "stun": {
+      "name": "击倒",
       "description": [
-        "受到伤害时可花费1个闪避并掷1骰",
-        "结果为1-2则伤害降为0（其他效果仍生效）",
-        "同一次攻击可花费多个闪避重复尝试"
-      ]
-    },
+        "攻击掷骰阶段前可花费2CP移除此标记",
+        "若不移除，必须跳过该阶段并移除此标记"
+      ],
+      "clickToRemove": "点击花费 2CP 移除"
+    }
+  },
+  "confirmRemoveStun": {
+    "title": "确认移除击倒？",
+    "description": "花费 2CP 移除击倒状态，允许你在本回合正常进行攻击掷骰阶段。",
+    "confirm": "花费 2CP 移除",
+    "cancel": "取消"
+  },
+  "tokens": {
     "taiji": {
       "name": "太极",
       "description": [
@@ -50,27 +75,32 @@
         "本回合获得的太极不可用于本回合增强伤害"
       ]
     },
-    "stun": {
-      "name": "击倒",
+    "evasive": {
+      "name": "闪避",
       "description": [
-        "攻击掷骰阶段前可花费2CP移除此标记",
-        "若不移除，必须跳过该阶段并移除此标记"
+        "受到伤害时可花费1个闪避并掷1骰",
+        "结果为1-2则伤害降为0（其他效果仍生效）",
+        "同一次攻击可花费多个闪避重复尝试"
       ]
     },
     "purify": {
       "name": "净化",
-      "description": ["任意时点可花费1个净化，移除自己1个负面效果标记"]
+      "description": [
+        "任意时点可花费1个净化，移除自己1个负面效果标记"
+      ]
     }
   },
   "hud": {
     "health": "生命",
     "energy": "能量",
+    "shield": "护盾",
     "deck": "牌堆",
     "discardPile": "弃牌堆",
     "viewingOpponent": "正在观察对手",
     "opponent": "对手",
     "healthLabel": "血量: {{value}}",
-    "energyLabel": "能量: {{value}}"
+    "energyLabel": "能量: {{value}}",
+    "shieldLabel": "护盾: {{value}}"
   },
   "hero": {
     "monk": "僧侣"
@@ -83,10 +113,36 @@
     "tipBoard": "提示板",
     "magnifiedView": "放大预览"
   },
+  "tokenResponse": {
+    "attackerTitle": "响应（攻击方）",
+    "attackerDesc": "你可以在伤害结算前花费标记来提高伤害。",
+    "defenderTitle": "响应（防御方）",
+    "defenderDesc": "你可以花费标记来减少伤害，或尝试完全闪避。",
+    "originalDamage": "原始伤害",
+    "currentDamage": "当前伤害",
+    "damage": "伤害",
+    "available": "可用",
+    "taijiBoostHint": "花费太极来提高伤害",
+    "taijiReduceHint": "花费太极来减少伤害",
+    "useTaiji": "使用太极",
+    "evasiveHint": "花费闪避尝试完全躲避",
+    "evasiveDesc": "花费 1 个闪避并掷 1 骰；成功则本次伤害变为 0。",
+    "useEvasive": "使用闪避",
+    "evasionRoll": "闪避投掷",
+    "evasionSuccess": "成功",
+    "evasionFailed": "失败",
+    "evaded": "已闪避",
+    "noTokens": "没有可用标记",
+    "confirm": "确认",
+    "skip": "跳过"
+  },
   "response": {
     "waitingOpponent": "等待对手响应...",
     "yourTurn": "可以响应",
     "pass": "跳过"
+  },
+  "waiting": {
+    "thinkingMessage": "正在思考中..."
   },
   "dice": {
     "waitingOpponent": "对方正在思考中...",
@@ -106,11 +162,16 @@
   },
   "bonusDie": {
     "title": "额外投掷",
+    "confirm": "确认",
     "effect": {
       "fist": "拳: 伤害 +2",
       "palm": "掌: 伤害 +3",
       "taiji": "太极: 获得 2 个太极标记",
-      "lotus": "莲花: 选择获得闪避或净化"
+      "lotus": "莲花: 选择获得闪避或净化",
+      "gainCp": "获得 {{cp}} CP",
+      "enlightenmentLotus": "莲花！获得 2太极 + 闪避 + 净化",
+      "enlightenmentOther": "抽 1 张牌",
+      "thunderStrike2Die": "投出 {{value}}"
     }
   },
   "error": {
@@ -136,7 +197,14 @@
     "no_roll_yet": "请先投掷骰子",
     "ability_not_available": "该技能当前不可用",
     "die_not_found": "找不到骰子",
-    "cannot_advance_phase": "无法推进阶段"
+    "cannot_advance_phase": "无法推进阶段",
+    "wrongPhaseForCard": "此卡需要在特定阶段打出",
+    "requireOwnTurn": "此卡只能在自己回合打出",
+    "requireOpponentTurn": "此卡只能在对手回合打出",
+    "requireHasRolled": "需要先投掷骰子才能打出此卡",
+    "requireDiceExists": "需要有骰子结果才能打出此卡",
+    "requireOpponentDiceExists": "需要对手有骰子结果才能打出此卡",
+    "requireIsRoller": "此卡只能由当前投掷方使用"
   },
   "actions": {
     "resolveAttack": "结算攻击",
@@ -160,12 +228,49 @@
   "confirmSkip": {
     "title": "确认结束攻击掷骰？",
     "description": "你当前尚未选择任何要发动的技能。确定直接结束该阶段吗？",
-    "cancel": "取消 (去选技能)",
+    "cancel": "返回选择技能",
     "confirm": "确定结束"
   },
   "choices": {
     "title": "技能结算选择",
-    "evasiveOrPurify": "请选择获得的状态效果"
+    "evasiveOrPurify": "请选择获得的状态效果",
+    "evasiveOrPurifyToken": "请选择获得的道具",
+    "lotusPalmUnblockable": {
+      "title": "是否花费2个太极标记令此次攻击不可防御？",
+      "pay2": "花费2太极：不可防御",
+      "skip": "不花费"
+    }
+  },
+  "common": {
+    "cancel": "取消",
+    "confirm": "确认",
+    "self": "自己",
+    "opponent": "对手"
+  },
+  "interaction": {
+    "waitingOpponent": "等待对手操作...",
+    "selectDie": "选择{{count}}颗骰子",
+    "modifyDie": "修改骰子数值",
+    "selectStatus": "选择要移除的状态",
+    "selectPlayer": "选择一名玩家",
+    "selectTargetStatus": "选择要转移的状态",
+    "transferSelectTarget": "选择转移目标玩家",
+    "noStatus": "没有状态效果",
+    "rerollDie": "选择要重掷的骰子",
+    "adjustDie": "调整骰子数值",
+    "setDieTo6": "选择要设为6的骰子",
+    "copyDie": "选择要复制的骰子",
+    "setDieAny": "选择要修改的骰子",
+    "selectDieToModify": "选择要修改的骰子",
+    "selectDieToCopy": "选择要复制的两颗骰子",
+    "selectDieToChange": "选择要改变的骰子",
+    "selectDiceToChange": "选择要2颗要改变的骰子",
+    "selectDieToAdjust": "选择要调整的骰子",
+    "selectOpponentDieToReroll": "选择对手要重掷的骰子",
+    "selectDiceToReroll": "选择要重掷的骰子（至多2颗）",
+    "selectStatusToRemove": "选择要移除的状态效果",
+    "selectPlayerToRemoveAllStatus": "选择要移除所有状态的玩家",
+    "selectStatusToTransfer": "选择要转移的状态效果"
   },
   "abilitySlots": {
     "fist": "拳术",
@@ -175,7 +280,8 @@
     "combo": "太极连环掌",
     "lightning": "雷霆万钧",
     "calm": "心如止水",
-    "meditate": "冥想"
+    "meditate": "冒想",
+    "ultimate": "超越！"
   },
   "abilities": {
     "fist-technique": {
@@ -183,9 +289,8 @@
       "description": "基础拳法攻击，根据拳面数量造成不同伤害"
     },
     "fist-technique-3": {
-      "effects": {
-        "damage4": "造成4点伤害"
-      }
+      "name": "拳术 III",
+      "description": "最高级拳法攻击，4个相同骰子可施加倒地"
     },
     "fist-technique-4": {
       "effects": {
@@ -197,12 +302,57 @@
         "damage8": "造成8点伤害"
       }
     },
+    "fist-technique-2": {
+      "name": "拳术 II",
+      "description": "升级拳法攻击，造成更高伤害"
+    },
+    "fist-technique-2-3": {
+      "effects": {
+        "damage7": "造成7点伤害"
+      }
+    },
+    "fist-technique-2-4": {
+      "effects": {
+        "damage8": "造成8点伤害"
+      }
+    },
+    "fist-technique-2-5": {
+      "effects": {
+        "damage9": "造成9点伤害"
+      }
+    },
+    "fist-technique-3-3": {
+      "effects": {
+        "damage7": "造成7点伤害"
+      }
+    },
+    "fist-technique-3-4": {
+      "effects": {
+        "damage8": "造成8点伤害",
+        "inflictStun": "施加1个击倒标记"
+      }
+    },
+    "fist-technique-3-5": {
+      "effects": {
+        "damage9": "造成9点伤害",
+        "inflictStun": "施加1个击倒标记"
+      }
+    },
     "zen-forget": {
       "name": "物我两忘",
       "description": "超然物外的境界，获得大量太极标记",
       "effects": {
         "gainTaiji5": "获得5个太极标记",
         "gainChoice": "获得闪避或净化（你选择）"
+      }
+    },
+    "zen-forget-2": {
+      "name": "物我两忘 II",
+      "description": "3太极触发：获得6气，获得闪避和净化",
+      "effects": {
+        "gainTaiji6": "获得6个太极标记",
+        "gainEvasive": "获得1个闪避标记",
+        "gainPurify": "获得1个净化标记"
       }
     },
     "harmony": {
@@ -213,6 +363,14 @@
         "gainTaiji2": "然后获得2个太极标记"
       }
     },
+    "harmony-2": {
+      "name": "天人合一 II",
+      "description": "小顺子触发：造成6伤害，然后获得3气",
+      "effects": {
+        "damage6": "造成6点伤害",
+        "gainTaiji3": "然后获得3个太极标记"
+      }
+    },
     "lotus-palm": {
       "name": "莲花掌",
       "description": "莲花绽放，太极圆满",
@@ -220,6 +378,29 @@
         "damage5": "造成5点伤害",
         "taijiCapMax": "太极标记堆叠上限+1，并立即获得最大数量的太极标记",
         "unblockable": "你可以花费2个太极标记令此次攻击不可防御"
+      }
+    },
+    "lotus-palm-2": {
+      "name": "莲花掌 II",
+      "description": "4莲花触发：造成6不可防御伤害，获得6气。莲花之道（3莲花触发）：造成2不可防御伤害，获得闪避和2气。"
+    },
+    "lotus-palm-2-3": {
+      "effects": {
+        "damage2": "造成2点不可防御伤害",
+        "gainEvasive": "获得1个闪避标记",
+        "gainTaiji2": "获得2个太极标记"
+      }
+    },
+    "lotus-palm-2-4": {
+      "effects": {
+        "damage6": "造成6点不可防御伤害",
+        "taijiCapMax": "获得6个太极标记"
+      }
+    },
+    "lotus-palm-2-5": {
+      "effects": {
+        "damage10": "造成10点不可防御伤害",
+        "taijiCapMax": "获得6个太极标记"
       }
     },
     "taiji-combo": {
@@ -234,12 +415,28 @@
         "gainChoice": "若本次掷骰含莲花：获得闪避或净化（你选择）"
       }
     },
+    "taiji-combo-2": {
+      "name": "太极连环掌 II",
+      "description": "造戒5伤害并投掷2骰，根据骰面触发效果",
+      "effects": {
+        "rollDie": "投掷2骰",
+        "damage5": "造戒5点伤害"
+      }
+    },
     "thunder-strike": {
       "name": "雷霆万钧",
       "description": "以雷霆之势发动攻击",
       "effects": {
         "roll3Damage": "掷3颗骰子，造成其点数总和的伤害（平均约10点）",
         "rerollOne": "可花费2个太极标记重掷其中1颗骰子"
+      }
+    },
+    "thunder-strike-2": {
+      "name": "雷霆万钧 II",
+      "description": "投掷3骰，造成总和伤害，>=12施加倒地",
+      "effects": {
+        "roll3Damage": "投掷3骰，造成总和伤害，>=12施加倒地",
+        "rerollOne": "可花费1个气重掷其中一颗"
       }
     },
     "calm-water": {
@@ -251,12 +448,32 @@
         "gainEvasive": "获得1个闪避标记"
       }
     },
+    "calm-water-2": {
+      "name": "心如止水 II",
+      "description": "大顺子触发：造戒9伤害，获得3气+闪避",
+      "effects": {
+        "damage9": "造戒9点伤害",
+        "gainTaiji3": "然后获得3个太极标记",
+        "gainEvasive": "获得1个闪避标记"
+      }
+    },
     "meditation": {
-      "name": "冥想",
-      "description": "防御时的冥想状态",
+      "name": "冒想",
+      "description": "防御时的冒想状态",
       "effects": {
         "taijiByResult": "获得太极标记=结果中太极面的数量",
         "damageByFist": "造成伤害=结果中拳面的数量"
+      }
+    },
+    "transcendence": {
+      "name": "超越！",
+      "description": "终极招式！一旦启动，对手无法干扰。",
+      "effects": {
+        "damage10": "造成10点终极伤害",
+        "inflictKnockdown": "对对手施加击倒",
+        "gainEvasive": "获得1个闪避标记",
+        "gainPurify": "获得1个净化标记",
+        "taijiCapMax": "太极标记堆叠上限+1，并立即获得最大数量的太极标记"
       }
     }
   },
@@ -281,7 +498,7 @@
       "name": "掌击！",
       "description": "对1名对手施加倒地。"
     },
-    "card-meditation-upgrade-3": {
+    "card-meditation-3": {
       "name": "清修 III",
       "description": "防御投掷5骰。获得1×气数值的气，造成1×拳伤害。如果投出2个太极，获得闪避 -或- 净化。"
     },
@@ -289,7 +506,7 @@
       "name": "玩得六啊！",
       "description": "将你1颗骰子的数值改至6。"
     },
-    "card-meditation-upgrade-2": {
+    "card-meditation-2": {
       "name": "清修 II",
       "description": "防御投掷5骰。获得1×气数值的气，造成1×拳伤害。"
     },
@@ -338,7 +555,7 @@
       "description": "1名玩家可以在其进攻投掷阶段，对至多5颗骰子进行1次额外的投掷尝试。"
     },
     "card-me-too": {
-      "name": "俺也一样！",
+      "name": "俣也一样！",
       "description": "将你1颗骰子的数值变为和你另一颗骰子的数值一样（同一阶段使用且目的相同）。"
     },
     "card-surprise": {
@@ -359,7 +576,7 @@
     },
     "card-boss-generous": {
       "name": "老板大气！",
-      "description": "获得2气。"
+      "description": "获得2CP。"
     },
     "card-flick": {
       "name": "弹一手！",
@@ -383,7 +600,7 @@
     },
     "card-one-throw-fortune": {
       "name": "一掷千金！",
-      "description": "投掷1骰：获得½数值的气（向上取整）。"
+      "description": "投掷1骰：获得½数值的CP（向上取整）。"
     },
     "card-what-status": {
       "name": "状什么态？",
@@ -392,6 +609,10 @@
     "card-transfer-status": {
       "name": "乾坤大挪移！",
       "description": "将1名玩家身上的1个状态效果转移至另1名玩家。"
+    },
+    "fist-technique": {
+      "name": "顿悟！",
+      "description": "投掷1骰：如果投出莲花，获得2气、闪避和净化；否则抽取1张牌。"
     },
     "actions": {
       "play": "打出",
@@ -403,5 +624,9 @@
       "releaseToPlay": "松开打出",
       "releaseToSell": "松开售卖"
     }
+  },
+  "cardSpotlight": {
+    "playerPlayed": "{{player}} 打出了卡牌",
+    "confirm": "确认"
   }
 }

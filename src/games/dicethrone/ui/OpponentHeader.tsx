@@ -3,13 +3,14 @@ import { useTranslation } from 'react-i18next';
 import type { HeroState } from '../types';
 import { RESOURCE_IDS } from '../domain/resources';
 import { ShakeContainer } from '../../../components/common/animations/ShakeContainer';
-import { StatusEffectsContainer, type StatusIconAtlasConfig } from './statusEffects';
+import { StatusEffectsContainer, TokensContainer, type StatusIconAtlasConfig } from './statusEffects';
 import { getPortraitStyle } from './assets';
 
 type ViewMode = 'self' | 'opponent';
 
 export const OpponentHeader = ({
     opponent,
+    opponentName,
     viewMode,
     isOpponentShaking,
     shouldAutoObserve,
@@ -19,8 +20,10 @@ export const OpponentHeader = ({
     opponentHpRef,
     statusIconAtlas,
     locale,
+    containerRef,
 }: {
     opponent: HeroState;
+    opponentName: string;
     viewMode: ViewMode;
     isOpponentShaking: boolean;
     shouldAutoObserve: boolean;
@@ -30,11 +33,13 @@ export const OpponentHeader = ({
     opponentHpRef?: RefObject<HTMLDivElement | null>;
     statusIconAtlas?: StatusIconAtlasConfig | null;
     locale?: string;
+    /** 对手悬浮窗容器引用（用于卡牌特写动画起点） */
+    containerRef?: RefObject<HTMLDivElement | null>;
 }) => {
     const { t } = useTranslation('game-dicethrone');
 
     return (
-        <div className="absolute top-[0.8vw] left-0 right-0 z-50 flex flex-col items-center gap-[0.5vw]">
+        <div ref={containerRef} className="absolute top-[0.8vw] left-0 right-0 z-50 flex flex-col items-center gap-[0.5vw]">
             {headerError && (
                 <div className="px-[1.5vw] py-[0.5vw] bg-red-600/90 text-white font-bold text-[0.9vw] rounded-full shadow-2xl border border-red-400/50 backdrop-blur-md animate-in slide-in-from-top-4">
                     ⚠️ {headerError}
@@ -59,29 +64,46 @@ export const OpponentHeader = ({
                     </div>
                     <div className="flex flex-col">
                         <div className="flex items-center gap-[0.4vw]">
-                            <span className={`font-black text-[0.9vw] tracking-wider truncate max-w-[10vw] ${viewMode === 'opponent' ? 'text-amber-400' : 'text-white'}`}>
-                                {viewMode === 'opponent' ? t('hud.viewingOpponent') : t('hud.opponent')}
+                            <span className={`font-black text-[0.9vw] tracking-wider truncate max-w-[8vw] ${viewMode === 'opponent' ? 'text-amber-400' : 'text-white'}`}>
+                                {opponentName}
                             </span>
-                            <span className="px-[0.4vw] py-[0.1vw] bg-amber-500/20 text-amber-400 text-[0.55vw] rounded border border-amber-500/30 mr-2">{t('hero.monk')}</span>
-                            <div ref={opponentBuffRef}>
-                                <StatusEffectsContainer
-                                    effects={opponent.statusEffects || {}}
-                                    size="small"
-                                    maxPerRow={5}
-                                    locale={locale}
-                                    atlas={statusIconAtlas}
-                                />
+                            <span className="px-[0.4vw] py-[0.1vw] bg-amber-500/20 text-amber-400 text-[0.55vw] rounded border border-amber-500/30">{t('hero.monk')}</span>
+                            <div ref={opponentHpRef} className="flex items-center gap-[0.5vw] ml-[0.3vw]">
+                                <div className="flex items-center gap-[0.3vw]">
+                                    <div className="w-[0.6vw] h-[0.6vw] bg-red-500 rounded-full shadow-red-500/50"></div>
+                                    <span className="text-red-400 font-bold text-[0.8vw]">{opponent.resources[RESOURCE_IDS.HP] ?? 0}</span>
+                                </div>
+                                {opponent.damageShields && opponent.damageShields.length > 0 && (
+                                    <div className="relative w-[1.2vw] h-[1.2vw]">
+                                        <svg className="w-full h-full text-cyan-500" viewBox="0 1 24 25" fill="currentColor">
+                                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
+                                        </svg>
+                                        <span className="absolute inset-0 flex items-center justify-center text-[0.55vw] font-bold text-white drop-shadow-md">
+                                            {opponent.damageShields.reduce((sum, s) => sum + s.value, 0)}
+                                        </span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-[0.3vw]">
+                                    <div className="w-[0.7vw] h-[0.7vw] bg-amber-500 rounded-full shadow-amber-500/50"></div>
+                                    <span className="text-amber-400 font-bold text-[0.8vw]">{opponent.resources[RESOURCE_IDS.CP] ?? 0}</span>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex gap-[0.8vw] mt-[0.1vw]">
-                            <div ref={opponentHpRef} className="flex items-center gap-[0.3vw]">
-                                <div className="w-[0.6vw] h-[0.6vw] bg-red-500 rounded-full shadow-red-500/50"></div>
-                                <span className="text-red-400 font-bold text-[0.8vw]">{t('hud.healthLabel', { value: opponent.resources[RESOURCE_IDS.HP] ?? 0 })}</span>
-                            </div>
-                            <div className="flex items-center gap-[0.3vw]">
-                                <div className="w-[0.7vw] h-[0.7vw] bg-amber-500 rounded-full shadow-amber-500/50"></div>
-                                <span className="text-amber-400 font-bold text-[0.8vw]">{t('hud.energyLabel', { value: opponent.resources[RESOURCE_IDS.CP] ?? 0 })}</span>
-                            </div>
+                        <div ref={opponentBuffRef} className="flex gap-[0.25vw] mt-[0.15vw]">
+                            <TokensContainer
+                                tokens={opponent.tokens || {}}
+                                size="tiny"
+                                maxPerRow={10}
+                                locale={locale}
+                                atlas={statusIconAtlas}
+                            />
+                            <StatusEffectsContainer
+                                effects={opponent.statusEffects || {}}
+                                size="tiny"
+                                maxPerRow={10}
+                                locale={locale}
+                                atlas={statusIconAtlas}
+                            />
                         </div>
                     </div>
                 </ShakeContainer>

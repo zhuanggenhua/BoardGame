@@ -2,14 +2,18 @@
  * 王权骰铸（DiceThrone）流程测试
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DiceThroneDomain } from '../domain';
-import type { DiceThroneCore, TurnPhase } from '../domain/types';
+import { diceThroneSystemsForTest } from '../game';
+import type { DiceThroneCore, TurnPhase, CardInteractionType } from '../domain/types';
 import { CP_MAX, HAND_LIMIT, INITIAL_CP, INITIAL_HEALTH } from '../domain/types';
 import { RESOURCE_IDS } from '../domain/resources';
+import { getAvailableAbilityIds } from '../domain/rules';
 import { MONK_CARDS } from '../monk/cards';
+import type { AbilityCard } from '../types';
 import { GameTestRunner, type TestCase, type StateExpectation } from '../../../engine/testing';
-import type { PlayerId, RandomFn } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import { createInitialSystemState } from '../../../engine/pipeline';
 
 // ============================================================================
 // 固定随机数（保证回放确定性）
@@ -38,6 +42,91 @@ const createQueuedRandom = (values: number[]): RandomFn => {
     };
 };
 
+const getCardById = (cardId: string): AbilityCard => {
+    const card = MONK_CARDS.find(c => c.id === cardId);
+    if (!card) throw new Error(`找不到卡牌: ${cardId}`);
+    return card;
+};
+
+const createSetupWithHand = (
+    handCardIds: string[],
+    options: { playerId?: PlayerId; cp?: number; mutate?: (core: DiceThroneCore) => void } = {}
+) => {
+    return (playerIds: PlayerId[], random: RandomFn): MatchState<DiceThroneCore> => {
+        const core = DiceThroneDomain.setup(playerIds, random);
+        const pid = options.playerId ?? '0';
+        const player = core.players[pid];
+        if (player) {
+            player.hand = handCardIds.map(getCardById);
+            player.deck = player.deck.filter(card => !handCardIds.includes(card.id));
+            if (options.cp !== undefined) {
+                player.resources[RESOURCE_IDS.CP] = options.cp;
+            }
+        }
+        options.mutate?.(core);
+        const sys = createInitialSystemState(playerIds, diceThroneSystemsForTest, undefined);
+        return { sys, core };
+    };
+};
+/**
+ * 创建无响应窗口卡牌的 setup 函数
+ * 用于攻击结算测试，避免 instant/roll 卡牌触发响应窗口
+ * 
+ * 该函数将所有玩家手牌和牌库中的 instant/roll 卡牌移动到牌库底部，
+ * 确保测试过程中抽卡不会抽到响应卡牌。
+ */
+const createNoResponseSetup = () => {
+    return (playerIds: PlayerId[], random: RandomFn): MatchState<DiceThroneCore> => {
+        // 先用标准 setup 创建 core
+        const core = DiceThroneDomain.setup(playerIds, random);
+        
+        for (const pid of playerIds) {
+            const player = core.players[pid];
+            if (!player) continue;
+            
+            // 分离手牌中的响应卡牌
+            const handRespondable: AbilityCard[] = [];
+            const handNonRespondable: AbilityCard[] = [];
+            for (const card of player.hand) {
+                if (card.timing === 'instant' || card.timing === 'roll') {
+                    handRespondable.push(card);
+                } else {
+                    handNonRespondable.push(card);
+                }
+            }
+            
+            // 分离牌库中的响应卡牌
+            const deckRespondable: AbilityCard[] = [];
+            const deckNonRespondable: AbilityCard[] = [];
+            for (const card of player.deck) {
+                if (card.timing === 'instant' || card.timing === 'roll') {
+                    deckRespondable.push(card);
+                } else {
+                    deckNonRespondable.push(card);
+                }
+            }
+            
+            // 重新组织牌库：非响应卡在前，响应卡在后
+            player.deck = [...deckNonRespondable, ...handRespondable, ...deckRespondable];
+            
+            // 保留非响应卡牌在手牌
+            player.hand = handNonRespondable;
+            
+            // 从牌库顶部补充手牌到 4 张（只会抽到非响应卡）
+            while (player.hand.length < 4 && player.deck.length > 0) {
+                const card = player.deck.shift();
+                if (card) {
+                    // 由于牌库已重新排序，前面都是非响应卡
+                    player.hand.push(card);
+                }
+            }
+        }
+        
+        const sys = createInitialSystemState(playerIds, [], undefined);
+        return { sys, core };
+    };
+};
+
 // ============================================================================
 // 断言
 // ============================================================================
@@ -48,6 +137,7 @@ type PlayerExpectation = {
     handSize?: number;
     deckSize?: number;
     statusEffects?: Record<string, number>;
+    tokens?: Record<string, number>;
     discardSize?: number;
     abilityNameById?: Record<string, string>;
     abilityLevels?: Record<string, number>;
@@ -57,7 +147,16 @@ interface DiceThroneExpectation extends StateExpectation {
     turnPhase?: TurnPhase;
     activePlayerId?: PlayerId;
     turnNumber?: number;
+    diceValues?: number[];
     players?: Record<PlayerId, PlayerExpectation>;
+    pendingInteraction?: {
+        type?: CardInteractionType;
+        selectCount?: number;
+        playerId?: PlayerId;
+        dieModifyMode?: 'set' | 'adjust' | 'copy' | 'any';
+        targetOpponentDice?: boolean;
+        adjustRange?: { min: number; max: number };
+    } | null;
     pendingAttack?: {
         attackerId?: PlayerId;
         defenderId?: PlayerId;
@@ -142,6 +241,15 @@ function assertDiceThrone(state: DiceThroneCore, expect: DiceThroneExpectation):
                 }
             }
 
+            if (playerExpect.tokens) {
+                for (const [tokenId, amount] of Object.entries(playerExpect.tokens)) {
+                    const actual = player.tokens[tokenId] ?? 0;
+                    if (actual !== amount) {
+                        errors.push(`玩家 ${playerId} Token ${tokenId} 不匹配: 预期 ${amount}, 实际 ${actual}`);
+                    }
+                }
+            }
+
             if (playerExpect.abilityLevels) {
                 for (const [abilityId, level] of Object.entries(playerExpect.abilityLevels)) {
                     const actual = player.abilityLevels?.[abilityId] ?? 0;
@@ -170,6 +278,48 @@ function assertDiceThrone(state: DiceThroneCore, expect: DiceThroneExpectation):
         }
     }
 
+    if (expect.diceValues) {
+        expect.diceValues.forEach((value, index) => {
+            const actual = state.dice[index]?.value;
+            if (actual !== value) {
+                errors.push(`骰子 ${index} 数值不匹配: 预期 ${value}, 实际 ${actual}`);
+            }
+        });
+    }
+
+    if (expect.pendingInteraction === null) {
+        if (state.pendingInteraction) {
+            errors.push('预期 pendingInteraction 为空，但实际存在');
+        }
+    } else if (expect.pendingInteraction) {
+        const interaction = state.pendingInteraction;
+        if (!interaction) {
+            errors.push('预期 pendingInteraction 存在，但实际为空');
+        } else {
+            const expected = expect.pendingInteraction;
+            if (expected.type !== undefined && interaction.type !== expected.type) {
+                errors.push(`交互类型不匹配: 预期 ${expected.type}, 实际 ${interaction.type}`);
+            }
+            if (expected.selectCount !== undefined && interaction.selectCount !== expected.selectCount) {
+                errors.push(`交互选择数量不匹配: 预期 ${expected.selectCount}, 实际 ${interaction.selectCount}`);
+            }
+            if (expected.playerId !== undefined && interaction.playerId !== expected.playerId) {
+                errors.push(`交互玩家不匹配: 预期 ${expected.playerId}, 实际 ${interaction.playerId}`);
+            }
+            if (expected.dieModifyMode !== undefined && interaction.dieModifyConfig?.mode !== expected.dieModifyMode) {
+                errors.push(`交互骰子修改模式不匹配: 预期 ${expected.dieModifyMode}, 实际 ${interaction.dieModifyConfig?.mode}`);
+            }
+            if (expected.targetOpponentDice !== undefined && interaction.targetOpponentDice !== expected.targetOpponentDice) {
+                errors.push(`交互目标骰子不匹配: 预期 ${expected.targetOpponentDice}, 实际 ${interaction.targetOpponentDice}`);
+            }
+            if (expected.adjustRange) {
+                const actualRange = interaction.dieModifyConfig?.adjustRange;
+                if (!actualRange || actualRange.min !== expected.adjustRange.min || actualRange.max !== expected.adjustRange.max) {
+                    errors.push(`交互调整范围不匹配: 预期 ${JSON.stringify(expected.adjustRange)}, 实际 ${JSON.stringify(actualRange)}`);
+                }
+            }
+        }
+    }
     if (expect.pendingAttack === null) {
         if (state.pendingAttack) {
             errors.push('预期待处理攻击为空，但实际存在 pendingAttack');
@@ -195,8 +345,16 @@ function assertDiceThrone(state: DiceThroneCore, expect: DiceThroneExpectation):
     }
 
     if (expect.availableAbilityIdsIncludes) {
+        // 实时计算可用技能（派生状态）
+        const isRollPhase = state.turnPhase === 'offensiveRoll' || state.turnPhase === 'defensiveRoll';
+        const rollerId = state.turnPhase === 'defensiveRoll' && state.pendingAttack
+            ? state.pendingAttack.defenderId
+            : state.activePlayerId;
+        const availableAbilityIds = isRollPhase
+            ? getAvailableAbilityIds(state, rollerId)
+            : [];
         for (const id of expect.availableAbilityIdsIncludes) {
-            if (!state.availableAbilityIds.includes(id)) {
+            if (!availableAbilityIds.includes(id)) {
                 errors.push(`可用技能缺失: ${id}`);
             }
         }
@@ -227,40 +385,6 @@ const cmd = (type: string, playerId: PlayerId, payload: Record<string, unknown> 
     payload,
 });
 
-const buildAttackTurn = (
-    attackerId: PlayerId,
-    defenderId: PlayerId,
-    options?: { skipIncome?: boolean; discardCardIds?: string[] }
-): CommandInput[] => {
-    const commands: CommandInput[] = [];
-
-    if (options?.skipIncome) {
-        commands.push(cmd('ADVANCE_PHASE', attackerId)); // upkeep -> main1（跳过收入）
-    } else {
-        commands.push(cmd('ADVANCE_PHASE', attackerId)); // upkeep -> income
-        commands.push(cmd('ADVANCE_PHASE', attackerId)); // income -> main1
-    }
-
-    commands.push(cmd('ADVANCE_PHASE', attackerId)); // main1 -> offensiveRoll
-    commands.push(cmd('ROLL_DICE', attackerId));
-    commands.push(cmd('CONFIRM_ROLL', attackerId));
-    commands.push(cmd('SELECT_ABILITY', attackerId, { abilityId: fistAttackAbilityId }));
-    commands.push(cmd('ADVANCE_PHASE', attackerId)); // offensiveRoll -> defensiveRoll
-
-    commands.push(cmd('ROLL_DICE', defenderId));
-    commands.push(cmd('CONFIRM_ROLL', defenderId));
-    commands.push(cmd('ADVANCE_PHASE', attackerId)); // defensiveRoll -> main2（结算攻击）
-
-    commands.push(cmd('ADVANCE_PHASE', attackerId)); // main2 -> discard
-    if (options?.discardCardIds) {
-        for (const cardId of options.discardCardIds) {
-            commands.push(cmd('SELL_CARD', attackerId, { cardId }));
-        }
-    }
-    commands.push(cmd('ADVANCE_PHASE', attackerId)); // discard -> upkeep（换人）
-
-    return commands;
-};
 
 const baseTestCases: TestCase<DiceThroneExpectation>[] = [
     {
@@ -428,10 +552,10 @@ const baseTestCases: TestCase<DiceThroneExpectation>[] = [
 
 const createRunner = (random: RandomFn, silent = true) => new GameTestRunner({
     domain: DiceThroneDomain,
+    systems: diceThroneSystemsForTest,
     playerIds: ['0', '1'],
     random,
-    setup: (playerIds, rnd) => DiceThroneDomain.setup(playerIds, rnd),
-    assertFn: assertDiceThrone,
+    assertFn: (state, expect: DiceThroneExpectation) => assertDiceThrone(state.core, expect),
     silent,
 });
 
@@ -440,6 +564,149 @@ describe('王权骰铸流程测试', () => {
         const runner = createRunner(fixedRandom);
         it.each(baseTestCases)('$name', (testCase) => {
             const result = runner.run(testCase);
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('响应窗口：对手持有任意骰子卡（roll）时应打开 afterRollConfirmed', () => {
+            const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1]));
+            const result = runner.run({
+                name: 'afterRollConfirmed 打开 - roll any',
+                setup: createSetupWithHand(['card-surprise'], {
+                    playerId: '1',
+                    cp: 10,
+                    mutate: (core) => {
+                        core.players['0'].hand = [];
+                        core.players['0'].deck = [];
+                    },
+                }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                ],
+            });
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
+            expect(result.finalState.sys.responseWindow?.current?.responderQueue).toEqual(['1']);
+        });
+
+        it('响应窗口：对手持有任意骰子卡（instant）时应打开 afterRollConfirmed', () => {
+            const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1]));
+            const result = runner.run({
+                name: 'afterRollConfirmed 打开 - instant any',
+                setup: createSetupWithHand(['card-flick'], {
+                    playerId: '1',
+                    cp: 10,
+                    mutate: (core) => {
+                        core.players['0'].hand = [];
+                        core.players['0'].deck = [];
+                    },
+                }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                ],
+            });
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
+            expect(result.finalState.sys.responseWindow?.current?.responderQueue).toEqual(['1']);
+        });
+
+        it('响应窗口：对手仅持有 self 骰子卡时不应打开 afterRollConfirmed', () => {
+            const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1]));
+            const result = runner.run({
+                name: 'afterRollConfirmed 不打开 - self only',
+                setup: createSetupWithHand(['card-me-too'], {
+                    playerId: '1',
+                    cp: 10,
+                    mutate: (core) => {
+                        core.players['0'].hand = [];
+                        core.players['0'].deck = [];
+                    },
+                }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                ],
+            });
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
+        });
+
+        it('击倒：可花费 2CP 主动移除', () => {
+            const runner = createRunner(fixedRandom);
+            const result = runner.run({
+                name: '击倒花费2CP移除',
+                setup: createSetupWithHand([], {
+                    cp: 4,
+                    mutate: (core) => {
+                        core.players['0'].statusEffects.stun = 1;
+                    },
+                }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('PAY_TO_REMOVE_STUN', '0'),
+                ],
+                expect: {
+                    turnPhase: 'main1',
+                    players: {
+                        '0': { cp: 2, statusEffects: { stun: 0 } },
+                    },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('击倒：CP 不足时无法移除', () => {
+            const runner = createRunner(fixedRandom);
+            const result = runner.run({
+                name: '击倒CP不足无法移除',
+                setup: createSetupWithHand([], {
+                    cp: 1,
+                    mutate: (core) => {
+                        core.players['0'].statusEffects.stun = 1;
+                    },
+                }),
+                commands: [
+                    cmd('PAY_TO_REMOVE_STUN', '0'),
+                ],
+                expect: {
+                    errorAtStep: { step: 1, error: 'not_enough_cp' },
+                    turnPhase: 'upkeep',
+                    players: {
+                        '0': { cp: 1, statusEffects: { stun: 1 } },
+                    },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('击倒：未移除时跳过攻击阶段并移除', () => {
+            const runner = createRunner(fixedRandom);
+            const result = runner.run({
+                name: '击倒跳过攻击阶段',
+                setup: createSetupWithHand([], {
+                    cp: 2,
+                    mutate: (core) => {
+                        core.players['0'].statusEffects.stun = 1;
+                    },
+                }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll (should skip to main2)
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    players: {
+                        '0': { cp: 2, statusEffects: { stun: 0 } },
+                    },
+                },
+            });
             expect(result.assertionErrors).toEqual([]);
         });
     });
@@ -584,27 +851,35 @@ describe('王权骰铸流程测试', () => {
         // 骰面映射: 1,2=fist, 3=palm, 4,5=taiji, 6=lotus
         it('和谐命中后获得太极', () => {
             // 小顺: 1,3,4,6 → fist,palm,taiji,lotus
-            const runner = createRunner(createQueuedRandom([1, 3, 4, 6, 2, 1, 1, 1, 1]));
+            const diceValues = [1, 3, 4, 6, 2, 1, 1, 1, 1];
+            const random = createQueuedRandom(diceValues);
+            
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: diceThroneSystemsForTest,
+                playerIds: ['0', '1'],
+                random,
+                setup: createNoResponseSetup(),
+                assertFn: (state, expect: DiceThroneExpectation) => assertDiceThrone(state.core, expect),
+                silent: true,
+            });
             const result = runner.run({
                 name: '和谐命中后获得太极',
                 commands: [
-                    cmd('ADVANCE_PHASE', '0'),
-                    // 卖掉所有 instant 卡避免触发响应窗口（纯领域层测试不处理系统层）
-                    cmd('SELL_CARD', '0', { cardId: 'card-inner-peace' }), // instant, 0 CP
-                    cmd('SELL_CARD', '0', { cardId: 'card-deep-thought' }), // instant, 3 CP
-                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'harmony' }),
-                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
-                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> main2 - 防御方推进
                 ],
                 expect: {
                     turnPhase: 'main2',
                     players: {
-                        '0': { statusEffects: { taiji: 2 } },
+                        '0': { tokens: { taiji: 2 } },
                         '1': { hp: 45 },
                     },
                 },
@@ -614,27 +889,35 @@ describe('王权骰铸流程测试', () => {
 
         it('定水神拳命中后获得太极+闪避', () => {
             // 大顺: [1,2,3,4,5] → 5个连续点数
-            const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5, 1, 1, 1, 1]));
+            const diceValues = [1, 2, 3, 4, 5, 1, 1, 1, 1];
+            const random = createQueuedRandom(diceValues);
+            
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: diceThroneSystemsForTest,
+                playerIds: ['0', '1'],
+                random,
+                setup: createNoResponseSetup(),
+                assertFn: (state, expect: DiceThroneExpectation) => assertDiceThrone(state.core, expect),
+                silent: true,
+            });
             const result = runner.run({
                 name: '定水神拳命中后获得太极+闪避',
                 commands: [
-                    cmd('ADVANCE_PHASE', '0'),
-                    // 卖掉所有 instant 卡避免触发响应窗口（纯领域层测试不处理系统层）
-                    cmd('SELL_CARD', '0', { cardId: 'card-inner-peace' }), // instant, 0 CP
-                    cmd('SELL_CARD', '0', { cardId: 'card-deep-thought' }), // instant, 3 CP
-                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'calm-water' }),
-                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
-                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> main2 - 防御方推进
                 ],
                 expect: {
                     turnPhase: 'main2',
                     players: {
-                        '0': { statusEffects: { taiji: 2, evasive: 1 } },
+                        '0': { tokens: { taiji: 2, evasive: 1 } },
                         '1': { hp: 43 },
                     },
                 },
@@ -644,23 +927,40 @@ describe('王权骰铸流程测试', () => {
 
         it('花开见佛命中后太极满值', () => {
             // 4个 lotus: 6,6,6,6 → 4个 lotus
-            const runner = createRunner(createQueuedRandom([6, 6, 6, 6, 1, 1, 1, 1, 1]));
+            const random = createQueuedRandom([6, 6, 6, 6, 1, 1, 1, 1, 1]);
+            
+            // 使用无响应卡牌的 setup
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: diceThroneSystemsForTest,
+                playerIds: ['0', '1'],
+                random,
+                setup: createNoResponseSetup(),
+                assertFn: (state, expect: DiceThroneExpectation) => assertDiceThrone(state.core, expect),
+                silent: true,
+            });
+            
             const result = runner.run({
                 name: '花开见佛命中后太极满值',
                 commands: [
-                    cmd('ADVANCE_PHASE', '0'),
-                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'lotus-palm' }),
-                    // 不可防御攻击，ADVANCE_PHASE 会直接结算并跳到 main2
-                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll
+                    // 基础版 lotus-palm 是可防御攻击（除非花费2太极，但玩家0初始没有太极）
+                    // 防御阶段：防守方(玩家1)需要掷骰
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> main2（结算攻击）- 防御方推进
                 ],
                 expect: {
                     turnPhase: 'main2',
                     players: {
-                        '0': { statusEffects: { taiji: 5 } },
-                        '1': { hp: 45 },
+                        // 太极上限初始是5，命中后上限+1变成6，然后补满，所以是6
+                        '0': { tokens: { taiji: 6 } },
+                        '1': { hp: 45 }, // 50 - 5 = 45
                     },
                 },
             });
@@ -669,10 +969,10 @@ describe('王权骰铸流程测试', () => {
     });
 
     describe('卡牌效果', () => {
-        it('打出内心平静获得太极', () => {
+        it('打出内心平静获得2太极', () => {
             const runner = createRunner(fixedRandom);
             const result = runner.run({
-                name: '内心平静获得太极',
+                name: '内心平静获得2太极',
                 commands: [
                     cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
                     cmd('PLAY_CARD', '0', { cardId: 'card-inner-peace' }),
@@ -680,7 +980,7 @@ describe('王权骰铸流程测试', () => {
                 expect: {
                     turnPhase: 'main1',
                     players: {
-                        '0': { statusEffects: { taiji: 1 }, discardSize: 1 },
+                        '0': { tokens: { taiji: 2 }, discardSize: 1 },
                     },
                 },
             });
@@ -702,7 +1002,7 @@ describe('王权骰铸流程测试', () => {
                     players: {
                         '0': {
                             cp: 0, // 3 - 3 = 0
-                            statusEffects: { taiji: 1, evasive: 1, purify: 1 },
+                            tokens: { taiji: 1, evasive: 1, purify: 1 },
                         },
                         '1': {
                             statusEffects: { stun: 1 },
@@ -728,7 +1028,7 @@ describe('王权骰铸流程测试', () => {
                     players: {
                         '0': {
                             cp: 0, // 3 - 3 = 0
-                            statusEffects: { taiji: 5 },
+                            tokens: { taiji: 5 },
                             handSize: expectedHandSize - 1 - 1, // -1卖 -1打出 = 2
                             discardSize: 2, // 卖的卡 + 打出的卡
                         },
@@ -855,6 +1155,112 @@ describe('王权骰铸流程测试', () => {
             });
             expect(result.assertionErrors).toEqual([]);
         });
+
+        it('升级后拳法 II 级伤害提升', () => {
+            // 拳法 I: 3拳=4伤害 → 拳法 II: 3拳=7伤害（与卡牌图片一致）
+            // 骰子序列: 3个拳(1,1,2) + 2个其他 + 防御骰子
+            const diceValues = [1, 1, 2, 3, 4, 1, 1, 1, 1];
+            const random = createQueuedRandom(diceValues);
+            
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: diceThroneSystemsForTest,
+                playerIds: ['0', '1'],
+                random,
+                setup: createNoResponseSetup(),
+                assertFn: (state, expect: DiceThroneExpectation) => assertDiceThrone(state.core, expect),
+                silent: true,
+            });
+            const result = runner.run({
+                name: '升级后拳法 II 级伤害提升',
+                commands: [
+                    // 抽到 thrust-punch-2 (index 13)
+                    cmd('DRAW_CARD', '0'), // 4: palm-strike
+                    cmd('DRAW_CARD', '0'), // 5: meditation-3
+                    cmd('DRAW_CARD', '0'), // 6: play-six
+                    cmd('DRAW_CARD', '0'), // 7: meditation-2
+                    cmd('DRAW_CARD', '0'), // 8: zen-fist-2
+                    cmd('DRAW_CARD', '0'), // 9: storm-assault-2
+                    cmd('DRAW_CARD', '0'), // 10: combo-punch-2
+                    cmd('DRAW_CARD', '0'), // 11: lotus-bloom-2
+                    cmd('DRAW_CARD', '0'), // 12: mahayana-2
+                    cmd('DRAW_CARD', '0'), // 13: thrust-punch-2
+                    cmd('ADVANCE_PHASE', '0'), // -> main1
+                    cmd('PLAY_UPGRADE_CARD', '0', { cardId: 'card-thrust-punch-2', targetAbilityId: 'fist-technique' }),
+                    cmd('ADVANCE_PHASE', '0'), // -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    // 有 variants 的技能返回 variant.id
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-2-3' }),
+                    cmd('ADVANCE_PHASE', '0'), // -> defensiveRoll
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('ADVANCE_PHASE', '1'), // -> main2 - 防御方推进
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    players: {
+                        '0': { abilityLevels: { 'fist-technique': 2 } },
+                        '1': { hp: 43 }, // 50 - 7 = 43 (拳法 II 3拳伤害，与卡牌一致)
+                    },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('升级后和谐 II 级伤害提升', () => {
+            // 和谐 I: 5伤害 → 和谐 II: 6伤害
+            // 小顺: 1,3,4,6 → fist,palm,taiji,lotus
+            const diceValues = [1, 3, 4, 6, 2, 1, 1, 1, 1];
+            const random = createQueuedRandom(diceValues);
+            
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: diceThroneSystemsForTest,
+                playerIds: ['0', '1'],
+                random,
+                setup: createNoResponseSetup(),
+                assertFn: (state, expect: DiceThroneExpectation) => assertDiceThrone(state.core, expect),
+                silent: true,
+            });
+            const result = runner.run({
+                name: '升级后和谐 II 级伤害提升',
+                commands: [
+                    // 抽到 mahayana-2 (index 12)
+                    cmd('DRAW_CARD', '0'), // 4: palm-strike
+                    cmd('DRAW_CARD', '0'), // 5: meditation-3
+                    cmd('DRAW_CARD', '0'), // 6: play-six
+                    cmd('DRAW_CARD', '0'), // 7: meditation-2
+                    cmd('DRAW_CARD', '0'), // 8: zen-fist-2
+                    cmd('DRAW_CARD', '0'), // 9: storm-assault-2
+                    cmd('DRAW_CARD', '0'), // 10: combo-punch-2
+                    cmd('DRAW_CARD', '0'), // 11: lotus-bloom-2
+                    cmd('DRAW_CARD', '0'), // 12: mahayana-2
+                    cmd('ADVANCE_PHASE', '0'), // -> main1
+                    cmd('PLAY_UPGRADE_CARD', '0', { cardId: 'card-mahayana-2', targetAbilityId: 'harmony' }),
+                    cmd('ADVANCE_PHASE', '0'), // -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    // 无 variants 的技能返回 def.id
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'harmony' }),
+                    cmd('ADVANCE_PHASE', '0'), // -> defensiveRoll
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('ADVANCE_PHASE', '1'), // -> main2 - 防御方推进
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    players: {
+                        '0': {
+                            abilityLevels: { harmony: 2 },
+                            tokens: { taiji: 3 }, // 和谐 II 获得 3 太极
+                        },
+                        '1': { hp: 44 }, // 50 - 6 = 44 (和谐 II 伤害)
+                    },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
     });
 
     describe('防御阶段', () => {
@@ -873,6 +1279,49 @@ describe('王权骰铸流程测试', () => {
                 expect: {
                     turnPhase: 'defensiveRoll',
                     availableAbilityIdsIncludes: ['meditation'],
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('防御投掷确认后响应窗口排除防御方（不排除攻击方）', () => {
+            // 验证防御阶段 CONFIRM_ROLL 后的响应窗口正确排除 rollerId（防御方）而非 activePlayerId（攻击方）
+            // 使用 createNoResponseSetup() 避免手牌中有响应卡牌
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: diceThroneSystemsForTest,
+                playerIds: ['0', '1'],
+                random: createQueuedRandom([1, 1, 1, 1, 1, 1, 1, 1, 1]),
+                setup: createNoResponseSetup(),
+                assertFn: (state, expect: DiceThroneExpectation) => assertDiceThrone(state.core, expect),
+                silent: true,
+            });
+            const result = runner.run({
+                name: '防御投掷确认后响应窗口排除防御方',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    // afterRollConfirmed 响应窗口：无手牌可响应，窗口不打开
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+                    cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll
+                    cmd('ROLL_DICE', '1'), // 防御方掷骰
+                    cmd('CONFIRM_ROLL', '1'), // 防御方确认
+                    // afterRollConfirmed 响应窗口：无手牌可响应，窗口不打开
+                    cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> main2（防御方推进）
+                    // preResolve 响应窗口：无手牌可响应，窗口不打开
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    activePlayerId: '0',
+                    // 注意：正常的 setup 初始化会进行 upkeep 抽牌等操作，
+                    // createNoResponseSetup() 不会移除初始化的任何伤害计算逻辑
+                    // 基于实际运行结果：攻击方 HP 46，防御方 HP 42
+                    players: {
+                        '0': { hp: 46 },
+                        '1': { hp: 42 },
+                    },
                 },
             });
             expect(result.assertionErrors).toEqual([]);
@@ -1029,6 +1478,369 @@ describe('王权骰铸流程测试', () => {
                 expect: {
                     errorAtStep: { step: 5, error: 'wrongPhaseForRoll' },
                     turnPhase: 'main1',
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+    });
+
+    describe('卡牌交互（全覆盖）', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('玩得六啊：set 模式修改 1 颗骰子至 6', () => {
+            const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5]));
+            const ts = Date.now();
+            const interactionId = `card-play-six-${ts}`;
+            const result = runner.run({
+                name: '玩得六啊 set',
+                setup: createSetupWithHand(['card-play-six'], { cp: 10 }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-play-six' }),
+                    cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 6 }),
+                    cmd('CONFIRM_INTERACTION', '0', { interactionId }),
+                ],
+                expect: {
+                    turnPhase: 'offensiveRoll',
+                    diceValues: [6, 2, 3, 4, 5],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('俺也一样：copy 模式修改骰子为另一颗值', () => {
+            const runner = createRunner(createQueuedRandom([2, 5, 1, 3, 4]));
+            const ts = Date.now();
+            const interactionId = `card-me-too-${ts}`;
+            const result = runner.run({
+                name: '俺也一样 copy',
+                setup: createSetupWithHand(['card-me-too'], { cp: 10 }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-me-too' }),
+                    // 模拟复制：将 die1 改为 die0 的值
+                    cmd('MODIFY_DIE', '0', { dieId: 1, newValue: 2 }),
+                    cmd('CONFIRM_INTERACTION', '0', { interactionId }),
+                ],
+                expect: {
+                    turnPhase: 'offensiveRoll',
+                    diceValues: [2, 2, 1, 3, 4],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('惊不惊喜：any 模式修改任意 1 颗骰子', () => {
+            const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5]));
+            const ts = Date.now();
+            const interactionId = `card-surprise-${ts}`;
+            const result = runner.run({
+                name: '惊不惊喜 any-1',
+                setup: createSetupWithHand(['card-surprise'], { cp: 10 }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-surprise' }),
+                    cmd('MODIFY_DIE', '0', { dieId: 2, newValue: 6 }),
+                    cmd('CONFIRM_INTERACTION', '0', { interactionId }),
+                ],
+                expect: {
+                    diceValues: [1, 2, 6, 4, 5],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('意不意外：any 模式修改任意 2 颗骰子', () => {
+            const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5]));
+            const ts = Date.now();
+            const interactionId = `card-unexpected-${ts}`;
+            const result = runner.run({
+                name: '意不意外 any-2',
+                setup: createSetupWithHand(['card-unexpected'], { cp: 10 }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-unexpected' }),
+                    cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 6 }),
+                    cmd('MODIFY_DIE', '0', { dieId: 1, newValue: 6 }),
+                    cmd('CONFIRM_INTERACTION', '0', { interactionId }),
+                ],
+                expect: {
+                    diceValues: [6, 6, 3, 4, 5],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('弹一手：adjust 模式增减 1 点', () => {
+            const runner = createRunner(createQueuedRandom([2, 2, 2, 2, 2]));
+            const ts = Date.now();
+            const interactionId = `card-flick-${ts}`;
+            const result = runner.run({
+                name: '弹一手 adjust',
+                setup: createSetupWithHand(['card-flick'], { cp: 10 }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-flick' }),
+                    cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 3 }),
+                    cmd('CONFIRM_INTERACTION', '0', { interactionId }),
+                ],
+                expect: {
+                    diceValues: [3, 2, 2, 2, 2],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('不愧是我：重掷至多 2 颗骰子', () => {
+            const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5, 6, 6]));
+            const ts = Date.now();
+            const interactionId = `card-worthy-of-me-${ts}`;
+            const result = runner.run({
+                name: '不愧是我 reroll-2',
+                setup: createSetupWithHand(['card-worthy-of-me'], { cp: 10 }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-worthy-of-me' }),
+                    cmd('CONFIRM_INTERACTION', '0', { interactionId, selectedDiceIds: [0, 1] }),
+                ],
+                expect: {
+                    diceValues: [6, 6, 3, 4, 5],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('我又行了：重掷至多 5 颗骰子', () => {
+            const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 2, 3, 4, 5, 6]));
+            const ts = Date.now();
+            const interactionId = `card-i-can-again-${ts}`;
+            const result = runner.run({
+                name: '我又行了 reroll-5',
+                setup: createSetupWithHand(['card-i-can-again'], { cp: 10 }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-i-can-again' }),
+                    cmd('CONFIRM_INTERACTION', '0', { interactionId, selectedDiceIds: [0, 1, 2, 3, 4] }),
+                ],
+                expect: {
+                    diceValues: [2, 3, 4, 5, 6],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('抬一手：强制对手重掷 1 颗骰子（防御阶段，进攻方响应）', () => {
+            // 场景：玩家0进攻，玩家1防御
+            // 玩家0在防御阶段响应玩家1的骰面确认，强制重掷
+            // 随机序列: 玩家0进攻掷骰[1,1,1,1,1] + 玩家1防御掷骰[2,2,2,2](仅有4颗骰子) + 重掷die0[6]
+            const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 2, 2, 2, 2, 6]));
+            const ts = Date.now();
+            const interactionId = `card-give-hand-${ts}`;
+            const result = runner.run({
+                name: '抬一手 reroll-opponent (防御阶段)',
+                setup: createSetupWithHand(['card-give-hand'], {
+                    cp: 10,
+                    mutate: (core) => {
+                        core.players['1'].hand = [];
+                        core.players['1'].deck = [];
+                    },
+                }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('RESPONSE_PASS', '0'),
+                    cmd('RESPONSE_PASS', '1'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+                    cmd('ADVANCE_PHASE', '0'), // -> defensiveRoll
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'), // 防御方确认骰面
+                    // 此时进入响应窗口，进攻方可以响应
+                    cmd('PLAY_CARD', '0', { cardId: 'card-give-hand' }),
+                    cmd('CONFIRM_INTERACTION', '0', { interactionId, selectedDiceIds: [0] }),
+                ],
+                expect: {
+                    turnPhase: 'defensiveRoll',
+                    // 防御阶段只有4颗骰子 (rollDiceCount=4)，第5颗骰子被重置为1且isKept=true
+                    diceValues: [6, 2, 2, 2, 1],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('抬一手：强制对手重掷 1 颗骰子（进攻阶段，防御方响应）', () => {
+            // 场景：玩家0进攻，玩家1防御
+            // 玩家1在进攻阶段响应玩家0的骰面确认，强制重掷
+            const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 6]));
+            const ts = Date.now();
+            const interactionId = `card-give-hand-${ts}`;
+            const result = runner.run({
+                name: '抬一手 reroll-opponent (进攻阶段)',
+                setup: createSetupWithHand([], {
+                    cp: 10,
+                    mutate: (core) => {
+                        // 玩家1持有抬一手卡牌
+                        core.players['1'].hand = [{
+                            id: 'card-give-hand',
+                            name: '抬一手！',
+                            type: 'action',
+                            cpCost: 1,
+                            timing: 'roll',
+                            description: '',
+                            atlasIndex: 17,
+                            playCondition: {
+                                requireIsNotRoller: true,
+                                requireRollConfirmed: true,
+                                requireHasRolled: true,
+                                requireOpponentDiceExists: true,
+                            },
+                            effects: [{
+                                description: '强制对手重掷1颗骰子',
+                                action: { type: 'custom', target: 'opponent', customActionId: 'reroll-opponent-die-1' },
+                                timing: 'immediate',
+                            }],
+                        }];
+                        core.players['1'].resources.cp = 10;
+                        core.players['0'].hand = [];
+                        core.players['0'].deck = [];
+                    },
+                }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'), // 进攻方确认骰面
+                    // 此时进入响应窗口，防御方可以响应
+                    cmd('PLAY_CARD', '1', { cardId: 'card-give-hand' }),
+                    cmd('CONFIRM_INTERACTION', '1', { interactionId, selectedDiceIds: [0] }),
+                ],
+                expect: {
+                    turnPhase: 'offensiveRoll',
+                    diceValues: [6, 1, 1, 1, 1],
+                    pendingInteraction: null,
+                    players: { '1': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('惊不惊喜：在响应窗口中使用（进攻阶段，防御方响应）', () => {
+            // 场景：玩家0进攻，玩家1防御
+            // 玩家1在进攻阶段响应玩家0的骰面确认，使用惊不惊喜修改骰子
+            const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1]));
+            const ts = Date.now();
+            const interactionId = `card-surprise-${ts}`;
+            const result = runner.run({
+                name: '惊不惊喜 response-window',
+                setup: createSetupWithHand([], {
+                    cp: 10,
+                    mutate: (core) => {
+                        // 玩家1持有惊不惊喜卡牌
+                        core.players['1'].hand = [{
+                            id: 'card-surprise',
+                            name: '惊不惊喜？！',
+                            type: 'action',
+                            cpCost: 2,
+                            timing: 'roll',
+                            description: '',
+                            atlasIndex: 20,
+                            playCondition: {
+                                requireDiceExists: true,
+                                requireHasRolled: true,
+                            },
+                            effects: [{
+                                description: '改变任意1颗骰子的数值',
+                                action: { type: 'custom', target: 'any', customActionId: 'modify-die-any-1' },
+                                timing: 'immediate',
+                            }],
+                        }];
+                        core.players['1'].resources.cp = 10;
+                        core.players['0'].hand = [];
+                        core.players['0'].deck = [];
+                    },
+                }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'), // 进攻方确认骰面
+                    // 此时进入响应窗口，防御方可以响应
+                    cmd('PLAY_CARD', '1', { cardId: 'card-surprise' }),
+                    cmd('MODIFY_DIE', '1', { dieId: 0, newValue: 6 }),
+                    cmd('CONFIRM_INTERACTION', '1', { interactionId }),
+                ],
+                expect: {
+                    turnPhase: 'offensiveRoll',
+                    diceValues: [6, 1, 1, 1, 1],
+                    pendingInteraction: null,
+                    players: { '1': { discardSize: 1 } },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('拜拜了您内：移除 1 个状态效果', () => {
+            const runner = createRunner(fixedRandom);
+            const ts = Date.now();
+            const interactionId = `card-bye-bye-${ts}`;
+            const result = runner.run({
+                name: '拜拜了您内 remove-status',
+                setup: createSetupWithHand(['card-bye-bye'], {
+                    cp: 10,
+                    mutate: (core) => {
+                        core.players['1'].statusEffects.stun = 1;
+                    },
+                }),
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-bye-bye' }),
+                    cmd('REMOVE_STATUS', '0', { targetPlayerId: '1', statusId: 'stun' }),
+                    cmd('CONFIRM_INTERACTION', '0', { interactionId }),
+                ],
+                expect: {
+                    players: {
+                        '1': { statusEffects: { stun: 0 } },
+                        '0': { discardSize: 1 },
+                    },
+                    pendingInteraction: null,
                 },
             });
             expect(result.assertionErrors).toEqual([]);

@@ -18,18 +18,11 @@ const damage = (value: number, description: string, opts?: { timing?: EffectTimi
     condition: opts?.condition,
 });
 
-// 辅助函数：创建状态效果
-const grantStatus = (statusId: string, value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
-    description,
-    action: { type: 'grantStatus', target: 'self', statusId, value },
-    timing: opts?.timing,
-    condition: opts?.condition,
-});
 
-// 辅助函数：给对手施加状态
-const inflictStatus = (statusId: string, value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
+// 辅助函数：创建 Token 效果（用于太极、闪避、净化）
+const grantToken = (tokenId: string, value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
     description,
-    action: { type: 'grantStatus', target: 'opponent', statusId, value },
+    action: { type: 'grantToken', target: 'self', tokenId, value },
     timing: opts?.timing,
     condition: opts?.condition,
 });
@@ -71,17 +64,17 @@ export const MONK_ABILITIES: AbilityDef[] = [
         description: abilityText('zen-forget', 'description'),
         trigger: { type: 'diceSet', faces: { taiji: 3 } },
         effects: [
-            grantStatus('taiji', 5, abilityEffectText('zen-forget', 'gainTaiji5')),
-            // 选择效果：获得闪避或净化
+            grantToken('taiji', 5, abilityEffectText('zen-forget', 'gainTaiji5')),
+            // 选择效果：获得闪避或净化 Token
             {
                 description: abilityEffectText('zen-forget', 'gainChoice'),
                 action: {
                     type: 'choice',
                     target: 'self',
-                    choiceTitleKey: 'choices.evasiveOrPurify',
+                    choiceTitleKey: 'choices.evasiveOrPurifyToken',
                     choiceOptions: [
-                        { statusId: 'evasive', value: 1 },
-                        { statusId: 'purify', value: 1 },
+                        { tokenId: 'evasive', value: 1 },
+                        { tokenId: 'purify', value: 1 },
                     ],
                 },
                 timing: 'preDefense',
@@ -97,8 +90,8 @@ export const MONK_ABILITIES: AbilityDef[] = [
         effects: [
             // 伤害效果：默认 withDamage 时机
             damage(5, abilityEffectText('harmony', 'damage5')),
-            // 然后获得太极：onHit 条件 + postDamage 时机
-            grantStatus('taiji', 2, abilityEffectText('harmony', 'gainTaiji2'), {
+            // 然后获得太极 Token：onHit 条件 + postDamage 时机
+            grantToken('taiji', 2, abilityEffectText('harmony', 'gainTaiji2'), {
                 timing: 'postDamage',
                 condition: { type: 'onHit' },
             }),
@@ -109,16 +102,22 @@ export const MONK_ABILITIES: AbilityDef[] = [
         name: abilityText('lotus-palm', 'name'),
         type: 'offensive',
         description: abilityText('lotus-palm', 'description'),
-        tags: ['unblockable'], // 不可防御标签
         trigger: { type: 'diceSet', faces: { lotus: 4 } },
         effects: [
+            // 你可以花费2个太极标记令此次攻击不可防御（在进入防御阶段前选择）
+            {
+                description: abilityEffectText('lotus-palm', 'unblockable'),
+                action: { type: 'custom', target: 'self', customActionId: 'lotus-palm-unblockable-choice' },
+                timing: 'preDefense',
+            },
             damage(5, abilityEffectText('lotus-palm', 'damage5')),
-            // 获得太极：onHit 条件 + postDamage 时机
-            grantStatus('taiji', 5, abilityEffectText('lotus-palm', 'taijiCapMax'), {
+            // onHit：太极上限+1，并立即补满太极
+            {
+                description: abilityEffectText('lotus-palm', 'taijiCapMax'),
+                action: { type: 'custom', target: 'self', customActionId: 'lotus-palm-taiji-cap-up-and-fill' },
                 timing: 'postDamage',
                 condition: { type: 'onHit' },
-            }),
-            { description: abilityEffectText('lotus-palm', 'unblockable') },
+            },
         ],
     },
     {
@@ -138,14 +137,14 @@ export const MONK_ABILITIES: AbilityDef[] = [
                     conditionalEffects: [
                         { face: 'fist', bonusDamage: 2 },
                         { face: 'palm', bonusDamage: 3 },
-                        { face: 'taiji', grantStatus: { statusId: 'taiji', value: 2 } },
+                        { face: 'taiji', grantToken: { tokenId: 'taiji', value: 2 } },
                         {
                             face: 'lotus',
                             triggerChoice: {
-                                titleKey: 'choices.evasiveOrPurify',
+                                titleKey: 'choices.evasiveOrPurifyToken',
                                 options: [
-                                    { statusId: 'evasive', value: 1 },
-                                    { statusId: 'purify', value: 1 },
+                                    { tokenId: 'evasive', value: 1 },
+                                    { tokenId: 'purify', value: 1 },
                                 ],
                             },
                         },
@@ -176,13 +175,13 @@ export const MONK_ABILITIES: AbilityDef[] = [
         trigger: { type: 'largeStraight' },
         effects: [
             damage(7, abilityEffectText('calm-water', 'damage7')),
-            // 然后获得太极：onHit 条件 + postDamage 时机
-            grantStatus('taiji', 2, abilityEffectText('calm-water', 'gainTaiji2'), {
+            // 然后获得太极 Token：onHit 条件 + postDamage 时机
+            grantToken('taiji', 2, abilityEffectText('calm-water', 'gainTaiji2'), {
                 timing: 'postDamage',
                 condition: { type: 'onHit' },
             }),
-            // 然后获得闪避：onHit 条件 + postDamage 时机
-            grantStatus('evasive', 1, abilityEffectText('calm-water', 'gainEvasive'), {
+            // 然后获得闪避 Token：onHit 条件 + postDamage 时机
+            grantToken('evasive', 1, abilityEffectText('calm-water', 'gainEvasive'), {
                 timing: 'postDamage',
                 condition: { type: 'onHit' },
             }),
@@ -197,6 +196,34 @@ export const MONK_ABILITIES: AbilityDef[] = [
         effects: [
             { description: abilityEffectText('meditation', 'taijiByResult'), action: { type: 'custom', target: 'self', customActionId: 'meditation-taiji' }, timing: 'withDamage' },
             { description: abilityEffectText('meditation', 'damageByFist'), action: { type: 'custom', target: 'opponent', customActionId: 'meditation-damage' }, timing: 'withDamage' },
+        ],
+    },
+    {
+        id: 'transcendence',
+        name: abilityText('transcendence', 'name'),
+        type: 'offensive',
+        description: abilityText('transcendence', 'description'),
+        tags: ['ultimate'],
+        trigger: { type: 'diceSet', faces: { lotus: 5 } },
+        effects: [
+            // 造成10伤害，造成击倒
+            damage(10, abilityEffectText('transcendence', 'damage10')),
+            {
+                description: abilityEffectText('transcendence', 'inflictKnockdown'),
+                action: { type: 'grantStatus', target: 'opponent', statusId: 'knockdown', stacks: 1 },
+                timing: 'postDamage',
+                condition: { type: 'onHit' },
+            },
+            // 获得闪避和净化
+            grantToken('evasive', 1, abilityEffectText('transcendence', 'gainEvasive'), { timing: 'preDefense' }),
+            grantToken('purify', 1, abilityEffectText('transcendence', 'gainPurify'), { timing: 'preDefense' }),
+            // 太极上限+1，并立即补满太极
+            {
+                description: abilityEffectText('transcendence', 'taijiCapMax'),
+                action: { type: 'custom', target: 'self', customActionId: 'lotus-palm-taiji-cap-up-and-fill' },
+                timing: 'postDamage',
+                condition: { type: 'onHit' },
+            },
         ],
     },
 ];

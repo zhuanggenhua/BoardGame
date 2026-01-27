@@ -247,6 +247,6 @@ export const HandAreaSkeleton = memo(function HandAreaSkeleton<TCard>({
             })}
         </div>
     );
-}) as <TCard>(props: HandAreaSkeletonProps<TCard>) => JSX.Element;
+}) as <TCard>(props: HandAreaSkeletonProps<TCard>) => React.ReactElement;
 
 export default HandAreaSkeleton;

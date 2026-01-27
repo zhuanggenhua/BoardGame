@@ -124,23 +124,34 @@ export interface RematchState {
 
 /**
  * 响应窗口类型
+ * - afterRollConfirmed: 确认骰面后（所有有骰子相关卡牌的玩家可响应）
+ * - preResolve: 攻击结算前/最后出牌机会（所有玩家可响应）
+ * - afterCardPlayed: 卡牌打出后（受影响玩家可响应）
+ * - thenBreakpoint: "然后"断点（所有玩家可响应）
  */
-export type ResponseWindowType = 'preResolve' | 'thenBreakpoint';
+export type ResponseWindowType = 'afterRollConfirmed' | 'preResolve' | 'afterCardPlayed' | 'thenBreakpoint';
 
 /**
  * 响应窗口状态
+ * 支持多玩家响应队列
  */
 export interface ResponseWindowState {
     /** 当前响应窗口 */
     current?: {
         /** 窗口唯一 ID */
         id: string;
-        /** 可响应的玩家 ID */
-        responderId: PlayerId;
         /** 窗口类型 */
         windowType: ResponseWindowType;
-        /** 来源技能 ID（可选） */
-        sourceAbilityId?: string;
+        /** 来源卡牌/技能 ID（可选） */
+        sourceId?: string;
+        /** 响应者队列（按顺序轮询） */
+        responderQueue: PlayerId[];
+        /** 当前响应者索引 */
+        currentResponderIndex: number;
+        /** 已跳过的玩家 */
+        passedPlayers: PlayerId[];
+        /** 交互锁：阻止推进直到交互完成（存储交互 ID） */
+        pendingInteractionId?: string;
     };
 }
 
@@ -164,8 +175,8 @@ export interface SystemState {
     responseWindow: ResponseWindowState;
     /** 当前回合数 */
     turnNumber: number;
-    /** 当前阶段 */
-    phase?: string;
+    /** 当前阶段（单一权威；没有阶段概念的游戏使用空字符串） */
+    phase: string;
 }
 
 // ============================================================================
@@ -203,22 +214,22 @@ export interface DomainCore<
     /** 游戏 ID */
     gameId: string;
 
-    /** 初始化游戏状态 */
+    /** 初始化游戏状态（仅返回 core，sys 由系统层 setup） */
     setup(playerIds: PlayerId[], random: RandomFn): TState;
 
-    /** 验证命令合法性 */
-    validate(state: TState, command: TCommand): ValidationResult;
+    /** 验证命令合法性（允许读取 sys 状态，例如 sys.phase） */
+    validate(state: MatchState<TState>, command: TCommand): ValidationResult;
 
-    /** 执行命令，产生事件 */
-    execute(state: TState, command: TCommand, random: RandomFn): TEvent[];
+    /** 执行命令，产生事件（允许读取 sys 状态，例如 sys.phase） */
+    execute(state: MatchState<TState>, command: TCommand, random: RandomFn): TEvent[];
 
-    /** 应用事件，返回新状态（确定性 reducer） */
+    /** 应用事件，返回新状态（确定性 reducer，仅作用于 core） */
     reduce(state: TState, event: TEvent): TState;
 
-    /** 玩家视图过滤（隐藏信息） */
+    /** 玩家视图过滤（隐藏信息，仅作用于 core） */
     playerView?(state: TState, playerId: PlayerId): Partial<TState>;
 
-    /** 判断游戏是否结束 */
+    /** 判断游戏是否结束（仅作用于 core） */
     isGameOver?(state: TState): GameOverResult | undefined;
 }
 

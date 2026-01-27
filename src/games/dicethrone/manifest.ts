@@ -10,6 +10,7 @@ const entry: GameManifestEntry = {
     playersKey: 'games.dicethrone.players',
     icon: '🎲',
     allowLocalMode: false,
+    playerOptions: [2, 3, 4],
 };
 
 export const DICETHRONE_MANIFEST: GameManifestEntry = entry;

@@ -98,6 +98,7 @@ function saveSnapshot<TCore>(
     const snapshots = [...state.sys.undo.snapshots];
     
     // 保存当前状态的深拷贝（排除已有快照，避免嵌套导致指数级膨胀）
+    // 同时限制日志数量，避免快照过大
     const stateToSave = {
         ...state,
         sys: {
@@ -105,6 +106,10 @@ function saveSnapshot<TCore>(
             undo: {
                 ...state.sys.undo,
                 snapshots: [], // 快照中不保存快照历史
+            },
+            log: {
+                ...state.sys.log,
+                entries: state.sys.log.entries.slice(-5), // 快照中只保留最近 5 条日志
             },
         },
     };
@@ -164,8 +169,9 @@ function handleRequestUndo<TCore>(
                 sys: {
                     ...previousState.sys,
                     undo: {
-                        ...previousState.sys.undo,
+                        maxSnapshots: undo.maxSnapshots,
                         snapshots: newSnapshots,
+                        pendingRequest: undefined,
                     },
                 },
             },
@@ -221,6 +227,9 @@ function handleApproveUndo<TCore>(
             approverId,
             requesterId: undo.pendingRequest.requesterId,
             approvals: approvals.length,
+            beforeSnapshotLen: undo.snapshots.length,
+            afterSnapshotLen: newSnapshots.length,
+            restoredPhase: (previousState as any).sys?.phase,
         });
         
         return {
@@ -230,7 +239,7 @@ function handleApproveUndo<TCore>(
                 sys: {
                     ...previousState.sys,
                     undo: {
-                        ...previousState.sys.undo,
+                        maxSnapshots: undo.maxSnapshots,
                         snapshots: newSnapshots,
                         pendingRequest: undefined,
                     },

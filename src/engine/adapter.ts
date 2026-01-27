@@ -26,9 +26,11 @@ import { dispatchEngineNotification } from './notifications';
 import { UNDO_COMMANDS } from './systems/UndoSystem';
 import { REMATCH_COMMANDS } from './systems/RematchSystem';
 import { PROMPT_COMMANDS } from './systems/PromptSystem';
+import { FLOW_COMMANDS } from './systems/FlowSystem';
 
 // 所有系统命令（自动合并到 commandTypes）
 const ALL_SYSTEM_COMMANDS: string[] = [
+    ...Object.values(FLOW_COMMANDS),
     ...Object.values(UNDO_COMMANDS),
     ...Object.values(REMATCH_COMMANDS),
     ...Object.values(PROMPT_COMMANDS),
@@ -78,25 +80,49 @@ export function createGameAdapter<
 
     // 生成通用 move 处理器
     const createMoveHandler = (commandType: string): Move<MatchState<TCore>> => {
+        let warnedSpectator = false;
         return ({ G, ctx, random, playerID }, payload: unknown) => {
             const coreCurrentPlayer = (G as { core?: { currentPlayer?: string } }).core?.currentPlayer;
             const isSystemCommand = systemCommandTypes.has(commandType);
-            const isAssumedPlayer = playerID === null
-                || playerID === undefined
-                || String(playerID) === String(ctx.currentPlayer);
             const isClient = typeof window !== 'undefined';
-            const shouldAvoidCtxPlayer = isClient && (playerID === null || playerID === undefined) && !coreCurrentPlayer;
+
             const globalMode = isClient
-                ? (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__
+                ? (window as Window & { __BG_GAME_MODE__?: string; __BG_IS_SPECTATOR__?: boolean }).__BG_GAME_MODE__
                 : undefined;
-            const isLocalMode = globalMode === 'local';
-            const shouldSkipValidation = playerID === null || playerID === undefined || isLocalMode;
-            const resolvedPlayerId = (!isSystemCommand && isClient && coreCurrentPlayer && isAssumedPlayer)
-                ? coreCurrentPlayer
-                : (shouldAvoidCtxPlayer ? playerID : (playerID ?? coreCurrentPlayer ?? ctx.currentPlayer));
+            const isSpectator = isClient
+                ? (window as Window & { __BG_IS_SPECTATOR__?: boolean }).__BG_IS_SPECTATOR__ === true
+                : false;
+            const isLocalLikeMode = globalMode === 'local' || globalMode === 'tutorial';
+            if (!isLocalLikeMode && isSpectator) {
+                if (isClient && import.meta.env.DEV && !warnedSpectator) {
+                    console.warn('[Spectate][Adapter] blocked command', { commandType });
+                    warnedSpectator = true;
+                }
+                return;
+            }
+
+            // IMPORTANT: In online mode, a missing playerID must NOT be allowed to act as ctx.currentPlayer.
+            // Otherwise spectators can mutate state.
+            const isMissingPlayer = playerID === null || playerID === undefined;
+            if (!isLocalLikeMode && isMissingPlayer) {
+                // On the server, all matches are online; on the client, this indicates spectator mode.
+                return;
+            }
+
+            // Only local/tutorial should bypass validation.
+            const shouldSkipValidation = isLocalLikeMode;
+
+            // Resolve acting playerId.
+            // - local/tutorial: allow hotseat-style fallback.
+            // - online: require explicit playerID.
+            const resolvedPlayerId = isLocalLikeMode
+                ? (playerID ?? coreCurrentPlayer ?? ctx.currentPlayer)
+                : playerID;
+
             const normalizedPlayerId = resolvedPlayerId !== null && resolvedPlayerId !== undefined
                 ? String(resolvedPlayerId)
                 : '';
+
             const isUndoCommand = undoCommandTypes.has(commandType);
 
             const command: Command = {
@@ -134,6 +160,15 @@ export function createGameAdapter<
                 systemsConfig,
             };
 
+            // 调试日志
+            if (commandType === 'ADVANCE_PHASE') {
+                console.log('[ADVANCE_PHASE] 执行前', {
+                    commandType,
+                    playerId: normalizedPlayerId,
+                    currentPhase: (G as { core?: { turnPhase?: string } }).core?.turnPhase,
+                });
+            }
+
             const result = executePipeline(
                 pipelineConfig,
                 G,
@@ -141,6 +176,16 @@ export function createGameAdapter<
                 randomFn,
                 playerIds
             );
+
+            // 调试日志
+            if (commandType === 'ADVANCE_PHASE') {
+                console.log('[ADVANCE_PHASE] 执行后', {
+                    success: result.success,
+                    error: result.error,
+                    'sys.phase': (result.state as { sys?: { phase?: string } }).sys?.phase,
+                    'core.turnPhase': (result.state as { core?: { turnPhase?: string } }).core?.turnPhase,
+                });
+            }
 
             if (isUndoCommand) {
                 console.log('[撤销调试][结果]', {
@@ -248,20 +293,24 @@ export function createReplayAdapter<
     domain: DomainCore<TCore, TCommand, TEvent>,
     seed: string
 ): {
-    setup: (playerIds: PlayerId[]) => TCore;
-    execute: (state: TCore, command: TCommand) => { state: TCore; events: TEvent[] };
+    setup: (playerIds: PlayerId[]) => MatchState<TCore>;
+    execute: (state: MatchState<TCore>, command: TCommand) => { state: MatchState<TCore>; events: TEvent[] };
 } {
     const random = createSeededRandom(seed);
 
     return {
-        setup: (playerIds: PlayerId[]) => domain.setup(playerIds, random),
-        execute: (state: TCore, command: TCommand) => {
+        setup: (playerIds: PlayerId[]) => {
+            const core = domain.setup(playerIds, random);
+            const sys = createInitialSystemState(playerIds, [], undefined);
+            return { sys, core };
+        },
+        execute: (state: MatchState<TCore>, command: TCommand) => {
             const events = domain.execute(state, command, random);
-            let newState = state;
+            let core = state.core;
             for (const event of events) {
-                newState = domain.reduce(newState, event);
+                core = domain.reduce(core, event);
             }
-            return { state: newState, events };
+            return { state: { ...state, core }, events };
         },
     };
 }

@@ -2,12 +2,13 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Client } from 'boardgame.io/react';
+import { LobbyClient } from 'boardgame.io/client';
 import { GAME_IMPLEMENTATIONS } from '../games/registry';
 import { useDebug } from '../contexts/DebugContext';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
 import { RematchProvider } from '../contexts/RematchContext';
-import { useMatchStatus, destroyMatch, leaveMatch } from '../hooks/match/useMatchStatus';
+import { useMatchStatus, destroyMatch, leaveMatch, rejoinMatch, persistMatchCredentials } from '../hooks/match/useMatchStatus';
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { useModalStack } from '../contexts/ModalStackContext';
 import { useToast } from '../contexts/ToastContext';
@@ -89,6 +90,126 @@ export const MatchRoom = () => {
 
     // 从 URL 查询参数中获取 playerID
     const urlPlayerID = searchParams.get('playerID');
+    const shouldAutoJoin = searchParams.get('join') === 'true';
+    const spectateParam = searchParams.get('spectate');
+    const isSpectatorRoute = !isTutorialRoute && !shouldAutoJoin && !urlPlayerID && (spectateParam === null || spectateParam === '1' || spectateParam === 'true');
+    useEffect(() => {
+        if (!import.meta.env.DEV) return;
+        console.info('[Spectate][MatchRoom]', {
+            gameId,
+            matchId,
+            urlPlayerID,
+            shouldAutoJoin,
+            spectateParam,
+            isSpectatorRoute,
+            href: window.location.href,
+        });
+    }, [gameId, matchId, urlPlayerID, shouldAutoJoin, spectateParam, isSpectatorRoute]);
+
+    // 自动加入逻辑（调试重置跳转）
+    const [isAutoJoining, setIsAutoJoining] = useState(false);
+    const autoJoinStartedRef = useRef(false);
+    useEffect(() => {
+        if (!shouldAutoJoin || !gameId || !matchId || isTutorialRoute || isAutoJoining) return;
+        if (autoJoinStartedRef.current) {
+            return;
+        }
+        autoJoinStartedRef.current = true;
+
+        // 如果已有凭据，直接使用
+        const stored = localStorage.getItem(`match_creds_${matchId}`);
+        if (stored) {
+            try {
+                const data = JSON.parse(stored);
+                // 如果已有玩家 1 的凭据，直接跳转
+                if (data?.playerID === '1') {
+                    window.location.href = `/play/${gameId}/match/${matchId}?playerID=1`;
+                    return;
+                }
+                // 如果是玩家0凭据（可能是同浏览器另一标签），不使用，继续自动加入
+                if (data?.playerID === '0') {
+                } else {
+                    // 其他情况默认跳过
+                    return;
+                }
+            } catch {
+                // 解析失败，继续自动加入
+            }
+        }
+
+        setIsAutoJoining(true);
+        const guestId = localStorage.getItem('guest_id') || String(Math.floor(Math.random() * 9000) + 1000);
+        if (!localStorage.getItem('guest_id')) {
+            localStorage.setItem('guest_id', guestId);
+        }
+        const playerName = t('player.guest', { id: guestId, ns: 'lobby' });
+
+        // 先查询房间状态，找到可用位置（带重试）
+        const lobbyClient = new LobbyClient({ server: GAME_SERVER_URL });
+        let retryCount = 0;
+        const maxRetries = 5;
+        
+        const tryJoin = async () => {
+            try {
+                const matchInfo = await lobbyClient.getMatch(gameId, matchId);
+                const player0 = matchInfo.players.find(p => p.id === 0);
+                const player1 = matchInfo.players.find(p => p.id === 1);
+                // 找一个空位
+                let targetPlayerID = '';
+                if (!player1?.name) targetPlayerID = '1';
+                else if (!player0?.name) targetPlayerID = '0';
+                else {
+                    setIsAutoJoining(false);
+                    return;
+                }
+                const { success } = await rejoinMatch(gameId, matchId, targetPlayerID, playerName);
+                if (success) {
+                    window.location.href = `/play/${gameId}/match/${matchId}?playerID=${targetPlayerID}`;
+                } else {
+                    // 加入失败，重试
+                    retryCount++;
+                    if (retryCount < maxRetries) {
+                        setTimeout(tryJoin, 500);
+                    } else {
+                        // 最后再检查一次是否已有凭据
+                        const finalStored = localStorage.getItem(`match_creds_${matchId}`);
+                        if (finalStored) {
+                            try {
+                                const data = JSON.parse(finalStored);
+                                if (data?.playerID) {
+                                    window.location.href = `/play/${gameId}/match/${matchId}?playerID=${data.playerID}`;
+                                    return;
+                                }
+                            } catch {}
+                        }
+                        setIsAutoJoining(false);
+                    }
+                }
+            } catch (err) {
+                // 出错也重试
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    setTimeout(tryJoin, 500);
+                } else {
+                    // 最后再检查一次是否已有凭据
+                    const finalStored = localStorage.getItem(`match_creds_${matchId}`);
+                    if (finalStored) {
+                        try {
+                            const data = JSON.parse(finalStored);
+                            if (data?.playerID) {
+                                window.location.href = `/play/${gameId}/match/${matchId}?playerID=${data.playerID}`;
+                                return;
+                            }
+                        } catch {}
+                    }
+                    setIsAutoJoining(false);
+                }
+            }
+        };
+        
+        // 延迟 1 秒，等待房主完全加入
+        setTimeout(tryJoin, 1000);
+    }, [shouldAutoJoin, gameId, matchId, isTutorialRoute, isAutoJoining, t]);
 
     // 获取凭据 (Credentials)
     const credentials = useMemo(() => {
@@ -111,11 +232,11 @@ export const MatchRoom = () => {
         try {
             const data = JSON.parse(stored);
             if (data.gameName !== gameId) {
-                localStorage.setItem(`match_creds_${matchId}`, JSON.stringify({
+                persistMatchCredentials(matchId, {
                     ...data,
                     matchID: data.matchID || matchId,
                     gameName: gameId,
-                }));
+                });
             }
         } catch {
             return;
@@ -206,22 +327,35 @@ export const MatchRoom = () => {
         }
     };
 
-    // 离开房间处理 - 只断开连接，不删除房间（保留房间以便重连）
+    const navigateBackToLobby = () => {
+        if (gameId) {
+            navigate(`/?game=${gameId}`, { replace: true });
+            return;
+        }
+        navigate('/', { replace: true });
+    };
+
+    // 离开房间处理 - 主动离开时释放座位（房主/非房主一致）
     const handleLeaveRoom = async () => {
         if (!matchId) {
-            navigate('/');
+            navigateBackToLobby();
             return;
         }
 
+        // 观战 / 未绑定身份：直接返回大厅
         if (!statusPlayerID || !credentials) {
-            navigate('/');
+            navigateBackToLobby();
             return;
         }
 
-        // 需求：保留空房间 + 不释放座位。
-        // 因为 boardgame.io 的 /leave 在无人时会 wipe(matchID) 删除房间，
-        // 所以这里不调用 leaveMatch，也不清理本地凭证。
-        navigate('/');
+        setIsLeaving(true);
+        const ok = await leaveMatch(gameId || 'tictactoe', matchId, statusPlayerID, credentials);
+        setIsLeaving(false);
+        if (!ok) {
+            toast.error({ kind: 'i18n', key: 'matchRoom.leaveFailed', ns: 'lobby' });
+            return;
+        }
+        navigateBackToLobby();
     };
 
     const handleConfirmDestroy = async () => {
@@ -241,7 +375,7 @@ export const MatchRoom = () => {
         }
 
         clearMatchCredentials();
-        navigate('/');
+        navigateBackToLobby();
     };
 
     // 真正销毁房间（仅房主可用）
@@ -400,6 +534,15 @@ export const MatchRoom = () => {
         );
     }
 
+    // 自动加入过程中显示加载状态
+    if (isAutoJoining || (shouldAutoJoin && !credentials)) {
+        return (
+            <div className="w-full h-screen bg-black flex items-center justify-center">
+                <div className="text-white/70 text-sm">正在加入房间...</div>
+            </div>
+        );
+    }
+
     if (matchStatus.error && !isTutorialRoute) {
         return (
             <div className="w-full h-screen bg-black flex items-center justify-center">
@@ -430,10 +573,18 @@ export const MatchRoom = () => {
                 myPlayerId={effectivePlayerID}
                 opponentName={matchStatus.opponentName}
                 opponentConnected={matchStatus.opponentConnected}
+                players={matchStatus.players}
                 onLeave={handleLeaveRoom}
                 onDestroy={handleDestroyRoom}
                 isLoading={isLeaving}
             />
+
+            {isSpectatorRoute && !isTutorialRoute && (
+                <div
+                    className="absolute inset-0 z-[1500] bg-transparent pointer-events-auto"
+                    aria-hidden="true"
+                />
+            )}
 
             {/* 游戏棋盘 - 全屏 */}
             <div className="w-full h-full">
@@ -447,14 +598,15 @@ export const MatchRoom = () => {
                     </GameModeProvider>
                 ) : (
                     GameClient ? (
-                        <GameModeProvider mode="online">
+                        <GameModeProvider mode="online" isSpectator={isSpectatorRoute}>
                             <RematchProvider
                                 matchId={matchId}
-                                playerId={effectivePlayerID}
+                                playerId={urlPlayerID ?? undefined}
                                 isMultiplayer={true}
                             >
                                 <GameClient
-                                    playerID={effectivePlayerID}
+                                    key={`${matchId}-${isSpectatorRoute ? 'spectate' : (effectivePlayerID ?? 'player')}`}
+                                    playerID={isSpectatorRoute ? null : (effectivePlayerID ?? null)}
                                     matchID={matchId}
                                     credentials={credentials}
                                 />

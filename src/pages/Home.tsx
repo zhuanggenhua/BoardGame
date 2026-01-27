@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from '../components/auth/AuthModal';
 import { EmailBindModal } from '../components/auth/EmailBindModal';
 import { useNavigate } from 'react-router-dom';
-import { clearMatchCredentials, destroyMatch, leaveMatch } from '../hooks/match/useMatchStatus';
+import { clearMatchCredentials, exitMatch, getOwnerActiveMatch, clearOwnerActiveMatch, rejoinMatch, getLatestStoredMatchCredentials, pruneStoredMatchCredentials } from '../hooks/match/useMatchStatus';
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { LanguageSwitcher } from '../components/common/i18n/LanguageSwitcher';
 import { UserMenu } from '../components/social/UserMenu';
@@ -77,6 +77,17 @@ export const Home = () => {
         setSearchParams({ game: id });
     };
 
+    const getGuestId = () => {
+        const key = 'guest_id';
+        const stored = localStorage.getItem(key);
+        if (stored) return stored;
+        const id = String(Math.floor(Math.random() * 9000) + 1000);
+        localStorage.setItem(key, id);
+        return id;
+    };
+
+    const getGuestName = () => t('lobby:player.guest', { id: getGuestId() });
+
     const handleLogout = () => {
         logout();
     };
@@ -134,12 +145,15 @@ export const Home = () => {
     useEffect(() => {
         const handleStorage = () => setLocalStorageTick(t => t + 1);
         const handleCredentialsChange = () => setLocalStorageTick(t => t + 1);
+        const handleOwnerActive = () => setLocalStorageTick(t => t + 1);
         window.addEventListener('storage', handleStorage);
         window.addEventListener('match-credentials-changed', handleCredentialsChange);
+        window.addEventListener('owner-active-match-changed', handleOwnerActive);
 
         return () => {
             window.removeEventListener('storage', handleStorage);
             window.removeEventListener('match-credentials-changed', handleCredentialsChange);
+            window.removeEventListener('owner-active-match-changed', handleOwnerActive);
         };
     }, []);
 
@@ -147,28 +161,28 @@ export const Home = () => {
         let cancelled = false;
 
         const findLocalMatch = () => {
-            for (let i = 0; i < localStorage.length; i += 1) {
-                const key = localStorage.key(i);
-                if (!key || !key.startsWith('match_creds_')) continue;
-                const raw = localStorage.getItem(key);
-                if (!raw) continue;
-                try {
-                    const parsed = JSON.parse(raw);
-                    const matchID = parsed.matchID || key.replace('match_creds_', '');
-                    if (!matchID) continue;
-                    const gameName = parsed.gameName || 'tictactoe';
-                    return {
-                        matchID,
-                        playerID: parsed.playerID as string,
-                        credentials: parsed.credentials as string | undefined,
-                        gameName: gameName as string,
-                    };
-                } catch {
-                    continue;
-                }
+            const latestCreds = getLatestStoredMatchCredentials();
+            if (latestCreds?.matchID) {
+                const gameName = latestCreds.gameName || 'tictactoe';
+                return {
+                    matchID: latestCreds.matchID,
+                    playerID: latestCreds.playerID as string,
+                    credentials: latestCreds.credentials as string | undefined,
+                    gameName: gameName as string,
+                };
+            }
+            const ownerActive = getOwnerActiveMatch();
+            if (ownerActive?.matchID && (!ownerActive.ownerKey || ownerActive.ownerKey === (user?.id ? `user:${user.id}` : `guest:${localStorage.getItem('guest_id') || ''}`))) {
+                return {
+                    matchID: ownerActive.matchID,
+                    playerID: '0',
+                    credentials: undefined,
+                    gameName: ownerActive.gameName,
+                };
             }
             return null;
         };
+        pruneStoredMatchCredentials();
 
         const local = findLocalMatch();
         if (!local) {
@@ -203,6 +217,7 @@ export const Home = () => {
                 if (status === 404 || message.includes('404')) {
                     // 房间已不存在，清理本地凭证避免重复请求
                     clearMatchCredentials(local.matchID);
+                    clearOwnerActiveMatch(local.matchID);
                     setActiveMatch(null);
                     setMyMatchRole(null);
                     setLocalStorageTick((t) => t + 1);
@@ -225,7 +240,33 @@ export const Home = () => {
 
         // 优先使用 myMatchRole 中保存的 gameName，否则回退到 activeMatch 中的 gameName，最后默认 tictactoe
         const gameId = myMatchRole.gameName || activeMatch.gameName || 'tictactoe';
-        navigate(`/play/${gameId}/match/${activeMatch.matchID}?playerID=${myMatchRole.playerID}`);
+
+        // 有凭证：直接进入
+        if (myMatchRole.credentials) {
+            navigate(`/play/${gameId}/match/${activeMatch.matchID}?playerID=${myMatchRole.playerID}`);
+            return;
+        }
+
+        // 无凭证：尝试重新加入空位
+        void (async () => {
+            try {
+                const matchInfo = await lobbyClient.getMatch(gameId, activeMatch.matchID);
+                const player0 = matchInfo.players.find(p => p.id === 0);
+                const player1 = matchInfo.players.find(p => p.id === 1);
+                let targetPlayerID = '';
+                if (!player0?.name) targetPlayerID = '0';
+                else if (!player1?.name) targetPlayerID = '1';
+                else return;
+
+                const playerName = user?.username || getGuestName();
+                const { success } = await rejoinMatch(gameId, activeMatch.matchID, targetPlayerID, playerName);
+                if (success) {
+                    navigate(`/play/${gameId}/match/${activeMatch.matchID}?playerID=${targetPlayerID}`);
+                }
+            } catch {
+                // ignore
+            }
+        })();
     };
 
     const handleDestroyOrLeave = async () => {
@@ -235,10 +276,6 @@ export const Home = () => {
         let effectiveCredentials = credentials;
 
         if (!effectiveCredentials) {
-            clearMatchCredentials(activeMatch.matchID);
-            setActiveMatch(null);
-            setMyMatchRole(null);
-            setLocalStorageTick(t => t + 1);
             return;
         }
 
@@ -262,9 +299,13 @@ export const Home = () => {
             gameName = activeMatch.gameName;
         }
 
-        const success = pendingAction.isHost
-            ? await destroyMatch(gameName, pendingAction.matchID, pendingAction.playerID, pendingAction.credentials)
-            : await leaveMatch(gameName, pendingAction.matchID, pendingAction.playerID, pendingAction.credentials);
+        const success = await exitMatch(
+            gameName,
+            pendingAction.matchID,
+            pendingAction.playerID,
+            pendingAction.credentials,
+            pendingAction.isHost
+        );
         if (!success) {
             // Keep state as-is so the user can retry or decide what to do next.
             return;
@@ -378,7 +419,7 @@ export const Home = () => {
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            {myMatchRole && (
+                            {myMatchRole?.credentials && (
                                 <button
                                     onClick={handleDestroyOrLeave}
                                     className={clsx(

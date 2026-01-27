@@ -38,19 +38,33 @@ export type EffectType =
  * 效果行为定义（可程序化执行）
  */
 export interface EffectAction {
-    type: 'damage' | 'heal' | 'modifyStat' | 'grantStatus' | 'removeStatus' | 'choice' | 'rollDie' | 'custom' | 'drawCard' | 'replaceAbility';
-    /** 目标：self/opponent/all */
-    target: 'self' | 'opponent' | 'all';
+    type: 'damage' | 'heal' | 'modifyStat' | 'grantStatus' | 'removeStatus' | 'grantToken' | 'grantDamageShield' | 'choice' | 'rollDie' | 'custom' | 'drawCard' | 'replaceAbility' | 'modifyDie' | 'rerollDie' | 'removeAllStatus' | 'transferStatus' | 'grantExtraRoll';
+    /** 目标：self/opponent/all/select（需要选择） */
+    target: 'self' | 'opponent' | 'all' | 'select';
     /** 数值（伤害/治疗量/修改值） */
     value?: number;
     /** 对于 grantStatus/removeStatus，指定状态 ID */
     statusId?: string;
+    /** 对于 grantToken，指定 Token ID */
+    tokenId?: string;
     /** 自定义行为 ID（需要游戏实现对应处理器） */
     customActionId?: string;
     
+    // ============ modifyDie 类型参数 ============
+    /** 骰子修改模式 */
+    dieModifyMode?: 'set' | 'adjust' | 'copy' | 'any';
+    /** 设置的目标值（mode=set） */
+    dieTargetValue?: number;
+    /** 调整范围（mode=adjust） */
+    dieAdjustRange?: { min: number; max: number };
+    /** 需要选择的骰子数量 */
+    dieSelectCount?: number;
+    /** 是否针对对手的骰子 */
+    targetOpponentDice?: boolean;
+    
     // ============ choice 类型参数 ============
-    /** 选择项列表（用于 choice 类型） */
-    choiceOptions?: Array<{ statusId: string; value: number }>;
+    /** 选择项列表（用于 choice 类型，支持 statusId 或 tokenId） */
+    choiceOptions?: Array<{ statusId?: string; tokenId?: string; value: number }>;
     /** 选择弹窗标题 key（用于 choice 类型） */
     choiceTitleKey?: string;
     
@@ -71,6 +85,10 @@ export interface EffectAction {
     newAbilityDef?: unknown;
     /** 新技能等级（用于 replaceAbility 类型，升级卡用于标注升级到 II/III 等） */
     newAbilityLevel?: number;
+    
+    // ============ grantDamageShield 类型参数 ============
+    /** 护盾值（用于 grantDamageShield 类型） */
+    shieldValue?: number;
 }
 
 /**
@@ -81,10 +99,12 @@ export interface RollDieConditionalEffect {
     face: string;
     /** 增加伤害（加到当前攻击） */
     bonusDamage?: number;
-    /** 获得状态 */
+    /** 获得状态（被动状态如击倒） */
     grantStatus?: { statusId: string; value: number };
-    /** 触发选择 */
-    triggerChoice?: { options: Array<{ statusId: string; value: number }>; titleKey: string };
+    /** 获得 Token（太极、闪避、净化） */
+    grantToken?: { tokenId: string; value: number };
+    /** 触发选择（支持 statusId 或 tokenId） */
+    triggerChoice?: { options: Array<{ statusId?: string; tokenId?: string; value: number }>; titleKey: string };
 }
 
 /**

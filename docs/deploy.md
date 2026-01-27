@@ -50,6 +50,29 @@
 - **/games、/default、/lobby-socket、/socket.io** 由 NestJS 反向代理到 game-server
 - 代理目标由 `GAME_SERVER_PROXY_TARGET` 指定（Docker 内部默认 `http://game-server:18000`）
 
+## 迁移与扩容准备（强烈建议提前做）
+
+本项目经常会以“首年特价机器”上线，第二年更换厂商/更换服务器是常见操作。为了让迁移成本最低，建议从一开始就按以下原则部署：
+
+- **入口可切换**：域名解析使用 DNS（建议 TTL 设短一些），或使用 Cloudflare 做一层代理入口；迁移时只改源站 IP。
+- **状态外置**：
+  - 静态资源 `/assets/*` 放对象存储（如 Cloudflare R2 / COS / OSS），避免资源随服务器迁移。
+  - 数据库数据可导出导入（MongoDB 走 `mongodump/mongorestore`）。
+  - `.env` 等配置文件纳入安全备份（不要只放在服务器上）。
+- **部署可重复**：使用 `docker-compose.yml` + 环境变量完成一键部署；新机器只需“装 Docker -> 拉代码/镜像 -> 起 compose”。
+
+### 负载均衡/多实例（预留方向）
+
+当前默认是单机同域部署（`web` 统一入口，反代到 `game-server`），适合小规模。
+
+如果未来要做高可用/水平扩展，可按以下方向演进：
+
+- **入口层**：在 `web` 前放一个 L7 负载均衡（云厂商 SLB/CLB 或自建 Nginx/HAProxy），对外仍只暴露 80/443。
+- **无状态服务可扩展**：
+  - `apps/api`（NestJS）理论上可多实例（前提：会话/JWT 无状态，WebSocket 需要 sticky 或 socket 统一落到同一实例，或改为共享适配器）。
+  - `game-server` 多实例需要谨慎：boardgame.io 的 match 状态与 WebSocket 连接需要一致性，通常需要 sticky session + 共享存储/协调（或拆分“大厅/匹配”层）。
+- **状态服务单点处理**：MongoDB/Redis 建议走托管或主从/集群，避免单机磁盘与内存成为瓶颈。
+
 ## 常见问题
 
 - **端口占用**：优先只改 `docker-compose.yml` 中 `web` 的端口映射，并同步 `WEB_ORIGINS`

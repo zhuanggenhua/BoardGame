@@ -12,17 +12,19 @@ interface FabMenuProps {
     className?: string; // Positioning
     titleExpand?: string;
     titleCollapse?: string;
+    isDark?: boolean;
 }
 
 export const FabMenu = ({
     children,
     icon,
-    activeColor = 'text-white',
+    activeColor,
     expanded: controlledExpanded,
     onToggle,
     className = "fixed bottom-8 right-8 z-[10000] flex flex-col items-end gap-2 font-sans",
     titleExpand = "Expand",
-    titleCollapse = "Collapse"
+    titleCollapse = "Collapse",
+    isDark = true
 }: FabMenuProps) => {
     const [internalExpanded, setInternalExpanded] = useState(false);
     const isControlled = controlledExpanded !== undefined;
@@ -49,6 +51,18 @@ export const FabMenu = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [expanded]);
 
+    const panelBase = isDark
+        ? "bg-black/90 backdrop-blur-xl border border-white/15 text-white"
+        : "bg-[#fcfbf9]/95 backdrop-blur-xl border border-[#d3ccba] text-[#433422] shadow-[0_8px_32px_rgba(67,52,34,0.15)]";
+
+    const btnBase = isDark
+        ? expanded
+            ? 'bg-white/20 border-white/30 text-white ring-2 ring-white/10'
+            : 'bg-black/60 border-white/10 text-white/80 hover:bg-black/80 hover:border-white/30 hover:shadow-neon-blue/20'
+        : expanded
+            ? 'bg-black/10 border-black/20 text-[#433422] ring-2 ring-black/5'
+            : 'bg-white/90 border-[#d3ccba] text-[#433422] hover:bg-white hover:border-[#8c7b64] hover:shadow-lg';
+
     return (
         <motion.div
             ref={containerRef}
@@ -63,7 +77,7 @@ export const FabMenu = ({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
                         transition={{ duration: 0.2 }}
-                        className="bg-black/90 backdrop-blur-xl border border-white/15 rounded-2xl p-4 shadow-2xl w-[85vw] max-w-[320px] md:min-w-[260px] flex flex-col gap-4 mb-2 cursor-default"
+                        className={`${panelBase} rounded-2xl p-4 shadow-2xl w-[85vw] max-w-[320px] md:min-w-[260px] flex flex-col gap-4 mb-2 cursor-default`}
                         onPointerDown={(e) => e.stopPropagation()}
                     >
                         {children}
@@ -78,11 +92,8 @@ export const FabMenu = ({
                 className={`
                     shadow-2xl flex items-center justify-center rounded-full 
                     border backdrop-blur-md transition-all active:scale-95
-                    ${expanded
-                        ? 'p-4 bg-white/20 border-white/30 text-white ring-2 ring-white/10'
-                        : 'w-12 h-12 bg-black/60 border-white/10 text-white/80 hover:bg-black/80 hover:border-white/30 hover:shadow-neon-blue/20'
-                    }
-                    cursor-grab active:cursor-grabbing
+                    ${btnBase}
+                    cursor-grab active:cursor-grabbing w-12 h-12
                 `}
                 whileHover={{ scale: 1.1 }}
                 title={expanded ? titleCollapse : titleExpand}

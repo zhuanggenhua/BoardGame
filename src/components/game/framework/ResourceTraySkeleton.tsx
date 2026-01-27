@@ -92,6 +92,6 @@ export const ResourceTraySkeleton = memo(function ResourceTraySkeleton<TItem>({
             })}
         </div>
     );
-}) as <TItem>(props: ResourceTraySkeletonProps<TItem>) => JSX.Element;
+}) as <TItem>(props: ResourceTraySkeletonProps<TItem>) => React.ReactElement;
 
 export default ResourceTraySkeleton;

@@ -62,7 +62,16 @@ export const resolveAttack = (
     options?: { includePreDefense?: boolean }
 ): DiceThroneEvent[] => {
     const pending = state.pendingAttack;
-    if (!pending) return [];
+    if (!pending) {
+        console.log('[resolveAttack] No pending attack');
+        return [];
+    }
+
+    console.log('[resolveAttack] Resolving attack:', {
+        sourceAbilityId: pending.sourceAbilityId,
+        isDefendable: pending.isDefendable,
+        includePreDefense: options?.includePreDefense
+    });
 
     const events: DiceThroneEvent[] = [];
     if (options?.includePreDefense) {

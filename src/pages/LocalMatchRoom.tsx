@@ -1,62 +1,40 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Client } from 'boardgame.io/react';
 import { GAME_IMPLEMENTATIONS } from '../games/registry';
 import { GameModeProvider } from '../contexts/GameModeContext';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore - Boardgame.io 类型有时不匹配
 import { getGameById } from '../config/games.config';
 import { GameHUD } from '../components/game/GameHUD';
 
 export const LocalMatchRoom = () => {
     const { gameId } = useParams();
+    const [searchParams] = useSearchParams();
     const { t, i18n } = useTranslation('lobby');
-    const [isGameNamespaceReady, setIsGameNamespaceReady] = useState(true);
 
     const gameConfig = gameId ? getGameById(gameId) : undefined;
 
+    // 从 URL 参数获取种子，如果没有则生成新的
+    const seedFromUrl = searchParams.get('seed');
+    const gameSeed = seedFromUrl || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
     useEffect(() => {
         if (!gameId) return;
-        const namespace = `game-${gameId}`;
-        let isActive = true;
-
-        setIsGameNamespaceReady(false);
-        i18n.loadNamespaces(namespace)
-            .then(() => {
-                if (isActive) {
-                    setIsGameNamespaceReady(true);
-                }
-            })
-            .catch(() => {
-                if (isActive) {
-                    setIsGameNamespaceReady(true);
-                }
-            });
-
-        return () => {
-            isActive = false;
-        };
+        i18n.loadNamespaces(`game-${gameId}`).catch(() => {});
     }, [gameId, i18n]);
 
     const LocalClient = useMemo(() => {
         if (!gameId || !GAME_IMPLEMENTATIONS[gameId]) return null;
         const impl = GAME_IMPLEMENTATIONS[gameId];
+        const gameWithSeed = { ...impl.game, seed: gameSeed };
+        console.log('[LocalMatch] 创建游戏，种子:', gameSeed);
         return Client({
-            game: impl.game,
+            game: gameWithSeed,
             board: impl.board,
             debug: false,
             numPlayers: 2,
         }) as React.ComponentType<{ playerID?: string | null }>;
-    }, [gameId]);
-
-    if (!isGameNamespaceReady) {
-        return (
-            <div className="w-full h-screen bg-black flex items-center justify-center">
-                <div className="text-white/70 text-sm">正在加载对局资源...</div>
-            </div>
-        );
-    }
+    }, [gameId, gameSeed]);
 
     if (!gameConfig) {
         return <div className="text-white">{t('matchRoom.noGame')}</div>;
@@ -64,10 +42,7 @@ export const LocalMatchRoom = () => {
 
     return (
         <div className="relative w-full h-screen bg-black overflow-hidden font-sans">
-            {/* 统一的游戏 HUD */}
             <GameHUD mode="local" />
-
-            {/* 游戏棋盘 - 全屏 */}
             <div className="w-full h-full">
                 <GameModeProvider mode="local">
                     {LocalClient ? <LocalClient playerID={null} /> : (

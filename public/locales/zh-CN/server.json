@@ -64,6 +64,18 @@
       "sent": "邀请已发送"
     }
   },
+  "review": {
+    "error": {
+      "missingGameId": "缺少游戏标识",
+      "contentTooLong": "评论内容不能超过 500 字",
+      "contentBlocked": "内容包含违规词汇",
+      "notFound": "评论不存在"
+    },
+    "success": {
+      "saved": "评论已保存",
+      "deleted": "评论已删除"
+    }
+  },
   "email": {
     "error": {
       "missingConfig": "邮件服务未配置"

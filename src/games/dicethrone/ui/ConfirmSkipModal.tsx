@@ -1,15 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '../../../components/common/overlays/ConfirmModal';
 
-/** DiceThrone 主题配置 */
+/** DiceThrone 主题配置 - 简化版，优化性能 */
 const diceThroneTone = {
-    overlay: 'bg-black/60',
-    panel: 'bg-slate-900/90 border border-white/20 backdrop-blur-xl p-[2vw] rounded-[1.5vw] shadow-2xl max-w-[30vw] flex flex-col items-center text-center gap-[1.5vw] pointer-events-auto',
-    title: 'text-[1.2vw] font-black text-white mb-0',
-    description: 'text-[0.9vw] text-slate-400 leading-relaxed px-[1vw] mb-0',
+    overlay: 'bg-[#0a0a0f]/85',
+    panel: 'bg-slate-900 border border-white/10 p-[2vw] rounded-[1.5vw] shadow-lg max-w-[28vw] flex flex-col items-center text-center gap-[1.5vw] pointer-events-auto',
+    title: 'text-[1.3vw] font-bold text-white mb-0',
+    description: 'text-[0.95vw] text-slate-300 leading-relaxed px-[0.5vw] mb-0',
     actions: 'flex gap-[1vw] w-full pt-[0.5vw]',
-    confirmButton: 'flex-1 py-[0.8vw] rounded-[0.8vw] bg-amber-600 hover:bg-amber-500 text-white font-bold text-[0.85vw] shadow-lg shadow-amber-900/40',
-    cancelButton: 'flex-1 py-[0.8vw] rounded-[0.8vw] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[0.85vw] border border-slate-700',
+    confirmButton: 'flex-1 py-[1vw] rounded-[1vw] bg-orange-500 hover:bg-orange-400 text-white font-bold text-[1vw] transition-[background-color] duration-150',
+    cancelButton: 'flex-1 py-[1vw] rounded-[1vw] bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-[1vw] transition-[background-color] duration-150',
 };
 
 export const ConfirmSkipModal = ({

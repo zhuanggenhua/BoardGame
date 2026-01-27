@@ -13,6 +13,50 @@
 - **模拟房主流程**：`npx tsx scripts/simulate-host.ts`（用于快速验证创建/加入/离开流程）
 - **图集网格扫描（方案A）**：`npm run atlas:scan -- <image> --rows <rows> --cols <cols>`（输出行/列裁切数据）
 
+## 完整工具清单（scripts/）
+
+### 资源与资产
+
+- `atlas_grid_scan.js` / `atlas_grid_scan.py`：图集网格扫描（JS 启动器 + Python 实现）
+- `pack_sprite_atlas.js` / `pack_sprite_atlas.py`：图集打包（JS 启动器 + Python 实现）
+- `compress_images.js` / `compress_images.py`：图片压缩（JS 启动器 + Python 实现）
+- `compress_audio.js`：音频压缩（基于 ffmpeg）
+- `generate_asset_manifests.js`：生成/校验 `assets-manifest.json`
+- `generate_audio_assets_md.js`：扫描音频源文件并生成 `public/audio_assets.md`
+- `extract_assets.js`：资源提取脚本（需在脚本内配置本地路径）
+
+### Manifest / i18n
+
+- `generate_game_manifests.js`：生成 `src/games/manifest*.generated.*`
+- `generate-card-locales.cjs`：从 `cards.ts` 生成/更新卡牌多语言
+
+### 联调 / 验证
+
+- `simulate-host.ts`：模拟房主创建/加入/离开流程
+- `verify_social_ws.ts`：社交 WebSocket 验证入口（转发到 `scripts/verify/social-ws.ts`）
+- `verify/social-ws.ts`：社交 WebSocket 事件链路验证
+
+### 环境与诊断
+
+- `check-architecture.cjs`：架构解耦检查（框架层不得依赖游戏层）
+- `clean_ports.js`：清理端口进程（默认 5173/18000/18001，可配置）
+- `wait_for_ports.js`：等待端口就绪（用于脚本/CI 串联）
+
+### 文档转换
+
+- `pdf_to_md.js`：PDF 转 Markdown
+
+### 其他工具目录
+
+- `alipan_save_tool/`：阿里云盘分享转存工具
+  - `README.txt`：使用说明与常见问题
+  - `alipan_save.py`：主程序（云端转存）
+  - `alipan_secrets.example.json`：配置模板（token/接口域名）
+  - `run.bat`：Windows CMD 启动脚本
+  - `run.ps1`：PowerShell 启动脚本
+- `verify/`：验证类脚本目录
+  - `social-ws.ts`：社交 WebSocket 事件链路验证
+
 ## 输出位置
 
 - **图片/音频压缩产物**：各资源目录下的 `compressed/`

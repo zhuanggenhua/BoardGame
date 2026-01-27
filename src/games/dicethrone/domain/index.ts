@@ -14,6 +14,7 @@ import { playerView } from './view';
 import { registerDiceThroneConditions } from '../conditions';
 import { MONK_ABILITIES } from '../monk/abilities';
 import { MONK_STATUS_EFFECTS } from '../monk/statusEffects';
+import { MONK_TOKENS, MONK_INITIAL_TOKENS } from '../monk/tokens';
 import { getMonkStartingDeck } from '../monk/cards';
 import { monkDiceDefinition } from '../monk/diceConfig';
 import { monkResourceDefinitions } from '../monk/resourceConfig';
@@ -53,12 +54,11 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
                 deck,
                 discard: [],
                 statusEffects: {
-                    evasive: 0,
-                    taiji: 0,
                     stun: 0,
-                    purify: 0,
-                    chi: 0,
                 },
+                tokens: { ...MONK_INITIAL_TOKENS },
+                tokenStackLimits: Object.fromEntries(MONK_TOKENS.map(t => [t.id, t.stackLimit])),
+                damageShields: [],
                 abilities: MONK_ABILITIES,
                 abilityLevels: {
                     'fist-technique': 1,
@@ -94,14 +94,14 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
             startingPlayerId: playerIds[0],
             turnNumber: 1,
             pendingAttack: null,
-            availableAbilityIds: [],
             statusDefinitions: MONK_STATUS_EFFECTS,
+            tokenDefinitions: MONK_TOKENS,
             lastEffectSourceByPlayerId: {},
         };
     },
 
-    validate: validateCommand,
-    execute,
+    validate: (state, command) => validateCommand(state.core, command),
+    execute: (state, command, random) => execute(state, command, random),
     reduce,
     playerView,
 

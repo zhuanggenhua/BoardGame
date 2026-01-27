@@ -3,7 +3,7 @@
  * 处理领域事件到系统状态的映射
  */
 
-import type { GameEvent, PromptOption, RandomFn } from '../../../engine/types';
+import type { GameEvent, PromptOption } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import { PROMPT_EVENTS, queuePrompt, createPrompt } from '../../../engine/systems/PromptSystem';
 import type {
@@ -11,10 +11,7 @@ import type {
     DiceThroneEvent,
     ChoiceRequestedEvent,
     ChoiceResolvedEvent,
-    PhaseChangedEvent,
 } from './types';
-import { resolveAttack } from './attack';
-import { reduce } from './reducer';
 
 // ============================================================================
 // DiceThrone 事件处理系统
@@ -30,7 +27,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
         name: 'DiceThrone 事件处理',
         priority: 50, // 在 PromptSystem 之后执行
 
-        afterEvents: ({ state, events, random }): HookResult<DiceThroneCore> | void => {
+        afterEvents: ({ state, events }): HookResult<DiceThroneCore> | void => {
             let newState = state;
             const nextEvents: GameEvent[] = [];
 
@@ -42,12 +39,23 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     const payload = (dtEvent as ChoiceRequestedEvent).payload;
                     
                     // 将 DiceThrone 的选择选项转换为 PromptOption
-                    const promptOptions: PromptOption<{ statusId: string; value: number }>[] = 
-                        payload.options.map((opt, index) => ({
+                    const promptOptions: PromptOption<{
+                        statusId?: string;
+                        tokenId?: string;
+                        value: number;
+                        customId?: string;
+                        labelKey?: string;
+                    }>[] = payload.options.map((opt, index) => {
+                        const label = opt.labelKey
+                            ?? (opt.tokenId ? `tokens.${opt.tokenId}.name`
+                                : opt.statusId ? `statusEffects.${opt.statusId}.name`
+                                    : `choices.option-${index}`);
+                        return {
                             id: `option-${index}`,
-                            label: opt.statusId, // UI 层会根据 statusId 显示本地化文案
+                            label,
                             value: opt,
-                        }));
+                        };
+                    });
                     
                     const prompt = createPrompt(
                         `choice-${payload.sourceAbilityId}-${Date.now()}`,
@@ -60,13 +68,12 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     newState = queuePrompt(newState, prompt);
                 }
 
+                // 处理 Prompt 响应 -> 生成 CHOICE_RESOLVED 领域事件
                 const resolvedEvent = handlePromptResolved(event);
                 if (resolvedEvent) {
                     nextEvents.push(resolvedEvent);
-                    const followupEvents = buildChoiceFollowupEvents(state.core, resolvedEvent, random);
-                    if (followupEvents.length > 0) {
-                        nextEvents.push(...followupEvents);
-                    }
+                    // 注意：选择完成后的阶段推进现在由 FlowSystem 统一处理
+                    // 用户/测试需要在选择完成后调用 ADVANCE_PHASE 继续流程
                 }
             }
 
@@ -78,53 +85,6 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
             }
         },
     };
-}
-
-const now = () => Date.now();
-
-function buildChoiceFollowupEvents(
-    core: DiceThroneCore,
-    resolvedEvent: ChoiceResolvedEvent,
-    random: RandomFn
-): DiceThroneEvent[] {
-    if (core.turnPhase !== 'offensiveRoll') return [];
-    if (!core.pendingAttack?.preDefenseResolved) return [];
-    if (core.pendingAttack.attackerId !== resolvedEvent.payload.playerId) return [];
-
-    const followups: DiceThroneEvent[] = [];
-
-    if (core.pendingAttack.isDefendable) {
-        const phaseEvent: PhaseChangedEvent = {
-            type: 'PHASE_CHANGED',
-            payload: {
-                from: core.turnPhase,
-                to: 'defensiveRoll',
-                activePlayerId: core.activePlayerId,
-            },
-            sourceCommandType: resolvedEvent.sourceCommandType,
-            timestamp: now(),
-        };
-        followups.push(phaseEvent);
-        return followups;
-    }
-
-    const coreAfterChoice = reduce(core, resolvedEvent);
-    const attackEvents = resolveAttack(coreAfterChoice, random, { includePreDefense: false });
-    followups.push(...attackEvents);
-
-    const phaseEvent: PhaseChangedEvent = {
-        type: 'PHASE_CHANGED',
-        payload: {
-            from: core.turnPhase,
-            to: 'main2',
-            activePlayerId: core.activePlayerId,
-        },
-        sourceCommandType: resolvedEvent.sourceCommandType,
-        timestamp: now(),
-    };
-    followups.push(phaseEvent);
-
-    return followups;
 }
 
 /**
@@ -140,7 +100,7 @@ export function handlePromptResolved(
         promptId: string;
         playerId: string;
         optionId: string;
-        value: { statusId: string; value: number };
+        value: { statusId?: string; tokenId?: string; value: number; customId?: string };
         sourceId?: string;
     };
     
@@ -149,7 +109,9 @@ export function handlePromptResolved(
         payload: {
             playerId: payload.playerId,
             statusId: payload.value.statusId,
+            tokenId: payload.value.tokenId,
             value: payload.value.value,
+            customId: payload.value.customId,
             sourceAbilityId: payload.sourceId,
         },
         sourceCommandType: 'RESOLVE_CHOICE',

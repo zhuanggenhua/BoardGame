@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 test('Homepage Navbar Check', async ({ page }) => {
+    await page.addInitScript(() => {
+        localStorage.setItem('i18nextLng', 'en');
+    });
     // 1. 访问首页 (自动使用 config 中的 baseURL)
     await page.goto('/');
 
@@ -18,10 +21,8 @@ test('Homepage Navbar Check', async ({ page }) => {
     // 检查游戏分类 Pills
     const categories = ['All Games', 'Strategy', 'Casual', 'Party', 'Abstract', 'Tools'];
     for (const cat of categories) {
-        await expect(page.getByText(cat, { exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: cat })).toBeVisible();
     }
-
-    // 4. 截图保存
 
     // 4. 截图保存
     await page.screenshot({ path: 'e2e/screenshots/homepage-navbar.png', fullPage: false });

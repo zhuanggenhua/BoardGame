@@ -8,31 +8,31 @@
 
 ## 1. Review 模块基础
 
-- [ ] 1.1 创建 Review Schema（`user`, `gameId`, `isPositive`, `content`, `rating?`, `tags?`, `helpfulCount?`）
-- [ ] 1.2 创建索引 `{ user: 1, gameId: 1 }` 唯一复合索引
-- [ ] 1.3 创建索引 `{ gameId: 1, createdAt: -1 }` 列表查询索引
-- [ ] 1.4 创建索引 `{ gameId: 1, isPositive: 1 }` 统计查询索引
-- [ ] 1.5 创建 ReviewModule、ReviewService、ReviewController
+- [x] 1.1 创建 Review Schema（`user`, `gameId`, `isPositive`, `content`, `rating?`, `tags?`, `helpfulCount?`）
+- [x] 1.2 创建索引 `{ user: 1, gameId: 1 }` 唯一复合索引
+- [x] 1.3 创建索引 `{ gameId: 1, createdAt: -1 }` 列表查询索引
+- [x] 1.4 创建索引 `{ gameId: 1, isPositive: 1 }` 统计查询索引
+- [x] 1.5 创建 ReviewModule、ReviewService、ReviewController
 
 ## 2. Review API 实现
 
-- [ ] 2.1 实现 `GET /auth/reviews/:gameId` 获取游戏评论列表（分页）
-- [ ] 2.2 实现 `GET /auth/reviews/:gameId/stats` 获取好评率统计（Redis 缓存）
-- [ ] 2.3 实现 `GET /auth/reviews/:gameId/mine` 获取当前用户的评论
-- [ ] 2.4 实现 `POST /auth/reviews/:gameId` 创建/更新评论
-- [ ] 2.5 实现 `DELETE /auth/reviews/:gameId` 删除评论
-- [ ] 2.6 实现关键词过滤服务（黑名单检查）
+- [x] 2.1 实现 `GET /auth/reviews/:gameId` 获取游戏评论列表（分页）
+- [x] 2.2 实现 `GET /auth/reviews/:gameId/stats` 获取好评率统计（Redis 缓存）
+- [x] 2.3 实现 `GET /auth/reviews/:gameId/mine` 获取当前用户的评论
+- [x] 2.4 实现 `POST /auth/reviews/:gameId` 创建/更新评论
+- [x] 2.5 实现 `DELETE /auth/reviews/:gameId` 删除评论
+- [x] 2.6 实现关键词过滤服务（黑名单检查）
 
 ## 3. 缓存与统计
 
-- [ ] 3.1 实现好评率统计 Redis 缓存（Key: `review:stats:{gameId}`，TTL: 300s）
-- [ ] 3.2 评论创建/更新/删除时清除对应游戏的统计缓存
+- [x] 3.1 实现好评率统计 Redis 缓存（Key: `review:stats:{gameId}`，TTL: 300s）
+- [x] 3.2 评论创建/更新/删除时清除对应游戏的统计缓存
 
 ## 4. 后端测试与文档
 
-- [ ] 4.1 编写 Review 模块单元测试
-- [ ] 4.2 编写 Review API 集成测试
-- [ ] 4.3 编写接口文档 `docs/api/review.md`
+- [x] 4.1 编写 Review 模块单元测试
+- [x] 4.2 编写 Review API 集成测试
+- [x] 4.3 编写接口文档 `docs/api/review.md`
 
 ---
 

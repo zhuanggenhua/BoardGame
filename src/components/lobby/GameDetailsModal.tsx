@@ -5,13 +5,14 @@ import clsx from 'clsx';
 import { LobbyClient } from 'boardgame.io/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { lobbySocket, type LobbyMatch } from '../../services/lobbySocket';
-import { leaveMatch } from '../../hooks/match/useMatchStatus';
+import { exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOwnerActiveMatch, clearMatchCredentials, listStoredMatchCredentials, getLatestStoredMatchCredentials, pruneStoredMatchCredentials, persistMatchCredentials } from '../../hooks/match/useMatchStatus';
 import { ConfirmModal } from '../common/overlays/ConfirmModal';
 import { ModalBase } from '../common/overlays/ModalBase';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { useToast } from '../../contexts/ToastContext';
 import { GAME_SERVER_URL } from '../../config/server';
 import { getGameById } from '../../config/games.config';
+import { CreateRoomModal, type RoomConfig } from './CreateRoomModal';
 
 const lobbyClient = new LobbyClient({ server: GAME_SERVER_URL });
 
@@ -26,6 +27,9 @@ interface Room {
     matchID: string;
     players: RoomPlayer[];
     gameName?: string;
+    roomName?: string;
+    ownerKey?: string;
+    ownerType?: 'user' | 'guest';
 }
 
 interface GameDetailsModalProps {
@@ -69,6 +73,23 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         leaderboard: { name: string; wins: number; matches: number }[];
     } | null>(null);
 
+    // 创建房间弹窗状态
+    const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
+
+    // Helper functions (must be defined before useMemo)
+    const getGuestId = () => {
+        const key = 'guest_id';
+        const stored = localStorage.getItem(key);
+        if (stored) return stored;
+        const id = String(Math.floor(Math.random() * 9000) + 1000);
+        localStorage.setItem(key, id);
+        return id;
+    };
+
+    const getGuestName = () => t('player.guest', { id: getGuestId() });
+    const getOwnerKey = () => (user?.id ? `user:${user.id}` : `guest:${getGuestId()}`);
+    const getOwnerType = () => (user?.id ? 'user' : 'guest');
+
     useEffect(() => {
         if (isOpen && activeTab === 'leaderboard') {
             fetch(`${GAME_SERVER_URL}/games/${normalizedGameId}/leaderboard`)
@@ -82,6 +103,11 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         }
     }, [isOpen, activeTab, normalizedGameId]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        pruneStoredMatchCredentials();
+    }, [isOpen]);
+
     // 使用 WebSocket 订阅房间列表更新（替代轮询）
     useEffect(() => {
         if (isOpen) {
@@ -93,6 +119,9 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 }, 150);
             };
             window.addEventListener('storage', handleStorage);
+            const handleOwnerActive = () => handleStorage();
+            window.addEventListener('owner-active-match-changed', handleOwnerActive);
+            window.addEventListener('match-credentials-changed', handleStorage);
 
             // 订阅大厅更新（仅当前游戏）
             const unsubscribeMatches = lobbySocket.subscribe(normalizedGameId, (matches: LobbyMatch[]) => {
@@ -101,6 +130,9 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     matchID: m.matchID,
                     players: m.players,
                     gameName: m.gameName,
+                    roomName: m.roomName,
+                    ownerKey: m.ownerKey,
+                    ownerType: m.ownerType,
                 }));
                 setRooms(roomList);
             });
@@ -123,6 +155,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             return () => {
                 clearTimeout(storageTimeout);
                 window.removeEventListener('storage', handleStorage);
+                window.removeEventListener('owner-active-match-changed', handleOwnerActive);
+                window.removeEventListener('match-credentials-changed', handleStorage);
                 unsubscribeMatches();
                 unsubscribeStatus();
             };
@@ -131,31 +165,37 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
     // 检测用户当前活跃的房间（本地存有凭证的任意房间，可能跨游戏）
     const myActiveRoomMatchID = useMemo(() => {
-        for (let i = 0; i < localStorage.length; i += 1) {
-            const key = localStorage.key(i);
-            if (!key || !key.startsWith('match_creds_')) continue;
-            const raw = localStorage.getItem(key);
-            if (!raw) continue;
-            try {
-                const parsed = JSON.parse(raw);
-                return parsed.matchID || key.replace('match_creds_', '') || null;
-            } catch {
-                continue;
-            }
+        const latestCreds = getLatestStoredMatchCredentials();
+        if (latestCreds?.matchID) return latestCreds.matchID;
+        const ownerActive = getOwnerActiveMatch();
+        const ownerKey = getOwnerKey();
+        if (ownerActive?.matchID && (!ownerActive.ownerKey || ownerActive.ownerKey === ownerKey)) {
+            return ownerActive.matchID;
         }
         return null;
-    }, [localStorageTick]);
+    }, [localStorageTick, user]);
 
-    const getGuestId = () => {
-        const key = 'guest_id';
-        const stored = localStorage.getItem(key);
-        if (stored) return stored;
-        const id = String(Math.floor(Math.random() * 9000) + 1000);
-        localStorage.setItem(key, id);
-        return id;
-    };
-
-    const getGuestName = () => t('player.guest', { id: getGuestId() });
+    // 同步 ownerActiveMatch 与房间列表（避免状态滞后或丢失）
+    useEffect(() => {
+        const ownerKey = getOwnerKey();
+        if (!ownerKey) return;
+        const ownerActive = getOwnerActiveMatch();
+        const matchedRoom = rooms.find(r => r.ownerKey === ownerKey);
+        if (matchedRoom) {
+            if (!ownerActive || ownerActive.matchID !== matchedRoom.matchID) {
+                setOwnerActiveMatch({
+                    matchID: matchedRoom.matchID,
+                    gameName: matchedRoom.gameName || gameId,
+                    ownerKey,
+                    ownerType: matchedRoom.ownerType || getOwnerType(),
+                });
+            }
+            return;
+        }
+        if (ownerActive?.matchID && ownerActive.ownerKey === ownerKey) {
+            clearOwnerActiveMatch(ownerActive.matchID);
+        }
+    }, [rooms, user, gameId]);
 
 
     const handleTutorial = () => {
@@ -168,16 +208,29 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         navigate(`/play/${gameId}/local`);
     };
 
-    const handleCreateRoom = async () => {
+    // 打开创建房间弹窗
+    const handleOpenCreateRoom = () => {
+        setShowCreateRoomModal(true);
+    };
 
+    // 实际创建房间逻辑
+    const handleCreateRoom = async (config: RoomConfig) => {
         setIsLoading(true);
         try {
-            const numPlayers = 2;
+            const { numPlayers, roomName, ttlSeconds } = config;
             // 获取用户名或生成游客名
             const playerName = user?.username || getGuestName();
+            const ownerKey = getOwnerKey();
+            const ownerType = getOwnerType();
 
-            // 使用传入的 gameId
-            const { matchID } = await lobbyClient.createMatch(gameId, { numPlayers });
+            // 使用传入的 gameId，通过 setupData 传递房间名
+            const setupData = {
+                ...(roomName ? { roomName } : {}),
+                ttlSeconds,
+                ownerKey,
+                ownerType,
+            };
+            const { matchID } = await lobbyClient.createMatch(gameId, { numPlayers, setupData });
 
             // 加入为 0 号玩家
             const { playerCredentials } = await lobbyClient.joinMatch(gameId, matchID, {
@@ -186,20 +239,48 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             });
 
             // 保存凭据，以便 MatchRoom 获取
-            localStorage.setItem(`match_creds_${matchID}`, JSON.stringify({
+            persistMatchCredentials(matchID, {
                 playerID: '0',
                 credentials: playerCredentials,
                 matchID,
                 gameName: gameId, // 保存游戏名称
                 playerName,
-            }));
+            });
+            setOwnerActiveMatch({ matchID, gameName: gameId, ownerKey, ownerType });
 
             setLocalStorageTick(t => t + 1);
+            setShowCreateRoomModal(false);
 
             onNavigate?.();
             navigate(`/play/${gameId}/match/${matchID}?playerID=0`);
         } catch (error) {
             console.error('Failed to create match:', error);
+            const message = error instanceof Error ? error.message : String(error);
+            // 解析 ACTIVE_MATCH_EXISTS:游戏ID:matchID 格式
+            const activeMatchPattern = /ACTIVE_MATCH_EXISTS:([^:]+):([^:]+)/;
+            const activeMatch = message.match(activeMatchPattern);
+            if (activeMatch) {
+                const [, existingGameName, existingMatchID] = activeMatch;
+                setOwnerActiveMatch({
+                    matchID: existingMatchID,
+                    gameName: existingGameName,
+                    ownerKey: getOwnerKey(),
+                    ownerType: getOwnerType(),
+                });
+                toast.warning(
+                    { kind: 'i18n', key: 'error.activeMatchExists', ns: 'lobby' },
+                    undefined,
+                    {
+                        action: {
+                            label: t('action.rejoinRoom'),
+                            onClick: () => handleJoinRoom(existingMatchID, existingGameName),
+                        },
+                    }
+                );
+                lobbySocket.requestRefresh(normalizedGameId);
+                setShowCreateRoomModal(false);
+                return;
+            }
             toast.error({ kind: 'i18n', key: 'error.createRoomFailed', ns: 'lobby' });
         } finally {
             setIsLoading(false);
@@ -228,7 +309,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     const seatTakenByOther = !!(seat?.name && storedPlayerName && seat.name !== storedPlayerName);
 
                     if (!seat || seatTakenByOther) {
-                        localStorage.removeItem(`match_creds_${matchID}`);
+                        clearMatchCredentials(matchID);
                     } else {
                         // 直接重连：让 server/client 侧用 credentials 校验
                         onNavigate?.();
@@ -237,10 +318,10 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     }
                 } catch (error) {
                     console.warn('校验本地凭据失败，改为重新加入', error);
-                    localStorage.removeItem(`match_creds_${matchID}`);
+                    clearMatchCredentials(matchID);
                 }
             } else {
-                localStorage.removeItem(`match_creds_${matchID}`);
+                clearMatchCredentials(matchID);
             }
         }
 
@@ -278,13 +359,13 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 playerName,
             });
 
-            localStorage.setItem(`match_creds_${matchID}`, JSON.stringify({
+            persistMatchCredentials(matchID, {
                 playerID: targetPlayerID,
                 credentials: playerCredentials,
                 matchID,
                 gameName: roomGameName,
                 playerName,
-            }));
+            });
 
             setLocalStorageTick(t => t + 1);
 
@@ -323,7 +404,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             if (room?.gameName) gameName = room.gameName;
         }
 
-        const success = await leaveMatch(gameName, matchID, myPlayerID, myCredentials);
+        const success = await exitMatch(gameName, matchID, myPlayerID, myCredentials, isHost);
         console.log('[LobbyModal] 执行完成', { success });
         if (!success) {
             toast.error({ kind: 'i18n', key: 'error.actionFailed', ns: 'lobby' });
@@ -390,19 +471,13 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
         // 预先获取缓存的 creds 索引，避免在 map 中反复查询 localStorage.getItem
         const credsMap = new Map<string, any>();
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith('match_creds_')) {
-                try {
-                    const matchID = key.replace('match_creds_', '');
-                    const raw = localStorage.getItem(key);
-                    if (raw) {
-                        credsMap.set(matchID, JSON.parse(raw));
-                    }
-                } catch { }
+        listStoredMatchCredentials().forEach((item) => {
+            if (item.matchID) {
+                credsMap.set(item.matchID, item);
             }
-        }
+        });
 
+        const ownerKey = getOwnerKey();
         return rooms.map(room => {
             const p0 = room.players[0]?.name;
             const p1 = room.players[1]?.name;
@@ -418,9 +493,9 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 myCredentials = parsed.credentials;
             }
 
-            const isUserRoom = user && (p0 === user.username || p1 === user.username);
             const canReconnect = !!myCredentials;
-            const isMyRoom = canReconnect || isUserRoom;
+            const isOwnerRoom = !!ownerKey && room.ownerKey === ownerKey;
+            const isMyRoom = !!myActiveRoomMatchID && room.matchID === myActiveRoomMatchID;
             const isHost = myPlayerID === '0';
 
             return {
@@ -428,6 +503,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 p0, p1,
                 isFull,
                 isMyRoom,
+                isOwnerRoom,
                 canReconnect,
                 myPlayerID,
                 myCredentials,
@@ -435,43 +511,45 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 gameKey: normalizeGameName(room.gameName)
             };
         });
-    }, [rooms, user, localStorageTick]);
+    }, [rooms, myActiveRoomMatchID, user, localStorageTick]);
 
     const roomItems = useMemo(() => {
         return allRoomItems.filter(room => room.gameKey === normalizedGameId);
     }, [allRoomItems, normalizedGameId]);
 
     const activeMatch = useMemo(() => {
-        for (let i = 0; i < localStorage.length; i += 1) {
-            const key = localStorage.key(i);
-            if (!key || !key.startsWith('match_creds_')) continue;
-            const raw = localStorage.getItem(key);
-            if (!raw) continue;
+        const latestCreds = getLatestStoredMatchCredentials();
+        if (latestCreds?.matchID) {
+            const listMatch = rooms.find(r => r.matchID === latestCreds.matchID);
+            const gameName = normalizeGameName(latestCreds.gameName || listMatch?.gameName) || normalizedGameId || 'tictactoe';
+            const myPlayerID = latestCreds.playerID as string | undefined;
+            const myCredentials = latestCreds.credentials as string | undefined;
 
-            try {
-                const parsed = JSON.parse(raw);
-                const matchID = parsed.matchID || key.replace('match_creds_', '');
-                if (!matchID) continue;
-
-                const listMatch = rooms.find(r => r.matchID === matchID);
-                const gameName = normalizeGameName(parsed.gameName || listMatch?.gameName) || normalizedGameId || 'tictactoe';
-                const myPlayerID = parsed.playerID as string | undefined;
-                const myCredentials = parsed.credentials as string | undefined;
-
-                return {
-                    matchID,
-                    gameName,
-                    canReconnect: !!myCredentials,
-                    myPlayerID: myPlayerID ?? null,
-                    myCredentials: myCredentials ?? null,
-                    isHost: myPlayerID === '0',
-                };
-            } catch {
-                continue;
-            }
+            return {
+                matchID: latestCreds.matchID,
+                gameName,
+                canReconnect: !!myCredentials,
+                myPlayerID: myPlayerID ?? null,
+                myCredentials: myCredentials ?? null,
+                isHost: myPlayerID === '0',
+            };
+        }
+        const ownerActive = getOwnerActiveMatch();
+        const ownerKey = getOwnerKey();
+        if (ownerActive?.matchID && (!ownerActive.ownerKey || ownerActive.ownerKey === ownerKey)) {
+            const listMatch = rooms.find(r => r.matchID === ownerActive.matchID);
+            const gameName = normalizeGameName(ownerActive.gameName || listMatch?.gameName) || normalizedGameId || 'tictactoe';
+            return {
+                matchID: ownerActive.matchID,
+                gameName,
+                canReconnect: false,
+                myPlayerID: null,
+                myCredentials: null,
+                isHost: true,
+            };
         }
         return null;
-    }, [localStorageTick, normalizedGameId, rooms]);
+    }, [localStorageTick, normalizedGameId, rooms, user]);
 
     return (
         <>
@@ -486,7 +564,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     className="
                         bg-[#fcfbf9] pointer-events-auto 
                         w-full max-w-2xl 
-                        h-auto max-h-[85vh]
+                        h-[27.5rem] max-h-[85vh]
                         rounded-sm shadow-[0_10px_40px_rgba(67,52,34,0.15)] 
                         flex flex-col md:flex-row 
                         border border-[#e5e0d0] relative 
@@ -605,7 +683,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
                                         return (
                                             <button
-                                                onClick={handleCreateRoom}
+                                                onClick={handleOpenCreateRoom}
                                                 disabled={isLoading}
                                                 className="w-full py-3 bg-[#433422] hover:bg-[#2b2114] text-[#fcfbf9] font-bold rounded-[4px] shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer text-sm uppercase tracking-widest"
                                             >
@@ -635,7 +713,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                                 <div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-bold text-[#433422] text-sm">
-                                                            {t('rooms.matchTitle', { id: room.matchID.slice(0, 4) })}
+                                                            {room.roomName || t('rooms.matchTitle', { id: room.matchID.slice(0, 4) })}
                                                         </span>
                                                         {room.isMyRoom && (
                                                             <span className="text-[8px] bg-[#c0a080] text-white px-1.5 py-0.5 rounded uppercase font-bold">
@@ -663,6 +741,25 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                                             )}
                                                         >
                                                             {room.isHost ? t('actions.destroy') : t('actions.leave')}
+                                                        </button>
+                                                    )}
+
+                                                    {/* 满员房间：显示观战按钮（眼睛图标） */}
+                                                    {room.isFull && !room.canReconnect && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onNavigate?.();
+                                                                navigate(`/play/${normalizedGameId}/match/${room.matchID}?spectate=1`);
+                                                            }}
+                                                            className="p-1.5 rounded-[4px] text-[#8c7b64] hover:text-[#433422] hover:bg-[#f3f0e6] transition-all cursor-pointer border border-[#e5e0d0]"
+                                                            title={t('actions.spectate')}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
                                                         </button>
                                                     )}
 
@@ -737,6 +834,17 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     </div>
                 </div>
             </ModalBase>
+
+            {/* 创建房间配置弹窗 */}
+            {gameManifest && (
+                <CreateRoomModal
+                    isOpen={showCreateRoomModal}
+                    onClose={() => setShowCreateRoomModal(false)}
+                    onConfirm={handleCreateRoom}
+                    gameManifest={gameManifest}
+                    isLoading={isLoading}
+                />
+            )}
         </>
     );
 };

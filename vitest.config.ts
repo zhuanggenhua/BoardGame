@@ -6,8 +6,9 @@ export default defineConfig({
         environment: 'node',
         include: [
             'src/games/**/__tests__/**/*.test.ts',
-            'apps/api/test/**/*.spec.ts',
-            'apps/api/test/**/*-spec.ts',
+            'src/engine/**/__tests__/**/*.test.ts',
+            'src/server/**/__tests__/**/*.test.ts',
+            'apps/api/test/**/*.test.ts',
         ],
         testTimeout: 180000,
         setupFiles: ['./apps/api/test/vitest.setup.ts'],

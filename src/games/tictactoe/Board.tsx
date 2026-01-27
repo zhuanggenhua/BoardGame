@@ -4,8 +4,8 @@ import type { BoardProps } from 'boardgame.io/react';
 import type { MatchState } from '../../engine/types';
 import type { TicTacToeCore } from './domain';
 import { GameDebugPanel } from '../../components/GameDebugPanel';
-import { GameControls } from '../../components/game/GameControls';
 import { EndgameOverlay } from '../../components/game/EndgameOverlay';
+import { UndoProvider } from '../../contexts/UndoContext';
 import { useDebug } from '../../contexts/DebugContext';
 import { useTutorial } from '../../contexts/TutorialContext';
 import { useRematch } from '../../contexts/RematchContext';
@@ -99,8 +99,8 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
     const currentPlayer = coreCurrentPlayer ?? ctx.currentPlayer;
     const gameMode = useGameMode();
     const isLocalMatch = gameMode ? !gameMode.isMultiplayer : !isMultiplayer;
-    const isSpectator = isLocalMatch || playerID === null || playerID === undefined;
-    const isPlayerTurn = isSpectator || currentPlayer === playerID;
+    const isSpectator = !!gameMode?.isSpectator;
+    const isPlayerTurn = isLocalMatch || (!isSpectator && currentPlayer === playerID);
     const { t } = useTranslation('game-tictactoe');
 
     // 本地同屏(hotseat)模式：开始一局时清空本机累计，避免上一轮对战/联机残留造成“离谱分数”。
@@ -143,13 +143,6 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
     // 音效系统
     useGameAudio({ config: TIC_TAC_TOE_AUDIO_CONFIG, G: G.core, ctx });
 
-    const undoHistory = G.sys?.undo?.snapshots || [];
-    const undoRequest = G.sys?.undo?.pendingRequest;
-    const isCurrentPlayer = playerID !== null && playerID !== undefined && playerID === currentPlayer;
-    const canRequestUndo = undoHistory.length > 0 && !undoRequest && !isCurrentPlayer;
-    const canReviewUndo = !!undoRequest && undoRequest.requesterId !== playerID && isCurrentPlayer;
-    const isUndoRequester = undoRequest?.requesterId === playerID;
-    const showUndoControls = !isGameOver && playerID !== null && playerID !== undefined && (canRequestUndo || canReviewUndo || isUndoRequester);
 
     // 追踪先前的激活状态（必须在顶层）
     const previousActiveRef = useRef(isActive);
@@ -159,11 +152,12 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
 
     useEffect(() => {
         registerMoveCallback((cellId: number) => {
+            if (isSpectator) return;
             if (isGameOverRef.current) return;
             if (cellsRef.current[cellId] !== null) return;
             moves.CLICK_CELL({ cellId });
         });
-    }, [registerMoveCallback, moves]);
+    }, [registerMoveCallback, moves, isSpectator]);
 
     const getWinningLine = (cells: (string | null)[]) => {
         if (!isWinner) return null;
@@ -230,6 +224,12 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
     const onClick = (id: number) => {
         if (isGameOver) return;
         if (G.core.cells[id] !== null) return;
+        if (isSpectator) {
+            if (import.meta.env.DEV) {
+                console.warn('[Spectate][TicTacToe] blocked click', { id, playerID, currentPlayer });
+            }
+            return;
+        }
 
         if (!isPlayerTurn) return;
 
@@ -262,8 +262,9 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
     }, [isActive, ctx.turn, ctx.gameover, resetGame]);
 
     return (
-        <div className="flex flex-col items-center h-[100dvh] w-full font-sans bg-[#050510] bg-[radial-gradient(ellipse_at_center,_#1a1d2d_0%,_#050510_100%)] overflow-hidden relative pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-            {/* 噪点纹理背景 */}
+        <UndoProvider value={{ G, ctx, moves, playerID, isGameOver: !!isGameOver, isLocalMode: isLocalMatch }}>
+            <div className="flex flex-col items-center h-[100dvh] w-full font-sans bg-[#050510] bg-[radial-gradient(ellipse_at_center,_#1a1d2d_0%,_#050510_100%)] overflow-hidden relative pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+                {/* 噪点纹理背景 */}
             <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
             ></div>
@@ -400,30 +401,24 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
                 </div>
             </div>
 
-            {/* 底部操作区域 - 撤销控件（游戏进行中） */}
-            {showUndoControls && (
-                <div className="absolute bottom-2 left-0 w-full z-30 pointer-events-none">
-                    <div className="flex items-center justify-center pointer-events-auto">
-                        <GameControls G={G} ctx={ctx} moves={moves} playerID={playerID} />
-                    </div>
-                </div>
-            )}
-
-            {/* 统一结束页面遮罩 */}
+                {/* 统一结束页面遮罩 */}
             <EndgameOverlay
                 isGameOver={!!isGameOver}
                 result={isGameOver}
                 playerID={playerID}
-                reset={reset}
-                isMultiplayer={isMultiplayer}
+                reset={isSpectator ? undefined : reset}
+                isMultiplayer={isSpectator ? false : isMultiplayer}
                 totalPlayers={matchData?.length}
                 rematchState={rematchState}
-                onVote={handleRematchVote}
+                onVote={isSpectator ? undefined : handleRematchVote}
             />
-            <div className="fixed bottom-0 right-0 p-2 z-50">
-                <GameDebugPanel G={G} ctx={ctx} moves={moves} events={events} playerID={playerID} autoSwitch={!isMultiplayer} />
+                {!isSpectator && (
+                    <div className="fixed bottom-0 right-0 p-2 z-50">
+                        <GameDebugPanel G={G} ctx={ctx} moves={moves} events={events} playerID={playerID} autoSwitch={!isMultiplayer} />
+                    </div>
+                )}
             </div>
-        </div>
+        </UndoProvider>
     );
 };
 

@@ -13,6 +13,6 @@ export interface GameManifestEntry {
     icon: string;
     /** 是否允许本地同屏模式，默认 true */
     allowLocalMode?: boolean;
-}
-    allowLocalMode?: boolean;
+    /** 可选的玩家人数列表，默认 [2] */
+    playerOptions?: number[];
 }

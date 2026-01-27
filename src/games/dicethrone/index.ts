@@ -1,3 +1,3 @@
 export { DiceThroneBoard } from './Board';
 export { DiceThroneGame } from './game';
-export type { DiceThroneState } from './types';
+export type { DiceThroneCore, DiceThroneEvent } from './domain/types';

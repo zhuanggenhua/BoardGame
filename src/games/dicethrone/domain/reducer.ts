@@ -6,11 +6,55 @@
 import type {
     DiceThroneCore,
     DiceThroneEvent,
-    DieFace,
+    TurnPhase,
 } from './types';
-import { getAvailableAbilityIds, getDieFace } from './rules';
+import { getDieFace, getTokenStackLimit } from './rules';
 import { resourceSystem } from '../../../systems/ResourceSystem';
 import { RESOURCE_IDS } from './resources';
+import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
+
+// ============================================================================
+// Choice Effect 处理器注册表
+// ============================================================================
+
+/**
+ * Choice Effect 处理器上下文
+ */
+export interface ChoiceEffectContext {
+    state: DiceThroneCore;
+    playerId: string;
+    customId: string;
+    sourceAbilityId?: string;
+}
+
+/**
+ * Choice Effect 处理器函数类型
+ * 返回修改后的 state（或 undefined 表示不处理）
+ */
+export type ChoiceEffectHandler = (context: ChoiceEffectContext) => DiceThroneCore | undefined;
+
+/**
+ * Choice Effect 处理器注册表
+ * 新增选择效果只需注册处理器，无需修改 handleChoiceResolved
+ */
+const choiceEffectHandlers: Map<string, ChoiceEffectHandler> = new Map();
+
+/**
+ * 注册 Choice Effect 处理器
+ */
+export function registerChoiceEffectHandler(customId: string, handler: ChoiceEffectHandler): void {
+    if (choiceEffectHandlers.has(customId)) {
+        console.warn(`[DiceThrone] ChoiceEffect "${customId}" 已存在，将被覆盖`);
+    }
+    choiceEffectHandlers.set(customId, handler);
+}
+
+/**
+ * 获取 Choice Effect 处理器
+ */
+export function getChoiceEffectHandler(customId: string): ChoiceEffectHandler | undefined {
+    return choiceEffectHandlers.get(customId);
+}
 
 // ============================================================================
 // 辅助函数
@@ -40,7 +84,7 @@ const handleDiceRolled: EventHandler<Extract<DiceThroneEvent, { type: 'DICE_ROLL
     event
 ) => {
     const newState = cloneState(state);
-    const { results, rollerId } = event.payload;
+    const { results } = event.payload;
     
     let resultIndex = 0;
     newState.dice.slice(0, newState.rollDiceCount).forEach(die => {
@@ -57,8 +101,7 @@ const handleDiceRolled: EventHandler<Extract<DiceThroneEvent, { type: 'DICE_ROLL
     
     newState.rollCount++;
     newState.rollConfirmed = false;
-    newState.availableAbilityIds = getAvailableAbilityIds(newState, rollerId);
-    
+
     return newState;
 };
 
@@ -92,10 +135,18 @@ const handleBonusDieRolled: EventHandler<Extract<DiceThroneEvent, { type: 'BONUS
     event
 ) => {
     const newState = cloneState(state);
-    const { value, face, playerId } = event.payload;
+    const { value, face, playerId, targetPlayerId, effectKey, effectParams } = event.payload;
     
     // 设置独立的 lastBonusDieRoll 状态（用于 UI 展示）
-    newState.lastBonusDieRoll = { value, face, playerId, timestamp: event.timestamp };
+    newState.lastBonusDieRoll = {
+        value,
+        face,
+        playerId,
+        targetPlayerId,
+        timestamp: event.timestamp,
+        effectKey,
+        effectParams,
+    };
     
     // 记录额外投掷结果（用于 pendingAttack 追踪）
     if (newState.pendingAttack) {
@@ -132,51 +183,12 @@ const handleDieLockToggled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_L
  */
 const handleRollConfirmed: EventHandler<Extract<DiceThroneEvent, { type: 'ROLL_CONFIRMED' }>> = (
     state,
-    event
+    _event
 ) => {
     const newState = cloneState(state);
-    const { availableAbilityIds } = event.payload;
-    
-    newState.rollConfirmed = true;
-    newState.availableAbilityIds = availableAbilityIds;
-    
-    return newState;
-};
 
-/**
- * 处理阶段切换事件
- */
-const handlePhaseChanged: EventHandler<Extract<DiceThroneEvent, { type: 'PHASE_CHANGED' }>> = (
-    state,
-    event
-) => {
-    const newState = cloneState(state);
-    const { to, activePlayerId } = event.payload;
-    
-    newState.turnPhase = to;
-    newState.activePlayerId = activePlayerId;
-    
-    // 进入掷骰阶段时重置骰子状态
-    if (to === 'offensiveRoll') {
-        newState.rollCount = 0;
-        newState.rollLimit = 3;
-        newState.rollDiceCount = 5;
-        newState.rollConfirmed = false;
-        newState.availableAbilityIds = [];
-        newState.pendingAttack = null;
-        resetDice(newState);
-    } else if (to === 'defensiveRoll') {
-        newState.rollCount = 0;
-        newState.rollLimit = 1;
-        newState.rollDiceCount = 4;
-        newState.rollConfirmed = false;
-        newState.availableAbilityIds = [];
-        resetDice(newState);
-        if (newState.pendingAttack) {
-            newState.availableAbilityIds = getAvailableAbilityIds(newState, newState.pendingAttack.defenderId);
-        }
-    }
-    
+    newState.rollConfirmed = true;
+
     return newState;
 };
 
@@ -201,12 +213,28 @@ const handleAbilityActivated: EventHandler<Extract<DiceThroneEvent, { type: 'ABI
     event
 ) => {
     const newState = cloneState(state);
-    const { abilityId, isDefense } = event.payload;
+    const { abilityId, playerId, isDefense } = event.payload;
     
     newState.activatingAbilityId = abilityId;
 
     if (isDefense && newState.pendingAttack) {
         newState.pendingAttack.defenseAbilityId = abilityId;
+    }
+
+    // 记录最后一次激活的技能（用于特写展示）
+    const player = newState.players[playerId];
+    if (player) {
+        // 查找技能的基础 ID（去掉 -2 / -2-3 等后缀）
+        const baseAbilityId = abilityId.replace(/(-\d+)+$/, '');
+        const level = player.abilityLevels[baseAbilityId] ?? 1;
+        
+        newState.lastActivatedAbility = {
+            abilityId,
+            playerId,
+            level,
+            timestamp: event.timestamp,
+            isDefense,
+        };
     }
     
     return newState;
@@ -214,6 +242,7 @@ const handleAbilityActivated: EventHandler<Extract<DiceThroneEvent, { type: 'ABI
 
 /**
  * 处理伤害事件
+ * 注意：伤害先经过护盾抵消，剩余伤害再扣血
  */
 const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'DAMAGE_DEALT' }>> = (
     state,
@@ -224,9 +253,24 @@ const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'DAMAGE_D
     
     const target = newState.players[targetId];
     if (target) {
-        // 使用 ResourceSystem 计算生命值变更
-        const result = resourceSystem.modify(target.resources, RESOURCE_IDS.HP, -actualDamage);
-        target.resources = result.pool;
+        let remainingDamage = actualDamage;
+        
+        // 消耗护盾抵消伤害
+        if (target.damageShields && target.damageShields.length > 0 && remainingDamage > 0) {
+            // 按添加顺序消耗护盾
+            const shield = target.damageShields[0];
+            const preventedAmount = Math.min(shield.value, remainingDamage);
+            remainingDamage -= preventedAmount;
+            
+            // 清空所有护盾（下次受伤后清空的设计）
+            target.damageShields = [];
+        }
+        
+        // 剩余伤害扣血
+        if (remainingDamage > 0) {
+            const result = resourceSystem.modify(target.resources, RESOURCE_IDS.HP, -remainingDamage);
+            target.resources = result.pool;
+        }
     }
     
     if (sourceAbilityId) {
@@ -300,6 +344,70 @@ const handleStatusRemoved: EventHandler<Extract<DiceThroneEvent, { type: 'STATUS
         target.statusEffects[statusId] = Math.max(0, (target.statusEffects[statusId] || 0) - stacks);
     }
     
+    return newState;
+};
+
+/**
+ * 处理 Token 授予事件
+ */
+const handleTokenGranted: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_GRANTED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { targetId, tokenId, newTotal, sourceAbilityId } = event.payload;
+    
+    const target = newState.players[targetId];
+    if (target) {
+        target.tokens[tokenId] = newTotal;
+    }
+
+    if (sourceAbilityId) {
+        newState.lastEffectSourceByPlayerId = newState.lastEffectSourceByPlayerId || {};
+        newState.lastEffectSourceByPlayerId[targetId] = sourceAbilityId;
+    }
+    
+    return newState;
+};
+
+/**
+ * 处理 Token 消耗事件
+ */
+const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_CONSUMED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { playerId, tokenId, newTotal } = event.payload;
+    
+    const player = newState.players[playerId];
+    if (player) {
+        player.tokens[tokenId] = newTotal;
+    }
+    
+    return newState;
+};
+
+/**
+ * 处理 Token 上限变化事件
+ */
+const handleTokenLimitChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_LIMIT_CHANGED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { playerId, tokenId, newLimit, sourceAbilityId } = event.payload;
+
+    const player = newState.players[playerId];
+    if (player) {
+        player.tokenStackLimits[tokenId] = newLimit;
+    }
+
+    if (sourceAbilityId) {
+        newState.lastEffectSourceByPlayerId = newState.lastEffectSourceByPlayerId || {};
+        newState.lastEffectSourceByPlayerId[playerId] = sourceAbilityId;
+    }
+
     return newState;
 };
 
@@ -411,6 +519,12 @@ const handleCardPlayed: EventHandler<Extract<DiceThroneEvent, { type: 'CARD_PLAY
     const newState = cloneState(state);
     const { playerId, cardId, cpCost } = event.payload;
     
+    // 如果有上一张卡的待展示特写，先触发它（处理无交互也无响应窗口的卡牌）
+    if (newState.pendingCardSpotlight) {
+        newState.lastPlayedCard = newState.pendingCardSpotlight;
+        // 注意：不清除，留给后续逻辑覆盖
+    }
+    
     const player = newState.players[playerId];
     if (player) {
         const cardIndex = player.hand.findIndex(c => c.id === cardId);
@@ -419,6 +533,15 @@ const handleCardPlayed: EventHandler<Extract<DiceThroneEvent, { type: 'CARD_PLAY
             player.discard.push(card);
             // 使用 ResourceSystem 支付 CP
             player.resources = resourceSystem.pay(player.resources, { [RESOURCE_IDS.CP]: cpCost });
+            
+            // 直接设置 lastPlayedCard（立即触发特写）
+            // 如果后续有 INTERACTION_REQUESTED 事件，会在那里清除并暂存
+            newState.lastPlayedCard = {
+                cardId,
+                playerId,
+                atlasIndex: card.atlasIndex ?? 0,
+                timestamp: event.timestamp,
+            };
         }
     }
     
@@ -505,13 +628,14 @@ const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type: 'ATTA
     event
 ) => {
     const newState = cloneState(state);
-    const { attackerId, defenderId, sourceAbilityId, isDefendable } = event.payload;
+    const { attackerId, defenderId, sourceAbilityId, isDefendable, isUltimate } = event.payload;
     
     newState.pendingAttack = {
         attackerId,
         defenderId,
         isDefendable,
         sourceAbilityId,
+        isUltimate,
         // 额外骰子现在在 resolveAttack 中自动投掷，不再需要设置 extraRoll
     };
     
@@ -558,14 +682,34 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
     event
 ) => {
     const newState = cloneState(state);
-    const { playerId, statusId, value, sourceAbilityId } = event.payload;
+    const { playerId, statusId, tokenId, value, customId, sourceAbilityId } = event.payload;
     
     const player = newState.players[playerId];
     if (player) {
-        const def = newState.statusDefinitions.find(e => e.id === statusId);
-        const maxStacks = def?.stackLimit || 99;
-        const currentStacks = player.statusEffects[statusId] || 0;
-        player.statusEffects[statusId] = Math.min(currentStacks + value, maxStacks);
+        if (tokenId) {
+            // 处理 Token 选择（允许 value 为负数表示消耗）
+            const maxStacks = getTokenStackLimit(newState, playerId, tokenId);
+            const currentAmount = player.tokens[tokenId] || 0;
+            const nextAmount = Math.max(0, Math.min(currentAmount + value, maxStacks));
+            player.tokens[tokenId] = nextAmount;
+        } else if (statusId) {
+            // 处理状态选择
+            const def = newState.statusDefinitions.find(e => e.id === statusId);
+            const maxStacks = def?.stackLimit || 99;
+            const currentStacks = player.statusEffects[statusId] || 0;
+            player.statusEffects[statusId] = Math.min(currentStacks + value, maxStacks);
+        }
+    }
+
+    // 通过注册表处理特殊选择效果
+    if (customId) {
+        const handler = getChoiceEffectHandler(customId);
+        if (handler) {
+            const result = handler({ state: newState, playerId, customId, sourceAbilityId });
+            if (result) {
+                Object.assign(newState, result);
+            }
+        }
     }
 
     if (sourceAbilityId) {
@@ -613,8 +757,209 @@ const handleResponseWindowClosed: EventHandler<Extract<DiceThroneEvent, { type: 
     state,
     _event
 ) => {
-    // 不修改核心状态，响应窗口由系统层管理
+    // 响应窗口关闭不需要处理 pendingCardSpotlight
+    // 因为卡牌特写已经在 CARD_PLAYED 时立即显示了
     return state;
+};
+
+/**
+ * 处理护盾授予事件
+ */
+const handleDamageShieldGranted: EventHandler<Extract<DiceThroneEvent, { type: 'DAMAGE_SHIELD_GRANTED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { targetId, value, sourceId } = event.payload;
+    
+    const target = newState.players[targetId];
+    if (target) {
+        // 初始化 damageShields 数组（兼容旧状态）
+        if (!target.damageShields) {
+            target.damageShields = [];
+        }
+        // 添加新护盾
+        target.damageShields.push({ value, sourceId });
+    }
+    
+    return newState;
+};
+
+/**
+ * 处理伤害被护盾阻挡事件（纯 UI/日志用途，不修改状态）
+ */
+const handleDamagePrevented: EventHandler<Extract<DiceThroneEvent, { type: 'DAMAGE_PREVENTED' }>> = (
+    state,
+    _event
+) => {
+    // 实际护盾消耗已在 handleDamageDealt 中处理
+    // 此事件仅用于 UI 反馈/日志
+    return state;
+};
+
+/**
+ * 处理骰子修改事件
+ * 
+ * 设计原则：
+ * - 如果修改骰子的玩家 === 骰子所有者（rollerId），则重置 rollConfirmed=false
+ * - 这样对手有机会响应新的骰面
+ * - 如果是对手改我的骰，不需要重新确认（我只能接受结果）
+ */
+const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODIFIED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { dieId, newValue, playerId } = event.payload;
+    
+    const die = newState.dice.find(d => d.id === dieId);
+    if (die) {
+        die.value = newValue;
+        const face = getDieFace(newValue);
+        die.symbol = face;
+        die.symbols = [face];
+    }
+    
+    // 检查是否是自己修改自己的骰子
+    // rollerId 是当前骰子的所有者
+    const rollerId = newState.turnPhase === 'defensiveRoll' && newState.pendingAttack
+        ? newState.pendingAttack.defenderId
+        : newState.activePlayerId;
+    
+    if (playerId === rollerId && newState.rollConfirmed) {
+        // 自己改自己的骰子，需要重新确认骰面，让对手有响应机会
+        newState.rollConfirmed = false;
+    }
+    
+    return newState;
+};
+
+/**
+ * 处理骰子重掷事件
+ * 
+ * 设计原则（同 handleDieModified）：
+ * - 如果重掷骰子的玩家 === 骰子所有者（rollerId），则重置 rollConfirmed=false
+ * - 这样对手有机会响应新的骰面
+ */
+const handleDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_REROLLED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { dieId, newValue, playerId } = event.payload;
+    
+    const die = newState.dice.find(d => d.id === dieId);
+    if (die) {
+        die.value = newValue;
+        const face = getDieFace(newValue);
+        die.symbol = face;
+        die.symbols = [face];
+    }
+    
+    // 检查是否是自己重掷自己的骰子
+    const rollerId = newState.turnPhase === 'defensiveRoll' && newState.pendingAttack
+        ? newState.pendingAttack.defenderId
+        : newState.activePlayerId;
+    
+    if (playerId === rollerId && newState.rollConfirmed) {
+        // 自己重掷自己的骰子，需要重新确认骰面
+        newState.rollConfirmed = false;
+    }
+    
+    return newState;
+};
+
+/**
+ * 处理投掷次数变化事件
+ */
+const handleRollLimitChanged: EventHandler<Extract<DiceThroneEvent, { type: 'ROLL_LIMIT_CHANGED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { newLimit } = event.payload;
+    
+    newState.rollLimit = newLimit;
+    
+    return newState;
+};
+
+/**
+ * 处理交互请求事件
+ */
+const handleInteractionRequested: EventHandler<Extract<DiceThroneEvent, { type: 'INTERACTION_REQUESTED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const interaction = event.payload.interaction;
+    newState.pendingInteraction = interaction;
+    
+    // 如果交互来自卡牌，将 lastPlayedCard 移到 pendingCardSpotlight（暂停特写，等待交互完成）
+    if (interaction.sourceCardId && newState.lastPlayedCard?.cardId === interaction.sourceCardId) {
+        newState.pendingCardSpotlight = newState.lastPlayedCard;
+        newState.lastPlayedCard = undefined;
+    }
+    
+    return newState;
+};
+
+/**
+ * 处理交互完成事件
+ */
+const handleInteractionCompleted: EventHandler<Extract<DiceThroneEvent, { type: 'INTERACTION_COMPLETED' }>> = (
+    state,
+    _event
+) => {
+    const newState = cloneState(state);
+    newState.pendingInteraction = undefined;
+    
+    // 如果有待展示的卡牌特写，现在触发（交互已完成，卡牌确认生效）
+    if (newState.pendingCardSpotlight) {
+        newState.lastPlayedCard = newState.pendingCardSpotlight;
+        newState.pendingCardSpotlight = undefined;
+    }
+    
+    return newState;
+};
+
+/**
+ * 处理交互取消事件
+ * - 清除 pendingInteraction
+ * - 把卡牌从弃牌堆还回手牌
+ * - 返还已扣除的 CP
+ * - 清除待展示的卡牌特写（卡牌被取消，不应显示特写）
+ */
+const handleInteractionCancelled: EventHandler<Extract<DiceThroneEvent, { type: 'INTERACTION_CANCELLED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { sourceCardId, cpCost, playerId } = event.payload;
+    
+    // 清除交互状态
+    newState.pendingInteraction = undefined;
+    
+    // 清除待展示的卡牌特写（卡牌被取消，不应显示特写）
+    newState.pendingCardSpotlight = undefined;
+    
+    const player = newState.players[playerId];
+    if (player && sourceCardId) {
+        // 从弃牌堆找到卡牌并还回手牌
+        const cardIndex = player.discard.findIndex(c => c.id === sourceCardId);
+        if (cardIndex !== -1) {
+            const [card] = player.discard.splice(cardIndex, 1);
+            player.hand.push(card);
+        }
+        
+        // 返还 CP
+        if (cpCost > 0) {
+            const currentCp = player.resources[RESOURCE_IDS.CP] ?? 0;
+            player.resources[RESOURCE_IDS.CP] = currentCp + cpCost;
+        }
+    }
+    
+    return newState;
 };
 
 /**
@@ -649,6 +994,10 @@ const handleAbilityReplaced: EventHandler<Extract<DiceThroneEvent, { type: 'ABIL
         if (upgradeCardIndex !== -1) {
             const [card] = player.hand.splice(upgradeCardIndex, 1);
             player.discard.push(card);
+            // 确保对象存在（向后兼容旧状态）
+            if (!player.upgradeCardByAbilityId) {
+                player.upgradeCardByAbilityId = {};
+            }
             player.upgradeCardByAbilityId[oldAbilityId] = { cardId: card.id, cpCost: card.cpCost };
         }
     }
@@ -656,6 +1005,106 @@ const handleAbilityReplaced: EventHandler<Extract<DiceThroneEvent, { type: 'ABIL
     // 升级后清除撤回状态
     newState.lastSoldCardId = undefined;
 
+    return newState;
+};
+
+// ============================================================================
+// Token 响应窗口事件处理
+// ============================================================================
+
+/**
+ * 处理 Token 响应窗口打开事件
+ */
+const handleTokenResponseRequested: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_RESPONSE_REQUESTED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    newState.pendingDamage = event.payload.pendingDamage;
+    return newState;
+};
+
+/**
+ * 处理 Token 使用事件
+ */
+const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_USED' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { playerId, tokenId, amount, effectType, damageModifier, evasionRoll } = event.payload;
+    
+    const player = newState.players[playerId];
+    if (player) {
+        // 消耗 Token
+        const currentAmount = player.tokens[tokenId] ?? 0;
+        player.tokens[tokenId] = Math.max(0, currentAmount - amount);
+    }
+    
+    // 更新 pendingDamage
+    if (newState.pendingDamage) {
+        if (effectType === 'damageBoost' && damageModifier) {
+            // 太极加伤
+            newState.pendingDamage = {
+                ...newState.pendingDamage,
+                currentDamage: newState.pendingDamage.currentDamage + damageModifier,
+            };
+        } else if (effectType === 'damageReduction' && damageModifier) {
+            // 太极减伤
+            newState.pendingDamage = {
+                ...newState.pendingDamage,
+                currentDamage: Math.max(0, newState.pendingDamage.currentDamage + damageModifier),
+            };
+        } else if (effectType === 'evasionAttempt') {
+            // 闪避尝试（无论成功失败都记录结果）
+            if (evasionRoll?.success) {
+                // 闪避成功
+                newState.pendingDamage = {
+                    ...newState.pendingDamage,
+                    currentDamage: 0,
+                    isFullyEvaded: true,
+                    lastEvasionRoll: evasionRoll,
+                };
+            } else if (evasionRoll) {
+                // 闪避失败，记录结果但不修改伤害
+                newState.pendingDamage = {
+                    ...newState.pendingDamage,
+                    lastEvasionRoll: evasionRoll,
+                };
+            }
+        }
+    }
+    
+    return newState;
+};
+
+/**
+ * 处理 Token 响应窗口关闭事件
+ */
+const handleTokenResponseClosed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_RESPONSE_CLOSED' }>> = (
+    state,
+    _event
+) => {
+    const newState = cloneState(state);
+    // 清除 pendingDamage，实际伤害由后续的 DAMAGE_DEALT 事件处理
+    newState.pendingDamage = undefined;
+    return newState;
+};
+
+/**
+ * 处理技能重选事件（骰面被修改后触发）
+ * - 清除 pendingAttack（回到技能选择状态）
+ * - 设置 rollConfirmed = false（允许继续重掷，如果还有次数）
+ */
+const handleAbilityReselectionRequired: EventHandler<Extract<DiceThroneEvent, { type: 'ABILITY_RESELECTION_REQUIRED' }>> = (
+    state,
+    _event
+) => {
+    const newState = cloneState(state);
+    // 清除已选择的技能/攻击
+    newState.pendingAttack = null;
+    // 允许继续重掷（如果还有次数）
+    newState.rollConfirmed = false;
     return newState;
 };
 
@@ -679,8 +1128,7 @@ export const reduce = (
             return handleDieLockToggled(state, event);
         case 'ROLL_CONFIRMED':
             return handleRollConfirmed(state, event);
-        case 'PHASE_CHANGED':
-            return handlePhaseChanged(state, event);
+        // PHASE_CHANGED 领域事件已废弃，阶段切换由 FlowSystem 的 SYS_PHASE_CHANGED 处理
         case 'ABILITY_ACTIVATED':
             return handleAbilityActivated(state, event);
         case 'DAMAGE_DEALT':
@@ -691,6 +1139,16 @@ export const reduce = (
             return handleStatusApplied(state, event);
         case 'STATUS_REMOVED':
             return handleStatusRemoved(state, event);
+        case 'TOKEN_GRANTED':
+            return handleTokenGranted(state, event);
+        case 'TOKEN_CONSUMED':
+            return handleTokenConsumed(state, event);
+        case 'TOKEN_LIMIT_CHANGED':
+            return handleTokenLimitChanged(state, event);
+        case 'DAMAGE_SHIELD_GRANTED':
+            return handleDamageShieldGranted(state, event);
+        case 'DAMAGE_PREVENTED':
+            return handleDamagePrevented(state, event);
         case 'CARD_DRAWN':
             return handleCardDrawn(state, event);
         case 'CARD_DISCARDED':
@@ -725,10 +1183,69 @@ export const reduce = (
             return handleResponseWindowOpened(state, event);
         case 'RESPONSE_WINDOW_CLOSED':
             return handleResponseWindowClosed(state, event);
+        case 'DIE_MODIFIED':
+            return handleDieModified(state, event);
+        case 'DIE_REROLLED':
+            return handleDieRerolled(state, event);
+        case 'ROLL_LIMIT_CHANGED':
+            return handleRollLimitChanged(state, event);
+        case 'INTERACTION_REQUESTED':
+            return handleInteractionRequested(state, event);
+        case 'INTERACTION_COMPLETED':
+            return handleInteractionCompleted(state, event);
+        case 'INTERACTION_CANCELLED':
+            return handleInteractionCancelled(state, event);
+        case 'TOKEN_RESPONSE_REQUESTED':
+            return handleTokenResponseRequested(state, event);
+        case 'TOKEN_USED':
+            return handleTokenUsed(state, event);
+        case 'TOKEN_RESPONSE_CLOSED':
+            return handleTokenResponseClosed(state, event);
+        case 'ABILITY_RESELECTION_REQUIRED':
+            return handleAbilityReselectionRequired(state, event);
         default: {
-            const _exhaustive: never = event;
-            console.warn(`Unknown event type: ${(_exhaustive as DiceThroneEvent).type}`);
+            // 处理系统层事件：SYS_PHASE_CHANGED 同步到 core.turnPhase
+            if ((event as { type: string }).type === FLOW_EVENTS.PHASE_CHANGED) {
+                const phaseEvent = event as unknown as { payload: { to: string; activePlayerId: string } };
+                const newState = cloneState(state);
+                newState.turnPhase = phaseEvent.payload.to as TurnPhase;
+                newState.activePlayerId = phaseEvent.payload.activePlayerId;
+                
+                // 进入掆骰阶段时重置骰子状态
+                if (phaseEvent.payload.to === 'offensiveRoll') {
+                    newState.rollCount = 0;
+                    newState.rollLimit = 3;
+                    newState.rollDiceCount = 5;
+                    newState.rollConfirmed = false;
+                    newState.pendingAttack = null;
+                    resetDice(newState);
+                } else if (phaseEvent.payload.to === 'defensiveRoll') {
+                    newState.rollCount = 0;
+                    newState.rollLimit = 1;
+                    newState.rollDiceCount = 4;
+                    newState.rollConfirmed = false;
+                    resetDice(newState);
+                }
+                
+                return newState;
+            }
+            
+            // 其他未知事件类型（包括系统层事件）直接返回原状态
+            // 注意：这里不使用 exhaustive check，因为系统层事件不在 DiceThroneEvent 类型中
+            console.debug(`[Reducer] Ignoring event type: ${(event as { type: string }).type}`);
             return state;
         }
     }
 };
+
+// ============================================================================
+// Choice Effect 处理器注册
+// ============================================================================
+
+/** 莲花掌：花费2太极使攻击不可防御 */
+registerChoiceEffectHandler('lotus-palm-unblockable-pay', ({ state }) => {
+    if (state.pendingAttack?.sourceAbilityId === 'lotus-palm') {
+        return { ...state, pendingAttack: { ...state.pendingAttack, isDefendable: false } };
+    }
+    return undefined;
+});

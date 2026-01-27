@@ -6,6 +6,7 @@ import bodyParser from 'koa-bodyparser';
 import { connectDB } from './src/server/db';
 import { MatchRecord } from './src/server/models/MatchRecord';
 import { GAME_SERVER_MANIFEST } from './src/games/manifest.server';
+import { mongoStorage } from './src/server/storage/MongoStorage';
 
 // 大厅事件常量（与前端 lobbySocket.ts 保持一致）
 const LOBBY_EVENTS = {
@@ -25,6 +26,8 @@ const REMATCH_EVENTS = {
     VOTE: 'rematch:vote',
     STATE_UPDATE: 'rematch:stateUpdate',
     TRIGGER_RESET: 'rematch:triggerReset',
+    // 调试用：广播新房间
+    DEBUG_NEW_ROOM: 'debug:newRoom',
 } as const;
 
 // 重赛投票状态（按 matchID 维护）
@@ -144,6 +147,22 @@ const withArchiveOnEnd = (game: Game, gameName: string): Game => {
         },
     };
 };
+const withSetupData = (game: Game): Game => {
+    const originalSetup = game.setup;
+    return {
+        ...game,
+        setup: (ctx, setupData) => {
+            const baseState = originalSetup ? originalSetup(ctx, setupData) : {};
+            if (baseState && typeof baseState === 'object') {
+                return {
+                    ...(baseState as Record<string, unknown>),
+                    __setupData: setupData ?? null,
+                };
+            }
+            return baseState;
+        },
+    };
+};
 
 const buildServerGames = (): Game[] => {
     const games: Game[] = [];
@@ -155,7 +174,7 @@ const buildServerGames = (): Game[] => {
             throw new Error(`[GameManifest] 游戏 ID 重复: ${manifest.id}`);
         }
         manifestGameIds.add(manifest.id);
-        games.push(withArchiveOnEnd(game, manifest.id));
+        games.push(withArchiveOnEnd(withSetupData(game), manifest.id));
     }
 
     return games;
@@ -179,15 +198,79 @@ const DEV_LOBBY_CORS_ORIGINS = [
 
 const LOBBY_CORS_ORIGINS = RAW_WEB_ORIGINS.length > 0 ? RAW_WEB_ORIGINS : DEV_LOBBY_CORS_ORIGINS;
 
+// 是否启用持久化存储（通过环境变量控制，默认启用以保持与生产一致）
+const USE_PERSISTENT_STORAGE = process.env.USE_PERSISTENT_STORAGE !== 'false';
+
 // 创建 boardgame.io 服务器
 const server = BoardgameServer({
     games: SERVER_GAMES,
     origins: SERVER_ORIGINS,
+    // 启用持久化时使用 MongoDB 存储
+    ...(USE_PERSISTENT_STORAGE ? { db: mongoStorage } : {}),
 });
 
 // 获取底层的 Koa 应用和数据库
 const { app, db } = server;
 serverDb = db;
+
+// 预处理 /leave：只释放座位，不删除房间（避免 boardgame.io 在无人时 wipe）
+// 注意：必须插入到 middleware 队列最前面，以拦截 boardgame.io 的默认路由
+const interceptLeaveMiddleware = async (ctx: any, next: () => Promise<void>) => {
+    if (ctx.method === 'POST') {
+        const match = ctx.path.match(/^\/games\/([^/]+)\/([^/]+)\/leave$/);
+        if (match) {
+            const matchID = match[2];
+            // 只在此路由读取 body，避免重复读取 request stream。
+            const parse = bodyParser();
+            await (parse as any)(ctx, async () => undefined);
+            const body = (ctx.request as any).body as { playerID?: string; credentials?: string } | undefined;
+            const playerID = body?.playerID;
+            const credentials = body?.credentials;
+
+            if (typeof playerID === 'undefined' || playerID === null) {
+                ctx.throw(403, 'playerID is required');
+            }
+            if (!credentials) {
+                ctx.throw(403, 'credentials is required');
+            }
+
+            const { metadata } = await db.fetch(matchID, { metadata: true });
+            if (!metadata) {
+                ctx.throw(404, 'Match ' + matchID + ' not found');
+            }
+            if (!metadata.players[playerID as string]) {
+                ctx.throw(404, 'Player ' + playerID + ' not found');
+            }
+
+            const isAuthorized = await app.context.auth.authenticateCredentials({
+                playerID: playerID as string,
+                credentials,
+                metadata,
+            });
+            if (!isAuthorized) {
+                ctx.throw(403, 'Invalid credentials ' + credentials);
+            }
+
+            // 只清除该玩家的占位，不删除房间
+            delete metadata.players[playerID as string].name;
+            delete metadata.players[playerID as string].credentials;
+            await db.setMetadata(matchID, metadata);
+
+            ctx.body = {};
+            return;
+        }
+    }
+    await next();
+};
+
+// 插到最前面，优先于 boardgame.io 内置路由
+(app as any).middleware?.unshift(interceptLeaveMiddleware);
+
+if (USE_PERSISTENT_STORAGE) {
+    console.log('[Server] 使用 MongoDB 持久化存储');
+} else {
+    console.log('[Server] 使用内存存储（开发模式）');
+}
 const GAME_SERVER_PORT = Number(process.env.GAME_SERVER_PORT) || 18000;
 
 // 注意：不要启用全局 bodyParser。
@@ -314,6 +397,9 @@ interface LobbyMatch {
     players: Array<{ id: number; name?: string; isConnected?: boolean }>;
     createdAt?: number;
     updatedAt?: number;
+    roomName?: string;
+    ownerKey?: string;
+    ownerType?: 'user' | 'guest';
 }
 
 const lobbyCacheByGame = new Map<SupportedGame, Map<string, LobbyMatch>>();
@@ -354,7 +440,9 @@ const bumpLobbyVersion = (gameName: SupportedGame): number => {
 
 const buildLobbyMatch = (
     matchID: string,
-    metadata: { gameName?: string; players?: Record<string, PlayerMetadata>; createdAt?: number; updatedAt?: number }
+    metadata: { gameName?: string; players?: Record<string, PlayerMetadata>; createdAt?: number; updatedAt?: number; setupData?: unknown },
+    roomName?: string,
+    setupDataFromState?: { ownerKey?: string; ownerType?: 'user' | 'guest' }
 ): LobbyMatch => {
     const playersObj = metadata.players || {};
     const playersArray = Object.entries(playersObj).map(([id, data]) => ({
@@ -362,6 +450,9 @@ const buildLobbyMatch = (
         name: data?.name,
         isConnected: data?.isConnected,
     }));
+    const setupDataFromMeta = (metadata.setupData as { ownerKey?: string; ownerType?: 'user' | 'guest' } | undefined) || undefined;
+    const ownerKey = setupDataFromMeta?.ownerKey ?? setupDataFromState?.ownerKey;
+    const ownerType = setupDataFromMeta?.ownerType ?? setupDataFromState?.ownerType;
 
     return {
         matchID,
@@ -369,14 +460,20 @@ const buildLobbyMatch = (
         players: playersArray,
         createdAt: metadata.createdAt,
         updatedAt: metadata.updatedAt,
+        roomName,
+        ownerKey,
+        ownerType,
     };
 };
 
 const fetchLobbyMatch = async (matchID: string): Promise<LobbyMatch | null> => {
     try {
-        const match = await db.fetch(matchID, { metadata: true });
+        const match = await db.fetch(matchID, { metadata: true, state: true });
         if (!match || !match.metadata) return null;
-        return buildLobbyMatch(matchID, match.metadata);
+        // 从游戏状态 G.__setupData 中读取房间名与 owner 信息
+        const setupData = match.state?.G?.__setupData as { roomName?: string; ownerKey?: string; ownerType?: 'user' | 'guest' } | undefined;
+        const roomName = setupData?.roomName;
+        return buildLobbyMatch(matchID, match.metadata, roomName, setupData);
     } catch (error) {
         console.error(`[LobbyIO] 获取房间 ${matchID} 失败:`, error);
         return null;
@@ -390,9 +487,12 @@ const fetchMatchesByGame = async (gameName: SupportedGame): Promise<LobbyMatch[]
 
         const matchIDs = await db.listMatches({ gameName });
         for (const matchID of matchIDs) {
-            const match = await db.fetch(matchID, { metadata: true });
+            const match = await db.fetch(matchID, { metadata: true, state: true });
             if (!match || !match.metadata) continue;
-            results.push(buildLobbyMatch(matchID, match.metadata));
+            // 从游戏状态 G.__setupData 中读取房间名与 owner 信息
+            const setupData = match.state?.G?.__setupData as { roomName?: string; ownerKey?: string; ownerType?: 'user' | 'guest' } | undefined;
+            const roomName = setupData?.roomName;
+            results.push(buildLobbyMatch(matchID, match.metadata, roomName, setupData));
         }
         return results;
     } catch (error) {
@@ -725,8 +825,26 @@ app.use(async (ctx, next) => {
 
 // 启动服务器
 server.run(GAME_SERVER_PORT).then(async (runningServers) => {
-    // Connect to DB
+    // 连接 MongoDB
     await connectDB();
+
+    // 如果使用持久化存储，连接存储后端
+    if (USE_PERSISTENT_STORAGE) {
+        await mongoStorage.connect();
+        // 定时清理"不保存"的空房间（每 5 分钟）
+        setInterval(async () => {
+            try {
+                const cleaned = await mongoStorage.cleanupEmptyMatches();
+                if (cleaned > 0) {
+                    for (const gameName of SUPPORTED_GAMES) {
+                        void broadcastLobbySnapshot(gameName, 'cleanupEmptyMatches');
+                    }
+                }
+            } catch (err) {
+                console.error('[MongoStorage] 清理空房间失败:', err);
+            }
+        }, 5 * 60 * 1000);
+    }
 
     console.log(`🎮 游戏服务器运行在 http://localhost:${GAME_SERVER_PORT}`);
 
@@ -857,6 +975,21 @@ server.run(GAME_SERVER_PORT).then(async (runningServers) => {
             socket.data.rematchMatchId = undefined;
             socket.data.rematchPlayerId = undefined;
             console.log(`[RematchIO] ${socket.id} 离开对局`);
+        });
+
+        // 调试用：广播新房间 URL
+        socket.on(REMATCH_EVENTS.DEBUG_NEW_ROOM, (data?: { url?: string }) => {
+            const matchId = socket.data.rematchMatchId as string | undefined;
+            if (!matchId) {
+                console.warn(`[RematchIO] ${socket.id} 广播新房间失败：未加入对局`);
+                return;
+            }
+            if (!data?.url) {
+                console.warn(`[RematchIO] ${socket.id} 广播新房间失败：缺少 URL`);
+                return;
+            }
+            // 广播给房间内的其他玩家（不包括发送者）
+            socket.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, data);
         });
 
         // 投票重赛

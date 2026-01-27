@@ -2,7 +2,7 @@
  * 井字棋确定性状态变更
  */
 
-import type { RandomFn } from '../../../engine/types';
+import type { RandomFn, MatchState } from '../../../engine/types';
 import type {
     TicTacToeCore,
     TicTacToeCommand,
@@ -18,10 +18,11 @@ import { checkWinner, checkDraw } from './rules';
 // ============================================================================
 
 export function execute(
-    state: TicTacToeCore,
+    state: MatchState<TicTacToeCore>,
     command: TicTacToeCommand,
     _random: RandomFn
 ): TicTacToeEvent[] {
+    const core = state.core;
     const events: TicTacToeEvent[] = [];
     const now = Date.now();
 
@@ -40,7 +41,7 @@ export function execute(
             events.push(cellOccupied);
 
             // 模拟应用事件后的状态（用于判断胜负）
-            const newCells = [...state.cells];
+            const newCells = [...core.cells];
             newCells[cellId] = playerId;
 
             // 2. 检查游戏结束
@@ -63,7 +64,7 @@ export function execute(
                 events.push(gameOver);
             } else {
                 // 3. 切换玩家事件
-                const nextPlayer = state.playerIds.find(id => id !== playerId) ?? playerId;
+                const nextPlayer = core.playerIds.find(id => id !== playerId) ?? playerId;
                 const playerSwitched: PlayerSwitchedEvent = {
                     type: 'PLAYER_SWITCHED',
                     payload: { previousPlayer: playerId, nextPlayer },

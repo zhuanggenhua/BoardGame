@@ -48,6 +48,9 @@ export interface LobbyMatch {
     }>;
     createdAt?: number;
     updatedAt?: number;
+    roomName?: string;
+    ownerKey?: string;
+    ownerType?: 'user' | 'guest';
 }
 
 interface LobbySnapshotPayload {

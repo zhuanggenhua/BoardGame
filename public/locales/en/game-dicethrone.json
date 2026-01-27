@@ -6,42 +6,67 @@
     },
     "upkeep": {
       "label": "1. Upkeep Phase",
-      "desc": ["Resolve applicable status effects"]
+      "desc": [
+        "Resolve applicable status effects"
+      ]
     },
     "income": {
       "label": "2. Income Phase",
-      "desc": ["Gain 1 CP", "Draw 1 card"]
+      "desc": [
+        "Gain 1 CP",
+        "Draw 1 card"
+      ]
     },
     "main1": {
       "label": "3. Main Phase (1)",
-      "desc": ["Play ability upgrade cards", "Play main phase action cards", "Sell cards (1 CP each)"]
+      "desc": [
+        "Play ability upgrade cards",
+        "Play main phase action cards",
+        "Sell cards (1 CP each)"
+      ]
     },
     "offensiveRoll": {
       "label": "4. Offensive Roll Phase",
-      "desc": ["Roll up to 3 times to activate an ability"]
+      "desc": [
+        "Roll up to 3 times to activate an ability"
+      ]
     },
     "defensiveRoll": {
       "label": "5. Defensive Roll Phase",
-      "desc": ["Your opponent rolls once to defend"]
+      "desc": [
+        "Your opponent rolls once to defend"
+      ]
     },
     "main2": {
       "label": "6. Main Phase (2)",
-      "desc": ["Same as Main Phase (1)"]
+      "desc": [
+        "Same as Main Phase (1)"
+      ]
     },
     "discard": {
       "label": "7. Discard Phase",
-      "desc": ["Sell cards above 6 in hand"]
+      "desc": [
+        "Sell cards above 6 in hand"
+      ]
     }
   },
   "statusEffects": {
-    "evasive": {
-      "name": "Evasive",
+    "stun": {
+      "name": "Stun",
       "description": [
-        "When taking damage, you may spend 1 Evasive and roll 1 die",
-        "On 1-2, damage becomes 0 (other effects still apply)",
-        "You may spend multiple Evasive to retry in the same attack"
-      ]
-    },
+        "Before the Offensive Roll Phase, you may spend 2 CP to remove this token",
+        "If not removed, you must skip the phase and remove this token"
+      ],
+      "clickToRemove": "Click to spend 2 CP to remove"
+    }
+  },
+  "confirmRemoveStun": {
+    "title": "Remove Stun?",
+    "description": "Spend 2 CP to remove Stun, allowing you to proceed with the Offensive Roll Phase this turn.",
+    "confirm": "Spend 2 CP to Remove",
+    "cancel": "Cancel"
+  },
+  "tokens": {
     "taiji": {
       "name": "Taiji",
       "description": [
@@ -50,31 +75,32 @@
         "Taiji gained this turn cannot be used to boost damage this turn"
       ]
     },
-    "stun": {
-      "name": "Stun",
+    "evasive": {
+      "name": "Evasive",
       "description": [
-        "Before the Offensive Roll Phase, you may spend 2 CP to remove this token",
-        "If not removed, you must skip the phase and remove this token"
+        "When taking damage, you may spend 1 Evasive and roll 1 die",
+        "On 1-2, damage becomes 0 (other effects still apply)",
+        "You may spend multiple Evasive to retry in the same attack"
       ]
     },
     "purify": {
       "name": "Purify",
-      "description": ["At any time, spend 1 Purify to remove 1 negative status token"]
-    },
-    "chi": {
-      "name": "Chi",
-      "description": ["Inner energy gathered, used to enhance abilities"]
+      "description": [
+        "At any time, spend 1 Purify to remove 1 negative status token"
+      ]
     }
   },
   "hud": {
     "health": "Health",
     "energy": "Energy",
+    "shield": "Shield",
     "deck": "Deck",
     "discardPile": "Discard Pile",
     "viewingOpponent": "Observing Opponent",
     "opponent": "Opponent",
     "healthLabel": "Health: {{value}}",
-    "energyLabel": "Energy: {{value}}"
+    "energyLabel": "Energy: {{value}}",
+    "shieldLabel": "Shield: {{value}}"
   },
   "hero": {
     "monk": "Monk"
@@ -87,10 +113,36 @@
     "tipBoard": "Tip Board",
     "magnifiedView": "Magnified View"
   },
+  "tokenResponse": {
+    "attackerTitle": "Respond (Attacker)",
+    "attackerDesc": "You may spend tokens to increase damage before it is dealt.",
+    "defenderTitle": "Respond (Defender)",
+    "defenderDesc": "You may spend tokens to reduce or negate incoming damage.",
+    "originalDamage": "Original Damage",
+    "currentDamage": "Current Damage",
+    "damage": "Damage",
+    "available": "available",
+    "taijiBoostHint": "Spend Taiji to boost damage",
+    "taijiReduceHint": "Spend Taiji to reduce damage",
+    "useTaiji": "Use Taiji",
+    "evasiveHint": "Spend Evasive to attempt a full evade",
+    "evasiveDesc": "Spend 1 Evasive and roll 1 die. On success, damage becomes 0.",
+    "useEvasive": "Use Evasive",
+    "evasionRoll": "Evasion roll",
+    "evasionSuccess": "Success",
+    "evasionFailed": "Failed",
+    "evaded": "Evaded",
+    "noTokens": "No tokens available",
+    "confirm": "Confirm",
+    "skip": "Skip"
+  },
   "response": {
     "waitingOpponent": "Waiting for opponent to respond...",
     "yourTurn": "You may respond",
     "pass": "Pass"
+  },
+  "waiting": {
+    "thinkingMessage": "Thinking..."
   },
   "dice": {
     "waitingOpponent": "Opponent is thinking...",
@@ -110,11 +162,15 @@
   },
   "bonusDie": {
     "title": "Bonus Roll",
+    "confirm": "Confirm",
     "effect": {
       "fist": "Fist: +2 Damage",
       "palm": "Palm: +3 Damage",
       "taiji": "Taiji: Gain 2 Taiji Tokens",
-      "lotus": "Lotus: Choose Evasive or Purify"
+      "lotus": "Lotus: Choose Evasive or Purify",
+      "gainCp": "Gain {{cp}} CP",
+      "enlightenmentLotus": "Lotus! Gain 2 Taiji + Evasive + Purify",
+      "enlightenmentOther": "Draw 1 card"
     }
   },
   "error": {
@@ -140,7 +196,14 @@
     "no_roll_yet": "Please roll the dice first",
     "ability_not_available": "This ability is not available",
     "die_not_found": "Die not found",
-    "cannot_advance_phase": "Cannot advance phase"
+    "cannot_advance_phase": "Cannot advance phase",
+    "wrongPhaseForCard": "This card requires a specific phase",
+    "requireOwnTurn": "This card can only be played on your turn",
+    "requireOpponentTurn": "This card can only be played on opponent's turn",
+    "requireHasRolled": "Must roll dice first before playing this card",
+    "requireDiceExists": "Must have dice results to play this card",
+    "requireOpponentDiceExists": "Opponent must have dice results to play this card",
+    "requireIsRoller": "This card can only be played by the current roller"
   },
   "actions": {
     "resolveAttack": "Resolve Attack",
@@ -169,7 +232,44 @@
   },
   "choices": {
     "title": "Ability Resolution Choice",
-    "evasiveOrPurify": "Choose a status effect to gain"
+    "evasiveOrPurify": "Choose a status effect to gain",
+    "evasiveOrPurifyToken": "Choose a token to gain",
+    "lotusPalmUnblockable": {
+      "title": "Lotus Palm",
+      "pay2": "Spend 2 Taiji to make this attack undefendable",
+      "skip": "Do not spend Taiji"
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "self": "Self",
+    "opponent": "Opponent"
+  },
+  "interaction": {
+    "waitingOpponent": "Waiting for opponent...",
+    "selectDie": "Select {{count}} die(s)",
+    "modifyDie": "Modify die value",
+    "selectStatus": "Select a status to remove",
+    "selectPlayer": "Select a player",
+    "selectTargetStatus": "Select a status to transfer",
+    "transferSelectTarget": "Select transfer target player",
+    "noStatus": "No status effects",
+    "rerollDie": "Select die(s) to reroll",
+    "adjustDie": "Adjust die value",
+    "setDieTo6": "Select die to set to 6",
+    "copyDie": "Select die to copy",
+    "setDieAny": "Select die to modify",
+    "selectDieToModify": "Select a die to modify",
+    "selectDieToCopy": "Select two dice (source and target)",
+    "selectDieToChange": "Select a die to change",
+    "selectDiceToChange": "Select 2 dice to change",
+    "selectDieToAdjust": "Select a die to adjust",
+    "selectOpponentDieToReroll": "Select opponent's die to reroll",
+    "selectDiceToReroll": "Select dice to reroll (up to 2)",
+    "selectStatusToRemove": "Select a status effect to remove",
+    "selectPlayerToRemoveAllStatus": "Select a player to remove all status",
+    "selectStatusToTransfer": "Select a status effect to transfer"
   },
   "abilitySlots": {
     "fist": "Fist Technique",
@@ -179,7 +279,8 @@
     "combo": "Taiji Combo",
     "lightning": "Thunder Strike",
     "calm": "Calm Water",
-    "meditate": "Meditation"
+    "meditate": "Meditation",
+    "ultimate": "Transcendence!"
   },
   "abilities": {
     "fist-technique": {
@@ -226,6 +327,29 @@
         "unblockable": "You may spend 2 Taiji tokens to make this attack undefendable"
       }
     },
+    "lotus-palm-2": {
+      "name": "Lotus Palm II",
+      "description": "4 Lotus: Deal 6 undefendable damage, gain 6 Chi. Way of Lotus (3 Lotus): Deal 2 undefendable damage, gain Evasive and 2 Chi."
+    },
+    "lotus-palm-2-3": {
+      "effects": {
+        "damage2": "Deal 2 undefendable damage",
+        "gainEvasive": "Gain 1 Evasive token",
+        "gainTaiji2": "Gain 2 Taiji tokens"
+      }
+    },
+    "lotus-palm-2-4": {
+      "effects": {
+        "damage6": "Deal 6 undefendable damage",
+        "taijiCapMax": "Gain 6 Taiji tokens"
+      }
+    },
+    "lotus-palm-2-5": {
+      "effects": {
+        "damage10": "Deal 10 undefendable damage",
+        "taijiCapMax": "Gain 6 Taiji tokens"
+      }
+    },
     "taiji-combo": {
       "name": "Taiji Combo",
       "description": "Flowing palm strikes with extra effects based on dice faces",
@@ -262,68 +386,155 @@
         "taijiByResult": "Gain Taiji tokens equal to Taiji faces rolled",
         "damageByFist": "Deal damage equal to Fist faces rolled"
       }
+    },
+    "transcendence": {
+      "name": "Transcendence!",
+      "description": "Ultimate Ability! Once activated, opponents cannot interfere.",
+      "effects": {
+        "damage10": "Deal 10 ultimate damage",
+        "inflictKnockdown": "Inflict Knockdown on opponent",
+        "gainEvasive": "Gain 1 Evasive token",
+        "gainPurify": "Gain 1 Purify token",
+        "taijiCapMax": "Increase Chi cap by 1 and instantly gain maximum Chi"
+      }
     }
   },
   "cards": {
-    "card-upgrade-fist-2": {
-      "name": "Fist Technique Upgrade II",
-      "description": "Upgrade Fist Technique to level II"
-    },
-    "card-upgrade-fist-3": {
-      "name": "Fist Technique Upgrade III",
-      "description": "Upgrade Fist Technique to level III (pay only the difference if already level II)"
-    },
-    "card-upgrade-harmony-2": {
-      "name": "Harmony Upgrade II",
-      "description": "Upgrade Harmony to level II"
-    },
-    "card-upgrade-lotus-2": {
-      "name": "Lotus Palm Upgrade II",
-      "description": "Upgrade Lotus Palm to level II"
-    },
-    "card-chi-burst": {
-      "name": "Chi Burst",
-      "description": "Modify any 1 die result by +1 or -1"
-    },
-    "card-reroll": {
-      "name": "Reroll",
-      "description": "Reroll any number of dice (does not count as a roll)"
-    },
-    "card-focus": {
-      "name": "Focus",
-      "description": "Set any 1 die to any face"
+    "card-enlightenment": {
+      "name": "Enlightenment!",
+      "description": "Roll 1 die: if Lotus, gain 2 Chi, Evasive and Purify; otherwise draw 1 card."
     },
     "card-inner-peace": {
-      "name": "Inner Peace",
-      "description": "Gain 1 Taiji token"
+      "name": "Inner Peace!",
+      "description": "Gain 2 Chi."
     },
-    "card-swift-strike": {
-      "name": "Swift Strike",
-      "description": "This attack deals +2 damage"
+    "card-deep-thought": {
+      "name": "Deep Thought!",
+      "description": "Gain 5 Chi."
     },
-    "card-dodge": {
-      "name": "Dodge",
-      "description": "Gain 1 Evasive token"
+    "card-buddha-light": {
+      "name": "Buddha Light!",
+      "description": "Gain 1 Chi, Evasive and Purify; inflict Stun on 1 opponent."
     },
-    "card-counterattack": {
-      "name": "Counterattack",
-      "description": "When attacked, deal 2 damage to the attacker"
+    "card-palm-strike": {
+      "name": "Palm Strike!",
+      "description": "Inflict Stun on 1 opponent."
     },
-    "card-purify": {
-      "name": "Purify",
-      "description": "Remove 1 negative status from yourself"
+    "card-meditation-3": {
+      "name": "Meditation III",
+      "description": "Defensive roll 5 dice. Gain Chi equal to Taiji faces; deal damage equal to Fist faces. If 2+ Taiji, gain Evasive -or- Purify."
     },
-    "card-iron-will": {
-      "name": "Iron Will",
-      "description": "Halve incoming damage this turn (round down)"
+    "card-play-six": {
+      "name": "Play Six!",
+      "description": "Set 1 of your dice to 6."
     },
-    "card-meditation": {
-      "name": "Meditation",
-      "description": "Discard 1 card to gain 2 Taiji tokens"
+    "card-meditation-2": {
+      "name": "Meditation II",
+      "description": "Defensive roll 5 dice. Gain Chi equal to Taiji faces; deal damage equal to Fist faces."
     },
-    "card-chi-shield": {
-      "name": "Chi Shield",
-      "description": "Spend 2 Taiji tokens to reduce damage by 4 this attack"
+    "card-zen-fist-2": {
+      "name": "Zen Fist II",
+      "description": "Large Straight: Deal 7 damage, gain Evasive and 3 Chi, inflict Stun. Way of the Monk (Fist+Palm+Taiji+Lotus): Gain 2 Evasive, deal 3 undefendable damage."
+    },
+    "card-storm-assault-2": {
+      "name": "Storm Assault II",
+      "description": "Roll 3 dice; deal damage equal to sum. Spend 1 Chi to reroll any die. If sum ≥12, inflict Stun."
+    },
+    "card-combo-punch-2": {
+      "name": "Combo Punch II",
+      "description": "Deal 5 damage and roll 2 dice. +2 damage per Fist, +3 per Palm. Gain 2 Chi per Taiji. Gain Evasive -or- Purify per Lotus."
+    },
+    "card-lotus-bloom-2": {
+      "name": "Lotus Bloom II",
+      "description": "4 Lotus: Deal 6 undefendable damage, Chi cap +1, gain 6 Chi. 3 Lotus: Deal 2 undefendable damage, gain Evasive and 2 Chi."
+    },
+    "card-mahayana-2": {
+      "name": "Mahayana II",
+      "description": "Small Straight: Deal 6 damage, then gain 3 Chi."
+    },
+    "card-thrust-punch-2": {
+      "name": "Thrust Punch II",
+      "description": "2 Fist: 7 damage / 3 Fist: 8 damage / 4 Fist: 9 damage."
+    },
+    "card-thrust-punch-3": {
+      "name": "Thrust Punch III",
+      "description": "2 Fist: 7 damage / 3 Fist: 8 damage / 4 Fist: 9 damage. If 4 of a kind, inflict Stun."
+    },
+    "card-contemplation-2": {
+      "name": "Contemplation II",
+      "description": "3 Taiji: Gain 6 Chi, Evasive and Purify. Zen Combat (Fist+Palm+Taiji): Deal 6 damage, gain 2 Chi."
+    },
+    "card-just-this": {
+      "name": "Just This?",
+      "description": "1 player may make 1 extra roll attempt with up to 5 dice during their defensive roll phase."
+    },
+    "card-give-hand": {
+      "name": "Give a Hand!",
+      "description": "Select 1 opponent's die and force them to reroll it."
+    },
+    "card-i-can-again": {
+      "name": "I Can Again!",
+      "description": "1 player may make 1 extra roll attempt with up to 5 dice during their offensive roll phase."
+    },
+    "card-me-too": {
+      "name": "Me Too!",
+      "description": "Set 1 of your dice to match another of your dice (same phase and purpose)."
+    },
+    "card-surprise": {
+      "name": "Surprise!",
+      "description": "Change any 1 die to any value."
+    },
+    "card-worthy-of-me": {
+      "name": "Worthy of Me!",
+      "description": "You or 1 teammate may reroll up to 2 dice (same die twice or 2 different dice once each)."
+    },
+    "card-unexpected": {
+      "name": "Unexpected!",
+      "description": "Change any 2 dice to any values."
+    },
+    "card-next-time": {
+      "name": "Next Time!",
+      "description": "One player prevents 6 points of incoming damage."
+    },
+    "card-boss-generous": {
+      "name": "Boss Generous!",
+      "description": "Gain 2 CP."
+    },
+    "card-flick": {
+      "name": "Flick!",
+      "description": "Increase or decrease any 1 die by 1 (1 cannot go lower, 6 cannot go higher)."
+    },
+    "card-bye-bye": {
+      "name": "Bye Bye!",
+      "description": "Remove 1 status effect from 1 player."
+    },
+    "card-double": {
+      "name": "Double!",
+      "description": "Draw 2 cards."
+    },
+    "card-super-double": {
+      "name": "Super Double!",
+      "description": "Draw 3 cards."
+    },
+    "card-get-away": {
+      "name": "Get Away!",
+      "description": "Remove 1 status effect from 1 player."
+    },
+    "card-one-throw-fortune": {
+      "name": "One Throw Fortune!",
+      "description": "Roll 1 die: gain CP equal to half the value (rounded up)."
+    },
+    "card-what-status": {
+      "name": "What Status?",
+      "description": "Remove all status effects from 1 player."
+    },
+    "card-transfer-status": {
+      "name": "Transfer Status!",
+      "description": "Transfer 1 status effect from 1 player to another player."
+    },
+    "fist-technique": {
+      "name": "Enlightenment!",
+      "description": "Roll 1 die: if Lotus, gain 2 Chi, Evasive and Purify; otherwise draw 1 card."
     },
     "actions": {
       "play": "Play",
@@ -335,5 +546,9 @@
       "releaseToPlay": "Release to play",
       "releaseToSell": "Release to sell"
     }
+  },
+  "cardSpotlight": {
+    "playerPlayed": "{{player}} played a card",
+    "confirm": "OK"
   }
 }

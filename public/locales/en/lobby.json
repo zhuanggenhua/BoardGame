@@ -23,6 +23,7 @@
     }
   },
   "actions": {
+    "spectate": "Spectate",
     "destroy": "Destroy",
     "leave": "Leave",
     "reconnect": "Reconnect",
@@ -30,7 +31,12 @@
     "join": "Join",
     "localPlay": "👥 Local",
     "tutorial": "🎓 Tutorial",
-    "createRoom": "Create Room"
+    "createRoom": "Create Room",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "action": {
+    "rejoinRoom": "Rejoin Room"
   },
   "button": {
     "processing": "Processing..."
@@ -103,6 +109,7 @@
   },
   "error": {
     "createRoomFailed": "Failed to create room",
+    "activeMatchExists": "You already have an active room. Please return to it or destroy it before creating a new one.",
     "roomFull": "Room is full",
     "joinRoomFailed": "Failed to join room",
     "actionFailed": "Action failed, please try again later.",
@@ -110,6 +117,22 @@
       "title": "Service Unavailable",
       "desc": "Unable to connect to backend services. Please check your connection and ensure the backend containers (MongoDB/Server) are running."
     }
+  },
+  "createRoom": {
+    "title": "Create Room",
+    "roomName": "Room Name",
+    "roomNamePlaceholder": "Enter room name (optional)",
+    "roomNameHint": "Leave blank for auto-generated name",
+    "playerCount": "Players",
+    "playerCountUnit": "{{count}} players",
+    "retention": "Room Retention",
+    "retentionOptions": {
+      "none": "No retention (destroy when empty)",
+      "1day": "1 day",
+      "3days": "3 days",
+      "7days": "7 days"
+    },
+    "retentionHint": "Reconnect within retention period; auto-cleanup after expiry"
   },
   "socket": {
     "invalidGameId": "Invalid gameId, subscription ignored: {{value}}",

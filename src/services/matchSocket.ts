@@ -14,6 +14,8 @@ export const REMATCH_EVENTS = {
     VOTE: 'rematch:vote',
     STATE_UPDATE: 'rematch:stateUpdate',
     TRIGGER_RESET: 'rematch:triggerReset',
+    // 调试用：广播新房间
+    DEBUG_NEW_ROOM: 'debug:newRoom',
 } as const;
 
 // 重赛投票状态
@@ -29,14 +31,17 @@ export interface RematchVoteState {
 // 状态更新回调
 export type RematchStateCallback = (state: RematchVoteState) => void;
 export type RematchResetCallback = () => void;
+export type NewRoomCallback = (url: string) => void;
 
 class MatchSocketService {
     private socket: Socket | null = null;
     private isConnected = false;
+    private isConnecting = false; // 新增：防止重复连接
     private currentMatchId: string | null = null;
     private currentPlayerId: string | null = null;
     private stateCallbacks: Set<RematchStateCallback> = new Set();
     private resetCallbacks: Set<RematchResetCallback> = new Set();
+    private newRoomCallbacks: Set<NewRoomCallback> = new Set();
     private currentState: RematchVoteState = { votes: {}, ready: false, revision: 0 };
     private lastAcceptedRevision = 0;
 
@@ -47,7 +52,13 @@ class MatchSocketService {
         if (this.socket?.connected) {
             return;
         }
-
+        if (this.isConnecting) {
+            return;
+        }
+        if (this.socket) {
+            return;
+        }
+        this.isConnecting = true;
         this.socket = io(GAME_SERVER_URL, {
             path: '/lobby-socket',
             transports: ['websocket', 'polling'],
@@ -67,10 +78,10 @@ class MatchSocketService {
         if (!this.socket) return;
 
         this.socket.on('connect', () => {
-            console.log('[MatchSocket] 已连接');
             this.isConnected = true;
+            this.isConnecting = false;
 
-            // 重连后自动重新加入对局
+            // 连接成功后自动加入对局
             if (this.currentMatchId && this.currentPlayerId) {
                 this.socket?.emit(REMATCH_EVENTS.JOIN_MATCH, {
                     matchId: this.currentMatchId,
@@ -80,12 +91,13 @@ class MatchSocketService {
         });
 
         this.socket.on('disconnect', () => {
-            console.log('[MatchSocket] 已断开');
             this.isConnected = false;
+            this.isConnecting = false;
         });
 
         this.socket.on('connect_error', (error) => {
             console.error('[MatchSocket] 连接错误:', error.message);
+            this.isConnecting = false;
         });
 
         // 接收重赛状态更新
@@ -101,15 +113,18 @@ class MatchSocketService {
                 return;
             }
             this.lastAcceptedRevision = incomingRev;
-            console.log('[MatchSocket] 收到状态更新:', state);
             this.currentState = state;
             this.notifyStateCallbacks(state);
         });
 
         // 接收重置触发事件
         this.socket.on(REMATCH_EVENTS.TRIGGER_RESET, () => {
-            console.log('[MatchSocket] 收到重置触发');
             this.notifyResetCallbacks();
+        });
+
+        // 接收新房间通知（调试用）
+        this.socket.on(REMATCH_EVENTS.DEBUG_NEW_ROOM, (data: { url: string }) => {
+            this.notifyNewRoomCallbacks(data.url);
         });
     }
 
@@ -135,6 +150,19 @@ class MatchSocketService {
                 callback();
             } catch (error) {
                 console.error('[MatchSocket] 重置回调错误:', error);
+            }
+        });
+    }
+
+    /**
+     * 通知新房间回调
+     */
+    private notifyNewRoomCallbacks(url: string): void {
+        this.newRoomCallbacks.forEach((callback) => {
+            try {
+                callback(url);
+            } catch (error) {
+                console.error('[MatchSocket] 新房间回调错误:', error);
             }
         });
     }
@@ -184,6 +212,21 @@ class MatchSocketService {
     }
 
     /**
+     * 广播新房间（调试用）
+     */
+    broadcastNewRoom(url: string): void {
+        if (!this.socket?.connected) {
+            console.warn('[MatchSocket] 广播失败：未连接');
+            return;
+        }
+        if (!this.currentMatchId) {
+            console.warn('[MatchSocket] 广播失败：未加入对局');
+            return;
+        }
+        this.socket.emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, { url });
+    }
+
+    /**
      * 订阅状态更新
      */
     subscribeState(callback: RematchStateCallback): () => void {
@@ -202,6 +245,16 @@ class MatchSocketService {
         this.resetCallbacks.add(callback);
         return () => {
             this.resetCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * 订阅新房间通知（调试用）
+     */
+    subscribeNewRoom(callback: NewRoomCallback): () => void {
+        this.newRoomCallbacks.add(callback);
+        return () => {
+            this.newRoomCallbacks.delete(callback);
         };
     }
 

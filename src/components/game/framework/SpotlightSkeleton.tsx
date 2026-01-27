@@ -49,11 +49,15 @@ export const SpotlightSkeleton = memo(function SpotlightSkeleton({
     closeOnBackdrop = false,
     showCloseButton = false,
     renderCloseButton,
+    confirmButtonDelay,
+    renderConfirmButton,
 }: SpotlightSkeletonProps) {
     // 淡出状态（用于出场动画）
     const [isExiting, setIsExiting] = useState(false);
     // 内容是否已准备好显示
     const [isContentReady, setIsContentReady] = useState(false);
+    // 确认按钮是否可见
+    const [isConfirmButtonVisible, setIsConfirmButtonVisible] = useState(false);
 
     // 计算动画时长
     const enterDuration = enterAnimation?.duration ?? 300;
@@ -92,6 +96,7 @@ export const SpotlightSkeleton = memo(function SpotlightSkeleton({
     useEffect(() => {
         if (!isVisible) {
             setIsContentReady(false);
+            setIsConfirmButtonVisible(false);
             return;
         }
 
@@ -102,6 +107,20 @@ export const SpotlightSkeleton = memo(function SpotlightSkeleton({
 
         return () => clearTimeout(timer);
     }, [isVisible]);
+
+    // 确认按钮延迟显示
+    useEffect(() => {
+        if (!isVisible || confirmButtonDelay === undefined) {
+            setIsConfirmButtonVisible(false);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            setIsConfirmButtonVisible(true);
+        }, confirmButtonDelay);
+
+        return () => clearTimeout(timer);
+    }, [isVisible, confirmButtonDelay]);
 
     // 不可见时不渲染
     if (!isVisible && !isExiting) {
@@ -185,6 +204,13 @@ export const SpotlightSkeleton = memo(function SpotlightSkeleton({
                 {description && (
                     <div data-spotlight="description">
                         {description}
+                    </div>
+                )}
+
+                {/* 确认按钮（延迟显示，位于描述下方） */}
+                {confirmButtonDelay !== undefined && isConfirmButtonVisible && renderConfirmButton && (
+                    <div data-spotlight="confirm-button">
+                        {renderConfirmButton(handleClose)}
                     </div>
                 )}
 

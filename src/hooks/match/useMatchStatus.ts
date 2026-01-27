@@ -10,12 +10,148 @@ export interface PlayerStatus {
     isConnected?: boolean;
 }
 
+const OWNER_ACTIVE_MATCH_KEY = 'owner_active_match';
+const MATCH_CREDENTIALS_PREFIX = 'match_creds_';
+
+export interface StoredMatchCredentials {
+    matchID: string;
+    playerID?: string;
+    credentials?: string;
+    gameName?: string;
+    playerName?: string;
+    updatedAt?: number;
+}
+
+export interface OwnerActiveMatch {
+    matchID: string;
+    gameName: string;
+    ownerKey?: string;
+    ownerType?: 'user' | 'guest';
+    updatedAt?: number;
+}
+
 export function clearMatchCredentials(matchID: string): void {
     if (!matchID) return;
-    localStorage.removeItem(`match_creds_${matchID}`);
+    localStorage.removeItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`);
 
     // Let same-tab listeners (Home active match banner, lobby modals) refresh immediately.
     // The native `storage` event does NOT fire in the same document.
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('match-credentials-changed'));
+    }
+}
+
+export function getOwnerActiveMatch(): OwnerActiveMatch | null {
+    try {
+        const raw = localStorage.getItem(OWNER_ACTIVE_MATCH_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as OwnerActiveMatch;
+        if (!parsed?.matchID) return null;
+        return parsed;
+    } catch {
+        return null;
+    }
+}
+
+export function setOwnerActiveMatch(payload: OwnerActiveMatch): void {
+    if (!payload?.matchID) return;
+    localStorage.setItem(OWNER_ACTIVE_MATCH_KEY, JSON.stringify({
+        ...payload,
+        updatedAt: Date.now(),
+    }));
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('owner-active-match-changed'));
+    }
+}
+
+export function clearOwnerActiveMatch(matchID?: string): void {
+    const existing = getOwnerActiveMatch();
+    if (!existing) return;
+    if (matchID && existing.matchID !== matchID) return;
+    localStorage.removeItem(OWNER_ACTIVE_MATCH_KEY);
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('owner-active-match-changed'));
+    }
+}
+
+const parseStoredCredentials = (raw: string | null): StoredMatchCredentials | null => {
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw) as StoredMatchCredentials;
+        if (!parsed?.matchID) return null;
+        return parsed;
+    } catch {
+        return null;
+    }
+};
+
+export function listStoredMatchCredentials(): StoredMatchCredentials[] {
+    const results: StoredMatchCredentials[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (!key || !key.startsWith(MATCH_CREDENTIALS_PREFIX)) continue;
+        const raw = localStorage.getItem(key);
+        const parsed = parseStoredCredentials(raw);
+        if (parsed) {
+            results.push(parsed);
+        }
+    }
+    return results;
+}
+
+export function getLatestStoredMatchCredentials(): StoredMatchCredentials | null {
+    const all = listStoredMatchCredentials();
+    if (all.length === 0) return null;
+    const sorted = [...all].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    return sorted[0] || null;
+}
+
+export function pruneStoredMatchCredentials(keepMatchID?: string): string | null {
+    const all = listStoredMatchCredentials();
+    if (all.length === 0) return null;
+
+    let keepId = keepMatchID;
+    if (!keepId) {
+        const latest = getLatestStoredMatchCredentials();
+        keepId = latest?.matchID;
+    }
+    if (!keepId) return null;
+
+    const toRemove = all.filter(item => item.matchID !== keepId);
+    if (toRemove.length > 0) {
+        toRemove.forEach(item => {
+            localStorage.removeItem(`${MATCH_CREDENTIALS_PREFIX}${item.matchID}`);
+        });
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('match-credentials-changed'));
+        }
+    }
+
+    const ownerActive = getOwnerActiveMatch();
+    if (ownerActive?.matchID && ownerActive.matchID !== keepId) {
+        clearOwnerActiveMatch(ownerActive.matchID);
+    }
+
+    return keepId;
+}
+
+export function persistMatchCredentials(
+    matchID: string,
+    data: StoredMatchCredentials,
+    options?: { enforceSingle?: boolean }
+): void {
+    if (!matchID) return;
+    if (options?.enforceSingle !== false) {
+        pruneStoredMatchCredentials(matchID);
+    }
+    const existing = parseStoredCredentials(localStorage.getItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`));
+    const payload: StoredMatchCredentials = {
+        ...(existing && typeof existing === 'object' ? existing : {}),
+        ...data,
+        matchID,
+        updatedAt: Date.now(),
+    };
+    localStorage.setItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify(payload));
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('match-credentials-changed'));
     }
@@ -57,14 +193,13 @@ export async function destroyMatch(
 
         if (!response.ok) {
             if (response.status === 404) {
-                console.warn('[destroyMatch] 404 Not Found，清理本地凭证', {
+                console.warn('[destroyMatch] 404 Not Found，销毁失败', {
                     url,
                     normalizedGameName,
                     matchID,
                     playerID,
                 });
-                clearMatchCredentials(matchID);
-                return true;
+                return false;
             }
 
             const message = await response.text().catch(() => '');
@@ -81,6 +216,7 @@ export async function destroyMatch(
         }
 
         clearMatchCredentials(matchID);
+        clearOwnerActiveMatch(matchID);
         return true;
     } catch (err) {
         console.error('[destroyMatch] 销毁房间失败:', err);
@@ -121,8 +257,12 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
                 isConnected: p.isConnected,
             })));
             setError(null);
-        } catch (err) {
+        } catch (err: any) {
             console.error('获取房间状态失败:', err);
+            // 404 说明房间已不存在，清理本地凭据
+            if (err?.message?.includes('404') || err?.message?.includes('not found')) {
+                clearMatchCredentials(matchID);
+            }
             setError(prev => prev ?? '房间不存在或已被删除');
         } finally {
             setIsLoading(false);
@@ -185,10 +325,31 @@ export async function leaveMatch(
         // 清理本地凭证
         clearMatchCredentials(matchID);
         return true;
-    } catch (err) {
+    } catch (err: any) {
         console.error('离开房间失败:', err);
+        // 404 说明房间已不存在，视为成功并清理凭据
+        if (err?.message?.includes('404') || err?.message?.includes('not found')) {
+            clearMatchCredentials(matchID);
+            return true;
+        }
         return false;
     }
+}
+
+/**
+ * 离开/销毁房间（统一入口）
+ */
+export async function exitMatch(
+    gameName: string,
+    matchID: string,
+    playerID: string,
+    credentials: string,
+    isHost?: boolean
+): Promise<boolean> {
+    if (isHost) {
+        return destroyMatch(gameName, matchID, playerID, credentials);
+    }
+    return leaveMatch(gameName, matchID, playerID, credentials);
 }
 
 /**
@@ -216,13 +377,13 @@ export async function rejoinMatch(
             existing = null;
         }
 
-        localStorage.setItem(storageKey, JSON.stringify({
+        persistMatchCredentials(matchID, {
             ...(existing && typeof existing === 'object' ? existing : {}),
             playerID,
             credentials: playerCredentials,
             matchID,
             gameName,
-        }));
+        });
 
         return { success: true, credentials: playerCredentials };
     } catch (err) {

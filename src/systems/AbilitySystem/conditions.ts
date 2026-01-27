@@ -296,7 +296,7 @@ function createCompositeEvaluator(registry: ConditionRegistry): ConditionEvaluat
 // 游戏扩展条件评估器（向后兼容，将迁移）
 // ============================================================================
 
-const evaluateDiceSet: ConditionEvaluator<DiceSetCondition> = (condition, ctx) => {
+export const evaluateDiceSet: ConditionEvaluator<DiceSetCondition> = (condition, ctx) => {
     const faceCounts = ctx.faceCounts as Record<string, number> | undefined;
     if (!faceCounts) return false;
     return Object.entries(condition.faces).every(([face, required]) => {
@@ -304,7 +304,7 @@ const evaluateDiceSet: ConditionEvaluator<DiceSetCondition> = (condition, ctx) =
     });
 };
 
-const evaluateSmallStraight: ConditionEvaluator<DiceStraightCondition> = (_, ctx) => {
+export const evaluateSmallStraight: ConditionEvaluator<DiceStraightCondition> = (_, ctx) => {
     const diceValues = ctx.diceValues as number[] | undefined;
     if (!diceValues) return false;
     const unique = Array.from(new Set(diceValues));
@@ -312,7 +312,7 @@ const evaluateSmallStraight: ConditionEvaluator<DiceStraightCondition> = (_, ctx
     return sequences.some(seq => seq.every(v => unique.includes(v)));
 };
 
-const evaluateLargeStraight: ConditionEvaluator<DiceStraightCondition> = (_, ctx) => {
+export const evaluateLargeStraight: ConditionEvaluator<DiceStraightCondition> = (_, ctx) => {
     const diceValues = ctx.diceValues as number[] | undefined;
     if (!diceValues) return false;
     const unique = Array.from(new Set(diceValues));
@@ -320,7 +320,7 @@ const evaluateLargeStraight: ConditionEvaluator<DiceStraightCondition> = (_, ctx
     return sequences.some(seq => seq.every(v => unique.includes(v)));
 };
 
-const evaluatePhase: ConditionEvaluator<PhaseCondition> = (condition, ctx) => {
+export const evaluatePhase: ConditionEvaluator<PhaseCondition> = (condition, ctx) => {
     if (ctx.currentPhase !== condition.phaseId) return false;
     if (condition.diceCount !== undefined) {
         const diceValues = ctx.diceValues as number[] | undefined;

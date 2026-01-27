@@ -3,8 +3,9 @@
  * 供 UI 与 domain 层共用的纯函数
  */
 
-import type { PlayerId } from '../../../engine/types';
+import type { PlayerId, ResponseWindowType } from '../../../engine/types';
 import { abilityManager, type AbilityContext } from '../../../systems/AbilitySystem';
+import { isCustomActionCategory } from './effects';
 import type {
     DiceThroneCore,
     Die,
@@ -52,6 +53,25 @@ export const getFaceCounts = (dice: Die[]): Record<DieFace, number> => {
  */
 export const getActiveDice = (state: DiceThroneCore): Die[] => {
     return state.dice.slice(0, state.rollDiceCount);
+};
+
+/**
+ * 获取玩家某个 Token 的堆叠上限（支持技能永久提高上限，如莲花掌）
+ * - player.tokenStackLimits 优先
+ * - 回退到 tokenDefinitions.stackLimit
+ * - stackLimit=0 表示无限
+ */
+export const getTokenStackLimit = (state: DiceThroneCore, playerId: PlayerId, tokenId: string): number => {
+    const player = state.players[playerId];
+    const override = player?.tokenStackLimits?.[tokenId];
+    if (typeof override === 'number') {
+        return override === 0 ? Infinity : override;
+    }
+
+    const def = state.tokenDefinitions.find(t => t.id === tokenId);
+    const base = def?.stackLimit;
+    if (base === 0) return Infinity;
+    return base ?? 99;
 };
 
 // ============================================================================
@@ -215,7 +235,17 @@ export type CardPlayFailReason =
     | 'wrongPhaseForMain'          // 主要阶段卡只能在主要阶段
     | 'wrongPhaseForRoll'          // 投掷阶段卡只能在投掷阶段
     | 'notEnoughCp'                // CP 不足
-    | 'unknownCardTiming';         // 未知卡牌时机
+    | 'unknownCardTiming'          // 未知卡牌时机
+    | 'wrongPhaseForCard'          // 卡牌需要特定阶段（进攻/防御）
+    | 'requireOwnTurn'             // 卡牌需要在自己回合打出
+    | 'requireOpponentTurn'        // 卡牌需要在对手回合打出
+    | 'requireIsRoller'            // 卡牌需要是当前投掷方
+    | 'requireIsNotRoller'         // 卡牌需要不是当前投掷方（响应对手骰面）
+    | 'requireHasRolled'           // 卡牌需要已经投掷过
+    | 'requireDiceExists'          // 卡牌需要有骰子结果
+    | 'requireOpponentDiceExists'  // 卡牌需要对手有骰子结果
+    | 'requireRollConfirmed'       // 卡牌需要骰面已确认（响应对手确认后）
+    | 'requireNotRollConfirmed';   // 骰面已确认，不能再打出该卡
 
 /**
  * 从升级卡效果中提取目标技能 ID
@@ -266,7 +296,7 @@ export const checkPlayCard = (
         }
         
         // 计算实际 CP 消耗
-        const previousUpgradeCost = player.upgradeCardByAbilityId[targetAbilityId]?.cpCost;
+        const previousUpgradeCost = player.upgradeCardByAbilityId?.[targetAbilityId]?.cpCost;
         let actualCost = card.cpCost;
         if (previousUpgradeCost !== undefined && currentLevel > 1) {
             actualCost = Math.max(0, card.cpCost - previousUpgradeCost);
@@ -295,6 +325,70 @@ export const checkPlayCard = (
     // 检查 CP
     if (card.cpCost > 0 && playerCp < card.cpCost) {
         return { ok: false, reason: 'notEnoughCp' };
+    }
+    
+    // 检查卡牌的额外打出条件
+    if (card.playCondition) {
+        const cond = card.playCondition;
+        
+        // 检查特定阶段（进攻/防御）
+        if (cond.phase && phase !== cond.phase) {
+            return { ok: false, reason: 'wrongPhaseForCard' };
+        }
+        
+        // 检查是否需要自己回合
+        if (cond.requireOwnTurn && playerId !== state.activePlayerId) {
+            return { ok: false, reason: 'requireOwnTurn' };
+        }
+        
+        // 检查是否需要对手回合
+        if (cond.requireOpponentTurn && playerId === state.activePlayerId) {
+            return { ok: false, reason: 'requireOpponentTurn' };
+        }
+        
+        // 检查是否需要是当前投掷方（防御阶段为防御方，进攻阶段为进攻方）
+        if (cond.requireIsRoller && playerId !== getRollerId(state)) {
+            return { ok: false, reason: 'requireIsRoller' };
+        }
+        
+        // 检查是否需要不是当前投掷方（用于响应对手骰面确认，如"抬一手"）
+        if (cond.requireIsNotRoller && playerId === getRollerId(state)) {
+            return { ok: false, reason: 'requireIsNotRoller' };
+        }
+        
+        // 检查是否已经投掷过
+        if (cond.requireHasRolled && state.rollCount === 0) {
+            return { ok: false, reason: 'requireHasRolled' };
+        }
+        
+        // 检查是否有骰子结果
+        if (cond.requireDiceExists && state.dice.length === 0) {
+            return { ok: false, reason: 'requireDiceExists' };
+        }
+        
+        // 检查最少骰子数量（用于需要多颗骰子才能触发的效果，如"俺也一样"需要2颗）
+        if (cond.requireMinDiceCount && state.dice.length < cond.requireMinDiceCount) {
+            return { ok: false, reason: 'requireDiceExists' };
+        }
+        
+        // 检查对手是否有骰子结果（用于强制对手重掷）
+        if (cond.requireOpponentDiceExists) {
+            // 防御阶段时对手是防御方，进攻阶段时对手是进攻方
+            // 这里简化处理：只要有骰子就算有
+            if (state.dice.length === 0) {
+                return { ok: false, reason: 'requireOpponentDiceExists' };
+            }
+        }
+        
+        // 检查骰面是否已确认（用于响应对手确认后的卡牌，如"抬一手"）
+        if (cond.requireRollConfirmed && !state.rollConfirmed) {
+            return { ok: false, reason: 'requireRollConfirmed' };
+        }
+        
+        // 检查骰面是否未确认（用于增加投掷次数的卡牌）
+        if (cond.requireNotRollConfirmed && state.rollConfirmed) {
+            return { ok: false, reason: 'requireNotRollConfirmed' };
+        }
     }
     
     return { ok: true };
@@ -370,7 +464,7 @@ export const checkPlayUpgradeCard = (
     }
 
     // 计算实际 CP 消耗
-    const previousUpgradeCost = player.upgradeCardByAbilityId[targetAbilityId]?.cpCost;
+    const previousUpgradeCost = player.upgradeCardByAbilityId?.[targetAbilityId]?.cpCost;
     let actualCost = card.cpCost;
     if (previousUpgradeCost !== undefined && currentLevel > 1) {
         actualCost = Math.max(0, card.cpCost - previousUpgradeCost);
@@ -423,39 +517,260 @@ export const canUndoSell = (
 // ============================================================================
 
 /**
+ * 检查卡牌效果是否对对手生效
+ * 用于决定打出卡牌后是否需要触发响应窗口
+ */
+export const hasOpponentTargetEffect = (card: AbilityCard): boolean => {
+    if (!card.effects || card.effects.length === 0) return false;
+    
+    return card.effects.some(effect => {
+        if (!effect.action) return false;
+        return effect.action.target === 'opponent';
+    });
+};
+
+/**
+ * 检查卡牌在当前响应窗口类型下是否可用
+ * 基于 windowType 和卡牌的 playCondition 精确检测
+ */
+export const isCardPlayableInResponseWindow = (
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    card: AbilityCard,
+    windowType: ResponseWindowType
+): boolean => {
+    // 升级卡不能在响应窗口打出
+    if (card.type === 'upgrade') return false;
+    
+    const player = state.players[playerId];
+    if (!player) return false;
+    
+    const playerCp = player.resources[RESOURCE_IDS.CP] ?? 0;
+    if (card.cpCost > playerCp) return false;
+    
+    const phase = state.turnPhase;
+    const isOwnTurn = playerId === state.activePlayerId;
+    
+    // 检查卡牌的基础 timing
+    if (card.timing === 'main') {
+        // 主要阶段卡不能在响应窗口打出
+        return false;
+    }
+    
+    if (card.timing === 'roll') {
+        // 投掷阶段卡只能在投掷阶段的响应窗口打出
+        if (phase !== 'offensiveRoll' && phase !== 'defensiveRoll') {
+            return false;
+        }
+    }
+    
+    // instant 卡牌可以在任何响应窗口打出，但仍需检查 playCondition
+    
+    // 检查卡牌的 playCondition
+    const cond = card.playCondition;
+    if (cond) {
+        // 检查特定阶段
+        if (cond.phase && phase !== cond.phase) {
+            return false;
+        }
+        
+        // 检查是否需要自己回合
+        if (cond.requireOwnTurn && !isOwnTurn) {
+            return false;
+        }
+        
+        // 检查是否需要对手回合
+        if (cond.requireOpponentTurn && isOwnTurn) {
+            return false;
+        }
+        
+        // 检查是否需要是当前投掷方
+        if (cond.requireIsRoller && playerId !== getRollerId(state)) {
+            return false;
+        }
+        
+        // 检查是否需要不是当前投掷方（用于响应对手骰面确认，如"抬一手"）
+        if (cond.requireIsNotRoller && playerId === getRollerId(state)) {
+            return false;
+        }
+        
+        // 检查是否已经投掷过
+        if (cond.requireHasRolled && state.rollCount === 0) {
+            return false;
+        }
+        
+        // 检查是否有骰子结果（例如"弹一手"需要有骰子才能改骰面）
+        if (cond.requireDiceExists && state.dice.length === 0) {
+            return false;
+        }
+        
+        // 检查最少骰子数量（用于需要多颗骰子才能触发的效果）
+        if (cond.requireMinDiceCount && state.dice.length < cond.requireMinDiceCount) {
+            return false;
+        }
+        
+        // 检查对手是否有骰子结果
+        if (cond.requireOpponentDiceExists && state.dice.length === 0) {
+            return false;
+        }
+        
+        // 检查骰面是否已确认（用于响应对手确认后的卡牌，如"抬一手"）
+        if (cond.requireRollConfirmed && !state.rollConfirmed) {
+            return false;
+        }
+        
+        // 检查骰面是否未确认（用于增加投掷次数的卡牌）
+        if (cond.requireNotRollConfirmed && state.rollConfirmed) {
+            return false;
+        }
+    }
+    
+    // ========== 响应窗口类型过滤规则 ==========
+    // 设计原则：只有当卡牌效果能够对当前情境产生有意义的影响时，才允许在响应窗口中使用
+    // 这样可以避免频繁打断游戏流程，同时保留关键的战术响应机会
+    
+    switch (windowType) {
+        case 'afterRollConfirmed': {
+            // 确认骰面后的响应窗口
+            // 目的：允许对手在看到骰面后使用骰子修改卡
+            // 限制：
+            //   1. 只有具有骰子相关效果的 instant/roll 卡才能使用
+            //   2. 卡牌必须能作用于对手骰子：
+            //      - target='opponent' 的卡（强制修改对手骰子）
+            //      - target='any' 的卡（可选择任意玩家的骰子）
+            //      - target='self' 的卡不允许，因为此时场上是对手的骰子，没有合法目标
+            //   3. 玩家必须是对手（非 rollerId）
+            if (card.timing !== 'instant' && card.timing !== 'roll') {
+                return false;
+            }
+            // 检查卡牌是否有骰子相关效果（通过元数据分类判断）
+            if (!hasAnyDiceEffect(card)) {
+                return false;
+            }
+            // 检查卡牌目标是否能作用于对手骰子
+            const diceEffectTarget = getDiceEffectTarget(card);
+            if (diceEffectTarget !== 'opponent' && diceEffectTarget !== 'any') {
+                // 只允许 target='opponent' 或 target='any' 的卡牌
+                // target='self' 的卡不允许，因为此时场上是对手的骰子
+                return false;
+            }
+            // 检查玩家是否是对手
+            const rollerId = getRollerId(state);
+            const isRoller = playerId === rollerId;
+            if (isRoller) {
+                // rollerId 不能在响应窗口中出牌，应该在确认骰面前主动出牌
+                return false;
+            }
+            break;
+        }
+            
+        case 'preResolve':
+            // @deprecated 已废弃 - 不再使用"最后机会"窗口设计
+            // 设计原则：响应窗口必须有明确的效果覆盖，玩家想打牌应在防御阶段主动打出
+            // 保留此 case 仅为类型完整性，实际不会触发
+            return false;
+            
+        case 'afterCardPlayed':
+            // 卡牌打出后的响应窗口
+            // 目的：允许对手响应刚打出的卡牌效果
+            // 限制：只有 instant 卡可以响应（快速反应）
+            // 注意：响应窗口中打出的卡牌不会再触发新的响应窗口（避免无限嵌套）
+            // TODO: 考虑限制为只有骰子/对手目标效果的 instant 卡才能响应
+            if (card.timing !== 'instant') {
+                return false;
+            }
+            break;
+            
+        case 'thenBreakpoint':
+            // "然后" 断点响应窗口
+            // 目的：在技能效果的 "then" 连接词处插入响应时机
+            // 策略：允许 instant/roll 卡，因为是技能流程的关键断点
+            // TODO: 考虑限制为只有响应效果的卡牌才能响应
+            break;
+    }
+    
+    return true;
+};
+
+/**
+ * 检查卡牌是否有骰子相关效果
+ * 
+ * 通过元数据查询判断，不依赖命名约定
+ * - 通用 action 类型：rollDie / modifyDie / rerollDie / grantExtraRoll / addRollCount / setDieValue
+ * - custom action：通过 isCustomActionCategory(actionId, 'dice') 查询元数据
+ */
+const hasAnyDiceEffect = (card: AbilityCard): boolean => {
+    if (!card.effects || card.effects.length === 0) return false;
+    
+    return card.effects.some(effect => {
+        if (!effect.action) return false;
+        const action = effect.action;
+        
+        // 通用骰子 action 类型（已实现 + 预留）
+        // 注：预留类型待实现后添加 - rollDie, modifyDie, rerollDie, grantExtraRoll, addRollCount, setDieValue
+        // 当前仅通过 custom action 实现骰子相关效果
+        
+        // custom action：通过元数据查询分类
+        if (action.type === 'custom' && action.customActionId) {
+            return isCustomActionCategory(action.customActionId, 'dice');
+        }
+        
+        return false;
+    });
+};
+
+/**
+ * 获取卡牌骰子效果的目标
+ * 返回 'self' / 'opponent' / 'any' / 'unknown'
+ * 
+ * 用于 afterRollConfirmed 响应窗口中检查卡牌是否可用：
+ * - 'self' 的卡牌：只有骰子主人（rollerId）能用
+ * - 'opponent' 的卡牌：只有对手能用
+ * - 'any' 的卡牌：可以选择任意玩家的骰子
+ */
+const getDiceEffectTarget = (card: AbilityCard): 'self' | 'opponent' | 'any' | 'unknown' => {
+    if (!card.effects || card.effects.length === 0) return 'unknown';
+    
+    // 查找第一个骰子相关效果的 target
+    for (const effect of card.effects) {
+        if (!effect.action) continue;
+        const action = effect.action;
+        
+        // 检查是否是骰子效果
+        if (action.type === 'custom' && action.customActionId) {
+            if (isCustomActionCategory(action.customActionId, 'dice')) {
+                // 返回效果目标
+                if (action.target === 'self') return 'self';
+                if (action.target === 'opponent') return 'opponent';
+                if (action.target === 'any') return 'any';
+            }
+        }
+    }
+    
+    return 'unknown';
+};
+
+/**
  * 检测玩家是否有可响应的内容（卡牌或消耗性状态效果）
- * 用于决定是否打开响应窗口
+ * 用于决定是否将玩家加入响应队列
  * 
  * @param state 游戏状态
  * @param playerId 要检测的玩家 ID
- * @param windowType 窗口类型（preResolve = 攻击结算前）
+ * @param windowType 窗口类型
+ * @param _sourceId 来源卡牌/技能 ID（预留）
  */
 export const hasRespondableContent = (
     state: DiceThroneCore,
     playerId: PlayerId,
-    windowType: 'preResolve' | 'thenBreakpoint'
+    windowType: ResponseWindowType,
+    _sourceId?: string
 ): boolean => {
     const player = state.players[playerId];
     if (!player) return false;
 
-    const phase = state.turnPhase;
-    const playerCp = player.resources[RESOURCE_IDS.CP] ?? 0;
-
     // 检查手牌中是否有可响应的卡牌
     for (const card of player.hand) {
-        // 跳过升级卡
-        if (card.type === 'upgrade') continue;
-        
-        // 检查 CP 是否足够
-        if (card.cpCost > playerCp) continue;
-
-        // instant 卡牌可以在任何时候打出
-        if (card.timing === 'instant') {
-            return true;
-        }
-
-        // roll 卡牌可以在掷骰阶段打出
-        if (card.timing === 'roll' && (phase === 'offensiveRoll' || phase === 'defensiveRoll')) {
+        if (isCardPlayableInResponseWindow(state, playerId, card, windowType)) {
             return true;
         }
     }
@@ -470,6 +785,50 @@ export const hasRespondableContent = (
     }
 
     return false;
+};
+
+/**
+ * 获取响应窗口的有效响应者队列
+ * 只包含有可响应内容的玩家
+ * 
+ * @param state 游戏状态
+ * @param windowType 窗口类型
+ * @param triggerId 触发响应的玩家 ID（这个玩家在队列中排在最前）
+ * @param sourceId 来源卡牌/技能 ID
+ * @param excludeId 要排除的玩家 ID（通常是当前行动玩家，因为可以主动出牌）
+ */
+export const getResponderQueue = (
+    state: DiceThroneCore,
+    windowType: ResponseWindowType,
+    triggerId: PlayerId,
+    sourceId?: string,
+    excludeId?: PlayerId
+): PlayerId[] => {
+    // 规则 4.4：终极技能行动锁定 - 对手不能采取任何行动
+    // 影响的窗口：afterRollConfirmed
+    if (state.pendingAttack?.isUltimate && windowType === 'afterRollConfirmed') {
+        // 终极技能激活后，对手不能响应，返回空队列
+        return [];
+    }
+    
+    const allPlayers = Object.keys(state.players) as PlayerId[];
+    const queue: PlayerId[] = [];
+    
+    // 触发者优先（如果有可响应内容且未被排除）
+    if (triggerId !== excludeId && hasRespondableContent(state, triggerId, windowType, sourceId)) {
+        queue.push(triggerId);
+    }
+    
+    // 其他玩家（排除 excludeId）
+    for (const pid of allPlayers) {
+        if (pid === triggerId) continue;
+        if (pid === excludeId) continue;
+        if (hasRespondableContent(state, pid, windowType, sourceId)) {
+            queue.push(pid);
+        }
+    }
+    
+    return queue;
 };
 
 // ============================================================================

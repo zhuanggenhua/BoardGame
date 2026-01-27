@@ -2,19 +2,20 @@
  * 井字棋命令定义与验证
  */
 
-import type { ValidationResult } from '../../../engine/types';
+import type { ValidationResult, MatchState } from '../../../engine/types';
 import type { TicTacToeCore, TicTacToeCommand } from './types';
 
 /**
  * 验证命令合法性
  */
 export function validate(
-    state: TicTacToeCore,
+    state: MatchState<TicTacToeCore>,
     command: TicTacToeCommand
 ): ValidationResult {
+    const core = state.core;
     switch (command.type) {
         case 'CLICK_CELL':
-            return validateClickCell(state, command);
+            return validateClickCell(core, command);
         default:
             return { valid: false, error: 'unknownCommand' };
     }

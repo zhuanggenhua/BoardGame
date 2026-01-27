@@ -8,6 +8,7 @@ import { FriendModule } from './modules/friend/friend.module';
 import { HealthModule } from './modules/health/health.module';
 import { InviteModule } from './modules/invite/invite.module';
 import { MessageModule } from './modules/message/message.module';
+import { ReviewModule } from './modules/review/review.module';
 
 @Module({
     imports: [
@@ -40,6 +41,7 @@ import { MessageModule } from './modules/message/message.module';
         FriendModule,
         MessageModule,
         InviteModule,
+        ReviewModule,
         HealthModule,
     ],
 })

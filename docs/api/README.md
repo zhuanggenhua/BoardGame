@@ -10,6 +10,7 @@
 | 好友 | [friend.md](friend.md) | 好友添加/删除/搜索、在线状态 |
 | 消息 | [message.md](message.md) | 私聊消息、会话列表 |
 | 邀请 | [invite.md](invite.md) | 游戏邀请 |
+| 评论 | [review.md](review.md) | 游戏评论、好评率统计 |
 | 后台管理 | [admin.md](admin.md) | 用户管理、对局记录、统计数据 |
 
 ## 通用约定

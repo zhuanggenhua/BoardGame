@@ -3,10 +3,11 @@
  * 包含核心状态、命令和事件类型
  */
 
-import type { Command, GameEvent, PlayerId } from '../../../engine/types';
+import type { Command, GameEvent, PlayerId, ResponseWindowType } from '../../../engine/types';
 import type { StatusEffectDef } from '../../../systems/StatusEffectSystem';
 import type { AbilityDef, AbilityEffect } from '../../../systems/AbilitySystem';
 import type { ResourcePool } from '../../../systems/ResourceSystem/types';
+import type { TokenDef, TokenState } from '../../../systems/TokenSystem';
 
 // ============================================================================
 // 基础类型（从 types.ts 迁移）
@@ -42,16 +43,57 @@ export interface Die {
     isKept: boolean;
 }
 
+/**
+ * 卡牌打出条件
+ * 用于限制卡牌在特定情况下才能打出
+ */
+export interface CardPlayCondition {
+    /** 必须在指定阶段（更细粒度，区分进攻/防御） */
+    phase?: 'offensiveRoll' | 'defensiveRoll';
+    /** 必须是自己的回合（activePlayer） */
+    requireOwnTurn?: boolean;
+    /** 必须是对手的回合（非 activePlayer） */
+    requireOpponentTurn?: boolean;
+    /** 必须是当前投掷方（rollerId）——防御阶段为防御方，进攻阶段为进攻方 */
+    requireIsRoller?: boolean;
+    /** 必须不是当前投掷方（用于响应对手骰面确认，如"抬一手"） */
+    requireIsNotRoller?: boolean;
+    /** 必须已经投掷过（rollCount > 0） */
+    requireHasRolled?: boolean;
+    /** 必须有骰子结果可操作（dice.length > 0） */
+    requireDiceExists?: boolean;
+    /** 必须对手有骰子结果可操作（用于强制对手重掷） */
+    requireOpponentDiceExists?: boolean;
+    /** 必须骰面已确认（rollConfirmed = true），用于响应对手确认后的卡牌（如"抬一手"） */
+    requireRollConfirmed?: boolean;
+    /** 必须骰面未确认（rollConfirmed = false），用于增加投掷次数的卡牌 */
+    requireNotRollConfirmed?: boolean;
+    /** 必须有至少指定数量的骰子 */
+    requireMinDiceCount?: number;
+}
+
+/** 卡牌多语言文案 */
+export interface CardI18n {
+    name: string;
+    description: string;
+}
+
 export interface AbilityCard {
     id: string;
+    /** @deprecated 使用 i18n 字段代替，此字段由构建脚本自动生成 */
     name: string;
     type: 'upgrade' | 'action';
     cpCost: number;
     timing: 'main' | 'roll' | 'instant';
+    /** @deprecated 使用 i18n 字段代替，此字段由构建脚本自动生成 */
     description: string;
     atlasIndex?: number;
     /** 卡牌效果列表（行动卡的即时效果，或升级卡的 replaceAbility 效果） */
     effects?: AbilityEffect[];
+    /** 卡牌打出的额外条件 */
+    playCondition?: CardPlayCondition;
+    /** 多语言文案（单一数据源，支持任意语言 key） */
+    i18n?: Record<string, CardI18n>;
 }
 
 export interface PendingAttack {
@@ -70,6 +112,107 @@ export interface PendingAttack {
     };
 }
 
+// ============================================================================
+// 卡牌交互系统类型
+// ============================================================================
+
+/** 交互类型 */
+export type CardInteractionType =
+    | 'selectDie'           // 选择骰子
+    | 'modifyDie'           // 修改骰子数值
+    | 'selectPlayer'        // 选择玩家
+    | 'selectStatus'        // 选择状态效果
+    | 'selectTargetStatus'; // 选择目标玩家的状态效果（转移用）
+
+/** 待处理的卡牌交互 */
+export interface PendingInteraction {
+    /** 交互 ID */
+    id: string;
+    /** 执行交互的玩家 */
+    playerId: PlayerId;
+    /** 来源卡牌 ID */
+    sourceCardId: string;
+    /** 交互类型 */
+    type: CardInteractionType;
+    /** 提示文本 key */
+    titleKey: string;
+    /** 需要选择的数量 */
+    selectCount: number;
+    /** 已选择的项目 */
+    selected: string[];
+    /** 可选择的目标玩家 ID 列表（用于 selectPlayer/selectStatus） */
+    targetPlayerIds?: PlayerId[];
+    /** 骰子修改配置 */
+    dieModifyConfig?: {
+        /** 修改模式: set=设置为指定值, adjust=增减, copy=复制另一颗, any=任意修改 */
+        mode: 'set' | 'adjust' | 'copy' | 'any';
+        /** 设置的目标值（mode=set） */
+        targetValue?: number;
+        /** 调整范围（mode=adjust） */
+        adjustRange?: { min: number; max: number };
+    };
+    /** 状态转移配置（用于 transfer） */
+    transferConfig?: {
+        /** 已选择的源玩家 */
+        sourcePlayerId?: PlayerId;
+        /** 已选择的状态 ID */
+        statusId?: string;
+    };
+    /** 是否针对对手的骰子（card-give-hand） */
+    targetOpponentDice?: boolean;
+}
+
+/**
+ * 伤害护盾
+ * 可抵消即将受到的伤害，下次受伤后清空
+ */
+export interface DamageShield {
+    /** 护盾值 */
+    value: number;
+    /** 来源（卡牌/技能 ID，用于 UI/日志） */
+    sourceId: string;
+}
+
+// ============================================================================
+// Token 响应窗口类型
+// ============================================================================
+
+/**
+ * 待处理的伤害（等待 Token 响应）
+ */
+export interface PendingDamage {
+    /** 唯一 ID */
+    id: string;
+    /** 伤害来源玩家 */
+    sourcePlayerId: PlayerId;
+    /** 伤害目标玩家 */
+    targetPlayerId: PlayerId;
+    /** 原始伤害值 */
+    originalDamage: number;
+    /** 当前伤害值（经过 Token 修改后） */
+    currentDamage: number;
+    /** 来源技能 ID */
+    sourceAbilityId?: string;
+    /** 响应窗口类型 */
+    responseType: 'beforeDamageDealt' | 'beforeDamageReceived';
+    /** 当前响应者 ID */
+    responderId: PlayerId;
+    /** 是否已经完全闪避（伤害变为 0） */
+    isFullyEvaded?: boolean;
+    /** 最后一次闪避投骰结果（用于 UI 展示） */
+    lastEvasionRoll?: {
+        value: number;
+        success: boolean;
+    };
+}
+
+/**
+ * Token 响应窗口阶段
+ * - attackerBoost: 攻击方使用太极加伤
+ * - defenderMitigation: 防御方使用太极减伤/闪避
+ */
+export type TokenResponsePhase = 'attackerBoost' | 'defenderMitigation';
+
 export interface HeroState {
     id: string;
     characterId: 'monk';
@@ -78,7 +221,14 @@ export interface HeroState {
     hand: AbilityCard[];
     deck: AbilityCard[];
     discard: AbilityCard[];
+    /** 被动状态效果（如击倒） */
     statusEffects: Record<string, number>;
+    /** 可消耗道具（太极、闪避、净化） */
+    tokens: TokenState;
+    /** Token 堆叠上限（可被技能永久提高，如莲花掌） */
+    tokenStackLimits: Record<string, number>;
+    /** 伤害护盾（下次受伤时消耗） */
+    damageShields: DamageShield[];
     abilities: AbilityDef[];
     abilityLevels: Record<string, number>;
     /** 已覆盖在技能上的升级卡信息（用于 II->III 差价计算 / 未来 UI 展示） */
@@ -104,13 +254,52 @@ export interface DiceThroneCore {
     startingPlayerId: PlayerId;
     turnNumber: number;
     pendingAttack: PendingAttack | null;
-    availableAbilityIds: string[];
+    /** 被动状态效果定义 */
     statusDefinitions: StatusEffectDef[];
+    /** 可消耗道具定义 */
+    tokenDefinitions: TokenDef[];
     activatingAbilityId?: string;
     lastEffectSourceByPlayerId?: Record<PlayerId, string | undefined>;
     lastSoldCardId?: string;
     /** 最后一次额外骰子投掷结果（用于 UI 展示） */
-    lastBonusDieRoll?: { value: number; face: DieFace; playerId: PlayerId; timestamp: number };
+    lastBonusDieRoll?: {
+        value: number;
+        face: DieFace;
+        playerId: PlayerId;
+        /** 效果目标玩家（若与 playerId 不同，则双方都显示特写） */
+        targetPlayerId?: PlayerId;
+        timestamp: number;
+        /** 可选的自定义效果描述 key */
+        effectKey?: string;
+        /** 效果描述的插值参数 */
+        effectParams?: Record<string, string | number>;
+    };
+    /** 待处理的卡牌交互 */
+    pendingInteraction?: PendingInteraction;
+    /** 待处理的伤害（等待 Token 响应） */
+    pendingDamage?: PendingDamage;
+    /** 待展示的卡牌特写（等待交互完成或确认无交互后触发） */
+    pendingCardSpotlight?: {
+        /** 卡牌 ID */
+        cardId: string;
+        /** 打出卡牌的玩家 ID */
+        playerId: PlayerId;
+        /** 卡牌图集索引（用于渲染） */
+        atlasIndex: number;
+        /** 时间戳（用于区分多次打出） */
+        timestamp: number;
+    };
+    /** 最后一次打出的卡牌（用于其他玩家的特写展示） */
+    lastPlayedCard?: {
+        /** 卡牌 ID */
+        cardId: string;
+        /** 打出卡牌的玩家 ID */
+        playerId: PlayerId;
+        /** 卡牌图集索引（用于渲染） */
+        atlasIndex: number;
+        /** 时间戳（用于区分多次打出） */
+        timestamp: number;
+    };
 }
 
 // ============================================================================
@@ -209,6 +398,89 @@ export interface ResponsePassCommand extends Command<'RESPONSE_PASS'> {
     payload: Record<string, never>;
 }
 
+/** 修改骰子命令 */
+export interface ModifyDieCommand extends Command<'MODIFY_DIE'> {
+    payload: {
+        /** 骰子 ID */
+        dieId: number;
+        /** 新数值 */
+        newValue: number;
+    };
+}
+
+/** 重掷骰子命令 */
+export interface RerollDieCommand extends Command<'REROLL_DIE'> {
+    payload: {
+        /** 骰子 ID */
+        dieId: number;
+    };
+}
+
+/** 移除状态效果命令 */
+export interface RemoveStatusCommand extends Command<'REMOVE_STATUS'> {
+    payload: {
+        /** 目标玩家 ID */
+        targetPlayerId: PlayerId;
+        /** 状态 ID（可选，不提供则移除所有） */
+        statusId?: string;
+    };
+}
+
+/** 转移状态效果命令 */
+export interface TransferStatusCommand extends Command<'TRANSFER_STATUS'> {
+    payload: {
+        /** 源玩家 ID */
+        fromPlayerId: PlayerId;
+        /** 目标玩家 ID */
+        toPlayerId: PlayerId;
+        /** 状态 ID */
+        statusId: string;
+    };
+}
+
+/** 确认交互命令 */
+export interface ConfirmInteractionCommand extends Command<'CONFIRM_INTERACTION'> {
+    payload: {
+        /** 交互 ID */
+        interactionId: string;
+        /** 选中的骰子 ID 列表（用于 selectDie 类型交互的批量重掷） */
+        selectedDiceIds?: number[];
+    };
+}
+
+/** 取消交互命令 */
+export interface CancelInteractionCommand extends Command<'CANCEL_INTERACTION'> {
+    payload: Record<string, never>;
+}
+
+/** 使用 Token 命令 */
+export interface UseTokenCommand extends Command<'USE_TOKEN'> {
+    payload: {
+        /** Token ID（taiji / evasive） */
+        tokenId: string;
+        /** 消耗数量（太极可选择数量，闪避固定为 1） */
+        amount: number;
+    };
+}
+
+/** 跳过 Token 响应命令 */
+export interface SkipTokenResponseCommand extends Command<'SKIP_TOKEN_RESPONSE'> {
+    payload: Record<string, never>;
+}
+
+/** 使用净化 Token 命令（独立于伤害流程） */
+export interface UsePurifyCommand extends Command<'USE_PURIFY'> {
+    payload: {
+        /** 要移除的负面状态 ID */
+        statusId: string;
+    };
+}
+
+/** 花费 CP 移除击倒命令 */
+export interface PayToRemoveStunCommand extends Command<'PAY_TO_REMOVE_STUN'> {
+    payload: Record<string, never>;
+}
+
 /** 所有 DiceThrone 命令 */
 export type DiceThroneCommand =
     | RollDiceCommand
@@ -225,7 +497,17 @@ export type DiceThroneCommand =
     | PlayUpgradeCardCommand
     | ResolveChoiceCommand
     | AdvancePhaseCommand
-    | ResponsePassCommand;
+    | ResponsePassCommand
+    | ModifyDieCommand
+    | RerollDieCommand
+    | RemoveStatusCommand
+    | TransferStatusCommand
+    | ConfirmInteractionCommand
+    | CancelInteractionCommand
+    | UseTokenCommand
+    | SkipTokenResponseCommand
+    | UsePurifyCommand
+    | PayToRemoveStunCommand;
 
 // ============================================================================
 // 事件定义
@@ -245,6 +527,12 @@ export interface BonusDieRolledEvent extends GameEvent<'BONUS_DIE_ROLLED'> {
         value: number;
         face: DieFace;
         playerId: PlayerId;
+        /** 效果目标玩家（若与 playerId 不同，则双方都显示特写） */
+        targetPlayerId?: PlayerId;
+        /** 可选的自定义效果描述 key（i18n），用于非骰面效果的特写 */
+        effectKey?: string;
+        /** 效果描述的插值参数 */
+        effectParams?: Record<string, string | number>;
     };
 }
 
@@ -260,18 +548,11 @@ export interface DieLockToggledEvent extends GameEvent<'DIE_LOCK_TOGGLED'> {
 export interface RollConfirmedEvent extends GameEvent<'ROLL_CONFIRMED'> {
     payload: {
         playerId: PlayerId;
-        availableAbilityIds: string[];
     };
 }
 
-/** 阶段切换事件 */
-export interface PhaseChangedEvent extends GameEvent<'PHASE_CHANGED'> {
-    payload: {
-        from: TurnPhase;
-        to: TurnPhase;
-        activePlayerId: PlayerId;
-    };
-}
+// PhaseChangedEvent 已废弃，阶段切换现在由 FlowSystem 的 SYS_PHASE_CHANGED 统一处理
+// 参见 src/engine/systems/FlowSystem.ts
 
 /** 技能激活事件 */
 export interface AbilityActivatedEvent extends GameEvent<'ABILITY_ACTIVATED'> {
@@ -318,6 +599,60 @@ export interface StatusRemovedEvent extends GameEvent<'STATUS_REMOVED'> {
         targetId: PlayerId;
         statusId: string;
         stacks: number;
+    };
+}
+
+/** Token 授予事件 */
+export interface TokenGrantedEvent extends GameEvent<'TOKEN_GRANTED'> {
+    payload: {
+        targetId: PlayerId;
+        tokenId: string;
+        amount: number;
+        newTotal: number;
+        sourceAbilityId?: string;
+    };
+}
+
+/** Token 消耗事件 */
+export interface TokenConsumedEvent extends GameEvent<'TOKEN_CONSUMED'> {
+    payload: {
+        playerId: PlayerId;
+        tokenId: string;
+        amount: number;
+        newTotal: number;
+    };
+}
+
+/** Token 堆叠上限变化事件 */
+export interface TokenLimitChangedEvent extends GameEvent<'TOKEN_LIMIT_CHANGED'> {
+    payload: {
+        playerId: PlayerId;
+        tokenId: string;
+        delta: number;
+        newLimit: number;
+        sourceAbilityId?: string;
+    };
+}
+
+/** 护盾授予事件 */
+export interface DamageShieldGrantedEvent extends GameEvent<'DAMAGE_SHIELD_GRANTED'> {
+    payload: {
+        targetId: PlayerId;
+        value: number;
+        sourceId: string;
+    };
+}
+
+/** 伤害被护盾阻挡事件 */
+export interface DamagePreventedEvent extends GameEvent<'DAMAGE_PREVENTED'> {
+    payload: {
+        targetId: PlayerId;
+        /** 原始伤害 */
+        originalDamage: number;
+        /** 被护盾抵消的伤害 */
+        preventedAmount: number;
+        /** 消耗的护盾来源 */
+        shieldSourceId: string;
     };
 }
 
@@ -411,6 +746,8 @@ export interface AttackInitiatedEvent extends GameEvent<'ATTACK_INITIATED'> {
         defenderId: PlayerId;
         sourceAbilityId: string;
         isDefendable: boolean;
+        /** 是否为终极技能（不可被干扰） */
+        isUltimate?: boolean;
     };
 }
 
@@ -440,7 +777,18 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
         playerId: PlayerId;
         sourceAbilityId: string;
         titleKey: string;
-        options: Array<{ statusId: string; value: number }>;
+        options: Array<{
+            /** 被动状态 ID（如 stun） */
+            statusId?: string;
+            /** Token ID（如 taiji/evasive/purify） */
+            tokenId?: string;
+            /** 数值（通常为 +1；也允许为负数表示消耗） */
+            value: number;
+            /** 自定义选择 ID（用于非 status/token 的选择，或区分不同语义） */
+            customId?: string;
+            /** 选项显示文案 key（i18n）。若不提供，将根据 statusId/tokenId 自动推导 */
+            labelKey?: string;
+        }>;
     };
 }
 
@@ -448,8 +796,14 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
 export interface ChoiceResolvedEvent extends GameEvent<'CHOICE_RESOLVED'> {
     payload: {
         playerId: PlayerId;
-        statusId: string;
+        /** 状态 ID（被动状态如击倒） */
+        statusId?: string;
+        /** Token ID（太极、闪避、净化） */
+        tokenId?: string;
+        /** 数值（通常为 +1；也允许为负数表示消耗） */
         value: number;
+        /** 自定义选择 ID（用于非 status/token 的选择，或区分不同语义） */
+        customId?: string;
         sourceAbilityId?: string;
     };
 }
@@ -463,13 +817,15 @@ export interface TurnChangedEvent extends GameEvent<'TURN_CHANGED'> {
     };
 }
 
-/** 响应窗口打开事件 */
+/** 响应窗口打开事件（多响应者队列） */
 export interface ResponseWindowOpenedEvent extends GameEvent<'RESPONSE_WINDOW_OPENED'> {
     payload: {
         windowId: string;
-        responderId: PlayerId;
-        windowType: 'preResolve' | 'thenBreakpoint';
-        sourceAbilityId?: string;
+        /** 响应者队列（按顺序轮询） */
+        responderQueue: PlayerId[];
+        windowType: ResponseWindowType;
+        /** 来源卡牌/技能 ID */
+        sourceId?: string;
     };
 }
 
@@ -477,7 +833,130 @@ export interface ResponseWindowOpenedEvent extends GameEvent<'RESPONSE_WINDOW_OP
 export interface ResponseWindowClosedEvent extends GameEvent<'RESPONSE_WINDOW_CLOSED'> {
     payload: {
         windowId: string;
-        passed: boolean;
+        /** 所有人都跳过了 */
+        allPassed?: boolean;
+    };
+}
+
+/** 响应者变更事件（窗口内部轮询） */
+export interface ResponseWindowResponderChangedEvent extends GameEvent<'RESPONSE_WINDOW_RESPONDER_CHANGED'> {
+    payload: {
+        windowId: string;
+        previousResponderId: PlayerId;
+        nextResponderId: PlayerId;
+    };
+}
+
+/** 骰子修改事件 */
+export interface DieModifiedEvent extends GameEvent<'DIE_MODIFIED'> {
+    payload: {
+        dieId: number;
+        oldValue: number;
+        newValue: number;
+        /** 执行修改的玩家 ID */
+        playerId: PlayerId;
+        sourceCardId?: string;
+    };
+}
+
+/** 骰子重掷事件 */
+export interface DieRerolledEvent extends GameEvent<'DIE_REROLLED'> {
+    payload: {
+        dieId: number;
+        oldValue: number;
+        newValue: number;
+        playerId: PlayerId;
+        sourceCardId?: string;
+    };
+}
+
+/** 投掷次数变化事件 */
+export interface RollLimitChangedEvent extends GameEvent<'ROLL_LIMIT_CHANGED'> {
+    payload: {
+        playerId: PlayerId;
+        delta: number;
+        newLimit: number;
+        sourceCardId?: string;
+    };
+}
+
+/** 交互请求事件 */
+export interface InteractionRequestedEvent extends GameEvent<'INTERACTION_REQUESTED'> {
+    payload: {
+        interaction: PendingInteraction;
+    };
+}
+
+/** 交互完成事件 */
+export interface InteractionCompletedEvent extends GameEvent<'INTERACTION_COMPLETED'> {
+    payload: {
+        interactionId: string;
+        sourceCardId: string;
+    };
+}
+
+/** 交互取消事件 */
+export interface InteractionCancelledEvent extends GameEvent<'INTERACTION_CANCELLED'> {
+    payload: {
+        interactionId: string;
+        /** 源卡牌 ID（用于还原卡牌） */
+        sourceCardId: string;
+        /** 源卡牌 CP 消耗（用于返还 CP） */
+        cpCost: number;
+        /** 执行交互的玩家 ID */
+        playerId: PlayerId;
+    };
+}
+
+// ============================================================================
+// Token 响应窗口事件
+// ============================================================================
+
+/** Token 响应窗口打开事件 */
+export interface TokenResponseRequestedEvent extends GameEvent<'TOKEN_RESPONSE_REQUESTED'> {
+    payload: {
+        /** 待处理的伤害信息 */
+        pendingDamage: PendingDamage;
+    };
+}
+
+/** Token 使用事件 */
+export interface TokenUsedEvent extends GameEvent<'TOKEN_USED'> {
+    payload: {
+        playerId: PlayerId;
+        tokenId: string;
+        amount: number;
+        /** 效果类型 */
+        effectType: 'damageBoost' | 'damageReduction' | 'evasionAttempt';
+        /** 伤害修改量（加伤/减伤） */
+        damageModifier?: number;
+        /** 闪避投骰结果（仅 evasionAttempt） */
+        evasionRoll?: {
+            value: number;
+            success: boolean;
+        };
+    };
+}
+
+/** Token 响应窗口关闭事件 */
+export interface TokenResponseClosedEvent extends GameEvent<'TOKEN_RESPONSE_CLOSED'> {
+    payload: {
+        pendingDamageId: string;
+        /** 最终伤害值 */
+        finalDamage: number;
+        /** 是否完全闪避 */
+        fullyEvaded: boolean;
+    };
+}
+
+/** 技能重选事件（骰面被修改后触发） */
+export interface AbilityReselectionRequiredEvent extends GameEvent<'ABILITY_RESELECTION_REQUIRED'> {
+    payload: {
+        playerId: PlayerId;
+        /** 原来选择的技能 ID */
+        previousAbilityId?: string;
+        /** 触发原因 */
+        reason: 'dieModified' | 'dieRerolled';
     };
 }
 
@@ -487,12 +966,17 @@ export type DiceThroneEvent =
     | BonusDieRolledEvent
     | DieLockToggledEvent
     | RollConfirmedEvent
-    | PhaseChangedEvent
+    // PhaseChangedEvent 已移除，使用 FlowSystem 的 SYS_PHASE_CHANGED
     | AbilityActivatedEvent
     | DamageDealtEvent
     | HealAppliedEvent
     | StatusAppliedEvent
     | StatusRemovedEvent
+    | TokenGrantedEvent
+    | TokenConsumedEvent
+    | TokenLimitChangedEvent
+    | DamageShieldGrantedEvent
+    | DamagePreventedEvent
     | CardDrawnEvent
     | CardDiscardedEvent
     | CardSoldEvent
@@ -509,7 +993,18 @@ export type DiceThroneEvent =
     | TurnChangedEvent
     | AbilityReplacedEvent
     | ResponseWindowOpenedEvent
-    | ResponseWindowClosedEvent;
+    | ResponseWindowClosedEvent
+    | ResponseWindowResponderChangedEvent
+    | DieModifiedEvent
+    | DieRerolledEvent
+    | RollLimitChangedEvent
+    | InteractionRequestedEvent
+    | InteractionCompletedEvent
+    | InteractionCancelledEvent
+    | TokenResponseRequestedEvent
+    | TokenUsedEvent
+    | TokenResponseClosedEvent
+    | AbilityReselectionRequiredEvent;
 
 // ============================================================================
 // 常量

@@ -64,6 +64,18 @@
       "sent": "Invite sent"
     }
   },
+  "review": {
+    "error": {
+      "missingGameId": "Missing game ID",
+      "contentTooLong": "Review content must be within 500 characters",
+      "contentBlocked": "Content contains restricted words",
+      "notFound": "Review not found"
+    },
+    "success": {
+      "saved": "Review saved",
+      "deleted": "Review deleted"
+    }
+  },
   "email": {
     "error": {
       "missingConfig": "Email service is not configured"

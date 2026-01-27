@@ -28,9 +28,15 @@
     "reconnect": "重连",
     "reconnectEnter": "重连进入",
     "join": "加入",
+    "spectate": "观战",
     "localPlay": "👥 本地同屏",
     "tutorial": "🎓 教程模式",
-    "createRoom": "开设新局"
+    "createRoom": "创建房间",
+    "confirm": "确认",
+    "cancel": "取消"
+  },
+  "action": {
+    "rejoinRoom": "重新加入"
   },
   "button": {
     "processing": "处理中..."
@@ -103,6 +109,7 @@
   },
   "error": {
     "createRoomFailed": "创建房间失败",
+    "activeMatchExists": "您已有未结束的房间，请先返回或销毁后再创建。",
     "roomFull": "房间已满",
     "joinRoomFailed": "加入房间失败",
     "actionFailed": "操作失败，请稍后重试。",
@@ -110,6 +117,22 @@
       "title": "服务目前不可用",
       "desc": "无法连接到后端服务。请检查网络或确认后端容器（MongoDB/Server）已启动。"
     }
+  },
+  "createRoom": {
+    "title": "创建房间",
+    "roomName": "房间名称",
+    "roomNamePlaceholder": "输入房间名称（可选）",
+    "roomNameHint": "留空则自动生成",
+    "playerCount": "游戏人数",
+    "playerCountUnit": "{{count}}人",
+    "retention": "房间保存",
+    "retentionOptions": {
+      "none": "不保存（所有人离开即销毁）",
+      "1day": "1 天",
+      "3days": "3 天",
+      "7days": "7 天"
+    },
+    "retentionHint": "保存期内可重连，过期自动清理"
   },
   "socket": {
     "invalidGameId": "非法 gameId，已忽略订阅: {{value}}",

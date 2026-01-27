@@ -38,13 +38,10 @@ export interface UseResourceTrayConfig<TItem> {
  * });
  * ```
  */
-export function useResourceTray<TItem>({
-    items,
-    getItemId,
-    multiSelect = false,
-    onItemClick,
-    onItemToggle,
-}: UseResourceTrayConfig<TItem>): UseResourceTrayReturn<TItem> {
+export function useResourceTray<TItem>(
+    config: UseResourceTrayConfig<TItem>
+): UseResourceTrayReturn<TItem> {
+    const { items, multiSelect = false, onItemClick, onItemToggle } = config;
     const [selectedItemId, setSelectedItemId] = useState<string | number | null>(null);
 
     const handleItemClick = useCallback(
