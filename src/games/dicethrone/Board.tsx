@@ -20,6 +20,7 @@ import { usePulseGlow } from '../../components/common/animations/PulseGlow';
 import { getLocalizedAssetPath } from '../../core';
 import { useToast } from '../../contexts/ToastContext';
 import { UndoProvider } from '../../contexts/UndoContext';
+import { useTutorial } from '../../contexts/TutorialContext';
 import { loadStatusIconAtlasConfig, type StatusIconAtlasConfig } from './ui/statusEffects';
 import { getAbilitySlotId } from './ui/AbilityOverlays';
 import { HandArea } from './ui/HandArea';
@@ -151,6 +152,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
         { logPrefix: 'Spectate[DiceThrone]' }
     ) as DiceThroneMoveMap;
     const { t, i18n } = useTranslation('game-dicethrone');
+    const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep: nextTutorialStep } = useTutorial();
     const toast = useToast();
     const locale = i18n.resolvedLanguage ?? i18n.language;
 
@@ -227,7 +229,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
         opponentName,
         isSpectator,
     });
-
 
     // 使用动画库 Hooks
     const { effects: flyingEffects, pushEffect: pushFlyingEffect, removeEffect: handleEffectComplete } = useFlyingEffects();
@@ -506,6 +507,24 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
         };
     }, []);
 
+    const shouldBlockTutorialAction = React.useCallback((targetId: string) => {
+        return Boolean(
+            isTutorialActive
+            && tutorialStep?.requireAction
+            && tutorialStep.highlightTarget
+            && tutorialStep.highlightTarget !== targetId
+        );
+    }, [isTutorialActive, tutorialStep]);
+
+    const advanceTutorialIfNeeded = React.useCallback((targetId: string) => {
+        if (
+            isTutorialActive
+            && tutorialStep?.requireAction
+            && tutorialStep.highlightTarget === targetId
+        ) {
+            nextTutorialStep();
+        }
+    }, [isTutorialActive, tutorialStep, nextTutorialStep]);
 
     const handleAdvancePhase = () => {
         if (!canAdvancePhase) {
@@ -516,12 +535,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
             }
             return;
         }
-        // 只有在有可用技能但玩家没选时才弹窗确认
-        if (currentPhase === 'offensiveRoll' && !selectedAbilityId && availableAbilityIds.length > 0) {
+        if (shouldBlockTutorialAction('advance-phase-button')) return;
+        if (currentPhase === 'offensiveRoll' && !G.rollConfirmed) {
             openModal('confirmSkip');
             return;
         }
         engineMoves.advancePhase();
+        advanceTutorialIfNeeded('advance-phase-button');
     };
 
     React.useEffect(() => {
@@ -661,7 +681,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                         availableAbilityIds={availableAbilityIds}
                         canSelectAbility={canSelectAbility}
                         canHighlightAbility={canHighlightAbility}
-                        onSelectAbility={(abilityId) => engineMoves.selectAbility(abilityId)}
+                        onSelectAbility={(abilityId) => {
+                            if (shouldBlockTutorialAction('ability-slots')) return;
+                            engineMoves.selectAbility(abilityId);
+                            advanceTutorialIfNeeded('ability-slots');
+                        }}
                         onHighlightedAbilityClick={() => {
                             if (currentPhase === 'offensiveRoll' && !G.rollConfirmed) {
                                 toast.warning(t('error.confirmRoll'));
@@ -689,11 +713,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                         onToggleLock={(id) => engineMoves.toggleDieLock(id)}
                         onRoll={() => {
                             if (!canInteractDice) return;
+                            if (shouldBlockTutorialAction('dice-roll-button')) return;
                             engineMoves.rollDice();
+                            advanceTutorialIfNeeded('dice-roll-button');
                         }}
                         onConfirm={() => {
                             if (!canInteractDice) return;
+                            if (shouldBlockTutorialAction('dice-confirm-button')) return;
                             engineMoves.confirmRoll();
+                            advanceTutorialIfNeeded('dice-confirm-button');
                         }}
                         showAdvancePhaseButton={showAdvancePhaseButton}
                         advanceLabel={advanceLabel}
@@ -741,7 +769,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                                 currentPhase={currentPhase}
                                 playerCp={handOwner.resources[RESOURCE_IDS.CP] ?? 0}
                                 onPlayCard={(cardId) => engineMoves.playCard(cardId)}
-                                onSellCard={(cardId) => engineMoves.sellCard(cardId)}
+                                onSellCard={(cardId) => {
+                                    if (shouldBlockTutorialAction('discard-pile')) return;
+                                    engineMoves.sellCard(cardId);
+                                    advanceTutorialIfNeeded('discard-pile');
+                                }}
                                 onError={(msg) => toast.warning(msg)}
                                 canInteract={isResponder || isSelfView}
                                 canPlayCards={isActivePlayer || isResponder}
@@ -752,7 +784,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                                 onPlayHintChange={setCoreAreaHighlighted}
                                 onSellButtonChange={setSellButtonVisible}
                                 isDiscardMode={isDiscardMode}
-                                onDiscardCard={(cardId) => engineMoves.sellCard(cardId)}
+                                onDiscardCard={(cardId) => {
+                                    if (shouldBlockTutorialAction('discard-pile')) return;
+                                    engineMoves.sellCard(cardId);
+                                    advanceTutorialIfNeeded('discard-pile');
+                                }}
                             />
                         </>
                     );
@@ -839,7 +875,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                     onRematchVote={handleRematchVote}
 
                     // 其他
-                    cardAtlas={cardAtlas ?? undefined}
+                    cardAtlas={cardAtlas ?? null}
                     statusIconAtlas={statusIconAtlas}
                     locale={locale}
                     moves={moves as Record<string, unknown>}

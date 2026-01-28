@@ -25,7 +25,8 @@ import type { StatusIconAtlasConfig } from './statusEffects';
 import type { AbilityCard, DieFace, HeroState, PendingInteraction, TokenResponsePhase } from '../domain/types';
 import type { PlayerId } from '../../../engine/types';
 import type { CardSpotlightItem } from './CardSpotlightOverlay';
-import type { PendingDamage, TokenDef } from '../domain/types';
+import type { PendingDamage } from '../domain/types';
+import type { TokenDef } from '../../../systems/TokenSystem';
 import { PROMPT_COMMANDS } from '../../../engine/systems/PromptSystem';
 
 export interface BoardOverlaysProps {
@@ -103,10 +104,10 @@ export interface BoardOverlaysProps {
     playerID?: string;
     reset?: () => void;
     rematchState: any;
-    onRematchVote: (vote: boolean) => void;
+    onRematchVote: () => void;
 
     // 其他
-    cardAtlas?: CardAtlasConfig;
+    cardAtlas: CardAtlasConfig | null;
     statusIconAtlas?: StatusIconAtlasConfig | null;
     locale: string;
     moves: Record<string, unknown>;
@@ -114,6 +115,7 @@ export interface BoardOverlaysProps {
 
 export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const { t } = useTranslation('game-dicethrone');
+    const cardAtlas = props.cardAtlas;
 
     const isPlayerBoardPreview = Boolean(props.magnifiedImage?.includes('monk-player-board'));
     const isMultiCardPreview = props.magnifiedCards.length > 0;
@@ -137,7 +139,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         containerClassName={magnifyContainerClassName}
                         closeLabel={t('actions.closePreview')}
                     >
-                        {isMultiCardPreview && props.cardAtlas ? (
+                        {isMultiCardPreview && cardAtlas ? (
                             <div className="flex flex-nowrap items-center justify-start gap-[2vw] p-[2vw] w-fit">
                                 {props.magnifiedCards.map((card, idx) => (
                                     <div
@@ -147,20 +149,20 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                             backgroundImage: buildLocalizedImageSet(ASSETS.CARDS_ATLAS, props.locale),
                                             backgroundRepeat: 'no-repeat',
                                             backgroundColor: '#0f172a',
-                                            ...getCardAtlasStyle(card.atlasIndex ?? 0, props.cardAtlas),
+                                            ...getCardAtlasStyle(card.atlasIndex ?? 0, cardAtlas),
                                         }}
                                         title={`#${idx + 1}`}
                                     />
                                 ))}
                             </div>
-                        ) : props.magnifiedCard && props.cardAtlas ? (
+                        ) : props.magnifiedCard && cardAtlas ? (
                             <div
                                 className="w-[40vw] h-[65vw] max-w-[400px] max-h-[650px]"
                                 style={{
                                     backgroundImage: buildLocalizedImageSet(ASSETS.CARDS_ATLAS, props.locale),
                                     backgroundRepeat: 'no-repeat',
                                     backgroundColor: '#0f172a',
-                                    ...getCardAtlasStyle(props.magnifiedCard.atlasIndex ?? 0, props.cardAtlas),
+                                    ...getCardAtlasStyle(props.magnifiedCard.atlasIndex ?? 0, cardAtlas),
                                 }}
                             />
                         ) : (
@@ -280,7 +282,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                     <CardSpotlightOverlay
                         key="card-spotlight"
                         queue={props.cardSpotlightQueue}
-                        atlas={props.cardAtlas}
+                        atlas={cardAtlas}
                         locale={props.locale}
                         onClose={props.onCardSpotlightClose}
                         opponentHeaderRef={props.opponentHeaderRef}

@@ -50,6 +50,22 @@
       ]
     }
   },
+  "tutorial": {
+    "steps": {
+      "intro": "Welcome to the Dice Throne 1v1 tutorial. Reduce your opponent to 0 Health before they do the same to you.",
+      "stats": "This panel shows your resources: Health (starts at 50) and CP (starts at 2, max 15). Most healing caps at starting Health +10.",
+      "phases": "Turn order lives here: Upkeep → Income → Main 1 → Offensive Roll → Defensive Roll → Main 2 → Discard. The first player skips Income on their first turn.",
+      "dice": "Your dice tray. You may roll up to 3 times each turn and lock dice you want to keep.",
+      "rollButton": "Use “Roll” to start rolling. When you’re satisfied or out of rolls, move to confirm.",
+      "confirmButton": "Confirm locks the result so you can pick a skill. If you want another roll, don’t confirm yet.",
+      "abilities": "Highlighted abilities are available to use. Pick one to begin attack resolution.",
+      "hand": "Your hand lives here. In Main phases you can play action cards or upgrades, or sell cards for CP.",
+      "discard": "This is the discard pile. Drag a card here to sell it for +1 CP.",
+      "statusTokens": "Status effects and tokens live here. Spend Evasive/Taiji/Purify at the right time; pay 2 CP before offense to remove Stun.",
+      "advance": "Use the “Next Phase” button once you’re done with the current phase.",
+      "finish": "That’s the 1v1 core flow. Try activating abilities, playing cards, and defeating your opponent!"
+    }
+  },
   "statusEffects": {
     "stun": {
       "name": "Stun",

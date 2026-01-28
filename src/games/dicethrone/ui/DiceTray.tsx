@@ -89,12 +89,15 @@ export const DiceTray = ({
     const canSelectMore = (interaction?.selectCount ?? 0) > selectedDice.length;
 
     return (
-        <div className={`
+        <div
+            className={`
             flex flex-col items-center p-[0.6vw] rounded-[1.5vw] gap-[0.5vw] w-[5.8vw] shrink-0 relative transition-all duration-300
             ${isInteractionMode
                 ? 'bg-slate-950 border-[0.2vw] border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.3)]'
                 : 'bg-gradient-to-b from-[#1a1e36] via-[#0d0e1a] to-[#05060a] border-t-[0.12vw] border-l-[0.1vw] border-indigo-300/30 border-b-[0.2vw] border-r-[0.12vw] border-black/80 shadow-[inset_0_5px_12px_rgba(0,0,0,0.9),0_15px_30px_rgba(0,0,0,0.4)]'}
-        `}>
+        `}
+            data-tutorial-id="dice-tray"
+        >
             {/* Glossy overlay for metallic feel without expensive blur */}
             <div className="absolute inset-0 rounded-[1.5vw] bg-gradient-to-tr from-white/0 via-white/5 to-transparent pointer-events-none" />
 
@@ -295,6 +298,7 @@ export const DiceActions = ({
                 variant={isRollPhase && canInteract && !rollConfirmed && rollCount < rollLimit ? 'primary' : 'secondary'}
                 size="sm"
                 className={`!px-[0.5vw] !py-0 flex items-center justify-between h-full whitespace-nowrap overflow-hidden !rounded-[0.5vw] ${isRolling ? 'animate-pulse' : ''}`}
+                data-tutorial-id="dice-roll-button"
             >
                 <div className="truncate flex-1 text-center font-black !text-[0.7vw] tracking-tighter">
                     {isRolling ? t('dice.rolling', '投掷中...') : t('dice.roll_action', '投掷')}
@@ -311,6 +315,7 @@ export const DiceActions = ({
                     rollConfirmed ? "!bg-emerald-700 !text-emerald-100 !border-emerald-500/60" : ""
                 )}
                 size="sm"
+                data-tutorial-id="dice-confirm-button"
             >
                 {rollConfirmed ? t('dice.confirmed', '已确认') : t('dice.confirm', '确认')}
             </GameButton>

@@ -73,7 +73,7 @@ export const useUndoStatus = (): {
         return { status: null, hasNotification: false };
     }
 
-    const { G, playerID, isLocalMode } = undoState;
+    const { G, playerID } = undoState;
     const history = G.sys?.undo?.snapshots || [];
     const request = G.sys?.undo?.pendingRequest;
     

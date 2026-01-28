@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTutorial } from '../../contexts/TutorialContext';
 
@@ -6,6 +6,8 @@ export const TutorialOverlay: React.FC = () => {
     const { isActive, currentStep, nextStep, isLastStep } = useTutorial();
     const { t } = useTranslation('tutorial');
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+    const lastStepIdRef = useRef<string | null>(null);
+    const hasAutoScrolledRef = useRef(false);
 
 
 
@@ -13,14 +15,37 @@ export const TutorialOverlay: React.FC = () => {
     useEffect(() => {
         if (!isActive || !currentStep) return;
 
+        if (lastStepIdRef.current !== currentStep.id) {
+            lastStepIdRef.current = currentStep.id;
+            hasAutoScrolledRef.current = false;
+        }
+
+        let resizeObserver: ResizeObserver | null = null;
+
         const updateRect = () => {
             if (currentStep.highlightTarget) {
                 const el = document.querySelector(`[data-tutorial-id="${currentStep.highlightTarget}"]`) ||
                     document.getElementById(currentStep.highlightTarget);
 
                 if (el) {
-                    setTargetRect(el.getBoundingClientRect());
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const rect = el.getBoundingClientRect();
+                    setTargetRect(rect);
+
+                    if (!hasAutoScrolledRef.current) {
+                        const inView = rect.top >= 0
+                            && rect.left >= 0
+                            && rect.bottom <= window.innerHeight
+                            && rect.right <= window.innerWidth;
+                        if (!inView) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        hasAutoScrolledRef.current = true;
+                    }
+
+                    if (!resizeObserver) {
+                        resizeObserver = new ResizeObserver(() => updateRect());
+                        resizeObserver.observe(el);
+                    }
                 } else {
                     setTargetRect(null);
                 }
@@ -31,11 +56,12 @@ export const TutorialOverlay: React.FC = () => {
 
         updateRect();
         window.addEventListener('resize', updateRect);
-        const interval = setInterval(updateRect, 500);
+        window.addEventListener('scroll', updateRect, true);
 
         return () => {
             window.removeEventListener('resize', updateRect);
-            clearInterval(interval);
+            window.removeEventListener('scroll', updateRect, true);
+            resizeObserver?.disconnect();
         };
     }, [isActive, currentStep]);
 
@@ -85,7 +111,7 @@ export const TutorialOverlay: React.FC = () => {
 
         // 计算具体坐标
         const styles: React.CSSProperties = {
-            position: 'absolute',
+            position: 'fixed',
             zIndex: 100,
         };
         let arrow = '';

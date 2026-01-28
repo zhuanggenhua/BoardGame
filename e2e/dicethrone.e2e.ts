@@ -17,6 +17,14 @@ const maybePassResponse = async (page: Page) => {
 };
 
 test.describe('DiceThrone E2E', () => {
+    test('Tutorial route shows Dice Throne tutorial overlay', async ({ page }) => {
+        await setEnglishLocale(page);
+        await page.goto('/play/dicethrone/tutorial');
+
+        await expect(page.getByAltText('Player Board')).toBeVisible();
+        await expect(page.getByText(/Dice Throne 1v1 tutorial/i)).toBeVisible();
+    });
+
     test('Online match can be created and HUD shows room info', async ({ page }) => {
         await setEnglishLocale(page);
         await page.goto('/');
