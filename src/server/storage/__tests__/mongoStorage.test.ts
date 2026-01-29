@@ -260,7 +260,8 @@ describe('MongoStorage 行为', () => {
         const end = Date.now();
 
         const Match = mongoose.model('Match');
-        const doc = await Match.findOne({ matchID: 'ttl-1day' }).lean();
+        type MatchTTLDoc = { ttlSeconds?: number; expiresAt?: Date | null };
+        const doc = await Match.findOne({ matchID: 'ttl-1day' }).lean<MatchTTLDoc | null>();
         expect(doc?.ttlSeconds).toBe(86400);
         expect(doc?.expiresAt).toBeInstanceOf(Date);
 

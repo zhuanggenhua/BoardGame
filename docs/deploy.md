@@ -16,6 +16,15 @@
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/scripts/deploy-auto.sh -o deploy-auto.sh && bash deploy-auto.sh
 ```
+
+## 快速更新脚本（已部署后使用）
+
+适用于已部署的服务器，执行：拉取最新代码 → 重建镜像 → 重启服务。
+
+```bash
+cd /home/admin/BoardGame
+bash scripts/deploy-quick.sh
+```
  
 
 ### 可选环境变量
@@ -120,6 +129,12 @@ bash deploy-auto.sh
 
 ## 常见问题
 
+### 部署后验收
+
+- `docker compose ps` 确认 web/game-server/mongodb 为 Running/Healthy
+- `ss -lntp | grep ':80'` 确认 80 端口已监听
+- `curl -I http://127.0.0.1/` 验证本机入口可达
+
 - **健康检查**：
   - 后端：`http://<服务器IP>/health` 或 `https://api.<你的域名>/health`（若未实现则返回 404，属于正常）
   - WebSocket：检查 `wss://api.<你的域名>/lobby-socket` 是否可建立连接
@@ -128,6 +143,8 @@ bash deploy-auto.sh
   - `docker compose logs -f web` 查看反向代理/NestJS 日志
   - `docker compose logs -f game-server` 查看游戏服务日志
   - DNS 解析：`nslookup easyboardgame.top` / `nslookup api.easyboardgame.top`
+- **521 / 无响应**：Cloudflare 无法连接源站，多为 80 端口未监听或源站服务重启；先确认 `docker compose ps` 与 `ss -lntp | grep ':80'`。
+- **容器反复重启**：通常是构建或运行时报错，先看 `docker compose logs -f web` 与 `docker compose logs -f game-server`。
 - **端口占用**：优先只改 `docker-compose.yml` 中 `web` 的端口映射，并同步 `WEB_ORIGINS`
 - **WebSocket 不通**：检查 `docker/nginx.conf` 的 Upgrade/Connection 头，以及访问路径是否以 `/default/`、`/lobby-socket/` 开头
 - **为什么 dev 没问题但部署报错**：
