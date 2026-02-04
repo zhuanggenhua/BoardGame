@@ -126,6 +126,7 @@ export const MONK_ABILITIES: AbilityDef[] = [
         name: abilityText('taiji-combo', 'name'),
         type: 'offensive',
         description: abilityText('taiji-combo', 'description'),
+        sfxKey: 'taiji_combo',
         trigger: { type: 'diceSet', faces: { [DICE_FACE_IDS.FIST]: 3, [DICE_FACE_IDS.PALM]: 1 } },
         effects: [
             // 投掷骰子效果：先投掷，根据结果累加 bonusDamage
@@ -162,6 +163,7 @@ export const MONK_ABILITIES: AbilityDef[] = [
         name: abilityText('thunder-strike', 'name'),
         type: 'offensive',
         description: abilityText('thunder-strike', 'description'),
+        sfxKey: 'thunder_strike',
         trigger: { type: 'diceSet', faces: { [DICE_FACE_IDS.PALM]: 3 } },
         effects: [
             {
@@ -209,6 +211,7 @@ export const MONK_ABILITIES: AbilityDef[] = [
         type: 'offensive',
         description: abilityText('transcendence', 'description'),
         tags: ['ultimate'],
+        sfxKey: 'transcendence_ultimate',
         trigger: { type: 'diceSet', faces: { [DICE_FACE_IDS.LOTUS]: 5 } },
         effects: [
             // 造成10伤害，造成击倒

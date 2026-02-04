@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { PromptGenerator, createEmptyContext } from '../ai';
 import { BaseEntitySchema, extendSchema, field, getTableFields } from '../schema/types';
+import { validateAbilityJson } from '../utils/validateAbilityJson';
 
 describe('PromptGenerator', () => {
   const testContext = createEmptyContext();
@@ -37,6 +38,52 @@ describe('PromptGenerator', () => {
     
     expect(fullPrompt).toBeDefined();
     expect(fullPrompt.length).toBeGreaterThan(100);
+  });
+});
+
+describe('能力 JSON 校验', () => {
+  it('应通过有效的能力数据', () => {
+    const data = [
+      {
+        id: 'entity-1',
+        abilities: [
+          {
+            id: 'ability-1',
+            name: '能力名称',
+            trigger: { type: 'always' },
+            effects: [
+              {
+                id: 'effect-1',
+                operations: [
+                  { type: 'modifyAttribute', target: 'self', attrId: 'hp', value: -1 },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    const result = validateAbilityJson(data);
+    expect(result.isValid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  it('应拦截缺失字段的能力数据', () => {
+    const data = [
+      {
+        id: '',
+        abilities: [
+          {
+            id: '',
+            name: '',
+            effects: [],
+          },
+        ],
+      },
+    ];
+    const result = validateAbilityJson(data);
+    expect(result.isValid).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
   });
 });
 

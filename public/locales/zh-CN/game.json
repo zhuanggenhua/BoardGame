@@ -48,10 +48,14 @@
       "settings": "设置",
       "audio": "音频",
       "chat": "聊天",
+      "actionLog": "行为日志",
       "info": "信息",
       "room": "房间",
       "exit": "离开",
       "close": "关闭"
+    },
+    "actionLog": {
+      "empty": "暂无行为日志"
     },
     "toggle": {
       "collapse": "收起菜单",

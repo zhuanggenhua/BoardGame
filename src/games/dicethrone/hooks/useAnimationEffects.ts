@@ -24,7 +24,7 @@ import { useEffect, useRef } from 'react';
 import type { HeroState } from '../domain/types';
 import type { PlayerId } from '../../../engine/types';
 import type { StatusIconAtlasConfig } from '../ui/statusEffects';
-import { STATUS_EFFECT_META, getStatusEffectIconNode } from '../ui/statusEffects';
+import { STATUS_EFFECT_META, TOKEN_META, getStatusEffectIconNode } from '../ui/statusEffects';
 import { getElementCenter } from '../../../components/common/animations/FlyingEffect';
 import { 
     getSlashPresetByDamage, 
@@ -106,6 +106,9 @@ export function useAnimationEffects(config: AnimationEffectsConfig) {
     // 追踪上一次的状态效果
     const prevOpponentStatusRef = useRef<Record<string, number>>({ ...(opponent?.statusEffects || {}) });
     const prevPlayerStatusRef = useRef<Record<string, number>>({ ...(player?.statusEffects || {}) });
+    // 追踪上一次的 Token
+    const prevOpponentTokensRef = useRef<Record<string, number>>({ ...(opponent?.tokens || {}) });
+    const prevPlayerTokensRef = useRef<Record<string, number>>({ ...(player?.tokens || {}) });
 
     /**
      * 监听对手 HP 变化（伤害动画）
@@ -223,4 +226,60 @@ export function useAnimationEffects(config: AnimationEffectsConfig) {
         
         prevPlayerStatusRef.current = { ...player.statusEffects };
     }, [player.statusEffects, pushFlyingEffect, getEffectStartPos, currentPlayerId, locale, statusIconAtlas, refs.selfBuff]);
+
+    /**
+     * 监听对手 Token 变化（增益动画）
+     */
+    useEffect(() => {
+        if (!opponent) return;
+
+        const prevTokens = prevOpponentTokensRef.current;
+
+        Object.entries(opponent.tokens || {}).forEach(([tokenId, stacks]) => {
+            const prevStacks = prevTokens[tokenId] ?? 0;
+            if (stacks > prevStacks) {
+                const info = TOKEN_META[tokenId] || {
+                    icon: '✨',
+                    color: 'from-slate-500 to-slate-600'
+                };
+
+                pushFlyingEffect({
+                    type: 'buff',
+                    content: getStatusEffectIconNode(info, locale, 'fly', statusIconAtlas),
+                    color: info.color,
+                    startPos: getEffectStartPos(opponentId),
+                    endPos: getElementCenter(refs.opponentBuff.current),
+                });
+            }
+        });
+
+        prevOpponentTokensRef.current = { ...opponent.tokens };
+    }, [opponent?.tokens, opponent, pushFlyingEffect, getEffectStartPos, opponentId, locale, statusIconAtlas, refs.opponentBuff]);
+
+    /**
+     * 监听玩家 Token 变化（增益动画）
+     */
+    useEffect(() => {
+        const prevTokens = prevPlayerTokensRef.current;
+
+        Object.entries(player.tokens || {}).forEach(([tokenId, stacks]) => {
+            const prevStacks = prevTokens[tokenId] ?? 0;
+            if (stacks > prevStacks) {
+                const info = TOKEN_META[tokenId] || {
+                    icon: '✨',
+                    color: 'from-slate-500 to-slate-600'
+                };
+
+                pushFlyingEffect({
+                    type: 'buff',
+                    content: getStatusEffectIconNode(info, locale, 'fly', statusIconAtlas),
+                    color: info.color,
+                    startPos: getEffectStartPos(currentPlayerId),
+                    endPos: getElementCenter(refs.selfBuff.current),
+                });
+            }
+        });
+
+        prevPlayerTokensRef.current = { ...player.tokens };
+    }, [player.tokens, pushFlyingEffect, getEffectStartPos, currentPlayerId, locale, statusIconAtlas, refs.selfBuff]);
 }

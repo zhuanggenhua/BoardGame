@@ -9,14 +9,14 @@ import { test, expect } from '@playwright/test';
 test.describe('UGC Builder', () => {
     test.beforeEach(async ({ page }) => {
         // 清除 localStorage
-        await page.goto('/ugc/builder');
+        await page.goto('/dev/ugc');
         await page.evaluate(() => localStorage.clear());
         await page.reload();
     });
 
     test.describe('页面加载', () => {
         test('应正确加载 Builder 页面', async ({ page }) => {
-            await page.goto('/ugc/builder');
+            await page.goto('/dev/ugc');
             
             // 检查页面标题元素
             await expect(page.locator('input[placeholder*="游戏名称"]')).toBeVisible();
@@ -31,7 +31,7 @@ test.describe('UGC Builder', () => {
 
     test.describe('Schema 管理', () => {
         test('应能创建新 Schema', async ({ page }) => {
-            await page.goto('/ugc/builder');
+            await page.goto('/dev/ugc');
             
             // 点击添加 Schema 按钮
             await page.getByText('+ Schema').click();
@@ -44,7 +44,7 @@ test.describe('UGC Builder', () => {
         });
 
         test('应能编辑 Schema 名称', async ({ page }) => {
-            await page.goto('/ugc/builder');
+            await page.goto('/dev/ugc');
             
             // 创建 Schema
             await page.getByText('+ Schema').click();
@@ -61,7 +61,7 @@ test.describe('UGC Builder', () => {
 
     test.describe('保存/加载', () => {
         test('保存后刷新应恢复数据', async ({ page }) => {
-            await page.goto('/ugc/builder');
+            await page.goto('/dev/ugc');
             
             // 修改游戏名称
             const nameInput = page.locator('input[placeholder*="游戏名称"]');
@@ -81,7 +81,7 @@ test.describe('UGC Builder', () => {
         });
 
         test('清空按钮应重置所有数据', async ({ page }) => {
-            await page.goto('/ugc/builder');
+            await page.goto('/dev/ugc');
             
             // 修改游戏名称
             const nameInput = page.locator('input[placeholder*="游戏名称"]');
@@ -107,7 +107,7 @@ test.describe('UGC Builder', () => {
 
     test.describe('标签管理', () => {
         test('应能打开标签管理模态框', async ({ page }) => {
-            await page.goto('/ugc/builder');
+            await page.goto('/dev/ugc');
             
             // 创建 Schema
             await page.getByText('+ Schema').click();
@@ -124,7 +124,7 @@ test.describe('UGC Builder', () => {
         });
 
         test('应能添加新标签', async ({ page }) => {
-            await page.goto('/ugc/builder');
+            await page.goto('/dev/ugc');
             
             // 创建 Schema
             await page.getByText('+ Schema').click();
@@ -149,7 +149,7 @@ test.describe('UGC Builder', () => {
 
     test.describe('布局组件', () => {
         test('应能拖拽组件到画布', async ({ page }) => {
-            await page.goto('/ugc/builder');
+            await page.goto('/dev/ugc');
             
             // 找到手牌区组件
             const handZone = page.getByText('手牌区');

@@ -13,7 +13,8 @@ import {
     Maximize,
     Minimize,
     MessageSquareWarning,
-    Users
+    Users,
+    ListOrdered
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUndo, useUndoStatus } from '../../contexts/UndoContext';
@@ -30,6 +31,7 @@ import { MAX_CHAT_LENGTH } from '../../shared/chat';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { FriendsChatModal } from '../social/FriendsChatModal';
 import { useSocial } from '../../contexts/SocialContext';
+import { buildActionLogRows } from './actionLogFormat';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial';
@@ -119,6 +121,27 @@ export const GameHUD = ({
         return matched?.name ?? (myPlayerId ? `玩家 ${myPlayerId}` : '玩家');
     }, [myPlayerId, players, user?.username]);
 
+    const playerNameMap = useMemo(() => {
+        const map = new Map<string, string>();
+        players?.forEach((player) => {
+            if (player.name) map.set(String(player.id), player.name);
+        });
+        return map;
+    }, [players]);
+
+    const getActionLogPlayerLabel = useCallback((playerId: string | number) => {
+        const normalizedId = String(playerId);
+        const knownName = playerNameMap.get(normalizedId);
+        if (knownName) return knownName;
+        if (myPlayerId != null && normalizedId === String(myPlayerId) && myDisplayName) return myDisplayName;
+        return t('hud.status.player', { id: normalizedId, defaultValue: `玩家${normalizedId}` });
+    }, [myPlayerId, myDisplayName, playerNameMap, t]);
+
+    const actionLogRows = useMemo(() => {
+        const entries = undoState?.G?.sys?.actionLog?.entries ?? [];
+        return buildActionLogRows(entries, { getPlayerLabel: getActionLogPlayerLabel });
+    }, [getActionLogPlayerLabel, undoState?.G?.sys?.actionLog?.entries]);
+
     const isSelfMessage = useCallback((message: MatchChatMessage) => {
         return isSelfChatMessage(message, myPlayerId, myDisplayName);
     }, [myPlayerId, myDisplayName]);
@@ -130,14 +153,17 @@ export const GameHUD = ({
     // 临时日志：确认局内聊天面板内容高度/布局是否生效（问题定位后删除）
     const chatPanelRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
-        const el = chatPanelRef.current;
-        if (!el) return;
-
         const log = (reason: string) => {
+            const el = chatPanelRef.current;
+            if (!el) {
+                console.log(`[GameHUD.ChatPanel] reason=${reason} el=null matchId=${matchId ?? '-'}`);
+                return;
+            }
             const rect = el.getBoundingClientRect();
             console.log(`[GameHUD.ChatPanel] reason=${reason} matchId=${matchId ?? '-'} height=${Math.round(rect.height)}px width=${Math.round(rect.width)}px`);
         };
 
+        // 强制定时打印：哪怕 ref 为空也会打印，便于确认是否进到 effect
         log('mount');
         const intervalId = window.setInterval(() => log('tick'), 1500);
         return () => window.clearInterval(intervalId);
@@ -285,6 +311,35 @@ export const GameHUD = ({
     // --- 操作项构建 ---
     const items: FabAction[] = [];
 
+    const actionLogAction: FabAction = {
+        id: 'action-log',
+        icon: <ListOrdered size={20} />,
+        label: t('hud.actions.actionLog', { defaultValue: '行为日志' }),
+        content: (
+            <div className="flex flex-col gap-2 pr-1">
+                {actionLogRows.length === 0 ? (
+                    <div className="text-xs text-white/40 text-center py-6">
+                        {t('hud.actionLog.empty', { defaultValue: '暂无行为日志' })}
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-2">
+                        {actionLogRows.map((row) => (
+                            <div key={row.id} className="rounded-lg bg-white/5 border border-white/10 px-3 py-2">
+                                <div className="flex items-center justify-between text-[10px] text-white/50">
+                                    <span className="font-mono">{row.timeLabel}</span>
+                                    <span className="font-semibold text-white/70">{row.playerLabel}</span>
+                                </div>
+                                <div className="text-xs text-white/90 mt-1 leading-relaxed">
+                                    {row.text}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        ),
+    };
+
     // 0. 主按钮逻辑
     // 在线模式：聊天为主按钮
     // 本地模式：设置为主按钮（聊天无效）
@@ -297,23 +352,15 @@ export const GameHUD = ({
             icon: <MessageSquare size={20} />,
             label: t('hud.actions.chat') || 'Chat',
             active: unreadChatCount > 0,
-            // 预览：与悬浮球同排展示；不挡住悬浮球（更窄+截断）
+            // 预览：一行展示，格式“用户名：消息”
             preview: unreadChatCount > 0 && latestIncomingMessage ? (
-                <div className="flex flex-col gap-0.5 max-w-[160px]">
-                    <div className="text-xs font-semibold text-white truncate">
-                        {latestIncomingMessage.senderName || '未知玩家'}
-                    </div>
-                    <div className="text-[11px] text-white/80 truncate">
-                        {latestIncomingMessage.text}
-                    </div>
+                <div className="text-xs font-semibold text-white/90 truncate max-w-[220px]">
+                    {(latestIncomingMessage.senderName || '未知玩家') + '：' + latestIncomingMessage.text}
                 </div>
             ) : undefined,
             onActivate: (isActive) => setIsChatPanelOpen(isActive),
             content: (
-                <div ref={chatPanelRef} className="flex flex-col h-64">
-                    <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-60 pb-2 border-b border-white/10">
-                        {t('hud.actions.chat') || '聊天'}
-                    </div>
+                <div ref={chatPanelRef} className="flex flex-col h-80">
                     {isOnline && (
                         <div className="mb-2 space-y-1 text-[10px] text-white/60">
                             <div className="flex items-center gap-2">
@@ -370,6 +417,10 @@ export const GameHUD = ({
         });
     }
 
+    if (useChatAsMain) {
+        items.push(actionLogAction);
+    }
+
     // [1] 设置（音频/工具） - 本地主按钮，联机次按钮
     items.push({
         id: 'settings',
@@ -377,7 +428,6 @@ export const GameHUD = ({
         label: t('hud.actions.settings') || 'Settings',
         content: (
             <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-2 opacity-60 pb-2 border-b border-white/10">{t('hud.actions.settings')}</h3>
                 {isOnline && (
                     <div className="space-y-4 mt-3">
                         {matchId && (
@@ -429,15 +479,16 @@ export const GameHUD = ({
         )
     });
 
+    if (!useChatAsMain) {
+        items.push(actionLogAction);
+    }
+
     const exitAction: FabAction = {
         id: 'exit',
         icon: <LogOut size={20} />,
         label: t('hud.actions.exit') || 'Exit',
         content: (
             <div className="space-y-3">
-                <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-60 pb-2 border-b border-white/10">
-                    {t('hud.actions.exit')}
-                </div>
                 {isOnline && isHost && (
                     <button
                         onClick={handleDestroy}
@@ -474,9 +525,6 @@ export const GameHUD = ({
                 label: t('controls.undo.title'),
                 content: (
                     <div className="space-y-3">
-                        <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-60 pb-2 border-b border-white/10">
-                            {t('controls.undo.title')}
-                        </div>
                         <p className="text-xs text-white/60">撤回状态加载中…</p>
                     </div>
                 )
@@ -513,9 +561,6 @@ export const GameHUD = ({
                 color: isWaiting ? 'text-amber-400' : undefined,
                 content: (
                     <div className="space-y-3">
-                        <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-60 pb-2 border-b border-white/10">
-                            {t('controls.undo.title')}
-                        </div>
                         <p className="text-xs text-white/70">
                             {isWaiting ? t('controls.undo.waiting') : t('controls.undo.requestHint')}
                         </p>
@@ -541,9 +586,6 @@ export const GameHUD = ({
                 label: t('controls.undo.title'),
                 content: (
                     <div className="space-y-3">
-                        <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-60 pb-2 border-b border-white/10">
-                            {t('controls.undo.title')}
-                        </div>
                         <p className="text-xs text-white/60">暂无可撤回操作。</p>
                     </div>
                 )

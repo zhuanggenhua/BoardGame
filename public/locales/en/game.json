@@ -39,7 +39,11 @@
     "actions": {
       "destroy": "End game and destroy room",
       "leaveKeep": "Leave room (keep open)",
-      "backToLobby": "Back to Lobby"
+      "backToLobby": "Back to Lobby",
+      "actionLog": "Action Log"
+    },
+    "actionLog": {
+      "empty": "No action log yet"
     },
     "toggle": {
       "collapse": "Collapse menu",

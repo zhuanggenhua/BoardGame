@@ -34,17 +34,32 @@ export const PurifyModal: React.FC<PurifyModalProps> = ({
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const [selectedStatusId, setSelectedStatusId] = React.useState<string | undefined>(undefined);
+    const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
     // 获取玩家当前的负面状态
     const debuffs = Object.entries(playerState.statusEffects)
         .filter(([id, stacks]) => purifiableStatusIds.includes(id) && stacks > 0);
 
-    const canConfirm = selectedStatusId !== undefined;
+    const canConfirm = debuffs.length > 0 && selectedStatusId !== undefined;
+
+    React.useEffect(() => {
+        if (debuffs.length === 0) {
+            setSelectedStatusId(undefined);
+            return;
+        }
+        const [firstId] = debuffs[0];
+        if (!selectedStatusId || !debuffs.some(([id]) => id === selectedStatusId)) {
+            setSelectedStatusId(firstId);
+        }
+    }, [debuffs, selectedStatusId]);
 
     const handleConfirm = () => {
-        if (selectedStatusId) {
-            onConfirm(selectedStatusId);
+        if (!selectedStatusId) {
+            setErrorMessage(t('purify.selectHint', { defaultValue: '请先选择要移除的负面状态。' }));
+            return;
         }
+        setErrorMessage(null);
+        onConfirm(selectedStatusId);
     };
 
     // Derived presence since BoardOverlays conditionally renders this
@@ -85,13 +100,23 @@ export const PurifyModal: React.FC<PurifyModalProps> = ({
                 {debuffs.length > 0 ? (
                     <div className="flex justify-center flex-wrap gap-4 py-4">
                         {debuffs.map(([statusId, stacks]) => (
-                            <div key={statusId} className="transition-transform hover:scale-110">
+                            <div
+                                key={statusId}
+                                className="transition-transform hover:scale-110 cursor-pointer"
+                                onClick={() => {
+                                    setSelectedStatusId(statusId);
+                                    setErrorMessage(null);
+                                }}
+                            >
                                 <SelectableStatusBadge
                                     effectId={statusId}
                                     stacks={stacks}
                                     isSelected={selectedStatusId === statusId}
                                     isHighlighted
-                                    onSelect={() => setSelectedStatusId(statusId)}
+                                    onSelect={() => {
+                                        setSelectedStatusId(statusId);
+                                        setErrorMessage(null);
+                                    }}
                                     size="normal"
                                     locale={locale}
                                     atlas={statusIconAtlas}
@@ -102,6 +127,11 @@ export const PurifyModal: React.FC<PurifyModalProps> = ({
                 ) : (
                     <div className="text-center py-8 text-slate-500 font-medium">
                         {t('purify.noDebuffs')}
+                    </div>
+                )}
+                {errorMessage && (
+                    <div className="text-sm text-amber-300/90">
+                        {errorMessage}
                     </div>
                 )}
             </div>

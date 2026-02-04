@@ -299,6 +299,13 @@ export interface PendingBonusDiceSettlement {
 export interface HeroState {
     id: string;
     characterId: CharacterId;
+    /**
+     * 选角阶段的“初始牌库顺序”（仅用于保证回放确定性）
+     * - 由 `SELECT_CHARACTER` 产生的 `CHARACTER_SELECTED.initialDeckCardIds` 写入
+     * - `HERO_INITIALIZED` 时会消费该顺序来构建 `hand/deck`
+     * - 完成初始化后会被清理（因为真实牌库已存入 deck/hand）
+     */
+    initialDeckCardIds?: string[];
     /** 资源池（hp, cp 等） */
     resources: ResourcePool;
     hand: AbilityCard[];

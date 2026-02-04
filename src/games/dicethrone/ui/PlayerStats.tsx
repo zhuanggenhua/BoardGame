@@ -78,7 +78,7 @@ export const PlayerStats = ({
             {...(hitStopConfig ?? {})}
             className="w-full"
         >
-            <div className="relative">
+            <div className="relative overflow-visible">
                 <PlayerPanelSkeleton
                     player={panelData}
                     className={`${defaultPlayerPanelClassName} z-20 hover:bg-slate-900/90 transition-all duration-300 overflow-visible bg-slate-950/95 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.4)] rounded-[1.2vw] p-[0.6vw]`}
@@ -112,7 +112,7 @@ export const PlayerStats = ({
                         );
                     }}
                 />
-                <SlashEffect isActive={!!slashActive} {...(slashConfig ?? {})} />
+                <SlashEffect isActive={!!slashActive} {...(slashConfig ?? {})} className="z-50" />
             </div>
         </HitStopContainer>
     );

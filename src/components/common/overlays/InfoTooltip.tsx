@@ -24,7 +24,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
     return (
         <div
             className={`
-                absolute top-0 z-[100] w-max max-w-[12vw] 
+                absolute top-0 z-[2005] w-max max-w-[12vw] 
                 bg-slate-900/95 border border-amber-500/30 rounded-[0.5vw] p-[0.8vw] 
                 shadow-[0_0_1vw_rgba(0,0,0,0.5)] backdrop-blur-xl 
                 animate-in fade-in slide-in-from-left-[0.5vw] duration-200

@@ -85,7 +85,7 @@
     },
     "dicethrone": {
       "title": "王权骰铸",
-      "description": "快节奏的骰子对战游戏。率领传奇英雄进行1v1对决。",
+      "description": "这是一款快节奏易上手的游戏，从众多英雄之中精心挑选你认为最不同凡响的一位。投掷你英雄专属的5颗骰子,从而攻击对手、激活能力。累积战斗点数，用它们购买效果繁多的卡牌,例如升级英雄,施展法术,直接操控(你的,你队友的或者你对手的）骰子",
       "players": "2人"
     },
     "assetslicer": {
@@ -97,6 +97,9 @@
       "title": "UGC 原型制作器",
       "description": "快速创建桌游原型。支持卡牌设计、规则配置、AI辅助生成。",
       "players": "单人工具"
+    },
+    "ugc": {
+      "players": "2人"
     }
   },
   "matchRoom": {
@@ -119,7 +122,9 @@
     "noClient": "未找到游戏客户端",
     "noGame": "未找到游戏",
     "tutorialTitle": "正在学习 {{game}}",
-    "matchTitle": "正在对局 {{game}}"
+    "matchTitle": "正在对局 {{game}}",
+    "loadingResources": "正在加载对局资源...",
+    "joiningRoom": "正在加入房间..."
   },
   "error": {
     "createRoomFailed": "创建房间失败",

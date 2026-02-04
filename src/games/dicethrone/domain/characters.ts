@@ -95,14 +95,47 @@ export const ALL_TOKEN_DEFINITIONS: TokenDef[] = (() => {
 
 /**
  * 根据角色 ID 初始化玩家状态
+ * 
+ * @param playerId 玩家 ID
+ * @param characterId 角色 ID
+ * @param random 随机函数（用于洗牌）
+ * @param initialDeckCardIds 可选的初始牌库顺序（来自 CHARACTER_SELECTED 事件）
+ *                           如果提供，将使用该顺序而非重新洗牌（确保事件数据驱动）
  */
-export function initHeroState(playerId: PlayerId, characterId: SelectableCharacterId, random: RandomFn): HeroState {
+export function initHeroState(
+    playerId: PlayerId, 
+    characterId: SelectableCharacterId, 
+    random: RandomFn,
+    initialDeckCardIds?: string[]
+): HeroState {
     const data = CHARACTER_DATA_MAP[characterId];
     if (!data) {
         throw new Error(`[DiceThrone] Unknown characterId: ${characterId}`);
     }
 
-    const deck = data.getStartingDeck(random);
+    let deck: AbilityCard[];
+    
+    // 如果提供了初始牌库顺序（来自 CHARACTER_SELECTED 事件），使用该顺序
+    if (initialDeckCardIds && initialDeckCardIds.length > 0) {
+        // 从卡牌定义中查找对应的完整卡牌对象
+        const fullDeck = data.getStartingDeck({ shuffle: (arr) => arr }); // 不洗牌，获取原始定义
+        const cardMap = new Map(fullDeck.map(card => [card.id, card]));
+        
+        // 按 initialDeckCardIds 的顺序重建牌库
+        deck = initialDeckCardIds
+            .map(id => cardMap.get(id))
+            .filter((card): card is AbilityCard => card !== undefined);
+        
+        // 安全检查：如果顺序不完整，回退到重新洗牌
+        if (deck.length !== fullDeck.length) {
+            console.warn(`[DiceThrone] initialDeckCardIds 不完整 (${deck.length}/${fullDeck.length})，回退到重新洗牌`);
+            deck = data.getStartingDeck(random);
+        }
+    } else {
+        // 没有提供顺序，使用随机洗牌（向后兼容）
+        deck = data.getStartingDeck(random);
+    }
+    
     const startingHand = deck.splice(0, 4);
 
     // 创建初始资源池
@@ -111,6 +144,7 @@ export function initHeroState(playerId: PlayerId, characterId: SelectableCharact
     return {
         id: `player-${playerId}`,
         characterId,
+        // initialDeckCardIds 不包含在返回值中（已消费完毕，避免状态膨胀）
         resources,
         hand: startingHand,
         deck,

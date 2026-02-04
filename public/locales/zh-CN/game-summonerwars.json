@@ -1,0 +1,39 @@
+{
+  "title": "召唤师战争",
+  "subtitle": "征服 Itharia 的战场",
+  "description": "召唤师战争是一款快速紧凑的2人游戏。玩家扮演召唤者，通过控制神秘召唤石力量来领导他们的种族征服Itharia这个饱受战争创伤的星球。",
+  "players": "2人",
+  
+  "tutorial": {
+    "title": "召唤师战争教学",
+    "welcome": "欢迎来到召唤师战争！在这个游戏中，你将扮演一位强大的召唤师，指挥你的军队征服战场。"
+  },
+  
+  "phase": {
+    "summon": "召唤阶段",
+    "move": "移动阶段",
+    "attack": "攻击阶段",
+    "magic": "魔法阶段",
+    "end": "结束阶段"
+  },
+  
+  "action": {
+    "summon": "召唤",
+    "move": "移动",
+    "attack": "攻击",
+    "castSpell": "施放法术",
+    "endTurn": "结束回合"
+  },
+  
+  "status": {
+    "yourTurn": "你的回合",
+    "opponentTurn": "对手回合",
+    "waiting": "等待中..."
+  },
+  
+  "result": {
+    "victory": "胜利！",
+    "defeat": "失败",
+    "summonerDefeated": "召唤师被击败"
+  }
+}

@@ -10,6 +10,7 @@ import { HealthModule } from './modules/health/health.module';
 import { InviteModule } from './modules/invite/invite.module';
 import { MessageModule } from './modules/message/message.module';
 import { ReviewModule } from './modules/review/review.module';
+import { UgcModule } from './modules/ugc/ugc.module';
 
 import { FeedbackModule } from './modules/feedback/feedback.module';
 
@@ -55,6 +56,7 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
         ReviewModule,
         FeedbackModule,
         HealthModule,
+        UgcModule,
     ],
 })
 export class AppModule { }

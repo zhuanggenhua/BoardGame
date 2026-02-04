@@ -55,7 +55,7 @@ describe('ActionLogSystem', () => {
             timestamp: Date.now(),
         };
 
-        const result = system.beforeCommand?.({
+        const result = system.afterEvents?.({
             state,
             command,
             events: [],

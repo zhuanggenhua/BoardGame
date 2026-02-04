@@ -184,16 +184,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
     const toast = useToast();
     const locale = i18n.resolvedLanguage ?? i18n.language;
 
-    // 重赛系统（socket）
-    const { state: rematchState, vote: handleRematchVote, registerReset } = useRematch();
-
-    // 注册 reset 回调（当双方都投票后由 socket 触发）
-    React.useEffect(() => {
-        if (!isSpectator && reset) {
-            registerReset(reset);
-        }
-    }, [reset, registerReset, isSpectator]);
-
     const isGameOver = ctx.gameover;
     const rootPid = playerID || '0';
     const player = G.players[rootPid] || G.players['0'];
@@ -204,6 +194,26 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
 
     // 从 access.turnPhase 读取阶段（单一权威：来自 sys.phase）
     const currentPhase = access.turnPhase;
+
+    // 调试：打印教学状态
+    React.useEffect(() => {
+        console.log('[DiceThrone][Board] 教学状态', {
+            isTutorialActive,
+            currentPhase,
+            stepId: tutorialStep?.id,
+            hasAiActions: tutorialStep?.aiActions?.length ?? 0,
+        });
+    }, [isTutorialActive, currentPhase, tutorialStep]);
+
+    // 重赛系统（socket）
+    const { state: rematchState, vote: handleRematchVote, registerReset } = useRematch();
+
+    // 注册 reset 回调（当双方都投票后由 socket 触发）
+    React.useEffect(() => {
+        if (!isSpectator && reset) {
+            registerReset(reset);
+        }
+    }, [reset, registerReset, isSpectator]);
 
     // 判断游戏结果
     const isWinner = isGameOver && ctx.gameover?.winner === rootPid;
@@ -349,6 +359,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
     const rollConfirmed = G.rollConfirmed;
     // availableAbilityIds 现在是派生状态，从 useDiceThroneState hook 中获取
     const availableAbilityIds = isViewRolling ? access.availableAbilityIds : [];
+    const availableAbilityIdsForRoller = access.availableAbilityIds;
     const selectedAbilityId = currentPhase === 'defensiveRoll'
         ? (isViewRolling ? G.pendingAttack?.defenseAbilityId : undefined)
         : (isViewRolling ? G.pendingAttack?.sourceAbilityId : undefined);
@@ -618,9 +629,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
             return;
         }
         if (shouldBlockTutorialAction('advance-phase-button')) return;
-        if (currentPhase === 'offensiveRoll' && !G.rollConfirmed) {
-            openModal('confirmSkip');
-            return;
+        if (currentPhase === 'offensiveRoll') {
+            const hasSelectedAbility = Boolean(G.pendingAttack?.sourceAbilityId);
+            const hasAvailableAbilities = availableAbilityIdsForRoller.length > 0;
+            const shouldConfirmSkip = !hasSelectedAbility && (!G.rollConfirmed || hasAvailableAbilities);
+            if (shouldConfirmSkip) {
+                openModal('confirmSkip');
+                return;
+            }
         }
         engineMoves.advancePhase();
         advanceTutorialIfNeeded('advance-phase-button');
@@ -693,42 +709,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
 
     if (!player) return <div className="p-10 text-white">{t('status.loadingGameState', { playerId: rootPid })}</div>;
 
-    // --- 教程模式自动选角：跳过选角界面 ---
-    React.useEffect(() => {
-        if (!isTutorialActive || currentPhase !== 'setup') return;
-        
-        const playerIds = Object.keys(G.selectedCharacters);
-        const allSelected = playerIds.every(pid => G.selectedCharacters[pid] && G.selectedCharacters[pid] !== 'unselected');
-        // 非房主玩家都准备好
-        const allNonHostReady = playerIds.every(pid => 
-            pid === G.hostPlayerId || (G.readyPlayers?.[pid] ?? false)
-        );
-        
-        // 自动为玩家选择角色（P1: monk, P2: barbarian）
-        if (!allSelected) {
-            const myChar = G.selectedCharacters[rootPid];
-            if (!myChar || myChar === 'unselected') {
-                const charToSelect = rootPid === '0' ? 'monk' : 'barbarian';
-                engineMoves.selectCharacter(charToSelect);
-            }
-            return;
-        }
-        
-        // 非房主玩家自动准备
-        if (allSelected && rootPid !== G.hostPlayerId && !G.readyPlayers?.[rootPid]) {
-            engineMoves.playerReady();
-            return;
-        }
-        
-        // 所有玩家都选好且非房主都准备后，房主自动开始游戏
-        if (allSelected && allNonHostReady && rootPid === G.hostPlayerId && !G.hostStarted) {
-            engineMoves.hostStartGame();
-        }
-    }, [isTutorialActive, currentPhase, G.selectedCharacters, G.readyPlayers, G.hostPlayerId, G.hostStarted, rootPid, engineMoves]);
-
     // --- Setup 阶段：仅渲染全屏选角界面 ---
     if (currentPhase === 'setup') {
-        // 教程模式下显示加载提示，等待自动选角完成
+        // 教学模式下不显示选角界面，教程清单会通过 AI 动作自动选角
+        // 但需要等待 AI 动作执行完成（约 1 秒），期间显示加载提示
         if (isTutorialActive) {
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0F0F23] text-white">
@@ -1032,8 +1016,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                     onConfirmStatusInteraction={handleStatusInteractionConfirm}
                     onCancelInteraction={handleCancelInteraction}
 
-                    // 净化相关
-                    viewPlayer={viewPlayer || player}
+                    // 净化相关（始终作用于自己）
+                    viewPlayer={player}
                     purifiableStatusIds={purifiableStatusIds}
 
                     // 游戏结束

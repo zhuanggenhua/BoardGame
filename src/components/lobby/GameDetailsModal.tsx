@@ -723,22 +723,29 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                             {thumbnail}
                         </div>
 
-                        <div className="flex-1 md:flex-none">
+                        {/* 标题 - 固定在顶部 */}
+                        <div className="shrink-0">
                             <h2 className="text-lg md:text-2xl font-bold text-parchment-base-text mb-1 md:mb-2 tracking-wide leading-tight">
                                 {t(titleKey, { defaultValue: titleKey })}
                             </h2>
                             <div className="hidden md:block h-px w-12 bg-parchment-card-border/50 opacity-30 mb-4 mx-auto" />
-                            <p className="text-[11px] md:text-sm text-parchment-light-text mb-3 md:mb-8 leading-relaxed italic line-clamp-2 md:line-clamp-none">
+                        </div>
+
+                        {/* 描述区域 - 可滚动 */}
+                        <div className="flex-1 overflow-y-auto scrollbar-thin pr-1 mb-3 md:mb-6">
+                            <p className="text-[11px] md:text-sm text-parchment-light-text leading-relaxed italic">
                                 {t(descriptionKey, { defaultValue: descriptionKey })}
                             </p>
+                        </div>
 
-                            {/* 人数显示 - 优化纵向空间 */}
+                        {/* 人数显示 - 固定在底部上方 */}
+                        <div className="shrink-0 mb-3">
                             {(() => {
                                 const playerOptions = gameManifest?.playerOptions || [2];
                                 const bestPlayers = gameManifest?.bestPlayers || [];
 
                                 return (
-                                    <div className="mb-3 flex flex-col items-center gap-1.5">
+                                    <div className="flex flex-col items-center gap-1.5">
                                         <div className="flex items-center gap-2">
                                             {playerOptions.map((count) => {
                                                 const isBest = bestPlayers.includes(count);
@@ -768,7 +775,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                             })()}
                         </div>
 
-                        <div className="mt-auto w-full flex flex-row md:flex-col gap-2">
+                        {/* 操作按钮 - 固定在底部 */}
+                        <div className="shrink-0 w-full flex flex-row md:flex-col gap-2">
                             {allowLocalMode && (
                                 <button
                                     type="button"

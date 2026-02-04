@@ -158,7 +158,7 @@ export const FabMenu = ({
         }
 
         // 已展开时：
-        // - 若当前没选中主球，则只“选中主球”（不折叠）
+        // - 若当前没选中主球，则只"选中主球"（不折叠）
         // - 若已选中主球，再次点击才折叠
         if (activeItemId !== items[0].id) {
             setActiveItemId(items[0].id);
@@ -185,7 +185,7 @@ export const FabMenu = ({
         }
     };
 
-    // 已展开时不允许“点空白就折叠”，只能再次点击主球关闭；
+    // 已展开时不允许"点空白就折叠"，只能再次点击主球关闭；
     // 避免误触导致面板闪退。
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -252,7 +252,7 @@ export const FabMenu = ({
         ? listHeight + BUTTON_GAP
         : 0;
     const containerTop = fabPosition.top - listOffset;
-    // 波纹/辉光颜色跟随“选中态”同色系，避免不明显
+    // 波纹/辉光颜色跟随"选中态"同色系，避免不明显
     const glowColor = isDark ? 'rgba(0, 243, 255, 0.55)' : 'rgba(140, 123, 100, 0.85)';
 
     return (
@@ -288,7 +288,6 @@ export const FabMenu = ({
                                 isActive={activeItemId === items[0].id && isOpen}
                                 alignment={alignment}
                                 isDark={isDark}
-                                isDragging={isDragging}
                             />
                             <MenuButton
                                 item={items[0]}
@@ -314,7 +313,6 @@ export const FabMenu = ({
                                 isActive={activeItemId === items[0].id && isOpen}
                                 alignment={alignment}
                                 isDark={isDark}
-                                isDragging={isDragging}
                             />
                             <MenuButton
                                 item={items[0]}
@@ -369,7 +367,6 @@ const SatelliteList = ({ isOpen, items, activeId, onItemClick, alignment, isDark
                                 isActive={activeId === item.id}
                                 alignment={alignment}
                                 isDark={isDark}
-                                isDragging={isDragging}
                             />
                             <MenuButton
                                 item={item}
@@ -391,7 +388,7 @@ const SatelliteList = ({ isOpen, items, activeId, onItemClick, alignment, isDark
     );
 };
 
-const Panel = ({ item, isActive, alignment, isDark, isDragging }: any) => {
+const Panel = ({ item, isActive, alignment, isDark }: any) => {
     const verticalClass = alignment.v === 'top' ? 'top-0' : 'bottom-0';
     const horizontalClass = alignment.h === 'right' ? 'left-[60px]' : 'right-[60px]';
 
@@ -415,11 +412,9 @@ const Panel = ({ item, isActive, alignment, isDark, isDragging }: any) => {
                     `}
                     onPointerDown={(e) => e.stopPropagation()}
                 >
-                    {isDragging && (
-                        <div className="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-70 border-b border-white/10 pb-2">
-                            {item.label}
-                        </div>
-                    )}
+                    <div className="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-70 border-b border-white/10 pb-2">
+                        {item.label}
+                    </div>
                     {item.content}
                 </motion.div>
             )}
@@ -430,7 +425,6 @@ const Panel = ({ item, isActive, alignment, isDark, isDragging }: any) => {
 const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, tooltipPortalRoot, showGlow, glowColor, isDragging }: any) => {
     const [isHovered, setIsHovered] = useState(false);
     const showTooltip = isHovered && !isDragging && !(isActive && item.content);
-    // 预览应与悬浮球同排（不占侧向空间挡住悬浮球），因此只在“非激活”时显示
     const showPreview = Boolean(item.preview) && !isDragging && !isActive;
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [tooltipRect, setTooltipRect] = useState<DOMRect | null>(null);
@@ -453,12 +447,14 @@ const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, toolti
     }, [showTooltip, showPreview, updateTooltipRect]);
 
     const tooltipSide = useMemo(() => {
+        // tooltip 出现在"展开方向"的一侧：对齐规则与 Panel 一致
         return alignment.h === 'right' ? 'left' : 'right';
     }, [alignment.h]);
 
-    const tooltipOffset = BUTTON_SIZE / 2;
-    const previewSide = alignment.h === 'right' ? 'right' : 'left';
-    const previewOffset = BUTTON_SIZE / 2;
+    const previewSide = useMemo(() => (tooltipSide === 'left' ? 'right' : 'left'), [tooltipSide]);
+
+    const tooltipVerticalOffset = -(tooltipRect?.height ?? 0) / 2 + 8;
+    const gap = 8; // tooltip/preview 与按钮边缘的间隙
 
     const activeStyle = isActive
         ? isDark
@@ -519,10 +515,13 @@ const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, toolti
                                     `}
                                     style={{
                                         position: 'fixed',
-                                        top: tooltipRect.top + tooltipRect.height / 2,
+                                        top: tooltipRect.top + tooltipRect.height / 2 + tooltipVerticalOffset,
                                         left: tooltipSide === 'right'
-                                            ? tooltipRect.right + tooltipOffset
-                                            : tooltipRect.left - tooltipOffset,
+                                            ? tooltipRect.right + gap
+                                            : undefined,
+                                        right: tooltipSide === 'left'
+                                            ? window.innerWidth - tooltipRect.left + gap
+                                            : undefined,
                                         transform: `translate(${tooltipSide === 'right' ? '0' : '-100%'}, -50%)`,
                                         zIndex: TOOLTIP_Z_INDEX,
                                     }}
@@ -535,21 +534,26 @@ const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, toolti
                             {showPreview && tooltipRect && (
                                 <motion.div
                                     key={`preview-${item.id}`}
-                                    initial={{ opacity: 0, y: alignment.v === 'bottom' ? 8 : -8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: alignment.v === 'bottom' ? 8 : -8 }}
+                                    initial={{ opacity: 0, x: previewSide === 'right' ? 8 : -8 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: previewSide === 'right' ? 8 : -8 }}
                                     className={`
-                                        pointer-events-none px-3 py-2 rounded-lg text-xs font-medium max-w-[200px]
+                                        pointer-events-none px-3 py-2 rounded-lg text-xs font-medium
+                                        overflow-hidden text-ellipsis whitespace-nowrap
                                         ${isDark ? 'bg-black/90 text-white border border-white/20 shadow-lg shadow-black/50' : 'bg-white text-[#433422] border border-[#d3ccba] shadow-xl'}
                                     `}
                                     style={{
                                         position: 'fixed',
-                                        top: alignment.v === 'bottom'
-                                            ? tooltipRect.top - 10
-                                            : tooltipRect.bottom + 10,
-                                        left: tooltipRect.left + tooltipRect.width / 2,
-                                        transform: `translate(-50%, ${alignment.v === 'bottom' ? '-100%' : '0'})`,
+                                        top: tooltipRect.top + tooltipRect.height / 2 + tooltipVerticalOffset,
+                                        left: previewSide === 'right'
+                                            ? tooltipRect.right + gap
+                                            : undefined,
+                                        right: previewSide === 'left'
+                                            ? window.innerWidth - tooltipRect.left + gap
+                                            : undefined,
+                                        transform: `translate(${previewSide === 'right' ? '0' : '-100%'}, -50%)`,
                                         zIndex: TOOLTIP_Z_INDEX,
+                                        maxWidth: 'min(360px, 70vw)',
                                     }}
                                 >
                                     {item.preview}

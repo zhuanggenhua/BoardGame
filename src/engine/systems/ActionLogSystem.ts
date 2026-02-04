@@ -4,7 +4,7 @@
  * 记录玩家可见的“领域行为”，用于 HUD 展示。
  */
 
-import type { ActionLogEntry, ActionLogState, Command, MatchState } from '../types';
+import type { ActionLogEntry, ActionLogState, Command, GameEvent, MatchState } from '../types';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 import {
@@ -27,6 +27,7 @@ export interface ActionLogSystemConfig {
     formatEntry?: (args: {
         command: Command;
         state: MatchState<unknown>;
+        events: GameEvent[];
     }) => ActionLogEntry | null;
 }
 
@@ -53,13 +54,14 @@ export function createActionLogSystem<TCore>(
             },
         }),
 
-        beforeCommand: ({ state, command }): HookResult<TCore> | void => {
+        afterEvents: ({ state, command, events }): HookResult<TCore> | void => {
             if (!shouldRecordCommand(command.type, normalizedAllowlist)) return;
             if (!formatEntry) return;
 
             const entry = formatEntry({
                 command,
                 state: state as MatchState<unknown>,
+                events,
             });
             if (!entry) return;
 

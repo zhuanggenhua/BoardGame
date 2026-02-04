@@ -83,7 +83,9 @@ export const SlashEffect: React.FC<SlashEffectProps> = ({
   }, [isActive, angle, count, duration]);
 
   return (
-    <div className={`absolute inset-0 pointer-events-none overflow-hidden ${className}`}>
+    <div
+      className={`absolute left-1/2 top-1/2 w-[240%] h-[240%] -translate-x-1/2 -translate-y-1/2 pointer-events-none overflow-visible ${className}`}
+    >
       <AnimatePresence>
         {slashes.map((slash) => (
           <motion.div
@@ -161,10 +163,11 @@ export const useSlashEffect = () => {
     setConfig(finalConfig);
     setIsActive(true);
 
-    // 短暂激活后自动关闭（组件内部会处理清理）
+    // 保持激活足够长时间让组件渲染动画
+    const duration = finalConfig.duration ?? 200;
     const timer = setTimeout(() => {
       setIsActive(false);
-    }, 50);
+    }, duration + 100);
 
     return () => clearTimeout(timer);
   }, [config]);
@@ -178,7 +181,7 @@ export const SLASH_PRESETS = {
   light: {
     count: 1,
     width: 2,
-    duration: 150,
+    duration: 3000,
     color: 'rgba(255, 200, 200, 0.7)',
     glow: false,
     trail: false,
@@ -188,7 +191,7 @@ export const SLASH_PRESETS = {
   normal: {
     count: 1,
     width: 3,
-    duration: 180,
+    duration: 3000,
     color: 'rgba(255, 100, 100, 0.85)',
     glow: true,
     trail: true,
@@ -198,7 +201,7 @@ export const SLASH_PRESETS = {
   heavy: {
     count: 2,
     width: 4,
-    duration: 220,
+    duration: 3000,
     color: 'rgba(255, 50, 50, 0.9)',
     glow: true,
     trail: true,
@@ -208,7 +211,7 @@ export const SLASH_PRESETS = {
   critical: {
     count: 3,
     width: 5,
-    duration: 280,
+    duration: 3000,
     color: 'rgba(255, 220, 50, 0.95)',
     glow: true,
     trail: true,

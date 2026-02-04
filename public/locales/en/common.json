@@ -13,7 +13,10 @@
   },
   "game_tags": {
     "dice_driven": "Dice Driven",
-    "combat": "Combat"
+    "combat": "Combat",
+    "ugc": "UGC",
+    "tactical": "Tactical",
+    "card_driven": "Card Driven"
   },
   "game_details": {
     "best_players": "Best Players",
@@ -41,5 +44,18 @@
   "accept": "Accept",
   "reject": "Reject",
   "back": "Back",
-  "loading": "Loading"
+  "loading": "Loading",
+  "unknownUser": "Unknown User",
+  "game_names": {
+    "tictactoe": "Tic-Tac-Toe",
+    "dicethrone": "Dice Throne",
+    "summonerwars": "Summoner Wars"
+  },
+  "games": {
+    "summonerwars": {
+      "title": "Summoner Wars",
+      "description": "Summoner Wars is a fast-paced, tactical 2-player game. Players take on the role of Summoners, leading their faction to conquer the war-torn world of Itharia through the power of mysterious Summoning Stones.",
+      "players": "2 Players"
+    }
+  }
 }

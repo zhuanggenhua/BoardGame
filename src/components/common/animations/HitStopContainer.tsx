@@ -56,7 +56,7 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
       // 触发缩放 + 滤镜
       controls.start({
         scale,
-        filter: enhanceContrast ? 'contrast(1.2) saturate(1.3)' : 'none',
+        filter: enhanceContrast ? 'contrast(1.4) saturate(1.6)' : 'none',
         transition: { duration: 0.02 },
       });
 
@@ -120,33 +120,33 @@ export const useHitStop = (defaultDuration = 80) => {
 export const HIT_STOP_PRESETS = {
   /** 轻击 - 快速微妙 */
   light: {
-    duration: 50,
-    scale: 1.01,
-    flashIntensity: 0.15,
-    enhanceContrast: false,
+    duration: 120,
+    scale: 1.04,
+    flashIntensity: 0.4,
+    enhanceContrast: true,
   } as HitStopConfig,
   
   /** 普通击中 */
   normal: {
-    duration: 80,
-    scale: 1.02,
-    flashIntensity: 0.25,
+    duration: 140,
+    scale: 1.05,
+    flashIntensity: 0.55,
     enhanceContrast: true,
   } as HitStopConfig,
   
   /** 重击 - 明显冻结 */
   heavy: {
-    duration: 120,
-    scale: 1.03,
-    flashIntensity: 0.4,
+    duration: 180,
+    scale: 1.07,
+    flashIntensity: 0.7,
     enhanceContrast: true,
   } as HitStopConfig,
   
   /** 暴击 - 最大冲击 */
   critical: {
-    duration: 150,
-    scale: 1.05,
-    flashIntensity: 0.5,
+    duration: 220,
+    scale: 1.1,
+    flashIntensity: 0.85,
     enhanceContrast: true,
   } as HitStopConfig,
 } as const;

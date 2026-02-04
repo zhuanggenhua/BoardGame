@@ -4,7 +4,7 @@
  * 使用领域内核 + 引擎适配器
  */
 
-import type { ActionLogEntry, Command, MatchState } from '../../engine/types';
+import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
 import {
     createActionLogSystem,
     createGameAdapter,
@@ -29,6 +29,7 @@ function formatTicTacToeActionEntry({
 }: {
     command: Command;
     state: MatchState<unknown>;
+    events: GameEvent[];
 }): ActionLogEntry | null {
     if (command.type !== 'CLICK_CELL') return null;
 

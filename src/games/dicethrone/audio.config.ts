@@ -1,43 +1,21 @@
 /**
  * DiceThrone 音频配置
- * 定义游戏所需的所有音效及其映射（仅 Monk 角色）
+ * 仅定义游戏特有的音效（战斗、BGM），通用音效由 common.config.ts 提供
  */
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig } from '../../lib/audio/types';
-import { FLOW_EVENTS } from '../../engine/systems/FlowSystem';
 import { pickRandomSoundKey } from '../../lib/audio/audioUtils';
 import { findPlayerAbility } from './domain/abilityLookup';
 import type { DiceThroneCore, TurnPhase } from './domain/types';
 import { MONK_CARDS } from './monk/cards';
 
-// 音效资源基础路径（相对于 public/assets/）
+// 游戏特有音效资源路径（战斗、BGM）
 const SFX_BASE = 'dicethrone/audio';
 
 export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
     basePath: SFX_BASE,
 
     sounds: {
-        // ============ 骰子音效 ============
-        dice_roll: { src: 'dice/compressed/Dice_Roll_Velvet_001.ogg', volume: 0.8, category: { group: 'dice', sub: 'roll' } },
-        dice_roll_2: { src: 'dice/compressed/Few_Dice_Roll_001.ogg', volume: 0.8, category: { group: 'dice', sub: 'roll' } },
-        dice_roll_3: { src: 'dice/compressed/Many_Dice_Roll_Wood_001.ogg', volume: 0.8, category: { group: 'dice', sub: 'roll' } },
-        dice_lock: { src: 'dice/compressed/Dice_Handling_001.ogg', volume: 0.5, category: { group: 'dice', sub: 'lock' } },
-        dice_confirm: { src: 'ui/compressed/UIClick_Accept_Button_01.ogg', volume: 0.6, category: { group: 'dice', sub: 'confirm' } },
-        bonus_die_roll: { src: 'dice/compressed/Single_Die_Roll_001.ogg', volume: 0.8, category: { group: 'dice', sub: 'bonus' } },
-        die_modify: { src: 'dice/compressed/Dice_Handling_002.ogg', volume: 0.5, category: { group: 'dice', sub: 'modify' } },
-        die_reroll: { src: 'dice/compressed/Dice_Roll_Velvet_002.ogg', volume: 0.8, category: { group: 'dice', sub: 'reroll' } },
-
-        // ============ 卡牌音效 ============
-        card_draw: { src: 'card/compressed/Card_Take_001.ogg', volume: 0.7, category: { group: 'card', sub: 'draw' } },
-        card_play: { src: 'card/compressed/Card_Placing_001.ogg', volume: 0.8, category: { group: 'card', sub: 'play' } },
-        card_discard: { src: 'card/compressed/FX_Discard_001.ogg', volume: 0.6, category: { group: 'card', sub: 'discard' } },
-        card_sell: { src: 'card/compressed/Small_Coin_Drop_001.ogg', volume: 0.7, category: { group: 'card', sub: 'sell' } },
-        card_sell_undo: { src: 'card/compressed/Small_Reward_001.ogg', volume: 0.6, category: { group: 'card', sub: 'sell_undo' } },
-        card_reorder: { src: 'card/compressed/Cards_Scrolling_001.ogg', volume: 0.5, category: { group: 'card', sub: 'reorder' } },
-        deck_shuffle: { src: 'card/compressed/Cards_Shuffle_Fast_001.ogg', volume: 0.7, category: { group: 'card', sub: 'shuffle' } },
-        cp_gain: { src: 'card/compressed/Small_Coin_Drop_001.ogg', volume: 0.7, category: { group: 'system', sub: 'cp_gain' } },
-        cp_spend: { src: 'card/compressed/Small_Coin_Drop_001.ogg', volume: 0.7, category: { group: 'system', sub: 'cp_spend' } },
-
-        // ============ 战斗音效（Monk 拳脚） ============
+        // ============ 战斗音效（Monk 拳脚，游戏特有） ============
         attack_punch: { src: 'fight/compressed/WHSH_Punch_Whooosh_01.ogg', volume: 0.8, category: { group: 'combat', sub: 'punch' } },
         attack_kick: { src: 'fight/compressed/SFX_Fight_Kick_Swoosh_1.ogg', volume: 0.8, category: { group: 'combat', sub: 'kick' } },
         attack_hit: { src: 'fight/compressed/FGHTImpt_Versatile_Punch_Hit_01.ogg', volume: 0.9, category: { group: 'combat', sub: 'hit' } },
@@ -45,30 +23,11 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
         attack_start: { src: 'fight/compressed/SFX_Weapon_Melee_Swoosh_Sword_1.ogg', volume: 0.85, category: { group: 'combat', sub: 'start' } },
         attack_resolve: { src: 'fight/compressed/FGHTImpt_Special_Hit_02.ogg', volume: 0.9, category: { group: 'combat', sub: 'resolve' } },
         ability_activate: { src: 'fight/compressed/SFX_Weapon_Melee_Swoosh_Small_1.ogg', volume: 0.7, category: { group: 'combat', sub: 'ability' } },
+        transcendence_ultimate: { src: 'fight/compressed/FGHTImpt_Special_Hit_02.ogg', volume: 1.0, category: { group: 'combat', sub: 'ultimate' } },
+        thunder_strike: { src: 'fight/compressed/FGHTImpt_Versatile_Punch_Hit_01.ogg', volume: 0.9, category: { group: 'combat', sub: 'heavy_attack' } },
+        taiji_combo: { src: 'fight/compressed/SFX_Fight_Kick_Swoosh_1.ogg', volume: 0.85, category: { group: 'combat', sub: 'combo' } },
         damage_prevented: { src: 'fight/compressed/Shield_Impact_A.ogg', volume: 0.75, category: { group: 'combat', sub: 'shield' } },
         damage_dealt: { src: 'fight/compressed/SFX_Body_Hit_Generic_Small_1.ogg', volume: 0.8, category: { group: 'combat', sub: 'damage' } },
-
-        // ============ 状态效果音效 ============
-        token_gain: { src: 'token/compressed/Token_Drop_001.ogg', volume: 0.6, category: { group: 'token', sub: 'gain' } },
-        token_use: { src: 'token/compressed/Tokens_Handling_001.ogg', volume: 0.5, category: { group: 'token', sub: 'use' } },
-        status_apply: { src: 'status/compressed/Charged_A.ogg', volume: 0.6, category: { group: 'status', sub: 'apply' } },
-        status_remove: { src: 'status/compressed/Purged_A.ogg', volume: 0.5, category: { group: 'status', sub: 'remove' } },
-        heal: { src: 'status/compressed/Healed_A.ogg', volume: 0.7, category: { group: 'status', sub: 'heal' } },
-        damage_shield_gain: { src: 'status/compressed/Water_Shield.ogg', volume: 0.75, category: { group: 'status', sub: 'shield' } },
-
-        // ============ UI 音效 ============
-        click: { src: 'ui/compressed/UIClick_Accept_Button_01.ogg', volume: 0.4, category: { group: 'ui', sub: 'click' } },
-        hover: { src: 'ui/compressed/UIClick_Mouseover_Dialog_Option_01.ogg', volume: 0.2, category: { group: 'ui', sub: 'hover' } },
-        phase_change: { src: 'ui/compressed/UIAlert_Dialog_Screen_Appears_01.ogg', volume: 0.5, category: { group: 'system', sub: 'phase_change' } },
-        turn_change: { src: 'ui/compressed/Update_Chime_A.ogg', volume: 0.6, category: { group: 'system', sub: 'turn_change' } },
-        response_open: { src: 'ui/compressed/Signal_Positive_Wood_Chimes_A.ogg', volume: 0.5, category: { group: 'system', sub: 'response_open' } },
-        response_close: { src: 'ui/compressed/Signal_Negative_Wood_Chimes_A.ogg', volume: 0.5, category: { group: 'system', sub: 'response_close' } },
-        choice_request: { src: 'status/compressed/Ready_A.ogg', volume: 0.5, category: { group: 'system', sub: 'choice_request' } },
-        choice_resolve: { src: 'ui/compressed/Signal_Positive_Spring_A.ogg', volume: 0.5, category: { group: 'system', sub: 'choice_resolve' } },
-
-        // ============ 游戏结果音效 ============
-        victory: { src: 'stinger/compressed/STGR_Action_Win.ogg', volume: 1.0, category: { group: 'stinger', sub: 'victory' } },
-        defeat: { src: 'stinger/compressed/STGR_Action_Lose.ogg', volume: 1.0, category: { group: 'stinger', sub: 'defeat' } },
     },
 
     bgm: [
@@ -87,33 +46,12 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
             category: { group: 'bgm', sub: 'battle_intense' },
         },
     ],
+    // 游戏特有事件映射（通用事件由 common.config.ts 提供）
     eventSoundMap: {
-        [FLOW_EVENTS.PHASE_CHANGED]: 'phase_change',
-        BONUS_DIE_ROLLED: 'bonus_die_roll',
-        DIE_LOCK_TOGGLED: 'dice_lock',
-        ROLL_CONFIRMED: 'dice_confirm',
-        DIE_MODIFIED: 'die_modify',
-        DIE_REROLLED: 'die_reroll',
-        CARD_DRAWN: 'card_draw',
-        CARD_DISCARDED: 'card_discard',
-        CARD_SOLD: 'card_sell',
-        SELL_UNDONE: 'card_sell_undo',
-        CARD_REORDERED: 'card_reorder',
-        DECK_SHUFFLED: 'deck_shuffle',
-        TOKEN_GRANTED: 'token_gain',
-        TOKEN_USED: 'token_use',
-        STATUS_APPLIED: 'status_apply',
-        STATUS_REMOVED: 'status_remove',
-        HEAL_APPLIED: 'heal',
-        DAMAGE_SHIELD_GRANTED: 'damage_shield_gain',
+        // 战斗事件（游戏特有）
         DAMAGE_PREVENTED: 'damage_prevented',
         ATTACK_INITIATED: 'attack_start',
         ATTACK_RESOLVED: 'attack_resolve',
-        CHOICE_REQUESTED: 'choice_request',
-        CHOICE_RESOLVED: 'choice_resolve',
-        RESPONSE_WINDOW_OPENED: 'response_open',
-        RESPONSE_WINDOW_CLOSED: 'response_close',
-        TURN_CHANGED: 'turn_change',
     },
     eventSoundResolver: (event, context) => {
         const runtime = context as AudioRuntimeContext<

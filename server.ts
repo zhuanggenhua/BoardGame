@@ -19,6 +19,7 @@ import { mongoStorage } from './src/server/storage/MongoStorage';
 import { hybridStorage } from './src/server/storage/HybridStorage';
 import { createClaimSeatHandler, claimSeatUtils } from './src/server/claimSeat';
 import { hasOccupiedPlayers } from './src/server/matchOccupancy';
+import { registerOfflineInteractionAdjudication } from './src/server/offlineInteractionAdjudicator';
 
 // 大厅事件常量（与前端 lobbySocket.ts 保持一致）
 const LOBBY_EVENTS = {
@@ -96,6 +97,7 @@ const archiveMatchResult = async ({
         console.warn(`[Archive] DB 未就绪，跳过归档: ${matchID}`);
         return;
     }
+
     try {
         const existing = await MatchRecord.findOne({ matchID });
         if (existing) return;
@@ -815,7 +817,7 @@ const startLobbyHeartbeat = () => {
     lobbyHeartbeatTimer = setInterval(emitLobbyHeartbeat, LOBBY_HEARTBEAT_INTERVAL);
 };
 
-const broadcastLobbySnapshot = async (gameName: SupportedGame, reason: string) => {
+const broadcastLobbySnapshot = async (gameName: SupportedGame, _reason: string) => {
     ensureGameState(gameName);
     const subscribers = lobbySubscribersByGame.get(gameName)!;
     if (!lobbyIO || subscribers.size === 0) return;
@@ -1105,6 +1107,18 @@ server.run(GAME_SERVER_PORT).then(async (runningServers) => {
             console.error('[MongoStorage] 启动清理重复 ownerKey 房间失败:', err);
         }
     }
+
+    registerOfflineInteractionAdjudication({
+        app,
+        db,
+        auth: app.context.auth,
+        transport: server.transport as unknown as {
+            getMatchQueue?: (matchID: string) => { add: <T>(task: () => Promise<T> | T) => Promise<T> };
+            pubSub?: { publish: (channelId: string, payload: unknown) => void };
+        },
+        games: SERVER_GAMES,
+        graceMs: 3000,
+    });
 
     console.log(`🎮 游戏服务器运行在 http://localhost:${GAME_SERVER_PORT}`);
 

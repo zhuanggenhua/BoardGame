@@ -52,6 +52,7 @@
   },
   "tutorial": {
     "steps": {
+      "setup": "Preparing tutorial...",
       "intro": "Welcome to the Dice Throne 1v1 tutorial. Reduce your opponent to 0 Health before they do the same to you.",
       "stats": "This panel shows your resources: Health (starts at 50) and CP (starts at 2, max 15). Most healing caps at starting Health +10.",
       "phases": "Turn order lives here: Upkeep → Income → Main 1 → Offensive Roll → Defensive Roll → Main 2 → Discard. The first player skips Income on their first turn.",
@@ -110,6 +111,12 @@
         "At any time, spend 1 Purify to remove 1 negative status token"
       ]
     }
+  },
+  "purify": {
+    "title": "Use Purify",
+    "desc": "Select a negative status effect to remove",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   },
   "hud": {
     "health": "Health",
@@ -204,7 +211,8 @@
     "noTokenToReroll": "No {{token}} tokens available to reroll",
     "total": "Total Damage",
     "confirmDamage": "Confirm Damage",
-    "continue": "Continue"
+    "continue": "Continue",
+    "knockdownTrigger": "Knockdown!"
   },
   "error": {
     "confirmRoll": "Please confirm the roll result first",

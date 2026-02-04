@@ -183,6 +183,14 @@ const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const playerIds = Object.keys(core.players);
             const initEvents: GameEvent[] = [];
 
+            // 教程模式：自动为玩家 1 选择默认角色
+            const isTutorialMode = typeof window !== 'undefined'
+                && (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__ === 'tutorial';
+            
+            if (isTutorialMode && (!core.selectedCharacters['1'] || core.selectedCharacters['1'] === 'unselected')) {
+                core.selectedCharacters['1'] = 'monk'; // 默认选择僧侣作为对手
+            }
+
             for (const pid of playerIds) {
                 const charId = core.selectedCharacters[pid];
                 if (charId && charId !== 'unselected') {
@@ -405,9 +413,11 @@ const ACTION_ALLOWLIST = [
 function formatDiceThroneActionEntry({
     command,
     state,
+    events,
 }: {
     command: Command;
     state: MatchState<unknown>;
+    events: GameEvent[];
 }): ActionLogEntry | null {
     const core = (state as MatchState<DiceThroneCore>).core;
     const timestamp = command.timestamp ?? Date.now();
@@ -436,7 +446,12 @@ function formatDiceThroneActionEntry({
     }
 
     if (command.type === 'ADVANCE_PHASE') {
-        const nextPhase = getNextPhase(core);
+        const phaseChanged = [...events]
+            .reverse()
+            .find(event => event.type === 'SYS_PHASE_CHANGED') as
+            | { payload?: { to?: string } }
+            | undefined;
+        const nextPhase = phaseChanged?.payload?.to ?? getNextPhase(core);
         const phaseLabel = nextPhase ? `推进阶段：${nextPhase}` : '推进阶段';
         return {
             id: `${command.type}-${command.playerId}-${timestamp}`,

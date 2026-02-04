@@ -333,7 +333,7 @@ export const DiceActions = ({
 
             <GameButton
                 onClick={handleConfirmClick}
-                disabled={rollConfirmed || rollCount === 0 || !canInteract}
+                disabled={rollConfirmed || rollCount === 0 || !canInteract || isRolling}
                 variant={rollConfirmed ? 'glass' : 'secondary'}
                 className={clsx(
                     "flex items-center justify-center h-full whitespace-nowrap overflow-hidden font-black !text-[0.7vw] !rounded-[0.5vw] !py-0",

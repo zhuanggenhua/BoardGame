@@ -65,6 +65,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "framer-motion": "^12.27.1",
+    "fflate": "^0.8.2",
     "howler": "^2.2.4",
     "http-proxy-middleware": "^3.0.5",
     "i18next": "^25.5.0",

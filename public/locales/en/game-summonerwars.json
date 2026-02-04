@@ -1,0 +1,39 @@
+{
+  "title": "Summoner Wars",
+  "subtitle": "Conquer the Battlefields of Itharia",
+  "description": "Summoner Wars is a fast-paced, tactical 2-player game. Players take on the role of Summoners, leading their faction to conquer the war-torn world of Itharia through the power of mysterious Summoning Stones.",
+  "players": "2 Players",
+  
+  "tutorial": {
+    "title": "Summoner Wars Tutorial",
+    "welcome": "Welcome to Summoner Wars! In this game, you will play as a powerful Summoner, commanding your army to conquer the battlefield."
+  },
+  
+  "phase": {
+    "summon": "Summon Phase",
+    "move": "Move Phase",
+    "attack": "Attack Phase",
+    "magic": "Magic Phase",
+    "end": "End Phase"
+  },
+  
+  "action": {
+    "summon": "Summon",
+    "move": "Move",
+    "attack": "Attack",
+    "castSpell": "Cast Spell",
+    "endTurn": "End Turn"
+  },
+  
+  "status": {
+    "yourTurn": "Your Turn",
+    "opponentTurn": "Opponent's Turn",
+    "waiting": "Waiting..."
+  },
+  
+  "result": {
+    "victory": "Victory!",
+    "defeat": "Defeat",
+    "summonerDefeated": "Summoner Defeated"
+  }
+}

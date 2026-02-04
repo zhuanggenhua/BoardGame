@@ -4,8 +4,10 @@ import type { GameServerManifestEntry } from './manifest.server.types';
 
 import manifest0 from './dicethrone/manifest';
 import Game0 from './dicethrone/game';
-import manifest1 from './tictactoe/manifest';
-import Game1 from './tictactoe/game';
+import manifest1 from './summonerwars/manifest';
+import Game1 from './summonerwars/game';
+import manifest2 from './tictactoe/manifest';
+import Game2 from './tictactoe/game';
 
 const entry0: GameServerManifestEntry = {
     manifest: manifest0,
@@ -17,9 +19,15 @@ const entry1: GameServerManifestEntry = {
     game: Game1,
 };
 
+const entry2: GameServerManifestEntry = {
+    manifest: manifest2,
+    game: Game2,
+};
+
 export const GAME_SERVER_MANIFEST: GameServerManifestEntry[] = [
     entry0,
     entry1,
+    entry2,
 ];
 
 export const GAME_SERVER_MANIFEST_BY_ID: Record<string, GameServerManifestEntry> = Object.fromEntries(

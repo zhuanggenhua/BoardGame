@@ -93,8 +93,8 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                         className="text-white text-[2vw] font-bold text-center mb-[1vw]"
                     >
                         {canReroll
-                            ? t('bonusDice.selectToReroll', { cost: costAmount, token: tokenName })
-                            : t('bonusDice.noTokenToReroll', { token: tokenName })}
+                            ? t('bonusDie.selectToReroll', { cost: costAmount, token: tokenName })
+                            : t('bonusDie.noTokenToReroll', { token: tokenName })}
                     </motion.div>
 
                     {/* 骰子列表 */}
@@ -140,10 +140,10 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                             transition={{ delay: 0.5 }}
                             className="text-white text-[2.5vw] font-black"
                         >
-                            {t('bonusDice.total')}: {total}
+                            {t('bonusDie.total')}: {total}
                             {total >= 12 && (
                                 <span className="ml-[1vw] text-red-400">
-                                    (倒地!)
+                                    ({t('bonusDie.knockdownTrigger')})
                                 </span>
                             )}
                         </motion.div>
@@ -157,7 +157,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                         onClick={onSkipReroll}
                         className="mt-[1vw] px-[3vw] py-[1vw] bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold text-[1.5vw] transition-colors"
                     >
-                        {canReroll ? t('bonusDice.confirmDamage') : t('bonusDice.continue')}
+                        {canReroll ? t('bonusDie.confirmDamage') : t('bonusDie.continue')}
                     </motion.button>
                 </div>
             </SpotlightContainer>

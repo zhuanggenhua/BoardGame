@@ -65,6 +65,25 @@
         border-radius: 2px;
     }
 
+    /* 窄滚动条变体 */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        @apply bg-parchment-card-border/40;
+        border-radius: 2px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        @apply bg-parchment-card-border/60;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
     .no-scrollbar::-webkit-scrollbar {
         display: none;
     }

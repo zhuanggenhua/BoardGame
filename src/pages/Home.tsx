@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { CategoryPills, type Category } from '../components/layout/CategoryPills';
 import { GameDetailsModal } from '../components/lobby/GameDetailsModal';
 import { GameList } from '../components/lobby/GameList';
-import { getGamesByCategory, getGameById } from '../config/games.config';
+import { getGamesByCategory, getGameById, refreshUgcGames, subscribeGameRegistry } from '../config/games.config';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from '../components/auth/AuthModal';
 import { EmailBindModal } from '../components/auth/EmailBindModal';
@@ -28,6 +28,7 @@ export const Home = () => {
     const [activeCategory, setActiveCategory] = useState<Category>('All');
     const [, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    const [registryVersion, setRegistryVersion] = useState(0);
 
     // 活跃对局状态
     const [activeMatch, setActiveMatch] = useState<{ matchID: string; gameName: string; players: Array<{ id: number; name?: string; isConnected?: boolean }> } | null>(null);
@@ -44,7 +45,7 @@ export const Home = () => {
     const { openModal, closeModal } = useModalStack();
     const toast = useToast();
     const { t } = useTranslation(['lobby', 'auth']);
-    const filteredGames = useMemo(() => getGamesByCategory(activeCategory), [activeCategory]);
+    const filteredGames = useMemo(() => getGamesByCategory(activeCategory), [activeCategory, registryVersion]);
     const activePlayerCount = activeMatch?.players.filter(player => player.name).length ?? 0;
 
     const confirmModalIdRef = useRef<string | null>(null);
@@ -72,6 +73,16 @@ export const Home = () => {
             };
         }, []),
     });
+
+    useEffect(() => {
+        const unsubscribe = subscribeGameRegistry(() => {
+            setRegistryVersion((version) => version + 1);
+        });
+        void refreshUgcGames();
+        return () => {
+            unsubscribe();
+        };
+    }, []);
 
     const handleGameClick = (id: string) => {
         if (id === 'assetslicer') {

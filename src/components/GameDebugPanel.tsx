@@ -7,7 +7,7 @@ import { useGameMode } from '../contexts/GameModeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { GAME_SERVER_URL } from '../config/server';
 import { matchSocket } from '../services/matchSocket';
-import { persistMatchCredentials } from '../hooks/match/useMatchStatus';
+import { destroyMatch, persistMatchCredentials } from '../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName } from '../hooks/match/ownerIdentity';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -132,11 +132,11 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                 <div className="fixed top-20 right-4 bottom-24 w-96 bg-white shadow-2xl rounded-xl border border-gray-200 z-[9998] flex flex-col overflow-hidden font-mono text-sm ring-1 ring-black/5">
                     {/* 页眉 */}
                     <div className="bg-gray-100 p-3 border-b border-gray-200 flex justify-between items-center">
-                        <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
                             <span>{t('debug.panelTitle')}</span>
                         </h3>
                         <div className="flex gap-1 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
-                            <span className="text-xs px-2 py-1 text-gray-500 font-bold select-none">{t('debug.viewLabel')}</span>
+                            <span className="text-xs px-2 py-1 text-gray-700 font-bold select-none">{t('debug.viewLabel')}</span>
                             {['0', '1', null].map((pid) => (
                                 <button
                                     key={String(pid)}
@@ -156,19 +156,19 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                     <div className="flex border-b border-gray-200 bg-white">
                         <button
                             onClick={() => setActiveTab('actions')}
-                            className={`flex-1 py-2.5 text-center text-xs font-bold transition-colors ${activeTab === 'actions' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}`}
+                            className={`flex-1 py-2.5 text-center text-xs font-bold transition-colors ${activeTab === 'actions' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}
                         >
                             {t('debug.tabs.actions')}
                         </button>
                         <button
                             onClick={() => setActiveTab('state')}
-                            className={`flex-1 py-2.5 text-center text-xs font-bold transition-colors ${activeTab === 'state' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}`}
+                            className={`flex-1 py-2.5 text-center text-xs font-bold transition-colors ${activeTab === 'state' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}
                         >
                             {t('debug.tabs.state')}
                         </button>
                         <button
                             onClick={() => setActiveTab('controls')}
-                            className={`flex-1 py-2.5 text-center text-xs font-bold transition-colors ${activeTab === 'controls' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}`}
+                            className={`flex-1 py-2.5 text-center text-xs font-bold transition-colors ${activeTab === 'controls' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}
                         >
                             {t('debug.tabs.controls')}
                         </button>
@@ -178,9 +178,9 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                     <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gray-50/30">
                         {/* 动作选项卡 */}
                         {activeTab === 'actions' && (
-                            <div className="space-y-6">
+                            <div className="space-y-3">
                                 <div className="space-y-3">
-                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <h4 className="text-[10px] font-black text-gray-700 uppercase tracking-widest flex items-center gap-2">
                                         <span className="w-full h-px bg-gray-200"></span>
                                         {t('debug.sections.moves')}
                                         <span className="w-full h-px bg-gray-200"></span>
@@ -189,7 +189,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                         {Object.keys(moves).filter(name => !name.startsWith('SYS_')).map((moveName) => (
                                             <div key={moveName} className="bg-white p-2 rounded-lg border border-gray-200 shadow-sm group hover:border-blue-300 transition-colors">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-bold text-gray-700 text-xs">{t(`debug.moves.${moveName}`, moveName)}</span>
+                                                    <span className="font-bold text-gray-900 text-xs">{t(`debug.moves.${moveName}`, moveName)}</span>
                                                     <button
                                                         onClick={() => executeMove(moveName)}
                                                         className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 active:translate-y-0.5 transition-all shadow-sm shadow-blue-200"
@@ -202,18 +202,18 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                     placeholder={t('debug.placeholders.moveArgs')}
                                                     value={moveArgs[moveName] || ''}
                                                     onChange={(e) => handleArgChange(moveName, e.target.value)}
-                                                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-300"
+                                                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-gray-50 text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-400"
                                                 />
                                             </div>
                                         ))}
                                         {Object.keys(moves).length === 0 && (
-                                            <p className="text-gray-400 italic text-xs text-center py-2">{t('debug.actions.empty')}</p>
+                                            <p className="text-gray-600 italic text-xs text-center py-2">{t('debug.actions.empty')}</p>
                                         )}
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
-                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <h4 className="text-[10px] font-black text-gray-700 uppercase tracking-widest flex items-center gap-2">
                                         <span className="w-full h-px bg-gray-200"></span>
                                         {t('debug.sections.events')}
                                         <span className="w-full h-px bg-gray-200"></span>
@@ -239,22 +239,22 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                             <div className="space-y-4">
                                 <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-2">
                                     <div className="flex justify-between text-xs border-b border-gray-100 pb-2">
-                                        <span className="text-gray-500 font-bold">{t('debug.state.phase')}</span>
+                                        <span className="text-gray-700 font-bold">{t('debug.state.phase')}</span>
                                         <span className="font-mono bg-purple-100 text-purple-700 px-1.5 rounded">{ctx.phase}</span>
                                     </div>
                                     <div className="flex justify-between text-xs border-b border-gray-100 pb-2">
-                                        <span className="text-gray-500 font-bold">{t('debug.state.turn')}</span>
+                                        <span className="text-gray-700 font-bold">{t('debug.state.turn')}</span>
                                         <span className="font-mono bg-blue-100 text-blue-700 px-1.5 rounded">{ctx.turn}</span>
                                     </div>
                                     <div className="flex justify-between text-xs pt-1">
-                                        <span className="text-gray-500 font-bold">{t('debug.state.activePlayer')}</span>
+                                        <span className="text-gray-700 font-bold">{t('debug.state.activePlayer')}</span>
                                         <span className="font-mono bg-green-100 text-green-700 px-1.5 rounded">{ctx.currentPlayer}</span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('debug.state.gameState')}</h4>
+                                        <h4 className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">{t('debug.state.gameState')}</h4>
                                         <div className="flex gap-1">
                                             <button
                                                 onClick={handleCopyState}
@@ -360,12 +360,14 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                 const newRoomUrl = `/play/${gameId}/match/${newMatchID}`;
                                                 matchSocket.broadcastNewRoom(newRoomUrl);
                                                 
-                                                // 3. 销毁旧房间（如果有凭据）
+                                                // 3. 退出旧房间并准备延迟销毁（如果有凭据）
+                                                let oldCredentials: string | null = null;
                                                 if (currentMatchId && currentPlayerID) {
                                                     const storedCreds = localStorage.getItem(`match_creds_${currentMatchId}`);
                                                     if (storedCreds) {
                                                         try {
-                                                            const { credentials: oldCredentials } = JSON.parse(storedCreds);
+                                                            const parsed = JSON.parse(storedCreds) as { credentials?: string } | null;
+                                                            oldCredentials = parsed?.credentials ?? null;
                                                             if (oldCredentials) {
                                                                 await lobbyClient.leaveMatch(gameId, currentMatchId, {
                                                                     playerID: currentPlayerID,
@@ -376,6 +378,13 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                         }
                                                         localStorage.removeItem(`match_creds_${currentMatchId}`);
                                                     }
+                                                }
+
+                                                if (currentMatchId && currentPlayerID && oldCredentials) {
+                                                    const delayMs = 8000;
+                                                    window.setTimeout(() => {
+                                                        void destroyMatch(gameId, currentMatchId, currentPlayerID, oldCredentials as string);
+                                                    }, delayMs);
                                                 }
                                                 
                                                 // 4. 保存新凭据

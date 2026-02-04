@@ -64,7 +64,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                             <select
                                 value={cheatPlayer}
                                 onChange={(e) => setCheatPlayer(e.target.value)}
-                                className="flex-1 px-2 py-1.5 text-xs border border-yellow-300 rounded bg-white"
+                                className="flex-1 px-2 py-1.5 text-xs border border-yellow-300 rounded bg-white text-gray-900"
                             >
                                 <option value="0">P0</option>
                                 <option value="1">P1</option>
@@ -72,7 +72,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                             <select
                                 value={cheatResource}
                                 onChange={(e) => setCheatResource(e.target.value)}
-                                className="flex-1 px-2 py-1.5 text-xs border border-yellow-300 rounded bg-white"
+                                className="flex-1 px-2 py-1.5 text-xs border border-yellow-300 rounded bg-white text-gray-900"
                             >
                                 <option value="cp">CP</option>
                                 <option value="health">HP</option>
@@ -81,7 +81,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                                 type="number"
                                 value={cheatValue}
                                 onChange={(e) => setCheatValue(e.target.value)}
-                                className="w-16 px-2 py-1.5 text-xs border border-yellow-300 rounded bg-white text-center"
+                                className="w-16 px-2 py-1.5 text-xs border border-yellow-300 rounded bg-white text-center text-gray-900"
                             />
                         </div>
                         <div className="flex gap-2">
@@ -143,7 +143,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                                         max="6"
                                         value={value}
                                         onChange={(e) => handleDieChange(index, e.target.value)}
-                                        className="w-full px-2 py-1.5 text-xs border border-blue-300 rounded bg-white text-center font-bold"
+                                        className="w-full px-2 py-1.5 text-xs border border-blue-300 rounded bg-white text-center font-bold text-gray-900"
                                     />
                                 </div>
                             ))}
@@ -183,7 +183,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                             <select
                                 value={tokenPlayer}
                                 onChange={(e) => setTokenPlayer(e.target.value)}
-                                className="flex-1 px-2 py-1.5 text-xs border border-purple-300 rounded bg-white"
+                                className="flex-1 px-2 py-1.5 text-xs border border-purple-300 rounded bg-white text-gray-900"
                             >
                                 <option value="0">P0</option>
                                 <option value="1">P1</option>
@@ -191,7 +191,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                             <select
                                 value={tokenType}
                                 onChange={(e) => setTokenType(e.target.value)}
-                                className="flex-1 px-2 py-1.5 text-xs border border-purple-300 rounded bg-white"
+                                className="flex-1 px-2 py-1.5 text-xs border border-purple-300 rounded bg-white text-gray-900"
                             >
                                 <option value="lotus">莲花 🪷</option>
                             </select>
@@ -200,7 +200,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                                 min="0"
                                 value={tokenValue}
                                 onChange={(e) => setTokenValue(e.target.value)}
-                                className="w-16 px-2 py-1.5 text-xs border border-purple-300 rounded bg-white text-center"
+                                className="w-16 px-2 py-1.5 text-xs border border-purple-300 rounded bg-white text-center text-gray-900"
                             />
                         </div>
                         <button
@@ -230,7 +230,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                             <select
                                 value={dealPlayer}
                                 onChange={(e) => setDealPlayer(e.target.value)}
-                                className="flex-1 px-2 py-1.5 text-xs border border-green-300 rounded bg-white"
+                                className="flex-1 px-2 py-1.5 text-xs border border-green-300 rounded bg-white text-gray-900"
                             >
                                 <option value="0">P0</option>
                                 <option value="1">P1</option>
@@ -241,7 +241,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                                 max={32}
                                 value={deckIndex}
                                 onChange={(e) => setDeckIndex(e.target.value)}
-                                className="flex-1 px-2 py-1.5 text-xs border border-green-300 rounded bg-white text-center"
+                                className="flex-1 px-2 py-1.5 text-xs border border-green-300 rounded bg-white text-center text-gray-900"
                                 placeholder="图集索引"
                             />
                         </div>

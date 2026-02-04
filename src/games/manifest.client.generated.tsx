@@ -11,13 +11,19 @@ import Board1 from './dicethrone/Board';
 import Tutorial1 from './dicethrone/tutorial';
 import Thumbnail1 from './dicethrone/thumbnail';
 
-import manifest2 from './tictactoe/manifest';
-import Game2 from './tictactoe/game';
-import Board2 from './tictactoe/Board';
-import Tutorial2 from './tictactoe/tutorial';
-import Thumbnail2 from './tictactoe/thumbnail';
+import manifest2 from './summonerwars/manifest';
+import Game2 from './summonerwars/game';
+import Board2 from './summonerwars/Board';
+import Tutorial2 from './summonerwars/tutorial';
+import Thumbnail2 from './summonerwars/thumbnail';
 
-import manifest3 from './ugcbuilder/manifest';
+import manifest3 from './tictactoe/manifest';
+import Game3 from './tictactoe/game';
+import Board3 from './tictactoe/Board';
+import Tutorial3 from './tictactoe/tutorial';
+import Thumbnail3 from './tictactoe/thumbnail';
+
+import manifest4 from './ugcbuilder/manifest';
 
 const entry0: GameClientManifestEntry = {
     manifest: manifest0,
@@ -42,7 +48,15 @@ const entry2: GameClientManifestEntry = {
 
 const entry3: GameClientManifestEntry = {
     manifest: manifest3,
-    thumbnail: <ManifestGameThumbnail manifest={manifest3} />,
+    game: Game3,
+    board: Board3,
+    tutorial: Tutorial3,
+    thumbnail: <Thumbnail3 />,
+};
+
+const entry4: GameClientManifestEntry = {
+    manifest: manifest4,
+    thumbnail: <ManifestGameThumbnail manifest={manifest4} />,
 };
 
 export const GAME_CLIENT_MANIFEST: GameClientManifestEntry[] = [
@@ -50,6 +64,7 @@ export const GAME_CLIENT_MANIFEST: GameClientManifestEntry[] = [
     entry1,
     entry2,
     entry3,
+    entry4,
 ];
 
 export const GAME_CLIENT_MANIFEST_BY_ID: Record<string, GameClientManifestEntry> = Object.fromEntries(

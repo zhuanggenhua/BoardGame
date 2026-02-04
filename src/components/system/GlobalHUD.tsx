@@ -100,7 +100,6 @@ export const GlobalHUD = () => {
         label: t('hud.actions.settings') || 'Settings',
         content: (
             <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-2 opacity-60 pb-2 border-b border-black/10">{t('hud.actions.settings') || 'Setting'}</h3>
                 <AudioControlSection isDark={isDark} />
             </div>
         )

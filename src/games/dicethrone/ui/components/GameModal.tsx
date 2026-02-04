@@ -45,7 +45,7 @@ export const GameModal = ({
                         className={clsx(
                             "relative bg-slate-950 border-2 border-amber-500/40 pointer-events-auto",
                             "shadow-[0_0_50px_rgba(0,0,0,0.8)]",
-                            "rounded-2xl overflow-hidden flex flex-col w-full mx-4",
+                            "rounded-2xl overflow-visible flex flex-col w-full mx-4",
                             // Dynamic background pattern
                             "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] before:from-slate-800/50 before:to-transparent before:pointer-events-none",
                             widthClass,

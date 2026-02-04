@@ -22,6 +22,19 @@ describe('resolvePlayerContext', () => {
     expect(wrap.resolvedPlayerId).toBe('p1');
   });
 
+  it('支持 self/other 语义化定位', () => {
+    const items = [
+      { id: 'a', name: '玩家A' },
+      { id: 'b', name: '玩家B' },
+    ];
+
+    const self = resolvePlayerContext({ items, currentPlayerId: 'a', playerRef: 'self' });
+    expect(self.resolvedPlayerId).toBe('a');
+
+    const other = resolvePlayerContext({ items, currentPlayerId: 'a', playerRef: 'other' });
+    expect(other.resolvedPlayerId).toBe('b');
+  });
+
   it('支持 offset/index/id 与自定义 ID 字段', () => {
     const items = [
       { pid: 'a', name: '玩家A' },

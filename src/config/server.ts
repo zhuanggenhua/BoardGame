@@ -36,3 +36,12 @@ const FALLBACK_ADMIN_API_URL = import.meta.env.DEV
 export const ADMIN_API_URL = normalizeUrl(
     import.meta.env.VITE_ADMIN_API_URL || FALLBACK_ADMIN_API_URL
 );
+
+// UGC API 地址
+const FALLBACK_UGC_API_URL = import.meta.env.DEV
+    ? '/ugc'
+    : (BACKEND_URL ? `${BACKEND_URL}/ugc` : '/ugc');
+
+export const UGC_API_URL = normalizeUrl(
+    import.meta.env.VITE_UGC_API_URL || FALLBACK_UGC_API_URL
+);

@@ -6,7 +6,7 @@
  */
 
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import type { S3Client } from '@aws-sdk/client-s3';
 
 export interface UploadOptions {
@@ -21,7 +21,7 @@ export interface StorageConfig {
   mode: 'local' | 'object-storage';
   
   // 本地存储配置
-  localPath?: string; // 默认 ./uploads/ugc
+  localPath?: string; // 默认 ./uploads
   
   // 对象存储配置（可选）
   s3Client?: S3Client;
@@ -29,15 +29,27 @@ export interface StorageConfig {
   publicUrlBase?: string; // 如 https://assets.example.com
 }
 
+function normalizePublicUrlBase(value?: string): string {
+  if (!value) return '/assets';
+  const trimmed = value.trim().replace(/\/+$/, '');
+  if (!trimmed) return '/assets';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  return `/${trimmed}`;
+}
+
 export class UGCStorageService {
   private config: StorageConfig;
+  private publicUrlBase: string;
   
   constructor(config: StorageConfig) {
     this.config = config;
+    this.publicUrlBase = normalizePublicUrlBase(config.publicUrlBase);
     
     // 本地模式：确保目录存在
     if (config.mode === 'local') {
-      const uploadDir = config.localPath || join(process.cwd(), 'uploads', 'ugc');
+      const uploadDir = config.localPath || join(process.cwd(), 'uploads');
       if (!existsSync(uploadDir)) {
         mkdirSync(uploadDir, { recursive: true });
       }
@@ -64,11 +76,11 @@ export class UGCStorageService {
    * 上传到本地文件系统
    */
   private async uploadToLocal(relativePath: string, fileBuffer: Buffer): Promise<string> {
-    const uploadDir = this.config.localPath || join(process.cwd(), 'uploads', 'ugc');
+    const uploadDir = this.config.localPath || join(process.cwd(), 'uploads');
     const fullPath = join(uploadDir, relativePath);
     
     // 确保父目录存在
-    const dir = fullPath.substring(0, fullPath.lastIndexOf('/'));
+    const dir = dirname(fullPath);
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
@@ -76,7 +88,7 @@ export class UGCStorageService {
     writeFileSync(fullPath, fileBuffer);
     
     // 返回访问 URL（相对路径）
-    return `/uploads/${relativePath}`;
+    return `${this.publicUrlBase}/${relativePath}`;
   }
   
   /**
@@ -104,8 +116,7 @@ export class UGCStorageService {
     await this.config.s3Client.send(command);
     
     // 返回公开访问 URL
-    const baseUrl = this.config.publicUrlBase || '';
-    return `${baseUrl}/${relativePath}`;
+    return `${this.publicUrlBase}/${relativePath}`;
   }
   
   /**
@@ -122,11 +133,13 @@ export class UGCStorageService {
  */
 export function createUGCStorageService(): UGCStorageService {
   const mode = process.env.UGC_STORAGE_MODE as 'local' | 'object-storage' || 'local';
+  const publicUrlBase = process.env.UGC_PUBLIC_URL_BASE;
   
   if (mode === 'local') {
     return new UGCStorageService({
       mode: 'local',
       localPath: process.env.UGC_LOCAL_PATH,
+      publicUrlBase,
     });
   }
   
@@ -134,6 +147,7 @@ export function createUGCStorageService(): UGCStorageService {
   // 示例：使用 R2/OSS/COS
   return new UGCStorageService({
     mode: 'object-storage',
+    publicUrlBase,
     // s3Client: ... 需要根据实际服务配置
     // bucketName: process.env.UGC_BUCKET_NAME,
     // publicUrlBase: process.env.UGC_PUBLIC_URL_BASE,

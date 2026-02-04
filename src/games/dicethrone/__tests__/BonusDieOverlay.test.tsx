@@ -56,9 +56,9 @@ describe('BonusDieOverlay', () => {
             />
         );
 
-        expect(html).toContain('bonusDice.selectToReroll:cost=2,token=tokens.taiji.name');
-        expect(html).toContain('bonusDice.confirmDamage');
-        expect(html).toContain('bonusDice.total');
+        expect(html).toContain('bonusDie.selectToReroll:cost=2,token=tokens.taiji.name');
+        expect(html).toContain('bonusDie.confirmDamage');
+        expect(html).toContain('bonusDie.total');
         expect(html).toContain('cursor-pointer');
         expect(html).toContain('bg-purple-600/80');
         expect(html).toContain('(倒地!)');
@@ -79,9 +79,9 @@ describe('BonusDieOverlay', () => {
             />
         );
 
-        expect(html).toContain('bonusDice.noTokenToReroll:token=tokens.taiji.name');
-        expect(html).toContain('bonusDice.continue');
-        expect(html).not.toContain('bonusDice.confirmDamage');
+        expect(html).toContain('bonusDie.noTokenToReroll:token=tokens.taiji.name');
+        expect(html).toContain('bonusDie.continue');
+        expect(html).not.toContain('bonusDie.confirmDamage');
         expect(html).not.toContain('cursor-pointer');
         expect(html).not.toContain('bg-purple-600/80');
     });

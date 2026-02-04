@@ -217,6 +217,14 @@ export function PreviewCanvas({
   className = '',
 }: PreviewCanvasProps) {
   const [showBack, setShowBack] = useState(false);
+
+  const previewInstances = useMemo(() => {
+    const map: Record<string, Record<string, unknown>[]> = {};
+    Object.entries(instances).forEach(([schemaId, items]) => {
+      map[schemaId] = items.slice(0, 10);
+    });
+    return map;
+  }, [instances]);
   
   // 过滤隐藏分组的组件
   const hiddenGroupIds = new Set(layoutGroups.filter(g => g.hidden).map(g => g.id));
@@ -230,7 +238,7 @@ export function PreviewCanvas({
     visibleComponents.forEach(comp => {
       const schemaId = (comp.data.bindSchema || comp.data.targetSchema) as string | undefined;
       if (!schemaId) return;
-      const items = instances[schemaId] || [];
+      const items = previewInstances[schemaId] || [];
       const output: ComponentOutput = {
         componentId: comp.id,
         type: comp.type,
@@ -243,7 +251,7 @@ export function PreviewCanvas({
       outputMap[comp.type].push(output);
     });
     return outputMap;
-  }, [visibleComponents, instances]);
+  }, [visibleComponents, previewInstances]);
 
   const outputsById = useMemo(() => {
     const outputMap: Record<string, ComponentOutput> = {};
@@ -262,6 +270,10 @@ export function PreviewCanvas({
       targetSchema: rc.targetSchema,
     }));
   }, [renderComponents]);
+
+  const renderComponentInstances = useMemo(() => {
+    return components.filter(comp => comp.type === 'render-component');
+  }, [components]);
 
   const renderByComponentId = useCallback(
     (componentId: string, item: Record<string, unknown>, options?: { showBack?: boolean }) => {
@@ -311,7 +323,7 @@ export function PreviewCanvas({
           if (!renderCode && comp.data.renderComponentId) {
             const rc = renderComponents.find(r => r.id === comp.data.renderComponentId);
             if (rc) {
-              const schemaData = instances[rc.targetSchema]?.[0] || {};
+              const schemaData = previewInstances[rc.targetSchema]?.[0] || {};
               return (
                 <div key={comp.id} style={style}>
                   <RenderPreview
@@ -328,7 +340,7 @@ export function PreviewCanvas({
           
           // 新模式：直接使用 comp.data 中的配置
           if (renderCode) {
-            const schemaData = targetSchema ? (instances[targetSchema]?.[0] || {}) : {};
+            const schemaData = targetSchema ? (previewInstances[targetSchema]?.[0] || {}) : {};
             // 使用 CSS 变量传递父容器尺寸，确保生成代码的 w-full h-full 能正确计算
             const containerStyle: React.CSSProperties = {
               ...style,
@@ -366,7 +378,7 @@ export function PreviewCanvas({
           const fallbackRenderComponentId = (comp.data.itemRenderComponentId || comp.data.renderComponentId || comp.renderComponentId) as string | undefined;
           
           // 获取关联数据
-          const items = targetSchemaId ? (instances[targetSchemaId] || []) : [];
+          const items = targetSchemaId ? (previewInstances[targetSchemaId] || []) : [];
           
           // 如果没有数据，显示占位
           if (items.length === 0) {
@@ -392,11 +404,14 @@ export function PreviewCanvas({
                 renderCard={(item, _index, _isSelected) => {
                   const itemRecord = item as Record<string, unknown>;
                   const itemRenderComponentId = (itemRecord.renderComponentId as string | undefined) || fallbackRenderComponentId;
-                  const itemRenderComponent = itemRenderComponentId
+                  const itemRenderInstance = itemRenderComponentId
+                    ? renderComponentInstances.find(rc => rc.id === itemRenderComponentId)
+                    : undefined;
+                  const itemRenderComponent = !itemRenderInstance && itemRenderComponentId
                     ? renderComponents.find(rc => rc.id === itemRenderComponentId)
                     : undefined;
-                  const itemRenderCode = itemRenderComponent?.renderCode;
-                  const itemBackRenderCode = itemRenderComponent?.backRenderCode;
+                  const itemRenderCode = (itemRenderInstance?.data.renderCode as string | undefined) || itemRenderComponent?.renderCode;
+                  const itemBackRenderCode = (itemRenderInstance?.data.backRenderCode as string | undefined) || itemRenderComponent?.backRenderCode;
 
                   return (
                     <div className="w-16 h-24 bg-white rounded shadow-md border border-gray-300 flex items-center justify-center text-xs">
@@ -424,12 +439,14 @@ export function PreviewCanvas({
         if (componentRenderCode) {
           // 组件上下文只包含通用字段 + 组件配置 + 绑定的Schema实例数据
           const bindSchemaId = (comp.data.bindSchema || comp.data.targetSchema) as string | undefined;
-          const boundData = bindSchemaId ? (instances[bindSchemaId] || []) : [];
+          const boundData = bindSchemaId ? (previewInstances[bindSchemaId] || []) : [];
           
           const playerContext = comp.type === 'player-area'
             ? resolvePlayerContext({
               items: boundData,
               playerRef: comp.data.playerRef as
+                | 'self'
+                | 'other'
                 | 'current'
                 | 'next'
                 | 'prev'

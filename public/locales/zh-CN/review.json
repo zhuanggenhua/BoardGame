@@ -5,23 +5,33 @@
         "count": "({{count}} 条评价)"
     },
     "form": {
+        "label": "你的评价",
         "placeholder": "写点什么...",
         "submit": "发布评论",
         "update": "更新评论",
         "delete": "删除",
         "loginToReview": "登录后参与评价",
         "positive": "推荐",
-        "negative": "不推荐"
+        "negative": "不推荐",
+        "editTitle": "修改我的评价",
+        "newTitle": "撰写评价",
+        "success": "评价已发布",
+        "deleted": "评价已删除",
+        "edit": "修改",
+        "writeReview": "写评价"
     },
     "list": {
         "empty": "暂无评论",
-        "loadMore": "加载更多"
+        "loadMore": "加载更多",
+        "error": "加载评价失败，请稍后重试"
     },
     "section": {
-        "title": "游戏评价"
+        "title": "游戏评价",
+        "ratingCount": "{{count}} 条评价",
+        "statsError": "暂时无法加载统计信息"
     },
     "errors": {
-        "contentLenght": "评论内容不能超过 500 字",
+        "contentLength": "评论内容不能超过 500 字",
         "required": "请选择好评或差评"
     }
 }

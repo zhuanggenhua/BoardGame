@@ -2,6 +2,8 @@ import 'dotenv/config';
 import 'reflect-metadata';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import type { IncomingMessage } from 'http';
+import type { Socket } from 'net';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { NestFactory } from '@nestjs/core';
@@ -26,12 +28,15 @@ async function bootstrap() {
         target: gameServerTarget,
         changeOrigin: true,
         ws: true,
-        logLevel: 'warn',
     });
 
     expressApp.use(['/games', '/default', '/lobby-socket', '/socket.io'], gameProxy);
 
     const distPath = join(process.cwd(), 'dist');
+    const uploadsPath = join(process.cwd(), 'uploads');
+    if (existsSync(uploadsPath)) {
+        expressApp.use('/assets', express.static(uploadsPath));
+    }
     if (existsSync(distPath)) {
         expressApp.use(express.static(distPath));
 
@@ -53,7 +58,7 @@ async function bootstrap() {
     const port = Number(process.env.API_SERVER_PORT) || 18001;
     const server = await app.listen(port);
     // 只代理游戏服相关的 WebSocket 升级，避免社交 Socket 被错误转发导致断线
-    server.on('upgrade', (req, socket, head) => {
+    server.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
         const url = req.url || '';
         if (url.startsWith('/lobby-socket') || url.startsWith('/socket.io')) {
             gameProxy.upgrade(req, socket, head);

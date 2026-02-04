@@ -1228,11 +1228,9 @@ const handleCharacterSelected: EventHandler<Extract<DiceThroneEvent, { type: 'CH
     if (player) {
         player.characterId = characterId;
         
-        // 如果提供了初始牌库（通常仅在初始化时），则设置它
+        // 存储初始牌库顺序（用于 HERO_INITIALIZED 消费）
         if (initialDeckCardIds && initialDeckCardIds.length > 0) {
-            // 找到对应的全量卡牌数据（目前主要用于测试或首次初始化）
-            // 在实际流程中，setup 阶段不应直接填满手牌，而是在进入游戏时 HERO_INITIALIZED 处理
-            // 这里仅记录选角完成，具体初始化留给 handleHeroInitialized
+            player.initialDeckCardIds = initialDeckCardIds;
         }
     }
 
@@ -1249,14 +1247,15 @@ const handleHeroInitialized: EventHandler<Extract<DiceThroneEvent, { type: 'HERO
     const newState = cloneState(state);
     const { playerId, characterId } = event.payload;
 
+    // 获取已存储的初始牌库顺序（来自 CHARACTER_SELECTED 事件）
+    const existingPlayer = newState.players[playerId];
+    const initialDeckCardIds = existingPlayer?.initialDeckCardIds;
+
     // 使用辅助函数执行完整初始化
-    // 注意：这里需要传入一个假的 random，因为 shuffle 已在 execute 层完成并写入了 event
+    // 如果有 initialDeckCardIds，传入以确保使用事件数据驱动的顺序
+    // 否则使用 dummyRandom（向后兼容旧流程）
     const dummyRandom: any = { shuffle: (arr: any[]) => arr };
-    const heroState = initHeroState(playerId, characterId, dummyRandom);
-    
-    // 如果 CHARACTER_SELECTED 已经确定了牌库顺序，这里应该保留它
-    // 但目前逻辑是 CHARACTER_SELECTED 产生 initialDeckCardIds，
-    // 我们需要确保 HeroState 使用那个顺序。
+    const heroState = initHeroState(playerId, characterId, dummyRandom, initialDeckCardIds);
     
     newState.players[playerId] = heroState;
 

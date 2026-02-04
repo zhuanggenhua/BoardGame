@@ -25,7 +25,7 @@ export const BARBARIAN_TOKENS: TokenDef[] = [
     /**
      * 脑震荡 Token
      * 效果：跳过下个收入阶段后自动移除
-     * 不可叠加，不可花费移除
+     * 不可叠加，不可花费移除（但可被净化）
      */
     {
         id: STATUS_IDS.CONCUSSION,
@@ -37,7 +37,7 @@ export const BARBARIAN_TOKENS: TokenDef[] = [
         category: 'debuff',
         passiveTrigger: {
             timing: 'onPhaseEnter', // 在收入阶段开始时检查
-            removable: false, // 自动移除，不需要花费移除
+            removable: true, // 自动移除，不需要花费移除（但可被净化）
             actions: [{ type: 'skipPhase', target: 'self' }], // 跳过收入阶段
         },
     },
@@ -45,7 +45,7 @@ export const BARBARIAN_TOKENS: TokenDef[] = [
     /**
      * 眩晕 Token
      * 效果：无法行动，攻击结束后移除并触发额外攻击
-     * 不可叠加，不可花费移除
+     * 不可叠加，不可花费移除（但可被净化）
      */
     {
         id: STATUS_IDS.DAZE,
@@ -57,7 +57,7 @@ export const BARBARIAN_TOKENS: TokenDef[] = [
         category: 'debuff',
         passiveTrigger: {
             timing: 'onAttackEnd', // 在攻击结束时触发额外攻击
-            removable: false, // 攻击结束后自动移除
+            removable: true, // 攻击结束后自动移除（但可被净化）
             actions: [{ type: 'extraAttack', target: 'self' }], // 触发额外攻击
         },
     },

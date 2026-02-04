@@ -85,7 +85,7 @@
     },
     "dicethrone": {
       "title": "Dice Throne",
-      "description": "Fast-paced dice duels. Lead a legendary hero in 1v1 combat.",
+      "description": "A fast-paced, easy-to-learn game where you choose the most extraordinary hero from many. Roll your hero's unique 5 dice to attack opponents and activate abilities. Accumulate combat points to purchase powerful cards—upgrade your hero, cast spells, or directly manipulate dice (yours, your teammates', or your opponents').",
       "players": "2 Players"
     },
     "assetslicer": {
@@ -97,6 +97,9 @@
       "title": "UGC Prototype Builder",
       "description": "Quickly create board game prototypes. Supports card design, rule config, and AI-assisted generation.",
       "players": "Solo Tool"
+    },
+    "ugc": {
+      "players": "2 Players"
     }
   },
   "matchRoom": {
@@ -119,7 +122,9 @@
     "noClient": "Game client not found",
     "noGame": "Game not found",
     "tutorialTitle": "Learning {{game}}",
-    "matchTitle": "Playing {{game}}"
+    "matchTitle": "Playing {{game}}",
+    "loadingResources": "Loading match resources...",
+    "joiningRoom": "Joining room..."
   },
   "error": {
     "createRoomFailed": "Failed to create room",

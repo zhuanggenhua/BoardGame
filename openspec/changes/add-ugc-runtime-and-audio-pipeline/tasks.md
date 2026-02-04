@@ -1,8 +1,11 @@
-## 1. 运行时入口与包加载
-- [ ] 1.1 设计并实现 UGC 包服务端数据结构（Package 元数据、版本、状态、manifest 引用）
-- [ ] 1.2 实现 UGC 包 API（列表、详情、发布、拉取 manifest）
-- [ ] 1.3 新增 UGC 运行时入口页面（host + iframe）并接入 UGCHostBridge/UGCViewSdk
-- [ ] 1.4 运行时接入音频播放（SFX/BGM）与资源路径归一化
+## 1. 联机入口与包加载
+- [ ] 1.1 设计并实现 UGC 包文件存储结构（视图/规则/教程入口、版本、manifest 引用）
+- [ ] 1.2 实现 UGC 包 API（列表、详情、发布、拉取 manifest/包入口）
+- [ ] 1.3 服务端启动/刷新时动态注册已发布 UGC 包（packageId 作为 gameId）
+- [ ] 1.4 通用 UGC Game Wrapper：沙箱执行 domain.js 并映射 setup/validate/execute/reduce/playerView/isGameOver
+- [ ] 1.5 前端通用 UGC Board/Client：iframe 挂载视图包并接入 UGCHostBridge/UGCViewSdk
+- [ ] 1.6 教程入口：从包内脚本/manifest 读取并接入现有 /tutorial 流程
+- [ ] 1.7 运行时接入音频播放（SFX/BGM）与资源路径归一化
 
 ## 2. 资产上传与压缩管线
 - [ ] 2.1 实现 UGC 资产上传 API（图片/音频）与权限校验
@@ -11,8 +14,7 @@
 - [ ] 2.4 Builder 上传对接（上传 → 返回 assetKey / manifest 更新）
 
 ## 3. 主页与分类入口
-- [ ] 3.1 首页新增“自制”分类入口，展示已发布 UGC 包
-- [ ] 3.2 “全部分类”中合并 UGC 包展示与跳转
+- [ ] 3.1 “全部分类”中合并 UGC 包展示与跳转
 
 ## 4. 测试与文档
 - [ ] 4.1 新增 API 与压缩流程测试（含跳过已压缩格式）

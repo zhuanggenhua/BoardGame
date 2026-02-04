@@ -74,7 +74,6 @@ const now = () => Date.now();
 const isDefendableAttack = (state: DiceThroneCore, attackerId: string, abilityId: string): boolean => {
     const match = findPlayerAbility(state, attackerId, abilityId);
     if (!match) {
-        console.log('[isDefendableAttack] Ability not found:', abilityId);
         return true;
     }
 
@@ -82,12 +81,6 @@ const isDefendableAttack = (state: DiceThroneCore, attackerId: string, abilityId
     const variantTags = match.variant?.tags ?? [];
     const abilityTags = match.ability.tags ?? [];
     const hasUnblockableTag = variantTags.includes('unblockable') || abilityTags.includes('unblockable');
-    
-    console.log('[isDefendableAttack]', {
-        abilityId,
-        hasUnblockableTag,
-        result: !hasUnblockableTag
-    });
 
     // 不可防御标签：跳过防御阶段
     if (hasUnblockableTag) return false;
@@ -383,25 +376,7 @@ export function execute(
             const player = state.players[actingPlayerId];
             const card = player?.hand.find(c => c.id === (command.payload as { cardId: string }).cardId);
             
-            // 详细日志：记录打出卡牌的详细信息
-            console.log('[PLAY_CARD] 尝试打出卡牌:', JSON.stringify({
-                playerId: actingPlayerId,
-                cardId: (command.payload as { cardId: string }).cardId,
-                cardType: card?.type,
-                cardTiming: card?.timing,
-                cpCost: card?.cpCost,
-                effectCount: card?.effects?.length ?? 0,
-                effects: card?.effects?.map(e => ({
-                    timing: e.timing,
-                    actionType: e.action?.type,
-                    customActionId: e.action?.customActionId,
-                })),
-                currentPhase: state.turnPhase,
-                playerCP: player?.resources[RESOURCE_IDS.CP] ?? 0,
-            }, null, 2));
-            
             if (!card || !player) {
-                console.warn('[PLAY_CARD] 打出失败 - 卡牌或玩家不存在');
                 break;
             }
             
@@ -450,15 +425,6 @@ export function execute(
                 };
                 const effectEvents = resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random });
                 events.push(...effectEvents);
-                
-                console.log('[PLAY_CARD] 升级卡打出成功:', JSON.stringify({
-                    playerId: actingPlayerId,
-                    cardId: card.id,
-                    targetAbilityId,
-                    currentLevel,
-                    actualCost,
-                    effectCount: effectEvents.length,
-                }));
                 break;
             }
             
@@ -474,14 +440,6 @@ export function execute(
                 timestamp,
             };
             events.push(event);
-            
-            console.log('[PLAY_CARD] 卡牌打出成功:', JSON.stringify({
-                playerId: actingPlayerId,
-                cardId: card.id,
-                cardType: card.type,
-                cpCost: card.cpCost,
-                effectCount: card.effects?.length ?? 0,
-            }));
             
             // 通过效果系统执行卡牌效果（数据驱动）
             const opponentId = Object.keys(state.players).find(id => id !== actingPlayerId) || actingPlayerId;

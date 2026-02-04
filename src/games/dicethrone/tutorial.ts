@@ -23,6 +23,18 @@ export const DiceThroneTutorial: TutorialManifest = {
     },
     steps: [
         {
+            id: 'setup',
+            content: 'game-dicethrone:tutorial.steps.setup',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+            aiActions: [
+                { commandType: 'SELECT_CHARACTER', payload: { characterId: 'monk' } },
+                { commandType: 'HOST_START_GAME', payload: {} },
+            ],
+            advanceOnEvents: [{ type: 'SYS_PHASE_CHANGED', match: { to: 'income' } }],
+        },
+        {
             id: 'intro',
             content: 'game-dicethrone:tutorial.steps.intro',
             position: 'center',

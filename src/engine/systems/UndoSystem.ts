@@ -33,6 +33,20 @@ export interface UndoSystemConfig {
     snapshotCommandAllowlist?: CommandAllowlist;
 }
 
+function clearPendingRequest<TCore>(state: MatchState<TCore>): MatchState<TCore> {
+    const { undo } = state.sys;
+    return {
+        ...state,
+        sys: {
+            ...state.sys,
+            undo: {
+                ...undo,
+                pendingRequest: undefined,
+            },
+        },
+    };
+}
+
 // ============================================================================
 // 撤销命令类型
 // ============================================================================
@@ -69,6 +83,9 @@ export function createUndoSystem<TCore>(
     } = config;
     const normalizedAllowlist = normalizeCommandAllowlist(snapshotCommandAllowlist);
 
+    let pendingSnapshot: MatchState<TCore> | null = null;
+    let shouldClearPendingRequest = false;
+
     return {
         id: SYSTEM_IDS.UNDO,
         name: '撤销系统',
@@ -82,6 +99,9 @@ export function createUndoSystem<TCore>(
         }),
 
         beforeCommand: ({ state, command }): HookResult<TCore> | void => {
+            pendingSnapshot = null;
+            shouldClearPendingRequest = false;
+
             // 处理撤销相关命令
             if (command.type === UNDO_COMMANDS.REQUEST_UNDO) {
                 return handleRequestUndo(state, command.playerId, requireApproval, requiredApprovals);
@@ -96,46 +116,55 @@ export function createUndoSystem<TCore>(
                 return handleCancelUndo(state, command.playerId);
             }
 
-            // 普通命令：保存快照
+            // 普通命令：准备快照/清理请求（成功后再落地）
             // 目标：只让“会改变对局领域状态”的命令进入撤回历史。
             // 约定：
             // - 系统命令："SYS_" 开头（永不快照）
             // - 作弊命令："CHEAT_" 开头（永不快照）
             // - 纯客户端/交互命令："UI_" / "DEV_" 开头（永不快照）
-            let workingState = state;
-            let didCancelPending = false;
             const type = command.type;
-            const isUndoCommand = Object.values(UNDO_COMMANDS).includes(type as typeof UNDO_COMMANDS[keyof typeof UNDO_COMMANDS]);
 
-            if (!isUndoCommand && workingState.sys.undo.pendingRequest) {
-                const { undo } = workingState.sys;
-                workingState = {
-                    ...workingState,
-                    sys: {
-                        ...workingState.sys,
-                        undo: {
-                            ...undo,
-                            pendingRequest: undefined,
-                        },
-                    },
-                };
-                didCancelPending = true;
+            if (state.sys.undo.pendingRequest) {
+                shouldClearPendingRequest = true;
             }
+
             // 最正确方案：由具体游戏提供白名单。
             // 不提供时保持兼容（对所有非系统命令快照），但这会导致 UI 高频动作也可能进入快照。
             if (!isCommandAllowlisted(type, normalizedAllowlist, { fallbackToAllowAll: true })) {
-                if (didCancelPending) {
-                    return { state: workingState };
-                }
                 return;
             }
 
-            const beforeCount = workingState.sys.undo.snapshots.length;
-            const newState = saveSnapshot(workingState, maxSnapshots);
-            if (IS_SERVER) {
-                console.log(`[UndoServer] snapshot-saved command=${type} before=${beforeCount} after=${newState.sys.undo.snapshots.length}`);
+            const snapshotSource = shouldClearPendingRequest
+                ? clearPendingRequest(state)
+                : state;
+            pendingSnapshot = createSnapshot(snapshotSource);
+        },
+
+        afterEvents: ({ state, command }): HookResult<TCore> | void => {
+            const type = command.type;
+            const isUndoCommand = Object.values(UNDO_COMMANDS).includes(type as typeof UNDO_COMMANDS[keyof typeof UNDO_COMMANDS]);
+            if (isUndoCommand) return;
+
+            let nextState = state;
+
+            if (shouldClearPendingRequest && nextState.sys.undo.pendingRequest) {
+                nextState = clearPendingRequest(nextState);
             }
-            return { state: newState };
+
+            if (pendingSnapshot) {
+                const beforeCount = nextState.sys.undo.snapshots.length;
+                nextState = appendSnapshot(nextState, pendingSnapshot, maxSnapshots);
+                if (IS_SERVER) {
+                    console.log(`[UndoServer] snapshot-saved command=${type} before=${beforeCount} after=${nextState.sys.undo.snapshots.length}`);
+                }
+            }
+
+            pendingSnapshot = null;
+            shouldClearPendingRequest = false;
+
+            if (nextState !== state) {
+                return { state: nextState };
+            }
         },
     };
 }
@@ -144,16 +173,12 @@ export function createUndoSystem<TCore>(
 // 撤销处理函数
 // ============================================================================
 
-function saveSnapshot<TCore>(
-    state: MatchState<TCore>,
-    maxSnapshots: number
+function createSnapshot<TCore>(
+    state: MatchState<TCore>
 ): MatchState<TCore> {
-    const snapshots = [...state.sys.undo.snapshots];
     const actionLog = state.sys.actionLog ?? { entries: [], maxEntries: 0 };
     const actionLogMaxEntries = actionLog.maxEntries ?? 0;
-    
-    // 保存当前状态的深拷贝（排除已有快照，避免嵌套导致指数级膨胀）
-    // 同时限制日志数量，避免快照过大
+
     const stateToSave = {
         ...state,
         sys: {
@@ -175,7 +200,17 @@ function saveSnapshot<TCore>(
             },
         },
     };
-    snapshots.push(JSON.parse(JSON.stringify(stateToSave)));
+
+    return JSON.parse(JSON.stringify(stateToSave)) as MatchState<TCore>;
+}
+
+function appendSnapshot<TCore>(
+    state: MatchState<TCore>,
+    snapshot: MatchState<TCore>,
+    maxSnapshots: number
+): MatchState<TCore> {
+    const snapshots = [...state.sys.undo.snapshots];
+    snapshots.push(snapshot);
     
     // 限制快照数量
     while (snapshots.length > maxSnapshots) {

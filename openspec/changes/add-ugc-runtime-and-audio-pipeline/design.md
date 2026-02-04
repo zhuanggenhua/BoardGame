@@ -5,17 +5,17 @@
 
 ## Goals / Non-Goals
 ### Goals
-- 提供 UGC 最终运行时入口（按 packageId 加载）并接入宿主桥接/iframe。
+- UGC 联机/教程入口复用现有大厅/房间与教程路由，并按 packageId 动态注册到 boardgame.io。
+- 提供通用 UGC Board（iframe + 宿主桥接/SDK）承载视图包。
 - 包来源统一从服务器拉取已发布 Package；本地预览仅限 Builder。
 - 资产上传接入 R2 管线，压缩后仅保留变体，不保留原始文件。
-- 主页“自制”与“全部分类”可浏览 UGC 包并跳转运行时。
+- 主页“全部分类”可浏览 UGC 包并跳转联机入口。
 
 ### Non-Goals
 - 实现完整审核/上架工作流（仅保留发布状态与列表能力）。
-- 实现匹配/房间系统的 UGC 专属玩法（先提供单人或宿主模式入口）。
 
 ## Decisions
-- 运行时入口采用 `/ugc/play/:packageId`（或等价路由），由宿主加载 iframe 并绑定 UGCHostBridge/UGCViewSdk。
+- UGC 联机/教程复用现有 /play/:gameId/match/:matchId 与 /tutorial 路由（gameId=packageId）。
 - 运行时仅加载服务器已发布包；Builder 预览允许使用本地数据。
 - 资产上传在服务端执行压缩流程，若需要压缩且失败则拒绝上传（避免保留原始文件）。
 - 资源对象存储前缀严格使用 `ugc/<userId>/<packageId>/...`，与 add-r2-asset-pipeline 保持一致。

@@ -1,20 +1,23 @@
 /**
  * 井字棋音频配置
- * 定义游戏所需的所有音效及其映射
+ * 仅定义游戏特有的音效，通用音效（UI、胜负等）由 common.config.ts 提供
  */
 import type { AudioEvent, GameAudioConfig } from '../../lib/audio/types';
 
+// 游戏特有音效资源路径
+const SFX_BASE = 'tictactoe/audio';
+
 export const TIC_TAC_TOE_AUDIO_CONFIG: GameAudioConfig = {
+    basePath: SFX_BASE,
+
     sounds: {
-        // 落子音效
-        place_x: { src: 'tictactoe/audio/compressed/move.ogg', volume: 0.8, category: { group: 'system', sub: 'place_x' } },
-        place_o: { src: 'tictactoe/audio/compressed/move.ogg', volume: 0.8, category: { group: 'system', sub: 'place_o' } },
-        // 游戏结果
-        victory: { src: 'tictactoe/audio/compressed/win.ogg', volume: 1.0, category: { group: 'stinger', sub: 'victory' } },
-        draw: { src: 'tictactoe/audio/compressed/draw_line.ogg', volume: 0.9, category: { group: 'stinger', sub: 'draw' } },
-        // UI 音效
-        hover: { src: 'common/audio/compressed/hover.ogg', volume: 0.3, category: { group: 'ui', sub: 'hover' } },
-        click: { src: 'common/audio/compressed/click.ogg', volume: 0.5, category: { group: 'ui', sub: 'click' } },
+        // 落子音效（游戏特有）
+        place_x: { src: 'compressed/move.ogg', volume: 0.8, category: { group: 'system', sub: 'place_x' } },
+        place_o: { src: 'compressed/move.ogg', volume: 0.8, category: { group: 'system', sub: 'place_o' } },
+        // 平局音效（游戏特有，覆盖通用 victory）
+        draw: { src: 'compressed/draw_line.ogg', volume: 0.9, category: { group: 'stinger', sub: 'draw' } },
+        // 胜利音效（覆盖通用 victory，使用游戏特有版本）
+        victory: { src: 'compressed/win.ogg', volume: 1.0, category: { group: 'stinger', sub: 'victory' } },
     },
     eventSoundResolver: (event) => {
         if (event.type === 'CELL_OCCUPIED') {

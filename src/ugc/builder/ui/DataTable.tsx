@@ -157,6 +157,15 @@ export function DataTable<T extends Record<string, unknown>>({
 
   const primaryKey = schema.primaryKey || 'id';
   const tableFields = useMemo(() => getTableFields(schema), [schema]);
+  const tagGroups = useMemo(() => {
+    const groups: Record<string, string[]> = {};
+    availableTags.forEach(t => {
+      const group = t.group || '未分组';
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(t.name);
+    });
+    return groups;
+  }, [availableTags]);
 
   // 排序和筛选
   const filteredData = useMemo(() => {
@@ -324,11 +333,11 @@ export function DataTable<T extends Record<string, unknown>>({
       {/* 表格 */}
       <div className="flex-1 overflow-auto">
         <table className="w-full text-xs">
-          <thead className="bg-slate-700 sticky top-0 border-b border-slate-600">
+          <thead className="bg-slate-700 sticky top-0 z-10 border-b border-slate-600">
             <tr>
               {/* 选择列 */}
               {onSelectedChange && (
-                <th className="w-8 px-2 py-1.5 text-left">
+                <th className="w-8 px-2 py-1.5 text-left bg-slate-700">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -342,7 +351,7 @@ export function DataTable<T extends Record<string, unknown>>({
               {tableFields.map(({ key, field }) => (
                 <th
                   key={key}
-                  className="px-2 py-2 text-left font-medium text-slate-300 cursor-pointer hover:bg-slate-600 min-w-[80px]"
+                  className="px-2 py-2 text-left font-medium text-slate-300 cursor-pointer hover:bg-slate-600 min-w-[80px] bg-slate-700"
                   style={{ width: field.width }}
                   onClick={() => handleSort(key)}
                 >
@@ -358,7 +367,7 @@ export function DataTable<T extends Record<string, unknown>>({
               ))}
 
               {/* 操作列 */}
-              <th className="w-20 px-2 py-2 text-left font-medium text-slate-300">
+              <th className="w-20 px-2 py-2 text-left font-medium text-slate-300 bg-slate-700">
                 操作
               </th>
             </tr>
@@ -399,17 +408,6 @@ export function DataTable<T extends Record<string, unknown>>({
                     const isTagField = field.type === 'array' && 'tagEditor' in field && field.tagEditor;
                     const isTagDropdownOpen = tagDropdownOpen?.id === id && tagDropdownOpen?.key === key;
                     const currentTags = Array.isArray(item[key]) ? item[key] as string[] : [];
-                    
-                    // 按分组整理标签
-                    const tagGroups = useMemo(() => {
-                      const groups: Record<string, string[]> = {};
-                      availableTags.forEach(t => {
-                        const group = t.group || '未分组';
-                        if (!groups[group]) groups[group] = [];
-                        groups[group].push(t.name);
-                      });
-                      return groups;
-                    }, [availableTags]);
                     
                     return (
                       <td 
@@ -507,7 +505,7 @@ export function DataTable<T extends Record<string, unknown>>({
                               </div>
                             )}
                           </div>
-                        ) : (field.type as string) === 'renderComponent' ? (
+                        ) : (field.type as string) === 'renderComponent' || key === 'renderComponentId' ? (
                           /* 渲染组件选择 - 内联下拉 */
                           <select
                             value={String(item[key] ?? '')}

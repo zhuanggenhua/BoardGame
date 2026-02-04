@@ -74,22 +74,6 @@ const validateRollDice = (
     
     const rollerId = getRollerId(state);
     if (!isMoveAllowed(playerId, rollerId)) {
-        // 临时日志：排查防御投掷 player_mismatch
-        console.warn('[DiceThrone][validateRollDice] player_mismatch', {
-            playerId,
-            rollerId,
-            turnPhase: state.turnPhase,
-            activePlayerId: state.activePlayerId,
-            rollCount: state.rollCount,
-            rollLimit: state.rollLimit,
-            pendingAttack: state.pendingAttack
-                ? {
-                    attackerId: state.pendingAttack.attackerId,
-                    defenderId: state.pendingAttack.defenderId,
-                    sourceAbilityId: state.pendingAttack.sourceAbilityId,
-                }
-                : null,
-        });
         return fail('player_mismatch');
     }
     
@@ -450,11 +434,6 @@ const validatePlayCard = (
         return fail(checkResult.reason);
     }
     
-    console.log('[validatePlayCard] 验证成功:', {
-        playerId: actingPlayerId,
-        cardId: card.id,
-        cardType: card.type,
-    });
     return ok();
 };
 

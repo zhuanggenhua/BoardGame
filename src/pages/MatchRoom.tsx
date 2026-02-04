@@ -485,7 +485,7 @@ export const MatchRoom = () => {
     if (!isGameNamespaceReady) {
         return (
             <div className="w-full h-screen bg-black flex items-center justify-center">
-                <div className="text-white/70 text-sm">正在加载对局资源...</div>
+                <div className="text-white/70 text-sm">{t('matchRoom.loadingResources')}</div>
             </div>
         );
     }
@@ -494,7 +494,7 @@ export const MatchRoom = () => {
     if (isAutoJoining || (shouldAutoJoin && !credentials)) {
         return (
             <div className="w-full h-screen bg-black flex items-center justify-center">
-                <div className="text-white/70 text-sm">正在加入房间...</div>
+                <div className="text-white/70 text-sm">{t('matchRoom.joiningRoom')}</div>
             </div>
         );
     }

@@ -5,23 +5,33 @@
         "count": "({{count}} reviews)"
     },
     "form": {
+        "label": "Your Review",
         "placeholder": "Write something...",
         "submit": "Post Review",
         "update": "Update Review",
         "delete": "Delete",
         "loginToReview": "Login to review",
         "positive": "Recommend",
-        "negative": "Not Recommend"
+        "negative": "Not Recommend",
+        "editTitle": "Edit My Review",
+        "newTitle": "Write a Review",
+        "success": "Review posted",
+        "deleted": "Review deleted",
+        "edit": "Edit",
+        "writeReview": "Write Review"
     },
     "list": {
         "empty": "No reviews yet",
-        "loadMore": "Load More"
+        "loadMore": "Load More",
+        "error": "Failed to load reviews, please try again later"
     },
     "section": {
-        "title": "Game Reviews"
+        "title": "Game Reviews",
+        "ratingCount": "{{count}} reviews",
+        "statsError": "Unable to load statistics at the moment"
     },
     "errors": {
-        "contentLenght": "Review content cannot exceed 500 characters",
+        "contentLength": "Review content cannot exceed 500 characters",
         "required": "Please select positive or negative"
     }
 }

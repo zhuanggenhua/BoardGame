@@ -128,6 +128,17 @@ export const canAdvancePhase = (state: DiceThroneCore): boolean => {
     // 选角阶段门禁
     if (state.turnPhase === 'setup') {
         const playerIds = Object.keys(state.players);
+        
+        // 教程模式：只检查玩家 0 是否选好角色
+        const isTutorialMode = typeof window !== 'undefined'
+            && (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__ === 'tutorial';
+        
+        if (isTutorialMode) {
+            const player0Selected = state.selectedCharacters['0'] && state.selectedCharacters['0'] !== 'unselected';
+            return player0Selected && state.hostStarted;
+        }
+        
+        // 正常模式：检查所有玩家
         const allSelected = playerIds.every(pid => state.selectedCharacters[pid] && state.selectedCharacters[pid] !== 'unselected');
         const allNonHostReady = playerIds.every(pid => pid === state.hostPlayerId || state.readyPlayers[pid]);
         return allSelected && allNonHostReady && state.hostStarted;

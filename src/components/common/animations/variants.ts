@@ -42,10 +42,10 @@ export const impactVariants: Variants = {
 export const shakeVariants: Variants = {
     idle: { x: 0 },
     shake: {
-        x: [-4, 4, -4, 4, -2, 2, 0],
+        x: [-10, 10, -8, 8, -5, 5, 0],
         transition: {
-            duration: 0.5,
-            ease: 'easeInOut',
+            duration: 0.4,
+            ease: 'easeOut',
         },
     },
 };

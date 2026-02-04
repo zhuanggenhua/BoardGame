@@ -759,12 +759,6 @@ function handleGrantCp2({ targetId, state, timestamp }: CustomActionContext): Di
 /** 额外投掷次数 */
 function handleGrantExtraRoll({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
     const newLimit = state.rollLimit + 1;
-    console.log('[DiceThrone][handleGrantExtraRoll] 增加投掷次数', {
-        targetId,
-        sourceAbilityId,
-        currentRollLimit: state.rollLimit,
-        newLimit,
-    });
     return [{
         type: 'ROLL_LIMIT_CHANGED',
         payload: { playerId: targetId, delta: 1, newLimit, sourceCardId: sourceAbilityId },
@@ -790,7 +784,6 @@ function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp }: CustomAc
 
 /** 将1颗骰子改为另1颗的值 */
 function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
-    console.log('[DiceThrone][handleModifyDieCopy] 处理 modify-die-copy', { attackerId, sourceAbilityId });
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -801,9 +794,7 @@ function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp }: CustomA
         selected: [],
         dieModifyConfig: { mode: 'copy' },
     };
-    const event = { type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent;
-    console.log('[DiceThrone][handleModifyDieCopy] 生成 INTERACTION_REQUESTED 事件', event.payload);
-    return [event];
+    return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
 /** 改变任意1颗骰子的数值 */

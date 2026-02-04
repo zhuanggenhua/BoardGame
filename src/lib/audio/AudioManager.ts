@@ -48,6 +48,54 @@ class AudioManagerClass {
 
     private _currentBgm: string | null = null;
     private _initialized: boolean = false;
+    private _limiterSetup: boolean = false;
+
+    private getAudioContext(): AudioContext | null {
+        return (Howler as unknown as { ctx?: AudioContext }).ctx ?? null;
+    }
+
+    private isContextSuspended(): boolean {
+        const ctx = this.getAudioContext();
+        return Boolean(ctx && ctx.state === 'suspended');
+    }
+
+    private resumeContextIfNeeded(): void {
+        const ctx = this.getAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume().catch(() => {
+                // 解锁依赖用户手势，失败时等待 unlock 再重试
+            });
+        }
+    }
+
+    private setupLimiterIfNeeded(): void {
+        if (this._limiterSetup) return;
+        const ctx = this.getAudioContext();
+        const masterGain = (Howler as unknown as { masterGain?: GainNode }).masterGain;
+        if (!ctx || !masterGain) return;
+
+        const compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-12, ctx.currentTime);
+        compressor.knee.setValueAtTime(8, ctx.currentTime);
+        compressor.ratio.setValueAtTime(12, ctx.currentTime);
+        compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+        compressor.release.setValueAtTime(0.25, ctx.currentTime);
+
+        const outputGain = ctx.createGain();
+        outputGain.gain.setValueAtTime(1, ctx.currentTime);
+
+        try {
+            masterGain.disconnect();
+        } catch {
+            // 忽略已断开或不支持的情况
+        }
+
+        masterGain.connect(compressor);
+        compressor.connect(outputGain);
+        outputGain.connect(ctx.destination);
+
+        this._limiterSetup = true;
+    }
 
     private notifyBgmChange(): void {
         this.bgmListeners.forEach((listener) => listener(this._currentBgm));
@@ -143,6 +191,9 @@ class AudioManagerClass {
                 this.bgms.set(bgmDef.key, howl);
             }
         }
+
+        // 仅影响 WebAudio 音效链路，HTML5 BGM 不受影响
+        this.setupLimiterIfNeeded();
     }
 
     /**
@@ -152,6 +203,13 @@ class AudioManagerClass {
         if (this.failedKeys.has(key)) return null;
         const howl = this.sounds.get(key);
         if (!howl) return null;
+        this.resumeContextIfNeeded();
+        if (this.isContextSuspended()) {
+            howl.once('unlock', () => {
+                this.resumeContextIfNeeded();
+                howl.play(spriteKey);
+            });
+        }
         return howl.play(spriteKey);
     }
 
@@ -159,10 +217,17 @@ class AudioManagerClass {
      * 播放 BGM
      */
     playBgm(key: string): void {
-        if (this._currentBgm === key) return;
+        const howl = this.bgms.get(key);
+        if (!howl) {
+            console.warn(`[AudioManager] BGM "${key}" 未注册`);
+            return;
+        }
+
+        const isSameBgm = this._currentBgm === key;
+        if (isSameBgm && howl.playing()) return;
 
         // 停止当前 BGM
-        if (this._currentBgm) {
+        if (this._currentBgm && !isSameBgm) {
             this.bgms.get(this._currentBgm)?.fade(this._bgmVolume, 0, 1000);
             const prevBgm = this._currentBgm;
             setTimeout(() => {
@@ -170,15 +235,23 @@ class AudioManagerClass {
             }, 1000);
         }
 
-        const howl = this.bgms.get(key);
-        if (howl) {
-            howl.volume(0);
-            howl.play();
-            howl.fade(0, this._bgmVolume, 1000);
+        this.resumeContextIfNeeded();
+        if (this.isContextSuspended()) {
+            howl.once('unlock', () => {
+                if (this._currentBgm !== key) return;
+                this.resumeContextIfNeeded();
+                howl.volume(0);
+                const playId = howl.play();
+                howl.fade(0, this._bgmVolume, 1000, playId);
+            });
+        }
+
+        howl.volume(0);
+        const playId = howl.play();
+        howl.fade(0, this._bgmVolume, 1000, playId);
+        if (!isSameBgm) {
             this._currentBgm = key;
             this.notifyBgmChange();
-        } else {
-            console.warn(`[AudioManager] BGM "${key}" 未注册`);
         }
     }
 

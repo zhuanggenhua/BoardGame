@@ -67,7 +67,7 @@ export const OpponentHeader = ({
                         onToggleView();
                     }}
                     className={`
-                        group px-[0.7vw] py-[0.3vw] rounded-[0.8vw] shadow-lg cursor-pointer transition-all duration-300
+                        relative overflow-visible group px-[0.7vw] py-[0.3vw] rounded-[0.8vw] shadow-lg cursor-pointer transition-all duration-300
                         border
                         ${viewMode === 'opponent'
                             ? 'bg-amber-900/80 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
@@ -80,7 +80,7 @@ export const OpponentHeader = ({
                         {...(hitStopConfig ?? {})}
                         className="w-full h-full"
                     >
-                        <div className="relative flex items-center gap-[0.6vw]">
+                        <div className="relative flex items-center gap-[0.6vw] overflow-visible">
                             <div className="w-[2.8vw] h-[4vw] rounded-[0.4vw] border border-white/10 overflow-hidden relative bg-slate-950 shadow-inner">
                                 <div className="w-full h-full transform transition-transform duration-500 group-hover:scale-110" style={getPortraitStyle(opponent.characterId, locale)} />
                                 <div className={`absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px] transition-all duration-300 ${viewMode === 'opponent' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
@@ -136,9 +136,9 @@ export const OpponentHeader = ({
                                 </div>
                             </div>
 
-                            <SlashEffect isActive={!!slashActive} {...(slashConfig ?? {})} />
                         </div>
                     </HitStopContainer>
+                    <SlashEffect isActive={!!slashActive} {...(slashConfig ?? {})} className="z-50" />
                 </ShakeContainer>
             </div>
         </div>

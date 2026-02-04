@@ -13,7 +13,10 @@
   },
   "game_tags": {
     "dice_driven": "骰驱",
-    "combat": "对战"
+    "combat": "对战",
+    "ugc": "UGC",
+    "tactical": "战棋",
+    "card_driven": "卡牌"
   },
   "game_details": {
     "best_players": "最佳人数",
@@ -41,5 +44,18 @@
   "accept": "接受",
   "reject": "拒绝",
   "back": "返回",
-  "loading": "加载中"
+  "loading": "加载中",
+  "unknownUser": "未知用户",
+  "game_names": {
+    "tictactoe": "井字棋",
+    "dicethrone": "王权骰铸",
+    "summonerwars": "召唤师战争"
+  },
+  "games": {
+    "summonerwars": {
+      "title": "召唤师战争",
+      "description": "召唤师战争是一款快速紧凑的2人游戏。玩家扮演召唤者，通过控制神秘召唤石力量来领导他们的种族征服Itharia这个饱受战争创伤的星球。",
+      "players": "2人"
+    }
+  }
 }

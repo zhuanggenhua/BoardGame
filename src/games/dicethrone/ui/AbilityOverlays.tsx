@@ -25,8 +25,8 @@ const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] }> = {
         'fist-technique-2-5', 'fist-technique-2-4', 'fist-technique-2-3',
         'fist-technique-3-5', 'fist-technique-3-4', 'fist-technique-3-3',
     ] },
-    // 物我两忘：基础、II级
-    chi: { labelKey: 'abilitySlots.chi', ids: ['zen-forget', 'zen-forget-2'] },
+    // 物我两忘：基础、II级（包含变体）
+    chi: { labelKey: 'abilitySlots.chi', ids: ['zen-forget', 'zen-forget-2', 'zen-forget-2-zen-combat', 'zen-forget-2-3'] },
     // 天人合一：基础、II级
     sky: { labelKey: 'abilitySlots.sky', ids: ['harmony', 'harmony-2'] },
     // 莲花掌：基础、II级(4/5/3莲花)
@@ -232,18 +232,10 @@ export const AbilityOverlays = ({
                             </>
                         )}
                         {shouldHighlight && (
-                            <div className={`absolute inset-0 rounded-lg border-[2.5px] pointer-events-none z-10 animate-pulse ${
-                                isUltimate 
-                                    ? 'border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.8),0_0_40px_rgba(251,191,36,0.4),inset_0_0_15px_rgba(251,191,36,0.3)]' 
-                                    : 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.8),0_0_40px_rgba(34,211,238,0.4)]'
-                            }`} />
+                            <div className="absolute inset-0 rounded-lg border-[2.5px] border-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.8),0_0_40px_rgba(251,113,133,0.4)] pointer-events-none z-10 animate-pulse" />
                         )}
                         {isAbilitySelected && (
-                            <div className={`absolute inset-0 rounded-lg border-[3px] pointer-events-none z-10 ${
-                                isUltimate
-                                    ? 'border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.9),0_0_50px_rgba(245,158,11,0.5)]'
-                                    : 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.9),0_0_50px_rgba(16,185,129,0.5)]'
-                            }`}>
+                            <div className="absolute inset-0 rounded-lg border-[3px] border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.9),0_0_50px_rgba(239,68,68,0.5)] pointer-events-none z-10">
                                 <div className="absolute -inset-[2px] rounded-lg border-2 border-white/60 animate-pulse" />
                             </div>
                         )}

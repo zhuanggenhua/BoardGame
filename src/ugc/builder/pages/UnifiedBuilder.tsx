@@ -18,6 +18,8 @@ import { DataTable } from '../ui/DataTable';
 import { SceneCanvas, type SceneComponent } from '../ui/SceneCanvas';
 import { PreviewCanvas } from '../ui/RenderPreview';
 import { PromptGenerator, type GameContext, useRenderPrompt } from '../ai';
+import { useToast } from '../../../contexts/ToastContext';
+import { validateAbilityJson } from '../utils/validateAbilityJson';
 import { useAudio } from '../../../contexts/AudioContext';
 import { AudioManager } from '../../../lib/audio/AudioManager';
 import type { BgmDefinition } from '../../../lib/audio/types';
@@ -69,7 +71,7 @@ const SCHEMA_TEMPLATES = {
     description: '带渲染组件引用的实体',
     fields: {
       name: field.string('名称'),
-      renderComponentId: field.string('渲染组件'),
+      renderComponentId: { type: 'renderComponent', label: '渲染组件', showInTable: true } as const,
     }
   },
   player: { 
@@ -286,7 +288,7 @@ function HookField({
       ? `\n## 当前布局可用输出\n${outputsSummary}`
       : '';
     const playerContextInfo = componentType === 'player-area'
-      ? `\n## 玩家上下文（系统注入，仅 player-area 可用）\n- playerIds: string[] - 玩家 ID 列表\n- currentPlayerId: string | null - 当前玩家 ID\n- currentPlayerIndex: number - 当前玩家索引\n- resolvedPlayerId: string | null - 当前组件定位到的玩家 ID\n- resolvedPlayerIndex: number - 目标玩家索引\n- resolvedPlayer: Record<string, unknown> | undefined - 目标玩家数据\n- player: resolvedPlayer 的别名\n- isCurrentPlayer: boolean - 是否为当前玩家\n- isCurrentTurn: boolean - 预览中等价于 isCurrentPlayer\n\n### 组件配置字段（用于定位玩家）\n- playerRef: 'current' | 'next' | 'prev' | 'offset' | 'index' | 'id'\n- playerRefOffset: number (playerRef=offset 时使用)\n- playerRefIndex: number (playerRef=index 时使用)\n- playerRefId: string (playerRef=id 时使用)\n- playerIdField: string (玩家 Schema 的 ID 字段，默认使用 id/playerId)\n- currentPlayerId/playerIds: 仅用于预览态模拟\n\n### 关联示例（目标玩家的关联数据）\n\`\`\`tsx\nconst outputs = data.outputsByType?.['hand-zone'] || [];\nconst output = outputs[0];\nconst key = output?.bindEntity;\nconst relatedItems = key ? output.items.filter(item => item[key] === data.resolvedPlayerId) : [];\n\`\`\``
+      ? `\n## 玩家上下文（系统注入，仅 player-area 可用）\n- playerIds: string[] - 玩家 ID 列表（由绑定 Schema 自动推导）\n- currentPlayerId: string | null - 当前玩家 ID\n- currentPlayerIndex: number - 当前玩家索引\n- resolvedPlayerId: string | null - 当前组件定位到的玩家 ID\n- resolvedPlayerIndex: number - 目标玩家索引\n- resolvedPlayer: Record<string, unknown> | undefined - 目标玩家数据\n- player: resolvedPlayer 的别名\n- isCurrentPlayer: boolean - 是否为当前玩家\n- isCurrentTurn: boolean - 预览中等价于 isCurrentPlayer\n\n### 组件配置字段（用于定位玩家）\n- playerRef: 'current' | 'index'\n  - current: 当前玩家\n  - index: 第 N 个玩家（使用 playerRefIndex）\n- playerRefIndex: number - 第 N 个玩家的索引（0 开始）\n\n### 关联示例（目标玩家的关联数据）\n\`\`\`tsx\nconst outputs = data.outputsByType?.['hand-zone'] || [];\nconst output = outputs[0];\nconst key = output?.bindEntity;\nconst relatedItems = key ? output.items.filter(item => item[key] === data.resolvedPlayerId) : [];\n\`\`\``
       : '';
 
     const templates: Record<string, string> = {
@@ -568,11 +570,13 @@ function UnifiedBuilderInner() {
   const [aiGenType, setAiGenType] = useState<AIGenType>(null);
   const [aiGenInput, setAiGenInput] = useState('');
   const [rulesRequirement, setRulesRequirement] = useState('');
+  const [abilityImportErrors, setAbilityImportErrors] = useState<string[]>([]);
   
   // 标签编辑状态
   const [editingTagIndex, setEditingTagIndex] = useState<number | null>(null);
   const [newTagName, setNewTagName] = useState('');
   const [newTagGroup, setNewTagGroup] = useState('');
+  const toast = useToast();
 
   const layoutOutputsSummary = useMemo(() => {
     const lines = state.layout
@@ -585,6 +589,16 @@ function UnifiedBuilderInner() {
       });
     return lines.length > 0 ? lines.join('\n') : '';
   }, [state.layout, state.schemas]);
+
+  const renderComponentInstances = useMemo(() => {
+    return state.layout
+      .filter(comp => comp.type === 'render-component')
+      .map(comp => ({
+        id: comp.id,
+        name: String(comp.data.name || '未命名渲染组件'),
+        targetSchema: comp.data.targetSchema as string | undefined,
+      }));
+  }, [state.layout]);
   
   // 预览模式状态
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -948,11 +962,15 @@ function UnifiedBuilderInner() {
         layout: state.layout,
         layoutGroups: state.layoutGroups,
         rulesCode: state.rulesCode,
+        uiLayout: {
+          leftPanelWidth,
+          topPanelRatio,
+        },
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
     }, 500);
     return () => clearTimeout(timer);
-  }, [state]);
+  }, [state, leftPanelWidth, topPanelRatio]);
 
   const handleSave = useCallback(() => {
     const saveData = {
@@ -965,10 +983,14 @@ function UnifiedBuilderInner() {
       layout: state.layout,
       layoutGroups: state.layoutGroups,
       rulesCode: state.rulesCode,
+      uiLayout: {
+        leftPanelWidth,
+        topPanelRatio,
+      },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
-    alert('已保存到本地');
-  }, [state]);
+    toast.success('已保存到本地');
+  }, [state, leftPanelWidth, topPanelRatio, toast]);
 
   const handleExport = useCallback(() => {
     const saveData = {
@@ -981,6 +1003,10 @@ function UnifiedBuilderInner() {
       layout: state.layout,
       layoutGroups: state.layoutGroups,
       rulesCode: state.rulesCode,
+      uiLayout: {
+        leftPanelWidth,
+        topPanelRatio,
+      },
     };
     const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -1014,6 +1040,14 @@ function UnifiedBuilderInner() {
             layoutGroups: data.layoutGroups || prev.layoutGroups,
             rulesCode: data.rulesCode || '',
           }));
+          if (data.uiLayout) {
+            if (typeof data.uiLayout.leftPanelWidth === 'number') {
+              setLeftPanelWidth(data.uiLayout.leftPanelWidth);
+            }
+            if (typeof data.uiLayout.topPanelRatio === 'number') {
+              setTopPanelRatio(data.uiLayout.topPanelRatio);
+            }
+          }
         } catch (err) {
           alert('导入失败：无效的 JSON 文件');
         }
@@ -1053,6 +1087,14 @@ function UnifiedBuilderInner() {
             rulesCode: data.rulesCode || '',
           };
         });
+        if (data.uiLayout) {
+          if (typeof data.uiLayout.leftPanelWidth === 'number') {
+            setLeftPanelWidth(data.uiLayout.leftPanelWidth);
+          }
+          if (typeof data.uiLayout.topPanelRatio === 'number') {
+            setTopPanelRatio(data.uiLayout.topPanelRatio);
+          }
+        }
       } catch (err) {
         console.error('Failed to load saved state:', err);
       }
@@ -1565,35 +1607,39 @@ function UnifiedBuilderInner() {
                     </div>
                   )}
 
-                  {/* 数据绑定 */}
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-amber-500">数据绑定</h3>
-                    <div className="space-y-2 text-xs">
-                      <div>
-                        <label className="text-slate-400">绑定 Schema</label>
-                        <select
-                          value={String(comp.data.bindSchema || '')}
-                          onChange={e => updateCompData('bindSchema', e.target.value || undefined)}
-                          className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
-                        >
-                          <option value="">无</option>
-                          {state.schemas.map(s => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-slate-400">关联实体字段</label>
-                        <input
-                          type="text"
-                          value={String(comp.data.bindEntity || '')}
-                          onChange={e => updateCompData('bindEntity', e.target.value)}
-                          placeholder="如：playerId"
-                          className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
-                        />
+                  {/* 数据绑定（render-component 使用专属 targetSchema，避免重复） */}
+                  {comp.type !== 'render-component' && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-amber-500">数据绑定</h3>
+                      <div className="space-y-2 text-xs">
+                        <div>
+                          <label className="text-slate-400">绑定 Schema</label>
+                          <select
+                            value={String(comp.data.bindSchema || '')}
+                            onChange={e => updateCompData('bindSchema', e.target.value || undefined)}
+                            className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                          >
+                            <option value="">无</option>
+                            {state.schemas.map(s => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-slate-400">
+                            {comp.type === 'hand-zone' ? '归属字段（玩家ID）' : '关联实体字段'}
+                          </label>
+                          <input
+                            type="text"
+                            value={String(comp.data.bindEntity || '')}
+                            onChange={e => updateCompData('bindEntity', e.target.value)}
+                            placeholder={comp.type === 'hand-zone' ? '如：ownerId / playerId' : '如：playerId'}
+                            className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* 玩家区域：目标玩家配置 */}
                   {comp.type === 'player-area' && (
@@ -1601,115 +1647,147 @@ function UnifiedBuilderInner() {
                       <h3 className="text-sm font-medium text-amber-500">目标玩家</h3>
                       <div className="space-y-2 text-xs">
                         <div>
-                          <label className="text-slate-400">定位方式</label>
+                          <label className="text-slate-400">目标类型</label>
                           <select
-                            value={String(comp.data.playerRef || 'current')}
+                            value={String(comp.data.playerRef === 'self' ? 'current' : (comp.data.playerRef || 'current'))}
                             onChange={e => updateCompData('playerRef', e.target.value)}
                             className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
                           >
                             <option value="current">当前玩家</option>
-                            <option value="next">下一位玩家</option>
-                            <option value="prev">上一位玩家</option>
-                            <option value="offset">相对偏移</option>
-                            <option value="index">指定序号</option>
-                            <option value="id">指定 ID</option>
+                            <option value="index">第 N 个玩家</option>
                           </select>
                         </div>
-                        {comp.data.playerRef === 'offset' && (
+                        {(comp.data.playerRef === 'index') && (
                           <div>
-                            <label className="text-slate-400">偏移量</label>
+                            <label className="text-slate-400">第 N 个玩家索引（0 开始）</label>
                             <input
                               type="number"
-                              value={Number(comp.data.playerRefOffset || 0)}
-                              onChange={e => updateCompData('playerRefOffset', Number(e.target.value || 0))}
-                              className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
-                            />
-                          </div>
-                        )}
-                        {comp.data.playerRef === 'index' && (
-                          <div>
-                            <label className="text-slate-400">玩家序号（0开始）</label>
-                            <input
-                              type="number"
-                              value={Number(comp.data.playerRefIndex || 0)}
+                              value={String(comp.data.playerRefIndex ?? 0)}
                               onChange={e => updateCompData('playerRefIndex', Number(e.target.value || 0))}
                               className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
                             />
                           </div>
                         )}
-                        {comp.data.playerRef === 'id' && (
-                          <div>
-                            <label className="text-slate-400">目标玩家 ID</label>
-                            <input
-                              type="text"
-                              value={String(comp.data.playerRefId || '')}
-                              onChange={e => updateCompData('playerRefId', e.target.value)}
-                              placeholder="如：player-1"
-                              className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
-                            />
-                          </div>
-                        )}
-                        <div>
-                          <label className="text-slate-400">玩家 ID 字段</label>
-                          <input
-                            type="text"
-                            value={String(comp.data.playerIdField || '')}
-                            onChange={e => updateCompData('playerIdField', e.target.value)}
-                            placeholder="默认使用 id / playerId"
-                            className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-slate-400">预览当前玩家 ID</label>
-                          <input
-                            type="text"
-                            value={String(comp.data.currentPlayerId || '')}
-                            onChange={e => updateCompData('currentPlayerId', e.target.value)}
-                            placeholder="预览用，可留空"
-                            className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-slate-400">预览玩家列表</label>
-                          <input
-                            type="text"
-                            value={Array.isArray(comp.data.playerIds) ? (comp.data.playerIds as string[]).join(',') : ''}
-                            onChange={e => {
-                              const next = e.target.value
-                                .split(',')
-                                .map(v => v.trim())
-                                .filter(Boolean);
-                              updateCompData('playerIds', next.length > 0 ? next : undefined);
-                            }}
-                            placeholder="player-1,player-2"
-                            className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
-                          />
-                        </div>
+                        <p className="text-[10px] text-slate-500">
+                          预览会自动使用绑定 Schema 的数据作为玩家列表。
+                        </p>
                       </div>
                     </div>
                   )}
 
                   {/* 手牌区：布局、选中、排序、过滤（引擎层 HandAreaSkeleton 支持） */}
-                  {comp.type === 'hand-zone' && (
-                    <>
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-amber-500">布局与选中</h3>
-                        <p className="text-slate-500 text-[10px]">由引擎层 HandAreaSkeleton 执行</p>
-                        <div className="space-y-2 text-xs">
-                          <HookField label="布局代码" value={String(comp.data.layoutCode || '')} onChange={v => updateCompData('layoutCode', v)} schema={currentSchema} hookType="layout" placeholder="顺序排开，卡牌间距-30px" componentType={comp.type} />
-                          <HookField label="选中效果" value={String(comp.data.selectEffectCode || '')} onChange={v => updateCompData('selectEffectCode', v)} schema={currentSchema} hookType="selectEffect" placeholder="抬高一点" componentType={comp.type} />
+                  {comp.type === 'hand-zone' && (() => {
+                    const bindSchemaId = comp.data.bindSchema as string | undefined;
+                    const bindSchema = bindSchemaId
+                      ? state.schemas.find(s => s.id === bindSchemaId)
+                      : undefined;
+                    const schemaFields = bindSchema ? Object.entries(bindSchema.fields) : [];
+                    const targetPlayerRef = String(comp.data.targetPlayerRef || 'current');
+                    return (
+                      <>
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-medium text-amber-500">归属与目标玩家</h3>
+                          <p className="text-slate-500 text-[10px]">基于归属字段与目标玩家自动过滤</p>
+                          <div className="space-y-2 text-xs">
+                            <div>
+                              <label className="text-slate-400">目标玩家</label>
+                              <select
+                                value={targetPlayerRef}
+                                onChange={e => updateCompData('targetPlayerRef', e.target.value)}
+                                className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                              >
+                                <option value="current">当前玩家</option>
+                                <option value="index">第 N 个玩家</option>
+                              </select>
+                            </div>
+                            {targetPlayerRef === 'index' && (
+                              <div>
+                                <label className="text-slate-400">第 N 个玩家索引（0 开始）</label>
+                                <input
+                                  type="number"
+                                  value={String(comp.data.targetPlayerIndex ?? 0)}
+                                  onChange={e => updateCompData('targetPlayerIndex', Number(e.target.value || 0))}
+                                  className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <label className="text-slate-400">归属字段（玩家ID）</label>
+                              {schemaFields.length > 0 ? (
+                                <select
+                                  value={String(comp.data.bindEntity || '')}
+                                  onChange={e => updateCompData('bindEntity', e.target.value || undefined)}
+                                  className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                                >
+                                  <option value="">未设置</option>
+                                  {schemaFields.map(([key, field]) => (
+                                    <option key={key} value={key}>{`${key} (${field.label})`}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={String(comp.data.bindEntity || '')}
+                                  onChange={e => updateCompData('bindEntity', e.target.value)}
+                                  placeholder="如：ownerId / playerId"
+                                  className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                                />
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-slate-400">区域字段（可选）</label>
+                              {schemaFields.length > 0 ? (
+                                <select
+                                  value={String(comp.data.zoneField || '')}
+                                  onChange={e => updateCompData('zoneField', e.target.value || undefined)}
+                                  className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                                >
+                                  <option value="">未设置</option>
+                                  {schemaFields.map(([key, field]) => (
+                                    <option key={key} value={key}>{`${key} (${field.label})`}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={String(comp.data.zoneField || '')}
+                                  onChange={e => updateCompData('zoneField', e.target.value)}
+                                  placeholder="如：zoneType"
+                                  className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                                />
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-slate-400">区域值（可选）</label>
+                              <input
+                                type="text"
+                                value={String(comp.data.zoneValue || '')}
+                                onChange={e => updateCompData('zoneValue', e.target.value)}
+                                placeholder="如：hand"
+                                className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-amber-500">排序与过滤</h3>
-                        <p className="text-slate-500 text-[10px]">由引擎层 HandAreaSkeleton 执行</p>
-                        <div className="space-y-2 text-xs">
-                          <HookField label="排序代码" value={String(comp.data.sortCode || '')} onChange={v => updateCompData('sortCode', v)} schema={currentSchema} hookType="sort" placeholder="按点数从小到大排序" componentType={comp.type} />
-                          <HookField label="过滤代码" value={String(comp.data.filterCode || '')} onChange={v => updateCompData('filterCode', v)} schema={currentSchema} hookType="filter" placeholder="只显示可出的牌" componentType={comp.type} />
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-medium text-amber-500">布局与选中</h3>
+                          <p className="text-slate-500 text-[10px]">由引擎层 HandAreaSkeleton 执行</p>
+                          <div className="space-y-2 text-xs">
+                            <HookField label="布局代码" value={String(comp.data.layoutCode || '')} onChange={v => updateCompData('layoutCode', v)} schema={currentSchema} hookType="layout" placeholder="顺序排开，卡牌间距-30px" componentType={comp.type} />
+                            <HookField label="选中效果" value={String(comp.data.selectEffectCode || '')} onChange={v => updateCompData('selectEffectCode', v)} schema={currentSchema} hookType="selectEffect" placeholder="抬高一点" componentType={comp.type} />
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-medium text-amber-500">排序与过滤</h3>
+                          <p className="text-slate-500 text-[10px]">由引擎层 HandAreaSkeleton 执行</p>
+                          <div className="space-y-2 text-xs">
+                            <HookField label="排序代码" value={String(comp.data.sortCode || '')} onChange={v => updateCompData('sortCode', v)} schema={currentSchema} hookType="sort" placeholder="按点数从小到大排序" componentType={comp.type} />
+                            <HookField label="过滤代码" value={String(comp.data.filterCode || '')} onChange={v => updateCompData('filterCode', v)} schema={currentSchema} hookType="filter" placeholder="只显示可出的牌" componentType={comp.type} />
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   {/* 出牌区：布局（引擎层 HandAreaSkeleton 支持） */}
                   {comp.type === 'play-zone' && (
@@ -1726,8 +1804,8 @@ function UnifiedBuilderInner() {
                   {['hand-zone', 'play-zone'].includes(comp.type) && (() => {
                     const bindSchemaId = comp.data.bindSchema as string | undefined;
                     const availableRenderComponents = bindSchemaId
-                      ? state.renderComponents.filter(rc => rc.targetSchema === bindSchemaId)
-                      : state.renderComponents;
+                      ? renderComponentInstances.filter(rc => rc.targetSchema === bindSchemaId)
+                      : renderComponentInstances;
                     return (
                       <div className="space-y-2">
                         <h3 className="text-sm font-medium text-amber-500">单项渲染组件</h3>
@@ -1801,6 +1879,7 @@ function UnifiedBuilderInner() {
                               value={String(comp.data.renderCode || '')}
                               onChange={e => updateCompData('renderCode', e.target.value)}
                               onPaste={e => {
+                                e.preventDefault();
                                 const text = e.clipboardData.getData('text');
                                 if (text.trim()) {
                                   updateCompData('renderCode', text);
@@ -1830,6 +1909,7 @@ function UnifiedBuilderInner() {
                               value={String(comp.data.backRenderCode || '')}
                               onChange={e => updateCompData('backRenderCode', e.target.value)}
                               onPaste={e => {
+                                e.preventDefault();
                                 const text = e.clipboardData.getData('text');
                                 if (text.trim()) {
                                   updateCompData('backRenderCode', text);
@@ -1847,25 +1927,27 @@ function UnifiedBuilderInner() {
 
                   {/* 注：点击/拖入交互由引擎层 HandAreaSkeleton 的 onPlayCard/onSellCard 处理，无需额外配置 */}
 
-                  {/* 通用渲染代码配置（所有组件都可以有） */}
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-purple-500">渲染代码</h3>
-                    <div className="space-y-2 text-xs">
-                      <p className="text-slate-500 text-[10px]">
-                        通过渲染代码控制组件显示。上下文包含：组件类型、绑定数据、组件输出等
-                      </p>
-                      <HookField 
-                        label="组件渲染" 
-                        value={String(comp.data.renderCode || '')} 
-                        onChange={v => updateCompData('renderCode', v)} 
-                        schema={currentSchema} 
-                        hookType="render" 
-                        placeholder="根据上下文数据渲染组件内容" 
-                        componentType={comp.type} 
-                        outputsSummary={layoutOutputsSummary}
-                      />
+                  {/* 通用渲染代码配置（render-component 不显示，避免入口重复） */}
+                  {comp.type !== 'render-component' && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-purple-500">渲染代码</h3>
+                      <div className="space-y-2 text-xs">
+                        <p className="text-slate-500 text-[10px]">
+                          通过渲染代码控制组件显示。上下文包含：组件类型、绑定数据、组件输出等
+                        </p>
+                        <HookField 
+                          label="组件渲染" 
+                          value={String(comp.data.renderCode || '')} 
+                          onChange={v => updateCompData('renderCode', v)} 
+                          schema={currentSchema} 
+                          hookType="render" 
+                          placeholder="根据上下文数据渲染组件内容" 
+                          componentType={comp.type} 
+                          outputsSummary={layoutOutputsSummary}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* 删除组件 */}
                   <button
@@ -2032,7 +2114,7 @@ function UnifiedBuilderInner() {
                           className="flex-1 px-2 py-1 bg-slate-600 border border-slate-500 rounded text-white text-xs"
                         >
                           <option value="">无默认值</option>
-                          {state.renderComponents.map(rc => (
+                          {renderComponentInstances.map(rc => (
                             <option key={rc.id} value={rc.id}>{rc.name}</option>
                           ))}
                         </select>
@@ -2106,7 +2188,7 @@ function UnifiedBuilderInner() {
               onChange={items => handleInstanceChange(currentSchema.id, items)}
               onRowDoubleClick={handleEditItem}
               availableTags={normalizeTags(currentSchema)}
-              availableRenderComponents={state.renderComponents.map(rc => ({ id: rc.id, name: rc.name }))}
+              availableRenderComponents={renderComponentInstances}
               className="max-h-[60vh]"
             />
           )}
@@ -2247,7 +2329,7 @@ function UnifiedBuilderInner() {
                       );
                     })()}
                   </div>
-                ) : (f.type as string) === 'renderComponent' ? (
+                ) : (f.type as string) === 'renderComponent' || key === 'renderComponentId' ? (
                   /* 渲染组件字段 - 单选下拉 */
                   <select
                     value={String(editingItem[key] ?? '')}
@@ -2293,19 +2375,28 @@ function UnifiedBuilderInner() {
           {/* 生成类型选择 */}
           <div className="flex gap-2">
             <button
-              onClick={() => setAiGenType('batch-data')}
+              onClick={() => {
+                setAiGenType('batch-data');
+                setAbilityImportErrors([]);
+              }}
               className={`px-3 py-2 rounded text-sm ${aiGenType === 'batch-data' ? 'bg-purple-600' : 'bg-slate-700 hover:bg-slate-600'}`}
             >
               批量数据
             </button>
             <button
-              onClick={() => setAiGenType('batch-tags')}
+              onClick={() => {
+                setAiGenType('batch-tags');
+                setAbilityImportErrors([]);
+              }}
               className={`px-3 py-2 rounded text-sm ${aiGenType === 'batch-tags' ? 'bg-purple-600' : 'bg-slate-700 hover:bg-slate-600'}`}
             >
               批量 Tag
             </button>
             <button
-              onClick={() => setAiGenType('ability-field')}
+              onClick={() => {
+                setAiGenType('ability-field');
+                setAbilityImportErrors([]);
+              }}
               className={`px-3 py-2 rounded text-sm ${aiGenType === 'ability-field' ? 'bg-purple-600' : 'bg-slate-700 hover:bg-slate-600'}`}
             >
               能力块 (GAS)
@@ -2368,6 +2459,7 @@ function UnifiedBuilderInner() {
                   const data = JSON.parse(text);
                   if (Array.isArray(data) && currentSchema) {
                     if (aiGenType === 'batch-tags') {
+                      setAbilityImportErrors([]);
                       // 导入标签
                       const existingTags = normalizeTags(currentSchema);
                       const newTags = data.filter((t: { name: string }) => 
@@ -2378,6 +2470,12 @@ function UnifiedBuilderInner() {
                       });
                       setActiveModal('schema');
                     } else if (aiGenType === 'ability-field') {
+                      const validation = validateAbilityJson(data);
+                      if (!validation.isValid) {
+                        setAbilityImportErrors(validation.errors);
+                        return;
+                      }
+                      setAbilityImportErrors([]);
                       const updatesById = new Map(
                         data.map((item: Record<string, unknown>) => [String(item.id || ''), item])
                       );
@@ -2394,6 +2492,7 @@ function UnifiedBuilderInner() {
                       handleInstanceChange(currentSchema.id, nextInstances);
                       setActiveModal('data');
                     } else {
+                      setAbilityImportErrors([]);
                       // 导入数据
                       handleInstanceChange(currentSchema.id, [...currentInstances, ...data]);
                       setActiveModal('data');
@@ -2401,11 +2500,26 @@ function UnifiedBuilderInner() {
                     setAiGenType(null);
                   }
                 } catch {
-                  // 忽略解析错误
+                  if (aiGenType === 'ability-field') {
+                    setAbilityImportErrors(['JSON 解析失败：请确认粘贴内容是有效的 JSON 数组']);
+                  }
                 }
               }}
             />
             <p className="text-xs text-slate-500 mt-1">粘贴后自动导入</p>
+            {abilityImportErrors.length > 0 && (
+              <div className="mt-2 rounded border border-red-500/50 bg-red-900/20 p-2 text-xs text-red-200">
+                <div className="font-semibold mb-1">能力 JSON 校验失败</div>
+                <ul className="list-disc pl-4 space-y-0.5">
+                  {abilityImportErrors.slice(0, 6).map((err, index) => (
+                    <li key={`${err}-${index}`}>{err}</li>
+                  ))}
+                </ul>
+                {abilityImportErrors.length > 6 && (
+                  <div className="mt-1 text-red-300">还有 {abilityImportErrors.length - 6} 条错误</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </Modal>
@@ -2618,9 +2732,18 @@ function RenderComponentManager({
     return null;
   });
   const [requirement, setRequirement] = useState('');
-  
+
   // 使用渲染组件专用的提示词生成器
   const { generateFront, generateBack } = useRenderPrompt();
+
+  const sanitizeRenderCode = useCallback((text: string) => {
+    const trimmed = text.trim();
+    const duplicateMatch = trimmed.match(/\n\s*\(data[^)]*\)\s*=>/);
+    if (duplicateMatch && typeof duplicateMatch.index === 'number') {
+      return trimmed.slice(0, duplicateMatch.index).trim();
+    }
+    return trimmed;
+  }, []);
 
   const handleAdd = () => {
     setEditing({
@@ -2752,9 +2875,11 @@ function RenderComponentManager({
               <textarea
                 value={editing.renderCode}
                 onPaste={e => {
+                  e.preventDefault();
                   const text = e.clipboardData.getData('text');
                   if (text.trim()) {
-                    setEditing({ ...editing, renderCode: text });
+                    const sanitized = sanitizeRenderCode(text);
+                    setEditing({ ...editing, renderCode: sanitized });
                   }
                 }}
                 readOnly
@@ -2775,9 +2900,11 @@ function RenderComponentManager({
               <textarea
                 value={editing.backRenderCode || ''}
                 onPaste={e => {
+                  e.preventDefault();
                   const text = e.clipboardData.getData('text');
                   if (text.trim()) {
-                    setEditing({ ...editing, backRenderCode: text });
+                    const sanitized = sanitizeRenderCode(text);
+                    setEditing({ ...editing, backRenderCode: sanitized });
                   }
                 }}
                 readOnly
