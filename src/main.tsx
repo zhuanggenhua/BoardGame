@@ -7,11 +7,25 @@ import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
-  void i18nInitPromise.then(() => {
+  let hasRendered = false;
+  const renderApp = () => {
+    if (hasRendered) return;
+    hasRendered = true;
     createRoot(rootElement).render(
       <StrictMode>
         <App />
       </StrictMode>,
     );
-  });
+  };
+
+  const fallbackTimer = window.setTimeout(renderApp, 2000);
+  void i18nInitPromise
+    .then(() => {
+      window.clearTimeout(fallbackTimer);
+      renderApp();
+    })
+    .catch(() => {
+      window.clearTimeout(fallbackTimer);
+      renderApp();
+    });
 }

@@ -285,11 +285,36 @@ export function getOptimizedImageUrls(src: string): ImageUrlSet {
     if (isPassthroughSource(normalized) || isSvgSource(normalized)) {
         return { avif: normalized, webp: normalized };
     }
+    // 压缩图片在 compressed/ 子目录
     const base = stripExtension(normalized);
+    const lastSlash = base.lastIndexOf('/');
+    const dir = lastSlash >= 0 ? base.substring(0, lastSlash) : '';
+    const filename = lastSlash >= 0 ? base.substring(lastSlash + 1) : base;
+    const compressedBase = dir ? `${dir}/${COMPRESSED_SUBDIR}/${filename}` : `${COMPRESSED_SUBDIR}/${filename}`;
     return {
-        avif: `${base}.avif`,
-        webp: `${base}.webp`,
+        avif: `${compressedBase}.avif`,
+        webp: `${compressedBase}.webp`,
     };
+}
+
+/**
+ * 获取优化音频 URL（自动插入 compressed/）
+ */
+export function getOptimizedAudioUrl(src: string, basePath?: string): string {
+    if (!isString(src) || !src) return '';
+    if (isPassthroughSource(src)) return src;
+
+    const normalizedBase = basePath ? basePath.replace(/\/+$/, '') : '';
+    const trimmedSrc = src.startsWith('/') ? src.slice(1) : src;
+    const fullPath = normalizedBase ? `${normalizedBase}/${trimmedSrc}` : trimmedSrc;
+    const normalized = assetsPath(fullPath);
+    if (!normalized) return '';
+
+    const lastSlash = normalized.lastIndexOf('/');
+    const dir = lastSlash >= 0 ? normalized.substring(0, lastSlash) : '';
+    const filename = lastSlash >= 0 ? normalized.substring(lastSlash + 1) : normalized;
+
+    return dir ? `${dir}/${COMPRESSED_SUBDIR}/${filename}` : `${COMPRESSED_SUBDIR}/${filename}`;
 }
 
 /**

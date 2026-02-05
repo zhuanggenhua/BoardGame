@@ -157,6 +157,8 @@ export interface SchemaDefinition {
   name: string;
   /** Schema 描述 */
   description?: string;
+  /** Schema 级默认渲染组件（模板） */
+  defaultRenderComponentId?: string;
   /** 字段定义 */
   fields: Record<string, FieldDefinition>;
   /** 主键字段（默认 'id'） */

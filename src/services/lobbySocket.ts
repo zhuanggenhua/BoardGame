@@ -192,7 +192,7 @@ class LobbySocketService {
                 return;
             }
 
-            console.log('[LobbySocket]', tLobbySocket('snapshotReceived', { count: payload.matches.length, version: payload.version }));
+            // 日志已移除：快照接收过于频繁
             this.currentMatches = payload.matches;
             this.updateVersion(payload.version);
             this.notifySubscribers(payload.matches);
@@ -208,7 +208,7 @@ class LobbySocketService {
                 return;
             }
 
-            console.log('[LobbySocket]', tLobbySocket('matchCreated', { matchId: payload.match.matchID, version: payload.version }));
+            // 日志已移除：房间创建事件过于频繁
             this.upsertMatch(payload.match);
             this.updateVersion(payload.version);
             this.notifySubscribers(this.currentMatches);
@@ -224,7 +224,7 @@ class LobbySocketService {
                 return;
             }
 
-            console.log('[LobbySocket]', tLobbySocket('matchUpdated', { matchId: payload.match.matchID, version: payload.version }));
+            // 日志已移除：房间更新事件过于频繁
             this.upsertMatch(payload.match);
             this.updateVersion(payload.version);
             this.notifySubscribers(this.currentMatches);
@@ -240,7 +240,7 @@ class LobbySocketService {
                 return;
             }
 
-            console.log('[LobbySocket]', tLobbySocket('matchEnded', { matchId: payload.matchID, version: payload.version }));
+            // 日志已移除：房间结束事件过于频繁
             this.removeMatch(payload.matchID);
             this.updateVersion(payload.version);
             this.notifySubscribers(this.currentMatches);
@@ -256,9 +256,7 @@ class LobbySocketService {
                 return;
             }
 
-            if (payload.version === this.lobbyVersion) {
-                console.log('[LobbySocket]', tLobbySocket('heartbeatOk', { version: payload.version }));
-            }
+            // 日志已移除：心跳检查过于频繁
         });
     }
 
@@ -338,7 +336,7 @@ class LobbySocketService {
 
             // 如果没有订阅者了，可选择断开连接以节省资源
             if (this.subscribers.size === 0) {
-                console.log('[LobbySocket]', tLobbySocket('noSubscribers'));
+                // 日志已移除：无订阅者提示过于频繁
                 if (this.socket?.connected) {
                     this.socket.emit(LOBBY_EVENTS.UNSUBSCRIBE_LOBBY);
                 }

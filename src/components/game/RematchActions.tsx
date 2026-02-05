@@ -85,8 +85,13 @@ export function RematchActions({
     // 单人模式：直接重置
     if (!isMultiplayer) {
         return (
-            <div className={`flex items-center gap-3 ${className}`}>
+            <div
+                data-testid="rematch-actions"
+                data-rematch-mode="single"
+                className={`flex items-center gap-3 ${className}`}
+            >
                 <button
+                    data-testid="rematch-play-again"
                     onClick={() => reset?.()}
                     className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/90 border border-white/20 bg-black/40 backdrop-blur-md"
                 >
@@ -97,6 +102,7 @@ export function RematchActions({
                     />
                 </button>
                 <button
+                    data-testid="rematch-back-to-lobby"
                     onClick={handleBackToLobby}
                     className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/70 border border-white/10 bg-black/40 backdrop-blur-md"
                 >
@@ -112,16 +118,26 @@ export function RematchActions({
 
     // 多人模式：投票机制
     return (
-        <div className={`flex items-center gap-3 ${className}`}>
+        <div
+            data-testid="rematch-actions"
+            data-rematch-mode="multi"
+            data-rematch-ready={ready ? 'true' : 'false'}
+            data-rematch-voted={myVote ? 'true' : 'false'}
+            className={`flex items-center gap-3 ${className}`}
+        >
             {ready ? (
                 // 双方已确认，重开中
-                <div className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-emerald-400 border border-emerald-400/40 bg-black/40 backdrop-blur-md animate-pulse">
+                <div
+                    data-testid="rematch-restarting"
+                    className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-emerald-400 border border-emerald-400/40 bg-black/40 backdrop-blur-md animate-pulse"
+                >
                     {t('rematch.restarting')}
                 </div>
             ) : myVote ? (
                 // 已投票，等待对手
                 <>
                     <button
+                        data-testid="rematch-cancel-vote"
                         onClick={handleVote}
                         className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-amber-400 border border-amber-400/40 bg-black/40 backdrop-blur-md"
                     >
@@ -130,20 +146,21 @@ export function RematchActions({
                             hoverBorderClass="border-amber-400/60"
                         />
                     </button>
-                    <span className="inline-flex items-center gap-1">
+                    <span data-testid="rematch-vote-dots" className="inline-flex items-center gap-1">
                         {voteDots}
                     </span>
-                    <span className="text-white/50 text-sm animate-pulse">
+                    <span data-testid="rematch-waiting" className="text-white/50 text-sm animate-pulse">
                         {t('rematch.waitingForOpponent')}
                     </span>
                 </>
             ) : (
                 // 未投票
                 <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1">
+                    <span data-testid="rematch-vote-dots" className="inline-flex items-center gap-1">
                         {voteDots}
                     </span>
                     <button
+                        data-testid="rematch-vote"
                         onClick={handleVote}
                         className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/90 border border-white/20 bg-black/40 backdrop-blur-md"
                     >
@@ -156,6 +173,7 @@ export function RematchActions({
                 </div>
             )}
             <button
+                data-testid="rematch-back-to-lobby"
                 onClick={handleBackToLobby}
                 className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/70 border border-white/10 bg-black/40 backdrop-blur-md"
             >

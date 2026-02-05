@@ -8,6 +8,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import * as Babel from '@babel/standalone';
 import { HandAreaSkeleton } from '../../../components/game/framework';
+import { getVisibleActions } from '../../runtime/actionHooks';
 import { resolvePlayerContext } from '../utils/resolvePlayerContext';
 
 interface RenderPreviewProps {
@@ -72,6 +73,8 @@ function stripTypeAnnotations(code: string): string {
   result = fixClassNameTemplate(result);
   // 移除参数类型注解：(data: Record<string, unknown>) => ...
   result = result.replace(/\((\w+)\s*:\s*[^)]+\)/g, '($1)');
+  // 移除箭头函数返回类型注解：(data) : Type => ...
+  result = result.replace(/\)\s*:\s*[^=]+=>/g, ') =>');
   // 移除变量类型注解：const x: Type = ...
   result = result.replace(/:\s*(?:string|number|boolean|string\[\]|number\[\]|Record<[^>]+>|[A-Z]\w*(?:<[^>]+>)?)\s*(?=[=,;)\]])/g, '');
   // 移除 as 类型断言：x as string[] 或 x as Type
@@ -197,7 +200,9 @@ interface PreviewCanvasProps {
   }>;
   instances: Record<string, Record<string, unknown>[]>;
   layoutGroups?: Array<{ id: string; name: string; hidden: boolean }>;
+  schemaDefaults?: Record<string, string>;
   className?: string;
+  onAction?: (action: ZoneAction, context: Record<string, unknown>) => void;
 }
 
 interface ComponentOutput {
@@ -209,12 +214,22 @@ interface ComponentOutput {
   bindEntity?: string;
 }
 
+interface ZoneAction {
+  id: string;
+  label: string;
+  scope?: 'current-player' | 'all';
+  requirement?: string;
+  hookCode?: string;
+}
+
 export function PreviewCanvas({
   components,
   renderComponents,
   instances,
   layoutGroups = [],
+  schemaDefaults,
   className = '',
+  onAction,
 }: PreviewCanvasProps) {
   const [showBack, setShowBack] = useState(false);
 
@@ -232,6 +247,16 @@ export function PreviewCanvas({
     const groupId = (comp.data.groupId as string) || 'default';
     return !hiddenGroupIds.has(groupId);
   });
+
+  const derivedPlayerCount = useMemo(() => {
+    const playerAreas = visibleComponents.filter(comp => comp.type === 'player-area');
+    return playerAreas.length > 0 ? playerAreas.length + 1 : 0;
+  }, [visibleComponents]);
+
+  const derivedPlayerIds = useMemo(() => {
+    if (!derivedPlayerCount) return [];
+    return Array.from({ length: derivedPlayerCount }, (_, index) => `player-${index + 1}`);
+  }, [derivedPlayerCount]);
 
   const outputsByType = useMemo(() => {
     const outputMap: Record<string, ComponentOutput[]> = {};
@@ -283,13 +308,13 @@ export function PreviewCanvas({
         <RenderPreview
           renderCode={rc.renderCode}
           backRenderCode={rc.backRenderCode}
-          showBack={options?.showBack}
+          showBack={options?.showBack ?? showBack}
           data={item}
           className="w-full h-full"
         />
       );
     },
-    [renderComponents]
+    [renderComponents, showBack]
   );
   
   return (
@@ -375,13 +400,105 @@ export function PreviewCanvas({
           const selectEffectCode = comp.data.selectEffectCode as string | undefined;
           const sortCode = comp.data.sortCode as string | undefined;
           const filterCode = comp.data.filterCode as string | undefined;
-          const fallbackRenderComponentId = (comp.data.itemRenderComponentId || comp.data.renderComponentId || comp.renderComponentId) as string | undefined;
+          const bindEntity = comp.data.bindEntity as string | undefined;
+          const zoneField = comp.data.zoneField as string | undefined;
+          const zoneValue = typeof comp.data.zoneValue === 'string' ? comp.data.zoneValue : undefined;
+          const schemaDefaultRenderComponentId = targetSchemaId && schemaDefaults
+            ? schemaDefaults[targetSchemaId]
+            : undefined;
+          const fallbackRenderComponentId = (
+            comp.data.itemRenderComponentId ||
+            comp.data.renderComponentId ||
+            comp.renderComponentId ||
+            schemaDefaultRenderComponentId
+          ) as string | undefined;
+          const renderFaceMode = String(comp.data.renderFaceMode || 'auto') as 'auto' | 'front' | 'back';
+          const allowActionHooks = comp.data.allowActionHooks !== false;
           
           // 获取关联数据
           const items = targetSchemaId ? (previewInstances[targetSchemaId] || []) : [];
+          let resolvedItems = items;
+          let filterContext: {
+            playerIds: string[];
+            currentPlayerId: string | null;
+            currentPlayerIndex: number;
+            resolvedPlayerId: string | null;
+            resolvedPlayerIndex: number;
+            bindEntity?: string;
+            zoneField?: string;
+            zoneValue?: string;
+          } | undefined;
+
+          if (comp.type === 'hand-zone') {
+            const targetPlayerRef = String(comp.data.targetPlayerRef || 'current') as
+              | 'self'
+              | 'other'
+              | 'current'
+              | 'next'
+              | 'prev'
+              | 'offset'
+              | 'index'
+              | 'id'
+              | undefined;
+            const targetPlayerIndex = typeof comp.data.targetPlayerIndex === 'number'
+              ? comp.data.targetPlayerIndex
+              : Number(comp.data.targetPlayerIndex ?? 0);
+            const explicitPlayerIds = Array.isArray(comp.data.playerIds)
+              ? (comp.data.playerIds as string[])
+              : undefined;
+            const derivedPlayerIdsFromData = bindEntity
+              ? Array.from(new Set(
+                items
+                  .map(item => {
+                    const value = (item as Record<string, unknown>)[bindEntity];
+                    if (typeof value === 'string' || typeof value === 'number') return String(value);
+                    return null;
+                  })
+                  .filter((value): value is string => Boolean(value))
+              ))
+              : [];
+            const resolvedPlayerIds = (explicitPlayerIds && explicitPlayerIds.length > 0)
+              ? explicitPlayerIds
+              : derivedPlayerIdsFromData;
+            const playerContext = resolvePlayerContext({
+              items,
+              playerRef: targetPlayerRef,
+              index: targetPlayerIndex,
+              currentPlayerId: comp.data.currentPlayerId as string | undefined,
+              playerIds: resolvedPlayerIds.length > 0 ? resolvedPlayerIds : undefined,
+              idField: bindEntity,
+            });
+            const normalizedZoneValue = zoneValue?.trim() || '';
+            filterContext = {
+              ...playerContext,
+              bindEntity,
+              zoneField,
+              zoneValue: normalizedZoneValue || undefined,
+            };
+
+            if (bindEntity && playerContext.resolvedPlayerId) {
+              resolvedItems = resolvedItems.filter(item => {
+                const value = (item as Record<string, unknown>)[bindEntity];
+                if (typeof value === 'string' || typeof value === 'number') {
+                  return String(value) === String(playerContext.resolvedPlayerId);
+                }
+                return false;
+              });
+            }
+
+            if (zoneField && normalizedZoneValue) {
+              resolvedItems = resolvedItems.filter(item => {
+                const value = (item as Record<string, unknown>)[zoneField];
+                if (typeof value === 'string' || typeof value === 'number') {
+                  return String(value) === normalizedZoneValue;
+                }
+                return false;
+              });
+            }
+          }
           
           // 如果没有数据，显示占位
-          if (items.length === 0) {
+          if (resolvedItems.length === 0) {
             return (
               <div key={comp.id} style={style} className="border-2 border-dashed border-slate-600 rounded flex items-center justify-center">
                 <span className="text-slate-400 text-xs">{String(comp.data.name || comp.type)} (无数据)</span>
@@ -390,16 +507,43 @@ export function PreviewCanvas({
           }
           
           // 使用通用框架 HandAreaSkeleton 渲染
+          const resolvedShowBack = renderFaceMode === 'back'
+            ? true
+            : renderFaceMode === 'front'
+              ? false
+              : showBack;
+          const actions = Array.isArray(comp.data.actions)
+            ? (comp.data.actions as ZoneAction[])
+            : [];
+          const isCurrentPlayer = Boolean(
+            filterContext?.currentPlayerId &&
+            filterContext?.resolvedPlayerId &&
+            filterContext.currentPlayerId === filterContext.resolvedPlayerId
+          );
+          const visibleActions = getVisibleActions({
+            actions,
+            allowActionHooks,
+            isCurrentPlayer,
+          });
+          const actionContext: Record<string, unknown> = {
+            componentId: comp.id,
+            componentType: comp.type,
+            currentPlayerId: filterContext?.currentPlayerId ?? null,
+            resolvedPlayerId: filterContext?.resolvedPlayerId ?? null,
+            resolvedPlayerIndex: filterContext?.resolvedPlayerIndex ?? -1,
+          };
+
           return (
             <div key={comp.id} style={style} className="relative border border-slate-600/50 rounded bg-slate-800/30 overflow-hidden">
               <HandAreaSkeleton
-                cards={items}
+                cards={resolvedItems}
                 canDrag={false}
                 canSelect={false}
                 layoutCode={layoutCode}
                 selectEffectCode={selectEffectCode}
                 sortCode={sortCode}
                 filterCode={filterCode}
+                filterContext={filterContext}
                 className="h-full flex items-center justify-center"
                 renderCard={(item, _index, _isSelected) => {
                   const itemRecord = item as Record<string, unknown>;
@@ -419,7 +563,7 @@ export function PreviewCanvas({
                         <RenderPreview
                           renderCode={itemRenderCode}
                           backRenderCode={itemBackRenderCode}
-                          showBack={showBack}
+                          showBack={resolvedShowBack}
                           data={itemRecord}
                           className="w-full h-full"
                         />
@@ -430,6 +574,19 @@ export function PreviewCanvas({
                   );
                 }}
               />
+              {comp.type === 'hand-zone' && visibleActions.length > 0 && (
+                <div className="absolute bottom-2 right-2 flex flex-wrap gap-1">
+                  {visibleActions.map(action => (
+                    <button
+                      key={action.id}
+                      className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-[10px]"
+                      onClick={() => onAction?.(action, actionContext)}
+                    >
+                      {action.label || '未命名动作'}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           );
         }
@@ -462,7 +619,7 @@ export function PreviewCanvas({
               currentPlayerId: comp.data.currentPlayerId as string | undefined,
               playerIds: Array.isArray(comp.data.playerIds)
                 ? (comp.data.playerIds as string[])
-                : undefined,
+                : (derivedPlayerIds.length > 0 ? derivedPlayerIds : undefined),
               idField: comp.data.playerIdField as string | undefined,
             })
             : null;
@@ -504,10 +661,10 @@ export function PreviewCanvas({
           
           return (
             <div key={comp.id} style={style}>
-              <RenderPreview 
-                renderCode={componentRenderCode} 
-                data={componentContext} 
-                className="w-full h-full" 
+              <RenderPreview
+                renderCode={componentRenderCode}
+                data={componentContext}
+                className="w-full h-full"
               />
             </div>
           );

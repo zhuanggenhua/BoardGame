@@ -61,6 +61,28 @@ export interface PlayerPanelData {
 // ============================================================================
 
 /**
+ * 手牌区过滤上下文（系统注入）
+ */
+export interface HandAreaFilterContext {
+    /** 玩家 ID 列表 */
+    playerIds: string[];
+    /** 当前玩家 ID */
+    currentPlayerId: string | null;
+    /** 当前玩家索引 */
+    currentPlayerIndex: number;
+    /** 目标玩家 ID */
+    resolvedPlayerId: string | null;
+    /** 目标玩家索引 */
+    resolvedPlayerIndex: number;
+    /** 归属字段（玩家ID） */
+    bindEntity?: string;
+    /** 区域字段 */
+    zoneField?: string;
+    /** 区域值 */
+    zoneValue?: string;
+}
+
+/**
  * 手牌区配置
  * @template TCard 卡牌类型
  */
@@ -103,10 +125,12 @@ export interface HandAreaConfig<TCard = unknown> {
     sortCode?: string;
     /**
      * 过滤代码（AI生成）
-     * 函数签名：(card: TCard) => boolean
+     * 函数签名：(card: TCard, ctx: HandAreaFilterContext) => boolean
      * 示例："只显示红色牌" → 生成 card.color === 'red'
      */
     filterCode?: string;
+    /** 过滤上下文（系统注入） */
+    filterContext?: HandAreaFilterContext;
 }
 
 // ============================================================================

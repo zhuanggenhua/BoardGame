@@ -10,15 +10,20 @@ function killPids(pids, label) {
     for (const pid of pids) {
         try {
             if (process.platform === 'win32') {
-                execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+                execSync(`taskkill /F /PID ${pid}`, { stdio: 'pipe' });
             } else {
-                execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+                execSync(`kill -9 ${pid}`, { stdio: 'pipe' });
             }
-            console.log(`已清理端口进程(${label}): ${pid}`);
-        } catch {
-            console.log(`清理端口进程失败(${label}): ${pid}`);
+            console.log(`已清理端口进程(${label}): PID ${pid}`);
+        } catch (err) {
+            // 进程可能已经退出，忽略错误
+            console.log(`清理端口进程(${label}): PID ${pid} - 已退出或无权限`);
         }
     }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function collectWindowsPids(output, portSet) {
@@ -54,13 +59,15 @@ function collectWindowsPids(output, portSet) {
     return result;
 }
 
-function cleanPorts() {
+async function cleanPorts() {
     if (ports.length === 0) {
         console.log('未配置需要清理的端口');
         return;
     }
 
     const portSet = new Set(ports);
+    let killedAny = false;
+    
     if (process.platform === 'win32') {
         const output = execSync('netstat -ano -p tcp', { encoding: 'utf8' });
         const pidsByPort = collectWindowsPids(output, portSet);
@@ -69,7 +76,14 @@ function cleanPorts() {
             if (!pids || pids.size === 0) {
                 continue;
             }
+            killedAny = true;
             killPids(pids, `端口 ${port}`);
+        }
+        
+        // 等待端口释放
+        if (killedAny) {
+            console.log('等待端口释放...');
+            await sleep(500);
         }
         return;
     }
@@ -80,11 +94,18 @@ function cleanPorts() {
             if (!output) {
                 continue;
             }
+            killedAny = true;
             const pids = new Set(output.split(/\s+/));
             killPids(pids, `端口 ${port}`);
         } catch {
-            console.log(`查询端口失败: ${port}`);
+            // lsof 没找到进程时会返回非零退出码，这是正常的
         }
+    }
+    
+    // 等待端口释放
+    if (killedAny) {
+        console.log('等待端口释放...');
+        await sleep(500);
     }
 }
 

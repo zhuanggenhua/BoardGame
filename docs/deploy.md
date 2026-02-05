@@ -2,13 +2,136 @@
 
 本项目默认采用**同域访问**，避免 CORS 与 WebSocket 跨域问题。
 
+## 部署模式选择
+
+| 模式 | 适用场景 | 部署速度 | 服务器压力 | 一致性 |
+|------|---------|---------|-----------|--------|
+| **镜像部署**（推荐生产） | 生产环境、多服务器 | 快（< 1 分钟） | 低 | 高 |
+| **Git + 本地构建** | 开发测试、快速迭代 | 慢（3-10 分钟） | 高 | 依赖网络 |
+
+- **镜像部署**：CI 预构建镜像 → 推送到镜像仓库 → 服务器拉取启动
+- **Git 部署**：服务器 git pull → 本地 docker build → 启动
+
 ## 入口地址
 
 - **开发**：`http://localhost:5173`
 - **Docker 一键部署**：`http://localhost:18080`
 - **Pages 预览域名**：`https://<project>.pages.dev`
 
-## 一键部署脚本（推荐）
+## 镜像部署（推荐生产环境）
+
+### 优势
+
+- **部署快**：拉取预构建镜像，无需服务器编译
+- **一致性高**：镜像已封装所有依赖，避免环境漂移
+- **回滚简单**：切换镜像 tag 即可
+- **服务器压力小**：无需 npm ci / build
+
+### 前置要求
+
+1. 服务器已安装 Docker + Docker Compose
+2. GitHub Actions CI 已配置（自动构建并推送镜像）
+3. 镜像仓库可访问（GHCR / 阿里云 ACR）
+
+### 首次部署
+
+```bash
+# 1. 下载生产配置文件
+curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/docker-compose.prod.yml -o docker-compose.yml
+
+# 2. 创建 .env 文件
+cat > .env << 'EOF'
+JWT_SECRET=$(openssl rand -hex 32)
+MONGO_URI=mongodb://mongodb:27017/boardgame
+WEB_ORIGINS=https://your-domain.com
+EOF
+
+# 3. 拉取镜像并启动
+docker compose pull
+docker compose up -d
+```
+
+### 更新部署
+
+```bash
+# 拉取最新镜像并重启
+docker compose pull
+docker compose up -d
+```
+
+### 回滚到指定版本
+
+```bash
+# 编辑 docker-compose.yml，将 image tag 改为指定版本
+# 例如：ghcr.io/zhuanggenhua/boardgame-web:v1.2.3
+docker compose pull
+docker compose up -d
+```
+
+### 使用部署脚本（推荐）
+
+```bash
+# 首次部署 / 更新
+bash scripts/deploy-image.sh deploy
+
+# 回滚到指定版本
+bash scripts/deploy-image.sh rollback v1.2.3
+
+# 查看状态
+bash scripts/deploy-image.sh status
+
+# 查看日志
+bash scripts/deploy-image.sh logs [service]
+```
+
+### CI 配置说明
+
+镜像由 GitHub Actions 自动构建并推送到 GHCR（`.github/workflows/docker-publish.yml`）：
+
+- **触发条件**：push 到 `main` 分支 或 创建 `v*` 标签
+- **镜像地址**：
+  - `ghcr.io/zhuanggenhua/boardgame-game:latest`
+  - `ghcr.io/zhuanggenhua/boardgame-web:latest`
+- **版本标签**：`latest`（main 分支）、`v1.2.3`（tag）、`sha-xxxxxx`（commit）
+
+> **注意**：首次使用需在 GitHub 仓库设置中启用 Packages 权限。
+
+### 从 Git 部署迁移到镜像部署
+
+如果你当前使用 Git + 本地构建部署，按以下步骤迁移：
+
+```bash
+# 1. 停止现有服务
+cd /home/admin/BoardGame
+docker compose down
+
+# 2. 备份 .env（保留配置）
+cp .env /tmp/.env.bak
+
+# 3. 下载生产配置文件
+curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/docker-compose.prod.yml -o docker-compose.yml
+
+# 4. 恢复 .env
+cp /tmp/.env.bak .env
+
+# 5. 拉取镜像并启动
+docker compose pull
+docker compose up -d
+
+# 6. 验证
+docker compose ps
+curl -I http://127.0.0.1/
+```
+
+迁移后，更新只需 `docker compose pull && docker compose up -d`，无需 `git pull`。
+
+---
+
+## Git + 本地构建部署（开发/测试）
+
+> **注意**：此方式适合开发测试或无 CI 环境的场景，生产环境推荐使用镜像部署。
+
+### 一键部署脚本
 
 适用于 Debian/Ubuntu 与 RHEL 系（含 Alibaba Cloud Linux）。脚本会自动完成：安装 Git/Docker/Compose、配置镜像源、克隆仓库、生成 `.env`、启动服务。
 

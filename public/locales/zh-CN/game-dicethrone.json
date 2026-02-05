@@ -207,7 +207,10 @@
       "fist": "拳",
       "palm": "掌",
       "taiji": "太极",
-      "lotus": "莲花"
+      "lotus": "莲花",
+      "sword": "剑",
+      "heart": "心",
+      "strength": "星"
     }
   },
   "bonusDie": {
@@ -224,7 +227,12 @@
       "thunderStrikeDie": "投出 {{value}}",
       "thunderStrikeReroll": "重掷得 {{value}}",
       "thunderStrike2Die": "投出 {{value}}",
-      "thunderStrike2Reroll": "重掷得 {{value}}"
+      "thunderStrike2Reroll": "重掷得 {{value}}",
+      "barbarianSuppress": "投出 {{value}}",
+      "energeticStrength": "星！治疗 2 并施加脑震荡",
+      "energeticOther": "抽 1 张牌",
+      "luckyRoll": "投出 {{value}}",
+      "morePleaseRoll": "投出 {{value}}"
     },
     "selectToReroll": "点击骰子花费{{cost}}{{token}}重掷",
     "noTokenToReroll": "没有{{token}}标记可用于重掷",
@@ -270,7 +278,15 @@
     "endDefense": "结束防御",
     "nextPhase": "下一阶段",
     "closePreview": "关闭预览 ✕",
-    "undoSell": "撤回售出"
+    "undoSell": "撤回售出",
+    "play": "打出",
+    "upgrade": "升级",
+    "sell": "售卖",
+    "discard": "弃牌"
+  },
+  "hints": {
+    "releaseToPlay": "松开打出",
+    "releaseToSell": "松开售卖"
   },
   "discard": {
     "mustDiscard": "手牌超限",
@@ -534,9 +550,197 @@
         "gainPurify": "获得1个净化标记",
         "taijiCapMax": "太极标记堆叠上限+1，并立即获得最大数量的太极标记"
       }
+    },
+    "slap": {
+      "name": "拍击",
+      "description": "基础挥砍攻击，根据剑面数量造成不同伤害",
+      "effects": {
+        "damage4": "造成4点伤害",
+        "damage6": "造成6点伤害",
+        "damage8": "造成8点伤害"
+      }
+    },
+    "all-out-strike": {
+      "name": "全力一击",
+      "description": "2剑+2星触发：造成4点不可防御伤害",
+      "effects": {
+        "damage4Unblockable": "造成4点不可防御伤害"
+      }
+    },
+    "powerful-strike": {
+      "name": "强力一击",
+      "description": "小顺子触发：造成9点伤害",
+      "effects": {
+        "damage9": "造成9点伤害"
+      }
+    },
+    "violent-assault": {
+      "name": "暴力猛击",
+      "description": "4星触发：施加眩晕，然后造成5点不可防御伤害",
+      "effects": {
+        "inflictDaze": "施加1个眩晕标记",
+        "damage5Unblockable": "造成5点不可防御伤害"
+      }
+    },
+    "steadfast": {
+      "name": "坚韧不拔",
+      "description": "根据心面数量恢复生命值",
+      "effects": {
+        "heal4": "恢复4点生命值",
+        "heal5": "恢复5点生命值",
+        "heal6": "恢复6点生命值"
+      }
+    },
+    "suppress": {
+      "name": "压制",
+      "description": "3剑+2星触发：投掷3骰，造成其点数总和的伤害；若总数>14，施加脑震荡",
+      "effects": {
+        "rollDice": "投掷3颗骰子，造成其点数总和的伤害",
+        "concussionThreshold": "如果总数大于14，施加1个脑震荡标记"
+      }
+    },
+    "reckless-strike": {
+      "name": "鲁莽一击",
+      "description": "大顺子触发：造成15点伤害并对自己造成4点伤害",
+      "effects": {
+        "damage15": "造成15点伤害",
+        "selfDamage4": "对自己造成4点伤害（仅在成功造成伤害时生效）"
+      }
+    },
+    "thick-skin": {
+      "name": "厚皮",
+      "description": "防御阶段触发：恢复 2 × 心面数量 的生命值",
+      "effects": {
+        "healByHearts": "恢复 2 × ❤ 数量的生命值"
+      }
+    },
+    "thick-skin-2": {
+      "name": "皮糙肉厚 II",
+      "description": "升级版防御：投掷4骰，恢复 2 × ❤ 生命；若有2个❤，可防止1个即将受到的状态效果",
+      "effects": {
+        "healByHearts": "恢复 2 × ❤ 数量的生命值",
+        "healAndPrevent": "恢复 2 × ❤ 生命，若投出2心，防止1个状态"
+      }
+    },
+    "reckless-strike-2": {
+      "name": "悍然不顾 II",
+      "description": "升级版大顺子：造成20点伤害，自身受到5点反伤",
+      "effects": {
+        "damage20": "造成20点伤害",
+        "selfDamage5": "对自己造成5点伤害"
+      }
+    },
+    "suppress-2": {
+      "name": "力大无穷 II",
+      "description": "升级版技能：包含力大无穷与战吼两个变体",
+      "effects": {
+        "rollDice": "投掷3颗骰子，造成其点数总和的伤害",
+        "concussionThreshold": "如果总数大于9，施加1个脑震荡标记"
+      }
+    },
+    "suppress-2-battle-cry": {
+      "effects": {
+        "heal2": "恢复2点生命值",
+        "damage2Unblockable": "造成2点不可防御伤害"
+      }
+    },
+    "steadfast-2": {
+      "name": "百折不挠 II",
+      "description": "升级版防御：提供更高治疗；若三连，可移除1个自身标记",
+      "effects": {
+        "removeStatus": "移除1个自身的状态效果标记"
+      }
+    },
+    "steadfast-2-3": {
+      "effects": {
+        "heal5": "恢复5点生命值"
+      }
+    },
+    "steadfast-2-4": {
+      "effects": {
+        "heal6": "恢复6点生命值"
+      }
+    },
+    "steadfast-2-5": {
+      "effects": {
+        "heal7": "恢复7点生命值"
+      }
+    },
+    "slap-2": {
+      "name": "重击 II",
+      "description": "3/4/5剑触发：造成5/7/9伤害。若4个相同，造成不可防御伤害",
+      "effects": {
+        "damage5": "造成5点伤害",
+        "damage7Unblockable": "造成7点不可防御伤害",
+        "damage9Unblockable": "造成9点不可防御伤害"
+      }
+    },
+    "slap-3": {
+      "name": "重击 III",
+      "description": "3/4/5剑触发：造成6/8/10伤害。若4个相同，造成不可防御伤害",
+      "effects": {
+        "damage6": "造成6点伤害",
+        "damage8Unblockable": "造成8点不可防御伤害",
+        "damage10Unblockable": "造成10点不可防御伤害"
+      }
+    },
+    "all-out-strike-2": {
+      "name": "坚毅重击 II",
+      "description": "2剑+2星触发：造成5点不可防御伤害",
+      "effects": {
+        "damage5Unblockable": "造成5点不可防御伤害"
+      }
+    },
+    "all-out-strike-3": {
+      "name": "坚毅重击 III",
+      "description": "2剑+2星触发：造成6点不可防御伤害",
+      "effects": {
+        "damage6Unblockable": "造成6点不可防御伤害"
+      }
+    },
+    "powerful-strike-2": {
+      "name": "神力重击 II",
+      "description": "小顺子触发：造成8点不可防御伤害",
+      "effects": {
+        "damage8Unblockable": "造成8点不可防御伤害"
+      }
+    },
+    "violent-assault-2": {
+      "name": "撼地重击 II",
+      "description": "包含撼地重击与粉碎重击两个变体",
+      "effects": {
+        "inflictDaze": "施加1个眩晕标记",
+        "damage7Unblockable": "造成7点不可防御伤害"
+      }
+    },
+    "violent-assault-2-crush": {
+      "effects": {
+        "inflictConcussion": "施加1个脑震荡标记",
+        "damage2Unblockable": "造成2点不可防御伤害"
+      }
     }
   },
   "cards": {
+    "card-energetic": {
+      "name": "精力充沛！",
+      "description": "投掷1骰：如果投出星，治疗2并对1名对手施加脑震荡。否则抽取1张牌。"
+    },
+    "card-lucky": {
+      "name": "大吉大利！",
+      "description": "投掷3骰：治疗 1 + 2×❤。"
+    },
+    "card-more-please": {
+      "name": "再来点儿！",
+      "description": "投掷5骰：每有1个剑增加1伤害。施加脑震荡。"
+    },
+    "card-dizzy": {
+      "name": "头晕目眩！",
+      "description": "如果已对对手造成至少8点伤害，则对其施加脑震荡。"
+    },
+    "card-head-blow": {
+      "name": "当头棒喝！",
+      "description": "对1名对手施加脑震荡。"
+    },
     "card-enlightenment": {
       "name": "顿悟！",
       "description": "投掷1骰：如果投出莲花，获得2气、闪避和净化；否则抽取1张牌。"
@@ -614,7 +818,7 @@
       "description": "1名玩家可以在其进攻投掷阶段，对至多5颗骰子进行1次额外的投掷尝试。"
     },
     "card-me-too": {
-      "name": "俣也一样！",
+      "name": "俺也一样！",
       "description": "将你1颗骰子的数值变为和你另一颗骰子的数值一样（同一阶段使用且目的相同）。"
     },
     "card-surprise": {
@@ -668,20 +872,6 @@
     "card-transfer-status": {
       "name": "乾坤大挪移！",
       "description": "将1名玩家身上的1个状态效果转移至另1名玩家。"
-    },
-    "fist-technique": {
-      "name": "顿悟！",
-      "description": "投掷1骰：如果投出莲花，获得2气、闪避和净化；否则抽取1张牌。"
-    },
-    "actions": {
-      "play": "打出",
-      "upgrade": "升级",
-      "sell": "售卖",
-      "discard": "弃牌"
-    },
-    "hints": {
-      "releaseToPlay": "松开打出",
-      "releaseToSell": "松开售卖"
     }
   },
   "cardSpotlight": {

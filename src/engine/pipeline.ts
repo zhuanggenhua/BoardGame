@@ -91,6 +91,11 @@ export function createInitialSystemState(
             entries: [],
             maxEntries: 1000,
         },
+        eventStream: {
+            entries: [],
+            maxEntries: 200,
+            nextId: 1,
+        },
         actionLog: {
             entries: [],
             maxEntries: 50,
@@ -252,6 +257,7 @@ export function executePipeline<
                 if (r?.events && r.events.length > 0) {
                     allEvents.push(...r.events);
                     systemEventsToReduce.push(...r.events);
+                    ctx.events = [...ctx.events, ...r.events];
                 }
             }
 
@@ -342,6 +348,9 @@ export function executePipeline<
                 if (result.events) {
                     allEvents.push(...result.events);
                     systemEventsToReduce.push(...result.events);
+                    if (result.events.length > 0) {
+                        ctx.events = [...ctx.events, ...result.events];
+                    }
                 }
             }
         }

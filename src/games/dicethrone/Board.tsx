@@ -32,7 +32,7 @@ import { loadStatusIconAtlasConfig, type StatusIconAtlasConfig } from './ui/stat
 import { getAbilitySlotId } from './ui/AbilityOverlays';
 import { HandArea } from './ui/HandArea';
 import { loadCardAtlasConfig } from './ui/cardAtlas';
-import { HeroSelectionOverlay } from './ui/HeroSelectionOverlay';
+import { DiceThroneCharacterSelection } from './ui/CharacterSelectionAdapter';
 import { OpponentHeader } from './ui/OpponentHeader';
 import { LeftSidebar } from './ui/LeftSidebar';
 import { CenterBoard } from './ui/CenterBoard';
@@ -183,6 +183,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
     const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep: nextTutorialStep } = useTutorial();
     const toast = useToast();
     const locale = i18n.resolvedLanguage ?? i18n.language;
+    const shouldAutoSkipSelection = React.useMemo(() => {
+        if (typeof window === 'undefined') return false;
+        try {
+            return window.localStorage.getItem('tutorial_skip') === '1';
+        } catch {
+            return false;
+        }
+    }, []);
+    const autoSkipStageRef = React.useRef<'idle' | 'selected' | 'completed'>('idle');
 
     const isGameOver = ctx.gameover;
     const rootPid = playerID || '0';
@@ -195,16 +204,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
     // 从 access.turnPhase 读取阶段（单一权威：来自 sys.phase）
     const currentPhase = access.turnPhase;
 
-    // 调试：打印教学状态
-    React.useEffect(() => {
-        console.log('[DiceThrone][Board] 教学状态', {
-            isTutorialActive,
-            currentPhase,
-            stepId: tutorialStep?.id,
-            hasAiActions: tutorialStep?.aiActions?.length ?? 0,
-        });
-    }, [isTutorialActive, currentPhase, tutorialStep]);
-
     // 重赛系统（socket）
     const { state: rematchState, vote: handleRematchVote, registerReset } = useRematch();
 
@@ -214,6 +213,87 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
             registerReset(reset);
         }
     }, [reset, registerReset, isSpectator]);
+
+    React.useEffect(() => {
+        if (!shouldAutoSkipSelection) return;
+        if (isSpectator) return;
+        if (gameMode?.mode === 'tutorial') return;
+        if (currentPhase !== 'setup') return;
+
+        const isAutoSkipDone = () => {
+            const selectedCharacter = G.selectedCharacters[rootPid];
+            const hasSelected = selectedCharacter && selectedCharacter !== 'unselected';
+            if (!hasSelected) return false;
+            if (gameMode?.mode === 'online') {
+                if (rootPid === G.hostPlayerId) {
+                    return G.hostStarted;
+                }
+                return !!G.readyPlayers?.[rootPid];
+            }
+            if (gameMode?.mode === 'local') {
+                return G.hostStarted;
+            }
+            return false;
+        };
+
+        let timer: number | undefined;
+        const attemptAutoSkip = () => {
+            if (isAutoSkipDone()) {
+                autoSkipStageRef.current = 'completed';
+                if (timer !== undefined) {
+                    window.clearInterval(timer);
+                }
+                return;
+            }
+
+            const selectedCharacter = G.selectedCharacters[rootPid];
+            const hasSelected = selectedCharacter && selectedCharacter !== 'unselected';
+
+            if (!hasSelected) {
+                const defaultCharacter = rootPid === '1' ? 'barbarian' : 'monk';
+                engineMoves.selectCharacter(defaultCharacter);
+                autoSkipStageRef.current = 'selected';
+                return;
+            }
+
+            if (gameMode?.mode === 'online') {
+                if (rootPid === G.hostPlayerId) {
+                    if (!G.hostStarted) {
+                        engineMoves.hostStartGame();
+                    }
+                } else if (!G.readyPlayers?.[rootPid]) {
+                    engineMoves.playerReady();
+                }
+                return;
+            }
+
+            if (gameMode?.mode === 'local') {
+                if (!G.hostStarted) {
+                    engineMoves.hostStartGame();
+                }
+            }
+        };
+
+        attemptAutoSkip();
+        timer = window.setInterval(attemptAutoSkip, 800);
+
+        return () => {
+            if (timer !== undefined) {
+                window.clearInterval(timer);
+            }
+        };
+    }, [
+        G.hostPlayerId,
+        G.hostStarted,
+        G.readyPlayers,
+        G.selectedCharacters,
+        currentPhase,
+        engineMoves,
+        gameMode?.mode,
+        isSpectator,
+        rootPid,
+        shouldAutoSkipSelection,
+    ]);
 
     // 判断游戏结果
     const isWinner = isGameOver && ctx.gameover?.winner === rootPid;
@@ -273,7 +353,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
     } = useUIState();
 
     // Atlas 配置（保持独立，用于资源加载）
-    const [cardAtlasRevision, setCardAtlasRevision] = React.useState(0);
+    const [_cardAtlasRevision, setCardAtlasRevision] = React.useState(0);
     const [statusIconAtlas, setStatusIconAtlas] = React.useState<StatusIconAtlasConfig | null>(null);
 
     // 使用 useCardSpotlight Hook 管理卡牌和额外骰子特写
@@ -677,6 +757,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
 
 
 
+    const damageStreamEntry = React.useMemo(() => {
+        const entries = rawG.sys?.eventStream?.entries ?? [];
+        for (let i = entries.length - 1; i >= 0; i -= 1) {
+            const entry = entries[i];
+            if ((entry.event as { type?: string }).type === 'DAMAGE_DEALT') {
+                return entry;
+            }
+        }
+        return undefined;
+    }, [rawG.sys?.eventStream?.entries]);
+
     // 使用 useAnimationEffects Hook 管理飞行动画效果（替代170行重复代码）
     useAnimationEffects({
         players: { player, opponent },
@@ -699,6 +790,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
         },
         locale,
         statusIconAtlas,
+        damageStreamEntry,
     });
 
     const advanceLabel = currentPhase === 'offensiveRoll'
@@ -724,7 +816,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
         return (
             <UndoProvider value={{ G: rawG, ctx, moves, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
                 <div className="relative w-full h-dvh bg-[#0a0a0c] overflow-hidden font-sans select-none">
-                    <HeroSelectionOverlay
+                    <DiceThroneCharacterSelection
                         isOpen={true}
                         currentPlayerId={rootPid}
                         hostPlayerId={G.hostPlayerId}
@@ -766,8 +858,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                 <div className="absolute inset-0 z-0">
                     <div className="absolute inset-0 bg-black/40 z-10 pointer-events-none" />
                     <OptimizedImage
-                        src={getLocalizedAssetPath('dicethrone/images/Common/compressed/background', locale)}
-                        fallbackSrc="dicethrone/images/Common/compressed/background"
+                        src={getLocalizedAssetPath('dicethrone/images/Common/background', locale)}
+                        fallbackSrc="dicethrone/images/Common/background"
                         className="w-full h-full object-cover"
                         alt={t('imageAlt.background')}
                     />
@@ -886,7 +978,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                     />
                 </div>
 
-                {cardAtlasRevision > 0 && (() => {
+                {/* HandArea 不再依赖 cardAtlasRevision，确保手牌始终渲染 */}
+                {(() => {
                     const mustDiscardCount = Math.max(0, handOwner.hand.length - HAND_LIMIT);
                     const isDiscardMode = currentPhase === 'discard' && mustDiscardCount > 0 && canOperateView;
                     return (

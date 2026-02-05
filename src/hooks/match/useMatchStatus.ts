@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { LobbyClient } from 'boardgame.io/client';
 import { GAME_SERVER_URL } from '../../config/server';
 
@@ -337,6 +337,8 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
     const [players, setPlayers] = useState<PlayerStatus[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const failureCountRef = useRef(0);
+    const lastFailureAtRef = useRef<number | null>(null);
 
     // 获取房间状态
     const fetchMatchStatus = useCallback(async () => {
@@ -350,14 +352,25 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
                 name: p.name,
                 isConnected: p.isConnected,
             })));
+            failureCountRef.current = 0;
+            lastFailureAtRef.current = null;
             setError(null);
         } catch (err: any) {
             console.error('获取房间状态失败:', err);
-            // 404 说明房间已不存在，清理本地凭据
-            if (err?.message?.includes('404') || err?.message?.includes('not found')) {
-                clearMatchCredentials(matchID);
+            failureCountRef.current += 1;
+            if (!lastFailureAtRef.current) {
+                lastFailureAtRef.current = Date.now();
             }
-            setError(prev => prev ?? '房间不存在或已被删除');
+            const shouldExposeError = failureCountRef.current >= 3;
+            if (shouldExposeError) {
+                // 404 说明房间已不存在，清理本地凭据（避免创建后短暂抖动误判）
+                if (err?.message?.includes('404') || err?.message?.includes('not found')) {
+                    clearMatchCredentials(matchID);
+                }
+                setError(prev => prev ?? '房间不存在或已被删除');
+            } else {
+                setError(null);
+            }
         } finally {
             setIsLoading(false);
         }

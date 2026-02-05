@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "zones": [],
+  "tracks": [],
+  "stackPoints": [],
+  "grid": {
+    "rows": 8,
+    "cols": 6,
+    "bounds": {
+      "x": 0.007,
+      "y": 0.01,
+      "width": 0.985,
+      "height": 0.98
+    },
+    "gapX": 0.01,
+    "gapY": 0.01
+  }
+}

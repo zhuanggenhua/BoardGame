@@ -21,7 +21,8 @@
  */
 
 import { useEffect, useRef } from 'react';
-import type { HeroState } from '../domain/types';
+import type { EventStreamEntry } from '../../../engine/types';
+import type { DamageDealtEvent, HeroState } from '../domain/types';
 import type { PlayerId } from '../../../engine/types';
 import type { StatusIconAtlasConfig } from '../ui/statusEffects';
 import { STATUS_EFFECT_META, TOKEN_META, getStatusEffectIconNode } from '../ui/statusEffects';
@@ -76,6 +77,8 @@ export interface AnimationEffectsConfig {
     locale?: string;
     /** 状态图标图集配置 */
     statusIconAtlas?: StatusIconAtlasConfig | null;
+    /** 伤害事件流条目（用于以事件驱动伤害动画，避免重复触发） */
+    damageStreamEntry?: EventStreamEntry;
 }
 
 /**
@@ -96,7 +99,8 @@ export function useAnimationEffects(config: AnimationEffectsConfig) {
         triggerHitStop,
         triggerSelfImpact,
         locale,
-        statusIconAtlas
+        statusIconAtlas,
+        damageStreamEntry
     } = config;
 
     // 追踪上一次的 HP 值（防御性读取，player/opponent 可能 undefined）
@@ -109,6 +113,58 @@ export function useAnimationEffects(config: AnimationEffectsConfig) {
     // 追踪上一次的 Token
     const prevOpponentTokensRef = useRef<Record<string, number>>({ ...(opponent?.tokens || {}) });
     const prevPlayerTokensRef = useRef<Record<string, number>>({ ...(player?.tokens || {}) });
+    const lastDamageEventIdRef = useRef<number | null>(null);
+
+    /**
+     * 基于事件流触发伤害动画（优先于 HP 变化）
+     */
+    useEffect(() => {
+        if (!damageStreamEntry) return;
+
+        const event = damageStreamEntry.event as DamageDealtEvent;
+        if (event.type !== 'DAMAGE_DEALT') return;
+        if (lastDamageEventIdRef.current === damageStreamEntry.id) return;
+        lastDamageEventIdRef.current = damageStreamEntry.id;
+
+        const damage = event.payload.actualDamage ?? 0;
+        if (damage <= 0) return;
+
+        if (event.payload.targetId === opponentId && opponent) {
+            pushFlyingEffect({
+                type: 'damage',
+                content: `-${damage}`,
+                startPos: getEffectStartPos(opponentId),
+                endPos: getElementCenter(refs.opponentHp.current),
+            });
+            triggerOpponentShake?.();
+            triggerSlash?.(getSlashPresetByDamage(damage));
+            triggerHitStop?.(getHitStopPresetByDamage(damage));
+            return;
+        }
+
+        if (event.payload.targetId === currentPlayerId) {
+            pushFlyingEffect({
+                type: 'damage',
+                content: `-${damage}`,
+                startPos: getEffectStartPos(currentPlayerId),
+                endPos: getElementCenter(refs.selfHp.current),
+            });
+            triggerSelfImpact?.(damage);
+        }
+    }, [
+        damageStreamEntry,
+        opponentId,
+        opponent,
+        currentPlayerId,
+        refs.opponentHp,
+        refs.selfHp,
+        getEffectStartPos,
+        pushFlyingEffect,
+        triggerOpponentShake,
+        triggerSlash,
+        triggerHitStop,
+        triggerSelfImpact,
+    ]);
 
     /**
      * 监听对手 HP 变化（伤害动画）
@@ -120,7 +176,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig) {
         const prevHealth = prevOpponentHealthRef.current;
         
         // 检测 HP 下降（受到伤害）
-        if (prevHealth !== undefined && currentHealth < prevHealth) {
+        if (!damageStreamEntry && prevHealth !== undefined && currentHealth < prevHealth) {
             const damage = prevHealth - currentHealth;
             pushFlyingEffect({
                 type: 'damage',
@@ -138,7 +194,18 @@ export function useAnimationEffects(config: AnimationEffectsConfig) {
         }
         
         prevOpponentHealthRef.current = currentHealth;
-    }, [opponent?.resources, opponent, pushFlyingEffect, triggerOpponentShake, triggerSlash, triggerHitStop, getEffectStartPos, opponentId, refs.opponentHp]);
+    }, [
+        opponent?.resources,
+        opponent,
+        damageStreamEntry,
+        pushFlyingEffect,
+        triggerOpponentShake,
+        triggerSlash,
+        triggerHitStop,
+        getEffectStartPos,
+        opponentId,
+        refs.opponentHp,
+    ]);
 
     /**
      * 监听玩家 HP 变化（伤害动画）
@@ -149,7 +216,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig) {
         const prevHealth = prevPlayerHealthRef.current;
         
         // 检测 HP 下降（受到伤害）
-        if (prevHealth !== undefined && currentHealth < prevHealth) {
+        if (!damageStreamEntry && prevHealth !== undefined && currentHealth < prevHealth) {
             const damage = prevHealth - currentHealth;
             pushFlyingEffect({
                 type: 'damage',
@@ -163,7 +230,15 @@ export function useAnimationEffects(config: AnimationEffectsConfig) {
         }
         
         prevPlayerHealthRef.current = currentHealth;
-    }, [player.resources, pushFlyingEffect, getEffectStartPos, currentPlayerId, triggerSelfImpact, refs.selfHp]);
+    }, [
+        player.resources,
+        damageStreamEntry,
+        pushFlyingEffect,
+        getEffectStartPos,
+        currentPlayerId,
+        triggerSelfImpact,
+        refs.selfHp,
+    ]);
 
     /**
      * 监听对手状态效果变化（增益/减益动画）

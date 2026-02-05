@@ -1,0 +1,320 @@
+{
+  "name": "斗地主预览",
+  "description": "UGC 预览模式斗地主原型",
+  "tags": ["斗地主", "预览", "UGC"],
+  "schemas": [
+    {
+      "id": "player",
+      "name": "玩家",
+      "description": "参与玩家列表",
+      "primaryKey": "id",
+      "displayField": "name",
+      "fields": {
+        "id": {
+          "type": "string",
+          "label": "ID",
+          "required": true,
+          "showInTable": true,
+          "width": 120
+        },
+        "name": {
+          "type": "string",
+          "label": "名称",
+          "required": true,
+          "showInTable": true,
+          "width": 140
+        },
+        "role": {
+          "type": "enum",
+          "label": "身份",
+          "showInTable": true,
+          "options": [
+            { "value": "地主", "label": "地主" },
+            { "value": "农民", "label": "农民" }
+          ]
+        },
+        "seat": {
+          "type": "number",
+          "label": "座位",
+          "showInTable": true,
+          "width": 80
+        },
+        "cardCount": {
+          "type": "number",
+          "label": "手牌数",
+          "showInTable": true,
+          "width": 90
+        }
+      }
+    },
+    {
+      "id": "card",
+      "name": "卡牌",
+      "description": "斗地主卡牌数据",
+      "defaultRenderComponentId": "rc-ddz-card",
+      "primaryKey": "id",
+      "displayField": "name",
+      "fields": {
+        "id": {
+          "type": "string",
+          "label": "ID",
+          "required": true,
+          "showInTable": true,
+          "width": 120
+        },
+        "name": {
+          "type": "string",
+          "label": "名称",
+          "required": true,
+          "showInTable": true,
+          "width": 140
+        },
+        "suit": {
+          "type": "enum",
+          "label": "花色",
+          "showInTable": true,
+          "options": [
+            { "value": "黑桃", "label": "黑桃" },
+            { "value": "红心", "label": "红心" },
+            { "value": "梅花", "label": "梅花" },
+            { "value": "方块", "label": "方块" },
+            { "value": "王", "label": "王" }
+          ]
+        },
+        "rank": {
+          "type": "enum",
+          "label": "点数",
+          "showInTable": true,
+          "options": [
+            { "value": "3", "label": "3" },
+            { "value": "4", "label": "4" },
+            { "value": "5", "label": "5" },
+            { "value": "6", "label": "6" },
+            { "value": "7", "label": "7" },
+            { "value": "8", "label": "8" },
+            { "value": "9", "label": "9" },
+            { "value": "10", "label": "10" },
+            { "value": "J", "label": "J" },
+            { "value": "Q", "label": "Q" },
+            { "value": "K", "label": "K" },
+            { "value": "A", "label": "A" },
+            { "value": "2", "label": "2" },
+            { "value": "小王", "label": "小王" },
+            { "value": "大王", "label": "大王" }
+          ]
+        },
+        "rankValue": {
+          "type": "number",
+          "label": "点数权重",
+          "showInTable": true,
+          "width": 90
+        },
+        "ownerId": {
+          "type": "string",
+          "label": "归属玩家ID",
+          "showInTable": true,
+          "width": 120
+        },
+        "zone": {
+          "type": "enum",
+          "label": "区域",
+          "showInTable": true,
+          "options": [
+            { "value": "hand", "label": "手牌" },
+            { "value": "table", "label": "桌面" },
+            { "value": "deck", "label": "牌堆" },
+            { "value": "landlord", "label": "底牌" }
+          ]
+        }
+      }
+    }
+  ],
+  "instances": {
+    "player": [
+      { "id": "player-1", "name": "玩家一", "role": "地主", "seat": 1, "cardCount": 20 },
+      { "id": "player-2", "name": "玩家二", "role": "农民", "seat": 2, "cardCount": 17 },
+      { "id": "player-3", "name": "玩家三", "role": "农民", "seat": 3, "cardCount": 17 }
+    ],
+    "card": [
+      { "id": "c1", "name": "黑桃3", "suit": "黑桃", "rank": "3", "rankValue": 3, "ownerId": "player-1", "zone": "hand" },
+      { "id": "c2", "name": "红心3", "suit": "红心", "rank": "3", "rankValue": 3, "ownerId": "player-1", "zone": "hand" },
+      { "id": "c3", "name": "方块A", "suit": "方块", "rank": "A", "rankValue": 14, "ownerId": "player-1", "zone": "hand" },
+      { "id": "c4", "name": "梅花5", "suit": "梅花", "rank": "5", "rankValue": 5, "ownerId": "player-2", "zone": "hand" },
+      { "id": "c5", "name": "红心5", "suit": "红心", "rank": "5", "rankValue": 5, "ownerId": "player-2", "zone": "hand" },
+      { "id": "c6", "name": "黑桃K", "suit": "黑桃", "rank": "K", "rankValue": 13, "ownerId": "player-2", "zone": "hand" },
+      { "id": "c7", "name": "黑桃7", "suit": "黑桃", "rank": "7", "rankValue": 7, "ownerId": "player-3", "zone": "hand" },
+      { "id": "c8", "name": "红心8", "suit": "红心", "rank": "8", "rankValue": 8, "ownerId": "player-3", "zone": "hand" },
+      { "id": "c9", "name": "小王", "suit": "王", "rank": "小王", "rankValue": 16, "ownerId": "table", "zone": "table" },
+      { "id": "c10", "name": "大王", "suit": "王", "rank": "大王", "rankValue": 17, "ownerId": "table", "zone": "table" }
+    ]
+  },
+  "renderComponents": [
+    {
+      "id": "rc-ddz-card",
+      "name": "斗地主卡牌",
+      "targetSchema": "card",
+      "description": "斗地主卡牌渲染",
+      "renderCode": "(data) => (\n  <div className={`w-full h-full rounded-md border border-slate-400 bg-gradient-to-br from-white to-slate-100 flex flex-col items-center justify-center ${data.suit === '红心' || data.suit === '方块' ? 'text-red-600' : 'text-slate-900'}`} >\n    <div className='text-lg font-bold'>{data.rank}</div>\n    <div className='text-[10px]'>{data.suit}</div>\n  </div>\n)",
+      "backRenderCode": "(data) => (\n  <div className='w-full h-full rounded-md border border-slate-500 bg-gradient-to-br from-slate-700 to-slate-900 text-slate-100 flex items-center justify-center text-xs'>\n    斗地主\n  </div>\n)"
+    }
+  ],
+  "layout": [
+    {
+      "id": "player-top-left",
+      "type": "player-area",
+      "x": 40,
+      "y": 40,
+      "width": 170,
+      "height": 70,
+      "data": {
+        "name": "玩家二信息",
+        "bindSchema": "player",
+        "playerRef": "index",
+        "playerRefIndex": 1,
+        "playerIds": ["player-1", "player-2", "player-3"],
+        "currentPlayerId": "player-1",
+        "playerIdField": "id",
+        "renderCode": "(data) => (\n  <div className='w-full h-full rounded-md border border-slate-600 bg-slate-800 text-slate-100 flex flex-col items-center justify-center gap-1'>\n    <div className='text-[10px] text-slate-400'>玩家</div>\n    <div className='text-sm font-semibold'>{data.player ? data.player.name : '未知'}</div>\n    <div className='text-[10px]'>{data.player ? `${data.player.role} · 余牌 ${data.player.cardCount}` : '--'}</div>\n  </div>\n)"
+      }
+    },
+    {
+      "id": "player-top-right",
+      "type": "player-area",
+      "x": 690,
+      "y": 40,
+      "width": 170,
+      "height": 70,
+      "data": {
+        "name": "玩家三信息",
+        "bindSchema": "player",
+        "playerRef": "index",
+        "playerRefIndex": 2,
+        "playerIds": ["player-1", "player-2", "player-3"],
+        "currentPlayerId": "player-1",
+        "playerIdField": "id",
+        "renderCode": "(data) => (\n  <div className='w-full h-full rounded-md border border-slate-600 bg-slate-800 text-slate-100 flex flex-col items-center justify-center gap-1'>\n    <div className='text-[10px] text-slate-400'>玩家</div>\n    <div className='text-sm font-semibold'>{data.player ? data.player.name : '未知'}</div>\n    <div className='text-[10px]'>{data.player ? `${data.player.role} · 余牌 ${data.player.cardCount}` : '--'}</div>\n  </div>\n)"
+      }
+    },
+    {
+      "id": "player-bottom",
+      "type": "player-area",
+      "x": 365,
+      "y": 420,
+      "width": 170,
+      "height": 70,
+      "data": {
+        "name": "玩家一信息",
+        "bindSchema": "player",
+        "playerRef": "index",
+        "playerRefIndex": 0,
+        "playerIds": ["player-1", "player-2", "player-3"],
+        "currentPlayerId": "player-1",
+        "playerIdField": "id",
+        "renderCode": "(data) => (\n  <div className='w-full h-full rounded-md border border-amber-500/60 bg-amber-900/20 text-amber-100 flex flex-col items-center justify-center gap-1'>\n    <div className='text-[10px] text-amber-200'>当前玩家</div>\n    <div className='text-sm font-semibold'>{data.player ? data.player.name : '未知'}</div>\n    <div className='text-[10px]'>{data.player ? `${data.player.role} · 余牌 ${data.player.cardCount}` : '--'}</div>\n  </div>\n)"
+      }
+    },
+    {
+      "id": "hand-top-left",
+      "type": "hand-zone",
+      "x": 30,
+      "y": 120,
+      "width": 260,
+      "height": 120,
+      "data": {
+        "name": "玩家二手牌",
+        "bindSchema": "card",
+        "bindEntity": "ownerId",
+        "zoneField": "zone",
+        "zoneValue": "hand",
+        "targetPlayerRef": "index",
+        "targetPlayerIndex": 1,
+        "playerIds": ["player-1", "player-2", "player-3"],
+        "currentPlayerId": "player-1",
+        "renderFaceMode": "back",
+        "sortCode": "(a, b) => (b.rankValue ?? 0) - (a.rankValue ?? 0)",
+        "layoutCode": "(index, total) => ({ marginLeft: index === 0 ? 0 : -24 })"
+      }
+    },
+    {
+      "id": "hand-top-right",
+      "type": "hand-zone",
+      "x": 610,
+      "y": 120,
+      "width": 260,
+      "height": 120,
+      "data": {
+        "name": "玩家三手牌",
+        "bindSchema": "card",
+        "bindEntity": "ownerId",
+        "zoneField": "zone",
+        "zoneValue": "hand",
+        "targetPlayerRef": "index",
+        "targetPlayerIndex": 2,
+        "playerIds": ["player-1", "player-2", "player-3"],
+        "currentPlayerId": "player-1",
+        "renderFaceMode": "back",
+        "sortCode": "(a, b) => (b.rankValue ?? 0) - (a.rankValue ?? 0)",
+        "layoutCode": "(index, total) => ({ marginLeft: index === 0 ? 0 : -24 })"
+      }
+    },
+    {
+      "id": "play-zone",
+      "type": "play-zone",
+      "x": 200,
+      "y": 220,
+      "width": 520,
+      "height": 70,
+      "data": {
+        "name": "桌面出牌",
+        "bindSchema": "card",
+        "filterCode": "(card) => card.zone === 'table'",
+        "renderFaceMode": "front",
+        "layoutCode": "(index, total) => ({ marginLeft: index === 0 ? 0 : -18 })"
+      }
+    },
+    {
+      "id": "hand-bottom",
+      "type": "hand-zone",
+      "x": 200,
+      "y": 300,
+      "width": 520,
+      "height": 120,
+      "data": {
+        "name": "玩家一手牌",
+        "bindSchema": "card",
+        "bindEntity": "ownerId",
+        "zoneField": "zone",
+        "zoneValue": "hand",
+        "targetPlayerRef": "index",
+        "targetPlayerIndex": 0,
+        "playerIds": ["player-1", "player-2", "player-3"],
+        "currentPlayerId": "player-1",
+        "renderFaceMode": "front",
+        "sortCode": "(a, b) => (b.rankValue ?? 0) - (a.rankValue ?? 0)",
+        "layoutCode": "(index, total) => ({ marginLeft: index === 0 ? 0 : -24 })",
+        "actions": [
+          {
+            "id": "play-cards",
+            "label": "出牌",
+            "scope": "current-player",
+            "hookCode": "(payload) => ({ type: 'PLAY_CARD', payload: { componentId: payload.context.componentId } })"
+          },
+          {
+            "id": "pass",
+            "label": "不出",
+            "scope": "current-player",
+            "hookCode": "(payload) => ({ type: 'PASS', payload: { componentId: payload.context.componentId } })"
+          }
+        ]
+      }
+    }
+  ],
+  "layoutGroups": [
+    { "id": "default", "name": "默认", "hidden": false }
+  ],
+  "rulesCode": "const domain = (() => {\n  const SUITS = ['黑桃', '红心', '梅花', '方块'];\n  const RANKS = [\n    { label: '3', value: 3 },\n    { label: '4', value: 4 },\n    { label: '5', value: 5 },\n    { label: '6', value: 6 },\n    { label: '7', value: 7 },\n    { label: '8', value: 8 },\n    { label: '9', value: 9 },\n    { label: '10', value: 10 },\n    { label: 'J', value: 11 },\n    { label: 'Q', value: 12 },\n    { label: 'K', value: 13 },\n    { label: 'A', value: 14 },\n    { label: '2', value: 15 }\n  ];\n\n  const buildPlayerState = (handCount) => ({\n    resources: {},\n    handCount,\n    deckCount: 0,\n    discardCount: 0,\n    statusEffects: {},\n  });\n\n  const normalizePlayerOrder = (playerIds) => (playerIds || []).map(id => String(id)).filter(Boolean);\n\n  const createDeck = () => {\n    const deck = [];\n    let index = 1;\n    SUITS.forEach(suit => {\n      RANKS.forEach(rank => {\n        deck.push({\n          id: `card-${index++}`,\n          suit,\n          rank: rank.label,\n          rankValue: rank.value,\n          display: `${suit}${rank.label}`,\n        });\n      });\n    });\n    deck.push({\n      id: `card-${index++}`,\n      suit: '王',\n      rank: '小王',\n      rankValue: 16,\n      display: '小王',\n    });\n    deck.push({\n      id: `card-${index++}`,\n      suit: '王',\n      rank: '大王',\n      rankValue: 17,\n      display: '大王',\n    });\n    return deck;\n  };\n\n  const extractCardIds = (payload) => {\n    if (!payload || typeof payload !== 'object') return [];\n    const raw = payload.cardIds || payload.cards || payload.cardId;\n    if (Array.isArray(raw)) return raw.map(id => String(id));\n    if (typeof raw === 'string' || typeof raw === 'number') return [String(raw)];\n    return [];\n  };\n\n  const groupByRank = (cards) => {\n    const bucket = {};\n    cards.forEach(card => {\n      const key = String(card.rankValue);\n      if (!bucket[key]) bucket[key] = [];\n      bucket[key].push(card);\n    });\n    const ranks = Object.keys(bucket).map(Number).sort((a, b) => a - b);\n    return ranks.map(rank => ({\n      rankValue: rank,\n      cards: bucket[String(rank)],\n      count: bucket[String(rank)].length,\n    }));\n  };\n\n  const isConsecutive = (ranks) => {\n    if (ranks.length <= 1) return true;\n    for (let i = 1; i < ranks.length; i += 1) {\n      if (ranks[i] !== ranks[i - 1] + 1) return false;\n    }\n    return true;\n  };\n\n  const detectPattern = (cards) => {\n    const total = cards.length;\n    if (!total) return null;\n    const groups = groupByRank(cards);\n    const counts = groups.map(group => group.count);\n    const ranks = groups.map(group => group.rankValue);\n    const maxRank = ranks[ranks.length - 1];\n\n    if (total === 2 && ranks.length === 2 && ranks[0] >= 16 && ranks[1] >= 16) {\n      return { type: 'rocket', mainRank: maxRank, length: total };\n    }\n    if (total === 4 && ranks.length === 1 && counts[0] === 4) {\n      return { type: 'bomb', mainRank: ranks[0], length: total };\n    }\n    if (total === 1) {\n      return { type: 'single', mainRank: ranks[0], length: total };\n    }\n    if (total === 2 && ranks.length === 1 && counts[0] === 2) {\n      return { type: 'pair', mainRank: ranks[0], length: total };\n    }\n    if (total === 3 && ranks.length === 1 && counts[0] === 3) {\n      return { type: 'triple', mainRank: ranks[0], length: total };\n    }\n    if (total === 4 && ranks.length === 2 && counts.includes(3)) {\n      const tripleRank = groups.find(group => group.count === 3).rankValue;\n      return { type: 'tripleWithOne', mainRank: tripleRank, length: total };\n    }\n    if (total === 5 && ranks.length === 2 && counts.includes(3) && counts.includes(2)) {\n      const tripleRank = groups.find(group => group.count === 3).rankValue;\n      return { type: 'tripleWithPair', mainRank: tripleRank, length: total };\n    }\n    if (total >= 5 && ranks.length === total && maxRank < 15 && isConsecutive(ranks)) {\n      return { type: 'straight', mainRank: maxRank, length: total };\n    }\n    if (total >= 6 && total % 2 === 0 && counts.every(count => count === 2) && maxRank < 15 && isConsecutive(ranks)) {\n      return { type: 'doubleStraight', mainRank: maxRank, length: total };\n    }\n\n    const tripleGroups = groups.filter(group => group.count === 3);\n    if (tripleGroups.length >= 2) {\n      const tripleRanks = tripleGroups.map(group => group.rankValue);\n      const tripleMax = tripleRanks[tripleRanks.length - 1];\n      if (tripleMax < 15 && isConsecutive(tripleRanks)) {\n        const tripleCount = tripleGroups.length;\n        const remaining = total - tripleCount * 3;\n        const pairGroups = groups.filter(group => group.count === 2);\n        const singleGroups = groups.filter(group => group.count === 1);\n        if (remaining === 0) {\n          return { type: 'plane', mainRank: tripleMax, length: total, mainLength: tripleCount };\n        }\n        if (remaining === tripleCount && singleGroups.length === tripleCount) {\n          return { type: 'planeWithSingles', mainRank: tripleMax, length: total, mainLength: tripleCount };\n        }\n        if (remaining === tripleCount * 2 && pairGroups.length === tripleCount) {\n          return { type: 'planeWithPairs', mainRank: tripleMax, length: total, mainLength: tripleCount };\n        }\n      }\n    }\n\n    return null;\n  };\n\n  const isSamePatternType = (pattern, lastPattern) => {\n    return pattern.type === lastPattern.type\n      && pattern.length === lastPattern.length\n      && Number(pattern.mainLength || 0) === Number(lastPattern.mainLength || 0);\n  };\n\n  const canBeat = (pattern, lastPattern) => {\n    if (!lastPattern) return true;\n    if (pattern.type === 'rocket') return true;\n    if (lastPattern.type === 'rocket') return false;\n    if (pattern.type === 'bomb') {\n      if (lastPattern.type !== 'bomb') return true;\n      return pattern.mainRank > lastPattern.mainRank;\n    }\n    if (lastPattern.type === 'bomb') return false;\n    if (!isSamePatternType(pattern, lastPattern)) return false;\n    return pattern.mainRank > lastPattern.mainRank;\n  };\n\n  const pickCardsByIds = (hand, cardIds) => {\n    const lookup = {};\n    cardIds.forEach(id => {\n      lookup[String(id)] = true;\n    });\n    return hand.filter(card => lookup[String(card.id)]);\n  };\n\n  const removeCardsByIds = (hand, cardIds) => {\n    const lookup = {};\n    cardIds.forEach(id => {\n      lookup[String(id)] = true;\n    });\n    return hand.filter(card => !lookup[String(card.id)]);\n  };\n\n  const getNextPlayerId = (currentId, order) => {\n    if (!order || order.length === 0) return currentId;\n    const index = order.indexOf(currentId);\n    const nextIndex = index < 0 ? 0 : (index + 1) % order.length;\n    return order[nextIndex];\n  };\n\n  const updateTurnNumber = (turnNumber, currentId, nextId, order) => {\n    if (!order || order.length === 0) return turnNumber;\n    const firstId = order[0];\n    if (currentId !== firstId && nextId === firstId) return turnNumber + 1;\n    return turnNumber;\n  };\n\n  return {\n    gameId: 'doudizhu',\n\n    setup(playerIds, random) {\n      const order = normalizePlayerOrder(playerIds);\n      const landlordId = order[0] || 'player-1';\n      const deck = random.shuffle(createDeck());\n      const hands = {};\n      order.forEach((id, index) => {\n        hands[id] = deck.slice(index * 17, index * 17 + 17);\n      });\n      const landlordCards = deck.slice(51, 54);\n      hands[landlordId] = (hands[landlordId] || []).concat(landlordCards);\n\n      const players = {};\n      order.forEach(id => {\n        players[id] = {\n          ...buildPlayerState(hands[id].length),\n          public: { role: id === landlordId ? '地主' : '农民' },\n        };\n      });\n\n      return {\n        phase: 'play',\n        turnNumber: 1,\n        activePlayerId: landlordId,\n        players,\n        publicZones: {\n          playerOrder: order,\n          landlordId,\n          hands,\n          deck: deck.slice(54),\n          landlordCards,\n          lastPlay: null,\n          passCount: 0,\n        },\n      };\n    },\n\n    validate(state, command) {\n      if (!state || typeof state !== 'object') {\n        return { valid: false, error: '状态无效' };\n      }\n      if (!command || typeof command !== 'object') {\n        return { valid: false, error: '命令无效' };\n      }\n\n      const commandType = String(command.type || '');\n      const playerId = String(command.playerId || '');\n      if (!playerId) {\n        return { valid: false, error: '缺少玩家信息' };\n      }\n      if (state.activePlayerId && playerId !== state.activePlayerId) {\n        return { valid: false, error: '非当前玩家回合' };\n      }\n\n      const zones = state.publicZones || {};\n      const hands = (zones.hands && typeof zones.hands === 'object') ? zones.hands : {};\n      const hand = hands[playerId] || [];\n      const lastPlay = zones.lastPlay || null;\n\n      if (commandType === 'PASS') {\n        if (!lastPlay) {\n          return { valid: false, error: '当前没有可跳过的出牌' };\n        }\n        return { valid: true };\n      }\n\n      if (commandType !== 'PLAY_CARD') {\n        return { valid: false, error: '不支持的命令类型' };\n      }\n\n      const cardIds = extractCardIds(command.payload || {});\n      if (!Array.isArray(cardIds) || cardIds.length === 0) {\n        return { valid: false, error: '未选择卡牌' };\n      }\n      const uniqueIds = Array.from(new Set(cardIds));\n      if (uniqueIds.length !== cardIds.length) {\n        return { valid: false, error: '存在重复卡牌' };\n      }\n\n      const selected = pickCardsByIds(hand, uniqueIds);\n      if (selected.length !== uniqueIds.length) {\n        return { valid: false, error: '手牌不包含所选卡牌' };\n      }\n\n      const pattern = detectPattern(selected);\n      if (!pattern) {\n        return { valid: false, error: '牌型不合法' };\n      }\n      const lastPattern = lastPlay ? lastPlay.pattern : null;\n      if (!canBeat(pattern, lastPattern)) {\n        return { valid: false, error: '牌型不够大' };\n      }\n\n      return { valid: true };\n    },\n\n    execute(state, command) {\n      const commandType = String(command.type || '');\n      const playerId = String(command.playerId || '');\n\n      if (commandType === 'PASS') {\n        return [{ type: 'PASSED', payload: { playerId } }];\n      }\n      if (commandType !== 'PLAY_CARD') {\n        return [{ type: 'NO_OP', payload: { commandType } }];\n      }\n\n      const zones = state.publicZones || {};\n      const hands = (zones.hands && typeof zones.hands === 'object') ? zones.hands : {};\n      const hand = hands[playerId] || [];\n      const cardIds = extractCardIds(command.payload || {});\n      const uniqueIds = Array.from(new Set(cardIds));\n      const selected = pickCardsByIds(hand, uniqueIds);\n      const pattern = detectPattern(selected);\n      if (!pattern) {\n        return [{ type: 'NO_OP', payload: { commandType } }];\n      }\n\n      return [{\n        type: 'PLAYED',\n        payload: {\n          playerId,\n          cardIds: uniqueIds,\n          pattern,\n        },\n      }];\n    },\n\n    reduce(state, event) {\n      const zones = state.publicZones || {};\n      const playerOrder = zones.playerOrder || Object.keys(state.players || {});\n      const hands = (zones.hands && typeof zones.hands === 'object') ? zones.hands : {};\n\n      if (event.type === 'PLAYED') {\n        const playerId = String(event.payload.playerId || '');\n        const cardIds = Array.isArray(event.payload.cardIds)\n          ? event.payload.cardIds.map(id => String(id))\n          : [];\n        const hand = hands[playerId] || [];\n        const remaining = removeCardsByIds(hand, cardIds);\n        const lastPlay = {\n          playerId,\n          cardIds,\n          pattern: event.payload.pattern || null,\n        };\n        const nextPlayerId = getNextPlayerId(playerId, playerOrder);\n        const nextTurnNumber = updateTurnNumber(state.turnNumber, state.activePlayerId, nextPlayerId, playerOrder);\n        const nextPlayers = { ...state.players };\n        if (nextPlayers[playerId]) {\n          nextPlayers[playerId] = {\n            ...nextPlayers[playerId],\n            handCount: remaining.length,\n          };\n        }\n        return {\n          ...state,\n          turnNumber: nextTurnNumber,\n          activePlayerId: nextPlayerId,\n          players: nextPlayers,\n          publicZones: {\n            ...zones,\n            hands: {\n              ...hands,\n              [playerId]: remaining,\n            },\n            lastPlay,\n            passCount: 0,\n          },\n        };\n      }\n\n      if (event.type === 'PASSED') {\n        const playerId = String(event.payload.playerId || '');\n        if (!zones.lastPlay) return state;\n        let passCount = Number(zones.passCount || 0) + 1;\n        let nextPlayerId = getNextPlayerId(playerId, playerOrder);\n        let nextLastPlay = zones.lastPlay;\n        if (passCount >= Math.max(1, playerOrder.length - 1)) {\n          nextPlayerId = zones.lastPlay.playerId || nextPlayerId;\n          nextLastPlay = null;\n          passCount = 0;\n        }\n        const nextTurnNumber = updateTurnNumber(state.turnNumber, state.activePlayerId, nextPlayerId, playerOrder);\n        return {\n          ...state,\n          turnNumber: nextTurnNumber,\n          activePlayerId: nextPlayerId,\n          publicZones: {\n            ...zones,\n            lastPlay: nextLastPlay,\n            passCount,\n          },\n        };\n      }\n\n      return state;\n    },\n\n    isGameOver(state) {\n      const zones = state.publicZones || {};\n      const hands = (zones.hands && typeof zones.hands === 'object') ? zones.hands : {};\n      const order = zones.playerOrder || Object.keys(state.players || {});\n      let winnerId = null;\n      order.forEach(id => {\n        if (!winnerId && hands[id] && hands[id].length === 0) {\n          winnerId = id;\n        }\n      });\n      if (!winnerId) {\n        order.forEach(id => {\n          const player = state.players ? state.players[id] : null;\n          if (!winnerId && player && player.handCount === 0) {\n            winnerId = id;\n          }\n        });\n      }\n      if (!winnerId) return undefined;\n      const landlordId = zones.landlordId;\n      if (landlordId && winnerId !== landlordId) {\n        return {\n          winner: winnerId,\n          winners: order.filter(id => id !== landlordId),\n        };\n      }\n      return { winner: winnerId };\n    },\n  };\n})();",
+  "uiLayout": {
+    "leftPanelWidth": 280,
+    "topPanelRatio": 0.55
+  }
+}

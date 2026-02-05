@@ -13,12 +13,14 @@
 import 'dotenv/config';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { readdirSync, readFileSync, statSync } from 'fs';
-import { join, relative } from 'path';
+import { join, relative, extname, sep } from 'path';
 import mime from 'mime-types';
 
 // R2 配置
 const R2_ENDPOINT = `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
+const ALLOWED_EXTS = new Set(['.ogg', '.webp', '.avif']);
+const COMPRESSED_DIR_NAME = 'compressed';
 
 // S3 客户端（R2 兼容 S3 API）
 const s3Client = new S3Client({
@@ -48,6 +50,15 @@ function getAllFiles(dir, fileList = []) {
   return fileList;
 }
 
+function shouldUpload(filePath) {
+  const parts = filePath.split(sep);
+  if (!parts.includes(COMPRESSED_DIR_NAME)) {
+    return false;
+  }
+  const ext = extname(filePath).toLowerCase();
+  return ALLOWED_EXTS.has(ext);
+}
+
 // 上传单个文件
 async function uploadFile(localPath, remotePath) {
   const fileContent = readFileSync(localPath);
@@ -71,7 +82,7 @@ async function uploadFile(localPath, remotePath) {
 // 主函数
 async function main() {
   const assetsDir = join(process.cwd(), 'public', 'assets');
-  const files = getAllFiles(assetsDir);
+  const files = getAllFiles(assetsDir).filter(shouldUpload);
   
   console.log(`📦 找到 ${files.length} 个文件，开始上传到 R2...\n`);
   

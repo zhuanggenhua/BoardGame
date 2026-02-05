@@ -42,10 +42,25 @@ interface UndoProviderProps {
  * ```
  */
 export const UndoProvider: React.FC<UndoProviderProps> = ({ children, value }) => {
+    const lastValueRef = React.useRef<UndoContextValue | null>(null);
     useEffect(() => {
-        setUndoState(value);
-        return () => setUndoState(null);
+        const prev = lastValueRef.current;
+        const isSame = prev
+            && prev.G === value.G
+            && prev.ctx === value.ctx
+            && prev.moves === value.moves
+            && prev.playerID === value.playerID
+            && prev.isGameOver === value.isGameOver
+            && prev.isLocalMode === value.isLocalMode;
+        if (!isSame) {
+            lastValueRef.current = value;
+            setUndoState(value);
+        }
     }, [value]);
+    useEffect(() => () => {
+        lastValueRef.current = null;
+        setUndoState(null);
+    }, []);
     return <>{children}</>;
 };
 

@@ -822,12 +822,6 @@ export function execute(
         case 'SKIP_TOKEN_RESPONSE': {
             const pendingDamage = state.pendingDamage;
             
-            console.log('[SKIP_TOKEN_RESPONSE] Executing:', {
-                hasPendingDamage: !!pendingDamage,
-                responseType: pendingDamage?.responseType,
-                currentPhase: state.turnPhase,
-            });
-            
             if (!pendingDamage) {
                 console.warn('[DiceThrone] SKIP_TOKEN_RESPONSE: no pending damage');
                 break;
@@ -837,7 +831,6 @@ export function execute(
             if (pendingDamage.responseType === 'beforeDamageDealt') {
                 // 攻击方跳过加伤，检查防御方是否有可用 Token
                 if (hasDefensiveTokens(state, pendingDamage.targetPlayerId)) {
-                    console.log('[SKIP_TOKEN_RESPONSE] Switching to defender mitigation');
                     // 切换到防御方响应
                     const newPendingDamage: PendingDamage = {
                         ...pendingDamage,
@@ -851,9 +844,7 @@ export function execute(
             }
             
             // 关闭响应窗口，应用最终伤害
-            console.log('[SKIP_TOKEN_RESPONSE] Finalizing token response');
             const closeEvents = finalizeTokenResponse(pendingDamage, state);
-            console.log('[SKIP_TOKEN_RESPONSE] Generated events:', closeEvents.map(e => e.type));
             events.push(...closeEvents);
             break;
         }

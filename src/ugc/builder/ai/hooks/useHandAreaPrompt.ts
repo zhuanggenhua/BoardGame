@@ -1,7 +1,7 @@
 /**
  * 手牌区提示词 Hook
  * 
- * 仅处理手牌区相关的提示词生成（布局、选中效果）
+ * 仅处理手牌区相关的提示词生成（布局、选中、排序、过滤）
  */
 
 import { useCallback } from 'react';
@@ -15,7 +15,7 @@ interface HandAreaPromptOptions {
 /**
  * 手牌区提示词生成器
  * 
- * 职责：生成布局代码和选中效果代码的提示词
+ * 职责：生成布局代码、选中效果、排序、过滤提示词
  */
 export function useHandAreaPrompt() {
   const ctx = usePromptContext();
@@ -107,25 +107,25 @@ ${TECH_STACK}
 ${options.requirement || '排序手牌'}
 
 ## 函数签名
-(items: Card[]) => Card[]
+(
+  a: Card,
+  b: Card
+) => number
 
 ## 参数说明
-- \`items\`: 手牌数组
-- 每张卡牌包含 id、name、tags 等字段
+- \`a\` / \`b\`: 参与比较的卡牌
 
 ## 使用示例
 \`\`\`tsx
 // 按名称排序
-(items) => [...items].sort((a, b) => 
-  (a.name as string).localeCompare(b.name as string)
-)
+(a, b) => (a.name as string).localeCompare(b.name as string)
 
 // 按标签优先级排序
-(items) => [...items].sort((a, b) => {
+(a, b) => {
   const aHas = (a.tags as string[])?.includes('优先');
   const bHas = (b.tags as string[])?.includes('优先');
   return aHas === bHas ? 0 : aHas ? -1 : 1;
-})
+}
 \`\`\`
 
 ${OUTPUT_RULES}`;
@@ -143,23 +143,31 @@ ${TECH_STACK}
 ${options.requirement || '过滤手牌'}
 
 ## 函数签名
-(items: Card[]) => Card[]
+(
+  item: Card,
+  ctx: {
+    playerIds: string[];
+    currentPlayerId: string | null;
+    currentPlayerIndex: number;
+    resolvedPlayerId: string | null;
+    resolvedPlayerIndex: number;
+    bindEntity?: string;
+    zoneField?: string;
+    zoneValue?: string;
+  }
+) => boolean
 
 ## 参数说明
-- \`items\`: 手牌数组
-- 每张卡牌包含 id、name、tags 等字段
+- \`item\`: 当前卡牌
+- \`ctx\`: 过滤上下文（hand-zone 注入）
 
 ## 使用示例
 \`\`\`tsx
 // 按标签过滤
-(items) => items.filter(item => 
-  (item.tags as string[])?.includes('可出')
-)
+(item) => (item.tags as string[])?.includes('可出')
 
 // 组合条件
-(items) => items.filter(item => 
-  (item.tags as string[])?.some(t => ['条件1', '条件2'].includes(t))
-)
+(item) => (item.tags as string[])?.some(t => ['条件1', '条件2'].includes(t))
 \`\`\`
 
 ${OUTPUT_RULES}`;

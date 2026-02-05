@@ -30,6 +30,54 @@ npm run test:watch
 npm run test:e2e
 ```
 
+## 跑测试的范围策略（建议）
+
+本项目目前没有内建“自动计算受影响测试（affected tests）”的脚本（例如按依赖图/按 git diff 自动挑选要跑的用例）。
+
+建议采用“按影响范围选择测试”的工作流：
+
+- 日常开发（改动明确且范围小）：优先只跑**直接相关**的 Vitest 测试（按路径/文件名过滤），提高迭代速度。
+- 提交前 / 合并前（改动较大、跨模块、或影响引擎/系统/公共组件）：必须补充并跑更大范围的测试，必要时跑全量。
+
+### 1) 只跑与你改动相关的 Vitest 测试
+
+Vitest 支持通过“过滤字符串/路径”来只运行匹配的测试文件（最稳定、最可控）。示例：
+
+```bash
+# 只跑文件名/路径匹配 audio.config 的测试
+npm test -- audio.config
+
+# 只跑某个目录下的测试（举例：UGC Builder）
+npm test -- src/ugc/builder
+
+# 只跑某个游戏的测试目录（举例：tictactoe）
+npm test -- src/games/tictactoe/__tests__
+```
+
+如果你在写/调试单个测试文件，也可以直接指定文件：
+
+```bash
+npm test -- src/games/tictactoe/__tests__/flow.test.ts
+```
+
+### 2) 什么时候应该扩大到全量
+
+建议满足任一条件就扩大范围：
+
+- 修改了 `src/engine/`、`src/systems/`、`src/core/`、`src/components/game/framework/` 等“跨游戏复用层”。
+- 修改涉及多人联机流程、状态同步、Undo/Rematch/Prompt 等系统性行为。
+- 改动涉及公共类型/协议（容易出现编译通过但运行期回归）。
+
+可选执行：
+
+```bash
+# 全量 vitest
+npm test
+
+# e2e（需要覆盖真实用户流程时）
+npm run test:e2e
+```
+
 ## API 测试（NestJS）
 
 ### 使用 Docker / 本地 MongoDB
@@ -47,6 +95,27 @@ npm run test:api
 ## E2E 测试（Playwright）
 
 端到端测试使用 Playwright，测试文件位于 `e2e/` 目录。
+
+**硬性要求**：端到端测试必须覆盖完整用户流程（从入口到完成），尤其是教程类流程必须覆盖“进入 → 关键步骤 → 结束/返回”的全链路。
+
+### 本地模式 vs 在线对局（重要）
+
+**结论：本项目的大多数游戏不支持“本地同屏”模式**。例如 DiceThrone 只能走在线房间流程，`/play/<gameId>/local` 仅用于快速渲染或调试，不代表真实多人流程。
+
+请按以下原则编写/选择 E2E：
+
+1. **在线对局优先**
+   - 真实多人流程必须使用 **host/guest 两个浏览器上下文**。
+   - 典型流程：创建房间 → 拿到 matchId → guest `?join=true` 加入 → 双方交互。
+
+2. **冒烟测试用途**
+   - 冒烟测试只验证“页面能加载 + 关键元素出现”。
+   - 若游戏**不支持本地同屏**，冒烟测试也应走在线房间，但只做最小断言。
+   - 若游戏支持本地同屏，可继续使用 `/play/<gameId>/local` 进行快速渲染验证。
+
+3. **不要误用本地路由**
+   - `/play/<gameId>/local` 仅用于调试或静态渲染检查，**不能替代多人在线流程**。
+   - 任何需要“准备/开始/同步”的逻辑，必须走在线对局。
 
 ```bash
 # 运行 E2E 测试
@@ -68,6 +137,7 @@ test('Homepage Check', async ({ page }) => {
 
 - **社交系统 (`e2e/social.test.ts`)**: 覆盖 Global HUD (右下角悬浮球) 入口点击、模态框打开、标签页切换及好友列表渲染。
 - **导航栏 (`e2e/navbar.test.ts`)**: 覆盖顶部导航、登录状态及游戏分类切换。
+- **游戏教程流程 (`e2e/tictactoe-tutorial.e2e.ts`)**: 覆盖井字棋教程完整流程（进入 → 玩家落子 → AI 回合 → 完成）。
 
 ### Mock API 响应
 
@@ -86,6 +156,7 @@ test.beforeEach(async ({ page }) => {
 ├── e2e/                          # Playwright E2E 测试
 │   ├── navbar.test.ts           # 导航栏测试
 │   └── social.test.ts           # 社交功能测试
+│   └── tictactoe-tutorial.e2e.ts # 井字棋教程流程测试
 ├── apps/
 │   └── api/
 │       └── test/                 # API 集成测试
@@ -113,7 +184,7 @@ test.beforeEach(async ({ page }) => {
 
 ## 测试覆盖要求
 
-测试应全面覆盖以下场景（根据具体项目选择适用项）：
+测试应全面覆盖以下场景（根据具体项目选择适用项）。**集成测试（命令级，仅使用命令序列验证）必须覆盖所有情况**：
 
 ### 1. 基础流程
 - 初始状态验证
@@ -147,6 +218,10 @@ test.beforeEach(async ({ page }) => {
 - 数值上限/下限
 - 特殊触发条件
 - 并发/竞态场景（如适用）
+
+### 7. 端到端流程覆盖（强制）
+- 端到端测试必须覆盖“入口 → 关键交互 → 完成/退出”的完整链路
+- 教程类流程必须验证 AI 回合与自动推进步骤
 
 ### 测试命名规范
 

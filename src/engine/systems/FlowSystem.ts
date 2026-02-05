@@ -152,15 +152,18 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
             if (command.type !== FLOW_COMMANDS.ADVANCE_PHASE) return;
 
             const from = getCurrentPhase(state) || hooks.initialPhase;
+            console.log(`[FlowSystem][beforeCommand] ADVANCE_PHASE from=${from} playerId=${command.playerId}`);
 
             // canAdvance 校验
             const can = hooks.canAdvance?.({ state, from, command }) ?? { ok: true };
             if (!can.ok) {
+                console.log(`[FlowSystem][beforeCommand] canAdvance failed: ${can.error}`);
                 return { halt: true, error: can.error ?? 'cannot_advance_phase' };
             }
 
             // 计算下一阶段
             let to = hooks.getNextPhase({ state, from, command });
+            console.log(`[FlowSystem][beforeCommand] getNextPhase returned to=${to}`);
 
             // 离开阶段钩子
             const exit = hooks.onPhaseExit?.({ state, from, to, command, random });
@@ -176,12 +179,14 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
                     shouldHalt = exit.halt ?? false;
                     if (exit.overrideNextPhase) {
                         to = exit.overrideNextPhase;
+                        console.log(`[FlowSystem][beforeCommand] overrideNextPhase to=${to}`);
                     }
                 }
             }
 
             if (shouldHalt) {
                 // 不切换阶段
+                console.log(`[FlowSystem][beforeCommand] halt=true, not advancing`);
                 return {
                     halt: true,
                     state,
@@ -191,6 +196,7 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
 
             // 更新 sys.phase
             const nextState = setPhase(state, to);
+            console.log(`[FlowSystem][beforeCommand] phase updated from=${from} to=${to}`);
 
             // 生成系统事件（用于 UI/日志）
             const activePlayerId = hooks.getActivePlayerId?.({ state: nextState, from, to, command }) ?? command.playerId;
@@ -228,15 +234,19 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
                 payload: undefined,
             };
 
+            console.log(`[FlowSystem][afterEvents] autoContinue from=${from} playerId=${playerId}`);
+
             // canAdvance 校验（自动继续时通常应该允许）
             const can = hooks.canAdvance?.({ state, from, command: syntheticCommand }) ?? { ok: true };
             if (!can.ok) {
                 // 自动继续被阻止，静默失败
+                console.log(`[FlowSystem][afterEvents] autoContinue blocked: ${can.error}`);
                 return;
             }
 
             // 计算下一阶段
             let to = hooks.getNextPhase({ state, from, command: syntheticCommand });
+            console.log(`[FlowSystem][afterEvents] getNextPhase returned to=${to}`);
 
             // 离开阶段钩子
             const exit = hooks.onPhaseExit?.({ state, from, to, command: syntheticCommand, random });
@@ -252,12 +262,14 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
                     shouldHalt = exit.halt ?? false;
                     if (exit.overrideNextPhase) {
                         to = exit.overrideNextPhase;
+                        console.log(`[FlowSystem][afterEvents] overrideNextPhase to=${to}`);
                     }
                 }
             }
 
             if (shouldHalt) {
                 // 流程被 halt（例如又触发了新的响应窗口），只返回事件
+                console.log(`[FlowSystem][afterEvents] halt=true, not advancing`);
                 return {
                     state,
                     events: exitEvents,
@@ -266,6 +278,7 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
 
             // 更新 sys.phase
             const nextState = setPhase(state, to);
+            console.log(`[FlowSystem][afterEvents] phase updated from=${from} to=${to}`);
 
             // 生成系统事件
             const activePlayerId = hooks.getActivePlayerId?.({ state: nextState, from, to, command: syntheticCommand }) ?? playerId;

@@ -48,6 +48,10 @@ export interface BgmDefinition {
 
 export interface AudioEvent {
     type: string;
+    /** 事件级音效 key（优先级最高） */
+    audioKey?: SoundKey;
+    /** 事件级音效分类（用于统一映射） */
+    audioCategory?: AudioCategory;
     sfxKey?: SoundKey;
     [key: string]: unknown;
 }

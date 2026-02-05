@@ -11,12 +11,23 @@ export type {
     PhaseInfo,
     PlayerPanelData,
     HandAreaConfig,
+    HandAreaFilterContext,
     ResourceTrayConfig,
     AnimationConfig,
     DragOffset,
     DragState,
     Ctx,
 } from './types';
+
+// 角色选择类型
+export type {
+    CharacterDef,
+    CharacterSelectionState,
+    CharacterAssets,
+    CharacterSelectionCallbacks,
+    PlayerColorScheme,
+    CharacterSelectionStyleConfig,
+} from './CharacterSelection.types';
 
 // Hook 契约类型
 export type {

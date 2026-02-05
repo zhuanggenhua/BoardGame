@@ -32,7 +32,11 @@ export const DiceThroneTutorial: TutorialManifest = {
                 { commandType: 'SELECT_CHARACTER', payload: { characterId: 'monk' } },
                 { commandType: 'HOST_START_GAME', payload: {} },
             ],
-            advanceOnEvents: [{ type: 'SYS_PHASE_CHANGED', match: { to: 'income' } }],
+            advanceOnEvents: [
+                { type: 'HOST_STARTED' },
+                { type: 'SYS_PHASE_CHANGED', match: { to: 'income' } },
+                { type: 'SYS_PHASE_CHANGED', match: { to: 'main1' } },
+            ],
         },
         {
             id: 'intro',

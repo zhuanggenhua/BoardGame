@@ -4,24 +4,39 @@
  */
 import { describe, it, expect } from 'vitest';
 import { DICETHRONE_AUDIO_CONFIG } from '../audio.config';
-import { COMMON_AUDIO_CONFIG } from '../../../lib/audio/common.config';
 import { MONK_ABILITIES } from '../monk/abilities';
-import type { AudioEvent, GameAudioConfig } from '../../../lib/audio/types';
+import type { AudioEvent } from '../../../lib/audio/types';
+import { getOptimizedAudioUrl } from '../../../core/AssetLoader';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// 合并通用配置和游戏配置
-function mergeAudioConfigs(common: GameAudioConfig, game: GameAudioConfig): GameAudioConfig {
-    return {
-        basePath: game.basePath || common.basePath,
-        sounds: { ...common.sounds, ...game.sounds },
-        eventSoundMap: { ...common.eventSoundMap, ...game.eventSoundMap },
-        eventSoundResolver: game.eventSoundResolver || common.eventSoundResolver,
-        bgm: { ...common.bgm, ...game.bgm },
-    };
-}
+const CP_GAIN_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a';
+const CP_SPEND_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.purged_a';
+const CARD_PLAY_KEY = 'card.handling.decks_and_cards_sound_fx_pack.card_placing_001';
+const DAMAGE_LIGHT_KEY = 'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_01_krst';
+const DAMAGE_HEAVY_KEY = 'combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_01_krst';
+const DAMAGE_SELF_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.body_hit.sfx_body_hit_generic_small_1';
+const VICTORY_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_win';
+const DEFEAT_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_lose';
+const DICE_ROLL_KEYS = [
+    'dice.decks_and_cards_sound_fx_pack.dice_roll_velvet_001',
+    'dice.decks_and_cards_sound_fx_pack.few_dice_roll_001',
+];
 
-const MERGED_CONFIG = mergeAudioConfigs(COMMON_AUDIO_CONFIG, DICETHRONE_AUDIO_CONFIG);
+const REGISTRY_BASE = 'common/audio';
+const REGISTRY_PATH = path.join(process.cwd(), 'public', 'assets', 'common', 'audio', 'registry.json');
+const registryRaw = fs.readFileSync(REGISTRY_PATH, 'utf-8');
+const registry = JSON.parse(registryRaw) as { entries: Array<{ key: string; src: string; type: 'sfx' | 'bgm' }> };
+const registryMap = new Map(registry.entries.map(entry => [entry.key, entry]));
+
+const resolveRegistryFilePath = (key: string): string => {
+    const entry = registryMap.get(key);
+    if (!entry) return '';
+    const url = getOptimizedAudioUrl(entry.src, REGISTRY_BASE);
+    if (!url) return '';
+    const relative = url.replace(/^\/assets\//, '');
+    return path.join(process.cwd(), 'public', 'assets', relative);
+};
 
 describe('DiceThrone 音效配置属性测试', () => {
     describe('属性 1：CP 变化音效正确性', () => {
@@ -33,14 +48,14 @@ describe('DiceThrone 音效配置属性测试', () => {
 
             // 测试多个随机 delta 值
             const testCases = [
-                { delta: 5, expected: 'cp_gain' },
-                { delta: 1, expected: 'cp_gain' },
-                { delta: 0, expected: 'cp_gain' },
-                { delta: -1, expected: 'cp_spend' },
-                { delta: -3, expected: 'cp_spend' },
-                { delta: -10, expected: 'cp_spend' },
-                { delta: 100, expected: 'cp_gain' },
-                { delta: -100, expected: 'cp_spend' },
+                { delta: 5, expected: CP_GAIN_KEY },
+                { delta: 1, expected: CP_GAIN_KEY },
+                { delta: 0, expected: CP_GAIN_KEY },
+                { delta: -1, expected: CP_SPEND_KEY },
+                { delta: -3, expected: CP_SPEND_KEY },
+                { delta: -10, expected: CP_SPEND_KEY },
+                { delta: 100, expected: CP_GAIN_KEY },
+                { delta: -100, expected: CP_SPEND_KEY },
             ];
 
             for (const { delta, expected } of testCases) {
@@ -50,13 +65,9 @@ describe('DiceThrone 音效配置属性测试', () => {
             }
         });
 
-        it('CP 音效资源路径应包含正确的关键词', () => {
-            // CP 音效现在在通用配置中定义
-            const cpGainConfig = COMMON_AUDIO_CONFIG.sounds.cp_gain;
-            const cpSpendConfig = COMMON_AUDIO_CONFIG.sounds.cp_spend;
-
-            expect(cpGainConfig.src).toContain('Charged');
-            expect(cpSpendConfig.src).toContain('Purged');
+        it('CP 音效 key 必须存在于 registry', () => {
+            expect(registryMap.has(CP_GAIN_KEY)).toBe(true);
+            expect(registryMap.has(CP_SPEND_KEY)).toBe(true);
         });
     });
 
@@ -92,78 +103,54 @@ describe('DiceThrone 音效配置属性测试', () => {
                     // 有 sfxKey 的技能应返回自定义音效键
                     expect(result).toBe(ability.sfxKey);
                 } else {
-                    // 没有 sfxKey 的技能应返回默认音效
-                    expect(result).toBe('ability_activate');
+                    // 没有 sfxKey 的技能不播放技能音效
+                    expect(result).toBeNull();
                 }
             }
         });
 
-        it('所有自定义音效键应在配置中存在', () => {
+        it('所有自定义音效键应在 registry 中存在', () => {
             const customSfxKeys = MONK_ABILITIES
                 .filter(a => a.sfxKey)
                 .map(a => a.sfxKey as string);
 
             for (const sfxKey of customSfxKeys) {
-                const config = DICETHRONE_AUDIO_CONFIG.sounds[sfxKey];
-                expect(config).toBeDefined();
-                expect(config.src).toBeTruthy();
+                expect(registryMap.has(sfxKey)).toBe(true);
             }
         });
     });
 
     describe('属性 3：配置完整性', () => {
-        it('所有音效配置的文件路径应存在', () => {
-            // 检查通用配置的文件路径
-            const commonBasePath = path.join(process.cwd(), 'public', 'assets', COMMON_AUDIO_CONFIG.basePath);
-            for (const [key, config] of Object.entries(COMMON_AUDIO_CONFIG.sounds)) {
-                const filePath = path.join(commonBasePath, config.src);
-                const exists = fs.existsSync(filePath);
-                if (!exists) {
-                    console.error(`通用音效文件不存在: ${key} -> ${filePath}`);
-                }
-                expect(exists).toBe(true);
-            }
-
-            // 检查游戏配置的文件路径
-            const gameBasePath = path.join(process.cwd(), 'public', 'assets', DICETHRONE_AUDIO_CONFIG.basePath);
-            for (const [key, config] of Object.entries(DICETHRONE_AUDIO_CONFIG.sounds)) {
-                const filePath = path.join(gameBasePath, config.src);
-                const exists = fs.existsSync(filePath);
-                if (!exists) {
-                    console.error(`游戏音效文件不存在: ${key} -> ${filePath}`);
-                }
-                expect(exists).toBe(true);
-            }
-        });
-
-        it('所有音量值应在 0 到 1 之间', () => {
-            // 检查合并后的配置
-            for (const [key, config] of Object.entries(MERGED_CONFIG.sounds)) {
-                expect(config.volume).toBeGreaterThanOrEqual(0);
-                expect(config.volume).toBeLessThanOrEqual(1);
-            }
-        });
-
-        it('所有分类标签应符合规范', () => {
-            const allowedGroups = ['dice', 'card', 'combat', 'token', 'status', 'ui', 'system', 'stinger', 'bgm'];
-
-            // 检查合并后的配置
-            for (const [key, config] of Object.entries(MERGED_CONFIG.sounds)) {
-                expect(config.category).toBeDefined();
-                expect(allowedGroups).toContain(config.category.group);
-                expect(config.category.sub).toBeTruthy();
-            }
-        });
-
-        it('所有技能 sfxKey 应在配置中有对应条目', () => {
+        it('所有使用到的 registry key 都必须存在并有资源文件', () => {
+            const keys = new Set<string>();
+            const eventKeys = Object.values(DICETHRONE_AUDIO_CONFIG.eventSoundMap ?? {});
+            eventKeys.forEach(key => keys.add(key));
+            DICETHRONE_AUDIO_CONFIG.bgm?.forEach(def => keys.add(def.key));
+            DICE_ROLL_KEYS.forEach(key => keys.add(key));
+            keys.add(CP_GAIN_KEY);
+            keys.add(CP_SPEND_KEY);
+            keys.add(CARD_PLAY_KEY);
+            keys.add(DAMAGE_LIGHT_KEY);
+            keys.add(DAMAGE_HEAVY_KEY);
+            keys.add(DAMAGE_SELF_KEY);
+            keys.add(VICTORY_KEY);
+            keys.add(DEFEAT_KEY);
             for (const ability of MONK_ABILITIES) {
                 if (ability.sfxKey) {
-                    const config = DICETHRONE_AUDIO_CONFIG.sounds[ability.sfxKey];
-                    expect(config).toBeDefined();
-                    expect(config.src).toBeTruthy();
-                    expect(config.volume).toBeGreaterThanOrEqual(0);
-                    expect(config.volume).toBeLessThanOrEqual(1);
+                    keys.add(ability.sfxKey);
                 }
+            }
+
+            for (const key of keys) {
+                const entry = registryMap.get(key);
+                expect(entry).toBeDefined();
+                if (!entry) continue;
+                const filePath = resolveRegistryFilePath(key);
+                const exists = fs.existsSync(filePath);
+                if (!exists) {
+                    console.error(`registry 音效文件不存在: ${key} -> ${filePath}`);
+                }
+                expect(exists).toBe(true);
             }
         });
     });

@@ -17,6 +17,7 @@ export {
     // 便捷工具 API
     assetsPath,
     getOptimizedImageUrls,
+    getOptimizedAudioUrl,
     getLocalizedAssetPath,
     getLocalizedImageUrls,
     buildLocalizedImageSet,

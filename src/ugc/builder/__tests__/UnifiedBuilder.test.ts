@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { PromptGenerator, createEmptyContext } from '../ai';
 import { BaseEntitySchema, extendSchema, field, getTableFields } from '../schema/types';
 import { validateAbilityJson } from '../utils/validateAbilityJson';
+import { buildRequirementsText } from '../utils/requirements';
 
 describe('PromptGenerator', () => {
   const testContext = createEmptyContext();
@@ -38,6 +39,27 @@ describe('PromptGenerator', () => {
     
     expect(fullPrompt).toBeDefined();
     expect(fullPrompt.length).toBeGreaterThan(100);
+  });
+});
+
+describe('需求汇总', () => {
+  it('应拼接 rawText 与结构化条目', () => {
+    const text = buildRequirementsText({
+      rawText: '总体目标描述',
+      entries: [
+        { id: 'e1', location: '区域A', content: '需要显示资源', notes: '优先' },
+        { id: 'e2', location: '', content: '支持快速切换', notes: '' },
+      ],
+    });
+
+    expect(text).toContain('总体需求：总体目标描述');
+    expect(text).toContain('[区域A] 需要显示资源（备注：优先）');
+    expect(text).toContain('[未标注位置] 支持快速切换');
+  });
+
+  it('应追加临时输入需求', () => {
+    const text = buildRequirementsText({ rawText: '', entries: [] }, '临时需求');
+    expect(text).toContain('本次需求：临时需求');
   });
 });
 

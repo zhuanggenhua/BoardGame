@@ -4,9 +4,7 @@ import type { TranslateFn } from './utils';
 import { buildLocalizedImageSet } from '../../../core';
 
 const getCharacterAssetBase = (charId: string = 'monk') => (
-    charId === 'barbarian'
-        ? `dicethrone/images/${charId}`
-        : `dicethrone/images/${charId}/compressed`
+    `dicethrone/images/${charId}`
 );
 
 const withLegacyPng = (path: string, charId: string) => (
@@ -20,8 +18,8 @@ export const ASSETS = {
     ABILITY_CARDS_BASE: (charId: string = 'monk') => withLegacyPng(`${getCharacterAssetBase(charId)}/${charId}-base-ability-cards`, charId),
     DICE_SPRITE: (charId: string = 'monk') => `${getCharacterAssetBase(charId)}/dice-sprite`,
     EFFECT_ICONS: (charId: string = 'monk') => `${getCharacterAssetBase(charId)}/status-icons-atlas`,
-    CARD_BG: 'dicethrone/images/Common/compressed/card-background',
-    AVATAR: 'dicethrone/images/Common/compressed/character-portraits',
+    CARD_BG: 'dicethrone/images/Common/card-background',
+    AVATAR: 'dicethrone/images/Common/character-portraits',
 };
 
 const DICE_ATLAS: {

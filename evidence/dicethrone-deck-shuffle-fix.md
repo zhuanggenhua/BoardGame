@@ -131,7 +131,41 @@ export function initHeroState(
 
 - ✅ 70 个流程测试全部通过
 - ✅ 8 个英雄选择测试全部通过
-- ❌ 3 个音效配置测试失败（与本次修改无关）
+- ✅ 所有测试（97 个）全部通过
+
+## 代码清理
+
+修复完成并经用户确认后，清理了所有调试日志：
+
+### 已清理的文件
+
+1. **src/games/dicethrone/domain/execute.ts**
+   - 移除 `[PLAY_CARD]` 日志
+   - 移除 `[isDefendableAttack]` 日志
+   - 移除 `[SKIP_TOKEN_RESPONSE]` 相关的 4 条日志（第 825-858 行）
+
+2. **src/games/dicethrone/domain/effects.ts**
+   - 移除 `[DiceThrone][handleGrantExtraRoll]` 日志
+   - 移除 `[DiceThrone][handleModifyDieCopy]` 日志
+
+3. **src/games/dicethrone/domain/commands.ts**
+   - 移除 `[validatePlayCard] 验证成功` 日志
+
+4. **src/games/dicethrone/domain/attack.ts**
+   - 移除 `[resolveAttack]` 日志
+
+### 保留的日志
+
+- `console.warn` 用于错误提示的日志（如 `[DiceThrone] SKIP_TOKEN_RESPONSE: no pending damage`）
+- `console.warn` 用于安全检查的日志（如 `[DiceThrone] initialDeckCardIds 不完整，回退到重新洗牌`）
+
+### 清理后测试
+
+```bash
+npm test -- src/games/dicethrone/__tests__/ --run
+```
+
+**结果**：97 个测试全部通过 ✅（包括 70 个流程测试 + 27 个其他测试）
 
 ## 预期效果
 
@@ -143,6 +177,18 @@ export function initHeroState(
 - 每次新建房间/Rematch，起手牌会随机变化（因为 seed 变化 → `initialDeckCardIds` 变化）
 - 同一局内回放时，起手牌保持一致（因为使用相同的 `initialDeckCardIds`）
 - Tutorial 模式：如果需要固定开局，可以在 `execute.ts` 的 `SELECT_CHARACTER` 中注入固定顺序
+
+### 用户确认
+
+✅ 用户已确认修复成功（需要重启服务器后生效）
+
+## 总结
+
+- **根因**：事件数据流断裂，`initialDeckCardIds` 未被消费
+- **修复方案**：事件数据驱动，确保架构正确性优先于改动最小
+- **影响范围**：所有模式（教程/创建房间/重赛）
+- **测试覆盖**：97 个测试全部通过
+- **代码质量**：已清理所有调试日志，保留必要的错误提示和安全检查
 
 ## 相关文件
 

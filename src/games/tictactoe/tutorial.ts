@@ -15,12 +15,14 @@ export const TicTacToeTutorial: TutorialManifest = {
             content: 'game-tictactoe:tutorial.steps.centerStrategy',
             highlightTarget: 'cell-4', // 对应数据属性: data-tutorial-id="cell-4"
             position: 'bottom',
-            requireAction: true
+            requireAction: true,
+            advanceOnEvents: [{ type: 'CELL_OCCUPIED', match: { cellId: 4 } }]
         },
         {
             id: 'opponent-turn',
             content: '', // 隐藏步骤 - AI 自动移动
-            aiActions: [{ commandType: 'makeMove', payload: { index: 0 } }] // AI 点击左上角格子
+            aiActions: [{ commandType: 'CLICK_CELL', payload: { cellId: 0 } }], // AI 点击左上角格子
+            advanceOnEvents: [{ type: 'CELL_OCCUPIED', match: { cellId: 0 } }]
         },
         {
             id: 'block-strategy',

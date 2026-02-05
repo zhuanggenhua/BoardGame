@@ -124,6 +124,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
     const gameMode = useGameMode();
     const isLocalMatch = gameMode ? !gameMode.isMultiplayer : !isMultiplayer;
     const isSpectator = !!gameMode?.isSpectator;
+    const isTutorialMode = gameMode?.mode === 'tutorial';
     const isPlayerTurn = isLocalMatch || (!isSpectator && currentPlayer === playerID);
     const { t } = useTranslation('game-tictactoe');
 
@@ -152,7 +153,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
 
     // 教学系统集成
     useTutorialBridge(G.sys.tutorial, moves as Record<string, unknown>);
-    const { isActive, currentStep, nextStep } = useTutorial();
+    const { isActive, currentStep } = useTutorial();
     const { setPlayerID } = useDebug();
 
     // 重赛系统（多人模式使用 socket）
@@ -170,7 +171,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
         config: TIC_TAC_TOE_AUDIO_CONFIG,
         G: G.core,
         ctx,
-        eventEntries: G.sys.log.entries,
+        eventEntries: G.sys.eventStream.entries,
     });
 
 
@@ -254,7 +255,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
 
         if (!isPlayerTurn) return;
 
-        playSound('click');
+        playSound('ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none');
 
         if (isActive) {
             if (currentStep?.requireAction) {
@@ -262,7 +263,6 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
                 if (currentStep.highlightTarget && currentStep.highlightTarget !== targetId) return;
 
                 moves.CLICK_CELL({ cellId: id });
-                nextStep();
             } else {
                 return;
             }
@@ -273,14 +273,18 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
 
     useEffect(() => {
         if (!previousActiveRef.current && isActive) {
-            resetGame();
+            if (!isTutorialMode) {
+                resetGame();
+            }
         }
 
         if (previousActiveRef.current && !isActive && (ctx.turn > 0 || ctx.gameover != null)) {
-            setTimeout(() => resetGame(), 300);
+            if (!isTutorialMode) {
+                setTimeout(() => resetGame(), 300);
+            }
         }
         previousActiveRef.current = isActive;
-    }, [isActive, ctx.turn, ctx.gameover, resetGame]);
+    }, [isActive, ctx.turn, ctx.gameover, isTutorialMode, resetGame]);
 
     return (
         <UndoProvider value={{ G, ctx, moves, playerID, isGameOver: !!isGameOver, isLocalMode: isLocalMatch }}>
@@ -459,9 +463,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
                     onVote={isSpectator ? undefined : handleRematchVote}
                 />
                 {!isSpectator && (
-                    <div className="fixed bottom-0 right-0 p-2 z-50 opacity-0 hover:opacity-100 transition-opacity">
-                        <GameDebugPanel G={G} ctx={ctx} moves={moves} events={events} playerID={playerID} autoSwitch={!isMultiplayer} />
-                    </div>
+                    <GameDebugPanel G={G} ctx={ctx} moves={moves} events={events} playerID={playerID} autoSwitch={!isMultiplayer} />
                 )}
             </div>
         </UndoProvider>

@@ -80,6 +80,10 @@ const fetchJson = async <T,>(url: string): Promise<T> => {
     if (!res.ok) {
         throw new Error(`[UGC] 请求失败: ${res.status} ${res.statusText}`);
     }
+    const contentType = res.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+        throw new Error(`[UGC] 响应不是 JSON 格式: ${contentType}`);
+    }
     return res.json() as Promise<T>;
 };
 

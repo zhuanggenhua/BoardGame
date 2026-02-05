@@ -1588,6 +1588,54 @@ describe('王权骰铸流程测试', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
+        it('清修：防御结算=获得太极(按太极骰面数)+造成伤害(按拳骰面数)', () => {
+            // 防御骰(4颗)固定为 [4,4,1,1] => 2太极 + 2拳
+            // 进攻方需要 5 个拳头才能触发 fist-technique-5 技能
+            // 骰子值 1, 2 对应拳头（fist）
+            const random = createQueuedRandom([
+                // 进攻方掷骰(5) - 5 个拳头
+                1, 1, 1, 1, 1,
+                // 防御方掷骰(4) - 2太极 + 2拳
+                4, 4, 1, 1,
+            ]);
+
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random,
+                setup: createNoResponseSetup(),
+                assertFn: assertState,
+                silent: true,
+            });
+
+            const result = runner.run({
+                name: '清修防御结算获得太极并造成伤害',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'), // upkeep -> main1
+                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+                    cmd('ADVANCE_PHASE', '0'), // -> defensiveRoll
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }), // 选择清修防御技能
+                    // 防御方结束防御阶段，触发结算
+                    cmd('ADVANCE_PHASE', '1'),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    players: {
+                        '1': { tokens: { taiji: 2 } },
+                        '0': { hp: 48 },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+        });
+
         it('防御投掷确认后响应窗口排除防御方（不排除攻击方）', () => {
             // 验证防御阶段 CONFIRM_ROLL 后的响应窗口正确排除 rollerId（防御方）而非 activePlayerId（攻击方）
             // 使用 createNoResponseSetup() 避免手牌中有响应卡牌

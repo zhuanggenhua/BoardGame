@@ -12,11 +12,26 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useDeferredRender } from '../../hooks/ui/useDeferredRender';
 import { useMatchRoomExit } from '../../contexts/MatchRoomExitContext';
+import { useGameMode } from '../../contexts/GameModeContext';
+import { VictoryParticles } from '../common/animations';
 import { RematchActions, type RematchActionsProps } from './RematchActions';
 
 export interface GameOverResult {
     winner?: string;
     draw?: boolean;
+}
+
+export function shouldShowVictoryParticles(
+    result?: GameOverResult,
+    playerID?: string | null,
+    options?: { isLocalMode?: boolean; isSpectator?: boolean }
+): boolean {
+    if (!result || result.draw === true) return false;
+    if (result.winner === undefined) return false;
+    if (options?.isSpectator) return false;
+    if (options?.isLocalMode) return true;
+    if (playerID === undefined || playerID === null) return false;
+    return String(result.winner) === String(playerID);
 }
 
 const OVERLAY_FADE_MS = 300;
@@ -138,6 +153,7 @@ export function EndgameOverlay({
     // 移除未使用的 blurEnabled，遮罩效果已移除
     const prevGameOverRef = useRef(false);
     const matchRoomExit = useMatchRoomExit();
+    const gameMode = useGameMode();
 
     // 仅在 isGameOver 从 false → true 时触发显示，并冻结 result
     useEffect(() => {
@@ -171,11 +187,18 @@ export function EndgameOverlay({
         onBackToLobby: matchRoomExit?.exitToLobby,
     };
 
+    const showVictoryParticles = shouldShowVictoryParticles(frozenResult, playerID, {
+        isLocalMode: gameMode?.mode === 'local',
+        isSpectator: gameMode?.isSpectator === true,
+    });
+
     const overlayContent = (
         <AnimatePresence>
             {shouldShow && (
                 <motion.div
                     key="endgame-overlay"
+                    data-testid="endgame-overlay"
+                    data-endgame-visible="true"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -184,8 +207,11 @@ export function EndgameOverlay({
                 >
                     {/* 彻底移除背景遮罩 */}
 
+                    <VictoryParticles active={showVictoryParticles} className="z-0" />
+
                     {/* 内容容器 - 仅作为布局容器，无背景 */}
                     <motion.div
+                        data-testid="endgame-overlay-content"
                         initial={{ scale: 0.9, y: 20, opacity: 0 }}
                         animate={{ scale: 1, y: 0, opacity: 1 }}
                         exit={{ scale: 0.9, y: 20, opacity: 0 }}

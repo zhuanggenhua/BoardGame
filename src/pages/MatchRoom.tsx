@@ -9,6 +9,7 @@ import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
 import { RematchProvider } from '../contexts/RematchContext';
 import { useMatchStatus, destroyMatch, leaveMatch, rejoinMatch, persistMatchCredentials } from '../hooks/match/useMatchStatus';
+import { getOrCreateGuestId } from '../hooks/match/ownerIdentity';
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { useModalStack } from '../contexts/ModalStackContext';
 import { useToast } from '../contexts/ToastContext';
@@ -57,6 +58,7 @@ export const MatchRoom = () => {
     const [isLeaving, setIsLeaving] = useState(false);
     const [isGameNamespaceReady, setIsGameNamespaceReady] = useState(true);
     const [destroyModalId, setDestroyModalId] = useState<string | null>(null);
+    const [shouldShowMatchError, setShouldShowMatchError] = useState(false);
     const tutorialStartedRef = useRef(false);
     const tutorialModalIdRef = useRef<string | null>(null);
     const errorToastRef = useRef<{ key: string; timestamp: number } | null>(null);
@@ -91,7 +93,8 @@ export const MatchRoom = () => {
     const shouldAutoJoin = searchParams.get('join') === 'true';
     const spectateParam = searchParams.get('spectate');
     const storedMatchCreds = useMemo(() => {
-        if (!matchId) return null;
+        // 教程模式不需要房间凭据
+        if (isTutorialRoute || !matchId) return null;
         const raw = localStorage.getItem(`match_creds_${matchId}`);
         if (!raw) return null;
         try {
@@ -99,7 +102,7 @@ export const MatchRoom = () => {
         } catch {
             return null;
         }
-    }, [matchId]);
+    }, [matchId, isTutorialRoute]);
     const storedPlayerID = storedMatchCreds?.playerID;
     const hasStoredSeat = Boolean(storedPlayerID);
     const isSpectatorRoute = !isTutorialRoute
@@ -108,16 +111,7 @@ export const MatchRoom = () => {
         && !hasStoredSeat
         && (spectateParam === null || spectateParam === '1' || spectateParam === 'true');
     useEffect(() => {
-        if (!import.meta.env.DEV) return;
-        console.info('[Spectate][MatchRoom]', {
-            gameId,
-            matchId,
-            urlPlayerID,
-            shouldAutoJoin,
-            spectateParam,
-            isSpectatorRoute,
-            href: window.location.href,
-        });
+        // 日志已移除：Spectate 调试信息过于频繁
     }, [gameId, matchId, urlPlayerID, shouldAutoJoin, spectateParam, isSpectatorRoute]);
 
     // 自动加入逻辑（调试重置跳转）
@@ -152,10 +146,7 @@ export const MatchRoom = () => {
         }
 
         setIsAutoJoining(true);
-        const guestId = localStorage.getItem('guest_id') || String(Math.floor(Math.random() * 9000) + 1000);
-        if (!localStorage.getItem('guest_id')) {
-            localStorage.setItem('guest_id', guestId);
-        }
+        const guestId = getOrCreateGuestId();
         const playerName = t('player.guest', { id: guestId, ns: 'lobby' });
 
         // 先查询房间状态，找到可用位置（带重试）
@@ -286,7 +277,12 @@ export const MatchRoom = () => {
     }, [gameId, matchId, navigate, spectateParam, storedPlayerID, urlPlayerID, isTutorialRoute]);
 
     // 使用房间状态钩子（以真实玩家身份为准）
-    const matchStatus = useMatchStatus(gameId, matchId, statusPlayerID);
+    // 教程模式不需要房间状态检查
+    const matchStatus = useMatchStatus(
+        isTutorialRoute ? undefined : gameId,
+        isTutorialRoute ? undefined : matchId,
+        isTutorialRoute ? null : statusPlayerID
+    );
     useEffect(() => {
         if (!isTutorialRoute) return;
         // 只有首次进入且当前未激活时才启动，避免结束后被再次拉起导致提示闪现
@@ -295,7 +291,6 @@ export const MatchRoom = () => {
             if (impl?.tutorial) {
                 // 延迟启动教程，等待 boardgame.io 客户端完全初始化
                 const timer = setTimeout(() => {
-                    console.log('[Tutorial][MatchRoom] 调用 startTutorial', { gameId, manifestId: impl.tutorial!.id });
                     startTutorial(impl.tutorial!);
                 }, 100);
                 return () => clearTimeout(timer);
@@ -313,9 +308,19 @@ export const MatchRoom = () => {
     useEffect(() => {
         if (!isTutorialRoute) return;
         if (!tutorialStartedRef.current) return;
+
+        // 教程模式下，部分游戏会在初始化/重置时短暂触发 tutorial.active=false。
+        // 这里避免把“瞬间失活”误判为“教程已结束”，导致刚进入就 navigate(-1) 退回首页。
         if (!isActive) {
-            // 返回上一个路由（通常是带游戏参数的首页，会自动打开详情弹窗）
-            navigate(-1);
+            const timer = window.setTimeout(() => {
+                if (!tutorialStartedRef.current) return;
+                // 二次确认仍未激活，才认为教程结束并返回。
+                if (!isActive) {
+                    // 返回上一个路由（通常是带游戏参数的首页，会自动打开详情弹窗）
+                    navigate(-1);
+                }
+            }, 600);
+            return () => window.clearTimeout(timer);
         }
     }, [isTutorialRoute, isActive, navigate]);
 
@@ -331,7 +336,7 @@ export const MatchRoom = () => {
         if (isActive && !tutorialModalIdRef.current) {
             tutorialModalIdRef.current = openModal({
                 closeOnBackdrop: false,
-                closeOnEsc: true,
+                closeOnEsc: false,
                 lockScroll: true,
                 allowPointerThrough: true,
                 onClose: () => {
@@ -444,9 +449,24 @@ export const MatchRoom = () => {
         setDestroyModalId(modalId);
     };
 
+    useEffect(() => {
+        if (isTutorialRoute) {
+            setShouldShowMatchError(false);
+            return;
+        }
+        if (!matchStatus.error) {
+            setShouldShowMatchError(false);
+            return;
+        }
+        const timer = window.setTimeout(() => {
+            setShouldShowMatchError(true);
+        }, 4000);
+        return () => window.clearTimeout(timer);
+    }, [isTutorialRoute, matchStatus.error]);
+
     // 如果房间不存在，显示错误并自动跳转
     useEffect(() => {
-        if (matchStatus.error && !isTutorialRoute) {
+        if (shouldShowMatchError) {
             const timer = setTimeout(() => {
                 navigate('/');
             }, 2500); // 2.5 秒后自动跳转
@@ -469,18 +489,18 @@ export const MatchRoom = () => {
     }, [closeModal, destroyModalId]);
 
     useEffect(() => {
-        if (!matchStatus.error || isTutorialRoute) return;
+        if (!shouldShowMatchError) return;
         const key = `matchRoom.error.${gameId ?? 'unknown'}.${matchId ?? 'unknown'}`;
         const now = Date.now();
         const last = errorToastRef.current;
         if (last && last.key === key && now - last.timestamp < 3000) return;
         errorToastRef.current = { key, timestamp: now };
         toast.error(
-            { kind: 'text', text: matchStatus.error },
+            { kind: 'text', text: matchStatus.error ?? '房间不存在或已被删除' },
             { kind: 'i18n', key: 'error.serviceUnavailable.title', ns: 'lobby' },
             { dedupeKey: key }
         );
-    }, [gameId, isTutorialRoute, matchId, matchStatus.error, toast]);
+    }, [gameId, matchId, shouldShowMatchError, toast]);
 
     if (!isGameNamespaceReady) {
         return (
@@ -499,7 +519,7 @@ export const MatchRoom = () => {
         );
     }
 
-    if (matchStatus.error && !isTutorialRoute) {
+    if (shouldShowMatchError) {
         return (
             <div className="w-full h-screen bg-black flex items-center justify-center">
                 <div className="text-center">
@@ -550,7 +570,7 @@ export const MatchRoom = () => {
             <div className="w-full h-full">
                 {isTutorialRoute ? (
                     <GameModeProvider mode="tutorial">
-                        {TutorialClient ? <TutorialClient playerID="0" /> : (
+                        {TutorialClient ? <TutorialClient playerID={tutorialPlayerID} /> : (
                             <div className="w-full h-full flex items-center justify-center text-white/50">
                                 {t('matchRoom.noTutorial')}
                             </div>
@@ -561,7 +581,7 @@ export const MatchRoom = () => {
                         <GameModeProvider mode="online" isSpectator={isSpectatorRoute}>
                             <RematchProvider
                                 matchId={matchId}
-                                playerId={urlPlayerID ?? undefined}
+                                playerId={effectivePlayerID ?? undefined}
                                 isMultiplayer={true}
                             >
                                 <GameClient

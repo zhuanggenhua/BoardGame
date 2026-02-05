@@ -88,6 +88,11 @@
       "description": "A fast-paced, easy-to-learn game where you choose the most extraordinary hero from many. Roll your hero's unique 5 dice to attack opponents and activate abilities. Accumulate combat points to purchase powerful cards—upgrade your hero, cast spells, or directly manipulate dice (yours, your teammates', or your opponents').",
       "players": "2 Players"
     },
+    "smashup": {
+      "title": "Smash Up",
+      "description": "Smash Up is a 2-4 player card battle game! Combine two different factions to compete for base control and victory points; the first to 15 points wins. The base game includes 8 distinct factions, enabling many strategic pairings and playstyles. (Year: 2012; Type: Competitive/Card; Rating: 7.2)",
+      "players": "2-4 Players"
+    },
     "assetslicer": {
       "title": "Asset Slicer",
       "description": "A toolkit for board game assets. Supports circular/square cuts and sprite exports.",
@@ -97,6 +102,11 @@
       "title": "UGC Prototype Builder",
       "description": "Quickly create board game prototypes. Supports card design, rule config, and AI-assisted generation.",
       "players": "Solo Tool"
+    },
+    "summonerwars": {
+      "title": "Summoner Wars",
+      "description": "A tactical card game where you command a faction of warriors on a battlefield grid. Summon units, cast spells, and destroy the enemy Summoner to win.",
+      "players": "2 Players"
     },
     "ugc": {
       "players": "2 Players"

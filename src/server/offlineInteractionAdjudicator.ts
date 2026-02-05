@@ -6,7 +6,33 @@ const require = createRequire(import.meta.url);
 const { Master } = require('boardgame.io/master') as typeof import('boardgame.io/master');
 
 const buildTimerKey = (matchID: string, playerID: string) => `${matchID}:${playerID}`;
+const buildPlayerKey = (matchID: string, playerID: string) => `${matchID}:${playerID}`;
 const buildPubSubChannelId = (matchID: string) => `MATCH-${matchID}`;
+
+type ConnectionIndex = Map<string, Set<string>>;
+
+const addSocketConnection = (index: ConnectionIndex, playerKey: string, socketId: string) => {
+    const set = index.get(playerKey) ?? new Set<string>();
+    set.add(socketId);
+    index.set(playerKey, set);
+};
+
+const removeSocketConnection = (index: ConnectionIndex, playerKey: string, socketId: string): boolean => {
+    const set = index.get(playerKey);
+    if (!set) return false;
+    set.delete(socketId);
+    if (set.size === 0) {
+        index.delete(playerKey);
+        return true;
+    }
+    return false;
+};
+
+export const __test__ = {
+    buildPlayerKey,
+    addSocketConnection,
+    removeSocketConnection,
+};
 
 type AdjudicationTransport = {
     getMatchQueue?: (matchID: string) => { add: <T>(task: () => Promise<T> | T) => Promise<T> };
@@ -40,6 +66,7 @@ export const registerOfflineInteractionAdjudication = ({
     if (!io) return;
 
     const socketIndex = new Map<string, SocketClientInfo>();
+    const connectionIndex: ConnectionIndex = new Map();
     const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
     const clearTimer = (matchID: string, playerID: string) => {
@@ -131,7 +158,22 @@ export const registerOfflineInteractionAdjudication = ({
             socket.on('sync', (matchID: string, playerID?: string | null, credentials?: string) => {
                 if (playerID === null || playerID === undefined) return;
                 const normalizedPlayerId = String(playerID);
-                socketIndex.set(socket.id, { matchID, playerID: normalizedPlayerId, credentials });
+                const nextInfo = { matchID, playerID: normalizedPlayerId, credentials };
+                const previous = socketIndex.get(socket.id);
+                if (previous) {
+                    const previousKey = buildPlayerKey(previous.matchID, previous.playerID);
+                    const nextKey = buildPlayerKey(nextInfo.matchID, nextInfo.playerID);
+                    if (previousKey !== nextKey) {
+                        const becameEmpty = removeSocketConnection(connectionIndex, previousKey, socket.id);
+                        if (becameEmpty) {
+                            scheduleAdjudication(previous.matchID, previous.playerID, previous.credentials);
+                        }
+                    }
+                }
+
+                const playerKey = buildPlayerKey(matchID, normalizedPlayerId);
+                addSocketConnection(connectionIndex, playerKey, socket.id);
+                socketIndex.set(socket.id, nextInfo);
                 clearTimer(matchID, normalizedPlayerId);
             });
 
@@ -139,6 +181,9 @@ export const registerOfflineInteractionAdjudication = ({
                 const info = socketIndex.get(socket.id);
                 socketIndex.delete(socket.id);
                 if (!info) return;
+                const playerKey = buildPlayerKey(info.matchID, info.playerID);
+                const becameEmpty = removeSocketConnection(connectionIndex, playerKey, socket.id);
+                if (!becameEmpty) return;
                 scheduleAdjudication(info.matchID, info.playerID, info.credentials);
             });
         });

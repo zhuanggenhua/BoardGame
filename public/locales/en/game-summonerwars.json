@@ -10,11 +10,22 @@
   },
   
   "phase": {
-    "summon": "Summon Phase",
-    "move": "Move Phase",
-    "attack": "Attack Phase",
-    "magic": "Magic Phase",
-    "end": "End Phase"
+    "summon": "Summon",
+    "move": "Move",
+    "build": "Build",
+    "attack": "Attack",
+    "magic": "Magic",
+    "draw": "Draw"
+  },
+  
+  "hint": {
+    "summon": "Summon units from hand adjacent to gates",
+    "move": "Move up to 3 units, each up to 2 spaces",
+    "build": "Build gates or structures in your back rows",
+    "attack": "Attack with up to 3 units",
+    "magic": "Discard cards to gain magic",
+    "draw": "Draw up to 5 cards",
+    "waitingOpponent": "Waiting for opponent..."
   },
   
   "action": {
@@ -22,6 +33,7 @@
     "move": "Move",
     "attack": "Attack",
     "castSpell": "Cast Spell",
+    "endPhase": "End Phase",
     "endTurn": "End Turn"
   },
   
@@ -29,6 +41,12 @@
     "yourTurn": "Your Turn",
     "opponentTurn": "Opponent's Turn",
     "waiting": "Waiting..."
+  },
+  
+  "log": {
+    "unit_moved": "Unit moved",
+    "unit_attacked": "Attack hit {{hits}} times",
+    "phase_ended": "Phase ended"
   },
   
   "result": {

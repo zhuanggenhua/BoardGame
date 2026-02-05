@@ -19,11 +19,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface SlashConfig {
-  /** 斜切角度 (度)，默认 -30 */
+  /** 斜切角度 (度)，默认 -35 */
   angle?: number;
   /** 斜切颜色，默认 'rgba(255, 100, 100, 0.8)' */
   color?: string;
-  /** 持续时间 (ms)，默认 200 */
+  /** 持续时间 (ms)，默认 1000 */
   duration?: number;
   /** 斜线数量，默认 1 */
   count?: number;
@@ -51,9 +51,9 @@ interface SlashLine {
 /** 斜切特效组件 */
 export const SlashEffect: React.FC<SlashEffectProps> = ({
   isActive,
-  angle = -30,
+  angle = -35,
   color = 'rgba(255, 100, 100, 0.9)',
-  duration = 200,
+  duration = 1000,
   count = 1,
   width = 3,
   glow = true,
@@ -67,9 +67,9 @@ export const SlashEffect: React.FC<SlashEffectProps> = ({
       // 生成多条斜线
       const newSlashes: SlashLine[] = Array.from({ length: count }, (_, i) => ({
         id: Date.now() + i,
-        angle: angle + (Math.random() - 0.5) * 15, // 角度随机偏移
+        angle, // 固定角度，避免偏移导致水平
         delay: i * 30, // 每条线延迟
-        offsetX: (i - (count - 1) / 2) * 20, // 水平分布
+        offsetX: 0, // 居中显示
       }));
       setSlashes(newSlashes);
 
@@ -181,7 +181,7 @@ export const SLASH_PRESETS = {
   light: {
     count: 1,
     width: 2,
-    duration: 3000,
+    duration: 1000,
     color: 'rgba(255, 200, 200, 0.7)',
     glow: false,
     trail: false,
@@ -191,7 +191,7 @@ export const SLASH_PRESETS = {
   normal: {
     count: 1,
     width: 3,
-    duration: 3000,
+    duration: 1000,
     color: 'rgba(255, 100, 100, 0.85)',
     glow: true,
     trail: true,
@@ -201,7 +201,7 @@ export const SLASH_PRESETS = {
   heavy: {
     count: 2,
     width: 4,
-    duration: 3000,
+    duration: 1000,
     color: 'rgba(255, 50, 50, 0.9)',
     glow: true,
     trail: true,
@@ -211,7 +211,7 @@ export const SLASH_PRESETS = {
   critical: {
     count: 3,
     width: 5,
-    duration: 3000,
+    duration: 1000,
     color: 'rgba(255, 220, 50, 0.95)',
     glow: true,
     trail: true,

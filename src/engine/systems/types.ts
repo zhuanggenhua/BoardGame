@@ -142,6 +142,7 @@ export const SYSTEM_IDS = {
     UNDO: 'undo',
     PROMPT: 'prompt',
     LOG: 'log',
+    EVENT_STREAM: 'eventStream',
     ACTION_LOG: 'actionLog',
     REMATCH: 'rematch',
     RESPONSE_WINDOW: 'responseWindow',

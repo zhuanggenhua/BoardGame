@@ -6,6 +6,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
@@ -50,6 +51,14 @@ export default defineConfig({
         target: 'http://127.0.0.1:18001',
         changeOrigin: true,
         ws: true,
+      },
+      '/ugc': {
+        target: 'http://127.0.0.1:18001',
+        changeOrigin: true,
+      },
+      '/layout': {
+        target: 'http://127.0.0.1:18001',
+        changeOrigin: true,
       },
     },
   }

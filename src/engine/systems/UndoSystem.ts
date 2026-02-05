@@ -191,6 +191,10 @@ function createSnapshot<TCore>(
                 ...state.sys.log,
                 entries: state.sys.log.entries.slice(-5), // 快照中只保留最近 5 条日志
             },
+            eventStream: {
+                ...state.sys.eventStream,
+                entries: [], // 事件流用于实时触发，撤销时不回放历史
+            },
             actionLog: {
                 ...actionLog,
                 maxEntries: actionLogMaxEntries,

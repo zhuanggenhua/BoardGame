@@ -45,20 +45,19 @@ export const CODE_STYLE_RULES = `## 代码风格
 export const GAME_STATE_STRUCTURE = `## 游戏状态结构 (G)
 \`\`\`typescript
 interface GameState {
-  players: Record<string, {
+  entities: Record<string, {
     id: string;
-    hand: Card[];      // 手牌
-    deck: Card[];      // 牌库
-    discard: Card[];   // 弃牌堆
-    resources: Record<string, number>;  // 资源（hp、mp等）
+    zones: Record<string, unknown[]>;  // 各类区域（如手牌区/弃置区等）
+    resources: Record<string, number>; // 数值资源（生命、能量等）
+    status?: Record<string, number>;   // 状态层叠
   }>;
-  currentPlayerId: string;
+  currentEntityId: string;
   selectedTargetId?: string;
   focusArea?: {
     visible: boolean;
-    cards: Card[];
-    source: 'self' | 'opponent';
-    onSelect?: (cardId: string) => void;
+    items: unknown[];
+    source: 'self' | 'target';
+    onSelect?: (itemId: string) => void;
   };
 }
 \`\`\``;
@@ -116,6 +115,22 @@ export const ENGINE_HOOKS_INTERFACE = `## 引擎层钩子接口
 // isSelected: 是否被选中
 \`\`\`
 
+### 过滤代码 (filterCode)
+\`\`\`typescript
+(card: TCard, ctx: {
+  playerIds: string[];
+  currentPlayerId: string | null;
+  currentPlayerIndex: number;
+  resolvedPlayerId: string | null;
+  resolvedPlayerIndex: number;
+  bindEntity?: string;
+  zoneField?: string;
+  zoneValue?: string;
+}) => boolean
+// card: 卡牌数据（包含 Schema 定义的字段）
+// ctx: 过滤上下文（hand-zone 注入）
+\`\`\`
+
 ### 卡牌渲染函数 (renderCard)
 \`\`\`typescript
 (card: TCard, index: number, isSelected: boolean) => ReactNode
@@ -140,32 +155,25 @@ interface Ctx {
 /** 可用的 moves 函数 */
 export const AVAILABLE_MOVES = `## 可用的 moves 函数
 \`\`\`typescript
-// 选择目标玩家
-selectTarget: (targetPlayerId: string) => void;
+// 选择目标实体
+selectTarget: (targetEntityId: string) => void;
 
-// 显示特写区域（查看对方手牌）
-showFocusArea: (sourcePlayerId: string) => void;
+// 显示特写区域（查看目标实体的对象列表）
+showFocusArea: (sourceEntityId: string) => void;
 
 // 隐藏特写区域
 hideFocusArea: () => void;
 
-// 从特写区域选择卡牌
-selectFromFocusArea: (cardId: string) => void;
+// 从特写区域选择对象
+selectFromFocusArea: (itemId: string) => void;
 
-// 转移卡牌
-transferCard: (cardId: string, fromPlayerId: string, toPlayerId: string) => void;
+// 转移对象（支持指定区域）
+transferItem: (itemId: string, fromEntityId: string, toEntityId: string, fromZone?: string, toZone?: string) => void;
 
-// 摸牌
-drawCard: (playerId: string, count: number) => void;
-
-// 弃牌
-discardCard: (playerId: string, cardId: string) => void;
-
-// 造成伤害
-dealDamage: (targetPlayerId: string, amount: number) => void;
-
-// 恢复生命
-heal: (targetPlayerId: string, amount: number) => void;
+// 增减资源
+addResource: (entityId: string, key: string, amount: number) => void;
+removeResource: (entityId: string, key: string, amount: number) => void;
+setResource: (entityId: string, key: string, value: number) => void;
 \`\`\``;
 
 /** 获取Schema字段信息（带访问方式） */
@@ -322,7 +330,7 @@ ${dataParamInfo}
 ${requirement}
 
 ## 输出格式
-(items) => items.sort((a, b) => { /* 排序逻辑 */ return 0; })
+(a, b) => { /* 排序逻辑 */ return 0; }
 
 ${OUTPUT_RULES}`;
 
@@ -337,7 +345,7 @@ ${dataParamInfo}
 ${requirement}
 
 ## 输出格式
-(items) => items.filter(item => { /* 过滤条件 */ return true; })
+(item, ctx) => { /* 过滤条件 */ return true; }
 
 ${OUTPUT_RULES}`;
 
@@ -419,8 +427,8 @@ ${requirement}
 Tag 用于描述**单个实体的固有属性**，不是组合规则或游戏逻辑。
 
 ✅ 正确使用 Tag（实体固有属性）：
-- 分类属性（类型、种类、阵营）
-- 数值属性（等级、稀有度、费用）
+- 分类属性（类别、类型、子类）
+- 数值属性（等级、强度、成本）
 - 状态属性（可用、已使用、禁用）
 
 ❌ 错误使用 Tag（这些是规则/逻辑，不是属性）：
@@ -430,8 +438,10 @@ Tag 用于描述**单个实体的固有属性**，不是组合规则或游戏逻
 
 ## 输出格式
 [
-  { "name": "标签名1", "group": "分组名" },
-  { "name": "标签名2", "group": "分组名" }
+  { "name": "分类A", "group": "分类属性" },
+  { "name": "分类B", "group": "分类属性" },
+  { "name": "数值高", "group": "数值属性" },
+  { "name": "状态可用", "group": "状态属性" }
 ]
 
 注意：只输出纯 JSON，不要 markdown 代码块`;

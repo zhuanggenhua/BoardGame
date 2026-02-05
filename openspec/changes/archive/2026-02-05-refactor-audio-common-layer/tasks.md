@@ -1,0 +1,15 @@
+## 1. Implementation
+- [x] 1.1 定义 audio-system 能力与通用音效 key 列表
+- [x] 1.2 实现 `getOptimizedAudioUrl()` 函数（自动插入 compressed/）
+- [x] 1.3 修改 `AudioManager.buildAudioSrc()` 使用新函数
+- [x] 1.4 实现通用音频注册表与统一解析逻辑（不依赖游戏层配置）
+- [x] 1.5 移除所有音频配置中的硬编码 `compressed/` 路径
+  - [x] `src/lib/audio/common.config.ts`
+  - [x] `src/games/dicethrone/audio.config.ts`
+  - [x] `src/games/tictactoe/audio.config.ts`
+- [x] 1.6 事件体系支持 audioKey / audioCategory 元数据
+- [x] 1.7 迁移所有音频资产到 common 目录并清理游戏层残留
+- [x] 1.8 添加校验：禁止游戏层音频资产/配置
+- [x] 1.9 更新相关测试（路径断言需调整）
+- [x] 1.10 补充测试与文档（事件解析、缺失音效处理）
+- [x] 1.11 运行类型检查与测试

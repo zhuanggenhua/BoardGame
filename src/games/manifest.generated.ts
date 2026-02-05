@@ -4,9 +4,10 @@ import type { GameManifestEntry } from './manifest.types';
 
 import entry0 from './assetslicer/manifest';
 import entry1 from './dicethrone/manifest';
-import entry2 from './summonerwars/manifest';
-import entry3 from './tictactoe/manifest';
-import entry4 from './ugcbuilder/manifest';
+import entry2 from './smashup/manifest';
+import entry3 from './summonerwars/manifest';
+import entry4 from './tictactoe/manifest';
+import entry5 from './ugcbuilder/manifest';
 
 export const GAME_MANIFEST: GameManifestEntry[] = [
     entry0,
@@ -14,6 +15,7 @@ export const GAME_MANIFEST: GameManifestEntry[] = [
     entry2,
     entry3,
     entry4,
+    entry5,
 ];
 
 export const GAME_MANIFEST_BY_ID: Record<string, GameManifestEntry> = Object.fromEntries(

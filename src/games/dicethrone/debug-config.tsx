@@ -128,7 +128,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
 
             {/* 骰子作弊 */}
             {moves.SYS_CHEAT_SET_DICE && (
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200" data-testid="dt-debug-dice">
                     <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3">
                         骰子调整
                     </h4>
@@ -151,6 +151,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                         <button
                             onClick={handleApplyDice}
                             className="w-full px-3 py-2 bg-blue-500 text-white rounded text-xs font-bold hover:bg-blue-600"
+                            data-testid="dt-debug-dice-apply"
                         >
                             ✓ 应用骰子值
                         </button>

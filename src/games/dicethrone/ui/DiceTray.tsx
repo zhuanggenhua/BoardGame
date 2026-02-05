@@ -322,6 +322,7 @@ export const DiceActions = ({
                 disabled={!canInteract || rollConfirmed || (rollCount >= rollLimit)}
                 variant={isRollPhase && canInteract && !rollConfirmed && rollCount < rollLimit ? 'primary' : 'secondary'}
                 size="sm"
+                clickSoundKey={null}
                 className={`!px-[0.5vw] !py-0 flex items-center justify-between h-full whitespace-nowrap overflow-hidden !rounded-[0.5vw] ${isRolling ? 'animate-pulse' : ''}`}
                 data-tutorial-id="dice-roll-button"
             >
@@ -335,9 +336,10 @@ export const DiceActions = ({
                 onClick={handleConfirmClick}
                 disabled={rollConfirmed || rollCount === 0 || !canInteract || isRolling}
                 variant={rollConfirmed ? 'glass' : 'secondary'}
+                clickSoundKey={null}
                 className={clsx(
                     "flex items-center justify-center h-full whitespace-nowrap overflow-hidden font-black !text-[0.7vw] !rounded-[0.5vw] !py-0",
-                    rollConfirmed ? "!bg-emerald-700 !text-emerald-100 !border-emerald-500/60" : ""
+                    rollConfirmed ? "!text-white/60" : ""
                 )}
                 size="sm"
                 data-tutorial-id="dice-confirm-button"

@@ -21,6 +21,7 @@ import React from 'react';
 
 const DevToolsSlicer = React.lazy(() => import('./pages/devtools/AssetSlicer'));
 const UnifiedBuilder = React.lazy(() => import('./ugc/builder/pages/UnifiedBuilder').then(m => ({ default: m.UnifiedBuilder })));
+const UGCRuntimeViewPage = React.lazy(() => import('./ugc/runtime/RuntimeViewPage'));
 const AdminLayout = React.lazy(() => import('./pages/admin/components/AdminLayout'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/index'));
 const UsersPage = React.lazy(() => import('./pages/admin/Users'));
@@ -47,6 +48,7 @@ const App = () => {
                         <Route path="/play/:gameId/local" element={<LocalMatchRoom />} />
                         <Route path="/dev/slicer" element={<React.Suspense fallback={<div>Loading...</div>}><DevToolsSlicer /></React.Suspense>} />
                         <Route path="/dev/ugc" element={<React.Suspense fallback={<div className="flex bg-slate-900 h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div></div>}><UnifiedBuilder /></React.Suspense>} />
+                        <Route path="/dev/ugc/runtime-view" element={<React.Suspense fallback={<div className="flex bg-slate-900 h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div></div>}><UGCRuntimeViewPage /></React.Suspense>} />
                                                 {/* 教程路由回退（如需要），或映射到对局路由 */}
                         <Route path="/play/:gameId/tutorial" element={<MatchRoom />} />
 

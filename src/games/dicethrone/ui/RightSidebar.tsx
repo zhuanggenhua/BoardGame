@@ -94,6 +94,7 @@ export const RightSidebar = ({
                         onClick={onAdvance}
                         disabled={!isAdvanceButtonEnabled}
                         variant={isAdvanceButtonEnabled ? "primary" : "secondary"}
+                        clickSoundKey={null}
                         className="w-[10.2vw] !text-[0.75vw] !py-[0.7vw]"
                         size="sm"
                         data-tutorial-id="advance-phase-button"

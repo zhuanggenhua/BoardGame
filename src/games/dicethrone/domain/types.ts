@@ -144,6 +144,10 @@ export interface PendingAttack {
         value?: number;
         resolved?: boolean;
     };
+    /** 伤害是否已通过 Token 响应结算（避免重复结算） */
+    damageResolved?: boolean;
+    /** Token 响应后的最终伤害值（用于 postDamage 效果的 onHit 条件判断） */
+    resolvedDamage?: number;
 }
 
 // ============================================================================

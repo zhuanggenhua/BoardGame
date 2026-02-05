@@ -6,6 +6,7 @@
  */
 
 import { memo, useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import type { HandAreaFilterContext } from '../../../core/ui';
 import type { HandAreaSkeletonProps } from './types';
 import type { DragOffset } from '../../../core/ui';
 
@@ -53,6 +54,7 @@ export const HandAreaSkeleton = memo(function HandAreaSkeleton<TCard>({
     selectEffectCode,
     sortCode,
     filterCode,
+    filterContext,
     className,
     dealAnimation = false,
     dragThreshold = 150,
@@ -238,23 +240,45 @@ export const HandAreaSkeleton = memo(function HandAreaSkeleton<TCard>({
         if (!filterCode) return undefined;
         try {
             // eslint-disable-next-line no-new-func
-            return new Function('card', `return (${filterCode})(card)`) as (card: TCard) => boolean;
+            return new Function('card', 'ctx', `return (${filterCode})(card, ctx)`) as (card: TCard, ctx: HandAreaFilterContext) => boolean;
         } catch {
             return undefined;
         }
     }, [filterCode]);
 
+    const resolvedFilterContext = useMemo<HandAreaFilterContext>(() => {
+        if (filterContext) {
+            return {
+                playerIds: filterContext.playerIds ?? [],
+                currentPlayerId: filterContext.currentPlayerId ?? null,
+                currentPlayerIndex: filterContext.currentPlayerIndex ?? -1,
+                resolvedPlayerId: filterContext.resolvedPlayerId ?? null,
+                resolvedPlayerIndex: filterContext.resolvedPlayerIndex ?? -1,
+                bindEntity: filterContext.bindEntity,
+                zoneField: filterContext.zoneField,
+                zoneValue: filterContext.zoneValue,
+            };
+        }
+        return {
+            playerIds: [],
+            currentPlayerId: null,
+            currentPlayerIndex: -1,
+            resolvedPlayerId: null,
+            resolvedPlayerIndex: -1,
+        };
+    }, [filterContext]);
+
     // 应用排序和过滤后的卡牌列表
     const processedCards = useMemo(() => {
         let result = [...cards];
         if (getFilterFn) {
-            result = result.filter(getFilterFn);
+            result = result.filter(card => getFilterFn(card, resolvedFilterContext));
         }
         if (getSortFn) {
             result = result.sort(getSortFn);
         }
         return result;
-    }, [cards, getFilterFn, getSortFn]);
+    }, [cards, getFilterFn, getSortFn, resolvedFilterContext]);
 
     // 解析并执行布局代码
     const getLayoutStyle = useMemo(() => {

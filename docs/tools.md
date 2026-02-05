@@ -20,6 +20,7 @@
 ### 资源与资产
 
 - `atlas_grid_scan.js` / `atlas_grid_scan.py`：图集网格扫描（JS 启动器 + Python 实现）
+- `scan_sprite_bounds.py`：精灵图内容边界扫描（识别每帧真实内容区域，裁切黑边/透明边）
 - `pack_sprite_atlas.js` / `pack_sprite_atlas.py`：图集打包（JS 启动器 + Python 实现）
 - `compress_images.js` / `compress_images.py`：图片压缩（JS 启动器 + Python 实现）
 - `compress_audio.js`：音频压缩（基于 ffmpeg）
@@ -86,6 +87,7 @@
   - 示例：`$env:FFMPEG_PATH = "BordGameAsset/工具/ffmpeg-7.1.1-essentials_build/bin"; npm run compress:audio`
 - `AUDIO_OGG_BITRATE`：输出码率（默认 96k）
 - `--clean` / `AUDIO_CLEAN=1`：清理 `compressed/` 内的 `.ogg`
+- **UGC 上传说明**：仅保存压缩变体；服务端音频压缩目前为占位实现（需 ffmpeg 落地）
 
 ### 模拟房主（simulate-host）
 
@@ -117,3 +119,17 @@ npm run atlas:scan -- public/assets/dicethrone/images/monk/compressed/monk-abili
 - `--scan-x-start` / `--scan-x-end`：限制扫描 X 区域
 - `--scan-y-start` / `--scan-y-end`：限制扫描 Y 区域
 - `--step`：采样步长（默认 1，增大可加速但精度降低）
+
+### 精灵图内容边界扫描（scan_sprite_bounds）
+
+用于“按帧裁切黑边/透明边”：给定图集 + 行列数，输出每帧内容矩形。
+
+**依赖**
+
+- 需要 Pillow：`python -m pip install Pillow`
+
+**基础用法**
+
+```bash
+python scripts/scan_sprite_bounds.py --image public/assets/summonerwars/hero/Necromancer/Necromancer.png --cols 2 --rows 1
+```

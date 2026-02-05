@@ -1,25 +1,71 @@
 import fs from 'fs';
 import path from 'path';
 
-const SOURCE_DIR = path.resolve('D:/gongzuo/web/BordGame/BordGameAsset/SoundEffect/_source_zips');
-const TARGET_FILE = path.resolve('D:/gongzuo/web/BordGame/public/audio_assets.md');
-const VALID_EXTS = ['.wav', '.mp3', '.ogg', '.flac'];
+const DEFAULT_SOURCE_DIR = path.resolve('D:/gongzuo/web/BordGame/BordGameAsset/SoundEffect/_source_zips');
+const DEFAULT_TARGET_FILE = path.resolve('D:/gongzuo/web/BordGame/public/audio_assets.md');
+const DEFAULT_EXTS = ['.wav', '.mp3', '.ogg', '.flac'];
 
-function scanDirectory(dir, fileSet = new Set()) {
+function parseArgs(argv) {
+    let source = DEFAULT_SOURCE_DIR;
+    let output = DEFAULT_TARGET_FILE;
+    let exts = [...DEFAULT_EXTS];
+    let mode = 'names';
+
+    for (let i = 0; i < argv.length; i += 1) {
+        const arg = argv[i];
+        if (arg === '--source' && argv[i + 1]) {
+            source = path.resolve(argv[i + 1]);
+            i += 1;
+            continue;
+        }
+        if (arg === '--output' && argv[i + 1]) {
+            output = path.resolve(argv[i + 1]);
+            i += 1;
+            continue;
+        }
+        if (arg === '--mode' && argv[i + 1]) {
+            mode = argv[i + 1];
+            i += 1;
+            continue;
+        }
+        if (arg === '--only-ogg') {
+            exts = ['.ogg'];
+            continue;
+        }
+        if (arg === '--extensions' && argv[i + 1]) {
+            exts = argv[i + 1]
+                .split(',')
+                .map(ext => ext.trim())
+                .filter(Boolean)
+                .map(ext => (ext.startsWith('.') ? ext.toLowerCase() : `.${ext.toLowerCase()}`));
+            i += 1;
+        }
+    }
+
+    return {
+        source,
+        output,
+        exts,
+        mode
+    };
+}
+
+function scanDirectory(dir, root, exts, fileList = []) {
     const files = fs.readdirSync(dir);
     files.forEach(file => {
         if (file.startsWith('.') || file === '__MACOSX') return;
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
         if (stat.isDirectory()) {
-            scanDirectory(filePath, fileSet);
-        } else {
-            if (VALID_EXTS.includes(path.extname(file).toLowerCase())) {
-                fileSet.add(file);
-            }
+            scanDirectory(filePath, root, exts, fileList);
+        } else if (exts.includes(path.extname(file).toLowerCase())) {
+            fileList.push({
+                name: file,
+                relativePath: path.relative(root, filePath)
+            });
         }
     });
-    return fileSet;
+    return fileList;
 }
 
 function groupFiles(names) {
@@ -102,13 +148,12 @@ function groupFiles(names) {
     return processed.sort();
 }
 
-function generateMarkdown(fileSet) {
-    const names = Array.from(fileSet);
+function generateNamesMarkdown(names, sourceDir, totalFiles) {
     const grouped = groupFiles(names);
 
     let content = '# Audio Asset Symbols (Flat & Grouped)\n\n';
     content += `Generated on: ${new Date().toLocaleString()}\n`;
-    content += `Total Metadata Symbols: ${grouped.length} (from ${names.length} physical files)\n\n`;
+    content += `Total Metadata Symbols: ${grouped.length} (from ${totalFiles} physical files)\n\n`;
 
     content += '> [!TIP]\n';
     content += '> This is a **FLAT LIST** of all audio filenames found in the assets directory.\n';
@@ -118,7 +163,7 @@ function generateMarkdown(fileSet) {
     content += '## 🔍 Search Command\n';
     content += '```json\n';
     content += '{\n';
-    content += `  "SearchDirectory": "${SOURCE_DIR.replace(/\\/g, '/')}",\n`;
+    content += `  "SearchDirectory": "${sourceDir.replace(/\\/g, '/')}",\n`;
     content += '  "Pattern": "*SYMBOL_OR_PART*",\n';
     content += '  "Type": "file"\n';
     content += '}\n';
@@ -133,16 +178,55 @@ function generateMarkdown(fileSet) {
     return content;
 }
 
+function generatePathsMarkdown(paths, sourceDir, exts) {
+    const normalized = paths.map(item => item.replace(/\\/g, '/'));
+    normalized.sort();
+
+    const counts = {};
+    normalized.forEach(item => {
+        const top = item.split('/')[0] || 'root';
+        counts[top] = (counts[top] ?? 0) + 1;
+    });
+
+    const categories = Object.keys(counts).sort();
+
+    let content = '# Common Audio Asset Manifest\n\n';
+    content += `Generated on: ${new Date().toLocaleString()}\n`;
+    content += `Source: ${sourceDir.replace(/\\/g, '/')}\n`;
+    content += `Extensions: ${exts.join(', ')}\n`;
+    content += `Total Files: ${normalized.length}\n\n`;
+
+    content += '## 📦 顶层分类统计\n\n';
+    categories.forEach(key => {
+        content += `- ${key}: ${counts[key]}\n`;
+    });
+
+    content += '\n---\n\n';
+    content += '## 🎧 资源路径清单（相对路径）\n\n';
+    normalized.forEach(item => {
+        content += `- \`${item}\`\n`;
+    });
+
+    return content;
+}
+
+const { source, output, exts, mode } = parseArgs(process.argv.slice(2));
+
 console.log('Scanning all files...');
 try {
-    const fileSet = scanDirectory(SOURCE_DIR);
-    console.log(`Found ${fileSet.size} unique filenames.`);
+    const fileList = scanDirectory(source, source, exts);
+    const nameSet = new Set(fileList.map(item => item.name));
+    const names = Array.from(nameSet);
 
-    console.log('Generating flat grouped manifest...');
-    const markdown = generateMarkdown(fileSet);
+    console.log(`Found ${fileList.length} files (${names.length} unique filenames).`);
 
-    fs.writeFileSync(TARGET_FILE, markdown, 'utf8');
-    console.log(`Successfully wrote to ${TARGET_FILE}`);
+    console.log('Generating manifest...');
+    const markdown = mode === 'paths'
+        ? generatePathsMarkdown(fileList.map(item => item.relativePath), source, exts)
+        : generateNamesMarkdown(names, source, fileList.length);
+
+    fs.writeFileSync(output, markdown, 'utf8');
+    console.log(`Successfully wrote to ${output}`);
 } catch (error) {
     console.error('Error:', error);
     process.exit(1);

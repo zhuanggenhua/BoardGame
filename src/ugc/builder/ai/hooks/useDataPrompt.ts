@@ -45,8 +45,11 @@ ${fields}${sample}`;
   /** 生成批量数据提示词 */
   const generateBatchData = useCallback((options: DataPromptOptions = {}) => {
     const schemaInfo = buildSchemaInfo(options.schema);
-    const tags = ctx.allTagGroups.length > 0
-      ? `\n## 可用标签分组\n${ctx.allTagGroups.join(', ')}\n注意：tags 字段必须使用上述分组中已定义的标签`
+    const tagGroups = Object.entries(ctx.tagsByGroup);
+    const tags = tagGroups.length > 0
+      ? `\n## 可用标签\n${tagGroups
+          .map(([group, names]) => `- ${group}: ${names.join('、') || '无'}`)
+          .join('\n')}\n注意：tags 字段必须使用上述标签名称`
       : '';
 
     return `你是一个游戏数据生成器。
@@ -66,8 +69,8 @@ JSON 数组，每个元素包含 Schema 定义的所有字段。
 ## 示例
 \`\`\`json
 [
-  { "id": "card-1", "name": "第一张牌", "tags": ["分组1标签", "分组2标签"], "description": "..." },
-  { "id": "card-2", "name": "第二张牌", "tags": ["分组1标签"], "description": "..." }
+  { "id": "entity-1", "name": "实体一", "tags": ["分类A", "状态可用"], "description": "..." },
+  { "id": "entity-2", "name": "实体二", "tags": ["分类B"], "description": "..." }
 ]
 \`\`\`
 
@@ -93,8 +96,8 @@ ${options.requirement || '设计标签'}
 Tag 描述**单个实体的固有属性**，不是组合规则或游戏逻辑。
 
 ✅ 正确使用（实体固有属性）：
-- 分类属性（类型、种类、阵营）
-- 数值属性（等级、稀有度、费用）
+- 分类属性（类别、类型、子类）
+- 数值属性（等级、强度、成本）
 - 状态属性（可用、已使用、禁用）
 
 ❌ 错误使用（这些是规则/逻辑，不是属性）：

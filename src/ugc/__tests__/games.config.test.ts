@@ -3,6 +3,9 @@ import { getGamesByCategory, refreshUgcGames } from '../../config/games.config';
 
 const createResponse = (data: unknown) => ({
     ok: true,
+    headers: {
+        get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
+    },
     json: async () => data,
 });
 

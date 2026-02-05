@@ -12,6 +12,8 @@ import type {
     ValidationResult,
     GameOverResult,
     UGCDomainCore,
+    RuleExecutionStage,
+    SandboxErrorType,
 } from './types';
 import { DEFAULT_SANDBOX_CONFIG, DISABLED_GLOBALS } from './types';
 
@@ -43,13 +45,83 @@ function createSeededRandom(seed: number): RandomFn {
     };
 }
 
+const PERMISSION_PREFIX = 'UGC_PERMISSION:';
+
+const normalizeErrorMessage = (error: unknown, fallback = '执行失败'): string => {
+    if (error instanceof Error && error.message) return error.message;
+    return fallback;
+};
+
+const stripErrorPrefix = (message: string): string => {
+    if (message.startsWith(PERMISSION_PREFIX)) {
+        return message.replace(PERMISSION_PREFIX, '').trim();
+    }
+    return message;
+};
+
+const resolveErrorType = (error: unknown, fallback: SandboxErrorType): SandboxErrorType => {
+    if (error instanceof Error && error.message.startsWith(PERMISSION_PREFIX)) {
+        return 'permission';
+    }
+    return fallback;
+};
+
+const buildErrorLog = ({
+    stage,
+    errorType,
+    message,
+    executionTimeMs,
+}: {
+    stage: RuleExecutionStage;
+    errorType: SandboxErrorType;
+    message: string;
+    executionTimeMs?: number;
+}) => {
+    const cost = typeof executionTimeMs === 'number' ? ` costMs=${executionTimeMs}` : '';
+    return `[UGC_RULE_EXEC] stage=${stage} type=${errorType} message=${message}${cost}`;
+};
+
+const buildErrorResult = <T>({
+    stage,
+    errorType,
+    message,
+    startTime = Date.now(),
+}: {
+    stage: RuleExecutionStage;
+    errorType: SandboxErrorType;
+    message: string;
+    startTime?: number;
+}): SandboxResult<T> => {
+    const executionTimeMs = Date.now() - startTime;
+    const safeMessage = stripErrorPrefix(message);
+    return {
+        success: false,
+        error: safeMessage,
+        errorType,
+        errorStage: stage,
+        errorLog: buildErrorLog({ stage, errorType, message: safeMessage, executionTimeMs }),
+        executionTimeMs,
+    };
+};
+
+function createSafeMath(): Record<string, unknown> {
+    const safeMath: Record<string, unknown> = {};
+    const mathRef = Math as unknown as Record<string, unknown>;
+    for (const key of Object.getOwnPropertyNames(Math)) {
+        safeMath[key] = mathRef[key];
+    }
+    safeMath.random = () => {
+        throw new Error(`${PERMISSION_PREFIX}禁止使用 Math.random，请使用 random 参数`);
+    };
+    return safeMath;
+}
+
 // ============================================================================
 // 沙箱执行器
 // ============================================================================
 
 export class SandboxExecutor {
     private config: SandboxConfig;
-    private domainCode: string | null = null;
     private domainCore: UGCDomainCore | null = null;
     private isLoaded: boolean = false;
 
@@ -67,39 +139,39 @@ export class SandboxExecutor {
             
             // 包装代码以导出 DomainCore
             const wrappedCode = `
-                (function() {
+                return (function() {
                     'use strict';
                     ${code}
                     return typeof domain !== 'undefined' ? domain : null;
-                })()
+                })();
             `;
 
             // 使用 Function 构造函数在受限环境中执行
             // 注：生产环境应使用 isolated-vm
-            const executor = new Function(...Object.keys(sandbox), wrappedCode);
-            const result = executor(...Object.values(sandbox));
+            const sandboxEntries = Object.entries(sandbox).filter(([key]) => key !== 'import');
+            const executor = new Function(...sandboxEntries.map(([key]) => key), wrappedCode);
+            const result = executor(...sandboxEntries.map(([, value]) => value));
 
             if (!result || typeof result !== 'object') {
-                return {
-                    success: false,
-                    error: 'UGC 代码必须导出 domain 对象',
-                    errorType: 'runtime',
-                    executionTimeMs: Date.now() - startTime,
-                };
+                return buildErrorResult({
+                    stage: 'load',
+                    errorType: 'contract',
+                    message: 'UGC 代码必须导出 domain 对象',
+                    startTime,
+                });
             }
 
             // 验证 DomainCore 契约
             const validation = this.validateDomainCore(result);
             if (!validation.valid) {
-                return {
-                    success: false,
-                    error: validation.error,
-                    errorType: 'runtime',
-                    executionTimeMs: Date.now() - startTime,
-                };
+                return buildErrorResult({
+                    stage: 'load',
+                    errorType: 'contract',
+                    message: validation.error || 'DomainCore 契约校验失败',
+                    startTime,
+                });
             }
 
-            this.domainCode = code;
             this.domainCore = result as UGCDomainCore;
             this.isLoaded = true;
 
@@ -108,34 +180,38 @@ export class SandboxExecutor {
                 executionTimeMs: Date.now() - startTime,
             };
         } catch (error) {
-            return {
-                success: false,
-                error: error instanceof Error ? error.message : '加载代码失败',
-                errorType: 'syntax',
-                executionTimeMs: Date.now() - startTime,
-            };
+            return buildErrorResult({
+                stage: 'load',
+                errorType: resolveErrorType(error, 'syntax'),
+                message: normalizeErrorMessage(error, '加载代码失败'),
+                startTime,
+            });
         }
     }
 
     /** 执行 setup */
     async setup(playerIds: string[], randomSeed: number): Promise<SandboxResult<unknown>> {
         if (!this.isLoaded || !this.domainCore) {
-            return { success: false, error: '代码未加载', errorType: 'runtime' };
+            return buildErrorResult({ stage: 'setup', errorType: 'runtime', message: '代码未加载' });
         }
 
-        return this.executeWithTimeout(() => {
+        const result = await this.executeWithTimeout('setup', () => {
             const random = createSeededRandom(randomSeed);
             return this.domainCore!.setup(playerIds, random);
         });
+        if (!result.success || result.result === undefined) return result;
+        const serializable = this.ensureSerializable('setup', result.result);
+        if (serializable) return serializable;
+        return result;
     }
 
     /** 执行 validate */
     async validate(state: unknown, command: unknown): Promise<SandboxResult<ValidationResult>> {
         if (!this.isLoaded || !this.domainCore) {
-            return { success: false, error: '代码未加载', errorType: 'runtime' };
+            return buildErrorResult({ stage: 'validate', errorType: 'runtime', message: '代码未加载' });
         }
 
-        return this.executeWithTimeout(() => {
+        return this.executeWithTimeout('validate', () => {
             return this.domainCore!.validate(state, command);
         });
     }
@@ -143,52 +219,64 @@ export class SandboxExecutor {
     /** 执行 execute */
     async execute(state: unknown, command: unknown, randomSeed: number): Promise<SandboxResult<unknown[]>> {
         if (!this.isLoaded || !this.domainCore) {
-            return { success: false, error: '代码未加载', errorType: 'runtime' };
+            return buildErrorResult({ stage: 'execute', errorType: 'runtime', message: '代码未加载' });
         }
 
-        return this.executeWithTimeout(() => {
+        const result = await this.executeWithTimeout('execute', () => {
             const random = createSeededRandom(randomSeed);
             return this.domainCore!.execute(state, command, random);
         });
+        if (!result.success || result.result === undefined) return result;
+        const serializable = this.ensureSerializable('execute', result.result);
+        if (serializable) return serializable;
+        return result;
     }
 
     /** 执行 reduce */
     async reduce(state: unknown, event: unknown): Promise<SandboxResult<unknown>> {
         if (!this.isLoaded || !this.domainCore) {
-            return { success: false, error: '代码未加载', errorType: 'runtime' };
+            return buildErrorResult({ stage: 'reduce', errorType: 'runtime', message: '代码未加载' });
         }
 
-        return this.executeWithTimeout(() => {
+        const result = await this.executeWithTimeout('reduce', () => {
             return this.domainCore!.reduce(state, event);
         });
+        if (!result.success || result.result === undefined) return result;
+        const serializable = this.ensureSerializable('reduce', result.result);
+        if (serializable) return serializable;
+        return result;
     }
 
     /** 执行 playerView */
     async playerView(state: unknown, playerId: string): Promise<SandboxResult<unknown>> {
         if (!this.isLoaded || !this.domainCore) {
-            return { success: false, error: '代码未加载', errorType: 'runtime' };
+            return buildErrorResult({ stage: 'playerView', errorType: 'runtime', message: '代码未加载' });
         }
 
         if (!this.domainCore.playerView) {
             return { success: true, result: state };
         }
 
-        return this.executeWithTimeout(() => {
+        const result = await this.executeWithTimeout('playerView', () => {
             return this.domainCore!.playerView!(state, playerId);
         });
+        if (!result.success || result.result === undefined) return result;
+        const serializable = this.ensureSerializable('playerView', result.result);
+        if (serializable) return serializable;
+        return result;
     }
 
     /** 执行 isGameOver */
     async isGameOver(state: unknown): Promise<SandboxResult<GameOverResult | undefined>> {
         if (!this.isLoaded || !this.domainCore) {
-            return { success: false, error: '代码未加载', errorType: 'runtime' };
+            return buildErrorResult({ stage: 'isGameOver', errorType: 'runtime', message: '代码未加载' });
         }
 
         if (!this.domainCore.isGameOver) {
             return { success: true, result: undefined };
         }
 
-        return this.executeWithTimeout(() => {
+        return this.executeWithTimeout('isGameOver', () => {
             return this.domainCore!.isGameOver!(state);
         });
     }
@@ -198,6 +286,11 @@ export class SandboxExecutor {
         return this.domainCore?.gameId ?? null;
     }
 
+    /** 获取已加载的 DomainCore（只读） */
+    getDomainCore(): UGCDomainCore | null {
+        return this.domainCore;
+    }
+
     /** 是否已加载 */
     isCodeLoaded(): boolean {
         return this.isLoaded;
@@ -205,7 +298,6 @@ export class SandboxExecutor {
 
     /** 卸载代码 */
     unload(): void {
-        this.domainCode = null;
         this.domainCore = null;
         this.isLoaded = false;
     }
@@ -216,7 +308,7 @@ export class SandboxExecutor {
     private createSandbox(): Record<string, unknown> {
         const sandbox: Record<string, unknown> = {
             // 安全的内置对象
-            Math,
+            Math: createSafeMath(),
             JSON,
             Array,
             Object,
@@ -258,6 +350,19 @@ export class SandboxExecutor {
         return sandbox;
     }
 
+    private ensureSerializable(stage: RuleExecutionStage, value: unknown): SandboxResult<never> | null {
+        try {
+            JSON.stringify(value);
+            return null;
+        } catch (error) {
+            return buildErrorResult({
+                stage,
+                errorType: 'contract',
+                message: `状态不可序列化: ${normalizeErrorMessage(error, '未知错误')}`,
+            });
+        }
+    }
+
     /** 验证 DomainCore 契约 */
     private validateDomainCore(obj: unknown): ValidationResult {
         if (!obj || typeof obj !== 'object') {
@@ -286,17 +391,17 @@ export class SandboxExecutor {
     }
 
     /** 带超时的执行 */
-    private async executeWithTimeout<T>(fn: () => T): Promise<SandboxResult<T>> {
+    private async executeWithTimeout<T>(stage: RuleExecutionStage, fn: () => T): Promise<SandboxResult<T>> {
         const startTime = Date.now();
 
         return new Promise((resolve) => {
             const timeoutId = setTimeout(() => {
-                resolve({
-                    success: false,
-                    error: `执行超时（${this.config.timeoutMs}ms）`,
+                resolve(buildErrorResult({
+                    stage,
                     errorType: 'timeout',
-                    executionTimeMs: Date.now() - startTime,
-                });
+                    message: `执行超时（${this.config.timeoutMs}ms）`,
+                    startTime,
+                }));
             }, this.config.timeoutMs);
 
             try {
@@ -309,12 +414,12 @@ export class SandboxExecutor {
                 });
             } catch (error) {
                 clearTimeout(timeoutId);
-                resolve({
-                    success: false,
-                    error: error instanceof Error ? error.message : '执行失败',
-                    errorType: 'runtime',
-                    executionTimeMs: Date.now() - startTime,
-                });
+                resolve(buildErrorResult({
+                    stage,
+                    errorType: resolveErrorType(error, 'runtime'),
+                    message: normalizeErrorMessage(error, '执行失败'),
+                    startTime,
+                }));
             }
         });
     }

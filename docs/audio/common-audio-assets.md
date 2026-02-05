@@ -1,0 +1,6981 @@
+# Common Audio Asset Manifest
+
+Generated on: 2026/2/4 15:28:55
+Source: d:/gongzuo/web/BordGame/public/assets/common/audio
+Extensions: .ogg
+Total Files: 6965
+
+## 📦 顶层分类统计
+
+- bgm: 200
+- sfx: 6765
+
+---
+
+## 🎧 资源路径清单（相对路径）
+
+- `bgm/ethereal/Ethereal Music Pack/Cloud Cathedral (RT 5.625)/compressed/Ethereal Cloud Cathedral Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Cloud Cathedral (RT 5.625)/compressed/Ethereal Cloud Cathedral Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Cloud Cathedral (RT 5.625)/compressed/Ethereal Cloud Cathedral Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Cloud Cathedral (RT 5.625)/compressed/Ethereal Cloud Cathedral Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Cloud Cathedral (RT 5.625)/compressed/Ethereal Cloud Cathedral Main.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Enigmatic Badger (RT 7.2)/compressed/Ethereal Enigmatic Badger Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Enigmatic Badger (RT 7.2)/compressed/Ethereal Enigmatic Badger Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Enigmatic Badger (RT 7.2)/compressed/Ethereal Enigmatic Badger Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Enigmatic Badger (RT 7.2)/compressed/Ethereal Enigmatic Badger Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Enigmatic Badger (RT 7.2)/compressed/Ethereal Enigmatic Badger Main.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Epiphone (RT 4)/compressed/Ethereal Epiphone Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Epiphone (RT 4)/compressed/Ethereal Epiphone Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Epiphone (RT 4)/compressed/Ethereal Epiphone Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Epiphone (RT 4)/compressed/Ethereal Epiphone Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Epiphone (RT 4)/compressed/Ethereal Epiphone Main.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Ether (RT 3.556)/compressed/Ethereal Ether Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Ether (RT 3.556)/compressed/Ethereal Ether Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Ether (RT 3.556)/compressed/Ethereal Ether Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Ether (RT 3.556)/compressed/Ethereal Ether Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Ether (RT 3.556)/compressed/Ethereal Ether Main.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Golden Clouds (RT 3.692)/compressed/Ethereal Golden Clouds Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Golden Clouds (RT 3.692)/compressed/Ethereal Golden Clouds Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Golden Clouds (RT 3.692)/compressed/Ethereal Golden Clouds Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Golden Clouds (RT 3.692)/compressed/Ethereal Golden Clouds Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Golden Clouds (RT 3.692)/compressed/Ethereal Golden Clouds Main.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Heartbeat (RT 3.2)/compressed/Ethereal Heartbeat Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Heartbeat (RT 3.2)/compressed/Ethereal Heartbeat Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Heartbeat (RT 3.2)/compressed/Ethereal Heartbeat Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Heartbeat (RT 3.2)/compressed/Ethereal Heartbeat Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Heartbeat (RT 3.2)/compressed/Ethereal Heartbeat Main.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Luminesce (RT 4.091)/compressed/Ethereal Luminesce Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Luminesce (RT 4.091)/compressed/Ethereal Luminesce Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Luminesce (RT 4.091)/compressed/Ethereal Luminesce Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Luminesce (RT 4.091)/compressed/Ethereal Luminesce Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Luminesce (RT 4.091)/compressed/Ethereal Luminesce Main.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Poison Meadow (RT 2)/compressed/Ethereal Poison Meadow Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Poison Meadow (RT 2)/compressed/Ethereal Poison Meadow Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Poison Meadow (RT 2)/compressed/Ethereal Poison Meadow Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Poison Meadow (RT 2)/compressed/Ethereal Poison Meadow Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Poison Meadow (RT 2)/compressed/Ethereal Poison Meadow Main.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Stairway (RT 4)/compressed/Ethereal Stairway Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Stairway (RT 4)/compressed/Ethereal Stairway Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Stairway (RT 4)/compressed/Ethereal Stairway Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Stairway (RT 4)/compressed/Ethereal Stairway Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Stairway (RT 4)/compressed/Ethereal Stairway Main.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Wind Chime (RT 5.647)/compressed/Ethereal Wind Chime Cut 30.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Wind Chime (RT 5.647)/compressed/Ethereal Wind Chime Cut 60.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Wind Chime (RT 5.647)/compressed/Ethereal Wind Chime Intensity 1.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Wind Chime (RT 5.647)/compressed/Ethereal Wind Chime Intensity 2.ogg`
+- `bgm/ethereal/Ethereal Music Pack/Wind Chime (RT 5.647)/compressed/Ethereal Wind Chime Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Cabin Lunch (RT 2.4)/compressed/Fantasy Vol5 Cabin Lunch Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Cabin Lunch (RT 2.4)/compressed/Fantasy Vol5 Cabin Lunch Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Cabin Lunch (RT 2.4)/compressed/Fantasy Vol5 Cabin Lunch Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Cabin Lunch (RT 2.4)/compressed/Fantasy Vol5 Cabin Lunch Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Cabin Lunch (RT 2.4)/compressed/Fantasy Vol5 Cabin Lunch Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Corsair (RT 3.75)/compressed/Fantasy Vol5 Corsair Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Corsair (RT 3.75)/compressed/Fantasy Vol5 Corsair Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Corsair (RT 3.75)/compressed/Fantasy Vol5 Corsair Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Corsair (RT 3.75)/compressed/Fantasy Vol5 Corsair Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Corsair (RT 3.75)/compressed/Fantasy Vol5 Corsair Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Dragon Dance (RT 2.286)/compressed/Fantasy Vol5 Dragon Dance Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Dragon Dance (RT 2.286)/compressed/Fantasy Vol5 Dragon Dance Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Dragon Dance (RT 2.286)/compressed/Fantasy Vol5 Dragon Dance Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Dragon Dance (RT 2.286)/compressed/Fantasy Vol5 Dragon Dance Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Dragon Dance (RT 2.286)/compressed/Fantasy Vol5 Dragon Dance Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Fish Bay (RT 4.8)/compressed/Fantasy Vol5 Fish Bay Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Fish Bay (RT 4.8)/compressed/Fantasy Vol5 Fish Bay Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Fish Bay (RT 4.8)/compressed/Fantasy Vol5 Fish Bay Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Fish Bay (RT 4.8)/compressed/Fantasy Vol5 Fish Bay Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Fish Bay (RT 4.8)/compressed/Fantasy Vol5 Fish Bay Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Hang Them (RT 3.692)/compressed/Fantasy Vol5 Hang Them Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Hang Them (RT 3.692)/compressed/Fantasy Vol5 Hang Them Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Hang Them (RT 3.692)/compressed/Fantasy Vol5 Hang Them Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Hang Them (RT 3.692)/compressed/Fantasy Vol5 Hang Them Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Hang Them (RT 3.692)/compressed/Fantasy Vol5 Hang Them Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lonely Bard (RT 3.176)/compressed/Fantasy Vol5 Lonely Bard Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lonely Bard (RT 3.176)/compressed/Fantasy Vol5 Lonely Bard Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lonely Bard (RT 3.176)/compressed/Fantasy Vol5 Lonely Bard Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lonely Bard (RT 3.176)/compressed/Fantasy Vol5 Lonely Bard Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lonely Bard (RT 3.176)/compressed/Fantasy Vol5 Lonely Bard Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lush Gardens (RT 3.75)/compressed/Fantasy Vol5 Lush Gardens Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lush Gardens (RT 3.75)/compressed/Fantasy Vol5 Lush Gardens Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lush Gardens (RT 3.75)/compressed/Fantasy Vol5 Lush Gardens Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lush Gardens (RT 3.75)/compressed/Fantasy Vol5 Lush Gardens Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Lush Gardens (RT 3.75)/compressed/Fantasy Vol5 Lush Gardens Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/My Kingdom (RT 2.286)/compressed/Fantasy Vol5 My Kingdom Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/My Kingdom (RT 2.286)/compressed/Fantasy Vol5 My Kingdom Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/My Kingdom (RT 2.286)/compressed/Fantasy Vol5 My Kingdom Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/My Kingdom (RT 2.286)/compressed/Fantasy Vol5 My Kingdom Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/My Kingdom (RT 2.286)/compressed/Fantasy Vol5 My Kingdom Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Shields and Spears (RT 2.625)/compressed/Fantasy Vol5 Shields and Spears Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Shields and Spears (RT 2.625)/compressed/Fantasy Vol5 Shields and Spears Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Shields and Spears (RT 2.625)/compressed/Fantasy Vol5 Shields and Spears Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Shields and Spears (RT 2.625)/compressed/Fantasy Vol5 Shields and Spears Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/Shields and Spears (RT 2.625)/compressed/Fantasy Vol5 Shields and Spears Main.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/The Mourning (RT 3.428)/compressed/Fantasy Vol5 The Mourning Cut 30.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/The Mourning (RT 3.428)/compressed/Fantasy Vol5 The Mourning Cut 60.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/The Mourning (RT 3.428)/compressed/Fantasy Vol5 The Mourning Intensity 1.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/The Mourning (RT 3.428)/compressed/Fantasy Vol5 The Mourning Intensity 2.ogg`
+- `bgm/fantasy/Fantasy Music Pack Vol. 5/The Mourning (RT 3.428)/compressed/Fantasy Vol5 The Mourning Main.ogg`
+- `bgm/funk/Funk Music Pack/Big Shot (RT 4.025)/compressed/Funk Big Shot Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/Big Shot (RT 4.025)/compressed/Funk Big Shot Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/Big Shot (RT 4.025)/compressed/Funk Big Shot Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/Big Shot (RT 4.025)/compressed/Funk Big Shot Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/Big Shot (RT 4.025)/compressed/Funk Big Shot Main.ogg`
+- `bgm/funk/Funk Music Pack/Dream Machine (RT 4.071)/compressed/Funk Dream Machine Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/Dream Machine (RT 4.071)/compressed/Funk Dream Machine Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/Dream Machine (RT 4.071)/compressed/Funk Dream Machine Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/Dream Machine (RT 4.071)/compressed/Funk Dream Machine Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/Dream Machine (RT 4.071)/compressed/Funk Dream Machine Main.ogg`
+- `bgm/funk/Funk Music Pack/Move Your Feet (RT 2.100)/compressed/Funk Move Your Feet Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/Move Your Feet (RT 2.100)/compressed/Funk Move Your Feet Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/Move Your Feet (RT 2.100)/compressed/Funk Move Your Feet Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/Move Your Feet (RT 2.100)/compressed/Funk Move Your Feet Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/Move Your Feet (RT 2.100)/compressed/Funk Move Your Feet Main.ogg`
+- `bgm/funk/Funk Music Pack/Nobody Knows (RT 4.091)/compressed/Funk Nobody Knows Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/Nobody Knows (RT 4.091)/compressed/Funk Nobody Knows Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/Nobody Knows (RT 4.091)/compressed/Funk Nobody Knows Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/Nobody Knows (RT 4.091)/compressed/Funk Nobody Knows Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/Nobody Knows (RT 4.091)/compressed/Funk Nobody Knows Main.ogg`
+- `bgm/funk/Funk Music Pack/Please Stay (RT 2.100)/compressed/Funk Please Stay Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/Please Stay (RT 2.100)/compressed/Funk Please Stay Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/Please Stay (RT 2.100)/compressed/Funk Please Stay Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/Please Stay (RT 2.100)/compressed/Funk Please Stay Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/Please Stay (RT 2.100)/compressed/Funk Please Stay Main.ogg`
+- `bgm/funk/Funk Music Pack/Slow Down (RT 3.000)/compressed/Funk Slow Down Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/Slow Down (RT 3.000)/compressed/Funk Slow Down Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/Slow Down (RT 3.000)/compressed/Funk Slow Down Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/Slow Down (RT 3.000)/compressed/Funk Slow Down Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/Slow Down (RT 3.000)/compressed/Funk Slow Down Main.ogg`
+- `bgm/funk/Funk Music Pack/Snare Machine (RT 4.016)/compressed/Funk Snare Machine Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/Snare Machine (RT 4.016)/compressed/Funk Snare Machine Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/Snare Machine (RT 4.016)/compressed/Funk Snare Machine Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/Snare Machine (RT 4.016)/compressed/Funk Snare Machine Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/Snare Machine (RT 4.016)/compressed/Funk Snare Machine Main.ogg`
+- `bgm/funk/Funk Music Pack/Sunny Days (RT 2.111)/compressed/Funk Sunny Days Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/Sunny Days (RT 2.111)/compressed/Funk Sunny Days Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/Sunny Days (RT 2.111)/compressed/Funk Sunny Days Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/Sunny Days (RT 2.111)/compressed/Funk Sunny Days Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/Sunny Days (RT 2.111)/compressed/Funk Sunny Days Main.ogg`
+- `bgm/funk/Funk Music Pack/The Right One (RT 4.022)/compressed/Funk The Right One Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/The Right One (RT 4.022)/compressed/Funk The Right One Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/The Right One (RT 4.022)/compressed/Funk The Right One Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/The Right One (RT 4.022)/compressed/Funk The Right One Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/The Right One (RT 4.022)/compressed/Funk The Right One Main.ogg`
+- `bgm/funk/Funk Music Pack/Wake Up (RT 4.200)/compressed/Funk Wake Up Cut 30.ogg`
+- `bgm/funk/Funk Music Pack/Wake Up (RT 4.200)/compressed/Funk Wake Up Cut 60.ogg`
+- `bgm/funk/Funk Music Pack/Wake Up (RT 4.200)/compressed/Funk Wake Up Intensity 1.ogg`
+- `bgm/funk/Funk Music Pack/Wake Up (RT 4.200)/compressed/Funk Wake Up Intensity 2.ogg`
+- `bgm/funk/Funk Music Pack/Wake Up (RT 4.200)/compressed/Funk Wake Up Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Bubblegum (RT 2)/compressed/Casual Bubblegum Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Bubblegum (RT 2)/compressed/Casual Bubblegum Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Bubblegum (RT 2)/compressed/Casual Bubblegum Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Bubblegum (RT 2)/compressed/Casual Bubblegum Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Bubblegum (RT 2)/compressed/Casual Bubblegum Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Dance Class (RT 4.022)/compressed/Casual Dance Class Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Dance Class (RT 4.022)/compressed/Casual Dance Class Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Dance Class (RT 4.022)/compressed/Casual Dance Class Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Dance Class (RT 4.022)/compressed/Casual Dance Class Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Dance Class (RT 4.022)/compressed/Casual Dance Class Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Field Day (RT 2.057)/compressed/Casual Field Day Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Field Day (RT 2.057)/compressed/Casual Field Day Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Field Day (RT 2.057)/compressed/Casual Field Day Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Field Day (RT 2.057)/compressed/Casual Field Day Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Field Day (RT 2.057)/compressed/Casual Field Day Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Lizards (RT 1.875)/compressed/Casual Lizards Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Lizards (RT 1.875)/compressed/Casual Lizards Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Lizards (RT 1.875)/compressed/Casual Lizards Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Lizards (RT 1.875)/compressed/Casual Lizards Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Lizards (RT 1.875)/compressed/Casual Lizards Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Observatory (RT 7.244)/compressed/Casual Observatory Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Observatory (RT 7.244)/compressed/Casual Observatory Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Observatory (RT 7.244)/compressed/Casual Observatory Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Observatory (RT 7.244)/compressed/Casual Observatory Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Observatory (RT 7.244)/compressed/Casual Observatory Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Pony Ride (RT 2.824)/compressed/Casual Pony Ride Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Pony Ride (RT 2.824)/compressed/Casual Pony Ride Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Pony Ride (RT 2.824)/compressed/Casual Pony Ride Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Pony Ride (RT 2.824)/compressed/Casual Pony Ride Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Pony Ride (RT 2.824)/compressed/Casual Pony Ride Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Shopping (RT 2)/compressed/Casual Shopping Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Shopping (RT 2)/compressed/Casual Shopping Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Shopping (RT 2)/compressed/Casual Shopping Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Shopping (RT 2)/compressed/Casual Shopping Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Shopping (RT 2)/compressed/Casual Shopping Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Sunset (RT 1.875)/compressed/Casual Sunset Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Sunset (RT 1.875)/compressed/Casual Sunset Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Sunset (RT 1.875)/compressed/Casual Sunset Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Sunset (RT 1.875)/compressed/Casual Sunset Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Sunset (RT 1.875)/compressed/Casual Sunset Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Tiki Party (RT 2.095)/compressed/Casual Tiki Party Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Tiki Party (RT 2.095)/compressed/Casual Tiki Party Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Tiki Party (RT 2.095)/compressed/Casual Tiki Party Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Tiki Party (RT 2.095)/compressed/Casual Tiki Party Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Tiki Party (RT 2.095)/compressed/Casual Tiki Party Main.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Workshop (RT 2.1)/compressed/Casual Workshop Cut 30.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Workshop (RT 2.1)/compressed/Casual Workshop Cut 60.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Workshop (RT 2.1)/compressed/Casual Workshop Intensity 1.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Workshop (RT 2.1)/compressed/Casual Workshop Intensity 2.ogg`
+- `bgm/general/Casual Music Pack Vol. 1/Workshop (RT 2.1)/compressed/Casual Workshop Main.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Drink/compressed/FOODDrnk_Character Drink 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Drink/compressed/FOODDrnk_Character Drink 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Drink/compressed/FOODDrnk_Character Drink 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Drink/compressed/FOODDrnk_Character Drink 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Drink/compressed/FOODDrnk_Character Drink 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Eat/compressed/FOODEat_Character Eat 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Eat/compressed/FOODEat_Character Eat 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Eat/compressed/FOODEat_Character Eat 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Eat/compressed/FOODEat_Character Eat 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Eat/compressed/FOODEat_Character Eat 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Concrete/compressed/FEETHmn_Character Fall After Jump Concrete 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Concrete/compressed/FEETHmn_Character Fall After Jump Concrete 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Concrete/compressed/FEETHmn_Character Fall After Jump Concrete 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Concrete/compressed/FEETHmn_Character Fall After Jump Concrete 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Concrete/compressed/FEETHmn_Character Fall After Jump Concrete 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Forest/compressed/FEETHmn_Character Fall After Jump Forest 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Forest/compressed/FEETHmn_Character Fall After Jump Forest 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Forest/compressed/FEETHmn_Character Fall After Jump Forest 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Forest/compressed/FEETHmn_Character Fall After Jump Forest 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Forest/compressed/FEETHmn_Character Fall After Jump Forest 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Gravel/compressed/FEETHmn_Character Fall After Jump Gravel 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Gravel/compressed/FEETHmn_Character Fall After Jump Gravel 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Gravel/compressed/FEETHmn_Character Fall After Jump Gravel 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Gravel/compressed/FEETHmn_Character Fall After Jump Gravel 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Gravel/compressed/FEETHmn_Character Fall After Jump Gravel 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Water/compressed/FEETHmn_Character Fall After Jump Water 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Water/compressed/FEETHmn_Character Fall After Jump Water 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Water/compressed/FEETHmn_Character Fall After Jump Water 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Water/compressed/FEETHmn_Character Fall After Jump Water 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Water/compressed/FEETHmn_Character Fall After Jump Water 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Wood/compressed/FEETHmn_Character Fall After Jump Wood 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Wood/compressed/FEETHmn_Character Fall After Jump Wood 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Wood/compressed/FEETHmn_Character Fall After Jump Wood 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Wood/compressed/FEETHmn_Character Fall After Jump Wood 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Fall_After_Jump_Wood/compressed/FEETHmn_Character Fall After Jump Wood 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Forest/compressed/FEETHmn_Character Footstep Forest 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Forest/compressed/FEETHmn_Character Footstep Forest 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Forest/compressed/FEETHmn_Character Footstep Forest 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Forest/compressed/FEETHmn_Character Footstep Forest 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Forest/compressed/FEETHmn_Character Footstep Forest 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Water/compressed/FEETHmn_Character Footstep Water 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Water/compressed/FEETHmn_Character Footstep Water 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Water/compressed/FEETHmn_Character Footstep Water 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Water/compressed/FEETHmn_Character Footstep Water 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footstep_Water/compressed/FEETHmn_Character Footstep Water 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Concrete/compressed/FEETHmn_Character Footsteps Concrete 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Concrete/compressed/FEETHmn_Character Footsteps Concrete 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Concrete/compressed/FEETHmn_Character Footsteps Concrete 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Concrete/compressed/FEETHmn_Character Footsteps Concrete 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Concrete/compressed/FEETHmn_Character Footsteps Concrete 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Gravel/compressed/FEETHmn_Character Footsteps Gravel 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Gravel/compressed/FEETHmn_Character Footsteps Gravel 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Gravel/compressed/FEETHmn_Character Footsteps Gravel 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Gravel/compressed/FEETHmn_Character Footsteps Gravel 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Gravel/compressed/FEETHmn_Character Footsteps Gravel 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Wood/compressed/FEETHmn_Character Footsteps Wood 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Wood/compressed/FEETHmn_Character Footsteps Wood 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Wood/compressed/FEETHmn_Character Footsteps Wood 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Wood/compressed/FEETHmn_Character Footsteps Wood 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Footsteps/Character_Footsteps_Wood/compressed/FEETHmn_Character Footsteps Wood 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Go_To_Bed/compressed/CLOTHHndl_Character Go To Bed 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Go_To_Bed/compressed/CLOTHHndl_Character Go To Bed 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Metal_With_Fists/compressed/FGHTImpt_Character Hitting Metal With Fists 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Metal_With_Fists/compressed/FGHTImpt_Character Hitting Metal With Fists 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Metal_With_Fists/compressed/FGHTImpt_Character Hitting Metal With Fists 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Rock_With_Fists/compressed/FGHTImpt_Character Hitting Rock With Fists 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Rock_With_Fists/compressed/FGHTImpt_Character Hitting Rock With Fists 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Rock_With_Fists/compressed/FGHTImpt_Character Hitting Rock With Fists 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Tree_With_Fists/compressed/FGHTImpt_Character Hitting Tree With Fists 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Tree_With_Fists/compressed/FGHTImpt_Character Hitting Tree With Fists 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Tree_With_Fists/compressed/FGHTImpt_Character Hitting Tree With Fists 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_With_Fists/compressed/FGHTImpt_Character Hitting With Fists 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_With_Fists/compressed/FGHTImpt_Character Hitting With Fists 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_With_Fists/compressed/FGHTImpt_Character Hitting With Fists 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Wood_With_Fists/compressed/FGHTImpt_Character Hitting Wood With Fists 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Wood_With_Fists/compressed/FGHTImpt_Character Hitting Wood With Fists 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Hitting_Wood_With_Fists/compressed/FGHTImpt_Character Hitting Wood With Fists 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Jump_Into_The_Sea/compressed/WATRSplsh_Character Jump Into The Sea 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Jump_Into_The_Sea/compressed/WATRSplsh_Character Jump Into The Sea 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Level_Up/compressed/DSGNSynth_Character Level Up 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Level_Up/compressed/DSGNSynth_Character Level Up 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Level_Up/compressed/DSGNSynth_Character Level Up 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Level_Up/compressed/DSGNSynth_Character Level Up 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Level_Up/compressed/DSGNSynth_Character Level Up 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Level_Up/compressed/DSGNSynth_Character Level Up 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Open_Plan_Map/compressed/PAPRHndl_Character Open Plan Map 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Open_Plan_Map/compressed/PAPRHndl_Character Open Plan Map 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Open_Plan_Map/compressed/PAPRHndl_Character Open Plan Map 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Open_Plan_Map/compressed/PAPRHndl_Character Open Plan Map 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Punch_Whoosh/compressed/FGHTMisc_Character Punch Whoosh 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Punch_Whoosh/compressed/FGHTMisc_Character Punch Whoosh 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Punch_Whoosh/compressed/FGHTMisc_Character Punch Whoosh 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Punch_Whoosh/compressed/FGHTMisc_Character Punch Whoosh 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Search_In_A_Box/compressed/OBJCont_Search In A Box 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Search_In_A_Box/compressed/OBJCont_Search In A Box 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Search_In_A_Box/compressed/OBJCont_Search In A Box 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Search_In_Character/compressed/CLOTHMvmt_Character Search In Character 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Search_In_Character/compressed/CLOTHMvmt_Character Search In Character 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Search_In_Character/compressed/CLOTHMvmt_Character Search In Character 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Search_In_Character/compressed/CLOTHMvmt_Character Search In Character 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Start_Jump/compressed/MOVEHmn_Character Start Jump 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Start_Jump/compressed/MOVEHmn_Character Start Jump 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Start_Jump/compressed/MOVEHmn_Character Start Jump 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Start_Jump/compressed/MOVEHmn_Character Start Jump 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Start_Jump/compressed/MOVEHmn_Character Start Jump 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Damage/compressed/FGHTImpt_Character Take Damage 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Damage/compressed/FGHTImpt_Character Take Damage 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Damage/compressed/FGHTImpt_Character Take Damage 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Damage/compressed/FGHTImpt_Character Take Damage 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Pills/compressed/HMNCough_Character Throat Swallow Pills 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Pills/compressed/HMNCough_Character Throat Swallow Pills 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Pills/compressed/OBJCont_Character Drop Pill Into Mouth 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Pills/compressed/OBJCont_Character Drop Pill Into Mouth 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Pills/compressed/OBJCont_Character Open Pills Bottle 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Pills/compressed/OBJCont_Character Open Pills Bottle 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Pills/compressed/OBJCont_Character Open Pills Bottle 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Pills/compressed/OBJCont_Character Take Pills Full Sequence 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Take_Pills/compressed/OBJCont_Character Take Pills Full Sequence 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Use_Matches/Character_Light_Match_Sequence/compressed/OBJCont_Character Light Match Sequence 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Use_Matches/Character_Light_Match_Sequence/compressed/OBJCont_Character Light Match Sequence 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Use_Matches/Character_Light_Matches/compressed/FIREIgn_Character Light Matches 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Use_Matches/Character_Light_Matches/compressed/FIREIgn_Character Light Matches 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Use_Matches/Character_Search_In_Matchbox/compressed/OBJCont_Character Search In Matchbox 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Use_Matches/Character_Search_In_Matchbox/compressed/OBJCont_Character Search In Matchbox 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Effort_Or_Attack_Voice/compressed/VOXMale_Character Effort Or Attack Voice 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Character_Jump_Voice/compressed/VOXMale_Character Jump Voice 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Voices/Male/Chararter_Pain_Voice/compressed/VOXMale_Chararter Pain Voice 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Wear_clothes/compressed/CLOTHFlp_Character Wear Clothes 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Wear_clothes/compressed/CLOTHFlp_Character Wear Clothes 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Wear_clothes/compressed/CLOTHFlp_Character Wear Clothes 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Wear_clothes/compressed/CLOTHFlp_Character Wear Clothes 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Character/Character_Wear_clothes/compressed/CLOTHFlp_Character Wear Clothes 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 11_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 12_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 13_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 14_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 15_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 16_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 17_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 18_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 19_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 20_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 21_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Build_Object/compressed/DSGNSrce_Build Object 22_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Metal_Object/compressed/DESTRCrsh_Demolition Metal Object 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Metal_Object/compressed/DESTRCrsh_Demolition Metal Object 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Metal_Object/compressed/DESTRCrsh_Demolition Metal Object 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Metal_Object/compressed/DESTRCrsh_Demolition Metal Object 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Metal_Object/compressed/DESTRCrsh_Demolition Metal Object 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Metal_Object/compressed/DESTRCrsh_Demolition Metal Object 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Rock_&_Wood_Object/compressed/DESTRCrsh_Demolition Rock Wood Object 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Rock_&_Wood_Object/compressed/DESTRCrsh_Demolition Rock Wood Object 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Rock_&_Wood_Object/compressed/DESTRCrsh_Demolition Rock Wood Object 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Rock_&_Wood_Object/compressed/DESTRCrsh_Demolition Rock Wood Object 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Rock_&_Wood_Object/compressed/DESTRCrsh_Demolition Rock Wood Object 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Wood_Object/compressed/DESTRCrsh_Demolition Wood Object 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Wood_Object/compressed/DESTRCrsh_Demolition Wood Object 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Wood_Object/compressed/DESTRCrsh_Demolition Wood Object 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Wood_Object/compressed/DESTRCrsh_Demolition Wood Object 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Wood_Object/compressed/DESTRCrsh_Demolition Wood Object 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Wood_Object/compressed/DESTRCrsh_Demolition Wood Object 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Wood_Object/compressed/DESTRCrsh_Demolition Wood Object 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Construction/Demolition_Objects/Demolition_Wood_Object/compressed/DESTRCrsh_Demolition Wood Object 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Craft_Neutral_Material/compressed/DSGNSrce_Craft Neutral Material 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Food/compressed/FOODMisc_Crafting Food 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Food/compressed/FOODMisc_Crafting Food 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Food/compressed/FOODMisc_Crafting Food 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Food/compressed/FOODMisc_Crafting Food 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Food/compressed/FOODMisc_Crafting Food 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Food/compressed/FOODMisc_Crafting Food 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 11_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 12_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 13_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 14_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Metal_Item/compressed/METLMisc_Crafting Metal Item 15_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 11_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 12_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 13_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_Stone_Item/compressed/ROCKMisc_Crafting Stone Item 14_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Crafting_wood_Item/compressed/WOODMisc_Crafting Wood Item 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Crafting/Open_Crafting_Menu/compressed/DSGNSrce_Open Crafting Menu 11_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Bonfire Loop 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Place Bonfire With Fire 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Place Bonfire With Fire 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Place Bonfire Without Fire 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Place Bonfire Without Fire 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Turn Off Bonfire 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Turn Off Bonfire 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Turn Off Bonfire 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Turn On Bonfire 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Bonfire/compressed/FIREBurn_Turn On Bonfire 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Broken_Box/compressed/WOODCrsh_Broken Box 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Broken_Box/compressed/WOODCrsh_Broken Box 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Broken_Box/compressed/WOODCrsh_Broken Box 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Medicine_Cabinet/Close_Medicine_Cabinet/compressed/DOORCab_Close Medicine Cabinet 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Medicine_Cabinet/Close_Medicine_Cabinet/compressed/DOORCab_Close Medicine Cabinet 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Medicine_Cabinet/Open_Medicine_Cabinet/compressed/DOORCab_Open Medicine Cabinet 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Medicine_Cabinet/Open_Medicine_Cabinet/compressed/DOORCab_Open Medicine Cabinet 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Rock/compressed/ROCKCrsh_Break Rock 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Rock/compressed/ROCKCrsh_Break Rock 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Tree/Tree_Falling/compressed/VEGETree_Tree Falling 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Tree/Tree_Falling/compressed/VEGETree_Tree Falling 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Tree/Tree_Falling_Full_Sequence/compressed/VEGETree_Tree Falling Full Sequence 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Tree/Tree_Falling_Full_Sequence/compressed/VEGETree_Tree Falling Full Sequence 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Tree/Tree_Hit_When_Falling/compressed/VEGETree_Tree Hit When Falling 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Enviroment/Tree/Tree_Hit_When_Falling/compressed/VEGETree_Tree Hit When Falling 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Chest/Close_Chest/compressed/OBJFurn_Close Chest 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Chest/Close_Chest/compressed/OBJFurn_Close Chest 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Chest/Close_Chest/compressed/OBJFurn_Close Chest 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Chest/Open_Chest/compressed/OBJFurn_Open Chest 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Chest/Open_Chest/compressed/OBJFurn_Open Chest 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Chest/Open_Chest/compressed/OBJFurn_Open Chest 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Lock_Door/compressed/DOORHdwr_Lock Door 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Lock_Door/compressed/DOORHdwr_Lock Door 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Locked_Door/compressed/DOORHdwr_Locked Door 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Locked_Door/compressed/DOORHdwr_Locked Door 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Close_Metal_Door/compressed/DOORMetl_Close Metal Door 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Close_Metal_Door/compressed/DOORMetl_Close Metal Door 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Close_Metal_Door/compressed/DOORMetl_Close Metal Door 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Close_Metal_Door/compressed/DOORMetl_Close Metal Door With Creak 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Close_Metal_Door/compressed/DOORMetl_Close Metal Door With Creak 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Close_Metal_Door/compressed/DOORMetl_Close Metal Door With Creak 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Open_Metal_Door/compressed/DOORMetl_Open Metal Door 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Open_Metal_Door/compressed/DOORMetl_Open Metal Door 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Open_Metal_Door/compressed/DOORMetl_Open Metal Door 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Open_Metal_Door/compressed/DOORMetl_Open Metal Door With Creak 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Open_Metal_Door/compressed/DOORMetl_Open Metal Door With Creak 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Metal_Door/Open_Metal_Door/compressed/DOORMetl_Open Metal Door With Creak 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Unlock_Door/compressed/DOORHdwr_Unlock Door 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Unlock_Door/compressed/DOORHdwr_Unlock Door 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Wood_Door/Close_Wood_Door/compressed/DOORWood_Close Wood Door 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Wood_Door/Close_Wood_Door/compressed/DOORWood_Close Wood Door 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Wood_Door/Close_Wood_Door/compressed/DOORWood_Close Wood Door 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Wood_Door/Close_Wood_Door/compressed/DOORWood_Close Wood Door With Creak 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Wood_Door/Close_Wood_Door/compressed/DOORWood_Close Wood Door With Creak 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Wood_Door/Close_Wood_Door/compressed/DOORWood_Close Wood Door With Creak 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Wood_Door/Open_Wood_Door/compressed/DOORWood_Open Wood Door 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Wood_Door/Open_Wood_Door/compressed/DOORWood_Open Wood Door 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Doors/Wood_Door/Open_Wood_Door/compressed/DOORWood_Open Wood Door 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Metal_Drawer/Close_Metal_Drawer/compressed/DRWRMetl_Close Metal Drawer 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Metal_Drawer/Close_Metal_Drawer/compressed/DRWRMetl_Close Metal Drawer 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Metal_Drawer/Close_Metal_Drawer/compressed/DRWRMetl_Close Metal Drawer 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Metal_Drawer/Open_Metal_Drawer/compressed/DRWRMetl_Open Metal Drawer 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Metal_Drawer/Open_Metal_Drawer/compressed/DRWRMetl_Open Metal Drawer 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Metal_Drawer/Open_Metal_Drawer/compressed/DRWRMetl_Open Metal Drawer 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Wood_Drawer/Close_Wood_Drawer/compressed/DRWRWood_Close Wood Drawers 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Wood_Drawer/Close_Wood_Drawer/compressed/DRWRWood_Close Wood Drawers 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Wood_Drawer/Close_Wood_Drawer/compressed/DRWRWood_Close Wood Drawers 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Wood_Drawer/Open_Wood_Drawer/compressed/DRWRWood_Open Wood Drawers 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Wood_Drawer/Open_Wood_Drawer/compressed/DRWRWood_Open Wood Drawers 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Drawer/Wood_Drawer/Open_Wood_Drawer/compressed/DRWRWood_Open Wood Drawers 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metal_Oven_Door/Close_Metal_Oven_Door/compressed/DOORAppl_Close Metal Oven Door 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metal_Oven_Door/Close_Metal_Oven_Door/compressed/DOORAppl_Close Metal Oven Door 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metal_Oven_Door/Open_Metal_Oven_Door/compressed/DOORAppl_Open Metal Oven Door 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metal_Oven_Door/Open_Metal_Oven_Door/compressed/DOORAppl_Open Metal Oven Door 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Close_Metalic_Safe/compressed/DOORMetl_Close Metalic Safe 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Close_Metalic_Safe/compressed/DOORMetl_Close Metalic Safe 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Open_Metalic_Safe/compressed/DOORMetl_Open Metalic Safe 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Open_Metalic_Safe/compressed/DOORMetl_Open Metalic Safe 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Turn_Safe_Security_System/compressed/CLOCKTick_Turn Safe Security System 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Turn_Safe_Security_System/compressed/CLOCKTick_Turn Safe Security System 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Turn_Safe_Security_System/compressed/DOORHdwr_Unlock Safe Deposit Box 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Turn_Safe_Security_System/compressed/DOORHdwr_Unlock Safe Deposit Box 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Turn_Safe_Security_System_Loop/compressed/CLOCKTick_Turn Safe Security System Loop 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Home/Metalic_Safe/Turn_Safe_Security_System_Loop/compressed/CLOCKTick_Turn Safe Security System Loop 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Close_Inventory/compressed/DSGNSrce_Close Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Close_Inventory/compressed/DSGNSrce_Close Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Close_Inventory/compressed/DSGNSrce_Close Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Close_Inventory/compressed/DSGNSrce_Close Inventory 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Close_Inventory/compressed/DSGNSrce_Close Inventory 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Close_Inventory/compressed/DSGNSrce_Close Inventory 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Metal_From_Inventory/compressed/METLHndl_Drop Metal From Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Metal_From_Inventory/compressed/METLHndl_Drop Metal From Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Metal_From_Inventory/compressed/METLHndl_Drop Metal From Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Neutral_Inventory_Item/compressed/DSGNSrce_Drop Neutral Inventory Item 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Neutral_Inventory_Item/compressed/DSGNSrce_Drop Neutral Inventory Item 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Neutral_Inventory_Item/compressed/DSGNSrce_Drop Neutral Inventory Item 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Neutral_Inventory_Item/compressed/DSGNSrce_Drop Neutral Inventory Item 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Neutral_Inventory_Item/compressed/DSGNSrce_Drop Neutral Inventory Item 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Stone_From_Inventory/compressed/ROCKMisc_Drop Stone From Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Stone_From_Inventory/compressed/ROCKMisc_Drop Stone From Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Stone_From_Inventory/compressed/ROCKMisc_Drop Stone From Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Wood_From_Inventory/compressed/WOODMisc_Drop Wood From Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Wood_From_Inventory/compressed/WOODMisc_Drop Wood From Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Drop_Wood_From_Inventory/compressed/WOODMisc_Drop Wood From Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Arrow_In_Inventory/compressed/WEAPArro_Moving Arrow In Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Arrow_In_Inventory/compressed/WEAPArro_Moving Arrow In Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Arrow_In_Inventory/compressed/WEAPArro_Moving Arrow In Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Arrow_In_Inventory/compressed/WEAPArro_Moving Arrow In Inventory 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Cloth_In_Inventory/compressed/CLOTHMisc_Moving Cloth In Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Cloth_In_Inventory/compressed/CLOTHMisc_Moving Cloth In Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Cloth_In_Inventory/compressed/CLOTHMisc_Moving Cloth In Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Cloth_In_Inventory/compressed/CLOTHMisc_Moving Cloth In Inventory 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Meat_In_Inventory/compressed/GORESrce_Moving Meat In Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Meat_In_Inventory/compressed/GORESrce_Moving Meat In Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Meat_In_Inventory/compressed/GORESrce_Moving Meat In Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Meat_In_Inventory/compressed/GORESrce_Moving Meat In Inventory 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Paper_In_Inventory/compressed/PAPRMisc_Moving Paper In Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Paper_In_Inventory/compressed/PAPRMisc_Moving Paper In Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Paper_In_Inventory/compressed/PAPRMisc_Moving Paper In Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Paper_In_Inventory/compressed/PAPRMisc_Moving Paper In Inventory 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Seeds_In_Inventory/compressed/FOODIngr_Moving Seeds In Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Seeds_In_Inventory/compressed/FOODIngr_Moving Seeds In Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Seeds_In_Inventory/compressed/FOODIngr_Moving Seeds In Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Seeds_In_Inventory/compressed/FOODIngr_Moving Seeds In Inventory 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 11_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Moving_Items/Moving_Tool_In_Inventory/compressed/TOOLMisc_Moving Tool In Inventory 12_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Open_Inventory/compressed/DSGNSrce_Open Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Open_Inventory/compressed/DSGNSrce_Open Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Open_Inventory/compressed/DSGNSrce_Open Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Open_Inventory/compressed/DSGNSrce_Open Inventory 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Open_Inventory/compressed/DSGNSrce_Open Inventory 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Open_Inventory/compressed/DSGNSrce_Open Inventory 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Metal_From_Inventory/compressed/METLMisc_Take Metal From Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Metal_From_Inventory/compressed/METLMisc_Take Metal From Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Metal_From_Inventory/compressed/METLMisc_Take Metal From Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Neutral_Inventory_Item/compressed/DSGNSrce_Take Neutral Inventory Item 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Neutral_Inventory_Item/compressed/DSGNSrce_Take Neutral Inventory Item 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Neutral_Inventory_Item/compressed/DSGNSrce_Take Neutral Inventory Item 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Neutral_Inventory_Item/compressed/DSGNSrce_Take Neutral Inventory Item 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Neutral_Inventory_Item/compressed/DSGNSrce_Take Neutral Inventory Item 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Stone_From_Inventory/compressed/ROCKMisc_Take Stone From Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Stone_From_Inventory/compressed/ROCKMisc_Take Stone From Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Stone_From_Inventory/compressed/ROCKMisc_Take Stone From Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Wood_From_Inventory/compressed/WOODMisc_Take Wood From Inventory 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Wood_From_Inventory/compressed/WOODMisc_Take Wood From Inventory 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Inventory/Take_Wood_From_Inventory/compressed/WOODMisc_Take Wood From Inventory 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Hit_Stone/compressed/WEAPAxe_Axe Hit Stone 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Hit_Stone/compressed/WEAPAxe_Axe Hit Stone 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Hit_Stone/compressed/WEAPAxe_Axe Hit Stone 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Hit_Wood/compressed/WEAPAxe_Axe Hit Wood 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Hit_Wood/compressed/WEAPAxe_Axe Hit Wood 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Hit_Wood/compressed/WEAPAxe_Axe Hit Wood 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Whoosh/compressed/WEAPAxe_Axe Whoosh 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Whoosh/compressed/WEAPAxe_Axe Whoosh 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Whoosh/compressed/WEAPAxe_Axe Whoosh 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Whoosh_Hit_Stone/compressed/WEAPAxe_Axe Whoosh Hit Stone 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Whoosh_Hit_Stone/compressed/WEAPAxe_Axe Whoosh Hit Stone 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Whoosh_Hit_Stone/compressed/WEAPAxe_Axe Whoosh Hit Stone 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Whoosh_Hit_Wood/compressed/WEAPAxe_Axe Whoosh Hit Wood 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Whoosh_Hit_Wood/compressed/WEAPAxe_Axe Whoosh Hit Wood 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Axe/Axe_Whoosh_Hit_Wood/compressed/WEAPAxe_Axe Whoosh Hit Wood 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Break_Metal_Tool/compressed/METLCrsh_Break Metal Tool 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Break_Metal_Tool/compressed/METLCrsh_Break Metal Tool 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Break_wood_Tool/compressed/WOODCrsh_Break Wood Tool 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Break_wood_Tool/compressed/WOODCrsh_Break Wood Tool 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Item_Or_Weapon_Hit_Metal/compressed/WEAPMisc_Item Or Weapon Hit Metal 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Item_Or_Weapon_Hit_Metal/compressed/WEAPMisc_Item Or Weapon Hit Metal 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Item_Or_Weapon_Hit_Metal/compressed/WEAPMisc_Item Or Weapon Hit Metal 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Item_Or_Weapon_Hit_Plants/compressed/WEAPMisc_Item Or Weapon Hit Plants 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Item_Or_Weapon_Hit_Plants/compressed/WEAPMisc_Item Or Weapon Hit Plants 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Item_Or_Weapon_Hit_Plants/compressed/WEAPMisc_Item Or Weapon Hit Plants 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Hit_Stone/compressed/TOOLHand_Pick Hit Stone 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Hit_Stone/compressed/TOOLHand_Pick Hit Stone 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Hit_Stone/compressed/TOOLHand_Pick Hit Stone 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Hit_Wood/compressed/TOOLHand_Pick Hit Wood 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Hit_Wood/compressed/TOOLHand_Pick Hit Wood 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Hit_Wood/compressed/TOOLHand_Pick Hit Wood 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Whoosh/compressed/TOOLHand_Pick Whoosh 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Whoosh/compressed/TOOLHand_Pick Whoosh 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Whoosh/compressed/TOOLHand_Pick Whoosh 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Whoosh_Hit_Stone/compressed/TOOLHand_Pick Whoosh Hit Stone 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Whoosh_Hit_Stone/compressed/TOOLHand_Pick Whoosh Hit Stone 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Whoosh_Hit_Stone/compressed/TOOLHand_Pick Whoosh Hit Stone 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Whoosh_Hit_Wood/compressed/TOOLHand_Pick Whoosh Hit Wood 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Whoosh_Hit_Wood/compressed/TOOLHand_Pick Whoosh Hit Wood 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Pick/Pick_Whoosh_Hit_Wood/compressed/TOOLHand_Pick Whoosh Hit Wood 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Item_With Hammer_And_Saw_Sequence/compressed/TOOLHand_Repair Item With Hammer And Saw Sequence_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Item_With_Hammer_Sequence/compressed/TOOLHand_Repair Item With Hammer Sequence 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Item_With_Hammer_Sequence/compressed/TOOLHand_Repair Item With Hammer Sequence 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Item_With_Hammer_Sequence/compressed/TOOLHand_Repair Item With Hammer Sequence 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Item_With_Saw/compressed/TOOLHand_Repair Item With Saw 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Neutral_Item/compressed/TOOLHand_Repair Neutral Item 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Neutral_Item/compressed/TOOLHand_Repair Neutral Item 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Neutral_Item/compressed/TOOLHand_Repair Neutral Item 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Neutral_Item/compressed/TOOLHand_Repair Neutral Item 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Object_With_Hammer_Single_Hit/compressed/TOOLHand_Repair Object With Hammer Single Hit 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Object_With_Hammer_Single_Hit/compressed/TOOLHand_Repair Object With Hammer Single Hit 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Object_With_Hammer_Single_Hit/compressed/TOOLHand_Repair Object With Hammer Single Hit 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Object_With_Hammer_Single_Hit/compressed/TOOLHand_Repair Object With Hammer Single Hit 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Object_With_Hammer_Single_Hit/compressed/TOOLHand_Repair Object With Hammer Single Hit 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Object_With_Hammer_Single_Hit/compressed/TOOLHand_Repair Object With Hammer Single Hit 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Object_With_Hammer_Single_Hit/compressed/TOOLHand_Repair Object With Hammer Single Hit 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Object_With_Hammer_Single_Hit/compressed/TOOLHand_Repair Object With Hammer Single Hit 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Repair Item/Repair_Object_With_Hammer_Single_Hit/compressed/TOOLHand_Repair Object With Hammer Single Hit 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Torch/compressed/FIRETrch_Torch Fire Loop 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Torch/compressed/FIRETrch_Turn Off Torch 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Items/Torch/compressed/FIRETrch_Turn On Torch_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Dry_Wood_Stick/compressed/WOODMisc_Pick Up Dry Wood Stick 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Dry_Wood_Stick/compressed/WOODMisc_Pick Up Dry Wood Stick 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Dry_Wood_Stick/compressed/WOODMisc_Pick Up Dry Wood Stick 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Dry_Wood_Stick/compressed/WOODMisc_Pick Up Dry Wood Stick 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Dry_Wood_Stick/compressed/WOODMisc_Pick Up Dry Wood Stick 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Dry_Wood_Stick/compressed/WOODMisc_Pick Up Dry Wood Stick 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Dry_Wood_Stick/compressed/WOODMisc_Pick Up Dry Wood Stick 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Meat/compressed/GORESrce_Pick Up Meat 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Meat/compressed/GORESrce_Pick Up Meat 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Meat/compressed/GORESrce_Pick Up Meat 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Meat/compressed/GORESrce_Pick Up Meat 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 11_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 12_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 13_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 14_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 15_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 16_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 17_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Metal_Pieces/compressed/METLHndl_Pick Up Metal Pieces 18_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plant/compressed/VEGEMisc_Pick Up Plant 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plant/compressed/VEGEMisc_Pick Up Plant 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plant/compressed/VEGEMisc_Pick Up Plant 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plastic/compressed/PLASHndl_Pick Up Plastic 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plastic/compressed/PLASHndl_Pick Up Plastic 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plastic/compressed/PLASHndl_Pick Up Plastic 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plastic/compressed/PLASHndl_Pick Up Plastic 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plastic/compressed/PLASHndl_Pick Up Plastic 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plastic/compressed/PLASHndl_Pick Up Plastic 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plastic/compressed/PLASHndl_Pick Up Plastic 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plastic/compressed/PLASHndl_Pick Up Plastic 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Plastic/compressed/PLASHndl_Pick Up Plastic 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Rock/compressed/ROCKHndl_Pick Up Rock 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Rock/compressed/ROCKHndl_Pick Up Rock 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Rock/compressed/ROCKHndl_Pick Up Rock 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Rock/compressed/ROCKHndl_Pick Up Rock 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Rock/compressed/ROCKHndl_Pick Up Rock 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Rock/compressed/ROCKHndl_Pick Up Rock 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Rock/compressed/ROCKHndl_Pick Up Rock 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Rock/compressed/ROCKHndl_Pick Up Rock 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Water/compressed/ROCKHndl_Pick Up Water 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Water/compressed/ROCKHndl_Pick Up Water 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Water/compressed/ROCKHndl_Pick Up Water 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Water/compressed/ROCKHndl_Pick Up Water 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Water/compressed/ROCKHndl_Pick Up Water 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Water/compressed/ROCKHndl_Pick Up Water 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 07_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 08_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 09_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick Up Materials/Pick_Up_Wood_Log/compressed/ROCKHndl_Pick Up Wood Log 10_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Can/compressed/METLMisc_Pick Up Can 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Can/compressed/METLMisc_Pick Up Can 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Can/compressed/METLMisc_Pick Up Can 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Can/compressed/METLMisc_Pick Up Can 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Can/compressed/METLMisc_Pick Up Can 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Can/compressed/METLMisc_Pick Up Can 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Cloth/compressed/CLOTHHndl_Pick Up Cloth 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Cloth/compressed/CLOTHHndl_Pick Up Cloth 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Cloth/compressed/CLOTHHndl_Pick Up Cloth 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Cloth/compressed/CLOTHHndl_Pick Up Cloth 04_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Cloth/compressed/CLOTHHndl_Pick Up Cloth 05_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Cloth/compressed/CLOTHHndl_Pick Up Cloth 06_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_MatchBox/compressed/OBJCont_Pick Up Matchbox 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_MatchBox/compressed/OBJCont_Pick Up Matchbox 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_MatchBox/compressed/OBJCont_Pick Up Matchbox 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Paper/compressed/PAPRHndl_Pick Up Paper 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Paper/compressed/PAPRHndl_Pick Up Paper 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Paper/compressed/PAPRHndl_Pick Up Paper 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Pill/compressed/OBJCont_Pick Up Pill 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Pill/compressed/OBJCont_Pick Up Pill 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Snack/compressed/PLASHndl_Pick Up Snack 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Snack/compressed/PLASHndl_Pick Up Snack 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Pick_Up_Items/Pick_Up_Snack/compressed/PLASHndl_Pick Up Snack 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Bow/Bow_Attack/compressed/WEAPBow_Bow Attack 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Bow/Bow_Attack/compressed/WEAPBow_Bow Attack 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Bow/Bow_Attack/compressed/WEAPBow_Bow Attack 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Bow/Bow_Handling/compressed/WEAPBow_Bow Handling 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Bow/Bow_Handling/compressed/WEAPBow_Bow Handling 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Bow/Bow_Handling/compressed/WEAPBow_Bow Handling 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Bow/Impact_Arrow/compressed/WEAPArro_Impact Arrow 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Bow/Impact_Arrow/compressed/WEAPArro_Impact Arrow 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Bow/Impact_Arrow/compressed/WEAPArro_Impact Arrow 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Metal_Spear/Attack_Metal_Spear/compressed/WEAPPole_Attack Metal Spear 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Metal_Spear/Attack_Metal_Spear/compressed/WEAPPole_Attack Metal Spear 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Metal_Spear/Attack_Metal_Spear/compressed/WEAPPole_Attack Metal Spear 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Metal_Spear/Full_Attack_Sequence_Metal_Spear/compressed/WEAPPole_Full Attack Sequence Metal Spear 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Metal_Spear/Full_Attack_Sequence_Metal_Spear/compressed/WEAPPole_Full Attack Sequence Metal Spear 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Metal_Spear/Full_Attack_Sequence_Metal_Spear/compressed/WEAPPole_Full Attack Sequence Metal Spear 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Metal_Spear/Whoosh_Metal_Spear/compressed/WEAPPole_Whoosh Metal Spear 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Metal_Spear/Whoosh_Metal_Spear/compressed/WEAPPole_Whoosh Metal Spear 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Metal_Spear/Whoosh_Metal_Spear/compressed/WEAPPole_Whoosh Metal Spear 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Wood_Spear/Attack_Wood_Spear/compressed/WEAPPole_Attack Wood Spear 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Wood_Spear/Attack_Wood_Spear/compressed/WEAPPole_Attack Wood Spear 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Wood_Spear/Attack_Wood_Spear/compressed/WEAPPole_Attack Wood Spear 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Wood_Spear/Full_Attack_Sequence_Wood_Spear/compressed/WEAPPole_Full Attack Sequence Wood Spear 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Wood_Spear/Full_Attack_Sequence_Wood_Spear/compressed/WEAPPole_Full Attack Sequence Wood Spear 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Wood_Spear/Full_Attack_Sequence_Wood_Spear/compressed/WEAPPole_Full Attack Sequence Wood Spear 03_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Wood_Spear/Whoosh_Wood_Spear/compressed/WEAPPole_Whoosh Wood Spear 01_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Wood_Spear/Whoosh_Wood_Spear/compressed/WEAPPole_Whoosh Wood Spear 02_KRST.ogg`
+- `sfx/ambient/Khron Studio - Sound Of Survival Vol 1 ASSETS/Weapons/Spear/Wood_Spear/Whoosh_Wood_Spear/compressed/WEAPPole_Whoosh Wood Spear 03_KRST.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/Looped/compressed/FX Counter Cards Loop 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/Looped/compressed/FX Counter Cards Loop 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/Looped/compressed/FX Counter Crystals Loop 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/Looped/compressed/FX Counter Crystals Loop 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/Looped/compressed/FX Counter Crystals Loop 003.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/Looped/compressed/FX Counter Money Loop 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/Looped/compressed/FX Counter Money Loop 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/Looped/compressed/FX Counter Money Loop 003.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Boost 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Boost 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Boost 003.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Boost 004.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Deck Reassemble 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Deck Reassemble 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Deck Reassemble 003.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Deck Reassemble 004.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Discard 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Discard 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Discard 003.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Discard 004.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Discard For Gold 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Discard For Gold 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Discard For Gold 003.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Discard For Gold 004.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Dispel 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Dispel 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Dispel 003.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Dispel 004.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Flying Cards 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Flying Cards 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Flying Cards 003.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Flying Cards 004.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Magic Deck 001.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Magic Deck 002.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Magic Deck 003.ogg`
+- `sfx/cards/fx/Decks and Cards Sound FX Pack/compressed/FX Magic Deck 004.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Box Handling 001.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Box Handling 002.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Box Handling 003.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Box Handling 004.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Box Handling 005.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Placing 001.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Placing 002.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Placing 003.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Placing 004.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Placing 005.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Placing 006.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Placing 007.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Placing 008.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Take 001.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Take 002.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Take 003.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Take 004.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Take 005.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Take 006.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Take 007.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Card Take 008.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Scrolling 001.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Scrolling 002.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Scrolling 003.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Scrolling 004.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Fast 001.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Fast 002.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Fast 003.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Fast 004.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Oneshot 001.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Oneshot 002.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Oneshot 003.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Oneshot 004.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Oneshot 005.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Slow 001.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Slow 002.ogg`
+- `sfx/cards/handling/Decks and Cards Sound FX Pack/compressed/Cards Shuffle Slow 003.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Backgammon/compressed/SFX_Backgammon_Piece_Move_1.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Backgammon/compressed/SFX_Backgammon_Piece_Move_2.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Backgammon/compressed/SFX_Backgammon_Piece_Move_3.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Backgammon/compressed/SFX_Backgammon_Piece_Move_4.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Backgammon/compressed/SFX_Backgammon_Piece_Move_5.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Deal_1.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Deal_2.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Deal_3.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Deal_4.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Deal_5.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Draw_1.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Draw_2.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Draw_3.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Draw_4.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Draw_5.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Play_1.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Play_2.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Play_3.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Play_4.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Card/compressed/SFX_Card_Play_5.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Checkers/compressed/SFX_Checkers_Move_1.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Checkers/compressed/SFX_Checkers_Move_2.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Checkers/compressed/SFX_Checkers_Move_3.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Checkers/compressed/SFX_Checkers_Move_4.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Checkers/compressed/SFX_Checkers_Move_5.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Chess/compressed/SFX_Chess_Piece_Move_1.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Chess/compressed/SFX_Chess_Piece_Move_2.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Chess/compressed/SFX_Chess_Piece_Move_3.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Chess/compressed/SFX_Chess_Piece_Move_4.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Chess/compressed/SFX_Chess_Piece_Move_5.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Dice/compressed/SFX_Dice_Roll_1.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Dice/compressed/SFX_Dice_Roll_2.ogg`
+- `sfx/cards/handling/Mini Games Sound Effects and Music Pack/Dice/compressed/SFX_Dice_Roll_3.ogg`
+- `sfx/cards/loops/Decks and Cards Sound FX Pack/compressed/Abstract Drone Bellish Loop.ogg`
+- `sfx/cards/loops/Decks and Cards Sound FX Pack/compressed/Abstract Drone Charm Loop.ogg`
+- `sfx/cards/loops/Decks and Cards Sound FX Pack/compressed/Abstract Drone Dark Loop.ogg`
+- `sfx/cards/loops/Decks and Cards Sound FX Pack/compressed/Abstract Drone Hollow Loop.ogg`
+- `sfx/cards/loops/Decks and Cards Sound FX Pack/compressed/Abstract Drone Mystic Loop.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Bet Placed 001.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Bet Placed 002.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Bet Placed 003.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Bet Placed 004.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Bet Placed 005.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Big Coin Drop 001.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Big Coin Drop 002.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Big Coin Drop 003.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Big Coin Drop 004.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Big Coin Drop 005.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Fair Reward 001.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Fair Reward 002.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Fair Reward 003.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Fair Reward 004.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Gold Pouch Handle 001.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Gold Pouch Handle 002.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Gold Pouch Handle 003.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Gold Pouch Handle 004.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Coin Drop 001.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Coin Drop 002.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Coin Drop 003.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Coin Drop 004.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Coin Drop Long.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Reward 001.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Reward 002.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Reward 003.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Reward 004.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Small Reward 005.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Treasure Box 001.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Treasure Box 002.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Treasure Box 003.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Treasure Box 004.ogg`
+- `sfx/coins/Decks and Cards Sound FX Pack/compressed/Treasure Box 005.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Body hitting the ground with blood/compressed/FGHTBf_Body Hitting The Ground With Blood 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Body hitting the ground with blood/compressed/FGHTBf_Body Hitting The Ground With Blood 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Body hitting the ground with blood/compressed/FGHTBf_Body Hitting The Ground With Blood 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Body hitting the ground with blood/compressed/FGHTBf_Body Hitting The Ground With Blood 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Body hitting the ground with blood/compressed/FGHTBf_Body Hitting The Ground With Blood 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 19_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 20_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 21_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 22_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 23_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 24_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 25_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 26_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 27_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 28_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 29_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 30_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 31_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 32_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 33_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 34_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Break Bone/compressed/GOREBone_Break Bone 35_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Distortion Break Bone/compressed/GOREBone_Distortion Break Bone 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Distortion Break Bone/compressed/GOREBone_Distortion Break Bone 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Distortion Break Bone/compressed/GOREBone_Distortion Break Bone 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Distortion Break Bone/compressed/GOREBone_Distortion Break Bone 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Distortion Break Bone/compressed/GOREBone_Distortion Break Bone 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Distortion Break Bone/compressed/GOREBone_Distortion Break Bone 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Distortion Break Bone/compressed/GOREBone_Distortion Break Bone 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Distortion Break Bone/compressed/GOREBone_Distortion Break Bone 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Distortion Break Bone/compressed/GOREBone_Distortion Break Bone 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 19_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 20_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 21_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 22_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 23_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 24_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 25_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 26_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 27_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 28_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 29_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 30_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 31_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 32_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 33_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 34_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 35_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 36_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 37_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 38_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 39_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 40_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 41_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 42_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 43_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 44_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 45_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Medium Blood And Bones/compressed/GOREOoze_Medium Blood And Bones 46_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Punch whooosh/compressed/WHSH_Punch Whooosh 19_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 19_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 20_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 21_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 22_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 23_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 24_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 25_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 26_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 27_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 28_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 29_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 30_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 31_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 32_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 33_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 34_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Blood And Bones/compressed/GOREOoze_Soft Blood And Bones 35_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 19_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 20_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 21_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 22_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 23_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 24_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 25_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 26_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 27_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 28_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 29_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 30_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 31_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 32_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 33_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 34_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 35_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 36_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 37_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 38_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 39_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 40_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 41_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 42_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 43_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 44_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 45_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 46_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Soft Break Bone/compressed/GOREBone_Soft Break Bone 47_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 19_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 20_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 21_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 22_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 23_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special Break Bone/compressed/GOREBone_Special Break Bone 24_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit with bones and blood/compressed/FGHTImpt_Special Hit With Bones And Blood 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Special hit/compressed/FGHTImpt_Special Hit 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit With Blood/compressed/FGHTImpt_Versatile Punch Hit With Blood 19_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 19_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 20_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 21_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 22_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 23_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 24_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 25_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 26_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 27_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 28_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 29_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 30_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 31_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 32_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 33_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Punch Hit/compressed/FGHTImpt_Versatile Punch Hit 34_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Versatile Soft Punch Hit/compressed/FGHTImpt_Versatile Soft Punch Hit 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase Round one/compressed/VOXMisc_Voice Type B Phrase Round One 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase Round one/compressed/VOXMisc_Voice Type B Phrase Round One 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase Round one/compressed/VOXMisc_Voice Type B Phrase Round One 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase Round one/compressed/VOXMisc_Voice Type B Phrase Round One 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase Round two/compressed/VOXMisc_Voice Type B Phrase Round Two 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase Round two/compressed/VOXMisc_Voice Type B Phrase Round Two 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase Round two/compressed/VOXMisc_Voice Type B Phrase Round Two 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase Round two/compressed/VOXMisc_Voice Type B Phrase Round Two 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase Round two/compressed/VOXMisc_Voice Type B Phrase Round Two 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase fight/compressed/VOXMisc_Voice Type B Phrase Fight 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase final round/compressed/VOXMisc_Voice Type B Phrase Final Round 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase final round/compressed/VOXMisc_Voice Type B Phrase Final Round 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase final round/compressed/VOXMisc_Voice Type B Phrase Final Round 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase final round/compressed/VOXMisc_Voice Type B Phrase Final Round 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type B phrase final round/compressed/VOXMisc_Voice Type B Phrase Final Round 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase fight/compressed/VOXMisc_Voice Type C Phrase Fight 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase final round/compressed/VOXMisc_Voice Type C Phrase Final Round 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase final round/compressed/VOXMisc_Voice Type C Phrase Final Round 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase final round/compressed/VOXMisc_Voice Type C Phrase Final Round 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase final round/compressed/VOXMisc_Voice Type C Phrase Final Round 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase final round/compressed/VOXMisc_Voice Type C Phrase Final Round 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase final round/compressed/VOXMisc_Voice Type C Phrase Final Round 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase final round/compressed/VOXMisc_Voice Type C Phrase Final Round 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase final round/compressed/VOXMisc_Voice Type C Phrase Final Round 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round one/compressed/VOXMisc_Voice Type C Phrase Round One 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice Type C phrase round two/compressed/VOXMisc_Voice Type C Phrase Round Two 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 15_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 16_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 17_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 18_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 19_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 20_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 21_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 22_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 23_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence fight/compressed/VOXMisc_Voice Type A Sentence Fight 24_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence final round/compressed/VOXMisc_Voice Type A Sentence Final Round 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence final round/compressed/VOXMisc_Voice Type A Sentence Final Round 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence final round/compressed/VOXMisc_Voice Type A Sentence Final Round 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence final round/compressed/VOXMisc_Voice Type A Sentence Final Round 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence final round/compressed/VOXMisc_Voice Type A Sentence Final Round 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence final round/compressed/VOXMisc_Voice Type A Sentence Final Round 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence final round/compressed/VOXMisc_Voice Type A Sentence Final Round 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round one/compressed/VOXMisc_Voice Type A Sentence Round One 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round one/compressed/VOXMisc_Voice Type A Sentence Round One 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round one/compressed/VOXMisc_Voice Type A Sentence Round One 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round one/compressed/VOXMisc_Voice Type A Sentence Round One 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round one/compressed/VOXMisc_Voice Type A Sentence Round One 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round one/compressed/VOXMisc_Voice Type A Sentence Round One 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round one/compressed/VOXMisc_Voice Type A Sentence Round One 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round one/compressed/VOXMisc_Voice Type A Sentence Round One 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round one/compressed/VOXMisc_Voice Type A Sentence Round One 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 01_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 02_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 03_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 04_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 05_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 06_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 07_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 08_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 09_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 10_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 11_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 12_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 13_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 14_KRST.ogg`
+- `sfx/combat/general/Fight Fury Vol 2/Voice type A sentence round two/compressed/VOXMisc_Voice Type A Sentence Round Two 15_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Equip Heavy Axe/compressed/WEAPAxe_Equip Heavy Axe 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Equip Heavy Axe/compressed/WEAPAxe_Equip Heavy Axe 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Equip Heavy Axe/compressed/WEAPAxe_Equip Heavy Axe 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heave Axe Normal Whoosh/compressed/WEAPAxe_Heave Axe Normal Whoosh 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heave Axe Normal Whoosh/compressed/WEAPAxe_Heave Axe Normal Whoosh 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heave Axe Normal Whoosh/compressed/WEAPAxe_Heave Axe Normal Whoosh 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Strike Only/compressed/WEAPAxe_Heavy Axe Hard Strike Only 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Strike Only/compressed/WEAPAxe_Heavy Axe Hard Strike Only 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Strike Only/compressed/WEAPAxe_Heavy Axe Hard Strike Only 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Strike Only/compressed/WEAPAxe_Heavy Axe Hard Strike Only 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Strike/compressed/WEAPAxe_Heavy Axe Hard Strike 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Strike/compressed/WEAPAxe_Heavy Axe Hard Strike 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Strike/compressed/WEAPAxe_Heavy Axe Hard Strike 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Strike/compressed/WEAPAxe_Heavy Axe Hard Strike 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Whoosh/compressed/WEAPAxe_Heavy Axe Hard Whoosh 01_KRST-005.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Whoosh/compressed/WEAPAxe_Heavy Axe Hard Whoosh 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Whoosh/compressed/WEAPAxe_Heavy Axe Hard Whoosh 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Whoosh/compressed/WEAPAxe_Heavy Axe Hard Whoosh 03_KRST-.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Hard Whoosh/compressed/WEAPAxe_Heavy Axe Hard Whoosh 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack Only Metal/compressed/WEAPAxe_Heavy Axe Lethal Attack Only Metal 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack Only Metal/compressed/WEAPAxe_Heavy Axe Lethal Attack Only Metal 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack Only Metal/compressed/WEAPAxe_Heavy Axe Lethal Attack Only Metal 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack Only/compressed/WEAPAxe_Heavy Axe Lethal Attack Only 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack Only/compressed/WEAPAxe_Heavy Axe Lethal Attack Only 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack Only/compressed/WEAPAxe_Heavy Axe Lethal Attack Only 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack Only/compressed/WEAPAxe_Heavy Axe Lethal Attack Only 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack Only/compressed/WEAPAxe_Heavy Axe Lethal Attack Only 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack/compressed/WEAPAxe_Heavy Axe Lethal Attack 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack/compressed/WEAPAxe_Heavy Axe Lethal Attack 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack/compressed/WEAPAxe_Heavy Axe Lethal Attack 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack/compressed/WEAPAxe_Heavy Axe Lethal Attack 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack/compressed/WEAPAxe_Heavy Axe Lethal Attack 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack/compressed/WEAPAxe_Heavy Axe Lethal Attack 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack/compressed/WEAPAxe_Heavy Axe Lethal Attack 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Lethal Attack/compressed/WEAPAxe_Heavy Axe Lethal Attack 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Short Whoosh/compressed/WEAPAxe_Heavy Axe Short Whoosh 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Short Whoosh/compressed/WEAPAxe_Heavy Axe Short Whoosh 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Short Whoosh/compressed/WEAPAxe_Heavy Axe Short Whoosh 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Short Whoosh/compressed/WEAPAxe_Heavy Axe Short Whoosh 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Short Whoosh/compressed/WEAPAxe_Heavy Axe Short Whoosh 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Short Whoosh/compressed/WEAPAxe_Heavy Axe Short Whoosh 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Short Whoosh/compressed/WEAPAxe_Heavy Axe Short Whoosh 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Short Whoosh/compressed/WEAPAxe_Heavy Axe Short Whoosh 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Short Whoosh/compressed/WEAPAxe_Heavy Axe Short Whoosh 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Strike Only/compressed/WEAPAxe_Heavy Axe Strike Only 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Strike Only/compressed/WEAPAxe_Heavy Axe Strike Only 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Strike Only/compressed/WEAPAxe_Heavy Axe Strike Only 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Strike Only/compressed/WEAPAxe_Heavy Axe Strike Only 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Strike/compressed/WEAPAxe_Heavy Axe Strike 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Strike/compressed/WEAPAxe_Heavy Axe Strike 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Strike/compressed/WEAPAxe_Heavy Axe Strike 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Heavy Axe Strike/compressed/WEAPAxe_Heavy Axe Strike 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 11_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 12_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 13_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 14_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 15_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 16_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 17_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 18_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 19_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 20_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 21_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 22_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 23_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 24_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 25_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Lethal Blood/compressed/GOREBlood_Lethal Blood 26_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/More Blood Than Normal/compressed/GOREBlood_More Blood Than Normal 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/More Blood Than Normal/compressed/GOREBlood_More Blood Than Normal 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/More Blood Than Normal/compressed/GOREBlood_More Blood Than Normal 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/More Blood Than Normal/compressed/GOREBlood_More Blood Than Normal 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Normal Blood/compressed/GOREBlood_Normal Blood 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Unequip Heavy Axe/compressed/WEAPAxe_Unequip Heavy Axe 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Unequip Heavy Axe/compressed/WEAPAxe_Unequip Heavy Axe 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Unequip Heavy Axe/compressed/WEAPAxe_Unequip Heavy Axe 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Heavy Axe/Unequip Heavy Axe/compressed/WEAPAxe_Unequip Heavy Axe 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Double Katana Whoosh/compressed/DSGNWhsh_Double Katana Whoosh 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Double Katana Whoosh/compressed/DSGNWhsh_Double Katana Whoosh 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Double Katana Whoosh/compressed/DSGNWhsh_Double Katana Whoosh 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Double Katana Whoosh/compressed/DSGNWhsh_Double Katana Whoosh 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Double Katana Whoosh/compressed/DSGNWhsh_Double Katana Whoosh 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sheath Clink Type A/compressed/WEAPSwrd_Katana Sheath Clink Type A 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sheath Clink Type A/compressed/WEAPSwrd_Katana Sheath Clink Type A 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sheath Clink Type B/compressed/WEAPSwrd_Katana Sheath Clink Type B 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sheath Clink Type B/compressed/WEAPSwrd_Katana Sheath Clink Type B 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sheath Clink Type C/compressed/WEAPSwrd_Katana Sheath Clink Type C 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sheath Clink Type C/compressed/WEAPSwrd_Katana Sheath Clink Type C 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sheath Clink Type C/compressed/WEAPSwrd_Katana Sheath Clink Type C 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sliding Through Saya/compressed/WEAPSwrd_Katana Sliding Through Saya 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sliding Through Saya/compressed/WEAPSwrd_Katana Sliding Through Saya 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sliding Through Saya/compressed/WEAPSwrd_Katana Sliding Through Saya 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sliding Through Saya/compressed/WEAPSwrd_Katana Sliding Through Saya 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sliding Through Saya/compressed/WEAPSwrd_Katana Sliding Through Saya 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sliding Through Saya/compressed/WEAPSwrd_Katana Sliding Through Saya 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sliding Through Saya/compressed/WEAPSwrd_Katana Sliding Through Saya 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sliding Through Saya/compressed/WEAPSwrd_Katana Sliding Through Saya 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Sliding Through Saya/compressed/WEAPSwrd_Katana Sliding Through Saya 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 11_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 12_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 13_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana Whoosh Type A/compressed/DSGNWhsh_Katana Whoosh Type A 14_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 11_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 12_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 13_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 14_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 15_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer with metal/compressed/FGHTImpt_Katana Only Hit Layer With Metal 16_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer/compressed/FGHTImpt_Katana Only Hit Layer 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer/compressed/FGHTImpt_Katana Only Hit Layer 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer/compressed/FGHTImpt_Katana Only Hit Layer 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer/compressed/FGHTImpt_Katana Only Hit Layer 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer/compressed/FGHTImpt_Katana Only Hit Layer 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer/compressed/FGHTImpt_Katana Only Hit Layer 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only hit layer/compressed/FGHTImpt_Katana Only Hit Layer 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 11_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 12_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 13_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 14_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 15_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 16_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 17_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type A/compressed/WEAPSwrd_Katana Only Metal Layer Type A 18_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type B/compressed/WEAPSwrd_Katana Only Metal Layer Type B 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type B/compressed/WEAPSwrd_Katana Only Metal Layer Type B 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type B/compressed/WEAPSwrd_Katana Only Metal Layer Type B 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type C/compressed/WEAPSwrd_Katana Only Metal Layer Type C 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type C/compressed/WEAPSwrd_Katana Only Metal Layer Type C 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type C/compressed/WEAPSwrd_Katana Only Metal Layer Type C 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type C/compressed/WEAPSwrd_Katana Only Metal Layer Type C 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana only metal layer type C/compressed/WEAPSwrd_Katana Only Metal Layer Type C 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut and blood/compressed/WEAPSwrd_Katana Type A Cut And Blood 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type A cut without blood/compressed/WEAPSwrd_Katana Type A Cut Without Blood 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type B cut and blood/compressed/WEAPSwrd_Katana Type B Cut And Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type B cut and blood/compressed/WEAPSwrd_Katana Type B Cut And Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type B cut and blood/compressed/WEAPSwrd_Katana Type B Cut And Blood 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type B cut and blood/compressed/WEAPSwrd_Katana Type B Cut And Blood 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type B cut and blood/compressed/WEAPSwrd_Katana Type B Cut And Blood 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type B cut without blood/compressed/WEAPSwrd_Katana Type B Cut Without Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type B cut without blood/compressed/WEAPSwrd_Katana Type B Cut Without Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type B cut without blood/compressed/WEAPSwrd_Katana Type B Cut Without Blood 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type B cut without blood/compressed/WEAPSwrd_Katana Type B Cut Without Blood 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type C cut and blood/compressed/WEAPSwrd_Katana Type C Cut And Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type C cut and blood/compressed/WEAPSwrd_Katana Type C Cut And Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type C cut and blood/compressed/WEAPSwrd_Katana Type C Cut And Blood 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type C cut without blood/compressed/WEAPSwrd_Katana Type C Cut Without Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type C cut without blood/compressed/WEAPSwrd_Katana Type C Cut Without Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut and blood/compressed/WEAPSwrd_Katana Type D Cut And Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut and blood/compressed/WEAPSwrd_Katana Type D Cut And Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut and blood/compressed/WEAPSwrd_Katana Type D Cut And Blood 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut and blood/compressed/WEAPSwrd_Katana Type D Cut And Blood 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut and blood/compressed/WEAPSwrd_Katana Type D Cut And Blood 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut and blood/compressed/WEAPSwrd_Katana Type D Cut And Blood 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut without blood/compressed/WEAPSwrd_Katana Type D Cut Without Blood 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut without blood/compressed/WEAPSwrd_Katana Type D Cut Without Blood 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut without blood/compressed/WEAPSwrd_Katana Type D Cut Without Blood 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut without blood/compressed/WEAPSwrd_Katana Type D Cut Without Blood 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut without blood/compressed/WEAPSwrd_Katana Type D Cut Without Blood 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Katana type D cut without blood/compressed/WEAPSwrd_Katana Type D Cut Without Blood 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type A katana/compressed/SWSH_Only Whoosh Type A Katana 11_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 11_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 12_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Only Whoosh Type B katana/compressed/SWSH_Only Whoosh Type B Katana 13_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Sheathing Katana/compressed/WEAPSwrd_Sheathing Katana 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Sheathing Katana/compressed/WEAPSwrd_Sheathing Katana 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Sheathing Katana/compressed/WEAPSwrd_Sheathing Katana 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 11_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 12_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 13_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 14_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 15_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 16_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 17_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 18_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 19_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 20_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 21_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type A blood used in katana/compressed/GOREBlood_Type A Blood Used In Katana 22_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type B blood used in katana/compressed/GOREBlood_Type B Blood Used In Katana 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type B blood used in katana/compressed/GOREBlood_Type B Blood Used In Katana 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type B blood used in katana/compressed/GOREBlood_Type B Blood Used In Katana 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type B blood used in katana/compressed/GOREBlood_Type B Blood Used In Katana 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type B blood used in katana/compressed/GOREBlood_Type B Blood Used In Katana 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type B blood used in katana/compressed/GOREBlood_Type B Blood Used In Katana 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type B blood used in katana/compressed/GOREBlood_Type B Blood Used In Katana 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type B blood used in katana/compressed/GOREBlood_Type B Blood Used In Katana 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type C blood used in katana/compressed/GOREBlood_Type C Blood Used In Katana 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type C blood used in katana/compressed/GOREBlood_Type C Blood Used In Katana 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type C blood used in katana/compressed/GOREBlood_Type C Blood Used In Katana 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type C blood used in katana/compressed/GOREBlood_Type C Blood Used In Katana 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type C blood used in katana/compressed/GOREBlood_Type C Blood Used In Katana 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Katana/Type C blood used in katana/compressed/GOREBlood_Type C Blood Used In Katana 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Open & Close Metal Claws/compressed/WEAPMisc_Open Close Metal Claws 11_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 08_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 09_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 10_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 11_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 12_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 13_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 14_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 15_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 16_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 17_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 18_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Stab Metal Claws/compressed/WEAPMisc_Stab Metal Claws 19_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Whoosh Metal Claws/compressed/WEAPMisc_Whoosh Metal Claws 01_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Whoosh Metal Claws/compressed/WEAPMisc_Whoosh Metal Claws 02_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Whoosh Metal Claws/compressed/WEAPMisc_Whoosh Metal Claws 03_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Whoosh Metal Claws/compressed/WEAPMisc_Whoosh Metal Claws 04_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Whoosh Metal Claws/compressed/WEAPMisc_Whoosh Metal Claws 05_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Whoosh Metal Claws/compressed/WEAPMisc_Whoosh Metal Claws 06_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Metal Claws/Whoosh Metal Claws/compressed/WEAPMisc_Whoosh Metal Claws 07_KRST.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 breathing/compressed/VOXFem_Female 01 Breathing 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 breathing/compressed/VOXFem_Female 01 Breathing 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 breathing/compressed/VOXFem_Female 01 Breathing 03_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 breathing/compressed/VOXFem_Female 01 Breathing 04_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 breathing/compressed/VOXFem_Female 01 Breathing 05_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 breathing/compressed/VOXFem_Female 01 Breathing 06_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 breathing/compressed/VOXFem_Female 01 Breathing 07_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 breathing/compressed/VOXFem_Female 01 Breathing 08_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 breathing/compressed/VOXFem_Female 01 Breathing 09_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 hard pain/compressed/VOXFem_Female 01 Hard Pain 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 hard pain/compressed/VOXFem_Female 01 Hard Pain 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 hard pain/compressed/VOXFem_Female 01 Hard Pain 03_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 hard pain/compressed/VOXFem_Female 01 Hard Pain 04_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 03_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 04_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 05_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 06_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 07_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 08_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 09_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 10_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 11_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 medium pain/compressed/VOXFem_Female 01 Medium Pain 12_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 soft pain type A/compressed/VOXFem_Female 01 Soft Pain Type A 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 soft pain type A/compressed/VOXFem_Female 01 Soft Pain Type A 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 soft pain type A/compressed/VOXFem_Female 01 Soft Pain Type A 03_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 soft pain type B/compressed/VOXFem_Female 01 Soft Pain Type B 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 soft pain type B/compressed/VOXFem_Female 01 Soft Pain Type B 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 soft pain type B/compressed/VOXFem_Female 01 Soft Pain Type B 03_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 soft pain type B/compressed/VOXFem_Female 01 Soft Pain Type B 04_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Female 01 soft pain type B/compressed/VOXFem_Female 01 Soft Pain Type B 05_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Hard Attack Female/compressed/VOXFem_Female Hard Attack 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Hard Attack Female/compressed/VOXFem_Female Hard Attack 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Medium Attack Female/compressed/VOXFem_Female Medium Attack 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Medium Attack Female/compressed/VOXFem_Female Medium Attack 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Medium Attack Female/compressed/VOXFem_Female Medium Attack 03_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Medium Attack Female/compressed/VOXFem_Female Medium Attack 04_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Medium Attack Female/compressed/VOXFem_Female Medium Attack 05_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Medium Attack Female/compressed/VOXFem_Female Medium Attack 06_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Medium Attack Female/compressed/VOXFem_Female Medium Attack 07_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Medium Attack Female/compressed/VOXFem_Female Medium Attack 08_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Soft Attack Female/compressed/VOXFem_Female Soft Attack 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Female/Soft Attack Female/compressed/VOXFem_Female Soft Attack 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 hard attack/compressed/VOXMale_Male 01 Hard Attack 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 hard attack/compressed/VOXMale_Male 01 Hard Attack 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium attack/compressed/VOXMale_Male 01 Medium Attack 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium attack/compressed/VOXMale_Male 01 Medium Attack 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium attack/compressed/VOXMale_Male 01 Medium Attack 03_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium attack/compressed/VOXMale_Male 01 Medium Attack 04_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium attack/compressed/VOXMale_Male 01 Medium Attack 05_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium hard pain/compressed/VOXMale_Male 01 Medium Hard Pain 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium hard pain/compressed/VOXMale_Male 01 Medium Hard Pain 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium hard pain/compressed/VOXMale_Male 01 Medium Hard Pain 03_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium hard pain/compressed/VOXMale_Male 01 Medium Hard Pain 04_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium hard pain/compressed/VOXMale_Male 01 Medium Hard Pain 05_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium hard pain/compressed/VOXMale_Male 01 Medium Hard Pain 06_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium hard pain/compressed/VOXMale_Male 01 Medium Hard Pain 07_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 medium hard pain/compressed/VOXMale_Male 01 Medium Hard Pain 08_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 soft pain/compressed/VOXMale_Male 01 Soft Pain 01_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 soft pain/compressed/VOXMale_Male 01 Soft Pain 02_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 soft pain/compressed/VOXMale_Male 01 Soft Pain 03_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 soft pain/compressed/VOXMale_Male 01 Soft Pain 04_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 soft pain/compressed/VOXMale_Male 01 Soft Pain 05_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 soft pain/compressed/VOXMale_Male 01 Soft Pain 06_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 soft pain/compressed/VOXMale_Male 01 Soft Pain 07_KRST_CO-100K.ogg`
+- `sfx/combat/general/Forged In Fury Vol 1/Voices/Male/Male 01 soft pain/compressed/VOXMale_Male 01 Soft Pain 08_KRST_CO-100K.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Blood/compressed/GOREBlood_Blood_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Blood/compressed/GOREBlood_Blood_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Blood/compressed/GOREBlood_Blood_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Blood/compressed/GOREBlood_Blood_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Blood/compressed/GOREBlood_Blood_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_06.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_07.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_08.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_10.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_11.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_12.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_13.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_14.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_9.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_With_Blood_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_With_Blood_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_With_Blood_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_With_Blood_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_With_Blood_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_With_Blood_06.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Body_Falls/compressed/FGHTBf_Body_Fall_With_Blood_07.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_06.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_07.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_08.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_09.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_10.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_11.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_12.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Break_Bone/compressed/GOREBone_Break_Bone_13.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_06.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_07.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_08.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_09.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_10.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_11.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_12.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_13.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_14.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_15.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_16.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_17.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_18.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_19.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_20.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_21.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_22.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Cloth_Whoosh/compressed/WHSH_Cloth_Whoosh_23.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_06.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_07.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_08.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_09.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_10.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_11.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_12.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_13.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_14.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_15.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_16.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_17.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_18.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_19.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Grab_Body_Cloth/compressed/FGHTGrab_Grab_Body_Clothes_20.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Stab/compressed/WEAPKnif_Knife_Stab_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Stab/compressed/WEAPKnif_Knife_Stab_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Stab/compressed/WEAPKnif_Knife_Stab_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Stab/compressed/WEAPKnif_Knife_Stab_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Stab/compressed/WEAPKnif_Knife_Stab_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Whoosh/compressed/WEAPKnif_Knife_Whoosh_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Whoosh/compressed/WEAPKnif_Knife_Whoosh_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Whoosh/compressed/WEAPKnif_Knife_Whoosh_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Whoosh/compressed/WEAPKnif_Knife_Whoosh_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Knife_Whoosh/compressed/WEAPKnif_Knife_Whoosh_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Hit_With_Whoosh/compressed/WEAPMisc_Metal_Tube_Hit_With_Whoosh_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Hit_With_Whoosh/compressed/WEAPMisc_Metal_Tube_Hit_With_Whoosh_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Hit_With_Whoosh/compressed/WEAPMisc_Metal_Tube_Hit_With_Whoosh_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Hit_With_Whoosh/compressed/WEAPMisc_Metal_Tube_Hit_With_Whoosh_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Hit_With_Whoosh/compressed/WEAPMisc_Metal_Tube_Hit_With_Whoosh_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Only_Hit/compressed/WEAPMisc_Metal_Tube_Only_Hit_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Only_Hit/compressed/WEAPMisc_Metal_Tube_Only_Hit_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Only_Hit/compressed/WEAPMisc_Metal_Tube_Only_Hit_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Only_Hit/compressed/WEAPMisc_Metal_Tube_Only_Hit_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Only_Hit/compressed/WEAPMisc_Metal_Tube_Only_Hit_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Whoosh/compressed/WEAPMisc_Metal_Tube_Whoosh_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Whoosh/compressed/WEAPMisc_Metal_Tube_Whoosh_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Whoosh/compressed/WEAPMisc_Metal_Tube_Whoosh_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Whoosh/compressed/WEAPMisc_Metal_Tube_Whoosh_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Metal_Tube_Whoosh/compressed/WEAPMisc_Metal_Tube_Whoosh_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_06.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_07.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_08.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_09.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_10.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_11.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_12.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_13.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_14.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Breaking_Bones/compressed/FGHTImpt_Punch_Breaking_Bones_15.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_06.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_07.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_08.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_09.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_10.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_11.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_12.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_13.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_14.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_15.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_16.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Protection/compressed/FGHTImpt_Punch_Protection_17.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_06.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_07.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_08.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_09.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_10.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_11.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_12.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_13.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_14.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_15.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_16.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_17.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_18.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_19.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_20.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Punch_Whoosh/compressed/FGHTImpt_Punch_Whoosh_21.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_05.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_06.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_07.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_08.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_09.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_10.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_11.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_12.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_13.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_14.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Strong_Generic_Punch/compressed/FGHTImpt_Strong_Generic_Punch_15.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Full_Attack/compressed/WEAPSwrd_Sword_Full_Attack_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Full_Attack/compressed/WEAPSwrd_Sword_Full_Attack_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Full_Attack/compressed/WEAPSwrd_Sword_Full_Attack_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Full_Attack_With_Blood/compressed/WEAPSwrd_Sword_Full_Attack_With_Blood_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Full_Attack_With_Blood/compressed/WEAPSwrd_Sword_Full_Attack_With_Blood_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Full_Attack_With_Blood/compressed/WEAPSwrd_Sword_Full_Attack_With_Blood_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Hit/compressed/WEAPSwrd_Sword_Hit_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Hit/compressed/WEAPSwrd_Sword_Hit_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Hit/compressed/WEAPSwrd_Sword_Hit_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Hit_With_Blood/compressed/WEAPSwrd_Sword_Hit_With_Blood_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Hit_With_Blood/compressed/WEAPSwrd_Sword_Hit_With_Blood_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Hit_With_Blood/compressed/WEAPSwrd_Sword_Hit_With_Blood_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Whoosh/compressed/WEAPSwrd_Sword_Whoosh_01.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Whoosh/compressed/WEAPSwrd_Sword_Whoosh_02.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Whoosh/compressed/WEAPSwrd_Sword_Whoosh_03.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Whoosh/compressed/WEAPSwrd_Sword_Whoosh_04.ogg`
+- `sfx/combat/general/Khron Studio - Fight Fury Vol 1 ASSETS/Sword_Whoosh/compressed/WEAPSwrd_Sword_Whoosh_05.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Body_Hit_Generic_Big_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Body_Hit_Generic_Big_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Body_Hit_Generic_Big_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Body_Hit_Generic_Medium_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Body_Hit_Generic_Medium_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Body_Hit_Generic_Medium_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Body_Hit_Generic_Small_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Body_Hit_Generic_Small_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Body_Hit_Generic_Small_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_4.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_5.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_v2_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_v2_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_v2_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_v2_4.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Fight_Hit_v2_5.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Weapon_Melee_Body_Hit_Bloody_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Weapon_Melee_Body_Hit_Bloody_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Body Hit/compressed/SFX_Weapon_Melee_Body_Hit_Bloody_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Bow/compressed/SFX_Weapon_Bow_Hit_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Bow/compressed/SFX_Weapon_Bow_Hit_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Bow/compressed/SFX_Weapon_Bow_Hit_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Bow/compressed/SFX_Weapon_Bow_Shoot_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Bow/compressed/SFX_Weapon_Bow_Shoot_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Bow/compressed/SFX_Weapon_Bow_Shoot_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Reload/compressed/SFX_Gun_Mechanic_Clip_In_A.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Reload/compressed/SFX_Gun_Mechanic_Clip_In_B.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Reload/compressed/SFX_Gun_Mechanic_Clip_In_C.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Reload/compressed/SFX_Gun_Mechanic_Clip_Out_A.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Reload/compressed/SFX_Gun_Mechanic_Clip_Out_B.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Reload/compressed/SFX_Gun_Mechanic_Clip_Out_C.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Reload/compressed/SFX_Gun_Mechanic_Set_A.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Reload/compressed/SFX_Gun_Mechanic_Set_B.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Reload/compressed/SFX_Gun_Mechanic_Set_C.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Generic_A_Shoot_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Generic_A_Shoot_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Generic_A_Shoot_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Generic_B_Shoot_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Generic_B_Shoot_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Generic_B_Shoot_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_MiniGun_Shoot_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_MiniGun_Shoot_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_MiniGun_Shoot_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Retro_Shoot_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Retro_Shoot_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Retro_Shoot_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Scifi_Charge_Generic_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Scifi_Charge_Generic_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Scifi_Charge_Generic_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Scifi_Shoot_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Scifi_Shoot_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Gun/Shoot/compressed/SFX_Gun_Scifi_Shoot_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Kick-Punch/compressed/SFX_Fight_Kick_Swoosh_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Kick-Punch/compressed/SFX_Fight_Kick_Swoosh_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Kick-Punch/compressed/SFX_Fight_Kick_Swoosh_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Kick-Punch/compressed/SFX_Fight_Punch_Swoosh_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Kick-Punch/compressed/SFX_Fight_Punch_Swoosh_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Kick-Punch/compressed/SFX_Fight_Punch_Swoosh_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Big_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Big_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Big_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Medium_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Medium_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Medium_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Small_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Small_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Small_3.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Sword_1.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Sword_2.ogg`
+- `sfx/combat/general/Mini Games Sound Effects and Music Pack/Weapon Swoosh/compressed/SFX_Weapon_Melee_Swoosh_Sword_3.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robot Cat.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robot Monster A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robot Monster B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robot Rodent Sounds.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robot Whale A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robot Whale B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single A1.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single A2.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single A3.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single A4.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single A5.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single B1.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single B2.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single B3.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single B4.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single B5.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single B6.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single B7.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Android-esque/compressed/Robotic Limb Single B8.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Buzz and Hum A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Buzz and Hum B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Buzz and Hum C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Buzz and Hum D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Buzzing Repeat.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Buzzing.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Compter Alerts and Hum.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Electronic Doppler A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Electronic Doppler B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Electronic Doppler C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Electronic Doppler D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Electronic Hum.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Neon A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Neon B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Neon C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Buzz and Hum/compressed/Neon D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Abrupt Halt.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Brap.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Engine.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Idle A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Idle B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Interior.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Pass L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Pass R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Pass.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Race Past.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Rev A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Rev B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Cyber Vehicles/compressed/Cyber Vehicle Sputter.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/CyberCity Soundscapes/compressed/CyberCity Lower Level Loop.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/CyberCity Soundscapes/compressed/CyberCity Lower Level.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/CyberCity Soundscapes/compressed/CyberCity Street Level Loop.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/CyberCity Soundscapes/compressed/CyberCity Street Level.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/CyberCity Soundscapes/compressed/CyberCity Upper Level Loop.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/CyberCity Soundscapes/compressed/CyberCity Upper Level.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/CyberCity Soundscapes/compressed/Lab Bubbles Loop.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/CyberCity Soundscapes/compressed/Lab Bubbles.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Cyber Bubbles.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Cyber Fire.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Cyber Water A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Cyber Water B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Digital Bugs Night Ambience Loop.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Digital Bugs Night Ambience.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Digital Crickets.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Digital Wind City Ambience Loop.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Digital Wind City Ambience.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Digital Nature/compressed/Electric Bug.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Future Door A  Sliding Close.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Future Door A Open.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Future Door B Close Quick.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Future Door B Open.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Future Door B Slide.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Future Door C Open.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Future Door C Slam.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Future Door D Swing Shut.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Future Door D Swing.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Futuristic Lock Mechanism.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Doors, Lifts, and Locks/compressed/Lift Launch and floors.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Eerie Memory.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Gentle Hovering Loop.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Gentle Hovering.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Hover Thing Approach.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Hover Thing Idle A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Hover Thing Idle B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Hover Thing Lower.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Hover Thing Passing.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Security Drone Angry A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Security Drone Angry B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Security Drone Chatter A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Security Drone Chatter B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Security Drone Idle Loop.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Security Drone Idle.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Drones/compressed/Security Drone Scan.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/A Virus.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/Annoying Machine Error A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/Annoying Machine Error B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/Annoying Machine Error C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/Annoying Machine Error D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/Future Siren Panned.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/Future Siren.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/Repetitive Pump.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/SOS.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/Tech Faliure Long.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Errors and Alerts/compressed/Tech Faliure Short.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Bleep Bloop.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Buttons A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Buttons B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Buttons C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Buttons D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Cyber Click A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Cyber Click B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Cyber Click C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Irrational Scan.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Message A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Message B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Message C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Message D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Old School Button.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Scan Reader.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Scan Then Beep A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Scan Then Beep B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Scan Then Beep C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/Scan Then Beep D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/UI Glitch A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/UI Glitch B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/UI Glitch Short A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/UI Glitch Short B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Healthy UI/compressed/UI Glitch Short C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Cyber Discharge A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Cyber Discharge B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Cyber Discharge Long A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Cyber Discharge Long B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Cyber Discharge Loud then Soft.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Irrational Interface A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Irrational Interface B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Irrational Interface C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Irrational Interface Long A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Irrational Interface Long B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Irrational Interfaces/compressed/Irrational Interface Long C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Impact and Fry.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Loading Lazer A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Loading Lazer B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Loading Lazer C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Pulsing Vaporwave B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Pulsing Vaporwave C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Pulsing Vaporwave D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Pulsing Vaporwave.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Robust Lazer Single A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Robust Lazer Single B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Robust Lazer Single C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Robust Lazer Single D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Subtle Shooter A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Subtle Shooter B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Lazers and Tazers/compressed/Subtle Shooter C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Active Machinery A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Active Machinery B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Active Machinery C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Big Machine Breaks.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Big Signal Machine.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Cyber Drill.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Mechanical Gears.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Mind Erasing.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Mind Reader Machine.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Passive Machinery A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Passive Machinery B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Passive Machinery C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Machinery/compressed/Passive Machinery D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Cyber Pulse A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Cyber Pulse B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Cyber Pulse C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Cyber Surge A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Cyber Surge B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Cyber Surge C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Mini Electric Swell.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Power Down A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Power Down B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Power Down C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Power Down D.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Rattle Power Up.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Sub Fuzzy Pulse.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Wavey Wobble A.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Wavey Wobble B.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 1/Pulse and Surge/compressed/Wavey Wobble C.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Kinetic Echo 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Kinetic Echo 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Kinetic Echo 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Kinetic Echo 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Kinetic Echo 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Kinetic Echo 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Nanomachines Plates 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Nanomachines Plates 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Nanomachines Plates 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Nanomachines Plates 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Nanomachines Plates 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Netstalkers Cloak 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Netstalkers Cloak 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Netstalkers Cloak 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Netstalkers Cloak 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Netstalkers Cloak 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Netstalkers Cloak 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Netstalkers Cloak 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Reactive Camo 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Reactive Camo 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Reactive Camo 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Reactive Camo 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Reactive Camo 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Reactive Camo 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Reactive Camo 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Voltaic Surge 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Voltaic Surge 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Voltaic Surge 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Voltaic Surge 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Voltaic Surge 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Armor/compressed/Armor Voltaic Surge 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Beacon 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Beacon 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Beacon 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Beacon 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Beacon 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Beacon 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Beacon 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Beacon 008.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Other Side 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Other Side 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Other Side 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Other Side 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Other Side 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Other Side 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Other Side 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Other Side 008.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Short Circuit 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Short Circuit 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Short Circuit 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Short Circuit 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Short Circuit 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Short Circuit 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Short Circuit 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Short Circuit 008.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Synth-Cortex Decrypter 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Synth-Cortex Decrypter 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Synth-Cortex Decrypter 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Synth-Cortex Decrypter 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Synth-Cortex Decrypter 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Synth-Cortex Decrypter 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Synth-Cortex Decrypter 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Devices/compressed/Device Synth-Cortex Decrypter 008.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 008.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 009.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 010.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 011.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 012.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Environmental Loops/compressed/Cyberspace 013.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Brain Melt 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Brain Melt 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Brain Melt 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Brain Melt 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Brain Melt 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Brain Melt 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Breach 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Breach 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Breach 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Breach 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Breach 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Breach 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Downloaded Successfully 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Downloaded Successfully 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Downloaded Successfully 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Downloaded Successfully 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Downloaded Successfully 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Downloaded Successfully 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Downloaded Successfully 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Mind Scraper 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Mind Scraper 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Mind Scraper 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Mind Scraper 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Mind Scraper 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Mind Scraper 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Mind Scraper 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Zeroing 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Zeroing 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Zeroing 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Zeroing 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Zeroing 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Hacking/compressed/Hacking Zeroing 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle CR-X1 001 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle CR-X1 002 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle CR-X1 003 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle CR-X1 004 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle CR-X1 005 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle DM-7 001 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle DM-7 002 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle DM-7 003 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle DM-7 004 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle DM-7 005 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle ER-Unit 001 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle ER-Unit 002 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle ER-Unit 002 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle ER-Unit 003 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle ER-Unit 004 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle GP-Alpha 001 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle GP-Alpha 002 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle GP-Alpha 003 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle GP-Alpha 004 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle GP-Alpha 005 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle GP-Alpha 006 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle Neon Cobra Mk. II 001 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle Neon Cobra Mk. II 002 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle Neon Cobra Mk. II 003 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle Neon Cobra Mk. II 004 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle Neon Cobra Mk. II 005 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle Neon Cobra Mk. II 006 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle VI-Series 001 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle VI-Series 002 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle VI-Series 003 L to R.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle VI-Series 004 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Vehicles/compressed/Vehicle VI-Series 005 R to L.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Carnage 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Carnage 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Carnage 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Carnage 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Carnage 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Jackie Tungstenfeet 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Jackie Tungstenfeet 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Jackie Tungstenfeet 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Jackie Tungstenfeet 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Jackie Tungstenfeet 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Obliterator 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Obliterator 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Obliterator 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Obliterator 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Obliterator 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Obliterator 006.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Obliterator 007.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Obliterator Burst 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Obliterator Burst 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Pulse Gun 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Pulse Gun 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Pulse Gun 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Pulse Gun 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Pulse Gun 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Scavengers Rifle 001.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Scavengers Rifle 002.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Scavengers Rifle 003.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Scavengers Rifle 004.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Scavengers Rifle 005.ogg`
+- `sfx/cyberpunk/Cyberpunk Sound FX Pack Vol. 3/Weapons/compressed/Weapon Scavengers Rifle 006.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice Handling 001.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice Handling 002.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice Handling 003.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice Handling 004.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice Handling 005.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice In Pouch 001.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice In Pouch 002.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice In Pouch 003.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice In Pouch 004.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice In Pouch 005.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice Roll Velvet 001.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice Roll Velvet 002.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice Roll Velvet 003.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Dice Roll Velvet 004.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Few Dice Roll 001.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Few Dice Roll 002.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Few Dice Roll 003.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Few Dice Roll 004.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Few Dice Roll 005.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Many Dice Roll Wood 001.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Many Dice Roll Wood 002.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Many Dice Roll Wood 003.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Many Dice Roll Wood 004.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Many Dice Roll Wood 005.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Single Die Roll 001.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Single Die Roll 002.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Single Die Roll 003.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Single Die Roll 004.ogg`
+- `sfx/dice/Decks and Cards Sound FX Pack/compressed/Single Die Roll 005.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Beach Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Castle Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Cave Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Dungeon Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Forest Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Meadow Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Mine Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Mountain Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Ocean Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/Loops/compressed/Void Loop.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Beach.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Castle.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Cave.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Dungeon.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Forest.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Meadow.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Mine.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Mountain.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Ocean.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Ambience/One Shots/compressed/Void.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Movement A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Movement B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Movement C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Movement D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Movement E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Movement F.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Movement G.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Movement H.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Salute A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Salute B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Salute C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Step A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Step B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Step C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Step D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Step E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Armor Step F.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Equip Armor.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Equip Helmet A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Equip Helmet B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Equip Shield A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Equip Shield B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Shield Impact A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Shield Impact B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Shield Impact C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Armor/compressed/Shield Impact D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Hammer A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Hammer B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Hammer C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Hammer D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Hammer E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Tool A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Tool B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Tool C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Tool D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Black Smith Tool E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Bush Rustle Short A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Bush Rustle Short B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Bush Rustle Short C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Carpenter Hammer A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Carpenter Hammer B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Carpenter Hammer C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Carpenter Hammer D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Equip Amulet A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Equip Amulet B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Equip Amulet C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Equip Amulet D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Equip Charm A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Equip Charm B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Equip Charm C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Item Use A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Item Use B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Lockbox Open A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Lockbox Open B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Lockbox Open C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Lockbox Unlock A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Lockbox Unlock B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Lockbox Unlock C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Drink A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Drink B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Drink C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Equip A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Equip B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Equip C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Handle A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Handle B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Handle C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Open A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Potion Open B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Unequip Item A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Unequip Item B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Unequip Item C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Unequip Item D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Warhorn A Delay.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Warhorn A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Warhorn B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Warhorn C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Warhorn D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Items & Misc/compressed/Warhorn E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Ballista Shoot A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Ballista Shoot B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Ballista Shoot C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Ballista Shoot D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Crossbow Load A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Crossbow Load B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Crossbow Shot A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Crossbow Shot B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Crossbow Shot C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Crossbow Shot D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Equip Axe.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Equip Crossbow.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Equip Dagger.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Equip Flail.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Equip General Weapon A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Equip General Weapon B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Equip General Weapon C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Equip Sword.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Knife Draw.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Knife Sheathe A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Knife Sheathe B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Acid.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Blood.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Break A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Break B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Break C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Explosion.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Fire.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Holy Water.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Ice.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Lightning.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Poison.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Pot Water.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Sword Draw A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Sword Draw B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Sword Draw C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Sword Draw D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Sword Sheathe A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Sword Sheathe B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Sword Sheathe C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Weapon Power Up Fire.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Weapon Power Up Ice.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Weapon Power Up Lightning.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Weapon Power Up Poison.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Weapons/compressed/Weapon Power Up.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Blunt Whoosh A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Blunt Whoosh B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Blunt Whoosh C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Blunt Whoosh D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Blunt Whoosh E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Blunt Whoosh F.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Flail Whoosh A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Flail Whoosh B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Flail Whoosh C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Flail Whoosh D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Flail Whoosh E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Flail Whoosh F.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/General Throw A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/General Throw B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/General Throw C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Large Blade Whoosh A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Large Blade Whoosh B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Large Blade Whoosh C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Large Blade Whoosh D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Large Blade Whoosh E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Small Blade Whoosh A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Small Blade Whoosh B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Small Blade Whoosh C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Small Blade Whoosh D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Small Blade Whoosh E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Spear Whoosh A.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Spear Whoosh B.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Spear Whoosh C.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Spear Whoosh D.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Spear Whoosh E.ogg`
+- `sfx/fantasy/Medieval Fantasy Sound FX Pack Vol. 2/Whooshes/compressed/Spear Whoosh F.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Attack_01.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Attack_02.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Attack_03.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Attack_WithBlood_01.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Attack_WithBlood_02.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Attack_WithBlood_03.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Crash.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Enchant.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Recharge.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_StealLife.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Unfold.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Dark_Sword_Whoosh_03.ogg`
+- `sfx/fantasy/compressed/Earth_Arrow_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Earth_Arrow_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Earth_Arrow_Whoosh_03.ogg`
+- `sfx/fantasy/compressed/Earth_Bow_buff_01.ogg`
+- `sfx/fantasy/compressed/Earth_Shooting_NoReverb_01.ogg`
+- `sfx/fantasy/compressed/Earth_Shooting_NoReverb_02.ogg`
+- `sfx/fantasy/compressed/Earth_Shooting_NoReverb_03.ogg`
+- `sfx/fantasy/compressed/Earth_Shooting_WithReverb_01.ogg`
+- `sfx/fantasy/compressed/Earth_Shooting_WithReverb_02.ogg`
+- `sfx/fantasy/compressed/Elementa_lBow_WaterAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_EarthAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_EarthAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_EarthAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_EarthAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_EarthAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_EarthAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_FireAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_FireAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_FireAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_FireAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_FireAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_FireAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_IceAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_IceAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_IceAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_IceAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_IceAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_IceAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_PoisonAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_PoisonAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_PoisonAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_PoisonAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_PoisonAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_PoisonAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_ThunderAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_ThunderAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_ThunderAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_ThunderAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_ThunderAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_ThunderAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WaterAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WaterAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WaterAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WaterAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WaterAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WindAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WindAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WindAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WindAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WindAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Bow_WindAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_EarthAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_EarthAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_EarthAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_FireAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_FireAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_FireAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_FireAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_FireAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_FireAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_IceAttack V1.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_IceAttack V2.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_IceAttack V3.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_PoisonAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_PoisonAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_PoisonAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_PoisonAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_PoisonAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_PoisonAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_ThunderAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_ThunderAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_ThunderAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_ThunderAttack_Extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_ThunderAttack_Extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_ThunderAttack_Extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WaterAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WaterAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WaterAttack_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WaterAttack_extended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WaterAttack_extended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WaterAttack_extended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WindAttackExtended_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WindAttackExtended_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WindAttackExtended_03.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WindAttack_01.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WindAttack_02.ogg`
+- `sfx/fantasy/compressed/Elemental_Sword_WindAttack_03.ogg`
+- `sfx/fantasy/compressed/Fire_Bow_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Fire_Bow_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Fire_Sword_Buff_01.ogg`
+- `sfx/fantasy/compressed/Fire_Sword_Buff_02.ogg`
+- `sfx/fantasy/compressed/Fire_Sword_Buff_03.ogg`
+- `sfx/fantasy/compressed/Ice_Arrow_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Ice_Arrow_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Ice_Bow_buff_01.ogg`
+- `sfx/fantasy/compressed/Ice_Bow_buff_02.ogg`
+- `sfx/fantasy/compressed/Ice_Bow_buff_03.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Attack_01.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Attack_02.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Attack_03.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Break.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Crash.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Enchant.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Recharge_01.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Recharge_02.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_StealLife_01.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_StealLife_02.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Unfold.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_Whoosh_03.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_attack_withBlood_01.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_attack_withBlood_02.ogg`
+- `sfx/fantasy/compressed/Magic_Sword_attack_withBlood_03.ogg`
+- `sfx/fantasy/compressed/Magical_Bow_Charge.ogg`
+- `sfx/fantasy/compressed/Magical_Bow_PullBack_01.ogg`
+- `sfx/fantasy/compressed/Magical_Bow_PullBack_02.ogg`
+- `sfx/fantasy/compressed/Magical_Bow_ShootMiss_01.ogg`
+- `sfx/fantasy/compressed/Magical_Bow_ShootMiss_02.ogg`
+- `sfx/fantasy/compressed/Magical_Bow_ShootMiss_03.ogg`
+- `sfx/fantasy/compressed/Poison_Arrow_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Poison_Arrow_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Poison_Arrow_Whoosh_03.ogg`
+- `sfx/fantasy/compressed/Poison_Bow_buff_01.ogg`
+- `sfx/fantasy/compressed/Poison_Sword_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Poison_Sword_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Poison_Sword_Whoosh_03.ogg`
+- `sfx/fantasy/compressed/Shooting_Arrow_Ice_Reverb_01.ogg`
+- `sfx/fantasy/compressed/Shooting_Arrow_Ice_Reverb_02.ogg`
+- `sfx/fantasy/compressed/Shooting_Arrow_Ice_Reverb_03.ogg`
+- `sfx/fantasy/compressed/Shooting_Poison_Arrow_NoReverb_01.ogg`
+- `sfx/fantasy/compressed/Shooting_Thunder_Arrow_NoReverb_01.ogg`
+- `sfx/fantasy/compressed/Shooting_Water_Arrow_NoReverb_01.ogg`
+- `sfx/fantasy/compressed/Shooting_Water_Arrow_NoReverb_02.ogg`
+- `sfx/fantasy/compressed/Shooting_Water_Arrow_NoReverb_03.ogg`
+- `sfx/fantasy/compressed/Shooting_Wind_Arrow_NoReverb_01.ogg`
+- `sfx/fantasy/compressed/Shooting_Wind_Arrow_NoReverb_02.ogg`
+- `sfx/fantasy/compressed/Shooting_Wind_Arrow_NoReverb_03.ogg`
+- `sfx/fantasy/compressed/Shooting_fire_Arrow_Reverb_01.ogg`
+- `sfx/fantasy/compressed/Shooting_fire_Arrow_Reverb_02.ogg`
+- `sfx/fantasy/compressed/Thunder_Bow_buff_01.ogg`
+- `sfx/fantasy/compressed/Thunder_Bow_buff_02.ogg`
+- `sfx/fantasy/compressed/Thunder_Sword_whoosh_01.ogg`
+- `sfx/fantasy/compressed/Thunder_Sword_whoosh_02.ogg`
+- `sfx/fantasy/compressed/Water_Arrow_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Water_Arrow_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Water_Arrow_Whoosh_03.ogg`
+- `sfx/fantasy/compressed/Water_Bow_Buff_01.ogg`
+- `sfx/fantasy/compressed/Water_Sword_Buff_01.ogg`
+- `sfx/fantasy/compressed/Water_Sword_Buff_02.ogg`
+- `sfx/fantasy/compressed/Water_Sword_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Water_Sword_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Water_Sword_Whoosh_03.ogg`
+- `sfx/fantasy/compressed/Wind_Arrow_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Wind_Bow_Buff_01.ogg`
+- `sfx/fantasy/compressed/Wind_Sword_Whoosh_01.ogg`
+- `sfx/fantasy/compressed/Wind_Sword_Whoosh_02.ogg`
+- `sfx/fantasy/compressed/Wind_Sword_Whoosh_03.ogg`
+- `sfx/fantasy/compressed/fire_Bow_buff_01.ogg`
+- `sfx/magic/dark/28.Dark_Hit/compressed/Dark_Hit_01.ogg`
+- `sfx/magic/dark/28.Dark_Hit/compressed/Dark_Hit_02.ogg`
+- `sfx/magic/dark/28.Dark_Hit/compressed/Dark_Hit_03.ogg`
+- `sfx/magic/dark/29.Dark_Resurrection/compressed/Dark_Resurrection.ogg`
+- `sfx/magic/dark/30.Dark_Aura/compressed/Dark_Aura.ogg`
+- `sfx/magic/dark/31.Dark_Magic_Whoosh/compressed/Dark_Magic_Whoosh_01.ogg`
+- `sfx/magic/dark/31.Dark_Magic_Whoosh/compressed/Dark_Magic_Whoosh_02.ogg`
+- `sfx/magic/dark/32.Dark_Spell/compressed/Dark_Spell_01.ogg`
+- `sfx/magic/dark/32.Dark_Spell/compressed/Dark_Spell_02.ogg`
+- `sfx/magic/dark/32.Dark_Spell/compressed/Dark_Spell_03.ogg`
+- `sfx/magic/dark/32.Dark_Spell/compressed/Dark_Spell_04.ogg`
+- `sfx/magic/dark/33.Dark_Magic_Buff/compressed/Dark_Magic_Buff_01.ogg`
+- `sfx/magic/dark/33.Dark_Magic_Buff/compressed/Dark_Magic_Buff_02.ogg`
+- `sfx/magic/dark/33.Dark_Magic_Buff/compressed/Dark_Magic_Buff_03.ogg`
+- `sfx/magic/fire/1.Fire_Hit/compressed/Fire_Hit_01.ogg`
+- `sfx/magic/fire/1.Fire_Hit/compressed/Fire_Hit_02.ogg`
+- `sfx/magic/fire/1.Fire_Hit/compressed/Fire_Hit_03.ogg`
+- `sfx/magic/fire/2.Magic_Fire_Earthquake_with_Lava/compressed/Fire_Earthquake_With_Lava.ogg`
+- `sfx/magic/fire/3.Magic_Fire_Earthquake/compressed/Fire_Earthquake.ogg`
+- `sfx/magic/fire/3.Magic_Fire_Earthquake/compressed/Fire_Earthquake_With_Lava.ogg`
+- `sfx/magic/fire/4. Fire_Spell/compressed/Fire_Spell_01.ogg`
+- `sfx/magic/fire/4. Fire_Spell/compressed/Fire_Spell_02.ogg`
+- `sfx/magic/fire/4. Fire_Spell/compressed/Fire_Spell_03.ogg`
+- `sfx/magic/fire/5.Fire_Magic_Dragon/compressed/Fire_Magic_Dragon.ogg`
+- `sfx/magic/fire/6.Dragon_Fireball/compressed/Dragon_Fireball.ogg`
+- `sfx/magic/fire/7.Fire_magic_buff/compressed/Fire_magic_buff_01.ogg`
+- `sfx/magic/fire/7.Fire_magic_buff/compressed/Fire_magic_buff_02.ogg`
+- `sfx/magic/fire/7.Fire_magic_buff/compressed/Fire_magic_buff_03.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Aetherial Pulse 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Aetherial Pulse 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Aetherial Pulse 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Aetherial Pulse 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Aetherial Pulse 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Aetherial Pulse 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Arcane Ripple 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Arcane Ripple 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Arcane Ripple 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Arcane Ripple 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Arcane Ripple 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Arcane Ripple 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Arcane Ripple 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Astral Flare 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Astral Flare 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Astral Flare 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Astral Flare 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Astral Flare 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Astral Flare 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Astral Flare 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Glyphic Resonance 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Glyphic Resonance 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Glyphic Resonance 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Glyphic Resonance 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Glyphic Resonance 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Glyphic Resonance 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Glyphic Resonance 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mana Surge 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mana Surge 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mana Surge 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mana Surge 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mana Surge 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mana Surge 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mystic Vortex 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mystic Vortex 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mystic Vortex 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mystic Vortex 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mystic Vortex 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mystic Vortex 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Arcane Spells/compressed/Arcane Spells Mystic Vortex 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Blight Curse 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Blight Curse 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Blight Curse 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Blight Curse 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Blight Curse 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Blight Curse 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Blight Curse 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Dread Surge 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Dread Surge 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Dread Surge 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Dread Surge 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Dread Surge 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Dread Surge 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Dread Surge 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Ebon Shatter 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Ebon Shatter 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Ebon Shatter 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Ebon Shatter 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Ebon Shatter 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Grave Whisper 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Grave Whisper 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Grave Whisper 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Grave Whisper 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Grave Whisper 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Grave Whisper 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Shadow Wail 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Shadow Wail 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Shadow Wail 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Shadow Wail 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Shadow Wail 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Shadow Wail 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Dark Magic/compressed/Dark Magic Shadow Wail 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Celestial Choir 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Celestial Choir 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Celestial Choir 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Celestial Choir 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Celestial Choir 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Celestial Choir 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Grace Whisper 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Grace Whisper 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Grace Whisper 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Grace Whisper 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Grace Whisper 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Hallowed Beam 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Hallowed Beam 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Hallowed Beam 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Hallowed Beam 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Hallowed Beam 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Mass Heal 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Mass Heal 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Mass Heal 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Mass Heal 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Mass Heal 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Smite 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Smite 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Smite 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Smite 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Smite 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Smite 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Divine Magic/compressed/Divine Magic Smite 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Arcane Missiles 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Arcane Missiles 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Arcane Missiles 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Arcane Missiles 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Arcane Missiles 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Arcane Missiles 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Arcane Missiles 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Energy Arrow 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Energy Arrow 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Energy Arrow 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Energy Arrow 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Energy Arrow 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Energy Arrow 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Energy Arrow 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Force Barrage 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Force Barrage 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Force Barrage 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Force Barrage 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Force Barrage 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Force Barrage 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Force Barrage 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Oblivion Strike 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Oblivion Strike 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Oblivion Strike 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Oblivion Strike 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Oblivion Strike 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Oblivion Strike 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Oblivion Strike 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Shockwave Slam 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Shockwave Slam 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Shockwave Slam 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Shockwave Slam 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Shockwave Slam 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Shockwave Slam 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Thunderstrike Crash 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Thunderstrike Crash 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Thunderstrike Crash 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Thunderstrike Crash 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Offensive Spells/compressed/Offensive Spells Thunderstrike Crash 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Current Pulse 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Current Pulse 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Current Pulse 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Current Pulse 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Current Pulse 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Current Pulse 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Current Pulse 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Burst 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Burst 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Burst 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Burst 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Burst 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Burst 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Burst 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Burst 008.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Shackle 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Shackle 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Shackle 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Shackle 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Geyser Shackle 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Maelstrom Roar 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Maelstrom Roar 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Maelstrom Roar 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Maelstrom Roar 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Maelstrom Roar 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Maelstrom Roar 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Maelstrom Roar 007.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Tidal Rush 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Tidal Rush 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Tidal Rush 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Tidal Rush 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Tidal Rush 005.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Tidal Rush 006.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Wavecrash Echo 001.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Wavecrash Echo 002.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Wavecrash Echo 003.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Wavecrash Echo 004.ogg`
+- `sfx/magic/general/Modern Magic Sound FX Pack Vol. 1/Water Magic/compressed/Water Magic Wavecrash Echo 005.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Aero Blade Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Aero Blade Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Aero Blade Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Aero Blade Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Aero Blade Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Aero Blade Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Aero Blade Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Aeroportation In.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Aeroportation Out.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Cyclone Blade Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Cyclone Blade Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Cyclone Blade Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Cyclone Blade Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Cyclone Blade Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Cyclone Blade Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Cyclone Blade Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Echoing Gust Cast.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Echoing Gust Impact.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Mistform.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Sky Surge.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Whirlwind Gust.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Zephyrs Embrace.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Air/compressed/Zephyrs Resonance.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Abyssal Pulse.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Dread Wave.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Horrify.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Necrotic Touch.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Nightshade Curse.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Shadow Bolt Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Shadow Bolt Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Shadow Bolt Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Shadow Bolt Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Shadow Bolt Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Shadow Bolt Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Shadow Bolt Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Soul Shatter.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Dark/compressed/Soul Siphon.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Boulder Throw Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Boulder Throw Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Boulder Throw Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Boulder Throw Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Boulder Throw Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Boulder Throw Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Boulder Throw Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Earthen Grasp.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Earthmeld.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Magnetic Burst.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Quake Step.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Rock Throw Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Rock Throw Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Rock Throw Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Rock Throw Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Rock Throw Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Rock Throw Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Rock Throw Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Seismic Pulse.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Stone Armor.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Stone Throw Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Stone Throw Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Stone Throw Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Stone Throw Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Stone Throw Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Stone Throw Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Stone Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Earth/compressed/Stone Wall.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Blazing Comet.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Burning Hands.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Combustion.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Fire Whip.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Flame Armor.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Flame Chain A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Flame Chain B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Flame Chain C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Flame Pillar.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Large Fireball Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Large Fireball Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Large Fireball Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Large Fireball Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Large Fireball Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Large Fireball Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Large Fireball Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Lava Burst.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Medium Fireball Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Medium Fireball Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Medium Fireball Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Medium Fireball Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Medium Fireball Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Medium Fireball Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Medium Fireball Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Phoenix Burst.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Phoenix Flash.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Small Fireball Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Small Fireball Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Small Fireball Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Small Fireball Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Small Fireball Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Small Fireball Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Fire/compressed/Small Fireball Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Arctic Gale.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Crystal Column.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Crystal Lance Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Crystal Lance Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Crystal Lance Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Crystal Lance Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Crystal Lance Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Crystal Lance Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Crystal Lance Travel Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Frost Nova.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Frozen Echo.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Glacial Shield.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Icicle Barrage.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Icy Veins.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Snow Ball A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Snow Ball B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Snow Ball C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Snow Ball Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Snow Ball Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Snow Ball Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Snow Ball Travel Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Ice/compressed/Water Walking.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Consecrate.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Heavenly Flame.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Heavenly Wrath.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Holy Light.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Holy Nova.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Holy Shock.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Holy Ward.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Illuminate.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Light Bolt Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Light Bolt Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Light Bolt Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Light Bolt Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Light Bolt Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Light Bolt Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Light/compressed/Light Bolt Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Animorphic Bond.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Barkskin.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Bramble Burst.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Bulb Burst Plant.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Bulb Burst.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Moon Beam.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Natural Healing.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Root Snare.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Summon Bramble Trap.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Summon Rain Cast.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Summon Rain End.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Summon Rain Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Summon Rain Start.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Summon Sapling.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Sun Beam.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Thorn Shield.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Verdant Growth.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Whip Vine A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Whip Vine B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Whip Vine C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Nature/compressed/Whip Vine D.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Bolt Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Bolt Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Bolt Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Bolt Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Bolt Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Bolt Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Bolt Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Whip A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Whip B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Lightning Whip C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Thunderbolt Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Thunderbolt Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Thunderbolt Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Thunderbolt Strike Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Thunderbolt Strike Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Thunderbolt Strike Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Shock/compressed/Thunderous Boom.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Bolt Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Bolt Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Bolt Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Bolt Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Bolt Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Bolt Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Bolt Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Heal.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Jet Cast A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Jet Cast B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Jet Cast C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Jet Impact A.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Jet Impact B.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Jet Impact C.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Aqua Jet Trail Loop.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Bubble Prison.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Purify.ogg`
+- `sfx/magic/general/Simple Magic Sound FX Pack Vol. 1/Water/compressed/Tidal Surge.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aqua Slice Whoosh/compressed/MAGSpel_Aqua Slice Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aqua Slice Whoosh/compressed/MAGSpel_Aqua Slice Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aqua Slice Whoosh/compressed/MAGSpel_Aqua Slice Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aqua Slice Whoosh/compressed/MAGSpel_Aqua Slice Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aqua Slice Whoosh/compressed/MAGSpel_Aqua Slice Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aqua Slice Whoosh/compressed/MAGSpel_Aqua Slice Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Blast/compressed/MAGSpel_Arcane Blast 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Snap/compressed/MAGSpel_Arcane Snap 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Snap/compressed/MAGSpel_Arcane Snap 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Snap/compressed/MAGSpel_Arcane Snap 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane Snap/compressed/MAGSpel_Arcane Snap 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Arcane mini Whoosh/compressed/MAGSpel_Arcane Mini Whoosh 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aura Twirl/compressed/MAGSpel_Aura Twirl 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aura Twirl/compressed/MAGSpel_Aura Twirl 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aura Twirl/compressed/MAGSpel_Aura Twirl 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aura Twirl/compressed/MAGSpel_Aura Twirl 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aura Twirl/compressed/MAGSpel_Aura Twirl 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Aura Twirl/compressed/MAGSpel_Aura Twirl 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Bubble Aura Explosion/compressed/MAGSpel_Bubble Aura Explosion 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Bubble Aura Explosion/compressed/MAGSpel_Bubble Aura Explosion 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Bubble Aura Explosion/compressed/MAGSpel_Bubble Aura Explosion 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Bubble Aura Explosion/compressed/MAGSpel_Bubble Aura Explosion 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Bubble Aura Explosion/compressed/MAGSpel_Bubble Aura Explosion 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Bubble Aura Explosion/compressed/MAGSpel_Bubble Aura Explosion 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 14_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Celestial Bolt/compressed/MAGSpel_Celestial Bolt 15_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Darkened Echo/compressed/MAGSpel_Chime Of Darkened Echo 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Darkened Echo/compressed/MAGSpel_Chime Of Darkened Echo 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Darkened Echo/compressed/MAGSpel_Chime Of Darkened Echo 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Darkened Echo/compressed/MAGSpel_Chime Of Darkened Echo 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Darkened Echo/compressed/MAGSpel_Chime Of Darkened Echo 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Empowerment/compressed/MAGSpel_Chime Of Empowerment 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Empowerment/compressed/MAGSpel_Chime Of Empowerment 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Empowerment/compressed/MAGSpel_Chime Of Empowerment 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Empowerment/compressed/MAGSpel_Chime Of Empowerment 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Empowerment/compressed/MAGSpel_Chime Of Empowerment 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Enchanted Speed/compressed/MAGSpel_Chime Of Enchanted Speed 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Enchanted Speed/compressed/MAGSpel_Chime Of Enchanted Speed 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Enchanted Speed/compressed/MAGSpel_Chime Of Enchanted Speed 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Enchanted Speed/compressed/MAGSpel_Chime Of Enchanted Speed 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Enchanted Speed/compressed/MAGSpel_Chime Of Enchanted Speed 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Enchanted Speed/compressed/MAGSpel_Chime Of Enchanted Speed 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Enchanted Speed/compressed/MAGSpel_Chime Of Enchanted Speed 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Enchanted Speed/compressed/MAGSpel_Chime Of Enchanted Speed 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Enchanted Speed/compressed/MAGSpel_Chime Of Enchanted Speed 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Mystic Pulse/compressed/MAGSpel_Chime Of Mystic Pulse 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Mystic Pulse/compressed/MAGSpel_Chime Of Mystic Pulse 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Mystic Pulse/compressed/MAGSpel_Chime Of Mystic Pulse 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Mystic Pulse/compressed/MAGSpel_Chime Of Mystic Pulse 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Mystic Pulse/compressed/MAGSpel_Chime Of Mystic Pulse 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Mystic Pulse/compressed/MAGSpel_Chime Of Mystic Pulse 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Mystic Pulse/compressed/MAGSpel_Chime Of Mystic Pulse 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Mystic Pulse/compressed/MAGSpel_Chime Of Mystic Pulse 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chime of Mystic Pulse/compressed/MAGSpel_Chime Of Mystic Pulse 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Chrono Rift/compressed/MAGSpel_Chrono Rift 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Close Temporal Rift Summoning/compressed/MAGSpel_Close Temporal Rift Summoning 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Close Temporal Rift Summoning/compressed/MAGSpel_Close Temporal Rift Summoning 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Close Temporal Rift Summoning/compressed/MAGSpel_Close Temporal Rift Summoning 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Close Temporal Rift Summoning/compressed/MAGSpel_Close Temporal Rift Summoning 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Close Temporal Rift Summoning/compressed/MAGSpel_Close Temporal Rift Summoning 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Close Temporal Rift Summoning/compressed/MAGSpel_Close Temporal Rift Summoning 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Close Temporal Rift Summoning/compressed/MAGSpel_Close Temporal Rift Summoning 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Close Temporal Rift Summoning/compressed/MAGSpel_Close Temporal Rift Summoning 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Cursed Blast/compressed/MAGSpel_Cursed Blast_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Darting Arcana/compressed/MAGSpel_Darting Arcana 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Darting Arcana/compressed/MAGSpel_Darting Arcana 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Darting Arcana/compressed/MAGSpel_Darting Arcana 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Darting Arcana/compressed/MAGSpel_Darting Arcana 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Darting Arcana/compressed/MAGSpel_Darting Arcana 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Darting Arcana/compressed/MAGSpel_Darting Arcana 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Doomed Whisper/compressed/MAGSpel_Doomed Whisper 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Doomed Whisper/compressed/MAGSpel_Doomed Whisper 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Doomed Whisper/compressed/MAGSpel_Doomed Whisper 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Doomed Whisper/compressed/MAGSpel_Doomed Whisper 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Doomed Whisper/compressed/MAGSpel_Doomed Whisper 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Aura/compressed/MAGSpel_Electrified Aura 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Impact/compressed/MAGSpel_Electrified Impact 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Impact/compressed/MAGSpel_Electrified Impact 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Impact/compressed/MAGSpel_Electrified Impact 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Impact/compressed/MAGSpel_Electrified Impact 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Impact/compressed/MAGSpel_Electrified Impact 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Impact/compressed/MAGSpel_Electrified Impact 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified Impact/compressed/MAGSpel_Electrified Impact 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified whoosh/compressed/MAGSpel_Electrified Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified whoosh/compressed/MAGSpel_Electrified Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified whoosh/compressed/MAGSpel_Electrified Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified whoosh/compressed/MAGSpel_Electrified Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified whoosh/compressed/MAGSpel_Electrified Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Electrified whoosh/compressed/MAGSpel_Electrified Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Blade Strike/compressed/MAGSpel_Ethereal Blade Strike 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Blade Strike/compressed/MAGSpel_Ethereal Blade Strike 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Blade Strike/compressed/MAGSpel_Ethereal Blade Strike 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Blade Strike/compressed/MAGSpel_Ethereal Blade Strike 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Blade Strike/compressed/MAGSpel_Ethereal Blade Strike 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Bubble Swish/compressed/MAGSpel_Ethereal Bubble Swish 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Bubble Swish/compressed/MAGSpel_Ethereal Bubble Swish 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Bubble Swish/compressed/MAGSpel_Ethereal Bubble Swish 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Bubble Swish/compressed/MAGSpel_Ethereal Bubble Swish 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Bubble Swish/compressed/MAGSpel_Ethereal Bubble Swish 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Bubble Swish/compressed/MAGSpel_Ethereal Bubble Swish 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Bubble Swish/compressed/MAGSpel_Ethereal Bubble Swish 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 14_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 15_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 16_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 17_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 18_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 19_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Essence Swish/compressed/MAGSpel_Ethereal Essence Swish 20_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 14_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 15_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 16_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 17_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Ethereal Swish/compressed/MAGSpel_Ethereal Swish 18_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Fateful Whoosh/compressed/MAGSpel_Fateful Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Fateful Whoosh/compressed/MAGSpel_Fateful Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Fateful Whoosh/compressed/MAGSpel_Fateful Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Fateful Whoosh/compressed/MAGSpel_Fateful Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Fateful Whoosh/compressed/MAGSpel_Fateful Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Fateful Whoosh/compressed/MAGSpel_Fateful Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Fateful Whoosh/compressed/MAGSpel_Fateful Whoosh 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Fateful Whoosh/compressed/MAGSpel_Fateful Whoosh 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Futuristic Impact Type A/compressed/MAGSpel_Futuristic Impact Type A_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type A/compressed/MAGSpel_Generic Whoosh Type A 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type A/compressed/MAGSpel_Generic Whoosh Type A 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type A/compressed/MAGSpel_Generic Whoosh Type A 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type A/compressed/MAGSpel_Generic Whoosh Type A 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type A/compressed/MAGSpel_Generic Whoosh Type A 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type A/compressed/MAGSpel_Generic Whoosh Type A 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type B/compressed/MAGSpel_Generic Whoosh Type B 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type B/compressed/MAGSpel_Generic Whoosh Type B 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type B/compressed/MAGSpel_Generic Whoosh Type B 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type B/compressed/MAGSpel_Generic Whoosh Type B 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type B/compressed/MAGSpel_Generic Whoosh Type B 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type B/compressed/MAGSpel_Generic Whoosh Type B 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type C/compressed/MAGSpel_Generic Whoosh Type C 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type C/compressed/MAGSpel_Generic Whoosh Type C 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type C/compressed/MAGSpel_Generic Whoosh Type C 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type C/compressed/MAGSpel_Generic Whoosh Type C 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type C/compressed/MAGSpel_Generic Whoosh Type C 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type C/compressed/MAGSpel_Generic Whoosh Type C 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Generic Whoosh Type C/compressed/MAGSpel_Generic Whoosh Type C 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Arcane Blast/compressed/MAGSpel_Little Arcane Blast 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Little Chime of Enchanted Speed/compressed/MAGSpel_Little Chime Of Enchanted Speed 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Loop Temporal Rift Summoning/compressed/MAGSpel_Loop Temporal Rift Summoning_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Medium Arcane Blast/compressed/MAGSpel_Medium Arcane Blast 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Medium Arcane Blast/compressed/MAGSpel_Medium Arcane Blast 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Medium Arcane Blast/compressed/MAGSpel_Medium Arcane Blast 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Medium Arcane Blast/compressed/MAGSpel_Medium Arcane Blast 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Medium Arcane Blast/compressed/MAGSpel_Medium Arcane Blast 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Medium Arcane Blast/compressed/MAGSpel_Medium Arcane Blast 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Medium Arcane Blast/compressed/MAGSpel_Medium Arcane Blast 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Medium Arcane Blast/compressed/MAGSpel_Medium Arcane Blast 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Medium Arcane Blast/compressed/MAGSpel_Medium Arcane Blast 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Neon Impact/compressed/MAGSpel_Neon Impact 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Neon Impact/compressed/MAGSpel_Neon Impact 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Open Temporal Rift Summoning/compressed/MAGSpel_Open Temporal Rift Summoning 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Open Temporal Rift Summoning/compressed/MAGSpel_Open Temporal Rift Summoning 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Open Temporal Rift Summoning/compressed/MAGSpel_Open Temporal Rift Summoning 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Open Temporal Rift Summoning/compressed/MAGSpel_Open Temporal Rift Summoning 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Open Temporal Rift Summoning/compressed/MAGSpel_Open Temporal Rift Summoning 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Open Temporal Rift Summoning/compressed/MAGSpel_Open Temporal Rift Summoning 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Phantom Whoosh/compressed/MAGSpel_Phantom Whoosh 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh Type B/compressed/MAGSpel_Quick Wand Whiz Whoosh Type B 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh/compressed/MAGSpel_Quick Wand Whiz Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh/compressed/MAGSpel_Quick Wand Whiz Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh/compressed/MAGSpel_Quick Wand Whiz Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Quick Wand Whiz Whoosh/compressed/MAGSpel_Quick Wand Whiz Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Rapid Air Slash/compressed/MAGSpel_Rapid Air Slash 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 14_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 15_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 16_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Shadowstrike Beam/compressed/MAGSpel_Shadowstrike Beam 17_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Summoning/compressed/MAGSpel_Temporal Rift Summoning_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Temporal Rift Whoosh/compressed/MAGSpel_Temporal Rift Whoosh 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Twirl Whoosh/compressed/MAGSpel_Twirl Whoosh 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Wand Whiz Whoosh/compressed/MAGSpel_Wand Whiz Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Wand Whiz Whoosh/compressed/MAGSpel_Wand Whiz Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Wand Whiz Whoosh/compressed/MAGSpel_Wand Whiz Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Wand Whiz Whoosh/compressed/MAGSpel_Wand Whiz Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Wand Whiz Whoosh/compressed/MAGSpel_Wand Whiz Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Wand Whiz Whoosh/compressed/MAGSpel_Wand Whiz Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Wand Whiz Whoosh/compressed/MAGSpel_Wand Whiz Whoosh 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Energy Flow Whoosh/compressed/MAGSpel_Warped Energy Flow Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Energy Flow Whoosh/compressed/MAGSpel_Warped Energy Flow Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Energy Flow Whoosh/compressed/MAGSpel_Warped Energy Flow Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Energy Flow Whoosh/compressed/MAGSpel_Warped Energy Flow Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Energy Flow Whoosh/compressed/MAGSpel_Warped Energy Flow Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Energy Flow Whoosh/compressed/MAGSpel_Warped Energy Flow Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Energy Flow Whoosh/compressed/MAGSpel_Warped Energy Flow Whoosh 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Energy Flow Whoosh/compressed/MAGSpel_Warped Energy Flow Whoosh 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Energy Flow Whoosh/compressed/MAGSpel_Warped Energy Flow Whoosh 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Flow Whoosh/compressed/MAGSpel_Warped Flow Whoosh 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Flow Whoosh/compressed/MAGSpel_Warped Flow Whoosh 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Flow Whoosh/compressed/MAGSpel_Warped Flow Whoosh 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Flow Whoosh/compressed/MAGSpel_Warped Flow Whoosh 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Flow Whoosh/compressed/MAGSpel_Warped Flow Whoosh 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Flow Whoosh/compressed/MAGSpel_Warped Flow Whoosh 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 1/Warped Flow Whoosh/compressed/MAGSpel_Warped Flow Whoosh 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Arc Pulse/compressed/MAGElem_Arc Pulse 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Arc Pulse/compressed/MAGElem_Arc Pulse 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Arc Pulse/compressed/MAGElem_Arc Pulse 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Arc Pulse/compressed/MAGElem_Arc Pulse 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Arc Pulse/compressed/MAGElem_Arc Pulse 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Beastly Chomp/compressed/CREAMnstr_Beastly Chomp 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Beastly Chomp/compressed/CREAMnstr_Beastly Chomp 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Beastly Chomp/compressed/CREAMnstr_Beastly Chomp 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Beastly Chomp/compressed/CREAMnstr_Beastly Chomp 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Beastly Chomp/compressed/CREAMnstr_Beastly Chomp 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Beastly Chomp/compressed/CREAMnstr_Beastly Chomp 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Beastly Chomp/compressed/CREAMnstr_Beastly Chomp 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Beastly Chomp/compressed/CREAMnstr_Beastly Chomp 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Beastly Chomp/compressed/CREAMnstr_Beastly Chomp 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blasting Dune/compressed/MAGElem_Blasting Dune 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Blazing Impact/compressed/MAGElem_Blazing Impact 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bloodlight Pierce/compressed/MAGSpel_Bloodlight Pierce 16_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bow of Power/compressed/MAGEvil_Bow Of Power 16_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Breeze of the Ancients/compressed/MAGElem_Breeze Of The Ancients 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Bubble Rush/compressed/MAGElem_Bubble Rush 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Celestial Mend/compressed/MAGSpel_Celestial Mend 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Celestial Mend/compressed/MAGSpel_Celestial Mend 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Celestial Mend/compressed/MAGSpel_Celestial Mend 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Celestial Mend/compressed/MAGSpel_Celestial Mend 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Colossal Shield Scrape/compressed/MAGMisc_Colossal Shield Scrape 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Corrupted Bile/compressed/MAGEvil_Corrupted Bile 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cutting Spiral/compressed/MAGSpel_Cutting Spiral 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cutting Spiral/compressed/MAGSpel_Cutting Spiral 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cutting Spiral/compressed/MAGSpel_Cutting Spiral 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cutting Spiral/compressed/MAGSpel_Cutting Spiral 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cutting Spiral/compressed/MAGSpel_Cutting Spiral 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cutting Spiral/compressed/MAGSpel_Cutting Spiral 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cutting Spiral/compressed/MAGSpel_Cutting Spiral 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cutting Spiral/compressed/MAGSpel_Cutting Spiral 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cutting Spiral/compressed/MAGSpel_Cutting Spiral 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Cyclone Wrath/compressed/MAGElem_Cyclone Wrath 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Doomed Impact/compressed/MAGEvil_Doomed Impact 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Energy Rush/compressed/WHSH_Energy Rush 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Energy Rush/compressed/WHSH_Energy Rush 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Energy Rush/compressed/WHSH_Energy Rush 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Energy Rush/compressed/WHSH_Energy Rush 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Ethereal Chime/compressed/MAGShim_Ethereal Chime 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Ethereal Chime/compressed/MAGShim_Ethereal Chime 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Ethereal Rejuvenation/compressed/MAGSpel_Ethereal Rejuvenation 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Ethereal Rejuvenation/compressed/MAGSpel_Ethereal Rejuvenation 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Ethereal Rejuvenation/compressed/MAGSpel_Ethereal Rejuvenation 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Ethereal Rejuvenation/compressed/MAGSpel_Ethereal Rejuvenation 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Frostveil Aura/compressed/MAGElem_Frostveil Aura 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glimmering Flux/compressed/MAGSpel_Glimmering Flux 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glimmering Flux/compressed/MAGSpel_Glimmering Flux 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glimmering Flux/compressed/MAGSpel_Glimmering Flux 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glimmering Flux/compressed/MAGSpel_Glimmering Flux 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 16_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 17_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Glinting Bubbles/compressed/MAGElem_Glinting Bubbles 18_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Godstrike Impact/compressed/MAGMisc_Godstrike Impact 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Godstrike Impact/compressed/MAGMisc_Godstrike Impact 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Godstrike Impact/compressed/MAGMisc_Godstrike Impact 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Godstrike Impact/compressed/MAGMisc_Godstrike Impact 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Harmonic Resurgence/compressed/MAGSpel_Harmonic Resurgence 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Harmonic Resurgence/compressed/MAGSpel_Harmonic Resurgence 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Harmonic Resurgence/compressed/MAGSpel_Harmonic Resurgence 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Harmonic Resurgence/compressed/MAGSpel_Harmonic Resurgence 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Harmonic Resurgence/compressed/MAGSpel_Harmonic Resurgence 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Harmonic Resurgence/compressed/MAGSpel_Harmonic Resurgence 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Haunted Wrath/compressed/MAGEvil_Haunted Wrath 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Haunted Wrath/compressed/MAGEvil_Haunted Wrath 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Haunted Wrath/compressed/MAGEvil_Haunted Wrath 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Haunted Wrath/compressed/MAGEvil_Haunted Wrath 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Haunted Wrath/compressed/MAGEvil_Haunted Wrath 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Haunted Wrath/compressed/MAGEvil_Haunted Wrath 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Haunted Wrath/compressed/MAGEvil_Haunted Wrath 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Haunted Wrath/compressed/MAGEvil_Haunted Wrath 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Hellfireball/compressed/MAGElem_Hellfireball 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Icy Fractals/compressed/MAGElem_Icy Fractals 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Luminous Projectile/compressed/WHSH_Luminous Projectile 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Magic Potion Unbound Two/compressed/MAGMisc_Magic Potion Unbound Two 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Magic Potion Unbound Two/compressed/MAGMisc_Magic Potion Unbound Two 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Magic Potion Unbound Two/compressed/MAGMisc_Magic Potion Unbound Two 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Magic Potion Unbound/compressed/MAGMisc_Magic Potion Unbound 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Magic Potion Unbound/compressed/MAGMisc_Magic Potion Unbound 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Magic Potion Unbound/compressed/MAGMisc_Magic Potion Unbound 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Magic Potion Unbound/compressed/MAGMisc_Magic Potion Unbound 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Magic Potion Unbound/compressed/MAGMisc_Magic Potion Unbound 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Mudslide Call/compressed/MAGElem_Mudslide Call 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Nebula Wave/compressed/MAGSpel_Nebula Wave 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Nebula Wave/compressed/MAGSpel_Nebula Wave 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Nebula Wave/compressed/MAGSpel_Nebula Wave 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Nebula Wave/compressed/MAGSpel_Nebula Wave 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Nebula Wave/compressed/MAGSpel_Nebula Wave 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Quakebound Spell/compressed/MAGElem_Quakebound Spell 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Resonant Veil/compressed/MAGSpel_Resonant Veil 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Resonant Veil/compressed/MAGSpel_Resonant Veil 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Resonant Veil/compressed/MAGSpel_Resonant Veil 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Riftstorm Discharge/compressed/MAGElem_Riftstorm Discharge 16_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Rune Blastwave/compressed/MAGSpel_Rune Blastwave 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowblade Scrape/compressed/MAGMisc_Shadowblade Scrape 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowblade Scrape/compressed/MAGMisc_Shadowblade Scrape 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowblade Scrape/compressed/MAGMisc_Shadowblade Scrape 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowblade Scrape/compressed/MAGMisc_Shadowblade Scrape 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowblade Scrape/compressed/MAGMisc_Shadowblade Scrape 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowblade Scrape/compressed/MAGMisc_Shadowblade Scrape 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowblade Scrape/compressed/MAGMisc_Shadowblade Scrape 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowblade Scrape/compressed/MAGMisc_Shadowblade Scrape 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shadowsteel Flurry/compressed/MAGMisc_Shadowsteel Flurry 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shattered Terrain/compressed/MAGElem_Shattered Terrain 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shattered Terrain/compressed/MAGElem_Shattered Terrain 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shattered Terrain/compressed/MAGElem_Shattered Terrain 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shattered Terrain/compressed/MAGElem_Shattered Terrain 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shattered Terrain/compressed/MAGElem_Shattered Terrain 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shattered Terrain/compressed/MAGElem_Shattered Terrain 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shattered Terrain/compressed/MAGElem_Shattered Terrain 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Shattered Terrain/compressed/MAGElem_Shattered Terrain 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Stonecrash Impact/compressed/MAGElem_Stonecrash Impact 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Twinkle Tweak/compressed/MAGSpel_Twinkle Tweak 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Undead Wail Impact/compressed/MAGEvil_Undead Wail Impact 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Undead Wail Impact/compressed/MAGEvil_Undead Wail Impact 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Unholy Echo/compressed/MAGEvil_Unholy Echo 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Veiled Incantation/compressed/MAGSpel_Veiled Incantation 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Veiled Incantation/compressed/MAGSpel_Veiled Incantation 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Veiled Incantation/compressed/MAGSpel_Veiled Incantation 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Veiled Incantation/compressed/MAGSpel_Veiled Incantation 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Veiled Incantation/compressed/MAGSpel_Veiled Incantation 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Veiled Incantation/compressed/MAGSpel_Veiled Incantation 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Veiled Incantation/compressed/MAGSpel_Veiled Incantation 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Veiled Incantation/compressed/MAGSpel_Veiled Incantation 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Venomous Melt/compressed/MAGElem_Venomous Melt 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Venomous Melt/compressed/MAGElem_Venomous Melt 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Venomous Melt/compressed/MAGElem_Venomous Melt 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Venomous Melt/compressed/MAGElem_Venomous Melt 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Venomous Melt/compressed/MAGElem_Venomous Melt 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Venomous Melt/compressed/MAGElem_Venomous Melt 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Venomous Melt/compressed/MAGElem_Venomous Melt 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Venomous Melt/compressed/MAGElem_Venomous Melt 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Venomous Melt/compressed/MAGElem_Venomous Melt 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Whimsy Morph/compressed/MAGSpel_Whimsy Morph 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Whimsy Morph/compressed/MAGSpel_Whimsy Morph 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Whimsy Morph/compressed/MAGSpel_Whimsy Morph 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Whimsy Morph/compressed/MAGSpel_Whimsy Morph 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Whimsy Morph/compressed/MAGSpel_Whimsy Morph 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Whimsy Morph/compressed/MAGSpel_Whimsy Morph 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 2/Whimsy Morph/compressed/MAGSpel_Whimsy Morph 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blackveil Curse/compressed/MAGEvil_Blackveil Curse 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blackveil Curse/compressed/MAGEvil_Blackveil Curse 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blackveil Curse/compressed/MAGEvil_Blackveil Curse 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blackveil Curse/compressed/MAGEvil_Blackveil Curse 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blackveil Curse/compressed/MAGEvil_Blackveil Curse 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blackveil Curse/compressed/MAGEvil_Blackveil Curse 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blackveil Curse/compressed/MAGEvil_Blackveil Curse 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blackveil Curse/compressed/MAGEvil_Blackveil Curse 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blackveil Curse/compressed/MAGEvil_Blackveil Curse 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blessing chime/compressed/MAGShim_Blessing Chime 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blessing chime/compressed/MAGShim_Blessing Chime 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Blessing chime/compressed/MAGShim_Blessing Chime 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Bubble Kiss/compressed/MAGSpel_Bubble Kiss 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Bubble Kiss/compressed/MAGSpel_Bubble Kiss 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Bubble Kiss/compressed/MAGSpel_Bubble Kiss 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Bubble Kiss/compressed/MAGSpel_Bubble Kiss 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Bubble Kiss/compressed/MAGSpel_Bubble Kiss 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Bubble Kiss/compressed/MAGSpel_Bubble Kiss 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Comet Crash/compressed/MAGElem_Comet Crash 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Comet Crash/compressed/MAGElem_Comet Crash 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Comet Crash/compressed/MAGElem_Comet Crash 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Comet Crash/compressed/MAGElem_Comet Crash 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Comet Crash/compressed/MAGElem_Comet Crash 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Comet Crash/compressed/MAGElem_Comet Crash 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Comet Crash/compressed/MAGElem_Comet Crash 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Comet Crash/compressed/MAGElem_Comet Crash 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Comet Crash/compressed/MAGElem_Comet Crash 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Demonlash/compressed/MAGEvil_Demonlash 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Demonlash/compressed/MAGEvil_Demonlash 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Divine Dissonance/compressed/MAGShim_Divine Dissonance 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Divine Dissonance/compressed/MAGShim_Divine Dissonance 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Divine Dissonance/compressed/MAGShim_Divine Dissonance 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Divine Dissonance/compressed/MAGShim_Divine Dissonance 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Divine Dissonance/compressed/MAGShim_Divine Dissonance 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Divine Dissonance/compressed/MAGShim_Divine Dissonance 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Divine Dissonance/compressed/MAGShim_Divine Dissonance 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Flashburst Rebound/compressed/MAGSpel_Flashburst Rebound 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Flashburst Rebound/compressed/MAGSpel_Flashburst Rebound 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Flashburst Rebound/compressed/MAGSpel_Flashburst Rebound 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Flashburst Rebound/compressed/MAGSpel_Flashburst Rebound 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Gemstone Ripple/compressed/MAGSpel_Gemstone Ripple 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Gemstone Ripple/compressed/MAGSpel_Gemstone Ripple 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Gemstone Ripple/compressed/MAGSpel_Gemstone Ripple 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Gemstone Ripple/compressed/MAGSpel_Gemstone Ripple 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Gemstone Ripple/compressed/MAGSpel_Gemstone Ripple 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Gemstone Ripple/compressed/MAGSpel_Gemstone Ripple 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Gemstone Ripple/compressed/MAGSpel_Gemstone Ripple 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Gemstone Ripple/compressed/MAGSpel_Gemstone Ripple 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Harmonic Power Cast/compressed/MAGSpel_Harmonic Power Cast 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Harmonic Power Cast/compressed/MAGSpel_Harmonic Power Cast 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Harmonic Power Cast/compressed/MAGSpel_Harmonic Power Cast 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Harmonic Power Cast/compressed/MAGSpel_Harmonic Power Cast 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellbound Bloodflow/compressed/MAGEvil_Hellbound Bloodflow 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 16_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 17_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 18_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 19_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 20_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 21_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 22_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 23_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellgate Curse/compressed/MAGEvil_Hellgate Curse 24_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellvoice Descent/compressed/MAGEvil_Hellvoice Descent 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellvoice Descent/compressed/MAGEvil_Hellvoice Descent 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellvoice Descent/compressed/MAGEvil_Hellvoice Descent 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellvoice Descent/compressed/MAGEvil_Hellvoice Descent 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellvoice Descent/compressed/MAGEvil_Hellvoice Descent 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellvoice Descent/compressed/MAGEvil_Hellvoice Descent 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellvoice Descent/compressed/MAGEvil_Hellvoice Descent 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Hellvoice Descent/compressed/MAGEvil_Hellvoice Descent 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Infernal Invocation/compressed/MAGEvil_Infernal Invocation 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Infernal Invocation/compressed/MAGEvil_Infernal Invocation 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Infernal Invocation/compressed/MAGEvil_Infernal Invocation 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 16_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 17_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Lightning Arc Hit/compressed/MAGElem_Lightning Arc Hit 18_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Luminous Blessing Strike/compressed/MAGSpel_Luminous Blessing Strike 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Luminous Blessing Strike/compressed/MAGSpel_Luminous Blessing Strike 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 16_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 17_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Mystic Trigger/compressed/MAGSpel_Mystic Trigger 18_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Phase Spiral/compressed/MAGSpel_Phase Spiral 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Rift Of Dread/compressed/MAGEvil_Rift Of Dread 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Rift Of Dread/compressed/MAGEvil_Rift Of Dread 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Rift Of Dread/compressed/MAGEvil_Rift Of Dread 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Rift Of Dread/compressed/MAGEvil_Rift Of Dread 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Rift Of Dread/compressed/MAGEvil_Rift Of Dread 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Rift Of Dread/compressed/MAGEvil_Rift Of Dread 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sacred Ritual/compressed/MAGSpel_Sacred Ritual 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sacred Ritual/compressed/MAGSpel_Sacred Ritual 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sacred Ritual/compressed/MAGSpel_Sacred Ritual 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sacred Ritual/compressed/MAGSpel_Sacred Ritual 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sacred Ritual/compressed/MAGSpel_Sacred Ritual 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sacred Ritual/compressed/MAGSpel_Sacred Ritual 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sacred Ritual/compressed/MAGSpel_Sacred Ritual 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sacred Ritual/compressed/MAGSpel_Sacred Ritual 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sacred Ritual/compressed/MAGSpel_Sacred Ritual 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 16_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 17_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 18_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 19_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 20_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sanctum Implosion/compressed/MAGAngl_Sanctum Implosion 21_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shadowed Aura Trail/compressed/MAGSpel_Shadowed Aura Trail 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shadowed Aura Trail/compressed/MAGSpel_Shadowed Aura Trail 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shadowed Aura Trail/compressed/MAGSpel_Shadowed Aura Trail 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shadowed Aura Trail/compressed/MAGSpel_Shadowed Aura Trail 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shadowed Aura Trail/compressed/MAGSpel_Shadowed Aura Trail 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shadowed Aura Trail/compressed/MAGSpel_Shadowed Aura Trail 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shadowed Aura Trail/compressed/MAGSpel_Shadowed Aura Trail 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shield Blessing/compressed/MAGSpel_Shield Blessing 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shield Blessing/compressed/MAGSpel_Shield Blessing 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shield Blessing/compressed/MAGSpel_Shield Blessing 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Shield Blessing/compressed/MAGSpel_Shield Blessing 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Steel Zapline/compressed/MAGSpel_Steel Zapline 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Steel Zapline/compressed/MAGSpel_Steel Zapline 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Steel Zapline/compressed/MAGSpel_Steel Zapline 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Steel Zapline/compressed/MAGSpel_Steel Zapline 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Steel Zapline/compressed/MAGSpel_Steel Zapline 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Stonebound Summon/compressed/MAGSpel_Stonebound Summon 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Stonebound Summon/compressed/MAGSpel_Stonebound Summon 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Stonebound Summon/compressed/MAGSpel_Stonebound Summon 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Stonebound Summon/compressed/MAGSpel_Stonebound Summon 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Stonebound Summon/compressed/MAGSpel_Stonebound Summon 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Stonebound Summon/compressed/MAGSpel_Stonebound Summon 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Stonebound Summon/compressed/MAGSpel_Stonebound Summon 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Stonebound Summon/compressed/MAGSpel_Stonebound Summon 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 12_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 13_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 14_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 15_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 16_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 17_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 18_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Subtle Torrent/compressed/MAGSpel_Subtle Torrent 19_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sweetbind/compressed/MAGSpel_Sweetbind 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sweetbind/compressed/MAGSpel_Sweetbind 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sweetbind/compressed/MAGSpel_Sweetbind 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sweetbind/compressed/MAGSpel_Sweetbind 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sweetbind/compressed/MAGSpel_Sweetbind 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sweetbind/compressed/MAGSpel_Sweetbind 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Sweetbind/compressed/MAGSpel_Sweetbind 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 01_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 02_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 03_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 04_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 05_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 06_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 07_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 08_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 09_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 10_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 3/Wailing Rite/compressed/MAGEvil_Wailing Rite 11_KRST_NONE.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aura of Vitality/compressed/MAGSpel_Aura Of Vitality 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aura of Vitality/compressed/MAGSpel_Aura Of Vitality 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aura of Vitality/compressed/MAGSpel_Aura Of Vitality 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aura of Vitality/compressed/MAGSpel_Aura Of Vitality 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aura of Vitality/compressed/MAGSpel_Aura Of Vitality 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aura of Vitality/compressed/MAGSpel_Aura Of Vitality 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aurora Mend/compressed/MAGSpel_Aurora Mend 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aurora Mend/compressed/MAGSpel_Aurora Mend 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aurora Mend/compressed/MAGSpel_Aurora Mend 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aurora Mend/compressed/MAGSpel_Aurora Mend 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aurora Mend/compressed/MAGSpel_Aurora Mend 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Aurora Mend/compressed/MAGSpel_Aurora Mend 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Blessing Bell/compressed/MAGShim_Blessing Bell 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Blessing Bell/compressed/MAGShim_Blessing Bell 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Blessing Bell/compressed/MAGShim_Blessing Bell 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Blessing Bell/compressed/MAGShim_Blessing Bell 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Blessing Bell/compressed/MAGShim_Blessing Bell 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 14_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 15_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 16_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Catalyst Strike/compressed/MAGSpel_Catalyst Strike 17_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Curse Of Frailty/compressed/MAGSpel_Curse Of Frailty 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Cursebrand/compressed/MAGEvil_Cursebrand 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dimensional Bind/compressed/MAGSpel_Dimensional Bind 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dimensional Bind/compressed/MAGSpel_Dimensional Bind 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dimensional Bind/compressed/MAGSpel_Dimensional Bind 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dimensional Bind/compressed/MAGSpel_Dimensional Bind 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dimensional Bind/compressed/MAGSpel_Dimensional Bind 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dimensional Bind/compressed/MAGSpel_Dimensional Bind 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Doomlash/compressed/MAGSpel_Doomlash 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Doomlash/compressed/MAGSpel_Doomlash 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Doomlash/compressed/MAGSpel_Doomlash 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Doomlash/compressed/MAGSpel_Doomlash 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Doomlash/compressed/MAGSpel_Doomlash 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Doomlash/compressed/MAGSpel_Doomlash 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Doomlash/compressed/MAGSpel_Doomlash 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Dreadbound Ritual/compressed/MAGSpel_Dreadbound Ritual 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Echoes of Invocation/compressed/MAGSpel_Echoes Of Invocation 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Echoes of Invocation/compressed/MAGSpel_Echoes Of Invocation 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Echoes of Invocation/compressed/MAGSpel_Echoes Of Invocation 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Echoes of Invocation/compressed/MAGSpel_Echoes Of Invocation 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Flowing Incantation/compressed/MAGSpel_Flowing Incantation 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Flowing Incantation/compressed/MAGSpel_Flowing Incantation 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Flowing Incantation/compressed/MAGSpel_Flowing Incantation 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Flowing Incantation/compressed/MAGSpel_Flowing Incantation 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Flowing Incantation/compressed/MAGSpel_Flowing Incantation 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Flowing Incantation/compressed/MAGSpel_Flowing Incantation 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Flowing Incantation/compressed/MAGSpel_Flowing Incantation 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Flowing Incantation/compressed/MAGSpel_Flowing Incantation 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gale Strike/compressed/MAGElem_Gale Strike 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Gilded Breeze/compressed/MAGSpel_Gilded Breeze 14_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Harmonia Grace/compressed/MAGSpel_Harmonia Grace 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Howling Hex/compressed/MAGSpel_Howling Hex 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Howling Hex/compressed/MAGSpel_Howling Hex 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Howling Hex/compressed/MAGSpel_Howling Hex 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Howling Hex/compressed/MAGSpel_Howling Hex 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Howling Hex/compressed/MAGSpel_Howling Hex 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Lumen Chimes/compressed/MAGSpel_Lumen Chimes 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Lumen Chimes/compressed/MAGSpel_Lumen Chimes 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Lumen Chimes/compressed/MAGSpel_Lumen Chimes 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Lumen Chimes/compressed/MAGSpel_Lumen Chimes 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Lumen Chimes/compressed/MAGSpel_Lumen Chimes 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Lumen Chimes/compressed/MAGSpel_Lumen Chimes 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Lumen Chimes/compressed/MAGSpel_Lumen Chimes 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Lumen Chimes/compressed/MAGSpel_Lumen Chimes 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 14_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 15_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 16_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 17_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Mistwhisper/compressed/MAGElem_Mistwhisper 18_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 14_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 15_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Monolith Crush/compressed/MAGElem_Monolith Crush 16_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Noctis Rite/compressed/MAGSpel_Noctis Rite 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Oblivion Slam/compressed/MAGEvil_Oblivion Slam 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Radiant Charge/compressed/MAGSpel_Radiant Charge 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Radiant Charge/compressed/MAGSpel_Radiant Charge 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Spellblade Rush/compressed/MAGSpel_Spellblade Rush 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Stonebind/compressed/MAGElem_Stonebind 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Stonebind/compressed/MAGElem_Stonebind 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Stonebind/compressed/MAGElem_Stonebind 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Stonebind/compressed/MAGElem_Stonebind 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Stonebind/compressed/MAGElem_Stonebind 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Stonebind/compressed/MAGElem_Stonebind 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Summoner Tempest/compressed/MAGSpel_Summoner Tempest 13_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Twilight Fang/compressed/MAGSpel_Twilight Fang 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vital Grace/compressed/MAGShim_Vital Grace 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vital Grace/compressed/MAGShim_Vital Grace 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vital Grace/compressed/MAGShim_Vital Grace 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vital Grace/compressed/MAGShim_Vital Grace 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 01_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 02_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 03_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 04_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 05_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 06_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 07_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 08_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 09_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 10_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 11_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 12_KRST.ogg`
+- `sfx/magic/general/Spells Variations Vol 4/Vitalis Current/compressed/MAGSpel_Vitalis Current 13_KRST.ogg`
+- `sfx/magic/ice/18.Ice_hits/compressed/Ice_hit_01.ogg`
+- `sfx/magic/ice/18.Ice_hits/compressed/Ice_hit_02.ogg`
+- `sfx/magic/ice/18.Ice_hits/compressed/Ice_hit_03.ogg`
+- `sfx/magic/ice/19.Ice_ Magic_whoosh/compressed/Ice_ Magic_whoosh_01.ogg`
+- `sfx/magic/ice/19.Ice_ Magic_whoosh/compressed/Ice_ Magic_whoosh_02.ogg`
+- `sfx/magic/ice/20.Ice_conjure/compressed/Ice_conjure.ogg`
+- `sfx/magic/ice/21.Ice_spell/compressed/Ice_spell_01.ogg`
+- `sfx/magic/ice/21.Ice_spell/compressed/Ice_spell_02.ogg`
+- `sfx/magic/ice/21.Ice_spell/compressed/Ice_spell_03.ogg`
+- `sfx/magic/ice/22.Ice_Magic_Buff/compressed/Ice_Magic_Buff_01.ogg`
+- `sfx/magic/ice/22.Ice_Magic_Buff/compressed/Ice_Magic_Buff_02.ogg`
+- `sfx/magic/ice/22.Ice_Magic_Buff/compressed/Ice_Magic_Buff_03.ogg`
+- `sfx/magic/lightning/13.Lighting_Hits/compressed/Lighting_Hit_01.ogg`
+- `sfx/magic/lightning/13.Lighting_Hits/compressed/Lighting_Hit_02.ogg`
+- `sfx/magic/lightning/13.Lighting_Hits/compressed/Lighting_Hit_03.ogg`
+- `sfx/magic/lightning/14.Lighting_Magic_Whoosh/compressed/Lighting_Magic_Whoosh_01.ogg`
+- `sfx/magic/lightning/14.Lighting_Magic_Whoosh/compressed/Lighting_Magic_Whoosh_02.ogg`
+- `sfx/magic/lightning/15.Lighting_Aura_loop/compressed/Lighting_Aura_loop.ogg`
+- `sfx/magic/lightning/16.Lighting_Spell/compressed/Lighting_Spell_01.ogg`
+- `sfx/magic/lightning/16.Lighting_Spell/compressed/Lighting_Spell_02.ogg`
+- `sfx/magic/lightning/16.Lighting_Spell/compressed/Lighting_Spell_03.ogg`
+- `sfx/magic/lightning/17.Lighting_Buff/compressed/Lighting_Magic_Buff_01.ogg`
+- `sfx/magic/lightning/17.Lighting_Buff/compressed/Lighting_Magic_Buff_02.ogg`
+- `sfx/magic/lightning/17.Lighting_Buff/compressed/Lighting_Magic_Buff_03.ogg`
+- `sfx/magic/poison/23.Poison_Hit/compressed/Poison_Hit_01.ogg`
+- `sfx/magic/poison/23.Poison_Hit/compressed/Poison_Hit_02.ogg`
+- `sfx/magic/poison/23.Poison_Hit/compressed/Poison_Hit_03.ogg`
+- `sfx/magic/poison/23.Poison_Hit/compressed/Poison_Hit_04.ogg`
+- `sfx/magic/poison/24.Poison_Magic_Whoosh/compressed/Poison_Magic_Whoosh_01.ogg`
+- `sfx/magic/poison/24.Poison_Magic_Whoosh/compressed/Poison_Magic_Whoosh_02.ogg`
+- `sfx/magic/poison/25.Poison_aura/compressed/Poison_aura.ogg`
+- `sfx/magic/poison/26.Poison_Spell/compressed/Poison_Spell_01.ogg`
+- `sfx/magic/poison/26.Poison_Spell/compressed/Poison_Spell_02.ogg`
+- `sfx/magic/poison/26.Poison_Spell/compressed/Poison_Spell_03.ogg`
+- `sfx/magic/poison/27.Poison_Magic_Buff/compressed/Poison_Magic_Buff_01.ogg`
+- `sfx/magic/poison/27.Poison_Magic_Buff/compressed/Poison_Magic_Buff_02.ogg`
+- `sfx/magic/poison/27.Poison_Magic_Buff/compressed/Poison_Magic_Buff_03.ogg`
+- `sfx/magic/rock/34.Rocks_Hit/compressed/Earth_Hit_01.ogg`
+- `sfx/magic/rock/34.Rocks_Hit/compressed/Earth_Hit_02.ogg`
+- `sfx/magic/rock/34.Rocks_Hit/compressed/Earth_Hit_03.ogg`
+- `sfx/magic/rock/35.Rocks_Magic_Whoosh/compressed/Earth_Magic_Whoosh_01.ogg`
+- `sfx/magic/rock/35.Rocks_Magic_Whoosh/compressed/Earth_Magic_Whoosh_02.ogg`
+- `sfx/magic/rock/36.Rocks_Aura_Loop/compressed/Earth_Aura_Loop.ogg`
+- `sfx/magic/rock/37.Rocks_Spell/compressed/Rocks_Spell_01.ogg`
+- `sfx/magic/rock/37.Rocks_Spell/compressed/Rocks_Spell_02.ogg`
+- `sfx/magic/rock/37.Rocks_Spell/compressed/Rocks_Spell_03.ogg`
+- `sfx/magic/rock/39.Rocks _Magic_Buff/compressed/Rocks _Magic_Buff_01.ogg`
+- `sfx/magic/rock/39.Rocks _Magic_Buff/compressed/Rocks _Magic_Buff_02.ogg`
+- `sfx/magic/rock/39.Rocks _Magic_Buff/compressed/Rocks _Magic_Buff_03.ogg`
+- `sfx/magic/water/10.Water_Shield/compressed/Water_Shield.ogg`
+- `sfx/magic/water/11.Water_Magic_Buff/compressed/Water_Magic_Buff_01.ogg`
+- `sfx/magic/water/11.Water_Magic_Buff/compressed/Water_Magic_Buff_02.ogg`
+- `sfx/magic/water/11.Water_Magic_Buff/compressed/Water_Magic_Buff_03.ogg`
+- `sfx/magic/water/12.Water_Spell/compressed/Water_Spell_01.ogg`
+- `sfx/magic/water/12.Water_Spell/compressed/Water_Spell_02.ogg`
+- `sfx/magic/water/12.Water_Spell/compressed/Water_Spell_03.ogg`
+- `sfx/magic/water/8.Water_Hit/compressed/Water_Hit_01.ogg`
+- `sfx/magic/water/8.Water_Hit/compressed/Water_Hit_02.ogg`
+- `sfx/magic/water/8.Water_Hit/compressed/Water_Hit_03.ogg`
+- `sfx/magic/water/9.Water_Magic_Whoosh/compressed/Water_Magic_whoosh_01.ogg`
+- `sfx/magic/water/9.Water_Magic_Whoosh/compressed/Water_Magic_whoosh_02.ogg`
+- `sfx/magic/wind/40.Wind_Hit/compressed/Wind_Hit_01.ogg`
+- `sfx/magic/wind/40.Wind_Hit/compressed/Wind_Hit_02.ogg`
+- `sfx/magic/wind/40.Wind_Hit/compressed/Wind_Hit_03.ogg`
+- `sfx/magic/wind/41.Wind_Whoosh/compressed/Wind_Whoosh_01.ogg`
+- `sfx/magic/wind/41.Wind_Whoosh/compressed/Wind_Whoosh_02.ogg`
+- `sfx/magic/wind/42.Wind_Aura_Loop/compressed/Wind_Aura_Loop .ogg`
+- `sfx/magic/wind/43.Wind_Spell/compressed/Wind_Spell_01.ogg`
+- `sfx/magic/wind/43.Wind_Spell/compressed/Wind_Spell_02.ogg`
+- `sfx/magic/wind/43.Wind_Spell/compressed/Wind_Spell_03.ogg`
+- `sfx/magic/wind/44.Wind_Magic_Buff/compressed/Wind_Magic_Buff_01.ogg`
+- `sfx/magic/wind/44.Wind_Magic_Buff/compressed/Wind_Magic_Buff_02.ogg`
+- `sfx/magic/wind/44.Wind_Magic_Buff/compressed/Wind_Magic_Buff_03.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_HighInstensity_01_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_HighInstensity_02_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_HighInstensity_03_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_HighInstensity_04_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_HighInstensity_05_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_MediumInstensity_01_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_MediumInstensity_02_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_MediumInstensity_03_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_MediumInstensity_04_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_MediumInstensity_05_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_Quick_01_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_Quick_02_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_Quick_03_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_Quick_04_WithEcho.ogg`
+- `sfx/monster/attack/monsters/compressed/Attack_Quick_05_WithEcho.ogg`
+- `sfx/monster/breath/monsters/compressed/FastBreathing_01_WithEcho.ogg`
+- `sfx/monster/breath/monsters/compressed/FastBreathing_02_WithEcho.ogg`
+- `sfx/monster/breath/monsters/compressed/FastBreathing_03_WithEcho.ogg`
+- `sfx/monster/breath/monsters/compressed/SlowBreathing_01_WithEcho.ogg`
+- `sfx/monster/breath/monsters/compressed/SlowBreathing_02_WithEcho.ogg`
+- `sfx/monster/breath/monsters/compressed/SlowBreathing_03_WithEcho.ogg`
+- `sfx/monster/death/monsters/compressed/Death_01_WithEcho.ogg`
+- `sfx/monster/death/monsters/compressed/Death_02_WithEcho.ogg`
+- `sfx/monster/death/monsters/compressed/Death_03_WithEcho.ogg`
+- `sfx/monster/death/monsters/compressed/Death_04_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_01_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_02_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_03_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_04_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_05_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_06_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_07_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_08_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_Earth_01_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_Earth_02_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_Earth_03_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_Earth_04_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_Earth_05_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_Earth_06_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_Earth_07_WithEcho.ogg`
+- `sfx/monster/footstep/monsters/compressed/Footstep_Landing_WithEcho.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Attack/compressed/CREADrgn_Dragon_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Attack/compressed/CREADrgn_Dragon_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Attack/compressed/CREADrgn_Dragon_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Attack/compressed/CREADrgn_Dragon_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Attack/compressed/CREADrgn_Dragon_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Attack/compressed/CREADrgn_Dragon_Attack_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Death/compressed/CREADrgn_Dragon_Death_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Death/compressed/CREADrgn_Dragon_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Death/compressed/CREADrgn_Dragon_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Death/compressed/CREADrgn_Dragon_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Death/compressed/CREADrgn_Dragon_Death_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Footstep/compressed/FEETCrea_Dragon_Footstep_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Footstep/compressed/FEETCrea_Dragon_Footstep_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Footstep/compressed/FEETCrea_Dragon_Footstep_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Footstep/compressed/FEETCrea_Dragon_Footstep_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Hurt/compressed/CREADrgn_Dragon_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Hurt/compressed/CREADrgn_Dragon_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Hurt/compressed/CREADrgn_Dragon_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Hurt/compressed/CREADrgn_Dragon_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Hurt/compressed/CREADrgn_Dragon_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Roar/compressed/CREADrgn_Dragon_Roar_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Roar/compressed/CREADrgn_Dragon_Roar_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Roar/compressed/CREADrgn_Dragon_Roar_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Roar/compressed/CREADrgn_Dragon_Roar_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Wings/compressed/WINGCrea_Dragon_Wings_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Wings/compressed/WINGCrea_Dragon_Wings_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Wings/compressed/WINGCrea_Dragon_Wings_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Wings/compressed/WINGCrea_Dragon_Wings_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Dragon/Dragon_Wings/compressed/WINGCrea_Dragon_Wings_Loop.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Attack/compressed/CREAHmn_Goblin_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Attack/compressed/CREAHmn_Goblin_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Attack/compressed/CREAHmn_Goblin_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Attack/compressed/CREAHmn_Goblin_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Attack/compressed/CREAHmn_Goblin_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Death/compressed/CREAHmn_Goblin_Death_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Death/compressed/CREAHmn_Goblin_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Death/compressed/CREAHmn_Goblin_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Death/compressed/CREAHmn_Goblin_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Death/compressed/CREAHmn_Goblin_Death_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Death/compressed/CREAHmn_Goblin_Death_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Death/compressed/CREAHmn_Goblin_Death_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Death/compressed/CREAHmn_Goblin_Death_08.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Footstep/compressed/FEETCrea_Goblin_Footstep_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Footstep/compressed/FEETCrea_Goblin_Footstep_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Footstep/compressed/FEETCrea_Goblin_Footstep_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Footstep/compressed/FEETCrea_Goblin_Footstep_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Footstep/compressed/FEETCrea_Goblin_Footstep_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Footstep/compressed/FEETCrea_Goblin_Footstep_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_08.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_09.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_10.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_11.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Goblin/Goblin_Hurt/compressed/CREAHmn_Goblin_Hurt_12.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_08.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_09.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_10.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Attack/compressed/CREAHmn_Orc_Attack_11.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_08.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_09.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Death/compressed/CREAHmn_Orc_Death_10.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Footsteps/compressed/CREAHmn_Orc_Footstep_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Footsteps/compressed/CREAHmn_Orc_Footstep_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Footsteps/compressed/CREAHmn_Orc_Footstep_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Footsteps/compressed/CREAHmn_Orc_Footstep_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Footsteps/compressed/CREAHmn_Orc_Footstep_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_08.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_09.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_10.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_11.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_12.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_13.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Hurt/compressed/CREAHmn_Orc_Hurt_14.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Scream/compressed/CREAHmn_Orc_Scream_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Scream/compressed/CREAHmn_Orc_Scream_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Scream/compressed/CREAHmn_Orc_Scream_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Scream/compressed/CREAHmn_Orc_Scream_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Scream/compressed/CREAHmn_Orc_Scream_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Scream/compressed/CREAHmn_Orc_Scream_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Scream/compressed/CREAHmn_Orc_Scream_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Scream/compressed/CREAHmn_Orc_Scream_08.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_Scream/compressed/CREAHmn_Orc_Scream_09.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_footstep_With_Armour/compressed/CREAHmn_Orc_Footstep_With_Armour_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_footstep_With_Armour/compressed/CREAHmn_Orc_Footstep_With_Armour_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_footstep_With_Armour/compressed/CREAHmn_Orc_Footstep_With_Armour_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_footstep_With_Armour/compressed/CREAHmn_Orc_Footstep_With_Armour_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Orc/Orc_footstep_With_Armour/compressed/CREAHmn_Orc_Footstep_With_Armour_05 .ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Attack/compressed/CREAInsc_Spider_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Attack/compressed/CREAInsc_Spider_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Attack/compressed/CREAInsc_Spider_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Attack/compressed/CREAInsc_Spider_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Attack/compressed/CREAInsc_Spider_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Attack/compressed/CREAInsc_Spider_Attack_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Attack/compressed/CREAInsc_Spider_Attack_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Attack_With_ Bite/compressed/CREAInsc_Spider_Attack_With_ Bite_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Attack_With_ Bite/compressed/CREAInsc_Spider_Attack_With_ Bite_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Bite/compressed/CREAInsc_Spider_Bite_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Bite/compressed/CREAInsc_Spider_Bite_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Death/compressed/CREAInsc_Spider_Death_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Death/compressed/CREAInsc_Spider_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Death/compressed/CREAInsc_Spider_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Death/compressed/CREAInsc_Spider_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Death/compressed/CREAInsc_Spider_Death_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Hurt/compressed/CREAInsc_Spider_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Hurt/compressed/CREAInsc_Spider_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Hurt/compressed/CREAInsc_Spider_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Hurt/compressed/CREAInsc_Spider_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Hurt/compressed/CREAInsc_Spider_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_Hurt/compressed/CREAInsc_Spider_Hurt_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_footstep_Loop/compressed/CREAInsc_Spider_footstep_Loop_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Spider/Spider_footstep_Loop/compressed/CREAInsc_Spider_footstep_Loop_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Attack/compressed/CREAMnstr_Troll_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Attack/compressed/CREAMnstr_Troll_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Attack/compressed/CREAMnstr_Troll_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Attack/compressed/CREAMnstr_Troll_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Attack/compressed/CREAMnstr_Troll_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Death/compressed/CREAMnstr_Troll_Death_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Death/compressed/CREAMnstr_Troll_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Death/compressed/CREAMnstr_Troll_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Death/compressed/CREAMnstr_Troll_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Footstep/compressed/FEETCrea_Troll_Footstep_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Footstep/compressed/FEETCrea_Troll_Footstep_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Footstep/compressed/FEETCrea_Troll_Footstep_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Footstep/compressed/FEETCrea_Troll_Footstep_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Footstep/compressed/FEETCrea_Troll_Footstep_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Growl/compressed/CREAMnstr_Troll_Growl_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Growl/compressed/CREAMnstr_Troll_Growl_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Growl/compressed/CREAMnstr_Troll_Growl_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Growl/compressed/CREAMnstr_Troll_Growl_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Growl/compressed/CREAMnstr_Troll_Growl_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Growl/compressed/CREAMnstr_Troll_Growl_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Growl/compressed/CREAMnstr_Troll_Growl_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Hurt/compressed/CREAMnstr_Troll_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Hurt/compressed/CREAMnstr_Troll_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Hurt/compressed/CREAMnstr_Troll_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Hurt/compressed/CREAMnstr_Troll_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Hurt/compressed/CREAMnstr_Troll_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Roar/compressed/CREAMnstr_Troll_Roar_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Roar/compressed/CREAMnstr_Troll_Roar_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Roar/compressed/CREAMnstr_Troll_Roar_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 3 ASSETS/Troll/Troll_Roar/compressed/CREAMnstr_Troll_Roar_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Attack/compressed/CREAHmn_Aberration_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Attack/compressed/CREAHmn_Aberration_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Attack/compressed/CREAHmn_Aberration_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Attack/compressed/CREAHmn_Aberration_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Attack/compressed/CREAHmn_Aberration_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Death/compressed/CREAHmn_Aberration_Death_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Death/compressed/CREAHmn_Aberration_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Death/compressed/CREAHmn_Aberration_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Death/compressed/CREAHmn_Aberration_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Death/compressed/CREAHmn_Aberration_Death_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Footsteps/compressed/FEETCrea_Aberration_Footstep_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Footsteps/compressed/FEETCrea_Aberration_Footstep_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Footsteps/compressed/FEETCrea_Aberration_Footstep_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Footsteps/compressed/FEETCrea_Aberration_Footstep_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Footsteps/compressed/FEETCrea_Aberration_Footstep_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Hurt/compressed/CREAHmn_Aberration_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Hurt/compressed/CREAHmn_Aberration_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Hurt/compressed/CREAHmn_Aberration_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Hurt/compressed/CREAHmn_Aberration_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Aberration/Aberration_Hurt/compressed/CREAHmn_Aberration_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Attack/compressed/CREAMnstr_Behemoth_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Attack/compressed/CREAMnstr_Behemoth_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Attack/compressed/CREAMnstr_Behemoth_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Attack/compressed/CREAMnstr_Behemoth_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Attack/compressed/CREAMnstr_Behemoth_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Death/compressed/CREAMnstr_Behemoth_Death_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Death/compressed/CREAMnstr_Behemoth_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Death/compressed/CREAMnstr_Behemoth_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Death/compressed/CREAMnstr_Behemoth_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Footstep/compressed/FEETCrea_Behemoth_Footstep_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Footstep/compressed/FEETCrea_Behemoth_Footstep_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Footstep/compressed/FEETCrea_Behemoth_Footstep_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Footstep/compressed/FEETCrea_Behemoth_Footstep_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Hurt/compressed/CREAMnstr_Behemoth_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Hurt/compressed/CREAMnstr_Behemoth_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Hurt/compressed/CREAMnstr_Behemoth_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Hurt/compressed/CREAMnstr_Behemoth_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Hurt/compressed/CREAMnstr_Behemoth_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Roar/compressed/CREAMnstr_Behemoth_Roar_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Roar/compressed/CREAMnstr_Behemoth_Roar_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Roar/compressed/CREAMnstr_Behemoth_Roar_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Behemoth/Behemoth_Roar/compressed/CREAMnstr_Behemoth_Roar_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Attack/compressed/CREAInsc_Insect_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Attack/compressed/CREAInsc_Insect_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Attack/compressed/CREAInsc_Insect_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Attack/compressed/CREAInsc_Insect_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Attack/compressed/CREAInsc_Insect_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Attack/compressed/CREAInsc_Insect_Attack_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Fly_Loop/compressed/WINGInsc_Insect_Fly_Loop_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Fly_Loop/compressed/WINGInsc_Insect_Fly_Loop_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Fly_Loop/compressed/WINGInsc_Insect_Fly_Loop_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Fly_Loop/compressed/WINGInsc_Insect_Fly_Loop_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Footstep/compressed/MOVEInsc_Insect_Footstep_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Footstep/compressed/MOVEInsc_Insect_Footstep_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Footstep/compressed/MOVEInsc_Insect_Footstep_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Footstep/compressed/MOVEInsc_Insect_Footstep_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Footstep/compressed/MOVEInsc_Insect_Footstep_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Footstep/compressed/MOVEInsc_Insect_Footstep_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Hurt/compressed/CREAInsc_Insect_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Hurt/compressed/CREAInsc_Insect_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Hurt/compressed/CREAInsc_Insect_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Hurt/compressed/CREAInsc_Insect_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_Hurt/compressed/CREAInsc_Insect_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_death/compressed/CREAInsc_Insect_Death_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_death/compressed/CREAInsc_Insect_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_death/compressed/CREAInsc_Insect_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_death/compressed/CREAInsc_Insect_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Insect/Insect_death/compressed/CREAInsc_Insect_Death_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Attack/compressed/CREAHmn_Skeleton_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Attack/compressed/CREAHmn_Skeleton_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Attack/compressed/CREAHmn_Skeleton_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Attack/compressed/CREAHmn_Skeleton_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Attack/compressed/CREAHmn_Skeleton_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Attack/compressed/CREAHmn_Skeleton_Attack_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Attack/compressed/CREAHmn_Skeleton_Attack_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Attack/compressed/CREAHmn_Skeleton_Attack_08.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Bones/compressed/GOREBone_Skeleton_Bones_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Bones/compressed/GOREBone_Skeleton_Bones_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Bones/compressed/GOREBone_Skeleton_Bones_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Bones/compressed/GOREBone_Skeleton_Bones_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Bones/compressed/GOREBone_Skeleton_Bones_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Bones/compressed/GOREBone_Skeleton_Bones_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Hurt/compressed/CREAHmn_Skeleton_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Hurt/compressed/CREAHmn_Skeleton_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Hurt/compressed/CREAHmn_Skeleton_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Hurt/compressed/CREAHmn_Skeleton_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Hurt/compressed/CREAHmn_Skeleton_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Hurt/compressed/CREAHmn_Skeleton_Hurt_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeleton_Hurt/compressed/CREAHmn_Skeleton_Hurt_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Death/compressed/CREAHmn_Skeleton_Death_01 .ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Death/compressed/CREAHmn_Skeleton_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Death/compressed/CREAHmn_Skeleton_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Death/compressed/CREAHmn_Skeleton_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Death/compressed/CREAHmn_Skeleton_Death_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Death/compressed/CREAHmn_Skeleton_Death_06.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Death/compressed/CREAHmn_Skeleton_Death_07.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Footstep/compressed/FEETCrea_Skeletons_Footstep_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Footstep/compressed/FEETCrea_Skeletons_Footstep_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Footstep/compressed/FEETCrea_Skeletons_Footstep_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Skeleton/Skeletons_Footstep/compressed/FEETCrea_Skeletons_Footstep_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Attack/compressed/CREAEthr_Spectre_Attack_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Attack/compressed/CREAEthr_Spectre_Attack_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Attack/compressed/CREAEthr_Spectre_Attack_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Attack/compressed/CREAEthr_Spectre_Attack_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Attack/compressed/CREAEthr_Spectre_Attack_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Death/compressed/CREAEthr_Spectre_Death_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Death/compressed/CREAEthr_Spectre_Death_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Death/compressed/CREAEthr_Spectre_Death_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Death/compressed/CREAEthr_Spectre_Death_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Death/compressed/CREAEthr_Spectre_Death_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Hurt/compressed/CREAEthr_Spectre_Hurt_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Hurt/compressed/CREAEthr_Spectre_Hurt_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Hurt/compressed/CREAEthr_Spectre_Hurt_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Hurt/compressed/CREAEthr_Spectre_Hurt_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Hurt/compressed/CREAEthr_Spectre_Hurt_05.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Whoosh_Movement/compressed/CREAEthr_Spectre_Whoosh_Movement_01.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Whoosh_Movement/compressed/CREAEthr_Spectre_Whoosh_Movement_02.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Whoosh_Movement/compressed/CREAEthr_Spectre_Whoosh_Movement_03.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Whoosh_Movement/compressed/CREAEthr_Spectre_Whoosh_Movement_04.ogg`
+- `sfx/monster/general/Khron Studio - Monster Library Vol 4 ASSETS/Spectre/Spectre_Whoosh_Movement/compressed/CREAEthr_Spectre_Whoosh_Movement_05.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Only Blood Type A/compressed/CREAMisc_Creature Bite Only Blood Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Only Blood Type A/compressed/CREAMisc_Creature Bite Only Blood Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Only Blood Type A/compressed/CREAMisc_Creature Bite Only Blood Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Only Blood Type A/compressed/CREAMisc_Creature Bite Only Blood Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Only Blood Type B/compressed/CREAMisc_Creature Bite Only Blood Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Only Blood Type B/compressed/CREAMisc_Creature Bite Only Blood Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Only Blood Type B/compressed/CREAMisc_Creature Bite Only Blood Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Only Blood Type B/compressed/CREAMisc_Creature Bite Only Blood Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Only Blood Type B/compressed/CREAMisc_Creature Bite Only Blood Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Type A/compressed/CREAMisc_Creature Bite Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Type A/compressed/CREAMisc_Creature Bite Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Type A/compressed/CREAMisc_Creature Bite Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Type A/compressed/CREAMisc_Creature Bite Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Type B/compressed/CREAMisc_Creature Bite Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Type B/compressed/CREAMisc_Creature Bite Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Type B/compressed/CREAMisc_Creature Bite Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Type B/compressed/CREAMisc_Creature Bite Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Type B/compressed/CREAMisc_Creature Bite Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Without Blood Type A/compressed/CREAMisc_Creature Bite Without Blood Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Without Blood Type A/compressed/CREAMisc_Creature Bite Without Blood Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Without Blood Type A/compressed/CREAMisc_Creature Bite Without Blood Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Without Blood Type A/compressed/CREAMisc_Creature Bite Without Blood Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Without Blood Type B/compressed/CREAMisc_Creature Bite Without Blood Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Without Blood Type B/compressed/CREAMisc_Creature Bite Without Blood Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Without Blood Type B/compressed/CREAMisc_Creature Bite Without Blood Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Without Blood Type B/compressed/CREAMisc_Creature Bite Without Blood Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Creature Bite/Creature Bite Without Blood Type B/compressed/CREAMisc_Creature Bite Without Blood Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type A/compressed/CREAMisc_Alien Egg Hatching Viscous Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type A/compressed/CREAMisc_Alien Egg Hatching Viscous Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type A/compressed/CREAMisc_Alien Egg Hatching Viscous Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type A/compressed/CREAMisc_Alien Egg Hatching Viscous Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type A/compressed/CREAMisc_Alien Egg Hatching Viscous Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type A/compressed/CREAMisc_Alien Egg Hatching Viscous Type A 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type A/compressed/CREAMisc_Alien Egg Hatching Viscous Type A 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type A/compressed/CREAMisc_Alien Egg Hatching Viscous Type A 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type B/compressed/CREAMisc_Alien Egg Hatching Viscous Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type B/compressed/CREAMisc_Alien Egg Hatching Viscous Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type B/compressed/CREAMisc_Alien Egg Hatching Viscous Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type B/compressed/CREAMisc_Alien Egg Hatching Viscous Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type B/compressed/CREAMisc_Alien Egg Hatching Viscous Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Hatching Viscous Type B/compressed/CREAMisc_Alien Egg Hatching Viscous Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Egg/Alien Egg Heartbeat Pulse Loop/compressed/CREAMisc_Alien Egg Heartbeat Pulse Loop_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type A/compressed/CREAMnstr_Kraughor Death Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type A/compressed/CREAMnstr_Kraughor Death Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type A/compressed/CREAMnstr_Kraughor Death Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type A/compressed/CREAMnstr_Kraughor Death Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type A/compressed/CREAMnstr_Kraughor Death Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type A/compressed/CREAMnstr_Kraughor Death Type A 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type A/compressed/CREAMnstr_Kraughor Death Type A 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type A/compressed/CREAMnstr_Kraughor Death Type A 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type B/compressed/CREAMnstr_Kraughor Death Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type B/compressed/CREAMnstr_Kraughor Death Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type B/compressed/CREAMnstr_Kraughor Death Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type B/compressed/CREAMnstr_Kraughor Death Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type B/compressed/CREAMnstr_Kraughor Death Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type B/compressed/CREAMnstr_Kraughor Death Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type B/compressed/CREAMnstr_Kraughor Death Type B 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type B/compressed/CREAMnstr_Kraughor Death Type B 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type B/compressed/CREAMnstr_Kraughor Death Type B 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type C/compressed/CREAMnstr_Kraughor Death Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type C/compressed/CREAMnstr_Kraughor Death Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type C/compressed/CREAMnstr_Kraughor Death Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type C/compressed/CREAMnstr_Kraughor Death Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type C/compressed/CREAMnstr_Kraughor Death Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type C/compressed/CREAMnstr_Kraughor Death Type C 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type C/compressed/CREAMnstr_Kraughor Death Type C 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Death Type C/compressed/CREAMnstr_Kraughor Death Type C 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type A/compressed/FEETCrea_Kraughor Footstep Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type A/compressed/FEETCrea_Kraughor Footstep Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type B/compressed/FEETCrea_Kraughor Footstep Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type B/compressed/FEETCrea_Kraughor Footstep Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type B/compressed/FEETCrea_Kraughor Footstep Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type B/compressed/FEETCrea_Kraughor Footstep Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type B/compressed/FEETCrea_Kraughor Footstep Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type C/compressed/FEETCrea_Kraughor Footstep Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type C/compressed/FEETCrea_Kraughor Footstep Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type C/compressed/FEETCrea_Kraughor Footstep Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type C/compressed/FEETCrea_Kraughor Footstep Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Footstep Type C/compressed/FEETCrea_Kraughor Footstep Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type A/compressed/CREAMnstr_Kraughor Growl Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type A/compressed/CREAMnstr_Kraughor Growl Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type A/compressed/CREAMnstr_Kraughor Growl Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type A/compressed/CREAMnstr_Kraughor Growl Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type A/compressed/CREAMnstr_Kraughor Growl Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type A/compressed/CREAMnstr_Kraughor Growl Type A 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type B/compressed/CREAMnstr_Kraughor Growl Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type B/compressed/CREAMnstr_Kraughor Growl Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type B/compressed/CREAMnstr_Kraughor Growl Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type B/compressed/CREAMnstr_Kraughor Growl Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type B/compressed/CREAMnstr_Kraughor Growl Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type B/compressed/CREAMnstr_Kraughor Growl Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type B/compressed/CREAMnstr_Kraughor Growl Type B 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type C/compressed/CREAMnstr_Kraughor Growl Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type C/compressed/CREAMnstr_Kraughor Growl Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type C/compressed/CREAMnstr_Kraughor Growl Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type C/compressed/CREAMnstr_Kraughor Growl Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type C/compressed/CREAMnstr_Kraughor Growl Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type C/compressed/CREAMnstr_Kraughor Growl Type C 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Growl Type C/compressed/CREAMnstr_Kraughor Growl Type C 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type A/compressed/CREAMnstr_Kraughor Roar Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type A/compressed/CREAMnstr_Kraughor Roar Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type A/compressed/CREAMnstr_Kraughor Roar Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type A/compressed/CREAMnstr_Kraughor Roar Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type A/compressed/CREAMnstr_Kraughor Roar Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type B/compressed/CREAMnstr_Kraughor Roar Type B 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type C/compressed/CREAMnstr_Kraughor Roar Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type C/compressed/CREAMnstr_Kraughor Roar Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Kraughor/Kraughor Roar Type C/compressed/CREAMnstr_Kraughor Roar Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type A/compressed/CREAMnstr_Skarnil Death Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type A/compressed/CREAMnstr_Skarnil Death Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type A/compressed/CREAMnstr_Skarnil Death Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type A/compressed/CREAMnstr_Skarnil Death Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type A/compressed/CREAMnstr_Skarnil Death Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type B/compressed/CREAMnstr_Skarnil Death Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type B/compressed/CREAMnstr_Skarnil Death Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type B/compressed/CREAMnstr_Skarnil Death Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type B/compressed/CREAMnstr_Skarnil Death Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type B/compressed/CREAMnstr_Skarnil Death Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type B/compressed/CREAMnstr_Skarnil Death Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type B/compressed/CREAMnstr_Skarnil Death Type B 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type B/compressed/CREAMnstr_Skarnil Death Type B 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Death Type C/compressed/CREAMnstr_Skarnil Death Type C 12_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type A/compressed/FEETCrea_Skarnil Foofsteps Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type A/compressed/FEETCrea_Skarnil Foofsteps Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type A/compressed/FEETCrea_Skarnil Foofsteps Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type A/compressed/FEETCrea_Skarnil Foofsteps Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type A/compressed/FEETCrea_Skarnil Foofsteps Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type A/compressed/FEETCrea_Skarnil Foofsteps Type A 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type A/compressed/FEETCrea_Skarnil Foofsteps Type A 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type A/compressed/FEETCrea_Skarnil Foofsteps Type A 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type B/compressed/FEETCrea_Skarnil Foofsteps Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type B/compressed/FEETCrea_Skarnil Foofsteps Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type B/compressed/FEETCrea_Skarnil Foofsteps Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type C/compressed/FEETCrea_Skarnil Foofsteps Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type C/compressed/FEETCrea_Skarnil Foofsteps Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type C/compressed/FEETCrea_Skarnil Foofsteps Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type D/compressed/FEETCrea_Skarnil Foofsteps Type D 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type D/compressed/FEETCrea_Skarnil Foofsteps Type D 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Foofsteps Type D/compressed/FEETCrea_Skarnil Foofsteps Type D 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type A/compressed/CREAMnstr_Skarnil Growl Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type A/compressed/CREAMnstr_Skarnil Growl Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type A/compressed/CREAMnstr_Skarnil Growl Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type A/compressed/CREAMnstr_Skarnil Growl Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type A/compressed/CREAMnstr_Skarnil Growl Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type B/compressed/CREAMnstr_Skarnil Growl Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type B/compressed/CREAMnstr_Skarnil Growl Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type B/compressed/CREAMnstr_Skarnil Growl Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type B/compressed/CREAMnstr_Skarnil Growl Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type B/compressed/CREAMnstr_Skarnil Growl Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type B/compressed/CREAMnstr_Skarnil Growl Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type B/compressed/CREAMnstr_Skarnil Growl Type B 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type B/compressed/CREAMnstr_Skarnil Growl Type B 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type B/compressed/CREAMnstr_Skarnil Growl Type B 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Growl Type C/compressed/CREAMnstr_Skarnil Growl Type C 12_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type A/compressed/CREAMnstr_Skarnil Grunt Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type A/compressed/CREAMnstr_Skarnil Grunt Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type A/compressed/CREAMnstr_Skarnil Grunt Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type A/compressed/CREAMnstr_Skarnil Grunt Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type B/compressed/CREAMnstr_Skarnil Grunt Type B 12_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 12_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 13_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 14_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 15_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 16_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Grunt Type C/compressed/CREAMnstr_Skarnil Grunt Type C 17_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type A/compressed/CREAMnstr_Skarnil Roar Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type A/compressed/CREAMnstr_Skarnil Roar Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type A/compressed/CREAMnstr_Skarnil Roar Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type A/compressed/CREAMnstr_Skarnil Roar Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type A/compressed/CREAMnstr_Skarnil Roar Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type A/compressed/CREAMnstr_Skarnil Roar Type A 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type A/compressed/CREAMnstr_Skarnil Roar Type A 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type B/compressed/CREAMnstr_Skarnil Roar Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type B/compressed/CREAMnstr_Skarnil Roar Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type B/compressed/CREAMnstr_Skarnil Roar Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type B/compressed/CREAMnstr_Skarnil Roar Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type C/compressed/CREAMnstr_Skarnil Roar Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type C/compressed/CREAMnstr_Skarnil Roar Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type C/compressed/CREAMnstr_Skarnil Roar Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type C/compressed/CREAMnstr_Skarnil Roar Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type C/compressed/CREAMnstr_Skarnil Roar Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type C/compressed/CREAMnstr_Skarnil Roar Type C 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Roar Type C/compressed/CREAMnstr_Skarnil Roar Type C 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Wings Type A/compressed/WINGCrea_Skarnil Wings Type A_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Wings Type B/compressed/WINGCrea_Skarnil Wings Type B_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Skarnil/Skarnil Wings Type C/compressed/WINGCrea_Skarnil Wings Type C_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 12_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type A/compressed/CREAMnstr_Varnok Death Type A 13_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type B/compressed/CREAMnstr_Varnok Death Type B 12_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type C/compressed/CREAMnstr_Varnok Death Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type C/compressed/CREAMnstr_Varnok Death Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type C/compressed/CREAMnstr_Varnok Death Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type C/compressed/CREAMnstr_Varnok Death Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type C/compressed/CREAMnstr_Varnok Death Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type C/compressed/CREAMnstr_Varnok Death Type C 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type C/compressed/CREAMnstr_Varnok Death Type C 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Death Type C/compressed/CREAMnstr_Varnok Death Type C 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Footstep Mud/compressed/CREAMnstr_Varnok Footstep Mud 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Footstep Mud/compressed/CREAMnstr_Varnok Footstep Mud 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Footstep Mud/compressed/CREAMnstr_Varnok Footstep Mud 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Footstep Mud/compressed/CREAMnstr_Varnok Footstep Mud 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Footstep Mud/compressed/CREAMnstr_Varnok Footstep Mud 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Footstep Mud/compressed/CREAMnstr_Varnok Footstep Mud 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Footstep Mud/compressed/CREAMnstr_Varnok Footstep Mud 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Footstep Mud/compressed/CREAMnstr_Varnok Footstep Mud 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Footstep Mud/compressed/CREAMnstr_Varnok Footstep Mud 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 12_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 13_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 14_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type A/compressed/CREAMnstr_Varnok Growl Type A 15_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type B/compressed/CREAMnstr_Varnok Growl Type B 12_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 12_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Growl Type C/compressed/CREAMnstr_Varnok Growl Type C 13_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Normal Footstep/compressed/CREAMnstr_Varnok Normal Footstep 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Normal Footstep/compressed/CREAMnstr_Varnok Normal Footstep 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Normal Footstep/compressed/CREAMnstr_Varnok Normal Footstep 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Normal Footstep/compressed/CREAMnstr_Varnok Normal Footstep 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Normal Footstep/compressed/CREAMnstr_Varnok Normal Footstep 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Normal Footstep/compressed/CREAMnstr_Varnok Normal Footstep 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Normal Footstep/compressed/CREAMnstr_Varnok Normal Footstep 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Normal Footstep/compressed/CREAMnstr_Varnok Normal Footstep 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Normal Footstep/compressed/CREAMnstr_Varnok Normal Footstep 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type A/compressed/CREAMnstr_Varnok Roar Type A 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 09_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 10_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type B/compressed/CREAMnstr_Varnok Roar Type B 11_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type C/compressed/CREAMnstr_Varnok Roar Type C 01_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type C/compressed/CREAMnstr_Varnok Roar Type C 02_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type C/compressed/CREAMnstr_Varnok Roar Type C 03_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type C/compressed/CREAMnstr_Varnok Roar Type C 04_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type C/compressed/CREAMnstr_Varnok Roar Type C 05_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type C/compressed/CREAMnstr_Varnok Roar Type C 06_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type C/compressed/CREAMnstr_Varnok Roar Type C 07_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type C/compressed/CREAMnstr_Varnok Roar Type C 08_KRST_NONE.ogg`
+- `sfx/monster/general/Monster Library Vol. 5/Varnok/Varnok Roar Type C/compressed/CREAMnstr_Varnok Roar Type C 09_KRST_NONE.ogg`
+- `sfx/monster/general/files/1.Attack_Quick/compressed/Attack_Quick_01.ogg`
+- `sfx/monster/general/files/1.Attack_Quick/compressed/Attack_Quick_02.ogg`
+- `sfx/monster/general/files/1.Attack_Quick/compressed/Attack_Quick_03.ogg`
+- `sfx/monster/general/files/1.Attack_Quick/compressed/Attack_Quick_With_Caw_01.ogg`
+- `sfx/monster/general/files/1.Attack_Quick/compressed/Attack_Quick_With_Caw_02.ogg`
+- `sfx/monster/general/files/1.Attack_Quick/compressed/Attack_Quick_With_Caw_03.ogg`
+- `sfx/monster/general/files/10.Growl_with_Slobber/compressed/Growl_with_Slobber_01.ogg`
+- `sfx/monster/general/files/10.Growl_with_Slobber/compressed/Growl_with_Slobber_02.ogg`
+- `sfx/monster/general/files/10.Growl_with_Slobber/compressed/Growl_with_Slobber_03.ogg`
+- `sfx/monster/general/files/11.Slobber/compressed/Slobber_01.ogg`
+- `sfx/monster/general/files/11.Slobber/compressed/Slobber_02.ogg`
+- `sfx/monster/general/files/11.Slobber/compressed/Slobber_03.ogg`
+- `sfx/monster/general/files/12.Slow_Breathing/compressed/Slow_Breathing.ogg`
+- `sfx/monster/general/files/12.Slow_Breathing/compressed/Slow_Breathing_Loop.ogg`
+- `sfx/monster/general/files/13.Fast_Breathing/compressed/Fast_Breathing.ogg`
+- `sfx/monster/general/files/13.Fast_Breathing/compressed/Fast_Breathing_loop.ogg`
+- `sfx/monster/general/files/14.short_Roar/compressed/Short_Roar_01.ogg`
+- `sfx/monster/general/files/14.short_Roar/compressed/Short_Roar_02.ogg`
+- `sfx/monster/general/files/14.short_Roar/compressed/Short_Roar_03.ogg`
+- `sfx/monster/general/files/14.short_Roar/compressed/Short_Roar_04.ogg`
+- `sfx/monster/general/files/14.short_Roar/compressed/Short_Roar_With_Caw_01.ogg`
+- `sfx/monster/general/files/14.short_Roar/compressed/Short_Roar_With_Caw_02.ogg`
+- `sfx/monster/general/files/14.short_Roar/compressed/Short_Roar_With_Caw_03.ogg`
+- `sfx/monster/general/files/14.short_Roar/compressed/Short_Roar_With_Caw_04.ogg`
+- `sfx/monster/general/files/15.Long_Roar/compressed/Long_Roar_01.ogg`
+- `sfx/monster/general/files/15.Long_Roar/compressed/Long_Roar_02.ogg`
+- `sfx/monster/general/files/15.Long_Roar/compressed/Long_Roar_03.ogg`
+- `sfx/monster/general/files/15.Long_Roar/compressed/Long_Roar_04.ogg`
+- `sfx/monster/general/files/15.Long_Roar/compressed/Long_Roar_With_Caw_01.ogg`
+- `sfx/monster/general/files/15.Long_Roar/compressed/Long_Roar_With_Caw_02.ogg`
+- `sfx/monster/general/files/15.Long_Roar/compressed/Long_Roar_With_Caw_03.ogg`
+- `sfx/monster/general/files/15.Long_Roar/compressed/Long_Roar_With_Caw_04.ogg`
+- `sfx/monster/general/files/16.Eating_Loop/compressed/Eating_Loop.ogg`
+- `sfx/monster/general/files/17.Eating_Loop_With_Grunts/compressed/Eating_Loop_With_Grunts.ogg`
+- `sfx/monster/general/files/18.Grunt/compressed/Grunt_01.ogg`
+- `sfx/monster/general/files/18.Grunt/compressed/Grunt_02.ogg`
+- `sfx/monster/general/files/18.Grunt/compressed/Grunt_03.ogg`
+- `sfx/monster/general/files/18.Grunt/compressed/Grunt_04.ogg`
+- `sfx/monster/general/files/18.Grunt/compressed/Grunt_With_Caw_01.ogg`
+- `sfx/monster/general/files/18.Grunt/compressed/Grunt_With_Caw_02.ogg`
+- `sfx/monster/general/files/18.Grunt/compressed/Grunt_With_Caw_03.ogg`
+- `sfx/monster/general/files/18.Grunt/compressed/Grunt_With_Caw_04.ogg`
+- `sfx/monster/general/files/19.Death/compressed/Death_01.ogg`
+- `sfx/monster/general/files/19.Death/compressed/Death_02.ogg`
+- `sfx/monster/general/files/19.Death/compressed/Death_03.ogg`
+- `sfx/monster/general/files/19.Death/compressed/Death_With_Caw_02.ogg`
+- `sfx/monster/general/files/2.Attack_Normal/compressed/Attack_Normal_01.ogg`
+- `sfx/monster/general/files/2.Attack_Normal/compressed/Attack_Normal_02.ogg`
+- `sfx/monster/general/files/2.Attack_Normal/compressed/Attack_Normal_03.ogg`
+- `sfx/monster/general/files/2.Attack_Normal/compressed/Attack_Normal_With_Caw_01.ogg`
+- `sfx/monster/general/files/2.Attack_Normal/compressed/Attack_Normal_With_Caw_02.ogg`
+- `sfx/monster/general/files/2.Attack_Normal/compressed/Attack_Normal_With_Caw_03.ogg`
+- `sfx/monster/general/files/20.Recieve_Attack_Quick/compressed/Recieve_Attack_Quick_01.ogg`
+- `sfx/monster/general/files/20.Recieve_Attack_Quick/compressed/Recieve_Attack_Quick_04.ogg`
+- `sfx/monster/general/files/20.Recieve_Attack_Quick/compressed/Recieve_Attack_Quick_With_Caw_01.ogg`
+- `sfx/monster/general/files/20.Recieve_Attack_Quick/compressed/Recieve_Attack_Quick_With_Caw_02.ogg`
+- `sfx/monster/general/files/20.Recieve_Attack_Quick/compressed/Recieve_Attack_Quick_With_Caw_03.ogg`
+- `sfx/monster/general/files/20.Recieve_Attack_Quick/compressed/Recieve_Attack_Quick_With_Caw_04.ogg`
+- `sfx/monster/general/files/21.Recieve_Attack_Medium/compressed/Recieve_Attack_Medium_01.ogg`
+- `sfx/monster/general/files/21.Recieve_Attack_Medium/compressed/Recieve_Attack_Medium_02.ogg`
+- `sfx/monster/general/files/21.Recieve_Attack_Medium/compressed/Recieve_Attack_Medium_03.ogg`
+- `sfx/monster/general/files/21.Recieve_Attack_Medium/compressed/Recieve_Attack_Medium_04.ogg`
+- `sfx/monster/general/files/21.Recieve_Attack_Medium/compressed/Recieve_Attack_Medium_With_Caw_01.ogg`
+- `sfx/monster/general/files/21.Recieve_Attack_Medium/compressed/Recieve_Attack_Medium_With_Caw_02.ogg`
+- `sfx/monster/general/files/21.Recieve_Attack_Medium/compressed/Recieve_Attack_Medium_With_Caw_03.ogg`
+- `sfx/monster/general/files/21.Recieve_Attack_Medium/compressed/Recieve_Attack_Medium_With_Caw_04.ogg`
+- `sfx/monster/general/files/22.Recieve_Attack_Long/compressed/Recieve_Attack_Long_01.ogg`
+- `sfx/monster/general/files/22.Recieve_Attack_Long/compressed/Recieve_Attack_Long_02.ogg`
+- `sfx/monster/general/files/22.Recieve_Attack_Long/compressed/Recieve_Attack_Long_03.ogg`
+- `sfx/monster/general/files/22.Recieve_Attack_Long/compressed/Recieve_Attack_Long_04.ogg`
+- `sfx/monster/general/files/22.Recieve_Attack_Long/compressed/Recieve_Attack_Long_With_Caw_01.ogg`
+- `sfx/monster/general/files/22.Recieve_Attack_Long/compressed/Recieve_Attack_Long_With_Caw_02.ogg`
+- `sfx/monster/general/files/22.Recieve_Attack_Long/compressed/Recieve_Attack_Long_With_Caw_03.ogg`
+- `sfx/monster/general/files/22.Recieve_Attack_Long/compressed/Recieve_Attack_Long_With_Caw_04.ogg`
+- `sfx/monster/general/files/23.Mutation/compressed/Mutation_01.ogg`
+- `sfx/monster/general/files/23.Mutation/compressed/Mutation_02.ogg`
+- `sfx/monster/general/files/23.Mutation/compressed/Mutation_03.ogg`
+- `sfx/monster/general/files/24.Bite/compressed/Bite_01.ogg`
+- `sfx/monster/general/files/24.Bite/compressed/Bite_02.ogg`
+- `sfx/monster/general/files/24.Bite/compressed/Bite_03.ogg`
+- `sfx/monster/general/files/24.Bite/compressed/Bite_With_Blood_01.ogg`
+- `sfx/monster/general/files/24.Bite/compressed/Bite_With_Blood_02.ogg`
+- `sfx/monster/general/files/24.Bite/compressed/Bite_With_Blood_03.ogg`
+- `sfx/monster/general/files/24.Bite/compressed/Complete_Bite_01.ogg`
+- `sfx/monster/general/files/24.Bite/compressed/Complete_Bite_02.ogg`
+- `sfx/monster/general/files/24.Bite/compressed/Complete_Bite_03.ogg`
+- `sfx/monster/general/files/25.Angry/compressed/Angry_01.ogg`
+- `sfx/monster/general/files/25.Angry/compressed/Angry_02.ogg`
+- `sfx/monster/general/files/25.Angry/compressed/Angry_03.ogg`
+- `sfx/monster/general/files/25.Angry/compressed/Angry_04.ogg`
+- `sfx/monster/general/files/25.Angry/compressed/Angry_With_Caw_01.ogg`
+- `sfx/monster/general/files/25.Angry/compressed/Angry_With_Caw_02.ogg`
+- `sfx/monster/general/files/25.Angry/compressed/Angry_With_Caw_03.ogg`
+- `sfx/monster/general/files/25.Angry/compressed/Angry_With_Caw_04.ogg`
+- `sfx/monster/general/files/26.Flying_Loop/compressed/Flying_Loop.ogg`
+- `sfx/monster/general/files/3.Attack_High_Intensity/compressed/Attack_High_Intensity_01.ogg`
+- `sfx/monster/general/files/3.Attack_High_Intensity/compressed/Attack_High_Intensity_02.ogg`
+- `sfx/monster/general/files/3.Attack_High_Intensity/compressed/Attack_High_Intensity_03.ogg`
+- `sfx/monster/general/files/3.Attack_High_Intensity/compressed/Attack_High_Intensity_With_Caw_01.ogg`
+- `sfx/monster/general/files/3.Attack_High_Intensity/compressed/Attack_High_Intensity_With_Caw_02.ogg`
+- `sfx/monster/general/files/3.Attack_High_Intensity/compressed/Attack_High_Intensity_With_Caw_03.ogg`
+- `sfx/monster/general/files/4.Danger/compressed/Danger_01.ogg`
+- `sfx/monster/general/files/4.Danger/compressed/Danger_02.ogg`
+- `sfx/monster/general/files/4.Danger/compressed/Danger_03.ogg`
+- `sfx/monster/general/files/4.Danger/compressed/Danger_04.ogg`
+- `sfx/monster/general/files/4.Danger/compressed/Danger_With_Caw_02.ogg`
+- `sfx/monster/general/files/4.Danger/compressed/Danger_With_Caw_03.ogg`
+- `sfx/monster/general/files/4.Danger/compressed/Danger_With_Caw_04.ogg`
+- `sfx/monster/general/files/5.Friendship_Call/compressed/Friendship_Call_01.ogg`
+- `sfx/monster/general/files/5.Friendship_Call/compressed/Friendship_Call_02.ogg`
+- `sfx/monster/general/files/5.Friendship_Call/compressed/Friendship_Call_03.ogg`
+- `sfx/monster/general/files/5.Friendship_Call/compressed/Friendship_Call_04.ogg`
+- `sfx/monster/general/files/5.Friendship_Call/compressed/Friendship_Call_With_Caw_01.ogg`
+- `sfx/monster/general/files/5.Friendship_Call/compressed/Friendship_Call_With_Caw_02.ogg`
+- `sfx/monster/general/files/5.Friendship_Call/compressed/Friendship_Call_With_Caw_03.ogg`
+- `sfx/monster/general/files/5.Friendship_Call/compressed/Friendship_Call_With_Caw_04.ogg`
+- `sfx/monster/general/files/6.Scream/compressed/Scream_01.ogg`
+- `sfx/monster/general/files/6.Scream/compressed/Scream_02.ogg`
+- `sfx/monster/general/files/6.Scream/compressed/Scream_03.ogg`
+- `sfx/monster/general/files/6.Scream/compressed/Scream_04.ogg`
+- `sfx/monster/general/files/6.Scream/compressed/Scream_With_Caw_01.ogg`
+- `sfx/monster/general/files/6.Scream/compressed/Scream_With_Caw_02.ogg`
+- `sfx/monster/general/files/6.Scream/compressed/Scream_With_Caw_03.ogg`
+- `sfx/monster/general/files/6.Scream/compressed/Scream_With_Caw_04.ogg`
+- `sfx/monster/general/files/7.Step/compressed/Step_01.ogg`
+- `sfx/monster/general/files/7.Step/compressed/Step_02.ogg`
+- `sfx/monster/general/files/7.Step/compressed/Step_03.ogg`
+- `sfx/monster/general/files/7.Step/compressed/Step_04.ogg`
+- `sfx/monster/general/files/7.Step/compressed/Step_05.ogg`
+- `sfx/monster/general/files/8.Step_With_Materials/compressed/Footstep_Gravel.ogg`
+- `sfx/monster/general/files/8.Step_With_Materials/compressed/Footstep_Leaves.ogg`
+- `sfx/monster/general/files/8.Step_With_Materials/compressed/Footstep_Metal.ogg`
+- `sfx/monster/general/files/8.Step_With_Materials/compressed/Footstep_Sand.ogg`
+- `sfx/monster/general/files/8.Step_With_Materials/compressed/Footstep_Water.ogg`
+- `sfx/monster/general/files/9.Growl/compressed/Growl_01.ogg`
+- `sfx/monster/general/files/9.Growl/compressed/Growl_02.ogg`
+- `sfx/monster/general/files/9.Growl/compressed/Growl_03.ogg`
+- `sfx/monster/general/files/9.Growl/compressed/Growl_04.ogg`
+- `sfx/monster/general/files/9.Growl/compressed/Growl_05.ogg`
+- `sfx/monster/general/files/9.Growl/compressed/Growl_With_Caw_03.ogg`
+- `sfx/monster/general/files/9.Growl/compressed/Growl_With_Caw_04.ogg`
+- `sfx/monster/general/monsters/compressed/Eating_Loop_WithEcho.ogg`
+- `sfx/monster/general/monsters/compressed/ThroatSound_01_WithEcho.ogg`
+- `sfx/monster/general/monsters/compressed/ThroatSound_02_WithEcho.ogg`
+- `sfx/monster/growl/monsters/compressed/DeepLowGrowl_01_WithEcho.ogg`
+- `sfx/monster/growl/monsters/compressed/DeepLowGrowl_02_WithEcho.ogg`
+- `sfx/monster/growl/monsters/compressed/DeepLowGrowl_03_WithEcho.ogg`
+- `sfx/monster/growl/monsters/compressed/Low Growl_01_WithEcho.ogg`
+- `sfx/monster/growl/monsters/compressed/Low Growl_02_WithEcho.ogg`
+- `sfx/monster/growl/monsters/compressed/Low Growl_03_WithEcho.ogg`
+- `sfx/monster/growl/monsters/compressed/Low Growl_04_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_HighIntensity_01_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_HighIntensity_02_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_HighIntensity_03_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_HighIntensity_04_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_HighIntensity_05_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_NormalIntensity_01_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_NormalIntensity_02_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_NormalIntensity_03_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_NormalIntensity_04_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_NormalIntensity_05_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_Quick_01_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_Quick_02_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_Quick_03_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_Quick_04_WithEcho.ogg`
+- `sfx/monster/impact/monsters/compressed/RecieveAttack_Quick_05_WithEcho.ogg`
+- `sfx/monster/movement/monsters/compressed/Movement_Flying_Loop_01_WithEcho.ogg`
+- `sfx/monster/movement/monsters/compressed/Movement_Flying_Loop_02_WithEcho.ogg`
+- `sfx/monster/movement/monsters/compressed/Movement_Spinning_Earth_Loop_01_WithEcho.ogg`
+- `sfx/monster/movement/monsters/compressed/Movement_Spinning_Earth_Loop_02_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/AgressiveShout_01_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/AgressiveShout_02_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/AgressiveShout_03_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/AgressiveShout_04_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/AgressiveShout_05_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/AgressiveShout_06_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/AgressiveShout_07_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/AgressiveShout_08_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/AgressiveShout_09_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/DragonShout_01_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/DragonShout_02_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/DragonShout_03_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/DragonShout_04_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/DragonShout_05_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Eating_Loop_WithGrunts_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Grunt_01_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Grunt_02_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Grunt_03_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Grunt_04_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Grunt_05_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/IncontinenceScream_01_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/IncontinenceScream_02_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/IncontinenceScream_03_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/IncontinenceScream_04_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/IncontinenceScream_05_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/IncontinenceScream_06_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/IncontinenceScream_07_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/QuickShout_01_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/QuickShout_02_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Shout_01_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Shout_02_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Shout_03_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Shout_04_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/Shout_05_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/TrebelScreams_01_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/TrebelScreams_02_WithEcho.ogg`
+- `sfx/monster/shout/monsters/compressed/TrebelScreams_03_WithEcho.ogg`
+- `sfx/puzzle/1.Puzzle Score_Power_Up_Bar/compressed/Power_Up_Bar_01 .ogg`
+- `sfx/puzzle/1.Puzzle Score_Power_Up_Bar/compressed/Power_Up_Bar_02.ogg`
+- `sfx/puzzle/1.Puzzle Score_Power_Up_Bar/compressed/Power_Up_Bar_03.ogg`
+- `sfx/puzzle/1.Puzzle Score_Power_Up_Bar/compressed/Power_Up_Bar_Lool_01.ogg`
+- `sfx/puzzle/1.Puzzle Score_Power_Up_Bar/compressed/Power_Up_Bar_Loop_02.ogg`
+- `sfx/puzzle/1.Puzzle Score_Power_Up_Bar/compressed/Power_Up_Bar_Loop_03.ogg`
+- `sfx/puzzle/10.Stars_complete_Level/compressed/Stars_complete_Level_01.ogg`
+- `sfx/puzzle/10.Stars_complete_Level/compressed/Stars_complete_Level_02.ogg`
+- `sfx/puzzle/10.Stars_complete_Level/compressed/Stars_complete_Level_03.ogg`
+- `sfx/puzzle/10.Stars_complete_Level/compressed/Stars_complete_Level_04.ogg`
+- `sfx/puzzle/10.Stars_complete_Level/compressed/Stars_complete_Level_05.ogg`
+- `sfx/puzzle/11.Complete_Level/compressed/Complete_Level_01.ogg`
+- `sfx/puzzle/11.Complete_Level/compressed/Complete_Level_02.ogg`
+- `sfx/puzzle/11.Complete_Level/compressed/Complete_Level_03.ogg`
+- `sfx/puzzle/11.Complete_Level/compressed/Complete_Level_04.ogg`
+- `sfx/puzzle/11.Complete_Level/compressed/Complete_Level_05.ogg`
+- `sfx/puzzle/11.Complete_Level/compressed/Complete_Level_06.ogg`
+- `sfx/puzzle/12. Lose_Game/compressed/Lose_Game_01.ogg`
+- `sfx/puzzle/12. Lose_Game/compressed/Lose_Game_02.ogg`
+- `sfx/puzzle/12. Lose_Game/compressed/Lose_Game_03.ogg`
+- `sfx/puzzle/13.Open_New_Level/compressed/Open_New_level_01.ogg`
+- `sfx/puzzle/13.Open_New_Level/compressed/Open_New_level_02.ogg`
+- `sfx/puzzle/13.Open_New_Level/compressed/Open_New_level_03.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_01.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_02.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_03.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_04.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_05.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_06.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_07.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_08.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_09.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_10.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_11.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_12.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_13.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_14.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_15.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_16.ogg`
+- `sfx/puzzle/14. Neutral_Select_Button/compressed/Neutral_Select_butom_17.ogg`
+- `sfx/puzzle/15. Select Item/compressed/Select_Item_01.ogg`
+- `sfx/puzzle/15. Select Item/compressed/Select_Item_02.ogg`
+- `sfx/puzzle/15. Select Item/compressed/Select_Item_03.ogg`
+- `sfx/puzzle/15. Select Item/compressed/Select_Item_04.ogg`
+- `sfx/puzzle/15. Select Item/compressed/Select_Item_05.ogg`
+- `sfx/puzzle/15. Select Item/compressed/Select_Item_06.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_01.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_02.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_03.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_04.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_05.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_06.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_07.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_08.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_09.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_10.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_11.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_12.ogg`
+- `sfx/puzzle/16. Tiny Pop/compressed/Tiny_Pop_13.ogg`
+- `sfx/puzzle/17. Positive Pop/compressed/Positive_Pop_01.ogg`
+- `sfx/puzzle/17. Positive Pop/compressed/Positive_Pop_02.ogg`
+- `sfx/puzzle/17. Positive Pop/compressed/Positive_Pop_03.ogg`
+- `sfx/puzzle/17. Positive Pop/compressed/Positive_Pop_04.ogg`
+- `sfx/puzzle/17. Positive Pop/compressed/Positive_Pop_05.ogg`
+- `sfx/puzzle/17. Positive Pop/compressed/Positive_Pop_06.ogg`
+- `sfx/puzzle/18. Negative Pop/compressed/Negative_Pop_01.ogg`
+- `sfx/puzzle/18. Negative Pop/compressed/Negative_Pop_02.ogg`
+- `sfx/puzzle/18. Negative Pop/compressed/Negative_Pop_03.ogg`
+- `sfx/puzzle/18. Negative Pop/compressed/Negative_Pop_04.ogg`
+- `sfx/puzzle/18. Negative Pop/compressed/Negative_Pop_05.ogg`
+- `sfx/puzzle/18. Negative Pop/compressed/Negative_Pop_06.ogg`
+- `sfx/puzzle/19. Collective_Coins/compressed/Collective_Coins_01.ogg`
+- `sfx/puzzle/19. Collective_Coins/compressed/Collective_Coins_02.ogg`
+- `sfx/puzzle/19. Collective_Coins/compressed/Collective_Coins_03.ogg`
+- `sfx/puzzle/19. Collective_Coins/compressed/Collective_Coins_04.ogg`
+- `sfx/puzzle/2.Normal_power_up/compressed/Normal_power_up_01.ogg`
+- `sfx/puzzle/2.Normal_power_up/compressed/Normal_power_up_02.ogg`
+- `sfx/puzzle/2.Normal_power_up/compressed/Normal_power_up_03.ogg`
+- `sfx/puzzle/2.Normal_power_up/compressed/Normal_power_up_04.ogg`
+- `sfx/puzzle/2.Normal_power_up/compressed/Normal_power_up_05.ogg`
+- `sfx/puzzle/2.Normal_power_up/compressed/Normal_power_up_06.ogg`
+- `sfx/puzzle/2.Normal_power_up/compressed/Normal_power_up_07.ogg`
+- `sfx/puzzle/2.Normal_power_up/compressed/Normal_power_up_08.ogg`
+- `sfx/puzzle/2.Normal_power_up/compressed/Normal_power_up_09.ogg`
+- `sfx/puzzle/20. Get_Orbs/compressed/Get_Orb_01.ogg`
+- `sfx/puzzle/20. Get_Orbs/compressed/Get_Orb_02.ogg`
+- `sfx/puzzle/20. Get_Orbs/compressed/Get_Orb_03.ogg`
+- `sfx/puzzle/20. Get_Orbs/compressed/Get_Orb_04.ogg`
+- `sfx/puzzle/21. Get_Crystals/compressed/Get_Crystal_01.ogg`
+- `sfx/puzzle/21. Get_Crystals/compressed/Get_Crystal_02.ogg`
+- `sfx/puzzle/21. Get_Crystals/compressed/Get_Crystal_03.ogg`
+- `sfx/puzzle/22. Bonus/compressed/Bonus_01.ogg`
+- `sfx/puzzle/22. Bonus/compressed/Bonus_02.ogg`
+- `sfx/puzzle/22. Bonus/compressed/Bonus_03.ogg`
+- `sfx/puzzle/22. Bonus/compressed/Bonus_04.ogg`
+- `sfx/puzzle/22. Bonus/compressed/Bonus_with_Crowns_04.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_01.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_02.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_03.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_04.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_05.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_06.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_07.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_08.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_09.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_10.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_11.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_12.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_13.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_14.ogg`
+- `sfx/puzzle/23.Match3/compressed/Match3_15.ogg`
+- `sfx/puzzle/24.Bombs/compressed/Bomb_Appear.ogg`
+- `sfx/puzzle/24.Bombs/compressed/Bomb_explosion_01.ogg`
+- `sfx/puzzle/24.Bombs/compressed/Bomb_explosion_02.ogg`
+- `sfx/puzzle/25.Break_Wood/compressed/Break_Wood_01.ogg`
+- `sfx/puzzle/25.Break_Wood/compressed/Break_Wood_02.ogg`
+- `sfx/puzzle/3.Tiny_Whoosh/compressed/Tiny_Whoosh_01.ogg`
+- `sfx/puzzle/3.Tiny_Whoosh/compressed/Tiny_Whoosh_02.ogg`
+- `sfx/puzzle/3.Tiny_Whoosh/compressed/Tiny_Whoosh_03.ogg`
+- `sfx/puzzle/4.Normal_Whoosh/compressed/Medium_Whoosh_01.ogg`
+- `sfx/puzzle/4.Normal_Whoosh/compressed/Medium_Whoosh_02.ogg`
+- `sfx/puzzle/4.Normal_Whoosh/compressed/Medium_Whoosh_03.ogg`
+- `sfx/puzzle/4.Normal_Whoosh/compressed/Medium_Whoosh_04.ogg`
+- `sfx/puzzle/4.Normal_Whoosh/compressed/Medium_Whoosh_05.ogg`
+- `sfx/puzzle/4.Normal_Whoosh/compressed/Medium_Whoosh_06.ogg`
+- `sfx/puzzle/5.Heavy_Whoosh/compressed/Heavy_Whoosh_01.ogg`
+- `sfx/puzzle/5.Heavy_Whoosh/compressed/Heavy_Whoosh_02.ogg`
+- `sfx/puzzle/5.Heavy_Whoosh/compressed/Heavy_Whoosh_03.ogg`
+- `sfx/puzzle/5.Heavy_Whoosh/compressed/Heavy_Whoosh_04.ogg`
+- `sfx/puzzle/5.Heavy_Whoosh/compressed/Heavy_Whoosh_05.ogg`
+- `sfx/puzzle/6.Treasure_Chest/compressed/Treasure_chest_01.ogg`
+- `sfx/puzzle/6.Treasure_Chest/compressed/Treasure_chest_02.ogg`
+- `sfx/puzzle/6.Treasure_Chest/compressed/Treasure_chest_03.ogg`
+- `sfx/puzzle/6.Treasure_Chest/compressed/Treasure_chest_04.ogg`
+- `sfx/puzzle/6.Treasure_Chest/compressed/Treasure_chest_05.ogg`
+- `sfx/puzzle/6.Treasure_Chest/compressed/Treasure_chest_06.ogg`
+- `sfx/puzzle/6.Treasure_Chest/compressed/Treasure_chest_07.ogg`
+- `sfx/puzzle/8. Play_Button/compressed/Play_Button_01.ogg`
+- `sfx/puzzle/8. Play_Button/compressed/Play_Button_02.ogg`
+- `sfx/puzzle/8. Play_Button/compressed/Play_Button_03.ogg`
+- `sfx/puzzle/8. Play_Button/compressed/Play_Button_04.ogg`
+- `sfx/puzzle/8. Play_Button/compressed/Play_Button_05.ogg`
+- `sfx/puzzle/8. Play_Button/compressed/Play_Button_06.ogg`
+- `sfx/puzzle/9. Task_Complete/compressed/Task_Complete_01.ogg`
+- `sfx/puzzle/9. Task_Complete/compressed/Task_Complete_02.ogg`
+- `sfx/puzzle/9. Task_Complete/compressed/Task_Complete_03.ogg`
+- `sfx/puzzle/9. Task_Complete/compressed/Task_Complete_04.ogg`
+- `sfx/puzzle/9. Task_Complete/compressed/Task_Complete_05.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Found A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Found B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Holy Charging A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Holy Charging B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Music Ready A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Music Ready B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Music Ready C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Ready A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Ready B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Ready C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Un Stuck A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Un Stuck B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Un Stuck C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Un Stuck D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Underwater A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Underwater B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Underwater C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Water Ready A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Water Ready B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Action and Interaction/compressed/Water Ready C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Charmed A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Charmed B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Confused A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Confused B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Confused C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Confused D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Confused E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Crazy.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Cursed A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Cursed B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Cursed C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Cursed D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Cursed E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Feared A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Feared B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Feared C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Feared D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Feared E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Greased A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Greased B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Haunted A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Haunted B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Haunted C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Hypnotized A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Hypnotized B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Silenced A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Silenced B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Silenced C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Mental and Magical Debuffs/compressed/Silenced D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Bound A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Bound B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Bound C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Bound D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Broken A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Broken B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Broken C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Broken D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Cute Hold A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Cute Hold B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Cute Hold C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Cute Hold D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Cute Hold E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Cute Rlease A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Cute Rlease B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Hold A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Hold B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Hold C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Slipped A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Slipped B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Slipped C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Slipped D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Stunned A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Stunned B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Stunned C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Physical Debuffs/compressed/Stunned D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Charged A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Charged B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Charged C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Charged D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Charged E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Charged F.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Charged G.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Charged H.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Growth A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Growth B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Growth C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Growth D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Healed A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Healed B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Healed C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Healed D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Healed E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Purged A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Purged B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Purged C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Purged D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Purged E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Purged F.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Sharpened A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Sharpened B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Sharpened C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Sharpened D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Sharpened E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Strengthened A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Strengthened B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Positive Buffs and Cures/compressed/Strengthened C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Analyzing A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Analyzing B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Digital Fear A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Digital Fear B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Hacked A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Hacked B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Hacked C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Hacked D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Hacked E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Hacked F.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Targeted A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Targeted B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Targeted C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Targeted D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Targeted E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Targeted F.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Tech Broken A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Tech Broken B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Tech Broken C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Tech Broken D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/System and Tech Status/compressed/Tech Broken E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Beast Formed A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Beast Formed B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Beast Formed C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Beast Formed Small A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Beast Formed Small B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Goblin Mode A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Goblin Mode B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Goblin Mode C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Goblin Mode D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Goblin Mode E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Goblin Mode F.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Shrunk A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Shrunk B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Shrunk C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Un Beast Formed A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Transformations and Special Moves/compressed/Un Beast Formed B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Diarrhea A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Diarrhea B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Diarrhea C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Diarrhea D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Diarrhea E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Diarrhea F.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Diarrhea G.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Energy Low A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Energy Low B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Energy Low C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Energy Low D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Frozen A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Frozen B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Frozen C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Frozen D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Frozen E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Hungry A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Hungry B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Hungry C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Hungry D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Hungry E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Low Health A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Low Health B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Low Oxygen A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Low Oxygen B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Low Oxygen C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Low Oxygen D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Needs Bathroom A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Needs Bathroom B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Needs Bathroom C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Needs Bathroom D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Needs Bathroom E.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Needs Bathroom F.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Weakened A.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Weakened B.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Weakened C.ogg`
+- `sfx/status/general/Player Status Sound FX Pack Vol. 3/Vitals and Needs/compressed/Weakened D.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailment Hunger 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailment Hunger 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailment Hunger 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailment Hunger 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Bleed 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Bleed 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Bleed 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Bleed 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Confuse 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Confuse 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Confuse 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Confuse 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Freeze 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Freeze 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Freeze 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Freeze 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Grease 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Grease 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Grease 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Grease 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Grease 005.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Hold 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Hold 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Hold 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Hold 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Hypnotize 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Hypnotize 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Hypnotize 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Hypnotize 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Poison 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Poison 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Poison 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Poison 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Regen 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Regen 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Regen 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Regen 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Slow 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Slow 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Slow 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Slow 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Stun 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Stun 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Stun 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Ailments/compressed/Ailments Stun 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Dark Castle 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Dark Castle 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Dark Castle 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Dark Castle 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Dispel 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Dispel 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Dispel 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Dispel 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Elven Charm 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Elven Charm 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Elven Charm 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Elven Charm 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Fairy Dust 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Fairy Dust 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Fairy Dust 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Fantasy/compressed/Fantasy Fairy Dust 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Change 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Change 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Change 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Change 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Dash 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Dash 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Dash 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Dash 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Decision 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Decision 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Decision 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Decision 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Move 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Move 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Move 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Move 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Reward 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Reward 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Reward 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Abstract Reward 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Low HP Heartbeat Fast Loop.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Low HP Heartbeat Mid Loop.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Low HP Heartbeat Slow Loop.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Stimpack 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Stimpack 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Stimpack 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/General/compressed/Stimpack 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Buff 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Buff 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Buff 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Coin 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Coin 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Coin 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Coin 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Compound 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Compound 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Compound 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Compound 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Count 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Count 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Count 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Count 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Debuff 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Debuff 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Debuff 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Score 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Score 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Score 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Score 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Slots 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Slots 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Slots 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Slots 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Slots 005.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Tweet 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Tweet 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Tweet 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Tweet 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Mobile/compressed/Mobile Tweet 005.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Bless 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Bless 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Bless 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Bless 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Combat Ready 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Combat Ready 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Combat Ready 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Connect 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Connect 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Connect 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Connect 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Connect 005.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Detected 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Detected 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Detected 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Detected 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Fear 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Fear 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Fear 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Fear 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Heal 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Heal 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Heal 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Heal 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Light 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Light 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Light 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Light 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Suspense 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Suspense 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Suspense 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Musical/compressed/Musical Suspense 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Device Use 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Device Use 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Device Use 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Device Use 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Meters Refill 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Meters Refill 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Meters Refill 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Meters Refill 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Overshield 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Overshield 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Overshield 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Overshield 004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Power Up-001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Power Up-002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Power Up-003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Power Up-004.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Ready To Fly 001.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Ready To Fly 002.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Ready To Fly 003.ogg`
+- `sfx/status/general/Player Status Sound FX Pack/Sci-Fi/compressed/Sci-Fi Ready To Fly 004.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Click A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Click B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Click C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Click D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Click E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Dink A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Dink B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Dink C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Dink D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Dink E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Pressure A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Pressure B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Pressure C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Pressure D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Pressure E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release H.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release I.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release J.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Release K.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Squeak A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Squeak B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Squeak C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Squeak D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Squeak E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Squeak F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Squeak G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Valve Release A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Valve Release B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Valve Release C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Gas Valve Release D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Slow Down Long A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Slow Down Long B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Slow Down Long C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Slow Down Short A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Slow Down Short B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Slow Down Short C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Speed Up Long A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Speed Up Long B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Speed Up Long C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Speed Up Short A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Speed Up Short B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Speed Up Short C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Gas Steam/compressed/Steam Engine Speed Up Short D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Handlight Thingy A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Handlight Thingy B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Handlight Thingy C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Handlight Thingy D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Handlight Thingy E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Handlight Thingy F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Handlight Thingy G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Handlight Thingy H.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Handlight Thingy I.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Close A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Close B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Close C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Close D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Close E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Open A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Open B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Open C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Open D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Kettle Lid Open E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Long A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Long B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Long C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Medium A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Medium B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Medium C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Medium D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Medium E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Misc A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Misc B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Misc C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Misc D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Misc E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Misc F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Misc G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Shift A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Shift B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Shift C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Shift D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Shift E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Shift F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Shift G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Shift H.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Shift I.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short H.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short I.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Handling/compressed/Ratchet Short J.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom H.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom I.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Impacts/compressed/Toaster Boom J.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Lever Winding A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Lever Winding B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Lever Winding C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Lever Winding D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Lever Winding E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Pump Squeak A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Pump Squeak B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Pump Squeak C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Pump Squeak D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Down and up A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Down and up B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Down and up C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Down and up D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Down and up E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Down and up F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Long A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Long B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Long C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Short A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Short B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Short C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Short D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Short E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Short F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Short G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Levers and Pumps/compressed/Squeaky Lever Short H.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Bike Chain Loop A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Bike Chain Loop B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Bike Chain Loop C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Boiler Room Loop A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Boiler Room Loop B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Boiler Room Loop C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Clicking Mechanism Big Loop.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Clicking Mechanism Small Loop.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Handlight Thingy Loop A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Handlight Thingy Loop B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Pump Machine Loop A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Pump Machine Loop B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Pump Machine Loop C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Pump Machine Loop D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop H.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop I.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop J.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop K.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Loops/compressed/Steam Engine Loop L.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Bike Chain A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Bike Chain B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Bike Chain C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Bike Chain D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Big A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Big B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Big C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Big D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Big E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Small A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Small B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Small C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Small D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Small E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Small F.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Clicking Mechanism Small G.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Lock A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Lock B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Lock C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Lock D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Lock E.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Reload A.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Reload B.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Reload C.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Reload D.ogg`
+- `sfx/steampunk/Steampunk Sound FX Pack Vol. 3/Mechanisms/compressed/Reload E.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Action_Lose.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Action_Win.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Lose_Cute.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Lose_Cute_Horror_Action.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Lose_Puzzle.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Lose_Reaction.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Lose_Retro.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Lose_Sports.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Win_Cute.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Win_Cute_Horror_Action.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Win_Puzzle.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Win_Reaction.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Win_Retro.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/compressed/STGR_Win_Sports.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/compressed/MUSC_Action.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/compressed/MUSC_Cute_Horror_Action_Loop.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/compressed/MUSC_Cute_Horror_Action_Loop_2.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/compressed/MUSC_Cute_Theme_Loop.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/compressed/MUSC_Puzzle_Theme_Loop.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/compressed/MUSC_Reaction_Theme_Loop.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/compressed/MUSC_Retro_Theme_Loop.ogg`
+- `sfx/stinger/Mini Games Sound Effects and Music Pack/compressed/MUSC_Sports_Theme_Loop.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Applause/compressed/SFX_Applause_Big_Loop.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Applause/compressed/SFX_Applause_Medium_Loop.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Applause/compressed/SFX_Applause_Small_Loop.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Bomb/compressed/SFX_Bomb_Explosion_Big.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Bomb/compressed/SFX_Bomb_Explosion_Small_1.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Bomb/compressed/SFX_Bomb_Explosion_Small_2.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Bomb/compressed/SFX_Bomb_Explosion_Small_3.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Firework/compressed/SFX_Firework_Explosion_1.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Firework/compressed/SFX_Firework_Explosion_2.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Firework/compressed/SFX_Firework_Explosion_3.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Firework/compressed/SFX_Firework_Shoot_1.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Firework/compressed/SFX_Firework_Shoot_2.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Firework/compressed/SFX_Firework_Shoot_3.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Firework/compressed/SFX_Firework_Sparkle_1.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Firework/compressed/SFX_Firework_Sparkle_2.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Firework/compressed/SFX_Firework_Sparkle_3.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Magical Confetti/compressed/SFX_Confetti_1.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Magical Confetti/compressed/SFX_Confetti_2.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/Magical Confetti/compressed/SFX_Confetti_3.ogg`
+- `sfx/system/celebrate/Mini Games Sound Effects and Music Pack/compressed/SFX_Wick_Loop.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Count Down.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Intruiging Alert.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Old School Alert.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Power Down.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Power Up Charge.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Power Up Grab A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Power Up Grab B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Power Up Grab C.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Ready Up Big Metallic.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/Misc Alerts/compressed/Ready Up Metal.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Bad/compressed/Big Loss.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Bad/compressed/Casual Danger Alert.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Bad/compressed/Failure.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Bad/compressed/Game Over Long.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Bad/compressed/Game Over Short.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Bad/compressed/Negative Effect.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Bad/compressed/Problem.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Good/compressed/Achievement.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Good/compressed/Big Win.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Good/compressed/Positive Effect.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Good/compressed/Powder Power.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Good/compressed/Resolve.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Good/compressed/Solution.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Good/compressed/Victory.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Ugly/compressed/Aggressive Twinkle.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Ugly/compressed/Chain Puzzle Alert.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Ugly/compressed/Clumsy Alert.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Ugly/compressed/Error Message A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Ugly/compressed/Error Message B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Ugly/compressed/Error Message C.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Ugly/compressed/Mild Fright.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Alerts/The Ugly/compressed/Mild Scare.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Ambiences/compressed/Lava Level A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Ambiences/compressed/Lava Level B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Ambiences/compressed/Spooky Ambience A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Ambiences/compressed/Spooky Ambience B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Ambiences/compressed/Water Level A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Ambiences/compressed/Water Level B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Activations/compressed/Game Start.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Activations/compressed/Paper Menu Sounds A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Activations/compressed/Paper Menu Sounds B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Clicks/compressed/Hollow Clicks Double.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Clicks/compressed/Hollow Clicks.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Clicks/compressed/Little Click Release.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Clicks/compressed/Poppy Click.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Clicks/compressed/Quick Click Double.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Clicks/compressed/Quick Click.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Clicks/compressed/Woody Clicks Double.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Clicks/compressed/Woody Clicks.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Misc Buttons/compressed/Cowbell Button A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Misc Buttons/compressed/Cowbell Button B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Misc Buttons/compressed/Dissonant Button.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Misc Buttons/compressed/No Button.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Misc Buttons/compressed/Rollish Button.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Misc Buttons/compressed/Soft Button.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Misc Buttons/compressed/Uh Oh Button.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Misc Buttons/compressed/Yes Button.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Selections/compressed/Bouncy Select.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Selections/compressed/Plink.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Selections/compressed/Plonk.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Selections/compressed/Selection Dull.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Selections/compressed/Selection High.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Selections/compressed/Selection Quick.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Buttons/Selections/compressed/Selection.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break A1.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break A2.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break A3.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break A4.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break A5.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break B1.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break B2.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break B3.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break B4.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Combos/compressed/Combo and Break B5.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Enemies and Allies/compressed/Casual Enemy Damage A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Enemies and Allies/compressed/Casual Enemy Damage B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Enemies and Allies/compressed/Casual Enemy Damage C.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Inventories, etc/compressed/Inventory.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Inventories, etc/compressed/Looting.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Inventories, etc/compressed/Quest Log.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Inventories, etc/compressed/Scratch.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Inventories, etc/compressed/Scrummage.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Misc Interactions/compressed/Casual Glass.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Misc Interactions/compressed/Cowbell A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Misc Interactions/compressed/Cowbell B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Misc Interactions/compressed/Shovel and Dig.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Puzzles/compressed/Chain Puzzle A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Puzzles/compressed/Chain Puzzle B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Puzzles/compressed/Heavy Object Move.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Puzzles/compressed/Puzzle Heavy Object Move.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Puzzles/compressed/Puzzle Movements A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Puzzles/compressed/Puzzle Movements B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Puzzles/compressed/Puzzle Right Spot.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Puzzles/compressed/Puzzle Turn and Unlock.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Puzzles/compressed/Something Mysterious Unlock.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Bow A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Bow B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Casual Spell A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Casual Spell B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Not-A-Gun A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Not-A-Gun B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Not-A-Gun C.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Object Hit.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Sword A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Sword B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Whack Smack A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Interactions/Weapons/compressed/Whack Smack B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Futuristic Siren.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Gatcha Even Speed.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Gatcha Slow Down.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Gulp.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Having a Good Chime.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Huge Splang.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Lazer Gun A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Lazer Gun B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Metallic Jangle.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Metallic Struggle A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Metallic Struggle B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Phony FX.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Rip And Tear A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Rip and Tear B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Rotater.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Running Tap.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Rustle A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Rustle B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Shake Rattle Twirls.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Toy Bell.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Toy Rocket.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Water Pour.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Misc/compressed/Yucky Eating.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Text/compressed/Text Sprawl High and Simple.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Text/compressed/Text Sprawl Low And Hollow.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Text/compressed/Text Sprawl Sci-Fi.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Text/compressed/Text Sprawl Simple.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Curiosities/compressed/Ahhh.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Curiosities/compressed/Gasp A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Curiosities/compressed/Gasp B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Curiosities/compressed/Gasp C.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Curiosities/compressed/Hmm A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Curiosities/compressed/Hmm B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Negatives/compressed/Evil Laugh.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Negatives/compressed/Faint.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Negatives/compressed/No.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Negatives/compressed/Sob A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Negatives/compressed/Sob B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Positives/compressed/Ah Ha A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Positives/compressed/Ah Ha B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Positives/compressed/Chuckle A.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Positives/compressed/Chuckle B.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Positives/compressed/Chuckle C.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Positives/compressed/Laugh.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Positives/compressed/Mmm.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Positives/compressed/Satisfied.ogg`
+- `sfx/system/general/Casual & Mobile Sound FX Pack Vol. 1/Vocalizations/Positives/compressed/Yes.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Move Piece Harsh 001.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Move Piece Harsh 002.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Move Piece Harsh 003.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Move Piece Harsh 004.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Move Piece Harsh 005.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Move Piece Soft 001.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Move Piece Soft 002.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Move Piece Soft 003.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Move Piece Soft 004.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Box Handling 001.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Box Handling 002.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Box Handling 003.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Box Shake 001.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Box Shake 002.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Box Shake 003.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Box Shake 004.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Box Shake 005.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Drop 001.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Drop 002.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Drop 003.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Drop 004.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Drop 005.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Hard 001.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Hard 002.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Hard 003.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Hard 004.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Hard 005.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Soft 001.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Soft 002.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Soft 003.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Soft 004.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Token Place Soft 005.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Tokens Handling 001.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Tokens Handling 002.ogg`
+- `sfx/token/Decks and Cards Sound FX Pack/compressed/Tokens Handling 003.ogg`
+- `sfx/ui/click/Mini Games Sound Effects and Music Pack/compressed/SFX_Interact_Pop_1.ogg`
+- `sfx/ui/click/Mini Games Sound Effects and Music Pack/compressed/SFX_Interact_Pop_2.ogg`
+- `sfx/ui/click/Mini Games Sound Effects and Music Pack/compressed/SFX_Interact_Pop_3.ogg`
+- `sfx/ui/click/Mini Games Sound Effects and Music Pack/compressed/SFX_Interact_Pop_4.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Overwrite_Saved_&_Save Game_Button/compressed/UIClick_Overwrite Saved Save Game Button 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Overwrite_Saved_&_Save Game_Button/compressed/UIClick_Overwrite Saved Save Game Button 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Overwrite_Saved_&_Save Game_Button/compressed/UIClick_Overwrite Saved Save Game Button 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Overwrite_Saved_&_Save Game_Button/compressed/UIClick_Overwrite Saved Save Game Button 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Overwrite_Saved_&_Save Game_Button/compressed/UIClick_Overwrite Saved Save Game Button 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Overwrite_Saved_&_Save Game_Button/compressed/UIClick_Overwrite Saved Save Game Button 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Overwrite_Saved_&_Save Game_Button/compressed/UIClick_Overwrite Saved Save Game Button 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab Switching Button 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab Switching Button 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab Switching Button 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab Switching Button 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab Switching Button 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab Switching Button 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab Switching Button 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab Switching Button 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Choice/compressed/UIClick_Dialog Choice 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Choice/compressed/UIClick_Dialog Choice 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Choice/compressed/UIClick_Dialog Choice 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Choice/compressed/UIClick_Dialog Choice 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Choice/compressed/UIClick_Dialog Choice 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Screen_Appears/compressed/UIAlert_Dialog Screen Appears 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Screen_Appears/compressed/UIAlert_Dialog Screen Appears 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Screen_Appears/compressed/UIAlert_Dialog Screen Appears 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Screen_Appears/compressed/UIAlert_Dialog Screen Appears 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Screen_Appears/compressed/UIAlert_Dialog Screen Appears 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Screen_Appears/compressed/UIAlert_Dialog Screen Appears 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Dialog_Screen_Appears/compressed/UIAlert_Dialog Screen Appears 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Mouseover_Dialog_Option/compressed/UIClick_Mouseover Dialog Option 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Mouseover_Dialog_Option/compressed/UIClick_Mouseover Dialog Option 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Mouseover_Dialog_Option/compressed/UIClick_Mouseover Dialog Option 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Dialog/Mouseover_Dialog_Option/compressed/UIClick_Mouseover Dialog Option 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Click_Object_Or_Item/compressed/OBJMisc_Click Object Or Item 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Close_And Open_Inventory/compressed/DSGNSrce_Close And Open Inventory 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Close_And Open_Inventory/compressed/DSGNSrce_Close And Open Inventory 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Close_And Open_Inventory/compressed/DSGNSrce_Close And Open Inventory 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Close_And Open_Inventory/compressed/DSGNSrce_Close And Open Inventory 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Close_And Open_Inventory/compressed/DSGNSrce_Close And Open Inventory 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Close_And Open_Inventory/compressed/DSGNSrce_Close And Open Inventory 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Close_And Open_Inventory/compressed/DSGNSrce_Close And Open Inventory 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Destroy_Group_Items/compressed/EXPLDsgn_Destroy Group Items 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Destroy_Group_Items/compressed/EXPLDsgn_Destroy Group Items 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Destroy_Group_Items/compressed/EXPLDsgn_Destroy Group Items 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drag_Neutral_Item/compressed/UIClick_Drag Neutral Item 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drag_Neutral_Item/compressed/UIClick_Drag Neutral Item 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drag_Neutral_Item/compressed/UIClick_Drag Neutral Item 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drag_Neutral_Item/compressed/UIClick_Drag Neutral Item 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drag_Neutral_Item/compressed/UIClick_Drag Neutral Item 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Amulet/compressed/OBJJewl_Drop Amulet 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Amulet/compressed/OBJJewl_Drop Amulet 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Amulet/compressed/OBJJewl_Drop Amulet 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Bone/compressed/GOREBone_Drop Bone 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Bone/compressed/GOREBone_Drop Bone 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Bone/compressed/GOREBone_Drop Bone 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Boots/compressed/CLOTHMisc_Drop Boots 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Boots/compressed/CLOTHMisc_Drop Boots 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Boots/compressed/CLOTHMisc_Drop Boots 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Bow/compressed/WEAPBow_Drop Bow 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Bow/compressed/WEAPBow_Drop Bow 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Bow/compressed/WEAPBow_Drop Bow 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Chest_Armor/compressed/WEAPArmr_Drop Chest Armor 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Chest_Armor/compressed/WEAPArmr_Drop Chest Armor 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Chest_Armor/compressed/WEAPArmr_Drop Chest Armor 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Gloves/compressed/WEAPArmr_Drop Gloves 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Gloves/compressed/WEAPArmr_Drop Gloves 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Gloves/compressed/WEAPArmr_Drop Gloves 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Gloves/compressed/WEAPArmr_Drop Gloves 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Gloves/compressed/WEAPArmr_Drop Gloves 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Gloves/compressed/WEAPArmr_Drop Gloves 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Hand_Shield/compressed/WEAPArmr_Drop Hand Shield 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Hand_Shield/compressed/WEAPArmr_Drop Hand Shield 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Hand_Shield/compressed/WEAPArmr_Drop Hand Shield 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Hand_Shield/compressed/WEAPArmr_Drop Hand Shield 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Helmet/compressed/WEAPArmr_Drop Helmet 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Helmet/compressed/WEAPArmr_Drop Helmet 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Helmet/compressed/WEAPArmr_Drop Helmet 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Helmet/compressed/WEAPArmr_Drop Helmet 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Helmet/compressed/WEAPArmr_Drop Helmet 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Metal_Weapon/compressed/WEAPMisc_Drop Metal Weapon 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Metal_Weapon/compressed/WEAPMisc_Drop Metal Weapon 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Metal_Weapon/compressed/WEAPMisc_Drop Metal Weapon 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Metal_Weapon/compressed/WEAPMisc_Drop Metal Weapon 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Metal_Weapon/compressed/WEAPMisc_Drop Metal Weapon 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Metal_Weapon/compressed/WEAPMisc_Drop Metal Weapon 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Metal_Weapon/compressed/WEAPMisc_Drop Metal Weapon 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Metal_Weapon/compressed/WEAPMisc_Drop Metal Weapon 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Pants/compressed/WEAPArmr_Drop Pants 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Pants/compressed/WEAPArmr_Drop Pants 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Pants/compressed/WEAPArmr_Drop Pants 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Pants/compressed/WEAPArmr_Drop Pants 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Ring/compressed/OBJJewl_Drop Ring 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Ring/compressed/OBJJewl_Drop Ring 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Ring/compressed/OBJJewl_Drop Ring 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Shoulder_Pads/compressed/WEAPArmr_Drop Shoulder Pads 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Shoulder_Pads/compressed/WEAPArmr_Drop Shoulder Pads 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Shoulder_Pads/compressed/WEAPArmr_Drop Shoulder Pads 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Wood_Weapon/compressed/WEAPMisc_Drop Wood Weapon 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Wood_Weapon/compressed/WEAPMisc_Drop Wood Weapon 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Wood_Weapon/compressed/WEAPMisc_Drop Wood Weapon 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Wood_Weapon/compressed/WEAPMisc_Drop Wood Weapon 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Wood_Weapon/compressed/WEAPMisc_Drop Wood Weapon 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Drop_Wood_Weapon/compressed/WEAPMisc_Drop Wood Weapon 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Identify_Object/compressed/MAGMisc_Identify Object 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Identify_Object/compressed/MAGMisc_Identify Object 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Identify_Object/compressed/MAGMisc_Identify Object 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Identify_Object/compressed/MAGMisc_Identify Object 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Identify_Object/compressed/MAGMisc_Identify Object 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Identify_Object/compressed/MAGMisc_Identify Object 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Item_Disposal/compressed/METLBrk_Item Disposal 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Item_Disposal/compressed/METLBrk_Item Disposal 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Item_Disposal/compressed/METLBrk_Item Disposal 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Item_Disposal/compressed/METLBrk_Item Disposal 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Item_Disposal/compressed/METLBrk_Item Disposal 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Item_Disposal/compressed/METLBrk_Item Disposal 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_All_Button/compressed/UIClick_Take All Button 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_All_Button/compressed/UIClick_Take All Button 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_All_Button/compressed/UIClick_Take All Button 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_All_Button/compressed/UIClick_Take All Button 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_All_Button/compressed/UIClick_Take All Button 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_All_Button/compressed/UIClick_Take All Button 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_Potion/compressed/WATRBubl_Potion 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_Potion/compressed/WATRBubl_Potion 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_Potion/compressed/WATRBubl_Potion 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Inventory/Take_Potion/compressed/WATRBubl_Potion 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Close_Journal_Menu/compressed/UIMisc_Close Journal Menu 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Close_Journal_Menu/compressed/UIMisc_Close Journal Menu 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Close_Journal_Menu/compressed/UIMisc_Close Journal Menu 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Close_Journal_Menu/compressed/UIMisc_Close Journal Menu 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Close_Journal_Menu/compressed/UIMisc_Close Journal Menu 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Close_Journal_Menu/compressed/UIMisc_Close Journal Menu 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Open_Journal_Menu/compressed/UIMisc_Open Journal Menu 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Open_Journal_Menu/compressed/UIMisc_Open Journal Menu 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Open_Journal_Menu/compressed/UIMisc_Open Journal Menu 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Open_Journal_Menu/compressed/UIMisc_Open Journal Menu 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Update_Journal/compressed/UIMisc_Update Journal 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Update_Journal/compressed/UIMisc_Update Journal 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Update_Journal/compressed/UIMisc_Update Journal 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Update_Journal/compressed/UIMisc_Update Journal 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Update_Journal/compressed/UIMisc_Update Journal 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Update_Journal/compressed/UIMisc_Update Journal 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Update_Journal/compressed/UIMisc_Update Journal 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Update_Journal/compressed/UIMisc_Update Journal 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Journal_Menu/Update_Journal/compressed/UIMisc_Update Journal 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Open_Or_Close_Menu/compressed/UIClick_Open Or Close Menu 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Open_Or_Close_Menu/compressed/UIClick_Open Or Close Menu 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Open_Or_Close_Menu/compressed/UIClick_Open Or Close Menu 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Open_Or_Close_Menu/compressed/UIClick_Open Or Close Menu 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Inventory & Dialog (UCS System 192Khz)/Open_Or_Close_Menu/compressed/UIClick_Open Or Close Menu 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Fast_Travel_On_The_Map/compressed/UIMisc_Fast Travel On The Map 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Fast_Travel_On_The_Map/compressed/UIMisc_Fast Travel On The Map 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Fast_Travel_On_The_Map/compressed/UIMisc_Fast Travel On The Map 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Fast_Travel_On_The_Map/compressed/UIMisc_Fast Travel On The Map 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Fast_Travel_On_The_Map/compressed/UIMisc_Fast Travel On The Map 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Fast_Travel_On_The_Map/compressed/UIMisc_Fast Travel On The Map 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Fast_Travel_On_The_Map/compressed/UIMisc_Fast Travel On The Map 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Map_Marker/compressed/UIMisc_Map Marker 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Map_Marker/compressed/UIMisc_Map Marker 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Map_Marker/compressed/UIMisc_Map Marker 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Map_Marker/compressed/UIMisc_Map Marker 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Map_Marker/compressed/UIMisc_Map Marker 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Map_Marker/compressed/UIMisc_Map Marker 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Map_Marker/compressed/UIMisc_Map Marker 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Map_Marker/compressed/UIMisc_Map Marker 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Map_Marker/compressed/UIMisc_Map Marker 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Mouseover_Locations_On_The_Map/compressed/UIMisc_Mouseover Locations On The Map 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Mouseover_Locations_On_The_Map/compressed/UIMisc_Mouseover Locations On The Map 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Mouseover_Locations_On_The_Map/compressed/UIMisc_Mouseover Locations On The Map 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Mouseover_Locations_On_The_Map/compressed/UIMisc_Mouseover Locations On The Map 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Mouseover_Locations_On_The_Map/compressed/UIMisc_Mouseover Locations On The Map 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Mouseover_Locations_On_The_Map/compressed/UIMisc_Mouseover Locations On The Map 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Mouseover_Locations_On_The_Map/compressed/UIMisc_Mouseover Locations On The Map 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Mouseover_Locations_On_The_Map/compressed/UIMisc_Mouseover Locations On The Map 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Open_Or_Close_Map_Menu/compressed/UIMisc_Open Or Close Map Menu 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Zoom_On_The Map/compressed/UIMisc_Zoom On The Map 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Zoom_On_The Map/compressed/UIMisc_Zoom On The Map 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Zoom_On_The Map/compressed/UIMisc_Zoom On The Map 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Zoom_On_The Map/compressed/UIMisc_Zoom On The Map 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Map Menu/Zoom_On_The Map/compressed/UIMisc_Zoom On The Map 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Pause_Menu/compressed/UIMisc_Open Close Pause Menu 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Quest_Menu/compressed/UIMisc_Open Close Quest Menu 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Open_&_Close_Skill_Tree/compressed/UIMisc_Open Close Skill Tree 12_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Accept_Button/compressed/UIClick_Accept Button 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Enable_Tutorial/compressed/UIMisc_Enable Tutorial 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Enable_Tutorial/compressed/UIMisc_Enable Tutorial 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Enable_Tutorial/compressed/UIMisc_Enable Tutorial 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Enable_Tutorial/compressed/UIMisc_Enable Tutorial 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Enable_Tutorial/compressed/UIMisc_Enable Tutorial 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 12_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 13_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 14_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 15_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 16_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 17_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Menu_Button/compressed/UIClick_Menu Button 18_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Mouse_Over_Options/compressed/UIMisc_Mouse Over Options 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Mouse_Over_Options/compressed/UIMisc_Mouse Over Options 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Mouse_Over_Options/compressed/UIMisc_Mouse Over Options 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Mouse_Over_Options/compressed/UIMisc_Mouse Over Options 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Mouse_Over_Options/compressed/UIMisc_Mouse Over Options 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Mouse_Over_Options/compressed/UIMisc_Mouse Over Options 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Start_Game/compressed/UIMisc_Start Game 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Start_Game/compressed/UIMisc_Start Game 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Start_Game/compressed/UIMisc_Start Game 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Start_Game/compressed/UIMisc_Start Game 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Start_Game/compressed/UIMisc_Start Game 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Start_Game/compressed/UIMisc_Start Game 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Start_Game/compressed/UIMisc_Start Game 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Start_Game/compressed/UIMisc_Start Game 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Map Menu & Principal Menu (UCS System 192Khz)/Principal_Menu/Start_Game/compressed/UIMisc_Start Game 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Enter_Or_Discover_New_Territory_Pop-up/compressed/UIMisc_Enter Or Discover New Territory Pop-Up 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Experience_Popup/compressed/UIMisc_Experience Popup 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Experience_Popup/compressed/UIMisc_Experience Popup 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Experience_Popup/compressed/UIMisc_Experience Popup 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Experience_Popup/compressed/UIMisc_Experience Popup 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Experience_Popup/compressed/UIMisc_Experience Popup 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Experience_Popup/compressed/UIMisc_Experience Popup 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Insufficient_Resources_PopUp/compressed/UIMisc_Insufficient Resources Popup 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Insufficient_Resources_PopUp/compressed/UIMisc_Insufficient Resources Popup 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Insufficient_Resources_PopUp/compressed/UIMisc_Insufficient Resources Popup 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Insufficient_Resources_PopUp/compressed/UIMisc_Insufficient Resources Popup 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Insufficient_Resources_PopUp/compressed/UIMisc_Insufficient Resources Popup 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Insufficient_Resources_PopUp/compressed/UIMisc_Insufficient Resources Popup 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Insufficient_Resources_PopUp/compressed/UIMisc_Insufficient Resources Popup 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Insufficient_Resources_PopUp/compressed/UIMisc_Insufficient Resources Popup 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 12_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 13_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 14_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 15_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 16_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 17_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Item_Received_PopUp/compressed/UIMisc_Item Received Popup 18_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 12_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 13_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 14_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 15_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 16_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 17_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 18_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 19_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 20_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 21_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Journal_Updated_Pop Up/compressed/UIMisc_Journal Updated Pop Up 22_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 12_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 13_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 14_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Mision_Or_Quest_Complete_Pop_Up/compressed/UIMisc_Mision Or Quest Complete Pop Up 15_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 12_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 13_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 14_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 15_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 16_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 17_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Neutral_Pop_Up/compressed/UIMisc_Neutral Pop Up 18_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 12_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 13_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 14_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 15_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Overwrite_Saved_And_Save_Game_Pop_Up/compressed/UIMisc_Overwrite Saved And Save Game Pop Up 16_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 01_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 02_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 03_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 04_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 05_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 06_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 07_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 08_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 09_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 10_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 11_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 12_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 13_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 14_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 15_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 16_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 17_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 18_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 19_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 20_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 21_KRST_NONE.ogg`
+- `sfx/ui/general/Khron Studio - RPG Interface Essentials - Pop-Ups (UCS System 192Khz)/Special_Event_Complete_Pop_Up/compressed/UIMisc_Special Event Complete Pop Up 22_KRST_NONE.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Buy.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Close_Cute.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Close_Retro.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Close_Scifi.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Generic_Cute.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Generic_Retro.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Generic_Scifi.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Open_Cute.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Open_Retro.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Click/compressed/SFX_UI_Click_Open_Scifi.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Countdown/compressed/SFX_UI_Countdown_Cute_Begin.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Countdown/compressed/SFX_UI_Countdown_Cute_End.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Countdown/compressed/SFX_UI_Countdown_Cute_Loop.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Countdown/compressed/SFX_UI_Countdown_Retro_Begin.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Countdown/compressed/SFX_UI_Countdown_Retro_End.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Countdown/compressed/SFX_UI_Countdown_Retro_Loop.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Countdown/compressed/SFX_UI_Countdown_SciFi_Begin.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Countdown/compressed/SFX_UI_Countdown_SciFi_End.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Countdown/compressed/SFX_UI_Countdown_SciFi_Loop.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Futuristic_1.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Futuristic_2.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Futuristic_3.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Gem_1.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Gem_2.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Gem_3.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Gold_1.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Gold_2.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Gold_3.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Star_1.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Star_2.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Fillup/compressed/SFX_UI_Fillup_Star_3.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Success/compressed/SFX_Success_Point_Big.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Success/compressed/SFX_Success_Point_Medium.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Success/compressed/SFX_Success_Point_Small.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Swipe/compressed/SFX_UI_Swipe_Screen_1.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Swipe/compressed/SFX_UI_Swipe_Screen_2.ogg`
+- `sfx/ui/general/Mini Games Sound Effects and Music Pack/Swipe/compressed/SFX_UI_Swipe_Screen_3.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Abacus A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Abacus B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Abacus C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Abacus D.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Fasten.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic D.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic E.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic F.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic G.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic H.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic I.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Mechanic J.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Shutter A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Shutter B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Shutter C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Trembling A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Trembling B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Interaction/compressed/Interaction Trembling C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Chaotic Droid A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Chaotic Droid B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Chaotic Droid C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Crickets A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Crickets B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Crickets C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Digiflow A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Digiflow B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Digiflow C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Synth Water A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Synth Water B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Synth Water C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Weird A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Weird B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Loading/compressed/Loading Weird C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Motion/compressed/Motion Electromech A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Motion/compressed/Motion Electromech B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Motion/compressed/Motion Electromech C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Motion/compressed/Motion Electromech D.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Motion/compressed/Motion Electromech E.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Misc/Motion/compressed/Motion Electromech F.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Blood.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Chemistry.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Friction.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Gloomy.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Monsters.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Power.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Roar.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Shards.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Snow.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Drag/compressed/Mouse Drag Whispers.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Abacus A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Abacus B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Abacus C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Beep Single A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Beep Single B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Beep Single C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Bell A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Bell B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Bell C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Boop Single A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Boop Single B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Boop Single C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Cog Single A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Cog Single B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Cog Single C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Motor A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Motor B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Motor C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Organ A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Organ B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Organ C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Piano String A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Piano String B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Piano String C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Shaker A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Shaker B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Shaker C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Wheel A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Wheel B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Scroll/compressed/Scroll Wheel C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select DigiBubbles A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select DigiBubbles B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select DigiBubbles C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select Medieval A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select Medieval B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select Medieval C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select Metallic A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select Metallic B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select Metallic C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select NeuroTick A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select NeuroTick B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select NeuroTick C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select NeuroTick D.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select TV A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select TV B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Mouse/Select/compressed/Select TV C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Bells A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Bells B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Bells C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Bubble A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Bubble B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Bubble C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Ceramic A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Ceramic B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Ceramic C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Hex A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Hex B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Hex C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative JRPG A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative JRPG B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative JRPG C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Metal Fence A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Metal Fence B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Metal Fence C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Space A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Space B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Space C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Sparkle A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Sparkle B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Sparkle C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Spring A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Spring B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Spring C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Wood Chimes A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Wood Chimes B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Negative/compressed/Signal Negative Wood Chimes C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Bells A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Bells B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Bells C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Bubble A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Bubble B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Bubble C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Ceramic A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Ceramic B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Ceramic C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Hex A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Hex B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Hex C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive JRPG A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive JRPG B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive JRPG C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Metal Fence A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Metal Fence B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Metal Fence C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Space A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Space B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Space C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Sparkle A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Sparkle B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Sparkle C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Spring A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Spring B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Spring C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Wood Chimes A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Wood Chimes B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Positive/compressed/Signal Positive Wood Chimes C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Castanets A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Castanets B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Castanets C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Chat A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Chat B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Chat C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Chime A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Chime B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Chime C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Flashlight A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Flashlight B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Flashlight C.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Purr A.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Purr B.ogg`
+- `sfx/ui/general/UI & Menu Sound FX Pack Vol. 2/Signals/Update/compressed/Update Purr C.ogg`

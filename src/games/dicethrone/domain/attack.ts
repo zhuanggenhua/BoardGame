@@ -59,19 +59,12 @@ export const resolveOffensivePreDefenseEffects = (state: DiceThroneCore): DiceTh
 export const resolveAttack = (
     state: DiceThroneCore,
     random: RandomFn,
-    options?: { includePreDefense?: boolean }
+    options?: { includePreDefense?: boolean; skipTokenResponse?: boolean }
 ): DiceThroneEvent[] => {
     const pending = state.pendingAttack;
     if (!pending) {
-        console.log('[resolveAttack] No pending attack');
         return [];
     }
-
-    console.log('[resolveAttack] Resolving attack:', {
-        sourceAbilityId: pending.sourceAbilityId,
-        isDefendable: pending.isDefendable,
-        includePreDefense: options?.includePreDefense
-    });
 
     const events: DiceThroneEvent[] = [];
     if (options?.includePreDefense) {
@@ -117,6 +110,14 @@ export const resolveAttack = (
             bonusDamageOnce: true,
             random,
         }));
+        
+        // 如果有 Token 响应请求，提前返回，不生成 ATTACK_RESOLVED 事件
+        // 等待 Token 响应完成后再继续攻击结算
+        const hasTokenResponse = events.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
+        if (hasTokenResponse) {
+            return events;
+        }
+        
         events.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
         totalDamage = attackCtx.damageDealt;
     }
@@ -129,6 +130,58 @@ export const resolveAttack = (
             sourceAbilityId,
             defenseAbilityId,
             totalDamage,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: now(),
+    };
+    events.push(resolvedEvent);
+
+    return events;
+};
+
+/**
+ * 仅执行 postDamage 效果（用于 Token 响应后的攻击结算）
+ * 当伤害已通过 Token 响应结算时，只需要执行 postDamage 效果（如击倒）
+ */
+export const resolvePostDamageEffects = (
+    state: DiceThroneCore,
+    random: RandomFn
+): DiceThroneEvent[] => {
+    const pending = state.pendingAttack;
+    if (!pending) {
+        return [];
+    }
+
+    const events: DiceThroneEvent[] = [];
+    const { attackerId, defenderId, sourceAbilityId, defenseAbilityId } = pending;
+    
+    // 使用 Token 响应后记录的最终伤害值（用于 onHit 条件判断）
+    // 如果没有记录，则使用原始伤害值
+    const damageDealt = pending.resolvedDamage ?? pending.damage ?? 0;
+
+    // 执行攻击技能的 postDamage 效果
+    if (sourceAbilityId) {
+        const effects = getPlayerAbilityEffects(state, attackerId, sourceAbilityId);
+        const attackCtx: EffectContext = {
+            attackerId,
+            defenderId,
+            sourceAbilityId,
+            state,
+            damageDealt, // 使用实际造成的伤害值
+        };
+
+        events.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
+    }
+
+    // 生成 ATTACK_RESOLVED 事件
+    const resolvedEvent: AttackResolvedEvent = {
+        type: 'ATTACK_RESOLVED',
+        payload: {
+            attackerId,
+            defenderId,
+            sourceAbilityId,
+            defenseAbilityId,
+            totalDamage: damageDealt, // 使用实际造成的伤害值
         },
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp: now(),

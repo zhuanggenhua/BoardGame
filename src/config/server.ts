@@ -45,3 +45,12 @@ const FALLBACK_UGC_API_URL = import.meta.env.DEV
 export const UGC_API_URL = normalizeUrl(
     import.meta.env.VITE_UGC_API_URL || FALLBACK_UGC_API_URL
 );
+
+// 布局保存 API 地址
+const FALLBACK_LAYOUT_API_URL = import.meta.env.DEV
+    ? '/layout'
+    : (BACKEND_URL ? `${BACKEND_URL}/layout` : '/layout');
+
+export const LAYOUT_API_URL = normalizeUrl(
+    import.meta.env.VITE_LAYOUT_API_URL || FALLBACK_LAYOUT_API_URL
+);

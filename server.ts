@@ -20,6 +20,7 @@ import { hybridStorage } from './src/server/storage/HybridStorage';
 import { createClaimSeatHandler, claimSeatUtils } from './src/server/claimSeat';
 import { hasOccupiedPlayers } from './src/server/matchOccupancy';
 import { registerOfflineInteractionAdjudication } from './src/server/offlineInteractionAdjudicator';
+import { buildUgcServerGames } from './src/server/ugcRegistration';
 
 // 大厅事件常量（与前端 lobbySocket.ts 保持一致）
 const LOBBY_EVENTS = {
@@ -72,13 +73,20 @@ const ENABLED_GAME_ENTRIES = GAME_SERVER_MANIFEST.filter(
     (entry) => entry.manifest.type === 'game' && entry.manifest.enabled
 );
 
-const SUPPORTED_GAMES = ENABLED_GAME_ENTRIES.map((entry) => entry.manifest.id);
-type SupportedGame = (typeof SUPPORTED_GAMES)[number];
+const SUPPORTED_GAMES: string[] = [];
+type SupportedGame = string;
 
 const normalizeGameName = (name?: string) => (name || '').toLowerCase();
 const isSupportedGame = (gameName: string): gameName is SupportedGame => {
     return (SUPPORTED_GAMES as readonly string[]).includes(gameName);
 }
+
+const registerSupportedGames = (gameIds: string[]) => {
+    const normalized = gameIds
+        .map((id) => normalizeGameName(id))
+        .filter((id) => id.length > 0);
+    SUPPORTED_GAMES.splice(0, SUPPORTED_GAMES.length, ...normalized);
+};
 
 const JWT_SECRET = process.env.JWT_SECRET || 'boardgame-secret-key-change-in-production';
 
@@ -189,23 +197,38 @@ const withSetupData = (game: Game): Game => {
     };
 };
 
-const buildServerGames = (): Game[] => {
+const buildServerGames = async (): Promise<{ games: Game[]; gameIds: string[] }> => {
     const games: Game[] = [];
     const manifestGameIds = new Set<string>();
+    const gameIds: string[] = [];
 
     for (const entry of ENABLED_GAME_ENTRIES) {
         const { manifest, game } = entry;
-        if (manifestGameIds.has(manifest.id)) {
+        const normalizedId = normalizeGameName(manifest.id);
+        if (manifestGameIds.has(normalizedId)) {
             throw new Error(`[GameManifest] 游戏 ID 重复: ${manifest.id}`);
         }
-        manifestGameIds.add(manifest.id);
+        manifestGameIds.add(normalizedId);
+        gameIds.push(normalizedId);
         games.push(withArchiveOnEnd(withSetupData(game), manifest.id));
     }
 
-    return games;
+    const { games: ugcGames, gameIds: ugcGameIds } = await buildUgcServerGames({
+        existingGameIds: manifestGameIds,
+    });
+    ugcGames.forEach((ugcGame, index) => {
+        const gameId = ugcGameIds[index];
+        if (!gameId) return;
+        games.push(withArchiveOnEnd(withSetupData(ugcGame), gameId));
+        gameIds.push(gameId);
+    });
+
+    return { games, gameIds };
 };
 
-const SERVER_GAMES = buildServerGames();
+await connectDB();
+const { games: SERVER_GAMES, gameIds: SERVER_GAME_IDS } = await buildServerGames();
+registerSupportedGames(SERVER_GAME_IDS);
 
 const RAW_WEB_ORIGINS = (process.env.WEB_ORIGINS || '')
     .split(',')
@@ -655,6 +678,7 @@ const bumpLobbyVersion = (gameName: SupportedGame): number => {
 
 const buildLobbyMatch = (
     matchID: string,
+    gameName: SupportedGame, // 强制传入游戏名，确保准确性
     metadata: { gameName?: string; players?: Record<string, PlayerMetadata>; createdAt?: number; updatedAt?: number; setupData?: unknown },
     roomName?: string,
     setupDataFromState?: { ownerKey?: string; ownerType?: 'user' | 'guest'; password?: string }
@@ -672,7 +696,7 @@ const buildLobbyMatch = (
 
     return {
         matchID,
-        gameName: metadata.gameName || 'tictactoe',
+        gameName, // 使用传入的 gameName，而非 metadata.gameName（可能不准确）
         players: playersArray,
         createdAt: metadata.createdAt,
         updatedAt: metadata.updatedAt,
@@ -690,7 +714,18 @@ const fetchLobbyMatch = async (matchID: string): Promise<LobbyMatch | null> => {
         // 从游戏状态 G.__setupData 中读取房间名与 owner 信息
         const setupData = match.state?.G?.__setupData as { roomName?: string; ownerKey?: string; ownerType?: 'user' | 'guest'; password?: string } | undefined;
         const roomName = setupData?.roomName;
-        return buildLobbyMatch(matchID, match.metadata, roomName, setupData);
+        // 从 matchGameIndex 获取游戏名（已在创建时索引）
+        const gameName = matchGameIndex.get(matchID);
+        if (!gameName) {
+            console.warn(`[LobbyIO] 房间 ${matchID} 未找到游戏索引，使用 metadata.gameName`);
+            const fallbackGameName = normalizeGameName(match.metadata.gameName);
+            if (!fallbackGameName || !isSupportedGame(fallbackGameName)) {
+                console.error(`[LobbyIO] 房间 ${matchID} 游戏名无效: ${match.metadata.gameName}`);
+                return null;
+            }
+            return buildLobbyMatch(matchID, fallbackGameName, match.metadata, roomName, setupData);
+        }
+        return buildLobbyMatch(matchID, gameName, match.metadata, roomName, setupData);
     } catch (error) {
         console.error(`[LobbyIO] 获取房间 ${matchID} 失败:`, error);
         return null;
@@ -709,7 +744,7 @@ const fetchMatchesByGame = async (gameName: SupportedGame): Promise<LobbyMatch[]
             // 从游戏状态 G.__setupData 中读取房间名与 owner 信息
             const setupData = match.state?.G?.__setupData as { roomName?: string; ownerKey?: string; ownerType?: 'user' | 'guest'; password?: string } | undefined;
             const roomName = setupData?.roomName;
-            results.push(buildLobbyMatch(matchID, match.metadata, roomName, setupData));
+            results.push(buildLobbyMatch(matchID, gameName, match.metadata, roomName, setupData));
         }
         return results;
     } catch (error) {
@@ -1042,8 +1077,6 @@ app.use(async (ctx, next) => {
 
 // 启动服务器
 server.run(GAME_SERVER_PORT).then(async (runningServers) => {
-    // 连接 MongoDB
-    await connectDB();
 
     // 如果使用持久化存储，连接存储后端
     if (USE_PERSISTENT_STORAGE) {

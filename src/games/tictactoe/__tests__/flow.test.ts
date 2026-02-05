@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { TicTacToeDomain } from '../domain';
 import type { TicTacToeCore } from '../domain/types';
 import { GameTestRunner, type TestCase, type StateExpectation } from '../../../engine/testing';
+import { createInitialSystemState } from '../../../engine/pipeline';
 
 // ============================================================================
 // 井字棋专用断言
@@ -138,6 +139,30 @@ const testCases: TestCase<TicTacToeExpectation>[] = [
         ],
         expect: {
             errorAtStep: { step: 1, error: 'invalidCell' },
+        },
+    },
+    {
+        name: '错误测试 - 游戏已结束',
+        setup: (playerIds, random) => {
+            const core = TicTacToeDomain.setup(playerIds, random);
+            core.gameResult = { winner: '0' };
+            const sys = createInitialSystemState(playerIds, []);
+            return { core, sys };
+        },
+        commands: [
+            { type: 'CLICK_CELL', playerId: '1', payload: { cellId: 1 } },
+        ],
+        expect: {
+            errorAtStep: { step: 1, error: 'gameOver' },
+        },
+    },
+    {
+        name: '错误测试 - 未知命令',
+        commands: [
+            { type: 'UNKNOWN_COMMAND', playerId: '0', payload: {} },
+        ],
+        expect: {
+            errorAtStep: { step: 1, error: 'unknownCommand' },
         },
     },
 ];

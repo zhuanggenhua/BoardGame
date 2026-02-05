@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -487,8 +487,6 @@ export const AssetSlicer = () => {
     const exportSpriteSheet = () => {
         if (extractedAssets.length === 0 || !imageRef.current) return;
 
-        console.log(`[AssetSlicer] 正在导出精灵图... 资源数: ${extractedAssets.length}`);
-
         const count = extractedAssets.length;
         const cols = Math.ceil(Math.sqrt(count));
         // 确保行数足够
@@ -543,28 +541,36 @@ export const AssetSlicer = () => {
 
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        // 中键拖拽（平移）
-        if (e.button === 1 || (e.button === 0 && isAltPressed)) {
+        // 右键拖拽（平移）或 Alt+左键拖拽
+        if (e.button === 2 || (e.button === 0 && isAltPressed)) {
             e.preventDefault();
+            e.stopPropagation();
             setIsPanning(true);
             setPanStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
-        } else if (e.button === 0) {
-            setPanStart({ x: e.clientX, y: e.clientY });
-            // 如果是在图片上按下，且不带 Alt，则开始“滑选”
-            if (isHoveringImage && !isAltPressed) {
-                // 同步更新 Ref 和 State
-                isDrawingRef.current = true;
-                drawStartRef.current = { x: e.clientX, y: e.clientY };
+            return; // 右键/Alt拖拽时不执行后续逻辑
+        }
+        
+        // 左键逻辑 - 必须在图片上才能开始框选
+        if (e.button === 0 && !isAltPressed && isHoveringImage) {
+            e.preventDefault(); // 阻止默认行为（如文本选择、图片拖拽）
+            
+            // 开始框选
+            isDrawingRef.current = true;
+            drawStartRef.current = { x: e.clientX, y: e.clientY };
+            setIsDrawing(true);
 
-                setIsDrawing(true);
-
-                // 记录开始拖拽时的宽高比，用于锁定比例模式
-                if (isSizeLocked && cropSize.height > 0) {
-                    dragAspectRatio.current = cropSize.width / cropSize.height;
-                } else {
-                    dragAspectRatio.current = 1;
-                }
+            // 记录开始拖拽时的宽高比，用于锁定比例模式
+            if (isSizeLocked && cropSize.height > 0) {
+                dragAspectRatio.current = cropSize.width / cropSize.height;
+            } else {
+                dragAspectRatio.current = 1;
             }
+            return; // 框选时不执行后续逻辑
+        }
+        
+        // 如果不是上述任何情况，阻止默认行为（防止意外拖拽）
+        if (e.button === 0) {
+            e.preventDefault();
         }
     };
 
@@ -642,16 +648,10 @@ export const AssetSlicer = () => {
                     const imgCenterX = displayX * scaleFactor;
                     const imgCenterY = displayY * scaleFactor;
                     performExtraction(imgCenterX, imgCenterY, cropSize.width, cropSize.height);
-
-                    updateAnchorPoint({ x: 0.5, y: 0.5 });
-                } else {
-                    // 非快裁模式：计算新的锚点，使选区视觉上保持在原位
-                    // dx > 0: 鼠标在右 -> Anchor X = 1
-                    updateAnchorPoint({
-                        x: dx > 0 ? 1 : 0,
-                        y: dy > 0 ? 1 : 0
-                    });
                 }
+                
+                // 拖拽结束后，始终重置锚点为中心，避免瞬移
+                updateAnchorPoint({ x: 0.5, y: 0.5 });
             } else {
                 handleExtractClick(e);
             }
@@ -827,6 +827,10 @@ export const AssetSlicer = () => {
                                         <span>粘贴剪贴板图片</span>
                                     </li>
                                     <li className="flex gap-2">
+                                        <kbd className="px-1 bg-gray-800 border border-gray-700 rounded text-teal-400 text-[9px] h-fit">右键拖拽</kbd>
+                                        <span>平移画布</span>
+                                    </li>
+                                    <li className="flex gap-2">
                                         <kbd className="px-1 bg-gray-800 border border-gray-700 rounded text-teal-400 text-[9px] h-fit">Ctrl+滚轮</kbd>
                                         <span>缩放裁切框</span>
                                     </li>
@@ -865,7 +869,16 @@ export const AssetSlicer = () => {
                 </button>
             </div>
 
-            <div className={cn("flex-1 bg-gray-950 relative overflow-hidden flex items-center justify-center border-l border-gray-800 perspective-1000", isPanning ? "cursor-grabbing" : "cursor-default")} onMouseMove={handleMouseMove} onMouseDown={handleMouseDown} ref={containerRef}>
+            <div 
+                className={cn("flex-1 bg-gray-950 relative overflow-hidden flex items-center justify-center border-l border-gray-800 perspective-1000", isPanning ? "cursor-grabbing" : "cursor-default")} 
+                onMouseMove={handleMouseMove} 
+                onMouseDown={handleMouseDown}
+                onContextMenu={(e) => {
+                    // 阻止右键菜单（右键用于拖拽）
+                    e.preventDefault();
+                }}
+                ref={containerRef}
+            >
                 {!sourceImage ? (
                     <div className="flex flex-col items-center justify-center p-16 border-2 border-dashed border-gray-800 rounded-[32px] bg-gray-900/20 text-gray-500 pointer-events-none max-w-md w-full select-none">
                         <UploadIcon />
@@ -875,7 +888,19 @@ export const AssetSlicer = () => {
                 ) : (
                     <div className="w-full h-full flex items-center justify-center pointer-events-none">
                         <div className="pointer-events-auto origin-center" style={{ transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})` }}>
-                            <img ref={imageRef} src={sourceImage} alt="Source" className={cn("max-w-none shadow-[0_0_100px_rgba(0,0,0,0.8)] ring-1 ring-gray-700/50 select-none", (isAltPressed || isPanning) ? "cursor-grab" : isHoveringImage ? "cursor-none" : "cursor-default")} onMouseEnter={() => setIsHoveringImage(true)} onMouseLeave={() => setIsHoveringImage(false)} draggable={false} />
+                            <img 
+                                ref={imageRef} 
+                                src={sourceImage} 
+                                alt="Source" 
+                                className={cn(
+                                    "max-w-none shadow-[0_0_100px_rgba(0,0,0,0.8)] ring-1 ring-gray-700/50 select-none", 
+                                    (isAltPressed || isPanning) ? "cursor-grab" : isHoveringImage ? "cursor-none" : "cursor-default"
+                                )} 
+                                onMouseEnter={() => setIsHoveringImage(true)} 
+                                onMouseLeave={() => setIsHoveringImage(false)} 
+                                draggable={false}
+                                onDragStart={(e) => e.preventDefault()} // 完全阻止拖拽
+                            />
                         </div>
                     </div>
                 )}
@@ -919,7 +944,7 @@ export const AssetSlicer = () => {
                     <div className="fixed bottom-6 right-6 bg-gray-900/90 backdrop-blur-xl border border-gray-700 px-4 py-2 rounded-full text-[10px] text-gray-400 flex items-center gap-4 z-50 shadow-2xl select-none pointer-events-none">
                         <div className="flex items-center gap-1.5"><span className="font-mono text-teal-400 font-bold">{(transform.scale * 100).toFixed(0)}%</span><span>视角</span></div>
                         <div className="w-px h-3 bg-gray-700" />
-                        <div className="flex items-center gap-1.5"><span className={cn("w-1.5 h-1.5 rounded-full", (isAltPressed || isPanning) ? "bg-blue-500 animate-pulse" : "bg-gray-700")} /><span>{isAltPressed ? "平移中" : "Alt 拖拽"}</span></div>
+                        <div className="flex items-center gap-1.5"><span className={cn("w-1.5 h-1.5 rounded-full", (isAltPressed || isPanning) ? "bg-blue-500 animate-pulse" : "bg-gray-700")} /><span>{isPanning ? "平移中" : "右键/Alt 拖拽"}</span></div>
                     </div>
                 )}
             </div>

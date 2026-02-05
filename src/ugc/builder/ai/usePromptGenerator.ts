@@ -44,12 +44,15 @@ export function usePromptGenerator() {
       })
       .join('\n');
 
-    const tagGroups = ctx.allTagGroups.length > 0
-      ? `\n\n## 标签使用说明\ndata.tags 是字符串数组，分组: ${ctx.allTagGroups.join(', ')}\n使用: (data.tags as string[])?.includes('标签名')`
+    const tagGroups = Object.entries(ctx.tagsByGroup);
+    const tagInfo = tagGroups.length > 0
+      ? `\n\n## 标签使用说明\ndata.tags 是字符串数组，可用标签：\n${tagGroups
+          .map(([group, names]) => `- ${group}: ${names.join('、') || '无'}`)
+          .join('\n')}\n使用: (data.tags as string[])?.includes('标签名')`
       : '';
 
-    return `## data 参数结构（已传入，直接使用 data.xxx）\n${fields}${tagGroups}`;
-  }, [ctx.currentSchema, ctx.allTagGroups]);
+    return `## data 参数结构（已传入，直接使用 data.xxx）\n${fields}${tagInfo}`;
+  }, [ctx.currentSchema, ctx.tagsByGroup]);
 
   // 生成提示词
   const generate = useCallback((type: PromptType, options: PromptOptions = {}): string => {
@@ -114,7 +117,7 @@ ${dataParamInfo}
 ${requirement}
 
 ## 输出格式
-(items) => items.sort((a, b) => { /* 排序逻辑 */ return 0; })
+(a, b) => { /* 排序逻辑 */ return 0; }
 
 ${OUTPUT_RULES}`;
 
@@ -129,7 +132,7 @@ ${dataParamInfo}
 ${requirement}
 
 ## 输出格式
-(items) => items.filter(item => { /* 过滤条件 */ return true; })
+(item, ctx) => { /* 过滤条件 */ return true; }
 
 ${OUTPUT_RULES}`;
 

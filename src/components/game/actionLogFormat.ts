@@ -5,6 +5,8 @@ export interface ActionLogRow {
     timeLabel: string;
     playerLabel: string;
     text: string;
+    /** 保留原始片段结构，用于渲染卡牌预览 */
+    segments: ActionLogSegment[];
 }
 
 interface BuildActionLogRowsOptions {
@@ -41,5 +43,6 @@ export const buildActionLogRows = (
         timeLabel: formatTime(entry.timestamp),
         playerLabel: getPlayerLabel(entry.actorId),
         text: formatActionLogSegments(entry.segments) || entry.kind,
+        segments: entry.segments || [],
     }));
 };

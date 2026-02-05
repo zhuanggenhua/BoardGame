@@ -37,18 +37,10 @@ export const ModalStackProvider = ({ children }: { children: ReactNode }) => {
     const stackRef = useRef<ModalEntry[]>([]);
     const pendingOnCloseRef = useRef<Array<() => void>>([]);
 
+    // 日志已移除：ModalStack 操作过于频繁，不再需要调试
     const logModalAction = useCallback(
-        (action: string, entry?: Partial<ModalEntry> & { id?: string }, nextSize?: number) => {
-            const id = entry?.id ?? 'unknown';
-            const closeOnBackdrop = entry?.closeOnBackdrop ?? 'default';
-            const closeOnEsc = entry?.closeOnEsc ?? 'default';
-            const lockScroll = entry?.lockScroll ?? 'default';
-            const allowPointerThrough = entry?.allowPointerThrough ?? 'default';
-            const zIndex = entry?.zIndex ?? 'default';
-            const size = nextSize ?? stackRef.current.length;
-            console.info(
-                `[ModalStack] action=${action} id=${id} stackSize=${size} closeOnBackdrop=${closeOnBackdrop} closeOnEsc=${closeOnEsc} lockScroll=${lockScroll} allowPointerThrough=${allowPointerThrough} zIndex=${zIndex}`
-            );
+        (_action: string, _entry?: Partial<ModalEntry> & { id?: string }, _nextSize?: number) => {
+            // 日志已禁用
         },
         []
     );

@@ -38,6 +38,10 @@ export interface GameEvent<TType extends string = string, TPayload = unknown> {
     timestamp: number;
     /** 可选的音效 key（用于音频系统自定义播放） */
     sfxKey?: string;
+    /** 事件级音效 key（优先级最高） */
+    audioKey?: string;
+    /** 事件级音效分类（用于统一映射） */
+    audioCategory?: { group: string; sub?: string };
 }
 
 /**
@@ -112,6 +116,23 @@ export interface LogEntry {
 export interface LogState {
     entries: LogEntry[];
     maxEntries: number;
+}
+
+/**
+ * 事件流条目
+ */
+export interface EventStreamEntry {
+    id: number;
+    event: GameEvent;
+}
+
+/**
+ * 事件流系统状态
+ */
+export interface EventStreamState {
+    entries: EventStreamEntry[];
+    maxEntries: number;
+    nextId: number;
 }
 
 /**
@@ -272,6 +293,8 @@ export interface SystemState {
     prompt: PromptState;
     /** 日志系统状态 */
     log: LogState;
+    /** 事件流系统状态 */
+    eventStream: EventStreamState;
     /** 操作日志系统状态 */
     actionLog: ActionLogState;
     /** 重赛系统状态 */

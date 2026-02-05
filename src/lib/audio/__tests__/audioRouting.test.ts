@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig } from '../types';
-import { resolveAudioEvent, resolveBgmKey, resolveEventSoundKey } from '../audioRouting';
+import { resolveAudioEvent, resolveAudioKey, resolveBgmKey, resolveEventSoundKey } from '../audioRouting';
 
 const buildContext = (): AudioRuntimeContext<unknown, { phase?: string }, { userId: string }> => ({
     G: {},
@@ -36,6 +36,27 @@ describe('audioRouting', () => {
         expect(key).toBe('mapped');
     });
 
+    it('audioKey 优先级最高', () => {
+        const event: AudioEvent = { type: 'X', audioKey: 'force' };
+        const config: GameAudioConfig = { eventSoundMap: { X: 'mapped' } };
+        const key = resolveAudioKey(event, buildContext(), config, () => 'category');
+        expect(key).toBe('force');
+    });
+
+    it('audioCategory 命中时返回分类 key', () => {
+        const event: AudioEvent = { type: 'X', audioCategory: { group: 'ui', sub: 'click' } };
+        const config: GameAudioConfig = { eventSoundMap: { X: 'mapped' } };
+        const key = resolveAudioKey(event, buildContext(), config, () => 'category');
+        expect(key).toBe('category');
+    });
+
+    it('audioCategory 未命中时回退到 resolver/map', () => {
+        const event: AudioEvent = { type: 'X', audioCategory: { group: 'ui' } };
+        const config: GameAudioConfig = { eventSoundMap: { X: 'mapped' } };
+        const key = resolveAudioKey(event, buildContext(), config, () => null);
+        expect(key).toBe('mapped');
+    });
+
     it('resolveBgmKey 优先匹配规则，否则 fallback', () => {
         const context = buildContext();
         const key = resolveBgmKey(context, [
@@ -52,6 +73,12 @@ describe('audioRouting', () => {
     it('resolveAudioEvent 默认解析 sys.log entry', () => {
         const event: AudioEvent = { type: 'TEST' };
         const entry = { type: 'event', data: event };
+        expect(resolveAudioEvent(entry)).toEqual(event);
+    });
+
+    it('resolveAudioEvent 支持事件流条目', () => {
+        const event: AudioEvent = { type: 'STREAM' };
+        const entry = { id: 1, event };
         expect(resolveAudioEvent(entry)).toEqual(event);
     });
 });

@@ -17,6 +17,7 @@ import type { UpdateUgcPackageDto } from './dtos/update-ugc-package.dto';
 import type { UgcPackageListQueryDto } from './dtos/ugc-list-query.dto';
 import type { UploadUgcAssetDto } from './dtos/upload-ugc-asset.dto';
 import { UgcAsset, type UgcAssetDocument } from './schemas/ugc-asset.schema';
+import { UgcBuilderProject, type UgcBuilderProjectDocument } from './schemas/ugc-builder-project.schema';
 import { UgcPackage, type UgcPackageDocument } from './schemas/ugc-package.schema';
 
 const IMAGE_FORMATS = new Set(['png', 'jpg', 'jpeg', 'webp', 'avif', 'gif', 'svg', 'bmp']);
@@ -90,6 +91,18 @@ export type PackageSummary = {
     updatedAt?: Date;
 };
 
+export type BuilderProjectSummary = {
+    projectId: string;
+    name: string;
+    description?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+};
+
+export type BuilderProjectDetail = BuilderProjectSummary & {
+    data?: Record<string, unknown> | null;
+};
+
 type PackageUploadResult = {
     packageId: string;
     packageType: string | null;
@@ -106,7 +119,8 @@ export class UgcService {
 
     constructor(
         @InjectModel(UgcPackage.name) private readonly packageModel: Model<UgcPackageDocument>,
-        @InjectModel(UgcAsset.name) private readonly assetModel: Model<UgcAssetDocument>
+        @InjectModel(UgcAsset.name) private readonly assetModel: Model<UgcAssetDocument>,
+        @InjectModel(UgcBuilderProject.name) private readonly builderProjectModel: Model<UgcBuilderProjectDocument>
     ) {}
 
     async createPackage(ownerId: string, dto: CreateUgcPackageDto): Promise<ServiceResult<UgcPackageDocument, 'duplicatePackageId'>> {
@@ -198,6 +212,53 @@ export class UgcService {
             total,
             hasMore: page * limit < total,
         };
+    }
+
+    async listBuilderProjects(ownerId: string): Promise<BuilderProjectSummary[]> {
+        const items = await this.builderProjectModel
+            .find({ ownerId })
+            .sort({ updatedAt: -1 })
+            .lean<UgcBuilderProjectDocument[]>();
+        return items.map((item) => this.toBuilderProjectSummary(item));
+    }
+
+    async createBuilderProject(
+        ownerId: string,
+        payload: { name: string; description?: string; data?: Record<string, unknown> | null }
+    ): Promise<BuilderProjectDetail> {
+        const projectId = await this.generateBuilderProjectId();
+        const created = await this.builderProjectModel.create({
+            projectId,
+            ownerId,
+            name: payload.name.trim(),
+            description: payload.description?.trim() ?? '',
+            data: payload.data ?? null,
+        });
+        return this.toBuilderProjectDetail(created);
+    }
+
+    async getBuilderProject(ownerId: string, projectId: string): Promise<BuilderProjectDetail | null> {
+        const project = await this.builderProjectModel.findOne({ ownerId, projectId });
+        return project ? this.toBuilderProjectDetail(project) : null;
+    }
+
+    async updateBuilderProject(
+        ownerId: string,
+        projectId: string,
+        payload: { name?: string; description?: string; data?: Record<string, unknown> | null }
+    ): Promise<BuilderProjectDetail | null> {
+        const project = await this.builderProjectModel.findOne({ ownerId, projectId });
+        if (!project) return null;
+        if (payload.name !== undefined) project.name = payload.name.trim();
+        if (payload.description !== undefined) project.description = payload.description?.trim() ?? '';
+        if (payload.data !== undefined) project.data = payload.data ?? null;
+        await project.save();
+        return this.toBuilderProjectDetail(project);
+    }
+
+    async deleteBuilderProject(ownerId: string, projectId: string): Promise<boolean> {
+        const result = await this.builderProjectModel.deleteOne({ ownerId, projectId });
+        return result.deletedCount > 0;
     }
 
     async getPublishedPackage(packageId: string) {
@@ -536,8 +597,34 @@ export class UgcService {
         };
     }
 
+    private toBuilderProjectSummary(project: UgcBuilderProjectDocument): BuilderProjectSummary {
+        return {
+            projectId: project.projectId,
+            name: project.name,
+            description: project.description,
+            createdAt: project.createdAt,
+            updatedAt: project.updatedAt,
+        };
+    }
+
+    private toBuilderProjectDetail(project: UgcBuilderProjectDocument): BuilderProjectDetail {
+        return {
+            ...this.toBuilderProjectSummary(project),
+            data: project.data ?? null,
+        };
+    }
+
     private generatePackageId(): string {
         return `ugc-${randomBytes(6).toString('hex')}`;
+    }
+
+    private async generateBuilderProjectId(): Promise<string> {
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+            const candidate = `builder-${randomBytes(8).toString('hex')}`;
+            const exists = await this.builderProjectModel.findOne({ projectId: candidate }).lean();
+            if (!exists) return candidate;
+        }
+        return `builder-${randomBytes(10).toString('hex')}`;
     }
 
     private generateAssetId(): string {

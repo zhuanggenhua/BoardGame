@@ -31,6 +31,10 @@ export const DEFAULT_SANDBOX_CONFIG: SandboxConfig = {
 // 执行结果
 // ============================================================================
 
+export type RuleExecutionStage = 'load' | 'setup' | 'validate' | 'execute' | 'reduce' | 'playerView' | 'isGameOver';
+
+export type SandboxErrorType = 'timeout' | 'memory' | 'permission' | 'runtime' | 'syntax' | 'contract';
+
 /** 沙箱执行结果 */
 export interface SandboxResult<T = unknown> {
     /** 是否成功 */
@@ -40,7 +44,11 @@ export interface SandboxResult<T = unknown> {
     /** 错误信息 */
     error?: string;
     /** 错误类型 */
-    errorType?: 'timeout' | 'memory' | 'permission' | 'runtime' | 'syntax';
+    errorType?: SandboxErrorType;
+    /** 失败阶段 */
+    errorStage?: RuleExecutionStage;
+    /** 最小错误日志 */
+    errorLog?: string;
     /** 执行时间（毫秒） */
     executionTimeMs?: number;
     /** 控制台输出 */

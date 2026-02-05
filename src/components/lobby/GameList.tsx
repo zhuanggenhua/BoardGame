@@ -17,6 +17,7 @@ export const GameList = ({ games, onGameClick }: GameListProps) => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
+                    data-game-id={game.id}
                     href={`/?game=${game.id}`}
                     onClick={(e) => {
                         e.preventDefault();

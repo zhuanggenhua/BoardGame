@@ -11,6 +11,14 @@ export { PlayerPanelSkeleton } from './PlayerPanelSkeleton';
 export { HandAreaSkeleton } from './HandAreaSkeleton';
 export { ResourceTraySkeleton } from './ResourceTraySkeleton';
 export { SpotlightSkeleton } from './SpotlightSkeleton';
+export { CharacterSelectionSkeleton } from './CharacterSelectionSkeleton';
+export type { CharacterSelectionSkeletonProps } from './CharacterSelectionSkeleton';
+
+// 棋盘布局组件
+export { BoardLayoutEditor } from './BoardLayoutEditor';
+export type { BoardLayoutEditorProps } from './BoardLayoutEditor';
+export { BoardLayoutRenderer } from './BoardLayoutRenderer';
+export type { BoardLayoutRendererProps } from './BoardLayoutRenderer';
 
 // 钩子
 export {

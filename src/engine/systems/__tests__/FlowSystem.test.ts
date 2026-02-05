@@ -32,6 +32,8 @@ const createTestState = (phase: string): MatchState<TestCore> => ({
         undo: { snapshots: [], maxSnapshots: 50 },
         prompt: { queue: [] },
         log: { entries: [], maxEntries: 1000 },
+        eventStream: { entries: [], maxEntries: 200, nextId: 1 },
+        actionLog: { entries: [], maxEntries: 50 },
         rematch: { votes: {}, ready: false },
         responseWindow: { current: undefined },
         tutorial: { ...DEFAULT_TUTORIAL_STATE },

@@ -42,7 +42,7 @@ export class PromptGenerator {
   /** 生成完整的游戏规则提示词 */
   generateFullPrompt(requirement?: string): string {
     const requirementText = requirement?.trim() ? requirement.trim() : '未补充需求';
-    return `你是一个桌游规则代码生成专家。请根据以下游戏定义，生成完整的 boardgame.io 游戏配置。
+    return `你是一个桌游规则代码生成专家。请根据以下游戏定义，生成可在 UGC 沙箱执行的规则代码。
 
 ## 游戏信息
 - 名称: ${this.context.name}
@@ -71,14 +71,70 @@ ${items.length > 5 ? `... 还有 ${items.length - 5} 条` : ''}
 ## UI 布局
 ${this.context.layout.map(c => `- ${c.type}: ${String(c.data.name || c.type)} (${c.width}x${c.height} @ ${c.x},${c.y})`).join('\n') || '未配置'}
 
+## 输出契约（必须遵守）
+请输出一个名为 \`domain\` 的对象，并包含以下方法（函数签名必须一致）：
+
+\`\`\`ts
+const domain = {
+  gameId: string,
+  setup(playerIds: string[], random: { random(): number; d(max: number): number; range(min: number, max: number): number; shuffle<T>(array: T[]): T[] }): UGCGameState,
+  validate(state: UGCGameState, command: Command): { valid: boolean; error?: string },
+  execute(state: UGCGameState, command: Command, random: { random(): number; d(max: number): number; range(min: number, max: number): number; shuffle<T>(array: T[]): T[] }): GameEvent[],
+  reduce(state: UGCGameState, event: GameEvent): UGCGameState,
+  playerView?(state: UGCGameState, playerId: string): Partial<UGCGameState>,
+  isGameOver?(state: UGCGameState): { winner?: string; winners?: string[]; draw?: boolean; scores?: Record<string, number> } | undefined,
+};
+\`\`\`
+
+### Command 结构
+\`\`\`ts
+type Command = {
+  type: string;
+  playerId: string;
+  payload: Record<string, unknown>;
+  timestamp?: number;
+};
+\`\`\`
+
+### GameEvent 结构
+\`\`\`ts
+type GameEvent = {
+  type: string;
+  payload: Record<string, unknown>;
+  timestamp?: number;
+  sourceCommandType?: string;
+  sfxKey?: string;
+};
+\`\`\`
+
+### UGCGameState 结构
+\`\`\`ts
+type UGCGameState = {
+  phase: string;
+  activePlayerId: string;
+  turnNumber: number;
+  players: Record<string, {
+    resources: Record<string, number>;
+    handCount: number;
+    deckCount: number;
+    discardCount: number;
+    statusEffects: Record<string, number>;
+    public?: Record<string, unknown>;
+  }>;
+  publicZones?: Record<string, unknown>;
+  gameOver?: { winner?: string; draw?: boolean };
+};
+\`\`\`
+
 ## 要求
-1. 生成完整的 boardgame.io 游戏配置
-2. 包含 setup、moves、phases、endIf
-3. **效果执行必须使用现有 GAS 系统**（src/systems/core/Ability.ts & Effect.ts）
-4. 禁止重新实现效果执行器，仅编排 GAS 能力数据与游戏规则调用
-3. 使用 TypeScript，类型安全
-4. 添加必要的注释
-5. 代码可直接运行
+1. 必须输出 \`const domain = {...}\`，并且可直接在沙箱中执行
+2. 仅使用内置对象与参数，禁止 import/require
+3. 状态必须保持可序列化、确定性
+4. 若需要随机数，仅使用传入的 random
+5. **效果执行必须使用现有 GAS 系统**（src/systems/core/Ability.ts & Effect.ts）
+6. 禁止重新实现效果执行器，仅编排 GAS 能力数据与游戏规则调用
+7. 使用 TypeScript 风格（但无需类型导入）
+8. 添加必要的中文注释
 
 请直接输出代码：`;
   }

@@ -1,0 +1,12 @@
+{
+  "name": "image-viewer-mcp",
+  "version": "1.0.0",
+  "description": "本地图片查看 MCP 服务器",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.0"
+  }
+}

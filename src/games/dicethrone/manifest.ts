@@ -9,7 +9,7 @@ const entry: GameManifestEntry = {
     category: 'strategy',
     playersKey: 'games.dicethrone.players',
     icon: '🎲',
-    thumbnailPath: 'dicethrone/thumbnails/compressed/fengm',
+    thumbnailPath: 'dicethrone/thumbnails/fengm',
     allowLocalMode: false,
     playerOptions: [2],
     tags: ['dice_driven', 'combat'],

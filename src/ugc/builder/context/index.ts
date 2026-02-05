@@ -14,5 +14,7 @@ export type {
   RenderComponent, 
   LayoutComponent,
   PromptContext,
-  ComponentContext 
+  ComponentContext,
+  RequirementEntry,
+  RequirementsState
 } from './BuilderContext';

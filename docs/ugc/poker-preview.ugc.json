@@ -1,0 +1,213 @@
+{
+  "name": "扑克原型",
+  "description": "UGC 预览模式最小扑克展示",
+  "tags": ["扑克", "预览"],
+  "schemas": [
+    {
+      "id": "player",
+      "name": "玩家",
+      "description": "参与玩家列表",
+      "primaryKey": "id",
+      "displayField": "name",
+      "fields": {
+        "id": {
+          "type": "string",
+          "label": "ID",
+          "required": true,
+          "showInTable": true,
+          "width": 120
+        },
+        "name": {
+          "type": "string",
+          "label": "名称",
+          "required": true,
+          "showInTable": true,
+          "width": 140
+        }
+      }
+    },
+    {
+      "id": "card",
+      "name": "卡牌",
+      "description": "扑克卡牌数据",
+      "primaryKey": "id",
+      "displayField": "name",
+      "fields": {
+        "id": {
+          "type": "string",
+          "label": "ID",
+          "required": true,
+          "showInTable": true,
+          "width": 120
+        },
+        "name": {
+          "type": "string",
+          "label": "名称",
+          "required": true,
+          "showInTable": true,
+          "width": 140
+        },
+        "suit": {
+          "type": "enum",
+          "label": "花色",
+          "showInTable": true,
+          "options": [
+            { "value": "spade", "label": "黑桃" },
+            { "value": "heart", "label": "红心" },
+            { "value": "club", "label": "梅花" },
+            { "value": "diamond", "label": "方块" }
+          ]
+        },
+        "rank": {
+          "type": "enum",
+          "label": "点数",
+          "showInTable": true,
+          "options": [
+            { "value": "A", "label": "A" },
+            { "value": "K", "label": "K" },
+            { "value": "Q", "label": "Q" },
+            { "value": "J", "label": "J" },
+            { "value": "10", "label": "10" },
+            { "value": "9", "label": "9" },
+            { "value": "8", "label": "8" }
+          ]
+        },
+        "ownerId": {
+          "type": "string",
+          "label": "归属玩家ID",
+          "showInTable": true,
+          "width": 120
+        },
+        "zone": {
+          "type": "enum",
+          "label": "区域",
+          "showInTable": true,
+          "options": [
+            { "value": "hand", "label": "手牌" },
+            { "value": "table", "label": "桌面" }
+          ]
+        }
+      }
+    }
+  ],
+  "instances": {
+    "player": [
+      { "id": "p1", "name": "玩家A" },
+      { "id": "p2", "name": "玩家B" }
+    ],
+    "card": [
+      { "id": "c1", "name": "黑桃A", "suit": "spade", "rank": "A", "ownerId": "p1", "zone": "hand" },
+      { "id": "c2", "name": "红心K", "suit": "heart", "rank": "K", "ownerId": "p1", "zone": "hand" },
+      { "id": "c3", "name": "梅花Q", "suit": "club", "rank": "Q", "ownerId": "p2", "zone": "hand" },
+      { "id": "c4", "name": "方块J", "suit": "diamond", "rank": "J", "ownerId": "p2", "zone": "hand" },
+      { "id": "c5", "name": "黑桃10", "suit": "spade", "rank": "10", "ownerId": "table", "zone": "table" },
+      { "id": "c6", "name": "红心9", "suit": "heart", "rank": "9", "ownerId": "table", "zone": "table" },
+      { "id": "c7", "name": "梅花8", "suit": "club", "rank": "8", "ownerId": "table", "zone": "table" }
+    ]
+  },
+  "renderComponents": [
+    {
+      "id": "rc-card",
+      "name": "扑克牌渲染",
+      "targetSchema": "card",
+      "description": "基础扑克卡牌渲染",
+      "renderCode": "(data) => (\n  <div className='w-full h-full rounded-md border border-slate-500 bg-gradient-to-br from-white to-slate-200 text-slate-900 flex flex-col items-center justify-center'>\n    <div className='text-lg font-bold'>{data.rank}</div>\n    <div className='text-[10px]'>{data.suit}</div>\n  </div>\n)",
+      "backRenderCode": "(data) => (\n  <div className='w-full h-full rounded-md border border-slate-500 bg-slate-700 text-slate-200 flex items-center justify-center'>\n    背面\n  </div>\n)"
+    }
+  ],
+  "layout": [
+    {
+      "id": "player-a",
+      "type": "player-area",
+      "x": 40,
+      "y": 360,
+      "width": 160,
+      "height": 80,
+      "data": {
+        "name": "玩家A",
+        "bindSchema": "player",
+        "playerRef": "index",
+        "playerRefIndex": 0,
+        "renderCode": "(data) => (\n  <div className='w-full h-full rounded-md border border-slate-600 bg-slate-800 text-white flex flex-col items-center justify-center'>\n    <div className='text-[10px] text-slate-400'>玩家</div>\n    <div className='text-sm font-bold'>{data.player ? data.player.name : '未知'}</div>\n  </div>\n)"
+      }
+    },
+    {
+      "id": "player-b",
+      "type": "player-area",
+      "x": 40,
+      "y": 40,
+      "width": 160,
+      "height": 80,
+      "data": {
+        "name": "玩家B",
+        "bindSchema": "player",
+        "playerRef": "index",
+        "playerRefIndex": 1,
+        "renderCode": "(data) => (\n  <div className='w-full h-full rounded-md border border-slate-600 bg-slate-800 text-white flex flex-col items-center justify-center'>\n    <div className='text-[10px] text-slate-400'>玩家</div>\n    <div className='text-sm font-bold'>{data.player ? data.player.name : '未知'}</div>\n  </div>\n)"
+      }
+    },
+    {
+      "id": "hand-a",
+      "type": "hand-zone",
+      "x": 220,
+      "y": 340,
+      "width": 560,
+      "height": 160,
+      "data": {
+        "name": "玩家A手牌",
+        "bindSchema": "card",
+        "bindEntity": "ownerId",
+        "zoneField": "zone",
+        "zoneValue": "hand",
+        "targetPlayerRef": "index",
+        "targetPlayerIndex": 0,
+        "playerIds": ["p1", "p2"],
+        "currentPlayerId": "p1",
+        "itemRenderComponentId": "rc-card"
+      }
+    },
+    {
+      "id": "hand-b",
+      "type": "hand-zone",
+      "x": 220,
+      "y": 40,
+      "width": 560,
+      "height": 160,
+      "data": {
+        "name": "玩家B手牌",
+        "bindSchema": "card",
+        "bindEntity": "ownerId",
+        "zoneField": "zone",
+        "zoneValue": "hand",
+        "targetPlayerRef": "index",
+        "targetPlayerIndex": 1,
+        "playerIds": ["p1", "p2"],
+        "currentPlayerId": "p1",
+        "itemRenderComponentId": "rc-card"
+      }
+    },
+    {
+      "id": "table-zone",
+      "type": "play-zone",
+      "x": 220,
+      "y": 210,
+      "width": 560,
+      "height": 110,
+      "data": {
+        "name": "公共牌",
+        "bindSchema": "card",
+        "filterCode": "(card) => card.zone === 'table'",
+        "itemRenderComponentId": "rc-card"
+      }
+    }
+  ],
+  "layoutGroups": [
+    { "id": "default", "name": "默认", "hidden": false },
+    { "id": "hide", "name": "隐藏", "hidden": true }
+  ],
+  "rulesCode": "",
+  "uiLayout": {
+    "leftPanelWidth": 280,
+    "topPanelRatio": 0.55
+  }
+}

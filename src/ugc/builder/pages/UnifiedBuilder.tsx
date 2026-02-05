@@ -16,9 +16,13 @@ import {
 import { BaseEntitySchema, extendSchema, field, type SchemaDefinition, type FieldDefinition, type TagDefinition } from '../schema/types';
 import { DataTable } from '../ui/DataTable';
 import { SceneCanvas, type SceneComponent } from '../ui/SceneCanvas';
-import { PreviewCanvas } from '../ui/RenderPreview';
+import { UGCRuntimeHost } from '../../runtime';
 import { PromptGenerator, type GameContext, useRenderPrompt } from '../ai';
+import { buildRequirementsText } from '../utils/requirements';
+import { generateUnifiedPrompt, TECH_STACK, OUTPUT_RULES } from '../ai/promptUtils';
+import { UGC_API_URL } from '../../../config/server';
 import { useToast } from '../../../contexts/ToastContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { validateAbilityJson } from '../utils/validateAbilityJson';
 import { useAudio } from '../../../contexts/AudioContext';
 import { AudioManager } from '../../../lib/audio/AudioManager';
@@ -42,10 +46,65 @@ export type { RenderComponent, BuilderState, LayoutComponent };
 
 const normalizeTags = (schema?: SchemaDefinition): TagDefinition[] => schema?.tagDefinitions ?? [];
 
+const normalizeRequirements = (
+  value: unknown,
+  fallback: BuilderState['requirements']
+): BuilderState['requirements'] => {
+  if (!value || typeof value !== 'object') return fallback;
+  const rawText = typeof (value as { rawText?: unknown }).rawText === 'string'
+    ? (value as { rawText: string }).rawText
+    : fallback.rawText;
+  const entriesRaw = (value as { entries?: unknown }).entries;
+  const entries = Array.isArray(entriesRaw)
+    ? entriesRaw.map((entry, index) => {
+        const item = entry as Record<string, unknown>;
+        const id = typeof item.id === 'string' ? item.id : `req-${index}`;
+        const location = typeof item.location === 'string' ? item.location : '';
+        const content = typeof item.content === 'string' ? item.content : '';
+        const notes = typeof item.notes === 'string' ? item.notes : undefined;
+        return { id, location, content, notes };
+      })
+    : fallback.entries;
+  return { rawText, entries };
+};
+
 // AI 生成请求类型
 type AIGenType = 'batch-data' | 'batch-tags' | 'ability-field' | null;
 
-type ModalType = 'schema' | 'data' | 'rules' | 'edit-item' | 'ai-gen' | 'template' | 'render-template' | 'tag-manager' | null;
+type ModalType =
+  | 'schema'
+  | 'data'
+  | 'rules'
+  | 'edit-item'
+  | 'ai-gen'
+  | 'template'
+  | 'render-template'
+  | 'tag-manager'
+  | 'project-list'
+  | null;
+
+type BuilderProjectSummary = {
+  projectId: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type BuilderProjectDetail = BuilderProjectSummary & {
+  data?: Record<string, unknown> | null;
+};
+
+const normalizeBaseUrl = (value: string) => value.replace(/\/+$/, '');
+const buildAuthHeaders = (token: string | null) => ({
+  'Content-Type': 'application/json',
+  Authorization: token ? `Bearer ${token}` : '',
+});
+const formatProjectDate = (value?: string) => {
+  if (!value) return '未保存';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+};
 
 // ============================================================================
 // 初始状态
@@ -109,6 +168,10 @@ const INITIAL_STATE: BuilderState = {
   selectedSchemaId: null,
   selectedComponentId: null,
   rulesCode: '',
+  requirements: {
+    rawText: '',
+    entries: [],
+  },
 };
 
 // ============================================================================
@@ -142,7 +205,7 @@ const BASE_UI_COMPONENTS: { category: string; items: UIComponentDef[] }[] = [
         type: 'hand-zone', 
         width: 400, 
         height: 120,
-        dataFormat: '{ cards: CardData[], playerId: string, canInteract: boolean }',
+        dataFormat: '{ cards: CardData[] }',
         customizable: true,
       },
       { 
@@ -244,6 +307,8 @@ function HookField({
   label,
   value,
   onChange,
+  requirementValue,
+  onRequirementChange,
   schema,
   hookType,
   placeholder,
@@ -253,16 +318,15 @@ function HookField({
   label: string;
   value: string;
   onChange: (v: string) => void;
+  requirementValue: string;
+  onRequirementChange: (v: string) => void;
   schema: SchemaDefinition | undefined;
   hookType: 'sort' | 'filter' | 'layout' | 'selectEffect' | 'render';
   placeholder: string;
   componentType?: string;
   outputsSummary?: string;
 }) {
-  const [inputMode, setInputMode] = useState(false);
-  const [requirement, setRequirement] = useState('');
-
-  const requirementText = requirement.trim() ? requirement.trim() : '（未填写需求）';
+  const requirementText = requirementValue.trim() ? requirementValue.trim() : '（未填写需求）';
 
   const generatePrompt = () => {
     const schemaFields = schema
@@ -290,6 +354,9 @@ function HookField({
     const playerContextInfo = componentType === 'player-area'
       ? `\n## 玩家上下文（系统注入，仅 player-area 可用）\n- playerIds: string[] - 玩家 ID 列表（由绑定 Schema 自动推导）\n- currentPlayerId: string | null - 当前玩家 ID\n- currentPlayerIndex: number - 当前玩家索引\n- resolvedPlayerId: string | null - 当前组件定位到的玩家 ID\n- resolvedPlayerIndex: number - 目标玩家索引\n- resolvedPlayer: Record<string, unknown> | undefined - 目标玩家数据\n- player: resolvedPlayer 的别名\n- isCurrentPlayer: boolean - 是否为当前玩家\n- isCurrentTurn: boolean - 预览中等价于 isCurrentPlayer\n\n### 组件配置字段（用于定位玩家）\n- playerRef: 'current' | 'index'\n  - current: 当前玩家\n  - index: 第 N 个玩家（使用 playerRefIndex）\n- playerRefIndex: number - 第 N 个玩家的索引（0 开始）\n\n### 关联示例（目标玩家的关联数据）\n\`\`\`tsx\nconst outputs = data.outputsByType?.['hand-zone'] || [];\nconst output = outputs[0];\nconst key = output?.bindEntity;\nconst relatedItems = key ? output.items.filter(item => item[key] === data.resolvedPlayerId) : [];\n\`\`\``
       : '';
+    const filterContextInfo = componentType === 'hand-zone'
+      ? `\n## 过滤上下文 ctx（系统注入，仅 hand-zone 可用）\n- playerIds: string[] - 玩家 ID 列表\n- currentPlayerId: string | null - 当前玩家 ID\n- currentPlayerIndex: number - 当前玩家索引\n- resolvedPlayerId: string | null - 目标玩家 ID\n- resolvedPlayerIndex: number - 目标玩家索引\n- bindEntity?: string - 归属字段（玩家ID）\n- zoneField?: string - 区域字段\n- zoneValue?: string - 区域值`
+      : '';
 
     const templates: Record<string, string> = {
       sort: `你是一个排序比较函数生成器。
@@ -316,18 +383,19 @@ ${dataFormatInfo}
 ## 数据结构
 ${schemaFields}
 ${tagsInfo}
+${filterContextInfo}
 
 ## 用户需求
 ${requirementText}
 
 ## 函数签名（必须严格遵守）
-(item: TItem) => boolean
+(item: TItem, ctx: Record<string, unknown>) => boolean
 // 返回 true：显示该项
 // 返回 false：隐藏该项
 
 ## 输出格式（只输出函数体，不要包装）
 \`\`\`javascript
-(item) => true
+(item, ctx) => true
 \`\`\``,
       layout: `你是一个布局代码生成器。
 ${dataFormatInfo}
@@ -452,44 +520,105 @@ ${requirementText}
     <div>
       <div className="flex items-center justify-between mb-1">
         <label className="text-slate-400">{label}</label>
-        <button
-          onClick={() => setInputMode(!inputMode)}
-          className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
-        >
-          {inputMode ? '收起' : 'AI生成'}
-        </button>
-      </div>
-      {inputMode && (
-        <div className="mb-2 space-y-1">
-          <input
-            type="text"
-            value={requirement}
-            onChange={e => setRequirement(e.target.value)}
-            placeholder={placeholder}
-            className="w-full px-2 py-1 bg-slate-600 border border-slate-500 rounded text-white text-[10px]"
-          />
+        <div className="flex items-center gap-2">
           <button
             onClick={() => navigator.clipboard.writeText(generatePrompt())}
-            className="w-full px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-[10px] text-slate-300"
+            className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
           >
             复制提示词
           </button>
+          <button
+            onClick={() => onChange('')}
+            disabled={!value}
+            className="px-1.5 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-[10px] disabled:opacity-40"
+          >
+            清空
+          </button>
         </div>
-      )}
+      </div>
+      <div className="mb-2">
+        <input
+          type="text"
+          value={requirementValue}
+          onChange={e => onRequirementChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full px-2 py-1 bg-slate-600 border border-slate-500 rounded text-white text-[10px]"
+        />
+      </div>
       <textarea
         value={value}
-        onChange={e => onChange(e.target.value)}
+        readOnly
         onPaste={e => {
+          e.preventDefault();
           const text = e.clipboardData.getData('text');
           if (text.trim()) {
             onChange(text);
           }
         }}
-        placeholder="粘贴AI生成结果..."
+        placeholder="粘贴 AI 生成结果..."
         className="w-full h-14 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white font-mono text-[10px] resize-none"
       />
     </div>
   );
+}
+
+function buildActionHookPrompt({
+  requirement,
+  componentType,
+}: {
+  requirement?: string;
+  componentType?: string;
+}): string {
+  const requirementText = requirement?.trim() ? requirement.trim() : '实现按钮交互';
+  const sourceInfo = componentType ? `组件类型: ${componentType}` : '组件类型: 未指定';
+  return `你是一个动作钩子代码生成器。
+
+${TECH_STACK}
+
+## 触发来源
+${sourceInfo}
+- 点击动作按钮时触发
+
+## 可用输入 payload
+- payload.action: { id, label, scope, requirement? }
+- payload.context: { componentId, componentType, currentPlayerId, resolvedPlayerId, resolvedPlayerIndex }
+- payload.state: UGCGameState | null
+- payload.sdk: UGCViewSdk | null
+- payload.dispatchCommand: (command: { type?: string; payload?: Record<string, unknown> }) => string
+
+## SDK 可用方法（存在时调用）
+- payload.sdk.playCard(cardId, targetIds?)
+- payload.sdk.selectTarget(targetIds)
+- payload.sdk.endPhase()
+- payload.sdk.endTurn()
+- payload.sdk.drawCard(count?)
+- payload.sdk.discardCard(cardIds)
+- payload.sdk.respond(responseType, params?)
+- payload.sdk.pass()
+
+## 支持返回命令（推荐）
+可直接 return 命令对象或数组，框架会自动调用 sendCommand：
+- { type?: string; payload?: Record<string, unknown> }
+- type 为空时默认使用 "ACTION"
+- payload 会自动合并 actionId/actionLabel/componentId/componentType
+
+## 用户需求
+${requirementText}
+
+## 函数签名（必须严格遵守）
+(payload: { action: Record<string, unknown>; context: Record<string, unknown>; state: unknown; sdk: unknown; dispatchCommand: (command: { type?: string; payload?: Record<string, unknown> }) => string }) => void | { type?: string; payload?: Record<string, unknown> } | { type?: string; payload?: Record<string, unknown> }[] | Promise<void | { type?: string; payload?: Record<string, unknown> } | { type?: string; payload?: Record<string, unknown> }[]>
+
+${OUTPUT_RULES}
+
+## 输出格式（只输出函数体）
+(payload) => {
+  return {
+    type: 'ACTION',
+    payload: {
+      detail: '触发动作',
+    },
+  };
+}`;
 }
 
 // ============================================================================
@@ -548,6 +677,7 @@ function UnifiedBuilderInner() {
   // 从 Context 获取状态（暂未使用，渐进迁移后启用）
   const builderCtx = useBuilder();
   const { playBgm, stopBgm, setPlaylist } = useAudio();
+  const { token } = useAuth();
   
   // 临时：仍使用本地状态，后续逐步替换为 Context
   // TODO: 迁移完成后删除本地 state，直接使用 contextState
@@ -569,7 +699,6 @@ function UnifiedBuilderInner() {
   // AI 生成相关状态
   const [aiGenType, setAiGenType] = useState<AIGenType>(null);
   const [aiGenInput, setAiGenInput] = useState('');
-  const [rulesRequirement, setRulesRequirement] = useState('');
   const [abilityImportErrors, setAbilityImportErrors] = useState<string[]>([]);
   
   // 标签编辑状态
@@ -577,6 +706,15 @@ function UnifiedBuilderInner() {
   const [newTagName, setNewTagName] = useState('');
   const [newTagGroup, setNewTagGroup] = useState('');
   const toast = useToast();
+  const [builderProjects, setBuilderProjects] = useState<BuilderProjectSummary[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [isProjectLoading, setIsProjectLoading] = useState(false);
+  const [projectNameDraft, setProjectNameDraft] = useState('');
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const layoutOutputsSummary = useMemo(() => {
     const lines = state.layout
@@ -599,6 +737,21 @@ function UnifiedBuilderInner() {
         targetSchema: comp.data.targetSchema as string | undefined,
       }));
   }, [state.layout]);
+
+  const schemaDefaults = useMemo(() => {
+    const entries = state.schemas
+      .filter(schema => typeof schema.defaultRenderComponentId === 'string' && schema.defaultRenderComponentId.trim())
+      .map(schema => [schema.id, schema.defaultRenderComponentId!.trim()] as const);
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+  }, [state.schemas]);
+
+  const previewConfig = useMemo(() => ({
+    layout: state.layout,
+    renderComponents: state.renderComponents,
+    instances: state.instances,
+    layoutGroups: state.layoutGroups,
+    schemaDefaults,
+  }), [state.layout, state.renderComponents, state.instances, state.layoutGroups, schemaDefaults]);
   
   // 预览模式状态
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -931,10 +1084,318 @@ function UnifiedBuilderInner() {
     setState(prev => ({ ...prev, layout }));
   }, []);
 
+  const handleAddRequirementEntry = useCallback(() => {
+    const entryId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setState(prev => ({
+      ...prev,
+      requirements: {
+        ...prev.requirements,
+        entries: [
+          ...prev.requirements.entries,
+          { id: entryId, location: '', content: '', notes: '' },
+        ],
+      },
+    }));
+  }, []);
+
+  const handleUpdateRequirementEntry = useCallback((id: string, updates: Partial<{ location: string; content: string; notes?: string }>) => {
+    setState(prev => ({
+      ...prev,
+      requirements: {
+        ...prev.requirements,
+        entries: prev.requirements.entries.map(entry =>
+          entry.id === id ? { ...entry, ...updates } : entry
+        ),
+      },
+    }));
+  }, []);
+
+  const handleRemoveRequirementEntry = useCallback((id: string) => {
+    setState(prev => ({
+      ...prev,
+      requirements: {
+        ...prev.requirements,
+        entries: prev.requirements.entries.filter(entry => entry.id !== id),
+      },
+    }));
+  }, []);
+
+  const upsertRequirementEntryByLocation = useCallback((location: string, content: string) => {
+    const trimmed = content.trim();
+    setState(prev => {
+      const existing = prev.requirements.entries.find(entry => entry.location === location);
+      if (!trimmed) {
+        if (!existing) return prev;
+        return {
+          ...prev,
+          requirements: {
+            ...prev.requirements,
+            entries: prev.requirements.entries.filter(entry => entry.location !== location),
+          },
+        };
+      }
+      if (existing && existing.content === trimmed) return prev;
+      const nextEntry = existing
+        ? { ...existing, content: trimmed }
+        : { id: `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, location, content: trimmed, notes: '' };
+      const entries = existing
+        ? prev.requirements.entries.map(entry => entry.location === location ? nextEntry : entry)
+        : [...prev.requirements.entries, nextEntry];
+      return {
+        ...prev,
+        requirements: {
+          ...prev.requirements,
+          entries,
+        },
+      };
+    });
+  }, []);
+
+  const resolveAiGenRequirementLocation = useCallback((type: AIGenType, schema?: SchemaDefinition | null) => {
+    if (!type || !schema) return null;
+    if (type === 'batch-data') return `数据库 AI 生成/${schema.name}`;
+    if (type === 'batch-tags') return `数据库 AI 生成/标签/${schema.name}`;
+    if (type === 'ability-field') return `能力块 AI 生成/${schema.name}`;
+    return null;
+  }, []);
+
   // ========== 规则生成 ==========
   const handleGenerateFullRules = useCallback(() => {
-    setPromptOutput(promptGenerator.generateFullPrompt(rulesRequirement));
-  }, [promptGenerator, rulesRequirement]);
+    setPromptOutput(promptGenerator.generateFullPrompt(buildRequirementsText(state.requirements)));
+  }, [promptGenerator, state.requirements]);
+
+  const STORAGE_KEY = 'ugc-builder-state';
+
+  const buildSaveData = useCallback(() => ({
+    name: state.name,
+    description: state.description,
+    tags: state.tags,
+    schemas: state.schemas,
+    instances: state.instances,
+    renderComponents: state.renderComponents,
+    layout: state.layout,
+    layoutGroups: state.layoutGroups,
+    rulesCode: state.rulesCode,
+    requirements: state.requirements,
+    uiLayout: {
+      leftPanelWidth,
+      topPanelRatio,
+    },
+  }), [state, leftPanelWidth, topPanelRatio]);
+
+  const applySavedData = useCallback((data: Record<string, unknown>) => {
+    setState(prev => {
+      const schemas = Array.isArray(data.schemas) ? data.schemas : prev.schemas;
+      const requirements = normalizeRequirements(data.requirements, prev.requirements);
+      const selectedSchemaId = schemas.length > 0 ? schemas[0].id : null;
+      return {
+        ...prev,
+        name: typeof data.name === 'string' ? data.name : prev.name,
+        description: typeof data.description === 'string' ? data.description : '',
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        schemas,
+        instances: (data.instances && typeof data.instances === 'object') ? data.instances as BuilderState['instances'] : prev.instances,
+        renderComponents: Array.isArray(data.renderComponents) ? data.renderComponents : prev.renderComponents,
+        layout: Array.isArray(data.layout) ? data.layout : [],
+        layoutGroups: Array.isArray(data.layoutGroups) ? data.layoutGroups : prev.layoutGroups,
+        selectedSchemaId,
+        rulesCode: typeof data.rulesCode === 'string' ? data.rulesCode : '',
+        requirements,
+      };
+    });
+    if (data.uiLayout && typeof data.uiLayout === 'object') {
+      const uiLayout = data.uiLayout as Record<string, unknown>;
+      if (typeof uiLayout.leftPanelWidth === 'number') {
+        setLeftPanelWidth(uiLayout.leftPanelWidth);
+      }
+      if (typeof uiLayout.topPanelRatio === 'number') {
+        setTopPanelRatio(uiLayout.topPanelRatio);
+      }
+    }
+  }, [setLeftPanelWidth, setTopPanelRatio]);
+
+  const persistLocalSave = useCallback((saveData: Record<string, unknown>) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+  }, []);
+
+  const fetchBuilderProjects = useCallback(async (silent = false) => {
+    if (!token) {
+      setBuilderProjects([]);
+      return [] as BuilderProjectSummary[];
+    }
+    const baseUrl = normalizeBaseUrl(UGC_API_URL);
+    try {
+      const res = await fetch(`${baseUrl}/builder/projects`, {
+        headers: buildAuthHeaders(token),
+      });
+      if (!res.ok) {
+        throw new Error(`项目列表加载失败: ${res.status}`);
+      }
+      const payload = await res.json() as { items?: BuilderProjectSummary[] };
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      setBuilderProjects(items);
+      return items;
+    } catch (error) {
+      if (!silent) {
+        toast.warning('草稿列表获取失败，将使用本地缓存');
+      }
+      return [] as BuilderProjectSummary[];
+    }
+  }, [token, toast]);
+
+  const loadBuilderProject = useCallback(async (projectId: string, silent = false) => {
+    if (!token) return null;
+    const baseUrl = normalizeBaseUrl(UGC_API_URL);
+    setIsProjectLoading(true);
+    try {
+      const res = await fetch(`${baseUrl}/builder/projects/${encodeURIComponent(projectId)}`, {
+        headers: buildAuthHeaders(token),
+      });
+      if (!res.ok) {
+        throw new Error(`项目加载失败: ${res.status}`);
+      }
+      const project = await res.json() as BuilderProjectDetail;
+      if (project?.data && typeof project.data === 'object') {
+        applySavedData(project.data);
+        persistLocalSave(project.data);
+      }
+      setActiveProjectId(project.projectId);
+      setProjectNameDraft(project.name ?? '');
+      return project;
+    } catch (error) {
+      if (!silent) {
+        toast.warning('草稿加载失败，将使用本地缓存');
+      }
+      return null;
+    } finally {
+      setIsProjectLoading(false);
+    }
+  }, [applySavedData, persistLocalSave, token, toast]);
+
+  const createBuilderProject = useCallback(async (payload: { name: string; description?: string; data?: Record<string, unknown> | null }, silent = false) => {
+    if (!token) return null;
+    const baseUrl = normalizeBaseUrl(UGC_API_URL);
+    const res = await fetch(`${baseUrl}/builder/projects`, {
+      method: 'POST',
+      headers: buildAuthHeaders(token),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      if (!silent) {
+        toast.error('新建草稿失败');
+      }
+      return null;
+    }
+    const project = await res.json() as BuilderProjectDetail;
+    setActiveProjectId(project.projectId);
+    setProjectNameDraft(project.name ?? '');
+    setBuilderProjects(prev => {
+      const filtered = prev.filter(item => item.projectId !== project.projectId);
+      return [project, ...filtered];
+    });
+    return project;
+  }, [token, toast]);
+
+  const updateBuilderProject = useCallback(async (
+    projectId: string,
+    payload: { name?: string; description?: string; data?: Record<string, unknown> | null },
+    silent = false
+  ) => {
+    if (!token) return null;
+    const baseUrl = normalizeBaseUrl(UGC_API_URL);
+    const res = await fetch(`${baseUrl}/builder/projects/${encodeURIComponent(projectId)}`, {
+      method: 'PUT',
+      headers: buildAuthHeaders(token),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      if (!silent) {
+        toast.error('草稿保存失败');
+      }
+      return null;
+    }
+    const project = await res.json() as BuilderProjectDetail;
+    setBuilderProjects(prev => prev.map(item => item.projectId === project.projectId
+      ? { ...item, name: project.name, description: project.description, updatedAt: project.updatedAt }
+      : item
+    ));
+    return project;
+  }, [token, toast]);
+
+  const deleteBuilderProject = useCallback(async (projectId: string) => {
+    if (!token) return false;
+    const baseUrl = normalizeBaseUrl(UGC_API_URL);
+    const res = await fetch(`${baseUrl}/builder/projects/${encodeURIComponent(projectId)}`, {
+      method: 'DELETE',
+      headers: buildAuthHeaders(token),
+    });
+    if (!res.ok) {
+      toast.error('删除草稿失败');
+      return false;
+    }
+    setBuilderProjects(prev => prev.filter(item => item.projectId !== projectId));
+    if (activeProjectId === projectId) {
+      setActiveProjectId(null);
+    }
+    return true;
+  }, [activeProjectId, token, toast]);
+
+  const refreshBuilderProjects = useCallback(async (silent = false) => {
+    setIsProjectLoading(true);
+    try {
+      return await fetchBuilderProjects(silent);
+    } finally {
+      setIsProjectLoading(false);
+    }
+  }, [fetchBuilderProjects]);
+
+  useEffect(() => {
+    if (activeModal !== 'project-list') return;
+    void refreshBuilderProjects();
+  }, [activeModal, refreshBuilderProjects]);
+
+  useEffect(() => {
+    if (!activeProjectId) return;
+    if (state.name && state.name !== projectNameDraft) {
+      setProjectNameDraft(state.name);
+    }
+  }, [activeProjectId, projectNameDraft, state.name]);
+
+  const handleOpenProjectList = useCallback(() => {
+    setActiveModal('project-list');
+  }, []);
+
+  const handleLoadProject = useCallback(async (projectId: string) => {
+    const loaded = await loadBuilderProject(projectId);
+    if (loaded) {
+      toast.success('草稿已加载');
+      setActiveModal(null);
+    }
+  }, [loadBuilderProject, toast]);
+
+  const handleDeleteProject = useCallback(async (projectId: string) => {
+    if (!confirm('确定删除该草稿？此操作不可撤销')) return;
+    const ok = await deleteBuilderProject(projectId);
+    if (ok) {
+      toast.success('草稿已删除');
+    }
+  }, [deleteBuilderProject, toast]);
+
+  const handleCreateProjectFromCurrent = useCallback(async () => {
+    if (!token) {
+      toast.warning('请先登录');
+      return;
+    }
+    const saveData = buildSaveData();
+    const created = await createBuilderProject({
+      name: state.name || '未命名草稿',
+      description: state.description,
+      data: saveData,
+    });
+    if (created) {
+      toast.success('草稿已创建');
+    }
+  }, [buildSaveData, createBuilderProject, state.description, state.name, toast, token]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
@@ -944,70 +1405,60 @@ function UnifiedBuilderInner() {
     });
   };
 
-  // ========== 保存/加载 ==========
-  const STORAGE_KEY = 'ugc-builder-state';
+  useEffect(() => {
+    const location = resolveAiGenRequirementLocation(aiGenType, currentSchema);
+    if (!location) return;
+    upsertRequirementEntryByLocation(location, aiGenInput);
+  }, [aiGenType, aiGenInput, currentSchema, resolveAiGenRequirementLocation, upsertRequirementEntryByLocation]);
 
+  // ========== 保存/加载 ==========
   // 自动保存（防抖500ms，仅在加载完成后）
   useEffect(() => {
     if (!isLoadedRef.current) return; // 等待数据加载完成
-    
     const timer = setTimeout(() => {
-      const saveData = {
-        name: state.name,
-        description: state.description,
-        tags: state.tags,
-        schemas: state.schemas,
-        instances: state.instances,
-        renderComponents: state.renderComponents,
-        layout: state.layout,
-        layoutGroups: state.layoutGroups,
-        rulesCode: state.rulesCode,
-        uiLayout: {
-          leftPanelWidth,
-          topPanelRatio,
-        },
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+      const saveData = buildSaveData();
+      persistLocalSave(saveData);
+      if (token && activeProjectId) {
+        void updateBuilderProject(activeProjectId, {
+          name: state.name,
+          description: state.description,
+          data: saveData,
+        }, true);
+      }
     }, 500);
     return () => clearTimeout(timer);
-  }, [state, leftPanelWidth, topPanelRatio]);
+  }, [activeProjectId, buildSaveData, persistLocalSave, token, updateBuilderProject, state.name, state.description]);
 
-  const handleSave = useCallback(() => {
-    const saveData = {
-      name: state.name,
+  const handleSave = useCallback(async () => {
+    const saveData = buildSaveData();
+    persistLocalSave(saveData);
+    if (!token) {
+      toast.success('已保存到本地');
+      return;
+    }
+    if (activeProjectId) {
+      const updated = await updateBuilderProject(activeProjectId, {
+        name: state.name,
+        description: state.description,
+        data: saveData,
+      });
+      if (updated) {
+        toast.success('已保存到云端');
+      }
+      return;
+    }
+    const created = await createBuilderProject({
+      name: state.name || '未命名草稿',
       description: state.description,
-      tags: state.tags,
-      schemas: state.schemas,
-      instances: state.instances,
-      renderComponents: state.renderComponents,
-      layout: state.layout,
-      layoutGroups: state.layoutGroups,
-      rulesCode: state.rulesCode,
-      uiLayout: {
-        leftPanelWidth,
-        topPanelRatio,
-      },
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
-    toast.success('已保存到本地');
-  }, [state, leftPanelWidth, topPanelRatio, toast]);
+      data: saveData,
+    });
+    if (created) {
+      toast.success('已创建云端草稿');
+    }
+  }, [activeProjectId, buildSaveData, createBuilderProject, persistLocalSave, token, updateBuilderProject, state.name, state.description, toast]);
 
   const handleExport = useCallback(() => {
-    const saveData = {
-      name: state.name,
-      description: state.description,
-      tags: state.tags,
-      schemas: state.schemas,
-      instances: state.instances,
-      renderComponents: state.renderComponents,
-      layout: state.layout,
-      layoutGroups: state.layoutGroups,
-      rulesCode: state.rulesCode,
-      uiLayout: {
-        leftPanelWidth,
-        topPanelRatio,
-      },
-    };
+    const saveData = buildSaveData();
     const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1015,7 +1466,7 @@ function UnifiedBuilderInner() {
     a.download = `${state.name || 'game'}.ugc.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [state]);
+  }, [buildSaveData, state.name]);
 
   const handleImport = useCallback(() => {
     const input = document.createElement('input');
@@ -1028,25 +1479,14 @@ function UnifiedBuilderInner() {
       reader.onload = (ev) => {
         try {
           const data = JSON.parse(ev.target?.result as string);
-          setState(prev => ({
-            ...prev,
-            name: data.name || prev.name,
-            description: data.description || '',
-            tags: data.tags || [],
-            schemas: data.schemas || prev.schemas,
-            instances: data.instances || prev.instances,
-            renderComponents: data.renderComponents || prev.renderComponents,
-            layout: data.layout || [],
-            layoutGroups: data.layoutGroups || prev.layoutGroups,
-            rulesCode: data.rulesCode || '',
-          }));
-          if (data.uiLayout) {
-            if (typeof data.uiLayout.leftPanelWidth === 'number') {
-              setLeftPanelWidth(data.uiLayout.leftPanelWidth);
-            }
-            if (typeof data.uiLayout.topPanelRatio === 'number') {
-              setTopPanelRatio(data.uiLayout.topPanelRatio);
-            }
+          applySavedData(data);
+          persistLocalSave(data);
+          if (token && activeProjectId) {
+            void updateBuilderProject(activeProjectId, {
+              name: typeof data.name === 'string' ? data.name : stateRef.current.name,
+              description: typeof data.description === 'string' ? data.description : stateRef.current.description,
+              data,
+            }, true);
           }
         } catch (err) {
           alert('导入失败：无效的 JSON 文件');
@@ -1069,32 +1509,7 @@ function UnifiedBuilderInner() {
     if (saved) {
       try {
         const data = JSON.parse(saved);
-        setState(prev => {
-          const schemas = data.schemas || prev.schemas;
-          // 确保 selectedSchemaId 有效
-          const selectedSchemaId = schemas.length > 0 ? schemas[0].id : null;
-          return {
-            ...prev,
-            name: data.name || prev.name,
-            description: data.description || '',
-            tags: data.tags || [],
-            schemas,
-            instances: data.instances || prev.instances,
-            renderComponents: data.renderComponents || prev.renderComponents,
-            layout: data.layout || [],
-            layoutGroups: data.layoutGroups || prev.layoutGroups,
-            selectedSchemaId,
-            rulesCode: data.rulesCode || '',
-          };
-        });
-        if (data.uiLayout) {
-          if (typeof data.uiLayout.leftPanelWidth === 'number') {
-            setLeftPanelWidth(data.uiLayout.leftPanelWidth);
-          }
-          if (typeof data.uiLayout.topPanelRatio === 'number') {
-            setTopPanelRatio(data.uiLayout.topPanelRatio);
-          }
-        }
+        applySavedData(data);
       } catch (err) {
         console.error('Failed to load saved state:', err);
       }
@@ -1123,8 +1538,19 @@ function UnifiedBuilderInner() {
             className="px-3 py-1 bg-slate-800 border border-slate-600 rounded text-sm focus:outline-none focus:border-amber-500"
             placeholder="游戏名称"
           />
+          <span className="text-xs text-slate-400">
+            {activeProjectId
+              ? `当前草稿：${projectNameDraft || '未命名'}`
+              : '未绑定云端草稿'}
+          </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleOpenProjectList}
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm"
+          >
+            <Database className="w-4 h-4" /> 草稿
+          </button>
           <button 
             onClick={handleImport}
             className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm"
@@ -1238,14 +1664,20 @@ function UnifiedBuilderInner() {
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="px-3 py-2 border-b border-slate-700 flex items-center justify-between shrink-0">
               <span className="text-xs text-slate-400">Schema & 数据</span>
-              <button onClick={handleAddSchema} className="p-1 text-slate-400 hover:text-white" title="新建 Schema">
+              <button
+                onClick={handleAddSchema}
+                className="flex items-center gap-1 p-1 text-slate-400 hover:text-white"
+                title="新建 Schema"
+              >
                 <Plus className="w-4 h-4" />
+                <span className="text-[10px]">+ Schema</span>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1">
               {state.schemas.map(s => (
                 <div 
                   key={s.id}
+                  data-testid="schema-item"
                   className={`p-2 rounded cursor-pointer hover:bg-slate-800 ${state.selectedSchemaId === s.id ? 'bg-slate-700' : ''}`}
                   onClick={() => setState(prev => ({ ...prev, selectedSchemaId: s.id }))}
                 >
@@ -1394,11 +1826,11 @@ function UnifiedBuilderInner() {
         {/* 中间：UI 画布 */}
         <div className="flex-1 flex flex-col">
           {isPreviewMode ? (
-            <PreviewCanvas
-              components={state.layout}
-              renderComponents={state.renderComponents}
-              instances={state.instances}
-              layoutGroups={state.layoutGroups}
+            <UGCRuntimeHost
+              mode="iframe"
+              config={previewConfig}
+              rulesCode={String(state.rulesCode || '')}
+              iframeSrc="/dev/ugc/runtime-view"
               className="flex-1"
             />
           ) : (
@@ -1683,6 +2115,9 @@ function UnifiedBuilderInner() {
                       : undefined;
                     const schemaFields = bindSchema ? Object.entries(bindSchema.fields) : [];
                     const targetPlayerRef = String(comp.data.targetPlayerRef || 'current');
+                    const actions = Array.isArray(comp.data.actions)
+                      ? (comp.data.actions as Array<{ id: string; label?: string; scope?: string; requirement?: string; hookCode?: string }>)
+                      : [];
                     return (
                       <>
                         <div className="space-y-2">
@@ -1773,16 +2208,152 @@ function UnifiedBuilderInner() {
                           <h3 className="text-sm font-medium text-amber-500">布局与选中</h3>
                           <p className="text-slate-500 text-[10px]">由引擎层 HandAreaSkeleton 执行</p>
                           <div className="space-y-2 text-xs">
-                            <HookField label="布局代码" value={String(comp.data.layoutCode || '')} onChange={v => updateCompData('layoutCode', v)} schema={currentSchema} hookType="layout" placeholder="顺序排开，卡牌间距-30px" componentType={comp.type} />
-                            <HookField label="选中效果" value={String(comp.data.selectEffectCode || '')} onChange={v => updateCompData('selectEffectCode', v)} schema={currentSchema} hookType="selectEffect" placeholder="抬高一点" componentType={comp.type} />
+                            <HookField label="布局代码" value={String(comp.data.layoutCode || '')} onChange={v => updateCompData('layoutCode', v)} requirementValue={String(comp.data.layoutRequirement || '')} onRequirementChange={v => updateCompData('layoutRequirement', v)} schema={currentSchema} hookType="layout" placeholder="顺序排开，卡牌间距-30px" componentType={comp.type} />
+                            <HookField label="选中效果" value={String(comp.data.selectEffectCode || '')} onChange={v => updateCompData('selectEffectCode', v)} requirementValue={String(comp.data.selectEffectRequirement || '')} onRequirementChange={v => updateCompData('selectEffectRequirement', v)} schema={currentSchema} hookType="selectEffect" placeholder="抬高一点" componentType={comp.type} />
                           </div>
                         </div>
                         <div className="space-y-2">
                           <h3 className="text-sm font-medium text-amber-500">排序与过滤</h3>
                           <p className="text-slate-500 text-[10px]">由引擎层 HandAreaSkeleton 执行</p>
                           <div className="space-y-2 text-xs">
-                            <HookField label="排序代码" value={String(comp.data.sortCode || '')} onChange={v => updateCompData('sortCode', v)} schema={currentSchema} hookType="sort" placeholder="按点数从小到大排序" componentType={comp.type} />
-                            <HookField label="过滤代码" value={String(comp.data.filterCode || '')} onChange={v => updateCompData('filterCode', v)} schema={currentSchema} hookType="filter" placeholder="只显示可出的牌" componentType={comp.type} />
+                            <HookField label="排序代码" value={String(comp.data.sortCode || '')} onChange={v => updateCompData('sortCode', v)} requirementValue={String(comp.data.sortRequirement || '')} onRequirementChange={v => updateCompData('sortRequirement', v)} schema={currentSchema} hookType="sort" placeholder="按点数从小到大排序" componentType={comp.type} />
+                            <HookField label="过滤代码" value={String(comp.data.filterCode || '')} onChange={v => updateCompData('filterCode', v)} requirementValue={String(comp.data.filterRequirement || '')} onRequirementChange={v => updateCompData('filterRequirement', v)} schema={currentSchema} hookType="filter" placeholder="只显示可出的牌" componentType={comp.type} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-medium text-amber-500">渲染面</h3>
+                          <p className="text-slate-500 text-[10px]">控制正/背面显示策略</p>
+                          <div className="space-y-2 text-xs">
+                            <div>
+                              <label className="text-slate-400">渲染面模式</label>
+                              <select
+                                value={String(comp.data.renderFaceMode || 'auto')}
+                                onChange={e => updateCompData('renderFaceMode', e.target.value)}
+                                className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                              >
+                                <option value="auto">跟随预览切换</option>
+                                <option value="front">始终正面</option>
+                                <option value="back">始终背面</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-medium text-amber-500">动作钩子</h3>
+                          <p className="text-slate-500 text-[10px]">支持在手牌区显示动作按钮并绑定交互钩子</p>
+                          <div className="space-y-2 text-xs">
+                            <div className="flex items-center justify-between">
+                              <label className="text-slate-400">启用动作钩子</label>
+                              <input
+                                type="checkbox"
+                                checked={comp.data.allowActionHooks !== false}
+                                onChange={e => updateCompData('allowActionHooks', e.target.checked)}
+                              />
+                            </div>
+                            <button
+                              onClick={() => updateCompData('actions', [
+                                ...actions,
+                                {
+                                  id: `action-${Date.now()}`,
+                                  label: '动作',
+                                  scope: 'current-player',
+                                  requirement: '',
+                                  hookCode: '',
+                                },
+                              ])}
+                              className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-[10px]"
+                            >
+                              + 添加动作
+                            </button>
+                            {actions.length === 0 ? (
+                              <div className="text-[10px] text-slate-500">暂无动作，可按需添加。</div>
+                            ) : (
+                              <div className="space-y-2">
+                                {actions.map((action, index) => (
+                                  <div key={action.id} className="border border-slate-700 rounded p-2 bg-slate-900/40 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] text-slate-400">动作 {index + 1}</span>
+                                      <button
+                                        onClick={() => updateCompData('actions', actions.filter(a => a.id !== action.id))}
+                                        className="text-[10px] text-red-400 hover:text-red-300"
+                                      >
+                                        删除
+                                      </button>
+                                    </div>
+                                    <input
+                                      type="text"
+                                      value={action.label || ''}
+                                      onChange={e => {
+                                        const next = actions.map(item => item.id === action.id ? { ...item, label: e.target.value } : item);
+                                        updateCompData('actions', next);
+                                      }}
+                                      placeholder="按钮文案"
+                                      className="w-full px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs text-slate-200"
+                                    />
+                                    <select
+                                      value={String(action.scope || 'current-player')}
+                                      onChange={e => {
+                                        const next = actions.map(item => item.id === action.id ? { ...item, scope: e.target.value } : item);
+                                        updateCompData('actions', next);
+                                      }}
+                                      className="w-full px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs text-slate-200"
+                                    >
+                                      <option value="current-player">仅当前玩家可见</option>
+                                      <option value="all">所有玩家可见</option>
+                                    </select>
+                                    <textarea
+                                      value={action.requirement || ''}
+                                      onChange={e => {
+                                        const next = actions.map(item => item.id === action.id ? { ...item, requirement: e.target.value } : item);
+                                        updateCompData('actions', next);
+                                      }}
+                                      placeholder="动作需求描述（可选）"
+                                      className="w-full h-16 px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs text-slate-200 resize-none"
+                                    />
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] text-slate-400">动作钩子代码</span>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(buildActionHookPrompt({
+                                              requirement: String(action.requirement || ''),
+                                              componentType: comp.type,
+                                            }));
+                                          }}
+                                          className="text-[10px] text-purple-400 hover:text-purple-300"
+                                        >
+                                          复制提示词
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            const next = actions.map(item => item.id === action.id ? { ...item, hookCode: '' } : item);
+                                            updateCompData('actions', next);
+                                          }}
+                                          disabled={!action.hookCode}
+                                          className="text-[10px] text-slate-400 hover:text-slate-200 disabled:opacity-40"
+                                        >
+                                          清空
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <textarea
+                                      value={action.hookCode || ''}
+                                      readOnly
+                                      onPaste={e => {
+                                        e.preventDefault();
+                                        const text = e.clipboardData.getData('text');
+                                        if (text.trim()) {
+                                          const next = actions.map(item => item.id === action.id ? { ...item, hookCode: text } : item);
+                                          updateCompData('actions', next);
+                                        }
+                                      }}
+                                      placeholder="粘贴 AI 生成的动作钩子代码"
+                                      className="w-full h-20 px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs text-slate-200 resize-none"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </>
@@ -1795,7 +2366,27 @@ function UnifiedBuilderInner() {
                       <h3 className="text-sm font-medium text-amber-500">布局</h3>
                       <p className="text-slate-500 text-[10px]">由引擎层 HandAreaSkeleton 执行</p>
                       <div className="space-y-2 text-xs">
-                        <HookField label="布局代码" value={String(comp.data.layoutCode || '')} onChange={v => updateCompData('layoutCode', v)} schema={currentSchema} hookType="layout" placeholder="居中堆叠" componentType={comp.type} />
+                        <HookField label="布局代码" value={String(comp.data.layoutCode || '')} onChange={v => updateCompData('layoutCode', v)} requirementValue={String(comp.data.layoutRequirement || '')} onRequirementChange={v => updateCompData('layoutRequirement', v)} schema={currentSchema} hookType="layout" placeholder="居中堆叠" componentType={comp.type} />
+                        <div>
+                          <label className="text-slate-400">渲染面模式</label>
+                          <select
+                            value={String(comp.data.renderFaceMode || 'auto')}
+                            onChange={e => updateCompData('renderFaceMode', e.target.value)}
+                            className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                          >
+                            <option value="auto">跟随预览切换</option>
+                            <option value="front">始终正面</option>
+                            <option value="back">始终背面</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-slate-400">启用动作钩子</label>
+                          <input
+                            type="checkbox"
+                            checked={comp.data.allowActionHooks !== false}
+                            onChange={e => updateCompData('allowActionHooks', e.target.checked)}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1862,22 +2453,31 @@ function UnifiedBuilderInner() {
                           <div>
                             <div className="flex items-center justify-between mb-1">
                               <label className="text-slate-400">正面渲染代码</label>
-                              <button
-                                onClick={() => {
-                                  const prompt = generateFront({
-                                    requirement: String(comp.data.renderRequirement || '显示数据的基本信息'),
-                                    schema: targetSchema,
-                                  });
-                                  navigator.clipboard.writeText(prompt);
-                                }}
-                                className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
-                              >
-                                复制提示词
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    const prompt = generateFront({
+                                      requirement: String(comp.data.renderRequirement || '显示数据的基本信息'),
+                                      schema: targetSchema,
+                                    });
+                                    navigator.clipboard.writeText(prompt);
+                                  }}
+                                  className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
+                                >
+                                  复制提示词
+                                </button>
+                                <button
+                                  onClick={() => updateCompData('renderCode', '')}
+                                  disabled={!comp.data.renderCode}
+                                  className="px-1.5 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-[10px] disabled:opacity-40"
+                                >
+                                  清空
+                                </button>
+                              </div>
                             </div>
                             <textarea
                               value={String(comp.data.renderCode || '')}
-                              onChange={e => updateCompData('renderCode', e.target.value)}
+                              readOnly
                               onPaste={e => {
                                 e.preventDefault();
                                 const text = e.clipboardData.getData('text');
@@ -1893,21 +2493,30 @@ function UnifiedBuilderInner() {
                           <div>
                             <div className="flex items-center justify-between mb-1">
                               <label className="text-slate-400">背面渲染代码</label>
-                              <button
-                                onClick={() => {
-                                  const prompt = generateBack({
-                                    requirement: String(comp.data.renderRequirement || '生成背面样式'),
-                                  });
-                                  navigator.clipboard.writeText(prompt);
-                                }}
-                                className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
-                              >
-                                复制提示词
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    const prompt = generateBack({
+                                      requirement: String(comp.data.renderRequirement || '生成背面样式'),
+                                    });
+                                    navigator.clipboard.writeText(prompt);
+                                  }}
+                                  className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
+                                >
+                                  复制提示词
+                                </button>
+                                <button
+                                  onClick={() => updateCompData('backRenderCode', '')}
+                                  disabled={!comp.data.backRenderCode}
+                                  className="px-1.5 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-[10px] disabled:opacity-40"
+                                >
+                                  清空
+                                </button>
+                              </div>
                             </div>
                             <textarea
                               value={String(comp.data.backRenderCode || '')}
-                              onChange={e => updateCompData('backRenderCode', e.target.value)}
+                              readOnly
                               onPaste={e => {
                                 e.preventDefault();
                                 const text = e.clipboardData.getData('text');
@@ -1939,6 +2548,8 @@ function UnifiedBuilderInner() {
                           label="组件渲染" 
                           value={String(comp.data.renderCode || '')} 
                           onChange={v => updateCompData('renderCode', v)} 
+                          requirementValue={String(comp.data.renderRequirement || '')}
+                          onRequirementChange={v => updateCompData('renderRequirement', v)}
                           schema={currentSchema} 
                           hookType="render" 
                           placeholder="根据上下文数据渲染组件内容" 
@@ -1979,6 +2590,68 @@ function UnifiedBuilderInner() {
 
       {/* ===== 模态框 ===== */}
 
+      {/* 草稿列表模态框 */}
+      <Modal open={activeModal === 'project-list'} onClose={() => setActiveModal(null)} title="云端草稿" width="max-w-3xl">
+        <div className="space-y-4">
+          {!token ? (
+            <div className="text-sm text-slate-400">请先登录后管理草稿。</div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-slate-400">共 {builderProjects.length} 个草稿</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => refreshBuilderProjects()}
+                    className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+                  >
+                    刷新
+                  </button>
+                  <button
+                    onClick={handleCreateProjectFromCurrent}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded text-xs"
+                  >
+                    以当前内容创建
+                  </button>
+                </div>
+              </div>
+              {isProjectLoading ? (
+                <div className="text-sm text-slate-500">草稿加载中...</div>
+              ) : builderProjects.length === 0 ? (
+                <div className="text-sm text-slate-500">暂无云端草稿。</div>
+              ) : (
+                <div className="space-y-2">
+                  {builderProjects.map(project => (
+                    <div key={project.projectId} className="flex items-center justify-between p-3 bg-slate-800 rounded">
+                      <div>
+                        <div className="text-sm text-white">{project.name || '未命名草稿'}</div>
+                        <div className="text-xs text-slate-500">最后更新：{formatProjectDate(project.updatedAt || project.createdAt)}</div>
+                        {project.description ? (
+                          <div className="text-xs text-slate-400 mt-1">{project.description}</div>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleLoadProject(project.projectId)}
+                          className="px-3 py-1.5 bg-green-600 hover:bg-green-500 rounded text-xs"
+                        >
+                          打开
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProject(project.projectId)}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded text-xs"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Modal>
+
       {/* Schema 编辑模态框 */}
       <Modal open={activeModal === 'schema'} onClose={() => setActiveModal(null)} title="Schema 编辑">
         {currentSchema && (
@@ -1997,6 +2670,21 @@ function UnifiedBuilderInner() {
                 <label className="text-xs text-slate-400">ID</label>
                 <input type="text" value={currentSchema.id} disabled className="w-full mt-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded text-sm text-slate-500" />
               </div>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400">默认渲染模板</label>
+              <select
+                value={String(currentSchema.defaultRenderComponentId || '')}
+                onChange={e => handleSchemaChange(currentSchema.id, { defaultRenderComponentId: e.target.value || undefined })}
+                className="w-full mt-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white"
+              >
+                <option value="">不设置</option>
+                {state.renderComponents
+                  .filter(rc => rc.targetSchema === currentSchema.id)
+                  .map(rc => (
+                    <option key={rc.id} value={rc.id}>{rc.name}</option>
+                  ))}
+              </select>
             </div>
             {/* 可用标签管理 */}
             <div>
@@ -2206,13 +2894,69 @@ function UnifiedBuilderInner() {
               <Sparkles className="w-4 h-4" /> 完整规则
             </button>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">规则需求（可选）</label>
+              <label className="text-xs text-slate-400 block mb-1">需求描述（可选，保存到配置）</label>
               <textarea
-                value={rulesRequirement}
-                onChange={e => setRulesRequirement(e.target.value)}
+                value={state.requirements.rawText}
+                onChange={e => setState(prev => ({
+                  ...prev,
+                  requirements: {
+                    ...prev.requirements,
+                    rawText: e.target.value,
+                  },
+                }))}
                 placeholder="描述胜利条件、回合流程、特殊规则等"
                 className="w-full h-32 px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs text-slate-200 resize-none"
               />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">结构化需求</span>
+                <button
+                  onClick={handleAddRequirementEntry}
+                  className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-[10px]"
+                >
+                  + 添加条目
+                </button>
+              </div>
+              {state.requirements.entries.length === 0 ? (
+                <div className="text-[10px] text-slate-500">暂无条目，可用于记录具体位置的需求。</div>
+              ) : (
+                <div className="space-y-2">
+                  {state.requirements.entries.map((entry, index) => (
+                    <div key={entry.id} className="p-2 rounded border border-slate-700 bg-slate-900/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400">条目 {index + 1}</span>
+                        <button
+                          onClick={() => handleRemoveRequirementEntry(entry.id)}
+                          className="text-[10px] text-red-400 hover:text-red-300"
+                        >
+                          删除
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={entry.location}
+                        onChange={e => handleUpdateRequirementEntry(entry.id, { location: e.target.value })}
+                        placeholder="需求位置（如：手牌区/排序）"
+                        className="w-full px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs text-slate-200"
+                      />
+                      <textarea
+                        value={entry.content}
+                        onChange={e => handleUpdateRequirementEntry(entry.id, { content: e.target.value })}
+                        placeholder="需求内容"
+                        className="w-full h-16 px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs text-slate-200 resize-none"
+                      />
+                      <input
+                        type="text"
+                        value={entry.notes || ''}
+                        onChange={e => handleUpdateRequirementEntry(entry.id, { notes: e.target.value || undefined })}
+                        placeholder="备注（可选）"
+                        className="w-full px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs text-slate-200"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex-1 flex flex-col border-l border-slate-700 pl-4">
@@ -2231,19 +2975,29 @@ function UnifiedBuilderInner() {
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-slate-400">粘贴 AI 生成的规则代码</span>
-                {state.rulesCode && (
+                <div className="flex items-center gap-2">
+                  {state.rulesCode && (
+                    <button
+                      onClick={() => navigator.clipboard.writeText(String(state.rulesCode))}
+                      className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+                    >
+                      <Copy className="w-3 h-3 inline mr-1" /> 复制代码
+                    </button>
+                  )}
                   <button
-                    onClick={() => navigator.clipboard.writeText(String(state.rulesCode))}
-                    className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
+                    onClick={() => setState(prev => ({ ...prev, rulesCode: '' }))}
+                    disabled={!state.rulesCode}
+                    className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs disabled:opacity-40"
                   >
-                    <Copy className="w-3 h-3 inline mr-1" /> 复制代码
+                    清空
                   </button>
-                )}
+                </div>
               </div>
               <textarea
                 value={String(state.rulesCode || '')}
-                onChange={e => setState(prev => ({ ...prev, rulesCode: e.target.value }))}
+                readOnly
                 onPaste={e => {
+                  e.preventDefault();
                   const text = e.clipboardData.getData('text');
                   if (text.trim()) {
                     setState(prev => ({ ...prev, rulesCode: text }));
@@ -2427,7 +3181,7 @@ function UnifiedBuilderInner() {
                 <label className="text-xs text-slate-400">生成的提示词</label>
                 <button
                   onClick={() => {
-                    const prompt = generateAIPrompt(aiGenType, aiGenInput, currentSchema, state);
+                    const prompt = generateAIPrompt(aiGenType, currentSchema, state);
                     navigator.clipboard.writeText(prompt);
                   }}
                   className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
@@ -2436,7 +3190,7 @@ function UnifiedBuilderInner() {
                 </button>
               </div>
               <pre className="p-3 bg-slate-900 rounded text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-48 overflow-auto">
-                {generateAIPrompt(aiGenType, aiGenInput, currentSchema, state)}
+                {generateAIPrompt(aiGenType, currentSchema, state)}
               </pre>
             </div>
           )}
@@ -2830,7 +3584,7 @@ function RenderComponentManager({
         </>
       ) : (
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs text-slate-400">组件名称</label>
               <input
@@ -2926,7 +3680,6 @@ function RenderComponentManager({
 // AI 提示词生成函数 - 包含丰富上下文
 function generateAIPrompt(
   type: AIGenType, 
-  input: string, 
   schema: SchemaDefinition | undefined,
   state: BuilderState
 ): string {
@@ -2941,11 +3694,6 @@ function generateAIPrompt(
     .map(s => `- ${s.name} (${s.id}): ${Object.keys(s.fields).length}个字段`)
     .join('\n');
 
-  const existingData = state.instances[schema.id] || [];
-  const existingDataSample = existingData.length > 0 
-    ? `\n已有数据示例 (${existingData.length}条):\n${JSON.stringify(existingData.slice(0, 2), null, 2)}`
-    : '';
-
   const renderComponents = state.renderComponents.length > 0
     ? `\n渲染组件: ${state.renderComponents.map(rc => rc.name).join(', ')}`
     : '';
@@ -2956,109 +3704,21 @@ function generateAIPrompt(
 所有 Schema:
 ${allSchemas}${renderComponents}`;
 
-  // 检查是否有tags字段
-  const hasTagsField = Object.entries(schema.fields).some(([, f]) => f.type === 'array' && 'tagEditor' in f);
-  
-  // 获取可用标签信息
-  const availableTagsInfo = schema.tagDefinitions?.length 
-    ? `\n## 可用标签（请从中选择）\n${[...new Set(schema.tagDefinitions.map(t => t.group || '未分组'))]
-        .map(g => `- ${g}: ${schema.tagDefinitions?.filter(t => (t.group || '未分组') === g).map(t => t.name).join(', ')}`)
-        .join('\n')}`
-    : '';
+  const requirementsText = buildRequirementsText(state.requirements);
 
-  if (type === 'batch-data') {
-    const tagGuidance = hasTagsField ? `
-## Tag 使用说明
-- tags 字段应使用上方"可用标签"中定义的标签
-- 一个实体可以有多个 Tag，表示不同维度的属性
-- Tag 用于筛选/分组/规则匹配
-${availableTagsInfo}
-` : '';
-
-    return `你是一个游戏数据生成器。请根据需求生成 JSON 数据数组。
-
-${gameContext}
-
-## 目标 Schema: ${schema.name}
-${schema.description || ''}
-
-## 字段定义
-${schemaFields}
-${existingDataSample}
-${tagGuidance}
-## 用户需求
-${input}
-
-## 技术栈
-- Tailwind CSS 4
-- React 19
-- TypeScript
-
-## 输出格式
-请输出 JSON 数组，每个元素包含所有字段。例如:
-[
-  { "id": "xxx-1", "name": "...", "tags": ["tag1", "tag2"], ... },
-  { "id": "xxx-2", "name": "...", "tags": ["tag3"], ... }
-]
-
-注意：
-1. id 字段必须唯一，建议使用有意义的前缀
-2. 严格按照 Schema 字段类型生成
-3. 只输出纯 JSON，不要 markdown 代码块或其他解释
-4. 参考已有数据的格式和命名风格
-5. tags 字段必须使用已定义的可用标签`;
-  }
-
-  if (type === 'batch-tags') {
-    // 获取已有标签分组
-    const existingGroups = [...new Set((schema.tagDefinitions || []).map(t => t.group).filter(Boolean))];
-    const existingGroupsInfo = existingGroups.length > 0 
-      ? `\n已有分组: ${existingGroups.join(', ')}`
-      : '';
-    
-    return `你是一个游戏 Tag 系统设计器。请根据需求设计 Tag 列表。
-
-${gameContext}
-
-## 目标 Schema: ${schema.name}
-${schema.description || ''}
-${existingGroupsInfo}
-
-## 用户需求
-${input}
-
-## Tag 设计原则
-Tag 用于描述**单个实体的固有属性**，不是组合规则或游戏逻辑。
-
-✅ 正确使用 Tag：
-- 阵营（联盟/部落/中立）
-- 类型（攻击/防御/辅助）
-- 稀有度（普通/稀有/史诗）
-- 角色职业（战士/法师/游侠）
-- 资源类别（金币/能量/耐力）
-
-❌ 错误使用 Tag（这些是规则/逻辑，不是属性）：
-- 组合判定（连击、套装效果）→ 应在规则代码中定义
-- 行为限制 → 应在 moves/规则代码中定义
-- 胜负条件 → 应在 endgame 中定义
-
-## 输出格式
-请输出 JSON 数组，每个 Tag 包含 name 和可选的 group（分组，用于配置时分类）。
-
-示例:
-[
-  { "name": "联盟", "group": "阵营" },
-  { "name": "部落", "group": "阵营" },
-  { "name": "攻击", "group": "类型" },
-  { "name": "防御", "group": "类型" },
-  { "name": "史诗", "group": "稀有度" }
-]
-
-注意：
-1. 只输出纯 JSON，不要 markdown 代码块
-2. name 是实际使用的标签值
-3. group 用于配置时分类，同类型标签放同一组
-4. 只描述单个实体的固有属性，不要包含组合规则`;
+  if (type === 'batch-data' || type === 'batch-tags') {
+    return generateUnifiedPrompt({
+      type,
+      requirement: requirementsText,
+      schema,
+      gameState: {
+        name: state.name,
+        description: state.description,
+        schemas: state.schemas,
+        renderComponents: state.renderComponents,
+        instances: state.instances,
+      },
+    });
   }
 
   if (type === 'ability-field') {
@@ -3085,7 +3745,7 @@ ${schemaFields}
 ${attributeInfo}
 
 ## 用户需求
-${input}
+${requirementsText}
 
 ## GAS 结构要求（必须严格遵守）
 - AbilityDefinition 字段: id, name, description?, tags?, trigger?, effects?, variants?, cooldown?, cost?
@@ -3101,6 +3761,8 @@ ${input}
 ## custom actionId 命名规范
 - 使用 kebab-case
 - 建议以 abilityId 作为前缀，例如 "ability-1-transfer-resource"
+
+${TECH_STACK}
 
 ## 输出格式（JSON 数组）
 [

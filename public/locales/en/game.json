@@ -38,9 +38,25 @@
     },
     "actions": {
       "destroy": "End game and destroy room",
+      "destroyHint": "Close room for everyone",
       "leaveKeep": "Leave room (keep open)",
+      "tempLeave": "Disconnect",
+      "tempLeaveHint": "Disconnect but keep seat",
       "backToLobby": "Back to Lobby",
-      "actionLog": "Action Log"
+      "backToLobbyHint": "Leave room completely",
+      "social": "Friends",
+      "feedback": "Feedback",
+      "about": "About",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit Fullscreen",
+      "settings": "Settings",
+      "audio": "Audio",
+      "chat": "Chat",
+      "actionLog": "Action Log",
+      "info": "Info",
+      "room": "Room",
+      "exit": "Exit",
+      "close": "Close"
     },
     "actionLog": {
       "empty": "No action log yet"

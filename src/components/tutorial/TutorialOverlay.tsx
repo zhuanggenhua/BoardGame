@@ -17,16 +17,7 @@ export const TutorialOverlay: React.FC = () => {
     useEffect(() => {
         if (!isActive || !currentStep) return;
         const stepId = currentStep.id ?? 'unknown';
-        const showMask = Boolean(currentStep.showMask);
-        const highlightTarget = currentStep.highlightTarget ?? 'none';
-        const requireAction = Boolean(currentStep.requireAction);
-        const aiActionsCount = currentStep.aiActions?.length ?? 0;
-        const logKey = `${stepId}-${showMask}-${highlightTarget}-${requireAction}-${aiActionsCount}`;
-        if (lastLogKeyRef.current === logKey) return;
-        lastLogKeyRef.current = logKey;
-        console.info(
-            `[TutorialOverlay] stepId=${stepId} showMask=${showMask} highlightTarget=${highlightTarget} requireAction=${requireAction} aiActionsCount=${aiActionsCount}`
-        );
+        // 日志已移除：TutorialOverlay 步骤变化过于频繁
     }, [currentStep, isActive]);
 
 

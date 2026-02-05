@@ -86,14 +86,14 @@ function EffectUI({ G, ctx, moves }: Props) {
 ${OUTPUT_RULES}`;
   }, [ctx]);
 
-  /** 生成"顺手牵羊"类效果的完整流程 */
+  /** 示例：生成通用的资源/对象转移流程 */
   const generateStealCardEffect = useCallback(() => {
     return generateEffect({
-      effectDescription: `顺手牵羊效果：
-1. 选择一个对手玩家
-2. 显示对方手牌在特写区域
-3. 从对方手牌中选择一张牌
-4. 将选中的牌转移到自己手牌
+      effectDescription: `资源转移流程示例：
+1. 选择一个目标实体
+2. 展示目标实体的可选对象列表（特写区域）
+3. 从列表中选择一项
+4. 将选中的对象转移到当前实体
 5. 关闭特写区域`,
       effectType: 'moveCard',
       targetType: 'opponent',

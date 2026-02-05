@@ -6,6 +6,10 @@ description: 前端框架封装说明（避免重复造轮子）
 
 > 目标：明确前端已有的「框架级封装」与复用入口，避免重复造轮子。
 
+## 0. 相关文档索引
+
+- [棋盘布局系统与坐标系说明](./board-layout.md)
+
 ## 1. 架构总览（实际目录）
 
 ```
@@ -138,7 +142,8 @@ src/
 - **撤销系统**：`src/engine/systems/UndoSystem.ts`（通过 `createDefaultSystems` 启用）
 - **通用游戏系统**：`src/systems/`（StatusEffect/Ability/Resource/Token/Dice/Card 等，含条件注册表）
 - **动画组件库**：`src/components/common/animations/`
-  - `FlyingEffect` / `ShakeContainer` / `PulseGlow` / `variants`
+  - `FlyingEffect` / `ShakeContainer` / `PulseGlow` / `variants` / `VictoryParticles`
+  - `VictoryParticles` 依赖 `@tsparticles/react` + `@tsparticles/slim`，用于胜利弹出粒子特效（动态加载，避免 SSR 访问 window）
 - **国际化**：`src/lib/i18n/`
 - **音频管理**：`src/lib/audio/AudioManager.ts`
 
@@ -193,7 +198,20 @@ src/
 - `src/pages/LocalMatchRoom.tsx`：本地对局
 - `src/services/lobbySocket.ts`：大厅订阅
 
-## 6. 何时扩展“框架”层
+## 6. 游客身份持久化与刷新行为
+
+> 目的：避免“刷新变新游客”导致房间所有权失效。
+
+- 游客 ID 通过 **localStorage + sessionStorage + cookie** 多重持久化。
+- 正常情况下刷新页面会复用已有游客 ID，不会生成新游客。
+- 若浏览器禁用/清空存储或跨域访问（如 `localhost` vs `127.0.0.1`），可能生成新的游客 ID。
+- 房主身份通过 `ownerKey = guest:<guestId>` 绑定，游客 ID 变化会导致无法认领原房间。
+
+**排查建议**
+- 在 DevTools 中检查 `guest_id`（localStorage）与 `bg_guest_id`（cookie）是否刷新后变化。
+- 确保访问域名一致（本地开发使用同一域名）。
+
+## 7. 何时扩展“框架”层
 
 > 解耦要求：框架不再默认注册任何游戏特定条件（如骰子组合/顺子/阶段）。这些条件需在游戏层通过 `conditionRegistry.register()` 显式注册，以避免耦合。
 

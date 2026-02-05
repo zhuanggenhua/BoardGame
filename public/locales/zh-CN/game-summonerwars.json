@@ -10,11 +10,22 @@
   },
   
   "phase": {
-    "summon": "召唤阶段",
-    "move": "移动阶段",
-    "attack": "攻击阶段",
-    "magic": "魔法阶段",
-    "end": "结束阶段"
+    "summon": "召唤",
+    "move": "移动",
+    "build": "建造",
+    "attack": "攻击",
+    "magic": "魔力",
+    "draw": "抽牌"
+  },
+  
+  "hint": {
+    "summon": "从手牌召唤单位到城门旁",
+    "move": "移动最多3个单位，每个最多2格",
+    "build": "在后方区域建造城门或建筑",
+    "attack": "用最多3个单位进行攻击",
+    "magic": "弃牌获取魔力",
+    "draw": "抽牌至5张",
+    "waitingOpponent": "等待对手行动..."
   },
   
   "action": {
@@ -22,6 +33,7 @@
     "move": "移动",
     "attack": "攻击",
     "castSpell": "施放法术",
+    "endPhase": "结束阶段",
     "endTurn": "结束回合"
   },
   
@@ -29,6 +41,12 @@
     "yourTurn": "你的回合",
     "opponentTurn": "对手回合",
     "waiting": "等待中..."
+  },
+  
+  "log": {
+    "unit_moved": "单位移动",
+    "unit_attacked": "攻击命中 {{hits}} 次",
+    "phase_ended": "阶段结束"
   },
   
   "result": {

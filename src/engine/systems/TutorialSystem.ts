@@ -222,20 +222,11 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
             if (command.type === TUTORIAL_COMMANDS.START) {
                 const payload = command.payload as TutorialStartPayload;
                 const manifest = payload?.manifest;
-                console.log('[Tutorial][System] START 命令处理', {
-                    hasManifest: !!manifest,
-                    stepsCount: manifest?.steps?.length,
-                });
                 if (!manifest || !Array.isArray(manifest.steps) || manifest.steps.length === 0) {
-                    console.log('[Tutorial][System] manifest 无效，返回错误');
                     return { halt: true, error: TUTORIAL_ERRORS.INVALID_MANIFEST };
                 }
 
                 const nextTutorial = deriveStepState(manifest, 0);
-                console.log('[Tutorial][System] 返回新状态', {
-                    active: nextTutorial.active,
-                    stepId: nextTutorial.step?.id,
-                });
                 return {
                     halt: true,
                     state: applyTutorialState(state, nextTutorial),

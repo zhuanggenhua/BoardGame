@@ -4,7 +4,9 @@ const mockUser = {
     id: 'user-review-test',
     username: 'ReviewerBot',
     email: 'reviewer@example.com',
-    emailVerified: true
+    emailVerified: true,
+    role: 'user',
+    banned: false,
 };
 
 test.describe('Game Review System', () => {
@@ -78,7 +80,8 @@ test.describe('Game Review System', () => {
         }
         // 1. Switch to Reviews tab and ensure stats visible
         const modalRoot = page.locator('#modal-root');
-        await modalRoot.getByRole('button', { name: /Reviews|评价/i }).click();
+        const reviewsTab = modalRoot.getByRole('button', { name: /^(Reviews|评价)$/i });
+        await reviewsTab.click();
         await expect(modalRoot.getByText(/Few Reviews|评价较少/i)).toBeVisible();
 
         // 2. Mock create review response
@@ -111,12 +114,14 @@ test.describe('Game Review System', () => {
         });
 
         // 3. Open review modal
-        const writeButton = modalRoot.getByRole('button', { name: /写评价|撰写评价|Write|Review/i }).first();
+        const writeButton = modalRoot.getByRole('button', { name: /^(写评价|撰写评价|Write Review)$/i });
         await expect(writeButton).toBeVisible();
         await writeButton.click();
 
         // 4. Fill and submit form
-        const positiveBtn = modalRoot.getByRole('button', { name: /推荐|Recommend/i });
+        await expect(modalRoot.getByText(/撰写评价|修改我的评价|Write a Review|Edit My Review/i)).toBeVisible();
+
+        const positiveBtn = modalRoot.getByRole('button', { name: /^(推荐|Recommend)$/i });
         await expect(positiveBtn).toBeVisible({ timeout: 10000 });
         await positiveBtn.click();
 

@@ -1,12 +1,14 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Put, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { createRequestI18n } from '../../shared/i18n';
 import { CreateUgcPackageDto } from './dtos/create-ugc-package.dto';
+import { CreateUgcBuilderProjectDto } from './dtos/create-ugc-builder-project.dto';
 import { UgcPackageListQueryDto } from './dtos/ugc-list-query.dto';
 import { UpdateUgcPackageDto } from './dtos/update-ugc-package.dto';
+import { UpdateUgcBuilderProjectDto } from './dtos/update-ugc-builder-project.dto';
 import { UploadUgcAssetDto } from './dtos/upload-ugc-asset.dto';
 import { UgcService } from './ugc.service';
 
@@ -36,6 +38,95 @@ export class UgcController {
             return this.sendError(res, 404, '未找到已发布的 UGC 包');
         }
         return res.json({ manifest });
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('builder/projects')
+    async listBuilderProjects(
+        @CurrentUser() currentUser: { userId: string } | null,
+        @Req() req: Request,
+        @Res() res: Response
+    ) {
+        const { t } = createRequestI18n(req);
+        if (!currentUser?.userId) {
+            return this.sendError(res, 401, t('auth.error.loginRequired'));
+        }
+        const items = await this.ugcService.listBuilderProjects(currentUser.userId);
+        return res.json({ items });
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('builder/projects')
+    async createBuilderProject(
+        @CurrentUser() currentUser: { userId: string } | null,
+        @Body() body: CreateUgcBuilderProjectDto,
+        @Req() req: Request,
+        @Res() res: Response
+    ) {
+        const { t } = createRequestI18n(req);
+        if (!currentUser?.userId) {
+            return this.sendError(res, 401, t('auth.error.loginRequired'));
+        }
+        const result = await this.ugcService.createBuilderProject(currentUser.userId, body);
+        return res.status(201).json(result);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('builder/projects/:projectId')
+    async getBuilderProject(
+        @CurrentUser() currentUser: { userId: string } | null,
+        @Param('projectId') projectId: string,
+        @Req() req: Request,
+        @Res() res: Response
+    ) {
+        const { t } = createRequestI18n(req);
+        if (!currentUser?.userId) {
+            return this.sendError(res, 401, t('auth.error.loginRequired'));
+        }
+        const project = await this.ugcService.getBuilderProject(currentUser.userId, projectId.trim());
+        if (!project) {
+            return this.sendError(res, 404, '未找到草稿项目');
+        }
+        return res.json(project);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Put('builder/projects/:projectId')
+    async updateBuilderProject(
+        @CurrentUser() currentUser: { userId: string } | null,
+        @Param('projectId') projectId: string,
+        @Body() body: UpdateUgcBuilderProjectDto,
+        @Req() req: Request,
+        @Res() res: Response
+    ) {
+        const { t } = createRequestI18n(req);
+        if (!currentUser?.userId) {
+            return this.sendError(res, 401, t('auth.error.loginRequired'));
+        }
+        const project = await this.ugcService.updateBuilderProject(currentUser.userId, projectId.trim(), body);
+        if (!project) {
+            return this.sendError(res, 404, '未找到草稿项目');
+        }
+        return res.json(project);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete('builder/projects/:projectId')
+    async deleteBuilderProject(
+        @CurrentUser() currentUser: { userId: string } | null,
+        @Param('projectId') projectId: string,
+        @Req() req: Request,
+        @Res() res: Response
+    ) {
+        const { t } = createRequestI18n(req);
+        if (!currentUser?.userId) {
+            return this.sendError(res, 401, t('auth.error.loginRequired'));
+        }
+        const deleted = await this.ugcService.deleteBuilderProject(currentUser.userId, projectId.trim());
+        if (!deleted) {
+            return this.sendError(res, 404, '未找到草稿项目');
+        }
+        return res.json({ deleted: true });
     }
 
     @UseGuards(JwtAuthGuard)

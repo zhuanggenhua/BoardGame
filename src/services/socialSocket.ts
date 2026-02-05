@@ -125,7 +125,7 @@ class SocialSocketService {
         // 注册所有社交事件的处理器
         Object.values(SOCIAL_EVENTS).forEach(eventName => {
             this.socket?.on(eventName, (payload) => {
-                console.log(`[SocialSocket] Event ${eventName}:`, payload);
+                // 日志已移除：事件接收过于频繁
                 this.notifyListeners(eventName, payload);
             });
         });

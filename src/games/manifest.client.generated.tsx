@@ -11,19 +11,25 @@ import Board1 from './dicethrone/Board';
 import Tutorial1 from './dicethrone/tutorial';
 import Thumbnail1 from './dicethrone/thumbnail';
 
-import manifest2 from './summonerwars/manifest';
-import Game2 from './summonerwars/game';
-import Board2 from './summonerwars/Board';
-import Tutorial2 from './summonerwars/tutorial';
-import Thumbnail2 from './summonerwars/thumbnail';
+import manifest2 from './smashup/manifest';
+import Game2 from './smashup/game';
+import Board2 from './smashup/Board';
+import Tutorial2 from './smashup/tutorial';
+import Thumbnail2 from './smashup/thumbnail';
 
-import manifest3 from './tictactoe/manifest';
-import Game3 from './tictactoe/game';
-import Board3 from './tictactoe/Board';
-import Tutorial3 from './tictactoe/tutorial';
-import Thumbnail3 from './tictactoe/thumbnail';
+import manifest3 from './summonerwars/manifest';
+import Game3 from './summonerwars/game';
+import Board3 from './summonerwars/Board';
+import Tutorial3 from './summonerwars/tutorial';
+import Thumbnail3 from './summonerwars/thumbnail';
 
-import manifest4 from './ugcbuilder/manifest';
+import manifest4 from './tictactoe/manifest';
+import Game4 from './tictactoe/game';
+import Board4 from './tictactoe/Board';
+import Tutorial4 from './tictactoe/tutorial';
+import Thumbnail4 from './tictactoe/thumbnail';
+
+import manifest5 from './ugcbuilder/manifest';
 
 const entry0: GameClientManifestEntry = {
     manifest: manifest0,
@@ -56,7 +62,15 @@ const entry3: GameClientManifestEntry = {
 
 const entry4: GameClientManifestEntry = {
     manifest: manifest4,
-    thumbnail: <ManifestGameThumbnail manifest={manifest4} />,
+    game: Game4,
+    board: Board4,
+    tutorial: Tutorial4,
+    thumbnail: <Thumbnail4 />,
+};
+
+const entry5: GameClientManifestEntry = {
+    manifest: manifest5,
+    thumbnail: <ManifestGameThumbnail manifest={manifest5} />,
 };
 
 export const GAME_CLIENT_MANIFEST: GameClientManifestEntry[] = [
@@ -65,6 +79,7 @@ export const GAME_CLIENT_MANIFEST: GameClientManifestEntry[] = [
     entry2,
     entry3,
     entry4,
+    entry5,
 ];
 
 export const GAME_CLIENT_MANIFEST_BY_ID: Record<string, GameClientManifestEntry> = Object.fromEntries(

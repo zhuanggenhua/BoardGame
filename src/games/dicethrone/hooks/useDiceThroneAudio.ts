@@ -13,7 +13,7 @@ import type { MatchState, PlayerId } from '../../../engine/types';
 export interface DiceThroneAudioConfig {
     /** 核心游戏状态 */
     G: DiceThroneCore;
-    /** 原始 MatchState（用于读取 sys.log） */
+    /** 原始 MatchState（用于读取 sys.eventStream） */
     rawState: MatchState<DiceThroneCore>;
     /** 当前玩家 ID */
     currentPlayerId: PlayerId;
@@ -42,6 +42,6 @@ export function useDiceThroneAudio(config: DiceThroneAudioConfig) {
         meta: {
             currentPlayerId,
         },
-        eventEntries: rawState.sys.log.entries,
+        eventEntries: rawState.sys.eventStream.entries,
     });
 }

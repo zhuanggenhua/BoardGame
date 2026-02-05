@@ -591,5 +591,19 @@
   "cardSpotlight": {
     "playerPlayed": "{{player}} played a card",
     "confirm": "OK"
+  },
+  "selection": {
+    "title": "Select Your Hero",
+    "selectHero": "Select Hero",
+    "choosing": "Choosing...",
+    "startGame": "Start Game",
+    "waiting": "Waiting...",
+    "waitingAll": "Waiting for all players",
+    "waitingForHost": "Waiting for host to start...",
+    "notSelected": "Not Selected",
+    "pressStart": "Start Game",
+    "ready": "Ready",
+    "readyWaiting": "Waiting for other players...",
+    "readyProgress": "Ready Progress"
   }
 }

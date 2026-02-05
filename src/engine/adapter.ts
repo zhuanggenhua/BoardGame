@@ -217,16 +217,7 @@ export function createGameAdapter<
                 skipValidation: shouldSkipValidation,
             };
 
-            // 教程调试日志
-            if (commandType.startsWith('SYS_TUTORIAL')) {
-                console.log('[Tutorial][Adapter] 收到教程命令', {
-                    commandType,
-                    playerId: normalizedPlayerId,
-                    isLocalLikeMode,
-                    globalMode,
-                    currentTutorialActive: (G as MatchState<TCore>).sys?.tutorial?.active,
-                });
-            }
+            // 日志已移除：教程系统已稳定
 
             // 撤销调试日志只在 DEV 下输出，避免正常开发被刷屏。
             if (isUndoCommand && import.meta.env.DEV) {
@@ -327,25 +318,12 @@ export function createGameAdapter<
                 return;
             }
 
-            // 教程调试日志
-            if (commandType.startsWith('SYS_TUTORIAL')) {
-                console.log('[Tutorial][Adapter] pipeline 结果', {
-                    success: result.success,
-                    resultTutorialActive: result.state.sys?.tutorial?.active,
-                    resultTutorialStepId: result.state.sys?.tutorial?.step?.id,
-                });
-            }
+            // 日志已移除：教程系统已稳定
 
             // 直接修改 G（Boardgame.io 使用 Immer）
             Object.assign(G, result.state);
 
-            // 教程调试日志
-            if (commandType.startsWith('SYS_TUTORIAL')) {
-                console.log('[Tutorial][Adapter] Object.assign 后', {
-                    G_tutorialActive: (G as MatchState<TCore>).sys?.tutorial?.active,
-                    G_tutorialStepId: (G as MatchState<TCore>).sys?.tutorial?.step?.id,
-                });
-            }
+            // 日志已移除：教程系统已稳定
         };
     };
 

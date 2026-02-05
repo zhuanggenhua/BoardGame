@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { config } from 'dotenv';
 import { existsSync } from 'fs';
 import { resolve } from 'path';

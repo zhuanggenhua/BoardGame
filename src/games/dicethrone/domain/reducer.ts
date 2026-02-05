@@ -9,10 +9,11 @@ import type {
     TurnPhase,
 } from './types';
 import { getDieFace, getTokenStackLimit } from './rules';
+import { diceSystem } from '../../../systems/DiceSystem';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
-import { MONK_CARDS } from '../monk/cards';
+import { findHeroCard } from '../heroes';
 import { initHeroState, createCharacterDice } from './characters';
 
 // ============================================================================
@@ -93,10 +94,13 @@ const handleDiceRolled: EventHandler<Extract<DiceThroneEvent, { type: 'DICE_ROLL
         if (!die.isKept && resultIndex < results.length) {
             const value = results[resultIndex];
             die.value = value;
-            // 同步更新符号
-            const face = getDieFace(value);
-            die.symbol = face;
-            die.symbols = [face];
+            // 同步更新符号（优先使用 DiceSystem 定义，回退到旧映射）
+            const faceDef = diceSystem.getFaceByValue(die.definitionId, value);
+            const symbols = faceDef?.symbols ?? [];
+            const fallbackFace = getDieFace(value);
+            const primarySymbol = (symbols[0] ?? fallbackFace) as typeof fallbackFace;
+            die.symbol = primarySymbol;
+            die.symbols = symbols.length > 0 ? symbols : [primarySymbol];
             resultIndex++;
         }
     });
@@ -236,11 +240,14 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
  * 重置骰子
  */
 const resetDice = (state: DiceThroneCore): void => {
-    const initialFace = getDieFace(1);
     state.dice.forEach((die, index) => {
+        const faceDef = diceSystem.getFaceByValue(die.definitionId, 1);
+        const symbols = faceDef?.symbols ?? [];
+        const fallbackFace = getDieFace(1);
+        const primarySymbol = (symbols[0] ?? fallbackFace) as typeof fallbackFace;
         die.value = 1;
-        die.symbol = initialFace;
-        die.symbols = [initialFace];
+        die.symbol = primarySymbol;
+        die.symbols = symbols.length > 0 ? symbols : [primarySymbol];
         die.isKept = index >= state.rollDiceCount;
     });
 };
@@ -277,6 +284,7 @@ const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'DAMAGE_D
     const { targetId, actualDamage, sourceAbilityId } = event.payload;
 
     const target = newState.players[targetId];
+    const beforeHp = target?.resources?.[RESOURCE_IDS.HP] ?? 0;
     if (target) {
         let remainingDamage = actualDamage;
 
@@ -297,6 +305,13 @@ const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'DAMAGE_D
             target.resources = result.pool;
         }
     }
+
+    const afterHp = target?.resources?.[RESOURCE_IDS.HP] ?? 0;
+    console.log(
+        `[DiceThrone] event=damage_dealt targetId=${targetId} actualDamage=${actualDamage} ` +
+        `remainingDamage=${Math.max(0, actualDamage - (beforeHp - afterHp))} beforeHp=${beforeHp} afterHp=${afterHp} ` +
+        `sourceAbilityId=${sourceAbilityId ?? 'none'} timestamp=${event.timestamp ?? 'none'}`
+    );
 
     if (sourceAbilityId) {
         newState.lastEffectSourceByPlayerId = newState.lastEffectSourceByPlayerId || {};
@@ -561,7 +576,8 @@ const handleCardPlayed: EventHandler<Extract<DiceThroneEvent, { type: 'CARD_PLAY
 
             // 直接设置 lastPlayedCard（立即触发特写）
             // 如果后续有 INTERACTION_REQUESTED 事件，会在那里清除并暂存
-            const resolvedPreviewRef = MONK_CARDS.find(cardDef => cardDef.id === cardId)?.previewRef
+            // 动态查找预览（通过所有英雄数据）
+            const resolvedPreviewRef = findHeroCard(cardId)?.previewRef
                 ?? card.previewRef;
 
             newState.lastPlayedCard = {
@@ -1029,7 +1045,8 @@ const handleAbilityReplaced: EventHandler<Extract<DiceThroneEvent, { type: 'ABIL
             player.upgradeCardByAbilityId[oldAbilityId] = { cardId: card.id, cpCost: card.cpCost };
 
             // 触发特写系统
-            const resolvedPreviewRef = MONK_CARDS.find(cardDef => cardDef.id === card.id)?.previewRef
+            // 触发特写系统（动态查找）
+            const resolvedPreviewRef = findHeroCard(card.id)?.previewRef
                 ?? card.previewRef;
             newState.lastPlayedCard = {
                 cardId: card.id,
@@ -1060,6 +1077,12 @@ const handleTokenResponseRequested: EventHandler<Extract<DiceThroneEvent, { type
 ) => {
     const newState = cloneState(state);
     newState.pendingDamage = event.payload.pendingDamage;
+    console.log(
+        `[DiceThrone] event=token_response_requested attackerId=${event.payload.pendingDamage.sourcePlayerId} ` +
+        `targetId=${event.payload.pendingDamage.targetPlayerId} damage=${event.payload.pendingDamage.currentDamage} ` +
+        `responseType=${event.payload.pendingDamage.responseType} sourceAbilityId=${event.payload.pendingDamage.sourceAbilityId ?? 'none'} ` +
+        `pendingDamageId=${event.payload.pendingDamage.id} timestamp=${event.timestamp ?? 'none'}`
+    );
     return newState;
 };
 
@@ -1122,11 +1145,27 @@ const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_USED
  */
 const handleTokenResponseClosed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_RESPONSE_CLOSED' }>> = (
     state,
-    _event
+    event
 ) => {
     const newState = cloneState(state);
     // 清除 pendingDamage，实际伤害由后续的 DAMAGE_DEALT 事件处理
     newState.pendingDamage = undefined;
+
+    // 标记伤害已结算，并记录最终伤害值（用于 postDamage 效果的 onHit 条件判断）
+    if (newState.pendingAttack) {
+        newState.pendingAttack = {
+            ...newState.pendingAttack,
+            damageResolved: true,
+            // 记录 Token 响应后的最终伤害值，供 resolvePostDamageEffects 使用
+            resolvedDamage: event.payload.finalDamage,
+        };
+    }
+
+    console.log(
+        `[DiceThrone] event=token_response_closed pendingDamageId=${event.payload.pendingDamageId} ` +
+        `finalDamage=${event.payload.finalDamage} fullyEvaded=${event.payload.fullyEvaded} ` +
+        `timestamp=${event.timestamp ?? 'none'}`
+    );
     return newState;
 };
 
@@ -1227,7 +1266,7 @@ const handleCharacterSelected: EventHandler<Extract<DiceThroneEvent, { type: 'CH
     const player = newState.players[playerId];
     if (player) {
         player.characterId = characterId;
-        
+
         // 存储初始牌库顺序（用于 HERO_INITIALIZED 消费）
         if (initialDeckCardIds && initialDeckCardIds.length > 0) {
             player.initialDeckCardIds = initialDeckCardIds;
@@ -1256,7 +1295,7 @@ const handleHeroInitialized: EventHandler<Extract<DiceThroneEvent, { type: 'HERO
     // 否则使用 dummyRandom（向后兼容旧流程）
     const dummyRandom: any = { shuffle: (arr: any[]) => arr };
     const heroState = initHeroState(playerId, characterId, dummyRandom, initialDeckCardIds);
-    
+
     newState.players[playerId] = heroState;
 
     // 如果是首位玩家初始化，或者当前活跃玩家，顺便创建骰子（如果还未创建）

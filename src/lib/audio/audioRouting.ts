@@ -1,4 +1,4 @@
-import type { AudioEvent, AudioRuntimeContext, BgmRule, GameAudioConfig, SoundKey } from './types';
+import type { AudioCategory, AudioEvent, AudioRuntimeContext, BgmRule, GameAudioConfig, SoundKey } from './types';
 
 export function resolveEventSoundKey<
     G = unknown,
@@ -17,6 +17,26 @@ export function resolveEventSoundKey<
     }
 
     return config.eventSoundMap?.[event.type] ?? null;
+}
+
+export function resolveAudioKey<
+    G = unknown,
+    Ctx = unknown,
+    Meta extends Record<string, unknown> = Record<string, unknown>
+>(
+    event: AudioEvent,
+    context: AudioRuntimeContext<G, Ctx, Meta>,
+    config: GameAudioConfig,
+    resolveCategoryKey: (category: AudioCategory) => SoundKey | null
+): SoundKey | null {
+    if (event.audioKey) return event.audioKey;
+
+    if (event.audioCategory) {
+        const categoryKey = resolveCategoryKey(event.audioCategory);
+        if (categoryKey) return categoryKey;
+    }
+
+    return resolveEventSoundKey(event, context, config);
 }
 
 export function resolveBgmKey<
@@ -43,6 +63,14 @@ export function resolveAudioEvent(
 ): AudioEvent | null {
     if (selector) return selector(entry) ?? null;
     if (!entry || typeof entry !== 'object') return null;
+
+    const maybeStreamEntry = entry as { event?: AudioEvent };
+    if (maybeStreamEntry.event && typeof maybeStreamEntry.event === 'object') {
+        const streamEvent = maybeStreamEntry.event as { type?: string };
+        if (typeof streamEvent.type === 'string') {
+            return streamEvent as AudioEvent;
+        }
+    }
 
     const maybeEntry = entry as { type?: string; data?: unknown };
     if (maybeEntry.type === 'event' && maybeEntry.data && typeof maybeEntry.data === 'object') {

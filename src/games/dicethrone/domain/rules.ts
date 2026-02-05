@@ -130,12 +130,20 @@ export const canAdvancePhase = (state: DiceThroneCore): boolean => {
         const playerIds = Object.keys(state.players);
         
         // 教程模式：只检查玩家 0 是否选好角色
-        const isTutorialMode = typeof window !== 'undefined'
-            && (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__ === 'tutorial';
+        const mode = typeof window !== 'undefined'
+            ? (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__
+            : undefined;
+        const isTutorialMode = mode === 'tutorial';
+        const isLocalMode = mode === 'local';
         
         if (isTutorialMode) {
             const player0Selected = state.selectedCharacters['0'] && state.selectedCharacters['0'] !== 'unselected';
             return player0Selected && state.hostStarted;
+        }
+
+        // 本地模式：仅要求房主开始即可推进，选角将由本地自动补全
+        if (isLocalMode) {
+            return state.hostStarted;
         }
         
         // 正常模式：检查所有玩家

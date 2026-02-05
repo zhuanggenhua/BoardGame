@@ -4,10 +4,16 @@
 
 ## 访问路由
 
-- `/dev/ugc/unified` - 统一 Builder（推荐）
+- `/dev/ugc` - 统一 Builder（推荐入口）
+- `/dev/ugc/runtime-view` - 运行时预览视图（iframe 使用）
 - `/dev/ugc/schema` - Schema 定义演示
 - `/dev/ugc/scene` - 场景画布演示
 - `/dev/ugc/rules` - 规则生成演示
+
+## 相关文档
+
+- [UGC 总览](./ugc/ugc-overview.md)
+- [UGC 规则模板（DomainCore）](./ugc/ugc-rule-template.md)
 
 ## 核心功能
 
@@ -59,27 +65,44 @@
 
 ### 4. AI 规则生成
 
-根据 Schema 和数据生成 boardgame.io 规则代码的提示词。
+根据 Schema 和数据生成 **UGC DomainCore** 规则代码的提示词（输出 `domain` 对象）。
 
-**模板：**
-- `setup` - 游戏初始化
-- `moves` - 玩家操作
-- `phases` - 阶段流程
-- `effects` - 效果系统
-- `endgame` - 胜负判定
+**输出契约：**
+- `domain.gameId`
+- `domain.setup / validate / execute / reduce / isGameOver / playerView`
+- 状态结构为 `UGCGameState`（必须可序列化）
 
 **使用方式：**
-1. 点击工具栏"生成规则"按钮
-2. 选择模板或生成完整提示词
-3. 复制到 AI 对话框生成代码
+1. 点击工具栏“生成规则”按钮
+2. 生成完整提示词
+3. 复制到 AI 对话框生成代码并粘贴到规则代码框
 
-### 5. 保存/加载
+### 5. 需求驱动数据生成
+
+需求输入支持两种形态并会持久化保存：
+
+- **总体需求**：在规则生成面板中填写的 rawText。
+- **结构化条目**：记录具体位置需求（如区域/交互/过滤）。
+
+在 "AI 批量生成" 中，会自动把需求与本次输入合并为统一上下文，避免手动拼接。
+
+### 6. 预览/运行对齐
+
+预览画布复用运行时容器，不保留旧预览逻辑：
+
+- Builder 预览使用 `UGCRuntimeHost`（iframe）
+- 运行时视图 `UGCRuntimeView` 通过 SDK 接收状态
+- 预览配置存放在 `publicZones` 中，运行态与预览态一致
+
+### 7. 保存/加载
 
 **功能：**
-- **保存** - 保存到 localStorage
+- **保存** - 登录后保存到云端草稿；未登录仅保存到本地 localStorage
+- **草稿列表** - 查看/打开/删除云端草稿，支持从当前内容创建草稿
 - **导出** - 下载 JSON 文件
 - **导入** - 上传 JSON 文件
-- 页面加载自动恢复
+- 页面加载自动恢复本地缓存
+- 自动保存（500ms 防抖），云端草稿同步失败会自动回退到本地缓存
 
 ## 技术架构
 
@@ -151,6 +174,11 @@ interface SceneComponent {
 npx vitest run src/ugc/builder/__tests__/UnifiedBuilder.test.ts
 ```
 
+端到端测试：
+```bash
+npx playwright test e2e/ugc-builder.e2e.ts
+```
+
 测试覆盖：
 - PromptGenerator（4 个测试）
 - Schema 工具函数（3 个测试）
@@ -158,7 +186,6 @@ npx vitest run src/ugc/builder/__tests__/UnifiedBuilder.test.ts
 
 ## 后续规划
 
-- [ ] 预览功能（生成可运行游戏）
 - [ ] 组件属性编辑增强
 - [ ] 撤销/重做
 - [ ] 画布缩放/平移

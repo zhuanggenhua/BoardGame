@@ -71,7 +71,6 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const bindMoves = useCallback((moves: Record<string, unknown>) => {
         controllerRef.current = buildTutorialController(moves);
         if (pendingStartRef.current) {
-            console.log('[Tutorial][Context] bindMoves 发现 pendingStart，立即启动', { manifestId: pendingStartRef.current.id });
             controllerRef.current.start(pendingStartRef.current);
             pendingStartRef.current = null;
         }
@@ -85,16 +84,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, []);
 
     const startTutorial = useCallback((manifest: TutorialManifest) => {
-        console.log('[Tutorial][Context] startTutorial 被调用', {
-            hasController: !!controllerRef.current,
-            manifestId: manifest.id,
-        });
         if (!controllerRef.current) {
-            console.log('[Tutorial][Context] controller 未就绪，存入 pendingStartRef');
             pendingStartRef.current = manifest;
             return;
         }
-        console.log('[Tutorial][Context] 直接调用 controller.start');
         controllerRef.current.start(manifest);
     }, []);
 
@@ -176,12 +169,15 @@ export const useTutorial = () => {
 
 export const useTutorialBridge = (tutorial: TutorialState, moves: Record<string, unknown>) => {
     const context = useContext(TutorialContext);
+    const lastSyncSignatureRef = useRef<string | null>(null);
     useEffect(() => {
-        console.log('[Tutorial][Bridge] syncTutorialState', { active: tutorial.active, stepId: tutorial.step?.id, stepIndex: tutorial.stepIndex });
-        context?.syncTutorialState(tutorial);
+        if (!context) return;
+        const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${tutorial.steps?.length ?? 0}`;
+        if (lastSyncSignatureRef.current === signature) return;
+        lastSyncSignatureRef.current = signature;
+        context.syncTutorialState(tutorial);
     }, [context, tutorial]);
     useEffect(() => {
-        console.log('[Tutorial][Bridge] bindMoves', { hasMoves: !!moves, moveKeys: moves ? Object.keys(moves).slice(0, 5) : [] });
         context?.bindMoves(moves);
     }, [context, moves]);
 };

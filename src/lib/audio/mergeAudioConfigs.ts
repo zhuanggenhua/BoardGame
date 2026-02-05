@@ -1,6 +1,7 @@
 /**
  * 音频配置合并工具
  * 支持 common + game 分层合并，游戏层优先
+ * @deprecated 已迁移到 registry.json + commonRegistry，待确认删除。
  */
 import type { GameAudioConfig, SoundDefinition, BgmDefinition } from './types';
 

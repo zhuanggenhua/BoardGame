@@ -1,3 +1,12 @@
+/**
+ * @deprecated 此组件已废弃，请使用 CharacterSelectionAdapter 代替
+ * 该组件将在未来版本中移除
+ * 
+ * 迁移路径：
+ * - 框架层：CharacterSelectionSkeleton (src/components/game/framework/)
+ * - 游戏层：CharacterSelectionAdapter (src/games/dicethrone/ui/)
+ */
+
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -116,8 +125,8 @@ export const HeroSelectionOverlay: React.FC<HeroSelectionOverlayProps> = ({
             <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute inset-0 bg-black/40 z-10" />
                 <OptimizedImage
-                    src={getLocalizedAssetPath('dicethrone/images/Common/compressed/background', locale)}
-                    fallbackSrc="dicethrone/images/Common/compressed/background"
+                    src={getLocalizedAssetPath('dicethrone/images/Common/background', locale)}
+                    fallbackSrc="dicethrone/images/Common/background"
                     className="w-full h-full object-cover opacity-20"
                     alt=""
                 />

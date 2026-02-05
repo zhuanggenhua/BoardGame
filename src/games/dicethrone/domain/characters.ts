@@ -6,8 +6,8 @@
 import type { PlayerId, RandomFn } from '../../../engine/types';
 import type { TokenDef } from '../../../systems/TokenSystem';
 import type { AbilityCard, HeroState, SelectableCharacterId, Die, DieFace } from './types';
-import { MONK_ABILITIES, MONK_TOKENS, MONK_INITIAL_TOKENS, getMonkStartingDeck } from '../monk';
-import { BARBARIAN_ABILITIES, BARBARIAN_TOKENS, BARBARIAN_INITIAL_TOKENS, getBarbarianStartingDeck } from '../barbarian';
+import { MONK_ABILITIES, MONK_TOKENS, MONK_INITIAL_TOKENS, getMonkStartingDeck } from '../heroes/monk';
+import { BARBARIAN_ABILITIES, BARBARIAN_TOKENS, BARBARIAN_INITIAL_TOKENS, getBarbarianStartingDeck } from '../heroes/barbarian';
 import { diceSystem } from '../../../systems/DiceSystem';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
@@ -103,8 +103,8 @@ export const ALL_TOKEN_DEFINITIONS: TokenDef[] = (() => {
  *                           如果提供，将使用该顺序而非重新洗牌（确保事件数据驱动）
  */
 export function initHeroState(
-    playerId: PlayerId, 
-    characterId: SelectableCharacterId, 
+    playerId: PlayerId,
+    characterId: SelectableCharacterId,
     random: RandomFn,
     initialDeckCardIds?: string[]
 ): HeroState {
@@ -114,18 +114,23 @@ export function initHeroState(
     }
 
     let deck: AbilityCard[];
-    
+
     // 如果提供了初始牌库顺序（来自 CHARACTER_SELECTED 事件），使用该顺序
     if (initialDeckCardIds && initialDeckCardIds.length > 0) {
         // 从卡牌定义中查找对应的完整卡牌对象
-        const fullDeck = data.getStartingDeck({ shuffle: (arr) => arr }); // 不洗牌，获取原始定义
+        const fullDeck = data.getStartingDeck({
+            shuffle: <T>(arr: T[]) => arr,
+            random: () => 0.5,
+            d: (_n: number) => 1,
+            range: (min: number, _max: number) => min
+        } as any); // 不洗牌，获取原始定义
         const cardMap = new Map(fullDeck.map(card => [card.id, card]));
-        
+
         // 按 initialDeckCardIds 的顺序重建牌库
         deck = initialDeckCardIds
             .map(id => cardMap.get(id))
             .filter((card): card is AbilityCard => card !== undefined);
-        
+
         // 安全检查：如果顺序不完整，回退到重新洗牌
         if (deck.length !== fullDeck.length) {
             console.warn(`[DiceThrone] initialDeckCardIds 不完整 (${deck.length}/${fullDeck.length})，回退到重新洗牌`);
@@ -135,7 +140,7 @@ export function initHeroState(
         // 没有提供顺序，使用随机洗牌（向后兼容）
         deck = data.getStartingDeck(random);
     }
-    
+
     const startingHand = deck.splice(0, 4);
 
     // 创建初始资源池

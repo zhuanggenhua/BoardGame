@@ -38,8 +38,12 @@
     },
     "actions": {
       "destroy": "结束游戏",
+      "destroyHint": "关闭房间，所有人退出",
       "leaveKeep": "离开房间",
+      "tempLeave": "暂时离开",
+      "tempLeaveHint": "断开连接但保留位置",
       "backToLobby": "返回大厅",
+      "backToLobbyHint": "彻底离开房间",
       "social": "好友",
       "feedback": "反馈",
       "about": "关于",

@@ -16,7 +16,7 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
 
     it('位图资源生成 avif/webp 路径', () => {
         const urls = getOptimizedImageUrls('dicethrone/thumbnails/fengm.png');
-        expect(urls.avif).toBe('/assets/dicethrone/thumbnails/fengm.avif');
-        expect(urls.webp).toBe('/assets/dicethrone/thumbnails/fengm.webp');
+        expect(urls.avif).toBe('/assets/dicethrone/thumbnails/compressed/fengm.avif');
+        expect(urls.webp).toBe('/assets/dicethrone/thumbnails/compressed/fengm.webp');
     });
 });

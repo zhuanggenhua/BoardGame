@@ -9,6 +9,7 @@ import {
     createGameAdapter,
     createActionLogSystem,
     createCheatSystem,
+    createEventStreamSystem,
     createFlowSystem,
     createLogSystem,
     createPromptSystem,
@@ -27,13 +28,14 @@ import { DICETHRONE_COMMANDS, STATUS_IDS } from './domain/ids';
 import type { AbilityCard, DiceThroneCore, TurnPhase, DiceThroneEvent, CpChangedEvent, TurnChangedEvent, StatusRemovedEvent } from './domain/types';
 import { createDiceThroneEventSystem } from './domain/systems';
 import { canAdvancePhase, getNextPhase, getNextPlayerId } from './domain/rules';
-import { resolveAttack, resolveOffensivePreDefenseEffects } from './domain/attack';
+import { resolveAttack, resolveOffensivePreDefenseEffects, resolvePostDamageEffects } from './domain/attack';
 import { resourceSystem } from './domain/resourceSystem';
 import { RESOURCE_IDS } from './domain/resources';
 import { buildDrawEvents } from './domain/deckEvents';
 import { reduce } from './domain/reducer';
 
 import { getDieFace } from './domain/rules';
+import { diceSystem } from '../../systems/DiceSystem';
 
 // DiceThrone 作弊系统配置
 const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
@@ -66,12 +68,15 @@ const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
     setDice: (core, values) => {
         const newDice = core.dice.map((die, i) => {
             const value = values[i] ?? die.value;
-            const face = getDieFace(value);
+            const faceDef = diceSystem.getFaceByValue(die.definitionId, value);
+            const symbols = faceDef?.symbols ?? [];
+            const fallbackFace = getDieFace(value);
+            const primarySymbol = (symbols[0] ?? fallbackFace) as typeof fallbackFace;
             return {
                 ...die,
                 value,
-                symbol: face,
-                symbols: [face],
+                symbol: primarySymbol,
+                symbols: symbols.length > 0 ? symbols : [primarySymbol],
             };
         });
         return {
@@ -183,26 +188,41 @@ const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const playerIds = Object.keys(core.players);
             const initEvents: GameEvent[] = [];
 
-            // 教程模式：自动为玩家 1 选择默认角色
-            const isTutorialMode = typeof window !== 'undefined'
-                && (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__ === 'tutorial';
-            
-            if (isTutorialMode && (!core.selectedCharacters['1'] || core.selectedCharacters['1'] === 'unselected')) {
-                core.selectedCharacters['1'] = 'monk'; // 默认选择僧侣作为对手
+            // 教程/本地模式：自动为所有玩家选择默认角色
+            const mode = typeof window !== 'undefined'
+                ? (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__
+                : undefined;
+            const isTutorialMode = mode === 'tutorial';
+            const isLocalMode = mode === 'local';
+
+            if (isTutorialMode) {
+                // 玩家 0（教学玩家）默认选择僧侣
+                if (!core.selectedCharacters['0'] || core.selectedCharacters['0'] === 'unselected') {
+                    core.selectedCharacters['0'] = 'monk';
+                }
+                // 玩家 1（AI 对手）默认选择野蛮人
+                if (!core.selectedCharacters['1'] || core.selectedCharacters['1'] === 'unselected') {
+                    core.selectedCharacters['1'] = 'barbarian';
+                }
+            }
+
+            if (isLocalMode) {
+                for (const pid of playerIds) {
+                    const selected = core.selectedCharacters[pid];
+                    if (!selected || selected === 'unselected') {
+                        core.selectedCharacters[pid] = pid === '0' ? 'monk' : 'barbarian';
+                    }
+                }
             }
 
             for (const pid of playerIds) {
                 const charId = core.selectedCharacters[pid];
                 if (charId && charId !== 'unselected') {
-                    // 发送初始化事件（此处由于 reducer 已处理部分，可能需要专门的 INIT_HERO_STATE 事件或直接在 reducer 处理）
-                    // 按照架构，最好是发送一个事件，让 reducer 执行 initHeroState 逻辑
                     initEvents.push({
                         type: 'HERO_INITIALIZED',
                         payload: {
                             playerId: pid,
                             characterId: charId as any,
-                            // 牌库已经在 CHARACTER_SELECTED 时确定了（payload.initialDeckCardIds），
-                            // 但为了严谨，这里可以再次确认或由 reducer 从 core.selectedCharacters 读取
                         },
                         sourceCommandType: command.type,
                         timestamp,
@@ -241,6 +261,7 @@ const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
         // ========== offensiveRoll 阶段退出：攻击前处理 ==========
         if (from === 'offensiveRoll') {
+            console.log(`[DiceThrone][onPhaseExit] offensiveRoll exit, pendingAttack=${JSON.stringify(core.pendingAttack)}`);
             if (core.pendingAttack) {
                 // 处理进攻方的 preDefense 效果
                 const preDefenseEvents = resolveOffensivePreDefenseEffects(core);
@@ -258,10 +279,12 @@ const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
                 if (core.pendingAttack.isDefendable) {
                     // 攻击可防御，切换到防御阶段
+                    console.log(`[DiceThrone][onPhaseExit] offensiveRoll -> defensiveRoll (isDefendable=true)`);
                     return { events, overrideNextPhase: 'defensiveRoll' };
                 }
 
                 // 攻击不可防御，直接结算
+                console.log(`[DiceThrone][onPhaseExit] offensiveRoll -> main2 (isDefendable=false, resolving attack)`);
                 const attackEvents = resolveAttack(coreAfterPreDefense, random, { includePreDefense: false });
                 events.push(...attackEvents);
 
@@ -276,6 +299,7 @@ const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 return { events, overrideNextPhase: 'main2' };
             }
             // 无 pendingAttack，直接进入 main2
+            console.log(`[DiceThrone][onPhaseExit] offensiveRoll -> main2 (no pendingAttack)`);
             return { events, overrideNextPhase: 'main2' };
         }
 
@@ -283,6 +307,15 @@ const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
         // 设计原则：不做"最后机会"响应窗口，玩家想打牌应在防御阶段主动打出
         if (from === 'defensiveRoll') {
             if (core.pendingAttack) {
+                // 如果伤害已通过 Token 响应结算，只执行 postDamage 效果
+                if (core.pendingAttack.damageResolved) {
+                    console.log(`[DiceThrone][onPhaseExit] defensiveRoll -> main2 (damageResolved=true, executing postDamage effects)`);
+                    // 执行 postDamage 效果（如击倒）并生成 ATTACK_RESOLVED 事件
+                    const postDamageEvents = resolvePostDamageEffects(core, random);
+                    events.push(...postDamageEvents);
+                    return { events, overrideNextPhase: 'main2' };
+                }
+                
                 // 直接结算攻击
                 const attackEvents = resolveAttack(core, random);
                 events.push(...attackEvents);
@@ -346,6 +379,7 @@ const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
             // 只有在没有其他阻塞条件时才自动继续
             if (!hasActivePrompt && !hasActiveResponseWindow && !hasPendingInteraction && !hasPendingDamage && !hasPendingBonusDice) {
+                console.log(`[DiceThrone][onAutoContinueCheck] autoContinue=true phase=${core.turnPhase} sysPhase=${state.sys.phase} activePlayerId=${core.activePlayerId} events=${events.map(e => e.type).join(',')}`);
                 return {
                     autoContinue: true,
                     playerId: core.activePlayerId,
@@ -360,6 +394,37 @@ const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
         const core = state.core;
         const events: GameEvent[] = [];
         const timestamp = now();
+
+        // ========== 状态修复：检测并修复缺失手牌的玩家 ==========
+        // 原因：旧版本的游戏状态可能在 HERO_INITIALIZED 事件添加前保存
+        // 症状：玩家已选择角色但 hand/deck 为空
+        if (to === 'income' || to === 'main1') {
+            const playerIds = Object.keys(core.players);
+            for (const pid of playerIds) {
+                const player = core.players[pid];
+                const charId = core.selectedCharacters[pid];
+
+                // 检测条件：已选角色 + 手牌和牌库都为空
+                if (charId && charId !== 'unselected'
+                    && player.hand.length === 0
+                    && player.deck.length === 0) {
+                    // 生成 HERO_INITIALIZED 事件来修复状态
+                    events.push({
+                        type: 'HERO_INITIALIZED',
+                        payload: {
+                            playerId: pid,
+                            characterId: charId as any,
+                        },
+                        sourceCommandType: command.type,
+                        timestamp,
+                    } as any);
+                }
+            }
+
+            if (events.length > 0) {
+                return events;
+            }
+        }
 
         // ========== 进入 income 阶段：+1 CP 和抽牌 ==========
         if (to === 'income') {
@@ -494,6 +559,7 @@ function findDiceThroneCard(
 // 注意：撤销快照保留 1 个 + 极度缩减日志（maxEntries: 20）以避免 MongoDB 16MB 限制
 const systems = [
     createFlowSystem<DiceThroneCore>({ hooks: diceThroneFlowHooks }),
+    createEventStreamSystem(),
     createLogSystem({ maxEntries: 20 }),  // 极度减少，不考虑回放
     createActionLogSystem({
         commandAllowlist: ACTION_ALLOWLIST,
@@ -582,6 +648,11 @@ export const DiceThroneGame = createGameAdapter({
 });
 
 export default DiceThroneGame;
+
+// 注册卡牌预览获取函数
+import { registerCardPreviewGetter } from '../../components/game/cardPreviewRegistry';
+import { getDiceThroneCardPreviewRef } from './ui/cardPreviewHelper';
+registerCardPreviewGetter('dicethrone', getDiceThroneCardPreviewRef);
 
 // 导出类型（兼容）
 export type { DiceThroneCore } from './domain';

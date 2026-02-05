@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { LobbyClient } from 'boardgame.io/client';
+import { motion, useMotionValue } from 'framer-motion';
 import { useDebug } from '../contexts/DebugContext';
 import { useGameMode } from '../contexts/GameModeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,6 +10,10 @@ import { GAME_SERVER_URL } from '../config/server';
 import { matchSocket } from '../services/matchSocket';
 import { destroyMatch, persistMatchCredentials } from '../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName } from '../hooks/match/ownerIdentity';
+
+const DEBUG_BUTTON_SIZE = 48;
+const EDGE_PADDING = 16;
+const STORAGE_KEY = 'debug_panel_position';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface DebugPanelProps {
@@ -36,8 +41,89 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
     const [isCreatingRoom, setIsCreatingRoom] = React.useState(false);
     const { setPlayerID } = useDebug();
 
+    // 拖拽相关状态
+    const [buttonPosition, setButtonPosition] = useState<{ left: number; top: number } | null>(null);
+    const dragX = useMotionValue(0);
+    const dragY = useMotionValue(0);
+    const didDragRef = useRef(false);
+
     const getGuestId = () => getOrCreateGuestId();
     const getGuestName = () => resolveGuestName(t, getGuestId());
+
+    // 位置约束函数
+    const clampPosition = useCallback((target: { left: number; top: number }) => {
+        const maxLeft = window.innerWidth - DEBUG_BUTTON_SIZE - EDGE_PADDING;
+        const maxTop = window.innerHeight - DEBUG_BUTTON_SIZE - EDGE_PADDING;
+        return {
+            left: Math.min(Math.max(target.left, EDGE_PADDING), maxLeft),
+            top: Math.min(Math.max(target.top, EDGE_PADDING), maxTop),
+        };
+    }, []);
+
+    // 获取默认位置（右下角偏上）
+    const getDefaultPosition = useCallback(() => {
+        const maxLeft = window.innerWidth - DEBUG_BUTTON_SIZE - EDGE_PADDING;
+        const defaultTop = window.innerHeight * 0.65; // 65% 高度位置
+        return { left: maxLeft, top: defaultTop };
+    }, []);
+
+    // 加载保存的位置
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const next = clampPosition(parsed);
+                setButtonPosition(next);
+                return;
+            }
+            const next = clampPosition(getDefaultPosition());
+            setButtonPosition(next);
+        } catch (e) {
+            console.error('[DebugPanel] 加载位置失败:', e);
+            setButtonPosition(clampPosition(getDefaultPosition()));
+        }
+    }, [clampPosition, getDefaultPosition]);
+
+    // 窗口大小变化时重新约束位置
+    useEffect(() => {
+        if (!buttonPosition) return;
+        const handleResize = () => {
+            const next = clampPosition(buttonPosition);
+            setButtonPosition(next);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [clampPosition, buttonPosition]);
+
+    // 拖拽结束处理
+    const handleDragEnd = (_: unknown, info: { offset: { x: number; y: number } }) => {
+        if (!buttonPosition) return;
+        const next = clampPosition({
+            left: buttonPosition.left + info.offset.x,
+            top: buttonPosition.top + info.offset.y,
+        });
+        setButtonPosition(next);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        dragX.set(0);
+        dragY.set(0);
+    };
+
+    const handleDragStart = () => {
+        didDragRef.current = true;
+    };
+
+    const handlePointerDownCapture = () => {
+        didDragRef.current = false;
+    };
+
+    const handleToggleClick = () => {
+        if (didDragRef.current) {
+            didDragRef.current = false;
+            return;
+        }
+        setIsOpen(!isOpen);
+    };
 
     // 动作参数状态
     const [moveArgs, setMoveArgs] = useState<Record<string, string>>({});
@@ -77,17 +163,11 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
         }
     }, [stateInput, moves]);
 
-    if (!import.meta.env.DEV) return null;
-
-    const handleArgChange = (moveName: string, value: string) => {
-        setMoveArgs(prev => ({ ...prev, [moveName]: value }));
-    };
-
     // 监听当前玩家变化，实现自动切换视角
     // 优先使用领域内核的当前玩家字段（G.core.currentPlayer），回退到 ctx.currentPlayer
     const coreCurrentPlayer = G?.core?.currentPlayer as string | undefined;
     const activePlayer = coreCurrentPlayer ?? ctx.currentPlayer;
-    React.useEffect(() => {
+    useEffect(() => {
         if (!autoSwitch) return;
         if (activePlayer && activePlayer !== playerID) {
             // 延迟切换，让用户看到上一步的结果
@@ -97,6 +177,14 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
             return () => clearTimeout(timer);
         }
     }, [activePlayer, setPlayerID, playerID, autoSwitch]);
+
+    // 早期返回必须在所有 hooks 之后
+    if (!import.meta.env.DEV) return null;
+    if (!buttonPosition) return null;
+
+    const handleArgChange = (moveName: string, value: string) => {
+        setMoveArgs(prev => ({ ...prev, [moveName]: value }));
+    };
 
     const executeMove = (moveName: string) => {
         const rawArg = moveArgs[moveName];
@@ -118,18 +206,41 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
 
     return (
         <>
-            {/* 浮动切换按钮 */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-24 right-4 z-[9999] w-12 h-12 bg-gray-900 text-white rounded-md shadow-lg flex items-center justify-center hover:bg-gray-800 transition-all border border-gray-700 hover:scale-105 active:scale-95 text-xl"
-                title={t('debug.toggleTitle')}
+            {/* 浮动切换按钮 - 可拖拽 */}
+            <motion.div
+                drag
+                dragMomentum={false}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onPointerDownCapture={handlePointerDownCapture}
+                style={{
+                    position: 'fixed',
+                    left: buttonPosition.left,
+                    top: buttonPosition.top,
+                    x: dragX,
+                    y: dragY,
+                    width: DEBUG_BUTTON_SIZE,
+                    height: DEBUG_BUTTON_SIZE,
+                }}
+                className="z-[9999] cursor-grab active:cursor-grabbing"
+                data-testid="debug-toggle-container"
             >
-                {isOpen ? '✕' : '🛠️'}
-            </button>
+                <div
+                    onClick={handleToggleClick}
+                    className="w-full h-full bg-gray-900 text-white rounded-md shadow-lg flex items-center justify-center hover:bg-gray-800 border border-gray-700 text-xl select-none"
+                    title={t('debug.toggleTitle')}
+                    data-testid="debug-toggle"
+                >
+                    {isOpen ? '✕' : '🛠️'}
+                </div>
+            </motion.div>
 
             {/* 主面板 */}
             {isOpen && (
-                <div className="fixed top-20 right-4 bottom-24 w-96 bg-white shadow-2xl rounded-xl border border-gray-200 z-[9998] flex flex-col overflow-hidden font-mono text-sm ring-1 ring-black/5">
+                <div
+                    className="fixed top-20 right-4 bottom-24 w-96 bg-white shadow-2xl rounded-xl border border-gray-200 z-[9998] flex flex-col overflow-hidden font-mono text-sm ring-1 ring-black/5"
+                    data-testid="debug-panel"
+                >
                     {/* 页眉 */}
                     <div className="bg-gray-100 p-3 border-b border-gray-200 flex justify-between items-center">
                         <h3 className="font-bold text-gray-900 flex items-center gap-2">
@@ -155,18 +266,21 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                     {/* 导航栏 */}
                     <div className="flex border-b border-gray-200 bg-white">
                         <button
+                            data-testid="debug-tab-actions"
                             onClick={() => setActiveTab('actions')}
                             className={`flex-1 py-2.5 text-center text-xs font-bold transition-colors ${activeTab === 'actions' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}
                         >
                             {t('debug.tabs.actions')}
                         </button>
                         <button
+                            data-testid="debug-tab-state"
                             onClick={() => setActiveTab('state')}
                             className={`flex-1 py-2.5 text-center text-xs font-bold transition-colors ${activeTab === 'state' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}
                         >
                             {t('debug.tabs.state')}
                         </button>
                         <button
+                            data-testid="debug-tab-controls"
                             onClick={() => setActiveTab('controls')}
                             className={`flex-1 py-2.5 text-center text-xs font-bold transition-colors ${activeTab === 'controls' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}
                         >
@@ -257,6 +371,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                         <h4 className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">{t('debug.state.gameState')}</h4>
                                         <div className="flex gap-1">
                                             <button
+                                                data-testid="debug-state-copy"
                                                 onClick={handleCopyState}
                                                 className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${
                                                     copySuccess
@@ -267,6 +382,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                 {copySuccess ? '✓ 已复制' : '📋 复制'}
                                             </button>
                                             <button
+                                                data-testid="debug-state-toggle-input"
                                                 onClick={() => setShowStateInput(!showStateInput)}
                                                 className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${
                                                     showStateInput
@@ -283,6 +399,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                     {showStateInput && (
                                         <div className="bg-blue-50 p-2 rounded-lg border border-blue-200 space-y-2">
                                             <textarea
+                                                data-testid="debug-state-input"
                                                 value={stateInput}
                                                 onChange={(e) => setStateInput(e.target.value)}
                                                 placeholder="粘贴游戏状态 JSON..."
@@ -290,6 +407,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                             />
                                             <div className="flex gap-2">
                                                 <button
+                                                    data-testid="debug-state-paste"
                                                     onClick={async () => {
                                                         try {
                                                             const text = await navigator.clipboard.readText();
@@ -303,6 +421,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                     📋 从剪贴板粘贴
                                                 </button>
                                                 <button
+                                                    data-testid="debug-state-apply"
                                                     onClick={handleApplyState}
                                                     disabled={!stateInput.trim()}
                                                     className="flex-1 px-2 py-1.5 bg-blue-500 text-white rounded text-[10px] font-bold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -316,7 +435,10 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                         </div>
                                     )}
                                     
-                                    <pre className="text-[10px] leading-relaxed bg-gray-900 text-green-400 p-3 rounded-lg overflow-x-auto border border-gray-800 font-mono shadow-inner max-h-[300px]">
+                                    <pre
+                                        data-testid="debug-state-json"
+                                        className="text-[10px] leading-relaxed bg-gray-900 text-green-400 p-3 rounded-lg overflow-x-auto border border-gray-800 font-mono shadow-inner max-h-[300px]"
+                                    >
                                         {JSON.stringify(G, null, 2)}
                                     </pre>
                                 </div>

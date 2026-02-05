@@ -3,8 +3,9 @@
  * 提供全局音效播放、静音、音量控制
  */
 import { Howl, Howler } from 'howler';
-import type { SoundDefinition, SoundKey, GameAudioConfig, BgmDefinition } from './types';
-import { assetsPath } from '../../core/AssetLoader';
+import type { SoundDefinition, SoundKey, GameAudioConfig, BgmDefinition, AudioCategory } from './types';
+import type { AudioRegistryEntry } from './commonRegistry';
+import { assetsPath, getOptimizedAudioUrl } from '../../core/AssetLoader';
 
 const isPassthroughSource = (src: string) => (
     src.startsWith('data:')
@@ -27,16 +28,26 @@ const buildAudioSrc = (basePath: string, src: string) => {
     if (isPassthroughSource(src)) {
         return src;
     }
-    if (!basePath) {
-        return assetsPath(src);
-    }
-    const trimmed = src.startsWith('/') ? src.slice(1) : src;
-    return `${basePath}${trimmed}`;
+    return getOptimizedAudioUrl(src, basePath);
+};
+
+const formatSrcForLog = (src: string | string[]) => (
+    Array.isArray(src) ? src.join('|') : src
+);
+
+const extractNameFromSrc = (src: string): string => {
+    const fileName = src.split('/').pop() ?? src;
+    return fileName.replace(/\.[^.]+$/, '');
 };
 
 class AudioManagerClass {
     private sounds: Map<SoundKey, Howl> = new Map();
+    private soundDefinitions: Map<SoundKey, SoundDefinition> = new Map();
     private bgms: Map<string, Howl> = new Map();
+    private bgmDefinitions: Map<string, BgmDefinition> = new Map();
+    private registryEntries: Map<string, AudioRegistryEntry> = new Map();
+    private registryCategoryIndex: Map<string, string[]> = new Map();
+    private registryBasePath: string = '';
     private failedKeys: Set<SoundKey> = new Set();
 
     private bgmListeners: Set<(currentBgm: string | null) => void> = new Set();
@@ -49,6 +60,9 @@ class AudioManagerClass {
     private _currentBgm: string | null = null;
     private _initialized: boolean = false;
     private _limiterSetup: boolean = false;
+    private _userGestureObserved: boolean = false;
+    private _unlockListenerAttached: boolean = false;
+    private _pendingBgmKey: string | null = null;
 
     private getAudioContext(): AudioContext | null {
         return (Howler as unknown as { ctx?: AudioContext }).ctx ?? null;
@@ -61,11 +75,39 @@ class AudioManagerClass {
 
     private resumeContextIfNeeded(): void {
         const ctx = this.getAudioContext();
-        if (ctx && ctx.state === 'suspended') {
-            ctx.resume().catch(() => {
-                // 解锁依赖用户手势，失败时等待 unlock 再重试
-            });
+        if (!ctx) return;
+        if (ctx.state === 'running') {
+            this._userGestureObserved = true;
+            return;
         }
+        if (ctx.state !== 'suspended') return;
+        if (!this._userGestureObserved && typeof window !== 'undefined') return;
+        ctx.resume()
+            .then(() => {
+                this._userGestureObserved = true;
+            })
+            .catch(() => {
+                // 解锁依赖用户手势，失败时等待用户手势再重试
+            });
+    }
+
+    private registerUnlockHandler(): void {
+        if (this._unlockListenerAttached) return;
+        if (typeof window === 'undefined') return;
+        this._unlockListenerAttached = true;
+        const handler = () => {
+            this._unlockListenerAttached = false;
+            this._userGestureObserved = true;
+            this.resumeContextIfNeeded();
+            const pendingKey = this._pendingBgmKey;
+            this._pendingBgmKey = null;
+            if (pendingKey) {
+                this.playBgm(pendingKey);
+            }
+        };
+        window.addEventListener('pointerdown', handler, { once: true });
+        window.addEventListener('keydown', handler, { once: true });
+        window.addEventListener('touchstart', handler, { once: true });
     }
 
     private setupLimiterIfNeeded(): void {
@@ -101,6 +143,63 @@ class AudioManagerClass {
         this.bgmListeners.forEach((listener) => listener(this._currentBgm));
     }
 
+    private resolveRegistrySoundDefinition(key: SoundKey): SoundDefinition | null {
+        const entry = this.registryEntries.get(key);
+        if (!entry || entry.type !== 'sfx') return null;
+        const src = buildAudioSrc(this.registryBasePath, entry.src);
+        return {
+            src,
+            category: entry.category,
+        };
+    }
+
+    private resolveRegistryBgmDefinition(key: string): BgmDefinition | null {
+        const entry = this.registryEntries.get(key);
+        if (!entry || entry.type !== 'bgm') return null;
+        return {
+            key: entry.key,
+            name: extractNameFromSrc(entry.src),
+            src: buildAudioSrc(this.registryBasePath, entry.src),
+            category: entry.category,
+        };
+    }
+
+    resolveCategoryKey(category: AudioCategory): SoundKey | null {
+        const groupKey = `group:${category.group}`;
+        const groupSubKey = category.sub ? `group:${category.group}|sub:${category.sub}` : '';
+        if (groupSubKey) {
+            const exact = this.registryCategoryIndex.get(groupSubKey);
+            if (exact && exact.length > 0) return exact[0];
+        }
+        const fallback = this.registryCategoryIndex.get(groupKey);
+        if (fallback && fallback.length > 0) return fallback[0];
+        return null;
+    }
+
+    /**
+     * 注册通用 registry 条目（仅缓存索引）
+     */
+    registerRegistryEntries(entries: AudioRegistryEntry[], basePath: string): void {
+        this.registryEntries = new Map(entries.map(entry => [entry.key, entry]));
+        this.registryBasePath = normalizeBasePath(basePath);
+        this.registryCategoryIndex = new Map();
+        for (const entry of entries) {
+            if (!entry.category) continue;
+            const groupKey = `group:${entry.category.group}`;
+            const groupSubKey = entry.category.sub
+                ? `group:${entry.category.group}|sub:${entry.category.sub}`
+                : null;
+            const groupBucket = this.registryCategoryIndex.get(groupKey) ?? [];
+            groupBucket.push(entry.key);
+            this.registryCategoryIndex.set(groupKey, groupBucket);
+            if (groupSubKey) {
+                const subBucket = this.registryCategoryIndex.get(groupSubKey) ?? [];
+                subBucket.push(entry.key);
+                this.registryCategoryIndex.set(groupSubKey, subBucket);
+            }
+        }
+    }
+
     /**
      * 初始化音频管理器
      */
@@ -133,32 +232,25 @@ class AudioManagerClass {
      * 注册单个音效
      */
     register(key: SoundKey, definition: SoundDefinition): void {
+        this.soundDefinitions.set(key, definition);
         if (this.sounds.has(key)) {
             this.sounds.get(key)?.unload();
+            this.sounds.delete(key);
         }
         this.failedKeys.delete(key);
-
-        const howl = new Howl({
-            src: Array.isArray(definition.src) ? definition.src : [definition.src],
-            volume: (definition.volume ?? 1.0) * this._sfxVolume,
-            loop: definition.loop ?? false,
-            sprite: definition.sprite,
-            preload: true,
-            onloaderror: (_id, error) => {
-                console.error(`[AudioManager] 加载音效 "${key}" 失败:`, error);
-                this.failedKeys.add(key);
-            }
-        });
-        this.sounds.set(key, howl);
     }
 
     /**
-     * 批量注册音频
+     * 批量注册音频（仅登记定义，按需加载）
      */
     registerAll(config: GameAudioConfig, basePath: string = ''): void {
+        if (typeof window !== 'undefined') {
+            const holder = window as Window & { __BG_DISABLE_AUDIO__?: boolean };
+            if (holder.__BG_DISABLE_AUDIO__) return;
+        }
         const normalizedBasePath = normalizeBasePath(basePath);
 
-        // 注册音效
+        // 登记音效定义
         if (config.sounds) {
             for (const [key, def] of Object.entries(config.sounds)) {
                 const soundDef = def as SoundDefinition;
@@ -169,7 +261,7 @@ class AudioManagerClass {
             }
         }
 
-        // 注册 BGM
+        // 登记 BGM 定义
         if (config.bgm) {
             for (const def of config.bgm) {
                 const bgmDef = def as BgmDefinition;
@@ -177,18 +269,11 @@ class AudioManagerClass {
                     ? bgmDef.src.map(s => buildAudioSrc(normalizedBasePath, s))
                     : buildAudioSrc(normalizedBasePath, bgmDef.src);
 
+                this.bgmDefinitions.set(bgmDef.key, { ...bgmDef, src });
                 if (this.bgms.has(bgmDef.key)) {
                     this.bgms.get(bgmDef.key)?.unload();
+                    this.bgms.delete(bgmDef.key);
                 }
-
-                const howl = new Howl({
-                    src: Array.isArray(src) ? src : [src],
-                    volume: (bgmDef.volume ?? 1.0) * this._bgmVolume,
-                    loop: true,
-                    html5: true, // BGM 通常比较大，使用 HTML5 Audio 以节省内存并支持流式播放
-                    preload: false // BGM 按需加载
-                });
-                this.bgms.set(bgmDef.key, howl);
             }
         }
 
@@ -201,8 +286,28 @@ class AudioManagerClass {
      */
     play(key: SoundKey, spriteKey?: string): number | null {
         if (this.failedKeys.has(key)) return null;
-        const howl = this.sounds.get(key);
-        if (!howl) return null;
+        let howl = this.sounds.get(key);
+        if (!howl) {
+            const definition = this.soundDefinitions.get(key) ?? this.resolveRegistrySoundDefinition(key);
+            if (!definition) {
+                console.warn(`[Audio] missing_sfx key=${key} registryCount=${this.registryEntries.size} definedCount=${this.soundDefinitions.size}`);
+                return null;
+            }
+            this.soundDefinitions.set(key, definition);
+            howl = new Howl({
+                src: Array.isArray(definition.src) ? definition.src : [definition.src],
+                volume: (definition.volume ?? 1.0) * this._sfxVolume,
+                loop: definition.loop ?? false,
+                sprite: definition.sprite,
+                preload: true,
+                onload: () => {},
+                onloaderror: (_id, error) => {
+                    console.error(`[Audio] load_sfx_failed key=${key} src=${formatSrcForLog(definition.src)} error=${String(error)}`);
+                    this.failedKeys.add(key);
+                }
+            });
+            this.sounds.set(key, howl);
+        }
         this.resumeContextIfNeeded();
         if (this.isContextSuspended()) {
             howl.once('unlock', () => {
@@ -217,9 +322,35 @@ class AudioManagerClass {
      * 播放 BGM
      */
     playBgm(key: string): void {
-        const howl = this.bgms.get(key);
+        let howl = this.bgms.get(key);
         if (!howl) {
-            console.warn(`[AudioManager] BGM "${key}" 未注册`);
+            const definition = this.bgmDefinitions.get(key);
+            const registryDef = this.resolveRegistryBgmDefinition(key);
+            const mergedDef = registryDef
+                ? { ...registryDef, ...definition, src: registryDef.src }
+                : definition;
+            if (!mergedDef) {
+                console.warn(`[Audio] missing_bgm key=${key} registryCount=${this.registryEntries.size} definedCount=${this.bgmDefinitions.size}`);
+                return;
+            }
+            this.bgmDefinitions.set(key, mergedDef);
+            howl = new Howl({
+                src: Array.isArray(mergedDef.src) ? mergedDef.src : [mergedDef.src],
+                volume: (mergedDef.volume ?? 1.0) * this._bgmVolume,
+                loop: true,
+                html5: true, // BGM 通常比较大，使用 HTML5 Audio 以节省内存并支持流式播放
+                preload: false, // BGM 按需加载
+                onload: () => {},
+                onloaderror: (_id, error) => {
+                    console.error(`[Audio] load_bgm_failed key=${key} src=${formatSrcForLog(mergedDef.src)} error=${String(error)}`);
+                }
+            });
+            this.bgms.set(key, howl);
+        }
+
+        if (this.isContextSuspended()) {
+            this._pendingBgmKey = key;
+            this.registerUnlockHandler();
             return;
         }
 
@@ -231,7 +362,10 @@ class AudioManagerClass {
             this.bgms.get(this._currentBgm)?.fade(this._bgmVolume, 0, 1000);
             const prevBgm = this._currentBgm;
             setTimeout(() => {
-                this.bgms.get(prevBgm)?.stop();
+                const prevHowl = this.bgms.get(prevBgm);
+                prevHowl?.stop();
+                prevHowl?.unload();
+                this.bgms.delete(prevBgm);
             }, 1000);
         }
 
@@ -264,6 +398,7 @@ class AudioManagerClass {
             this._currentBgm = null;
             this.notifyBgmChange();
         }
+        this._pendingBgmKey = null;
     }
 
     /**
@@ -332,6 +467,7 @@ class AudioManagerClass {
         for (const howl of this.bgms.values()) howl.unload();
         this.sounds.clear();
         this.bgms.clear();
+        this._pendingBgmKey = null;
         if (this._currentBgm !== null) {
             this._currentBgm = null;
             this.notifyBgmChange();

@@ -28,6 +28,18 @@ export interface LayoutGroup {
   hidden: boolean;
 }
 
+export interface RequirementEntry {
+  id: string;
+  location: string;
+  content: string;
+  notes?: string;
+}
+
+export interface RequirementsState {
+  rawText: string;
+  entries: RequirementEntry[];
+}
+
 /** Builder 全局状态 */
 export interface BuilderState {
   name: string;
@@ -41,6 +53,7 @@ export interface BuilderState {
   selectedSchemaId: string | null;
   selectedComponentId: string | null;
   rulesCode?: string;
+  requirements: RequirementsState;
 }
 
 /** 布局组件 */
@@ -119,6 +132,10 @@ const initialState: BuilderState = {
   selectedSchemaId: null,
   selectedComponentId: null,
   rulesCode: '',
+  requirements: {
+    rawText: '',
+    entries: [],
+  },
 };
 
 function builderReducer(state: BuilderState, action: BuilderAction): BuilderState {

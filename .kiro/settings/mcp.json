@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "image-viewer": {
+      "command": "node",
+      "args": ["scripts/image-viewer-mcp/server.js"],
+      "disabled": false,
+      "autoApprove": ["view_image", "list_images", "image_info"]
+    }
+  }
+}
