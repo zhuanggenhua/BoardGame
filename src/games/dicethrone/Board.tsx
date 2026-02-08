@@ -53,7 +53,9 @@ import { useDiceInteractionConfig } from './hooks/useDiceInteractionConfig';
 import { useCardSpotlight } from './hooks/useCardSpotlight';
 import { useUIState } from './hooks/useUIState';
 import { useDiceThroneAudio } from './hooks/useDiceThroneAudio';
-import { computeViewModeState } from './ui/viewMode';
+import { computeViewModeState } from './domain/viewMode';
+import { getDieFace } from './domain/rules';
+import type { TutorialStep } from './tutorial';
 
 type DiceThroneMatchState = MatchState<DiceThroneCore>;
 type DiceThroneBoardProps = BoardProps<DiceThroneMatchState>;
@@ -464,10 +466,60 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
         && (currentPhase === 'defensiveRoll' || hasRolled);
     const canSelectAbility = canOperateView && isViewRolling && isRollPhase
         && (currentPhase === 'defensiveRoll' ? true : G.rollConfirmed);
+    
+    // Debug log for tutorial state
+    React.useEffect(() => {
+        if (gameMode?.mode === 'tutorial') {
+            console.warn('[DiceThroneBoard] Tutorial state:', {
+                stepId: tutorialStep?.id,
+                isActive: isTutorialActive,
+                currentPhase,
+            });
+        }
+    }, [gameMode?.mode, tutorialStep?.id, isTutorialActive, currentPhase]);
+    
+    // Debug log for abilities step
+    React.useEffect(() => {
+        if (gameMode?.mode === 'tutorial' && tutorialStep?.id === 'abilities') {
+            console.warn('[DiceThroneBoard] Abilities step debug:', {
+                currentPhase,
+                isViewRolling,
+                isRollPhase,
+                rollConfirmed,
+                canSelectAbility,
+                canHighlightAbility,
+                availableAbilityIds,
+                dice: G.dice,
+                faceCounts: G.dice.reduce((acc, die) => {
+                    const face = die.symbol || getDieFace(die.value);
+                    acc[face] = (acc[face] || 0) + 1;
+                    return acc;
+                }, {} as Record<string, number>),
+            });
+        }
+    }, [gameMode?.mode, tutorialStep?.id, currentPhase, isViewRolling, isRollPhase, rollConfirmed, canSelectAbility, canHighlightAbility, availableAbilityIds, G.dice]);
     // 阶段推进权限：由焦点玩家控制，防御阶段需要验证 rollConfirmed
     const canAdvancePhase = isFocusPlayer && !hasPendingInteraction && (currentPhase === 'defensiveRoll' ? rollConfirmed : true);
     const canResolveChoice = Boolean(choice.hasChoice && choice.playerId === rootPid);
     const canInteractDice = canOperateView && isViewRolling;
+
+    // Debug log for tutorial defense phase
+    React.useEffect(() => {
+        if (gameMode?.mode === 'tutorial' && currentPhase === 'defensiveRoll') {
+            console.warn('[DiceThroneBoard] Defense phase debug:', {
+                canInteractDice,
+                canOperateView,
+                isViewRolling,
+                rollerId,
+                viewPid,
+                rootPid,
+                rollCount: G.rollCount,
+                rollConfirmed,
+                pendingAttack: G.pendingAttack,
+            });
+        }
+    }, [gameMode?.mode, currentPhase, canInteractDice, canOperateView, isViewRolling, rollerId, viewPid, rootPid, G.rollCount, rollConfirmed, G.pendingAttack]);
+
     // 响应窗口状态
     const responseWindow = access.responseWindow;
     const isResponseWindowOpen = !!responseWindow;
@@ -745,6 +797,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
     }, [isTutorialActive, tutorialStep, nextTutorialStep]);
 
     const handleAdvancePhase = () => {
+        console.warn('[DiceThroneBoard] handleAdvancePhase called', {
+            canAdvancePhase,
+            currentPhase,
+            isTutorialActive,
+            tutorialStepId: tutorialStep?.id,
+        });
         if (!canAdvancePhase) {
             if (currentPhase === 'offensiveRoll' && !G.rollConfirmed) {
                 showHeaderError(t('error.confirmRoll'));
@@ -753,7 +811,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
             }
             return;
         }
-        if (shouldBlockTutorialAction('advance-phase-button')) return;
+        if (shouldBlockTutorialAction('advance-phase-button')) {
+            console.warn('[DiceThroneBoard] handleAdvancePhase blocked by tutorial');
+            return;
+        }
         if (currentPhase === 'offensiveRoll') {
             const hasSelectedAbility = Boolean(G.pendingAttack?.sourceAbilityId);
             const hasAvailableAbilities = availableAbilityIdsForRoller.length > 0;
@@ -763,6 +824,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                 return;
             }
         }
+        console.warn('[DiceThroneBoard] Calling engineMoves.advancePhase()');
         engineMoves.advancePhase();
         advanceTutorialIfNeeded('advance-phase-button');
     };

@@ -170,6 +170,8 @@ const ALLOWED_COMMANDS_DURING_RESPONSE = [
     'TRANSFER_STATUS',    // 转移状态效果
     'CONFIRM_INTERACTION', // 确认交互
     'CANCEL_INTERACTION', // 取消交互
+    // SmashUp 响应命令
+    'su:play_action',     // 大杀四方：Me First! 响应打出特殊行动卡
 ];
 
 // ============================================================================
@@ -358,8 +360,8 @@ export function createResponseWindowSystem<TCore>(
                     }
                 }
                 
-                // 处理打牌事件：仅在无交互锁时才推进（普通卡牌）
-                if (event.type === 'CARD_PLAYED') {
+                // 处理打牌事件：仅在无交互锁时才推进（普通卡牌/行动卡）
+                if (event.type === 'CARD_PLAYED' || event.type === 'su:action_played') {
                     const currentWindow = newState.sys.responseWindow?.current;
                     if (currentWindow && !currentWindow.pendingInteractionId) {
                         const cardPayload = event.payload as { playerId: PlayerId };

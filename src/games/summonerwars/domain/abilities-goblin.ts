@@ -27,6 +27,7 @@ export const GOBLIN_ABILITIES: AbilityDef[] = [
     id: 'vanish',
     name: '神出鬼没',
     description: '每回合一次，在你的攻击阶段，本单位可以和一个费用为0点的友方单位交换位置。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_01',
     trigger: 'activated',
     effects: [
       { type: 'custom', actionId: 'vanish_swap' },
@@ -53,6 +54,7 @@ export const GOBLIN_ABILITIES: AbilityDef[] = [
     id: 'blood_rune',
     name: '鲜血符文',
     description: '在你的攻击阶段开始时，对本单位造成1点伤害，或者消耗1点魔力以将本单位充能。',
+    sfxKey: 'fantasy.dark_sword_attack_withblood_01',
     trigger: 'onPhaseStart',
     effects: [
       // 二选一：自伤1 或 花1魔力充能
@@ -72,6 +74,7 @@ export const GOBLIN_ABILITIES: AbilityDef[] = [
     id: 'magic_addiction',
     name: '魔力成瘾',
     description: '在你的回合结束时，消耗1点魔力，或者弃除本单位。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_02',
     trigger: 'onTurnEnd',
     effects: [
       // 自动触发：有魔力则扣1，无魔力则自毁
@@ -84,6 +87,7 @@ export const GOBLIN_ABILITIES: AbilityDef[] = [
     id: 'ferocity',
     name: '凶残',
     description: '在你的攻击阶段，你可以选择本单位作为额外的攻击单位。',
+    sfxKey: 'fantasy.dark_sword_attack_withblood_02',
     trigger: 'passive',
     effects: [
       // 被动效果：攻击阶段允许额外攻击（不计入3次限制）
@@ -100,6 +104,7 @@ export const GOBLIN_ABILITIES: AbilityDef[] = [
     id: 'feed_beast',
     name: '喂养巨食兽',
     description: '在你的攻击阶段结束时，如果本单位在本回合没有消灭任何单位，则移除一个相邻友方单位，或者弃除本单位。',
+    sfxKey: 'fantasy.dark_sword_attack_withblood_03',
     trigger: 'onPhaseEnd',
     effects: [
       // 攻击阶段结束时触发，需要检查本回合是否击杀
@@ -122,6 +127,7 @@ export const GOBLIN_ABILITIES: AbilityDef[] = [
     id: 'climb',
     name: '攀爬',
     description: '当本单位移动时，可以额外移动1个区格，并且可以穿过建筑。',
+    sfxKey: 'fantasy.elemental_sword_earthattack_01',
     trigger: 'onMove',
     effects: [
       { type: 'extraMove', target: 'self', value: 1, canPassThrough: 'structures' },
@@ -136,6 +142,7 @@ export const GOBLIN_ABILITIES: AbilityDef[] = [
     id: 'charge',
     name: '冲锋',
     description: '本单位可以移动1至4个直线视野区格，以代替正常移动。如果本单位移动了至少3个直线区格，则获得战力+1，直到回合结束。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_01',
     trigger: 'onMove',
     effects: [
       // 冲锋替代正常移动：1-4格直线
@@ -152,6 +159,7 @@ export const GOBLIN_ABILITIES: AbilityDef[] = [
     id: 'immobile',
     name: '禁足',
     description: '本单位不能移动。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_02',
     trigger: 'passive',
     effects: [
       // 被动效果：在移动验证时检查
@@ -163,6 +171,7 @@ export const GOBLIN_ABILITIES: AbilityDef[] = [
     id: 'grab',
     name: '抓附',
     description: '当一个友方单位从本单位相邻的区格开始移动时，你可以在本次移动结束之后，将本单位放置到该单位相邻的区格。',
+    sfxKey: 'fantasy.elemental_sword_earthattack_01',
     trigger: 'passive',
     effects: [
       // 被动效果：在友方移动后触发，需要 UI 交互

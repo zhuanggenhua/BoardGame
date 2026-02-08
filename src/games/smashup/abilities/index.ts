@@ -5,6 +5,7 @@
  */
 
 import { registerAlienAbilities } from './aliens';
+import { registerAlienPromptContinuations } from './aliens';
 import { registerPirateAbilities } from './pirates';
 import { registerNinjaAbilities } from './ninjas';
 import { registerDinosaurAbilities } from './dinosaurs';
@@ -18,8 +19,10 @@ import { registerSteampunkAbilities } from './steampunks';
 import { registerKillerPlantAbilities } from './killer_plants';
 import { registerInnsmouthAbilities } from './innsmouth';
 import { registerMiskatonicAbilities } from './miskatonic';
+import { registerMiskatonicPromptContinuations } from './miskatonic';
 import { registerCthulhuAbilities } from './cthulhu';
 import { registerBaseAbilities } from '../domain/baseAbilities';
+import { registerMultiBaseScoringContinuation } from '../domain/index';
 
 let initialized = false;
 
@@ -30,6 +33,7 @@ export function initAllAbilities(): void {
 
     // 基础版 8 派系
     registerAlienAbilities();
+    registerAlienPromptContinuations();
     registerPirateAbilities();
     registerNinjaAbilities();
     registerDinosaurAbilities();
@@ -41,6 +45,9 @@ export function initAllAbilities(): void {
     // 基地能力
     registerBaseAbilities();
 
+    // 多基地计分 Prompt 继续函数
+    registerMultiBaseScoringContinuation();
+
     // 扩展派系
     registerGhostAbilities();
     registerBearCavalryAbilities();
@@ -50,6 +57,7 @@ export function initAllAbilities(): void {
     // 克苏鲁扩展
     registerInnsmouthAbilities();
     registerMiskatonicAbilities();
+    registerMiskatonicPromptContinuations();
     registerCthulhuAbilities();
 
     // TODO: registerElderThingAbilities(); — 几乎全部依赖 Madness 系统

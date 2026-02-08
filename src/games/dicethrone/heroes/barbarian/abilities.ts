@@ -10,7 +10,7 @@ const abilityText = (id: string, field: 'name' | 'description') => `abilities.${
 const abilityEffectText = (id: string, field: string) => `abilities.${id}.effects.${field}`;
 
 const BARBARIAN_SFX_LIGHT = 'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_01_krst';
-const BARBARIAN_SFX_HEAVY = 'combat.general.fight_fury_vol_2.versatile_punch_hit_with_blood.fghtimpt_versatile_punch_hit_with_blood_04_krst';
+const BARBARIAN_SFX_HEAVY = 'combat.general.fight_fury_vol_2.versatile_punch_hit_with_blood.fghtimpt_versatile_punch_hit_with_blood_06_krst';
 const BARBARIAN_SFX_ULTIMATE = 'combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_02_krst';
 
 // 辅助函数

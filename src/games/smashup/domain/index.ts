@@ -33,7 +33,112 @@ import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef } from '../data/cards';
 import { drawCards } from './utils';
+import { countMadnessCards, madnessVpPenalty } from './abilityHelpers';
 import { triggerAllBaseAbilities, triggerBaseAbility } from './baseAbilities';
+import { openMeFirstWindow, setPromptContinuation, buildBaseTargetOptions } from './abilityHelpers';
+import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
+import { registerPromptContinuation } from './promptContinuation';
+
+// ============================================================================
+// 基地记分辅助函数（供 FlowHooks 和 Prompt 继续函数共用）
+// ============================================================================
+
+/**
+ * 对指定基地执行记分逻辑，返回所有相关事件
+ * 
+ * 包含：beforeScoring 基地能力 → 排名计算 → BASE_SCORED → afterScoring 基地能力 → BASE_REPLACED
+ */
+function scoreOneBase(
+    core: SmashUpCore,
+    baseIndex: number,
+    baseDeck: string[],
+    pid: PlayerId,
+    now: number
+): { events: SmashUpEvent[]; newBaseDeck: string[] } {
+    const events: SmashUpEvent[] = [];
+    const base = core.bases[baseIndex];
+    const baseDef = getBaseDef(base.defId)!;
+
+    // 触发 beforeScoring 基地能力
+    const beforeCtx = {
+        state: core,
+        baseIndex,
+        baseDefId: base.defId,
+        playerId: pid,
+        now,
+    };
+    events.push(...triggerBaseAbility(base.defId, 'beforeScoring', beforeCtx));
+
+    // 计算排名
+    const playerPowers = new Map<PlayerId, number>();
+    for (const m of base.minions) {
+        const prev = playerPowers.get(m.controller) ?? 0;
+        playerPowers.set(m.controller, prev + m.basePower + m.powerModifier);
+    }
+    const sorted = Array.from(playerPowers.entries())
+        .filter(([, p]) => p > 0)
+        .sort((a, b) => b[1] - a[1]);
+
+    // Property 16: 平局玩家获得该名次最高 VP
+    const rankings: { playerId: string; power: number; vp: number }[] = [];
+    let rankSlot = 0;
+    for (let i = 0; i < sorted.length; i++) {
+        const [playerId, power] = sorted[i];
+        if (i > 0 && power < sorted[i - 1][1]) {
+            rankSlot = i;
+        }
+        rankings.push({
+            playerId,
+            power,
+            vp: rankSlot < 3 ? baseDef.vpAwards[rankSlot] : 0,
+        });
+    }
+
+    const scoreEvt: BaseScoredEvent = {
+        type: SU_EVENTS.BASE_SCORED,
+        payload: { baseIndex, baseDefId: base.defId, rankings },
+        timestamp: now,
+    };
+    events.push(scoreEvt);
+
+    // 触发 afterScoring 基地能力
+    const afterCtx = {
+        state: core,
+        baseIndex,
+        baseDefId: base.defId,
+        playerId: pid,
+        rankings,
+        now,
+    };
+    events.push(...triggerBaseAbility(base.defId, 'afterScoring', afterCtx));
+
+    // 替换基地
+    let newBaseDeck = baseDeck;
+    if (newBaseDeck.length > 0) {
+        const replaceEvt: BaseReplacedEvent = {
+            type: SU_EVENTS.BASE_REPLACED,
+            payload: {
+                baseIndex,
+                oldBaseDefId: base.defId,
+                newBaseDefId: newBaseDeck[0],
+            },
+            timestamp: now,
+        };
+        events.push(replaceEvt);
+        newBaseDeck = newBaseDeck.slice(1);
+    }
+
+    return { events, newBaseDeck };
+}
+
+/** 注册多基地计分的 Prompt 继续函数 */
+export function registerMultiBaseScoringContinuation(): void {
+    registerPromptContinuation('multi_base_scoring', (ctx) => {
+        const { baseIndex } = ctx.selectedValue as { baseIndex: number };
+        const { events } = scoreOneBase(ctx.state, baseIndex, ctx.state.baseDeck, ctx.playerId, ctx.now);
+        return events;
+    });
+}
 
 // ============================================================================
 // Setup
@@ -107,7 +212,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         return getCurrentPlayerId(state.core);
     },
 
-    onPhaseExit({ state, from }): GameEvent[] {
+    onPhaseExit({ state, from }): GameEvent[] | PhaseExitResult {
         const core = state.core;
         const pid = getCurrentPlayerId(core);
         const now = Date.now();
@@ -122,6 +227,87 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             };
             return [evt];
         }
+
+        if (from === 'scoreBases') {
+            // Me First! 响应完成后，执行实际基地记分
+            const events: GameEvent[] = [];
+
+            // 找出所有达到临界点的基地
+            const eligibleBases: { baseIndex: number; defId: string; totalPower: number }[] = [];
+            for (let i = 0; i < core.bases.length; i++) {
+                const base = core.bases[i];
+                const baseDef = getBaseDef(base.defId);
+                if (!baseDef) continue;
+                const totalPower = getTotalPowerOnBase(base);
+                if (totalPower >= baseDef.breakpoint) {
+                    eligibleBases.push({ baseIndex: i, defId: base.defId, totalPower });
+                }
+            }
+
+            // 无基地达标 → 正常推进
+            if (eligibleBases.length === 0) {
+                return events;
+            }
+
+            // Property 14: 2+ 基地达标 → 通过 PromptSystem 让当前玩家选择计分顺序
+            if (eligibleBases.length >= 2 && !core.pendingPromptContinuation) {
+                const candidates = eligibleBases.map(eb => {
+                    const baseDef = getBaseDef(eb.defId);
+                    return {
+                        baseIndex: eb.baseIndex,
+                        label: `${baseDef?.name ?? `基地 ${eb.baseIndex + 1}`} (力量 ${eb.totalPower}/${baseDef?.breakpoint ?? '?'})`,
+                    };
+                });
+
+                const promptEvents: GameEvent[] = [
+                    setPromptContinuation(
+                        {
+                            abilityId: 'multi_base_scoring',
+                            playerId: pid,
+                            data: {
+                                promptConfig: {
+                                    title: '选择先记分的基地',
+                                    options: buildBaseTargetOptions(candidates),
+                                },
+                            },
+                        },
+                        now
+                    ),
+                ];
+
+                // halt=true：不切换阶段，等待 Prompt 解决后再继续
+                return { events: promptEvents, halt: true } as PhaseExitResult;
+            }
+
+            // 1 个基地达标（或 Prompt 已解决后的后续循环）→ 直接记分
+            // Property 15: 循环检查所有达到临界点的基地
+            let remainingBaseIndices = core.bases.map((_, index) => index);
+            let currentBaseDeck = core.baseDeck;
+
+            const maxIterations = remainingBaseIndices.length;
+            for (let iter = 0; iter < maxIterations; iter++) {
+                let foundIndex: number | null = null;
+                for (const baseIndex of remainingBaseIndices) {
+                    const base = core.bases[baseIndex];
+                    const baseDef = getBaseDef(base.defId);
+                    if (!baseDef) continue;
+                    const totalPower = getTotalPowerOnBase(base);
+                    if (totalPower >= baseDef.breakpoint) {
+                        foundIndex = baseIndex;
+                        break;
+                    }
+                }
+                if (foundIndex === null) break;
+
+                const result = scoreOneBase(core, foundIndex, currentBaseDeck, pid, now);
+                events.push(...result.events);
+                currentBaseDeck = result.newBaseDeck;
+                remainingBaseIndices = remainingBaseIndices.filter((index) => index !== foundIndex);
+            }
+
+            return events;
+        }
+
         return [];
     },
 
@@ -157,109 +343,11 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (to === 'scoreBases') {
-            // Property 15: 循环检查所有达到临界点的基地
-            // 每次记分后重新检查（因为 afterScoring 能力可能改变状态）
-            let currentBases = core.bases;
-            let currentBaseDeck = core.baseDeck;
-            let scoredCount = 0;
-
-            // 最多循环基地数量次（防止无限循环）
-            const maxIterations = core.bases.length;
-            for (let iter = 0; iter < maxIterations; iter++) {
-                let foundIndex = -1;
-                for (let i = 0; i < currentBases.length; i++) {
-                    const base = currentBases[i];
-                    const baseDef = getBaseDef(base.defId);
-                    if (!baseDef) continue;
-                    const totalPower = getTotalPowerOnBase(base);
-                    if (totalPower >= baseDef.breakpoint) {
-                        foundIndex = i;
-                        break;
-                        // TODO Property 14: 多基地同时达标时，通过 PromptSystem 让玩家选择顺序
-                    }
-                }
-                if (foundIndex === -1) break; // 无基地达标，退出循环
-
-                const base = currentBases[foundIndex];
-                const baseDef = getBaseDef(base.defId)!;
-
-                // 触发 beforeScoring 基地能力
-                const beforeCtx = {
-                    state: core,
-                    baseIndex: foundIndex,
-                    baseDefId: base.defId,
-                    playerId: pid,
-                    now,
-                };
-                const bsEvents = triggerBaseAbility(base.defId, 'beforeScoring', beforeCtx);
-                events.push(...bsEvents);
-
-                // 计算排名
-                const playerPowers = new Map<PlayerId, number>();
-                for (const m of base.minions) {
-                    const prev = playerPowers.get(m.controller) ?? 0;
-                    playerPowers.set(m.controller, prev + m.basePower + m.powerModifier);
-                }
-                const sorted = Array.from(playerPowers.entries())
-                    .filter(([, p]) => p > 0)
-                    .sort((a, b) => b[1] - a[1]);
-
-                // Property 16: 平局玩家获得该名次最高 VP
-                // 例：两人并列第一 → 都拿第一名 VP，第三名拿第三名 VP
-                const rankings: { playerId: string; power: number; vp: number }[] = [];
-                let rankSlot = 0; // 当前名次槽位（0=第一名, 1=第二名, 2=第三名）
-                for (let i = 0; i < sorted.length; i++) {
-                    const [playerId, power] = sorted[i];
-                    // 如果不是第一个且力量与前一个不同，推进名次槽位
-                    if (i > 0 && power < sorted[i - 1][1]) {
-                        rankSlot = i; // 跳过被平局占用的名次
-                    }
-                    rankings.push({
-                        playerId,
-                        power,
-                        vp: rankSlot < 3 ? baseDef.vpAwards[rankSlot] : 0,
-                    });
-                }
-
-                const scoreEvt: BaseScoredEvent = {
-                    type: SU_EVENTS.BASE_SCORED,
-                    payload: { baseIndex: foundIndex, baseDefId: base.defId, rankings },
-                    timestamp: now,
-                };
-                events.push(scoreEvt);
-
-                // 触发 afterScoring 基地能力
-                const afterCtx = {
-                    state: core,
-                    baseIndex: foundIndex,
-                    baseDefId: base.defId,
-                    playerId: pid,
-                    rankings,
-                    now,
-                };
-                const asEvents = triggerBaseAbility(base.defId, 'afterScoring', afterCtx);
-                events.push(...asEvents);
-
-                // 替换基地
-                if (currentBaseDeck.length > 0) {
-                    const replaceEvt: BaseReplacedEvent = {
-                        type: SU_EVENTS.BASE_REPLACED,
-                        payload: {
-                            baseIndex: foundIndex,
-                            oldBaseDefId: base.defId,
-                            newBaseDefId: currentBaseDeck[0],
-                        },
-                        timestamp: now,
-                    };
-                    events.push(replaceEvt);
-                    // 更新本地追踪（reducer 会处理实际状态）
-                    currentBaseDeck = currentBaseDeck.slice(1);
-                }
-
-                // 从本地追踪中移除已记分基地（用于循环检查）
-                currentBases = currentBases.filter((_, i) => i !== foundIndex);
-                scoredCount++;
-            }
+            // Step 1: 打开 Me First! 响应窗口，等待所有玩家响应
+            // 实际记分在 onPhaseExit('scoreBases') 中执行
+            const meFirstEvt = openMeFirstWindow('scoreBases', pid, core.turnOrder, now);
+            events.push(meFirstEvt);
+            return events;
         }
 
         if (to === 'draw') {
@@ -306,8 +394,21 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             return { autoContinue: true, playerId: pid };
         }
 
-        // scoreBases 自动推进到 draw
+        // scoreBases 自动推进：
+        // Me First! 响应窗口打开时不推进（由 ResponseWindowSystem 阻塞命令）
+        // 响应窗口关闭后，自动推进到 draw（记分在 onPhaseExit 中执行）
         if (phase === 'scoreBases') {
+            // 检查响应窗口是否仍然打开
+            const responseWindow = state.sys.responseWindow?.current;
+            if (responseWindow) {
+                // 响应窗口仍然打开，不自动推进
+                return undefined;
+            }
+            // Property 14: 有待处理的 Prompt 时不自动推进（等待玩家选择计分顺序）
+            if (state.sys.prompt.current || core.pendingPromptContinuation) {
+                return undefined;
+            }
+            // 响应窗口已关闭且无 Prompt，自动推进
             return { autoContinue: true, playerId: pid };
         }
 
@@ -354,17 +455,20 @@ function playerView(state: SmashUpCore, playerId: PlayerId): Partial<SmashUpCore
 function isGameOver(state: SmashUpCore): GameOverResult | undefined {
     if (state.gameResult) return state.gameResult;
 
-    // 回合结束时检查：有玩家 >= 15 VP
+    // 回合结束时检查：有玩家 >= 15 VP（原始 VP，惩罚在最终分数中体现）
     const winners = state.turnOrder.filter(pid => state.players[pid]?.vp >= VP_TO_WIN);
     if (winners.length === 0) return undefined;
 
+    // 计算含疯狂卡惩罚的最终分数
+    const scores = getScores(state);
+
     if (winners.length === 1) {
-        return { winner: winners[0], scores: getScores(state) };
+        return { winner: winners[0], scores };
     }
-    // 多人达标：VP 最高者胜
-    const sorted = winners.sort((a, b) => state.players[b].vp - state.players[a].vp);
-    if (state.players[sorted[0]].vp > state.players[sorted[1]].vp) {
-        return { winner: sorted[0], scores: getScores(state) };
+    // 多人达标：最终分数最高者胜
+    const sorted = winners.sort((a, b) => scores[b] - scores[a]);
+    if (scores[sorted[0]] > scores[sorted[1]]) {
+        return { winner: sorted[0], scores };
     }
     // 平局：继续游戏（规则：平局继续直到打破）
     return undefined;
@@ -373,7 +477,14 @@ function isGameOver(state: SmashUpCore): GameOverResult | undefined {
 function getScores(state: SmashUpCore): Record<PlayerId, number> {
     const scores: Record<PlayerId, number> = {};
     for (const pid of state.turnOrder) {
-        scores[pid] = state.players[pid]?.vp ?? 0;
+        const player = state.players[pid];
+        if (!player) continue;
+        let vp = player.vp;
+        // P19: 疯狂卡 VP 惩罚（每 2 张扣 1 VP）
+        if (state.madnessDeck !== undefined) {
+            vp -= madnessVpPenalty(countMadnessCards(player));
+        }
+        scores[pid] = vp;
     }
     return scores;
 }

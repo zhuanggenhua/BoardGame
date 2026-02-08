@@ -2,9 +2,28 @@
   "mcpServers": {
     "image-viewer": {
       "command": "node",
-      "args": ["scripts/image-viewer-mcp/server.js"],
+      "args": [
+        "scripts/image-viewer-mcp/server.js"
+      ],
       "disabled": false,
-      "autoApprove": ["view_image", "list_images", "image_info"]
+      "autoApprove": [
+        "view_image",
+        "list_images",
+        "image_info"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "resolve-library-id",
+        "get-library-docs",
+        "query-docs"
+      ]
     }
   }
 }

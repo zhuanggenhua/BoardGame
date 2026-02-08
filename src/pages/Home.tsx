@@ -21,6 +21,7 @@ import clsx from 'clsx';
 import { LobbyClient } from 'boardgame.io/client';
 import { GAME_SERVER_URL } from '../config/server';
 import { SEO } from '../components/common/SEO';
+import { useLobbyStats } from '../hooks/useLobbyStats';
 
 const lobbyClient = new LobbyClient({ server: GAME_SERVER_URL });
 
@@ -40,6 +41,9 @@ export const Home = () => {
         credentials: string;
         isHost: boolean;
     } | null>(null);
+
+    // Monitoring & Stats
+    const { mostPopularGameId } = useLobbyStats();
 
     const { user, token, logout } = useAuth();
     const { openModal, closeModal } = useModalStack();
@@ -91,6 +95,10 @@ export const Home = () => {
         }
         if (id === 'fxpreview') {
             navigate('/dev/fx');
+            return;
+        }
+        if (id === 'audiobrowser') {
+            navigate('/dev/audio');
             return;
         }
         if (id === 'ugcbuilder') {
@@ -328,7 +336,8 @@ export const Home = () => {
                 else return;
 
                 const playerName = user?.username || getGuestName();
-                const { success } = await rejoinMatch(gameId, activeMatch.matchID, targetPlayerID, playerName);
+                const guestId = user?.id ? undefined : getGuestId();
+                const { success } = await rejoinMatch(gameId, activeMatch.matchID, targetPlayerID, playerName, { guestId });
                 if (success) {
                     navigate(`/play/${gameId}/match/${activeMatch.matchID}?playerID=${targetPlayerID}`);
                 }
@@ -490,7 +499,7 @@ export const Home = () => {
 
                 {/* 游戏列表 */}
                 <section className="w-full pb-20">
-                    <GameList games={filteredGames} onGameClick={handleGameClick} />
+                    <GameList games={filteredGames} onGameClick={handleGameClick} mostPopularGameId={mostPopularGameId} />
                 </section>
             </main>
 

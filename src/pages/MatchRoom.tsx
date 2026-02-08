@@ -183,6 +183,14 @@ export const MatchRoom = () => {
         }
         autoJoinStartedRef.current = true;
 
+        let cancelled = false;
+        let retryTimer: number | undefined;
+        const safeSetIsAutoJoining = (value: boolean) => {
+            if (!cancelled) {
+                setIsAutoJoining(value);
+            }
+        };
+
         // 如果已有凭据，直接使用
         const stored = localStorage.getItem(`match_creds_${matchId}`);
         if (stored) {
@@ -204,7 +212,7 @@ export const MatchRoom = () => {
             }
         }
 
-        setIsAutoJoining(true);
+        safeSetIsAutoJoining(true);
         const guestId = getOrCreateGuestId();
         const playerName = t('player.guest', { id: guestId, ns: 'lobby' });
 
@@ -213,26 +221,40 @@ export const MatchRoom = () => {
         let retryCount = 0;
         const maxRetries = 5;
 
+        const scheduleRetry = (delay: number) => {
+            if (retryTimer !== undefined) {
+                window.clearTimeout(retryTimer);
+            }
+            retryTimer = window.setTimeout(() => {
+                if (!cancelled) {
+                    void tryJoin();
+                }
+            }, delay);
+        };
+
         const tryJoin = async () => {
+            if (cancelled) return;
             try {
                 const matchInfo = await lobbyClient.getMatch(gameId, matchId);
+                if (cancelled) return;
                 const openSeat = [...matchInfo.players]
                     .sort((a, b) => a.id - b.id)
                     .find(p => !p.name);
                 // 找一个空位
                 if (!openSeat) {
-                    setIsAutoJoining(false);
+                    safeSetIsAutoJoining(false);
                     return;
                 }
                 const targetPlayerID = String(openSeat.id);
-                const { success } = await rejoinMatch(gameId, matchId, targetPlayerID, playerName);
+                const { success } = await rejoinMatch(gameId, matchId, targetPlayerID, playerName, { guestId });
+                if (cancelled) return;
                 if (success) {
                     window.location.href = `/play/${gameId}/match/${matchId}?playerID=${targetPlayerID}`;
                 } else {
                     // 加入失败，重试
                     retryCount++;
                     if (retryCount < maxRetries) {
-                        setTimeout(tryJoin, 500);
+                        scheduleRetry(500);
                     } else {
                         // 最后再检查一次是否已有凭据
                         const finalStored = localStorage.getItem(`match_creds_${matchId}`);
@@ -245,14 +267,15 @@ export const MatchRoom = () => {
                                 }
                             } catch { }
                         }
-                        setIsAutoJoining(false);
+                        safeSetIsAutoJoining(false);
                     }
                 }
             } catch (err) {
+                if (cancelled) return;
                 // 出错也重试
                 retryCount++;
                 if (retryCount < maxRetries) {
-                    setTimeout(tryJoin, 500);
+                    scheduleRetry(500);
                 } else {
                     // 最后再检查一次是否已有凭据
                     const finalStored = localStorage.getItem(`match_creds_${matchId}`);
@@ -265,13 +288,20 @@ export const MatchRoom = () => {
                             }
                         } catch { }
                     }
-                    setIsAutoJoining(false);
+                    safeSetIsAutoJoining(false);
                 }
             }
         };
 
         // 延迟 1 秒，等待房主完全加入
-        setTimeout(tryJoin, 1000);
+        scheduleRetry(1000);
+
+        return () => {
+            cancelled = true;
+            if (retryTimer !== undefined) {
+                window.clearTimeout(retryTimer);
+            }
+        };
     }, [shouldAutoJoin, gameId, matchId, isTutorialRoute, isAutoJoining, t]);
 
     // 获取凭据
@@ -347,6 +377,7 @@ export const MatchRoom = () => {
         if (!isActive && !tutorialStartedRef.current) {
             const impl = gameId ? GAME_IMPLEMENTATIONS[gameId] : null;
             if (impl?.tutorial) {
+                console.warn(`[MatchRoom] startTutorial triggered isActive=${isActive} tutorialStarted=${tutorialStartedRef.current}`);
                 // 延迟启动教程，等待 boardgame.io 客户端完全初始化
                 const timer = setTimeout(() => {
                     startTutorial(impl.tutorial!);
@@ -375,12 +406,16 @@ export const MatchRoom = () => {
         if (!tutorialStartedRef.current) return;
 
         // 教程模式下，部分游戏会在初始化/重置时短暂触发 tutorial.active=false。
-        // 这里避免把“瞬间失活”误判为“教程已结束”，导致刚进入就 navigate(-1) 退回首页。
+        // 这里避免把"瞬间失活"误判为"教程已结束"，导致刚进入就 navigate(-1) 退回首页。
         if (!isActive) {
+            console.warn(
+                `[MatchRoom] tutorial inactive detected lastStepId=${lastTutorialStepIdRef.current} isTutorialRoute=${isTutorialRoute}`
+            );
             const timer = window.setTimeout(() => {
                 if (!tutorialStartedRef.current) return;
                 // 二次确认仍未激活，且已进入完成步骤时才认为教程结束并返回。
                 if (!isActive && lastTutorialStepIdRef.current === 'finish') {
+                    console.warn('[MatchRoom] navigate(-1) triggered from finish step');
                     // 返回上一个路由（通常是带游戏参数的首页，会自动打开详情弹窗）
                     navigate(-1);
                 }
@@ -546,6 +581,7 @@ export const MatchRoom = () => {
     // 如果房间不存在，显示错误并自动跳转
     useEffect(() => {
         if (shouldShowMatchError) {
+            console.warn(`[MatchRoom] shouldShowMatchError triggered navigate('/') isTutorialRoute=${isTutorialRoute}`);
             const timer = setTimeout(() => {
                 navigate('/');
             }, 2500); // 2.5 秒后自动跳转
@@ -646,7 +682,7 @@ export const MatchRoom = () => {
             )}
 
             {/* 游戏棋盘 - 全屏 */}
-            <div className="w-full h-full">
+            <div className={`w-full h-full ${isUgcGame ? 'ugc-preview-container' : ''}`}>
                 {isTutorialRoute ? (
                     <GameModeProvider mode="tutorial">
                         {TutorialClient ? <TutorialClient playerID={tutorialPlayerID} /> : (

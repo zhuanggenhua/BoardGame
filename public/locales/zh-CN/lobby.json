@@ -26,6 +26,10 @@
     "leave": {
       "title": "离开房间",
       "description": "确定要离开房间吗？"
+    },
+    "exitActiveMatch": {
+      "title": "退出当前对局",
+      "description": "你正在进行对局，确认退出并加入新的房间吗？"
     }
   },
   "actions": {
@@ -56,6 +60,8 @@
     "matchTitle": "对局 #{{id}}",
     "mine": "我的",
     "emptySlot": "空位",
+    "ownerMustReconnect": "这是您创建的房间，请重连进入",
+    "ownerRejoinOnly": "空房间仅房主可重连",
     "inAnotherMatch": "您当前已在另一场对局中",
     "inProgress": "对局中",
     "full": "已满"
@@ -99,8 +105,13 @@
       "players": "单人工具"
     },
     "fxpreview": {
-      "title": "特效音频预览",
-      "description": "预览所有通用动画特效（飞行粒子、震动、钝帧、斜切、爆发粒子）和音频资源。",
+      "title": "特效预览",
+      "description": "预览所有通用动画特效（飞行粒子、震动、钝帧、斜切、爆发粒子）。",
+      "players": "单人工具"
+    },
+    "audiobrowser": {
+      "title": "音效浏览器",
+      "description": "按分类浏览和试听所有通用音频资源，支持关键词搜索和分类筛选。",
       "players": "单人工具"
     },
     "ugcbuilder": {
@@ -151,6 +162,7 @@
     "leaveForbidden": "无法离开房间：凭证无效或已失效，请重新进入房间后再试。",
     "leaveNetwork": "离开房间失败：网络或服务异常，请稍后重试。",
     "roomFull": "房间已满",
+    "ownerClaimFailed": "无法重连该房间：身份或凭证异常，请刷新或重新登录后再试。",
     "joinRoomFailed": "加入房间失败",
     "actionFailed": "操作失败，请稍后重试。",
     "serviceUnavailable": {

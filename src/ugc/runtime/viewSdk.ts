@@ -66,6 +66,7 @@ export class UGCViewSdk {
     private isInitialized: boolean = false;
     private currentPlayerId: PlayerId = '';
     private state: UGCGameState | null = null;
+    private readyTimer: number | null = null;
 
     constructor(config: ViewSdkConfig = {}) {
         this.config = config;
@@ -76,11 +77,13 @@ export class UGCViewSdk {
     start(): void {
         window.addEventListener('message', this.messageHandler);
         this.sendReady();
+        this.startReadyPing();
     }
 
     /** 停止 SDK */
     stop(): void {
         window.removeEventListener('message', this.messageHandler);
+        this.stopReadyPing();
         this.pendingCommands.clear();
         this.isInitialized = false;
     }
@@ -206,6 +209,23 @@ export class UGCViewSdk {
         this.postMessage(message);
     }
 
+    private startReadyPing(): void {
+        if (this.readyTimer) return;
+        this.readyTimer = window.setInterval(() => {
+            if (this.isInitialized) {
+                this.stopReadyPing();
+                return;
+            }
+            this.sendReady();
+        }, 600);
+    }
+
+    private stopReadyPing(): void {
+        if (this.readyTimer === null) return;
+        window.clearInterval(this.readyTimer);
+        this.readyTimer = null;
+    }
+
     /** 处理收到的消息 */
     private handleMessage(event: MessageEvent): void {
         const message = event.data as HostMessage;
@@ -233,6 +253,7 @@ export class UGCViewSdk {
     /** 处理初始化 */
     private handleInit(message: HostInitMessage): void {
         this.isInitialized = true;
+        this.stopReadyPing();
         this.currentPlayerId = message.payload.currentPlayerId;
         this.state = message.payload.state;
 

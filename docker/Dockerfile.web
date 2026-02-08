@@ -6,6 +6,11 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+
+# 前端构建时注入的环境变量（Vite 在编译期内联 VITE_ 前缀变量）
+ARG VITE_SENTRY_DSN=""
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+
 RUN npm run build
 
 FROM nginx:1.27-alpine

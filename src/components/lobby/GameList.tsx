@@ -1,13 +1,15 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { Flame } from 'lucide-react';
 import type { GameConfig } from '../../config/games.config';
 
 interface GameListProps {
     games: GameConfig[];
     onGameClick: (id: string) => void;
+    mostPopularGameId?: string | null;
 }
 
-export const GameList = ({ games, onGameClick }: GameListProps) => {
+export const GameList = ({ games, onGameClick, mostPopularGameId }: GameListProps) => {
     const { t, i18n } = useTranslation(['lobby', 'common']);
     return (
         <div className="grid grid-cols-[repeat(auto-fill,180px)] justify-center gap-5 w-full max-w-full mx-auto">
@@ -54,6 +56,13 @@ export const GameList = ({ games, onGameClick }: GameListProps) => {
                             )}
                         </div>
                     </div>
+
+                    {/* Popularity Badge */}
+                    {mostPopularGameId && mostPopularGameId.toLowerCase() === game.id.toLowerCase() && (
+                        <div className="absolute top-2 right-2 z-10 bg-red-500 text-white p-1 rounded-full shadow-lg animate-pulse">
+                            <Flame size={14} fill="currentColor" />
+                        </div>
+                    )}
 
                     {/* 内容 - 极紧凑垂直结构 */}
                     <div className="flex flex-col flex-1 justify-between">

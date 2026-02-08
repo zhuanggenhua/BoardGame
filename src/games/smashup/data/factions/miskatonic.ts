@@ -52,7 +52,7 @@ export const MISKATONIC_MINIONS: MinionCardDef[] = [
         abilityTextEn: 'Special: If you would draw a Madness card, you may instead place it in any player’s hand.',
         abilityTags: ['special'],
         count: 4,
-        previewRef: { type: 'atlas', atlasId: 'smashup:cards2', index: 0 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 0 },
     },
 ];
 

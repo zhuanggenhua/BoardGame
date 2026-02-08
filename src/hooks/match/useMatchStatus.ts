@@ -466,12 +466,14 @@ export async function rejoinMatch(
     gameName: string,
     matchID: string,
     playerID: string,
-    playerName: string
+    playerName: string,
+    options?: { guestId?: string }
 ): Promise<{ success: boolean; credentials?: string }> {
     try {
         const { playerCredentials } = await lobbyClient.joinMatch(gameName, matchID, {
             playerID,
             playerName,
+            data: options?.guestId ? { guestId: options.guestId } : undefined,
         });
 
         // 保存新凭证

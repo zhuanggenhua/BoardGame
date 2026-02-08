@@ -23,7 +23,7 @@ export default function UserCompositionChart({ totalUsers, activeUsers, bannedUs
             </div>
 
             <div className="flex-1 w-full min-h-0 relative">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={280}>
                     <PieChart>
                         <Pie
                             data={data}

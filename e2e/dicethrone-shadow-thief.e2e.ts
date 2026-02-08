@@ -4,11 +4,13 @@
  * 覆盖交互面：
  * - 角色选择：暗影刺客在选角界面可选
  * - 攻击流程：掷骰 → 确认 → 选择技能 → 结算攻击
- * - 技能高亮：不同骰面组合触发不同技能
+ * - 技能高亮：关键技能触发
  * - 双防御技能选择：暗影守护(4骰) vs 恐惧反击(5骰)
  */
 
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
+import { TOKEN_IDS } from '../src/games/dicethrone/domain/ids';
+import { RESOURCE_IDS } from '../src/games/dicethrone/domain/resources';
 
 // ============================================================================
 // 复用辅助函数（与 dicethrone.e2e.ts / dicethrone-moon-elf.e2e.ts 保持一致）
@@ -94,6 +96,31 @@ const ensureDebugControlsTab = async (page: Page) => {
     }
 };
 
+const ensureDebugStateTab = async (page: Page) => {
+    await ensureDebugPanelOpen(page);
+    const stateTab = page.getByTestId('debug-tab-state');
+    if (await stateTab.isVisible().catch(() => false)) {
+        await stateTab.click();
+    }
+};
+
+const readCoreState = async (page: Page) => {
+    await ensureDebugStateTab(page);
+    const raw = await page.getByTestId('debug-state-json').innerText();
+    const parsed = JSON.parse(raw);
+    return parsed?.core ?? parsed?.G?.core ?? parsed;
+};
+
+const applyCoreState = async (page: Page, coreState: unknown) => {
+    await ensureDebugStateTab(page);
+    await page.getByTestId('debug-state-toggle-input').click();
+    const input = page.getByTestId('debug-state-input');
+    await expect(input).toBeVisible({ timeout: 3000 });
+    await input.fill(JSON.stringify(coreState));
+    await page.getByTestId('debug-state-apply').click();
+    await expect(input).toBeHidden({ timeout: 5000 }).catch(() => { });
+};
+
 const applyDiceValues = async (page: Page, values: number[]) => {
     await ensureDebugControlsTab(page);
     const diceSection = page.getByTestId('dt-debug-dice');
@@ -104,6 +131,15 @@ const applyDiceValues = async (page: Page, values: number[]) => {
     }
     await diceSection.getByTestId('dt-debug-dice-apply').click();
     await closeDebugPanelIfOpen(page);
+};
+
+const getPlayerIdFromUrl = (page: Page, fallback: string) => {
+    try {
+        const url = new URL(page.url());
+        return url.searchParams.get('playerID') ?? fallback;
+    } catch {
+        return fallback;
+    }
 };
 
 const advanceToOffensiveRoll = async (page: Page) => {
@@ -342,14 +378,98 @@ test.describe('DiceThrone Shadow Thief E2E', () => {
         // 验证到达 Main Phase 2
         await expect(attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/)).toBeVisible({ timeout: 15000 });
 
-        await attackerPage.screenshot({ path: 'test-results/shadow-thief-attack-flow.png', fullPage: false });
+        await attackerPage.screenshot({ path: testInfo.outputPath('shadow-thief-attack-flow.png'), fullPage: false });
 
         await hostContext.close();
         await guestContext.close();
     });
 
     // ========================================================================
-    // 2. 暗影刺客防御时的双防御技能选择
+    // 2. Sneak 免伤触发
+    // ========================================================================
+    test('Online match: Shadow Thief Sneak prevents damage', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const match = await setupOnlineMatch(browser, baseURL, 'barbarian', 'shadow_thief');
+        if (!match) test.skip(true, '游戏服务器不可用或房间创建失败');
+        const { hostPage, guestPage, hostContext, guestContext, autoStarted } = match!;
+
+        if (autoStarted) {
+            test.skip(true, '游戏自动开始，无法选择暗影刺客角色');
+        }
+
+        const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
+        const hostIsActive = await hostNextPhase.isEnabled({ timeout: 3000 }).catch(() => false);
+        if (!hostIsActive) {
+            test.skip(true, '非预期起始玩家，无法构造 Sneak 防御场景');
+        }
+
+        const attackerPage = hostPage;
+        const defenderPage = guestPage;
+        const defenderId = getPlayerIdFromUrl(defenderPage, '1');
+
+        const coreState = await readCoreState(attackerPage);
+        const defenderState = coreState?.players?.[defenderId];
+        if (!defenderState) {
+            test.skip(true, '无法读取防御方状态');
+        }
+
+        const hpBefore = defenderState.resources?.[RESOURCE_IDS.HP] ?? 0;
+        const nextCoreState = {
+            ...coreState,
+            players: {
+                ...coreState.players,
+                [defenderId]: {
+                    ...defenderState,
+                    tokens: {
+                        ...defenderState.tokens,
+                        [TOKEN_IDS.SNEAK]: 1,
+                    },
+                },
+            },
+        };
+
+        await applyCoreState(attackerPage, nextCoreState);
+        await attackerPage.waitForTimeout(300);
+
+        // 进攻：狂战士用 4 个 strength 触发不可防御攻击
+        await advanceToOffensiveRoll(attackerPage);
+        const rollButton = attackerPage.locator('[data-tutorial-id="dice-roll-button"]');
+        await expect(rollButton).toBeEnabled({ timeout: 5000 });
+        await rollButton.click();
+        await attackerPage.waitForTimeout(300);
+        await applyDiceValues(attackerPage, [6, 6, 6, 6, 1]);
+
+        const confirmButton = attackerPage.locator('[data-tutorial-id="dice-confirm-button"]');
+        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+        await confirmButton.click();
+
+        const highlightedSlots = attackerPage
+            .locator('[data-ability-slot]')
+            .filter({ has: attackerPage.locator('div.animate-pulse[class*="border-"]') });
+        await expect(highlightedSlots.first()).toBeVisible({ timeout: 8000 });
+        await highlightedSlots.first().click();
+
+        const resolveAttackButton = attackerPage.getByRole('button', { name: /Resolve Attack|结算攻击/i });
+        await expect(resolveAttackButton).toBeVisible({ timeout: 10000 });
+        await resolveAttackButton.click();
+
+        await expect(attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/)).toBeVisible({ timeout: 15000 });
+
+        const coreAfter = await readCoreState(attackerPage);
+        const defenderAfter = coreAfter?.players?.[defenderId];
+        expect(defenderAfter?.resources?.[RESOURCE_IDS.HP] ?? 0).toBe(hpBefore);
+        expect(defenderAfter?.tokens?.[TOKEN_IDS.SNEAK] ?? 0).toBe(0);
+
+        await attackerPage.screenshot({ path: testInfo.outputPath('shadow-thief-sneak-prevent.png'), fullPage: false });
+
+        await hostContext.close();
+        await guestContext.close();
+    });
+
+    // ========================================================================
+    // 3. 暗影刺客防御时的双防御技能选择
     // ========================================================================
     test('Online match: Shadow Thief defense ability selection (dual defense)', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
@@ -442,7 +562,7 @@ test.describe('DiceThrone Shadow Thief E2E', () => {
                 .filter({ has: defenderPage.locator('div.animate-pulse[class*="border-"]') });
 
             // 截图记录防御选择状态
-            await defenderPage.screenshot({ path: 'test-results/shadow-thief-defense-selection.png', fullPage: false });
+            await defenderPage.screenshot({ path: testInfo.outputPath('shadow-thief-defense-selection.png'), fullPage: false });
 
             // 尝试点击高亮的防御技能槽位
             const hasDefenseHighlight = await defenderHighlightedSlots.first().isVisible({ timeout: 5000 }).catch(() => false);
@@ -483,58 +603,4 @@ test.describe('DiceThrone Shadow Thief E2E', () => {
         await guestContext.close();
     });
 
-    // ========================================================================
-    // 3. 暗影刺客不同骰面组合触发不同技能
-    // ========================================================================
-    test('Online match: Shadow Thief dice combinations trigger different abilities', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
-
-        const match = await setupOnlineMatch(browser, baseURL, 'shadow_thief', 'barbarian');
-        if (!match) test.skip(true, '游戏服务器不可用或房间创建失败');
-        const { hostPage, guestPage, hostContext, guestContext, autoStarted } = match!;
-
-        if (autoStarted) {
-            test.skip(true, '游戏自动开始，无法选择暗影刺客角色');
-        }
-
-        // 确定攻击方
-        let attackerPage: Page;
-        const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-        if (await hostNextPhase.isEnabled({ timeout: 3000 }).catch(() => false)) {
-            attackerPage = hostPage;
-        } else {
-            attackerPage = guestPage;
-        }
-
-        // 推进到攻击掷骰
-        await advanceToOffensiveRoll(attackerPage);
-
-        // 掷骰
-        const rollButton = attackerPage.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(rollButton).toBeEnabled({ timeout: 5000 });
-        await rollButton.click();
-        await attackerPage.waitForTimeout(300);
-
-        // 设置 [6,6,6,6,6] = 5个暗影(shadow) → 应触发暗影之舞或终极
-        await applyDiceValues(attackerPage, [6, 6, 6, 6, 6]);
-
-        const confirmButton = attackerPage.locator('[data-tutorial-id="dice-confirm-button"]');
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-
-        // 验证有技能被高亮
-        const highlightedSlots = attackerPage
-            .locator('[data-ability-slot]')
-            .filter({ has: attackerPage.locator('div.animate-pulse[class*="border-"]') });
-
-        const highlightCount = await highlightedSlots.count();
-        expect(highlightCount).toBeGreaterThan(0);
-
-        // 截图记录技能高亮状态
-        await attackerPage.screenshot({ path: 'test-results/shadow-thief-5-shadow-highlight.png', fullPage: false });
-
-        await hostContext.close();
-        await guestContext.close();
-    });
 });

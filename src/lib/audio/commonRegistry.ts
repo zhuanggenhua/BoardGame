@@ -68,7 +68,12 @@ export const buildCommonAudioConfig = (registry: AudioRegistryPayload): GameAudi
 
 export const loadCommonAudioRegistry = (): Promise<AudioRegistryPayload> => {
     if (!registryPromise) {
-        registryPromise = fetchJson<AudioRegistryPayload>(assetsPath(COMMON_AUDIO_REGISTRY_URL));
+        registryPromise = fetchJson<AudioRegistryPayload>(assetsPath(COMMON_AUDIO_REGISTRY_URL))
+            .catch((err) => {
+                // 失败时清除缓存，允许下次重试
+                registryPromise = null;
+                throw err;
+            });
     }
     return registryPromise;
 };

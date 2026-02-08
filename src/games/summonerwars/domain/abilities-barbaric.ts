@@ -29,6 +29,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'ancestral_bond',
     name: '祖灵羁绊',
     description: '在本单位移动之后，可以指定其3个区格以内的一个友方单位为目标。将目标充能并且将本单位的所有充能移动到目标上。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_01',
     trigger: 'activated',
     effects: [
       { type: 'custom', actionId: 'ancestral_bond_transfer' },
@@ -48,6 +49,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'power_up',
     name: '力量强化',
     description: '本单位每有1点充能，则获得战力+1，至多为+5。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_02',
     trigger: 'onDamageCalculation',
     effects: [
       {
@@ -68,6 +70,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'prepare',
     name: '预备',
     description: '你可以将本单位充能，以代替本单位的移动。',
+    sfxKey: 'fantasy.elemental_sword_earthattack_01',
     trigger: 'activated',
     effects: [
       { type: 'addCharge', target: 'self', value: 1 },
@@ -78,6 +81,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'rapid_fire',
     name: '连续射击',
     description: '每回合一次，在本单位攻击之后，你可以消耗1点充能以使其进行一次额外的攻击。',
+    sfxKey: 'fantasy.elemental_bow_fireattack_01',
     trigger: 'afterAttack',
     effects: [
       { type: 'custom', actionId: 'rapid_fire_extra_attack' },
@@ -93,6 +97,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'inspire',
     name: '启悟',
     description: '在本单位移动之后，将其相邻的所有友方单位充能。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_01',
     trigger: 'activated',
     effects: [
       { type: 'addCharge', target: 'adjacentAllies', value: 1 },
@@ -103,6 +108,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'withdraw',
     name: '撤退',
     description: '在本单位攻击之后，你可以消耗1点充能或魔力。如果你这样做，则将本单位推拉1至2个区格。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_02',
     trigger: 'afterAttack',
     effects: [
       { type: 'custom', actionId: 'withdraw_push_pull' },
@@ -117,6 +123,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'intimidate',
     name: '威势',
     description: '每回合一次，在本单位攻击一个敌方单位之后，将本单位充能。',
+    sfxKey: 'fantasy.elemental_sword_earthattack_01',
     trigger: 'afterAttack',
     effects: [
       { type: 'addCharge', target: 'self', value: 1 },
@@ -128,6 +135,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'life_up',
     name: '生命强化',
     description: '本单位每有1点充能，则获得生命+1，至多+5。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_01',
     trigger: 'passive',
     effects: [
       {
@@ -146,6 +154,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'speed_up',
     name: '速度强化',
     description: '本单位每有1点充能，则当本单位移动时，可以额外移动1个区格，至多额外移动5个区格。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_02',
     trigger: 'onMove',
     effects: [
       { type: 'custom', actionId: 'speed_up_extra_move' },
@@ -160,6 +169,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'gather_power',
     name: '聚能',
     description: '在召唤本单位之后，将其充能。',
+    sfxKey: 'magic.rock.35.earth_magic_whoosh_01',
     trigger: 'onSummon',
     effects: [
       { type: 'addCharge', target: 'self', value: 1 },
@@ -170,6 +180,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     id: 'spirit_bond',
     name: '祖灵交流',
     description: '在本单位移动之后，将其充能，或者消耗1点充能以将其3个区格以内的一个友方单位充能。',
+    sfxKey: 'fantasy.elemental_sword_earthattack_01',
     trigger: 'activated',
     effects: [
       { type: 'custom', actionId: 'spirit_bond_action' },

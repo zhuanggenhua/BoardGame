@@ -1,0 +1,561 @@
+{
+  "version": 1,
+  "generatedAt": "2026-02-08T01:58:12.698Z",
+  "registrySource": "public/assets/common/audio/registry.json",
+  "scanRoot": "src/games/dicethrone",
+  "total": 69,
+  "entries": [
+    {
+      "key": "bgm.fantasy.fantasy_music_pack_vol.dragon_dance_rt_2.fantasy_vol5_dragon_dance_main",
+      "type": "bgm",
+      "category": {
+        "group": "bgm",
+        "sub": "fantasy"
+      }
+    },
+    {
+      "key": "bgm.fantasy.fantasy_music_pack_vol.shields_and_spears_rt_2.fantasy_vol5_shields_and_spears_main",
+      "type": "bgm",
+      "category": {
+        "group": "bgm",
+        "sub": "fantasy"
+      }
+    },
+    {
+      "key": "card.fx.decks_and_cards_sound_fx_pack.fx_boost_001",
+      "type": "sfx",
+      "category": {
+        "group": "card",
+        "sub": "fx"
+      }
+    },
+    {
+      "key": "card.fx.decks_and_cards_sound_fx_pack.fx_discard_001",
+      "type": "sfx",
+      "category": {
+        "group": "card",
+        "sub": "fx"
+      }
+    },
+    {
+      "key": "card.fx.decks_and_cards_sound_fx_pack.fx_discard_for_gold_001",
+      "type": "sfx",
+      "category": {
+        "group": "card",
+        "sub": "fx"
+      }
+    },
+    {
+      "key": "card.handling.decks_and_cards_sound_fx_pack.card_placing_001",
+      "type": "sfx",
+      "category": {
+        "group": "card",
+        "sub": "handling"
+      }
+    },
+    {
+      "key": "card.handling.decks_and_cards_sound_fx_pack.card_take_001",
+      "type": "sfx",
+      "category": {
+        "group": "card",
+        "sub": "handling"
+      }
+    },
+    {
+      "key": "card.handling.decks_and_cards_sound_fx_pack.cards_scrolling_001",
+      "type": "sfx",
+      "category": {
+        "group": "card",
+        "sub": "handling"
+      }
+    },
+    {
+      "key": "card.handling.decks_and_cards_sound_fx_pack.cards_shuffle_fast_001",
+      "type": "sfx",
+      "category": {
+        "group": "card",
+        "sub": "handling"
+      }
+    },
+    {
+      "key": "combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_01_krst",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_02_krst",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.fight_fury_vol_2.versatile_punch_hit_with_blood.fghtimpt_versatile_punch_hit_with_blood_06_krst",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_01_krst",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.khron_studio_fight_fury_vol_1_assets.knife_stab.weapknif_knife_stab_01",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.body_hit.sfx_body_hit_generic_small_1",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.bow.sfx_weapon_bow_hit_2",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.bow.sfx_weapon_bow_shoot_1",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.kick_punch.sfx_fight_kick_swoosh_1",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.kick_punch.sfx_fight_kick_swoosh_2",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.kick_punch.sfx_fight_punch_swoosh_1",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.kick_punch.sfx_fight_punch_swoosh_2",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.kick_punch.sfx_fight_punch_swoosh_3",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_small_1",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_sword_1",
+      "type": "sfx",
+      "category": {
+        "group": "combat",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "dice.decks_and_cards_sound_fx_pack.dice_handling_001",
+      "type": "sfx",
+      "category": {
+        "group": "dice",
+        "sub": "decks_and_cards_sound_fx_pack"
+      }
+    },
+    {
+      "key": "dice.decks_and_cards_sound_fx_pack.dice_handling_002",
+      "type": "sfx",
+      "category": {
+        "group": "dice",
+        "sub": "decks_and_cards_sound_fx_pack"
+      }
+    },
+    {
+      "key": "dice.decks_and_cards_sound_fx_pack.dice_roll_velvet_001",
+      "type": "sfx",
+      "category": {
+        "group": "dice",
+        "sub": "decks_and_cards_sound_fx_pack"
+      }
+    },
+    {
+      "key": "dice.decks_and_cards_sound_fx_pack.dice_roll_velvet_002",
+      "type": "sfx",
+      "category": {
+        "group": "dice",
+        "sub": "decks_and_cards_sound_fx_pack"
+      }
+    },
+    {
+      "key": "dice.decks_and_cards_sound_fx_pack.few_dice_roll_001",
+      "type": "sfx",
+      "category": {
+        "group": "dice",
+        "sub": "decks_and_cards_sound_fx_pack"
+      }
+    },
+    {
+      "key": "dice.decks_and_cards_sound_fx_pack.single_die_roll_001",
+      "type": "sfx",
+      "category": {
+        "group": "dice",
+        "sub": "decks_and_cards_sound_fx_pack"
+      }
+    },
+    {
+      "key": "fantasy.dark_sword_recharge",
+      "type": "sfx",
+      "category": {
+        "group": "fantasy",
+        "sub": "dark_sword_recharge"
+      }
+    },
+    {
+      "key": "fantasy.magic_sword_recharge_01",
+      "type": "sfx",
+      "category": {
+        "group": "fantasy",
+        "sub": "magic_sword_recharge_01"
+      }
+    },
+    {
+      "key": "fantasy.medieval_fantasy_sound_fx_pack_vol.armor.shield_impact_a",
+      "type": "sfx",
+      "category": {
+        "group": "fantasy",
+        "sub": "medieval_fantasy_sound_fx_pack_vol"
+      }
+    },
+    {
+      "key": "fantasy.medieval_fantasy_sound_fx_pack_vol.weapons.pot_explosion",
+      "type": "sfx",
+      "category": {
+        "group": "fantasy",
+        "sub": "medieval_fantasy_sound_fx_pack_vol"
+      }
+    },
+    {
+      "key": "fantasy.medieval_fantasy_sound_fx_pack_vol.weapons.pot_holy_water",
+      "type": "sfx",
+      "category": {
+        "group": "fantasy",
+        "sub": "medieval_fantasy_sound_fx_pack_vol"
+      }
+    },
+    {
+      "key": "fantasy.medieval_fantasy_sound_fx_pack_vol.weapons.pot_lightning",
+      "type": "sfx",
+      "category": {
+        "group": "fantasy",
+        "sub": "medieval_fantasy_sound_fx_pack_vol"
+      }
+    },
+    {
+      "key": "fantasy.medieval_fantasy_sound_fx_pack_vol.weapons.weapon_power_up_fire",
+      "type": "sfx",
+      "category": {
+        "group": "fantasy",
+        "sub": "medieval_fantasy_sound_fx_pack_vol"
+      }
+    },
+    {
+      "key": "fantasy.medieval_fantasy_sound_fx_pack_vol.weapons.weapon_power_up_lightning",
+      "type": "sfx",
+      "category": {
+        "group": "fantasy",
+        "sub": "medieval_fantasy_sound_fx_pack_vol"
+      }
+    },
+    {
+      "key": "fantasy.shooting_thunder_arrow_noreverb_01",
+      "type": "sfx",
+      "category": {
+        "group": "fantasy",
+        "sub": "shooting_thunder_arrow_noreverb_01"
+      }
+    },
+    {
+      "key": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_celestial_choir_001",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_grace_whisper_001",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.modern_magic_sound_fx_pack_vol.offensive_spells.offensive_spells_shockwave_slam_001",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.dark.shadow_bolt_impact_a",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.blazing_comet",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.combustion",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.fire_whip",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.flame_armor",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.flame_chain_a",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.flame_pillar",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.large_fireball_impact_a",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.medium_fireball_cast_a",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.phoenix_burst",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.fire.small_fireball_cast_a",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.ice.glacial_shield",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.simple_magic_sound_fx_pack_vol.light.heavenly_flame",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.general.spells_variations_vol_1.shadowstrike_beam.magspel_shadowstrike_beam_01_krst",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "magic.water.10.water_shield",
+      "type": "sfx",
+      "category": {
+        "group": "magic",
+        "sub": "water"
+      }
+    },
+    {
+      "key": "status.general.player_status_sound_fx_pack_vol.action_and_interaction.ready_a",
+      "type": "sfx",
+      "category": {
+        "group": "status",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a",
+      "type": "sfx",
+      "category": {
+        "group": "status",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.purged_a",
+      "type": "sfx",
+      "category": {
+        "group": "status",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_lose",
+      "type": "sfx",
+      "category": {
+        "group": "stinger",
+        "sub": "mini_games_sound_effects_and_music_pack"
+      }
+    },
+    {
+      "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_win",
+      "type": "sfx",
+      "category": {
+        "group": "stinger",
+        "sub": "mini_games_sound_effects_and_music_pack"
+      }
+    },
+    {
+      "key": "ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.buttons.tab_switching_button.uiclick_tab_switching_button_01_krst_none",
+      "type": "sfx",
+      "category": {
+        "group": "ui",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none",
+      "type": "sfx",
+      "category": {
+        "group": "ui",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "ui.general.ui_menu_sound_fx_pack_vol.signals.negative.signal_negative_spring_a",
+      "type": "sfx",
+      "category": {
+        "group": "ui",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a",
+      "type": "sfx",
+      "category": {
+        "group": "ui",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_spring_a",
+      "type": "sfx",
+      "category": {
+        "group": "ui",
+        "sub": "general"
+      }
+    },
+    {
+      "key": "ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a",
+      "type": "sfx",
+      "category": {
+        "group": "ui",
+        "sub": "general"
+      }
+    }
+  ]
+}

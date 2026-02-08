@@ -61,7 +61,7 @@ describe('BonusDieOverlay', () => {
         expect(html).toContain('bonusDie.total');
         expect(html).toContain('cursor-pointer');
         expect(html).toContain('bg-purple-600/80');
-        expect(html).toContain('(倒地!)');
+        expect(html).toContain('(bonusDie.knockdownTrigger)');
     });
 
     it('无太极时显示无法重掷提示与继续按钮', () => {

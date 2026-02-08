@@ -147,7 +147,7 @@ export const ImpactContainer: React.FC<ImpactContainerProps> = ({
       style={style}
     >
       <motion.div
-        className="relative"
+        className="relative w-full h-full"
         variants={dynamicShakeVariants}
         animate={isShaking ? 'shake' : 'idle'}
         onClick={onClick}

@@ -101,12 +101,12 @@ export const GameHUD = ({
     const { t, i18n } = useTranslation('game');
     const toast = useToast();
     const { user } = useAuth();
-    
+
     // 从注册表获取游戏特定的卡牌预览函数
     const getCardPreviewRef = useMemo(() => {
         return _gameId ? getCardPreviewGetter(_gameId) : undefined;
     }, [_gameId]);
-    
+
     const locale = i18n.language;
     const { openModal, closeModal } = useModalStack();
     const { unreadTotal, requests } = useSocial();
@@ -635,8 +635,8 @@ export const GameHUD = ({
                                 else undoState.moves[UNDO_COMMANDS.REQUEST_UNDO]();
                             }}
                             className={`w-full py-2 rounded font-bold text-xs transition-colors ${isWaiting
-                                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 hover:bg-amber-500/40'
-                                    : 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
+                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 hover:bg-amber-500/40'
+                                : 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
                                 }`}
                         >
                             {isWaiting ? t('controls.undo.cancel') : t('controls.undo.request')}

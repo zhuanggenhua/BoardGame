@@ -8,7 +8,6 @@
 import type { PlayerId } from '../../../engine/types';
 import type {
     SmashUpCore,
-    SmashUpEvent,
     MinionOnBase,
     LimitModifiedEvent,
     MinionDestroyedEvent,
@@ -196,4 +195,198 @@ export function shuffleHandIntoDeck(
         payload: { playerId, newDeckUids, reason },
         timestamp: now,
     };
+}
+
+// ============================================================================
+// Me First! 响应窗口
+// ============================================================================
+
+import type { GameEvent } from '../../../engine/types';
+import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
+import type { PromptOption as EnginePromptOption } from '../../../engine/types';
+import type { PromptContinuationContext, PromptContinuationEvent } from './types';
+
+// ============================================================================
+// 疯狂牌库操作
+// ============================================================================
+
+import type { MadnessDrawnEvent, MadnessReturnedEvent } from './types';
+import { MADNESS_CARD_DEF_ID, CTHULHU_EXPANSION_FACTIONS } from './types';
+
+/**
+ * 生成抽取疯狂卡事件
+ * 
+ * @param playerId 抽取玩家
+ * @param count 抽取数量
+ * @param state 当前游戏状态（用于检查牌库剩余和生成 UID）
+ * @param reason 触发来源
+ * @param now 时间戳
+ * @returns 事件（如果疯狂牌库为空或不存在则返回 undefined）
+ */
+export function drawMadnessCards(
+    playerId: PlayerId,
+    count: number,
+    state: SmashUpCore,
+    reason: string,
+    now: number
+): MadnessDrawnEvent | undefined {
+    if (!state.madnessDeck || state.madnessDeck.length === 0 || count <= 0) return undefined;
+    const actualCount = Math.min(count, state.madnessDeck.length);
+    // 生成唯一 UID（使用 nextUid 偏移，避免与玩家卡牌冲突）
+    const cardUids: string[] = [];
+    for (let i = 0; i < actualCount; i++) {
+        cardUids.push(`madness_${state.nextUid + i}`);
+    }
+    return {
+        type: SU_EVENTS.MADNESS_DRAWN,
+        payload: { playerId, count: actualCount, cardUids, reason },
+        timestamp: now,
+    };
+}
+
+/**
+ * 生成返回疯狂卡事件
+ * 
+ * @param playerId 返回玩家
+ * @param cardUid 疯狂卡实例 UID
+ * @param reason 触发来源
+ * @param now 时间戳
+ */
+export function returnMadnessCard(
+    playerId: PlayerId,
+    cardUid: string,
+    reason: string,
+    now: number
+): MadnessReturnedEvent {
+    return {
+        type: SU_EVENTS.MADNESS_RETURNED,
+        payload: { playerId, cardUid, reason },
+        timestamp: now,
+    };
+}
+
+/** 检查游戏中是否有克苏鲁扩展派系（需要疯狂牌库） */
+export function hasCthulhuExpansionFaction(players: Record<string, { factions: [string, string] }>): boolean {
+    for (const player of Object.values(players)) {
+        for (const f of player.factions) {
+            if ((CTHULHU_EXPANSION_FACTIONS as readonly string[]).includes(f)) return true;
+        }
+    }
+    return false;
+}
+
+/** 计算玩家持有的疯狂卡数量（手牌+牌库+弃牌堆） */
+export function countMadnessCards(player: { hand: { defId: string }[]; deck: { defId: string }[]; discard: { defId: string }[] }): number {
+    let count = 0;
+    for (const c of player.hand) if (c.defId === MADNESS_CARD_DEF_ID) count++;
+    for (const c of player.deck) if (c.defId === MADNESS_CARD_DEF_ID) count++;
+    for (const c of player.discard) if (c.defId === MADNESS_CARD_DEF_ID) count++;
+    return count;
+}
+
+/** 计算疯狂卡 VP 惩罚（每 2 张扣 1 VP） */
+export function madnessVpPenalty(madnessCount: number): number {
+    return Math.floor(madnessCount / 2);
+}
+
+/**
+ * 生成 Me First! 响应窗口打开事件
+ * 
+ * 规则：从当前玩家开始顺时针轮流，每人可打 1 张特殊牌或让过。
+ * 所有人连续让过时终止。
+ * 
+ * @param triggerContext 触发上下文描述（如 "基地记分前"）
+ * @param currentPlayerId 当前玩家（响应从此玩家开始）
+ * @param turnOrder 玩家回合顺序
+ * @param now 时间戳
+ */
+export function openMeFirstWindow(
+    triggerContext: string,
+    currentPlayerId: PlayerId,
+    turnOrder: PlayerId[],
+    now: number
+): GameEvent {
+    // 构建响应者队列：从当前玩家开始顺时针
+    const startIdx = turnOrder.indexOf(currentPlayerId);
+    const responderQueue: PlayerId[] = [];
+    for (let i = 0; i < turnOrder.length; i++) {
+        responderQueue.push(turnOrder[(startIdx + i) % turnOrder.length]);
+    }
+
+    return {
+        type: RESPONSE_WINDOW_EVENTS.OPENED,
+        payload: {
+            windowId: `meFirst_${triggerContext}_${now}`,
+            responderQueue,
+            windowType: 'meFirst' as const,
+            sourceId: triggerContext,
+        },
+        timestamp: now,
+    };
+}
+
+
+// ============================================================================
+// Prompt 辅助函数（目标选择）
+// ============================================================================
+
+/**
+ * 生成 Prompt 继续上下文设置事件
+ * 
+ * 当能力需要目标选择时，先生成此事件将继续上下文存入 core 状态，
+ * 然后通过 queuePrompt 创建引擎层 Prompt。
+ * Prompt 解决后，FlowHooks 读取 pendingPromptContinuation 并执行继续逻辑。
+ */
+export function setPromptContinuation(
+    continuation: PromptContinuationContext,
+    now: number
+): PromptContinuationEvent {
+    return {
+        type: SU_EVENTS.PROMPT_CONTINUATION,
+        payload: { action: 'set', continuation },
+        timestamp: now,
+    };
+}
+
+/** 生成清除 Prompt 继续上下文事件 */
+export function clearPromptContinuation(
+    now: number
+): PromptContinuationEvent {
+    return {
+        type: SU_EVENTS.PROMPT_CONTINUATION,
+        payload: { action: 'clear' },
+        timestamp: now,
+    };
+}
+
+/**
+ * 构建随从目标选择的 Prompt 选项
+ * 
+ * @param candidates 候选随从列表（含基地索引）
+ * @returns 引擎层 PromptOption 数组
+ */
+export function buildMinionTargetOptions(
+    candidates: { uid: string; defId: string; baseIndex: number; label: string }[]
+): EnginePromptOption<{ minionUid: string; baseIndex: number }>[] {
+    return candidates.map((c, i) => ({
+        id: `minion-${i}`,
+        label: c.label,
+        value: { minionUid: c.uid, baseIndex: c.baseIndex },
+    }));
+}
+
+/**
+ * 构建基地目标选择的 Prompt 选项
+ * 
+ * @param candidates 候选基地列表
+ * @returns 引擎层 PromptOption 数组
+ */
+export function buildBaseTargetOptions(
+    candidates: { baseIndex: number; label: string }[]
+): EnginePromptOption<{ baseIndex: number }>[] {
+    return candidates.map((c, i) => ({
+        id: `base-${i}`,
+        label: c.label,
+        value: { baseIndex: c.baseIndex },
+    }));
 }

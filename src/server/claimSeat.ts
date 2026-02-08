@@ -57,7 +57,13 @@ export const createClaimSeatHandler = ({
         const authHeader = ctx.get('authorization');
         const rawToken = parseBearerToken(authHeader);
         const body = ctx.request.body;
-        const resolvedPlayerID = String(body?.playerID ?? '0');
+        const playerIDInput = body?.playerID;
+        if (playerIDInput === undefined || playerIDInput === null || (typeof playerIDInput === 'string' && !playerIDInput.trim())) {
+            console.warn(`[claim-seat] rejected reason=missing_player_id matchID=${matchID} origin=${origin || ''}`);
+            ctx.throw(400, 'playerID is required');
+            return;
+        }
+        const resolvedPlayerID = String(playerIDInput);
         const requestedName = typeof body?.playerName === 'string' ? body.playerName.trim() : '';
 
         let expectedOwnerKey: string | null = null;

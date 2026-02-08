@@ -638,8 +638,9 @@
     {
       "id": "player-top-left",
       "type": "player-area",
-      "x": 20,
-      "y": 20,
+      "anchor": { "x": 0.5, "y": 0 },
+      "pivot": { "x": 0.5, "y": 0 },
+      "offset": { "x": -392, "y": 20 },
       "width": 200,
       "height": 70,
       "data": {
@@ -656,8 +657,9 @@
     {
       "id": "player-top-right",
       "type": "player-area",
-      "x": 804,
-      "y": 20,
+      "anchor": { "x": 0.5, "y": 0 },
+      "pivot": { "x": 0.5, "y": 0 },
+      "offset": { "x": 392, "y": 20 },
       "width": 200,
       "height": 70,
       "data": {
@@ -674,8 +676,9 @@
     {
       "id": "player-bottom",
       "type": "player-area",
-      "x": 20,
-      "y": 440,
+      "anchor": { "x": 0.5, "y": 0 },
+      "pivot": { "x": 0.5, "y": 0 },
+      "offset": { "x": -392, "y": 440 },
       "width": 200,
       "height": 120,
       "data": {
@@ -692,8 +695,9 @@
     {
       "id": "phase-hud",
       "type": "phase-hud",
-      "x": 220,
-      "y": 90,
+      "anchor": { "x": 0.5, "y": 0 },
+      "pivot": { "x": 0.5, "y": 0 },
+      "offset": { "x": 0, "y": 90 },
       "width": 584,
       "height": 100,
       "data": {
@@ -720,8 +724,9 @@
     {
       "id": "play-zone",
       "type": "play-zone",
-      "x": 220,
-      "y": 290,
+      "anchor": { "x": 0.5, "y": 0 },
+      "pivot": { "x": 0.5, "y": 0 },
+      "offset": { "x": 0, "y": 290 },
       "width": 584,
       "height": 90,
       "data": {
@@ -737,8 +742,9 @@
     {
       "id": "landlord-zone",
       "type": "play-zone",
-      "x": 412,
-      "y": 200,
+      "anchor": { "x": 0.5, "y": 0 },
+      "pivot": { "x": 0.5, "y": 0 },
+      "offset": { "x": 0, "y": 200 },
       "width": 200,
       "height": 80,
       "data": {
@@ -754,8 +760,9 @@
     {
       "id": "hand-bottom",
       "type": "hand-zone",
-      "x": 220,
-      "y": 440,
+      "anchor": { "x": 0.5, "y": 0 },
+      "pivot": { "x": 0.5, "y": 0 },
+      "offset": { "x": 0, "y": 440 },
       "width": 584,
       "height": 120,
       "data": {
@@ -787,8 +794,9 @@
     {
       "id": "action-bar",
       "type": "action-bar",
-      "x": 220,
-      "y": 390,
+      "anchor": { "x": 0.5, "y": 0 },
+      "pivot": { "x": 0.5, "y": 0 },
+      "offset": { "x": 0, "y": 390 },
       "width": 584,
       "height": 50,
       "data": {

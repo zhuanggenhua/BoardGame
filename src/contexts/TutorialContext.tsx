@@ -12,6 +12,13 @@ export type { TutorialManifest } from '../engine/types';
 import { DEFAULT_TUTORIAL_STATE } from '../engine/types';
 import { TUTORIAL_COMMANDS } from '../engine/systems/TutorialSystem';
 
+const isDev = import.meta.env.DEV;
+const warnDev = (...args: unknown[]) => {
+    if (isDev) {
+        console.warn(...args);
+    }
+};
+
 type TutorialNextReason = 'manual' | 'auto';
 
 interface TutorialController {
@@ -199,10 +206,24 @@ export const useTutorial = () => {
 export const useTutorialBridge = (tutorial: TutorialState, moves: Record<string, unknown>) => {
     const context = useContext(TutorialContext);
     const lastSyncSignatureRef = useRef<string | null>(null);
+    const lastActiveRef = useRef<boolean>(tutorial.active);
     useEffect(() => {
         if (!context) return;
         const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${tutorial.steps?.length ?? 0}-${tutorial.aiActions?.length ?? 0}`;
         if (lastSyncSignatureRef.current === signature) return;
+        if (lastSyncSignatureRef.current !== null) {
+            const prev = lastSyncSignatureRef.current.split('-');
+            const curr = signature.split('-');
+            if (prev[1] !== curr[1] || prev[2] !== curr[2]) {
+                warnDev(
+                    `[useTutorialBridge] tutorial state changed from stepIndex=${prev[1]} stepId=${prev[2]} to stepIndex=${curr[1]} stepId=${curr[2]}`
+                );
+            }
+            // 追踪 active 变化
+            if (prev[0] !== curr[0]) {
+                warnDev(`[useTutorialBridge] tutorial active changed from ${prev[0]} to ${curr[0]}`);
+            }
+        }
         lastSyncSignatureRef.current = signature;
         context.syncTutorialState(tutorial);
     }, [context, tutorial]);

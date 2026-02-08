@@ -7,13 +7,19 @@
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { SU_EVENTS } from '../domain/types';
+import { MADNESS_CARD_DEF_ID } from '../domain/types';
 import type {
     SmashUpEvent,
     DeckReshuffledEvent,
     CardsDrawnEvent,
+    VpAwardedEvent,
     MinionCardDef,
 } from '../domain/types';
 import { getCardDef } from '../data/cards';
+import {
+    drawMadnessCards, grantExtraAction, destroyMinion,
+    returnMadnessCard,
+} from '../domain/abilityHelpers';
 
 /** 注册克苏鲁之仆派系所有能力 */
 export function registerCthulhuAbilities(): void {
@@ -23,6 +29,14 @@ export function registerCthulhuAbilities(): void {
     registerAbility('cthulhu_it_begins_again', 'onPlay', cthulhuItBeginsAgain);
     // 克苏鲁的馈赠（行动卡）：从牌库顶找2张行动卡放入手牌
     registerAbility('cthulhu_fhtagn', 'onPlay', cthulhuFhtagn);
+    // 暗中低语（行动卡）：抽1张疯狂卡 + 2个额外行动
+    registerAbility('cthulhu_whispers_in_darkness', 'onPlay', cthulhuWhispersInDarkness);
+    // 封印已破（行动卡）：抽1张疯狂卡 + 1VP
+    registerAbility('cthulhu_seal_is_broken', 'onPlay', cthulhuSealIsBroken);
+    // 腐化（行动卡）：抽1张疯狂卡 + 消灭一个随从（MVP：自动选最弱对手随从）
+    registerAbility('cthulhu_corruption', 'onPlay', cthulhuCorruption);
+    // 疯狂释放（行动卡）：弃任意数量疯狂卡，每张 = 抽1牌 + 额外行动
+    registerAbility('cthulhu_madness_unleashed', 'onPlay', cthulhuMadnessUnleashed);
 }
 
 /** 强制招募 onPlay：将弃牌堆中力量≤3的随从放到牌库顶（MVP：全部放入） */
@@ -132,13 +146,104 @@ function cthulhuFhtagn(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
+/** 暗中低语 onPlay：抽1张疯狂卡 + 获得2个额外行动 */
+function cthulhuWhispersInDarkness(ctx: AbilityContext): AbilityResult {
+    const events: SmashUpEvent[] = [];
+    const madnessEvt = drawMadnessCards(ctx.playerId, 1, ctx.state, 'cthulhu_whispers_in_darkness', ctx.now);
+    if (madnessEvt) events.push(madnessEvt);
+    events.push(grantExtraAction(ctx.playerId, 'cthulhu_whispers_in_darkness', ctx.now));
+    events.push(grantExtraAction(ctx.playerId, 'cthulhu_whispers_in_darkness', ctx.now));
+    return { events };
+}
+
+/** 封印已破 onPlay：抽1张疯狂卡 + 获得1VP */
+function cthulhuSealIsBroken(ctx: AbilityContext): AbilityResult {
+    const events: SmashUpEvent[] = [];
+    const madnessEvt = drawMadnessCards(ctx.playerId, 1, ctx.state, 'cthulhu_seal_is_broken', ctx.now);
+    if (madnessEvt) events.push(madnessEvt);
+    const vpEvt: VpAwardedEvent = {
+        type: SU_EVENTS.VP_AWARDED,
+        payload: { playerId: ctx.playerId, amount: 1, reason: 'cthulhu_seal_is_broken' },
+        timestamp: ctx.now,
+    };
+    events.push(vpEvt);
+    return { events };
+}
+
+/** 腐化 onPlay：抽1张疯狂卡 + 消灭一个随从（MVP：自动选最弱对手随从） */
+function cthulhuCorruption(ctx: AbilityContext): AbilityResult {
+    const events: SmashUpEvent[] = [];
+    const madnessEvt = drawMadnessCards(ctx.playerId, 1, ctx.state, 'cthulhu_corruption', ctx.now);
+    if (madnessEvt) events.push(madnessEvt);
+    // 找最弱的对手随从
+    let weakest: { uid: string; defId: string; baseIndex: number; ownerId: string; power: number } | undefined;
+    for (let i = 0; i < ctx.state.bases.length; i++) {
+        for (const m of ctx.state.bases[i].minions) {
+            if (m.controller === ctx.playerId) continue;
+            const effectivePower = m.basePower + m.powerModifier;
+            if (!weakest || effectivePower < weakest.power) {
+                weakest = { uid: m.uid, defId: m.defId, baseIndex: i, ownerId: m.owner, power: effectivePower };
+            }
+        }
+    }
+    if (weakest) {
+        events.push(destroyMinion(weakest.uid, weakest.defId, weakest.baseIndex, weakest.ownerId, 'cthulhu_corruption', ctx.now));
+    }
+    return { events };
+}
+
+/**
+ * 疯狂释放 onPlay：弃掉手中任意数量的疯狂卡，每张 = 抽1张牌 + 1个额外行动
+ * 
+ * - 无疯狂卡时无效果
+ * - 只有1张疯狂卡时自动弃掉（不创建 Prompt）
+ * - 多张疯狂卡时创建 Prompt 让玩家选择弃几张（MVP：自动弃全部）
+ */
+function cthulhuMadnessUnleashed(ctx: AbilityContext): AbilityResult {
+    const player = ctx.state.players[ctx.playerId];
+    // 排除当前打出的卡，找手中的疯狂卡
+    const madnessInHand = player.hand.filter(
+        c => c.defId === MADNESS_CARD_DEF_ID && c.uid !== ctx.cardUid
+    );
+    if (madnessInHand.length === 0) return { events: [] };
+
+    // MVP：自动弃掉所有疯狂卡（不创建 Prompt）
+    return { events: discardMadnessAndDraw(ctx, madnessInHand.map(c => c.uid)) };
+}
+
+/** 弃疯狂卡并抽牌+额外行动（辅助函数） */
+function discardMadnessAndDraw(
+    ctx: AbilityContext,
+    madnessUids: string[]
+): SmashUpEvent[] {
+    const events: SmashUpEvent[] = [];
+    const player = ctx.state.players[ctx.playerId];
+
+    // 返回疯狂卡到疯狂牌库
+    for (const uid of madnessUids) {
+        events.push(returnMadnessCard(ctx.playerId, uid, 'cthulhu_madness_unleashed', ctx.now));
+    }
+
+    // 每张疯狂卡 = 抽1张牌 + 1个额外行动
+    const drawCount = Math.min(madnessUids.length, player.deck.length);
+    if (drawCount > 0) {
+        const drawnUids = player.deck.slice(0, drawCount).map(c => c.uid);
+        const drawEvt: CardsDrawnEvent = {
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: { playerId: ctx.playerId, count: drawCount, cardUids: drawnUids },
+            timestamp: ctx.now,
+        };
+        events.push(drawEvt);
+    }
+    for (let i = 0; i < madnessUids.length; i++) {
+        events.push(grantExtraAction(ctx.playerId, 'cthulhu_madness_unleashed', ctx.now));
+    }
+    return events;
+}
+
 // TODO: cthulhu_star_spawn (talent) - 转移疯狂卡（需要 Madness + talent 系统）
 // TODO: cthulhu_chosen (special) - 计分前抽疯狂卡+2力量（需要 Madness + beforeScoring）
 // TODO: cthulhu_servitor (talent) - 消灭自身+弃牌堆行动放牌库顶（需要 talent + Prompt）
 // TODO: cthulhu_altar (ongoing) - 打出随从时额外行动（需要 ongoing 触发系统）
 // TODO: cthulhu_complete_the_ritual (ongoing) - 回合开始清场换基地（需要 onTurnStart）
 // TODO: cthulhu_furthering_the_cause (ongoing) - 回合结束时条件获VP（需要 onTurnEnd 触发）
-// TODO: cthulhu_whispers_in_darkness - 疯狂卡+额外行动（需要 Madness）
-// TODO: cthulhu_corruption - 疯狂卡+消灭随从（需要 Madness + Prompt）
-// TODO: cthulhu_madness_unleashed - 弃疯狂卡换抽牌+额外行动（需要 Madness）
-// TODO: cthulhu_seal_is_broken - 疯狂卡+1VP（需要 Madness）

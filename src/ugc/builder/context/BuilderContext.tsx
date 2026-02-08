@@ -60,8 +60,9 @@ export interface BuilderState {
 export interface LayoutComponent {
   id: string;
   type: string;
-  x: number;
-  y: number;
+  anchor: { x: number; y: number };
+  pivot: { x: number; y: number };
+  offset: { x: number; y: number };
   width: number;
   height: number;
   rotation?: number;

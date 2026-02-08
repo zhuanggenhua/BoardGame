@@ -236,7 +236,7 @@ test.describe('SummonerWars 阵营选择流程', () => {
     // 收集控制台日志用于调试
     const hostLogs: string[] = [];
     hostPage.on('console', (msg) => {
-      if (msg.type() === 'log' || msg.type() === 'warn' || msg.type() === 'error') {
+      if (msg.type() === 'log' || msg.type() === 'warning' || msg.type() === 'error') {
         hostLogs.push(`[host][${msg.type()}] ${msg.text()}`);
       }
     });
@@ -263,7 +263,7 @@ test.describe('SummonerWars 阵营选择流程', () => {
     console.log('[test] Host 看到阵营选择界面');
 
     // 截图：初始阵营选择界面
-    await hostPage.screenshot({ path: 'e2e/screenshots/sw-selection-initial.png' });
+    await hostPage.screenshot({ path: testInfo.outputPath('sw-selection-initial.png') });
 
     // ---- 创建 Guest 浏览器上下文 ----
     const guestContext = await browser.newContext({ baseURL });
@@ -276,7 +276,7 @@ test.describe('SummonerWars 阵营选择流程', () => {
 
     const guestLogs: string[] = [];
     guestPage.on('console', (msg) => {
-      if (msg.type() === 'log' || msg.type() === 'warn' || msg.type() === 'error') {
+      if (msg.type() === 'log' || msg.type() === 'warning' || msg.type() === 'error') {
         guestLogs.push(`[guest][${msg.type()}] ${msg.text()}`);
       }
     });
@@ -296,7 +296,7 @@ test.describe('SummonerWars 阵营选择流程', () => {
     await hostPage.waitForTimeout(1000);
 
     // 截图：Host 选择后
-    await hostPage.screenshot({ path: 'e2e/screenshots/sw-selection-host-selected.png' });
+    await hostPage.screenshot({ path: testInfo.outputPath('sw-selection-host-selected.png') });
 
     // 验证 Host 的选择在 Guest 端可见（P1 标记应出现）
     // 等待 P1 标记出现在第一个阵营卡片上
@@ -309,9 +309,9 @@ test.describe('SummonerWars 阵营选择流程', () => {
       // 打印 host 控制台日志帮助调试
       console.log('[test] Host 最近日志:', hostLogs.slice(-20).join('\n'));
       console.log('[test] Guest 最近日志:', guestLogs.slice(-20).join('\n'));
-      
+
       // 截图帮助调试
-      await guestPage.screenshot({ path: 'e2e/screenshots/sw-selection-guest-no-p1.png' });
+      await guestPage.screenshot({ path: testInfo.outputPath('sw-selection-guest-no-p1.png') });
     }
 
     // ---- Guest 选择阵营（第二个：欺心巫族/trickster） ----
@@ -320,7 +320,7 @@ test.describe('SummonerWars 阵营选择流程', () => {
     await guestPage.waitForTimeout(1000);
 
     // 截图：Guest 选择后
-    await guestPage.screenshot({ path: 'e2e/screenshots/sw-selection-guest-selected.png' });
+    await guestPage.screenshot({ path: testInfo.outputPath('sw-selection-guest-selected.png') });
 
     // ---- Guest 点击准备 ----
     console.log('[test] Guest 点击准备...');
@@ -332,7 +332,7 @@ test.describe('SummonerWars 阵营选择流程', () => {
     } catch {
       console.log('[test] 警告：准备按钮未出现');
       console.log('[test] Guest 最近日志:', guestLogs.slice(-20).join('\n'));
-      await guestPage.screenshot({ path: 'e2e/screenshots/sw-selection-no-ready-btn.png' });
+      await guestPage.screenshot({ path: testInfo.outputPath('sw-selection-no-ready-btn.png') });
     }
 
     await hostPage.waitForTimeout(1000);
@@ -349,7 +349,7 @@ test.describe('SummonerWars 阵营选择流程', () => {
     } catch {
       console.log('[test] 警告：开始按钮未出现或不可用');
       console.log('[test] Host 最近日志:', hostLogs.slice(-20).join('\n'));
-      await hostPage.screenshot({ path: 'e2e/screenshots/sw-selection-no-start-btn.png' });
+      await hostPage.screenshot({ path: testInfo.outputPath('sw-selection-no-start-btn.png') });
     }
 
     // ---- 等待游戏 UI 出现 ----
@@ -360,7 +360,7 @@ test.describe('SummonerWars 阵营选择流程', () => {
     } catch {
       console.log('[test] 错误：Host 未进入游戏 UI');
       console.log('[test] Host 最近日志:', hostLogs.slice(-30).join('\n'));
-      await hostPage.screenshot({ path: 'e2e/screenshots/sw-selection-host-stuck.png' });
+      await hostPage.screenshot({ path: testInfo.outputPath('sw-selection-host-stuck.png') });
       throw new Error('Host 未能进入游戏 UI');
     }
 
@@ -370,12 +370,12 @@ test.describe('SummonerWars 阵营选择流程', () => {
     } catch {
       console.log('[test] 错误：Guest 未进入游戏 UI');
       console.log('[test] Guest 最近日志:', guestLogs.slice(-30).join('\n'));
-      await guestPage.screenshot({ path: 'e2e/screenshots/sw-selection-guest-stuck.png' });
+      await guestPage.screenshot({ path: testInfo.outputPath('sw-selection-guest-stuck.png') });
       throw new Error('Guest 未能进入游戏 UI');
     }
 
     // 截图：游戏开始
-    await hostPage.screenshot({ path: 'e2e/screenshots/sw-selection-game-started.png' });
+    await hostPage.screenshot({ path: testInfo.outputPath('sw-selection-game-started.png') });
 
     // ---- 验证基本游戏 UI 元素 ----
     await expect(hostPage.getByTestId('sw-phase-tracker')).toBeVisible();

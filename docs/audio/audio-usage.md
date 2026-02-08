@@ -9,7 +9,7 @@
 
 ## 2. 压缩与生成（强制）
 ### 2.1 压缩音频
-使用脚本：`scripts/compress_audio.js`
+使用脚本：`scripts/audio/compress_audio.js`
 
 示例：
 ```bash
@@ -24,23 +24,73 @@ AUDIO_OGG_BITRATE=96k npm run compress:audio -- public/assets/common/audio
 ```
 
 ### 2.2 生成 registry.json
-使用脚本：`scripts/generate_common_audio_registry.js`
+使用脚本：`scripts/audio/generate_common_audio_registry.js`
 
 ```bash
-node scripts/generate_common_audio_registry.js
+node scripts/audio/generate_common_audio_registry.js
 ```
 
 - 产出：`public/assets/common/audio/registry.json`
 - **注意**：生成脚本会自动忽略 `compressed/` 目录，并基于路径生成 key。
 
 ### 2.3 生成音频清单文档
-使用脚本：`scripts/generate_audio_assets_md.js`
+使用脚本：`scripts/audio/generate_audio_assets_md.js`
 
 ```bash
-node scripts/generate_audio_assets_md.js
+node scripts/audio/generate_audio_assets_md.js
 ```
 
 - 产出：`docs/audio/common-audio-assets.md`
+
+### 2.4 生成 AI 精简 registry（可选）
+用于减少 AI 查找音效时的 token 消耗（不影响运行时）。
+
+**全量精简版（全仓库通用）**
+```bash
+node scripts/audio/generate_ai_audio_registry.js
+```
+- 产出：`docs/audio/registry.ai.json`
+- 内容：仅保留 `key/type/category`，去掉 `src`
+
+**DiceThrone 专用精简版（仅扫描该游戏源码）**
+```bash
+node scripts/audio/generate_ai_audio_registry_dicethrone.js
+```
+- 产出：`docs/audio/registry.ai.dicethrone.json`
+- 内容：仅包含 `src/games/dicethrone` 中实际使用的 key
+
+### 2.5 AI 查找/筛选音效（推荐流程）
+**目标**：在挑选音效时，用最小 token 成本定位合适 key。
+
+**优先级**（从省 token 到最全面）：
+1. `docs/audio/registry.ai.dicethrone.json`（DiceThrone 专用、最小）
+2. `docs/audio/registry.ai.json`（全量精简）
+3. `public/assets/common/audio/registry.json`（全量原始）
+
+**推荐步骤：**
+1. 明确语义关键词（例：`holy`/`divine`/`shadow`/`poison`/`bow`/`hit`/`shield`）。
+2. 先搜 `registry.ai.dicethrone.json`，未命中再搜 `registry.ai.json`。
+3. 选中 key 后，再确认是否存在于 `registry.json`（最终来源）。
+
+**AI 查询示例（grep_search）：**
+```json
+{
+  "SearchPath": "docs/audio/registry.ai.dicethrone.json",
+  "Query": "divine_magic|holy|choir",
+  "CaseSensitive": false,
+  "MatchPerLine": true
+}
+```
+
+**如果未命中，再查全量精简版：**
+```json
+{
+  "SearchPath": "docs/audio/registry.ai.json",
+  "Query": "shadow|stealth|poison|venom",
+  "CaseSensitive": false,
+  "MatchPerLine": true
+}
+```
 
 ## 3. 代码使用规范（强制）
 ### 3.1 使用 registry key

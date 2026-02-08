@@ -276,7 +276,7 @@ node scripts/compress-images.js public/assets/dicethrone/images/monk
 使用 `atlas_grid_scan.js` 脚本自动扫描卡牌边界并生成 `.atlas.json`：
 
 ```bash
-node scripts/atlas_grid_scan.js public/assets/dicethrone/images/monk/ability-cards.png
+node scripts/assets/atlas_grid_scan.js public/assets/dicethrone/images/monk/ability-cards.png
 ```
 
 **输出**：`ability-cards.atlas.json`（需复制到 `compressed/` 目录）

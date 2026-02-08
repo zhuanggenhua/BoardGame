@@ -9,7 +9,61 @@ import type { GameEvent, PlayerId } from '../../../engine/types';
 import type { SummonerWarsCore, GamePhase } from './types';
 import { SW_EVENTS, PHASE_ORDER } from './types';
 import { getSummoner, HAND_SIZE } from './helpers';
-import { triggerAllUnitsAbilities } from './abilityResolver';
+import { triggerAllUnitsAbilities, resolveAbilityEffects } from './abilityResolver';
+import { abilityRegistry } from './abilities';
+
+const PHASE_START_ABILITIES: Record<GamePhase, string[]> = {
+  factionSelect: [],
+  summon: ['guidance'],
+  move: ['illusion'],
+  build: [],
+  attack: ['blood_rune'],
+  magic: [],
+  draw: [],
+};
+
+const PHASE_END_ABILITIES: Record<GamePhase, string[]> = {
+  factionSelect: [],
+  summon: [],
+  move: [],
+  build: ['ice_shards'],
+  attack: ['feed_beast'],
+  magic: [],
+  draw: [],
+};
+
+function triggerPhaseAbilities(
+  core: SummonerWarsCore,
+  playerId: PlayerId,
+  trigger: 'onPhaseStart' | 'onPhaseEnd',
+  abilityIds: string[]
+): GameEvent[] {
+  if (abilityIds.length === 0) return [];
+  const events: GameEvent[] = [];
+  const timestamp = Date.now();
+
+  for (let row = 0; row < core.board.length; row++) {
+    for (let col = 0; col < core.board[row].length; col++) {
+      const unit = core.board[row]?.[col]?.unit;
+      if (!unit || unit.owner !== playerId) continue;
+      const unitAbilityIds = unit.card.abilities ?? [];
+      for (const abilityId of abilityIds) {
+        if (!unitAbilityIds.includes(abilityId)) continue;
+        const def = abilityRegistry.get(abilityId);
+        if (!def || def.trigger !== trigger) continue;
+        events.push(...resolveAbilityEffects(def, {
+          state: core,
+          sourceUnit: unit,
+          sourcePosition: { row, col },
+          ownerId: playerId,
+          timestamp,
+        }));
+      }
+    }
+  }
+
+  return events;
+}
 
 /** 游戏进行阶段顺序映射（不含 factionSelect） */
 const PHASE_INDEX: Record<string, number> = {
@@ -95,6 +149,12 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
       events.push(...triggerAllUnitsAbilities('onTurnEnd', core, playerId));
     }
 
+    // 阶段结束技能触发（按阶段筛选）
+    const phaseEndAbilities = PHASE_END_ABILITIES[from as GamePhase] ?? [];
+    if (phaseEndAbilities.length > 0) {
+      events.push(...triggerPhaseAbilities(core, playerId, 'onPhaseEnd', phaseEndAbilities));
+    }
+
     return { events };
   },
 
@@ -105,10 +165,11 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
     const events: GameEvent[] = [];
     const core = state.core;
     const playerId = core.currentPlayer;
+    const nextPlayer = playerId === '0' ? '1' : '0';
+    const phaseStartPlayer = from === 'draw' && to === 'summon' ? nextPlayer : playerId;
 
     // 从抽牌阶段进入召唤阶段 = 新回合开始
     if (from === 'draw' && to === 'summon') {
-      const nextPlayer = playerId === '0' ? '1' : '0';
       events.push({
         type: SW_EVENTS.TURN_CHANGED,
         payload: { from: playerId, to: nextPlayer },
@@ -139,6 +200,15 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
           timestamp: Date.now(),
         });
       }
+
+      // 新回合开始技能
+      events.push(...triggerAllUnitsAbilities('onTurnStart', core, nextPlayer));
+    }
+
+    // 阶段开始技能触发（按阶段筛选）
+    const phaseStartAbilities = PHASE_START_ABILITIES[to as GamePhase] ?? [];
+    if (phaseStartAbilities.length > 0) {
+      events.push(...triggerPhaseAbilities(core, phaseStartPlayer, 'onPhaseStart', phaseStartAbilities));
     }
 
     return events;

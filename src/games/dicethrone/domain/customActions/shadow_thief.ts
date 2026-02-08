@@ -15,6 +15,9 @@ import type {
     StatusAppliedEvent,
     CardDiscardedEvent,
     DamageShieldGrantedEvent,
+    TokenConsumedEvent,
+    PreventDamageEvent,
+    DamagePreventedEvent,
 } from '../types';
 import { registerCustomActionHandler, type CustomActionContext } from '../effects';
 
@@ -644,20 +647,55 @@ function handleShadowDefense2({ sourceAbilityId, state, timestamp, ctx, attacker
 }
 
 /** 潜行：移除标记并免除伤害 */
-function handleSneakPrevent({ state, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleSneakPrevent({ state, timestamp, targetId, action }: CustomActionContext): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
-    if (state.pendingAttack) {
-        // 记录原始值用于显示
-        const originalDamage = state.pendingAttack.damage ?? 0;
-        state.pendingAttack.damage = 0;
+    const player = state.players[targetId];
+    if (!player) return events;
 
-        events.push({
-            type: 'DAMAGE_PREVENTED',
-            payload: { playerId: state.pendingAttack.defenderId, amount: originalDamage, sourceId: TOKEN_IDS.SNEAK },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp
-        } as any);
+    const params = (action as any).params as { damageAmount?: number; tokenStacks?: number } | undefined;
+    const damageAmount = params?.damageAmount ?? 0;
+    const currentStacks = params?.tokenStacks ?? (player.tokens[TOKEN_IDS.SNEAK] ?? 0);
+
+    if (currentStacks <= 0 || damageAmount <= 0) {
+        return events;
     }
+
+    const newTotal = Math.max(0, currentStacks - 1);
+    events.push({
+        type: 'TOKEN_CONSUMED',
+        payload: {
+            playerId: targetId,
+            tokenId: TOKEN_IDS.SNEAK,
+            amount: 1,
+            newTotal,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as TokenConsumedEvent);
+
+    events.push({
+        type: 'PREVENT_DAMAGE',
+        payload: {
+            targetId,
+            amount: damageAmount,
+            sourceAbilityId: 'shadow_thief-sneak-prevent',
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: timestamp + 1,
+    } as PreventDamageEvent);
+
+    events.push({
+        type: 'DAMAGE_PREVENTED',
+        payload: {
+            targetId,
+            originalDamage: damageAmount,
+            preventedAmount: damageAmount,
+            shieldSourceId: TOKEN_IDS.SNEAK,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: timestamp + 2,
+    } as DamagePreventedEvent);
+
     return events;
 }
 

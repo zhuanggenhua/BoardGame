@@ -44,6 +44,12 @@ const DRAFT_COMMANDS: SmashUpCommand[] = [
     { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
 ] as any[];
 
+/** Me First! 响应：两人都让过 */
+const ME_FIRST_PASS = [
+    { type: 'RESPONSE_PASS', playerId: '0', payload: {} },
+    { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
+] as any[];
+
 // ============================================================================
 // 完整回合循环
 // ============================================================================
@@ -56,8 +62,10 @@ describe('完整回合循环', () => {
             name: '完整回合',
             commands: [
                 ...DRAFT_COMMANDS,
-                // playCards → scoreBases（auto-continue → draw）
+                // playCards → scoreBases（Me First! 响应窗口打开）
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
+                // Me First! 两人都让过 → auto-continue → draw
+                ...ME_FIRST_PASS,
             ] as any[],
         });
 
@@ -77,13 +85,11 @@ describe('完整回合循环', () => {
             name: '自动推进到下一回合',
             commands: [
                 ...DRAFT_COMMANDS,
-                // P0: playCards → scoreBases(auto→draw) 停在 draw
+                // P0: playCards → scoreBases（Me First!）
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-                // draw → endTurn(auto→startTurn) 停在 startTurn
-                // 注意：draw 阶段 getActivePlayerId 仍返回 P0，但 endTurn 的 onPhaseExit 切换了 currentPlayerIndex
-                // auto-continue 只触发一次，所以停在 startTurn
-                // 但 ADVANCE_PHASE 的 playerId 需要是当前 draw 阶段的活跃玩家
-                // 从日志看 ADVANCE_PHASE from=draw playerId=1 成功了，说明引擎接受了
+                ...ME_FIRST_PASS,
+                // auto-continue: scoreBases → draw
+                // draw → endTurn(auto→startTurn)
                 { type: 'ADVANCE_PHASE', playerId: '1', payload: undefined },
                 // startTurn(auto→playCards) — 需要再推一次
                 { type: 'ADVANCE_PHASE', playerId: '1', payload: undefined },
@@ -100,14 +106,22 @@ describe('完整回合循环', () => {
             name: '两个完整回合',
             commands: [
                 ...DRAFT_COMMANDS,
-                // P0 回合：playCards → scoreBases(auto→draw)
+                // P0 回合：playCards → scoreBases（Me First!）
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
+                // Me First! 响应队列从 P0 开始：P0→P1
+                { type: 'RESPONSE_PASS', playerId: '0', payload: {} },
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
+                // auto-continue: scoreBases → draw
                 // draw → endTurn(auto→startTurn)
                 { type: 'ADVANCE_PHASE', playerId: '1', payload: undefined },
                 // P1 回合：startTurn → playCards(auto)
                 { type: 'ADVANCE_PHASE', playerId: '1', payload: undefined },
-                // P1 回合：playCards → scoreBases(auto→draw)
+                // P1 回合：playCards → scoreBases（Me First!）
                 { type: 'ADVANCE_PHASE', playerId: '1', payload: undefined },
+                // Me First! 响应队列从 P1 开始：P1→P0
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
+                { type: 'RESPONSE_PASS', playerId: '0', payload: {} },
+                // auto-continue: scoreBases → draw
                 // draw → endTurn(auto→startTurn)
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
                 // P0 回合：startTurn → playCards

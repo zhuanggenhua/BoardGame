@@ -13,7 +13,7 @@ export const KILLER_PLANT_MINIONS: MinionCardDef[] = [
         abilityTextEn: 'Talent: Search your deck for a minion with power 2 or less and play it here as an extra minion. Shuffle your deck.',
         abilityTags: ['talent', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: 'smashup:cards3', index: 47 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 47 },
     },
     {
         id: 'killer_plant_weed_eater',

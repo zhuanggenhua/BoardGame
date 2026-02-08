@@ -15,7 +15,7 @@
 - `src/engine/systems/index.ts`：`createDefaultSystems` 入口
 
 ## 清单生成
-- `scripts/generate_game_manifests.js`：扫描 `src/games/*/manifest.ts` 自动生成清单
+- `scripts/game/generate_game_manifests.js`：扫描 `src/games/*/manifest.ts` 自动生成清单
 - `src/games/manifest*.generated.ts(x)`：自动生成，禁止手改
 
 ## 参考游戏

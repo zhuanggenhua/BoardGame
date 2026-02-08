@@ -150,4 +150,52 @@ test.describe('Smash Up Lobby E2E', () => {
     await guestContext2.close();
     await hostContext.close();
   });
+
+  test('Host can see faction selection after room is ready', async ({ browser }, testInfo) => {
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+    const hostContext = await browser.newContext({ baseURL });
+    await setEnglishLocale(hostContext);
+    await resetMatchStorage(hostContext);
+    await disableTutorial(hostContext);
+    const hostPage = await hostContext.newPage();
+
+    if (!await ensureGameServerAvailable(hostPage)) {
+      test.skip(true, 'Game server unavailable for online tests.');
+    }
+
+    await openSmashUpModal(hostPage);
+    await hostPage.getByRole('button', { name: /Create Room|创建房间/i }).click();
+    const createHeading = hostPage.getByRole('heading', { name: /Create Room|创建房间/i });
+    await expect(createHeading).toBeVisible({ timeout: 10000 });
+    const createModal = createHeading.locator('..').locator('..');
+
+    const twoPlayersButton = createModal.getByRole('button', { name: /2\s*players|2\s*人/i });
+    await expect(twoPlayersButton).toBeVisible({ timeout: 5000 });
+    await twoPlayersButton.click();
+
+    await createModal.getByRole('button', { name: /Confirm|确认/i }).click();
+    try {
+      await hostPage.waitForURL(/\/play\/smashup\/match\//, { timeout: 8000 });
+    } catch {
+      test.skip(true, 'Room creation failed or backend unavailable.');
+    }
+
+    const hostUrl = new URL(hostPage.url());
+    if (!hostUrl.searchParams.get('playerID')) {
+      hostUrl.searchParams.set('playerID', '0');
+      await hostPage.goto(hostUrl.toString());
+    }
+
+    // 等待派系选择界面出现（关键交互面）
+    const factionHeading = hostPage.getByText(/Draft Your Factions|选择你的派系/i);
+    await expect(factionHeading).toBeVisible({ timeout: 15000 });
+
+    // 验证能看到至少一个派系名称（派系卡片上的文本）
+    // 使用更宽松的选择器，因为派系名称在卡片上而非按钮中
+    const anyFactionName = hostPage.getByText(/Aliens|Pirates|Ninjas|Dinosaurs|Robots|Wizards|外星人|海盗|忍者|恐龙|机器人|巫师/i).first();
+    await expect(anyFactionName).toBeVisible({ timeout: 5000 });
+
+    await hostContext.close();
+  });
 });

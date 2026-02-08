@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { X, Github, Heart, MessageCircle, Coffee } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getParticlesComponent, type ParticlesComponent } from '../common/animations/particleEngine';
+import { createParticle, parseColorToRgb, type Particle } from '../common/animations/canvasParticleEngine';
 
 interface AboutModalProps {
     onClose: () => void;
@@ -30,11 +30,94 @@ const SPONSORS = [
 export const AboutModal = ({ onClose }: AboutModalProps) => {
     const backdropRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [Particles, setParticles] = useState<ParticlesComponent | null>(null);
+    const particleCanvasRef = useRef<HTMLCanvasElement>(null);
     const [isHovered, setIsHovered] = useState(false);
 
+    // 金色背景粒子（Canvas 2D 替代 tsParticles）
     useEffect(() => {
-        getParticlesComponent().then(Comp => setParticles(() => Comp));
+        const canvas = particleCanvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const parent = canvas.parentElement;
+        if (!parent) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        const rect = parent.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const cw = rect.width;
+        const ch = rect.height;
+        const goldRgb = parseColorToRgb('#D4AF37');
+
+        // 持续飘动的粒子
+        const particles: Particle[] = [];
+        const COUNT = 15;
+        for (let i = 0; i < COUNT; i++) {
+            particles.push(createParticle({
+                x: Math.random() * cw,
+                y: Math.random() * ch,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: -(0.3 + Math.random() * 0.5),
+                maxLife: 3 + Math.random() * 4,
+                size: 1 + Math.random() * 2,
+                rgb: goldRgb,
+            }));
+        }
+
+        let rafId = 0;
+        let lastTime = 0;
+
+        const loop = (now: number) => {
+            if (!lastTime) lastTime = now;
+            const dt = Math.min((now - lastTime) / 1000, 0.05);
+            lastTime = now;
+
+            ctx.clearRect(0, 0, cw, ch);
+
+            for (const p of particles) {
+                p.life -= dt / p.maxLife;
+                p.x += p.vx * dt * 60;
+                p.y += p.vy * dt * 60;
+
+                // 循环：消亡后从底部重生
+                if (p.life <= 0 || p.y < -5) {
+                    p.x = Math.random() * cw;
+                    p.y = ch + 5;
+                    p.life = 1;
+                    p.maxLife = 3 + Math.random() * 4;
+                    p.size = 1 + Math.random() * 2;
+                }
+
+                const alpha = Math.min(1, p.life * 1.5) * 0.6;
+                if (alpha < 0.01) continue;
+
+                // 辉光
+                ctx.globalAlpha = alpha * 0.3;
+                ctx.fillStyle = `rgb(${goldRgb[0]},${goldRgb[1]},${goldRgb[2]})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 核心
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = `rgb(${Math.min(255, goldRgb[0] + 60)},${Math.min(255, goldRgb[1] + 50)},${Math.min(255, goldRgb[2] + 40)})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.globalAlpha = 1;
+            rafId = requestAnimationFrame(loop);
+        };
+
+        rafId = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(rafId);
     }, []);
 
     // Auto-scroll logic (Robust 1/3 reset for seamless triplicated loop)
@@ -164,32 +247,11 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                             onMouseEnter={() => setIsHovered(true)}
                             onMouseLeave={() => setIsHovered(false)}
                         >
-                            {/* Particles Background */}
-                            {Particles && (
-                                <div className="absolute inset-0 pointer-events-none">
-                                    <Particles
-                                        id="sponsor-particles"
-                                        options={{
-                                            fullScreen: { enable: false },
-                                            fpsLimit: 30,
-                                            particles: {
-                                                color: { value: "#D4AF37" }, // Gold
-                                                move: {
-                                                    direction: "top",
-                                                    enable: true,
-                                                    speed: 1, // Visual speed of particles
-                                                    random: true,
-                                                },
-                                                number: { value: 15 },
-                                                opacity: { value: 0.6, random: true },
-                                                shape: { type: "circle" },
-                                                size: { value: { min: 1, max: 3 } },
-                                            },
-                                        }}
-                                        className="h-full w-full"
-                                    />
-                                </div>
-                            )}
+                            {/* 粒子背景（Canvas 2D） */}
+                            <canvas
+                                ref={particleCanvasRef}
+                                className="absolute inset-0 pointer-events-none"
+                            />
 
                             {/* Scrolling List Container */}
                             <div

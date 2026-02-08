@@ -27,18 +27,22 @@ import type {
     CardToDeckBottomEvent,
     CardRecoveredFromDiscardEvent,
     HandShuffledIntoDeckEvent,
+    PromptContinuationEvent,
+    MadnessDrawnEvent,
+    MadnessReturnedEvent,
     MinionOnBase,
     CardInstance,
     BaseInPlay,
 } from './types';
 import type { PlayerId } from '../../../engine/types';
-import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
+import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
 import { getMinionDef, getCardDef } from '../data/cards';
 import type { ActionCardDef } from './types';
 import { buildDeck, drawCards } from './utils';
 import { resolveOnPlay, resolveTalent } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
 import { triggerAllBaseAbilities, triggerBaseAbility } from './baseAbilities';
+import { hasCthulhuExpansionFaction } from './abilityHelpers';
 
 // ============================================================================
 // execute：命令 → 事件
@@ -51,6 +55,11 @@ export function execute(
 ): SmashUpEvent[] {
     const now = Date.now();
     const core = state.core;
+
+    // 系统命令（SYS_ 前缀）由引擎层处理，领域层不生成事件
+    if ((command as any).type.startsWith('SYS_')) {
+        return [];
+    }
 
     switch (command.type) {
         case SU_COMMANDS.PLAY_MINION: {
@@ -299,6 +308,7 @@ export function execute(
         }
 
         default:
+            // RESPONSE_PASS 由引擎 ResponseWindowSystem.beforeCommand 处理，领域层不生成事件
             return [];
     }
 }
@@ -356,12 +366,18 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 }
             }
 
+            // 检查是否有克苏鲁扩展派系，初始化疯狂牌库
+            const madnessDeck = hasCthulhuExpansionFaction(newPlayers)
+                ? Array.from({ length: MADNESS_DECK_SIZE }, () => MADNESS_CARD_DEF_ID)
+                : undefined;
+
             return {
                 ...state,
                 players: newPlayers,
                 nextUid,
                 currentPlayerIndex: 0,
                 factionSelection: undefined,
+                madnessDeck,
             };
         }
 
@@ -899,6 +915,58 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         hand: [],
                         deck: newDeck,
                     },
+                },
+            };
+        }
+
+        case SU_EVENTS.PROMPT_CONTINUATION: {
+            const { action, continuation } = (event as PromptContinuationEvent).payload;
+            if (action === 'set') {
+                return { ...state, pendingPromptContinuation: continuation };
+            }
+            // action === 'clear'
+            return { ...state, pendingPromptContinuation: undefined };
+        }
+
+        case SU_EVENTS.MADNESS_DRAWN: {
+            const { playerId, count, cardUids } = (event as MadnessDrawnEvent).payload;
+            const player = state.players[playerId];
+            if (!player || !state.madnessDeck) return state;
+            // 从疯狂牌库取出 count 张，生成卡牌实例放入玩家手牌
+            const actualCount = Math.min(count, state.madnessDeck.length);
+            const newMadnessDeck = state.madnessDeck.slice(actualCount);
+            const madnessCards: CardInstance[] = cardUids.slice(0, actualCount).map(uid => ({
+                uid,
+                defId: MADNESS_CARD_DEF_ID,
+                type: 'action' as const,
+                owner: playerId,
+            }));
+            return {
+                ...state,
+                madnessDeck: newMadnessDeck,
+                nextUid: state.nextUid + actualCount,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        hand: [...player.hand, ...madnessCards],
+                    },
+                },
+            };
+        }
+
+        case SU_EVENTS.MADNESS_RETURNED: {
+            const { playerId, cardUid } = (event as MadnessReturnedEvent).payload;
+            const player = state.players[playerId];
+            if (!player || !state.madnessDeck) return state;
+            // 从手牌移除疯狂卡，放回疯狂牌库
+            const newHand = player.hand.filter(c => c.uid !== cardUid);
+            return {
+                ...state,
+                madnessDeck: [...state.madnessDeck, MADNESS_CARD_DEF_ID],
+                players: {
+                    ...state.players,
+                    [playerId]: { ...player, hand: newHand },
                 },
             };
         }

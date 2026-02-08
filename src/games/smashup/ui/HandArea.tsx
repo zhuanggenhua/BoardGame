@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import type { CardInstance } from '../domain/types';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { User, Swords } from 'lucide-react';
@@ -10,19 +11,21 @@ import { getCardDef as lookupCardDef, getMinionDef as lookupMinionDef } from '..
 // ============================================================================
 const CARD_WIDTH_VW = 8.5; // Reduced from 10 to fit better and look less overwhelming
 const CARD_ASPECT_RATIO = 0.714;
-const HOVER_Y_LIFT_VW = 3;
+
 const SELECTED_Y_LIFT_VW = 5;
 
 type Props = {
     hand: CardInstance[];
     selectedCardUid: string | null;
     onCardSelect: (card: CardInstance) => void;
+    onCardView?: (card: CardInstance) => void;
     isDiscardMode?: boolean;
     discardSelection?: Set<string>;
     disableInteraction?: boolean;
 };
 
-const HandCard: React.FC<{
+// New prop for viewing details
+type HandCardProps = {
     card: CardInstance;
     index: number;
     total: number;
@@ -31,7 +34,14 @@ const HandCard: React.FC<{
     isDiscardMode: boolean;
     disableInteraction: boolean;
     onSelect: () => void;
-}> = ({ card, index, total, isSelected, isDiscardSelected, isDiscardMode, disableInteraction, onSelect }) => {
+    onViewDetail?: () => void;
+};
+
+
+const HandCard: React.FC<HandCardProps> = ({
+    card, index, total, isSelected, isDiscardSelected, isDiscardMode, disableInteraction, onSelect, onViewDetail
+}) => {
+    const { t } = useTranslation('game-smashup');
     const [isHovered, setIsHovered] = useState(false);
     const [isShaking, setIsShaking] = useState(false);
 
@@ -72,8 +82,8 @@ const HandCard: React.FC<{
             }}
             initial={{ y: 200, opacity: 0, scale: 0.8 }}
             animate={{
-                y: isSelected ? `-${SELECTED_Y_LIFT_VW}vw` : (isHovered ? `-${HOVER_Y_LIFT_VW}vw` : '0'),
-                scale: isHovered || isSelected ? 1.15 : 1,
+                y: isSelected ? `-${SELECTED_Y_LIFT_VW}vw` : '0',
+                scale: isSelected ? 1.15 : 1,
                 rotate: isShaking ? [0, -6, 6, -4, 4, 0] : (isHovered || isSelected ? 0 : rotationSeed),
                 opacity: 1
             }}
@@ -99,6 +109,19 @@ const HandCard: React.FC<{
                 ${!isSelected && !isDiscardSelected ? (isDiscardMode ? 'ring-2 ring-red-500/30' : 'hover:ring-2 hover:ring-white/50 hover:shadow-xl') : ''}
             `}>
 
+                {/* Detail View Button (Magnifying Glass) - Appears on hover */}
+                <div
+                    className={`absolute -top-3 -right-3 z-50 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetail?.();
+                    }}
+                >
+                    <div className="bg-slate-800 text-white p-1 rounded-full border border-white shadow-md hover:bg-blue-600 hover:scale-110 transition-all cursor-zoom-in">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </div>
+                </div>
+
                 {/* 1. Real Asset Preview */}
                 <div className="w-full h-full rounded-md overflow-hidden bg-[#f3f0e8] border border-slate-400/50 shadow-inner relative">
                     <CardPreview
@@ -114,7 +137,7 @@ const HandCard: React.FC<{
                             <div className="flex justify-between items-start mb-1 h-[20%]">
                                 <div className={`px-1 py-0.5 rounded-sm text-[0.5vw] font-black uppercase tracking-wider shadow-sm border border-black/10 transform -rotate-1 
                                     ${isMinion ? 'bg-blue-100/90 text-blue-900' : 'bg-red-100/90 text-red-900'}`}>
-                                    {isMinion ? 'MINION' : 'ACTION'}
+                                    {isMinion ? t('ui.minion') : t('ui.action')}
                                 </div>
                                 {isMinion && (
                                     <div className="w-[1.4vw] h-[1.4vw] rounded-full bg-yellow-400 text-black font-black flex items-center justify-center text-[0.8vw] shadow-md border border-white transform rotate-3">
@@ -137,11 +160,10 @@ const HandCard: React.FC<{
                     )}
                 </div>
 
-                {/* Discard Overlay Badge */}
                 {isDiscardSelected && (
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center rounded-md z-30">
                         <div className="bg-red-600 text-white font-black text-sm rotate-12 border-2 border-white px-2 py-0.5 shadow-lg rounded-sm uppercase tracking-widest">
-                            Discard
+                            {t('ui.discard_badge')}
                         </div>
                     </div>
                 )}
@@ -154,6 +176,7 @@ export const HandArea: React.FC<Props> = ({
     hand,
     selectedCardUid,
     onCardSelect,
+    onCardView,
     isDiscardMode = false,
     discardSelection,
     disableInteraction = false,
@@ -164,7 +187,10 @@ export const HandArea: React.FC<Props> = ({
     if (!isLoaded) return null;
 
     return (
-        <div className="absolute bottom-4 left-0 right-0 h-[20vh] flex flex-col justify-end items-center pointer-events-none z-40">
+        <div
+            className="absolute bottom-4 left-0 right-0 h-[20vh] flex flex-col justify-end items-center pointer-events-none z-40"
+            data-testid="su-hand-area"
+        >
             <div className="flex items-end justify-center px-4 max-w-[90vw] perspective-[1000px]">
                 <AnimatePresence>
                     {hand.map((card, i) => (
@@ -178,6 +204,7 @@ export const HandArea: React.FC<Props> = ({
                             isDiscardMode={isDiscardMode}
                             disableInteraction={disableInteraction}
                             onSelect={() => onCardSelect(card)}
+                            onViewDetail={() => onCardView?.(card)}
                         />
                     ))}
                 </AnimatePresence>

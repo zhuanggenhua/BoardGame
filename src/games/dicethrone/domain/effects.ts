@@ -11,7 +11,6 @@ import type { AbilityEffect, EffectTiming, EffectResolutionContext } from '../..
 import { combatAbilityManager } from './combatAbility';
 import { getActiveDice, getFaceCounts, getDieFace, getTokenStackLimit } from './rules';
 import { RESOURCE_IDS } from './resources';
-import { STATUS_IDS, TOKEN_IDS } from './ids';
 import type {
     DiceThroneCore,
     DiceThroneEvent,
@@ -20,12 +19,11 @@ import type {
     StatusAppliedEvent,
     StatusRemovedEvent,
     TokenGrantedEvent,
-    TokenConsumedEvent,
     ChoiceRequestedEvent,
     BonusDieRolledEvent,
     AbilityReplacedEvent,
     DamageShieldGrantedEvent,
-    DamagePreventedEvent,
+    PreventDamageEvent,
     CpChangedEvent,
 } from './types';
 import { CP_MAX } from './types';
@@ -158,6 +156,121 @@ export function isCustomActionCategory(actionId: string, category: CustomActionC
 // ============================================================================
 
 /**
+ * 处理 onDamageReceived 被动触发（基于 tokenDefinitions）
+ * - 支持 modifyStat / removeStatus / custom
+ * - custom 中的 PREVENT_DAMAGE 会即时折算到当前伤害，并标记 applyImmediately
+ */
+function applyOnDamageReceivedTriggers(
+    ctx: EffectContext,
+    targetId: PlayerId,
+    baseDamage: number,
+    options: { timestamp: number; random?: RandomFn; sfxKey?: string }
+): { damage: number; events: DiceThroneEvent[] } {
+    const events: DiceThroneEvent[] = [];
+    const { state } = ctx;
+    const target = state.players[targetId];
+    if (!target) {
+        return { damage: baseDamage, events };
+    }
+
+    const tokenDefinitions = state.tokenDefinitions ?? [];
+    let nextDamage = baseDamage;
+
+    for (const def of tokenDefinitions) {
+        if (def.passiveTrigger?.timing !== 'onDamageReceived') {
+            continue;
+        }
+
+        const stacks = def.category === 'debuff'
+            ? (target.statusEffects[def.id] ?? 0)
+            : (target.tokens[def.id] ?? 0);
+
+        if (stacks <= 0) {
+            continue;
+        }
+
+        const actions = def.passiveTrigger.actions ?? [];
+        for (const action of actions) {
+            switch (action.type) {
+                case 'modifyStat': {
+                    const delta = action.value ?? 0;
+                    if (delta !== 0) {
+                        nextDamage += delta * stacks;
+                    }
+                    break;
+                }
+                case 'removeStatus': {
+                    if (!action.statusId) break;
+                    const currentStacks = target.statusEffects[action.statusId] ?? 0;
+                    if (currentStacks <= 0) break;
+                    const removeStacks = Math.min(currentStacks, action.value ?? currentStacks);
+                    events.push({
+                        type: 'STATUS_REMOVED',
+                        payload: { targetId, statusId: action.statusId, stacks: removeStacks },
+                        sourceCommandType: 'ABILITY_EFFECT',
+                        timestamp: options.timestamp,
+                        sfxKey: options.sfxKey,
+                    } as StatusRemovedEvent);
+                    break;
+                }
+                case 'custom': {
+                    const actionId = action.customActionId;
+                    if (!actionId) break;
+                    const handler = getCustomActionHandler(actionId);
+                    if (!handler) {
+                        console.warn(`[DiceThrone] 未注册的 customAction: ${actionId}`);
+                        break;
+                    }
+                    const actionWithParams: EffectAction = {
+                        ...action,
+                        params: {
+                            ...(action as any).params,
+                            damageAmount: nextDamage,
+                            tokenId: def.id,
+                            tokenStacks: stacks,
+                        },
+                    };
+                    const handlerCtx: CustomActionContext = {
+                        ctx,
+                        targetId,
+                        attackerId: ctx.attackerId,
+                        sourceAbilityId: ctx.sourceAbilityId,
+                        state,
+                        timestamp: options.timestamp,
+                        random: options.random,
+                        action: actionWithParams,
+                    };
+                    const handledEvents = handler(handlerCtx);
+                    if (options.sfxKey) {
+                        handledEvents.forEach(handledEvent => {
+                            if (!handledEvent.sfxKey) {
+                                handledEvent.sfxKey = options.sfxKey;
+                            }
+                        });
+                    }
+                    handledEvents.forEach(handledEvent => {
+                        if (handledEvent.type === 'PREVENT_DAMAGE') {
+                            const payload = (handledEvent as PreventDamageEvent).payload;
+                            const preventAmount = payload.amount ?? 0;
+                            if (preventAmount > 0) {
+                                nextDamage = Math.max(0, nextDamage - preventAmount);
+                            }
+                            payload.applyImmediately = true;
+                        }
+                    });
+                    events.push(...handledEvents);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    }
+
+    return { damage: Math.max(0, nextDamage), events };
+}
+
+/**
  * 将单个效果动作转换为事件
  */
 function resolveEffectAction(
@@ -176,52 +289,14 @@ function resolveEffectAction(
         case 'damage': {
             let totalValue = (action.value ?? 0) + (bonusDamage ?? 0);
 
-            // 锁定 (Targeted) 状态：受到的伤害 +2，然后移除锁定
-            const targetPlayer = state.players[targetId];
-            const targetedStacks = targetPlayer?.statusEffects[STATUS_IDS.TARGETED] ?? 0;
-            if (targetedStacks > 0 && totalValue > 0) {
-                totalValue += 2;
-                // 移除锁定状态（一次性），事件在伤害事件之前
-                events.push({
-                    type: 'STATUS_REMOVED',
-                    payload: { targetId, statusId: STATUS_IDS.TARGETED, stacks: targetedStacks },
-                    sourceCommandType: 'ABILITY_EFFECT',
+            if (totalValue > 0) {
+                const passiveResult = applyOnDamageReceivedTriggers(ctx, targetId, totalValue, {
                     timestamp,
-                } as StatusRemovedEvent);
-            }
-
-            // check SNEAK
-            const sneakStacks = targetPlayer?.tokens[TOKEN_IDS.SNEAK] ?? 0;
-            if (sneakStacks > 0 && totalValue > 0) {
-                // Prevent damage
-                const originalDamage = totalValue;
-                totalValue = 0;
-
-                // Remove SNEAK Token
-                events.push({
-                    type: 'TOKEN_CONSUMED',
-                    payload: {
-                        playerId: targetId,
-                        tokenId: TOKEN_IDS.SNEAK,
-                        amount: 1,
-                        newTotal: sneakStacks - 1
-                    },
-                    sourceCommandType: 'ABILITY_EFFECT',
-                    timestamp,
-                } as TokenConsumedEvent);
-
-                // Log Prevention
-                events.push({
-                    type: 'DAMAGE_PREVENTED',
-                    payload: {
-                        targetId,
-                        originalDamage,
-                        preventedAmount: originalDamage,
-                        shieldSourceId: TOKEN_IDS.SNEAK,
-                    },
-                    sourceCommandType: 'ABILITY_EFFECT',
-                    timestamp
-                } as DamagePreventedEvent);
+                    random,
+                    sfxKey,
+                });
+                totalValue = passiveResult.damage;
+                events.push(...passiveResult.events);
             }
 
             if (totalValue <= 0) break;

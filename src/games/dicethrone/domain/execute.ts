@@ -33,7 +33,6 @@ import type {
     PlayerReadyEvent,
 } from './types';
 import {
-    getAvailableAbilityIds,
     getRollerId,
     getNextPlayerId,
     getUpgradeTargetAbilityId,
@@ -62,6 +61,12 @@ import {
 // ============================================================================
 
 const now = () => Date.now();
+type GameModeHost = { __BG_GAME_MODE__?: string };
+const getGameMode = () => (
+    typeof globalThis !== 'undefined'
+        ? (globalThis as GameModeHost).__BG_GAME_MODE__
+        : undefined
+);
 
 /**
  * 判断该进攻技能是否可被防御（是否进入防御投掷阶段）
@@ -118,8 +123,7 @@ export function execute(
         case 'ROLL_DICE': {
             const rollerId = getRollerId(state);
             const results: number[] = [];
-            const isTutorialMode = typeof window !== 'undefined'
-                && (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__ === 'tutorial';
+            const isTutorialMode = getGameMode() === 'tutorial';
             const fixedValue = 1;
             
             state.dice.slice(0, state.rollDiceCount).forEach(die => {

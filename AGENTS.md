@@ -217,25 +217,51 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 | 动效类型 | 正确技术 | 判断标准 | 典型场景 |
 |----------|----------|----------|----------|
-| **粒子系统** | tsParticles (`@tsparticles/react`) | 大量同质元素的随机/物理运动；手写循环生成 **>8 个** `<motion.div>` 做随机散射/衰减时，说明该用粒子库 | 爆炸碎片、火花飞溅、烟尘扩散、胜利彩带、召唤碎片 |
-| **形状动画** | framer-motion | 确定性形状变换（缩放/位移/旋转/裁切/透明度）；每次触发 1-3 个 DOM 节点 | 气浪冲击波、斜切线、红闪脉冲、伤害数字飞出、UI 过渡 |
+| **粒子系统** | Canvas 2D（自研引擎） | 粒子特效（几十到几百级别）；双层绘制（辉光+核心） | 胜利彩带、召唤光粒子、爆炸碎片、烟尘扩散 |
+| **复杂矢量动画** | Canvas 2D **推荐** | 每帧重绘复杂路径（弧形/渐变/多层叠加） | 斜切刀光、气浪冲击波、复杂轨迹特效 |
+| **形状动画** | framer-motion | 确定性形状变换（缩放/位移/旋转/裁切/透明度）；每次触发 1-3 个 DOM 节点 | 红闪脉冲、伤害数字飞出、简单冲击波 |
 | **UI 状态过渡** | framer-motion / CSS transition | 组件进出场、hover/press 反馈、布局动画 | 手牌展开、横幅切换、按钮反馈、阶段指示脉冲 |
 | **精确设计动效** | Lottie（未接入，需美术资源） | 设计师在 AE 中制作的复杂动画，需要逐帧精确控制 | 暂无，未来可用于技能释放特写 |
-| **高密度渲染** | PixiJS（未接入，按需评估） | 同屏 >50 个动画元素、需要 WebGL 加速 | 暂无，未来棋盘特效密度极高时考虑 |
 
-**粒子系统使用规范**：
-- **通用粒子组件**放在 `src/components/common/animations/`，游戏层通过 props/配置注入差异
-- **动态加载**：tsParticles 必须 `import()` 懒加载，避免首屏体积膨胀和 SSR 问题
-- **对象池复用（强制）**：全局使用 `ParticlePoolProvider` 复用粒子实例；`BurstParticles` 已自动接入对象池，禁止在游戏层手动创建/销毁 tsParticles 实例
-- **生命周期**：粒子效果必须有明确的 `duration`/`life` 配置，禁止无限循环粒子（VictoryParticles 等全屏庆祝除外）
-- **性能预算**：单次爆发粒子数建议 ≤50，持续性粒子 ≤30；移动端可通过 `reducedMotion` 降级为简化版
-- **配置外置**：粒子参数（颜色/数量/速度/重力）以配置对象形式定义，方便游戏层覆盖
-- **现有组件**：`VictoryParticles`（胜利彩带）；待新增：`BurstParticles`（爆炸碎片，用于摧毁/召唤）
+**PixiJS 已评估不适用（2026-02-08）**：已移除，当前特效规模下 Canvas 2D 全面优于 PixiJS。详见 `docs/refactor/pixi-performance-findings.md`。
+
+**Canvas 粒子引擎使用规范**：
+- **引擎位置**：`src/components/common/animations/canvasParticleEngine.ts`
+- **双层绘制**：每个粒子有辉光层（半透明大圆）+ 核心层（高亮小圆），视觉质感和 FlyingEffect 一致
+- **预设驱动**：通过 `ParticlePreset` 配置粒子行为，`BURST_PRESETS` 提供常用预设
+- **生命周期**：粒子效果必须有明确的 `life` 配置，所有粒子消散后自动停止渲染循环
+- **现有组件**：`BurstParticles`（爆炸/召唤/烟尘）、`VictoryParticles`（胜利彩带）
+- **Canvas 溢出规范（强制）**：特效 Canvas 天然超出挂载目标边界，**禁止用 `overflow: hidden` 裁切**。Canvas 必须比容器大（默认 2 倍），居中偏移，容器设 `overflow: visible` + `pointer-events-none`。详见 `docs/particle-engine.md` § Canvas 溢出规范。
 
 **判断边界（快速自检）**：
-1. 你在写 `Array.from({ length: N })` 生成随机角度/距离/大小的 `<motion.div>` 吗？→ 用 tsParticles
-2. 你在做一个有方向性的形状变换（锥形/线条/脉冲）吗？→ 用 framer-motion
-3. 你在做 UI 组件的进出场/状态切换吗？→ 用 framer-motion 或 CSS transition
+1. 需要每帧重绘复杂矢量路径（弧形/渐变）？→ 用 Canvas 2D 手写（如 SlashEffect）
+2. 需要粒子特效（爆炸/烟尘/彩带/光粒子）？→ 用 Canvas 粒子引擎（BurstParticles）
+3. 需要简单形状变换（1-3 个元素）？→ 用 framer-motion
+4. 需要 UI 组件进出场/状态切换？→ 用 framer-motion 或 CSS transition
+
+**特效视觉质量规则（强制）**：
+- **禁止纯几何拼接**：特效禁止用 `stroke` 线段、V 形轮廓、横切线等几何图元拼凑，视觉效果生硬且缺乏能量感。
+- **正确做法**：优先使用粒子系统（streak/circle 喷射 + 自然衰减）或柔和径向渐变模拟气流/光晕；需要轨迹时用粒子拖尾而非画线。
+- **判断标准**：如果特效看起来像"线框图/几何示意图"而非"有能量感的自然效果"，说明方案有问题，必须换用粒子/渐变方案。
+
+**通用特效组件规范（强制）**：
+- **通用 vs 游戏特有**：除非特效包含游戏特有语义（如特定卡牌名称文字、游戏专属资源），否则必须实现为通用组件放在 `src/components/common/animations/`，游戏层通过 props 注入差异。
+- **现有通用特效清单**（新增特效前必须检查是否已有）：
+  - `FlyingEffect` — 飞行特效（伤害/治疗/Buff 飞行数字+粒子尾迹）
+  - `ShakeContainer` — 震动容器
+  - `HitStopContainer` — 钝帧容器
+  - `SlashEffect` — 斜切特效（Canvas 2D）
+  - `BurstParticles` — 爆发粒子（Canvas 2D 引擎）
+  - `VictoryParticles` — 胜利彩带（Canvas 2D 引擎）
+  - `ImpactContainer` — 打击感组合（震动+斜切+钝帧）
+  - `ShockwaveProjectile` — 冲击波投射物
+  - `PulseGlow` — 脉冲发光/涟漪
+  - `SummonEffect` — 召唤/降临特效（光柱+冲击波环+地裂线+粒子）
+  - `ConeBlast` — 远程投射气浪（光球头部+粒子尾迹锥形扩散+命中爆发，Canvas 2D 粒子引擎）
+  - `DamageFlash` — 受伤反馈（震动+斜切+白闪+红脉冲+伤害数字）
+  - `FloatingText` — 独立飘字（弹出+弹性缩回+上浮淡出，纯文字无粒子）
+  - `CardDrawAnimation` — 抽牌动画（飞出+3D翻转）
+- **预览页同步**：新增通用特效组件后，必须在 `src/pages/devtools/EffectPreview.tsx` 的 `EFFECT_CATEGORIES` 中注册预览区块。
 
 ### 文档索引与使用时机（强制）
 
@@ -251,6 +277,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 | **接口调用 / 联调** (REST/WS) | `docs/api/README.md` | 认证方式、分页约定、实时通信事件 |
 | **使用 Undo / Fab 功能** | `docs/components/UndoFab.md` | UndoFab 组件的 Props 要求与环境依赖 |
 | **新增作弊/调试指令** | `docs/debug-tool-refactor.md` | 游戏专属调试配置的解耦注入方式 |
+| **粒子特效开发** (Canvas 2D 引擎) | `docs/particle-engine.md` | API、预设字段、性能优化、视觉质量规则、新增检查清单 |
 | **状态同步/存储调优** (16MB 限制) | `docs/mongodb-16mb-fix.md` | 状态裁剪策略、Log 限制、Undo 快照优化 |
 | **复杂任务规划** (多文件/长流程) | `.agent/skills/planning-with-files/SKILL.md` | 必须维护 `task_plan.md`，定期转存 `findings.md` |
 | **UI/UX 设计** (配色/组件/动效) | `.agent/skills/ui-ux-pro-max/SKILL.md` | 使用 `python3 ... search.py` 生成设计系统与样式 |
@@ -337,7 +364,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 | 构建工具 | Vite 7 | 快速热更新 |
 | 样式方案 | Tailwind CSS 4 | 原子化 CSS |
 | 动画/动效 | framer-motion | motion/AnimatePresence + 通用动效组件 |
-| 粒子特效 | tsParticles (`@tsparticles/react` + `@tsparticles/slim`) | 爆炸碎片/烟尘/彩带等粒子效果，动态加载避免 SSR；选型规范见"动效技术选型规范" |
+| 粒子特效 | Canvas 2D（自研引擎） | 双层绘制（辉光+核心），零依赖；选型规范见"动效技术选型规范" |
 | 国际化 | i18next + react-i18next | 多语言与懒加载词条 |
 | 音频 | howler | 统一音效/音乐管理 |
 | 实时通信 | socket.io / socket.io-client | 大厅与对局实时同步 |
@@ -348,7 +375,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 | 基础设施 | Docker / Docker Compose | 本地与部署一致化 |
 
 > 说明：`three` / `@react-three/fiber` / `@react-three/drei` 已安装但当前未接入代码，避免在未确认需求前启用。
-> 说明：`tsParticles` 相关包（`@tsparticles/react`、`@tsparticles/slim`、`@tsparticles/plugin-emitters`、`@tsparticles/engine`）已接入，用于游戏内粒子特效。注意 `react` / `react-dom` 必须通过 `overrides` 锁定单一版本，避免 tsParticles 内部依赖拉出第二份 React 导致 `Invalid hook call`。
+> 说明：`tsParticles` 已移除（2026-02-08），替换为自研 Canvas 2D 粒子引擎（`canvasParticleEngine.ts`），效果更好、零依赖、包体积更小。
 
 ### TypeScript 类型规范（强制）
 
@@ -378,6 +405,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **测试工具**：Playwright E2E（首选）、Vitest（领域/API）、GameTestRunner（命令序列）。
 - **常用命令**：`npm run test:e2e`（E2E）、`npm test -- <路径>`（Vitest）。
 - **失败处理**：查看 Playwright 报告（`npx playwright show-report`）和截图/视频。
+- **截图规范（强制）**：禁止使用硬编码路径保存截图，必须使用 `testInfo.outputPath('name.png')` 以确保并行测试时的隔离性。详情见 `docs/automated-testing.md`。
 
 **E2E 覆盖要求（强制）**：端到端测试必须覆盖“关键交互面”，而不只是跑通一条完整流程。
 - 交互面示例：按钮/菜单/Tab/Modal 打开关闭/表单校验与错误提示/列表操作/关键面板交互。
@@ -539,7 +567,7 @@ public/assets/<gameId>/
 ### 压缩流程
 
 1. **压缩命令**：`npm run compress:images -- public/assets/<gameId>`
-2. **压缩脚本**：`scripts/compress_images.js`（启动器）+ `scripts/compress_images.py`（实现）
+2. **压缩脚本**：`scripts/assets/compress_images.js`（启动器）+ `scripts/assets/compress_images.py`（实现）
 3. **输出位置**：同级 `compressed/` 子目录，生成 `.avif` 和 `.webp`
 
 ### 前端引用方式
@@ -606,8 +634,8 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 
 #### ✅ 音频文件使用规范（与图片规范一致）
 - **压缩脚本**：`npm run compress:audio -- public/assets/common/audio`
-- **生成 registry**：`node scripts/generate_common_audio_registry.js`
-- **资源清单**：`node scripts/generate_audio_assets_md.js`
+- **生成 registry**：`node scripts/audio/generate_common_audio_registry.js`
+- **资源清单**：`node scripts/audio/generate_audio_assets_md.js`
 - **详见文档**：`docs/audio/audio-usage.md`
 
 #### ✅ 当前正确示例（音频）

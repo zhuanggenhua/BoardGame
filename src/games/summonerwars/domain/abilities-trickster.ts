@@ -29,6 +29,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'mind_capture',
     name: '心灵捕获',
     description: '当本单位攻击一个敌方单位时，如果造成的伤害足够消灭目标，则你可以忽略本次伤害并且获得目标的控制权，以代替造成伤害。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_aetherial_pulse_003',
     trigger: 'passive',
     effects: [
       // 实际逻辑在 execute.ts 的攻击流程中处理：
@@ -46,6 +47,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'flying',
     name: '飞行',
     description: '当本单位移动时，可以额外移动1个区格，并且可以穿过其它卡牌。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_001',
     trigger: 'onMove',
     effects: [
       { type: 'extraMove', target: 'self', value: 1, canPassThrough: 'all' },
@@ -56,6 +58,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'aerial_strike',
     name: '浮空术',
     description: '本单位2个区格以内开始移动的友方士兵，在本次移动时获得飞行技能。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_002',
     trigger: 'passive',
     effects: [
       // 被动光环效果：在移动验证时检查
@@ -72,6 +75,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'high_telekinesis',
     name: '高阶念力',
     description: '在本单位攻击之后，或代替本单位的攻击，可以指定其最多3个区格以内的一个士兵或英雄为目标，将目标推拉1个区格。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_aetherial_pulse_002',
     trigger: 'afterAttack',
     effects: [
       { type: 'pushPull', target: { unitId: 'selectedTarget' }, distance: 1, direction: 'choice' },
@@ -88,6 +92,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'stable',
     name: '稳固',
     description: '本单位不能被推拉。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_003',
     trigger: 'passive',
     effects: [
       // 被动标记：在推拉解析时检查目标是否有 stable 技能
@@ -103,6 +108,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'mind_transmission',
     name: '读心传念',
     description: '在本单位攻击一张敌方卡牌之后，可以指定本单位3个区格以内的一个友方士兵为目标，目标进行一次额外的攻击。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_004',
     trigger: 'afterAttack',
     effects: [
       { type: 'grantExtraAttack', target: { unitId: 'selectedTarget' } },
@@ -130,6 +136,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'swift',
     name: '迅捷',
     description: '当本单位移动时，可以额外移动1个区格。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_001',
     trigger: 'onMove',
     effects: [
       { type: 'extraMove', target: 'self', value: 1 },
@@ -140,6 +147,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'ranged',
     name: '远射',
     description: '本单位可以攻击至多4个直线区格的目标。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_002',
     trigger: 'passive',
     effects: [
       // 被动效果：在攻击范围计算时检查
@@ -156,6 +164,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'telekinesis',
     name: '念力',
     description: '在本单位攻击之后，或代替本单位的攻击，可以指定其2个区格以内的一个士兵或英雄为目标，将目标推拉1个区格。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_aetherial_pulse_001',
     trigger: 'afterAttack',
     effects: [
       { type: 'pushPull', target: { unitId: 'selectedTarget' }, distance: 1, direction: 'choice' },
@@ -176,6 +185,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'illusion',
     name: '幻化',
     description: '在你的移动阶段开始时，可以指定本单位3个区格以内的一个士兵为目标。本单位获得目标的所有技能，直到回合结束。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_005',
     trigger: 'onPhaseStart',
     effects: [
       // 在移动阶段开始时触发，需要玩家选择目标士兵
@@ -203,6 +213,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'evasion',
     name: '迷魂',
     description: '当一个相邻敌方单位攻击时，如果掷出一个或更多✦，则本次攻击造成的伤害减少1点。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_006',
     trigger: 'onAdjacentEnemyAttack',
     effects: [
       { type: 'reduceDamage', target: 'target', value: 1, condition: 'onSpecialDice' },
@@ -213,6 +224,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     id: 'rebound',
     name: '缠斗',
     description: '每当一个相邻敌方单位因为移动或被推拉而远离本单位时，立刻对该单位造成1点伤害。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_007',
     trigger: 'onAdjacentEnemyLeave',
     effects: [
       { type: 'damage', target: 'target', value: 1 },

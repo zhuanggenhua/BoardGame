@@ -26,6 +26,10 @@
     "leave": {
       "title": "Leave Room",
       "description": "Are you sure you want to leave this room?"
+    },
+    "exitActiveMatch": {
+      "title": "Leave Current Match",
+      "description": "You are in a match. Leave it and join the new room?"
     }
   },
   "actions": {
@@ -56,6 +60,8 @@
     "matchTitle": "Match #{{id}}",
     "mine": "Mine",
     "emptySlot": "Empty",
+    "ownerMustReconnect": "This is your room. Please reconnect.",
+    "ownerRejoinOnly": "Only the room owner can rejoin an empty room",
     "inAnotherMatch": "You are already in another match",
     "inProgress": "In match",
     "full": "Full"
@@ -99,8 +105,13 @@
       "players": "Solo Tool"
     },
     "fxpreview": {
-      "title": "Effect & Audio Preview",
-      "description": "Preview all common animation effects (flying particles, shake, hit-stop, slash, burst) and audio assets.",
+      "title": "Effect Preview",
+      "description": "Preview all common animation effects (flying particles, shake, hit-stop, slash, burst).",
+      "players": "Solo Tool"
+    },
+    "audiobrowser": {
+      "title": "Audio Browser",
+      "description": "Browse and preview all common audio assets by category, with keyword search and filtering.",
       "players": "Solo Tool"
     },
     "ugcbuilder": {
@@ -151,6 +162,7 @@
     "leaveForbidden": "Unable to leave the room: invalid or expired credentials. Please re-enter the match and try again.",
     "leaveNetwork": "Failed to leave the room due to network or service issues. Please try again later.",
     "roomFull": "Room is full",
+    "ownerClaimFailed": "Unable to reconnect to this room. Please refresh or sign in again.",
     "joinRoomFailed": "Failed to join room",
     "actionFailed": "Action failed, please try again later.",
     "serviceUnavailable": {

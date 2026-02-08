@@ -3,7 +3,7 @@
  */
 
 import type { MatchState, ValidationResult } from '../../../engine/types';
-import type { SmashUpCommand, SmashUpCore } from './types';
+import type { SmashUpCommand, SmashUpCore, ActionCardDef } from './types';
 import { SU_COMMANDS, getCurrentPlayerId, HAND_LIMIT } from './types';
 import { getCardDef } from '../data/cards';
 
@@ -14,6 +14,11 @@ export function validate(
     const core = state.core;
     const currentPlayerId = getCurrentPlayerId(core);
     const phase = state.sys.phase;
+
+    // 系统命令（SYS_ 前缀）由引擎层处理，领域层直接放行
+    if ((command as any).type.startsWith('SYS_')) {
+        return { valid: true };
+    }
 
     switch (command.type) {
         case SU_COMMANDS.PLAY_MINION: {
@@ -39,6 +44,27 @@ export function validate(
         }
 
         case SU_COMMANDS.PLAY_ACTION: {
+            // Me First! 响应窗口期间：允许当前响应者打出特殊行动卡
+            const responseWindow = state.sys.responseWindow?.current;
+            if (responseWindow && responseWindow.windowType === 'meFirst') {
+                const responderQueue = responseWindow.responderQueue;
+                const currentResponderId = responderQueue[responseWindow.currentResponderIndex];
+                if (command.playerId !== currentResponderId) {
+                    return { valid: false, error: '等待对方响应' };
+                }
+                const rPlayer = core.players[command.playerId];
+                if (!rPlayer) return { valid: false, error: '玩家不存在' };
+                const rCard = rPlayer.hand.find(c => c.uid === command.payload.cardUid);
+                if (!rCard) return { valid: false, error: '手牌中没有该卡牌' };
+                if (rCard.type !== 'action') return { valid: false, error: '该卡牌不是行动卡' };
+                const rDef = getCardDef(rCard.defId) as ActionCardDef | undefined;
+                if (!rDef) return { valid: false, error: '卡牌定义不存在' };
+                if (rDef.subtype !== 'special') {
+                    return { valid: false, error: 'Me First! 响应只能打出特殊行动卡' };
+                }
+                return { valid: true };
+            }
+
             if (phase !== 'playCards') {
                 return { valid: false, error: '只能在出牌阶段打出行动卡' };
             }
@@ -131,6 +157,10 @@ export function validate(
         }
 
         default:
+            // RESPONSE_PASS 由引擎 ResponseWindowSystem 处理，领域层直接放行
+            if ((command as any).type === 'RESPONSE_PASS') {
+                return { valid: true };
+            }
             return { valid: false, error: '未知命令' };
     }
 }

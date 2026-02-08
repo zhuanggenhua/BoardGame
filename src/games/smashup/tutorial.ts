@@ -8,6 +8,12 @@ const SMASH_UP_TUTORIAL: TutorialManifest = {
             content: 'game-smashup:tutorial.welcome',
             requireAction: false,
         },
+        {
+            id: 'finish',
+            content: 'game-smashup:tutorial.finish',
+            position: 'center',
+            requireAction: false,
+        },
     ],
 };
 

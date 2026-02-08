@@ -364,40 +364,60 @@ docs/
 
 ```
 scripts/
-├── alipan_save_tool/
+├── audio/                          # 音频相关
+│   ├── compress_audio.js
+│   ├── generate_common_audio_registry.js
+│   ├── generate_ai_audio_registry.js
+│   ├── generate_ai_audio_registry_dicethrone.js
+│   ├── generate_audio_assets_md.js
+│   ├── check-audio-assets.cjs
+│   ├── merge_audio_translations.js
+│   ├── migrate_audio_assets.ps1
+│   ├── admin-archive-refactor-audio.ps1
+│   └── admin-move-tictactoe-audio.ps1
+├── assets/                         # 图片/图集/资源
+│   ├── compress_images.js / .py
+│   ├── atlas_grid_scan.js / .py
+│   ├── pack_sprite_atlas.js / .py
+│   ├── scan_sprite_bounds.py
+│   ├── scan_atlas_to_file.py
+│   ├── generate_uniform_atlas.cjs
+│   ├── check_edges.py
+│   ├── profile_scan.py
+│   ├── extract_assets.js
+│   ├── generate_asset_manifests.js
+│   └── upload-to-r2.js
+├── deploy/                         # 部署
+│   ├── deploy-auto.sh
+│   ├── deploy-image.sh
+│   └── deploy-quick.sh
+├── db/                             # 数据库
+│   ├── cleanup-db.ts
+│   ├── init_admin.ts
+│   └── diagnose-rooms.ts
+├── game/                           # 游戏相关
+│   ├── generate_game_manifests.js
+│   ├── generate-card-locales.cjs
+│   └── fix_dicethrone_ids_mistake.cjs
+├── ugc/                            # UGC
+│   ├── ugc-generate-preview.mjs
+│   └── ugc-publish-preview.mjs
+├── infra/                          # 基础设施
+│   ├── clean_ports.js
+│   ├── wait_for_ports.js
+│   ├── simulate-host.ts
+│   ├── verify_social_ws.ts
+│   ├── check-architecture.cjs
+│   └── pdf_to_md.js
+├── verify/                         # 验证
+│   └── social-ws.ts
+├── alipan_save_tool/               # 阿里云盘转存
 │   ├── README.txt
 │   ├── alipan_save.py
 │   ├── alipan_secrets.example.json
 │   ├── run.bat
 │   └── run.ps1
-├── verify/
-│   └── social-ws.ts
-├── atlas_grid_scan.js
-├── atlas_grid_scan.py
-├── check-architecture.cjs
-├── clean_ports.js
-├── cleanup-db.ts
-├── compress_audio.js
-├── compress_images.js
-├── compress_images.py
-├── deploy-auto.sh
-├── deploy-image.sh
-├── deploy-quick.sh
-├── diagnose-rooms.ts
-├── extract_assets.js
-├── fix_dicethrone_ids_mistake.cjs
-├── generate_asset_manifests.js
-├── generate_audio_assets_md.js
-├── generate_game_manifests.js
-├── generate-card-locales.cjs
-├── init_admin.ts
-├── migrate_audio_assets.ps1
-├── pack_sprite_atlas.js
-├── pack_sprite_atlas.py
-├── pdf_to_md.js
-├── simulate-host.ts
-├── upload-to-r2.js
-└── wait_for_ports.js
+└── image-viewer-mcp/               # MCP 图片查看器
 ```
 
 ## openspec/

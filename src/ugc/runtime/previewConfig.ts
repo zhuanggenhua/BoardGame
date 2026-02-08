@@ -6,8 +6,9 @@ export interface BuilderPreviewConfig {
   layout: Array<{
     id: string;
     type: string;
-    x: number;
-    y: number;
+    anchor: { x: number; y: number };
+    pivot: { x: number; y: number };
+    offset: { x: number; y: number };
     width: number;
     height: number;
     data: Record<string, unknown>;
@@ -24,58 +25,21 @@ export interface BuilderPreviewConfig {
   layoutGroups?: Array<{ id: string; name: string; hidden: boolean }>;
   schemaDefaults?: Record<string, string>;
 }
-
-const buildStandardCardCatalog = () => {
-  const suits = ['黑桃', '红心', '梅花', '方块'];
-  const ranks = [
-    { label: '3', value: 3 },
-    { label: '4', value: 4 },
-    { label: '5', value: 5 },
-    { label: '6', value: 6 },
-    { label: '7', value: 7 },
-    { label: '8', value: 8 },
-    { label: '9', value: 9 },
-    { label: '10', value: 10 },
-    { label: 'J', value: 11 },
-    { label: 'Q', value: 12 },
-    { label: 'K', value: 13 },
-    { label: 'A', value: 14 },
-    { label: '2', value: 15 },
-  ];
-  const catalog: Record<string, Record<string, unknown>> = {};
-  let index = 1;
-  suits.forEach(suit => {
-    ranks.forEach(rank => {
-      const id = `card-${index++}`;
-      const name = `${suit}${rank.label}`;
-      catalog[id] = {
-        id,
-        suit,
-        rank: rank.label,
-        rankValue: rank.value,
-        display: name,
-        name,
-      };
+const buildInstanceCatalog = (
+  instances: BuilderPreviewConfig['instances'],
+  schemaIds: Set<string>
+) => {
+  const catalog = new Map<string, Record<string, unknown>>();
+  schemaIds.forEach(schemaId => {
+    const items = instances[schemaId];
+    if (!Array.isArray(items)) return;
+    items.forEach(item => {
+      if (!item || typeof item !== 'object' || !('id' in item)) return;
+      const id = String((item as { id?: unknown }).id ?? '');
+      if (!id || catalog.has(id)) return;
+      catalog.set(id, item as Record<string, unknown>);
     });
   });
-  const smallJokerId = `card-${index++}`;
-  catalog[smallJokerId] = {
-    id: smallJokerId,
-    suit: '王',
-    rank: '小王',
-    rankValue: 16,
-    display: '小王',
-    name: '小王',
-  };
-  const bigJokerId = `card-${index++}`;
-  catalog[bigJokerId] = {
-    id: bigJokerId,
-    suit: '王',
-    rank: '大王',
-    rankValue: 17,
-    display: '大王',
-    name: '大王',
-  };
   return catalog;
 };
 
@@ -124,7 +88,7 @@ const deriveInstancesFromRuntime = (
       const base = baseById.get(playerId) || {};
       const playerState = playerMap[playerId] as { handCount?: number; public?: { role?: string } } | undefined;
       const role = playerState?.public?.role
-        || (publicZones.landlordId === playerId ? '地主' : '农民');
+      || (base.role as string | undefined);
       const cardCount = hands && hands[playerId]
         ? hands[playerId].length
         : (playerState?.handCount ?? (base.cardCount as number | undefined) ?? 0);
@@ -145,17 +109,18 @@ const deriveInstancesFromRuntime = (
   }
 
   if (cardSchemaIds.size > 0) {
-    const catalog = buildStandardCardCatalog();
+    const catalog = buildInstanceCatalog(nextInstances, cardSchemaIds);
     const cardItems: Record<string, unknown>[] = [];
     if (hands && typeof hands === 'object') {
       Object.entries(hands).forEach(([playerId, cards]) => {
         if (!Array.isArray(cards)) return;
         cards.forEach(card => {
           const cardId = String(card.id ?? '');
-          const base = cardId ? catalog[cardId] || {} : {};
+          const base = cardId ? catalog.get(cardId) || {} : {};
           const name = (card.name as string | undefined)
             || (base.name as string | undefined)
             || (card.display as string | undefined)
+            || (base.display as string | undefined)
             || cardId;
           cardItems.push({
             ...base,
@@ -172,10 +137,11 @@ const deriveInstancesFromRuntime = (
       const landlordId = String(publicZones.landlordId || 'landlord');
       landlordCards.forEach(card => {
         const cardId = String(card.id ?? '');
-        const base = cardId ? catalog[cardId] || {} : {};
+        const base = cardId ? catalog.get(cardId) || {} : {};
         const name = (card.name as string | undefined)
           || (base.name as string | undefined)
           || (card.display as string | undefined)
+          || (base.display as string | undefined)
           || cardId;
         cardItems.push({
           ...base,
@@ -191,11 +157,13 @@ const deriveInstancesFromRuntime = (
       const tableOwner = String(lastPlay.playerId || 'table');
       lastPlay.cardIds.forEach(rawId => {
         const cardId = String(rawId);
-        const base = catalog[cardId] || {};
+        const base = catalog.get(cardId) || {};
         cardItems.push({
           ...base,
           id: cardId,
-          name: (base.name as string | undefined) || cardId,
+          name: (base.name as string | undefined)
+            || (base.display as string | undefined)
+            || cardId,
           ownerId: tableOwner,
           zone: 'table',
         });

@@ -70,6 +70,47 @@ const handleDiceRolled: EventHandler<Extract<DiceThroneEvent, { type: 'DICE_ROLL
 };
 
 /**
+ * 处理伤害减免事件
+ * - 若存在 pendingDamage：直接降低当前伤害
+ * - 若不存在 pendingDamage：转为一次性护盾，供后续 DAMAGE_DEALT 消耗
+ */
+const handlePreventDamage: EventHandler<Extract<DiceThroneEvent, { type: 'PREVENT_DAMAGE' }>> = (
+    state,
+    event
+) => {
+    const newState = cloneState(state);
+    const { targetId, amount, sourceAbilityId, applyImmediately } = event.payload;
+
+    if (amount <= 0) {
+        return newState;
+    }
+
+    if (newState.pendingDamage && newState.pendingDamage.targetPlayerId === targetId) {
+        const nextDamage = Math.max(0, newState.pendingDamage.currentDamage - amount);
+        newState.pendingDamage = {
+            ...newState.pendingDamage,
+            currentDamage: nextDamage,
+            isFullyEvaded: nextDamage <= 0 ? true : newState.pendingDamage.isFullyEvaded,
+        };
+    } else if (!applyImmediately) {
+        const target = newState.players[targetId];
+        if (target) {
+            if (!target.damageShields) {
+                target.damageShields = [];
+            }
+            target.damageShields.push({ value: amount, sourceId: sourceAbilityId, preventStatus: false });
+        }
+    }
+
+    if (sourceAbilityId) {
+        newState.lastEffectSourceByPlayerId = newState.lastEffectSourceByPlayerId || {};
+        newState.lastEffectSourceByPlayerId[targetId] = sourceAbilityId;
+    }
+
+    return newState;
+};
+
+/**
  * 处理进攻方前置防御结算事件
  */
 const handleAttackPreDefenseResolved: EventHandler<Extract<DiceThroneEvent, { type: 'ATTACK_PRE_DEFENSE_RESOLVED' }>> = (
@@ -1404,6 +1445,8 @@ export const reduce = (
             return handleTokenLimitChanged(state, event);
         case 'DAMAGE_SHIELD_GRANTED':
             return handleDamageShieldGranted(state, event);
+        case 'PREVENT_DAMAGE':
+            return handlePreventDamage(state, event);
         case 'DAMAGE_PREVENTED':
             return handleDamagePrevented(state, event);
         case 'CARD_DRAWN':

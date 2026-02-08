@@ -22,6 +22,7 @@ export default defineConfig({
             'src/systems/**/__tests__/**/*.test.{ts,tsx}',
             'src/server/**/__tests__/**/*.test.{ts,tsx}',
             'src/ugc/**/__tests__/**/*.test.{ts,tsx}',
+            'src/pages/**/__tests__/**/*.test.{ts,tsx}',
             'apps/api/test/**/*.test.{ts,tsx}',
             'apps/api/test/**/*.e2e-spec.ts',
         ],

@@ -9,7 +9,6 @@
  */
 import type { TokenDef, TokenState } from '../../../../systems/TokenSystem';
 import { TOKEN_IDS, STATUS_IDS } from '../../domain/ids';
-import { RESOURCE_IDS } from '../../domain/resources';
 
 // 复用 Monk 的 Evasive 定义，但在 Moon Elf 中重新声明以保持独立性结构，
 // 或者引用已有的定义如果完全一致。这里为了方便维护（如果音效/描述有微调），我们复制并适配。
@@ -106,7 +105,10 @@ export const MOON_ELF_TOKENS: TokenDef[] = [
         passiveTrigger: {
             timing: 'onDamageReceived',
             removable: true,
-            actions: [{ type: 'modifyStat', target: 'self', value: 2 }],
+            actions: [
+                { type: 'modifyStat', target: 'self', value: 2 },
+                { type: 'removeStatus', target: 'self', statusId: STATUS_IDS.TARGETED, value: 1 },
+            ],
         },
     },
 ];

@@ -25,6 +25,13 @@ import type {
 import { DEFAULT_TUTORIAL_STATE } from './types';
 import type { EngineSystem, GameSystemsConfig } from './systems/types';
 
+const isDev = import.meta.env.DEV;
+const logDev = (...args: unknown[]) => {
+    if (isDev) {
+        console.log(...args);
+    }
+};
+
 function sortSystems<TCore>(systems: EngineSystem<TCore>[]): EngineSystem<TCore>[] {
     // 稳定排序：priority 越小越先执行；priority 相同按传入顺序
     return systems
@@ -115,6 +122,7 @@ export function createInitialSystemState(
     // 让每个系统初始化自己的状态（按 priority 排序）
     for (const system of sortedSystems) {
         if (system.setup) {
+            logDev(`[Pipeline] Calling setup for system: ${system.id || system.name || 'unknown'}`);
             const partial = system.setup(playerIds);
             sys = { ...sys, ...partial };
         }

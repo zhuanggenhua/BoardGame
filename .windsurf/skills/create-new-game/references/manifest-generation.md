@@ -5,7 +5,7 @@
 
 ## 如何生成
 - 命令：`npm run generate:manifests`
-- 生成脚本：`scripts/generate_game_manifests.js`
+- 生成脚本：`scripts/game/generate_game_manifests.js`
 
 ## 常见问题
 - `manifest.id` 必须与目录名一致，否则脚本会报错。

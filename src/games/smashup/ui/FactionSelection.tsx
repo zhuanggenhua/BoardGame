@@ -1,6 +1,6 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { SU_COMMANDS, getCurrentPlayerId } from '../domain/types';
 import type { SmashUpCore } from '../domain/types';
 import { FACTION_METADATA } from './factionMeta';
@@ -16,6 +16,7 @@ interface Props {
 }
 
 export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => {
+    const { t } = useTranslation('game-smashup');
     const selectionState = core.factionSelection;
     const [focusedFactionId, setFocusedFactionId] = useState<string | null>(null);
 
@@ -48,15 +49,15 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
             >
                 <div className="flex flex-col items-center justify-center mb-2">
                     <span className="text-blue-400 font-bold tracking-widest uppercase text-xs mb-1 px-3 py-1 bg-blue-500/10 rounded-full border border-blue-500/20">
-                        {isMyTurn ? "现在轮到你了" : `正在等待 P${currentPlayerId}`}
+                        {isMyTurn ? t('ui.your_turn_prompt') : t('ui.waiting_for_player', { id: currentPlayerId })}
                     </span>
                     <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-2xl">
-                        选择你的派系
+                        {t('ui.select_factions_title')}
                     </h1>
                 </div>
 
                 <p className="text-slate-400 text-sm max-w-lg mx-auto">
-                    组合两个派系来构建你的终极牌组。利用不同的能力组合来大杀四方。
+                    {t('ui.select_factions_desc')}
                 </p>
             </motion.div>
 
@@ -114,7 +115,7 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                             <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-2 text-center">
                                                 <span className="text-3xl mb-1">🔒</span>
                                                 <span className="font-bold text-white text-sm uppercase tracking-wider">
-                                                    P{ownerId} 已占领
+                                                    {t('ui.player_taken', { id: ownerId })}
                                                 </span>
                                             </div>
                                         )}
@@ -188,16 +189,16 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                             <div className="relative z-10">
                                                 <div className="flex items-center gap-2 mb-2 opacity-70">
                                                     <Layers size={16} />
-                                                    <span className="text-xs font-bold uppercase tracking-wider">派系详情</span>
+                                                    <span className="text-xs font-bold uppercase tracking-wider">{t('ui.faction_details')}</span>
                                                 </div>
                                                 <h2 className="text-4xl font-black text-white mb-4">{meta.name}</h2>
 
                                                 <div className="flex gap-2 mb-6">
                                                     <div className="px-2 py-1 bg-white/10 rounded text-xs font-bold text-white border border-white/10">
-                                                        {cards.filter(c => c.type === 'minion').length} 随从
+                                                        {t('ui.minion_count', { count: cards.filter(c => c.type === 'minion').length })}
                                                     </div>
                                                     <div className="px-2 py-1 bg-white/10 rounded text-xs font-bold text-white border border-white/10">
-                                                        {cards.filter(c => c.type === 'action').length} 战术
+                                                        {t('ui.action_count', { count: cards.filter(c => c.type === 'action').length })}
                                                     </div>
                                                 </div>
 
@@ -210,11 +211,11 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                                 {isSelectedByMe ? (
                                                     <div className="w-full py-4 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 font-bold text-center flex items-center justify-center gap-2">
                                                         <Check size={20} />
-                                                        已选择
+                                                        {t('ui.selected')}
                                                     </div>
                                                 ) : isTaken ? (
                                                     <div className="w-full py-4 bg-slate-800 rounded-lg text-slate-400 font-bold text-center cursor-not-allowed">
-                                                        已被其他玩家选择
+                                                        {t('ui.taken_by_other')}
                                                     </div>
                                                 ) : (
                                                     <button
@@ -229,8 +230,8 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                                         `}
                                                     >
                                                         {isMyTurn
-                                                            ? (mySelections.length >= 2 ? '已选满 2 个派系' : '确认选择')
-                                                            : '等待你的回合'}
+                                                            ? (mySelections.length >= 2 ? t('ui.faction_full') : t('ui.confirm_selection'))
+                                                            : t('ui.wait_turn')}
                                                     </button>
                                                 )}
                                             </div>
@@ -243,7 +244,7 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                             <div className="flex-1 bg-slate-900 overflow-y-auto p-4 md:p-8 custom-scrollbar">
                                 <h3 className="text-white/50 text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
                                     <Search size={14} />
-                                    <span>包含卡牌预览</span>
+                                    <span>{t('ui.preview_cards')}</span>
                                 </h3>
 
                                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -257,7 +258,7 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                             <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 pointer-events-none">
                                                 <div className="text-white font-bold text-sm leading-tight mb-1">{card.name}</div>
                                                 <div className="text-[10px] text-white/70 uppercase tracking-wider">
-                                                    {card.type === 'minion' ? `力量: ${(card as any).power}` : '战术'}
+                                                    {card.type === 'minion' ? `${t('ui.minion')}: ${(card as any).power}` : t('ui.action')}
                                                 </div>
                                             </div>
                                         </div>

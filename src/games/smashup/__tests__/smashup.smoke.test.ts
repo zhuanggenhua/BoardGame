@@ -172,11 +172,15 @@ describe('smashup', () => {
             commands: [
                 ...DRAFT_COMMANDS,
                 { type: 'ADVANCE_PHASE', playerId: pid, payload: undefined },
+                // Me First! 响应：两人都让过
+                { type: 'RESPONSE_PASS', playerId: '0', payload: {} },
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
             ],
         });
 
         expect(result.finalState.sys.phase).toBe('draw');
-        const advanceStep = result.steps[result.steps.length - 1];
+        // ADVANCE_PHASE 步骤成功
+        const advanceStep = result.steps[DRAFT_COMMANDS.length];
         expect(advanceStep?.success).toBe(true);
     });
 

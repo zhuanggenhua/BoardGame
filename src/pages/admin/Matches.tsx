@@ -45,6 +45,13 @@ export default function MatchesPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const fetchMatches = async () => {
+        if (!token) {
+            setMatches([]);
+            setTotalPages(1);
+            setTotalItems(0);
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
             const query = new URLSearchParams({
@@ -165,7 +172,7 @@ export default function MatchesPage() {
                 />
             ),
             width: '48px',
-            className: 'text-center',
+            align: 'center',
             cell: (m) => (
                 <div className="flex items-center justify-center">
                     <input
@@ -203,9 +210,11 @@ export default function MatchesPage() {
             header: '玩家',
             cell: (m) => (
                 <div className="flex items-center gap-3">
-                    <div className="flex -space-x-3 hover:space-x-1 transition-all">
+                    {/* Fixed: Removed hover:space-x-1 to prevent layout jitter */}
+                    <div className="flex -space-x-3">
                         {m.players.map((p, i) => (
-                            <div key={i} className="w-8 h-8 rounded-full bg-zinc-200 border-2 border-white overflow-hidden shadow-sm relative hover:z-10 transition-transform hover:scale-110" title={p.name || p.id}>
+                            // Fixed: Removed hover:scale-110 and hover:z-10
+                            <div key={i} className="w-8 h-8 rounded-full bg-zinc-200 border-2 border-white overflow-hidden shadow-sm relative z-0" title={p.name || p.id}>
                                 {p.avatar ? (
                                     <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
                                 ) : (
@@ -221,22 +230,27 @@ export default function MatchesPage() {
         },
         {
             header: '结果',
+            align: 'center',
             cell: (m) => (
-                <span className={cn(
-                    "px-2.5 py-1 text-xs rounded-full font-semibold border flex w-fit items-center gap-1.5",
-                    m.winnerID ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-zinc-100 text-zinc-500 border-zinc-200"
-                )}>
-                    <span className={cn("w-1.5 h-1.5 rounded-full", m.winnerID ? "bg-emerald-400" : "bg-zinc-400")} />
-                    {resolveResultLabel(m)}
-                </span>
+                <div className="flex justify-center">
+                    <span className={cn(
+                        "px-2.5 py-1 text-xs rounded-full font-semibold border flex w-fit items-center gap-1.5",
+                        m.winnerID ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-zinc-100 text-zinc-500 border-zinc-200"
+                    )}>
+                        <span className={cn("w-1.5 h-1.5 rounded-full", m.winnerID ? "bg-emerald-400" : "bg-zinc-400")} />
+                        {resolveResultLabel(m)}
+                    </span>
+                </div>
             )
         },
         {
             header: '结束时间',
             accessorKey: 'endedAt',
+            align: 'right', // New alignment
+            className: 'custom-date-col',
             cell: (m) => (
                 <div className="flex flex-col gap-1 text-zinc-500 text-xs font-mono">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-end gap-1.5">
                         <Calendar size={12} className="opacity-70" />
                         {new Date(m.endedAt).toLocaleString(undefined, {
                             year: 'numeric', month: '2-digit', day: '2-digit',
@@ -251,7 +265,7 @@ export default function MatchesPage() {
         },
         {
             header: '操作',
-            className: 'text-right',
+            align: 'right', // New alignment
             cell: (m) => (
                 <div className="flex justify-end gap-3">
                     <button
@@ -261,7 +275,7 @@ export default function MatchesPage() {
                         删除
                     </button>
                     <button disabled className="text-xs font-medium text-zinc-400 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        查看详情
+                        详情
                     </button>
                 </div>
             )

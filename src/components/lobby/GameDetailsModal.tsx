@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import { LobbyClient } from 'boardgame.io/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { lobbySocket, type LobbyMatch } from '../../services/lobbySocket';
-import { claimSeat, exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOwnerActiveMatch, clearMatchCredentials, listStoredMatchCredentials, getLatestStoredMatchCredentials, pruneStoredMatchCredentials, persistMatchCredentials } from '../../hooks/match/useMatchStatus';
+import { claimSeat, exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOwnerActiveMatch, clearMatchCredentials, readStoredMatchCredentials, listStoredMatchCredentials, getLatestStoredMatchCredentials, pruneStoredMatchCredentials, persistMatchCredentials, type OwnerActiveMatch, type StoredMatchCredentials } from '../../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName, getOwnerKey as resolveOwnerKey, getOwnerType as resolveOwnerType } from '../../hooks/match/ownerIdentity';
 import { ConfirmModal } from '../common/overlays/ConfirmModal';
 import { ModalBase } from '../common/overlays/ModalBase';
@@ -20,6 +20,28 @@ import { PasswordEntryModal } from '../common/overlays/PasswordEntryModal';
 const lobbyClient = new LobbyClient({ server: GAME_SERVER_URL });
 
 const normalizeGameName = (name?: string) => (name || '').toLowerCase();
+
+export const shouldPromptExitActiveMatch = (activeMatchID: string | null, targetMatchID: string) => (
+    !!activeMatchID && activeMatchID !== targetMatchID
+);
+
+export const resolveActiveMatchExitPayload = (
+    activeMatchID: string | null,
+    storedActive: StoredMatchCredentials | null,
+    ownerActive: OwnerActiveMatch | null,
+    fallbackGameName: string
+): { gameName: string; playerID: string; credentials: string } | null => {
+    if (!activeMatchID) return null;
+    const playerID = storedActive?.playerID;
+    const credentials = storedActive?.credentials;
+    if (!playerID || !credentials) return null;
+
+    const activeGameName = normalizeGameName(storedActive?.gameName || ownerActive?.gameName)
+        || fallbackGameName
+        || 'tictactoe';
+
+    return { gameName: activeGameName, playerID, credentials };
+};
 
 const buildCreateRoomErrorTip = (error: unknown): { title: string; message: string } | null => {
     const rawMessage = error instanceof Error ? error.message : String(error);
@@ -79,6 +101,7 @@ const buildCreateRoomErrorTip = (error: unknown): { title: string; message: stri
 interface RoomPlayer {
     id: number;
     name?: string;
+    isConnected?: boolean;
 }
 
 interface Room {
@@ -113,6 +136,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const { openModal, closeModal } = useModalStack();
     const toast = useToast();
     const confirmModalIdRef = useRef<string | null>(null);
+    const confirmJoinModalIdRef = useRef<string | null>(null);
     const normalizedGameId = normalizeGameName(gameId);
     const gameManifest = getGameById(gameId);
     const allowLocalMode = gameManifest?.allowLocalMode !== false;
@@ -126,6 +150,10 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         myPlayerID: string;
         myCredentials: string;
         isHost: boolean;
+    } | null>(null);
+    const [pendingJoin, setPendingJoin] = useState<{
+        matchID: string;
+        gameName?: string;
     } | null>(null);
 
     // 排行榜状态
@@ -428,6 +456,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         if (canClaimSeat) {
             const claimed = await tryClaimSeat(matchID, roomGameName);
             if (claimed) return;
+            toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+            return;
         }
         let targetPlayerID = '';
 
@@ -481,6 +511,56 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         if (!passwordModalConfig) return;
         handleJoinRoom(passwordModalConfig.matchID, passwordModalConfig.gameName, password);
         setPasswordModalConfig(null);
+    };
+
+    const handleJoinRequest = (matchID: string, overrideGameName?: string) => {
+        if (shouldPromptExitActiveMatch(myActiveRoomMatchID, matchID)) {
+            setPendingJoin({ matchID, gameName: overrideGameName });
+            return;
+        }
+        void handleJoinRoom(matchID, overrideGameName);
+    };
+
+    const handleConfirmJoin = async () => {
+        if (!pendingJoin) return;
+        const nextJoin = pendingJoin;
+        const activeMatchID = myActiveRoomMatchID;
+
+        if (!activeMatchID || activeMatchID === nextJoin.matchID) {
+            setPendingJoin(null);
+            void handleJoinRoom(nextJoin.matchID, nextJoin.gameName);
+            return;
+        }
+
+        const storedActive = readStoredMatchCredentials(activeMatchID);
+        const ownerActive = getOwnerActiveMatch();
+        const exitPayload = resolveActiveMatchExitPayload(activeMatchID, storedActive, ownerActive, normalizedGameId);
+
+        if (!exitPayload) {
+            toast.error({ kind: 'i18n', key: 'error.leaveForbidden', ns: 'lobby' });
+            setPendingJoin(null);
+            return;
+        }
+
+        const isHost = exitPayload.playerID === '0';
+        const result = await exitMatch(exitPayload.gameName, activeMatchID, exitPayload.playerID, exitPayload.credentials, isHost);
+        if (!result.success) {
+            const errorKey = result.error === 'forbidden'
+                ? (isHost ? 'error.destroyForbidden' : 'error.leaveForbidden')
+                : result.error === 'network'
+                    ? (isHost ? 'error.destroyNetwork' : 'error.leaveNetwork')
+                    : 'error.actionFailed';
+            toast.error({ kind: 'i18n', key: errorKey, ns: 'lobby' });
+            setPendingJoin(null);
+            return;
+        }
+
+        setPendingJoin(null);
+        void handleJoinRoom(nextJoin.matchID, nextJoin.gameName);
+    };
+
+    const handleCancelJoin = () => {
+        setPendingJoin(null);
     };
 
     const handleAction = (matchID: string, myPlayerID: string, myCredentials: string, isHost: boolean) => {
@@ -590,10 +670,47 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     }, [closeModal, handleCancelAction, handleConfirmAction, openModal, pendingAction]);
 
     useEffect(() => {
+        if (pendingJoin && !confirmJoinModalIdRef.current) {
+            confirmJoinModalIdRef.current = openModal({
+                closeOnBackdrop: true,
+                closeOnEsc: true,
+                lockScroll: true,
+                onClose: () => {
+                    handleCancelJoin();
+                    confirmJoinModalIdRef.current = null;
+                },
+                render: ({ close, closeOnBackdrop: stackCloseOnBackdrop }) => (
+                    <ConfirmModal
+                        title={t('confirm.exitActiveMatch.title')}
+                        description={t('confirm.exitActiveMatch.description')}
+                        onConfirm={() => {
+                            handleConfirmJoin();
+                        }}
+                        onCancel={() => {
+                            close();
+                        }}
+                        tone="cool"
+                        closeOnBackdrop={stackCloseOnBackdrop}
+                    />
+                ),
+            });
+        }
+
+        if (!pendingJoin && confirmJoinModalIdRef.current) {
+            closeModal(confirmJoinModalIdRef.current);
+            confirmJoinModalIdRef.current = null;
+        }
+    }, [closeModal, handleCancelJoin, handleConfirmJoin, openModal, pendingJoin, t]);
+
+    useEffect(() => {
         return () => {
             if (confirmModalIdRef.current) {
                 closeModal(confirmModalIdRef.current);
                 confirmModalIdRef.current = null;
+            }
+            if (confirmJoinModalIdRef.current) {
+                closeModal(confirmJoinModalIdRef.current);
+                confirmJoinModalIdRef.current = null;
             }
         };
     }, [closeModal]);
@@ -613,8 +730,10 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         const ownerKey = getOwnerKey();
         return rooms.map(room => {
             const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
+            const hasOccupiedSeat = room.players.some(player => Boolean(player.name || player.isConnected));
             const playerCount = room.players.filter(p => p.name).length;
             const isFull = totalSeats > 0 ? playerCount >= totalSeats : true;
+            const isEmptyRoom = !hasOccupiedSeat;
 
             const parsed = credsMap.get(room.matchID);
             let myPlayerID: string | null = null;
@@ -633,6 +752,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             return {
                 ...room,
                 isFull,
+                isEmptyRoom,
                 playerCount,
                 totalSeats,
                 isMyRoom,
@@ -962,6 +1082,11 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                                                 <div className="text-[10px] text-parchment-light-text mt-0.5">
                                                                     {seatLabels.join(' vs ')}
                                                                 </div>
+                                                                {room.isEmptyRoom && !room.isOwnerRoom && (
+                                                                    <div className="text-[10px] text-parchment-light-text mt-1 italic">
+                                                                        {t('rooms.ownerRejoinOnly')}
+                                                                    </div>
+                                                                )}
                                                             </>
                                                         );
                                                     })()}
@@ -1005,25 +1130,22 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                                     )}
 
                                                     <button
-                                                        onClick={() => handleJoinRoom(room.matchID)}
-                                                        disabled={(room.isFull && !room.canReconnect) || (!!myActiveRoomMatchID && !room.canReconnect)}
+                                                        onClick={() => handleJoinRequest(room.matchID, room.gameName)}
+                                                        disabled={(room.isFull && !room.canReconnect) || (room.isEmptyRoom && !room.isOwnerRoom)}
                                                         className={clsx(
                                                             "px-3 py-1.5 rounded-[4px] text-[10px] font-bold transition-all cursor-pointer uppercase tracking-wider",
                                                             room.canReconnect
                                                                 ? "bg-[#c0a080] text-white hover:bg-[#a08060]"
-                                                                : (room.isFull || (!!myActiveRoomMatchID && !room.canReconnect))
+                                                                : (room.isFull || (room.isEmptyRoom && !room.isOwnerRoom))
                                                                     ? "bg-[#e5e0d0] text-[#8c7b64] cursor-not-allowed"
                                                                     : "bg-[#433422] text-[#fcfbf9] hover:bg-[#2b2114]"
                                                         )}
-                                                        title={myActiveRoomMatchID && !room.canReconnect ? t('rooms.inAnotherMatch') : undefined}
                                                     >
                                                         {room.canReconnect
                                                             ? t('actions.reconnect')
-                                                            : (myActiveRoomMatchID && !room.canReconnect)
-                                                                ? t('rooms.inProgress')
-                                                                : room.isFull
-                                                                    ? t('rooms.full')
-                                                                    : t('actions.join')}
+                                                            : room.isFull
+                                                                ? t('rooms.full')
+                                                                : t('actions.join')}
                                                     </button>
                                                 </div>
                                             </div>

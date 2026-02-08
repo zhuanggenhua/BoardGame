@@ -210,7 +210,7 @@ export interface DamageShield {
     /** 护盾值 */
     value: number;
     /** 来源（卡牌/技能 ID，用于 UI/日志） */
-    sourceId: string;
+    sourceId?: string;
     /** 是否用于防止本次攻击的状态效果 */
     preventStatus?: boolean;
 }
@@ -815,9 +815,21 @@ export interface DamageShieldGrantedEvent extends GameEvent<'DAMAGE_SHIELD_GRANT
     payload: {
         targetId: PlayerId;
         value: number;
-        sourceId: string;
+        sourceId?: string;
         /** 是否用于防止本次攻击的状态效果 */
         preventStatus?: boolean;
+    };
+}
+
+/** 伤害减免事件（用于提前抵消即将到来的伤害） */
+export interface PreventDamageEvent extends GameEvent<'PREVENT_DAMAGE'> {
+    payload: {
+        targetId: PlayerId;
+        /** 要减免的伤害值 */
+        amount: number;
+        sourceAbilityId?: string;
+        /** 是否仅用于当前伤害结算（无 pendingDamage 时不转为护盾） */
+        applyImmediately?: boolean;
     };
 }
 
@@ -1227,6 +1239,7 @@ export type DiceThroneEvent =
     | TokenConsumedEvent
     | TokenLimitChangedEvent
     | DamageShieldGrantedEvent
+    | PreventDamageEvent
     | DamagePreventedEvent
     | CardDrawnEvent
     | CardDiscardedEvent

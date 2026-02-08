@@ -84,16 +84,16 @@ docker compose up -d
 
 ```bash
 # 首次部署 / 更新
-bash scripts/deploy-image.sh deploy
+bash scripts/deploy/deploy-image.sh deploy
 
 # 回滚到指定版本
-bash scripts/deploy-image.sh rollback v1.2.3
+bash scripts/deploy/deploy-image.sh rollback v1.2.3
 
 # 查看状态
-bash scripts/deploy-image.sh status
+bash scripts/deploy/deploy-image.sh status
 
 # 查看日志
-bash scripts/deploy-image.sh logs [service]
+bash scripts/deploy/deploy-image.sh logs [service]
 ```
 
 ### CI 配置说明
@@ -149,7 +149,7 @@ curl -I http://127.0.0.1/
 
 在根目录执行
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/scripts/deploy-auto.sh -o deploy-auto.sh && bash deploy-auto.sh
+curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/scripts/deploy/deploy-auto.sh -o deploy-auto.sh && bash deploy-auto.sh
 ```
 
 ## 快速更新脚本（已部署后使用）
@@ -158,7 +158,7 @@ curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/scripts
 
 ```bash
 cd /home/admin/BoardGame
-bash scripts/deploy-quick.sh
+bash scripts/deploy/deploy-quick.sh
 ```
 
 ## 部署前本地自检（强烈建议）

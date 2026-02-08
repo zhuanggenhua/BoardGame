@@ -175,6 +175,19 @@ export const HAND_LIMIT = 10;
 export const STARTING_HAND_SIZE = 5;
 export const DRAW_PER_TURN = 2;
 export const VP_TO_WIN = 15;
+/** 疯狂牌库初始数量 */
+export const MADNESS_DECK_SIZE = 30;
+/** 疯狂卡 defId */
+export const MADNESS_CARD_DEF_ID = 'special_madness';
+/** 疯狂卡 faction */
+export const MADNESS_FACTION = 'madness';
+/** 克苏鲁扩展派系（使用疯狂牌库的派系） */
+export const CTHULHU_EXPANSION_FACTIONS = [
+    'minions_of_cthulhu',
+    'elder_things',
+    'innsmouth',
+    'miskatonic_university',
+] as const;
 
 export interface SmashUpCore {
     players: Record<PlayerId, PlayerState>;
@@ -196,12 +209,10 @@ export interface SmashUpCore {
     // === 新增字段 ===
     /** 派系选择阶段状态（选择完成后置为 undefined） */
     factionSelection?: FactionSelectionState;
-    /** Me First 响应窗口状态 */
-    meFirstWindow?: MeFirstState;
     /** 疯狂牌库（克苏鲁扩展，defId 列表） */
     madnessDeck?: string[];
-    /** 当前活跃的 Prompt */
-    activePrompt?: PromptConfig;
+    /** 待处理的 Prompt 继续上下文（能力需要目标选择时写入，Prompt 解决后读取并清除） */
+    pendingPromptContinuation?: PromptContinuationContext;
 }
 
 export interface FactionSelectionState {
@@ -213,12 +224,19 @@ export interface FactionSelectionState {
     completedPlayers: PlayerId[];
 }
 
-export interface MeFirstState {
-    active: boolean;
-    triggerContext: string;
-    responderQueue: PlayerId[];
-    currentIndex: number;
-    consecutivePasses: number;
+/**
+ * Prompt 继续上下文
+ * 
+ * 当能力需要目标选择时，将继续执行所需的上下文存入 core 状态。
+ * Prompt 解决后（SYS_PROMPT_RESOLVED），FlowHooks 读取此上下文并生成继续事件。
+ */
+export interface PromptContinuationContext {
+    /** 能力来源 ID（如 'pirate_dinghy'） */
+    abilityId: string;
+    /** 发起 Prompt 的玩家 */
+    playerId: PlayerId;
+    /** 额外上下文数据（能力特定） */
+    data?: Record<string, unknown>;
 }
 
 export interface PromptConfig {
@@ -264,10 +282,7 @@ export const SU_COMMANDS = {
     DISCARD_TO_LIMIT: 'su:discard_to_limit',
     // === 新增 ===
     SELECT_FACTION: 'su:select_faction',
-    RESOLVE_PROMPT: 'su:resolve_prompt',
     USE_TALENT: 'su:use_talent',
-    ME_FIRST_PLAY: 'su:me_first_play',
-    ME_FIRST_PASS: 'su:me_first_pass',
 } as const;
 
 /** 打出随从 */
@@ -301,14 +316,6 @@ export interface SelectFactionCommand extends Command<typeof SU_COMMANDS.SELECT_
     };
 }
 
-/** 解决 Prompt */
-export interface ResolvePromptCommand extends Command<typeof SU_COMMANDS.RESOLVE_PROMPT> {
-    payload: {
-        promptId: string;
-        result: any;
-    };
-}
-
 /** 使用天赋 */
 export interface UseTalentCommand extends Command<typeof SU_COMMANDS.USE_TALENT> {
     payload: {
@@ -322,7 +329,6 @@ export type SmashUpCommand =
     | PlayActionCommand
     | DiscardToLimitCommand
     | SelectFactionCommand
-    | ResolvePromptCommand
     | UseTalentCommand;
 
 // ============================================================================
@@ -345,10 +351,6 @@ export const SU_EVENTS = {
     // === 新增 ===
     FACTION_SELECTED: 'su:faction_selected',
     ALL_FACTIONS_SELECTED: 'su:all_factions_selected',
-    PROMPT_CREATED: 'su:prompt_created',
-    PROMPT_RESOLVED: 'su:prompt_resolved',
-    ME_FIRST_OPENED: 'su:me_first_opened',
-    ME_FIRST_CLOSED: 'su:me_first_closed',
     MINION_DESTROYED: 'su:minion_destroyed',
     MINION_MOVED: 'su:minion_moved',
     POWER_COUNTER_ADDED: 'su:power_counter_added',
@@ -359,6 +361,12 @@ export const SU_EVENTS = {
     CARD_TO_DECK_BOTTOM: 'su:card_to_deck_bottom',
     CARD_RECOVERED_FROM_DISCARD: 'su:card_recovered_from_discard',
     HAND_SHUFFLED_INTO_DECK: 'su:hand_shuffled_into_deck',
+    /** Prompt 继续：能力目标选择完成后的继续事件 */
+    PROMPT_CONTINUATION: 'su:prompt_continuation',
+    /** 疯狂卡抽取（从疯狂牌库到玩家手牌） */
+    MADNESS_DRAWN: 'su:madness_drawn',
+    /** 疯狂卡返回（从玩家手牌回疯狂牌库） */
+    MADNESS_RETURNED: 'su:madness_returned',
 } as const;
 
 export interface MinionPlayedEvent extends GameEvent<typeof SU_EVENTS.MINION_PLAYED> {
@@ -478,8 +486,6 @@ export type SmashUpEvent =
     | LimitModifiedEvent
     | FactionSelectedEvent
     | AllFactionsSelectedEvent
-    | PromptCreatedEvent
-    | PromptResolvedEvent
     | MinionDestroyedEvent
     | MinionMovedEvent
     | PowerCounterAddedEvent
@@ -489,7 +495,10 @@ export type SmashUpEvent =
     | TalentUsedEvent
     | CardToDeckBottomEvent
     | CardRecoveredFromDiscardEvent
-    | HandShuffledIntoDeckEvent;
+    | HandShuffledIntoDeckEvent
+    | PromptContinuationEvent
+    | MadnessDrawnEvent
+    | MadnessReturnedEvent;
 
 // ============================================================================
 // 新增事件接口
@@ -512,18 +521,8 @@ export interface AllFactionsSelectedEvent extends GameEvent<typeof SU_EVENTS.ALL
     };
 }
 
-export interface PromptCreatedEvent extends GameEvent<typeof SU_EVENTS.PROMPT_CREATED> {
-    payload: {
-        prompt: PromptConfig;
-    };
-}
-
-export interface PromptResolvedEvent extends GameEvent<typeof SU_EVENTS.PROMPT_RESOLVED> {
-    payload: {
-        promptId: string;
-        result: any;
-    };
-}
+// PromptCreatedEvent 和 PromptResolvedEvent 已移除
+// 统一使用引擎层 PromptSystem 的 SYS_PROMPT_CREATED / SYS_PROMPT_RESOLVED
 
 // ============================================================================
 // 新增事件接口（能力系统）
@@ -621,6 +620,39 @@ export interface HandShuffledIntoDeckEvent extends GameEvent<typeof SU_EVENTS.HA
         playerId: PlayerId;
         /** 洗入后的牌库 uid 列表（确定性） */
         newDeckUids: string[];
+        reason: string;
+    };
+}
+
+/** Prompt 继续事件：存储/清除 Prompt 继续上下文 */
+export interface PromptContinuationEvent extends GameEvent<typeof SU_EVENTS.PROMPT_CONTINUATION> {
+    payload: {
+        /** 'set' 设置上下文，'clear' 清除上下文 */
+        action: 'set' | 'clear';
+        /** 继续上下文（action='set' 时必填） */
+        continuation?: PromptContinuationContext;
+        /** Prompt 解决后的选择值（action='clear' 时由继续逻辑填充） */
+        resolvedValue?: unknown;
+    };
+}
+
+/** 疯狂卡抽取事件 */
+export interface MadnessDrawnEvent extends GameEvent<typeof SU_EVENTS.MADNESS_DRAWN> {
+    payload: {
+        playerId: PlayerId;
+        /** 抽取数量 */
+        count: number;
+        /** 生成的疯狂卡实例 UID 列表 */
+        cardUids: string[];
+        reason: string;
+    };
+}
+
+/** 疯狂卡返回事件 */
+export interface MadnessReturnedEvent extends GameEvent<typeof SU_EVENTS.MADNESS_RETURNED> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
         reason: string;
     };
 }

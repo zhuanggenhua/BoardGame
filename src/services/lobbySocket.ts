@@ -29,6 +29,8 @@ export const LOBBY_EVENTS = {
     HEARTBEAT: 'lobby:heartbeat',
 } as const;
 
+const LOBBY_ALL = 'all';
+
 const tLobbySocket = (key: string, params?: Record<string, string | number>) => (
     i18n.t(`lobby:socket.${key}`, params)
 );
@@ -55,22 +57,28 @@ export interface LobbyMatch {
     isLocked?: boolean;
 }
 
+type LobbyGameId = string;
+
 interface LobbySnapshotPayload {
+    gameId: LobbyGameId;
     version: number;
     matches: LobbyMatch[];
 }
 
 interface LobbyMatchPayload {
+    gameId: LobbyGameId;
     version: number;
     match: LobbyMatch;
 }
 
 interface LobbyMatchEndedPayload {
+    gameId: LobbyGameId;
     version: number;
     matchID: string;
 }
 
 interface LobbyHeartbeatPayload {
+    gameId: LobbyGameId;
     version: number;
     timestamp: number;
 }
@@ -78,53 +86,79 @@ interface LobbyHeartbeatPayload {
 // 大厅更新回调类型
 export type LobbyUpdateCallback = (matches: LobbyMatch[]) => void;
 
+type LobbyState = {
+    matches: LobbyMatch[];
+    version: number;
+    callbacks: Set<LobbyUpdateCallback>;
+};
+
 class LobbySocketService {
     private socket: Socket | null = null;
-    private subscribers: Set<LobbyUpdateCallback> = new Set();
     private statusSubscribers: Set<(status: { connected: boolean; lastError?: string }) => void> = new Set();
     private isConnected = false;
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
-    private currentMatches: LobbyMatch[] = [];
-    private lobbyVersion = -1;
-    private subscribedGameId: string | null = null;
+    private lobbyStateByGame: Map<LobbyGameId, LobbyState> = new Map();
 
-    private upsertMatch(match: LobbyMatch): void {
-        const index = this.currentMatches.findIndex(m => m.matchID === match.matchID);
+    private ensureState(gameId: LobbyGameId): LobbyState {
+        const existing = this.lobbyStateByGame.get(gameId);
+        if (existing) return existing;
+        const state: LobbyState = { matches: [], version: -1, callbacks: new Set() };
+        this.lobbyStateByGame.set(gameId, state);
+        return state;
+    }
+
+    private getState(gameId: LobbyGameId): LobbyState | null {
+        return this.lobbyStateByGame.get(gameId) ?? null;
+    }
+
+    private upsertMatch(gameId: LobbyGameId, match: LobbyMatch): void {
+        const state = this.getState(gameId);
+        if (!state) return;
+        const index = state.matches.findIndex(m => m.matchID === match.matchID);
         if (index >= 0) {
-            this.currentMatches = this.currentMatches.map(m =>
+            state.matches = state.matches.map(m =>
                 m.matchID === match.matchID ? match : m
             );
         } else {
-            this.currentMatches = [...this.currentMatches, match];
+            state.matches = [...state.matches, match];
         }
     }
 
-    private removeMatch(matchID: string): void {
-        this.currentMatches = this.currentMatches.filter(m => m.matchID !== matchID);
+    private removeMatch(gameId: LobbyGameId, matchID: string): void {
+        const state = this.getState(gameId);
+        if (!state) return;
+        state.matches = state.matches.filter(m => m.matchID !== matchID);
     }
 
-    private shouldAcceptVersion(version: number, allowEqual = false): boolean {
-        if (allowEqual) return version >= this.lobbyVersion;
-        return version > this.lobbyVersion;
+    private shouldAcceptVersion(gameId: LobbyGameId, version: number, allowEqual = false): boolean {
+        const state = this.getState(gameId);
+        if (!state) return false;
+        if (allowEqual) return version >= state.version;
+        return version > state.version;
     }
 
-    private updateVersion(version: number): void {
-        if (version > this.lobbyVersion) {
-            this.lobbyVersion = version;
+    private updateVersion(gameId: LobbyGameId, version: number): void {
+        const state = this.getState(gameId);
+        if (!state) return;
+        if (version > state.version) {
+            state.version = version;
         }
     }
 
-    private handleVersionRollback(version: number, context: string): boolean {
-        if (version < this.lobbyVersion) {
+    private handleVersionRollback(gameId: LobbyGameId, version: number, context: string): boolean {
+        const state = this.getState(gameId);
+        if (!state) return false;
+        if (version < state.version) {
             console.warn('[LobbySocket] 版本回退，强制刷新', {
                 context,
+                gameId,
                 version,
-                current: this.lobbyVersion,
+                current: state.version,
             });
-            this.currentMatches = [];
-            this.lobbyVersion = -1;
-            this.requestRefresh();
+            state.matches = [];
+            state.version = -1;
+            this.requestRefresh(gameId);
             return true;
         }
         return false;
@@ -165,10 +199,12 @@ class LobbySocketService {
             this.reconnectAttempts = 0;
             this.notifyStatusSubscribers({ connected: true });
 
-            // 自动订阅大厅更新（仅当已指定 gameId）
-            if (this.subscribedGameId) {
-                this.socket?.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: this.subscribedGameId });
-            }
+            // 自动订阅大厅更新（支持多 gameId）
+            this.lobbyStateByGame.forEach((state, gameId) => {
+                if (state.callbacks.size > 0) {
+                    this.socket?.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId });
+                }
+            });
         });
 
         this.socket.on('disconnect', (reason) => {
@@ -185,75 +221,82 @@ class LobbySocketService {
 
         // 接收完整的房间列表更新
         this.socket.on(LOBBY_EVENTS.LOBBY_UPDATE, (payload: LobbySnapshotPayload) => {
-            if (this.handleVersionRollback(payload.version, 'snapshot')) {
+            const state = this.getState(payload.gameId);
+            if (!state) return;
+            if (this.handleVersionRollback(payload.gameId, payload.version, 'snapshot')) {
                 return;
             }
-            if (!this.shouldAcceptVersion(payload.version, true)) {
+            if (!this.shouldAcceptVersion(payload.gameId, payload.version, true)) {
                 console.log('[LobbySocket]', tLobbySocket('ignoreSnapshot', { version: payload.version }));
                 return;
             }
 
             // 日志已移除：快照接收过于频繁
-            this.currentMatches = payload.matches;
-            this.updateVersion(payload.version);
-            this.notifySubscribers(payload.matches);
+            state.matches = payload.matches;
+            this.updateVersion(payload.gameId, payload.version);
+            this.notifySubscribers(payload.gameId, payload.matches);
         });
 
         // 接收单个房间创建事件
         this.socket.on(LOBBY_EVENTS.MATCH_CREATED, (payload: LobbyMatchPayload) => {
-            if (this.handleVersionRollback(payload.version, 'matchCreated')) {
+            if (!this.getState(payload.gameId)) return;
+            if (this.handleVersionRollback(payload.gameId, payload.version, 'matchCreated')) {
                 return;
             }
-            if (!this.shouldAcceptVersion(payload.version)) {
+            if (!this.shouldAcceptVersion(payload.gameId, payload.version)) {
                 console.log('[LobbySocket]', tLobbySocket('ignoreMatchCreated', { version: payload.version, matchId: payload.match.matchID }));
                 return;
             }
 
             // 日志已移除：房间创建事件过于频繁
-            this.upsertMatch(payload.match);
-            this.updateVersion(payload.version);
-            this.notifySubscribers(this.currentMatches);
+            this.upsertMatch(payload.gameId, payload.match);
+            this.updateVersion(payload.gameId, payload.version);
+            this.notifySubscribers(payload.gameId, this.getState(payload.gameId)?.matches ?? []);
         });
 
         // 接收单个房间更新事件（玩家加入/离开）
         this.socket.on(LOBBY_EVENTS.MATCH_UPDATED, (payload: LobbyMatchPayload) => {
-            if (this.handleVersionRollback(payload.version, 'matchUpdated')) {
+            if (!this.getState(payload.gameId)) return;
+            if (this.handleVersionRollback(payload.gameId, payload.version, 'matchUpdated')) {
                 return;
             }
-            if (!this.shouldAcceptVersion(payload.version)) {
+            if (!this.shouldAcceptVersion(payload.gameId, payload.version)) {
                 console.log('[LobbySocket]', tLobbySocket('ignoreMatchUpdated', { version: payload.version, matchId: payload.match.matchID }));
                 return;
             }
 
             // 日志已移除：房间更新事件过于频繁
-            this.upsertMatch(payload.match);
-            this.updateVersion(payload.version);
-            this.notifySubscribers(this.currentMatches);
+            this.upsertMatch(payload.gameId, payload.match);
+            this.updateVersion(payload.gameId, payload.version);
+            this.notifySubscribers(payload.gameId, this.getState(payload.gameId)?.matches ?? []);
         });
 
         // 接收房间结束事件
         this.socket.on(LOBBY_EVENTS.MATCH_ENDED, (payload: LobbyMatchEndedPayload) => {
-            if (this.handleVersionRollback(payload.version, 'matchEnded')) {
+            if (!this.getState(payload.gameId)) return;
+            if (this.handleVersionRollback(payload.gameId, payload.version, 'matchEnded')) {
                 return;
             }
-            if (!this.shouldAcceptVersion(payload.version)) {
+            if (!this.shouldAcceptVersion(payload.gameId, payload.version)) {
                 console.log('[LobbySocket]', tLobbySocket('ignoreMatchEnded', { version: payload.version, matchId: payload.matchID }));
                 return;
             }
 
             // 日志已移除：房间结束事件过于频繁
-            this.removeMatch(payload.matchID);
-            this.updateVersion(payload.version);
-            this.notifySubscribers(this.currentMatches);
+            this.removeMatch(payload.gameId, payload.matchID);
+            this.updateVersion(payload.gameId, payload.version);
+            this.notifySubscribers(payload.gameId, this.getState(payload.gameId)?.matches ?? []);
         });
 
         this.socket.on(LOBBY_EVENTS.HEARTBEAT, (payload: LobbyHeartbeatPayload) => {
-            if (this.handleVersionRollback(payload.version, 'heartbeat')) {
+            if (!this.getState(payload.gameId)) return;
+            if (this.handleVersionRollback(payload.gameId, payload.version, 'heartbeat')) {
                 return;
             }
-            if (payload.version > this.lobbyVersion) {
-                console.log('[LobbySocket]', tLobbySocket('heartbeatStale', { version: payload.version, current: this.lobbyVersion }));
-                this.requestRefresh();
+            const currentVersion = this.getState(payload.gameId)?.version ?? -1;
+            if (payload.version > currentVersion) {
+                console.log('[LobbySocket]', tLobbySocket('heartbeatStale', { version: payload.version, current: currentVersion }));
+                this.requestRefresh(payload.gameId);
                 return;
             }
 
@@ -264,8 +307,10 @@ class LobbySocketService {
     /**
      * 通知所有订阅者
      */
-    private notifySubscribers(matches: LobbyMatch[]): void {
-        this.subscribers.forEach(callback => {
+    private notifySubscribers(gameId: LobbyGameId, matches: LobbyMatch[]): void {
+        const state = this.getState(gameId);
+        if (!state) return;
+        state.callbacks.forEach(callback => {
             try {
                 callback(matches);
             } catch (error) {
@@ -306,44 +351,37 @@ class LobbySocketService {
         const normalizedGameId = normalizeGameName(gameId);
         if (!normalizedGameId) {
             console.warn('[LobbySocket]', tLobbySocket('subscribeMissingGameId'));
-            return () => {
-                this.subscribers.delete(callback);
-            };
+            return () => {};
         }
 
-        if (this.subscribedGameId !== normalizedGameId) {
-            this.subscribedGameId = normalizedGameId;
-            this.currentMatches = [];
-            this.lobbyVersion = -1;
-        }
+        const resolvedGameId = normalizedGameId === LOBBY_ALL ? LOBBY_ALL : normalizedGameId;
+        const state = this.ensureState(resolvedGameId);
 
-        this.subscribers.add(callback);
+        state.callbacks.add(callback);
 
         // 如果已有房间数据，立即通知新订阅者
-        if (this.currentMatches.length > 0) {
-            callback(this.currentMatches);
+        if (state.matches.length > 0) {
+            callback(state.matches);
         }
 
         // 确保已连接
         if (!this.socket?.connected) {
             this.connect();
         } else {
-            this.socket.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: this.subscribedGameId });
+            this.socket.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: resolvedGameId });
         }
 
         // 返回取消订阅函数
         return () => {
-            this.subscribers.delete(callback);
+            state.callbacks.delete(callback);
 
-            // 如果没有订阅者了，可选择断开连接以节省资源
-            if (this.subscribers.size === 0) {
+            if (state.callbacks.size === 0) {
                 // 日志已移除：无订阅者提示过于频繁
                 if (this.socket?.connected) {
-                    this.socket.emit(LOBBY_EVENTS.UNSUBSCRIBE_LOBBY);
+                    this.socket.emit(LOBBY_EVENTS.UNSUBSCRIBE_LOBBY, { gameId: resolvedGameId });
                 }
-                this.subscribedGameId = null;
-                this.currentMatches = [];
-                this.lobbyVersion = -1;
+                state.matches = [];
+                state.version = -1;
             }
         };
     }
@@ -354,15 +392,21 @@ class LobbySocketService {
     requestRefresh(gameId?: string): void {
         if (gameId) {
             const normalizedGameId = normalizeGameName(gameId);
-            if (normalizedGameId && this.subscribedGameId !== normalizedGameId) {
-                this.subscribedGameId = normalizedGameId;
-                this.currentMatches = [];
-                this.lobbyVersion = -1;
+            if (!normalizedGameId) return;
+            const resolvedGameId = normalizedGameId === LOBBY_ALL ? LOBBY_ALL : normalizedGameId;
+            this.ensureState(resolvedGameId);
+            if (this.socket?.connected) {
+                this.socket.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: resolvedGameId });
             }
+            return;
         }
 
-        if (this.socket?.connected && this.subscribedGameId) {
-            this.socket.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: this.subscribedGameId });
+        if (this.socket?.connected) {
+            this.lobbyStateByGame.forEach((state, activeGameId) => {
+                if (state.callbacks.size > 0) {
+                    this.socket?.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: activeGameId });
+                }
+            });
         }
     }
 
@@ -375,8 +419,10 @@ class LobbySocketService {
             this.socket.disconnect();
             this.socket = null;
             this.isConnected = false;
-            this.currentMatches = [];
-            this.lobbyVersion = -1;
+            this.lobbyStateByGame.forEach((state) => {
+                state.matches = [];
+                state.version = -1;
+            });
         }
     }
 

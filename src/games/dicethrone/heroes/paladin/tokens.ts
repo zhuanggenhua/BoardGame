@@ -127,7 +127,7 @@ export const PALADIN_TOKENS: TokenDef[] = [
         icon: '✝️',
         colorTheme: 'from-yellow-400 to-amber-500',
         description: tokenText(TOKEN_IDS.BLESSING_OF_DIVINITY, 'description') as unknown as string[],
-        sfxKey: 'magic.general.simple_magic_sound_fx_pack_vol.light.holy_light',
+        sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_celestial_choir_001',
         stackLimit: 1,
         category: 'consumable',
         passiveTrigger: {

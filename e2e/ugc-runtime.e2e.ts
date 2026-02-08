@@ -8,29 +8,47 @@ import { test, expect } from '@playwright/test';
 
 test.describe('UGC Runtime', () => {
     test.describe('postMessage 通信协议', () => {
-        test('应正确发送和接收消息', async ({ page }) => {
-            // 在页面中注入测试代码
+        test('应覆盖关键消息类型', async ({ page }) => {
             await page.goto('about:blank');
 
-            // 模拟宿主发送消息
             const result = await page.evaluate(() => {
-                return new Promise<{ received: boolean; messageType: string }>((resolve) => {
-                    const messages: Array<{ type: string }> = [];
+                return new Promise<{
+                    received: Record<string, boolean>;
+                    payloads: { commandType: string; playerId: string; sfxKey: string; volume: number };
+                }>((resolve) => {
+                    const received: Record<string, boolean> = {
+                        VIEW_READY: false,
+                        COMMAND: false,
+                        STATE_REQUEST: false,
+                        PLAY_SFX: false,
+                    };
+                    const payloads = { commandType: '', playerId: '', sfxKey: '', volume: 0 };
 
-                    // 监听消息
+                    const isComplete = () => Object.values(received).every(Boolean);
+
                     window.addEventListener('message', (event) => {
-                        if (event.data && event.data.source === 'ugc-view') {
-                            messages.push({ type: event.data.type });
-                            if (event.data.type === 'VIEW_READY') {
-                                resolve({
-                                    received: true,
-                                    messageType: event.data.type,
-                                });
-                            }
+                        if (event.data?.source !== 'ugc-view') return;
+                        const type = event.data?.type as string | undefined;
+                        if (!type) return;
+
+                        if (type === 'VIEW_READY') received.VIEW_READY = true;
+                        if (type === 'COMMAND') {
+                            received.COMMAND = true;
+                            payloads.commandType = event.data?.payload?.commandType ?? '';
+                            payloads.playerId = event.data?.payload?.playerId ?? '';
+                        }
+                        if (type === 'STATE_REQUEST') received.STATE_REQUEST = true;
+                        if (type === 'PLAY_SFX') {
+                            received.PLAY_SFX = true;
+                            payloads.sfxKey = event.data?.payload?.sfxKey ?? '';
+                            payloads.volume = event.data?.payload?.volume ?? 0;
+                        }
+
+                        if (isComplete()) {
+                            resolve({ received, payloads });
                         }
                     });
 
-                    // 模拟视图发送 VIEW_READY
                     window.postMessage({
                         id: 'test-1',
                         source: 'ugc-view',
@@ -38,32 +56,6 @@ test.describe('UGC Runtime', () => {
                         timestamp: Date.now(),
                     }, '*');
 
-                    // 超时处理
-                    setTimeout(() => {
-                        resolve({ received: false, messageType: '' });
-                    }, 1000);
-                });
-            });
-
-            expect(result.received).toBe(true);
-            expect(result.messageType).toBe('VIEW_READY');
-        });
-
-        test('应正确处理命令消息', async ({ page }) => {
-            await page.goto('about:blank');
-
-            const result = await page.evaluate(() => {
-                return new Promise<{ commandType: string; playerId: string }>((resolve) => {
-                    window.addEventListener('message', (event) => {
-                        if (event.data?.source === 'ugc-view' && event.data?.type === 'COMMAND') {
-                            resolve({
-                                commandType: event.data.payload.commandType,
-                                playerId: event.data.payload.playerId,
-                            });
-                        }
-                    });
-
-                    // 模拟视图发送命令
                     window.postMessage({
                         id: 'cmd-1',
                         source: 'ugc-view',
@@ -76,52 +68,12 @@ test.describe('UGC Runtime', () => {
                         },
                     }, '*');
 
-                    setTimeout(() => resolve({ commandType: '', playerId: '' }), 1000);
-                });
-            });
-
-            expect(result.commandType).toBe('PLAY_CARD');
-            expect(result.playerId).toBe('player-1');
-        });
-
-        test('应正确处理状态请求', async ({ page }) => {
-            await page.goto('about:blank');
-
-            const result = await page.evaluate(() => {
-                return new Promise<{ type: string }>((resolve) => {
-                    window.addEventListener('message', (event) => {
-                        if (event.data?.source === 'ugc-view' && event.data?.type === 'STATE_REQUEST') {
-                            resolve({ type: event.data.type });
-                        }
-                    });
-
                     window.postMessage({
                         id: 'state-1',
                         source: 'ugc-view',
                         type: 'STATE_REQUEST',
                         timestamp: Date.now(),
                     }, '*');
-
-                    setTimeout(() => resolve({ type: '' }), 1000);
-                });
-            });
-
-            expect(result.type).toBe('STATE_REQUEST');
-        });
-
-        test('应正确处理音效请求', async ({ page }) => {
-            await page.goto('about:blank');
-
-            const result = await page.evaluate(() => {
-                return new Promise<{ sfxKey: string; volume: number }>((resolve) => {
-                    window.addEventListener('message', (event) => {
-                        if (event.data?.source === 'ugc-view' && event.data?.type === 'PLAY_SFX') {
-                            resolve({
-                                sfxKey: event.data.payload.sfxKey,
-                                volume: event.data.payload.volume,
-                            });
-                        }
-                    });
 
                     window.postMessage({
                         id: 'sfx-1',
@@ -131,12 +83,18 @@ test.describe('UGC Runtime', () => {
                         payload: { sfxKey: 'click', volume: 0.8 },
                     }, '*');
 
-                    setTimeout(() => resolve({ sfxKey: '', volume: 0 }), 1000);
+                    setTimeout(() => resolve({ received, payloads }), 1000);
                 });
             });
 
-            expect(result.sfxKey).toBe('click');
-            expect(result.volume).toBe(0.8);
+            expect(result.received.VIEW_READY).toBe(true);
+            expect(result.received.COMMAND).toBe(true);
+            expect(result.received.STATE_REQUEST).toBe(true);
+            expect(result.received.PLAY_SFX).toBe(true);
+            expect(result.payloads.commandType).toBe('PLAY_CARD');
+            expect(result.payloads.playerId).toBe('player-1');
+            expect(result.payloads.sfxKey).toBe('click');
+            expect(result.payloads.volume).toBe(0.8);
         });
     });
 

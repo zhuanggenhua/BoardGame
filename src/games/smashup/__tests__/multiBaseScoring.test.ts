@@ -1,18 +1,27 @@
 /**
  * 大杀四方 - 多基地记分与平局 VP 测试
  *
+ * 覆盖 Property 14: 多基地记分提示（PromptSystem）
  * 覆盖 Property 15: 记分循环完整性
  * 覆盖 Property 16: 平局 VP 分配（FlowHooks 层面）
  */
 
 import { describe, expect, it, beforeAll } from 'vitest';
 import { smashUpFlowHooks } from '../domain/index';
-import { initAllAbilities } from '../abilities';
+import { initAllAbilities, resetAbilityInit } from '../abilities';
+import { clearRegistry } from '../domain/abilityRegistry';
+import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
+import { clearPromptContinuationRegistry, resolvePromptContinuation } from '../domain/promptContinuation';
 import type { SmashUpCore, MinionOnBase, PlayerState } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import type { GameEvent, MatchState, Command, RandomFn } from '../../../engine/types';
+import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
 
 beforeAll(() => {
+    clearRegistry();
+    clearBaseAbilityRegistry();
+    clearPromptContinuationRegistry();
+    resetAbilityInit();
     initAllAbilities();
 });
 
@@ -40,20 +49,26 @@ const mockRandom: RandomFn = {
 
 const mockCommand: Command = { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any;
 
-function callOnPhaseEnter(core: SmashUpCore): GameEvent[] {
-    const result = smashUpFlowHooks.onPhaseEnter!({
-        state: { core, sys: { phase: 'scoreBases' } } as MatchState<SmashUpCore>,
-        from: 'playCards',
-        to: 'scoreBases',
+function callOnPhaseExit(core: SmashUpCore): GameEvent[] | PhaseExitResult {
+    // 记分逻辑在 onPhaseExit('scoreBases') 中执行
+    const result = smashUpFlowHooks.onPhaseExit!({
+        state: { core, sys: { phase: 'scoreBases', responseWindow: { current: undefined }, prompt: { queue: [] } } } as MatchState<SmashUpCore>,
+        from: 'scoreBases',
+        to: 'draw',
         command: mockCommand,
         random: mockRandom,
     });
     return result ?? [];
 }
 
-describe('Property 15: 多基地记分循环', () => {
-    it('两个基地同时达到临界点时都被记分', () => {
-        // base_the_jungle: breakpoint=12, base_tar_pits: breakpoint=16
+/** 提取事件（兼容 GameEvent[] 和 PhaseExitResult） */
+function extractEvents(result: GameEvent[] | PhaseExitResult): GameEvent[] {
+    if (Array.isArray(result)) return result;
+    return (result as PhaseExitResult).events ?? [];
+}
+
+describe('Property 14: 多基地记分提示', () => {
+    it('两个基地同时达标时返回 PROMPT_CONTINUATION 而非直接记分', () => {
         const core: SmashUpCore = {
             players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
             turnOrder: ['0', '1'],
@@ -67,16 +82,112 @@ describe('Property 15: 多基地记分循环', () => {
             nextUid: 100,
         };
 
-        const events = callOnPhaseEnter(core);
+        const result = callOnPhaseExit(core);
+
+        // 应返回 PhaseExitResult（非数组）
+        expect(Array.isArray(result)).toBe(false);
+        const exitResult = result as PhaseExitResult;
+        expect(exitResult.halt).toBe(true);
+
+        const events = exitResult.events ?? [];
+        const promptEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.PROMPT_CONTINUATION);
+        expect(promptEvents.length).toBe(1);
+        expect((promptEvents[0] as any).payload.action).toBe('set');
+        expect((promptEvents[0] as any).payload.continuation.abilityId).toBe('multi_base_scoring');
+
+        // 不应有 BASE_SCORED 事件（等待玩家选择）
         const scoredEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
-        expect(scoredEvents.length).toBe(2);
+        expect(scoredEvents.length).toBe(0);
+    });
+
+    it('multi_base_scoring 继续函数已注册', () => {
+        const fn = resolvePromptContinuation('multi_base_scoring');
+        expect(fn).toBeDefined();
+        expect(typeof fn).toBe('function');
+    });
+
+    it('multi_base_scoring 继续函数正确记分选中的基地', () => {
+        const core: SmashUpCore = {
+            players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                { defId: 'base_the_jungle', minions: [makeMinion('m1', '0', 15)], ongoingActions: [] },
+                { defId: 'base_tar_pits', minions: [makeMinion('m2', '1', 20)], ongoingActions: [] },
+            ],
+            baseDeck: ['base_central_brain', 'base_locker_room'],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const fn = resolvePromptContinuation('multi_base_scoring')!;
+        const events = fn({
+            state: core,
+            playerId: '0',
+            selectedValue: { baseIndex: 1 }, // 选择 base_tar_pits
+            random: mockRandom,
+            now: 1000,
+        });
+
+        const scoredEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
+        expect(scoredEvents.length).toBe(1);
+        expect((scoredEvents[0] as any).payload.baseDefId).toBe('base_tar_pits');
 
         const replacedEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_REPLACED);
-        expect(replacedEvents.length).toBe(2);
+        expect(replacedEvents.length).toBe(1);
+    });
+});
 
-        const scoredBaseIds = scoredEvents.map((e: any) => e.payload.baseDefId);
-        expect(scoredBaseIds).toContain('base_the_jungle');
-        expect(scoredBaseIds).toContain('base_tar_pits');
+describe('Property 15: 多基地记分循环', () => {
+    it('两个基地同时达标时通过 Prompt 选择后逐个记分（P14 + P15 联合）', () => {
+        // 此测试验证 P14 的 Prompt 创建 + P15 的继续函数正确记分
+        // 完整的 Prompt 交互流程在 promptSystem.test.ts 中通过 GameTestRunner 测试
+        const core: SmashUpCore = {
+            players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                { defId: 'base_the_jungle', minions: [makeMinion('m1', '0', 15)], ongoingActions: [] },
+                { defId: 'base_tar_pits', minions: [makeMinion('m2', '1', 20)], ongoingActions: [] },
+            ],
+            baseDeck: ['base_central_brain', 'base_locker_room'],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        // 第一次调用：2 基地达标 → 返回 Prompt
+        const result1 = callOnPhaseExit(core);
+        expect(Array.isArray(result1)).toBe(false);
+        expect((result1 as PhaseExitResult).halt).toBe(true);
+
+        // 模拟玩家选择 base_the_jungle（index=0）
+        const fn = resolvePromptContinuation('multi_base_scoring')!;
+        const scoringEvents = fn({
+            state: core,
+            playerId: '0',
+            selectedValue: { baseIndex: 0 },
+            random: mockRandom,
+            now: 1000,
+        });
+        const scored1 = scoringEvents.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
+        expect(scored1.length).toBe(1);
+        expect((scored1[0] as any).payload.baseDefId).toBe('base_the_jungle');
+
+        // 模拟第一个基地记分后的状态（移除已记分基地）
+        const coreAfterFirst: SmashUpCore = {
+            ...core,
+            bases: [
+                { defId: 'base_tar_pits', minions: [makeMinion('m2', '1', 20)], ongoingActions: [] },
+            ],
+            baseDeck: ['base_locker_room'],
+        };
+
+        // 第二次调用：只剩 1 基地达标 → 直接记分
+        const result2 = callOnPhaseExit(coreAfterFirst);
+        const events2 = extractEvents(result2);
+        const scored2 = events2.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
+        expect(scored2.length).toBe(1);
+        expect((scored2[0] as any).payload.baseDefId).toBe('base_tar_pits');
     });
 
     it('无基地达到临界点时不产生记分事件', () => {
@@ -92,7 +203,7 @@ describe('Property 15: 多基地记分循环', () => {
             nextUid: 100,
         };
 
-        const events = callOnPhaseEnter(core);
+        const events = extractEvents(callOnPhaseExit(core));
         const scoredEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
         expect(scoredEvents.length).toBe(0);
     });
@@ -111,7 +222,7 @@ describe('Property 15: 多基地记分循环', () => {
             nextUid: 100,
         };
 
-        const events = callOnPhaseEnter(core);
+        const events = extractEvents(callOnPhaseExit(core));
         const scoredEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
         expect(scoredEvents.length).toBe(1);
         expect((scoredEvents[0] as any).payload.baseDefId).toBe('base_the_jungle');
@@ -135,7 +246,7 @@ describe('Property 16: 平局 VP 分配（FlowHooks 层面）', () => {
             nextUid: 100,
         };
 
-        const events = callOnPhaseEnter(core);
+        const events = extractEvents(callOnPhaseExit(core));
         const scoredEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
         expect(scoredEvents.length).toBe(1);
 
@@ -167,7 +278,7 @@ describe('Property 16: 平局 VP 分配（FlowHooks 层面）', () => {
             nextUid: 100,
         };
 
-        const events = callOnPhaseEnter(core);
+        const events = extractEvents(callOnPhaseExit(core));
         const scoredEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
         const rankings = (scoredEvents[0] as any).payload.rankings;
         expect(rankings.length).toBe(3);
@@ -202,7 +313,7 @@ describe('Property 16: 平局 VP 分配（FlowHooks 层面）', () => {
             nextUid: 100,
         };
 
-        const events = callOnPhaseEnter(core);
+        const events = extractEvents(callOnPhaseExit(core));
         const scoredEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
         const rankings = (scoredEvents[0] as any).payload.rankings;
         expect(rankings.length).toBe(3);
@@ -231,7 +342,7 @@ describe('Property 16: 平局 VP 分配（FlowHooks 层面）', () => {
             nextUid: 100,
         };
 
-        const events = callOnPhaseEnter(core);
+        const events = extractEvents(callOnPhaseExit(core));
         const scoredEvents = events.filter((e: GameEvent) => e.type === SU_EVENTS.BASE_SCORED);
         const rankings = (scoredEvents[0] as any).payload.rankings;
         // P1 没有随从，不应出现在排名中

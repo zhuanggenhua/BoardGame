@@ -99,7 +99,7 @@ createUndoSystem({ maxSnapshots: 1 })
 
 ```bash
 # 运行清理脚本
-npx tsx scripts/cleanup-db.ts
+npx tsx scripts/db/cleanup-db.ts
 ```
 
 这将：
@@ -193,5 +193,5 @@ console.log(stats);
 ## 相关文件
 
 - `src/server/storage/MongoStorage.ts` - 存储实现
-- `scripts/cleanup-db.ts` - 清理脚本
+- `scripts/db/cleanup-db.ts` - 清理脚本
 - `server.ts` - 服务器入口（定时清理）

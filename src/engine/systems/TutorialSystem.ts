@@ -17,6 +17,13 @@ import { DEFAULT_TUTORIAL_STATE } from '../types';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 
+const isDev = import.meta.env.DEV;
+const warnDev = (...args: unknown[]) => {
+    if (isDev) {
+        console.warn(...args);
+    }
+};
+
 export const TUTORIAL_COMMANDS = {
     START: 'SYS_TUTORIAL_START',
     NEXT: 'SYS_TUTORIAL_NEXT',
@@ -153,7 +160,11 @@ const isEventMatch = (event: GameEvent, matcher: TutorialEventMatcher): boolean 
 
 const shouldAdvance = (events: GameEvent[], advanceOnEvents?: TutorialEventMatcher[]): boolean => {
     if (!advanceOnEvents || advanceOnEvents.length === 0) return false;
-    return advanceOnEvents.some((matcher) => events.some((event) => isEventMatch(event, matcher)));
+    const result = advanceOnEvents.some((matcher) => events.some((event) => isEventMatch(event, matcher)));
+    if (events.some(e => e.type.includes('PHASE'))) {
+        warnDev('[TutorialSystem] shouldAdvance check:', { result, eventTypes: events.map(e => e.type), advanceOnEvents });
+    }
+    return result;
 };
 
 const buildManifestFromState = (tutorial: TutorialState): TutorialManifest | null => {
@@ -172,11 +183,17 @@ const advanceStep = <TCore>(state: MatchState<TCore>): HookResult<TCore> => {
 
     const manifest = buildManifestFromState(tutorial);
     if (!manifest) {
+        warnDev(
+            `[TutorialSystem] manifest 缺失，重置教程状态 manifestId=${tutorial.manifestId ?? 'null'} stepIndex=${tutorial.stepIndex} steps=${tutorial.steps?.length ?? 0}`
+        );
         return { state: applyTutorialState(state, { ...DEFAULT_TUTORIAL_STATE }) };
     }
 
     const nextIndex = tutorial.stepIndex + 1;
     if (!manifest.steps[nextIndex]) {
+        warnDev(
+            `[TutorialSystem] 下一步不存在，关闭教程 manifestId=${tutorial.manifestId ?? 'null'} stepIndex=${tutorial.stepIndex} nextIndex=${nextIndex} steps=${manifest.steps.length}`
+        );
         return {
             state: applyTutorialState(state, { ...DEFAULT_TUTORIAL_STATE }),
             events: [createClosedEvent(tutorial.manifestId)],
@@ -217,9 +234,12 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
         name: '教程系统',
         priority: 9,
 
-        setup: (): Partial<{ tutorial: TutorialState }> => ({
-            tutorial: { ...DEFAULT_TUTORIAL_STATE },
-        }),
+        setup: (): Partial<{ tutorial: TutorialState }> => {
+            warnDev('[TutorialSystem] setup called - initializing DEFAULT_TUTORIAL_STATE');
+            return {
+                tutorial: { ...DEFAULT_TUTORIAL_STATE },
+            };
+        },
 
         beforeCommand: ({ state, command }): HookResult<TCore> | void => {
             if (command.type === TUTORIAL_COMMANDS.START) {
@@ -272,8 +292,21 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
         },
 
         afterEvents: ({ state, events }): HookResult<TCore> | void => {
-            if (!state.sys.tutorial.active) return;
-            if (!shouldAdvance(events, state.sys.tutorial.advanceOnEvents)) return;
+            if (!state.sys.tutorial.active) {
+                warnDev('[TutorialSystem] afterEvents: tutorial not active');
+                return;
+            }
+            warnDev('[TutorialSystem] afterEvents called:', { 
+                active: state.sys.tutorial.active, 
+                stepId: state.sys.tutorial.step?.id,
+                advanceOnEvents: state.sys.tutorial.advanceOnEvents,
+                eventTypes: events.map(e => e.type)
+            });
+            if (!shouldAdvance(events, state.sys.tutorial.advanceOnEvents)) {
+                warnDev('[TutorialSystem] shouldAdvance returned false');
+                return;
+            }
+            warnDev('[TutorialSystem] advancing step');
             return advanceStep(state);
         },
     };

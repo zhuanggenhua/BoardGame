@@ -40,7 +40,7 @@ export default function GamePopularityChart({ stats }: Props) {
                 <div className="flex-1 flex items-center justify-center text-zinc-400">暂无数据</div>
             ) : (
                 <div className="flex-1 w-full min-h-0">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={280}>
                         <BarChart
                             layout="vertical"
                             data={data}

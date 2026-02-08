@@ -207,6 +207,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'revive_undead',
     name: '复活死灵',
     description: '每回合一次，在你的召唤阶段，你可以对本单位造成2点伤害，以从你的弃牌堆中拿取一张亡灵单位并且放置到本单位相邻的区格。',
+    sfxKey: 'magic.dark.29.dark_resurrection',
     trigger: 'activated',
     condition: {
       type: 'and',
@@ -232,6 +233,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'fire_sacrifice_summon',
     name: '火祀召唤',
     description: '当你为召唤本单位支付费用时，还必须消灭一个友方单位，并且使用本单位替换被消灭的单位。',
+    sfxKey: 'fantasy.elemental_sword_fireattack_01',
     trigger: 'onSummon',
     effects: [
       { type: 'destroyUnit', target: { unitId: 'selectedAlly' } },
@@ -251,6 +253,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'life_drain',
     name: '吸取生命',
     description: '在本单位攻击之前，可以消灭其2个区格以内的一个友方单位。如果你这样做，则本次攻击战力翻倍。',
+    sfxKey: 'fantasy.dark_sword_steallife',
     trigger: 'beforeAttack',
     condition: { type: 'always' },
     effects: [
@@ -276,6 +279,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'rage',
     name: '暴怒',
     description: '本单位每有1点伤害，则获得战力+1。',
+    sfxKey: 'magic.dark.32.dark_spell_01',
     trigger: 'onDamageCalculation',
     effects: [
       { 
@@ -291,6 +295,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'blood_rage',
     name: '血腥狂怒',
     description: '每当一个单位在你的回合中被消灭时，将本单位充能。在你的回合结束时，从本单位上移除2点充能。',
+    sfxKey: 'fantasy.dark_sword_attack_withblood_01',
     trigger: 'onUnitDestroyed',
     condition: { type: 'always' }, // 任意单位被消灭
     effects: [
@@ -303,6 +308,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'power_boost',
     name: '力量强化',
     description: '本单位每有1点充能，则获得战力+1，至多为+5。',
+    sfxKey: 'magic.dark.32.dark_spell_02',
     trigger: 'onDamageCalculation',
     effects: [
       {
@@ -322,6 +328,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'blood_rage_decay',
     name: '血腥狂怒衰减',
     description: '在你的回合结束时，从本单位上移除2点充能。',
+    sfxKey: 'fantasy.dark_sword_attack_withblood_02',
     trigger: 'onTurnEnd',
     condition: { type: 'hasCharge', target: 'self', minStacks: 1 },
     effects: [
@@ -334,6 +341,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'sacrifice',
     name: '献祭',
     description: '在本单位被消灭之后，对其相邻的每个敌方单位造成1点伤害。',
+    sfxKey: 'fantasy.elemental_sword_fireattack_02',
     trigger: 'onDeath',
     effects: [
       { type: 'damage', target: 'adjacentEnemies', value: 1 },
@@ -345,6 +353,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'soulless',
     name: '无魂',
     description: '当本单位消灭敌方单位时，你不会获得魔力。',
+    sfxKey: 'magic.dark.32.dark_spell_03',
     trigger: 'onKill',
     effects: [
       { type: 'preventMagicGain', target: 'owner' },
@@ -356,6 +365,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'infection',
     name: '感染',
     description: '在本单位消灭一个单位之后，你可以使用你的弃牌堆中一个疫病体单位替换被消灭的单位。',
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_blight_curse_001',
     trigger: 'onKill',
     condition: { type: 'hasCardInDiscard', cardType: 'plagueZombie' },
     effects: [
@@ -373,6 +383,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     id: 'soul_transfer',
     name: '灵魂转移',
     description: '当本单位消灭3个区格以内的一个单位后，你可使用本单位替换被消灭的单位。',
+    sfxKey: 'magic.general.spells_variations_vol_2.unholy_echo.magevil_unholy_echo_01_krst_none',
     trigger: 'onKill',
     condition: { type: 'isInRange', target: 'victim', range: 3 },
     effects: [

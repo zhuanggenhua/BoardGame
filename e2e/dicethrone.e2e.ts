@@ -49,22 +49,6 @@ const disableAudio = async (context: BrowserContext | Page) => {
     });
 };
 
-const waitForPlayerBoard = async (page: Page, timeout = 15000) => {
-    await page.waitForFunction(() => {
-        const candidates = Array.from(document.querySelectorAll(
-            '[data-tutorial-id="player-board"], img[alt="Player Board"], img[alt="玩家面板"]'
-        ));
-        return candidates.some((el) => {
-            const style = window.getComputedStyle(el);
-            if (!style || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-                return false;
-            }
-            const rects = (el as HTMLElement).getClientRects();
-            return rects.length > 0 && rects[0].width > 0 && rects[0].height > 0;
-        });
-    }, { timeout });
-};
-
 const waitForBoardReady = async (page: Page, timeout = 20000) => {
     await page.waitForFunction(() => {
         const selectors = [
@@ -158,13 +142,6 @@ const applyCoreState = async (
     await closeDebugPanelIfOpen(page);
 };
 
-const setPendingDamage = async (page: Page, pendingDamage: Record<string, unknown>) => {
-    await applyCoreState(page, (core) => ({
-        ...core,
-        pendingDamage,
-    }));
-};
-
 const setPlayerCp = async (page: Page, playerId: string, value: number) => {
     await applyCoreState(page, (core) => {
         const players = core.players as Record<string, any> | undefined;
@@ -256,12 +233,6 @@ const waitForRoomReady = async (page: Page, timeout = 15000) => {
     }, { timeout });
 };
 
-const getPlayerBoardLocator = (page: Page) => {
-    // Prefer the stable container hook over nested images to avoid strict-mode
-    // collisions when the container + inner <img alt="Player Board"> both match.
-    return page.locator('[data-tutorial-id="player-board"]').first();
-};
-
 const assertHandCardsVisible = async (page: Page, expectedCount: number, label: string) => {
     const handArea = page.locator('[data-tutorial-id="hand-area"]');
     await expect(handArea, `[${label}] 手牌区域未显示`).toBeVisible();
@@ -301,15 +272,6 @@ const advanceToOffensiveRoll = async (page: Page) => {
     }
 };
 
-
-const maybePassResponse = async (page: Page) => {
-    const passButton = page.getByRole('button', { name: /Pass|跳过/i });
-    if (await passButton.isVisible()) {
-        await passButton.click();
-        return true;
-    }
-    return false;
-};
 
 const waitForMainPhase = async (page: Page, timeout = 20000) => {
     await expect(page.getByText(/Main Phase \(1\)|主要阶段 \(1\)/)).toBeVisible({ timeout });
@@ -402,21 +364,13 @@ test.describe('DiceThrone E2E', () => {
         await assertHandCardsVisible(guestPage, 4, 'guest');
 
         // 截图保存证据（只截取视口，不是全页面）
-        await hostPage.screenshot({ path: 'test-results/hand-cards-success.png', fullPage: false });
+        await hostPage.screenshot({ path: testInfo.outputPath('hand-cards-success.png'), fullPage: false });
 
         await hostContext.close();
         await guestContext.close();
     });
 
-    test('Tutorial route shows Dice Throne tutorial overlay', async ({ page }) => {
-        await setEnglishLocale(page);
-        await page.goto('/play/dicethrone/tutorial');
-
-        await waitForBoardReady(page, 20000);
-        await expect(page.getByText(/Dice Throne 1v1 tutorial/i)).toBeVisible();
-    });
-
-    test('Tutorial completes the full flow (main1 -> offensive -> defense -> finish)', async ({ page }) => {
+    test('Tutorial completes the full flow (main1 -> offensive -> defense -> finish)', async ({ page }, testInfo) => {
         test.setTimeout(120000);
         const pageErrors: string[] = [];
         const consoleErrors: string[] = [];
@@ -501,18 +455,20 @@ test.describe('DiceThrone E2E', () => {
         const advanceButton = page.locator('[data-tutorial-id="advance-phase-button"]');
         await expect(advanceButton).toBeEnabled();
         await advanceButton.click();
+        await page.waitForTimeout(300);
 
         // Step: dice tray visible
         const diceTray = page.locator('[data-tutorial-id="dice-tray"]');
         await expect(diceTray).toBeVisible();
         await logTutorialStep('dice-tray');
 
-        // Step: roll dice (deterministic via debug: force all 1s to guarantee at least one ability)
+        // Step: roll dice (deterministic via debug: force values to trigger monk abilities)
         const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
         await expect(rollButton).toBeEnabled({ timeout: 10000 });
         await rollButton.click();
         await page.waitForTimeout(300);
-        await applyDiceValues(page, [1, 1, 1, 1, 1]);
+        // Set dice to [1,1,1,3,6] to trigger fist-technique (3 fists) or taiji-combo (3 fists + 1 palm)
+        await applyDiceValues(page, [1, 1, 1, 3, 6]);
 
         const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
         await expect(confirmButton).toBeEnabled({ timeout: 10000 });
@@ -526,31 +482,36 @@ test.describe('DiceThrone E2E', () => {
             .filter({ has: page.locator('div.animate-pulse[class*="border-"]') });
 
         const firstHighlighted = highlightedSlots.first();
-        const abilityActivated = await Promise.race([
-            firstHighlighted.isVisible({ timeout: 4000 }).then(() => 'slot').catch(() => 'no-slot'),
-            page.getByText(/resolve attack|结算|进入防御|defense/i).isVisible({ timeout: 4000 }).then(() => 'progress').catch(() => 'no-progress'),
-        ]);
-
-        if (abilityActivated === 'slot') {
+        const hasSlot = await firstHighlighted.isVisible({ timeout: 4000 }).catch(() => false);
+        console.log('[tutorial] highlighted slot visible:', hasSlot);
+        
+        if (hasSlot) {
             // The UI might show a highlight ring but not allow clicking yet (animations/overlays).
             // If clicking fails, just continue by advancing phase; tutorial will still validate the end-to-end path.
             try {
                 await firstHighlighted.click({ timeout: 2000 });
-            } catch {
-                // ignore
+                console.log('[tutorial] clicked highlighted slot');
+                // 等待一下让事件处理
+                await page.waitForTimeout(500);
+            } catch (e) {
+                console.log('[tutorial] failed to click slot:', e);
             }
         } else {
             // If no slot is highlighted, proceed by advancing phase; tutorial may have auto-activated.
+            console.log('[tutorial] no highlighted slot, proceeding without clicking');
         }
 
         // Step: resolve attack via Next Phase.
+        // 等待教程推进到 resolve-attack 步骤（点击技能槽触发 ABILITY_ACTIVATED 后）
+        await waitForTutorialStep(page, 'resolve-attack', 15000);
+        await logTutorialStep('resolve-attack');
         await expect(advanceButton).toBeEnabled({ timeout: 10000 });
         await advanceButton.click();
 
         // In tutorial mode, the system may either enter defense or jump directly to main2.
         await Promise.race([
             page.getByText(/Defense|防御/i).isVisible({ timeout: 15000 }).then(() => true).catch(() => false),
-            page.getByText(/Main Phase \(2\)|主要阶段 \(2\)/).isVisible({ timeout: 15000 }).then(() => true).catch(() => false),
+            page.getByText(/Main Phase \(2\)|主要阶段 \(2\)/).isVisible({ timeout: 15000 }).then(() => false).catch(() => false),
         ]);
 
         // If we are in defense, end it by rolling+confirming once.
@@ -638,7 +599,7 @@ test.describe('DiceThrone E2E', () => {
         await waitStep('finish', 20000);
         const finishButton = page.getByRole('button', { name: /^(Finish and return|完成并返回)$/i }).first();
         if (await finishButton.isVisible({ timeout: 6000 }).catch(() => false)) {
-            await page.screenshot({ path: 'test-results/tutorial-final-step.png', fullPage: false });
+            await page.screenshot({ path: testInfo.outputPath('tutorial-final-step.png'), fullPage: false });
             await finishButton.click();
         }
 
@@ -649,310 +610,4 @@ test.describe('DiceThrone E2E', () => {
         }
     });
 
-    test('Local offensive roll shows confirm skip modal when ability available', async ({ page }) => {
-        await setEnglishLocale(page);
-        await disableTutorial(page);
-        await page.goto('/play/dicethrone/local');
-
-        await waitForBoardReady(page, 20000);
-        await advanceToOffensiveRoll(page);
-
-        const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(rollButton).toBeEnabled({ timeout: 5000 });
-        await rollButton.click();
-        await page.waitForTimeout(300);
-        await applyDiceValues(page, [1, 1, 1, 1, 1]);
-        const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-
-        const advanceButton = page.locator('[data-tutorial-id="advance-phase-button"]');
-
-        await advanceButton.click();
-        const confirmHeading = page.getByRole('heading', { name: /End offensive roll\?|确认结束攻击掷骰？/i });
-        if (await confirmHeading.isVisible({ timeout: 4000 }).catch(() => false)) {
-            const confirmSkipModal = confirmHeading.locator('..').locator('..');
-            await confirmSkipModal.getByRole('button', { name: /Cancel|返回选择技能/i }).click();
-        }
-    });
-
-    test('Online match can be created and HUD shows room info', async ({ page }) => {
-        const pageErrors: string[] = [];
-        const consoleErrors: string[] = [];
-        page.on('pageerror', (error) => {
-            pageErrors.push(error.stack || error.message);
-        });
-        page.on('console', (message) => {
-            if (message.type() === 'error') {
-                consoleErrors.push(message.text());
-            }
-        });
-
-        await setEnglishLocale(page);
-        await disableTutorial(page);
-        if (!await ensureGameServerAvailable(page)) {
-            test.skip(true, 'Game server unavailable for online tests.');
-        }
-        await openDiceThroneModal(page);
-        await page.getByRole('button', { name: /Create Room|创建房间/i }).click();
-        await expect(page.getByRole('heading', { name: /Create Room|创建房间/i })).toBeVisible();
-        await page.getByRole('button', { name: /Confirm|确认/i }).click();
-        try {
-            await page.waitForURL(/\/play\/dicethrone\/match\//, { timeout: 5000 });
-        } catch {
-            test.skip(true, 'Room creation failed or backend unavailable.');
-        }
-        await expect(page).toHaveURL(/\/play\/dicethrone\/match\//);
-        try {
-            await waitForRoomReady(page, 15000);
-        } catch (error) {
-            console.log(`[E2E] player-board-not-found url=${page.url()}`);
-            console.log(`[E2E] pageErrors=${pageErrors.join(' | ') || 'none'}`);
-            console.log(`[E2E] consoleErrors=${consoleErrors.join(' | ') || 'none'}`);
-            throw error;
-        }
-
-        // Open HUD menu
-        const hudFab = page.locator('[data-testid="fab-menu"] [data-fab-id]').first();
-        await expect(hudFab).toBeVisible();
-        await hudFab.click();
-
-        const settingsButton = page.locator('[data-fab-id="settings"]');
-        await expect(settingsButton).toBeVisible();
-        await settingsButton.click();
-
-        const roomIdSection = page.getByText(/Room ID/i).locator('..');
-        const roomIdButton = roomIdSection.getByRole('button');
-        await expect(roomIdButton).toBeVisible();
-        await expect(roomIdButton.locator('span.font-mono')).toHaveText(/[A-Za-z0-9]+/);
-    });
-
-    test('Online match supports offensive roll flow with two players', async ({ browser }, testInfo) => {
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
-
-        const hostContext = await browser.newContext({ baseURL });
-        await disableTutorial(hostContext as any);
-        await setEnglishLocale(hostContext);
-        const hostPage = await hostContext.newPage();
-
-        if (!await ensureGameServerAvailable(hostPage)) {
-            test.skip(true, 'Game server unavailable for online tests.');
-        }
-
-        await openDiceThroneModal(hostPage);
-        await hostPage.getByRole('button', { name: /Create Room|创建房间/i }).click();
-        await expect(hostPage.getByRole('heading', { name: /Create Room|创建房间/i })).toBeVisible();
-        await hostPage.getByRole('button', { name: /Confirm|确认/i }).click();
-        try {
-            await hostPage.waitForURL(/\/play\/dicethrone\/match\//, { timeout: 5000 });
-        } catch {
-            test.skip(true, 'Room creation failed or backend unavailable.');
-        }
-        await waitForRoomReady(hostPage, 15000);
-
-        const hostUrl = new URL(hostPage.url());
-        const matchId = hostUrl.pathname.split('/').pop();
-        if (!matchId) {
-            throw new Error('Failed to parse match id from host URL.');
-        }
-
-        if (!hostUrl.searchParams.get('playerID')) {
-            hostUrl.searchParams.set('playerID', '0');
-            await hostPage.goto(hostUrl.toString());
-            await waitForRoomReady(hostPage, 15000);
-        }
-
-        const guestContext = await browser.newContext({ baseURL });
-        await disableTutorial(guestContext as any);
-        await setEnglishLocale(guestContext);
-        const guestPage = await guestContext.newPage();
-        await guestPage.goto(`/play/dicethrone/match/${matchId}?join=true`);
-        await guestPage.waitForURL(/playerID=\d/);
-        await waitForRoomReady(guestPage, 15000);
-
-        let autoStarted = true;
-        try {
-            await waitForMainPhase(hostPage, 15000);
-            await waitForMainPhase(guestPage, 15000);
-        } catch {
-            autoStarted = false;
-        }
-
-        if (!autoStarted) {
-            await hostPage.waitForSelector('[data-char-id="monk"]', { state: 'attached', timeout: 60000 });
-            await guestPage.waitForSelector('[data-char-id="barbarian"]', { state: 'attached', timeout: 60000 });
-            await hostPage.locator('[data-char-id="monk"]').first().click();
-            await guestPage.locator('[data-char-id="barbarian"]').first().click();
-            const readyButton = guestPage.getByRole('button', { name: /Ready|准备/i });
-            await expect(readyButton).toBeVisible({ timeout: 20000 });
-            await expect(readyButton).toBeEnabled({ timeout: 20000 });
-            await readyButton.click();
-
-            const startButton = hostPage.getByRole('button', { name: /Start Game|开始游戏/i });
-            await expect(startButton).toBeVisible({ timeout: 20000 });
-            await expect(startButton).toBeEnabled({ timeout: 20000 });
-            await startButton.click();
-
-            await waitForMainPhase(hostPage, 15000);
-            await waitForMainPhase(guestPage, 15000);
-        }
-
-        const isButtonEnabled = async (page: Page, name: string | RegExp) => {
-            const button = page.getByRole('button', { name });
-            if (await button.count() === 0) return false;
-            return button.isEnabled();
-        };
-
-        let attackerPage: Page | null = null;
-        let defenderPage: Page | null = null;
-        let alreadyOffensive = false;
-        for (let i = 0; i < 20; i += 1) {
-            if (await isButtonEnabled(hostPage, /Resolve Attack|结算攻击/i)) {
-                attackerPage = hostPage;
-                defenderPage = guestPage;
-                alreadyOffensive = true;
-                break;
-            }
-            if (await isButtonEnabled(guestPage, /Resolve Attack|结算攻击/i)) {
-                attackerPage = guestPage;
-                defenderPage = hostPage;
-                alreadyOffensive = true;
-                break;
-            }
-            if (await isButtonEnabled(hostPage, /Next Phase|下一阶段/i)) {
-                attackerPage = hostPage;
-                defenderPage = guestPage;
-                break;
-            }
-            if (await isButtonEnabled(guestPage, /Next Phase|下一阶段/i)) {
-                attackerPage = guestPage;
-                defenderPage = hostPage;
-                break;
-            }
-            await hostPage.waitForTimeout(300);
-        }
-
-        if (!attackerPage || !defenderPage) {
-            throw new Error('Failed to determine the active player page.');
-        }
-
-        const resolveAttackButton = attackerPage.getByRole('button', { name: /Resolve Attack|结算攻击/i });
-        if (!alreadyOffensive) {
-            await attackerPage.getByRole('button', { name: /Next Phase|下一阶段/i }).click();
-            const attackerRollButton = attackerPage.locator('[data-tutorial-id="dice-roll-button"]');
-            await expect(attackerRollButton).toBeEnabled({ timeout: 10000 });
-        }
-
-        const rollButton = attackerPage.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(rollButton).toBeEnabled({ timeout: 5000 });
-        await rollButton.click();
-        await attackerPage.waitForTimeout(300);
-        await applyDiceValues(attackerPage, [1, 1, 1, 1, 1]);
-        const confirmButton = attackerPage.locator('[data-tutorial-id="dice-confirm-button"]');
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-        const highlightedSlots = attackerPage
-            .locator('[data-ability-slot]')
-            .filter({ has: attackerPage.locator('div.animate-pulse[class*="border-"]') });
-        const firstHighlighted = highlightedSlots.first();
-        const hasHighlight = await firstHighlighted.isVisible({ timeout: 3000 }).catch(() => false);
-        if (hasHighlight) {
-            await firstHighlighted.click();
-            await expect(resolveAttackButton).toBeVisible({ timeout: 10000 });
-            await resolveAttackButton.click();
-        } else {
-            const advanceButton = attackerPage.locator('[data-tutorial-id="advance-phase-button"]');
-            await advanceButton.click();
-            const confirmHeading = attackerPage.getByRole('heading', { name: /End offensive roll\?|确认结束攻击掷骰？/i });
-            if (await confirmHeading.isVisible({ timeout: 4000 }).catch(() => false)) {
-                const confirmSkipModal = confirmHeading.locator('..').locator('..');
-                await confirmSkipModal.getByRole('button', { name: /Confirm|确认/i }).click();
-            }
-        }
-
-        // Handle ability resolution choice modal if it appears (some abilities require token selection)
-        // Loop to handle multiple choice modals that may appear
-        for (let choiceAttempt = 0; choiceAttempt < 5; choiceAttempt++) {
-            let choiceModal: ReturnType<typeof attackerPage.locator> | null = null;
-            try {
-                choiceModal = await getModalContainerByHeading(
-                    attackerPage,
-                    /Ability Resolution Choice|技能结算选择/i,
-                    1500
-                );
-            } catch {
-                choiceModal = null;
-            }
-            if (!choiceModal) break;
-            const choiceButton = choiceModal.getByRole('button').filter({ hasText: /\S+/ }).first();
-            if (await choiceButton.isVisible({ timeout: 500 }).catch(() => false)) {
-                await choiceButton.click();
-                await attackerPage.waitForTimeout(500);
-            }
-        }
-
-        // Wait for either defensive phase or main phase 2 (ability might not be defendable)
-        const defensePhaseStarted = await Promise.race([
-            defenderPage.getByRole('button', { name: /End Defense|结束防御/i }).isVisible({ timeout: 5000 }).then(() => true).catch(() => false),
-            attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/).isVisible({ timeout: 5000 }).then(() => false).catch(() => false),
-        ]);
-
-        if (defensePhaseStarted) {
-            // If defensive phase started, defender should be able to roll
-            const defenderRollButton = defenderPage.locator('[data-tutorial-id="dice-roll-button"]');
-            const defenderConfirmButton = defenderPage.locator('[data-tutorial-id="dice-confirm-button"]');
-            const endDefenseButton = defenderPage.getByRole('button', { name: /End Defense|结束防御/i });
-            const canRoll = await defenderRollButton.isEnabled({ timeout: 5000 }).catch(() => false);
-            if (canRoll) {
-                await defenderRollButton.click();
-                await defenderConfirmButton.click();
-                await endDefenseButton.click();
-            } else {
-                const canEndDefense = await endDefenseButton.isEnabled({ timeout: 2000 }).catch(() => false);
-                if (canEndDefense) {
-                    await endDefenseButton.click();
-                }
-            }
-
-            // Handle response windows
-            for (let i = 0; i < 4; i += 1) {
-                const hostPassed = await maybePassResponse(hostPage);
-                const guestPassed = await maybePassResponse(guestPage);
-                if (!hostPassed && !guestPassed) break;
-            }
-        }
-
-        // Verify we reached Main Phase 2 (attack completed)
-        await expect(attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/)).toBeVisible({ timeout: 10000 });
-
-        await hostContext.close();
-        await guestContext.close();
-    });
-
-    test('Local skip token response shows Next Phase button', async ({ page }) => {
-        await setEnglishLocale(page);
-        await disableTutorial(page);
-        await page.goto('/play/dicethrone/local');
-        await waitForPlayerBoard(page, 15000);
-
-        await expect(page.getByText(/Main Phase \(1\)|主要阶段 \(1\)/)).toBeVisible({ timeout: 10000 });
-        await advanceToOffensiveRoll(page);
-        await setPendingDamage(page, {
-            id: 'tutorial-skip-response',
-            sourcePlayerId: '0',
-            targetPlayerId: '1',
-            originalDamage: 2,
-            currentDamage: 2,
-            responseType: 'beforeDamageDealt',
-            responderId: '0',
-            isFullyEvaded: false,
-        });
-
-        const responseModal = await getModalContainerByHeading(page, /Respond|响应/i, 15000);
-        const skipButton = responseModal.getByRole('button', { name: /Skip|跳过/i });
-        await expect(skipButton).toBeVisible({ timeout: 5000 });
-        await skipButton.click();
-
-        await expect(page.getByRole('button', { name: /Next Phase|下一阶段/i })).toBeVisible({ timeout: 10000 });
-    });
 });

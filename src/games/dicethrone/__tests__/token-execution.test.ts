@@ -31,6 +31,7 @@ import { resolveEffectsToEvents } from '../domain/effects';
 import { processTokenUsage, shouldOpenTokenResponse } from '../domain/tokenResponse';
 import { initializeCustomActions } from '../domain/customActions';
 import { BARBARIAN_TOKENS } from '../heroes/barbarian/tokens';
+import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
 
 initializeCustomActions();
 
@@ -554,7 +555,7 @@ describe('锁定 (Targeted) 伤害修正', () => {
                     },
                 },
                 dice: [],
-                tokenDefinitions: [],
+                tokenDefinitions: ALL_TOKEN_DEFINITIONS,
             },
             damageDealt: 0,
         };
@@ -674,20 +675,23 @@ describe('潜行 (Sneak) 伤害免除', () => {
                     },
                 },
                 dice: [],
-                tokenDefinitions: [],
+                tokenDefinitions: ALL_TOKEN_DEFINITIONS,
             },
             damageDealt: 0,
         };
 
         const events = resolveEffectsToEvents(effects as any, 'withDamage', ctx as any);
 
-        // 应该有 TOKEN_CONSUMED（消耗潜行）+ DAMAGE_PREVENTED（免除伤害）
+        // 应该有 TOKEN_CONSUMED（消耗潜行）+ PREVENT_DAMAGE（免除伤害）
         const tokenConsumed = events.find((e: any) => e.type === 'TOKEN_CONSUMED');
+        const preventDamage = events.find((e: any) => e.type === 'PREVENT_DAMAGE');
         const damagePrevented = events.find((e: any) => e.type === 'DAMAGE_PREVENTED');
         const damageDealt = events.find((e: any) => e.type === 'DAMAGE_DEALT');
 
         expect(tokenConsumed).toBeDefined();
         expect((tokenConsumed as any).payload.tokenId).toBe(TOKEN_IDS.SNEAK);
+        expect(preventDamage).toBeDefined();
+        expect((preventDamage as any).payload.applyImmediately).toBe(true);
         expect(damagePrevented).toBeDefined();
         // 伤害被完全免除，不应有 DAMAGE_DEALT 事件
         expect(damageDealt).toBeUndefined();

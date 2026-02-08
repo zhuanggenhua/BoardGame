@@ -70,3 +70,6 @@ const FALLBACK_LAYOUT_API_URL = import.meta.env.DEV
 export const LAYOUT_API_URL = normalizeUrl(
     import.meta.env.VITE_LAYOUT_API_URL || FALLBACK_LAYOUT_API_URL
 );
+
+// 第三方监控配置
+export const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || '';

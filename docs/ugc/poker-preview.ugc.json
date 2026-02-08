@@ -119,8 +119,9 @@
     {
       "id": "player-a",
       "type": "player-area",
-      "x": 40,
-      "y": 360,
+      "anchor": { "x": 0, "y": 0 },
+      "pivot": { "x": 0, "y": 0 },
+      "offset": { "x": 40, "y": 360 },
       "width": 160,
       "height": 80,
       "data": {
@@ -134,8 +135,9 @@
     {
       "id": "player-b",
       "type": "player-area",
-      "x": 40,
-      "y": 40,
+      "anchor": { "x": 0, "y": 0 },
+      "pivot": { "x": 0, "y": 0 },
+      "offset": { "x": 40, "y": 40 },
       "width": 160,
       "height": 80,
       "data": {
@@ -149,8 +151,9 @@
     {
       "id": "hand-a",
       "type": "hand-zone",
-      "x": 220,
-      "y": 340,
+      "anchor": { "x": 0, "y": 0 },
+      "pivot": { "x": 0, "y": 0 },
+      "offset": { "x": 220, "y": 340 },
       "width": 560,
       "height": 160,
       "data": {
@@ -169,8 +172,9 @@
     {
       "id": "hand-b",
       "type": "hand-zone",
-      "x": 220,
-      "y": 40,
+      "anchor": { "x": 0, "y": 0 },
+      "pivot": { "x": 0, "y": 0 },
+      "offset": { "x": 220, "y": 40 },
       "width": 560,
       "height": 160,
       "data": {
@@ -189,8 +193,9 @@
     {
       "id": "table-zone",
       "type": "play-zone",
-      "x": 220,
-      "y": 210,
+      "anchor": { "x": 0, "y": 0 },
+      "pivot": { "x": 0, "y": 0 },
+      "offset": { "x": 220, "y": 210 },
       "width": 560,
       "height": 110,
       "data": {

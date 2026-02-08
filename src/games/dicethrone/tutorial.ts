@@ -103,7 +103,10 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'advance-phase-button',
             position: 'left',
             requireAction: true,
-            advanceOnEvents: [MATCH_PHASE_OFFENSIVE],
+            advanceOnEvents: [
+                { type: 'SYS_PHASE_CHANGED' },
+                MATCH_PHASE_OFFENSIVE,
+            ],
         },
         {
             id: 'dice-tray',
@@ -111,6 +114,9 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'dice-tray',
             position: 'left',
             requireAction: false,
+            advanceOnEvents: [
+                { type: 'SYS_PHASE_CHANGED', match: { to: 'offensiveRoll' } },
+            ],
         },
         {
             id: 'dice-roll',
@@ -134,6 +140,10 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'ability-slots',
             position: 'left',
             requireAction: true,
+            aiActions: [
+                // 确保阶段在 offensiveRoll，否则 canSelectAbility 会为 false
+                { commandType: CHEAT_COMMANDS.SET_PHASE, payload: { phase: 'offensiveRoll' } },
+            ],
             advanceOnEvents: [{ type: 'ABILITY_ACTIVATED' }],
         },
         {
@@ -154,6 +164,17 @@ export const DiceThroneTutorial: TutorialManifest = {
             aiActions: [
                 { commandType: CHEAT_COMMANDS.SET_TOKEN, payload: { playerId: '0', tokenId: TOKEN_IDS.TAIJI, amount: 1 } },
                 { commandType: CHEAT_COMMANDS.SET_PHASE, payload: { phase: 'defensiveRoll' } },
+                // 注入 pendingAttack 以确定防御方（rollerId）
+                { commandType: CHEAT_COMMANDS.MERGE_STATE, payload: { fields: {
+                    pendingAttack: {
+                        id: 'tutorial-taiji-attack',
+                        attackerId: '1',
+                        defenderId: '0',
+                        sourceAbilityId: 'dummy-attack',
+                        isDefendable: true,
+                        damageResolved: false,
+                    },
+                } } },
                 // 注入 pendingDamage 以触发 Token 响应窗口
                 { commandType: CHEAT_COMMANDS.MERGE_STATE, payload: { fields: {
                     pendingDamage: {
@@ -183,6 +204,17 @@ export const DiceThroneTutorial: TutorialManifest = {
             aiActions: [
                 { commandType: CHEAT_COMMANDS.SET_TOKEN, payload: { playerId: '0', tokenId: TOKEN_IDS.EVASIVE, amount: 1 } },
                 { commandType: CHEAT_COMMANDS.SET_PHASE, payload: { phase: 'defensiveRoll' } },
+                // 注入 pendingAttack 以确定防御方（rollerId）
+                { commandType: CHEAT_COMMANDS.MERGE_STATE, payload: { fields: {
+                    pendingAttack: {
+                        id: 'tutorial-evasive-attack',
+                        attackerId: '1',
+                        defenderId: '0',
+                        sourceAbilityId: 'dummy-attack',
+                        isDefendable: true,
+                        damageResolved: false,
+                    },
+                } } },
                 // 注入 pendingDamage 以触发 Token 响应窗口（防御方视角）
                 { commandType: CHEAT_COMMANDS.MERGE_STATE, payload: { fields: {
                     pendingDamage: {

@@ -8,7 +8,8 @@ export interface Column<T> {
     accessorKey?: keyof T;
     cell?: (item: T) => ReactNode;
     width?: string;
-    className?: string;
+    className?: string; // Additional classes for th/td
+    align?: 'left' | 'center' | 'right'; // Horizontal alignment
 }
 
 interface DataTableProps<T> {
@@ -33,23 +34,31 @@ export default function DataTable<T extends { id: string | number }>({
 }: DataTableProps<T>) {
     return (
         <div className={cn("bg-white rounded-2xl border border-zinc-100 shadow-xl shadow-zinc-200/50 flex flex-col overflow-hidden", className)}>
-            <div className="flex-1 overflow-auto relative">
-                <table className="w-full text-left text-sm">
+            <div className="flex-1 overflow-auto relative w-full h-full min-h-0">
+                <table className="w-full text-left text-sm relative">
                     <thead className="bg-zinc-50 border-b border-zinc-100 sticky top-0 z-10 shadow-sm">
                         <tr>
-                            {columns.map((col, idx) => (
-                                <th
-                                    key={idx}
-                                    className={cn("px-6 py-4 font-semibold text-zinc-500 uppercase tracking-wider text-xs", col.className)}
-                                    style={{ width: col.width }}
-                                >
-                                    <div className="flex items-center gap-1 group cursor-pointer hover:text-zinc-800 transition-colors">
-                                        {col.header}
-                                        {/* 排序占位 */}
-                                        {/* <ArrowUpDown size={12} className="opacity-0 group-hover:opacity-50 transition-opacity" /> */}
-                                    </div>
-                                </th>
-                            ))}
+                            {columns.map((col, idx) => {
+                                const align = col.align || 'left';
+                                return (
+                                    <th
+                                        key={idx}
+                                        className={cn(
+                                            "px-6 py-4 font-semibold text-zinc-500 uppercase tracking-wider text-xs whitespace-nowrap bg-zinc-50",
+                                            align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left',
+                                            col.className
+                                        )}
+                                        style={{ width: col.width }}
+                                    >
+                                        <div className={cn(
+                                            "flex items-center gap-1 group cursor-pointer hover:text-zinc-800 transition-colors",
+                                            align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start'
+                                        )}>
+                                            {col.header}
+                                        </div>
+                                    </th>
+                                );
+                            })}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-50">
@@ -58,7 +67,7 @@ export default function DataTable<T extends { id: string | number }>({
                                 <tr key={i}>
                                     {columns.map((_, j) => (
                                         <td key={j} className="px-6 py-4">
-                                            <div className="h-5 bg-zinc-100 rounded-md animate-pulse w-3/4" />
+                                            <div className="h-5 bg-zinc-100 rounded-md animate-pulse w-3/4 mx-auto" />
                                         </td>
                                     ))}
                                 </tr>
@@ -83,13 +92,20 @@ export default function DataTable<T extends { id: string | number }>({
                                     transition={{ delay: index * 0.05 }}
                                     className="hover:bg-zinc-50/80 transition-colors group"
                                 >
-                                    {columns.map((col, idx) => (
-                                        <td key={idx} className={cn("px-6 py-4 text-zinc-700 group-hover:text-zinc-900 transition-colors", col.className)}>
-                                            {col.cell
-                                                ? col.cell(item)
-                                                : (item[col.accessorKey as keyof T] as ReactNode)}
-                                        </td>
-                                    ))}
+                                    {columns.map((col, idx) => {
+                                        const align = col.align || 'left';
+                                        return (
+                                            <td key={idx} className={cn(
+                                                "px-6 py-4 text-zinc-700 group-hover:text-zinc-900 transition-colors",
+                                                align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left',
+                                                col.className
+                                            )}>
+                                                {col.cell
+                                                    ? col.cell(item)
+                                                    : (item[col.accessorKey as keyof T] as ReactNode)}
+                                            </td>
+                                        );
+                                    })}
                                 </motion.tr>
                             ))
                         )}
@@ -98,7 +114,7 @@ export default function DataTable<T extends { id: string | number }>({
             </div>
 
             {pagination && (
-                <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-zinc-50/30">
+                <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-zinc-50/30 flex-none z-20 relative">
                     <div className="text-xs font-medium text-zinc-400">
                         Total {pagination.totalItems || 0} items
                     </div>

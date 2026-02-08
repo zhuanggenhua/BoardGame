@@ -310,7 +310,7 @@ const applyCoreState = async (page: Page, coreState: unknown) => {
   await expect(input).toBeVisible({ timeout: 3000 });
   await input.fill(JSON.stringify(coreState));
   await page.getByTestId('debug-state-apply').click();
-  await expect(input).toBeHidden({ timeout: 5000 }).catch(() => {});
+  await expect(input).toBeHidden({ timeout: 5000 }).catch(() => { });
 };
 
 const ensureGameServerAvailable = async (page: Page) => {
@@ -339,7 +339,7 @@ const createSummonerWarsRoom = async (page: Page) => {
   if (await lobbyTab.isVisible().catch(() => false)) {
     await lobbyTab.evaluate((node) => {
       (node as HTMLElement | null)?.click();
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   const returnButton = modalRoot.locator('button:visible', { hasText: /Return to match|返回当前对局/i }).first();
@@ -397,7 +397,7 @@ const ensurePlayerIdInUrl = async (page: Page, playerId: string) => {
 const disableFabMenu = async (page: Page) => {
   await page.addStyleTag({
     content: '[data-testid="fab-menu"] { pointer-events: none !important; opacity: 0 !important; }',
-  }).catch(() => {});
+  }).catch(() => { });
 };
 
 const waitForSummonerWarsUI = async (page: Page, timeout = 20000) => {
@@ -767,19 +767,19 @@ const removeSummonerFromCore = (coreState: any, playerId: string) => {
 };
 
 test.describe('SummonerWars', () => {
-  test('首页游戏列表包含召唤师战争', async ({ page }) => {
+  test('首页游戏列表包含召唤师战争', async ({ page }, testInfo) => {
     attachPageDiagnostics(page);
     await resetMatchStorage(page);
     await page.goto('/');
     await dismissViteOverlay(page);
     await ensureSummonerWarsCard(page);
-    await page.screenshot({ 
-      path: 'e2e/screenshots/summonerwars-home.png',
-      fullPage: true 
+    await page.screenshot({
+      path: testInfo.outputPath('summonerwars-home.png'),
+      fullPage: true
     });
   });
 
-  test('游戏大厅页面', async ({ page }) => {
+  test('游戏大厅页面', async ({ page }, testInfo) => {
     attachPageDiagnostics(page);
     await resetMatchStorage(page);
     await page.goto('/?game=summonerwars');
@@ -795,10 +795,84 @@ test.describe('SummonerWars', () => {
     }
     await expect(createButton).toBeVisible({ timeout: 20000 });
 
-    await page.screenshot({ 
-      path: 'e2e/screenshots/summonerwars-lobby.png',
-      fullPage: true 
+    await page.screenshot({
+      path: testInfo.outputPath('summonerwars-lobby.png'),
+      fullPage: true
     });
+  });
+
+  test('大厅切换房间需确认并退出当前对局', async ({ browser }, testInfo) => {
+    test.setTimeout(90000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+    const hostContext = await browser.newContext({ baseURL });
+    await setEnglishLocale(hostContext);
+    await resetMatchStorage(hostContext);
+    const hostPage = await hostContext.newPage();
+
+    if (!await ensureGameServerAvailable(hostPage)) {
+      test.skip(true, 'Game server unavailable for online tests.');
+    }
+
+    const activeMatchId = await createSummonerWarsRoom(hostPage);
+    if (!activeMatchId) {
+      test.skip(true, 'Room creation failed or backend unavailable.');
+    }
+    await ensurePlayerIdInUrl(hostPage, '0');
+
+    const otherContext = await browser.newContext({ baseURL });
+    await setEnglishLocale(otherContext);
+    await resetMatchStorage(otherContext);
+    const otherPage = await otherContext.newPage();
+
+    const nextMatchId = await createSummonerWarsRoom(otherPage);
+    if (!nextMatchId) {
+      test.skip(true, 'Room creation failed or backend unavailable.');
+      await hostContext.close();
+      await otherContext.close();
+      return;
+    }
+    await ensurePlayerIdInUrl(otherPage, '0');
+
+    await hostPage.goto('/?game=summonerwars', { waitUntil: 'domcontentloaded' });
+    await dismissViteOverlay(hostPage);
+    await waitForHomeGameList(hostPage);
+
+    const { modalRoot } = await ensureSummonerWarsModalOpen(hostPage);
+    const lobbyTab = modalRoot.getByRole('button', { name: /Lobby|在线大厅/i });
+    if (await lobbyTab.isVisible().catch(() => false)) {
+      await lobbyTab.click();
+    }
+
+    const shortId = nextMatchId.slice(0, 4);
+    await expect(
+      modalRoot.getByText(new RegExp(`Match #${shortId}|对局 #${shortId}`))
+    ).toBeVisible({ timeout: 20000 });
+
+    const joinButton = modalRoot.getByRole('button', { name: /Join|加入/i }).first();
+    await expect(joinButton).toBeVisible({ timeout: 10000 });
+    await joinButton.click();
+
+    const confirmTitle = hostPage.getByText(/Leave Current Match|退出当前对局/i);
+    await expect(confirmTitle).toBeVisible({ timeout: 5000 });
+    const cancelButton = hostPage.getByRole('button', { name: /Cancel|取消/i }).first();
+    await cancelButton.click();
+    await expect(confirmTitle).toHaveCount(0);
+    await expect(hostPage).toHaveURL(/\?game=summonerwars/);
+
+    const joinButtonAgain = modalRoot.getByRole('button', { name: /Join|加入/i }).first();
+    await expect(joinButtonAgain).toBeVisible({ timeout: 10000 });
+    await joinButtonAgain.click();
+    await expect(confirmTitle).toBeVisible({ timeout: 5000 });
+    const confirmButton = hostPage.getByRole('button', { name: /Confirm|确认/i }).first();
+    await confirmButton.click();
+
+    await hostPage.waitForURL(new RegExp(`/play/summonerwars/match/${nextMatchId}`), { timeout: 20000 });
+    const finalUrl = new URL(hostPage.url());
+    expect(finalUrl.pathname).toContain(`/play/summonerwars/match/${nextMatchId}`);
+
+    await hostContext.close();
+    await otherContext.close();
   });
 
   test('在线对局流程：核心 UI、阶段推进与魔力弃牌', async ({ browser }, testInfo) => {
@@ -1072,23 +1146,42 @@ test.describe('SummonerWars', () => {
 
     // 检查复活死灵按钮是否显示（召唤师默认有此技能）
     const reviveButton = hostPage.getByRole('button', { name: /复活死灵/i });
-    const hasButton = await reviveButton.isVisible({ timeout: 5000 }).catch(() => false);
-    
-    if (hasButton) {
-      // 点击复活死灵按钮
-      await reviveButton.click();
+    await expect(reviveButton).toBeVisible({ timeout: 5000 });
 
-      // 检查卡牌选择器是否显示
-      const cardSelector = hostPage.locator('[data-testid="sw-card-selector-overlay"]');
-      await expect(cardSelector).toBeVisible({ timeout: 8000 });
+    const summonerDamageBefore = Number(await summoner.getAttribute('data-unit-damage') ?? '0');
 
-      // 选择弃牌堆中的亡灵单位
-      const undeadCard = cardSelector.locator('[data-card-id]').first();
-      const hasCard = await undeadCard.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasCard) {
-        await undeadCard.click();
-      }
+    // 点击复活死灵按钮
+    await reviveButton.click();
+
+    // 检查卡牌选择器是否显示
+    const cardSelector = hostPage.locator('[data-testid="sw-card-selector-overlay"]');
+    await expect(cardSelector).toBeVisible({ timeout: 8000 });
+
+    // 选择弃牌堆中的亡灵单位
+    const undeadCard = cardSelector.locator('[data-card-id="necro-undead-warrior-test"]').first();
+    await expect(undeadCard).toBeVisible({ timeout: 3000 });
+    await undeadCard.click();
+
+    await expect(cardSelector).toBeHidden({ timeout: 5000 });
+
+    // 选择相邻空位
+    const abilityCell = hostPage.locator('[data-testid^="sw-cell-"][class*="border-green-400"]').first();
+    await expect(abilityCell).toBeVisible({ timeout: 5000 });
+    const targetId = await abilityCell.getAttribute('data-testid');
+    if (!targetId) {
+      throw new Error('无法定位复活死灵目标格子');
     }
+    const match = targetId.match(/sw-cell-(\d+)-(\d+)/);
+    if (!match) {
+      throw new Error(`无法解析复活死灵目标坐标: ${targetId}`);
+    }
+    const [, row, col] = match;
+    await clickBoardElement(hostPage, `[data-testid="${targetId}"]`);
+
+    const summonedUnit = hostPage.getByTestId(`sw-unit-${row}-${col}`);
+    await expect(summonedUnit).toBeVisible({ timeout: 5000 });
+    await expect.poll(async () => Number(await summoner.getAttribute('data-unit-damage') ?? '0'))
+      .toBe(summonerDamageBefore + 2);
 
     await hostContext.close();
     await guestContext.close();
@@ -1135,52 +1228,63 @@ test.describe('SummonerWars', () => {
 
     // 测试1：火祀召唤 - 准备状态并验证按钮
     let coreState = await readCoreState(hostPage);
-    const fireSacrificeCore = prepareFireSacrificeState(coreState);
+    const { core: fireSacrificeCore, elutBarPosition, allyPosition } = prepareFireSacrificeState(coreState);
     await applyCoreState(hostPage, fireSacrificeCore);
     await closeDebugPanelIfOpen(hostPage);
 
+    await waitForPhase(hostPage, 'summon');
+
     // 选中伊路特-巴尔
     const elutBar = hostPage.locator('[data-testid^="sw-unit-"][data-owner="0"][data-unit-name*="伊路特"]').first();
-    const hasElutBar = await elutBar.isVisible({ timeout: 5000 }).catch(() => false);
-    
-    if (hasElutBar) {
-      await clickBoardElement(hostPage, '[data-testid^="sw-unit-"][data-owner="0"][data-unit-name*="伊路特"]');
-      const fireSacrificeButton = hostPage.getByRole('button', { name: /火祀召唤/i });
-      const hasFireButton = await fireSacrificeButton.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasFireButton) {
-        await fireSacrificeButton.click();
-        // 验证提示横幅显示
-        const banner = hostPage.locator('.bg-amber-900');
-        await expect(banner).toBeVisible({ timeout: 3000 }).catch(() => {});
-        // 取消操作
-        const cancelButton = hostPage.getByRole('button', { name: /取消/i });
-        if (await cancelButton.isVisible().catch(() => false)) {
-          await cancelButton.click();
-        }
-      }
-    }
+    await expect(elutBar).toBeVisible({ timeout: 5000 });
+
+    await clickBoardElement(hostPage, '[data-testid^="sw-unit-"][data-owner="0"][data-unit-name*="伊路特"]');
+    const fireSacrificeButton = hostPage.getByRole('button', { name: /火祀召唤/i });
+    await expect(fireSacrificeButton).toBeVisible({ timeout: 3000 });
+    await fireSacrificeButton.click();
+
+    const fireBanner = hostPage.locator('.bg-amber-900');
+    await expect(fireBanner).toBeVisible({ timeout: 3000 });
+
+    const allyCell = hostPage.getByTestId(`sw-cell-${allyPosition.row}-${allyPosition.col}`);
+    await expect(allyCell).toHaveClass(/border-amber-400/);
+    await clickBoardElement(hostPage, `[data-testid="sw-cell-${allyPosition.row}-${allyPosition.col}"]`);
+
+    await expect(fireBanner).toBeHidden({ timeout: 5000 });
+    await expect(allyCell).not.toHaveClass(/border-amber-400/);
+
+    const movedUnit = hostPage.getByTestId(`sw-unit-${allyPosition.row}-${allyPosition.col}`);
+    await expect(movedUnit).toBeVisible({ timeout: 5000 });
+    await expect(movedUnit).toHaveAttribute('data-unit-name', '伊路特-巴尔');
+    await expect(hostPage.getByTestId(`sw-unit-${elutBarPosition.row}-${elutBarPosition.col}`)).toHaveCount(0);
 
     // 测试2：吸取生命 - 准备状态并验证按钮
     coreState = await readCoreState(hostPage);
-    const lifeDrainCore = prepareLifeDrainState(coreState);
+    const { core: lifeDrainCore, dragosPosition, allyPosition: lifeDrainAlly } = prepareLifeDrainState(coreState);
     await applyCoreState(hostPage, lifeDrainCore);
     await closeDebugPanelIfOpen(hostPage);
 
+    await waitForPhase(hostPage, 'attack');
+
     // 选中德拉戈斯
     const dragos = hostPage.locator('[data-testid^="sw-unit-"][data-owner="0"][data-unit-name*="德拉戈斯"]').first();
-    const hasDragos = await dragos.isVisible({ timeout: 5000 }).catch(() => false);
-    
-    if (hasDragos) {
-      await clickBoardElement(hostPage, '[data-testid^="sw-unit-"][data-owner="0"][data-unit-name*="德拉戈斯"]');
-      const lifeDrainButton = hostPage.getByRole('button', { name: /吸取生命/i });
-      const hasLifeButton = await lifeDrainButton.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasLifeButton) {
-        await lifeDrainButton.click();
-        // 验证提示横幅显示
-        const banner = hostPage.locator('.bg-amber-900');
-        await expect(banner).toBeVisible({ timeout: 3000 }).catch(() => {});
-      }
-    }
+    await expect(dragos).toBeVisible({ timeout: 5000 });
+
+    await clickBoardElement(hostPage, '[data-testid^="sw-unit-"][data-owner="0"][data-unit-name*="德拉戈斯"]');
+    const lifeDrainButton = hostPage.getByRole('button', { name: /吸取生命/i });
+    await expect(lifeDrainButton).toBeVisible({ timeout: 3000 });
+    await lifeDrainButton.click();
+
+    const lifeBanner = hostPage.locator('.bg-amber-900');
+    await expect(lifeBanner).toBeVisible({ timeout: 3000 });
+
+    const lifeDrainCell = hostPage.getByTestId(`sw-cell-${lifeDrainAlly.row}-${lifeDrainAlly.col}`);
+    await expect(lifeDrainCell).toHaveClass(/border-amber-400/);
+    await clickBoardElement(hostPage, `[data-testid="sw-cell-${lifeDrainAlly.row}-${lifeDrainAlly.col}"]`);
+
+    await expect(lifeBanner).toBeHidden({ timeout: 5000 });
+    await expect(hostPage.getByTestId(`sw-unit-${lifeDrainAlly.row}-${lifeDrainAlly.col}`)).toHaveCount(0);
+    await expect(hostPage.getByTestId(`sw-unit-${dragosPosition.row}-${dragosPosition.col}`)).toBeVisible({ timeout: 5000 });
 
     await hostContext.close();
     await guestContext.close();
@@ -1239,19 +1343,19 @@ test.describe('SummonerWars', () => {
       .locator('[data-card-id*="hellfire-blade"]')
       .first();
     const hasHellfireCard = await hellfireCard.isVisible({ timeout: 5000 }).catch(() => false);
-    
+
     if (hasHellfireCard) {
       await hellfireCard.click();
-      
+
       // 验证目标选择高亮（友方士兵）
       const targetHighlight = hostPage.locator('[data-valid-event-target="true"]');
       const hasTargetHighlight = await targetHighlight.first().isVisible({ timeout: 3000 }).catch(() => false);
-      
+
       if (hasTargetHighlight) {
         // 点击一个有效目标
         await clickBoardElement(hostPage, '[data-valid-event-target="true"]');
         // 验证事件卡已打出（手牌减少或提示消失）
-        await expect(hellfireCard).toBeHidden({ timeout: 5000 }).catch(() => {});
+        await expect(hellfireCard).toBeHidden({ timeout: 5000 }).catch(() => { });
       }
     }
 
@@ -1319,7 +1423,7 @@ test.describe('SummonerWars', () => {
       .locator('[data-card-id*="annihilate"], [data-card-name*="除灭"]')
       .first();
     const hasAnnihilateCard = await annihilateCard.isVisible({ timeout: 5000 }).catch(() => false);
-    
+
     if (!hasAnnihilateCard) {
       // 如果没有除灭卡，记录手牌信息并跳过
       const handCards = await hostPage.getByTestId('sw-hand-area').locator('[data-card-id]').all();
@@ -1328,30 +1432,30 @@ test.describe('SummonerWars', () => {
     }
 
     await annihilateCard.click();
-    
+
     // 验证除灭模式横幅显示
     const annihilateBanner = hostPage.locator('[class*="bg-purple-900"]');
     await expect(annihilateBanner).toBeVisible({ timeout: 3000 });
-    
+
     // 验证可选目标高亮
     const targetHighlight = hostPage.locator('[class*="border-purple"]');
     const hasTargetHighlight = await targetHighlight.first().isVisible({ timeout: 3000 }).catch(() => false);
-    
+
     if (hasTargetHighlight) {
       // 选择一个友方单位
       await clickBoardElement(hostPage, '[data-owner="0"]:not([data-unit-class="summoner"])');
-      
+
       // 验证确认选择按钮出现
       const confirmButton = hostPage.getByRole('button', { name: /确认选择/i });
       const hasConfirmButton = await confirmButton.isVisible({ timeout: 3000 }).catch(() => false);
-      
+
       if (hasConfirmButton) {
         await confirmButton.click();
         // 验证进入伤害目标选择步骤
-        await expect(annihilateBanner).toContainText(/伤害/, { timeout: 3000 }).catch(() => {});
+        await expect(annihilateBanner).toContainText(/伤害/, { timeout: 3000 }).catch(() => { });
       }
     }
-    
+
     // 取消操作
     const cancelButton = hostPage.getByRole('button', { name: /取消/i });
     if (await cancelButton.isVisible().catch(() => false)) {
@@ -1415,15 +1519,15 @@ test.describe('SummonerWars', () => {
       .locator('[data-card-id*="blood-summon"]')
       .first();
     const hasBloodSummonCard = await bloodSummonCard.isVisible({ timeout: 5000 }).catch(() => false);
-    
+
     if (hasBloodSummonCard) {
       await bloodSummonCard.click();
-      
+
       // 验证血契召唤模式横幅显示
       const bloodSummonBanner = hostPage.locator('[class*="bg-rose-900"]');
       await expect(bloodSummonBanner).toBeVisible({ timeout: 3000 });
       await expect(bloodSummonBanner).toContainText(/选择.*友方单位/, { timeout: 3000 });
-      
+
       // 取消操作
       const cancelButton = hostPage.getByRole('button', { name: /取消/i });
       if (await cancelButton.isVisible().catch(() => false)) {
@@ -1480,7 +1584,7 @@ test.describe('SummonerWars', () => {
 
     // 验证当前是建造阶段（不应被自动跳过）
     await waitForPhase(hostPage, 'build');
-    
+
     // 等待一段时间确认阶段没有被自动跳过
     await hostPage.waitForTimeout(1000);
     const currentPhase = await getCurrentPhase(hostPage);
@@ -1724,6 +1828,8 @@ const prepareFireSacrificeState = (coreState: any) => {
   const board = next.board;
   let elutBarPlaced = false;
   let allyPlaced = false;
+  let elutBarPosition: { row: number; col: number } | null = null;
+  let allyPosition: { row: number; col: number } | null = null;
 
   for (let row = 6; row < 8 && !elutBarPlaced; row++) {
     for (let col = 0; col < 6 && !elutBarPlaced; col++) {
@@ -1752,6 +1858,7 @@ const prepareFireSacrificeState = (coreState: any) => {
           hasAttacked: false,
         };
         elutBarPlaced = true;
+        elutBarPosition = { row, col };
 
         // 在相邻位置放置一个友方单位
         const adjPositions = [
@@ -1786,6 +1893,7 @@ const prepareFireSacrificeState = (coreState: any) => {
                 hasAttacked: false,
               };
               allyPlaced = true;
+              allyPosition = { ...adj };
               break;
             }
           }
@@ -1794,15 +1902,15 @@ const prepareFireSacrificeState = (coreState: any) => {
     }
   }
 
-  if (!elutBarPlaced) {
+  if (!elutBarPlaced || !elutBarPosition) {
     throw new Error('无法放置伊路特-巴尔');
   }
 
-  if (!allyPlaced) {
+  if (!allyPlaced || !allyPosition) {
     throw new Error('无法放置火祀召唤所需的友方单位');
   }
 
-  return next;
+  return { core: next, elutBarPosition, allyPosition };
 };
 
 /**
@@ -1826,6 +1934,8 @@ const prepareLifeDrainState = (coreState: any) => {
   const board = next.board;
   let dragosPlaced = false;
   let allyPlaced = false;
+  let dragosPosition: { row: number; col: number } | null = null;
+  let allyPosition: { row: number; col: number } | null = null;
 
   for (let row = 5; row < 8 && !dragosPlaced; row++) {
     for (let col = 0; col < 6 && !dragosPlaced; col++) {
@@ -1854,6 +1964,7 @@ const prepareLifeDrainState = (coreState: any) => {
           hasAttacked: false,
         };
         dragosPlaced = true;
+        dragosPosition = { row, col };
 
         // 2格内放置一个友方单位
         const nearbyPositions = [
@@ -1892,6 +2003,7 @@ const prepareLifeDrainState = (coreState: any) => {
                 hasAttacked: false,
               };
               allyPlaced = true;
+              allyPosition = { ...pos };
               break;
             }
           }
@@ -1900,15 +2012,15 @@ const prepareLifeDrainState = (coreState: any) => {
     }
   }
 
-  if (!dragosPlaced) {
+  if (!dragosPlaced || !dragosPosition) {
     throw new Error('无法放置德拉戈斯');
   }
 
-  if (!allyPlaced) {
+  if (!allyPlaced || !allyPosition) {
     throw new Error('无法放置吸取生命所需的友方单位');
   }
 
-  return next;
+  return { core: next, dragosPosition, allyPosition };
 };
 
 

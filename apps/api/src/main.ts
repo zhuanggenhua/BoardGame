@@ -9,7 +9,17 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import * as Sentry from '@sentry/nestjs';
 import { GlobalHttpExceptionFilter } from './shared/filters/http-exception.filter';
+
+// 初始化 Sentry (后端)
+if (process.env.SENTRY_DSN) {
+    Sentry.init({
+        dsn: process.env.SENTRY_DSN,
+        // 性能监控采样率
+        tracesSampleRate: 1.0,
+    });
+}
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {

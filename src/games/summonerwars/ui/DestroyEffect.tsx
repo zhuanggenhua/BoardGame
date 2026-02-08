@@ -2,7 +2,7 @@
  * 召唤师战争 - 单位/建筑摧毁动画
  * 
  * 当单位或建筑被摧毁时显示爆炸消散效果
- * 粒子散射使用 BurstParticles（tsParticles），形状动画保留 framer-motion
+ * 粒子散射使用 BurstParticles（Canvas 2D），形状动画保留 framer-motion
  */
 
 import React, { useState, useCallback, useRef } from 'react';
@@ -91,14 +91,14 @@ const DestroyEffectItem: React.FC<DestroyEffectProps> = ({
         transition={{ duration: 0.55, ease: 'easeOut' }}
       />
       
-      {/* 爆炸粒子 — tsParticles */}
+      {/* 爆炸粒子 — Canvas 2D */}
       <BurstParticles
         active
         preset={isStructure ? 'explosionStrong' : 'explosion'}
         color={DESTROY_COLORS[effect.type]}
       />
 
-      {/* 烟尘 — tsParticles */}
+      {/* 烟尘 — Canvas 2D */}
       <BurstParticles
         active
         preset="smoke"

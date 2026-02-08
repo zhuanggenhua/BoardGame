@@ -45,6 +45,13 @@ export default function UsersPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const fetchUsers = async () => {
+        if (!token) {
+            setUsers([]);
+            setTotalPages(1);
+            setTotalItems(0);
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
             const query = new URLSearchParams({
@@ -262,9 +269,9 @@ export default function UsersPage() {
         },
         {
             header: '操作',
-            className: 'text-right',
+            align: 'center',
             cell: (user) => (
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-center gap-2">
                     <Link
                         to={`/admin/users/${user.id}`}
                         className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"

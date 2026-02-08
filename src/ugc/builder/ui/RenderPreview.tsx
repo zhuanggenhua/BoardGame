@@ -4,12 +4,13 @@
  * 动态执行用户生成的渲染代码并显示预览
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import * as Babel from '@babel/standalone';
 import { ActionBarSkeleton, HandAreaSkeleton, PhaseHudSkeleton } from '../../../components/game/framework';
 import { getVisibleActions } from '../../runtime/actionHooks';
 import { resolvePlayerContext } from '../utils/resolvePlayerContext';
+import { resolveLayoutRect } from '../../utils/layout';
 import type { UGCGameState } from '../../sdk/types';
 
 interface RenderPreviewProps {
@@ -185,10 +186,12 @@ interface PreviewCanvasProps {
   components: Array<{
     id: string;
     type: string;
-    x: number;
-    y: number;
+    anchor: { x: number; y: number };
+    pivot: { x: number; y: number };
+    offset: { x: number; y: number };
     width: number;
     height: number;
+    rotation?: number;
     data: Record<string, unknown>;
     renderComponentId?: string;
   }>;
@@ -252,6 +255,22 @@ export function PreviewCanvas({
 }: PreviewCanvasProps) {
   const [showBack, setShowBack] = useState(false);
   const [selectedCardIdsByComponent, setSelectedCardIdsByComponent] = useState<Record<string, string[]>>({});
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (!entry) return;
+      setContainerSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleSelectChange = useCallback((componentId: string, cardId: string, selected: boolean) => {
     setSelectedCardIdsByComponent(prev => {
@@ -360,7 +379,11 @@ export function PreviewCanvas({
   );
   
   return (
-    <div className={`relative bg-slate-950 rounded-lg ${className}`}>
+    <div
+      ref={containerRef}
+      data-testid="ugc-preview-canvas"
+      className={`relative bg-slate-950 rounded-lg ${className}`}
+    >
       {/* 背面切换按钮 */}
       <div className="absolute top-2 right-2 z-10">
         <button
@@ -371,12 +394,24 @@ export function PreviewCanvas({
         </button>
       </div>
       {visibleComponents.map(comp => {
+        if (!containerSize.width || !containerSize.height) return null;
+        const resolved = resolveLayoutRect(
+          {
+            anchor: comp.anchor,
+            pivot: comp.pivot,
+            offset: comp.offset,
+            width: comp.width,
+            height: comp.height,
+            rotation: comp.rotation,
+          },
+          containerSize
+        );
         const style: React.CSSProperties = {
           position: 'absolute',
-          left: comp.x,
-          top: comp.y,
-          width: comp.width,
-          height: comp.height,
+          left: resolved.x,
+          top: resolved.y,
+          width: resolved.width,
+          height: resolved.height,
         };
 
         // 自定义渲染组件

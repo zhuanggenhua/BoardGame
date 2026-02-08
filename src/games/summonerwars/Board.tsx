@@ -22,6 +22,7 @@ import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { useRematch } from '../../contexts/RematchContext';
 import { useGameMode } from '../../contexts/GameModeContext';
+import { useGameAudio } from '../../lib/audio/useGameAudio';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { BoardLayoutEditor } from '../../components/game/framework/BoardLayoutEditor';
 import { saveSummonerWarsLayout } from '../../api/layout';
@@ -51,6 +52,7 @@ import { useGameEvents } from './ui/useGameEvents';
 import { useCellInteraction } from './ui/useCellInteraction';
 import { StatusBanners } from './ui/StatusBanners';
 import { BoardGrid, getCellPosition } from './ui/BoardGrid';
+import { SUMMONER_WARS_AUDIO_CONFIG } from './audio.config';
 
 type Props = BoardProps<MatchState<SummonerWarsCore>>;
 
@@ -149,6 +151,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const isMyTurn = isLocalMatch || (playerID !== null && playerID !== undefined && activePlayerId === playerID);
   const myPlayerId = isLocalMatch ? '0' : (playerID === '1' ? '1' : '0');
   const opponentPlayerId = myPlayerId === '0' ? '1' : '0';
+  const isWinner = !!isGameOver && isGameOver?.winner === rootPid;
   const shouldFlipView = !isLocalMatch && !isSpectator && myPlayerId === '1';
   const toViewCoord = useCallback((coord: CellCoord): CellCoord => (
     shouldFlipView ? { row: BOARD_ROWS - 1 - coord.row, col: BOARD_COLS - 1 - coord.col } : coord
@@ -165,6 +168,21 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const myHand = core.players[myPlayerId]?.hand ?? [];
   const myActiveEvents = core.players[myPlayerId]?.activeEvents ?? [];
   const opponentActiveEvents = core.players[opponentPlayerId]?.activeEvents ?? [];
+
+  // 音效系统
+  useGameAudio({
+    config: SUMMONER_WARS_AUDIO_CONFIG,
+    G: G.core,
+    ctx: {
+      currentPhase,
+      isGameOver: !!isGameOver,
+      isWinner,
+    },
+    meta: {
+      currentPlayerId: rootPid as PlayerId,
+    },
+    eventEntries: G.sys.eventStream.entries,
+  });
 
   // 卡牌放大预览状态
   const [magnifiedCard, setMagnifiedCard] = useState<{ atlasId: string; frameIndex: number } | null>(null);

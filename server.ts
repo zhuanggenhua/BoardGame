@@ -18,7 +18,7 @@ import { GAME_SERVER_MANIFEST } from './src/games/manifest.server';
 import { mongoStorage } from './src/server/storage/MongoStorage';
 import { hybridStorage } from './src/server/storage/HybridStorage';
 import { createClaimSeatHandler, claimSeatUtils } from './src/server/claimSeat';
-import { hasOccupiedPlayers } from './src/server/matchOccupancy';
+import { evaluateEmptyRoomJoinGuard } from './src/server/joinGuard';
 import { registerOfflineInteractionAdjudication } from './src/server/offlineInteractionAdjudicator';
 import { buildUgcServerGames } from './src/server/ugcRegistration';
 
@@ -64,6 +64,8 @@ const rematchStateByMatch = new Map<string, RematchVoteState>();
 const matchSubscribers = new Map<string, Set<string>>(); // matchID -> Set<socketId>
 
 const LOBBY_ROOM = 'lobby:subscribers';
+const LOBBY_ALL = 'all';
+const LOBBY_ALL_ROOM = `${LOBBY_ROOM}:${LOBBY_ALL}`;
 const LOBBY_HEARTBEAT_INTERVAL = 15000;
 
 // 权威清单驱动服务端注册与归档（仅 type=game 且 enabled=true）
@@ -75,6 +77,7 @@ const ENABLED_GAME_ENTRIES = GAME_SERVER_MANIFEST.filter(
 
 const SUPPORTED_GAMES: string[] = [];
 type SupportedGame = string;
+type LobbyGameId = SupportedGame | typeof LOBBY_ALL;
 
 const normalizeGameName = (name?: string) => (name || '').toLowerCase();
 const isSupportedGame = (gameName: string): gameName is SupportedGame => {
@@ -88,7 +91,15 @@ const registerSupportedGames = (gameIds: string[]) => {
     SUPPORTED_GAMES.splice(0, SUPPORTED_GAMES.length, ...normalized);
 };
 
-const JWT_SECRET = process.env.JWT_SECRET || 'boardgame-secret-key-change-in-production';
+const isProd = process.env.NODE_ENV === 'production';
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    if (isProd) {
+        throw new Error('[Server] JWT_SECRET 必须在生产环境配置');
+    }
+    JWT_SECRET = 'boardgame-secret-key-change-in-production';
+    console.warn('[Server] JWT_SECRET 未配置，使用开发默认值');
+}
 
 let serverDb: any = null;
 
@@ -462,7 +473,7 @@ const interceptJoinMiddleware = async (ctx: any, next: () => Promise<void>) => {
             const password = body?.data?.password; // 客户端传来的密码
 
             // 获取房间配置
-            const roomData = await db.fetch(matchID, { state: true });
+            const roomData = await db.fetch(matchID, { state: true, metadata: true });
             if (!roomData) {
                 // 让 boardgame.io 处理 404，需要先重建流
                 recreateRequestStream(ctx, body);
@@ -477,6 +488,22 @@ const interceptJoinMiddleware = async (ctx: any, next: () => Promise<void>) => {
             // 如果房间有密码，且 client 没传或者传错了 -> 403
             if (roomPassword && roomPassword !== password) {
                 ctx.throw(403, 'Incorrect password');
+                return;
+            }
+
+            const guestId = typeof body?.data?.guestId === 'string' ? body.data.guestId : undefined;
+            const guard = evaluateEmptyRoomJoinGuard({
+                metadata: roomData.metadata,
+                state: roomData.state,
+                authHeader: ctx.get('authorization'),
+                guestId,
+                jwtSecret: JWT_SECRET,
+            });
+            if (!guard.allowed) {
+                console.warn(
+                    `[JoinGuard] rejected matchID=${matchID} reason=${guard.reason ?? 'unknown'} ownerKey=${guard.ownerKey ?? ''} requesterKey=${guard.requesterKey ?? ''}`
+                );
+                ctx.throw(guard.status ?? 403, guard.message ?? 'Only match owner can rejoin');
                 return;
             }
 
@@ -506,7 +533,7 @@ const GAME_SERVER_PORT = Number(process.env.GAME_SERVER_PORT) || 18000;
 const corsMiddleware = async (ctx: any, next: () => Promise<void>) => {
     const requestOrigin = ctx.get('origin');
     const allowedOrigins = new Set(LOBBY_CORS_ORIGINS);
-    const isDevOrigin = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(requestOrigin);
+    const isDevOrigin = !isProd && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(requestOrigin);
 
     if (requestOrigin && (allowedOrigins.has(requestOrigin) || isDevOrigin)) {
         ctx.set('Access-Control-Allow-Origin', requestOrigin);
@@ -599,32 +626,35 @@ app.use(async (ctx, next) => {
     await next();
 });
 
-// 临时排查日志：捕获 /games/* 500 与异常栈，定位创建房间失败原因（定位完成后移除）
-app.use(async (ctx, next) => {
-    try {
-        await next();
-    } catch (error) {
-        console.error('[服务器异常]', {
-            method: ctx.method,
-            path: ctx.path,
-            query: ctx.query,
-            error,
-        });
-        throw error;
-    }
+// 临时排查日志：捕获 /games/* 500 与异常栈（仅开发环境）
+if (!isProd) {
+    app.use(async (ctx, next) => {
+        try {
+            await next();
+        } catch (error) {
+            console.error('[服务器异常]', {
+                method: ctx.method,
+                path: ctx.path,
+                query: ctx.query,
+                error,
+            });
+            throw error;
+        }
 
-    if (ctx.status >= 500 && ctx.path.startsWith('/games/')) {
-        console.error('[HTTP 500]', {
-            method: ctx.method,
-            path: ctx.path,
-            status: ctx.status,
-            body: ctx.body,
-        });
-    }
-});
+        if (ctx.status >= 500 && ctx.path.startsWith('/games/')) {
+            console.error('[HTTP 500]', {
+                method: ctx.method,
+                path: ctx.path,
+                status: ctx.status,
+                body: ctx.body,
+            });
+        }
+    });
+}
 
 // 存储订阅大厅的 socket 连接（按 game 维度分组）
 const lobbySubscribersByGame = new Map<SupportedGame, Set<string>>();
+const lobbyAllSubscribers = new Set<string>();
 let lobbyIO: IOServer | null = null;
 
 // 房间信息类型（发送给前端的格式）
@@ -646,26 +676,31 @@ const lobbyCacheReadyByGame = new Map<SupportedGame, boolean>();
 const lobbySnapshotTimerByGame = new Map<SupportedGame, ReturnType<typeof setTimeout> | null>();
 let lobbyHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
 const lobbyVersionByGame = new Map<SupportedGame, number>();
+let lobbyAllVersion = 0;
 const matchGameIndex = new Map<string, SupportedGame>();
 
 type PlayerMetadata = { name?: string; isConnected?: boolean };
 
 interface LobbySnapshotPayload {
+    gameId: LobbyGameId;
     version: number;
     matches: LobbyMatch[];
 }
 
 interface LobbyMatchPayload {
+    gameId: LobbyGameId;
     version: number;
     match: LobbyMatch;
 }
 
 interface LobbyMatchEndedPayload {
+    gameId: LobbyGameId;
     version: number;
     matchID: string;
 }
 
 interface LobbyHeartbeatPayload {
+    gameId: LobbyGameId;
     version: number;
     timestamp: number;
 }
@@ -675,6 +710,11 @@ const bumpLobbyVersion = (gameName: SupportedGame): number => {
     const next = current + 1;
     lobbyVersionByGame.set(gameName, next);
     return next;
+};
+
+const bumpLobbyAllVersion = (): number => {
+    lobbyAllVersion += 1;
+    return lobbyAllVersion;
 };
 
 const buildLobbyMatch = (
@@ -759,6 +799,25 @@ const fetchMatchesByGame = async (gameName: SupportedGame): Promise<LobbyMatch[]
 
 const getLobbyRoomName = (gameName: SupportedGame) => `${LOBBY_ROOM}:${gameName}`;
 
+const getLobbySubscriptions = (socket: IOSocket): Set<LobbyGameId> => {
+    if (!socket.data.lobbyGameIds) {
+        socket.data.lobbyGameIds = new Set<LobbyGameId>();
+    }
+    return socket.data.lobbyGameIds as Set<LobbyGameId>;
+};
+
+const removeLobbySubscription = (socket: IOSocket, gameId: LobbyGameId) => {
+    if (gameId === LOBBY_ALL) {
+        lobbyAllSubscribers.delete(socket.id);
+        socket.leave(LOBBY_ALL_ROOM);
+        return;
+    }
+    if (!isSupportedGame(gameId)) return;
+    ensureGameState(gameId);
+    lobbySubscribersByGame.get(gameId)?.delete(socket.id);
+    socket.leave(getLobbyRoomName(gameId));
+};
+
 const ensureGameState = (gameName: SupportedGame) => {
     if (!lobbySubscribersByGame.has(gameName)) lobbySubscribersByGame.set(gameName, new Set());
     if (!lobbyCacheByGame.has(gameName)) lobbyCacheByGame.set(gameName, new Map());
@@ -801,7 +860,18 @@ const sendLobbySnapshot = async (socket: IOSocket, gameName: SupportedGame) => {
     const wasReady = lobbyCacheReadyByGame.get(gameName) ?? false;
     const matches = await getLobbySnapshot(gameName);
     const version = wasReady ? (lobbyVersionByGame.get(gameName) ?? 0) : bumpLobbyVersion(gameName);
-    const payload: LobbySnapshotPayload = { version, matches };
+    const payload: LobbySnapshotPayload = { gameId: gameName, version, matches };
+    socket.emit(LOBBY_EVENTS.LOBBY_UPDATE, payload);
+};
+
+const getLobbySnapshotAll = async (): Promise<LobbyMatch[]> => {
+    const snapshots = await Promise.all(SUPPORTED_GAMES.map((gameName) => getLobbySnapshot(gameName)));
+    return snapshots.flat();
+};
+
+const sendLobbySnapshotAll = async (socket: IOSocket) => {
+    const matches = await getLobbySnapshotAll();
+    const payload: LobbySnapshotPayload = { gameId: LOBBY_ALL, version: bumpLobbyAllVersion(), matches };
     socket.emit(LOBBY_EVENTS.LOBBY_UPDATE, payload);
 };
 
@@ -812,28 +882,36 @@ const emitToLobby = (gameName: SupportedGame, event: string, payload: unknown) =
     lobbyIO.to(getLobbyRoomName(gameName)).emit(event, payload);
 };
 
+const emitToLobbyAll = (event: string, payload: unknown) => {
+    if (!lobbyIO || lobbyAllSubscribers.size === 0) return;
+    lobbyIO.to(LOBBY_ALL_ROOM).emit(event, payload);
+};
+
 const emitMatchCreated = (gameName: SupportedGame, match: LobbyMatch) => {
     ensureGameState(gameName);
     lobbyCacheByGame.get(gameName)!.set(match.matchID, match);
     matchGameIndex.set(match.matchID, gameName);
-    const payload: LobbyMatchPayload = { version: bumpLobbyVersion(gameName), match };
+    const payload: LobbyMatchPayload = { gameId: gameName, version: bumpLobbyVersion(gameName), match };
     emitToLobby(gameName, LOBBY_EVENTS.MATCH_CREATED, payload);
+    emitToLobbyAll(LOBBY_EVENTS.MATCH_CREATED, { gameId: LOBBY_ALL, version: bumpLobbyAllVersion(), match });
 };
 
 const emitMatchUpdated = (gameName: SupportedGame, match: LobbyMatch) => {
     ensureGameState(gameName);
     lobbyCacheByGame.get(gameName)!.set(match.matchID, match);
     matchGameIndex.set(match.matchID, gameName);
-    const payload: LobbyMatchPayload = { version: bumpLobbyVersion(gameName), match };
+    const payload: LobbyMatchPayload = { gameId: gameName, version: bumpLobbyVersion(gameName), match };
     emitToLobby(gameName, LOBBY_EVENTS.MATCH_UPDATED, payload);
+    emitToLobbyAll(LOBBY_EVENTS.MATCH_UPDATED, { gameId: LOBBY_ALL, version: bumpLobbyAllVersion(), match });
 };
 
 const emitMatchEnded = (gameName: SupportedGame, matchID: string) => {
     ensureGameState(gameName);
     lobbyCacheByGame.get(gameName)!.delete(matchID);
     matchGameIndex.delete(matchID);
-    const payload: LobbyMatchEndedPayload = { version: bumpLobbyVersion(gameName), matchID };
+    const payload: LobbyMatchEndedPayload = { gameId: gameName, version: bumpLobbyVersion(gameName), matchID };
     emitToLobby(gameName, LOBBY_EVENTS.MATCH_ENDED, payload);
+    emitToLobbyAll(LOBBY_EVENTS.MATCH_ENDED, { gameId: LOBBY_ALL, version: bumpLobbyAllVersion(), matchID });
 };
 
 const emitLobbyHeartbeat = () => {
@@ -844,10 +922,20 @@ const emitLobbyHeartbeat = () => {
         const subscribers = lobbySubscribersByGame.get(gameName)!;
         if (subscribers.size === 0) continue;
         const payload: LobbyHeartbeatPayload = {
+            gameId: gameName,
             version: lobbyVersionByGame.get(gameName) ?? 0,
             timestamp: Date.now(),
         };
         lobbyIO.to(getLobbyRoomName(gameName)).emit(LOBBY_EVENTS.HEARTBEAT, payload);
+    }
+
+    if (lobbyAllSubscribers.size > 0) {
+        const payload: LobbyHeartbeatPayload = {
+            gameId: LOBBY_ALL,
+            version: lobbyAllVersion,
+            timestamp: Date.now(),
+        };
+        lobbyIO.to(LOBBY_ALL_ROOM).emit(LOBBY_EVENTS.HEARTBEAT, payload);
     }
 };
 
@@ -861,8 +949,13 @@ const broadcastLobbySnapshot = async (gameName: SupportedGame, _reason: string) 
     const subscribers = lobbySubscribersByGame.get(gameName)!;
     if (!lobbyIO || subscribers.size === 0) return;
     const matches = await syncLobbyCache(gameName);
-    const payload: LobbySnapshotPayload = { version: bumpLobbyVersion(gameName), matches };
+    const payload: LobbySnapshotPayload = { gameId: gameName, version: bumpLobbyVersion(gameName), matches };
     lobbyIO.to(getLobbyRoomName(gameName)).emit(LOBBY_EVENTS.LOBBY_UPDATE, payload);
+    if (lobbyAllSubscribers.size > 0) {
+        const allMatches = await getLobbySnapshotAll();
+        const allPayload: LobbySnapshotPayload = { gameId: LOBBY_ALL, version: bumpLobbyAllVersion(), matches: allMatches };
+        lobbyIO.to(LOBBY_ALL_ROOM).emit(LOBBY_EVENTS.LOBBY_UPDATE, allPayload);
+    }
 };
 
 const scheduleLobbySnapshot = (gameName: SupportedGame, reason: string) => {
@@ -1146,7 +1239,7 @@ server.run(GAME_SERVER_PORT).then(async (runningServers) => {
     }
 
     registerOfflineInteractionAdjudication({
-        app,
+        app: app as { _io?: { of: (name: string) => { on: (event: string, handler: (socket: any) => void) => void } } },
         db,
         auth: app.context.auth,
         transport: server.transport as unknown as {
@@ -1178,18 +1271,29 @@ server.run(GAME_SERVER_PORT).then(async (runningServers) => {
         // 订阅大厅更新请求
         socket.on(LOBBY_EVENTS.SUBSCRIBE_LOBBY, async (payload?: { gameId?: string }) => {
             const requestedGame = normalizeGameName(payload?.gameId);
-            if (!requestedGame || !isSupportedGame(requestedGame)) {
+            if (!requestedGame) {
                 console.warn(`[LobbyIO] ${socket.id} 订阅大厅失败：非法 gameId`, payload?.gameId);
                 return;
             }
 
-            const prevGame = socket.data.lobbyGameId as SupportedGame | undefined;
-            if (prevGame && prevGame !== requestedGame) {
-                lobbySubscribersByGame.get(prevGame)?.delete(socket.id);
-                socket.leave(getLobbyRoomName(prevGame));
+            const subscriptions = getLobbySubscriptions(socket);
+
+            if (requestedGame === LOBBY_ALL) {
+                subscriptions.add(LOBBY_ALL);
+                lobbyAllSubscribers.add(socket.id);
+                socket.join(LOBBY_ALL_ROOM);
+                console.log(`[LobbyIO] ${socket.id} 订阅大厅(${LOBBY_ALL}) (当前 ${lobbyAllSubscribers.size} 个订阅者)`);
+                await sendLobbySnapshotAll(socket);
+                startLobbyHeartbeat();
+                return;
             }
 
-            socket.data.lobbyGameId = requestedGame;
+            if (!isSupportedGame(requestedGame)) {
+                console.warn(`[LobbyIO] ${socket.id} 订阅大厅失败：非法 gameId`, payload?.gameId);
+                return;
+            }
+
+            subscriptions.add(requestedGame);
             ensureGameState(requestedGame);
             lobbySubscribersByGame.get(requestedGame)!.add(socket.id);
             socket.join(getLobbyRoomName(requestedGame));
@@ -1201,24 +1305,33 @@ server.run(GAME_SERVER_PORT).then(async (runningServers) => {
         });
 
         // 取消订阅请求
-        socket.on(LOBBY_EVENTS.UNSUBSCRIBE_LOBBY, () => {
-            const gameName = socket.data.lobbyGameId as SupportedGame | undefined;
-            if (gameName) {
-                lobbySubscribersByGame.get(gameName)?.delete(socket.id);
-                socket.leave(getLobbyRoomName(gameName));
+        socket.on(LOBBY_EVENTS.UNSUBSCRIBE_LOBBY, (payload?: { gameId?: string }) => {
+            const requestedGame = normalizeGameName(payload?.gameId);
+            const subscriptions = getLobbySubscriptions(socket);
+
+            if (!requestedGame) {
+                subscriptions.forEach((gameId) => removeLobbySubscription(socket, gameId));
+                subscriptions.clear();
+                socket.data.lobbyGameIds = undefined;
+                console.log(`[LobbyIO] ${socket.id} 取消全部订阅`);
+                return;
             }
-            socket.data.lobbyGameId = undefined;
-            console.log(`[LobbyIO] ${socket.id} 取消订阅`);
+
+            const gameId = requestedGame === LOBBY_ALL ? LOBBY_ALL : requestedGame;
+            removeLobbySubscription(socket, gameId);
+            subscriptions.delete(gameId);
+            if (subscriptions.size === 0) {
+                socket.data.lobbyGameIds = undefined;
+            }
+            console.log(`[LobbyIO] ${socket.id} 取消订阅 ${gameId}`);
         });
 
         // 断开连接时的清理逻辑
         socket.on('disconnect', () => {
-            const gameName = socket.data.lobbyGameId as SupportedGame | undefined;
-            if (gameName) {
-                lobbySubscribersByGame.get(gameName)?.delete(socket.id);
-                socket.leave(getLobbyRoomName(gameName));
-            }
-            socket.data.lobbyGameId = undefined;
+            const subscriptions = getLobbySubscriptions(socket);
+            subscriptions.forEach((gameId) => removeLobbySubscription(socket, gameId));
+            subscriptions.clear();
+            socket.data.lobbyGameIds = undefined;
 
             // 清理重赛订阅
             const matchId = socket.data.rematchMatchId as string | undefined;

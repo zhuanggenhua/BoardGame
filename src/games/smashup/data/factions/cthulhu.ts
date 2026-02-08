@@ -39,7 +39,7 @@ export const CTHULHU_MINIONS: MinionCardDef[] = [
         abilityTextEn: 'Talent: Destroy this card to choose an action from your discard pile and place it on top of your deck.',
         abilityTags: ['talent'],
         count: 4,
-        previewRef: { type: 'atlas', atlasId: 'smashup:cards2', index: 14 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 14 },
     },
 ];
 
@@ -117,7 +117,7 @@ export const CTHULHU_ACTIONS: ActionCardDef[] = [
         effectText: '抽一张疯狂卡。消灭一个随从。',
         effectTextEn: 'Draw a Madness card. Destroy a minion.',
         count: 2,
-        previewRef: { type: 'atlas', atlasId: 'smashup:cards2', index: 20 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 20 },
     },
     {
         id: 'cthulhu_fhtagn',

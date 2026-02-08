@@ -22,8 +22,21 @@
   "include": [
     "server.ts",
     "src/server/**/*",
-    "src/lib/**/*",
-    "src/games/**/*",
-    "src/shared/**/*"
+    "src/shared/**/*",
+    "src/lib/i18n/**/*",
+    "src/lib/utils.ts",
+    "src/games/**/game.ts",
+    "src/games/**/manifest.ts",
+    "src/games/manifest.server*.ts"
+  ],
+  "exclude": [
+    "**/__tests__/**",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/*.tsx",
+    "src/games/**/index.ts",
+    "src/games/manifest.client.*",
+    "src/games/**/ui/**",
+    "src/lib/audio/**"
   ]
 }

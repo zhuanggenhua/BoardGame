@@ -68,6 +68,13 @@ export default defineConfig(({ mode }) => {
           target: 'http://127.0.0.1:18001',
           changeOrigin: true,
         },
+        // UGC 上传资源代理（后端 uploads/ 目录）
+        // 注意：public/assets/ 下的静态文件（音频/图片等）由 Vite 直接 serve
+        // 仅代理 UGC 动态上传的资源（uploads/ugc/...）
+        '/assets/ugc': {
+          target: 'http://127.0.0.1:18001',
+          changeOrigin: true,
+        },
         '/layout': {
           target: 'http://127.0.0.1:18001',
           changeOrigin: true,

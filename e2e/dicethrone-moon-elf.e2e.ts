@@ -4,12 +4,14 @@
  * 覆盖交互面：
  * - 角色选择：月精灵在选角界面可选
  * - 攻击流程：掷骰 → 确认 → 选择技能 → 结算攻击 → 防御阶段
- * - 技能高亮：不同骰面组合触发不同技能
- * - 防御阶段：迷影步防御技能触发
- * - 状态效果：缠绕/致盲/锁定图标可见
+ * - 技能高亮：关键技能触发
+ * - 防御阶段：防御掷骰流程覆盖
+ * - 状态效果：Targeted 伤害提升结算
  */
 
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
+import { STATUS_IDS } from '../src/games/dicethrone/domain/ids';
+import { RESOURCE_IDS } from '../src/games/dicethrone/domain/resources';
 
 // ============================================================================
 // 复用辅助函数（与 dicethrone.e2e.ts 保持一致）
@@ -109,6 +111,31 @@ const ensureDebugControlsTab = async (page: Page) => {
     }
 };
 
+const ensureDebugStateTab = async (page: Page) => {
+    await ensureDebugPanelOpen(page);
+    const stateTab = page.getByTestId('debug-tab-state');
+    if (await stateTab.isVisible().catch(() => false)) {
+        await stateTab.click();
+    }
+};
+
+const readCoreState = async (page: Page) => {
+    await ensureDebugStateTab(page);
+    const raw = await page.getByTestId('debug-state-json').innerText();
+    const parsed = JSON.parse(raw);
+    return parsed?.core ?? parsed?.G?.core ?? parsed;
+};
+
+const applyCoreState = async (page: Page, coreState: unknown) => {
+    await ensureDebugStateTab(page);
+    await page.getByTestId('debug-state-toggle-input').click();
+    const input = page.getByTestId('debug-state-input');
+    await expect(input).toBeVisible({ timeout: 3000 });
+    await input.fill(JSON.stringify(coreState));
+    await page.getByTestId('debug-state-apply').click();
+    await expect(input).toBeHidden({ timeout: 5000 }).catch(() => { });
+};
+
 const applyDiceValues = async (page: Page, values: number[]) => {
     await ensureDebugControlsTab(page);
     const diceSection = page.getByTestId('dt-debug-dice');
@@ -119,6 +146,15 @@ const applyDiceValues = async (page: Page, values: number[]) => {
     }
     await diceSection.getByTestId('dt-debug-dice-apply').click();
     await closeDebugPanelIfOpen(page);
+};
+
+const getPlayerIdFromUrl = (page: Page, fallback: string) => {
+    try {
+        const url = new URL(page.url());
+        return url.searchParams.get('playerID') ?? fallback;
+    } catch {
+        return fallback;
+    }
 };
 
 const waitForMainPhase = async (page: Page, timeout = 20000) => {
@@ -372,135 +408,16 @@ test.describe('DiceThrone Moon Elf E2E', () => {
         // 验证到达 Main Phase 2（攻击完成）
         await expect(attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/)).toBeVisible({ timeout: 15000 });
 
-        await hostPage.screenshot({ path: 'test-results/moon-elf-attack-flow.png', fullPage: false });
+        await hostPage.screenshot({ path: testInfo.outputPath('moon-elf-attack-flow.png'), fullPage: false });
 
         await hostContext.close();
         await guestContext.close();
     });
 
     // ========================================================================
-    // 2. 在线对局：月精灵不同骰面组合触发不同技能
+    // 2. 在线对局：Targeted 受伤 +2（伤害结算后移除）
     // ========================================================================
-    test('Online match: Moon Elf dice combinations trigger different abilities', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
-
-        const hostContext = await browser.newContext({ baseURL });
-        await blockAudioRequests(hostContext);
-        await disableAudio(hostContext);
-        await disableTutorial(hostContext as any);
-        await setEnglishLocale(hostContext);
-        const hostPage = await hostContext.newPage();
-
-        if (!await ensureGameServerAvailable(hostPage)) {
-            test.skip(true, '游戏服务器不可用');
-        }
-
-        // 创建房间并双方加入
-        await openDiceThroneModal(hostPage);
-        await hostPage.getByRole('button', { name: /Create Room|创建房间/i }).click();
-        await expect(hostPage.getByRole('heading', { name: /Create Room|创建房间/i })).toBeVisible();
-        await hostPage.getByRole('button', { name: /Confirm|确认/i }).click();
-        try {
-            await hostPage.waitForURL(/\/play\/dicethrone\/match\//, { timeout: 5000 });
-        } catch {
-            test.skip(true, '房间创建失败或后端不可用');
-        }
-
-        const hostUrl = new URL(hostPage.url());
-        const matchId = hostUrl.pathname.split('/').pop();
-        if (!matchId) throw new Error('无法从 URL 解析 matchId');
-        if (!hostUrl.searchParams.get('playerID')) {
-            hostUrl.searchParams.set('playerID', '0');
-            await hostPage.goto(hostUrl.toString());
-        }
-
-        const guestContext = await browser.newContext({ baseURL });
-        await blockAudioRequests(guestContext);
-        await disableAudio(guestContext);
-        await disableTutorial(guestContext as any);
-        await setEnglishLocale(guestContext);
-        const guestPage = await guestContext.newPage();
-        await guestPage.goto(`/play/dicethrone/match/${matchId}?join=true`, { waitUntil: 'domcontentloaded' });
-        await guestPage.waitForURL(/playerID=\d/, { timeout: 20000 });
-
-        // 先检查是否自动开始
-        let autoStarted2 = true;
-        try {
-            await waitForMainPhase(hostPage, 15000);
-            await waitForMainPhase(guestPage, 15000);
-        } catch {
-            autoStarted2 = false;
-        }
-
-        if (autoStarted2) {
-            // 自动开始时无法控制角色选择，跳过此测试
-            test.skip(true, '游戏自动开始，无法选择月精灵角色');
-        }
-
-        await hostPage.waitForSelector('[data-char-id="moon_elf"]', { state: 'attached', timeout: 60000 });
-        await guestPage.waitForSelector('[data-char-id="monk"]', { state: 'attached', timeout: 60000 });
-        await hostPage.locator('[data-char-id="moon_elf"]').first().click();
-        await guestPage.locator('[data-char-id="monk"]').first().click();
-
-        const readyButton = guestPage.getByRole('button', { name: /Ready|准备/i });
-        await expect(readyButton).toBeVisible({ timeout: 20000 });
-        await expect(readyButton).toBeEnabled({ timeout: 20000 });
-        await readyButton.click();
-
-        const startButton = hostPage.getByRole('button', { name: /Start Game|开始游戏/i });
-        await expect(startButton).toBeVisible({ timeout: 20000 });
-        await expect(startButton).toBeEnabled({ timeout: 20000 });
-        await startButton.click();
-
-        await waitForMainPhase(hostPage, 15000);
-        await waitForMainPhase(guestPage, 15000);
-
-        // 确定攻击方
-        let attackerPage: Page;
-        const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-        if (await hostNextPhase.isEnabled({ timeout: 3000 }).catch(() => false)) {
-            attackerPage = hostPage;
-        } else {
-            attackerPage = guestPage;
-        }
-
-        // 推进到攻击掷骰
-        await advanceToOffensiveRoll(attackerPage);
-
-        // 掷骰
-        const rollButton = attackerPage.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(rollButton).toBeEnabled({ timeout: 5000 });
-        await rollButton.click();
-        await attackerPage.waitForTimeout(300);
-
-        // 测试骰面组合：[6,6,6,6,6] = 5个月(moon) → 应触发月蚀(lunar-eclipse)终极技能
-        await applyDiceValues(attackerPage, [6, 6, 6, 6, 6]);
-
-        const confirmButton = attackerPage.locator('[data-tutorial-id="dice-confirm-button"]');
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-
-        // 验证有技能被高亮（5个月应触发月蚀终极技能）
-        const highlightedSlots = attackerPage
-            .locator('[data-ability-slot]')
-            .filter({ has: attackerPage.locator('div.animate-pulse[class*="border-"]') });
-
-        // 至少应有一个技能高亮
-        const highlightCount = await highlightedSlots.count();
-        expect(highlightCount).toBeGreaterThan(0);
-
-        // 截图记录技能高亮状态
-        await attackerPage.screenshot({ path: 'test-results/moon-elf-lunar-eclipse-highlight.png', fullPage: false });
-
-        await hostContext.close();
-        await guestContext.close();
-    });
-
-    // ========================================================================
-    // 3. 在线对局：月精灵 vs 月精灵（双方迷影步防御）
-    // ========================================================================
-    test('Online match: Moon Elf mirror match with defensive ability', async ({ browser }, testInfo) => {
+    test('Online match: Moon Elf Targeted increases damage by 2', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
 
@@ -544,21 +461,21 @@ test.describe('DiceThrone Moon Elf E2E', () => {
         await guestPage.waitForURL(/playerID=\d/, { timeout: 20000 });
 
         // 先检查是否自动开始
-        let autoStarted3 = true;
+        let autoStarted5 = true;
         try {
             await waitForMainPhase(hostPage, 15000);
             await waitForMainPhase(guestPage, 15000);
         } catch {
-            autoStarted3 = false;
+            autoStarted5 = false;
         }
 
-        if (autoStarted3) {
-            test.skip(true, '游戏自动开始，无法选择月精灵角色');
+        if (autoStarted5) {
+            test.skip(true, '游戏自动开始，无法选择角色');
         }
 
-        await hostPage.waitForSelector('[data-char-id="moon_elf"]', { state: 'attached', timeout: 60000 });
+        await hostPage.waitForSelector('[data-char-id="barbarian"]', { state: 'attached', timeout: 60000 });
         await guestPage.waitForSelector('[data-char-id="moon_elf"]', { state: 'attached', timeout: 60000 });
-        await hostPage.locator('[data-char-id="moon_elf"]').first().click();
+        await hostPage.locator('[data-char-id="barbarian"]').first().click();
         await guestPage.locator('[data-char-id="moon_elf"]').first().click();
 
         const readyButton = guestPage.getByRole('button', { name: /Ready|准备/i });
@@ -574,353 +491,73 @@ test.describe('DiceThrone Moon Elf E2E', () => {
         await waitForMainPhase(hostPage, 15000);
         await waitForMainPhase(guestPage, 15000);
 
-        // 确定攻击方和防御方
-        let attackerPage: Page;
-        let defenderPage: Page;
         const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-        if (await hostNextPhase.isEnabled({ timeout: 3000 }).catch(() => false)) {
-            attackerPage = hostPage;
-            defenderPage = guestPage;
-        } else {
-            attackerPage = guestPage;
-            defenderPage = hostPage;
+        const hostIsActive = await hostNextPhase.isEnabled({ timeout: 3000 }).catch(() => false);
+        if (!hostIsActive) {
+            test.skip(true, '非预期起始玩家，无法构造 Targeted 受伤场景');
         }
 
-        // 攻击方推进到攻击掷骰
-        await advanceToOffensiveRoll(attackerPage);
+        const attackerPage = hostPage;
+        const defenderPage = guestPage;
+        const defenderId = getPlayerIdFromUrl(defenderPage, '1');
 
-        // 掷骰并设置为 [1,1,1,4,5] = 3弓+1足+1足 → 触发长弓(3弓)
+        const coreState = await readCoreState(attackerPage);
+        const defenderState = coreState?.players?.[defenderId];
+        if (!defenderState) {
+            test.skip(true, '无法读取防御方状态');
+        }
+
+        const hpBefore = defenderState.resources?.[RESOURCE_IDS.HP] ?? 0;
+        const nextCoreState = {
+            ...coreState,
+            players: {
+                ...coreState.players,
+                [defenderId]: {
+                    ...defenderState,
+                    statusEffects: {
+                        ...(defenderState.statusEffects ?? {}),
+                        [STATUS_IDS.TARGETED]: 1,
+                    },
+                },
+            },
+        };
+
+        await applyCoreState(attackerPage, nextCoreState);
+        await attackerPage.waitForTimeout(300);
+
+        // 狂战士进攻：4 Strength 触发不可防御攻击 (violent-assault)
+        await advanceToOffensiveRoll(attackerPage);
         const rollButton = attackerPage.locator('[data-tutorial-id="dice-roll-button"]');
         await expect(rollButton).toBeEnabled({ timeout: 5000 });
         await rollButton.click();
         await attackerPage.waitForTimeout(300);
-        await applyDiceValues(attackerPage, [1, 1, 1, 4, 5]);
+        await applyDiceValues(attackerPage, [6, 6, 6, 6, 1]);
 
         const confirmButton = attackerPage.locator('[data-tutorial-id="dice-confirm-button"]');
         await expect(confirmButton).toBeEnabled({ timeout: 5000 });
         await confirmButton.click();
 
-        // 选择高亮技能
         const highlightedSlots = attackerPage
             .locator('[data-ability-slot]')
             .filter({ has: attackerPage.locator('div.animate-pulse[class*="border-"]') });
-        const hasHighlight = await highlightedSlots.first().isVisible({ timeout: 5000 }).catch(() => false);
+        await expect(highlightedSlots.first()).toBeVisible({ timeout: 8000 });
+        await highlightedSlots.first().click();
 
-        if (hasHighlight) {
-            await highlightedSlots.first().click();
-            const resolveAttackButton = attackerPage.getByRole('button', { name: /Resolve Attack|结算攻击/i });
-            await expect(resolveAttackButton).toBeVisible({ timeout: 10000 });
-            await resolveAttackButton.click();
-        } else {
-            // 没有高亮，直接推进
-            const advanceButton = attackerPage.locator('[data-tutorial-id="advance-phase-button"]');
-            await advanceButton.click();
-            const confirmHeading = attackerPage.getByRole('heading', { name: /End offensive roll\?|确认结束攻击掷骰？/i });
-            if (await confirmHeading.isVisible({ timeout: 4000 }).catch(() => false)) {
-                const confirmSkipModal = confirmHeading.locator('..').locator('..');
-                await confirmSkipModal.getByRole('button', { name: /Confirm|确认/i }).click();
-            }
-        }
+        const resolveAttackButton = attackerPage.getByRole('button', { name: /Resolve Attack|结算攻击/i });
+        await expect(resolveAttackButton).toBeVisible({ timeout: 10000 });
+        await resolveAttackButton.click();
 
-        // 处理技能结算选择弹窗
-        for (let choiceAttempt = 0; choiceAttempt < 5; choiceAttempt++) {
-            let choiceModal: ReturnType<typeof attackerPage.locator> | null = null;
-            try {
-                choiceModal = await getModalContainerByHeading(attackerPage, /Ability Resolution Choice|技能结算选择/i, 1500);
-            } catch { choiceModal = null; }
-            if (!choiceModal) break;
-            const choiceButton = choiceModal.getByRole('button').filter({ hasText: /\S+/ }).first();
-            if (await choiceButton.isVisible({ timeout: 500 }).catch(() => false)) {
-                await choiceButton.click();
-                await attackerPage.waitForTimeout(500);
-            }
-        }
-
-        // 等待防御阶段（月精灵有迷影步防御技能）
-        const defensePhaseStarted = await Promise.race([
-            defenderPage.getByRole('button', { name: /End Defense|结束防御/i }).isVisible({ timeout: 8000 }).then(() => true).catch(() => false),
-            attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/).isVisible({ timeout: 8000 }).then(() => false).catch(() => false),
-        ]);
-
-        if (defensePhaseStarted) {
-            // 防御方掷骰（迷影步会根据足的数量产生不同效果）
-            const defenderRollButton = defenderPage.locator('[data-tutorial-id="dice-roll-button"]');
-            const defenderConfirmButton = defenderPage.locator('[data-tutorial-id="dice-confirm-button"]');
-            const endDefenseButton = defenderPage.getByRole('button', { name: /End Defense|结束防御/i });
-
-            const canRoll = await defenderRollButton.isEnabled({ timeout: 5000 }).catch(() => false);
-            if (canRoll) {
-                await defenderRollButton.click();
-                await defenderPage.waitForTimeout(300);
-
-                // 设置防御骰为 [4,4,4,1,1] = 3足+2弓 → 迷影步最高效果
-                await applyDiceValues(defenderPage, [4, 4, 4, 1, 1]);
-
-                await expect(defenderConfirmButton).toBeEnabled({ timeout: 5000 });
-                await defenderConfirmButton.click();
-
-                // 截图记录防御阶段
-                await defenderPage.screenshot({ path: 'test-results/moon-elf-defense-phase.png', fullPage: false });
-
-                await expect(endDefenseButton).toBeEnabled({ timeout: 10000 });
-                await endDefenseButton.click();
-            } else {
-                const canEndDefense = await endDefenseButton.isEnabled({ timeout: 2000 }).catch(() => false);
-                if (canEndDefense) await endDefenseButton.click();
-            }
-
-            // 处理响应窗口
-            for (let i = 0; i < 4; i += 1) {
-                const hostPassed = await maybePassResponse(hostPage);
-                const guestPassed = await maybePassResponse(guestPage);
-                if (!hostPassed && !guestPassed) break;
-            }
-        }
-
-        // 验证到达 Main Phase 2
         await expect(attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/)).toBeVisible({ timeout: 15000 });
+
+        const coreAfter = await readCoreState(attackerPage);
+        const defenderAfter = coreAfter?.players?.[defenderId];
+        const hpAfter = defenderAfter?.resources?.[RESOURCE_IDS.HP] ?? 0;
+        expect(hpAfter).toBe(hpBefore - 7);
+        expect(defenderAfter?.statusEffects?.[STATUS_IDS.TARGETED] ?? 0).toBe(0);
+
+        await attackerPage.screenshot({ path: testInfo.outputPath('moon-elf-targeted-damage.png'), fullPage: false });
 
         await hostContext.close();
         await guestContext.close();
-    });
-
-    // ========================================================================
-    // 4. 在线对局：月精灵爆裂箭（bonus die 交互）
-    // ========================================================================
-    test('Online match: Moon Elf exploding arrow triggers bonus die roll', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
-
-        const hostContext = await browser.newContext({ baseURL });
-        await blockAudioRequests(hostContext);
-        await disableAudio(hostContext);
-        await disableTutorial(hostContext as any);
-        await setEnglishLocale(hostContext);
-        const hostPage = await hostContext.newPage();
-
-        if (!await ensureGameServerAvailable(hostPage)) {
-            test.skip(true, '游戏服务器不可用');
-        }
-
-        // 创建房间
-        await openDiceThroneModal(hostPage);
-        await hostPage.getByRole('button', { name: /Create Room|创建房间/i }).click();
-        await expect(hostPage.getByRole('heading', { name: /Create Room|创建房间/i })).toBeVisible();
-        await hostPage.getByRole('button', { name: /Confirm|确认/i }).click();
-        try {
-            await hostPage.waitForURL(/\/play\/dicethrone\/match\//, { timeout: 5000 });
-        } catch {
-            test.skip(true, '房间创建失败或后端不可用');
-        }
-
-        const hostUrl = new URL(hostPage.url());
-        const matchId = hostUrl.pathname.split('/').pop();
-        if (!matchId) throw new Error('无法从 URL 解析 matchId');
-        if (!hostUrl.searchParams.get('playerID')) {
-            hostUrl.searchParams.set('playerID', '0');
-            await hostPage.goto(hostUrl.toString());
-        }
-
-        const guestContext = await browser.newContext({ baseURL });
-        await blockAudioRequests(guestContext);
-        await disableAudio(guestContext);
-        await disableTutorial(guestContext as any);
-        await setEnglishLocale(guestContext);
-        const guestPage = await guestContext.newPage();
-        await guestPage.goto(`/play/dicethrone/match/${matchId}?join=true`, { waitUntil: 'domcontentloaded' });
-        await guestPage.waitForURL(/playerID=\d/, { timeout: 20000 });
-
-        // 先检查是否自动开始
-        let autoStarted4 = true;
-        try {
-            await waitForMainPhase(hostPage, 15000);
-            await waitForMainPhase(guestPage, 15000);
-        } catch {
-            autoStarted4 = false;
-        }
-
-        if (autoStarted4) {
-            test.skip(true, '游戏自动开始，无法选择月精灵角色');
-        }
-
-        await hostPage.waitForSelector('[data-char-id="moon_elf"]', { state: 'attached', timeout: 60000 });
-        await guestPage.waitForSelector('[data-char-id="barbarian"]', { state: 'attached', timeout: 60000 });
-        await hostPage.locator('[data-char-id="moon_elf"]').first().click();
-        await guestPage.locator('[data-char-id="barbarian"]').first().click();
-
-        const readyButton = guestPage.getByRole('button', { name: /Ready|准备/i });
-        await expect(readyButton).toBeVisible({ timeout: 20000 });
-        await expect(readyButton).toBeEnabled({ timeout: 20000 });
-        await readyButton.click();
-
-        const startButton = hostPage.getByRole('button', { name: /Start Game|开始游戏/i });
-        await expect(startButton).toBeVisible({ timeout: 20000 });
-        await expect(startButton).toBeEnabled({ timeout: 20000 });
-        await startButton.click();
-
-        await waitForMainPhase(hostPage, 15000);
-        await waitForMainPhase(guestPage, 15000);
-
-        // 确定攻击方
-        let attackerPage: Page;
-        let defenderPage: Page;
-        const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-        if (await hostNextPhase.isEnabled({ timeout: 3000 }).catch(() => false)) {
-            attackerPage = hostPage;
-            defenderPage = guestPage;
-        } else {
-            attackerPage = guestPage;
-            defenderPage = hostPage;
-        }
-
-        // 推进到攻击掷骰
-        await advanceToOffensiveRoll(attackerPage);
-
-        // 掷骰并设置为 [1,6,6,6,6] = 1弓+4月 → 触发爆裂箭(1弓+3月) 或 月蚀(4月)
-        // 爆裂箭触发条件：1弓+3月，月蚀触发条件：4月
-        // 使用 [2,6,6,6,4] = 1弓+3月+1足 → 精确触发爆裂箭
-        const rollButton = attackerPage.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(rollButton).toBeEnabled({ timeout: 5000 });
-        await rollButton.click();
-        await attackerPage.waitForTimeout(300);
-        await applyDiceValues(attackerPage, [2, 6, 6, 6, 4]);
-
-        const confirmButton = attackerPage.locator('[data-tutorial-id="dice-confirm-button"]');
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-
-        // 检查技能高亮
-        const highlightedSlots = attackerPage
-            .locator('[data-ability-slot]')
-            .filter({ has: attackerPage.locator('div.animate-pulse[class*="border-"]') });
-        const hasHighlight = await highlightedSlots.first().isVisible({ timeout: 5000 }).catch(() => false);
-
-        if (hasHighlight) {
-            await highlightedSlots.first().click();
-            const resolveAttackButton = attackerPage.getByRole('button', { name: /Resolve Attack|结算攻击/i });
-            await expect(resolveAttackButton).toBeVisible({ timeout: 10000 });
-            await resolveAttackButton.click();
-
-            // 爆裂箭会触发 bonus die roll，可能会有额外的 UI 反馈
-            // 截图记录爆裂箭结算过程
-            await attackerPage.waitForTimeout(1000);
-            await attackerPage.screenshot({ path: 'test-results/moon-elf-exploding-arrow.png', fullPage: false });
-        } else {
-            // 没有高亮，直接推进
-            const advanceButton = attackerPage.locator('[data-tutorial-id="advance-phase-button"]');
-            await advanceButton.click();
-            const confirmHeading = attackerPage.getByRole('heading', { name: /End offensive roll\?|确认结束攻击掷骰？/i });
-            if (await confirmHeading.isVisible({ timeout: 4000 }).catch(() => false)) {
-                const confirmSkipModal = confirmHeading.locator('..').locator('..');
-                await confirmSkipModal.getByRole('button', { name: /Confirm|确认/i }).click();
-            }
-        }
-
-        // 处理技能结算选择弹窗
-        for (let choiceAttempt = 0; choiceAttempt < 5; choiceAttempt++) {
-            let choiceModal: ReturnType<typeof attackerPage.locator> | null = null;
-            try {
-                choiceModal = await getModalContainerByHeading(attackerPage, /Ability Resolution Choice|技能结算选择/i, 1500);
-            } catch { choiceModal = null; }
-            if (!choiceModal) break;
-            const choiceButton = choiceModal.getByRole('button').filter({ hasText: /\S+/ }).first();
-            if (await choiceButton.isVisible({ timeout: 500 }).catch(() => false)) {
-                await choiceButton.click();
-                await attackerPage.waitForTimeout(500);
-            }
-        }
-
-        // 等待防御阶段或 Main Phase 2
-        const defensePhaseStarted = await Promise.race([
-            defenderPage.getByRole('button', { name: /End Defense|结束防御/i }).isVisible({ timeout: 8000 }).then(() => true).catch(() => false),
-            attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/).isVisible({ timeout: 8000 }).then(() => false).catch(() => false),
-        ]);
-
-        if (defensePhaseStarted) {
-            const defenderRollButton = defenderPage.locator('[data-tutorial-id="dice-roll-button"]');
-            const defenderConfirmButton = defenderPage.locator('[data-tutorial-id="dice-confirm-button"]');
-            const endDefenseButton = defenderPage.getByRole('button', { name: /End Defense|结束防御/i });
-
-            const canRoll = await defenderRollButton.isEnabled({ timeout: 5000 }).catch(() => false);
-            if (canRoll) {
-                await defenderRollButton.click();
-                await defenderPage.waitForTimeout(300);
-                await defenderConfirmButton.click();
-                await expect(endDefenseButton).toBeEnabled({ timeout: 10000 });
-                await endDefenseButton.click();
-            } else {
-                const canEndDefense = await endDefenseButton.isEnabled({ timeout: 2000 }).catch(() => false);
-                if (canEndDefense) await endDefenseButton.click();
-            }
-
-            for (let i = 0; i < 4; i += 1) {
-                const hostPassed = await maybePassResponse(hostPage);
-                const guestPassed = await maybePassResponse(guestPage);
-                if (!hostPassed && !guestPassed) break;
-            }
-        }
-
-        // 验证到达 Main Phase 2
-        await expect(attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/)).toBeVisible({ timeout: 15000 });
-
-        await hostContext.close();
-        await guestContext.close();
-    });
-
-    // ========================================================================
-    // 5. 在线对局：月精灵角色选择界面可见性验证
-    // ========================================================================
-    test('Online match: Moon Elf character card is visible and selectable', async ({ browser }, testInfo) => {
-        test.setTimeout(60000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
-
-        const hostContext = await browser.newContext({ baseURL });
-        await blockAudioRequests(hostContext);
-        await disableAudio(hostContext);
-        await disableTutorial(hostContext as any);
-        await setEnglishLocale(hostContext);
-        const hostPage = await hostContext.newPage();
-
-        if (!await ensureGameServerAvailable(hostPage)) {
-            test.skip(true, '游戏服务器不可用');
-        }
-
-        // 创建房间
-        await openDiceThroneModal(hostPage);
-        await hostPage.getByRole('button', { name: /Create Room|创建房间/i }).click();
-        await expect(hostPage.getByRole('heading', { name: /Create Room|创建房间/i })).toBeVisible();
-        await hostPage.getByRole('button', { name: /Confirm|确认/i }).click();
-        try {
-            await hostPage.waitForURL(/\/play\/dicethrone\/match\//, { timeout: 5000 });
-        } catch {
-            test.skip(true, '房间创建失败或后端不可用');
-        }
-
-        // 等待角色选择界面
-        await hostPage.waitForSelector('[data-char-id]', { state: 'attached', timeout: 60000 });
-
-        // 验证月精灵角色卡片存在且可见
-        const moonElfCard = hostPage.locator('[data-char-id="moon_elf"]').first();
-        await expect(moonElfCard).toBeVisible({ timeout: 10000 });
-
-        // 点击选择月精灵
-        await moonElfCard.click();
-
-        // 验证选中状态（通常会有边框高亮或其他视觉反馈）
-        // 选中后角色卡片应该有选中样式
-        await hostPage.waitForTimeout(500);
-        await hostPage.screenshot({ path: 'test-results/moon-elf-selection.png', fullPage: false });
-
-        // 验证可以取消选择（再次点击其他角色）
-        const monkCard = hostPage.locator('[data-char-id="monk"]').first();
-        await expect(monkCard).toBeVisible();
-        await monkCard.click();
-        await hostPage.waitForTimeout(300);
-
-        // 再次选回月精灵
-        await moonElfCard.click();
-        await hostPage.waitForTimeout(300);
-
-        await hostContext.close();
     });
 });

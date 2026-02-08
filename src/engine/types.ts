@@ -184,7 +184,7 @@ export interface RematchState {
  * - afterCardPlayed: 卡牌打出后（受影响玩家可响应）
  * - thenBreakpoint: "然后"断点（所有玩家可响应）
  */
-export type ResponseWindowType = 'afterRollConfirmed' | 'afterCardPlayed' | 'thenBreakpoint';
+export type ResponseWindowType = 'afterRollConfirmed' | 'afterCardPlayed' | 'thenBreakpoint' | 'meFirst';
 
 /**
  * 响应窗口状态

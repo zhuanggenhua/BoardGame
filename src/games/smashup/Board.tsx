@@ -11,10 +11,13 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
+import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import type { MatchState } from '../../engine/types';
 import type { SmashUpCore, BaseInPlay, CardInstance, MinionOnBase } from './domain/types';
 import { SU_COMMANDS, HAND_LIMIT, getCurrentPlayerId, getTotalPowerOnBase } from './domain/types';
 import { getBaseDef, getMinionDef, getCardDef } from './data/cards';
+import type { ActionCardDef } from './domain/types';
 import { CardPreview, registerCardAtlasSource } from '../../components/common/media/CardPreview';
 import { AnimatePresence, motion } from 'framer-motion';
 import { loadCardAtlasConfig } from './ui/cardAtlas';
@@ -24,17 +27,12 @@ import { useGameEvents } from './ui/useGameEvents';
 import { SmashUpEffectsLayer } from './ui/BoardEffects';
 import { FactionSelection } from './ui/FactionSelection';
 import { PromptOverlay } from './ui/PromptOverlay';
+import { getFactionMeta } from './ui/factionMeta';
+import { DeckDiscardZone } from './ui/DeckDiscardZone';
 
 type Props = BoardProps<MatchState<SmashUpCore>>;
 
-const PHASE_NAMES: Record<string, string> = {
-    factionSelect: 'Draft',
-    startTurn: 'Start',
-    playCards: 'Play',
-    scoreBases: 'Score',
-    draw: 'Draw',
-    endTurn: 'End',
-};
+const getPhaseNameKey = (phase: string) => `phases.${phase}`;
 
 // Player "Chips" Colors - Bright, opaque, acrylic feel
 const PLAYER_CONFIG = [
@@ -65,6 +63,7 @@ const PLAYER_CONFIG = [
 ];
 
 const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
+    const { t } = useTranslation('game-smashup');
     const core = G.core;
     const phase = G.sys.phase;
     const currentPid = getCurrentPlayerId(core);
@@ -165,13 +164,23 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
     }, [selectedCardUid, handlePlayMinion, core.bases]);
 
     const handleCardClick = useCallback((card: CardInstance) => {
-        if (!isMyTurn || phase !== 'playCards') return;
+        // Validation for play phase / turn
+        if (!isMyTurn || phase !== 'playCards') {
+            toast(t('ui.invalid_play'), { icon: '🚫' });
+            return;
+        }
+
+        // Normal play logic
         if (card.type === 'action') {
             moves[SU_COMMANDS.PLAY_ACTION]?.({ cardUid: card.uid });
         } else {
             setSelectedCardUid(curr => curr === card.uid ? null : card.uid);
         }
     }, [isMyTurn, phase, moves]);
+
+    const handleViewCardDetail = useCallback((card: CardInstance) => {
+        setViewingCard({ defId: card.defId, type: card.type === 'minion' ? 'minion' : 'action' });
+    }, []);
 
     const handleViewAction = useCallback((defId: string) => {
         setViewingCard({ defId, type: 'action' });
@@ -201,7 +210,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
             <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
 
             {/* --- TOP HUD: "Sticky Notes" Style --- */}
-            <div className="relative z-20 flex justify-between items-start p-6 pointer-events-none">
+            <div className="relative z-20 flex justify-between items-start pt-6 px-[2vw] pointer-events-none">
 
                 {/* Left: Turn Tracker (Yellow Notepad) */}
                 <div className="bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 pointer-events-auto min-w-[140px] clip-path-jagged">
@@ -213,10 +222,10 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                         className="text-center font-black uppercase text-xl leading-none tracking-tighter mb-1 border-b-2 border-slate-800/20 pb-1"
                     >
-                        Turn {core.turnNumber}
+                        {t('ui.turn')} {core.turnNumber}
                     </motion.div>
                     <div className="flex justify-between items-center text-sm font-bold font-mono">
-                        <span>{isMyTurn ? 'YOU' : 'OPP'}</span>
+                        <span>{isMyTurn ? t('ui.you') : t('ui.opp')}</span>
                         <motion.span
                             key={phase}
                             initial={{ scale: 0.7, opacity: 0 }}
@@ -224,19 +233,24 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                             transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                             className="text-blue-600 bg-blue-100 px-1 rounded transform rotate-2 inline-block"
                         >
-                            {PHASE_NAMES[phase]}
+                            {t(getPhaseNameKey(phase))}
                         </motion.span>
                     </div>
                 </div>
 
-                {/* Right: Score Sheet (White Paper) */}
-                {/* REVERTED: Removed emoji, kept layout */}
-                <div className="bg-white text-slate-900 p-4 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] rotate-1 max-w-[400px] pointer-events-auto rounded-sm">
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-2 border-b border-slate-200">Score Sheet</div>
-                    <div className="flex gap-6">
+                {/* Right: Score Sheet + Player Info */}
+                <div className="bg-white text-slate-900 p-4 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] rotate-1 max-w-[500px] pointer-events-auto rounded-sm">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-2 border-b border-slate-200">{t('ui.score_sheet')}</div>
+                    <div className="flex gap-5">
                         {core.turnOrder.map(pid => {
                             const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
                             const isCurrent = pid === currentPid;
+                            const player = core.players[pid];
+                            const isMe = pid === playerID;
+                            // 派系图标
+                            const factionIcons = player.factions
+                                .map(fid => getFactionMeta(fid))
+                                .filter(Boolean);
                             return (
                                 <motion.div
                                     key={pid}
@@ -244,21 +258,67 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                                     animate={isCurrent ? { scale: 1.1 } : { scale: 1 }}
                                     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                                 >
-                                    <span className="text-xs font-black uppercase mb-1">P{pid}</span>
+                                    <span className="text-xs font-black uppercase mb-1">{isMe ? 'YOU' : `P${pid}`}</span>
                                     <motion.div
-                                        key={`vp-${pid}-${core.players[pid].vp}`}
+                                        key={`vp-${pid}-${player.vp}`}
                                         className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg}`}
                                         initial={{ scale: 1 }}
                                         animate={{ scale: [1, 1.3, 1] }}
                                         transition={{ duration: 0.4, ease: 'easeOut' }}
                                     >
-                                        {core.players[pid].vp}
+                                        {player.vp}
                                     </motion.div>
+                                    {/* 派系图标 */}
+                                    <div className="flex gap-0.5 mt-1">
+                                        {factionIcons.map(meta => (
+                                            <span key={meta!.id} className="text-sm" title={meta!.name}>{meta!.icon}</span>
+                                        ))}
+                                    </div>
+                                    {/* 自己的牌库/弃牌信息已移至下方 DeckDiscardZone */}
                                 </motion.div>
                             );
                         })}
                     </div>
                 </div>
+            </div>
+
+            {/* --- FINISH TURN BUTTON: Fixed Position (Right Edge) --- */}
+            <div className="fixed right-[8vw] bottom-[35vh] z-50 flex pointer-events-none">
+                <AnimatePresence>
+                    {isMyTurn && phase === 'playCards' && (
+                        <motion.div
+                            initial={{ y: 100, opacity: 0, scale: 0.5 }}
+                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                            exit={{ y: 100, opacity: 0, scale: 0.5 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                            className="pointer-events-auto"
+                        >
+                            <button
+                                onClick={() => moves['ADVANCE_PHASE']?.()}
+                                className="group w-24 h-24 rounded-full bg-slate-900 border-4 border-white shadow-[0_10px_20px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center hover:scale-110 hover:rotate-3 transition-all active:scale-95 text-white relative overflow-hidden"
+                            >
+                                <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]" />
+
+                                {t('ui.finish_turn').includes(' ') ? (
+                                    <>
+                                        <span className="text-[10px] font-bold opacity-70 uppercase tracking-tighter leading-tight">
+                                            {t('ui.finish_turn').split(' ')[0]}
+                                        </span>
+                                        <span className="text-lg font-black uppercase italic leading-none">
+                                            {t('ui.finish_turn').split(' ')[1]}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span className="text-lg font-black uppercase italic leading-none tracking-tighter">
+                                        {t('ui.finish_turn')}
+                                    </span>
+                                )}
+
+                                <div className="absolute -inset-1 bg-white/5 blur-xl group-hover:bg-white/10 transition-colors" />
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* --- MAIN BOARD --- */}
@@ -270,6 +330,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                             key={`${base.defId}-${idx}`}
                             base={base}
                             baseIndex={idx}
+                            turnOrder={core.turnOrder}
                             isDeployMode={!!selectedCardUid}
                             isMyTurn={isMyTurn}
                             myPlayerId={playerID}
@@ -282,61 +343,65 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                                 else baseRefsMap.current.delete(idx);
                             }}
                         />
+
                     ))}
                 </div>
             </div>
 
             {/* --- BOTTOM: HAND & CONTROLS --- */}
             {/* Not a bar, but floating elements */}
-            {myPlayer && (
-                <div className="absolute bottom-0 inset-x-0 h-[220px] z-30 pointer-events-none">
+            {
+                myPlayer && (
+                    <div className="absolute bottom-0 inset-x-0 h-[220px] z-30 pointer-events-none">
 
-                    {/* Discard Overlay (Messy Pile) */}
-                    {needDiscard && (
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center pointer-events-auto">
-                            <div className="bg-white p-6 rotate-1 shadow-2xl max-w-md text-center border-4 border-red-500 border-dashed">
-                                <h2 className="text-2xl font-black text-red-600 uppercase mb-2 transform -rotate-1">Too Many Cards!</h2>
-                                <p className="font-bold text-slate-700 mb-4">Discard <span className="text-3xl align-middle text-red-600">{discardCount}</span> cards to continue.</p>
-                                <button
-                                    onClick={() => {
-                                        if (discardSelection.size === discardCount) {
-                                            moves[SU_COMMANDS.DISCARD_TO_LIMIT]?.({ cardUids: Array.from(discardSelection) });
-                                            setDiscardSelection(new Set());
-                                        }
-                                    }}
-                                    disabled={discardSelection.size !== discardCount}
-                                    className="bg-slate-800 text-white font-black px-6 py-3 rounded shadow-lg hover:bg-black hover:scale-105 transition-all uppercase tracking-widest disabled:opacity-50"
-                                >
-                                    Throw Away
-                                </button>
+                        {/* Discard Overlay (Messy Pile) */}
+                        {needDiscard && (
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center pointer-events-auto">
+                                <div className="bg-white p-6 rotate-1 shadow-2xl max-w-md text-center border-4 border-red-500 border-dashed">
+                                    <h2 className="text-2xl font-black text-red-600 uppercase mb-2 transform -rotate-1">{t('ui.too_many_cards')}</h2>
+                                    <p className="font-bold text-slate-700 mb-4">{t('ui.discard_desc', { count: discardCount })}</p>
+                                    <button
+                                        onClick={() => {
+                                            if (discardSelection.size === discardCount) {
+                                                moves[SU_COMMANDS.DISCARD_TO_LIMIT]?.({ cardUids: Array.from(discardSelection) });
+                                                setDiscardSelection(new Set());
+                                            }
+                                        }}
+                                        disabled={discardSelection.size !== discardCount}
+                                        className="bg-slate-800 text-white font-black px-6 py-3 rounded shadow-lg hover:bg-black hover:scale-105 transition-all uppercase tracking-widest disabled:opacity-50"
+                                    >
+                                        {t('ui.throw_away')}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    <HandArea
-                        hand={myPlayer.hand}
-                        selectedCardUid={selectedCardUid}
-                        onCardSelect={handleCardClick}
-                        isDiscardMode={needDiscard}
-                        discardSelection={discardSelection}
-                        // If not my turn, hand is "put down" (lower opacity or stylized)
-                        disableInteraction={!isMyTurn && !needDiscard}
-                    />
+                        <HandArea
+                            hand={myPlayer.hand}
+                            selectedCardUid={selectedCardUid}
+                            onCardSelect={handleCardClick}
+                            isDiscardMode={needDiscard}
+                            discardSelection={discardSelection}
+                            // If not my turn, hand is "put down" (lower opacity or stylized)
+                            // Even if not my turn, interaction is enabled for viewing. 
+                            // Visual feedback (shaking) is handled inside HandArea if we wanted to block it, 
+                            // but now we handle the click in the parent to show details.
+                            disableInteraction={false}
+                            onCardView={handleViewCardDetail}
+                        />
 
-                    {/* End Phase Token */}
-                    {isMyTurn && phase === 'playCards' && (
-                        <div className="absolute right-12 bottom-24 pointer-events-auto">
-                            <button
-                                onClick={() => moves['ADVANCE_PHASE']?.()}
-                                className="group w-24 h-24 rounded-full bg-slate-900 border-4 border-white shadow-[0_5px_15px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center hover:scale-105 hover:rotate-3 transition-all active:scale-95 text-white"
-                            >
-                                <span className="text-xs font-bold opacity-50 uppercase">Finish</span>
-                                <span className="text-xl font-black uppercase italic leading-none">Turn</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
+
+
+                        {/* NEW: Deck & Discard Zone */}
+                        <DeckDiscardZone
+                            deckCount={myPlayer.deck.length}
+                            discard={myPlayer.discard}
+                            myPlayerId={playerID || ''}
+                            isMyTurn={isMyTurn}
+                        />
+                    </div>
+                )
+            }
 
             {/* 特效层 */}
             <SmashUpEffectsLayer
@@ -367,7 +432,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                             style={{ fontFamily: "'Caveat', 'Comic Sans MS', cursive" }}
                         >
-                            <span className="text-[3vw] font-black uppercase tracking-tight">Your Turn!</span>
+                            <span className="text-[3vw] font-black uppercase tracking-tight">{t('ui.your_turn')}</span>
                         </motion.div>
                     </motion.div>
                 )}
@@ -390,7 +455,14 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                 moves={moves}
                 playerID={playerID}
             />
-        </div>
+
+            {/* ME FIRST! 响应窗口 */}
+            <MeFirstOverlay
+                G={G}
+                moves={moves}
+                playerID={playerID}
+            />
+        </div >
     );
 };
 
@@ -401,6 +473,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
 const BaseZone: React.FC<{
     base: BaseInPlay;
     baseIndex: number;
+    turnOrder: string[];
     isDeployMode: boolean;
     isMyTurn: boolean;
     myPlayerId: string | null;
@@ -409,7 +482,7 @@ const BaseZone: React.FC<{
     onViewMinion: (defId: string) => void;
     onViewAction: (defId: string) => void;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, isDeployMode, isMyTurn, myPlayerId, moves, onClick, onViewMinion, onViewAction, tokenRef }) => {
+}> = ({ base, baseIndex, turnOrder, isDeployMode, isMyTurn, myPlayerId, moves, onClick, onViewMinion, onViewAction, tokenRef }) => {
     const baseDef = getBaseDef(base.defId);
     const totalPower = getTotalPowerOnBase(base);
     const breakpoint = baseDef?.breakpoint || 20;
@@ -417,73 +490,31 @@ const BaseZone: React.FC<{
     const isNearBreak = ratio >= 0.8 && ratio < 1;
     const isAtBreak = ratio >= 1;
 
-    // 按控制者分组随从
+    // 分组
     const minionsByController: Record<string, MinionOnBase[]> = {};
     base.minions.forEach(m => {
         if (!minionsByController[m.controller]) minionsByController[m.controller] = [];
         minionsByController[m.controller].push(m);
     });
-    const playerIds = Object.keys(minionsByController).sort();
 
-    // 各玩家力量明细
-    const playerPowers = playerIds.map(pid => {
-        const minions = minionsByController[pid];
-        const total = minions.reduce((sum, m) => sum + m.basePower + m.powerModifier, 0);
-        const basePowerTotal = minions.reduce((sum, m) => sum + m.basePower, 0);
-        // 总力量与印刷力量之差 = 外部增益/减益的净影响
-        const modifierDelta = total - basePowerTotal;
-        return { pid, total, modifierDelta };
+    const actionsByOwner: Record<string, typeof base.ongoingActions> = {};
+    base.ongoingActions?.forEach(oa => {
+        if (!actionsByOwner[oa.ownerId]) actionsByOwner[oa.ownerId] = [];
+        actionsByOwner[oa.ownerId].push(oa);
     });
 
     return (
-        <div className="flex flex-col items-center group/base min-w-[15vw] mx-[1vw]">
-
-            {/* --- 持续行动卡（基地上方） --- */}
-            {/* TODO: 教程引导 - 说明基地上方的卡牌是附着在该基地上的持续效果 */}
-            {base.ongoingActions?.length > 0 && (
-                <div className="flex gap-[0.5vw] mb-[0.8vw] justify-center">
-                    {base.ongoingActions.map(oa => {
-                        const actionDef = getCardDef(oa.defId);
-                        const ownerConf = PLAYER_CONFIG[parseInt(oa.ownerId) % PLAYER_CONFIG.length];
-                        return (
-                            <motion.div
-                                key={oa.uid}
-                                onClick={() => onViewAction(oa.defId)}
-                                className={`
-                                    relative w-[5.5vw] aspect-[0.714] bg-white p-[0.2vw] rounded-[0.2vw]
-                                    shadow-md cursor-zoom-in hover:z-50 hover:scale-110 transition-transform
-                                    border-[0.15vw] ${ownerConf.border} ${ownerConf.shadow}
-                                `}
-                                initial={{ scale: 0, opacity: 0, y: -20 }}
-                                animate={{ scale: 1, opacity: 1, y: 0 }}
-                                transition={{ type: 'spring', stiffness: 350, damping: 20 }}
-                                title={actionDef?.name || oa.defId}
-                            >
-                                <div className="w-full h-full bg-slate-100 relative overflow-hidden">
-                                    <CardPreview
-                                        previewRef={actionDef?.previewRef}
-                                        className="w-full h-full object-cover"
-                                    />
-                                    {!actionDef?.previewRef && (
-                                        <div className="absolute inset-0 p-[0.2vw] flex items-center justify-center text-center bg-slate-50">
-                                            <p className="text-[0.6vw] font-bold leading-none text-slate-800 line-clamp-4">{actionDef?.name}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-            )}
+        <div className="relative flex flex-col items-center group/base mx-[1vw]">
 
             {/* --- BASE CARD --- */}
+            {/* z-20 ensures it sits on top of the 'tucked' persistent effects */}
             <div
                 onClick={onClick}
                 className={`
-                    relative w-[14vw] aspect-[1.43] bg-white p-[0.4vw] shadow-sm rounded-sm transition-all duration-300
+                    relative w-[14vw] aspect-[1.43] bg-white p-[0.4vw] shadow-sm rounded-sm transition-all duration-300 z-20
                     ${isDeployMode
-                        ? 'cursor-pointer rotate-0 scale-105 z-20 shadow-[0_0_2vw_rgba(255,255,255,0.4)] ring-4 ring-green-400'
-                        : 'rotate-1 hover:rotate-0 hover:z-10 hover:shadow-xl cursor-zoom-in'}
+                        ? 'cursor-pointer rotate-0 scale-105 shadow-[0_0_2vw_rgba(255,255,255,0.4)] ring-4 ring-green-400'
+                        : 'rotate-1 hover:rotate-0 hover:shadow-xl cursor-zoom-in'}
                 `}
                 style={{
                     backgroundImage: 'repeating-linear-gradient(45deg, #fff 0px, #fff 2px, #fdfdfd 2px, #fdfdfd 4px)',
@@ -549,73 +580,104 @@ const BaseZone: React.FC<{
                         </div>
                     </motion.div>
                 </div>
-
-                {/* VP 奖励提示 */}
-                {baseDef && (
-                    <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 flex gap-[0.3vw] z-30">
-                        {baseDef.vpAwards.map((vp, i) => (
-                            <div key={i} className={`text-[0.5vw] font-bold px-[0.3vw] py-[0.05vw] rounded-sm border shadow-sm ${
-                                i === 0 ? 'bg-yellow-400 text-yellow-900 border-yellow-500' :
-                                i === 1 ? 'bg-slate-300 text-slate-700 border-slate-400' :
-                                'bg-amber-700 text-amber-100 border-amber-800'
-                            }`}>
-                                {vp}
-                            </div>
-                        ))}
-                    </div>
-                )}
             </div>
 
-            {/* --- MINIONS CONTAINER --- */}
-            <div className="flex items-start gap-[1vw] mt-[1vw] w-full justify-center transition-all pt-[0.5vw] min-h-[10vw]">
-                {playerIds.length === 0 && isDeployMode ? (
-                    <div className="w-[5.5vw] h-[7.7vw] border-[0.2vw] border-white/40 rounded flex flex-col items-center justify-center opacity-60 animate-pulse bg-white/5">
-                        <span className="text-white/80 text-[2vw] font-black">+</span>
-                        <span className="text-white/80 text-[0.6vw] font-bold uppercase tracking-widest mt-1">Deploy</span>
-                    </div>
-                ) : (
-                    playerIds.map(pid => (
-                        <div key={pid} className="flex flex-col items-center gap-[0.5vw]">
-                            <div className="flex flex-col items-center isolate">
-                                {minionsByController[pid].map((m, i) => (
-                                    <MinionCard
-                                        key={m.uid}
-                                        minion={m}
-                                        index={i}
-                                        pid={pid}
-                                        baseIndex={baseIndex}
-                                        isMyTurn={isMyTurn}
-                                        myPlayerId={myPlayerId}
-                                        moves={moves}
-                                        onView={() => onViewMinion(m.defId)}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+            {/* --- PLAYER COLUMNS CONTAINER --- */}
+            <div className="flex items-start justify-center gap-[0.5vw] w-full pt-[0.5vw]">
+                {turnOrder.map(pid => {
+                    const minions = minionsByController[pid] || [];
+                    const actions = actionsByOwner[pid] || [];
 
-            {/* --- 玩家力量明细（随从区下方） --- */}
-            {playerPowers.length > 0 && (
-                <div className="flex gap-[0.8vw] mt-[0.5vw]">
-                    {playerPowers.map(pp => {
-                        const conf = PLAYER_CONFIG[parseInt(pp.pid) % PLAYER_CONFIG.length];
-                        return (
-                            <div key={pp.pid} className="flex items-center gap-[0.2vw]">
-                                <div className={`w-[0.8vw] h-[0.8vw] rounded-full ${conf.bg}`} />
-                                <span className={`text-[0.65vw] font-black ${
-                                    pp.modifierDelta > 0 ? 'text-green-400' :
-                                    pp.modifierDelta < 0 ? 'text-red-400' :
-                                    'text-white/70'
-                                }`}>
-                                    {pp.total}
+                    // Calc Power
+                    const total = minions.reduce((sum, m) => sum + m.basePower + m.powerModifier, 0);
+                    const basePowerTotal = minions.reduce((sum, m) => sum + m.basePower, 0);
+                    const modifierDelta = total - basePowerTotal;
+
+                    const pConf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
+
+                    return (
+                        <div key={pid} className="flex flex-col items-center min-w-[5.5vw] relative">
+
+                            {/* --- PERSISTENT EFFECTS (Bucket/Tucked) --- */}
+                            {/* 
+                                Positioned absolute relative to the top of column? 
+                                No, simply rendered before minions with negative margin to tuck under base.
+                                Since Base is z-20 and we are z-0 (default), negative margin pulls it under.
+                            */}
+                            {actions.length > 0 ? (
+                                <div className="flex flex-col items-center mb-1 -mt-[2vw] z-0 space-y-[-1.2vw]">
+                                    {actions.map((oa) => {
+                                        const actionDef = getCardDef(oa.defId);
+                                        return (
+                                            <motion.div
+                                                key={oa.uid}
+                                                onClick={() => onViewAction(oa.defId)}
+                                                className={`
+                                                    relative w-[5vw] h-[2vw] bg-white rounded-t-md shadow-md cursor-pointer border-t-[0.15vw] border-x-[0.15vw] ${pConf.border}
+                                                    flex items-center justify-center overflow-hidden hover:z-30 hover:-translate-y-2 transition-transform
+                                                `}
+                                                initial={{ y: 0, opacity: 0 }}
+                                                animate={{ y: 0, opacity: 1 }}
+                                            >
+                                                {/* Background Strip */}
+                                                <div className={`absolute top-0 inset-x-0 h-[0.3vw] ${pConf.bg}`} />
+                                                <span className="text-[0.55vw] font-bold uppercase tracking-tight text-slate-700 px-1 truncate mt-1">
+                                                    {actionDef?.name || oa.defId}
+                                                </span>
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                /* Spacer to prevent layout jump if other columns have effects? 
+                                   Actually, we want them tucked, so no spacer needed usually. 
+                                   But if we want perfect alignment? 
+                                   Let's keep it natural flow.
+                                */
+                                null
+                            )}
+
+                            {/* --- MINIONS --- */}
+                            {minions.length > 0 ? (
+                                <div className="flex flex-col items-center isolate z-10">
+                                    {minions.map((m, i) => (
+                                        <MinionCard
+                                            key={m.uid}
+                                            minion={m}
+                                            index={i}
+                                            pid={pid}
+                                            baseIndex={baseIndex}
+                                            isMyTurn={isMyTurn}
+                                            myPlayerId={myPlayerId}
+                                            moves={moves}
+                                            onView={() => onViewMinion(m.defId)}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                /* Empty Placeholder for Layout Stability */
+                                <div className={`w-[5.5vw] h-[2vw] rounded-sm border md-2 border-dashed border-slate-300/30 ${isDeployMode && isMyTurn ? 'animate-pulse bg-white/5' : ''}`}>
+                                    {isDeployMode && isMyTurn && myPlayerId === pid && minions.length === 0 && (
+                                        <div className="w-full h-full flex items-center justify-center text-white/50 text-[0.8vw]">+</div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* --- SCORE (POWER) --- */}
+                            <div className="mt-2 flex items-center justify-center gap-1 z-10 bg-slate-900/40 rounded-full px-2 py-0.5 backdrop-blur-sm">
+                                <div className={`w-[0.6vw] h-[0.6vw] rounded-full ${pConf.bg}`} />
+                                <span className={`text-[0.7vw] font-black leading-none ${modifierDelta > 0 ? 'text-green-300' :
+                                    modifierDelta < 0 ? 'text-red-300' :
+                                        'text-white'
+                                    }`}>
+                                    {total}
                                 </span>
                             </div>
-                        );
-                    })}
-                </div>
-            )}
+
+                        </div>
+                    );
+                })}
+            </div>
 
         </div>
     );
@@ -714,6 +776,120 @@ const MinionCard: React.FC<{
 };
 
 export default SmashUpBoard;
+
+// ============================================================================
+// Me First! Response Window Overlay
+// ============================================================================
+const MeFirstOverlay: React.FC<{
+    G: MatchState<SmashUpCore>;
+    moves: Record<string, any>;
+    playerID: string | null;
+}> = ({ G, moves, playerID }) => {
+    const { t } = useTranslation('game-smashup');
+    const responseWindow = G.sys.responseWindow?.current;
+
+    if (!responseWindow || responseWindow.windowType !== 'meFirst') return null;
+
+    const currentResponderId = responseWindow.responderQueue[responseWindow.currentResponderIndex];
+    const isMyResponse = playerID === currentResponderId;
+    const core = G.core;
+
+    // 检查手牌中是否有特殊行动卡
+    const myPlayer = playerID ? core.players[playerID] : undefined;
+    const specialCards = myPlayer?.hand.filter(c => {
+        if (c.type !== 'action') return false;
+        const def = getCardDef(c.defId) as ActionCardDef | undefined;
+        return def?.subtype === 'special';
+    }) ?? [];
+
+    const handlePass = useCallback(() => {
+        moves['RESPONSE_PASS']?.({});
+    }, [moves]);
+
+    const handlePlaySpecial = useCallback((cardUid: string) => {
+        moves[SU_COMMANDS.PLAY_ACTION]?.({ cardUid });
+    }, [moves]);
+
+    return (
+        <motion.div
+            className="fixed inset-0 z-[80] flex items-center justify-center pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            data-testid="me-first-overlay"
+        >
+            <motion.div
+                className="bg-[#fef3c7] text-slate-900 p-5 shadow-2xl border-4 border-dashed border-amber-600/50 max-w-md pointer-events-auto -rotate-1"
+                initial={{ scale: 0.7, y: 30 }}
+                animate={{ scale: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            >
+                <div className="text-center mb-3">
+                    <h3 className="text-xl font-black uppercase tracking-tight text-amber-800 transform rotate-1">
+                        ⚡ Me First!
+                    </h3>
+                    <p className="text-sm font-bold text-slate-600 mt-1" data-testid="me-first-status">
+                        {isMyResponse
+                            ? t('ui.me_first_your_turn', '轮到你响应 — 打出特殊牌或让过')
+                            : t('ui.me_first_waiting', { player: `P${currentResponderId}` })
+                        }
+                    </p>
+                </div>
+
+                {isMyResponse && (
+                    <div className="flex flex-col gap-2">
+                        {/* 特殊牌列表 */}
+                        {specialCards.length > 0 && (
+                            <div className="flex flex-wrap gap-2 justify-center mb-2" data-testid="me-first-special-cards">
+                                {specialCards.map(card => {
+                                    const def = getCardDef(card.defId);
+                                    return (
+                                        <button
+                                            key={card.uid}
+                                            onClick={() => handlePlaySpecial(card.uid)}
+                                            className="bg-purple-600 text-white px-3 py-2 rounded shadow-md font-bold text-sm hover:bg-purple-700 hover:scale-105 transition-all border-2 border-purple-300"
+                                            data-testid={`me-first-card-${card.uid}`}
+                                        >
+                                            {def?.name || card.defId}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* 让过按钮 */}
+                        <button
+                            onClick={handlePass}
+                            className="bg-slate-700 text-white px-6 py-3 rounded shadow-lg font-black uppercase tracking-wider hover:bg-slate-800 hover:scale-105 transition-all mx-auto"
+                            data-testid="me-first-pass-button"
+                        >
+                            {t('ui.me_first_pass', '让过')}
+                        </button>
+                    </div>
+                )}
+
+                {/* 响应进度 */}
+                <div className="flex justify-center gap-2 mt-3">
+                    {responseWindow.responderQueue.map((pid, idx) => {
+                        const isPassed = responseWindow.passedPlayers.includes(pid);
+                        const isCurrent = idx === responseWindow.currentResponderIndex;
+                        const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
+                        return (
+                            <div
+                                key={pid}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 ${conf.bg} ${
+                                    isCurrent ? 'ring-2 ring-amber-400 scale-125' : isPassed ? 'opacity-40' : ''
+                                }`}
+                            >
+                                {isPassed ? '✓' : pid === playerID ? 'Y' : pid}
+                            </div>
+                        );
+                    })}
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
 
 // ============================================================================
 // Overlay: Click-to-View Details

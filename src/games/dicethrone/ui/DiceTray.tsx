@@ -1,3 +1,4 @@
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { GameButton } from './components/GameButton';
@@ -293,7 +294,26 @@ export const DiceActions = ({
         );
     }
 
-    // 渲染投掷次数指示点 - 一列三个
+    // 添加调试日志：追踪 confirm 按钮禁用原因
+    React.useEffect(() => {
+        if (currentPhase === 'defensiveRoll' || currentPhase === 'offensiveRoll') {
+            const disabledReasons = [];
+            if (rollConfirmed) disabledReasons.push('rollConfirmed');
+            if (rollCount === 0) disabledReasons.push('rollCount===0');
+            if (!canInteract) disabledReasons.push('!canInteract');
+            if (isRolling) disabledReasons.push('isRolling');
+            if (disabledReasons.length > 0) {
+                console.warn('[DiceActions] Confirm button disabled:', {
+                    reasons: disabledReasons,
+                    rollConfirmed,
+                    rollCount,
+                    canInteract,
+                    isRolling,
+                    currentPhase,
+                });
+            }
+        }
+    }, [rollConfirmed, rollCount, canInteract, isRolling, currentPhase]);
     const renderRollDots = () => {
         const dots = [];
         for (let i = 0; i < rollLimit; i++) {

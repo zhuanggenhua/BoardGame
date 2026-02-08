@@ -1,12 +1,21 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
+import React, { useEffect, Suspense } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { LayoutDashboard, Users, Gamepad2, LogOut, ChevronRight, MessageSquareWarning, DoorOpen } from 'lucide-react';
+import { useModalStack } from '../../../contexts/ModalStackContext';
+import { LayoutDashboard, Users, Gamepad2, LogOut, ChevronRight, MessageSquareWarning, DoorOpen, Activity } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion } from 'framer-motion';
 
 export default function AdminLayout() {
     const { user, logout } = useAuth();
     const location = useLocation();
+    const { closeAll } = useModalStack();
+
+    // 进入管理后台时，清理所有可能残留的弹窗 (如：从游戏页跳转过来时遗留的聊天窗口)
+    useEffect(() => {
+        closeAll();
+    }, [closeAll]);
+
 
     const navItems = [
         { icon: LayoutDashboard, label: '概览', path: '/admin' },
@@ -14,6 +23,7 @@ export default function AdminLayout() {
         { icon: Gamepad2, label: '对局记录', path: '/admin/matches' },
         { icon: DoorOpen, label: '房间管理', path: '/admin/rooms' },
         { icon: MessageSquareWarning, label: '反馈管理', path: '/admin/feedback' },
+        { icon: Activity, label: '系统健康', path: '/admin/health' },
     ];
 
     const isActive = (path: string) => {
@@ -103,7 +113,9 @@ export default function AdminLayout() {
 
             {/* 主内容区 */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-zinc-50">
-                <Outlet />
+                <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>}>
+                    <Outlet />
+                </Suspense>
             </main>
         </div>
     );

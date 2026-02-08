@@ -17,8 +17,9 @@ describe('previewConfig', () => {
         {
           id: 'comp-1',
           type: 'hand-zone',
-          x: 0,
-          y: 0,
+          anchor: { x: 0, y: 0 },
+          pivot: { x: 0, y: 0 },
+          offset: { x: 0, y: 0 },
           width: 100,
           height: 100,
           data: {},

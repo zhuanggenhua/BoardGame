@@ -21,6 +21,7 @@ import { PreviewCanvas } from '../ui/RenderPreview';
 import { PromptGenerator, type GameContext, useRenderPrompt } from '../ai';
 import { buildRequirementsText } from '../utils/requirements';
 import { generateUnifiedPrompt, TECH_STACK, OUTPUT_RULES } from '../ai/promptUtils';
+import { resolveAnchorFromPosition, resolveLayoutRect } from '../../utils/layout';
 import { UGC_API_URL } from '../../../config/server';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -719,6 +720,7 @@ function UnifiedBuilderInner() {
   // TODO: 迁移完成后删除本地 state，直接使用 contextState
   const [state, setState] = useState<BuilderState>(INITIAL_STATE);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['卡牌机制']));
+  const [selectedComponentIds, setSelectedComponentIds] = useState<string[]>([]);
   const isLoadedRef = useRef(false);
   const hasHydratedData = useMemo(() => {
     return (
@@ -869,6 +871,13 @@ function UnifiedBuilderInner() {
   // 可拖拽分隔线状态
   const [leftPanelWidth, setLeftPanelWidth] = useState(280);
   const [topPanelRatio, setTopPanelRatio] = useState(0.5);
+  const [gridSize, setGridSize] = useState(20);
+  const [showGrid, setShowGrid] = useState(true);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [snapToEdges, setSnapToEdges] = useState(true);
+  const [snapToCenters, setSnapToCenters] = useState(true);
+  const [snapThreshold, setSnapThreshold] = useState(6);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const isDraggingH = useRef(false);
   const isDraggingV = useRef(false);
   const leftPanelRef = useRef<HTMLDivElement>(null);
@@ -973,7 +982,9 @@ function UnifiedBuilderInner() {
 
   const handleDeleteSchema = useCallback((schemaId: string) => {
     setState(prev => {
-      const { [schemaId]: _, ...restInstances } = prev.instances;
+      const restInstances = Object.fromEntries(
+        Object.entries(prev.instances).filter(([key]) => key !== schemaId)
+      );
       return {
         ...prev,
         schemas: prev.schemas.filter(s => s.id !== schemaId),
@@ -1006,7 +1017,9 @@ function UnifiedBuilderInner() {
       ...prev,
       schemas: prev.schemas.map(s => {
         if (s.id !== schemaId) return s;
-        const { [fieldKey]: _, ...restFields } = s.fields;
+        const restFields = Object.fromEntries(
+          Object.entries(s.fields).filter(([key]) => key !== fieldKey)
+        );
         return { ...s, fields: restFields };
       }),
     }));
@@ -1121,8 +1134,152 @@ function UnifiedBuilderInner() {
   }, []);
 
   const handleLayoutChange = useCallback((layout: SceneComponent[]) => {
-    setState(prev => ({ ...prev, layout }));
+    setState(prev => ({
+      ...prev,
+      layout,
+      selectedComponentId: prev.selectedComponentId && layout.some(c => c.id === prev.selectedComponentId)
+        ? prev.selectedComponentId
+        : null,
+    }));
+    setSelectedComponentIds(prev => prev.filter(id => layout.some(c => c.id === id)));
   }, []);
+
+  const handleSelectionChange = useCallback((ids: string[]) => {
+    setSelectedComponentIds(ids);
+    setState(prev => ({
+      ...prev,
+      selectedComponentId: ids.length > 0 ? ids[ids.length - 1] : null,
+    }));
+  }, []);
+
+  const selectedComponents = useMemo(() => {
+    if (selectedComponentIds.length === 0) return [] as LayoutComponent[];
+    return state.layout.filter(comp => selectedComponentIds.includes(comp.id));
+  }, [state.layout, selectedComponentIds]);
+
+  const resolveRect = useCallback((comp: LayoutComponent) => {
+    if (!canvasSize.width || !canvasSize.height) return null;
+    return resolveLayoutRect(
+      {
+        anchor: comp.anchor,
+        pivot: comp.pivot,
+        offset: comp.offset,
+        width: comp.width,
+        height: comp.height,
+        rotation: comp.rotation,
+      },
+      canvasSize
+    );
+  }, [canvasSize]);
+
+  const alignSelection = useCallback((mode: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => {
+    if (!canvasSize.width || !canvasSize.height) return;
+    if (selectedComponents.length === 0) return;
+    const rects = selectedComponents
+      .map(comp => ({ comp, rect: resolveRect(comp) }))
+      .filter((item): item is { comp: LayoutComponent; rect: NonNullable<ReturnType<typeof resolveRect>> } => Boolean(item.rect));
+    if (rects.length === 0) return;
+
+    const bounds = rects.reduce(
+      (acc, item) => {
+        acc.minX = Math.min(acc.minX, item.rect.x);
+        acc.minY = Math.min(acc.minY, item.rect.y);
+        acc.maxX = Math.max(acc.maxX, item.rect.x + item.rect.width);
+        acc.maxY = Math.max(acc.maxY, item.rect.y + item.rect.height);
+        return acc;
+      },
+      { minX: Number.POSITIVE_INFINITY, minY: Number.POSITIVE_INFINITY, maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY }
+    );
+
+    const useCanvas = rects.length === 1;
+    const nextLayout = state.layout.map(comp => {
+      if (!selectedComponentIds.includes(comp.id)) return comp;
+      const rect = rects.find(item => item.comp.id === comp.id)?.rect;
+      if (!rect) return comp;
+
+      let nextX = rect.x;
+      let nextY = rect.y;
+      if (mode === 'left') {
+        nextX = useCanvas ? 0 : bounds.minX;
+      }
+      if (mode === 'center') {
+        const target = useCanvas ? canvasSize.width / 2 : (bounds.minX + bounds.maxX) / 2;
+        nextX = target - rect.width / 2;
+      }
+      if (mode === 'right') {
+        const target = useCanvas ? canvasSize.width : bounds.maxX;
+        nextX = target - rect.width;
+      }
+      if (mode === 'top') {
+        nextY = useCanvas ? 0 : bounds.minY;
+      }
+      if (mode === 'middle') {
+        const target = useCanvas ? canvasSize.height / 2 : (bounds.minY + bounds.maxY) / 2;
+        nextY = target - rect.height / 2;
+      }
+      if (mode === 'bottom') {
+        const target = useCanvas ? canvasSize.height : bounds.maxY;
+        nextY = target - rect.height;
+      }
+
+      return {
+        ...comp,
+        anchor: resolveAnchorFromPosition({
+          position: { x: nextX, y: nextY },
+          pivot: comp.pivot,
+          offset: comp.offset,
+          size: { width: comp.width, height: comp.height },
+          canvas: canvasSize,
+        }),
+      };
+    });
+
+    handleLayoutChange(nextLayout as SceneComponent[]);
+  }, [canvasSize, handleLayoutChange, resolveRect, selectedComponentIds, selectedComponents, state.layout]);
+
+  const distributeSelection = useCallback((axis: 'horizontal' | 'vertical') => {
+    if (selectedComponents.length < 3) return;
+    if (!canvasSize.width || !canvasSize.height) return;
+    const rects = selectedComponents
+      .map(comp => ({ comp, rect: resolveRect(comp) }))
+      .filter((item): item is { comp: LayoutComponent; rect: NonNullable<ReturnType<typeof resolveRect>> } => Boolean(item.rect));
+    if (rects.length < 3) return;
+
+    const sorted = [...rects].sort((a, b) => axis === 'horizontal'
+      ? a.rect.x - b.rect.x
+      : a.rect.y - b.rect.y
+    );
+
+    const totalSpan = axis === 'horizontal'
+      ? (sorted[sorted.length - 1].rect.x + sorted[sorted.length - 1].rect.width - sorted[0].rect.x)
+      : (sorted[sorted.length - 1].rect.y + sorted[sorted.length - 1].rect.height - sorted[0].rect.y);
+    const totalSize = sorted.reduce((sum, item) => sum + (axis === 'horizontal' ? item.rect.width : item.rect.height), 0);
+    const gap = Math.max(0, (totalSpan - totalSize) / (sorted.length - 1));
+
+    let cursor = axis === 'horizontal' ? sorted[0].rect.x : sorted[0].rect.y;
+    const nextLayout = state.layout.map(comp => {
+      const item = sorted.find(entry => entry.comp.id === comp.id);
+      if (!item) return comp;
+
+      const rect = item.rect;
+      const nextX = axis === 'horizontal' ? cursor : rect.x;
+      const nextY = axis === 'vertical' ? cursor : rect.y;
+      cursor += (axis === 'horizontal' ? rect.width : rect.height) + gap;
+
+      return {
+        ...comp,
+        anchor: resolveAnchorFromPosition({
+          position: { x: nextX, y: nextY },
+          pivot: comp.pivot,
+          offset: comp.offset,
+          size: { width: comp.width, height: comp.height },
+          canvas: canvasSize,
+        }),
+      };
+    });
+
+    handleLayoutChange(nextLayout as SceneComponent[]);
+  }, [canvasSize, handleLayoutChange, resolveRect, selectedComponents, state.layout]);
 
   const handleAddRequirementEntry = useCallback(() => {
     const entryId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -1220,8 +1377,14 @@ function UnifiedBuilderInner() {
     uiLayout: {
       leftPanelWidth,
       topPanelRatio,
+      gridSize,
+      showGrid,
+      snapToGrid,
+      snapToEdges,
+      snapToCenters,
+      snapThreshold,
     },
-  }), [state, leftPanelWidth, topPanelRatio]);
+  }), [state, leftPanelWidth, topPanelRatio, gridSize, showGrid, snapToGrid, snapToEdges, snapToCenters, snapThreshold]);
 
   const applySavedData = useCallback((data: Record<string, unknown>) => {
     setState(prev => {
@@ -1251,6 +1414,24 @@ function UnifiedBuilderInner() {
       if (typeof uiLayout.topPanelRatio === 'number') {
         setTopPanelRatio(uiLayout.topPanelRatio);
       }
+      if (typeof uiLayout.gridSize === 'number') {
+        setGridSize(uiLayout.gridSize);
+      }
+      if (typeof uiLayout.showGrid === 'boolean') {
+        setShowGrid(uiLayout.showGrid);
+      }
+      if (typeof uiLayout.snapToGrid === 'boolean') {
+        setSnapToGrid(uiLayout.snapToGrid);
+      }
+      if (typeof uiLayout.snapToEdges === 'boolean') {
+        setSnapToEdges(uiLayout.snapToEdges);
+      }
+      if (typeof uiLayout.snapToCenters === 'boolean') {
+        setSnapToCenters(uiLayout.snapToCenters);
+      }
+      if (typeof uiLayout.snapThreshold === 'number') {
+        setSnapThreshold(uiLayout.snapThreshold);
+      }
     }
   }, [setLeftPanelWidth, setTopPanelRatio]);
 
@@ -1275,7 +1456,7 @@ function UnifiedBuilderInner() {
       const items = Array.isArray(payload.items) ? payload.items : [];
       setBuilderProjects(items);
       return items;
-    } catch (error) {
+    } catch {
       if (!silent) {
         toast.warning('草稿列表获取失败，将使用本地缓存');
       }
@@ -1302,7 +1483,7 @@ function UnifiedBuilderInner() {
       setActiveProjectId(project.projectId);
       setProjectNameDraft(project.name ?? '');
       return project;
-    } catch (error) {
+    } catch {
       if (!silent) {
         toast.warning('草稿加载失败，将使用本地缓存');
       }
@@ -1440,7 +1621,11 @@ function UnifiedBuilderInner() {
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
-      next.has(cat) ? next.delete(cat) : next.add(cat);
+      if (next.has(cat)) {
+        next.delete(cat);
+      } else {
+        next.add(cat);
+      }
       return next;
     });
   };
@@ -1537,14 +1722,14 @@ function UnifiedBuilderInner() {
               data,
             }, true);
           }
-        } catch (err) {
+        } catch {
           alert('导入失败：无效的 JSON 文件');
         }
       };
       reader.readAsText(file);
     };
     input.click();
-  }, []);
+  }, [activeProjectId, applySavedData, persistLocalSave, token, updateBuilderProject]);
 
   // 页面加载时恢复（仅在无数据时才从 localStorage 还原）
   useEffect(() => {
@@ -1565,7 +1750,7 @@ function UnifiedBuilderInner() {
     }
     // 标记加载完成，允许自动保存
     isLoadedRef.current = true;
-  }, [hasHydratedData]);
+  }, [applySavedData, hasHydratedData]);
 
   // ========== 渲染 ==========
   return (
@@ -1849,14 +2034,24 @@ function UnifiedBuilderInner() {
                       {groupComponents.map(comp => (
                         <div
                           key={comp.id}
+                          data-testid={`layout-tree-item-${comp.id}`}
                           draggable
                           onDragStart={e => {
                             e.dataTransfer.setData('compId', comp.id);
                             e.dataTransfer.effectAllowed = 'move';
                           }}
-                          onClick={() => setState(prev => ({ ...prev, selectedComponentId: comp.id }))}
+                          onClick={e => {
+                            e.stopPropagation();
+                            const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
+                            const nextSelected = isMulti
+                              ? (selectedComponentIds.includes(comp.id)
+                                ? selectedComponentIds.filter(id => id !== comp.id)
+                                : [...selectedComponentIds, comp.id])
+                              : [comp.id];
+                            handleSelectionChange(nextSelected);
+                          }}
                           className={`flex items-center gap-2 px-2 py-1 rounded cursor-grab text-xs ${
-                            state.selectedComponentId === comp.id ? 'bg-blue-600/50' : 'hover:bg-slate-700/50'
+                            selectedComponentIds.includes(comp.id) ? 'bg-blue-600/50' : 'hover:bg-slate-700/50'
                           }`}
                         >
                           <GripVertical className="w-2.5 h-2.5 text-slate-500" />
@@ -1892,32 +2087,164 @@ function UnifiedBuilderInner() {
               />
             </div>
           ) : (
-            <SceneCanvas
-              components={state.layout}
-              onChange={handleLayoutChange}
-              selectedId={state.selectedComponentId ?? undefined}
-              onSelect={id => setState(prev => ({ ...prev, selectedComponentId: id }))}
-              onNewRenderComponent={comp => {
-                // 拖入新建渲染组件时，自动创建renderComponent并关联
-                const newRc: RenderComponent = {
-                  id: `rc-${Date.now()}`,
-                  name: String(comp.data.name || '新渲染组件'),
-                  targetSchema: state.schemas[0]?.id || '',
-                  renderCode: '',
-                  description: '',
-                };
-                setState(prev => ({
-                  ...prev,
-                  renderComponents: [...prev.renderComponents, newRc],
-                  layout: prev.layout.map(c => 
-                    c.id === comp.id 
-                      ? { ...c, data: { ...c.data, renderComponentId: newRc.id, isNew: undefined } }
-                      : c
-                  ),
-                }));
-              }}
-              className="flex-1"
-            />
+            <>
+              <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-800 bg-slate-900/80 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-400">对齐</span>
+                  <button
+                    type="button"
+                    onClick={() => alignSelection('left')}
+                    disabled={selectedComponentIds.length === 0}
+                    data-testid="align-left"
+                    className={`px-2 py-1 rounded ${selectedComponentIds.length === 0 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600'}`}
+                  >左</button>
+                  <button
+                    type="button"
+                    onClick={() => alignSelection('center')}
+                    disabled={selectedComponentIds.length === 0}
+                    data-testid="align-center"
+                    className={`px-2 py-1 rounded ${selectedComponentIds.length === 0 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600'}`}
+                  >中</button>
+                  <button
+                    type="button"
+                    onClick={() => alignSelection('right')}
+                    disabled={selectedComponentIds.length === 0}
+                    data-testid="align-right"
+                    className={`px-2 py-1 rounded ${selectedComponentIds.length === 0 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600'}`}
+                  >右</button>
+                  <button
+                    type="button"
+                    onClick={() => alignSelection('top')}
+                    disabled={selectedComponentIds.length === 0}
+                    data-testid="align-top"
+                    className={`px-2 py-1 rounded ${selectedComponentIds.length === 0 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600'}`}
+                  >上</button>
+                  <button
+                    type="button"
+                    onClick={() => alignSelection('middle')}
+                    disabled={selectedComponentIds.length === 0}
+                    data-testid="align-middle"
+                    className={`px-2 py-1 rounded ${selectedComponentIds.length === 0 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600'}`}
+                  >中</button>
+                  <button
+                    type="button"
+                    onClick={() => alignSelection('bottom')}
+                    disabled={selectedComponentIds.length === 0}
+                    data-testid="align-bottom"
+                    className={`px-2 py-1 rounded ${selectedComponentIds.length === 0 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600'}`}
+                  >下</button>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-400">分布</span>
+                  <button
+                    type="button"
+                    onClick={() => distributeSelection('horizontal')}
+                    disabled={selectedComponentIds.length < 3}
+                    data-testid="distribute-horizontal"
+                    className={`px-2 py-1 rounded ${selectedComponentIds.length < 3 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600'}`}
+                  >水平</button>
+                  <button
+                    type="button"
+                    onClick={() => distributeSelection('vertical')}
+                    disabled={selectedComponentIds.length < 3}
+                    data-testid="distribute-vertical"
+                    className={`px-2 py-1 rounded ${selectedComponentIds.length < 3 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600'}`}
+                  >垂直</button>
+                </div>
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                  <label className="flex items-center gap-1 text-slate-400">
+                    <input
+                      type="checkbox"
+                      checked={showGrid}
+                      onChange={e => setShowGrid(e.target.checked)}
+                      data-testid="toggle-grid"
+                    />网格
+                  </label>
+                  <label className="flex items-center gap-1 text-slate-400">
+                    <span>网格</span>
+                    <input
+                      type="number"
+                      min={4}
+                      value={gridSize}
+                      onChange={e => setGridSize(Math.max(4, Number(e.target.value || 0)))}
+                      data-testid="grid-size-input"
+                      className="w-16 px-1 py-0.5 bg-slate-800 border border-slate-700 rounded"
+                    />
+                  </label>
+                  <label className="flex items-center gap-1 text-slate-400">
+                    <input
+                      type="checkbox"
+                      checked={snapToGrid}
+                      onChange={e => setSnapToGrid(e.target.checked)}
+                      data-testid="toggle-snap-grid"
+                    />吸附网格
+                  </label>
+                  <label className="flex items-center gap-1 text-slate-400">
+                    <input
+                      type="checkbox"
+                      checked={snapToEdges}
+                      onChange={e => setSnapToEdges(e.target.checked)}
+                      data-testid="toggle-snap-edges"
+                    />边缘
+                  </label>
+                  <label className="flex items-center gap-1 text-slate-400">
+                    <input
+                      type="checkbox"
+                      checked={snapToCenters}
+                      onChange={e => setSnapToCenters(e.target.checked)}
+                      data-testid="toggle-snap-centers"
+                    />中心
+                  </label>
+                  <label className="flex items-center gap-1 text-slate-400">
+                    <span>阈值</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={snapThreshold}
+                      onChange={e => setSnapThreshold(Math.max(1, Number(e.target.value || 0)))}
+                      data-testid="snap-threshold-input"
+                      className="w-14 px-1 py-0.5 bg-slate-800 border border-slate-700 rounded"
+                    />
+                  </label>
+                </div>
+              </div>
+              <div className="flex-1 p-2">
+                <SceneCanvas
+                  components={state.layout}
+                  onChange={handleLayoutChange}
+                  selectedIds={selectedComponentIds}
+                  primarySelectedId={state.selectedComponentId ?? undefined}
+                  onSelectionChange={handleSelectionChange}
+                  onCanvasSizeChange={setCanvasSize}
+                  gridSize={gridSize}
+                  showGrid={showGrid}
+                  snapToGrid={snapToGrid}
+                  snapToEdges={snapToEdges}
+                  snapToCenters={snapToCenters}
+                  snapThreshold={snapThreshold}
+                  onNewRenderComponent={comp => {
+                    // 拖入新建渲染组件时，自动创建renderComponent并关联
+                    const newRc: RenderComponent = {
+                      id: `rc-${Date.now()}`,
+                      name: String(comp.data.name || '新渲染组件'),
+                      targetSchema: state.schemas[0]?.id || '',
+                      renderCode: '',
+                      description: '',
+                    };
+                    setState(prev => ({
+                      ...prev,
+                      renderComponents: [...prev.renderComponents, newRc],
+                      layout: prev.layout.map(c => 
+                        c.id === comp.id 
+                          ? { ...c, data: { ...c.data, renderComponentId: newRc.id, isNew: undefined } }
+                          : c
+                      ),
+                    }));
+                  }}
+                  className="h-full"
+                />
+              </div>
+            </>
           )}
         </div>
 
@@ -1982,20 +2309,68 @@ function UnifiedBuilderInner() {
                     <h3 className="text-sm font-medium text-amber-500">变换</h3>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <label className="text-slate-400">X</label>
+                        <label className="text-slate-400">锚点 X</label>
                         <input
                           type="number"
-                          value={comp.x}
-                          onChange={e => updateComp({ x: Number(e.target.value) })}
+                          step="0.01"
+                          min="0"
+                          max="1"
+                          value={comp.anchor.x}
+                          onChange={e => updateComp({ anchor: { ...comp.anchor, x: Number(e.target.value) } })}
                           className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
                         />
                       </div>
                       <div>
-                        <label className="text-slate-400">Y</label>
+                        <label className="text-slate-400">锚点 Y</label>
                         <input
                           type="number"
-                          value={comp.y}
-                          onChange={e => updateComp({ y: Number(e.target.value) })}
+                          step="0.01"
+                          min="0"
+                          max="1"
+                          value={comp.anchor.y}
+                          onChange={e => updateComp({ anchor: { ...comp.anchor, y: Number(e.target.value) } })}
+                          className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-400">枢轴 X</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="1"
+                          value={comp.pivot.x}
+                          onChange={e => updateComp({ pivot: { ...comp.pivot, x: Number(e.target.value) } })}
+                          className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-400">枢轴 Y</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="1"
+                          value={comp.pivot.y}
+                          onChange={e => updateComp({ pivot: { ...comp.pivot, y: Number(e.target.value) } })}
+                          className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-400">偏移 X</label>
+                        <input
+                          type="number"
+                          value={comp.offset.x}
+                          onChange={e => updateComp({ offset: { ...comp.offset, x: Number(e.target.value) } })}
+                          className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-400">偏移 Y</label>
+                        <input
+                          type="number"
+                          value={comp.offset.y}
+                          onChange={e => updateComp({ offset: { ...comp.offset, y: Number(e.target.value) } })}
                           className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white"
                         />
                       </div>
@@ -3735,7 +4110,11 @@ function UnifiedBuilderInner() {
                   <button
                     onClick={() => {
                       const tags = normalizeTags(currentSchema);
-                      const updated = tags.filter((_, i) => i !== editingTagIndex);
+                      const updated = tags.reduce<TagDefinition[]>((acc, tag, index) => {
+                        if (index === editingTagIndex) return acc;
+                        acc.push(tag);
+                        return acc;
+                      }, []);
                       handleSchemaChange(currentSchema.id, { tagDefinitions: updated });
                       setEditingTagIndex(null);
                       setNewTagName('');
