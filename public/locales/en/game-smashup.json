@@ -45,11 +45,110 @@
     "preview_cards": "Included Card Preview",
     "minion": "Minion",
     "action": "Action",
-    "discard_badge": "Discard"
+    "discard_badge": "Discard",
+    "prompt_select_option": "Select an option to continue",
+    "prompt_wait": "Please wait",
+    "played": "Played!",
+    "vp_award": "+{{vp}} VP",
+    "player_short": "P{{id}}",
+    "you_short": "YOU",
+    "you_badge": "YOU",
+    "talent_used": "Used",
+    "card_placeholder": "Card",
+    "me_first_title": "⚡ Me First!"
+  },
+  "factions": {
+    "pirates": {
+      "name": "Pirates",
+      "description": "Highly mobile; move minions between bases."
+    },
+    "ninjas": {
+      "name": "Ninjas",
+      "description": "Ambush tactics, stealth, and minion assassinations."
+    },
+    "dinosaurs": {
+      "name": "Dinosaurs",
+      "description": "Massive power that crushes everything."
+    },
+    "aliens": {
+      "name": "Aliens",
+      "description": "Disrupt opponents, bounce minions, control bases."
+    },
+    "robots": {
+      "name": "Robots",
+      "description": "A swarm of micro-bots that floods the board."
+    },
+    "zombies": {
+      "name": "Zombies",
+      "description": "Rise from the discard and never stay dead."
+    },
+    "wizards": {
+      "name": "Wizards",
+      "description": "Extra actions, deck manipulation, spell bursts."
+    },
+    "tricksters": {
+      "name": "Tricksters",
+      "description": "Set traps, discard opponents, cause chaos."
+    },
+    "steampunks": {
+      "name": "Steampunks",
+      "description": "Leverage base actions, upgrades, and recycling."
+    },
+    "ghosts": {
+      "name": "Ghosts",
+      "description": "Fewer cards, stronger effects, phase through matter."
+    },
+    "killer_plants": {
+      "name": "Killer Plants",
+      "description": "Rapid growth and minion control."
+    },
+    "bear_cavalry": {
+      "name": "Bear Cavalry",
+      "description": "Force movement and crush opponents."
+    },
+    "minions_of_cthulhu": {
+      "name": "Minions of Cthulhu",
+      "description": "Use madness cards and sacrifice minions."
+    },
+    "elder_things": {
+      "name": "Elder Things",
+      "description": "Hand out madness and manipulate minds."
+    },
+    "innsmouth": {
+      "name": "Innsmouth",
+      "description": "Swarm tactics; rally identical minions."
+    },
+    "miskatonic_university": {
+      "name": "Miskatonic University",
+      "description": "Leverage madness for advantage and research."
+    }
   },
   "tutorial": {
     "title": "Smash Up Tutorial",
     "welcome": "Welcome to Smash Up! Combine two factions, fight for base control, and be the first to reach 15 victory points.",
-    "finish": "Tutorial complete — you are ready to smash up!"
+    "finish": "Tutorial complete — you are ready to smash up!",
+    "steps": {
+      "setup": "Preparing tutorial scenario...",
+      "welcome": "Welcome to Smash Up!\n\nIn this game, you pick two factions and shuffle their decks together, then compete to score bases and earn Victory Points.\n\nFirst to 15 VP wins!",
+      "scoreboard": "This is the scoreboard, showing each player's Victory Points (VP) and chosen factions.\n\nYour goal is to reach 15 VP first!",
+      "handIntro": "This is your hand area. Your deck is a mix of cards from your two factions.\n\nCards come in two types:\n• Minions — placed on bases to contribute power\n• Actions — trigger special effects",
+      "turnTracker": "This shows the current turn number and game phase.\n\nEach turn follows: Play Cards → Score Bases → Draw.",
+      "endTurnBtn": "This is the End Phase button. After you're done with each phase, click it to move on.",
+      "playCardsExplain": "It's the Play Cards phase!\n\nEach turn you may play 1 minion and 1 action (one of each).\n\nMinions go on bases to add power; actions trigger special effects.",
+      "playMinion": "Try playing a minion!\n\nClick a minion card in your hand, then choose a base to place it on.",
+      "playAction": "Nice! Now play an action card.\n\nClick an action card in your hand to use it.",
+      "endPlayCards": "Done playing cards! Click the End Phase button to proceed.",
+      "baseScoring": "Base Scoring: when the total power of all minions on a base reaches or exceeds its breakpoint, that base scores.\n\nAfter scoring, minions on the base are discarded and a new base is revealed.",
+      "vpAwards": "When a base scores, the top 3 players by power receive the VP rewards shown on the base card.\n\nThe player with the most power gets the biggest reward!",
+      "scoringPhase": "Processing the scoring phase...",
+      "drawExplain": "Draw phase: at the end of each turn you draw 2 cards to refill your hand.",
+      "handLimit": "Note the hand limit is 10 cards.\n\nIf you exceed the limit after drawing, you must discard down to 10.",
+      "endDraw": "Click the End Phase button to finish the draw phase.",
+      "opponentTurn": "It's your opponent's turn now. Watch what they do...",
+      "talentIntro": "Some minions have Talent abilities that can be used once per turn.\n\nLook for the Talent marker on minion cards! Talents reset at the start of your turn.",
+      "turnCycle": "Turns alternate between players, each following Play Cards → Score → Draw.\n\nUse your plays wisely to build power advantages on key bases!",
+      "summary": "Tutorial complete! Key takeaways:\n\n• Pick 2 factions and shuffle them together\n• Each turn: play 1 minion + 1 action\n• Bases score when total power hits the breakpoint\n• First to 15 VP wins",
+      "finish": "You've learned the basics of Smash Up. Ready to smash?"
+    }
   }
 }

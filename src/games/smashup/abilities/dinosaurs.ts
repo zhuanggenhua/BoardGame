@@ -6,7 +6,7 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, addPowerCounter } from '../domain/abilityHelpers';
+import { destroyMinion, addPowerCounter, getMinionPower } from '../domain/abilityHelpers';
 import type { SmashUpEvent } from '../domain/types';
 
 /** 注册恐龙派系所有能力 */
@@ -26,7 +26,7 @@ function dinoLaserTriceratops(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
     const target = base.minions.find(
-        m => m.uid !== ctx.cardUid && (m.basePower + m.powerModifier) <= 2
+        m => m.uid !== ctx.cardUid && getMinionPower(ctx.state, m, ctx.baseIndex) <= 2
     );
     if (!target) return { events: [] };
     return {
@@ -39,7 +39,7 @@ function dinoWildStuffing(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
         const target = base.minions.find(
-            m => m.controller !== ctx.playerId && (m.basePower + m.powerModifier) <= 3
+            m => m.controller !== ctx.playerId && getMinionPower(ctx.state, m, i) <= 3
         );
         if (target) {
             return {
@@ -56,7 +56,7 @@ function dinoAugmentation(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (m.controller === ctx.playerId) {
-                const power = m.basePower + m.powerModifier;
+                const power = getMinionPower(ctx.state, m, i);
                 if (!bestMinion || power > bestMinion.power) {
                     bestMinion = { uid: m.uid, baseIndex: i, power };
                 }
@@ -87,13 +87,13 @@ function dinoNaturalSelection(ctx: AbilityContext): AbilityResult {
     let myMaxPower = 0;
     for (const m of base.minions) {
         if (m.controller === ctx.playerId) {
-            const power = m.basePower + m.powerModifier;
+            const power = getMinionPower(ctx.state, m, ctx.baseIndex);
             if (power > myMaxPower) myMaxPower = power;
         }
     }
     if (myMaxPower === 0) return { events: [] };
     const target = base.minions.find(
-        m => m.controller !== ctx.playerId && (m.basePower + m.powerModifier) < myMaxPower
+        m => m.controller !== ctx.playerId && getMinionPower(ctx.state, m, ctx.baseIndex) < myMaxPower
     );
     if (!target) return { events: [] };
     return {
@@ -117,9 +117,9 @@ function dinoWildRampage(ctx: AbilityContext): AbilityResult {
 /** 适者生存 onPlay：消灭所有拥有最低力量的随从 */
 function dinoSurvivalOfTheFittest(ctx: AbilityContext): AbilityResult {
     let minPower = Infinity;
-    for (const base of ctx.state.bases) {
-        for (const m of base.minions) {
-            const power = m.basePower + m.powerModifier;
+    for (let i = 0; i < ctx.state.bases.length; i++) {
+        for (const m of ctx.state.bases[i].minions) {
+            const power = getMinionPower(ctx.state, m, i);
             if (power < minPower) minPower = power;
         }
     }
@@ -127,7 +127,7 @@ function dinoSurvivalOfTheFittest(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
-            if ((m.basePower + m.powerModifier) === minPower) {
+            if (getMinionPower(ctx.state, m, i) === minPower) {
                 events.push(destroyMinion(m.uid, m.defId, i, m.owner, 'dino_survival_of_the_fittest', ctx.now));
             }
         }
@@ -136,7 +136,7 @@ function dinoSurvivalOfTheFittest(ctx: AbilityContext): AbilityResult {
 }
 
 // 暴龙雷克斯：无能力（纯力量7）
-// TODO: dino_armor_stego (ongoing) - 其他玩家回合+2力量（需要 ongoing 力量修正系统）
-// TODO: dino_war_raptor (ongoing) - 每个战争猛禽+1力量（需要 ongoing 力量修正系统）
+// dino_armor_stego (ongoing) - 已通过 ongoingModifiers 系统实现力量修正
+// dino_war_raptor (ongoing) - 已通过 ongoingModifiers 系统实现力量修正
 // TODO: dino_tooth_and_claw (ongoing) - 保护随从（需要 ongoing 效果系统）
 // TODO: dino_upgrade (ongoing) - +2力量且不能被消灭（需要 ongoing 效果系统）

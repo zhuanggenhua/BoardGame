@@ -39,7 +39,7 @@ export const AudioControlSection: React.FC<AudioControlSectionProps> = ({ isDark
 
     const currentTrack = playlist.find(track => track.key === currentBgm);
     const currentTrackLabel = currentTrack
-        ? t(`audio.tracks.${currentTrack.key}`, { defaultValue: currentTrack.name })
+        ? t(`audio.tracks.${currentTrack.key}`)
         : t('audio.nonePlaying');
 
     const labelClass = isDark ? "text-white/40" : "text-[#8c7b64]";

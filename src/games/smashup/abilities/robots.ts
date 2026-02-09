@@ -6,10 +6,11 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { grantExtraMinion, destroyMinion, getPlayerMinionsOnBase } from '../domain/abilityHelpers';
+import { grantExtraMinion, destroyMinion, getMinionPower } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { CardsDrawnEvent, DeckReshuffledEvent, SmashUpEvent } from '../domain/types';
 import { drawCards } from '../domain/utils';
+import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 
 /** 注册机器人派系所有能力 */
 export function registerRobotAbilities(): void {
@@ -21,6 +22,11 @@ export function registerRobotAbilities(): void {
     registerAbility('robot_zapbot', 'onPlay', robotZapbot);
     // 技术中心（行动卡）：按基地上随从数抽牌
     registerAbility('robot_tech_center', 'onPlay', robotTechCenter);
+    // 核弹机器人 onDestroy：被消灭后消灭同基地其他玩家所有随从
+    registerAbility('robot_nukebot', 'onDestroy', robotNukebotOnDestroy);
+
+    // 注册 ongoing 拦截器
+    registerRobotOngoingEffects();
 }
 
 /** 微型机守护者 onPlay：消灭力量低于己方随从数量的随从 */
@@ -29,7 +35,7 @@ function robotMicrobotGuard(ctx: AbilityContext): AbilityResult {
     if (!base) return { events: [] };
     const myMinionCount = base.minions.filter(m => m.controller === ctx.playerId).length + 1;
     const target = base.minions.find(
-        m => m.uid !== ctx.cardUid && (m.basePower + m.powerModifier) < myMinionCount
+        m => m.uid !== ctx.cardUid && getMinionPower(ctx.state, m, ctx.baseIndex) < myMinionCount
     );
     if (!target) return { events: [] };
     return {
@@ -64,9 +70,6 @@ function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
     );
     if (microbotsInDiscard.length > 0) {
         // 将微型机从弃牌堆移到牌库并洗牌
-        const remainingDiscard = player.discard.filter(
-            c => !(c.type === 'minion' && microbotDefIds.has(c.defId))
-        );
         const newDeck = [...player.deck, ...microbotsInDiscard];
         const shuffled = ctx.random.shuffle([...newDeck]);
         const reshuffleEvt: DeckReshuffledEvent = {
@@ -103,13 +106,11 @@ function robotZapbot(ctx: AbilityContext): AbilityResult {
 /** 技术中心 onPlay：选择一个基地，该基地上你每有一个随从就抽一张牌 */
 function robotTechCenter(ctx: AbilityContext): AbilityResult {
     // MVP：自动选己方随从最多的基地
-    let bestBaseIndex = -1;
     let bestCount = 0;
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const count = ctx.state.bases[i].minions.filter(m => m.controller === ctx.playerId).length;
         if (count > bestCount) {
             bestCount = count;
-            bestBaseIndex = i;
         }
     }
     if (bestCount === 0) return { events: [] };
@@ -126,7 +127,67 @@ function robotTechCenter(ctx: AbilityContext): AbilityResult {
     return { events: [evt] };
 }
 
-// TODO: robot_nukebot (ongoing) - 被消灭后消灭同基地其他玩家所有随从（需要 onDestroy 触发）
-// TODO: robot_warbot (ongoing) - 不能被消灭（需要 ongoing 效果系统）
-// TODO: robot_microbot_archive (ongoing) - 微型机被消灭后抽牌（需要 onDestroy 触发）
-// TODO: robot_microbot_alpha (ongoing) - 每个其他微型机+1力量（需要 ongoing 力量修正系统）
+/** 核弹机器人 onDestroy：被消灭后消灭同基地其他玩家所有随从 */
+function robotNukebotOnDestroy(ctx: AbilityContext): AbilityResult {
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return { events: [] };
+    // 消灭同基地上不属于自己的所有随从
+    const targets = base.minions.filter(
+        m => m.uid !== ctx.cardUid && m.controller !== ctx.playerId
+    );
+    if (targets.length === 0) return { events: [] };
+    return {
+        events: targets.map(t =>
+            destroyMinion(t.uid, t.defId, ctx.baseIndex, t.owner, 'robot_nukebot', ctx.now)
+        ),
+    };
+}
+
+// robot_microbot_alpha (ongoing) - 已通过 ongoingModifiers 系统实现力量修正
+
+
+// ============================================================================
+// Ongoing 拦截器注册
+// ============================================================================
+
+/** 注册机器人派系的 ongoing 拦截器 */
+function registerRobotOngoingEffects(): void {
+    // 战争机器人：不能被消灭
+    registerProtection('robot_warbot', 'destroy', (ctx) => {
+        return ctx.targetMinion.defId === 'robot_warbot';
+    });
+
+    // 微型机档案馆：微型机被消灭后控制者抽1张牌
+    registerTrigger('robot_microbot_archive', 'onMinionDestroyed', (trigCtx) => {
+        if (!trigCtx.triggerMinionDefId) return [];
+        // 检查被消灭的是否是微型机（力量1的机器人随从）
+        const microbotDefIds = new Set([
+            'robot_microbot_guard', 'robot_microbot_fixer', 'robot_microbot_reclaimer',
+            'robot_microbot_archive', 'robot_microbot_alpha',
+        ]);
+        if (!microbotDefIds.has(trigCtx.triggerMinionDefId)) return [];
+
+        // 找到 microbot_archive 的拥有者
+        let archiveOwner: string | undefined;
+        for (const base of trigCtx.state.bases) {
+            const archive = base.minions.find(m => m.defId === 'robot_microbot_archive');
+            if (archive) {
+                archiveOwner = archive.controller;
+                break;
+            }
+        }
+        if (!archiveOwner) return [];
+
+        // 抽1张牌
+        const player = trigCtx.state.players[archiveOwner];
+        if (!player || player.deck.length === 0) return [];
+        const { drawnUids } = drawCards(player, 1, trigCtx.random);
+        if (drawnUids.length === 0) return [];
+
+        return [{
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: { playerId: archiveOwner, count: 1, cardUids: drawnUids },
+            timestamp: trigCtx.now,
+        }];
+    });
+}

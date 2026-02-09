@@ -143,7 +143,7 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                 {/* 标题 */}
                 <div className="px-[1vw] pt-[1.2vw] pb-[0.6vw] border-b border-white/10">
                     <h2 className="text-[1vw] font-bold text-white/90 uppercase tracking-wider">
-                        {t('selection.title', '选择你的英雄')}
+                        {t('selection.title')}
                     </h2>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-[1vw] pt-[1vw] grid grid-cols-2 gap-[0.8vw] content-start">
@@ -290,11 +290,13 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                                             "text-[0.9vw] font-black uppercase tracking-wide leading-tight",
                                             hasSelected ? "text-amber-400" : "text-white/50"
                                         )}>
-                                            {hasSelected ? t(`characters.${charId}`) : t('selection.notSelected', '未选择')}
+                                            {hasSelected ? t(`characters.${charId}`) : t('selection.notSelected')}
                                         </div>
                                         <div className="text-[0.6vw] text-white/50 truncate max-w-[8vw]">
                                             {playerNames[pid]}
-                                            {isMe && <span className="ml-[0.2vw] text-amber-400/80 font-bold">(YOU)</span>}
+                                            {isMe && (
+                                                <span className="ml-[0.2vw] text-amber-400/80 font-bold">({t('selection.you')})</span>
+                                            )}
                                         </div>
                                     </div>
 
@@ -321,7 +323,7 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                             onClick={callbacks.onReady}
                             className="px-[3vw] py-[1vw] rounded-full text-[1.2vw] font-black uppercase tracking-[0.2em] transition-all duration-300 border-2 bg-emerald-500 text-white border-emerald-400 hover:bg-emerald-400 hover:scale-105 active:scale-95 cursor-pointer shadow-[0_0_30px_rgba(16,185,129,0.5)]"
                         >
-                            {t('selection.ready', '准备')}
+                            {t('selection.ready')}
                         </motion.button>
                     )}
                     
@@ -329,7 +331,7 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                     {!isHost && readyPlayers[currentPlayerId] && (
                         <div className="px-[3vw] py-[1vw] rounded-full text-[1.2vw] font-black uppercase tracking-[0.2em] border-2 bg-white/5 text-emerald-400 border-emerald-400/50">
                             <span className="inline-flex items-center gap-[0.8vw]">
-                                <span>{t('selection.readyWaiting', '等待其他玩家...')}</span>
+                                <span>{t('selection.readyWaiting')}</span>
                                 <span className="flex items-center gap-[0.35vw]">
                                     {readyProgressDots}
                                 </span>
@@ -352,7 +354,7 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                             )}
                         >
                             <span className="inline-flex items-center gap-[0.8vw]">
-                                <span>{everyoneReady ? t('selection.pressStart', 'Press Start') : t('selection.waitingAll', '等待全员就绪')}</span>
+                                <span>{everyoneReady ? t('selection.pressStart') : t('selection.waitingAll')}</span>
                                 <span className="flex items-center gap-[0.35vw]">
                                     {readyProgressDots}
                                 </span>
@@ -383,7 +385,7 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                 isOpen={!!magnifyImage}
                 onClose={() => setMagnifyImage(null)}
                 containerClassName="max-h-[90vh] max-w-[90vw]"
-                closeLabel={t('actions.closePreview', '关闭预览')}
+                closeLabel={t('actions.closePreview')}
             >
                 {magnifyImage && (
                     <OptimizedImage

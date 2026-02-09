@@ -119,7 +119,6 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
     },
     {
         id: 'alien_scout_ship_1',
-        id_alias: 'alien_scout_ship_1',
         type: 'action',
         subtype: 'standard',
         name: '侦察船（一）',
@@ -132,7 +131,6 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
     },
     {
         id: 'alien_scout_ship_2',
-        id_alias: 'alien_scout_ship_2',
         type: 'action',
         subtype: 'standard',
         name: '侦察船（二）',

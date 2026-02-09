@@ -86,10 +86,6 @@ const subLabel = (sub: string): string => SUB_LABELS[sub] ?? sub;
 // 通用 UI
 // ============================================================================
 
-const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children}) => (
-  <h2 className="text-lg font-bold text-slate-100 border-b border-slate-700 pb-1 mb-3">{children}</h2>
-);
-
 /** 从 key 提取词根（去掉数字后缀） */
 const extractStem = (name: string): string => {
   return name.replace(/\s+\d+[A-Za-z]?$/, '').replace(/\s+[A-Za-z]$/, '').trim();
@@ -345,7 +341,7 @@ const AudioBrowser: React.FC = () => {
     if (entry.type === 'bgm') {
       AudioManager.playBgm(entry.key);
     } else {
-      AudioManager.play(entry.key);
+      AudioManager.play(entry.key, undefined, () => setPlayingKey(null));
     }
     setPlayingKey(entry.key);
   }, []);

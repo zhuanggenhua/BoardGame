@@ -29,7 +29,9 @@ const PLAYER_COLORS: Record<string, { bg: string; border: string; text: string; 
   '0': { bg: '#F43F5E', border: '#fb7185', text: 'white', glow: 'rgba(244,63,94,0.4)' },
   '1': { bg: '#3B82F6', border: '#60a5fa', text: 'white', glow: 'rgba(59,130,246,0.4)' },
 };
-const PLAYER_LABELS: Record<string, string> = { '0': 'P1', '1': 'P2' };
+const getPlayerShortLabel = (t: TFunction, pid: string) => t('player.short', {
+  id: pid === '0' ? 1 : 2,
+});
 
 /** 根据阵营 ID 获取召唤师精灵图 atlasId */
 function getSummonerAtlasId(factionId: string): string {
@@ -125,10 +127,10 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
       <div className="relative z-10 text-center pt-[2.5vh] pb-[1.5vh]">
         <h1 className="text-[clamp(18px,1.6vw,32px)] font-black tracking-[0.25em] text-amber-400/90"
           style={{ textShadow: '0 0 20px rgba(245,158,11,0.3)' }}>
-          {t('factionSelection.title', '选择你的阵营')}
+          {t('factionSelection.title')}
         </h1>
         <p className="text-[clamp(10px,0.65vw,14px)] text-white/35 mt-[0.5vh] tracking-wider">
-          {t('factionSelection.subtitle', '每位召唤师拥有独特的军队与战术')}
+          {t('factionSelection.subtitle')}
         </p>
       </div>
 
@@ -179,7 +181,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                     <OptimizedImage
                       src={previewEntry.tipImagePath}
                       className="h-full w-auto object-contain"
-                      alt={`${t(previewEntry.nameKey)} tip`}
+                      alt={t('factionSelection.tipAlt', { name: t(previewEntry.nameKey) })}
                     />
                   </motion.div>
                 ) : (
@@ -190,7 +192,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                     className="h-[24vh] aspect-[4/3] rounded-lg border border-dashed border-white/10 flex items-center justify-center"
                   >
                     <span className="text-[clamp(10px,0.7vw,14px)] text-white/20">
-                      {t('factionSelection.hoverToPreview', '悬停阵营查看详情')}
+                      {t('factionSelection.hoverToPreview')}
                     </span>
                   </motion.div>
                 )}
@@ -233,13 +235,13 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
         isOpen={!!magnifyImage}
         onClose={() => setMagnifyImage(null)}
         containerClassName="max-h-[90vh] max-w-[90vw]"
-        closeLabel={t('actions.closePreview', '关闭预览')}
+        closeLabel={t('actions.closePreview')}
       >
         {magnifyImage && (
           <OptimizedImage
             src={magnifyImage}
             className="max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain"
-            alt="Preview"
+            alt={t('factionSelection.previewAlt')}
           />
         )}
       </MagnifyOverlay>
@@ -249,7 +251,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
         isOpen={!!magnifySprite}
         onClose={() => setMagnifySprite(null)}
         containerClassName="max-h-[90vh] max-w-[90vw]"
-        closeLabel={t('actions.closePreview', '关闭预览')}
+        closeLabel={t('actions.closePreview')}
       >
         {magnifySprite && (
           <CardSprite
@@ -317,13 +319,13 @@ const FactionCard: React.FC<FactionCardProps> = ({
       {/* 底部渐变遮罩 + 阵营名 + 放大按钮 */}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-[2vw] pb-[0.4vw] px-[0.5vw] flex items-end justify-between">
         <div className="text-[clamp(10px,0.75vw,16px)] font-bold text-white/90 tracking-wide drop-shadow-md">
-          {t(faction.nameKey, faction.id)}
+          {t(faction.nameKey)}
         </div>
         {/* 放大查看按钮 */}
         <button
           className="text-white/50 hover:text-white/90 transition-colors duration-150 p-[0.2vw] cursor-pointer"
           onClick={(e) => onMagnify(faction.id, e)}
-          title={t('actions.magnify', '放大查看')}
+          title={t('actions.magnify')}
         >
           <svg width="clamp(14px,1vw,20px)" height="clamp(14px,1vw,20px)" viewBox="0 0 20 20" fill="currentColor">
             <path d="M5 8a1 1 0 011-1h1V6a1 1 0 012 0v1h1a1 1 0 110 2H9v1a1 1 0 11-2 0V9H6a1 1 0 01-1-1z" />
@@ -359,7 +361,7 @@ const FactionCard: React.FC<FactionCardProps> = ({
                   boxShadow: `0 0 8px ${colors.glow}`,
                 }}
               >
-                {PLAYER_LABELS[pid]}
+                {getPlayerShortLabel(t, pid)}
               </div>
             );
           })}
@@ -413,7 +415,7 @@ const PlayerStatusCard: React.FC<PlayerStatusCardProps> = ({
           boxShadow: `0 0 10px ${colors.glow}`,
         }}
       >
-        {PLAYER_LABELS[pid]}
+        {getPlayerShortLabel(t, pid)}
       </div>
 
       {/* 信息区 */}
@@ -422,11 +424,11 @@ const PlayerStatusCard: React.FC<PlayerStatusCardProps> = ({
           'text-[clamp(11px,0.7vw,15px)] font-bold leading-tight truncate',
           selected ? 'text-amber-300' : 'text-white/40'
         )}>
-          {factionEntry ? t(factionEntry.nameKey, factionEntry.id) : t('factionSelection.notSelected', '未选择')}
+          {factionEntry ? t(factionEntry.nameKey) : t('factionSelection.notSelected')}
         </div>
         <div className="text-[clamp(9px,0.5vw,12px)] text-white/40 truncate leading-tight mt-[0.1vw]">
           {playerName}
-          {isMe && <span className="ml-1 text-amber-400/70 font-bold">(YOU)</span>}
+          {isMe && <span className="ml-1 text-amber-400/70 font-bold">{t('player.youTag')}</span>}
         </div>
       </div>
 
@@ -479,8 +481,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         )}
       >
         {everyoneReady
-          ? t('factionSelection.start', '开始游戏')
-          : t('factionSelection.waitAll', '等待全员就绪')}
+          ? t('factionSelection.start')
+          : t('factionSelection.waitAll')}
       </motion.button>
     );
   }
@@ -493,7 +495,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         onClick={onReady}
         className="px-[2vw] py-[0.6vw] rounded-xl text-[clamp(11px,0.85vw,16px)] font-bold tracking-wider bg-gradient-to-b from-emerald-400 to-emerald-600 text-white border-2 border-emerald-300 shadow-[0_3px_0_#047857] hover:brightness-110 active:translate-y-[2px] active:shadow-none cursor-pointer transition-[transform] duration-200"
       >
-        {t('factionSelection.ready', '准备')}
+        {t('factionSelection.ready')}
       </motion.button>
     );
   }
@@ -501,7 +503,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   if (!isHost && isReady) {
     return (
       <div className="px-[2vw] py-[0.6vw] rounded-xl text-[clamp(11px,0.85vw,16px)] font-bold tracking-wider border-2 bg-white/5 text-emerald-400/70 border-emerald-400/30">
-        {t('factionSelection.waiting', '等待其他玩家...')}
+        {t('factionSelection.waiting')}
       </div>
     );
   }

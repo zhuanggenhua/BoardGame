@@ -41,6 +41,11 @@ const ALL_SYSTEM_COMMANDS: string[] = [
 ];
 
 const RANDOM_SEQUENCE_MAX = 1000000;
+const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+type ClientGlobals = { __BG_GAME_MODE__?: string; __BG_IS_SPECTATOR__?: boolean; window?: unknown };
+const getClientGlobals = (): ClientGlobals => (
+    typeof globalThis !== 'undefined' ? (globalThis as ClientGlobals) : {}
+);
 
 const normalizePolicyValue = (value: number, max: number): number => {
     if (!Number.isFinite(value) || max <= 0) return 1;
@@ -168,17 +173,14 @@ export function createGameAdapter<
         let warnedSpectator = false;
         return ({ G, ctx, random, playerID }, payload: unknown) => {
             const coreCurrentPlayer = (G as { core?: { currentPlayer?: string } }).core?.currentPlayer;
-            const isClient = typeof window !== 'undefined';
+            const globals = getClientGlobals();
+            const isClient = typeof globals.window !== 'undefined';
 
-            const globalMode = isClient
-                ? (window as Window & { __BG_GAME_MODE__?: string; __BG_IS_SPECTATOR__?: boolean }).__BG_GAME_MODE__
-                : undefined;
-            const isSpectator = isClient
-                ? (window as Window & { __BG_IS_SPECTATOR__?: boolean }).__BG_IS_SPECTATOR__ === true
-                : false;
+            const globalMode = isClient ? globals.__BG_GAME_MODE__ : undefined;
+            const isSpectator = isClient ? globals.__BG_IS_SPECTATOR__ === true : false;
             const isLocalLikeMode = globalMode === 'local' || globalMode === 'tutorial';
             if (!isLocalLikeMode && isSpectator) {
-                if (isClient && import.meta.env.DEV && !warnedSpectator) {
+                if (isClient && isDev && !warnedSpectator) {
                     console.warn('[Spectate][Adapter] blocked command', { commandType });
                     warnedSpectator = true;
                 }
@@ -230,7 +232,7 @@ export function createGameAdapter<
             };
 
             // 撤销调试日志只在 DEV 下输出，避免正常开发被刷屏。
-            if (isUndoCommand && import.meta.env.DEV) {
+            if (isUndoCommand && isDev) {
                 console.log('[撤销调试][命令]', {
                     commandType,
                     playerId: normalizedPlayerId,
@@ -310,7 +312,7 @@ export function createGameAdapter<
                 });
             }
 
-            if (isUndoCommand && import.meta.env.DEV) {
+            if (isUndoCommand && isDev) {
                 console.log('[撤销调试][结果]', {
                     commandType,
                     success: result.success,

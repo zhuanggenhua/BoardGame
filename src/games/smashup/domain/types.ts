@@ -10,6 +10,7 @@
 
 import type { Command, GameEvent, GameOverResult, PlayerId } from '../../../engine/types';
 import type { CardPreviewRef } from '../../../systems/CardSystem/types';
+import { SMASHUP_FACTION_IDS } from './ids';
 
 // ============================================================================
 // 游戏阶段
@@ -42,7 +43,7 @@ export type ActionSubtype = 'standard' | 'ongoing' | 'special';
 export type FactionId = string;
 
 /** 能力标签 */
-export type AbilityTag = 'onPlay' | 'ongoing' | 'special' | 'talent' | 'extra';
+export type AbilityTag = 'onPlay' | 'ongoing' | 'special' | 'talent' | 'extra' | 'onDestroy';
 
 /** 随从卡定义 */
 export interface MinionCardDef {
@@ -180,13 +181,13 @@ export const MADNESS_DECK_SIZE = 30;
 /** 疯狂卡 defId */
 export const MADNESS_CARD_DEF_ID = 'special_madness';
 /** 疯狂卡 faction */
-export const MADNESS_FACTION = 'madness';
+export const MADNESS_FACTION = SMASHUP_FACTION_IDS.MADNESS;
 /** 克苏鲁扩展派系（使用疯狂牌库的派系） */
 export const CTHULHU_EXPANSION_FACTIONS = [
-    'minions_of_cthulhu',
-    'elder_things',
-    'innsmouth',
-    'miskatonic_university',
+    SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU,
+    SMASHUP_FACTION_IDS.ELDER_THINGS,
+    SMASHUP_FACTION_IDS.INNSMOUTH,
+    SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY,
 ] as const;
 
 export interface SmashUpCore {
@@ -518,6 +519,10 @@ export interface AllFactionsSelectedEvent extends GameEvent<typeof SU_EVENTS.ALL
             hand: CardInstance[];
         }>;
         nextUid: number;
+        /** 按派系筛选后的场上基地 */
+        bases?: BaseInPlay[];
+        /** 按派系筛选后的基地牌库 */
+        baseDeck?: string[];
     };
 }
 

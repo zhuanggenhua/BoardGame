@@ -9,7 +9,17 @@ import { useDebug } from '../contexts/DebugContext';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
 import { RematchProvider } from '../contexts/RematchContext';
-import { useMatchStatus, destroyMatch, leaveMatch, rejoinMatch, persistMatchCredentials, clearMatchCredentials, clearOwnerActiveMatch } from '../hooks/match/useMatchStatus';
+import {
+    useMatchStatus,
+    destroyMatch,
+    leaveMatch,
+    rejoinMatch,
+    persistMatchCredentials,
+    clearMatchCredentials,
+    clearOwnerActiveMatch,
+    readStoredMatchCredentials,
+    validateStoredMatchSeat,
+} from '../hooks/match/useMatchStatus';
 import { getOrCreateGuestId } from '../hooks/match/ownerIdentity';
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { useModalStack } from '../contexts/ModalStackContext';
@@ -22,6 +32,7 @@ import { GameModeProvider } from '../contexts/GameModeContext';
 import { SEO } from '../components/common/SEO';
 import { createUgcClientGame } from '../ugc/client/game';
 import { createUgcRemoteHostBoard } from '../ugc/client/board';
+import { LoadingScreen } from '../components/system/LoadingScreen';
 
 
 export const MatchRoom = () => {
@@ -51,6 +62,7 @@ export const MatchRoom = () => {
             board: impl.board,
             debug: false,
             multiplayer: SocketIO({ server: GAME_SERVER_URL }),
+            loading: () => <LoadingScreen title="Connecting" description={t('matchRoom.loadingResources')} />
         });
     }, [gameId]);
 
@@ -82,6 +94,7 @@ export const MatchRoom = () => {
                     board,
                     debug: false,
                     multiplayer: SocketIO({ server: GAME_SERVER_URL }),
+                    loading: () => <LoadingScreen title="Connecting" description={t('matchRoom.joiningRoom')} />
                 });
                 setUgcGameClient(() => client as GameClientComponent);
             })
@@ -109,13 +122,16 @@ export const MatchRoom = () => {
             board: impl.board,
             debug: false,
             numPlayers: 2,
+            loading: () => <LoadingScreen title="Tutorial" description={t('matchRoom.loadingResources')} />
         }) as React.ComponentType<{ playerID?: string | null }>;
     }, [gameId]);
 
     const [isLeaving, setIsLeaving] = useState(false);
     const [isGameNamespaceReady, setIsGameNamespaceReady] = useState(true);
     const [destroyModalId, setDestroyModalId] = useState<string | null>(null);
+    const [forceExitModalId, setForceExitModalId] = useState<string | null>(null);
     const [shouldShowMatchError, setShouldShowMatchError] = useState(false);
+    const [localStorageTick, setLocalStorageTick] = useState(0);
     const tutorialStartedRef = useRef(false);
     const lastTutorialStepIdRef = useRef<string | null>(null);
     const tutorialModalIdRef = useRef<string | null>(null);
@@ -161,7 +177,7 @@ export const MatchRoom = () => {
         } catch {
             return null;
         }
-    }, [matchId, isTutorialRoute]);
+    }, [matchId, isTutorialRoute, localStorageTick]);
     const storedPlayerID = storedMatchCreds?.playerID;
     const hasStoredSeat = Boolean(storedPlayerID);
     const isSpectatorRoute = !isTutorialRoute
@@ -357,6 +373,21 @@ export const MatchRoom = () => {
         : (urlPlayerID ?? storedPlayerID ?? null);
 
     useEffect(() => {
+        const handleStorage = () => setLocalStorageTick((t) => t + 1);
+        const handleCredentialsChange = () => setLocalStorageTick((t) => t + 1);
+        const handleOwnerActive = () => setLocalStorageTick((t) => t + 1);
+        window.addEventListener('storage', handleStorage);
+        window.addEventListener('match-credentials-changed', handleCredentialsChange);
+        window.addEventListener('owner-active-match-changed', handleOwnerActive);
+
+        return () => {
+            window.removeEventListener('storage', handleStorage);
+            window.removeEventListener('match-credentials-changed', handleCredentialsChange);
+            window.removeEventListener('owner-active-match-changed', handleOwnerActive);
+        };
+    }, []);
+
+    useEffect(() => {
         if (isTutorialRoute) return;
         if (urlPlayerID || !storedPlayerID) return;
         if (spectateParam === '1' || spectateParam === 'true') return;
@@ -371,6 +402,20 @@ export const MatchRoom = () => {
         isTutorialRoute ? undefined : matchId,
         isTutorialRoute ? null : statusPlayerID
     );
+    useEffect(() => {
+        if (isTutorialRoute) return;
+        if (!matchId || !statusPlayerID) return;
+        if (matchStatus.isLoading || matchStatus.players.length === 0) return;
+
+        const stored = readStoredMatchCredentials(matchId);
+        const validation = validateStoredMatchSeat(stored, matchStatus.players, statusPlayerID);
+        if (!validation.shouldClear) return;
+
+        clearMatchCredentials(matchId);
+        clearOwnerActiveMatch(matchId);
+        setLocalStorageTick((t) => t + 1);
+        toast.warning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
+    }, [isTutorialRoute, matchId, statusPlayerID, matchStatus.isLoading, matchStatus.players, toast]);
     useEffect(() => {
         if (!isTutorialRoute) return;
         // 只有首次进入且当前未激活时才启动，避免结束后被再次拉起导致提示闪现
@@ -464,13 +509,47 @@ export const MatchRoom = () => {
         }
     }, [closeModal, closeTutorial, isActive, isTutorialRoute, openModal]);
 
-    // 清理房间本地状态必须走 hooks 的统一入口：
-    // - 触发同标签页事件（Home/大厅弹窗依赖）
-    // - 同步清理 owner_active_match，避免“房间已销毁但主页仍显示活跃对局悬浮条”
     const clearMatchLocalState = () => {
         if (!matchId) return;
         clearMatchCredentials(matchId);
         clearOwnerActiveMatch(matchId);
+        // 关键：强制退出时，也要增加对当前房间的“主页活跃对局”抑制，
+        // 确保即使在跨标签页同步延迟时，主页也能立即排除此房间。
+        suppressOwnerActiveMatch(matchId);
+    };
+
+    const handleForceExitLocal = () => {
+        clearMatchLocalState();
+        navigateBackToLobby();
+    };
+
+    const openForceExitModal = () => {
+        if (forceExitModalId) return;
+        const modalId = openModal({
+            closeOnBackdrop: true,
+            closeOnEsc: true,
+            lockScroll: true,
+            onClose: () => {
+                setForceExitModalId(null);
+            },
+            render: ({ close, closeOnBackdrop }) => (
+                <ConfirmModal
+                    title={t('matchRoom.destroy.forceExitTitle')}
+                    description={t('matchRoom.destroy.forceExitDescription')}
+                    confirmText={t('matchRoom.destroy.forceExitConfirm')}
+                    onConfirm={() => {
+                        close();
+                        handleForceExitLocal();
+                    }}
+                    onCancel={() => {
+                        close();
+                    }}
+                    tone="cool"
+                    closeOnBackdrop={closeOnBackdrop}
+                />
+            ),
+        });
+        setForceExitModalId(modalId);
     };
 
     const navigateBackToLobby = () => {
@@ -517,6 +596,7 @@ export const MatchRoom = () => {
             // 否则会出现「后端房间仍存在 + 前端以为销毁了」的累加/脏数据问题。
             toast.error({ kind: 'i18n', key: 'matchRoom.destroy.failed', ns: 'lobby' });
             setIsLeaving(false);
+            openForceExitModal();
             return;
         }
 
@@ -596,12 +676,16 @@ export const MatchRoom = () => {
                 closeModal(destroyModalId);
                 setDestroyModalId(null);
             }
+            if (forceExitModalId) {
+                closeModal(forceExitModalId);
+                setForceExitModalId(null);
+            }
             if (tutorialModalIdRef.current) {
                 closeModal(tutorialModalIdRef.current);
                 tutorialModalIdRef.current = null;
             }
         };
-    }, [closeModal, destroyModalId]);
+    }, [closeModal, destroyModalId, forceExitModalId]);
 
     useEffect(() => {
         if (!shouldShowMatchError) return;
@@ -618,20 +702,12 @@ export const MatchRoom = () => {
     }, [gameId, matchId, shouldShowMatchError, toast]);
 
     if (!isGameNamespaceReady) {
-        return (
-            <div className="w-full h-screen bg-black flex items-center justify-center">
-                <div className="text-white/70 text-sm">{t('matchRoom.loadingResources')}</div>
-            </div>
-        );
+        return <LoadingScreen description={t('matchRoom.loadingResources')} />;
     }
 
     // 自动加入过程中显示加载状态
     if (isAutoJoining || (shouldAutoJoin && !credentials)) {
-        return (
-            <div className="w-full h-screen bg-black flex items-center justify-center">
-                <div className="text-white/70 text-sm">{t('matchRoom.joiningRoom')}</div>
-            </div>
-        );
+        return <LoadingScreen description={t('matchRoom.joiningRoom')} />;
     }
 
     if (shouldShowMatchError) {
@@ -671,6 +747,7 @@ export const MatchRoom = () => {
                 players={matchStatus.players}
                 onLeave={handleLeaveRoom}
                 onDestroy={handleDestroyRoom}
+                onForceExit={handleForceExitLocal}
                 isLoading={isLeaving}
             />
 
@@ -693,9 +770,7 @@ export const MatchRoom = () => {
                     </GameModeProvider>
                 ) : (
                     isUgcGame && ugcLoading ? (
-                        <div className="w-full h-full flex items-center justify-center text-white/60">
-                            UGC 运行态加载中…
-                        </div>
+                        <LoadingScreen fullScreen={false} description="UGC 运行态加载中…" />
                     ) : isUgcGame && ugcError ? (
                         <div className="w-full h-full flex items-center justify-center text-red-300 text-sm">
                             {`UGC 运行态加载失败: ${ugcError}`}

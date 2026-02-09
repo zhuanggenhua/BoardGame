@@ -7,6 +7,9 @@
   "factionSelection": {
     "title": "Choose Your Faction",
     "subtitle": "Each summoner commands a unique army and tactics",
+    "hoverToPreview": "Hover a faction to preview",
+    "tipAlt": "{{name}} faction tip",
+    "previewAlt": "Faction preview",
     "notSelected": "Not Selected",
     "ready": "Ready",
     "waiting": "Waiting for others...",
@@ -24,7 +27,52 @@
   },
   
   "actions": {
-    "closePreview": "Close Preview"
+    "closePreview": "Close Preview",
+    "close": "Close",
+    "cancel": "Cancel",
+    "magnify": "Magnify",
+    "confirm": "Confirm",
+    "confirmDiscard": "Confirm Discard",
+    "confirmSelection": "Confirm Selection",
+    "confirmMove": "Confirm Move",
+    "confirmControl": "Confirm Control",
+    "continue": "Continue",
+    "finish": "Finish",
+    "skip": "Skip",
+    "push": "Push",
+    "pull": "Pull",
+    "control": "Control",
+    "damage": "Damage"
+  },
+  "player": {
+    "default1": "Player 1",
+    "default2": "Player 2",
+    "self": "Player",
+    "opponent": "Opponent",
+    "short": "P{{id}}",
+    "youTag": "(You)"
+  },
+  "layoutEditor": {
+    "backToGame": "← Back to Game",
+    "saveLayout": "Save Layout",
+    "editLayout": "Edit Layout",
+    "exitEdit": "Exit Editing"
+  },
+  "ui": {
+    "mapAlt": "Battlefield Map",
+    "opponentActiveEvents": "Opponent Active Effects",
+    "activeEvents": "Active Effects"
+  },
+  "phaseTracker": {
+    "turn": "Turn {{count}}"
+  },
+  "phaseDesc": {
+    "summon": ["Summon units from hand", "Place adjacent to your gate"],
+    "move": ["Move up to 3 units", "Each unit moves up to 2 spaces", "No diagonal movement"],
+    "build": ["Build gates or structures", "Place in back 3 rows or adjacent to your summoner"],
+    "attack": ["Attack with up to 3 units", "Melee: adjacent targets", "Ranged: up to 3 spaces in a straight line"],
+    "magic": ["Discard cards to gain magic", "+1 magic per card"],
+    "draw": ["Draw up to 5 cards", "No draw if deck is empty"]
   },
   
   "tutorial": {
@@ -43,18 +91,20 @@
       "summonExplain": "It's the Summon phase.\n\nSelect a unit card from your hand, pay its magic cost, and place it on an empty space adjacent to your gate.",
       "summonAction": "Try summoning a unit!\n\nClick a unit card in your hand to select it, then click a highlighted space next to your gate.",
       "abilityExplain": "Your Summoner has the \"Revive Undead\" ability:\n\nDeal 2 damage to himself to revive an undead unit from your discard pile to an adjacent space.\n\nThere's an Undead Warrior in your discard pile — click your Summoner to try it!",
-      "abilityAction": "Click your Summoner to activate the ability, then select the Undead Warrior from your discard pile.\n\nYou can click \"Next\" to skip if you prefer.",
+      "abilityAction": "Click your Summoner to activate \"Revive Undead\", then select the Undead Warrior from your discard pile and place it on an adjacent space.",
       "endSummon": "Click \"End Phase\" to enter the Move phase.",
       "moveExplain": "Move phase: Move up to 3 units, each up to 2 spaces.\n\nOnly horizontal or vertical — no moving through other cards.",
       "moveAction": "Click a unit to select it, then click a highlighted space to move.\n\nTry pushing toward the enemy!",
       "endMove": "You can move more units, or click \"End Phase\".",
-      "buildExplain": "The Build phase lets you build gates.\n\nGates are summoning points — more gates means more places to summon units.",
-      "buildAction": "No portals to build right now. Click \"End Phase\" to skip.",
+      "buildExplain": "The Build phase lets you build gates and cast event cards.\n\nGates are summoning points — more gates means more places to summon units.\n\nEvent cards are powerful one-time effects that activate immediately when cast during their designated phase.",
+      "eventCardExplain": "You have a \"Hellfire Blade\" event card in your hand.\n\nEvent cards have phase restrictions — this one can only be cast during the Build phase.\n\nOnce cast, it attaches to a friendly common unit, granting +2 Strength, but the unit takes backlash damage after attacking.",
+      "eventCardAction": "Click the \"Hellfire Blade\" event card in your hand, then select a friendly common unit on the board to attach it to.",
+      "buildAction": "Event card played! Click \"End Phase\" to enter the Attack phase.",
       "attackExplain": "Attack phase! Attack with up to 3 units.\n\nStrength = number of dice. Only matching attack type faces deal damage.\n\n⚠️ If you don't attack, your Summoner takes 1 penalty damage!",
       "meleeExplain": "⚔️ Melee units can only attack adjacent targets (up/down/left/right).\n\nMelee dice face ⚔️ = 1 damage.",
       "rangedExplain": "🏹 Your Summoner is a ranged unit.\n\nRanged units can attack targets up to 3 spaces away in a straight line — dealing damage from a safe distance!",
-      "attackAction": "Click your unit, then click an enemy target in range to attack.\n\nNo targets? Click \"Next\" to skip.",
-      "attackResult": "Dice results determine hits.\n\nWhen damage equals Life, the unit is destroyed. Destroying an enemy grants 1 Magic!",
+      "attackAction": "Click your unit to select it, then click an enemy target in range to attack!\n\nTry using your Summoner's ranged attack on an enemy unit.",
+      "attackResult": "Dice results determine hits. ✦ Special faces deal no damage by default (unless an ability says otherwise).\n\nWhen damage equals Life, the unit is destroyed. Destroying an enemy grants 1 Magic!",
       "endAttack": "You can attack with more units, or click \"End Phase\".",
       "magicExplain": "Magic phase: Discard cards to gain magic.\n\n1 discarded card = 1 Magic. Convert unneeded cards into resources!",
       "magicAction": "Click cards to select them for discard, or \"End Phase\" to skip.",
@@ -63,7 +113,7 @@
       "opponentTurn": "Opponent's turn — watch their moves...",
       "inactionPenalty": "The opponent didn't attack any of your units, so their Summoner took 1 penalty damage.\n\nThis is the \"Inaction Penalty\" — it encourages aggressive play!",
       "victoryCondition": "Remember: Protect your Summoner while finding ways to destroy theirs!\n\nThat's the key to victory.",
-      "finish": "Congratulations on completing the tutorial!\n\nYou've learned the 6 turn phases, basic summoning/moving/attacking, and how to use Summoner abilities.\n\nNow go challenge a real opponent!"
+      "finish": "Congratulations on completing the tutorial!\n\nYou've learned the 6 turn phases, basic summoning/moving/attacking, event card casting, and how to use Summoner abilities.\n\nNow go challenge a real opponent!"
     }
   },
   
@@ -77,6 +127,7 @@
   },
   
   "hint": {
+    "factionSelect": "Choose a faction and get ready",
     "summon": "Summon units from hand adjacent to gates",
     "move": "Move up to 3 units, each up to 2 spaces",
     "build": "Build gates or structures in your back rows",
@@ -92,7 +143,115 @@
     "attack": "Attack",
     "castSpell": "Cast Spell",
     "endPhase": "End Phase",
-    "endTurn": "End Turn"
+    "endTurn": "End Turn",
+    "discardSelected": "Discard +{{count}}"
+  },
+  "cardSelector": {
+    "reviveUndead": "Revive Undead: Select an undead unit from the discard pile",
+    "infection": "Infection: Select a plague zombie from the discard pile",
+    "default": "Select a card",
+    "empty": "No eligible cards"
+  },
+  "discardPile": {
+    "title": "Discard Pile",
+    "empty": "Discard pile is empty",
+    "titleWithCount": "Discard Pile ({{count}})",
+    "latest": "Latest"
+  },
+  "deckPile": {
+    "draw": "Deck",
+    "discard": "Discard",
+    "cardBackAlt": "Card back",
+    "view": "View"
+  },
+  "diceResult": {
+    "meleeAttack": "Melee Attack",
+    "rangedAttack": "Ranged Attack",
+    "damage": "{{count}} Damage!",
+    "miss": "Miss"
+  },
+  "handArea": {
+    "bloodSummonOnlyLowCost": "Blood Summon only allows unit cards with cost ≤ {{maxCost}}",
+    "insufficientMagic": "Not enough magic! Need {{cost}}, you have {{current}}",
+    "eventPhaseOnly": "This event can only be played during {{phase}}",
+    "onlyUnitInSummon": "Only unit cards can be played in the Summon phase",
+    "onlyStructureInBuild": "Only structure cards can be played in the Build phase"
+  },
+  "destroyEffect": {
+    "destroyed": "{{name}} destroyed!"
+  },
+  "statusBanners": {
+    "stun": {
+      "selectTarget": "Stun: Select an enemy unit within 3 straight spaces of your summoner",
+      "direction": "Stun direction:",
+      "distance": "Distance:"
+    },
+    "ability": {
+      "reviveUndead": {
+        "selectCard": "Revive Undead: Select an undead unit from the discard pile",
+        "selectPosition": "Revive Undead: Choose an adjacent empty space"
+      },
+      "fireSacrificeSummon": "Fire Sacrifice: Select a friendly unit to destroy",
+      "lifeDrain": "Life Drain: Select a friendly unit within 2 spaces to destroy",
+      "infection": {
+        "selectCard": "Infection: Select a plague zombie from the discard pile",
+        "selectPosition": "Infection: Confirm placement"
+      },
+      "holyArrow": {
+        "selectCards": "Holy Arrow: Select any number of non-duplicate unit cards to discard"
+      },
+      "healing": {
+        "selectCards": "Healing: Select cards to discard"
+      }
+    },
+    "beforeAttack": {
+      "lifeDrain": "Pre-attack: Life Drain ready, select an attack target",
+      "holyArrow": "Pre-attack: Holy Arrow ready, select an attack target",
+      "healing": "Pre-attack: Healing ready, select a friendly target"
+    },
+    "bloodSummon": {
+      "selectTarget": "Blood Summon: Select a friendly unit (takes 2 damage)",
+      "selectCard": "Blood Summon: Select a unit card with cost ≤ 2",
+      "selectPosition": "Blood Summon: Select an adjacent empty space",
+      "confirm": "Blood Summon completed {{count}} time(s). Continue?"
+    },
+    "annihilate": {
+      "selectTargets": "Annihilate: Select friendly units to sacrifice (selected {{count}})",
+      "selectDamageTarget": "Annihilate: Select an adjacent unit to deal 2 damage for target {{index}}"
+    },
+    "soulTransfer": {
+      "message": "Soul Transfer: Move the archer to the destroyed unit's space?"
+    },
+    "funeralPyre": {
+      "message": "Funeral Pyre: Heal a damaged unit for {{charges}} (click a unit)"
+    },
+    "mindControl": {
+      "message": "Mind Control: Select enemy units within 2 spaces (selected {{count}})"
+    },
+    "hypnoticLure": {
+      "message": "Hypnotic Lure: Select an enemy unit"
+    },
+    "mindCapture": {
+      "message": "Mind Capture: Control the target or deal {{hits}} damage?"
+    },
+    "telekinesis": {
+      "message": "{{ability}}: Choose push or pull direction"
+    },
+    "afterAttack": {
+      "message": "{{ability}}: Select a target"
+    },
+    "abilityNames": {
+      "telekinesis": "Telekinesis",
+      "high_telekinesis": "High Telekinesis",
+      "mind_transmission": "Mind Transmission"
+    }
+  },
+  "abilityButtons": {
+    "reviveUndead": "🗡️ Revive Undead (Take 2 damage)",
+    "fireSacrificeSummon": "🔥 Fire Sacrifice Summon (Destroy ally and move)",
+    "lifeDrain": "💀 Life Drain (Destroy ally, double strength)",
+    "holyArrow": "✨ Holy Arrow (Discard for magic and strength)",
+    "healing": "✨ Healing (Discard to convert attack to healing)"
   },
   
   "status": {

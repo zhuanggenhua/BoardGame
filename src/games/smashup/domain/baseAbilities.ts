@@ -18,6 +18,7 @@ import type {
     MinionOnBase,
 } from './types';
 import { SU_EVENTS } from './types';
+import { getEffectivePower } from './ongoingModifiers';
 
 // ============================================================================
 // 类型定义
@@ -267,7 +268,7 @@ export function registerBaseAbilities(): void {
         const playerPowers = new Map<PlayerId, number>();
         for (const m of base.minions) {
             const prev = playerPowers.get(m.controller) ?? 0;
-            playerPowers.set(m.controller, prev + m.basePower + m.powerModifier);
+            playerPowers.set(m.controller, prev + getEffectivePower(ctx.state, m, ctx.baseIndex));
         }
         let maxPower = 0;
         let winnerId: PlayerId | undefined;
@@ -362,8 +363,8 @@ export function registerBaseAbilities(): void {
             if (minions.length === 0) continue;
             // 找力量最高的随从
             const strongest = minions.reduce((best, m) => {
-                const mPower = m.basePower + m.powerModifier;
-                const bPower = best.basePower + best.powerModifier;
+                const mPower = getEffectivePower(ctx.state, m, ctx.baseIndex);
+                const bPower = getEffectivePower(ctx.state, best, ctx.baseIndex);
                 return mPower > bPower ? m : best;
             });
             events.push({

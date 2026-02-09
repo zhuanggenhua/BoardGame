@@ -79,6 +79,17 @@ export function playSound(key: SoundKey): void {
     }
 }
 
+/** 操作被拒绝/失败时的反馈音效 key */
+const DENIED_SOUND_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.negative.signal_negative_jrpg_a';
+
+/**
+ * 播放操作被拒绝的反馈音效
+ * 用于用户尝试执行不合法操作时（如不是自己的回合、条件不满足等）
+ */
+export function playDeniedSound(): void {
+    playSound(DENIED_SOUND_KEY);
+}
+
 /**
  * 游戏音效 Hook
  * 自动监听游戏状态变化并触发音效

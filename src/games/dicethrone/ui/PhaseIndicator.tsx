@@ -12,7 +12,7 @@ const buildPhases = (t: TranslateFn): Array<PhaseInfo & { desc: string[] }> => {
     return phaseOrder.map(pid => ({
         id: pid,
         label: t(`phase.${pid}.label`) as string,
-        desc: resolveI18nList(t(`phase.${pid}.desc`, { returnObjects: true, defaultValue: [] })),
+        desc: resolveI18nList(t(`phase.${pid}.desc`, { returnObjects: true })),
     }));
 };
 

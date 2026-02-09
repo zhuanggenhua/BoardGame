@@ -17,6 +17,7 @@ import { SU_COMMANDS, SU_EVENTS, getCurrentPlayerId } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { getCardDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -38,10 +39,10 @@ function createRunner() {
 
 /** 蛇形选秀 + 推进到 playCards */
 const DRAFT_COMMANDS: SmashUpCommand[] = [
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: 'aliens' } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: 'pirates' } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: 'ninjas' } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: 'dinosaurs' } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
     { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
 ] as any[];
 

@@ -216,7 +216,7 @@ export const FriendList = ({ onSelectFriend, activeFriendId }: FriendListProps) 
                         </form>
 
                         <div className="space-y-2">
-                            {searching && <div className="text-center text-xs text-[#8c7b64]">{t('common:loading')}...</div>}
+                            {searching && <div className="text-center text-xs text-[#8c7b64]">{t('common:loading')}</div>}
                             {searchResults.map(user => (
                                 <div key={user.id} className="flex items-center justify-between p-2 bg-white rounded border border-parchment-card-border/30 shadow-sm">
                                     <div className="flex items-center gap-2">

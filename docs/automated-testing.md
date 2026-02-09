@@ -178,7 +178,7 @@ test.beforeEach(async ({ page }) => {
 - `e2e/social.test.ts` - Global HUD 入口、模态框、标签页、好友列表
 - `e2e/navbar.test.ts` - 顶部导航、登录状态、游戏分类
 - `e2e/tictactoe-tutorial.e2e.ts` - 井字棋教程完整流程
-- `e2e/dicethrone.e2e.ts` - 线上房间手牌校验 + 教程完整流程
+- `e2e/dicethrone.e2e.ts` - 线上房间手牌校验 + 教程完整流程 + 僧侣莲花掌选择 + 雷霆万钧奖励骰重掷
 - `e2e/dicethrone-moon-elf.e2e.ts` - 月精灵基础攻击 + Targeted 伤害结算
 - `e2e/dicethrone-shadow-thief.e2e.ts` - 暗影刺客基础攻击 + Sneak 免伤 + 双防御技能选择
 

@@ -1,6 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CardPreview } from '../../../components/common/media/CardPreview';
+import { saveDiceThroneAbilityLayout } from '../../../api/layout';
+import { DEFAULT_ABILITY_SLOT_LAYOUT } from './abilitySlotLayout';
 import type { CardPreviewRef } from '../../../systems/CardSystem';
 import type { AbilityCard } from '../types';
 // 导入所有英雄的卡牌定义
@@ -21,19 +23,6 @@ const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     shadow_thief: SHADOW_THIEF_CARDS,
 };
 
-// 技能槽位置定义（百分比坐标，基于玩家面板）
-// 方案 A：仅用于定位选框，不再用于精灵图裁切
-const INITIAL_SLOTS = [
-    { id: 'fist', x: 0.1, y: 1.5, w: 20.8, h: 38.5 },
-    { id: 'chi', x: 22.2, y: 1.4, w: 21.3, h: 39.4 },
-    { id: 'sky', x: 54.7, y: 1.4, w: 21.7, h: 39.6 },
-    { id: 'lotus', x: 77.0, y: 1.3, w: 21.5, h: 39.5 },
-    { id: 'combo', x: 0.1, y: 42.3, w: 20.9, h: 39.3 },
-    { id: 'lightning', x: 22.1, y: 42.4, w: 21.8, h: 38.7 },
-    { id: 'calm', x: 54.5, y: 42.0, w: 21.9, h: 40.2 },
-    { id: 'meditate', x: 77.3, y: 42.0, w: 21.7, h: 39.9 },
-    { id: 'ultimate', x: 0.1, y: 83.5, w: 55.0, h: 15.6 },
-];
 
 const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] }> = {
     // 基础技能 ID（跨英雄）— 每个槽位包含所有英雄对应的技能 ID
@@ -188,36 +177,30 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
     }) => {
         const { t } = useTranslation('game-dicethrone');
 
-        // 布局持久化：从 localStorage 加载已保存的槽位布局
-        const STORAGE_KEY = `dt-layout-${characterId}`;
-        const [slots, setSlots] = React.useState(() => {
-            try {
-                const saved = window.localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved) as typeof INITIAL_SLOTS;
-                    // 校验数据完整性：数量和 id 必须与 INITIAL_SLOTS 一致
-                    if (
-                        Array.isArray(parsed) &&
-                        parsed.length === INITIAL_SLOTS.length &&
-                        INITIAL_SLOTS.every(init => parsed.some(p => p.id === init.id))
-                    ) {
-                        return parsed;
-                    }
-                }
-            } catch { /* 解析失败则使用默认值 */ }
-            return INITIAL_SLOTS;
-        });
+        // 游戏级布局配置：所有用户共享一致的默认布局
+        const [slots, setSlots] = React.useState(() => (
+            DEFAULT_ABILITY_SLOT_LAYOUT.map(slot => ({ ...slot }))
+        ));
+        const [isSaving, setIsSaving] = React.useState(false);
+        const [saveHint, setSaveHint] = React.useState<string | null>(null);
         const [editingId, setEditingId] = React.useState<string | null>(null);
         const containerRef = React.useRef<HTMLDivElement>(null);
         const dragInfo = React.useRef<{ id: string, type: 'move' | 'resize', startX: number, startY: number, startVal: { x: number; y: number; w: number; h: number } } | null>(null);
 
-        // 编辑模式下自动保存布局到 localStorage
-        React.useEffect(() => {
-            if (!isEditing) return;
+        const handleSaveLayout = React.useCallback(async () => {
+            setIsSaving(true);
+            setSaveHint(null);
             try {
-                window.localStorage.setItem(STORAGE_KEY, JSON.stringify(slots));
-            } catch { /* 写入失败静默忽略 */ }
-        }, [isEditing, slots, STORAGE_KEY]);
+                const result = await saveDiceThroneAbilityLayout(slots);
+                const hint = result.relativePath ? `已写入 ${result.relativePath}` : '已写入布局文件';
+                setSaveHint(hint);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : '保存失败';
+                setSaveHint(message);
+            } finally {
+                setIsSaving(false);
+            }
+        }, [slots]);
 
         const resolveAbilityId = (slotId: string) => {
             const mapping = ABILITY_SLOT_MAP[slotId];
@@ -245,8 +228,9 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                 const deltaY = ((e.clientY - startY) / rect.height) * 100;
                 setSlots(prev => prev.map(s => s.id === id ? {
                     ...s,
-                    ...(type === 'move' ? { x: Number((startVal.x + deltaX).toFixed(1)), y: Number((startVal.y + deltaY).toFixed(1)) }
-                        : { w: Number(Math.max(5, startVal.w + deltaX).toFixed(1)), h: Number(Math.max(5, startVal.h + deltaY).toFixed(1)) })
+                    ...(type === 'move'
+                        ? { x: Number((startVal.x + deltaX).toFixed(2)), y: Number((startVal.y + deltaY).toFixed(2)) }
+                        : { w: Number(Math.max(5, startVal.w + deltaX).toFixed(2)), h: Number(Math.max(5, startVal.h + deltaY).toFixed(2)) })
                 } : s));
             };
             const handleMouseUp = () => { dragInfo.current = null; };
@@ -266,6 +250,22 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                 className="absolute inset-0 z-20 pointer-events-none"
                 data-tutorial-id="ability-slots"
             >
+                {isEditing && (
+                    <div className="absolute top-[0.6vw] right-[0.6vw] z-50 flex items-center gap-[0.4vw] pointer-events-auto">
+                        {saveHint && (
+                            <span className="text-[0.6vw] text-emerald-200 bg-black/70 px-[0.4vw] py-[0.2vw] rounded border border-emerald-400/40">
+                                {saveHint}
+                            </span>
+                        )}
+                        <button
+                            onClick={handleSaveLayout}
+                            disabled={isSaving}
+                            className={`px-[0.6vw] py-[0.35vw] text-[0.65vw] font-bold rounded border transition-colors ${isSaving ? 'bg-emerald-300 text-black/70 border-emerald-200' : 'bg-emerald-600 text-white border-emerald-400 hover:bg-emerald-500'}`}
+                        >
+                            {isSaving ? '保存中…' : '保存布局'}
+                        </button>
+                    </div>
+                )}
                 {slots.map((slot) => {
                     // 方案 A：不再需要计算精灵图位置（col, row, bgX, bgY），玩家面板已包含基础技能
                     const isResolved = resolveAbilityId(slot.id);
@@ -327,7 +327,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                             {isEditing && (
                                 <>
                                     <div className="absolute -top-3 left-0 bg-black/80 text-[8px] text-white px-1 rounded whitespace-nowrap pointer-events-none">
-                                        {slotLabel} {slot.x.toFixed(1)}% {slot.y.toFixed(1)}% ({slot.w.toFixed(1)}×{slot.h.toFixed(1)})
+                                        {slotLabel} {slot.x.toFixed(2)}% {slot.y.toFixed(2)}% ({slot.w.toFixed(2)}×{slot.h.toFixed(2)})
                                     </div>
                                     {/* 右下角 resize 手柄 */}
                                     <div

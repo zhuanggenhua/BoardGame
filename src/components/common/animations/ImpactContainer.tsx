@@ -1,51 +1,37 @@
 /**
- * ImpactContainer - 打击感组合容器
- * 
- * 组合震动、斜切、钝帧等效果，提供统一的打击感体验。
- * 通用层组件，可被任何游戏复用。
- * 
- * @example
+ * ImpactContainer — 打击感容器（包裹目标元素）
+ *
+ * 负责作用于目标本身的效果：
+ * - 震动（ShakeContainer）— 目标元素抖动
+ * - 钝帧（HitStopContainer）— 目标元素冻结
+ *
+ * 不负责视觉覆盖效果（斜切/红脉冲/数字）——这些由 DamageFlash 作为 overlay 叠加。
+ *
+ * 组合使用：
  * ```tsx
- * <ImpactContainer
- *   isActive={isBeingHit}
- *   damage={8}
- *   effects={{ shake: true, slash: true, hitStop: true }}
- * >
+ * <ImpactContainer isActive={hit} damage={8} effects={{ shake: true, hitStop: true }}>
  *   <OpponentPanel />
+ *   <DamageFlash active={hit} damage={8} />
  * </ImpactContainer>
  * ```
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { SlashEffect, getSlashPresetByDamage, type SlashConfig } from './SlashEffect';
 import { HitStopContainer, getHitStopPresetByDamage, type HitStopConfig } from './HitStopContainer';
-
-export type ImpactIntensity = 'light' | 'normal' | 'heavy' | 'critical';
+import { ShakeContainer } from './ShakeContainer';
 
 export interface ImpactEffects {
-  /** 启用震动效果 */
+  /** 启用震动（目标元素抖动） */
   shake?: boolean;
-  /** 启用斜切效果 */
-  slash?: boolean;
-  /** 启用钝帧效果 */
+  /** 启用钝帧（目标元素冻结） */
   hitStop?: boolean;
-  /** 启用屏幕闪烁 */
-  screenFlash?: boolean;
 }
 
 export interface ImpactConfig {
-  /** 效果强度，可用伤害值自动推断 */
-  intensity?: ImpactIntensity;
-  /** 伤害值（用于自动推断强度） */
+  /** 伤害值（用于自动推断各效果强度） */
   damage?: number;
-  /** 自定义震动配置 */
-  shakeConfig?: {
-    duration?: number;
-    intensity?: number;
-  };
-  /** 自定义斜切配置 */
-  slashConfig?: SlashConfig;
+  /** 自定义震动持续时间 (ms) */
+  shakeDuration?: number;
   /** 自定义钝帧配置 */
   hitStopConfig?: HitStopConfig;
 }
@@ -56,113 +42,105 @@ export interface ImpactContainerProps extends ImpactConfig {
   isActive: boolean;
   /** 启用的效果类型 */
   effects?: ImpactEffects;
+  /** 完成回调（震动结束时触发） */
+  onComplete?: () => void;
   className?: string;
   style?: React.CSSProperties;
   onClick?: () => void;
 }
 
-/** 根据伤害值推断强度等级 */
-const getIntensityByDamage = (damage: number): ImpactIntensity => {
-  if (damage >= 10) return 'critical';
-  if (damage >= 6) return 'heavy';
-  if (damage >= 3) return 'normal';
-  return 'light';
+/** 默认效果开关 */
+const DEFAULT_EFFECTS: ImpactEffects = {
+  shake: true,
+  hitStop: false,
 };
 
-/** 强度对应的震动参数 */
-const SHAKE_INTENSITY_MAP: Record<ImpactIntensity, number[]> = {
-  light: [-2, 2, -1, 1, 0],
-  normal: [-4, 4, -3, 3, -1, 1, 0],
-  heavy: [-6, 6, -5, 5, -3, 3, -1, 1, 0],
-  critical: [-10, 10, -8, 8, -5, 5, -3, 3, -1, 0],
-};
-
-/** 打击感组合容器 */
+/** 打击感容器 */
 export const ImpactContainer: React.FC<ImpactContainerProps> = ({
   children,
   isActive,
-  effects = { shake: true, slash: true, hitStop: true },
-  intensity: explicitIntensity,
+  effects = DEFAULT_EFFECTS,
   damage = 0,
-  shakeConfig,
-  slashConfig,
+  shakeDuration = 500,
   hitStopConfig,
+  onComplete,
   className = '',
   style,
   onClick,
 }) => {
   const [isShaking, setIsShaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [isHitStopping, setIsHitStopping] = useState(false);
-  const [isSlashing, setIsSlashing] = useState(false);
 
-  // 推断强度
-  const intensity = explicitIntensity ?? getIntensityByDamage(damage);
+  // 用 ref 持有 onComplete，避免父组件传内联函数导致 useEffect 重跑
+  const onCompleteRef = React.useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
-    if (isActive) {
-      // 同时触发所有启用的效果
-      if (effects.hitStop) {
-        setIsHitStopping(true);
-        const hitStopPreset = hitStopConfig ?? getHitStopPresetByDamage(damage);
-        setTimeout(() => setIsHitStopping(false), (hitStopPreset.duration ?? 80) + 50);
-      }
+    if (!isActive) return;
 
-      if (effects.slash) {
-        setIsSlashing(true);
-        setTimeout(() => setIsSlashing(false), 50);
-      }
+    const timers: number[] = [];
+    const preset = hitStopConfig ?? getHitStopPresetByDamage(damage);
+    const hitStopDur = preset.duration ?? 80;
+    const doShake = !!effects.shake;
+    const doHitStop = !!effects.hitStop;
 
-      if (effects.shake) {
-        // 钝帧结束后开始震动（顺序感更好）
-        const shakeDelay = effects.hitStop ? (hitStopConfig?.duration ?? getHitStopPresetByDamage(damage).duration ?? 80) : 0;
-        setTimeout(() => {
-          setIsShaking(true);
-          setTimeout(() => setIsShaking(false), shakeConfig?.duration ?? 400);
-        }, shakeDelay);
-      }
+    // 时序编排：震动开始 → 延迟后钝帧插入（paused 冻住） → 钝帧结束（恢复震动） → 震动结束
+    // 钝帧在震动进行约 80ms 时插入，模拟"卡肉"手感
+    const hitStopDelay = doShake ? 80 : 0;
+
+    if (doShake) {
+      setIsShaking(true);
+      setIsPaused(false);
     }
-  }, [isActive, effects, damage, hitStopConfig, shakeConfig]);
 
-  // 获取震动变体（根据强度动态生成）
-  const dynamicShakeVariants = {
-    idle: { x: 0 },
-    shake: {
-      x: SHAKE_INTENSITY_MAP[intensity],
-      transition: {
-        duration: (shakeConfig?.duration ?? 400) / 1000,
-        ease: 'easeInOut' as const,
-      },
-    },
-  };
+    if (doHitStop) {
+      // 延迟插入钝帧：暂停震动（冻在当前偏移位置）
+      timers.push(window.setTimeout(() => {
+        setIsPaused(true);
+        setIsHitStopping(true);
 
-  // 获取斜切预设
-  const finalSlashConfig = slashConfig ?? getSlashPresetByDamage(damage);
+        // 钝帧结束后解冻
+        timers.push(window.setTimeout(() => {
+          setIsPaused(false);
+          setIsHitStopping(false);
+        }, hitStopDur));
+      }, hitStopDelay));
+    }
+
+    // 总时长 = 震动时长 + 钝帧冻结时长（冻结期间震动暂停，所以要加上）
+    const totalDuration = doShake
+      ? shakeDuration + (doHitStop ? hitStopDur : 0)
+      : (doHitStop ? hitStopDelay + hitStopDur + 100 : 300);
+
+    timers.push(window.setTimeout(() => {
+      setIsShaking(false);
+      setIsPaused(false);
+      setIsHitStopping(false);
+      onCompleteRef.current?.();
+    }, totalDuration));
+
+    return () => timers.forEach(t => window.clearTimeout(t));
+  }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const finalHitStopConfig = hitStopConfig ?? getHitStopPresetByDamage(damage);
 
   return (
-    <HitStopContainer
-      isActive={effects.hitStop ? isHitStopping : false}
-      {...finalHitStopConfig}
+    <ShakeContainer
+      isShaking={effects.shake ? isShaking : false}
+      paused={isPaused}
       className={className}
-      style={style}
+      style={{ overflow: 'visible', ...style }}
+      onClick={onClick}
     >
-      <motion.div
+      <HitStopContainer
+        isActive={effects.hitStop ? isHitStopping : false}
+        {...finalHitStopConfig}
         className="relative w-full h-full"
-        variants={dynamicShakeVariants}
-        animate={isShaking ? 'shake' : 'idle'}
-        onClick={onClick}
       >
         {children}
-        
-        {/* 斜切效果层 */}
-        {effects.slash && (
-          <SlashEffect
-            isActive={isSlashing}
-            {...finalSlashConfig}
-          />
-        )}
-      </motion.div>
-    </HitStopContainer>
+      </HitStopContainer>
+    </ShakeContainer>
   );
 };
 
@@ -175,12 +153,7 @@ export const useImpact = () => {
     const finalConfig = { ...config, ...overrideConfig };
     setConfig(finalConfig);
     setIsActive(true);
-
-    // 短暂激活后自动关闭
-    const timer = setTimeout(() => {
-      setIsActive(false);
-    }, 50);
-
+    const timer = setTimeout(() => setIsActive(false), 50);
     return () => clearTimeout(timer);
   }, [config]);
 
@@ -190,7 +163,5 @@ export const useImpact = () => {
 /** 预设：根据伤害值获取完整配置 */
 export const getImpactPresetByDamage = (damage: number): ImpactConfig => ({
   damage,
-  intensity: getIntensityByDamage(damage),
-  slashConfig: getSlashPresetByDamage(damage),
   hitStopConfig: getHitStopPresetByDamage(damage),
 });

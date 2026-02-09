@@ -5,9 +5,10 @@
  * 带着玩家走一遍完整回合，而不是一股脑把信息扔给玩家。
  *
  * 使用作弊命令设置固定手牌和弃牌堆，确保教学流程可控：
- * - 给玩家发地狱火教徒（cost=0, 远程）和亡灵疫病体（cost=1, 近战）
+ * - 给玩家发地狱火教徒（cost=0, 远程）、亡灵疫病体（cost=1, 近战）和狱火铸剑（事件卡）
  * - 设置魔力为5，确保有足够资源召唤
  * - 弃牌堆预置亡灵战士，用于演示召唤师技能「复活死灵」
+ * - 狱火铸剑用于建造阶段演示事件卡施放
  */
 
 import type { TutorialManifest } from '../../engine/types';
@@ -46,6 +47,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
         { commandType: CHEAT_COMMANDS.SET_RESOURCE, payload: { playerId: '0', resourceId: 'magic', value: 5 } },
         { commandType: CHEAT_COMMANDS.DEAL_CARD_BY_ATLAS_INDEX, payload: { playerId: '0', atlasIndex: SPRITE_INDEX.COMMON_HELLFIRE_CULTIST } },
         { commandType: CHEAT_COMMANDS.DEAL_CARD_BY_ATLAS_INDEX, payload: { playerId: '0', atlasIndex: SPRITE_INDEX.COMMON_PLAGUE_ZOMBIE } },
+        { commandType: CHEAT_COMMANDS.DEAL_CARD_BY_ATLAS_INDEX, payload: { playerId: '0', atlasIndex: SPRITE_INDEX.EVENT_HELLFIRE_BLADE } },
         { commandType: CHEAT_COMMANDS.DEAL_CARD_TO_DISCARD, payload: { playerId: '0', atlasIndex: SPRITE_INDEX.COMMON_UNDEAD_WARRIOR } },
       ],
     },
@@ -171,7 +173,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       content: 'game-summonerwars:tutorial.steps.abilityAction',
       highlightTarget: 'sw-discard-pile',
       position: 'left',
-      requireAction: false,
+      requireAction: true,
       allowedCommands: [SW_COMMANDS.ACTIVATE_ABILITY],
       blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
       advanceOnEvents: [
@@ -228,7 +230,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
     },
 
     // ================================================================
-    // 第四部分：建造阶段
+    // 第四部分：建造阶段 + 事件卡教学
     // ================================================================
 
     // 17: 建造阶段说明 — 高亮城门
@@ -241,7 +243,29 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
     },
 
-    // 18: 建造操作 — 高亮结束按钮
+    // 18: 事件卡说明 — 高亮手牌区
+    {
+      id: 'event-card-explain',
+      content: 'game-summonerwars:tutorial.steps.eventCardExplain',
+      highlightTarget: 'sw-hand-area',
+      position: 'top',
+      requireAction: false,
+      blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+    },
+
+    // 19: 施放事件卡操作 — 高亮手牌区
+    {
+      id: 'event-card-action',
+      content: 'game-summonerwars:tutorial.steps.eventCardAction',
+      highlightTarget: 'sw-hand-area',
+      position: 'top',
+      requireAction: true,
+      allowedCommands: [SW_COMMANDS.PLAY_EVENT],
+      blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+      advanceOnEvents: [{ type: SW_EVENTS.EVENT_PLAYED }],
+    },
+
+    // 20: 结束建造阶段 — 高亮结束按钮
     {
       id: 'build-action',
       content: 'game-summonerwars:tutorial.steps.buildAction',
@@ -256,7 +280,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
     // 第五部分：攻击阶段
     // ================================================================
 
-    // 19: 攻击阶段说明 — 高亮阶段追踪器
+    // 21: 攻击阶段说明 — 高亮阶段追踪器
     {
       id: 'attack-explain',
       content: 'game-summonerwars:tutorial.steps.attackExplain',
@@ -266,7 +290,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
     },
 
-    // 20: 近战说明 — 高亮棋盘（近战单位在棋盘上）
+    // 22: 近战说明 — 高亮棋盘（近战单位在棋盘上）
     {
       id: 'melee-explain',
       content: 'game-summonerwars:tutorial.steps.meleeExplain',
@@ -276,7 +300,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
     },
 
-    // 21: 远程说明 — 高亮己方召唤师（远程单位）
+    // 23: 远程说明 — 高亮己方召唤师（远程单位）
     {
       id: 'ranged-explain',
       content: 'game-summonerwars:tutorial.steps.rangedExplain',
@@ -286,18 +310,19 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
     },
 
-    // 22: 攻击操作
+    // 24: 攻击操作
     {
       id: 'attack-action',
       content: 'game-summonerwars:tutorial.steps.attackAction',
       highlightTarget: 'sw-map-area',
       position: 'right',
-      requireAction: false,
+      requireAction: true,
+      allowedCommands: [SW_COMMANDS.SELECT_UNIT, SW_COMMANDS.DECLARE_ATTACK],
       blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
       advanceOnEvents: [{ type: SW_EVENTS.UNIT_ATTACKED }],
     },
 
-    // 23: 攻击结果 — 高亮敌方召唤师
+    // 25: 攻击结果 — 高亮敌方召唤师
     {
       id: 'attack-result',
       content: 'game-summonerwars:tutorial.steps.attackResult',
@@ -307,7 +332,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
     },
 
-    // 24: 结束攻击阶段
+    // 26: 结束攻击阶段
     {
       id: 'end-attack',
       content: 'game-summonerwars:tutorial.steps.endAttack',
@@ -322,7 +347,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
     // 第六部分：魔力阶段
     // ================================================================
 
-    // 25: 魔力阶段说明 — 高亮手牌
+    // 27: 魔力阶段说明 — 高亮手牌
     {
       id: 'magic-explain',
       content: 'game-summonerwars:tutorial.steps.magicExplain',
@@ -332,7 +357,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
     },
 
-    // 26: 魔力操作
+    // 28: 魔力操作
     {
       id: 'magic-action',
       content: 'game-summonerwars:tutorial.steps.magicAction',
@@ -347,7 +372,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
     // 第七部分：抽牌阶段
     // ================================================================
 
-    // 27: 抽牌阶段说明 — 高亮抽牌堆
+    // 29: 抽牌阶段说明 — 高亮抽牌堆
     {
       id: 'draw-explain',
       content: 'game-summonerwars:tutorial.steps.drawExplain',
@@ -357,7 +382,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       blockedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
     },
 
-    // 28: 结束抽牌阶段
+    // 30: 结束抽牌阶段
     {
       id: 'end-draw',
       content: 'game-summonerwars:tutorial.steps.endDraw',
@@ -372,7 +397,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
     // 第八部分：对手回合 + 总结
     // ================================================================
 
-    // 29: 对手回合 - AI 自动执行
+    // 31: 对手回合 - AI 自动执行
     {
       id: 'opponent-turn',
       content: 'game-summonerwars:tutorial.steps.opponentTurn',
@@ -393,7 +418,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       ],
     },
 
-    // 30: 不活动惩罚 — 高亮敌方召唤师（受到惩罚伤害）
+    // 32: 不活动惩罚 — 高亮敌方召唤师（受到惩罚伤害）
     {
       id: 'inaction-penalty',
       content: 'game-summonerwars:tutorial.steps.inactionPenalty',
@@ -402,7 +427,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       requireAction: false,
     },
 
-    // 31: 胜利条件 — 高亮己方召唤师
+    // 33: 胜利条件 — 高亮己方召唤师
     {
       id: 'victory-condition',
       content: 'game-summonerwars:tutorial.steps.victoryCondition',
@@ -411,7 +436,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       requireAction: false,
     },
 
-    // 32: 教学完成 — 高亮棋盘全局
+    // 34: 教学完成 — 高亮棋盘全局
     {
       id: 'finish',
       content: 'game-summonerwars:tutorial.steps.finish',

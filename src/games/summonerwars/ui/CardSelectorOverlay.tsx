@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Card } from '../domain/types';
 import { CardSprite } from './CardSprite';
 import { GameButton } from './GameButton';
@@ -33,6 +34,7 @@ export const CardSelectorOverlay: React.FC<CardSelectorOverlayProps> = ({
     onCancel,
     title,
 }) => {
+    const { t } = useTranslation('game-summonerwars');
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
@@ -42,9 +44,9 @@ export const CardSelectorOverlay: React.FC<CardSelectorOverlayProps> = ({
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
                 <div className="bg-slate-800 p-8 rounded-xl border border-slate-600 shadow-2xl text-center max-w-sm mx-4">
                     <h3 className="text-xl text-white font-bold mb-4">{title}</h3>
-                    <p className="text-slate-300 mb-6">没有符合条件的卡牌</p>
+                    <p className="text-slate-300 mb-6">{t('cardSelector.empty')}</p>
                     <GameButton onClick={onCancel} variant="secondary">
-                        关闭
+                        {t('actions.close')}
                     </GameButton>
                 </div>
             </div>
@@ -138,7 +140,7 @@ export const CardSelectorOverlay: React.FC<CardSelectorOverlayProps> = ({
             {/* 底部操作区 */}
             <div className="mt-12 flex gap-4">
                 <GameButton onClick={onCancel} variant="secondary" size="lg">
-                    取消
+                    {t('actions.cancel')}
                 </GameButton>
             </div>
         </div>

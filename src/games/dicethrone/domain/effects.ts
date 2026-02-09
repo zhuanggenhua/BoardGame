@@ -78,11 +78,24 @@ export type CustomActionHandler = (context: CustomActionContext) => DiceThroneEv
  * Custom Action 效果分类
  * - dice: 骰子相关（修改、重掷、增加投掷次数）
  * - status: 状态效果相关（移除、转移）
- * - resource: 资源相关（CP、Token）
+ * - resource: 资源相关（CP）
+ * - token: Token 相关
+ * - damage: 伤害相关
+ * - defense: 防御相关
+ * - card: 卡牌相关
  * - choice: 选择类效果
  * - other: 其他
  */
-export type CustomActionCategory = 'dice' | 'status' | 'resource' | 'choice' | 'other';
+export type CustomActionCategory =
+    | 'dice'
+    | 'status'
+    | 'resource'
+    | 'token'
+    | 'damage'
+    | 'defense'
+    | 'card'
+    | 'choice'
+    | 'other';
 
 /**
  * Custom Action 元数据

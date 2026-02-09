@@ -17,6 +17,7 @@ interface SummonerWarsDebugConfigProps {
 
 /** 阶段中文名映射 */
 const PHASE_LABELS: Record<GamePhase, string> = {
+    factionSelect: '选阵营',
     summon: '召唤',
     move: '移动',
     build: '建造',

@@ -127,7 +127,7 @@ export const ChatWindow = ({ targetUserId, inviteData }: ChatWindowProps) => {
         return <div className="flex-1 flex items-center justify-center text-[#8c7b64]">{t('social:chat.userNotFound')}</div>;
     }
 
-    const username = friend?.username || conversation?.username || 'User';
+    const username = friend?.username || conversation?.username || t('common:unknownUser');
     const isOnline = friend?.online || conversation?.online || false;
 
     // 临时日志：确认布局高度是否生效（问题解决后会删除）
@@ -194,17 +194,21 @@ export const ChatWindow = ({ targetUserId, inviteData }: ChatWindowProps) => {
 
                 {/* 信息区：跟悬浮球预览同排，展示最近一条消息摘要 */}
                 <div className="px-4 pb-3 text-xs text-parchment-light-text">
-                    <div className="leading-5">房间：{(inviteData?.matchId ?? '').slice(0, 12) || '--'}</div>
-                    <div className="leading-5">我：{user?.username || user?.id || '--'}</div>
+                    <div className="leading-5">
+                        {t('social:chat.roomLabel')}{(inviteData?.matchId ?? '').slice(0, 12) || t('social:chat.emptyValue')}
+                    </div>
+                    <div className="leading-5">
+                        {t('social:chat.meLabel')}{user?.username || user?.id || t('social:chat.emptyValue')}
+                    </div>
                     <div className="mt-1 leading-5 text-[11px] text-parchment-base-text/70 truncate">
-                        {messages.length > 0 ? messages[messages.length - 1]?.content : '暂无消息'}
+                        {messages.length > 0 ? messages[messages.length - 1]?.content : t('social:chat.noMessages')}
                     </div>
                 </div>
             </div>
 
             {/* 消息列表 */}
             <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar" ref={scrollRef}>
-                {loading && <div className="text-center text-xs text-parchment-light-text">{t('common:loading')}...</div>}
+                {loading && <div className="text-center text-xs text-parchment-light-text">{t('common:loading')}</div>}
                 {messages.map((msg, index) => {
                     const isMe = msg.from !== targetUserId;
                     const showTime = index === 0 || (new Date(msg.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 5 * 60 * 1000);

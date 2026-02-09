@@ -6,11 +6,14 @@ import { GAME_IMPLEMENTATIONS } from '../games/registry';
 import { GameModeProvider } from '../contexts/GameModeContext';
 import { getGameById } from '../config/games.config';
 import { GameHUD } from '../components/game/GameHUD';
+import { LoadingScreen } from '../components/system/LoadingScreen';
+import { useState } from 'react';
 
 export const LocalMatchRoom = () => {
     const { gameId } = useParams();
     const [searchParams] = useSearchParams();
     const { t, i18n } = useTranslation('lobby');
+    const [isGameNamespaceReady, setIsGameNamespaceReady] = useState(false);
 
     const gameConfig = gameId ? getGameById(gameId) : undefined;
 
@@ -20,7 +23,10 @@ export const LocalMatchRoom = () => {
 
     useEffect(() => {
         if (!gameId) return;
-        i18n.loadNamespaces(`game-${gameId}`).catch(() => {});
+        setIsGameNamespaceReady(false);
+        i18n.loadNamespaces(`game-${gameId}`)
+            .then(() => setIsGameNamespaceReady(true))
+            .catch(() => setIsGameNamespaceReady(true));
     }, [gameId, i18n]);
 
     const LocalClient = useMemo(() => {
@@ -33,11 +39,16 @@ export const LocalMatchRoom = () => {
             board: impl.board,
             debug: false,
             numPlayers: 2,
+            loading: () => <LoadingScreen title="Local Match" description={t('matchRoom.loadingResources')} />
         }) as React.ComponentType<{ playerID?: string | null }>;
     }, [gameId, gameSeed]);
 
     if (!gameConfig) {
         return <div className="text-white">{t('matchRoom.noGame')}</div>;
+    }
+
+    if (!isGameNamespaceReady) {
+        return <LoadingScreen description={t('matchRoom.loadingResources')} />;
     }
 
     return (

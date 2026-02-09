@@ -11,6 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { BoardProps } from 'boardgame.io/react';
 import type { MatchState } from '../../engine/types';
 import type { SummonerWarsCore } from './domain';
@@ -70,6 +71,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const gameMode = useGameMode();
   const isLocalMatch = gameMode ? !gameMode.isMultiplayer : !isMultiplayer;
   const isSpectator = !!gameMode?.isSpectator;
+  const { t } = useTranslation('game-summonerwars');
 
   // 阵营选择状态
   const rootPid = (playerID || '0') as PlayerId;
@@ -79,10 +81,11 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const playerNames = useMemo(() => {
     const names: Record<string, string> = {};
     for (const pid of ['0', '1']) {
-      names[pid] = matchData?.find(p => String(p.id) === pid)?.name ?? (pid === '0' ? '玩家1' : '玩家2');
+      names[pid] = matchData?.find(p => String(p.id) === pid)?.name
+        ?? (pid === '0' ? t('player.default1') : t('player.default2'));
     }
     return names;
-  }, [matchData]);
+  }, [matchData, t]);
 
   // 阵营选择回调
   const handleSelectFaction = useCallback((factionId: FactionId) => {
@@ -289,6 +292,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
 
   // StatusBanners 回调
   const handleCancelAbility = useCallback(() => setAbilityMode(null), [setAbilityMode]);
+  const handleCancelBeforeAttack = useCallback(() => interaction.handleCancelBeforeAttack(), [interaction]);
   const handleCancelBloodSummon = useCallback(() => interaction.setBloodSummonMode(null), [interaction]);
   const handleContinueBloodSummon = useCallback(() => {
     interaction.setBloodSummonMode({
@@ -347,34 +351,49 @@ export const SummonerWarsBoard: React.FC<Props> = ({
 
   const handleSaveLayout = useCallback(async (config: BoardLayoutConfig) => saveSummonerWarsLayout(config), []);
 
+  const debugPanel = !isSpectator ? (
+    <GameDebugPanel G={G} ctx={ctx} moves={moves} events={events} playerID={playerID} autoSwitch={!isMultiplayer}>
+      <SummonerWarsDebugConfig G={G} ctx={ctx} moves={moves} />
+      <button
+        onClick={() => { if (isEditingLayout) { void handleExitLayoutEditor(); return; } setIsEditingLayout(true); }}
+        className="px-2 py-1 text-xs bg-cyan-600 text-white rounded hover:bg-cyan-500"
+      >
+        {isEditingLayout ? t('layoutEditor.exitEdit') : t('layoutEditor.editLayout')}
+      </button>
+    </GameDebugPanel>
+  ) : null;
+
   return (
     <UndoProvider value={{ G, ctx, moves, playerID, isGameOver: !!isGameOver, isLocalMode: isLocalMatch }}>
       {/* 阵营选择阶段 */}
       {isInFactionSelection ? (
-        <FactionSelection
-          isOpen={true}
-          currentPlayerId={rootPid}
-          hostPlayerId={G.core.hostPlayerId}
-          selectedFactions={G.core.selectedFactions}
-          readyPlayers={G.core.readyPlayers ?? {}}
-          playerNames={playerNames as Record<PlayerId, string>}
-          onSelect={handleSelectFaction}
-          onReady={handlePlayerReady}
-          onStart={handleHostStart}
-        />
+        <>
+          <FactionSelection
+            isOpen={true}
+            currentPlayerId={rootPid}
+            hostPlayerId={G.core.hostPlayerId}
+            selectedFactions={G.core.selectedFactions}
+            readyPlayers={G.core.readyPlayers ?? {}}
+            playerNames={playerNames as Record<PlayerId, string>}
+            onSelect={handleSelectFaction}
+            onReady={handlePlayerReady}
+            onStart={handleHostStart}
+          />
+          {debugPanel}
+        </>
       ) : (
       <div className="h-[100dvh] w-full bg-neutral-900 overflow-hidden relative flex flex-col">
         {isEditingLayout ? (
           <div className="flex-1 overflow-auto p-4">
             <div className="mb-2 flex items-center gap-2">
-              <button onClick={handleExitLayoutEditor} className="px-3 py-1 bg-slate-700 text-white rounded hover:bg-slate-600">← 返回游戏</button>
+              <button onClick={handleExitLayoutEditor} className="px-3 py-1 bg-slate-700 text-white rounded hover:bg-slate-600">{t('layoutEditor.backToGame')}</button>
             </div>
             <BoardLayoutEditor
               initialConfig={layoutConfig ?? undefined}
               backgroundImage="/assets/summonerwars/common/map.png"
               onChange={setLayoutConfig}
               onSave={handleSaveLayout}
-              saveLabel="保存布局"
+              saveLabel={t('layoutEditor.saveLayout')}
             />
           </div>
         ) : (
@@ -394,7 +413,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   <div className="relative">
                     <OptimizedImage
                       src="summonerwars/common/map.png"
-                      alt=""
+                      alt={t('ui.mapAlt')}
                       className="block w-auto h-auto max-w-none pointer-events-none select-none"
                       draggable={false}
                     />
@@ -465,7 +484,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
               <div className="absolute top-3 right-3 pointer-events-auto flex flex-col items-end gap-2" data-testid="sw-opponent-bar">
                 <div className="flex items-center gap-3 bg-black/30 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-600/20">
                   <span className="text-sm text-white font-medium text-opacity-100">
-                    {matchData?.[playerID === '1' ? 0 : 1]?.name ?? '对手'}
+                    {matchData?.[playerID === '1' ? 0 : 1]?.name ?? t('player.opponent')}
                   </span>
                   <EnergyBar current={opponentMagic} testId="sw-energy-opponent" />
                 </div>
@@ -475,7 +494,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
               {opponentActiveEvents.length > 0 && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto flex flex-row-reverse items-center gap-2"
                   style={{ marginTop: '-8rem' }} data-testid="sw-opponent-active-events">
-                  <span className="text-[0.8vw] text-amber-300/80 font-bold tracking-wider writing-mode-vertical" style={{ writingMode: 'vertical-rl' }}>对方持续效果</span>
+                  <span className="text-[0.8vw] text-amber-300/80 font-bold tracking-wider writing-mode-vertical" style={{ writingMode: 'vertical-rl' }}>{t('ui.opponentActiveEvents')}</span>
                   <div className="flex flex-col gap-1">
                     {opponentActiveEvents.map((ev) => {
                       const sprite = getEventSpriteConfig(ev);
@@ -494,7 +513,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
               {/* 左侧：己方持续效果 */}
               {myActiveEvents.length > 0 && (
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto flex flex-row items-center gap-2" data-testid="sw-my-active-events">
-                  <span className="text-[0.8vw] text-amber-300/80 font-bold tracking-wider writing-mode-vertical" style={{ writingMode: 'vertical-rl' }}>持续效果</span>
+                  <span className="text-[0.8vw] text-amber-300/80 font-bold tracking-wider writing-mode-vertical" style={{ writingMode: 'vertical-rl' }}>{t('ui.activeEvents')}</span>
                   <div className="flex flex-col gap-1">
                     {myActiveEvents.map((ev) => {
                       const sprite = getEventSpriteConfig(ev);
@@ -514,7 +533,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
               <div className="absolute left-3 bottom-3 z-20 pointer-events-auto flex flex-col items-start gap-[3.75rem]" data-testid="sw-player-bar" data-tutorial-id="sw-player-bar">
                 <div className="flex items-center gap-3 bg-black/30 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-600/20">
                   <span className="text-sm text-white font-medium text-opacity-100">
-                    {matchData?.[playerID === '1' ? 1 : 0]?.name ?? '玩家'}
+                    {matchData?.[playerID === '1' ? 1 : 0]?.name ?? t('player.self')}
                   </span>
                   <EnergyBar current={myMagic} testId="sw-energy-player" />
                 </div>
@@ -528,11 +547,11 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 <div className="flex gap-2">
                   {currentPhase === 'magic' && isMyTurn && interaction.selectedCardsForDiscard.length > 0 && (
                     <GameButton onClick={interaction.handleConfirmDiscard} variant="secondary" size="sm" data-testid="sw-confirm-discard">
-                      弃牌 +{interaction.selectedCardsForDiscard.length}
+                      {t('action.discardSelected', { count: interaction.selectedCardsForDiscard.length })}
                     </GameButton>
                   )}
                   <GameButton onClick={interaction.handleEndPhase} disabled={!isMyTurn} variant="primary" size="md" data-testid="sw-end-phase" data-tutorial-id="sw-end-phase-btn">
-                    结束阶段
+                    {t('action.endPhase')}
                   </GameButton>
                 </div>
                 <div data-tutorial-id="sw-discard-pile">
@@ -562,6 +581,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   currentPhase={currentPhase}
                   isMyTurn={isMyTurn}
                   abilityMode={abilityMode}
+                  pendingBeforeAttack={interaction.pendingBeforeAttack}
                   bloodSummonMode={interaction.bloodSummonMode}
                   annihilateMode={interaction.annihilateMode}
                   soulTransferMode={soulTransferMode}
@@ -573,6 +593,8 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   afterAttackAbilityMode={afterAttackAbilityMode}
                   telekinesisTargetMode={interaction.telekinesisTargetMode}
                   onCancelAbility={handleCancelAbility}
+                  onConfirmBeforeAttackCards={interaction.handleConfirmBeforeAttackCards}
+                  onCancelBeforeAttack={handleCancelBeforeAttack}
                   onCancelBloodSummon={handleCancelBloodSummon}
                   onContinueBloodSummon={handleContinueBloodSummon}
                   onCancelAnnihilate={handleCancelAnnihilate}
@@ -600,7 +622,9 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   isMyTurn={isMyTurn}
                   currentMagic={myMagic}
                   selectedCardId={interaction.selectedHandCardId}
-                  selectedCardIds={interaction.selectedCardsForDiscard}
+                  selectedCardIds={abilityMode?.step === 'selectCards'
+                    ? interaction.abilitySelectedCardIds
+                    : interaction.selectedCardsForDiscard}
                   onCardClick={interaction.handleCardClick}
                   onCardSelect={interaction.handleCardSelect}
                   onPlayEvent={interaction.handlePlayEvent}
@@ -614,8 +638,8 @@ export const SummonerWarsBoard: React.FC<Props> = ({
             {abilityMode && abilityMode.step === 'selectCard' && (
               <CardSelectorOverlay
                 title={
-                  abilityMode.abilityId === 'revive_undead' ? '复活死灵：选择弃牌堆中的亡灵单位' :
-                    abilityMode.abilityId === 'infection' ? '感染：选择弃牌堆中的疫病体' : '选择卡牌'
+                  abilityMode.abilityId === 'revive_undead' ? t('cardSelector.reviveUndead') :
+                    abilityMode.abilityId === 'infection' ? t('cardSelector.infection') : t('cardSelector.default')
                 }
                 cards={core.players[myPlayerId]?.discard.filter(c => {
                   if (abilityMode.abilityId === 'revive_undead') {
@@ -655,7 +679,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 if (hasUndeadInDiscard) {
                   buttons.push(
                     <GameButton key="revive_undead" onClick={() => setAbilityMode({ abilityId: 'revive_undead', step: 'selectCard', sourceUnitId: unit.cardId })} variant="primary" size="md">
-                      🗡️ 复活死灵 (受到2点伤害)
+                      {t('abilityButtons.reviveUndead')}
                     </GameButton>
                   );
                 }
@@ -665,7 +689,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 if (hasOtherUnits) {
                   buttons.push(
                     <GameButton key="fire_sacrifice_summon" onClick={() => setAbilityMode({ abilityId: 'fire_sacrifice_summon', step: 'selectUnit', sourceUnitId: unit.cardId })} variant="secondary" size="md">
-                      🔥 火祀召唤 (消灭友方单位并移动)
+                      {t('abilityButtons.fireSacrificeSummon')}
                     </GameButton>
                   );
                 }
@@ -679,8 +703,28 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   });
                 if (nearbyUnits.length > 0) {
                   buttons.push(
-                    <GameButton key="life_drain" onClick={() => setAbilityMode({ abilityId: 'life_drain', step: 'selectUnit', sourceUnitId: unit.cardId })} variant="secondary" size="md">
-                      💀 吸取生命 (消灭友方，战力翻倍)
+                    <GameButton key="life_drain" onClick={() => setAbilityMode({ abilityId: 'life_drain', step: 'selectUnit', sourceUnitId: unit.cardId, context: 'beforeAttack' })} variant="secondary" size="md">
+                      {t('abilityButtons.lifeDrain')}
+                    </GameButton>
+                  );
+                }
+              }
+              if (abilities.includes('holy_arrow') && currentPhase === 'attack') {
+                const hasValidDiscard = myHand.some(card => card.cardType === 'unit' && card.name !== unit.card.name);
+                if (hasValidDiscard) {
+                  buttons.push(
+                    <GameButton key="holy_arrow" onClick={() => setAbilityMode({ abilityId: 'holy_arrow', step: 'selectCards', sourceUnitId: unit.cardId, context: 'beforeAttack', selectedCardIds: [] })} variant="secondary" size="md">
+                      {t('abilityButtons.holyArrow')}
+                    </GameButton>
+                  );
+                }
+              }
+              if (abilities.includes('healing') && currentPhase === 'attack') {
+                const hasDiscard = myHand.length > 0;
+                if (hasDiscard) {
+                  buttons.push(
+                    <GameButton key="healing" onClick={() => setAbilityMode({ abilityId: 'healing', step: 'selectCards', sourceUnitId: unit.cardId, context: 'beforeAttack', selectedCardIds: [] })} variant="secondary" size="md">
+                      {t('abilityButtons.healing')}
                     </GameButton>
                   );
                 }
@@ -690,7 +734,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
             })()}
 
             {/* 卡牌放大预览 */}
-            <MagnifyOverlay isOpen={!!magnifiedCard} onClose={() => setMagnifiedCard(null)} containerClassName="max-h-[85vh] max-w-[90vw]" closeLabel="关闭预览">
+            <MagnifyOverlay isOpen={!!magnifiedCard} onClose={() => setMagnifiedCard(null)} containerClassName="max-h-[85vh] max-w-[90vw]" closeLabel={t('actions.closePreview')}>
               {magnifiedCard && <CardSprite atlasId={magnifiedCard.atlasId} frameIndex={magnifiedCard.frameIndex} className="h-[75vh] w-auto rounded-xl shadow-2xl" />}
             </MagnifyOverlay>
 
@@ -721,17 +765,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
             />
 
             {/* 调试面板 */}
-            {!isSpectator && (
-              <GameDebugPanel G={G} ctx={ctx} moves={moves} events={events} playerID={playerID} autoSwitch={!isMultiplayer}>
-                <SummonerWarsDebugConfig G={G} ctx={ctx} moves={moves} />
-                <button
-                  onClick={() => { if (isEditingLayout) { void handleExitLayoutEditor(); return; } setIsEditingLayout(true); }}
-                  className="px-2 py-1 text-xs bg-cyan-600 text-white rounded hover:bg-cyan-500"
-                >
-                  {isEditingLayout ? '退出编辑' : '编辑布局'}
-                </button>
-              </GameDebugPanel>
-            )}
+            {debugPanel}
           </div>
         )}
       </div>

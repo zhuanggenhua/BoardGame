@@ -122,7 +122,13 @@ export const loadCardAtlasConfig = async (
                 const { width, height } = await getImageSize(pngPath);
                 return generateUniformAtlasConfig(width, height, defaultGrid.rows, defaultGrid.cols);
             } catch {
-                // 图片也加载失败，抛出错误
+                // 图片也加载失败，回退到虚拟尺寸（保证图集仍可用）
+                return generateUniformAtlasConfig(
+                    defaultGrid.cols,
+                    defaultGrid.rows,
+                    defaultGrid.rows,
+                    defaultGrid.cols
+                );
             }
         }
     }

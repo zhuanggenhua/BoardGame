@@ -13,7 +13,6 @@ import type {
   BoardCell,
   FactionId,
 } from './types';
-import { SW_COMMANDS, SW_EVENTS } from './types';
 import { BOARD_ROWS, BOARD_COLS, FIRST_PLAYER_MAGIC, SECOND_PLAYER_MAGIC, getSummoner } from './helpers';
 import { executeCommand } from './execute';
 import { reduceEvent } from './reduce';

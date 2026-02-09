@@ -53,9 +53,9 @@ import { useDiceInteractionConfig } from './hooks/useDiceInteractionConfig';
 import { useCardSpotlight } from './hooks/useCardSpotlight';
 import { useUIState } from './hooks/useUIState';
 import { useDiceThroneAudio } from './hooks/useDiceThroneAudio';
-import { computeViewModeState } from './domain/viewMode';
+import { playDeniedSound } from '../../lib/audio/useGameAudio';
+import { computeViewModeState } from './ui/viewMode';
 import { getDieFace } from './domain/rules';
-import type { TutorialStep } from './tutorial';
 
 type DiceThroneMatchState = MatchState<DiceThroneCore>;
 type DiceThroneBoardProps = BoardProps<DiceThroneMatchState>;
@@ -1026,6 +1026,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                         }}
                         onHighlightedAbilityClick={() => {
                             if (currentPhase === 'offensiveRoll' && !G.rollConfirmed) {
+                                playDeniedSound();
                                 toast.warning(t('error.confirmRoll'));
                             }
                         }}
@@ -1111,7 +1112,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                                     engineMoves.sellCard(cardId);
                                     advanceTutorialIfNeeded('discard-pile');
                                 }}
-                                onError={(msg) => toast.warning(msg)}
+                                onError={(msg) => { playDeniedSound(); toast.warning(msg); }}
                                 canInteract={isResponder || isSelfView}
                                 canPlayCards={isActivePlayer || isResponder}
                                 drawDeckRef={drawDeckRef}

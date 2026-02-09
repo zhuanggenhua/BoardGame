@@ -2,7 +2,7 @@
  * 圣骑士 (Paladin) 专属 Custom Action 处理器
  */
 
-import { getActiveDice, getDieFace, getTokenStackLimit } from '../rules';
+import { getDieFace, getTokenStackLimit } from '../rules';
 import { RESOURCE_IDS } from '../resources';
 import { TOKEN_IDS, PALADIN_DICE_FACE_IDS as FACES } from '../ids';
 import type {

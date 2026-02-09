@@ -12,6 +12,8 @@ import { GameModeProvider } from '../../../contexts/GameModeContext';
 import { createUgcDraftGame } from '../../client/game';
 import { createUgcRemoteHostBoard } from '../../client/board';
 import type { BuilderState } from '../context';
+import { LoadingScreen } from '../../../components/system/LoadingScreen';
+import { useTranslation } from 'react-i18next';
 
 const STORAGE_KEY = 'ugc-builder-state';
 
@@ -144,6 +146,7 @@ export function UGCSandbox() {
           board,
           debug: false,
           numPlayers: previewPlayerCount,
+          loading: () => <LoadingScreen title="Sandbox" description="Initializing game sandbox..." />
         });
         setSandboxClient(() => client as ComponentType<{ playerID?: string | null }>);
       })
@@ -197,9 +200,7 @@ export function UGCSandbox() {
             {errorMessage}
           </div>
         ) : sandboxLoading ? (
-          <div className="flex-1 flex items-center justify-center text-slate-300 text-sm">
-            沙盒加载中…
-          </div>
+          <LoadingScreen description="沙盒加载中…" />
         ) : sandboxClient ? (
           <div className="ugc-preview-container flex-1">
             <GameModeProvider mode="local">

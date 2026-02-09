@@ -108,6 +108,10 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 
   const isStrong = intensity === 'strong';
 
+  // 解构坐标值，避免对象引用变化导致 useCallback 重建
+  const { xPct: sx0, yPct: sy0 } = start;
+  const { xPct: ex0, yPct: ey0 } = end;
+
   const render = useCallback(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
@@ -126,10 +130,10 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     // 像素坐标
-    const sx = (start.xPct / 100) * cw;
-    const sy = (start.yPct / 100) * ch;
-    const ex = (end.xPct / 100) * cw;
-    const ey = (end.yPct / 100) * ch;
+    const sx = (sx0 / 100) * cw;
+    const sy = (sy0 / 100) * ch;
+    const ex = (ex0 / 100) * cw;
+    const ey = (ey0 / 100) * ch;
     const dx = ex - sx;
     const dy = ey - sy;
     const totalDist = Math.sqrt(dx * dx + dy * dy);
@@ -142,7 +146,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 
     // 飞行时长（距离自适应）
     const distPct = Math.sqrt(
-      (end.xPct - start.xPct) ** 2 + (end.yPct - start.yPct) ** 2,
+      (ex0 - sx0) ** 2 + (ey0 - sy0) ** 2,
     );
     const flightDuration = Math.max(0.15, Math.min(0.5, distPct / 180));
 
@@ -350,7 +354,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
     };
 
     rafRef.current = requestAnimationFrame(loop);
-  }, [start, end, isStrong]);
+  }, [sx0, sy0, ex0, ey0, isStrong]);
 
   useEffect(() => {
     render();

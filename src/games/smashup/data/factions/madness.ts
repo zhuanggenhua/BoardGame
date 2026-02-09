@@ -1,4 +1,4 @@
-import type { MinionCardDef, ActionCardDef, CardDef } from '../../domain/types';
+import type { CardDef } from '../../domain/types';
 import { SMASHUP_ATLAS_IDS } from '../../domain/ids';
 
 export const MADNESS_CARDS: CardDef[] = [

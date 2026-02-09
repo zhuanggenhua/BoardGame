@@ -11,7 +11,6 @@ interface UndoFabProps {
     moves: any;
     playerID: string | null;
     isGameOver?: boolean;
-    className?: string;
 }
 
 /**
@@ -34,8 +33,7 @@ export const UndoFab: React.FC<UndoFabProps> = ({
     ctx, 
     moves, 
     playerID,
-    isGameOver = false,
-    className = "fixed bottom-8 left-8 z-[10000] flex flex-col items-start gap-2 font-sans"
+    isGameOver = false
 }) => {
     const { t } = useTranslation('game');
     
@@ -66,101 +64,105 @@ export const UndoFab: React.FC<UndoFabProps> = ({
     // 如果没有任何操作可做，不显示
     if (!canRequest && !canReview && !isRequester) return null;
 
+    const items = [
+        {
+            id: 'undo',
+            icon: <Undo2 size={20} />,
+            label: t('controls.undo.title'),
+            active: canReview || isRequester,
+            content: (
+                <div className="flex flex-col gap-3">
+                    {/* 标题 */}
+                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                        <span className="text-white/60 text-xs font-bold uppercase tracking-wider">
+                            {t('controls.undo.title')}
+                        </span>
+                    </div>
+
+                    {/* 等待状态 - 申请者等待批准 */}
+                    {isRequester && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                <span className="text-amber-400 text-sm font-medium">
+                                    {t('controls.undo.waiting')}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => moves[UNDO_COMMANDS.CANCEL_UNDO]()}
+                                className="w-full px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/80 text-sm font-medium transition-all"
+                            >
+                                {t('controls.undo.cancel')}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* 审查状态 - 当前玩家审批撤回请求 */}
+                    {canReview && (
+                        <div className="space-y-3">
+                            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
+                                    <span className="text-blue-400 text-sm font-bold">
+                                        {t('controls.undo.opponentRequest')}
+                                    </span>
+                                </div>
+                                <p className="text-white/50 text-xs leading-relaxed">
+                                    {t('controls.undo.reviewHint')}
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => moves[UNDO_COMMANDS.APPROVE_UNDO]()}
+                                    className="flex-1 px-4 py-2.5 rounded-lg bg-green-500/20 hover:bg-green-500 hover:text-white border border-green-500/50 hover:border-green-500 text-green-400 text-sm font-bold transition-all"
+                                >
+                                    {t('controls.undo.approve')}
+                                </button>
+                                <button
+                                    onClick={() => moves[UNDO_COMMANDS.REJECT_UNDO]()}
+                                    className="flex-1 px-4 py-2.5 rounded-lg bg-red-500/20 hover:bg-red-500 hover:text-white border border-red-500/50 hover:border-red-500 text-red-400 text-sm font-bold transition-all"
+                                >
+                                    {t('controls.undo.reject')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 申请状态 - 可以发起撤回请求 */}
+                    {canRequest && (
+                        <div className="space-y-3">
+                            <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                                <p className="text-white/60 text-xs leading-relaxed mb-2">
+                                    {t('controls.undo.requestHint')}
+                                </p>
+                                <div className="flex items-center gap-2 text-white/40 text-[10px]">
+                                    <Undo2 size={12} />
+                                    <span>
+                                        {t('controls.undo.historyCount', { count: history.length })}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => moves[UNDO_COMMANDS.REQUEST_UNDO]()}
+                                className="w-full px-4 py-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500 hover:text-black border border-amber-500/50 hover:border-amber-500 text-amber-400 font-bold text-sm transition-all group"
+                            >
+                                <span className="flex items-center justify-center gap-2">
+                                    <Undo2 size={16} className="group-hover:-rotate-45 transition-transform" />
+                                    {t('controls.undo.request')}
+                                </span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )
+        }
+    ];
+
     return (
         <FabMenu
             isDark={true}
-            icon={<Undo2 size={20} />}
-            activeColor="text-amber-400"
-            className={className}
-            titleExpand={t('controls.undo.expand', { defaultValue: '展开撤回' })}
-            titleCollapse={t('controls.undo.collapse', { defaultValue: '收起撤回' })}
-        >
-            <div className="flex flex-col gap-3">
-                {/* 标题 */}
-                <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                    <span className="text-white/60 text-xs font-bold uppercase tracking-wider">
-                        {t('controls.undo.title', { defaultValue: '撤回操作' })}
-                    </span>
-                </div>
-
-                {/* 等待状态 - 申请者等待批准 */}
-                {isRequester && (
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                            <span className="text-amber-400 text-sm font-medium">
-                                {t('controls.undo.waiting', { defaultValue: '等待对方批准...' })}
-                            </span>
-                        </div>
-                        <button
-                            onClick={() => moves[UNDO_COMMANDS.CANCEL_UNDO]()}
-                            className="w-full px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/80 text-sm font-medium transition-all"
-                        >
-                            {t('controls.undo.cancel', { defaultValue: '取消申请' })}
-                        </button>
-                    </div>
-                )}
-
-                {/* 审查状态 - 当前玩家审批撤回请求 */}
-                {canReview && (
-                    <div className="space-y-3">
-                        <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
-                                <span className="text-blue-400 text-sm font-bold">
-                                    {t('controls.undo.opponentRequest', { defaultValue: '对方请求撤回' })}
-                                </span>
-                            </div>
-                            <p className="text-white/50 text-xs leading-relaxed">
-                                {t('controls.undo.reviewHint', { defaultValue: '对方想要撤回上一步操作，是否同意？' })}
-                            </p>
-                        </div>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => moves[UNDO_COMMANDS.APPROVE_UNDO]()}
-                                className="flex-1 px-4 py-2.5 rounded-lg bg-green-500/20 hover:bg-green-500 hover:text-white border border-green-500/50 hover:border-green-500 text-green-400 text-sm font-bold transition-all"
-                            >
-                                {t('controls.undo.approve', { defaultValue: '同意' })}
-                            </button>
-                            <button
-                                onClick={() => moves[UNDO_COMMANDS.REJECT_UNDO]()}
-                                className="flex-1 px-4 py-2.5 rounded-lg bg-red-500/20 hover:bg-red-500 hover:text-white border border-red-500/50 hover:border-red-500 text-red-400 text-sm font-bold transition-all"
-                            >
-                                {t('controls.undo.reject', { defaultValue: '拒绝' })}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* 申请状态 - 可以发起撤回请求 */}
-                {canRequest && (
-                    <div className="space-y-3">
-                        <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-                            <p className="text-white/60 text-xs leading-relaxed mb-2">
-                                {t('controls.undo.requestHint', { defaultValue: '可以请求撤回上一步操作' })}
-                            </p>
-                            <div className="flex items-center gap-2 text-white/40 text-[10px]">
-                                <Undo2 size={12} />
-                                <span>
-                                    {t('controls.undo.historyCount', { 
-                                        count: history.length,
-                                        defaultValue: `可撤回 ${history.length} 步`
-                                    })}
-                                </span>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => moves[UNDO_COMMANDS.REQUEST_UNDO]()}
-                            className="w-full px-4 py-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500 hover:text-black border border-amber-500/50 hover:border-amber-500 text-amber-400 font-bold text-sm transition-all group"
-                        >
-                            <span className="flex items-center justify-center gap-2">
-                                <Undo2 size={16} className="group-hover:-rotate-45 transition-transform" />
-                                {t('controls.undo.request', { defaultValue: '申请撤回' })}
-                            </span>
-                        </button>
-                    </div>
-                )}
-            </div>
-        </FabMenu>
+            items={items}
+            position="bottom-left"
+        />
     );
 };

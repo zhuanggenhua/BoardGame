@@ -31,7 +31,11 @@
     "chat": {
         "placeholder": "Type a message...",
         "gameInvite": "sent a game invitation",
-        "userNotFound": "User or conversation not found."
+        "userNotFound": "User or conversation not found.",
+        "roomLabel": "Room: ",
+        "meLabel": "Me: ",
+        "noMessages": "No messages yet",
+        "emptyValue": "--"
     },
     "modal": {
         "title": "Social",
@@ -43,6 +47,22 @@
     },
     "matchHistory": {
         "title": "Match History",
-        "empty": "No match history found."
+        "empty": "No match history found.",
+        "vs": "vs {{name}}",
+        "result": {
+            "win": "Win",
+            "loss": "Loss",
+            "draw": "Draw"
+        },
+        "resultShort": {
+            "win": "W",
+            "loss": "L",
+            "draw": "D"
+        },
+        "games": {
+            "tictactoe": "Tic-Tac-Toe",
+            "chess": "Chess",
+            "gomoku": "Gomoku"
+        }
     }
 }

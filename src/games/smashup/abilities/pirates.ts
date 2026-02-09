@@ -6,7 +6,7 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, addPowerCounter, moveMinion, getPlayerMinionsOnBase } from '../domain/abilityHelpers';
+import { destroyMinion, addPowerCounter, moveMinion, getMinionPower } from '../domain/abilityHelpers';
 import type { SmashUpEvent } from '../domain/types';
 
 /** 注册海盗派系所有能力 */
@@ -31,7 +31,7 @@ function pirateSaucyWench(ctx: AbilityContext): AbilityResult {
     if (!base) return { events: [] };
 
     const target = base.minions.find(
-        m => m.uid !== ctx.cardUid && (m.basePower + m.powerModifier) <= 2
+        m => m.uid !== ctx.cardUid && getMinionPower(ctx.state, m, ctx.baseIndex) <= 2
     );
     if (!target) return { events: [] };
 
@@ -55,7 +55,7 @@ function pirateBroadside(ctx: AbilityContext): AbilityResult {
         // 找到该基地上对手力量≤2的随从最多的玩家
         const opponentCounts = new Map<string, number>();
         for (const m of base.minions) {
-            if (m.controller !== ctx.playerId && (m.basePower + m.powerModifier) <= 2) {
+            if (m.controller !== ctx.playerId && getMinionPower(ctx.state, m, i) <= 2) {
                 opponentCounts.set(m.controller, (opponentCounts.get(m.controller) || 0) + 1);
             }
         }
@@ -73,7 +73,7 @@ function pirateBroadside(ctx: AbilityContext): AbilityResult {
 
         // 消灭该对手在该基地所有力量≤2的随从
         for (const m of base.minions) {
-            if (m.controller === bestOpponent && (m.basePower + m.powerModifier) <= 2) {
+            if (m.controller === bestOpponent && getMinionPower(ctx.state, m, i) <= 2) {
                 events.push(destroyMinion(m.uid, m.defId, i, m.owner, 'pirate_broadside', ctx.now));
             }
         }
@@ -92,7 +92,7 @@ function pirateCannon(ctx: AbilityContext): AbilityResult {
         const base = ctx.state.bases[i];
         for (const m of base.minions) {
             if (destroyed >= 2) break;
-            if (m.controller !== ctx.playerId && (m.basePower + m.powerModifier) <= 2) {
+            if (m.controller !== ctx.playerId && getMinionPower(ctx.state, m, i) <= 2) {
                 events.push(destroyMinion(m.uid, m.defId, i, m.owner, 'pirate_cannon', ctx.now));
                 destroyed++;
             }
@@ -131,7 +131,7 @@ function pirateDinghy(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (m.controller === ctx.playerId) {
-                myMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, power: m.basePower + m.powerModifier });
+                myMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, power: getMinionPower(ctx.state, m, i) });
             }
         }
     }
@@ -166,7 +166,7 @@ function pirateShanghai(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (m.controller === ctx.playerId) continue;
-            const power = m.basePower + m.powerModifier;
+            const power = getMinionPower(ctx.state, m, i);
             if (!strongest || power > strongest.power) {
                 strongest = { uid: m.uid, defId: m.defId, baseIndex: i, power };
             }
@@ -196,7 +196,7 @@ function pirateSeaDogs(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (m.controller === ctx.playerId) continue;
-            const power = m.basePower + m.powerModifier;
+            const power = getMinionPower(ctx.state, m, i);
             if (!weakest || power < weakest.power) {
                 weakest = { uid: m.uid, defId: m.defId, baseIndex: i, power };
             }
@@ -228,7 +228,7 @@ function piratePowderkeg(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (m.controller !== ctx.playerId) continue;
-            const power = m.basePower + m.powerModifier;
+            const power = getMinionPower(ctx.state, m, i);
             if (!weakest || power < weakest.power) {
                 weakest = { uid: m.uid, defId: m.defId, power, baseIndex: i, owner: m.owner };
             }
@@ -243,7 +243,7 @@ function piratePowderkeg(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[weakest.baseIndex];
     for (const m of base.minions) {
         if (m.uid === weakest.uid) continue; // 跳过已消灭的
-        if ((m.basePower + m.powerModifier) <= weakest.power) {
+        if (getMinionPower(ctx.state, m, weakest.baseIndex) <= weakest.power) {
             events.push(destroyMinion(m.uid, m.defId, weakest.baseIndex, m.owner, 'pirate_powderkeg', ctx.now));
         }
     }

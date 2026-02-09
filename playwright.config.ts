@@ -59,6 +59,7 @@ export default defineConfig({
     retries: 0,
     workers: 1,
     reporter: 'list',
+    outputDir: './test-results',
     use: {
         // Priority: ENV variable > configured port > Default localhost:5173
         baseURL,

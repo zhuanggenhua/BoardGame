@@ -1,13 +1,8 @@
 /**
- * HitStopContainer - 钝帧/卡肉容器组件
+ * HitStopContainer - 钝帧容器组件
  *
- * 命中瞬间短暂冻结画面 + 微弹，模拟格斗游戏的"卡肉"打击感。
- * 不使用闪白覆盖，而是通过帧冻结 + scale 微弹 + 轻微亮度脉冲实现。
- *
- * 原理：
- * 1. 触发时立即 scale 放大（模拟冲击膨胀）
- * 2. 冻结期间保持放大状态（帧停顿 = 卡肉）
- * 3. 冻结结束后弹性回弹到原始大小
+ * 命中瞬间短暂冻结画面，模拟格斗游戏的"卡肉"打击感。
+ * 通过 CSS 类暂停所有子元素的动画和过渡实现纯冻结效果。
  *
  * @example
  * ```tsx
@@ -22,10 +17,6 @@ import React, { useEffect, useCallback, useRef } from 'react';
 export interface HitStopConfig {
   /** 冻结时长 (ms)，默认 80 */
   duration?: number;
-  /** 冲击放大倍数，默认 1.03 */
-  scale?: number;
-  /** 亮度脉冲强度 (1.0=无变化，1.3=轻微提亮)，默认 1.15 */
-  brightness?: number;
 }
 
 export interface HitStopContainerProps extends HitStopConfig {
@@ -41,8 +32,6 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
   children,
   isActive,
   duration = 80,
-  scale = 1.03,
-  brightness = 1.15,
   className = '',
   style,
 }) => {
@@ -53,27 +42,23 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
     const el = elRef.current;
     if (!el || !isActive) return;
 
-    // 阶段 1：立即冲击放大 + 亮度提升（卡肉开始）
-    el.style.transition = 'transform 0.02s ease-out, filter 0.02s ease-out';
-    el.style.transform = `scale(${scale})`;
-    el.style.filter = `brightness(${brightness})`;
+    // 冻结：暂停所有子元素的动画（纯钝帧，不做 scale/brightness）
+    el.style.animationPlayState = 'paused';
+    // 通过 CSS 类让子元素也暂停
+    el.classList.add('hitstop-frozen');
 
-    // 阶段 2：冻结期间保持（这就是"卡肉"）
     timerRef.current = window.setTimeout(() => {
-      // 阶段 3：弹性回弹到原始大小
-      el.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease-out';
-      el.style.transform = 'scale(1)';
-      el.style.filter = 'brightness(1)';
+      // 解冻
+      el.style.animationPlayState = '';
+      el.classList.remove('hitstop-frozen');
     }, duration);
 
     return () => {
       window.clearTimeout(timerRef.current);
-      // 清理：确保不残留变换
-      el.style.transition = '';
-      el.style.transform = '';
-      el.style.filter = '';
+      el.style.animationPlayState = '';
+      el.classList.remove('hitstop-frozen');
     };
-  }, [isActive, duration, scale, brightness]);
+  }, [isActive, duration]);
 
   return (
     <div
@@ -89,10 +74,12 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
 /** Hook：管理钝帧状态 */
 export const useHitStop = (defaultDuration = 80) => {
   const [isActive, setIsActive] = React.useState(false);
+  const [config, setConfig] = React.useState<HitStopConfig | undefined>(undefined);
   const timerRef = useRef<number>(0);
 
   const triggerHitStop = useCallback((overrideConfig?: HitStopConfig) => {
     setIsActive(true);
+    setConfig(overrideConfig);
     window.clearTimeout(timerRef.current);
 
     const dur = (overrideConfig?.duration ?? defaultDuration) + 250;
@@ -101,38 +88,19 @@ export const useHitStop = (defaultDuration = 80) => {
     }, dur);
   }, [defaultDuration]);
 
-  return { isActive, triggerHitStop };
+  return { isActive, triggerHitStop, config };
 };
 
-/** 预设配置 — 卡肉感从轻到重 */
+/** 预设配置 — 冻结时长从轻到重 */
 export const HIT_STOP_PRESETS = {
   /** 轻击 - 微弱卡顿 */
-  light: {
-    duration: 60,
-    scale: 1.02,
-    brightness: 1.1,
-  } as HitStopConfig,
-
+  light: { duration: 60 } as HitStopConfig,
   /** 普通击中 */
-  normal: {
-    duration: 100,
-    scale: 1.04,
-    brightness: 1.15,
-  } as HitStopConfig,
-
+  normal: { duration: 100 } as HitStopConfig,
   /** 重击 - 明显冻结 */
-  heavy: {
-    duration: 160,
-    scale: 1.06,
-    brightness: 1.2,
-  } as HitStopConfig,
-
+  heavy: { duration: 160 } as HitStopConfig,
   /** 暴击 - 最大卡肉 */
-  critical: {
-    duration: 220,
-    scale: 1.08,
-    brightness: 1.25,
-  } as HitStopConfig,
+  critical: { duration: 220 } as HitStopConfig,
 } as const;
 
 /** 根据伤害值获取预设 */

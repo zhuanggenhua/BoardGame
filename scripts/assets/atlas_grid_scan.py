@@ -372,6 +372,21 @@ def build_config(
     if expected_cols is not None and expected_cols != cols:
         print(f"[warn] 预期列数={expected_cols}，实际识别列数={cols}")
 
+    # 行高归一化：当某行高度明显偏小（<中位数70%）时，补齐到中位数
+    # 典型场景：最后一行只有部分卡牌，大片空白导致扫描提前截断行高
+    row_heights = [length for _, length in row_segments]
+    if len(row_heights) >= 2:
+        sorted_heights = sorted(row_heights)
+        median_height = sorted_heights[len(sorted_heights) // 2]
+        for i, h_val in enumerate(row_heights):
+            if h_val < median_height * 0.7:
+                # 补齐到中位数，但不超过图片边界
+                start = row_segments[i][0]
+                max_possible = h - start
+                new_height = min(median_height, max_possible)
+                row_segments[i] = (start, new_height)
+                print(f"[info] 行{i}高度{h_val}偏小（中位数{median_height}），已补齐到{new_height}")
+
     return {
         'imageW': w,
         'imageH': h,

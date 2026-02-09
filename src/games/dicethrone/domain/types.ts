@@ -24,7 +24,27 @@ export type TurnPhase =
     | 'main2'
     | 'discard';
 
-export type DieFace = 'fist' | 'palm' | 'taiji' | 'lotus' | 'sword' | 'heart' | 'strength' | 'fire' | 'fiery_soul' | 'magma' | 'meteor' | 'bow' | 'foot' | 'moon' | 'dagger' | 'bag' | 'card' | 'shadow';
+export type DieFace =
+    | 'fist'
+    | 'palm'
+    | 'taiji'
+    | 'lotus'
+    | 'sword'
+    | 'helm'
+    | 'heart'
+    | 'pray'
+    | 'strength'
+    | 'fire'
+    | 'fiery_soul'
+    | 'magma'
+    | 'meteor'
+    | 'bow'
+    | 'foot'
+    | 'moon'
+    | 'dagger'
+    | 'bag'
+    | 'card'
+    | 'shadow';
 
 // ============================================================================
 // 角色编目
@@ -507,6 +527,8 @@ export interface AdvancePhaseCommand extends Command<'ADVANCE_PHASE'> {
 export interface SelectCharacterCommand extends Command<'SELECT_CHARACTER'> {
     payload: {
         characterId: SelectableCharacterId;
+        /** 初始牌库顺序（教程/回放用，可选） */
+        initialDeckCardIds?: string[];
     };
 }
 

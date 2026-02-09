@@ -15,6 +15,7 @@ import type {
 } from '../domain/types';
 import { SU_EVENTS, getTotalPowerOnBase, getPlayerPowerOnBase } from '../domain/types';
 import { initAllAbilities } from '../abilities';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -27,7 +28,7 @@ function makePlayer(id: string, overrides: Partial<any> = {}) {
         id, vp: 0, hand: [], deck: [], discard: [],
         minionsPlayed: 0, minionLimit: 1,
         actionsPlayed: 0, actionLimit: 1,
-        factions: ['aliens', 'dinosaurs'] as [string, string],
+        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS] as [string, string],
         ...overrides,
     };
 }
@@ -78,7 +79,7 @@ describe('基地记分与力量计算', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
-                    '1': makePlayer('1', { factions: ['pirates', 'ninjas'] }),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
                 },
                 turnOrder: PLAYER_IDS,
                 currentPlayerIndex: 0,
@@ -150,7 +151,7 @@ describe('基地记分与力量计算', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
-                    '1': makePlayer('1', { factions: ['pirates', 'ninjas'] }),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
                 },
                 turnOrder: PLAYER_IDS,
                 currentPlayerIndex: 0,
@@ -225,7 +226,7 @@ describe('基地记分与力量计算', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
-                    '1': makePlayer('1', { factions: ['pirates', 'ninjas'] }),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
                 },
                 turnOrder: PLAYER_IDS,
                 currentPlayerIndex: 0,
@@ -269,7 +270,7 @@ describe('基地记分与力量计算', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
-                    '1': makePlayer('1', { factions: ['pirates', 'ninjas'] }),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
                 },
                 turnOrder: PLAYER_IDS,
                 currentPlayerIndex: 0,

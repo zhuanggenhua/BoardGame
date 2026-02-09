@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Library, Trash2, X } from 'lucide-react';
 import type { CardInstance } from '../domain/types';
-import { getCardDef } from '../data/cards';
+import { getCardDef, resolveCardName } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { useDelayedBackdropBlur } from '../../../hooks/ui/useDelayedBackdropBlur';
+import { SMASHUP_CARD_BACK } from '../domain/ids';
 
 type Props = {
     deckCount: number;
@@ -16,10 +17,11 @@ type Props = {
 };
 
 export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn }) => {
-    const { t } = useTranslation('game-smashup');
+    const { t, i18n } = useTranslation('game-smashup');
     const [showDiscard, setShowDiscard] = useState(false);
     const topCard = discard.length > 0 ? discard[discard.length - 1] : null;
     const topDef = topCard ? getCardDef(topCard.defId) : null;
+    const topName = resolveCardName(topDef ?? undefined, i18n.language) || topCard?.defId;
 
     const handleDiscardClick = () => {
         if (!isMyTurn) {
@@ -44,7 +46,7 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn 
     };
 
     return (
-        <>
+        <div data-tutorial-id="su-deck-discard">
             {/* Deck Pile - Bottom Left */}
             <div className="absolute bottom-4 left-[2vw] z-30 flex flex-col items-center pointer-events-auto group">
                 <div className="relative w-[7.5vw] aspect-[0.714]">
@@ -52,9 +54,16 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn 
                     <div className="absolute inset-0 bg-slate-700 rounded-sm border border-slate-600 shadow-sm translate-x-1 -translate-y-1 rotate-1" />
 
                     {/* Top Card Back */}
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl flex items-center justify-center z-10 transition-transform group-hover:-translate-y-2">
-                        <div className="w-8 h-8 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center">
-                            <span className="text-white font-bold font-mono text-sm">{deckCount}</span>
+                    <div className="absolute inset-0 bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2">
+                        <CardPreview
+                            previewRef={SMASHUP_CARD_BACK}
+                            className="w-full h-full object-cover"
+                        />
+                        {/* Power/Count Overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                            <div className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg">
+                                <span className="text-white font-black font-mono text-base">{deckCount}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -82,7 +91,7 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn 
                                 />
                                 {!topDef?.previewRef && (
                                     <div className="absolute inset-0 flex items-center justify-center p-1 text-center">
-                                        <span className="text-[0.5vw] font-bold leading-none">{topDef?.name || topCard?.defId}</span>
+                                        <span className="text-[0.5vw] font-bold leading-none">{topName}</span>
                                     </div>
                                 )}
                             </div>
@@ -109,7 +118,7 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn 
                     )
                 }
             </AnimatePresence >
-        </>
+        </div>
     );
 };
 
@@ -118,7 +127,7 @@ const DiscardListOverlay: React.FC<{
     matches: CardInstance[];
     onClose: () => void;
 }> = ({ matches, onClose }) => {
-    const { t } = useTranslation('game-smashup');
+    const { t, i18n } = useTranslation('game-smashup');
     // Standard backdrop blur handling according to AGENTS.md
     const blurActive = useDelayedBackdropBlur(true);
 
@@ -164,16 +173,17 @@ const DiscardListOverlay: React.FC<{
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                         {matches.map((card) => {
                             const def = getCardDef(card.defId);
+                            const resolvedName = resolveCardName(def, i18n.language) || card.defId;
                             return (
                                 <div key={card.uid} className="relative aspect-[0.714] bg-white rounded shadow-lg hover:scale-105 transition-transform group">
                                     <div className="w-full h-full rounded overflow-hidden relative bg-slate-200">
                                         <CardPreview
                                             previewRef={def?.previewRef}
                                             className="w-full h-full object-cover"
-                                            title={def?.name}
+                                            title={resolvedName}
                                         />
                                         {!def?.previewRef && (
-                                            <div className="p-2 text-center text-xs font-bold">{def?.name}</div>
+                                            <div className="p-2 text-center text-xs font-bold">{resolvedName}</div>
                                         )}
                                     </div>
                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />

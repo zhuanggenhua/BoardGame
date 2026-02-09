@@ -50,6 +50,7 @@ interface GameHUDProps {
     }>;
     onLeave?: () => void;
     onDestroy?: () => void;
+    onForceExit?: () => void;
     isLoading?: boolean;
 }
 
@@ -95,6 +96,7 @@ export const GameHUD = ({
     players,
     onLeave,
     onDestroy,
+    onForceExit,
     isLoading = false,
 }: GameHUDProps) => {
     const navigate = useNavigate();
@@ -134,7 +136,9 @@ export const GameHUD = ({
     const myDisplayName = useMemo(() => {
         if (user?.username) return user.username;
         const matched = players?.find((p) => String(p.id) === String(myPlayerId));
-        return matched?.name ?? (myPlayerId ? `玩家 ${myPlayerId}` : '玩家');
+        return matched?.name ?? (myPlayerId != null
+            ? t('hud.status.player', { id: myPlayerId })
+            : t('hud.status.playerUnknown'));
     }, [myPlayerId, players, user?.username]);
 
     const playerNameMap = useMemo(() => {
@@ -150,7 +154,7 @@ export const GameHUD = ({
         const knownName = playerNameMap.get(normalizedId);
         if (knownName) return knownName;
         if (myPlayerId != null && normalizedId === String(myPlayerId) && myDisplayName) return myDisplayName;
-        return t('hud.status.player', { id: normalizedId, defaultValue: `玩家${normalizedId}` });
+        return t('hud.status.player', { id: normalizedId });
     }, [myPlayerId, myDisplayName, playerNameMap, t]);
 
     const actionLogRows = useMemo(() => {
@@ -210,22 +214,22 @@ export const GameHUD = ({
         const trimmed = chatInput.trim();
         if (!trimmed) return;
         if (trimmed.length > MAX_CHAT_LENGTH) {
-            toast.warning(`消息过长，最多 ${MAX_CHAT_LENGTH} 字。`);
+            toast.warning(t('hud.chat.tooLong', { count: MAX_CHAT_LENGTH }));
             return;
         }
 
         if (isOnline) {
             if (isChatReadonly) {
-                toast.info('观战模式不可发言。');
+                toast.info(t('hud.chat.readonlyWarning'));
                 return;
             }
             const result = matchSocket.sendChat(trimmed, myPlayerId ?? undefined, myDisplayName);
             if (!result.ok) {
                 if (result.reason === 'not_connected') {
-                    toast.error('聊天服务未连接，请稍后重试。');
+                    toast.error(t('hud.chat.notConnected'));
                 } else {
                     if (matchId) matchSocket.joinChat(matchId);
-                    toast.info('聊天连接中，请稍后重试。');
+                    toast.info(t('hud.chat.connecting'));
                 }
                 return;
             }
@@ -272,7 +276,7 @@ export const GameHUD = ({
                 }
                 setIsFullscreen(true);
             } catch (error) {
-                toast.error('全屏失败，请检查浏览器权限或系统全屏占用。');
+                toast.error(t('hud.fullscreen.enterFailed'));
             }
             return;
         }
@@ -289,7 +293,7 @@ export const GameHUD = ({
             }
             setIsFullscreen(false);
         } catch (error) {
-            toast.error('退出全屏失败，请检查浏览器权限或系统状态。');
+            toast.error(t('hud.fullscreen.exitFailed'));
         }
     };
 
@@ -313,6 +317,12 @@ export const GameHUD = ({
         else navigate('/');
     };
 
+    const handleForceExit = () => {
+        if (isLoading) return;
+        if (onForceExit) onForceExit();
+        else navigate('/');
+    };
+
     const handleDestroy = () => {
         if (isLoading) return;
         if (onDestroy) onDestroy();
@@ -329,12 +339,12 @@ export const GameHUD = ({
     const actionLogAction: FabAction = {
         id: 'action-log',
         icon: <ListOrdered size={20} />,
-        label: t('hud.actions.actionLog', { defaultValue: '行为日志' }),
+        label: t('hud.actions.actionLog'),
         content: (
             <div className="flex flex-col gap-2 pr-1">
                 {actionLogRows.length === 0 ? (
                     <div className="text-xs text-white/40 text-center py-6">
-                        {t('hud.actionLog.empty', { defaultValue: '暂无行为日志' })}
+                        {t('hud.actionLog.empty')}
                     </div>
                 ) : (
                     <div className="flex flex-col gap-2">
@@ -369,12 +379,15 @@ export const GameHUD = ({
         items.push({
             id: 'chat',
             icon: <MessageSquare size={20} />,
-            label: t('hud.actions.chat') || 'Chat',
+            label: t('hud.actions.chat'),
             active: unreadChatCount > 0,
             // 预览：一行展示，格式“用户名：消息”
             preview: unreadChatCount > 0 && latestIncomingMessage ? (
                 <div className="text-xs font-semibold text-white/90 truncate max-w-[220px]">
-                    {(latestIncomingMessage.senderName || '未知玩家') + '：' + latestIncomingMessage.text}
+                    {t('hud.chat.preview', {
+                        name: latestIncomingMessage.senderName || t('hud.chat.unknownPlayer'),
+                        message: latestIncomingMessage.text,
+                    })}
                 </div>
             ) : undefined,
             onActivate: (isActive) => setIsChatPanelOpen(isActive),
@@ -383,18 +396,18 @@ export const GameHUD = ({
                     {isOnline && (
                         <div className="mb-2 space-y-1 text-[10px] text-white/60">
                             <div className="flex items-center gap-2">
-                                <span className="uppercase font-bold text-white/40">房间</span>
+                                <span className="uppercase font-bold text-white/40">{t('hud.actions.room')}</span>
                                 <span className="font-mono tracking-widest">{matchId ?? '-'}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="uppercase font-bold text-white/40">我</span>
+                                <span className="uppercase font-bold text-white/40">{t('hud.status.self')}</span>
                                 <span className="text-white/80">{myDisplayName}</span>
                             </div>
                         </div>
                     )}
                     <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar text-xs">
                         {chatMessages.length === 0 && (
-                            <div className="text-white/20 text-center mt-10 italic">暂无消息...</div>
+                            <div className="text-white/20 text-center mt-10 italic">{t('hud.chat.empty')}</div>
                         )}
                         {chatMessages.map((msg) => (
                             <div key={msg.id} className="flex flex-col">
@@ -412,14 +425,14 @@ export const GameHUD = ({
                                 type="text"
                                 value={chatInput}
                                 onChange={e => setChatInput(e.target.value)}
-                                placeholder={isChatReadonly ? '观战模式不可发言' : '...'}
+                                placeholder={isChatReadonly ? t('hud.chat.readonlyPlaceholder') : t('hud.chat.placeholder')}
                                 maxLength={MAX_CHAT_LENGTH}
                                 disabled={isChatReadonly}
                                 className="w-full bg-white/15 border border-white/35 rounded px-2 py-1.5 pr-16 text-xs text-white placeholder-white/60 focus:outline-none focus:border-neon-blue/70 focus:bg-white/20 disabled:opacity-60 disabled:cursor-not-allowed"
                             />
                             {chatInput.length >= MAX_CHAT_LENGTH && (
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-amber-300">
-                                    最多{MAX_CHAT_LENGTH}字
+                                    {t('hud.chat.maxLength', { count: MAX_CHAT_LENGTH })}
                                 </span>
                             )}
                         </div>
@@ -444,7 +457,7 @@ export const GameHUD = ({
     items.push({
         id: 'settings',
         icon: <Settings size={20} />,
-        label: t('hud.actions.settings') || 'Settings',
+        label: t('hud.actions.settings'),
         content: (
             <div>
                 {/* 本地同屏模式信息 */}
@@ -457,9 +470,11 @@ export const GameHUD = ({
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-xs">
-                            <span className="text-white/60">Turn:</span>
+                            <span className="text-white/60">{t('hud.labels.turn')}</span>
                             <span className={`font-bold ${currentPlayerId === '0' ? 'text-amber-400' : 'text-purple-400'}`}>
-                                {currentPlayerId === '0' ? 'P1' : 'P2'}
+                                {t('hud.status.playerShort', {
+                                    id: String(currentPlayerId) === '0' ? 1 : 2,
+                                })}
                             </span>
                         </div>
                     </div>
@@ -469,7 +484,7 @@ export const GameHUD = ({
                     <div className="space-y-4 mt-3">
                         {matchId && (
                             <div className="space-y-1">
-                                <span className="text-[10px] text-white/40 uppercase font-bold">Room ID</span>
+                                <span className="text-[10px] text-white/40 uppercase font-bold">{t('hud.labels.roomId')}</span>
                                 <button
                                     onClick={copyRoomId}
                                     className="w-full flex items-center justify-between px-3 py-2 rounded bg-white/5 hover:bg-white/10 transition-colors group border border-white/5"
@@ -481,16 +496,16 @@ export const GameHUD = ({
                         )}
                         {players && (
                             <div className="space-y-2 relative">
-                                <span className="text-[10px] text-white/40 uppercase font-bold">Players</span>
+                                <span className="text-[10px] text-white/40 uppercase font-bold">{t('hud.labels.players')}</span>
                                 <div className="space-y-2">
                                     {players.map(p => (
                                         <div key={p.id} className="flex items-center justify-between bg-black/40 px-3 py-2 rounded border border-white/5">
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-2 h-2 rounded-full ${p.isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
-                                                <span className="text-sm font-medium">{p.name || `Player ${p.id}`}</span>
+                                                <span className="text-sm font-medium">{p.name || t('hud.status.player', { id: p.id })}</span>
                                             </div>
                                             {String(p.id) === String(myPlayerId) && (
-                                                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/60">YOU</span>
+                                                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/60">{t('hud.status.self')}</span>
                                             )}
                                         </div>
                                     ))}
@@ -512,7 +527,7 @@ export const GameHUD = ({
     const exitAction: FabAction = {
         id: 'exit',
         icon: <LogOut size={20} />,
-        label: t('hud.actions.exit') || 'Exit',
+        label: t('hud.actions.exit'),
         content: (
             <div className="space-y-3">
                 {/* 房主：显示"结束游戏"（销毁房间） */}
@@ -525,7 +540,7 @@ export const GameHUD = ({
                         <Trash2 size={16} />
                         <div className="flex flex-col items-start">
                             <span>{t('hud.actions.destroy')}</span>
-                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.destroyHint', { defaultValue: '关闭房间，所有人退出' })}</span>
+                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.destroyHint')}</span>
                         </div>
                     </button>
                 )}
@@ -538,8 +553,8 @@ export const GameHUD = ({
                     >
                         <LogOut size={16} />
                         <div className="flex flex-col items-start">
-                            <span>{t('hud.actions.leaveRoom', { defaultValue: '离开房间' })}</span>
-                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.leaveRoomHint', { defaultValue: '彻底离开房间' })}</span>
+                            <span>{t('hud.actions.leaveRoom')}</span>
+                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.leaveRoomHint')}</span>
                         </div>
                     </button>
                 )}
@@ -555,8 +570,22 @@ export const GameHUD = ({
                     >
                         <LogOut size={16} />
                         <div className="flex flex-col items-start">
-                            <span>{t('hud.actions.tempLeave', { defaultValue: '暂时离开' })}</span>
-                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.tempLeaveHint', { defaultValue: '断开连接但保留位置' })}</span>
+                            <span>{t('hud.actions.tempLeave')}</span>
+                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.tempLeaveHint')}</span>
+                        </div>
+                    </button>
+                )}
+                {/* 无凭证兜底：清理本地并返回大厅 */}
+                {isOnline && !credentials && (
+                    <button
+                        onClick={handleForceExit}
+                        disabled={isLoading}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-white/5 hover:bg-white/10 text-white/90 border border-white/10 transition-all font-bold text-xs"
+                    >
+                        <LogOut size={16} />
+                        <div className="flex flex-col items-start">
+                            <span>{t('hud.actions.forceExit')}</span>
+                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.forceExitHint')}</span>
                         </div>
                     </button>
                 )}
@@ -573,7 +602,7 @@ export const GameHUD = ({
                         <LogOut size={16} />
                         <div className="flex flex-col items-start">
                             <span>{t('hud.actions.backToLobby')}</span>
-                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.backToLobbyHint', { defaultValue: '返回游戏大厅' })}</span>
+                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.backToLobbyHint')}</span>
                         </div>
                     </button>
                 )}
@@ -590,7 +619,7 @@ export const GameHUD = ({
                 label: t('controls.undo.title'),
                 content: (
                     <div className="space-y-3">
-                        <p className="text-xs text-white/60">撤回状态加载中…</p>
+                        <p className="text-xs text-white/60">{t('controls.undo.loading')}</p>
                     </div>
                 )
             });
@@ -651,7 +680,7 @@ export const GameHUD = ({
                 label: t('controls.undo.title'),
                 content: (
                     <div className="space-y-3">
-                        <p className="text-xs text-white/60">暂无可撤回操作。</p>
+                        <p className="text-xs text-white/60">{t('controls.undo.none')}</p>
                     </div>
                 )
             });
@@ -672,7 +701,7 @@ export const GameHUD = ({
         items.push({
             id: 'social',
             icon: <Users size={20} />,
-            label: t('hud.actions.social') || '好友',
+            label: t('hud.actions.social'),
             active: totalBadge > 0,
             onClick: () => {
                 if (socialModalId) {

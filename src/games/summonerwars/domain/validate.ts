@@ -158,8 +158,85 @@ export function validateCommand(
       if (core.players[playerId].attackCount >= MAX_ATTACKS_PER_TURN && !hasFerocity) {
         return { valid: false, error: '本回合攻击次数已用完' };
       }
+      const rawBeforeAttack = payload.beforeAttack as
+        | { abilityId: string; targetUnitId?: string; targetCardId?: string; discardCardIds?: string[] }
+        | Array<{ abilityId: string; targetUnitId?: string; targetCardId?: string; discardCardIds?: string[] }>
+        | undefined;
+      const beforeAttackList = rawBeforeAttack
+        ? (Array.isArray(rawBeforeAttack) ? rawBeforeAttack : [rawBeforeAttack])
+        : [];
+      let hasHealingBeforeAttack = false;
+      if (beforeAttackList.length > 0) {
+        const attackerAbilities = attacker.card.abilities ?? [];
+        for (const beforeAttack of beforeAttackList) {
+          if (!attackerAbilities.includes(beforeAttack.abilityId)) {
+            return { valid: false, error: '该单位没有此技能' };
+          }
+          switch (beforeAttack.abilityId) {
+            case 'life_drain': {
+              if (!beforeAttack.targetUnitId) return { valid: false, error: '必须选择要消灭的友方单位' };
+              let targetUnit: BoardUnit | undefined;
+              let targetPos: CellCoord | undefined;
+              for (let row = 0; row < BOARD_ROWS; row++) {
+                for (let col = 0; col < BOARD_COLS; col++) {
+                  const unit = core.board[row]?.[col]?.unit;
+                  if (unit && unit.cardId === beforeAttack.targetUnitId) {
+                    targetUnit = unit;
+                    targetPos = { row, col };
+                    break;
+                  }
+                }
+                if (targetUnit) break;
+              }
+              if (!targetUnit || !targetPos || targetUnit.owner !== playerId) {
+                return { valid: false, error: '必须选择一个友方单位' };
+              }
+              const dist = Math.abs(attackerPos.row - targetPos.row) + Math.abs(attackerPos.col - targetPos.col);
+              if (dist > 2) return { valid: false, error: '目标必须在2格以内' };
+              break;
+            }
+
+            case 'holy_arrow': {
+              const discardCardIds = beforeAttack.discardCardIds as string[] | undefined;
+              if (!discardCardIds || discardCardIds.length === 0) {
+                return { valid: false, error: '必须选择要弃除的卡牌' };
+              }
+              const haPlayer = core.players[playerId];
+              const names = new Set<string>();
+              for (const cardId of discardCardIds) {
+                const card = haPlayer.hand.find(c => c.id === cardId);
+                if (!card || card.cardType !== 'unit') return { valid: false, error: '只能弃除单位卡' };
+                const unitCard = card as UnitCard;
+                if (unitCard.name === attacker.card.name) return { valid: false, error: '不能弃除同名单位' };
+                if (names.has(unitCard.name)) return { valid: false, error: '不能弃除多张同名单位' };
+                names.add(unitCard.name);
+              }
+              break;
+            }
+
+            case 'healing': {
+              const healDiscardId = beforeAttack.targetCardId as string | undefined;
+              if (!healDiscardId) return { valid: false, error: '必须选择要弃除的手牌' };
+              const healPlayer = core.players[playerId];
+              const healCard = healPlayer.hand.find(c => c.id === healDiscardId);
+              if (!healCard) return { valid: false, error: '手牌中没有该卡牌' };
+              const healTarget = getUnitAt(core, targetPos);
+              if (!healTarget || healTarget.owner !== playerId) return { valid: false, error: '目标必须是友方单位' };
+              if (healTarget.card.unitClass !== 'common' && healTarget.card.unitClass !== 'champion') {
+                return { valid: false, error: '目标必须是士兵或英雄' };
+              }
+              hasHealingBeforeAttack = true;
+              break;
+            }
+
+            default:
+              return { valid: false, error: '无效的攻击前技能' };
+          }
+        }
+      }
+      const isHealingAttack = attacker.healingMode || hasHealingBeforeAttack;
       // 治疗模式允许攻击友方单位（圣殿牧师）
-      if (attacker.healingMode) {
+      if (isHealingAttack) {
         const healTarget = getUnitAt(core, targetPos);
         if (!healTarget || healTarget.owner !== playerId) {
           return { valid: false, error: '治疗模式只能攻击友方单位' };

@@ -169,6 +169,27 @@ Keep this managed block so 'openspec update' can refresh the instructions.
    - 资源加载失败（404）
 4. **禁止行为**：在没有错误日志的情况下"猜测"问题并随意修改代码
 
+### Vite SSR 函数提升陷阱（强制）
+> **Vite 的 SSR 转换会将 `function` 声明转为变量赋值，导致函数提升（hoisting）失效。**
+
+- **问题**：原生 JS 中 `function foo() {}` 会被提升到作用域顶部，但 Vite SSR（vite-node）会将其转换为类似 `const foo = function() {}` 的形式，此时在定义之前引用会抛出 `ReferenceError: xxx is not defined`。
+- **典型错误模式**：
+  ```typescript
+  // ❌ 错误：注册函数在文件上方，被引用的函数定义在文件下方
+  export function registerAll(): void {
+      registerAbility('foo', handler); // handler 还未定义！
+  }
+  // ... 200 行后 ...
+  function handler(ctx: Context) { ... }
+  
+  // ✅ 正确：确保所有被引用的函数在注册调用之前定义，或将注册函数放在文件末尾
+  function handler(ctx: Context) { ... }
+  export function registerAll(): void {
+      registerAbility('foo', handler); // handler 已定义
+  }
+  ```
+- **规则**：在能力注册文件（`abilities/*.ts`）中，`register*Abilities()` 导出函数必须放在文件末尾，确保所有被引用的实现函数都已定义。
+
 ### Auth / 状态管理（强制）
 - **禁止在组件内直接读写 `localStorage` 作为业务状态**（例如 token）。优先通过 Context/状态流获取，避免 key 不一致与状态不同步。
 - **Context Provider 的 `value` 必须 `useMemo`，内部方法用 `useCallback`**，避免全局无意义重渲染。
@@ -219,6 +240,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 |----------|----------|----------|----------|
 | **粒子系统** | Canvas 2D（自研引擎） | 粒子特效（几十到几百级别）；双层绘制（辉光+核心） | 胜利彩带、召唤光粒子、爆炸碎片、烟尘扩散 |
 | **复杂矢量动画** | Canvas 2D **推荐** | 每帧重绘复杂路径（弧形/渐变/多层叠加） | 斜切刀光、气浪冲击波、复杂轨迹特效 |
+| **多阶段组合特效** | Canvas 2D **推荐** | 需要蓄力→爆发→持续→消散等多阶段节奏；需要 additive 混合/动态渐变/脉冲呼吸 | 召唤光柱、技能释放、大招特写 |
 | **形状动画** | framer-motion | 确定性形状变换（缩放/位移/旋转/裁切/透明度）；每次触发 1-3 个 DOM 节点 | 红闪脉冲、伤害数字飞出、简单冲击波 |
 | **UI 状态过渡** | framer-motion / CSS transition | 组件进出场、hover/press 反馈、布局动画 | 手牌展开、横幅切换、按钮反馈、阶段指示脉冲 |
 | **精确设计动效** | Lottie（未接入，需美术资源） | 设计师在 AE 中制作的复杂动画，需要逐帧精确控制 | 暂无，未来可用于技能释放特写 |
@@ -231,13 +253,35 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **预设驱动**：通过 `ParticlePreset` 配置粒子行为，`BURST_PRESETS` 提供常用预设
 - **生命周期**：粒子效果必须有明确的 `life` 配置，所有粒子消散后自动停止渲染循环
 - **现有组件**：`BurstParticles`（爆炸/召唤/烟尘）、`VictoryParticles`（胜利彩带）
-- **Canvas 溢出规范（强制）**：特效 Canvas 天然超出挂载目标边界，**禁止用 `overflow: hidden` 裁切**。Canvas 必须比容器大（默认 2 倍），居中偏移，容器设 `overflow: visible` + `pointer-events-none`。详见 `docs/particle-engine.md` § Canvas 溢出规范。
+- **Canvas 溢出规范（强制）**：特效 Canvas 天然超出挂载目标边界，**禁止用 `overflow: hidden` 裁切**。优先使用无溢出方案（Canvas 铺满父级，绘制基于 canvas 尺寸）；小元素挂载场景使用溢出放大方案（Canvas 比容器大 N 倍，居中偏移，容器设 `overflow: visible` + `pointer-events-none`）。详见 `docs/particle-engine.md` § Canvas 溢出规范。
+- **特效组件 useEffect 依赖稳定性（强制，适用于所有特效组件）**：所有特效组件（Canvas 粒子、framer-motion、DOM timer 驱动）的动画循环/timer 由 useEffect 启动，**其依赖数组中的每一项都必须引用稳定**，否则父组件重渲染会导致 useEffect 重跑 → 动画重启/中断。
+  - **回调 prop（`onComplete` 等）**：必须用 `useRef` 持有，禁止放入 useEffect 依赖。Canvas 组件和 DOM timer 组件（如 ImpactContainer/DamageFlash）同样适用。
+  - **数组/对象 prop（`color` 等）**：`useMemo` 的依赖不能直接用数组/对象引用（浅比较会失败），必须用 `JSON.stringify` 做值比较。
+  - **典型错误**：调用方传内联箭头函数或数组字面量 → 父组件因性能计数器/状态更新重渲染 → prop 引用变化 → useEffect 重跑 → 粒子不断重生/timer 组件效果被截断，表现为"特效卡住好几秒"或"播放一半就没了"。
+- **条件渲染特效的生命周期管理（强制）**：当使用 `{isActive && <Effect />}` 条件渲染特效组件时：
+  - **必须有关闭机制**：通过 `onComplete` 回调将 `isActive` 设回 `false`，否则 isActive 永远为 true，连续触发时组件不会卸载重挂载，效果只播一次。
+  - **重触发模式**：`setIsActive(false)` → `requestAnimationFrame(() => setIsActive(true))`，确保 React 先卸载再重挂载。
+  - **禁止用固定 timer 关闭**：不要用 `setTimeout(() => setIsActive(false), 100)` 硬编码关闭时间，必须由效果组件自身通过 `onComplete` 通知完成。
+  - **典型错误**：ImpactCard 没有 onComplete → isActive 永远 true → 连续点击时 DamageFlash 不重挂载 → 效果只播一瞬间。
+- **组合式特效架构（强制）**：打击感特效必须按职责拆分为两层：
+  - **ImpactContainer（包裹层）**：作用于目标本身——震动（ShakeContainer）+ 钝帧（HitStopContainer）。ShakeContainer 在外层承载 className（背景/边框），HitStopContainer 在内层。
+  - **DamageFlash（覆盖层）**：纯视觉 overlay——斜切（RiftSlash）+ 红脉冲（RedPulse）+ 伤害数字（DamageNumber），作为 ImpactContainer 的子元素。
+  - **正确组合**：`<ImpactContainer><Target /><DamageFlash /></ImpactContainer>`
+  - **禁止**：把震动和视觉效果混在同一个组件里；把 DamageFlash 放在 ImpactContainer 外面（会导致震动目标不一致）。
 
 **判断边界（快速自检）**：
 1. 需要每帧重绘复杂矢量路径（弧形/渐变）？→ 用 Canvas 2D 手写（如 SlashEffect）
 2. 需要粒子特效（爆炸/烟尘/彩带/光粒子）？→ 用 Canvas 粒子引擎（BurstParticles）
-3. 需要简单形状变换（1-3 个元素）？→ 用 framer-motion
-4. 需要 UI 组件进出场/状态切换？→ 用 framer-motion 或 CSS transition
+3. 需要多阶段组合特效（蓄力/爆发/持续/消散）？→ 用 Canvas 2D（如 SummonEffect）
+4. 需要简单形状变换（1-3 个元素）？→ 用 framer-motion
+5. 需要 UI 组件进出场/状态切换？→ 用 framer-motion 或 CSS transition
+
+**为什么多阶段特效必须用 Canvas 而非 framer-motion（教训）**：
+- **逐帧精确控制**：Canvas 每帧重绘，可在同一动画循环中实现蓄力→爆发→呼吸→消散等多阶段节奏；framer-motion 只能声明式定义起止状态，中间过程不可控。
+- **动态渐变**：Canvas 的 `createLinearGradient`/`createRadialGradient` 每帧可动态改变参数（位置/颜色/透明度），CSS gradient 是静态的。
+- **additive 混合**：`globalCompositeOperation: 'lighter'` 让光效自然叠加发亮，DOM 元素无法实现。
+- **形状自由度**：梯形光柱、柔和边缘辉光等自由路径绘制不受 CSS box model 限制。
+- **clipPath 动画不可靠**：framer-motion 对 `clipPath` 字符串插值支持不稳定，实测无法正确动画。
 
 **特效视觉质量规则（强制）**：
 - **禁止纯几何拼接**：特效禁止用 `stroke` 线段、V 形轮廓、横切线等几何图元拼凑，视觉效果生硬且缺乏能量感。
@@ -247,20 +291,23 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 **通用特效组件规范（强制）**：
 - **通用 vs 游戏特有**：除非特效包含游戏特有语义（如特定卡牌名称文字、游戏专属资源），否则必须实现为通用组件放在 `src/components/common/animations/`，游戏层通过 props 注入差异。
 - **现有通用特效清单**（新增特效前必须检查是否已有）：
-  - `FlyingEffect` — 飞行特效（伤害/治疗/Buff 飞行数字+粒子尾迹）
-  - `ShakeContainer` — 震动容器
-  - `HitStopContainer` — 钝帧容器
-  - `SlashEffect` — 斜切特效（Canvas 2D）
-  - `BurstParticles` — 爆发粒子（Canvas 2D 引擎）
-  - `VictoryParticles` — 胜利彩带（Canvas 2D 引擎）
-  - `ImpactContainer` — 打击感组合（震动+斜切+钝帧）
-  - `ShockwaveProjectile` — 冲击波投射物
-  - `PulseGlow` — 脉冲发光/涟漪
-  - `SummonEffect` — 召唤/降临特效（光柱+冲击波环+地裂线+粒子）
-  - `ConeBlast` — 远程投射气浪（光球头部+粒子尾迹锥形扩散+命中爆发，Canvas 2D 粒子引擎）
-  - `DamageFlash` — 受伤反馈（震动+斜切+白闪+红脉冲+伤害数字）
-  - `FloatingText` — 独立飘字（弹出+弹性缩回+上浮淡出，纯文字无粒子）
-  - `CardDrawAnimation` — 抽牌动画（飞出+3D翻转）
+  - `FlyingEffect` — 飞行特效（伤害/治疗/Buff 飞行数字+粒子尾迹）｜使用：`dicethrone/Board`、`dicethrone/hooks/useAnimationEffects`
+  - `ShakeContainer` — 震动容器｜使用：`dicethrone/Board`、`dicethrone/ui/OpponentHeader`、`ImpactContainer`（内部）
+  - `HitStopContainer` — 钝帧容器｜使用：`summonerwars/ui/BoardGrid`、`ImpactContainer`（内部）
+  - `SlashEffect` — 弧形刀光（Canvas 2D）｜使用：仅预览页
+  - `BurstParticles` — 爆发粒子（Canvas 2D 引擎）｜使用：`summonerwars/ui/DestroyEffect`
+  - `VictoryParticles` — 胜利彩带（Canvas 2D 引擎）｜使用：`components/game/EndgameOverlay`
+  - `ImpactContainer` — 打击感包裹容器（震动+钝帧，ShakeContainer 外层 + HitStopContainer 内层）｜使用：`summonerwars/ui/BoardEffects`
+  - `PulseGlow` — 脉冲发光/涟漪｜使用：`dicethrone/Board`、`components/system/FabMenu`
+  - `SummonEffect` — 召唤/降临特效（Canvas 2D 多阶段）｜使用：`summonerwars/ui/BoardEffects`
+  - `ConeBlast` — 远程投射气浪（Canvas 2D 粒子引擎）｜使用：`summonerwars/ui/BoardEffects`
+  - `DamageFlash` — 受伤视觉覆盖层（斜切+红脉冲+伤害数字，纯 overlay）｜使用：`summonerwars/ui/BoardEffects`
+  - `RedPulse` — 红色脉冲原子组件（framer-motion）｜使用：`DamageFlash`（内部）
+  - `DamageNumber` — 伤害数字飘出原子组件｜使用：`DamageFlash`（内部）
+  - `FloatingText` — 独立飘字（弹出+弹性缩回+上浮淡出）｜使用：仅预览页
+  - `RiftSlash` — 次元裂隙直线斜切（Canvas 2D）｜使用：`DamageFlash`（内部）
+  - `CardDrawAnimation` — 抽牌动画（飞出+3D翻转）｜使用：仅导出，暂无业务引用
+  - `ShatterEffect` — 碎裂消散（square 粒子 + 重力下坠 + 旋转飞散）｜使用：暂未接入，预期替代 BurstParticles 用于死亡效果
 - **预览页同步**：新增通用特效组件后，必须在 `src/pages/devtools/EffectPreview.tsx` 的 `EFFECT_CATEGORIES` 中注册预览区块。
 
 ### 文档索引与使用时机（强制）

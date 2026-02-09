@@ -6,6 +6,7 @@
  */
 
 import { memo, useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SpotlightSkeletonProps } from './types';
 
 /**
@@ -52,6 +53,7 @@ export const SpotlightSkeleton = memo(function SpotlightSkeleton({
     confirmButtonDelay,
     renderConfirmButton,
 }: SpotlightSkeletonProps) {
+    const { t } = useTranslation('common');
     // 淡出状态（用于出场动画）
     const [isExiting, setIsExiting] = useState(false);
     // 内容是否已准备好显示
@@ -131,7 +133,7 @@ export const SpotlightSkeleton = memo(function SpotlightSkeleton({
     const defaultCloseButton = (close: () => void) => (
         <button
             onClick={close}
-            aria-label="Close"
+            aria-label={t('button.close')}
             style={{
                 position: 'absolute',
                 top: '1rem',

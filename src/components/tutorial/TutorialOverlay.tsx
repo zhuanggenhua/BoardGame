@@ -244,7 +244,7 @@ export const TutorialOverlay: React.FC = () => {
                     <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t border-r border-[#c0a080] opacity-40" />
 
                     <div className="text-[#433422] font-bold text-lg mb-4 leading-relaxed text-left overflow-y-auto flex-1 min-h-0">
-                        {t(currentStep.content, { defaultValue: currentStep.content })}
+                        {t(currentStep.content)}
                     </div>
 
                     {!currentStep.requireAction && (

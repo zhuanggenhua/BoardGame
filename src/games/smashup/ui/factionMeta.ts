@@ -1,29 +1,51 @@
 
+import {
+    Anchor,
+    Bone,
+    Bot,
+    Cog,
+    Crosshair,
+    Eye,
+    Fish,
+    Ghost,
+    GraduationCap,
+    Orbit,
+    PawPrint,
+    Skull,
+    Snowflake,
+    Sprout,
+    Theater,
+    Wand2,
+    type LucideIcon,
+} from 'lucide-react';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { ShurikenIcon, OctopusHeadIcon } from './icons/CustomIcons';
+
 export interface FactionMeta {
     id: string;
-    name: string;
-    icon: string; // Emoji
+    nameKey: string;
+    icon: LucideIcon | React.FC<any>;
     color: string;
-    description: string;
+    descriptionKey: string;
 }
 
 export const FACTION_METADATA: FactionMeta[] = [
-    { id: 'pirates', name: '海盗', icon: '🏴‍☠️', color: '#1e293b', description: '高机动性，可以在基地间移动随从。' },
-    { id: 'ninjas', name: '忍者', icon: '🥷', color: '#7f1d1d', description: '出其不意，隐蔽行动，暗杀随从。' },
-    { id: 'dinosaurs', name: '恐龙', icon: '🦖', color: '#15803d', description: '巨大的力量，无坚不摧。' },
-    { id: 'aliens', name: '外星人', icon: '👽', color: '#0ea5e9', description: '干扰对手，将随从送回手牌，控制基地。' },
-    { id: 'robots', name: '机器人', icon: '🤖', color: '#475569', description: '微型机器人大军，快速铺场。' },
-    { id: 'zombies', name: '丧尸', icon: '🧟', color: '#10b981', description: '从弃牌堆复活，永不消逝。' },
-    { id: 'wizards', name: '巫师', icon: '🧙‍♂️', color: '#8b5cf6', description: '额外的行动，操控牌库，法术轰炸。' },
-    { id: 'tricksters', name: '捣蛋鬼', icon: '🤡', color: '#f59e0b', description: '设置陷阱，弃置对手手牌，制造混乱。' },
-    { id: 'steampunks', name: '蒸汽朋克', icon: '⚙️', color: '#b45309', description: '利用基地行动卡，升级与回收。' },
-    { id: 'ghosts', name: '幽灵', icon: '👻', color: '#fca5a5', description: '手牌越少越强，穿过物质。' },
-    { id: 'plants', name: '食人花', icon: '🪴', color: '#4d7c0f', description: '快速生长，控制随从。' },
-    { id: 'bear_cavalry', name: '熊骑兵', icon: '🐻', color: '#7c2d12', description: '强迫移动对手，无情碾压。' },
-    { id: 'cthulhu', name: '克苏鲁仆从', icon: '🐙', color: '#4c1d95', description: '利用疯狂牌，献祭随从。' },
-    { id: 'elder_things', name: '远古物种', icon: '🧊', color: '#0e7490', description: '给予疯狂牌，控制人心。' },
-    { id: 'innsmouth', name: '印斯茅斯', icon: '🐟', color: '#06b6d4', description: '人海战术，同样的随从集结。' },
-    { id: 'miskatonic', name: '米斯卡塔尼克', icon: '🎓', color: '#fcd34d', description: '利用疯狂牌获得优势，研究知识。' },
+    { id: SMASHUP_FACTION_IDS.PIRATES, nameKey: 'factions.pirates.name', icon: Anchor, color: '#1e293b', descriptionKey: 'factions.pirates.description' },
+    { id: SMASHUP_FACTION_IDS.NINJAS, nameKey: 'factions.ninjas.name', icon: ShurikenIcon, color: '#7f1d1d', descriptionKey: 'factions.ninjas.description' },
+    { id: SMASHUP_FACTION_IDS.DINOSAURS, nameKey: 'factions.dinosaurs.name', icon: Bone, color: '#15803d', descriptionKey: 'factions.dinosaurs.description' },
+    { id: SMASHUP_FACTION_IDS.ALIENS, nameKey: 'factions.aliens.name', icon: Orbit, color: '#0ea5e9', descriptionKey: 'factions.aliens.description' },
+    { id: SMASHUP_FACTION_IDS.ROBOTS, nameKey: 'factions.robots.name', icon: Bot, color: '#475569', descriptionKey: 'factions.robots.description' },
+    { id: SMASHUP_FACTION_IDS.ZOMBIES, nameKey: 'factions.zombies.name', icon: Skull, color: '#10b981', descriptionKey: 'factions.zombies.description' },
+    { id: SMASHUP_FACTION_IDS.WIZARDS, nameKey: 'factions.wizards.name', icon: Wand2, color: '#8b5cf6', descriptionKey: 'factions.wizards.description' },
+    { id: SMASHUP_FACTION_IDS.TRICKSTERS, nameKey: 'factions.tricksters.name', icon: Theater, color: '#f59e0b', descriptionKey: 'factions.tricksters.description' },
+    { id: SMASHUP_FACTION_IDS.STEAMPUNKS, nameKey: 'factions.steampunks.name', icon: Cog, color: '#b45309', descriptionKey: 'factions.steampunks.description' },
+    { id: SMASHUP_FACTION_IDS.GHOSTS, nameKey: 'factions.ghosts.name', icon: Ghost, color: '#fca5a5', descriptionKey: 'factions.ghosts.description' },
+    { id: SMASHUP_FACTION_IDS.KILLER_PLANTS, nameKey: 'factions.killer_plants.name', icon: Sprout, color: '#4d7c0f', descriptionKey: 'factions.killer_plants.description' },
+    { id: SMASHUP_FACTION_IDS.BEAR_CAVALRY, nameKey: 'factions.bear_cavalry.name', icon: PawPrint, color: '#7c2d12', descriptionKey: 'factions.bear_cavalry.description' },
+    { id: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU, nameKey: 'factions.minions_of_cthulhu.name', icon: Eye, color: '#4c1d95', descriptionKey: 'factions.minions_of_cthulhu.description' },
+    { id: SMASHUP_FACTION_IDS.ELDER_THINGS, nameKey: 'factions.elder_things.name', icon: OctopusHeadIcon, color: '#0e7490', descriptionKey: 'factions.elder_things.description' },
+    { id: SMASHUP_FACTION_IDS.INNSMOUTH, nameKey: 'factions.innsmouth.name', icon: Fish, color: '#06b6d4', descriptionKey: 'factions.innsmouth.description' },
+    { id: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY, nameKey: 'factions.miskatonic_university.name', icon: GraduationCap, color: '#fcd34d', descriptionKey: 'factions.miskatonic_university.description' },
 ];
 
 export function getFactionMeta(id: string): FactionMeta | undefined {

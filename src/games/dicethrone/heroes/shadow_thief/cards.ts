@@ -4,9 +4,6 @@ import { COMMON_CARDS, injectCommonCardPreviewRefs } from '../../domain/commonCa
 import type { RandomFn } from '../../../../engine/types';
 import { DAGGER_STRIKE_2, PICKPOCKET_2, KIDNEY_SHOT_2, SHADOW_ASSAULT, PIERCING_ATTACK, SHADOW_DEFENSE_2, FEARLESS_RIPOSTE_2, SHADOW_DANCE_2, STEAL_2, CORNUCOPIA_2 } from './abilities';
 
-// Helper
-const cardText = (id: string, field: 'name' | 'description') => `cards.${id}.${field}`;
-
 
 export const SHADOW_THIEF_CARDS: AbilityCard[] = [
     // 1. Pickpocket II (迅捷突袭 II)

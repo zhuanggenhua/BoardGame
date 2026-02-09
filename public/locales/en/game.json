@@ -12,7 +12,9 @@
       "reject": "Reject",
       "requestHint": "You can request to undo your last move",
       "historyCount": "{{count}} move(s) available",
-      "request": "Request Undo"
+      "request": "Request Undo",
+      "loading": "Loading undo status...",
+      "none": "No undo actions available."
     }
   },
   "hud": {
@@ -28,6 +30,8 @@
       "connected": "Connected",
       "waiting": "Waiting...",
       "player": "Player {{id}}",
+      "playerShort": "P{{id}}",
+      "playerUnknown": "Player",
       "opponent": "Opponent",
       "offline": "Offline",
       "searching": "Searching",
@@ -36,9 +40,16 @@
       "tutorialTitle": "Tutorial Mode",
       "tutorialDescription": "Follow the guidance to learn the rules."
     },
+    "labels": {
+      "turn": "Turn:",
+      "roomId": "Room ID",
+      "players": "Players"
+    },
     "actions": {
       "destroy": "End game and destroy room",
       "destroyHint": "Close room for everyone",
+      "leaveRoom": "Leave Room",
+      "leaveRoomHint": "Leave the room completely",
       "leaveKeep": "Leave room (keep open)",
       "tempLeave": "Disconnect",
       "tempLeaveHint": "Disconnect but keep seat",
@@ -58,8 +69,69 @@
       "exit": "Exit",
       "close": "Close"
     },
+    "about": {
+      "title": "Board Game",
+      "githubTitle": "GitHub",
+      "githubSubtitle": "View the source code and contribute",
+      "qqTitle": "QQ Group",
+      "qqSubtitle": "Join the community: ",
+      "supportTitle": "If you like this project, consider helping with server costs.",
+      "supportSubtitle": "Your nickname will be listed below",
+      "qrPlaceholder": "QR",
+      "wechatLabel": "WeChat",
+      "alipayLabel": "Alipay"
+    },
+    "feedback": {
+      "title": "Feedback",
+      "subtitle": "Help us improve the experience",
+      "gameLabel": "Related game (optional)",
+      "gameAll": "-- General feedback --",
+      "typeLabel": "Type",
+      "severityLabel": "Priority",
+      "contentLabel": "Description",
+      "contentPlaceholder": "Describe the issue or suggestion...\nPaste screenshots (Ctrl+V)",
+      "pasteHint": "Screenshot paste supported",
+      "imageAlt": "Feedback screenshot",
+      "deleteImage": "Delete image",
+      "imageAdded": "Screenshot added",
+      "contactLabel": "Contact (optional)",
+      "contactPlaceholder": "Email or QQ (for follow-up)",
+      "submit": "Submit Feedback",
+      "success": "Feedback submitted. Thanks for the support!",
+      "errors": {
+        "loginRequired": "Please log in before submitting feedback.",
+        "submitFailed": "Submission failed. Please try again later."
+      },
+      "type": {
+        "bug": "Bug",
+        "suggestion": "Suggestion",
+        "other": "Other"
+      },
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+      }
+    },
     "actionLog": {
       "empty": "No action log yet"
+    },
+    "chat": {
+      "placeholder": "Type a message...",
+      "readonlyPlaceholder": "Spectators cannot chat",
+      "empty": "No messages yet...",
+      "unknownPlayer": "Unknown Player",
+      "preview": "{{name}}: {{message}}",
+      "maxLength": "Max {{count}} chars",
+      "tooLong": "Message too long. Max {{count}} chars.",
+      "readonlyWarning": "Spectators cannot chat.",
+      "notConnected": "Chat service disconnected. Please try again.",
+      "connecting": "Connecting to chat. Please try again."
+    },
+    "fullscreen": {
+      "enterFailed": "Failed to enter fullscreen. Check browser permissions.",
+      "exitFailed": "Failed to exit fullscreen. Check browser status."
     },
     "toggle": {
       "collapse": "Collapse menu",
@@ -77,6 +149,45 @@
     "tracks": {
       "main_theme": "Classic Duel",
       "chill_piano": "Chill Piano"
+    }
+  },
+  "layoutEditor": {
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "savedWithPath": "Saved: {{path}}",
+    "saveFailed": "Save failed",
+    "exportFileName": "layout.config.json",
+    "import": "Import",
+    "export": "Export",
+    "finishTrack": "Finish track ({{count}} points)",
+    "delete": "Delete",
+    "backgroundAlt": "Background",
+    "tools": {
+      "select": "Select",
+      "grid": "Grid",
+      "zone": "Zone",
+      "track": "Track",
+      "stackPoint": "Stack Point"
+    },
+    "grid": {
+      "rows": "Rows",
+      "cols": "Columns",
+      "gapX": "X Gap",
+      "gapY": "Y Gap",
+      "offsetX": "X Offset",
+      "offsetY": "Y Offset",
+      "width": "Width",
+      "height": "Height",
+      "create": "Create Grid"
+    },
+    "status": {
+      "grid": "Grid: {{value}}",
+      "unset": "Unset",
+      "zone": "Zones: {{count}}",
+      "track": "Tracks: {{count}}",
+      "stackPoint": "Stack Points: {{count}}",
+      "selected": "Selected: {{id}}"
     }
   },
   "debug": {
@@ -129,7 +240,16 @@
       "phase": "Phase",
       "turn": "Turn",
       "activePlayer": "Active Player",
-      "gameState": "Game State (G)"
+      "gameState": "Game State (G)",
+      "copy": "Copy",
+      "copied": "Copied",
+      "assign": "Assign",
+      "cancelAssign": "Cancel",
+      "pastePlaceholder": "Paste game state JSON...",
+      "pasteFromClipboard": "Paste from clipboard",
+      "apply": "Apply state",
+      "errorUnsupported": "This game does not support state assignment",
+      "errorInvalidJson": "Invalid JSON format"
     },
     "reset": {
       "button": "🔄 Reset Game",

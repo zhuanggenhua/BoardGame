@@ -1,15 +1,19 @@
 
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Map, Home, Compass } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 
 export const NotFound = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation('common');
 
     return (
         <div className="min-h-screen bg-parchment-base-bg text-parchment-base-text font-serif flex flex-col items-center justify-center p-4 relative overflow-hidden">
-            <SEO title="404 - Page Not Found" description="The page you are looking for does not exist." />
+            <SEO
+                title={t('notFound.seoTitle')}
+                description={t('notFound.seoDescription')}
+            />
 
             {/* Background Texture/Effect */}
             <div className="absolute inset-0 opacity-5 pointer-events-none"
@@ -33,16 +37,16 @@ export const NotFound = () => {
                 </h1>
 
                 <h2 className="text-2xl md:text-3xl font-bold mb-4 text-parchment-base-text">
-                    迷失在地图之外
+                    {t('notFound.headline')}
                     <span className="block text-lg font-normal text-parchment-light-text mt-2 italic">
-                        Lost off the edge of the map
+                        {t('notFound.headlineSub')}
                     </span>
                 </h2>
 
                 <p className="text-parchment-light-text mb-8 max-w-md leading-relaxed">
-                    您所寻找的页面似乎已被移除，或者从未存在于这个版图之上。
+                    {t('notFound.description')}
                     <br />
-                    The hex you are looking for has been removed or never existed.
+                    {t('notFound.descriptionSub')}
                 </p>
 
                 {/* Actions */}
@@ -52,7 +56,7 @@ export const NotFound = () => {
                 >
                     <span className="flex items-center gap-2">
                         <Home size={16} />
-                        返回大厅 Return Home
+                        {t('notFound.backHome')}
                     </span>
                     {/* Corner accents */}
                     <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-parchment-gold opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -62,7 +66,7 @@ export const NotFound = () => {
 
             {/* Footer / Decor */}
             <div className="absolute bottom-8 text-parchment-light-text/40 text-xs tracking-[0.2em] uppercase">
-                BordGame System
+                {t('notFound.footer')}
             </div>
         </div>
     );

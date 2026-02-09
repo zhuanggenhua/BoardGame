@@ -592,7 +592,7 @@ export function resolveEffect(
         // 神圣护盾：被动效果，在攻击流程中由 execute.ts 处理
         // 此处不做任何事，仅作为占位
       } else if (effect.actionId === 'healing_convert') {
-        // 治疗：beforeAttack 效果，在 ACTIVATE_ABILITY 中处理
+        // 治疗：beforeAttack 效果，在 DECLARE_ATTACK 中处理
         // 此处不做任何事，仅作为占位
       } else {
         events.push({

@@ -7,6 +7,7 @@
  */
 
 import React, { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Card } from '../domain/types';
 import { CardSprite } from './CardSprite';
 import { GameButton } from './GameButton';
@@ -37,6 +38,7 @@ export const DiscardPileOverlay: React.FC<DiscardPileOverlayProps> = ({
   onClose,
   onMagnify,
 }) => {
+  const { t } = useTranslation('game-summonerwars');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 鼠标滚轮转换为水平滚动
@@ -63,10 +65,10 @@ export const DiscardPileOverlay: React.FC<DiscardPileOverlayProps> = ({
         onClick={onClose}
       >
         <div className="bg-slate-800 p-8 rounded-xl border border-slate-600 shadow-2xl text-center max-w-sm mx-4">
-          <h3 className="text-xl text-white font-bold mb-4">弃牌堆</h3>
-          <p className="text-slate-300 mb-6">弃牌堆为空</p>
+          <h3 className="text-xl text-white font-bold mb-4">{t('discardPile.title')}</h3>
+          <p className="text-slate-300 mb-6">{t('discardPile.empty')}</p>
           <GameButton onClick={onClose} variant="secondary">
-            关闭
+            {t('actions.close')}
           </GameButton>
         </div>
       </div>
@@ -81,7 +83,7 @@ export const DiscardPileOverlay: React.FC<DiscardPileOverlayProps> = ({
     >
       {/* 标题 + 数量 */}
       <h2 className="text-3xl text-amber-100 font-bold mb-6 drop-shadow-lg tracking-wider">
-        弃牌堆 ({cards.length})
+        {t('discardPile.titleWithCount', { count: cards.length })}
       </h2>
 
       {/* 滚动容器 */}
@@ -120,7 +122,7 @@ export const DiscardPileOverlay: React.FC<DiscardPileOverlayProps> = ({
                 {/* 序号标记（最近弃置） */}
                 {idx === 0 && (
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-amber-500/90 text-white text-xs font-bold shadow pointer-events-none">
-                    最新
+                    {t('discardPile.latest')}
                   </div>
                 )}
               </div>
@@ -137,7 +139,7 @@ export const DiscardPileOverlay: React.FC<DiscardPileOverlayProps> = ({
       {/* 关闭按钮 */}
       <div className="mt-8">
         <GameButton onClick={onClose} variant="secondary" size="lg">
-          关闭
+          {t('actions.close')}
         </GameButton>
       </div>
     </div>

@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import { LobbyClient } from 'boardgame.io/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { lobbySocket, type LobbyMatch } from '../../services/lobbySocket';
-import { claimSeat, exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOwnerActiveMatch, clearMatchCredentials, readStoredMatchCredentials, listStoredMatchCredentials, getLatestStoredMatchCredentials, pruneStoredMatchCredentials, persistMatchCredentials, type OwnerActiveMatch, type StoredMatchCredentials } from '../../hooks/match/useMatchStatus';
+import { claimSeat, exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOwnerActiveMatch, isOwnerActiveMatchSuppressed, suppressOwnerActiveMatch, clearMatchCredentials, readStoredMatchCredentials, listStoredMatchCredentials, getLatestStoredMatchCredentials, pruneStoredMatchCredentials, persistMatchCredentials, type OwnerActiveMatch, type StoredMatchCredentials } from '../../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName, getOwnerKey as resolveOwnerKey, getOwnerType as resolveOwnerType } from '../../hooks/match/ownerIdentity';
 import { ConfirmModal } from '../common/overlays/ConfirmModal';
 import { ModalBase } from '../common/overlays/ModalBase';
@@ -43,7 +43,7 @@ export const resolveActiveMatchExitPayload = (
     return { gameName: activeGameName, playerID, credentials };
 };
 
-const buildCreateRoomErrorTip = (error: unknown): { title: string; message: string } | null => {
+const buildCreateRoomErrorTip = (error: unknown): { messageKey: string } | null => {
     const rawMessage = error instanceof Error ? error.message : String(error);
     const details = (error as { details?: unknown } | null)?.details;
     const detailText = typeof details === 'string'
@@ -54,46 +54,25 @@ const buildCreateRoomErrorTip = (error: unknown): { title: string; message: stri
     const combined = `${rawMessage} ${detailText}`.toLowerCase();
 
     if (combined.includes('failed to fetch') || combined.includes('networkerror')) {
-        return {
-            title: '创建房间失败',
-            message: '无法连接游戏服务，请确认服务已启动，并检查跨域/代理设置。',
-        };
+        return { messageKey: 'error.createRoomNetwork' };
     }
     if (combined.includes('access-control-allow-origin') || combined.includes('cors')) {
-        return {
-            title: '创建房间失败',
-            message: '浏览器拦截了跨域请求，请使用本地代理或检查 CORS 配置。',
-        };
+        return { messageKey: 'error.createRoomCors' };
     }
     if (combined.includes('http status 401') || combined.includes('invalid token')) {
-        return {
-            title: '创建房间失败',
-            message: '登录信息已过期或无效，请重新登录后再试。',
-        };
+        return { messageKey: 'error.createRoomInvalidToken' };
     }
     if (combined.includes('guestid is required')) {
-        return {
-            title: '创建房间失败',
-            message: '游客身份异常，请刷新页面后重试。',
-        };
+        return { messageKey: 'error.createRoomGuestId' };
     }
     if (combined.includes('http status 403')) {
-        return {
-            title: '创建房间失败',
-            message: '当前权限不足，无法创建房间。',
-        };
+        return { messageKey: 'error.createRoomForbidden' };
     }
     if (combined.includes('http status 404')) {
-        return {
-            title: '创建房间失败',
-            message: '游戏服务未找到该游戏，请刷新页面后重试。',
-        };
+        return { messageKey: 'error.createRoomNotFound' };
     }
     if (combined.includes('request size did not match content length')) {
-        return {
-            title: '创建房间失败',
-            message: '请求数据异常，请刷新页面后再试。',
-        };
+        return { messageKey: 'error.createRoomRequestSize' };
     }
     return null;
 };
@@ -252,6 +231,10 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         if (latestCreds?.matchID) return latestCreds.matchID;
         const ownerActive = getOwnerActiveMatch();
         const ownerKey = getOwnerKey();
+        if (ownerActive?.matchID && isOwnerActiveMatchSuppressed(ownerActive.matchID)) {
+            clearOwnerActiveMatch(ownerActive.matchID);
+            return null;
+        }
         if (ownerActive?.matchID && (!ownerActive.ownerKey || ownerActive.ownerKey === ownerKey)) {
             return ownerActive.matchID;
         }
@@ -265,6 +248,12 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         const ownerActive = getOwnerActiveMatch();
         const matchedRoom = rooms.find(r => r.ownerKey === ownerKey);
         if (matchedRoom) {
+            if (isOwnerActiveMatchSuppressed(matchedRoom.matchID)) {
+                if (ownerActive?.matchID === matchedRoom.matchID) {
+                    clearOwnerActiveMatch(matchedRoom.matchID);
+                }
+                return;
+            }
             if (!ownerActive || ownerActive.matchID !== matchedRoom.matchID) {
                 setOwnerActiveMatch({
                     matchID: matchedRoom.matchID,
@@ -297,14 +286,16 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     };
 
     const tryClaimSeat = async (matchID: string, gameName: string) => {
-        if (user?.id && token) {
-            const { success } = await claimSeat(gameName, matchID, '0', { token, playerName: user.username });
-            if (!success) return false;
-        } else {
-            const guestId = getGuestId();
-            const guestName = getGuestName();
-            const { success } = await claimSeat(gameName, matchID, '0', { guestId, playerName: guestName });
-            if (!success) return false;
+        const claimResult = user?.id && token
+            ? await claimSeat(gameName, matchID, '0', { token, playerName: user.username })
+            : await claimSeat(gameName, matchID, '0', { guestId: getGuestId(), playerName: getGuestName() });
+        if (!claimResult.success) {
+            if (claimResult.error === 'unauthorized' || claimResult.error === 'forbidden' || claimResult.error === 'not_found') {
+                clearMatchCredentials(matchID);
+                clearOwnerActiveMatch(matchID);
+                setLocalStorageTick((t) => t + 1);
+            }
+            return { success: false, error: claimResult.error };
         }
         setOwnerActiveMatch({
             matchID,
@@ -316,7 +307,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         setShowCreateRoomModal(false);
         onNavigate?.();
         navigate(`/play/${gameName}/match/${matchID}?playerID=0`);
-        return true;
+        return { success: true };
     };
 
     // 实际创建房间逻辑
@@ -324,8 +315,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         setIsLoading(true);
         try {
             const { numPlayers, roomName, ttlSeconds, password } = config;
-            // 获取用户名或生成游客名
-            const playerName = user?.username || getGuestName();
             const ownerKey = getOwnerKey();
             const ownerType = getOwnerType();
             const guestId = user?.id ? undefined : getGuestId();
@@ -345,27 +334,11 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
             );
 
-            // 加入为 0 号玩家
-            const { playerCredentials } = await lobbyClient.joinMatch(gameId, matchID, {
-                playerID: '0',
-                playerName,
-            });
-
-            // 保存凭据，供对局页面获取
-            persistMatchCredentials(matchID, {
-                playerID: '0',
-                credentials: playerCredentials,
-                matchID,
-                gameName: gameId, // 保存游戏名称
-                playerName,
-            });
-            setOwnerActiveMatch({ matchID, gameName: gameId, ownerKey, ownerType });
-
-            setLocalStorageTick(t => t + 1);
-            setShowCreateRoomModal(false);
-
-            onNavigate?.();
-            navigate(`/play/${gameId}/match/${matchID}?playerID=0`);
+            const claimResult = await tryClaimSeat(matchID, gameId);
+            if (!claimResult.success) {
+                toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+                return;
+            }
         } catch (error) {
             console.error('Failed to create match:', error);
             const message = error instanceof Error ? error.message : String(error);
@@ -380,8 +353,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     ownerKey: getOwnerKey(),
                     ownerType: getOwnerType(),
                 });
-                const claimed = await tryClaimSeat(existingMatchID, existingGameName);
-                if (claimed) {
+                const claimResult = await tryClaimSeat(existingMatchID, existingGameName);
+                if (claimResult.success) {
                     lobbySocket.requestRefresh(normalizedGameId);
                     return;
                 }
@@ -393,7 +366,10 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             }
             const friendlyTip = buildCreateRoomErrorTip(error);
             if (friendlyTip) {
-                toast.error(friendlyTip.message, friendlyTip.title);
+                toast.error(
+                    { kind: 'i18n', key: friendlyTip.messageKey, ns: 'lobby' },
+                    { kind: 'i18n', key: 'error.createRoomFailed', ns: 'lobby' }
+                );
                 return;
             }
             toast.error({ kind: 'i18n', key: 'error.createRoomFailed', ns: 'lobby' });
@@ -454,8 +430,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
         const canClaimSeat = !!(match.ownerKey && match.ownerKey === getOwnerKey());
         if (canClaimSeat) {
-            const claimed = await tryClaimSeat(matchID, roomGameName);
-            if (claimed) return;
+            const claimResult = await tryClaimSeat(matchID, roomGameName);
+            if (claimResult.success) return;
             toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
             return;
         }
@@ -561,6 +537,14 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
     const handleCancelJoin = () => {
         setPendingJoin(null);
+    };
+
+    const handleForceExitLocal = (matchID: string) => {
+        suppressOwnerActiveMatch(matchID);
+        clearMatchCredentials(matchID);
+        clearOwnerActiveMatch(matchID);
+        setLocalStorageTick((t) => t + 1);
+        toast.warning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
     };
 
     const handleAction = (matchID: string, myPlayerID: string, myCredentials: string, isHost: boolean) => {
@@ -789,6 +773,10 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         }
         const ownerActive = getOwnerActiveMatch();
         const ownerKey = getOwnerKey();
+        if (ownerActive?.matchID && isOwnerActiveMatchSuppressed(ownerActive.matchID)) {
+            clearOwnerActiveMatch(ownerActive.matchID);
+            return null;
+        }
         if (ownerActive?.matchID && (!ownerActive.ownerKey || ownerActive.ownerKey === ownerKey)) {
             const listMatch = rooms.find(r => r.matchID === ownerActive.matchID);
             const gameName = normalizeGameName(ownerActive.gameName || listMatch?.gameName) || normalizedGameId || 'tictactoe';
@@ -867,7 +855,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         {/* 标题 - 固定在顶部 */}
                         <div className="shrink-0">
                             <h2 className="text-lg md:text-2xl font-bold text-parchment-base-text mb-1 md:mb-2 tracking-wide leading-tight">
-                                {t(titleKey, { defaultValue: titleKey })}
+                                {t(titleKey)}
                             </h2>
                             <div className="hidden md:block h-px w-12 bg-parchment-card-border/50 opacity-30 mb-4 mx-auto" />
                         </div>
@@ -875,7 +863,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         {/* 描述区域 - 可滚动 */}
                         <div className="flex-1 overflow-y-auto scrollbar-thin pr-1 mb-3 md:mb-6">
                             <p className="text-[11px] md:text-sm text-parchment-light-text leading-relaxed italic">
-                                {t(descriptionKey, { defaultValue: descriptionKey })}
+                                {t(descriptionKey)}
                             </p>
                         </div>
 
@@ -1016,6 +1004,15 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                                                 {activeMatch.isHost ? t('actions.destroy') : t('actions.leave')}
                                                             </button>
                                                         )}
+                                                        {!activeMatch.canReconnect && (
+                                                            <button
+                                                                onClick={() => handleForceExitLocal(activeMatch.matchID)}
+                                                                className="px-3 py-1.5 rounded-[4px] text-[10px] font-bold transition-all cursor-pointer uppercase tracking-wider border bg-white/70 text-parchment-base-text border-parchment-card-border/60 hover:bg-white"
+                                                                title={t('actions.forceExitHint')}
+                                                            >
+                                                                {t('actions.forceExit')}
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
@@ -1082,11 +1079,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                                                 <div className="text-[10px] text-parchment-light-text mt-0.5">
                                                                     {seatLabels.join(' vs ')}
                                                                 </div>
-                                                                {room.isEmptyRoom && !room.isOwnerRoom && (
-                                                                    <div className="text-[10px] text-parchment-light-text mt-1 italic">
-                                                                        {t('rooms.ownerRejoinOnly')}
-                                                                    </div>
-                                                                )}
                                                             </>
                                                         );
                                                     })()}
@@ -1107,6 +1099,18 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                                             )}
                                                         >
                                                             {room.isHost ? t('actions.destroy') : t('actions.leave')}
+                                                        </button>
+                                                    )}
+                                                    {room.isMyRoom && !room.canReconnect && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleForceExitLocal(room.matchID);
+                                                            }}
+                                                            className="px-3 py-1.5 rounded-[4px] text-[10px] font-bold transition-all cursor-pointer uppercase tracking-wider border bg-white/70 text-parchment-base-text border-parchment-card-border/60 hover:bg-white"
+                                                            title={t('actions.forceExitHint')}
+                                                        >
+                                                            {t('actions.forceExit')}
                                                         </button>
                                                     )}
 
@@ -1157,8 +1161,9 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         {activeTab === 'leaderboard' && (
                             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                                 {!leaderboardData ? (
-                                    <div className="flex items-center justify-center h-40">
-                                        <p className="text-[#8c7b64] italic">{t('leaderboard.loading')}</p>
+                                    <div className="flex flex-col items-center justify-center h-40 gap-3">
+                                        <div className="w-8 h-8 border-2 border-parchment-brown/20 border-t-parchment-brown rounded-full animate-spin" />
+                                        <p className="text-[#8c7b64] text-xs italic tracking-wider">{t('leaderboard.loading')}</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-6">

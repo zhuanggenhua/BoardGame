@@ -38,6 +38,7 @@ import {
 import { rollDice, countHits } from '../config/dice';
 import { createDeckByFactionId } from '../config/factions';
 import { calculateEffectiveStrength, getEffectiveLife, triggerAbilities, triggerAllUnitsAbilities, hasHellfireBlade } from './abilityResolver';
+import { reduceEvent } from './reduce';
 import type { AbilityContext } from './abilityResolver';
 
 // ============================================================================
@@ -233,15 +234,172 @@ export function executeCommand(
     case SW_COMMANDS.DECLARE_ATTACK: {
       const attacker = payload.attacker as CellCoord;
       const target = payload.target as CellCoord;
-      const attackerUnit = getUnitAt(core, attacker);
+      let attackerUnit = getUnitAt(core, attacker);
+      let workingCore = core;
+      let beforeAttackBonus = 0;
+      let beforeAttackMultiplier = 1;
+      const rawBeforeAttack = payload.beforeAttack as
+        | { abilityId: string; targetUnitId?: string; targetCardId?: string; discardCardIds?: string[] }
+        | Array<{ abilityId: string; targetUnitId?: string; targetCardId?: string; discardCardIds?: string[] }>
+        | undefined;
+      const beforeAttackList = rawBeforeAttack
+        ? (Array.isArray(rawBeforeAttack) ? rawBeforeAttack : [rawBeforeAttack])
+        : [];
+      const applyBeforeAttackEvents = (newEvents: GameEvent[]) => {
+        for (const event of newEvents) {
+          events.push(event);
+          workingCore = reduceEvent(workingCore, event);
+        }
+      };
+
+      if (attackerUnit && beforeAttackList.length > 0) {
+        for (const beforeAttack of beforeAttackList) {
+          const sourceUnit = getUnitAt(workingCore, attacker);
+          if (!sourceUnit) {
+            break;
+          }
+          const sourceAbilities = sourceUnit.card.abilities ?? [];
+          if (!sourceAbilities.includes(beforeAttack.abilityId)) {
+            continue;
+          }
+
+          const abilityTriggeredEvent: GameEvent = {
+            type: SW_EVENTS.ABILITY_TRIGGERED,
+            payload: {
+              abilityId: beforeAttack.abilityId,
+              abilityName: beforeAttack.abilityId,
+              sourceUnitId: sourceUnit.cardId,
+              sourcePosition: attacker,
+            },
+            timestamp,
+          };
+
+          switch (beforeAttack.abilityId) {
+            case 'life_drain': {
+              if (!beforeAttack.targetUnitId) {
+                applyBeforeAttackEvents([abilityTriggeredEvent]);
+                break;
+              }
+              let victimUnit: BoardUnit | undefined;
+              let victimPosition: CellCoord | undefined;
+              for (let row = 0; row < BOARD_ROWS; row++) {
+                for (let col = 0; col < BOARD_COLS; col++) {
+                  const unit = workingCore.board[row]?.[col]?.unit;
+                  if (unit && unit.cardId === beforeAttack.targetUnitId && unit.owner === playerId) {
+                    victimUnit = unit;
+                    victimPosition = { row, col };
+                    break;
+                  }
+                }
+                if (victimUnit) break;
+              }
+              const lifeDrainEvents: GameEvent[] = [abilityTriggeredEvent];
+              if (victimUnit && victimPosition) {
+                const onDestroyedEvents = triggerAllUnitsAbilities('onUnitDestroyed', workingCore, playerId, {
+                  victimUnit,
+                  victimPosition,
+                  timestamp,
+                });
+                lifeDrainEvents.push({
+                  type: SW_EVENTS.UNIT_DESTROYED,
+                  payload: {
+                    position: victimPosition,
+                    cardId: victimUnit.cardId,
+                    cardName: victimUnit.card.name,
+                    owner: victimUnit.owner,
+                    reason: 'life_drain',
+                  },
+                  timestamp,
+                });
+                const victimCtx: AbilityContext = {
+                  state: workingCore,
+                  sourceUnit: victimUnit,
+                  sourcePosition: victimPosition,
+                  ownerId: victimUnit.owner,
+                  killerUnit: sourceUnit,
+                  timestamp,
+                };
+                lifeDrainEvents.push(...triggerAbilities('onDeath', victimCtx));
+                lifeDrainEvents.push(...onDestroyedEvents);
+                lifeDrainEvents.push({
+                  type: SW_EVENTS.STRENGTH_MODIFIED,
+                  payload: { position: attacker, multiplier: 2, sourceAbilityId: 'life_drain' },
+                  timestamp,
+                });
+                beforeAttackMultiplier *= 2;
+              }
+              applyBeforeAttackEvents(lifeDrainEvents);
+              break;
+            }
+
+            case 'holy_arrow': {
+              const discardCardIds = beforeAttack.discardCardIds ?? [];
+              const haPlayer = workingCore.players[playerId];
+              const validDiscards = discardCardIds.filter(id => haPlayer.hand.some(c => c.id === id));
+              const holyArrowEvents: GameEvent[] = [abilityTriggeredEvent];
+              if (validDiscards.length > 0) {
+                holyArrowEvents.push({
+                  type: SW_EVENTS.MAGIC_CHANGED,
+                  payload: { playerId, delta: validDiscards.length },
+                  timestamp,
+                });
+                for (const cardId of validDiscards) {
+                  holyArrowEvents.push({
+                    type: SW_EVENTS.CARD_DISCARDED,
+                    payload: { playerId, cardId },
+                    timestamp,
+                  });
+                }
+                holyArrowEvents.push({
+                  type: SW_EVENTS.UNIT_CHARGED,
+                  payload: { position: attacker, delta: validDiscards.length },
+                  timestamp,
+                });
+                beforeAttackBonus += validDiscards.length;
+              }
+              applyBeforeAttackEvents(holyArrowEvents);
+              break;
+            }
+
+            case 'healing': {
+              const healDiscardId = beforeAttack.targetCardId;
+              const healPlayer = workingCore.players[playerId];
+              const healingEvents: GameEvent[] = [abilityTriggeredEvent];
+              if (healDiscardId && healPlayer.hand.some(c => c.id === healDiscardId)) {
+                healingEvents.push({
+                  type: SW_EVENTS.CARD_DISCARDED,
+                  payload: { playerId, cardId: healDiscardId },
+                  timestamp,
+                });
+                healingEvents.push({
+                  type: SW_EVENTS.HEALING_MODE_SET,
+                  payload: { position: attacker, unitId: sourceUnit.cardId },
+                  timestamp,
+                });
+              }
+              applyBeforeAttackEvents(healingEvents);
+              break;
+            }
+
+            default:
+              applyBeforeAttackEvents([abilityTriggeredEvent]);
+              break;
+          }
+        }
+      }
+
+      attackerUnit = getUnitAt(workingCore, attacker);
+      const applyBeforeAttackStrength = (strength: number) =>
+        Math.max(0, Math.floor((strength + beforeAttackBonus) * beforeAttackMultiplier));
 
       // 治疗模式独立路径：绕过 canAttackEnhanced（它会拒绝友方目标）
       if (attackerUnit?.healingMode) {
-        const healTargetCell = core.board[target.row]?.[target.col];
+        const healTargetCell = workingCore.board[target.row]?.[target.col];
         const healTargetUnit = healTargetCell?.unit;
         if (healTargetUnit && healTargetUnit.owner === attackerUnit.owner) {
-          const healStrength = calculateEffectiveStrength(attackerUnit, core, healTargetUnit);
-          const healAttackType = getAttackType(core, attacker, target);
+          const healStrengthBase = calculateEffectiveStrength(attackerUnit, workingCore, healTargetUnit);
+          const healStrength = applyBeforeAttackStrength(healStrengthBase);
+          const healAttackType = getAttackType(workingCore, attacker, target);
           const healDiceResults = rollDice(healStrength, () => random.random());
 
           events.push({
@@ -269,17 +427,18 @@ export function executeCommand(
         }
       }
 
-      if (attackerUnit && canAttackEnhanced(core, attacker, target)) {
-        const targetCell = core.board[target.row]?.[target.col];
-        const effectiveStrength = calculateEffectiveStrength(attackerUnit, core, targetCell?.unit ?? undefined);
-        const attackType = getAttackType(core, attacker, target);
+      if (attackerUnit && canAttackEnhanced(workingCore, attacker, target)) {
+        const targetCell = workingCore.board[target.row]?.[target.col];
+        const effectiveStrengthBase = calculateEffectiveStrength(attackerUnit, workingCore, targetCell?.unit ?? undefined);
+        const effectiveStrength = applyBeforeAttackStrength(effectiveStrengthBase);
+        const attackType = getAttackType(workingCore, attacker, target);
         const diceResults = rollDice(effectiveStrength, () => random.random());
         let hits = countHits(diceResults, attackType);
         
         // 迷魂减伤：检查攻击者相邻是否有敌方掷术师（evasion）
         const hasSpecialDice = diceResults.some(r => r === 'special');
         if (hasSpecialDice) {
-          const evasionUnits = getEvasionUnits(core, attacker, attackerUnit.owner);
+          const evasionUnits = getEvasionUnits(workingCore, attacker, attackerUnit.owner);
           if (evasionUnits.length > 0) {
             // 每个迷魂单位减伤1点（多个可叠加）
             const reduction = evasionUnits.length;
@@ -306,7 +465,7 @@ export function executeCommand(
           // 查找目标方拥有 divine_shield 的单位（科琳）
           for (let row = 0; row < BOARD_ROWS; row++) {
             for (let col = 0; col < BOARD_COLS; col++) {
-              const shieldUnit = core.board[row]?.[col]?.unit;
+              const shieldUnit = workingCore.board[row]?.[col]?.unit;
               if (shieldUnit && shieldUnit.owner === targetOwner
                 && (shieldUnit.card.abilities ?? []).includes('divine_shield')
                 && manhattanDistance({ row, col }, target) <= 3) {
@@ -379,14 +538,14 @@ export function executeCommand(
           // 圣灵庇护：召唤师3格内友方士兵首次被攻击时伤害上限1
           if (targetCell?.unit && !targetCell.unit.wasAttackedThisTurn) {
             const targetOwner = targetCell.unit.owner;
-            const targetPlayer = core.players[targetOwner];
+            const targetPlayer = workingCore.players[targetOwner];
             const hasHolyProtection = targetPlayer.activeEvents.some(ev => {
               const baseId = ev.id.replace(/-\d+-\d+$/, '').replace(/-\d+$/, '');
               return baseId === 'paladin-holy-protection';
             });
             if (hasHolyProtection && targetCell.unit.card.unitClass === 'common') {
               // 检查目标是否在召唤师3格内
-              const summoner = getSummoner(core, targetOwner);
+              const summoner = getSummoner(workingCore, targetOwner);
               if (summoner && manhattanDistance(summoner.position, target) <= 3) {
                 if (hits > 1) {
                   events.push({
@@ -428,21 +587,32 @@ export function executeCommand(
               
               // 触发击杀相关技能（感染、灵魂转移）
               const killerCtx: AbilityContext = {
-                state: core, sourceUnit: attackerUnit, sourcePosition: attacker,
-                ownerId: playerId, victimUnit: targetCell.unit, victimPosition: target, timestamp,
+                state: workingCore,
+                sourceUnit: attackerUnit,
+                sourcePosition: attacker,
+                ownerId: playerId,
+                victimUnit: targetCell.unit,
+                victimPosition: target,
+                timestamp,
               };
               events.push(...triggerAbilities('onKill', killerCtx));
               
               // 触发被消灭单位的死亡技能（献祭）
               const victimCtx: AbilityContext = {
-                state: core, sourceUnit: targetCell.unit, sourcePosition: target,
-                ownerId: targetCell.unit.owner, killerUnit: attackerUnit, timestamp,
+                state: workingCore,
+                sourceUnit: targetCell.unit,
+                sourcePosition: target,
+                ownerId: targetCell.unit.owner,
+                killerUnit: attackerUnit,
+                timestamp,
               };
               events.push(...triggerAbilities('onDeath', victimCtx));
               
               // 触发所有单位的 onUnitDestroyed 技能（血腥狂怒）
-              events.push(...triggerAllUnitsAbilities('onUnitDestroyed', core, playerId, {
-                victimUnit: targetCell.unit, victimPosition: target,
+              events.push(...triggerAllUnitsAbilities('onUnitDestroyed', workingCore, playerId, {
+                victimUnit: targetCell.unit,
+                victimPosition: target,
+                timestamp,
               }));
             }
           } else if (targetCell?.structure) {
@@ -609,7 +779,9 @@ export function executeCommand(
                     timestamp,
                   });
                   events.push(...triggerAllUnitsAbilities('onUnitDestroyed', core, playerId, {
-                    victimUnit: targetUnit, victimPosition: targetPos,
+                    victimUnit: targetUnit,
+                    victimPosition: targetPos,
+                    timestamp,
                   }));
                 }
               }
@@ -1055,7 +1227,9 @@ export function executeCommand(
             timestamp,
           });
           events.push(...triggerAllUnitsAbilities('onUnitDestroyed', core, playerId, {
-            victimUnit: targetUnit, victimPosition: targetPos,
+            victimUnit: targetUnit,
+            victimPosition: targetPos,
+            timestamp,
           }));
         }
       }
@@ -1293,7 +1467,11 @@ function executeActivateAbility(
           payload: { position: victimPosition, cardId: victimUnit.cardId, cardName: victimUnit.card.name, owner: victimUnit.owner, reason: 'fire_sacrifice_summon' },
           timestamp,
         });
-        events.push(...triggerAllUnitsAbilities('onUnitDestroyed', core, playerId, { victimUnit, victimPosition }));
+        events.push(...triggerAllUnitsAbilities('onUnitDestroyed', core, playerId, {
+          victimUnit,
+          victimPosition,
+          timestamp,
+        }));
         events.push({
           type: SW_EVENTS.UNIT_MOVED,
           payload: { from: sourcePosition, to: victimPosition, unitId: sourceUnitId, reason: 'fire_sacrifice_summon' },
@@ -1324,7 +1502,11 @@ function executeActivateAbility(
           payload: { position: victimPosition, cardId: victimUnit.cardId, cardName: victimUnit.card.name, owner: victimUnit.owner, reason: 'life_drain' },
           timestamp,
         });
-        events.push(...triggerAllUnitsAbilities('onUnitDestroyed', core, playerId, { victimUnit, victimPosition }));
+        events.push(...triggerAllUnitsAbilities('onUnitDestroyed', core, playerId, {
+          victimUnit,
+          victimPosition,
+          timestamp,
+        }));
         events.push({
           type: SW_EVENTS.STRENGTH_MODIFIED,
           payload: { position: sourcePosition, multiplier: 2, sourceAbilityId: 'life_drain' },
@@ -1400,6 +1582,32 @@ function executeActivateAbility(
               },
               timestamp,
             });
+            const killerCtx: AbilityContext = {
+              state: core,
+              sourceUnit,
+              sourcePosition,
+              ownerId: playerId,
+              victimUnit: captureTarget,
+              victimPosition: captureTargetPos,
+              timestamp,
+            };
+            events.push(...triggerAbilities('onKill', killerCtx));
+
+            const victimCtx: AbilityContext = {
+              state: core,
+              sourceUnit: captureTarget,
+              sourcePosition: captureTargetPos,
+              ownerId: captureTarget.owner,
+              killerUnit: sourceUnit,
+              timestamp,
+            };
+            events.push(...triggerAbilities('onDeath', victimCtx));
+
+            events.push(...triggerAllUnitsAbilities('onUnitDestroyed', core, playerId, {
+              victimUnit: captureTarget,
+              victimPosition: captureTargetPos,
+              timestamp,
+            }));
           }
         }
       }

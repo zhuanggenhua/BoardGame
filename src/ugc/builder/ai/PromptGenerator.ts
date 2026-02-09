@@ -69,7 +69,7 @@ ${items.length > 5 ? `... 还有 ${items.length - 5} 条` : ''}
 `).join('\n')}
 
 ## UI 布局
-${this.context.layout.map(c => `- ${c.type}: ${String(c.data.name || c.type)} (${c.width}x${c.height} @ ${c.x},${c.y})`).join('\n') || '未配置'}
+${this.context.layout.map(c => `- ${c.type}: ${String(c.data.name || c.type)} (${c.width}x${c.height} @ anchor ${c.anchor.x},${c.anchor.y} + offset ${c.offset.x},${c.offset.y} | pivot ${c.pivot.x},${c.pivot.y} | rotation ${c.rotation ?? 0})`).join('\n') || '未配置'}
 
 ## 输出契约（必须遵守）
 请输出一个名为 \`domain\` 的对象，并包含以下方法（函数签名必须一致）：

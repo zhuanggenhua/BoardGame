@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { useAuth } from '../../contexts/AuthContext';
 import { ModalBase } from '../common/overlays/ModalBase';
+import { LoadingArcaneAether } from '../system/LoadingVariants';
+import { AnimatePresence } from 'framer-motion';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -200,12 +202,35 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
             closeOnBackdrop={closeOnBackdrop}
             containerClassName="p-0"
         >
-            <div className="bg-[#fcfbf9] pointer-events-auto w-[calc(100vw-2rem)] max-w-[400px] shadow-[0_10px_40px_rgba(67,52,34,0.1)] border border-[#e5e0d0] p-6 sm:p-10 relative rounded-sm mx-4">
+            <div className="bg-[#fcfbf9] pointer-events-auto w-[calc(100vw-2rem)] max-w-[400px] shadow-[0_10px_40px_rgba(67,52,34,0.1)] border border-[#e5e0d0] p-6 sm:p-10 relative rounded-sm mx-4 overflow-hidden">
                 {/* 装饰边角 */}
                 <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-[#c0a080]" />
                 <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-[#c0a080]" />
                 <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-[#c0a080]" />
                 <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-[#c0a080]" />
+
+                <AnimatePresence>
+                    {isLoading && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 z-50 bg-[#fcfbf9]/80 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center"
+                        >
+                            <div className="scale-50 mb-4">
+                                <LoadingArcaneAether />
+                            </div>
+                            <motion.p
+                                initial={{ y: 10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-[#433422] font-bold text-sm tracking-widest uppercase"
+                            >
+                                {t('button.processing')}
+                            </motion.p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <div className="text-center mb-8">
                     <h2 className="text-2xl font-serif font-bold text-[#433422] tracking-wide mb-2">
@@ -332,14 +357,14 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                     {mode === 'login' ? (
                         <div>
                             <label className="block text-xs font-bold text-[#8c7b64] uppercase tracking-wider mb-2">
-                                {t('label.account', { defaultValue: '邮箱' })}
+                                {t('label.account')}
                             </label>
                             <input
                                 type="text"
                                 value={account}
                                 onChange={(e) => setAccount(e.target.value)}
                                 className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-sm sm:text-lg"
-                                placeholder={t('placeholder.account', { defaultValue: '输入邮箱' })}
+                                placeholder={t('placeholder.account')}
                                 required
                                 autoFocus
                             />
@@ -370,7 +395,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-sm sm:text-lg"
-                                placeholder="••••"
+                                placeholder={t('placeholder.password')}
                                 required
                                 minLength={4}
                             />
@@ -387,7 +412,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-sm sm:text-lg"
-                                placeholder="••••"
+                                placeholder={t('placeholder.password')}
                                 required
                                 minLength={4}
                             />
@@ -404,7 +429,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                                 value={resetNewPassword}
                                 onChange={(e) => setResetNewPassword(e.target.value)}
                                 className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-sm sm:text-lg"
-                                placeholder="••••"
+                                placeholder={t('placeholder.password')}
                                 required
                                 minLength={4}
                             />
@@ -424,7 +449,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-lg"
-                                placeholder="••••"
+                                placeholder={t('placeholder.password')}
                                 required
                                 minLength={4}
                             />
@@ -444,7 +469,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                                 value={resetConfirmPassword}
                                 onChange={(e) => setResetConfirmPassword(e.target.value)}
                                 className="w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-lg"
-                                placeholder="••••"
+                                placeholder={t('placeholder.password')}
                                 required
                                 minLength={4}
                             />
@@ -483,7 +508,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                             mode === 'login' ? "text-[#433422] font-bold" : "text-[#8c7b64] hover:text-[#433422]"
                         )}
                     >
-                        <span className="relative z-10">{t('login.toggle_to_login', { defaultValue: '登入' })}</span>
+                        <span className="relative z-10">{t('menu.login')}</span>
                         <span className="underline-center h-[1px] opacity-60" />
                     </button>
                     <div className="w-px h-3 bg-[#c0a080] opacity-40" />
@@ -495,7 +520,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                             mode === 'register' ? "text-[#433422] font-bold" : "text-[#8c7b64] hover:text-[#433422]"
                         )}
                     >
-                        <span className="relative z-10">{t('login.toggle_to_register', { defaultValue: '注册' })}</span>
+                        <span className="relative z-10">{t('menu.register')}</span>
                         <span className="underline-center h-[1px] opacity-60" />
                     </button>
                 </div>

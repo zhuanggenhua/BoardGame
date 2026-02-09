@@ -163,6 +163,8 @@ const ALLOWED_COMMANDS_DURING_RESPONSE = [
     'RESPONSE_PASS',      // 跳过响应
     'PLAY_CARD',          // 打出卡牌（响应卡）
     'SYS_PROMPT_RESPOND', // Prompt 响应命令
+    'USE_TOKEN',          // Token 响应
+    'SKIP_TOKEN_RESPONSE', // 跳过 Token 响应
     // 卡牌交互相关命令
     'MODIFY_DIE',         // 修改骰子数值
     'REROLL_DIE',         // 重掷骰子
@@ -250,9 +252,12 @@ export function createResponseWindowSystem<TCore>(
 
             // 检查命令是否允许在响应窗口期间执行
             if (ALLOWED_COMMANDS_DURING_RESPONSE.includes(command.type)) {
-                // 只有当前响应者可以执行这些命令
-                if (command.playerId !== currentResponderId) {
-                    return { halt: true, error: '等待对方响应' };
+                // Token 响应依赖 pendingDamage.responderId 校验，不与 response window responder 强绑定
+                if (command.type !== 'USE_TOKEN' && command.type !== 'SKIP_TOKEN_RESPONSE') {
+                    // 只有当前响应者可以执行这些命令
+                    if (command.playerId !== currentResponderId) {
+                        return { halt: true, error: '等待对方响应' };
+                    }
                 }
                 // 允许执行
                 return;

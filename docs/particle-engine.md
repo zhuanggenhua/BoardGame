@@ -12,7 +12,7 @@ canvasParticleEngine.ts    核心引擎（类型 + 生成 + 更新 + 绘制）
 ├── BurstParticles.tsx     一次性爆发组件（预设驱动）
 ├── VictoryParticles.tsx   胜利彩带（持续喷射）
 ├── ConeBlast.tsx          远程投射气浪（飞行头部 + 粒子尾迹）
-├── SummonEffect.tsx       召唤特效（内嵌 BurstParticles）
+├── SummonEffect.tsx       召唤特效（Canvas 2D 多阶段：蓄力→爆发→呼吸→消散，内嵌粒子引擎）
 └── AboutModal.tsx         关于弹窗背景粒子
 ```
 
@@ -104,11 +104,51 @@ const loop = (now) => {
 | 批量混合模式 | 单次切换 `globalCompositeOperation` | 减少 GPU 状态切换 |
 | dt 上限 50ms | 防跳帧导致粒子瞬移 | 视觉稳定性 |
 
+## React 组件集成规范（强制）
+
+> **教训（2026-02-08）**：BurstParticles 的 useEffect 依赖了 `onComplete` 回调和 `color` 数组，父组件重渲染导致引用变化 → useEffect 重跑 → 粒子不断重生，表现为"特效卡住好几秒不消散"。
+
+Canvas 动画组件的 rAF 循环由 useEffect 启动，**依赖数组中每一项必须引用稳定**：
+
+| prop 类型 | 错误做法 | 正确做法 |
+|-----------|----------|----------|
+| 回调（`onComplete`） | `useCallback` 包裹后放入依赖 | `useRef` 持有，不放入依赖 |
+| 数组（`color`） | `useMemo(() => ..., [color])` | `useMemo(() => ..., [JSON.stringify(color)])` |
+| 对象（`config`） | 直接放入依赖 | 序列化后做值比较，或由调用方 `useMemo` 稳定化 |
+
+```tsx
+// ✅ 正确模式
+const onCompleteRef = useRef(onComplete);
+onCompleteRef.current = onComplete;
+
+const colorKey = JSON.stringify(color);
+const rgbColors = useMemo(() => color.map(parse), [colorKey]);
+
+useEffect(() => {
+  // rAF 循环中用 onCompleteRef.current?.()
+}, [active, preset, rgbColors]); // 无回调依赖，数组已稳定化
+```
+
 ## 视觉质量规则
 
 - **禁止纯几何拼接**：不要用 stroke 线段、V 形轮廓、横切线等几何图元拼凑特效。
 - **正确做法**：用粒子喷射（streak/circle + 自然衰减）或柔和径向渐变模拟气流/光晕。
 - **判断标准**：如果效果看起来像"线框图"而非"有能量感的自然效果"，方案有问题。
+
+## Canvas 2D vs framer-motion 选型教训
+
+> **多阶段组合特效（如召唤光柱）必须用 Canvas 2D，禁止用 framer-motion + DOM。**
+
+SummonEffect 经历了 framer-motion → Canvas 2D 的重写，以下是实测对比：
+
+| 维度 | framer-motion (DOM) | Canvas 2D |
+|------|---------------------|-----------|
+| 多阶段节奏 | ❌ 只能声明起止状态，中间过程不可控 | ✅ 每帧精确控制蓄力→爆发→呼吸→消散 |
+| 动态渐变 | ❌ CSS gradient 静态，无法逐帧变化 | ✅ `createLinearGradient` 每帧动态参数 |
+| 光效叠加 | ❌ DOM 无 additive 混合 | ✅ `globalCompositeOperation: 'lighter'` |
+| 形状自由度 | ❌ 受 CSS box model 限制 | ✅ 梯形/弧形/自由路径 |
+| clipPath 动画 | ❌ framer-motion 插值不稳定 | ✅ 不需要，直接控制绘制范围 |
+| 脉冲呼吸 | ❌ 需要额外 keyframes | ✅ `sin(t)` 直接调制宽度 |
 
 ## 新增特效检查清单
 
@@ -117,13 +157,39 @@ const loop = (now) => {
 3. 需要持续喷射时参考 `VictoryParticles` / `ConeBlast` 的手动 spawn 模式
 4. 新增通用特效组件后在 `EffectPreview.tsx` 的 `EFFECT_CATEGORIES` 注册
 5. 确保传入 `canvasWidth/canvasHeight` 启用边界剔除
-6. **Canvas 必须使用溢出方案**（见下方规范）
+6. **Canvas 溢出策略**：优先使用无溢出方案（铺满父级），仅在特效范围远超容器时使用溢出方案（见下方规范）
 
 ## Canvas 溢出规范（强制）
 
 特效 Canvas 天然会超出挂载目标的边界（弧形刀光、粒子飞溅、辉光扩散等），**禁止用 `overflow: hidden` 裁切特效**。
 
-### 标准溢出模式
+### 方案一：无溢出（铺满父级）— 推荐
+
+适用于多阶段组合特效（如 SummonEffect），Canvas 铺满父级，所有绘制基于 canvas 尺寸。
+
+```tsx
+// Canvas 铺满父级，无偏移，无溢出
+<canvas className="absolute inset-0 pointer-events-none" />
+
+// 渲染时直接用父级尺寸
+const cw = parent.getBoundingClientRect().width;
+const ch = parent.getBoundingClientRect().height;
+canvas.width = cw * dpr;
+canvas.height = ch * dpr;
+
+// 绘制原点基于 canvas 尺寸（如底部居中）
+const cx = cw / 2;
+const cy = ch * 0.78;
+const pillarMaxHeight = ch * 0.7;
+const ringMaxR = Math.min(cw, ch) * 0.4;
+```
+
+**优点**：无需父级 `overflow: visible`，不会被任何祖先的 `overflow: auto/hidden` 裁切。
+**适用**：SummonEffect 等需要大面积展示的特效，调用方只需提供足够大的容器。
+
+### 方案二：溢出放大（传统方案）
+
+适用于挂载在小元素上、特效需要超出元素边界的场景（如 BurstParticles 挂在一张卡牌上）。
 
 ```tsx
 // Canvas 比容器大 OVERFLOW 倍，居中偏移，容器 overflow: visible
@@ -154,4 +220,4 @@ const offset = ((OVERFLOW - 1) / 2) * 100;
 - **Canvas 放大倍数**：默认 2 倍（`BurstParticles` 已实现），特大范围特效可用 3 倍。
 - **绘制坐标基于 Canvas 中心**：所有绘制以 `(cw/2, ch/2)` 为原点，对应原始容器中心。
 - **`pointer-events-none`**：溢出的 Canvas 必须设置，避免拦截交互事件。
-- **已实现组件**：`BurstParticles`（2x）、`SlashEffect`（2x）、`ConeBlast`（内部管理）、`VictoryParticles`（全屏）。
+- **已实现组件**：`BurstParticles`（2x）、`SlashEffect`（2x）、`ConeBlast`（内部管理）、`VictoryParticles`（全屏）、`SummonEffect`（无溢出，铺满父级，所有绘制基于 canvas 尺寸）。

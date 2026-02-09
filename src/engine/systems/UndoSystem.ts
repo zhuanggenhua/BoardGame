@@ -58,7 +58,7 @@ export const UNDO_COMMANDS = {
     CANCEL_UNDO: 'SYS_CANCEL_UNDO',
 } as const;
 
-const IS_SERVER = typeof window === 'undefined';
+const IS_SERVER = typeof (typeof globalThis !== 'undefined' ? (globalThis as { window?: unknown }).window : undefined) === 'undefined';
 
 function logUndoServer(label: string, data: Record<string, unknown>): void {
     if (IS_SERVER) {

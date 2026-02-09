@@ -35,8 +35,21 @@ const FACE_GLOW_COLORS: Record<DieFace, string> = {
     taiji: 'rgba(192,132,252,0.5)',
     lotus: 'rgba(52,211,153,0.5)',
     sword: 'rgba(148,163,184,0.5)',
+    helm: 'rgba(251,191,36,0.5)',
     heart: 'rgba(244,63,94,0.5)',
+    pray: 'rgba(250,204,21,0.5)',
     strength: 'rgba(245,158,11,0.5)',
+    fire: 'rgba(239,68,68,0.5)',
+    fiery_soul: 'rgba(244,114,182,0.5)',
+    magma: 'rgba(249,115,22,0.5)',
+    meteor: 'rgba(251,146,60,0.5)',
+    bow: 'rgba(56,189,248,0.5)',
+    foot: 'rgba(59,130,246,0.5)',
+    moon: 'rgba(129,140,248,0.5)',
+    dagger: 'rgba(100,116,139,0.5)',
+    bag: 'rgba(250,204,21,0.5)',
+    card: 'rgba(16,185,129,0.5)',
+    shadow: 'rgba(139,92,246,0.5)',
 };
 
 export const BonusDieSpotlightContent: React.FC<BonusDieSpotlightContentProps> = ({

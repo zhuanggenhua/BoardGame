@@ -242,9 +242,9 @@ export const DiceActions = ({
     const { t } = useTranslation('game-dicethrone');
     const isRollPhase = currentPhase === 'offensiveRoll' || currentPhase === 'defensiveRoll';
     const isInteractionMode = Boolean(interactionConfig);
-    const selectedCount = interactionConfig?.interaction.selected.length ?? 0;
+    const selectedCount = interactionConfig?.interaction?.selected?.length ?? 0;
     const modifiedCount = interactionConfig?.modifiedDice?.length ?? 0;
-    const isAnyMode = interactionConfig?.interaction.dieModifyConfig?.mode === 'any';
+    const isAnyMode = interactionConfig?.interaction?.dieModifyConfig?.mode === 'any';
     // any 模式检查已修改数量，其他模式检查已选择数量
     const canConfirm = isAnyMode ? modifiedCount > 0 : selectedCount > 0;
 
@@ -268,6 +268,27 @@ export const DiceActions = ({
         }
         onConfirm();
     };
+
+    // 添加调试日志：追踪 confirm 按钮禁用原因
+    React.useEffect(() => {
+        if (currentPhase === 'defensiveRoll' || currentPhase === 'offensiveRoll') {
+            const disabledReasons = [];
+            if (rollConfirmed) disabledReasons.push('rollConfirmed');
+            if (rollCount === 0) disabledReasons.push('rollCount===0');
+            if (!canInteract) disabledReasons.push('!canInteract');
+            if (isRolling) disabledReasons.push('isRolling');
+            if (disabledReasons.length > 0) {
+                console.warn('[DiceActions] Confirm button disabled:', {
+                    reasons: disabledReasons,
+                    rollConfirmed,
+                    rollCount,
+                    canInteract,
+                    isRolling,
+                    currentPhase,
+                });
+            }
+        }
+    }, [rollConfirmed, rollCount, canInteract, isRolling, currentPhase]);
 
     // 交互模式按钮样式
     if (isInteractionMode) {
@@ -293,27 +314,6 @@ export const DiceActions = ({
             </div>
         );
     }
-
-    // 添加调试日志：追踪 confirm 按钮禁用原因
-    React.useEffect(() => {
-        if (currentPhase === 'defensiveRoll' || currentPhase === 'offensiveRoll') {
-            const disabledReasons = [];
-            if (rollConfirmed) disabledReasons.push('rollConfirmed');
-            if (rollCount === 0) disabledReasons.push('rollCount===0');
-            if (!canInteract) disabledReasons.push('!canInteract');
-            if (isRolling) disabledReasons.push('isRolling');
-            if (disabledReasons.length > 0) {
-                console.warn('[DiceActions] Confirm button disabled:', {
-                    reasons: disabledReasons,
-                    rollConfirmed,
-                    rollCount,
-                    canInteract,
-                    isRolling,
-                    currentPhase,
-                });
-            }
-        }
-    }, [rollConfirmed, rollCount, canInteract, isRolling, currentPhase]);
     const renderRollDots = () => {
         const dots = [];
         for (let i = 0; i < rollLimit; i++) {

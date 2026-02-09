@@ -5,11 +5,12 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { GamePhase } from '../domain/types';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
 
 interface PhaseConfig {
-  id: GamePhase;
+  id: Exclude<GamePhase, 'factionSelect'>;
   label: string;
   desc: string[];
   /** 显示的数字（如移动次数、攻击次数） */
@@ -18,14 +19,16 @@ interface PhaseConfig {
   maxCount?: number;
 }
 
-const PHASES: Omit<PhaseConfig, 'count' | 'maxCount'>[] = [
-  { id: 'summon', label: '召唤', desc: ['从手牌召唤单位', '放置在城门相邻的空格'] },
-  { id: 'move', label: '移动', desc: ['移动最多3个单位', '每个单位最多移动2格', '不能对角线移动'] },
-  { id: 'build', label: '建造', desc: ['建造城门或建筑', '放置在后方3行或召唤师相邻'] },
-  { id: 'attack', label: '攻击', desc: ['用最多3个单位攻击', '近战：相邻目标', '远程：最多3格直线'] },
-  { id: 'magic', label: '魔力', desc: ['弃置手牌获取魔力', '每张牌+1魔力'] },
-  { id: 'draw', label: '抽牌', desc: ['抽牌至5张', '牌堆空时无法抽牌'] },
-];
+const PHASE_ORDER: Exclude<GamePhase, 'factionSelect'>[] = ['summon', 'move', 'build', 'attack', 'magic', 'draw'];
+
+const PHASE_DESC_KEYS: Record<Exclude<GamePhase, 'factionSelect'>, string[]> = {
+  summon: ['phaseDesc.summon.0', 'phaseDesc.summon.1'],
+  move: ['phaseDesc.move.0', 'phaseDesc.move.1', 'phaseDesc.move.2'],
+  build: ['phaseDesc.build.0', 'phaseDesc.build.1'],
+  attack: ['phaseDesc.attack.0', 'phaseDesc.attack.1', 'phaseDesc.attack.2'],
+  magic: ['phaseDesc.magic.0', 'phaseDesc.magic.1'],
+  draw: ['phaseDesc.draw.0', 'phaseDesc.draw.1'],
+};
 
 export interface PhaseTrackerProps {
   currentPhase: GamePhase;
@@ -46,10 +49,20 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
   attackCount = 0,
   className = '',
 }) => {
+  const { t } = useTranslation('game-summonerwars');
   const [hoveredPhaseId, setHoveredPhaseId] = useState<string | null>(null);
+  const phaseCursor: Exclude<GamePhase, 'factionSelect'> = currentPhase === 'factionSelect'
+    ? PHASE_ORDER[0]
+    : currentPhase;
+
+  const phasesBase: Omit<PhaseConfig, 'count' | 'maxCount'>[] = PHASE_ORDER.map((phaseId) => ({
+    id: phaseId,
+    label: t(`phase.${phaseId}`),
+    desc: PHASE_DESC_KEYS[phaseId].map(key => t(key)),
+  }));
 
   // 构建带数字的阶段配置
-  const phasesWithCount: PhaseConfig[] = PHASES.map(phase => {
+  const phasesWithCount: PhaseConfig[] = phasesBase.map(phase => {
     if (phase.id === 'move') {
       return { ...phase, count: 3 - moveCount, maxCount: 3 };
     }
@@ -63,14 +76,16 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {/* 回合数 */}
       <div className="text-center mb-2 pb-2 border-b border-slate-600/50">
-        <span className="text-base text-amber-400 font-bold">回合 {turnNumber}</span>
+        <span className="text-base text-amber-400 font-bold">
+          {t('phaseTracker.turn', { count: turnNumber })}
+        </span>
       </div>
       
       {/* 阶段列表 */}
       <div className="flex flex-col gap-1.5">
         {phasesWithCount.map((phase) => {
-          const isCurrent = phase.id === currentPhase;
-          const isPast = PHASES.findIndex(p => p.id === currentPhase) > PHASES.findIndex(p => p.id === phase.id);
+          const isCurrent = phase.id === phaseCursor;
+          const isPast = PHASE_ORDER.indexOf(phaseCursor) > PHASE_ORDER.indexOf(phase.id);
           const isHovered = hoveredPhaseId === phase.id;
           
           return (

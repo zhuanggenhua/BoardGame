@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type {
   BoardLayoutConfig,
   GridConfig,
@@ -35,12 +36,14 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
   backgroundImage,
   onChange,
   onSave,
-  saveLabel = '保存',
+  saveLabel,
   className = '',
 }) => {
+  const { t } = useTranslation('game');
   const [config, setConfig] = useState<BoardLayoutConfig>(
     initialConfig ?? createDefaultLayoutConfig()
   );
+  const resolvedSaveLabel = saveLabel ?? t('layoutEditor.save');
   const [activeTool, setActiveTool] = useState<EditTool>('select');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -94,14 +97,16 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
       const relativePath = typeof result === 'object' && result && 'relativePath' in result
         ? String((result as { relativePath?: string }).relativePath || '')
         : '';
-      setSaveHint(relativePath ? `已保存：${relativePath}` : '已保存');
+      setSaveHint(relativePath
+        ? t('layoutEditor.savedWithPath', { path: relativePath })
+        : t('layoutEditor.saved'));
     } catch (error) {
-      const message = error instanceof Error ? error.message : '保存失败';
+      const message = error instanceof Error ? error.message : t('layoutEditor.saveFailed');
       setSaveHint(message);
     } finally {
       setIsSaving(false);
     }
-  }, [config, onSave]);
+  }, [config, onSave, t]);
 
   // 配置变更时通知外部
   useEffect(() => {
@@ -232,10 +237,10 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'layout.config.json';
+    a.download = t('layoutEditor.exportFileName');
     a.click();
     URL.revokeObjectURL(url);
-  }, [config]);
+  }, [config, t]);
 
   // 导入配置
   const importConfig = useCallback(() => {
@@ -381,11 +386,11 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
               data-testid={`layout-tool-${tool}`}
               className={`px-2 py-1 text-xs rounded ${activeTool === tool ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
             >
-              {tool === 'select' && '选择'}
-              {tool === 'grid' && '网格'}
-              {tool === 'zone' && '区域'}
-              {tool === 'track' && '轨道'}
-              {tool === 'stackPoint' && '堆叠点'}
+              {tool === 'select' && t('layoutEditor.tools.select')}
+              {tool === 'grid' && t('layoutEditor.tools.grid')}
+              {tool === 'zone' && t('layoutEditor.tools.zone')}
+              {tool === 'track' && t('layoutEditor.tools.track')}
+              {tool === 'stackPoint' && t('layoutEditor.tools.stackPoint')}
             </button>
           ))}
         </div>
@@ -395,7 +400,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
               onClick={finishTrack}
               className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-500"
             >
-              完成轨道 ({trackPoints.length}点)
+              {t('layoutEditor.finishTrack', { count: trackPoints.length })}
             </button>
           )}
           {selectedId && (
@@ -403,14 +408,14 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
               onClick={deleteSelected}
               className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-500"
             >
-              删除
+              {t('layoutEditor.delete')}
             </button>
           )}
           <button
             onClick={importConfig}
             className="px-2 py-1 text-xs bg-slate-700 text-slate-300 rounded hover:bg-slate-600"
           >
-            导入
+            {t('layoutEditor.import')}
           </button>
           {onSave && (
             <button
@@ -419,14 +424,14 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
               data-testid="layout-save"
               className={`px-2 py-1 text-xs rounded ${isSaving ? 'bg-emerald-400 text-black/70' : 'bg-emerald-600 text-white hover:bg-emerald-500'}`}
             >
-              {isSaving ? '保存中…' : saveLabel}
+              {isSaving ? t('layoutEditor.saving') : resolvedSaveLabel}
             </button>
           )}
           <button
             onClick={exportConfig}
             className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-500"
           >
-            导出
+            {t('layoutEditor.export')}
           </button>
         </div>
       </div>
@@ -440,7 +445,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
       {activeTool === 'grid' && (
         <div className="flex flex-wrap gap-3 p-2 bg-slate-800 rounded-lg text-xs text-white">
           <label className="flex items-center gap-1 font-medium">
-            <span className="text-slate-200">行数</span>
+            <span className="text-slate-200">{t('layoutEditor.grid.rows')}</span>
             <input
               type="number"
               min={1}
@@ -452,7 +457,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
             />
           </label>
           <label className="flex items-center gap-1 font-medium">
-            <span className="text-slate-200">列数</span>
+            <span className="text-slate-200">{t('layoutEditor.grid.cols')}</span>
             <input
               type="number"
               min={1}
@@ -464,7 +469,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
             />
           </label>
           <label className="flex items-center gap-1 font-medium">
-            <span className="text-slate-200">X间距</span>
+            <span className="text-slate-200">{t('layoutEditor.grid.gapX')}</span>
             <input
               type="number"
               min={0}
@@ -477,7 +482,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
             />
           </label>
           <label className="flex items-center gap-1 font-medium">
-            <span className="text-slate-200">Y间距</span>
+            <span className="text-slate-200">{t('layoutEditor.grid.gapY')}</span>
             <input
               type="number"
               min={0}
@@ -490,7 +495,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
             />
           </label>
           <label className="flex items-center gap-1 font-medium">
-            <span className="text-slate-200">X偏移</span>
+            <span className="text-slate-200">{t('layoutEditor.grid.offsetX')}</span>
             <input
               type="number"
               min={0}
@@ -503,7 +508,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
             />
           </label>
           <label className="flex items-center gap-1 font-medium">
-            <span className="text-slate-200">Y偏移</span>
+            <span className="text-slate-200">{t('layoutEditor.grid.offsetY')}</span>
             <input
               type="number"
               min={0}
@@ -516,7 +521,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
             />
           </label>
           <label className="flex items-center gap-1 font-medium">
-            <span className="text-slate-200">宽度</span>
+            <span className="text-slate-200">{t('layoutEditor.grid.width')}</span>
             <input
               type="number"
               min={0.1}
@@ -529,7 +534,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
             />
           </label>
           <label className="flex items-center gap-1 font-medium">
-            <span className="text-slate-200">高度</span>
+            <span className="text-slate-200">{t('layoutEditor.grid.height')}</span>
             <input
               type="number"
               min={0.1}
@@ -546,7 +551,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
               onClick={() => updateGrid({})}
               className="px-2 py-1 bg-cyan-600 text-white rounded hover:bg-cyan-500"
             >
-              创建网格
+              {t('layoutEditor.grid.create')}
             </button>
           )}
         </div>
@@ -571,7 +576,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
         {(backgroundImage || config.backgroundImage) && (
           <img
             src={backgroundImage || config.backgroundImage}
-            alt="背景"
+            alt={t('layoutEditor.backgroundAlt')}
             onLoad={handleBackgroundImageLoad}
             className="absolute inset-0 w-full h-full object-contain pointer-events-none"
           />
@@ -606,11 +611,15 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
 
       {/* 状态信息 */}
       <div className="text-xs text-slate-400 p-2 bg-slate-800 rounded-lg">
-        <span>网格: {config.grid ? `${config.grid.rows}×${config.grid.cols}` : '未设置'}</span>
-        <span className="ml-4">区域: {config.zones.length}</span>
-        <span className="ml-4">轨道: {config.tracks.length}</span>
-        <span className="ml-4">堆叠点: {config.stackPoints.length}</span>
-        {selectedId && <span className="ml-4 text-yellow-400">选中: {selectedId}</span>}
+        <span>
+          {t('layoutEditor.status.grid', {
+            value: config.grid ? `${config.grid.rows}×${config.grid.cols}` : t('layoutEditor.status.unset'),
+          })}
+        </span>
+        <span className="ml-4">{t('layoutEditor.status.zone', { count: config.zones.length })}</span>
+        <span className="ml-4">{t('layoutEditor.status.track', { count: config.tracks.length })}</span>
+        <span className="ml-4">{t('layoutEditor.status.stackPoint', { count: config.stackPoints.length })}</span>
+        {selectedId && <span className="ml-4 text-yellow-400">{t('layoutEditor.status.selected', { id: selectedId })}</span>}
       </div>
     </div>
   );

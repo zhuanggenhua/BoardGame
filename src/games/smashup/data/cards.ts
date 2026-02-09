@@ -1,5 +1,5 @@
 import type { CardDef, BaseCardDef, MinionCardDef } from '../domain/types';
-import { SMASHUP_ATLAS_IDS } from '../domain/ids';
+import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 
 import { PIRATE_CARDS } from './factions/pirates';
 import { NINJA_CARDS } from './factions/ninjas';
@@ -475,7 +475,7 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         vpAwards: [4, 2, 1],
         abilityText: '在每位玩家回合开始时，该玩家可以消灭他在本地的一个随从，如果他这样做，获得1VP。',
         abilityTextEn: 'At the start of each player’s turn, that player may destroy one of their minions here to gain 1 VP.',
-        faction: 'cthulhu',
+        faction: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 2 },
     },
     {
@@ -519,7 +519,7 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         vpAwards: [3, 3, 2],
         abilityText: '在这个基地计分后，冠军可以搜寻他的手牌和弃牌堆中任意数量的疯狂卡，然后返回到疯狂卡牌库。',
         abilityTextEn: 'After this base scores, the winner may search their hand and discard pile for any number of Madness cards and return them to the Madness deck.',
-        faction: 'miskatonic',
+        faction: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 6 },
     },
     {
@@ -580,6 +580,33 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
 ];
 registerBases(BASE_CARDS_SET4);
 
+// ============================================================================
+// 基地选择：按所选派系推断扩展包（从基地数据推断）
+// ============================================================================
+
+type BaseSetKey = 'base' | 'al9000' | 'pretty_pretty' | 'set4';
+
+const BASE_SET_CARDS: Record<BaseSetKey, BaseCardDef[]> = {
+    base: BASE_CARDS,
+    al9000: BASE_CARDS_AL9000,
+    pretty_pretty: BASE_CARDS_PRETTY_PRETTY,
+    set4: BASE_CARDS_SET4,
+};
+
+/** 根据所选派系获取基地定义 ID（按派系对应扩展包聚合） */
+export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
+    const selected = new Set(factionIds);
+    const selectedSets = Object.entries(BASE_SET_CARDS)
+        .filter(([, bases]) => bases.some(base => base.faction && selected.has(base.faction)))
+        .map(([setKey]) => setKey as BaseSetKey);
+    if (selectedSets.length === 0) {
+        return getAllBaseDefIds();
+    }
+    return selectedSets.flatMap((setKey) =>
+        BASE_SET_CARDS[setKey].map(base => base.id)
+    );
+}
+
 
 /** 查找卡牌定义 */
 export function getCardDef(defId: string): CardDef | undefined {
@@ -595,6 +622,25 @@ export function getMinionDef(defId: string): MinionCardDef | undefined {
 /** 查找基地定义 */
 export function getBaseDef(defId: string): BaseCardDef | undefined {
     return _baseRegistry.get(defId);
+}
+
+const isEnglishLocale = (language?: string) => (language ?? '').toLowerCase().startsWith('en');
+
+export function resolveCardName(def: CardDef | BaseCardDef | undefined, language?: string): string {
+    if (!def) return '';
+    return isEnglishLocale(language) ? def.nameEn : def.name;
+}
+
+export function resolveCardText(def: CardDef | BaseCardDef | undefined, language?: string): string {
+    if (!def) return '';
+    const useEn = isEnglishLocale(language);
+    if ('type' in def) {
+        if (def.type === 'minion') {
+            return useEn ? def.abilityTextEn ?? '' : def.abilityText ?? '';
+        }
+        return useEn ? def.effectTextEn ?? '' : def.effectText ?? '';
+    }
+    return useEn ? def.abilityTextEn ?? '' : def.abilityText ?? '';
 }
 
 /** 注册新派系（用于后续扩展） */

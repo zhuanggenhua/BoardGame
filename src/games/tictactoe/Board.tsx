@@ -11,7 +11,7 @@ import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { useRematch } from '../../contexts/RematchContext';
 import { useGameMode } from '../../contexts/GameModeContext';
 import { motion } from 'framer-motion';
-import { useGameAudio, playSound } from '../../lib/audio/useGameAudio';
+import { useGameAudio, playSound, playDeniedSound } from '../../lib/audio/useGameAudio';
 import { TIC_TAC_TOE_AUDIO_CONFIG } from './audio.config';
 
 type Props = BoardProps<MatchState<TicTacToeCore>>;
@@ -253,7 +253,10 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
             return;
         }
 
-        if (!isPlayerTurn) return;
+        if (!isPlayerTurn) {
+            playDeniedSound();
+            return;
+        }
 
         playSound('ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none');
 
@@ -416,8 +419,10 @@ export const TicTacToeBoard: React.FC<Props> = ({ ctx, G, moves, events, playerI
                             {isGameOver ? (
                                 <div className="text-xl md:text-2xl font-black italic text-white tracking-widest animate-pulse whitespace-nowrap drop-shadow-lg">
                                     {isWinner ?
-                                        (String(ctx.gameover.winner) === '0' ? <span className="text-neon-pink">{getPlayerName('0')} WINS</span> : <span className="text-neon-blue">{getPlayerName('1')} WINS</span>)
-                                        : "DRAW GAME"
+                                        (String(ctx.gameover.winner) === '0'
+                                            ? <span className="text-neon-pink">{t('status.win', { player: getPlayerName('0') })}</span>
+                                            : <span className="text-neon-blue">{t('status.win', { player: getPlayerName('1') })}</span>)
+                                        : t('status.draw')
                                     }
                                 </div>
                             ) : (

@@ -128,12 +128,21 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const aiTimerRef = useRef<number | undefined>(undefined);
 
     useEffect(() => {
+        warnDev('[TutorialContext] AI effect check:', {
+            active: tutorial.active,
+            hasStep: !!tutorial.step,
+            stepId: tutorial.step?.id,
+            hasAi: tutorial.step ? hasAiActions(tutorial.step) : false,
+            isControllerReady,
+            executedSteps: [...executedAiStepsRef.current],
+        });
         if (!tutorial.active || !tutorial.step || !hasAiActions(tutorial.step)) return;
         if (!isControllerReady) return;
 
         const stepId = tutorial.step.id;
         if (executedAiStepsRef.current.has(stepId)) return;
         executedAiStepsRef.current.add(stepId);
+        warnDev('[TutorialContext] AI effect: scheduling aiActions for step', stepId);
 
         // 缓存当前步骤的 autoAdvance 判断和 aiActions，避免闭包引用被清理后的状态
         const shouldAutoAdvanceAfterAi = shouldAutoAdvance(tutorial.step);
@@ -151,7 +160,11 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         aiTimerRef.current = window.setTimeout(() => {
             aiTimerRef.current = undefined;
             const controller = controllerRef.current;
-            if (!controller) return;
+            if (!controller) {
+                warnDev('[TutorialContext] AI timer fired but controller is null!');
+                return;
+            }
+            warnDev('[TutorialContext] AI timer fired, dispatching', aiActions.length, 'actions for step', stepId);
 
             aiActions.forEach((action: TutorialAiAction) => {
                 // 如果 aiAction 指定了 playerId，注入到 payload 中供 adapter 使用
@@ -206,7 +219,6 @@ export const useTutorial = () => {
 export const useTutorialBridge = (tutorial: TutorialState, moves: Record<string, unknown>) => {
     const context = useContext(TutorialContext);
     const lastSyncSignatureRef = useRef<string | null>(null);
-    const lastActiveRef = useRef<boolean>(tutorial.active);
     useEffect(() => {
         if (!context) return;
         const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${tutorial.steps?.length ?? 0}-${tutorial.aiActions?.length ?? 0}`;

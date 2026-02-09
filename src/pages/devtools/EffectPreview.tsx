@@ -7,6 +7,8 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
+import { clsx } from 'clsx';
+import { motion } from 'framer-motion';
 import {
   FlyingEffectsLayer,
   useFlyingEffects,
@@ -14,16 +16,25 @@ import {
 } from '../../components/common/animations/FlyingEffect';
 import { FloatingTextLayer, useFloatingText } from '../../components/common/animations/FloatingText';
 import { ShakeContainer, useShake } from '../../components/common/animations/ShakeContainer';
-import { HitStopContainer, useHitStop, HIT_STOP_PRESETS } from '../../components/common/animations/HitStopContainer';
-import { SlashEffect, useSlashEffect, SLASH_PRESETS } from '../../components/common/animations/SlashEffect';
+import { HIT_STOP_PRESETS } from '../../components/common/animations/HitStopContainer';
+import { SlashEffect, useSlashEffect, SLASH_PRESETS, getSlashPresetByDamage } from '../../components/common/animations/SlashEffect';
 import { BurstParticles, BURST_PRESETS } from '../../components/common/animations/BurstParticles';
 import { VictoryParticles } from '../../components/common/animations/VictoryParticles';
 import { ImpactContainer } from '../../components/common/animations/ImpactContainer';
-import { ShockwaveProjectile } from '../../components/common/animations/ShockwaveProjectile';
 import { PulseGlow } from '../../components/common/animations/PulseGlow';
 import { SummonEffect } from '../../components/common/animations/SummonEffect';
 import { ConeBlast } from '../../components/common/animations/ConeBlast';
 import { DamageFlash } from '../../components/common/animations/DamageFlash';
+import { RiftSlash, useRiftSlash, RIFT_PRESETS } from '../../components/common/animations/RiftSlash';
+import { ShatterEffect } from '../../components/common/animations/ShatterEffect';
+import { OptimizedImage } from '../../components/common/media/OptimizedImage';
+import {
+  LoadingArcaneAether,
+  LoadingArcaneGrandmaster,
+  LoadingMagicTrickCards,
+  LoadingCelestialOrrery,
+  LoadingSteampunkClock,
+} from '../../components/system/LoadingVariants';
 
 // ============================================================================
 // 预设 key → 中文标签映射
@@ -31,6 +42,9 @@ import { DamageFlash } from '../../components/common/animations/DamageFlash';
 
 const SLASH_LABELS: Record<string, string> = {
   light: '轻击', normal: '普通', heavy: '重击', critical: '暴击', ice: '冰霜', holy: '神圣',
+};
+const RIFT_LABELS: Record<string, string> = {
+  light: '轻击', normal: '普通', heavy: '重击', critical: '暴击', ice: '冰霜', holy: '神圣', void: '虚空',
 };
 const BURST_LABELS: Record<string, string> = {
   explosion: '爆炸', explosionStrong: '强力爆炸', summonGlow: '召唤光',
@@ -43,32 +57,48 @@ const BURST_LABELS: Record<string, string> = {
 
 interface PerfStats {
   fps: number;
-  frameTime: number; // ms
+  frameTime: number; // ms（当前批次平均）
+  avgFrameTime: number; // ms（全程平均）
+  maxFrameTime: number; // ms（全程最高）
   particles: number; // 存活粒子数
   isRunning: boolean;
 }
 
-/** 轻量级每卡片性能计数器 */
+/** 轻量级每卡片性能计数器（用 ref 累积，减少 setState 频率） */
 function usePerfCounter(): { stats: PerfStats; startMeasure: () => () => void; setParticles: (n: number) => void } {
-  const [stats, setStats] = useState<PerfStats>({ fps: 0, frameTime: 0, particles: 0, isRunning: false });
+  const [stats, setStats] = useState<PerfStats>({ fps: 0, frameTime: 0, avgFrameTime: 0, maxFrameTime: 0, particles: 0, isRunning: false });
   const rafRef = useRef(0);
 
   const startMeasure = useCallback(() => {
     const frameTimes: number[] = [];
+    const allFrameTimes: number[] = [];
+    let maxFt = 0;
     let lastTime = performance.now();
     let running = true;
 
-    setStats(s => ({ ...s, isRunning: true }));
+    setStats(s => ({ ...s, isRunning: true, avgFrameTime: 0, maxFrameTime: 0 }));
 
     const tick = () => {
       if (!running) return;
       const now = performance.now();
-      frameTimes.push(now - lastTime);
+      const ft = now - lastTime;
       lastTime = now;
+      frameTimes.push(ft);
+      allFrameTimes.push(ft);
+      if (ft > maxFt) maxFt = ft;
 
-      if (frameTimes.length >= 10) {
-        const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
-        setStats(s => ({ ...s, fps: Math.round(1000 / avg), frameTime: +avg.toFixed(1), isRunning: true }));
+      // 每 15 帧更新一次显示（降低 setState 频率）
+      if (frameTimes.length >= 15) {
+        const batchAvg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+        const totalAvg = allFrameTimes.reduce((a, b) => a + b, 0) / allFrameTimes.length;
+        setStats(s => ({
+          ...s,
+          fps: Math.round(1000 / batchAvg),
+          frameTime: +batchAvg.toFixed(1),
+          avgFrameTime: +totalAvg.toFixed(1),
+          maxFrameTime: +maxFt.toFixed(1),
+          isRunning: true,
+        }));
         frameTimes.length = 0;
       }
       rafRef.current = requestAnimationFrame(tick);
@@ -78,7 +108,15 @@ function usePerfCounter(): { stats: PerfStats; startMeasure: () => () => void; s
     return () => {
       running = false;
       cancelAnimationFrame(rafRef.current);
-      setStats(s => ({ ...s, isRunning: false }));
+      // 结束时写入最终统计
+      const totalAvg = allFrameTimes.length > 0
+        ? allFrameTimes.reduce((a, b) => a + b, 0) / allFrameTimes.length : 0;
+      setStats(s => ({
+        ...s,
+        isRunning: false,
+        avgFrameTime: +totalAvg.toFixed(1),
+        maxFrameTime: +maxFt.toFixed(1),
+      }));
     };
   }, []);
 
@@ -109,10 +147,17 @@ const TriggerButton: React.FC<{
 /** 性能指标显示条 */
 const PerfBar: React.FC<{ stats: PerfStats }> = ({ stats }) => {
   const fpsColor = !stats.isRunning ? 'text-slate-500' : stats.fps >= 55 ? 'text-emerald-400' : stats.fps >= 40 ? 'text-yellow-400' : 'text-red-400';
+  const maxColor = stats.maxFrameTime > 33 ? 'text-red-400' : stats.maxFrameTime > 20 ? 'text-yellow-400' : 'text-slate-400';
   return (
-    <div className="flex gap-2 text-[10px] font-mono items-center">
+    <div className="flex gap-2 text-[10px] font-mono items-center flex-wrap">
       <span className={fpsColor}>{stats.fps || '--'} FPS</span>
       <span className="text-slate-500">{stats.frameTime || '--'}ms</span>
+      {(stats.avgFrameTime > 0 || stats.maxFrameTime > 0) && (
+        <>
+          <span className="text-slate-400" title="全程平均帧时间">均 {stats.avgFrameTime}ms</span>
+          <span className={maxColor} title="全程最高帧时间">峰 {stats.maxFrameTime}ms</span>
+        </>
+      )}
       {stats.particles > 0 && <span className="text-blue-400">{stats.particles}p</span>}
       {stats.isRunning && <span className="text-emerald-500 animate-pulse text-[8px]">●</span>}
     </div>
@@ -127,8 +172,11 @@ const EffectCard: React.FC<{
   children: React.ReactNode;
   buttons: React.ReactNode;
   stats?: PerfStats;
-}> = ({ title, icon, desc, children, buttons, stats }) => (
-  <div className="bg-slate-800/40 rounded-lg border border-slate-700/60 p-3 flex flex-col overflow-hidden">
+  /** 预览区最小高度（默认 160px） */
+  previewMinH?: string;
+  className?: string;
+}> = ({ title, icon, desc, children, buttons, stats, previewMinH = '160px', className }) => (
+  <div className={clsx("bg-slate-800/40 rounded-lg border border-slate-700/60 p-3 flex flex-col", className)}>
     <div className="flex items-center justify-between mb-1">
       <div className="flex items-center gap-1.5">
         <span className="text-sm">{icon}</span>
@@ -137,7 +185,7 @@ const EffectCard: React.FC<{
       {stats && <PerfBar stats={stats} />}
     </div>
     {desc && <p className="text-[10px] text-slate-500 mb-2">{desc}</p>}
-    <div className="relative bg-slate-900/50 rounded border border-slate-700/40 mb-2 flex-1 min-h-[160px]" style={{ overflow: 'visible' }}>
+    <div className="relative bg-slate-900/50 rounded border border-slate-700/40 mb-2 flex-1" style={{ overflow: 'visible', minHeight: previewMinH }}>
       {children}
     </div>
     <div className="flex flex-wrap gap-1.5">{buttons}</div>
@@ -224,33 +272,58 @@ const FloatingTextCard: React.FC = () => {
 /** 震动 + 钝帧 */
 const ShakeHitStopCard: React.FC = () => {
   const { isShaking, triggerShake } = useShake(500);
-  const { isActive: hitLight, triggerHitStop: triggerLight } = useHitStop(80);
-  const { isActive: hitHeavy, triggerHitStop: triggerHeavy } = useHitStop(80);
-  const { isActive: hitCrit, triggerHitStop: triggerCrit } = useHitStop(80);
+
+  // 钝帧通过 ImpactContainer 统一管理
+  const [lightActive, setLightActive] = useState(false);
+  const [heavyActive, setHeavyActive] = useState(false);
+  const [critActive, setCritActive] = useState(false);
+
+  const triggerImpact = useCallback((setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    setter(false);
+    requestAnimationFrame(() => setter(true));
+  }, []);
 
   return (
-    <EffectCard title="震动 + 钝帧" icon="💥" desc="帧冻结 + scale 微弹 + 亮度脉冲"
+    <EffectCard title="震动 + 钝帧" icon="💥" desc="震动 + 帧冻结（rAF 暂停，冻在当前偏移）"
       buttons={<>
-        <TriggerButton label="震动" onClick={triggerShake} />
-        <TriggerButton label="钝帧·轻" onClick={() => triggerLight(HIT_STOP_PRESETS.light)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="钝帧·重" onClick={() => triggerHeavy(HIT_STOP_PRESETS.heavy)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="钝帧·暴击" onClick={() => triggerCrit(HIT_STOP_PRESETS.critical)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label="纯震动" onClick={triggerShake} />
+        <TriggerButton label="震动+钝帧·轻" onClick={() => triggerImpact(setLightActive)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label="震动+钝帧·重" onClick={() => triggerImpact(setHeavyActive)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label="震动+钝帧·暴击" onClick={() => triggerImpact(setCritActive)} color="bg-rose-700 hover:bg-rose-600" />
       </>}
     >
       <div className="absolute inset-0 flex items-center justify-center gap-3 p-3">
         <ShakeContainer isShaking={isShaking} className="w-24 h-16 bg-slate-700 rounded flex items-center justify-center border border-slate-600">
-          <span className="text-[10px] text-slate-300">震动</span>
+          <span className="text-[10px] text-slate-300">纯震动</span>
         </ShakeContainer>
-        <div className="flex flex-col gap-1">
-          <HitStopContainer isActive={hitLight} {...HIT_STOP_PRESETS.light} className="w-20 h-4 bg-red-900/50 rounded flex items-center justify-center border border-red-700/50">
+        <div className="flex flex-col gap-2">
+          <ImpactContainer
+            isActive={lightActive} damage={1}
+            effects={{ shake: true, hitStop: true }}
+            hitStopConfig={HIT_STOP_PRESETS.light}
+            onComplete={() => setLightActive(false)}
+            className="w-20 h-6 bg-red-900/50 rounded flex items-center justify-center border border-red-700/50"
+          >
             <span className="text-[9px] text-red-300">轻</span>
-          </HitStopContainer>
-          <HitStopContainer isActive={hitHeavy} {...HIT_STOP_PRESETS.heavy} className="w-20 h-4 bg-red-900/50 rounded flex items-center justify-center border border-red-700/50">
+          </ImpactContainer>
+          <ImpactContainer
+            isActive={heavyActive} damage={5}
+            effects={{ shake: true, hitStop: true }}
+            hitStopConfig={HIT_STOP_PRESETS.heavy}
+            onComplete={() => setHeavyActive(false)}
+            className="w-20 h-6 bg-red-900/50 rounded flex items-center justify-center border border-red-700/50"
+          >
             <span className="text-[9px] text-red-300">重</span>
-          </HitStopContainer>
-          <HitStopContainer isActive={hitCrit} {...HIT_STOP_PRESETS.critical} className="w-20 h-4 bg-red-900/50 rounded flex items-center justify-center border border-red-700/50">
+          </ImpactContainer>
+          <ImpactContainer
+            isActive={critActive} damage={10}
+            effects={{ shake: true, hitStop: true }}
+            hitStopConfig={HIT_STOP_PRESETS.critical}
+            onComplete={() => setCritActive(false)}
+            className="w-20 h-6 bg-red-900/50 rounded flex items-center justify-center border border-red-700/50"
+          >
             <span className="text-[9px] text-red-300">暴击</span>
-          </HitStopContainer>
+          </ImpactContainer>
         </div>
       </div>
     </EffectCard>
@@ -271,7 +344,7 @@ const SlashCard: React.FC = () => {
   }, [triggerSlash, startMeasure]);
 
   return (
-    <EffectCard title="斜切" icon="⚔️" desc="Canvas 弧形刀光 + 火花" stats={stats}
+    <EffectCard title="弧形刀光" icon="⚔️" desc="Canvas 弧形刀光 + 火花" stats={stats}
       buttons={<>
         {Object.keys(SLASH_PRESETS).map(name => (
           <TriggerButton key={name} label={SLASH_LABELS[name] ?? name} onClick={() => fire(name)} color="bg-orange-700 hover:bg-orange-600" />
@@ -317,9 +390,10 @@ const BurstCard: React.FC = () => {
           active preset={activePreset as keyof typeof BURST_PRESETS}
           color={
             activePreset.includes('summon') ? ['#a78bfa', '#c084fc', '#e9d5ff'] :
-            activePreset === 'sparks' ? ['#fbbf24', '#f59e0b', '#fef3c7', '#fff'] :
-            activePreset === 'magicDust' ? ['#34d399', '#6ee7b7', '#a7f3d0', '#fff'] :
-            undefined
+              activePreset === 'sparks' ? ['#fbbf24', '#f59e0b', '#fef3c7', '#fff'] :
+                activePreset === 'magicDust' ? ['#34d399', '#6ee7b7', '#a7f3d0', '#fff'] :
+                  activePreset === 'smoke' ? ['#94a3b8', '#64748b', '#475569', '#cbd5e1'] :
+                    undefined
           }
           onComplete={() => setActivePreset(null)}
         />
@@ -355,48 +429,8 @@ const VictoryCard: React.FC = () => {
   );
 };
 
-/** 打击感组合 */
-const ImpactCard: React.FC = () => {
-  const [isActive, setIsActive] = useState(false);
-  const [damage, setDamage] = useState(5);
-  const timerRef = useRef<number>(0);
-  const { stats, startMeasure } = usePerfCounter();
-
-  const trigger = useCallback((dmg: number) => {
-    setDamage(dmg);
-    setIsActive(false);
-    window.clearTimeout(timerRef.current);
-    requestAnimationFrame(() => setIsActive(true));
-    timerRef.current = window.setTimeout(() => setIsActive(false), 100);
-    const stop = startMeasure();
-    setTimeout(stop, 800);
-  }, [startMeasure]);
-
-  return (
-    <EffectCard title="打击感组合" icon="🔨" desc="震动 + 斜切 + 钝帧" stats={stats}
-      buttons={<>
-        <TriggerButton label="轻击 (2)" onClick={() => trigger(2)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="普通 (5)" onClick={() => trigger(5)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="重击 (8)" onClick={() => trigger(8)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="暴击 (12)" onClick={() => trigger(12)} color="bg-rose-700 hover:bg-rose-600" />
-      </>}
-    >
-      <div className="absolute inset-0 flex items-center justify-center">
-        <ImpactContainer
-          isActive={isActive} damage={damage}
-          effects={{ shake: true, slash: true, hitStop: true }}
-          className="w-36 h-20 bg-slate-700 rounded flex items-center justify-center border border-slate-600"
-          style={{ overflow: 'visible' }}
-        >
-          <span className="text-[10px] text-slate-300">受击目标（伤害={damage}）</span>
-        </ImpactContainer>
-      </div>
-    </EffectCard>
-  );
-};
-
-/** 冲击波投射物 */
-const ShockwaveCard: React.FC = () => {
+/** 碎裂消散 */
+const ShatterCard: React.FC = () => {
   const [active, setActive] = useState(false);
   const [intensity, setIntensity] = useState<'normal' | 'strong'>('normal');
   const { stats, startMeasure } = usePerfCounter();
@@ -406,21 +440,138 @@ const ShockwaveCard: React.FC = () => {
     setActive(false);
     requestAnimationFrame(() => setActive(true));
     const stop = startMeasure();
-    setTimeout(stop, 1000);
+    setTimeout(stop, 1500);
   }, [startMeasure]);
 
   return (
-    <EffectCard title="冲击波" icon="🌊" desc="气浪投射物，普通/强力" stats={stats}
+    <EffectCard title="碎裂消散" icon="💀" desc="实体碎裂飞散 + 重力下坠（单位死亡/卡牌销毁）" stats={stats}
       buttons={<>
-        <TriggerButton label="普通" onClick={() => trigger('normal')} color="bg-cyan-700 hover:bg-cyan-600" />
-        <TriggerButton label="强力" onClick={() => trigger('strong')} color="bg-cyan-700 hover:bg-cyan-600" />
+        <TriggerButton label="普通死亡" onClick={() => trigger('normal')} color="bg-slate-600 hover:bg-slate-500" />
+        <TriggerButton label="强力击杀" onClick={() => trigger('strong')} color="bg-red-700 hover:bg-red-600" />
       </>}
     >
-      <div className="absolute left-[20%] top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-cyan-500/30 border border-cyan-400/50 flex items-center justify-center text-[9px] text-cyan-300">起</div>
-      <div className="absolute left-[80%] top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500/30 border border-red-400/50 flex items-center justify-center text-[9px] text-red-300">终</div>
-      {active && (
-        <ShockwaveProjectile start={{ xPct: 20, yPct: 50 }} end={{ xPct: 80, yPct: 50 }} intensity={intensity} onComplete={() => setActive(false)} />
-      )}
+      <div className="absolute inset-0 flex items-center justify-center">
+        {/* 用实际卡图做预览背景 */}
+        <div className="relative w-24 h-32 rounded overflow-hidden border border-slate-600">
+          <OptimizedImage
+            src="summonerwars/hero/Frost/hero.png"
+            alt="预览卡图"
+            className="w-full h-full object-cover"
+          />
+          {active && (
+            <ShatterEffect
+              active
+              intensity={intensity}
+              onComplete={() => setActive(false)}
+            />
+          )}
+        </div>
+      </div>
+    </EffectCard>
+  );
+};
+
+/** 效果开关按钮 */
+const ToggleChip: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`px-2 py-0.5 rounded text-[10px] font-medium transition-[background-color,color] border ${active
+      ? 'bg-indigo-600/60 text-indigo-200 border-indigo-500/60'
+      : 'bg-slate-700/40 text-slate-500 border-slate-600/40'
+      }`}
+  >
+    {label}
+  </button>
+);
+
+/** 打击感组合（可自选） */
+const ImpactCard: React.FC = () => {
+  const [damage, setDamage] = useState(5);
+  const { stats, startMeasure } = usePerfCounter();
+
+  // 各效果开关（默认与受伤反馈一致）
+  const [useShakeEff, setUseShakeEff] = useState(true);
+  const [useHitStopEff, setUseHitStopEff] = useState(false);
+  const [slashType, setSlashType] = useState<'arc' | 'rift' | 'none'>('rift');
+  const [useWhiteFlash, setUseWhiteFlash] = useState(false);
+  const [useRedPulse, setUseRedPulse] = useState(true);
+  const [showDmgNumber, setShowDmgNumber] = useState(true);
+
+  const [isActive, setIsActive] = useState(false);
+  const timerRef = useRef<number>(0);
+
+  // 弧形刀光
+  const { isActive: slashActive, triggerSlash } = useSlashEffect();
+
+  const trigger = useCallback((dmg: number) => {
+    setDamage(dmg);
+    setIsActive(false);
+    window.clearTimeout(timerRef.current);
+    requestAnimationFrame(() => {
+      setIsActive(true);
+      if (slashType === 'arc') triggerSlash(getSlashPresetByDamage(dmg));
+    });
+    const stop = startMeasure();
+    setTimeout(stop, 800);
+  }, [startMeasure, slashType, triggerSlash]);
+
+  const isStrong = damage >= 6;
+
+  return (
+    <EffectCard title="打击感组合" icon="🔨" desc="ImpactContainer(震动+钝帧) + DamageFlash(视觉层)" stats={stats}
+      buttons={<>
+        <TriggerButton label="轻击 (2)" onClick={() => trigger(2)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label="普通 (5)" onClick={() => trigger(5)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label="重击 (8)" onClick={() => trigger(8)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label="暴击 (12)" onClick={() => trigger(12)} color="bg-rose-700 hover:bg-rose-600" />
+      </>}
+    >
+      {/* 效果开关栏 */}
+      <div className="absolute top-1.5 left-1.5 right-1.5 flex gap-1 z-10 flex-wrap">
+        <ToggleChip label="震动" active={useShakeEff} onClick={() => setUseShakeEff(v => !v)} />
+        <ToggleChip label="钝帧" active={useHitStopEff} onClick={() => setUseHitStopEff(v => !v)} />
+        <ToggleChip label="弧形刀光" active={slashType === 'arc'} onClick={() => setSlashType(v => v === 'arc' ? 'none' : 'arc')} />
+        <ToggleChip label="次元裂隙" active={slashType === 'rift'} onClick={() => setSlashType(v => v === 'rift' ? 'none' : 'rift')} />
+        <ToggleChip label="白闪" active={useWhiteFlash} onClick={() => setUseWhiteFlash(v => !v)} />
+        <ToggleChip label="红脉冲" active={useRedPulse} onClick={() => setUseRedPulse(v => !v)} />
+        <ToggleChip label="伤害数字" active={showDmgNumber} onClick={() => setShowDmgNumber(v => !v)} />
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center" style={{ overflow: 'visible' }}>
+        {/* ImpactContainer 包裹目标：震动+钝帧作用于目标本身 */}
+        <ImpactContainer
+          isActive={isActive} damage={damage}
+          effects={{ shake: useShakeEff, hitStop: useHitStopEff }}
+          hitStopConfig={useHitStopEff ? { duration: 300 } : undefined}
+          onComplete={() => setIsActive(false)}
+          className="relative w-36 h-20 bg-slate-700 rounded flex items-center justify-center border border-slate-600"
+          style={{ overflow: 'visible' }}
+        >
+          <span className="text-[10px] text-slate-300">受击目标（伤害={damage}）</span>
+          {/* DamageFlash 视觉覆盖层：斜切+红脉冲+数字 */}
+          {isActive && (
+            <DamageFlash
+              active
+              damage={damage}
+              intensity={isStrong ? 'strong' : 'normal'}
+              showSlash={slashType === 'rift'}
+              showRedPulse={useRedPulse}
+              showNumber={showDmgNumber}
+            />
+          )}
+          {/* 弧形刀光（独立叠加） */}
+          {slashType === 'arc' && (
+            <SlashEffect isActive={slashActive} {...getSlashPresetByDamage(damage)} />
+          )}
+          {/* 白闪 */}
+          {useWhiteFlash && isActive && (
+            <motion.div className="absolute inset-0 rounded bg-white/50 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.7, 0] }}
+              transition={{ duration: 0.08 }}
+            />
+          )}
+        </ImpactContainer>
+      </div>
     </EffectCard>
   );
 };
@@ -473,18 +624,16 @@ const SummonCard: React.FC = () => {
   }, [startMeasure]);
 
   return (
-    <EffectCard title="召唤特效" icon="🔮" desc="光柱 + 冲击波环 + 地裂 + 粒子" stats={stats}
+    <EffectCard title="召唤特效" icon="🔮" desc="Canvas 2D 多阶段：蓄力→爆发→呼吸→消散" stats={stats} previewMinH="320px"
       buttons={<>
         <TriggerButton label="普通（蓝）" onClick={() => trigger(false)} color="bg-blue-700 hover:bg-blue-600" />
         <TriggerButton label="强力（金）" onClick={() => trigger(true)} color="bg-yellow-600 hover:bg-yellow-500" />
       </>}
     >
-      <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'radial-gradient(circle, #1e293b 0%, #0f172a 100%)' }}>
-        <div className="relative w-24 h-24" style={{ overflow: 'visible' }}>
-          {active && (
-            <SummonEffect active intensity={isStrong ? 'strong' : 'normal'} color={isStrong ? 'gold' : 'blue'} onComplete={() => setActive(false)} />
-          )}
-        </div>
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(circle, #1e293b 0%, #0f172a 100%)' }}>
+        {active && (
+          <SummonEffect active intensity={isStrong ? 'strong' : 'normal'} color={isStrong ? 'gold' : 'blue'} onComplete={() => setActive(false)} />
+        )}
       </div>
     </EffectCard>
   );
@@ -537,7 +686,7 @@ const DamageFlashCard: React.FC = () => {
   }, [startMeasure]);
 
   return (
-    <EffectCard title="受伤反馈" icon="🩸" desc="震动 + 斜切 + 白闪 + 红脉冲 + 飘字" stats={stats}
+    <EffectCard title="受伤反馈" icon="🩸" desc="ImpactContainer(震动) + DamageFlash(斜切+红脉冲+数字)" stats={stats}
       buttons={<>
         <TriggerButton label="轻伤 (1)" onClick={() => trigger(1, 'normal')} color="bg-red-700 hover:bg-red-600" />
         <TriggerButton label="中伤 (3)" onClick={() => trigger(3, 'normal')} color="bg-red-700 hover:bg-red-600" />
@@ -545,17 +694,105 @@ const DamageFlashCard: React.FC = () => {
         <TriggerButton label="致命 (10)" onClick={() => trigger(10, 'strong')} color="bg-red-700 hover:bg-red-600" />
       </>}
     >
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative w-32 h-20 bg-slate-700 rounded border border-slate-600 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center" style={{ overflow: 'visible' }}>
+        {/* ImpactContainer 包裹目标：震动作用于目标本身 */}
+        <ImpactContainer
+          isActive={active} damage={damage}
+          effects={{ shake: true, hitStop: false }}
+          onComplete={() => setActive(false)}
+          className="relative w-32 h-20 bg-slate-700 rounded flex items-center justify-center border border-slate-600"
+          style={{ overflow: 'visible' }}
+        >
           <span className="text-[10px] text-slate-300">受击目标</span>
+          {/* DamageFlash 视觉覆盖层 */}
           {active && (
-            <DamageFlash active damage={damage} intensity={intensity} onComplete={() => setActive(false)} />
+            <DamageFlash active damage={damage} intensity={intensity} />
           )}
-        </div>
+        </ImpactContainer>
       </div>
     </EffectCard>
   );
 };
+
+/** 次元裂隙 */
+const RiftSlashCard: React.FC = () => {
+  const { isActive, triggerRift } = useRiftSlash();
+  const [currentPreset, setCurrentPreset] = useState('normal');
+  const { stats, startMeasure } = usePerfCounter();
+
+  const fire = useCallback((name: string) => {
+    setCurrentPreset(name);
+    triggerRift(RIFT_PRESETS[name as keyof typeof RIFT_PRESETS]);
+    const stop = startMeasure();
+    setTimeout(stop, 600);
+  }, [triggerRift, startMeasure]);
+
+  return (
+    <EffectCard title="次元裂隙" icon="🌀" desc="Canvas 直线斜切 + 火花" stats={stats}
+      buttons={<>
+        {Object.keys(RIFT_PRESETS).map(name => (
+          <TriggerButton key={name} label={RIFT_LABELS[name] ?? name} onClick={() => fire(name)} color="bg-violet-700 hover:bg-violet-600" />
+        ))}
+      </>}
+    >
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-[10px] text-slate-600">受击区域</span>
+      </div>
+      <RiftSlash isActive={isActive} {...(RIFT_PRESETS[currentPreset as keyof typeof RIFT_PRESETS] ?? RIFT_PRESETS.normal)} />
+    </EffectCard>
+  );
+};
+
+// ============================================================================
+// 加载动画预览区块
+// ============================================================================
+
+const LoadingVariantCard: React.FC<{
+  title: string;
+  icon: string;
+  desc: string;
+  component: React.FC<{ className?: string }>;
+}> = ({ title, icon, desc, component: Comp }) => {
+  const { stats, startMeasure } = usePerfCounter();
+  const [active, setActive] = useState(false); // 初始设为停止
+
+  // 仅在 active 为 true 时启动性能监测
+  React.useEffect(() => {
+    if (active) {
+      const stop = startMeasure();
+      return stop;
+    }
+  }, [active, startMeasure]);
+
+  return (
+    <EffectCard
+      title={title} icon={icon} desc={desc} stats={stats}
+      className="md:col-span-2 lg:col-span-3 min-h-[600px]" // 再次增大容器，并占用更多网格列
+      previewMinH="500px"
+      buttons={
+        <TriggerButton
+          label={active ? "停止" : "启动"}
+          onClick={() => setActive(prev => !prev)}
+          color={active ? "bg-slate-700" : "bg-emerald-700"}
+        />
+      }
+    >
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden bg-slate-900/50">
+        {active && (
+          <div className="w-full h-full flex items-center justify-center">
+            <Comp className="scale-100 transform-gpu" />
+          </div>
+        )}
+      </div>
+    </EffectCard>
+  );
+};
+
+const ArcaneQualifiedCard: React.FC = () => <LoadingVariantCard title="Qualified Arcane" icon="✅" desc="【过审】复合叠加版本（粒子流）" component={LoadingArcaneAether} />;
+const ArcaneGrandmasterCard: React.FC = () => <LoadingVariantCard title="Arcane Grandmaster" icon="🔯" desc="【候补】在过审版基础上大幅加强" component={LoadingArcaneGrandmaster} />;
+const MagicCardsCard: React.FC = () => <LoadingVariantCard title="Magic Cards" icon="🪄" desc="【候补】魔术师天女散花式飞牌" component={LoadingMagicTrickCards} />;
+const OrreryCard: React.FC = () => <LoadingVariantCard title="Solar System Pro" icon="🪐" desc="写实：太阳系模拟（八大行星）" component={LoadingCelestialOrrery} />;
+const GrandClockCard: React.FC = () => <LoadingVariantCard title="Grandmaster Clock" icon="🕰️" desc="极致机械感：精密咬合齿轮组" component={LoadingSteampunkClock} />;
 
 // ============================================================================
 // 分类注册表 — 按特效类型分组
@@ -566,6 +803,8 @@ interface EffectEntry {
   label: string;
   icon: string;
   component: React.FC;
+  /** 中文使用场景描述 */
+  usageDesc?: string;
 }
 
 interface EffectGroup {
@@ -578,33 +817,44 @@ const EFFECT_GROUPS: EffectGroup[] = [
   {
     id: 'particle', label: '🔥 粒子类',
     entries: [
-      { id: 'burst', label: '爆发粒子', icon: '✨', component: BurstCard },
-      { id: 'victory', label: '胜利彩带', icon: '🎉', component: VictoryCard },
-      { id: 'summon', label: '召唤特效', icon: '🔮', component: SummonCard },
+      { id: 'burst', label: '爆发粒子', icon: '✨', component: BurstCard, usageDesc: '召唤师战争·单位被消灭' },
+      { id: 'shatter', label: '碎裂消散', icon: '💀', component: ShatterCard, usageDesc: '暂未接入·替代爆发粒子用于死亡' },
+      { id: 'victory', label: '胜利彩带', icon: '🎉', component: VictoryCard, usageDesc: '通用·对局胜利结算' },
+      { id: 'summon', label: '召唤特效', icon: '🔮', component: SummonCard, usageDesc: '召唤师战争·召唤单位入场' },
     ],
   },
   {
     id: 'impact', label: '⚔️ 打击类',
     entries: [
-      { id: 'shake', label: '震动+钝帧', icon: '💥', component: ShakeHitStopCard },
-      { id: 'slash', label: '斜切', icon: '⚔️', component: SlashCard },
-      { id: 'impactCombo', label: '打击感组合', icon: '🔨', component: ImpactCard },
-      { id: 'dmgflash', label: '受伤反馈', icon: '🩸', component: DamageFlashCard },
+      { id: 'shake', label: '震动+钝帧', icon: '💥', component: ShakeHitStopCard, usageDesc: '骰铸王座·受击震动 / 召唤师战争·棋格受击' },
+      { id: 'slash', label: '弧形刀光', icon: '⚔️', component: SlashCard, usageDesc: '暂未接入业务' },
+      { id: 'rift', label: '次元裂隙', icon: '🌀', component: RiftSlashCard, usageDesc: '受伤反馈·斜切视觉（DamageFlash 内部）' },
+      { id: 'impactCombo', label: '打击感组合', icon: '🔨', component: ImpactCard, usageDesc: '测试台·自由组合各效果' },
+      { id: 'dmgflash', label: '受伤反馈', icon: '🩸', component: DamageFlashCard, usageDesc: '召唤师战争·伤害反馈覆盖层' },
     ],
   },
   {
     id: 'projectile', label: '💨 投射类',
     entries: [
-      { id: 'flying', label: '飞行特效', icon: '🚀', component: FlyingCard },
-      { id: 'shockwave', label: '冲击波', icon: '🌊', component: ShockwaveCard },
-      { id: 'coneblast', label: '锥形气浪', icon: '💨', component: ConeBlastCard },
+      { id: 'flying', label: '飞行特效', icon: '🚀', component: FlyingCard, usageDesc: '骰铸王座·伤害/治疗/增益飞行数字' },
+      { id: 'coneblast', label: '锥形气浪', icon: '💨', component: ConeBlastCard, usageDesc: '召唤师战争·远程攻击投射' },
     ],
   },
   {
     id: 'ui', label: '✨ UI 类',
     entries: [
-      { id: 'floating', label: '飘字', icon: '💬', component: FloatingTextCard },
-      { id: 'pulseglow', label: '脉冲发光', icon: '⚡', component: PulseGlowCard },
+      { id: 'floating', label: '飘字', icon: '💬', component: FloatingTextCard, usageDesc: '暂未接入业务' },
+      { id: 'pulseglow', label: '脉冲发光', icon: '⚡', component: PulseGlowCard, usageDesc: '骰铸王座·技能高亮 / 悬浮球菜单' },
+    ],
+  },
+  {
+    id: 'loading', label: '⌛ 加载类',
+    entries: [
+      { id: 'arcane_qualified', label: '✅ 过审法阵', icon: '✅', component: ArcaneQualifiedCard },
+      { id: 'arcane_grandmaster', label: '究极法阵', icon: '🔯', component: ArcaneGrandmasterCard },
+      { id: 'magic_cards', label: '魔术飞牌', icon: '🪄', component: MagicCardsCard },
+      { id: 'solar_system', label: '太阳系 Pro', icon: '🪐', component: OrreryCard },
+      { id: 'grand_clock', label: '机械神域', icon: '🕰️', component: GrandClockCard },
     ],
   },
 ];
@@ -628,11 +878,10 @@ const EffectPreview: React.FC = () => {
           <button
             key={group.id}
             onClick={() => setActiveGroupId(group.id)}
-            className={`text-left px-3 py-2 rounded-lg text-xs font-medium transition-[background-color] ${
-              group.id === activeGroupId
-                ? 'bg-indigo-600/40 text-indigo-200 border border-indigo-500/50'
-                : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-200 border border-transparent'
-            }`}
+            className={`text-left px-3 py-2 rounded-lg text-xs font-medium transition-[background-color] ${group.id === activeGroupId
+              ? 'bg-indigo-600/40 text-indigo-200 border border-indigo-500/50'
+              : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-200 border border-transparent'
+              }`}
           >
             {group.label}
             <span className="ml-1 text-[10px] opacity-50">({group.entries.length})</span>
@@ -648,10 +897,22 @@ const EffectPreview: React.FC = () => {
         <h2 className="text-base font-bold text-slate-100 border-b border-slate-700 pb-1 mb-4">
           {activeGroup.label}
         </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-16">
           {activeGroup.entries.map(entry => {
             const Comp = entry.component;
-            return <Comp key={entry.id} />;
+            return (
+              <div key={entry.id} className="flex flex-col gap-1">
+                <Comp />
+                {entry.usageDesc && (
+                  <div className="flex items-center gap-1.5 px-1">
+                    <span className="text-[9px] text-slate-500 shrink-0">使用场景：</span>
+                    <span className={`text-[9px] ${entry.usageDesc.startsWith('暂未') ? 'text-slate-600 italic' : 'text-emerald-400'}`}>
+                      {entry.usageDesc}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
           })}
         </div>
       </main>

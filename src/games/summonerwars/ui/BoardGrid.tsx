@@ -125,6 +125,7 @@ const GridLayer: React.FC<{
             data-valid-build={props.validBuildPositions.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             data-valid-move={props.validMovePositions.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             data-valid-attack={props.validAttackPositions.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
+            data-valid-event-target={props.validEventTargets.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             className={`absolute bg-transparent border transition-colors cursor-pointer ${cellStyle}`}
             style={{
               left: `${pos.left}%`, top: `${pos.top}%`,

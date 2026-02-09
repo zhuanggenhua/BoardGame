@@ -82,6 +82,14 @@ function makeAllyUnit(id: string, name: string): UnitCard {
   };
 }
 
+function makeEnemy(id: string): UnitCard {
+  return {
+    id, cardType: 'unit', name: '敌方单位', unitClass: 'common',
+    faction: '测试', strength: 2, life: 3, cost: 0,
+    attackType: 'melee', attackRange: 1, deckSymbols: [],
+  };
+}
+
 function executeAndReduce(
   state: SummonerWarsCore,
   commandType: string,
@@ -145,6 +153,61 @@ describe('雅各布 - 圣光箭 (holy_arrow) execute 流程', () => {
 
     // 雅各布 boosts 增加2
     expect(newState.board[4][2].unit?.boosts).toBe(2);
+  });
+
+  it('DECLARE_ATTACK 携带 beforeAttack 时触发弃牌并提升战力', () => {
+    const state = createPaladinState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-jacob',
+      card: makeJacob('test-jacob'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-enemy',
+      card: makeEnemy('test-enemy'),
+      owner: '1',
+    });
+
+    state.players['0'].hand.push(makeAllyUnit('discard-1', '城塞骑士'));
+    state.players['0'].hand.push(makeAllyUnit('discard-2', '城塞战士'));
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+    state.players['0'].attackCount = 0;
+    const magicBefore = state.players['0'].magic;
+
+    const { events } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 3 },
+      beforeAttack: {
+        abilityId: 'holy_arrow',
+        discardCardIds: ['discard-1', 'discard-2'],
+      },
+    });
+
+    const magicEvents = events.filter(e => e.type === SW_EVENTS.MAGIC_CHANGED);
+    expect(magicEvents.length).toBe(1);
+    expect((magicEvents[0].payload as any).delta).toBe(2);
+    expect((magicEvents[0].payload as any).playerId).toBe('0');
+
+    const discardEvents = events.filter(e => e.type === SW_EVENTS.CARD_DISCARDED);
+    expect(discardEvents.length).toBe(2);
+
+    const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGED);
+    expect(chargeEvents.length).toBe(1);
+    expect((chargeEvents[0].payload as any).delta).toBe(2);
+
+    const attackedEvent = events.find(e => e.type === SW_EVENTS.UNIT_ATTACKED);
+    expect(attackedEvent).toBeDefined();
+    // base 2 + beforeAttack bonus 2 + 弃牌充能 2
+    expect((attackedEvent!.payload as any).diceCount).toBe(6);
+
+    const magicAfter = magicBefore + 2;
+    const magicEvent = magicEvents[0];
+    expect((magicEvent.payload as any).delta).toBe(magicAfter - magicBefore);
   });
 
   it('不能弃除同名单位（验证拒绝）', () => {

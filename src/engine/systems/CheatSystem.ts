@@ -128,12 +128,43 @@ export interface CheatResourceModifier<TCore> {
 }
 
 // ============================================================================
+// 深度合并工具（用于 MERGE_STATE）
+// ============================================================================
+
+/**
+ * 深度合并两个对象。数组和原始值直接覆盖，普通对象递归合并。
+ * 仅处理 plain object，不处理 class 实例/Date/RegExp 等。
+ */
+function isPlainObject(val: unknown): val is Record<string, unknown> {
+    return val !== null && typeof val === 'object' && !Array.isArray(val);
+}
+
+function deepMerge(
+    target: Record<string, unknown>,
+    source: Record<string, unknown>,
+): Record<string, unknown> {
+    const result = { ...target };
+    for (const key of Object.keys(source)) {
+        const srcVal = source[key];
+        const tgtVal = target[key];
+        if (isPlainObject(srcVal) && isPlainObject(tgtVal)) {
+            result[key] = deepMerge(tgtVal, srcVal);
+        } else {
+            result[key] = srcVal;
+        }
+    }
+    return result;
+}
+
+// ============================================================================
 // 创建 Cheat 系统
 // ============================================================================
 
 export function createCheatSystem<TCore>(
     modifier?: CheatResourceModifier<TCore>
 ): EngineSystem<TCore> {
+    const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+    const isClient = typeof (typeof globalThis !== 'undefined' ? (globalThis as { window?: unknown }).window : undefined) !== 'undefined';
     return {
         id: SYSTEM_IDS.CHEAT,
         name: 'Cheat 系统',
@@ -141,7 +172,7 @@ export function createCheatSystem<TCore>(
 
         beforeCommand: ({ state, command }): HookResult<TCore> | void => {
             // 仅在开发模式下生效
-            if (typeof window !== 'undefined' && !import.meta.env.DEV) {
+            if (isClient && !isDev) {
                 if (command.type.startsWith('SYS_CHEAT_')) {
                     return { halt: true, error: '作弊命令仅在开发模式下可用' };
                 }
@@ -286,14 +317,15 @@ export function createCheatSystem<TCore>(
                 };
             }
 
-            // 处理合并部分字段到状态命令（教程注入 pendingDamage 等场景）
+            // 处理合并部分字段到状态命令（教程注入 pendingDamage / 手牌等场景）
+            // 使用深度合并，确保嵌套对象（如 players['0']）不会被浅覆盖
             if (command.type === CHEAT_COMMANDS.MERGE_STATE) {
                 const payload = command.payload as MergeStatePayload;
                 return {
                     halt: true,
                     state: {
                         ...state,
-                        core: { ...state.core, ...payload.fields } as TCore,
+                        core: deepMerge(state.core as Record<string, unknown>, payload.fields) as TCore,
                     },
                 };
             }

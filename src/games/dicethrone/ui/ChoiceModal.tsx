@@ -28,6 +28,16 @@ export const ChoiceModal = ({
     // isOpen determination
     const isOpen = !!choice;
 
+    const resolveOptionLabel = (label: string) => {
+        if (label.startsWith('choices.option-')) {
+            const index = Number(label.replace('choices.option-', ''));
+            if (!Number.isNaN(index)) {
+                return t('choices.option', { index: index + 1 });
+            }
+        }
+        return t(label);
+    };
+
     return (
         <GameModal
             isOpen={isOpen}
@@ -61,7 +71,7 @@ export const ChoiceModal = ({
                                     </span>
                                 }
                             >
-                                {t(option.label, { defaultValue: option.label })}
+                                {resolveOptionLabel(option.label)}
                             </GameButton>
                         );
                     })}

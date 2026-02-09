@@ -14,6 +14,8 @@
 
 import { useMemo, useRef } from 'react';
 
+const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+
 /**
  * 观察者 moves 包装配置
  */
@@ -47,7 +49,7 @@ export function useSpectatorMoves<T extends Record<string, unknown>>(
     const blockedLogRef = useRef<Set<string>>(new Set());
     
     const logBlocked = (action: string) => {
-        if (!enableDevLog || typeof import.meta === 'undefined' || !import.meta.env?.DEV) return;
+        if (!enableDevLog || !isDev) return;
         if (blockedLogRef.current.has(action)) return;
         
         blockedLogRef.current.add(action);

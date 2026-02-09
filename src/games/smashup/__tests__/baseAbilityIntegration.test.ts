@@ -18,6 +18,7 @@ import { createFlowSystem, createDefaultSystems } from '../../../engine';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS, getCurrentPlayerId } from '../domain/types';
 import { initAllAbilities } from '../abilities';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import {
     triggerBaseAbility,
     triggerExtendedBaseAbility,
@@ -44,10 +45,10 @@ function createRunner() {
 
 /** 蛇形选秀 + 推进到 playCards */
 const DRAFT_COMMANDS: SmashUpCommand[] = [
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: 'aliens' } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: 'pirates' } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: 'ninjas' } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: 'dinosaurs' } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
     { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
 ] as any[];
 
@@ -308,7 +309,7 @@ describe('base_locker_room: 回合开始抽牌', () => {
                         ],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 },
                 turnOrder: ['0', '1'],
@@ -348,7 +349,7 @@ describe('base_locker_room: 回合开始抽牌', () => {
                         deck: [{ uid: 'c1', defId: 'test', type: 'minion', owner: '0' }],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 },
                 turnOrder: ['0', '1'],
@@ -384,7 +385,7 @@ describe('base_locker_room: 回合开始抽牌', () => {
                         deck: [], // 空牌库
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 },
                 turnOrder: ['0', '1'],
@@ -494,7 +495,7 @@ describe('Property 17: 基地能力事件顺序', () => {
                         deck: [{ uid: 'c1', defId: 'test', type: 'minion', owner: '0' }],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 },
                 turnOrder: ['0', '1'],

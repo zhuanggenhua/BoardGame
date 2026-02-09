@@ -1,7 +1,6 @@
 import type { PlayerId, RandomFn } from '../../../engine/types';
 import type { CardInstance, PlayerState } from './types';
 import { getFactionCards } from '../data/cards';
-import { DRAW_PER_TURN, HAND_LIMIT } from './types';
 
 /** 将派系卡牌定义展开为卡牌实例列表 */
 export function buildDeck(

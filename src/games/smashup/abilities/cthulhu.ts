@@ -18,7 +18,7 @@ import type {
 import { getCardDef } from '../data/cards';
 import {
     drawMadnessCards, grantExtraAction, destroyMinion,
-    returnMadnessCard,
+    returnMadnessCard, getMinionPower,
 } from '../domain/abilityHelpers';
 
 /** 注册克苏鲁之仆派系所有能力 */
@@ -37,6 +37,10 @@ export function registerCthulhuAbilities(): void {
     registerAbility('cthulhu_corruption', 'onPlay', cthulhuCorruption);
     // 疯狂释放（行动卡）：弃任意数量疯狂卡，每张 = 抽1牌 + 额外行动
     registerAbility('cthulhu_madness_unleashed', 'onPlay', cthulhuMadnessUnleashed);
+    // 星之眷族（随从 talent）：将手中疯狂卡转给对手
+    registerAbility('cthulhu_star_spawn', 'talent', cthulhuStarSpawn);
+    // 仆人（随从 talent）：消灭自身 + 弃牌堆行动卡放牌库顶
+    registerAbility('cthulhu_servitor', 'talent', cthulhuServitor);
 }
 
 /** 强制招募 onPlay：将弃牌堆中力量≤3的随从放到牌库顶（MVP：全部放入） */
@@ -180,7 +184,7 @@ function cthulhuCorruption(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (m.controller === ctx.playerId) continue;
-            const effectivePower = m.basePower + m.powerModifier;
+            const effectivePower = getMinionPower(ctx.state, m, i);
             if (!weakest || effectivePower < weakest.power) {
                 weakest = { uid: m.uid, defId: m.defId, baseIndex: i, ownerId: m.owner, power: effectivePower };
             }
@@ -241,9 +245,67 @@ function discardMadnessAndDraw(
     return events;
 }
 
-// TODO: cthulhu_star_spawn (talent) - 转移疯狂卡（需要 Madness + talent 系统）
 // TODO: cthulhu_chosen (special) - 计分前抽疯狂卡+2力量（需要 Madness + beforeScoring）
-// TODO: cthulhu_servitor (talent) - 消灭自身+弃牌堆行动放牌库顶（需要 talent + Prompt）
 // TODO: cthulhu_altar (ongoing) - 打出随从时额外行动（需要 ongoing 触发系统）
 // TODO: cthulhu_complete_the_ritual (ongoing) - 回合开始清场换基地（需要 onTurnStart）
 // TODO: cthulhu_furthering_the_cause (ongoing) - 回合结束时条件获VP（需要 onTurnEnd 触发）
+
+/**
+ * 星之眷族 talent：将手中一张疯狂卡转给另一个玩家
+ * 
+ * MVP：自动选第一个对手，转移手中第一张疯狂卡
+ * 手中无疯狂卡时无效果
+ */
+function cthulhuStarSpawn(ctx: AbilityContext): AbilityResult {
+    const player = ctx.state.players[ctx.playerId];
+    const madnessInHand = player.hand.filter(c => c.defId === MADNESS_CARD_DEF_ID);
+    if (madnessInHand.length === 0) return { events: [] };
+
+    // 选第一个对手
+    const opponent = ctx.state.turnOrder.find(pid => pid !== ctx.playerId);
+    if (!opponent) return { events: [] };
+
+    const events: SmashUpEvent[] = [];
+    const madnessCard = madnessInHand[0];
+
+    // 从自己手牌返回疯狂卡到疯狂牌库
+    events.push(returnMadnessCard(ctx.playerId, madnessCard.uid, 'cthulhu_star_spawn', ctx.now));
+
+    // 对手抽1张疯狂卡（从疯狂牌库）
+    const drawEvt = drawMadnessCards(opponent, 1, ctx.state, 'cthulhu_star_spawn', ctx.now);
+    if (drawEvt) events.push(drawEvt);
+
+    return { events };
+}
+
+/**
+ * 仆人 talent：消灭自身，从弃牌堆选一张行动卡放到牌库顶
+ * 
+ * MVP：自动选弃牌堆中第一张行动卡
+ * 弃牌堆无行动卡时仍消灭自身（天赋效果是"消灭本卡并..."，消灭是前置条件）
+ */
+function cthulhuServitor(ctx: AbilityContext): AbilityResult {
+    const events: SmashUpEvent[] = [];
+    const player = ctx.state.players[ctx.playerId];
+
+    // 消灭自身
+    events.push(destroyMinion(
+        ctx.cardUid, ctx.defId, ctx.baseIndex, ctx.playerId,
+        'cthulhu_servitor', ctx.now
+    ));
+
+    // 从弃牌堆找第一张行动卡放牌库顶
+    const actionInDiscard = player.discard.find(c => c.type === 'action');
+    if (actionInDiscard) {
+        // 用 DECK_RESHUFFLED 重排牌库：目标卡放顶部 + 原牌库
+        const newDeckUids = [actionInDiscard.uid, ...player.deck.map(c => c.uid)];
+        const reshuffleEvt: DeckReshuffledEvent = {
+            type: SU_EVENTS.DECK_RESHUFFLED,
+            payload: { playerId: ctx.playerId, deckUids: newDeckUids },
+            timestamp: ctx.now,
+        };
+        events.push(reshuffleEvt);
+    }
+
+    return { events };
+}

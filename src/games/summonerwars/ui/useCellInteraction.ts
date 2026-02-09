@@ -18,6 +18,7 @@ import {
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
 import type { AbilityModeState, SoulTransferModeState, MindCaptureModeState, AfterAttackAbilityModeState } from './useGameEvents';
 import type { BloodSummonModeState, AnnihilateModeState, FuneralPyreModeState } from './StatusBanners';
+import { useToast } from '../../../contexts/ToastContext';
 
 // ============================================================================
 // 类型
@@ -48,6 +49,14 @@ export interface StunModeState {
 export interface HypnoticLureModeState {
   cardId: string;
   validTargets: CellCoord[]; // 所有敌方士兵/冠军
+}
+
+interface PendingBeforeAttack {
+  abilityId: 'life_drain' | 'holy_arrow' | 'healing';
+  sourceUnitId: string;
+  targetUnitId?: string;
+  targetCardId?: string;
+  discardCardIds?: string[];
 }
 
 interface UseCellInteractionParams {
@@ -81,9 +90,11 @@ export function useCellInteraction({
   mindCaptureMode, setMindCaptureMode,
   afterAttackAbilityMode, setAfterAttackAbilityMode,
 }: UseCellInteractionParams) {
+  const showToast = useToast();
   // 手牌选中状态
   const [selectedHandCardId, setSelectedHandCardId] = useState<string | null>(null);
   const [selectedCardsForDiscard, setSelectedCardsForDiscard] = useState<string[]>([]);
+  const [pendingBeforeAttack, setPendingBeforeAttack] = useState<PendingBeforeAttack | null>(null);
 
   // 离开魔力阶段时自动清空弃牌选中
   useEffect(() => {
@@ -209,8 +220,31 @@ export function useCellInteraction({
   // 获取可攻击位置
   const validAttackPositions = useMemo(() => {
     if (currentPhase !== 'attack' || !isMyTurn || !core.selectedUnit) return [];
-    return getValidAttackTargetsEnhanced(core, core.selectedUnit);
-  }, [core, currentPhase, isMyTurn]);
+    const baseTargets = getValidAttackTargetsEnhanced(core, core.selectedUnit);
+    const selectedUnit = core.board[core.selectedUnit.row]?.[core.selectedUnit.col]?.unit;
+    const hasHealingBeforeAttack = pendingBeforeAttack
+      && selectedUnit
+      && pendingBeforeAttack.sourceUnitId === selectedUnit.cardId
+      && pendingBeforeAttack.abilityId === 'healing';
+    if (!selectedUnit || (!selectedUnit.healingMode && !hasHealingBeforeAttack)) {
+      return baseTargets;
+    }
+    const extendedTargets = [...baseTargets];
+    const seen = new Set(extendedTargets.map(p => `${p.row}-${p.col}`));
+    const candidates = getPlayerUnits(core, myPlayerId as '0' | '1');
+    for (const u of candidates) {
+      if (u.owner !== (myPlayerId as '0' | '1')) continue;
+      if (u.card.unitClass !== 'common' && u.card.unitClass !== 'champion') continue;
+      const dist = manhattanDistance(core.selectedUnit, u.position);
+      if (dist !== 1) continue;
+      const key = `${u.position.row}-${u.position.col}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        extendedTargets.push(u.position);
+      }
+    }
+    return extendedTargets;
+  }, [core, currentPhase, isMyTurn, myPlayerId, pendingBeforeAttack]);
 
   // 可操作单位高亮
   const actionableUnitPositions = useMemo(() => {
@@ -354,6 +388,30 @@ export function useCellInteraction({
     }
     return positions;
   }, [afterAttackAbilityMode, core, myPlayerId]);
+
+  const activeBeforeAttack = useMemo(() => {
+    if (!pendingBeforeAttack || !core.selectedUnit) return null;
+    const unit = core.board[core.selectedUnit.row]?.[core.selectedUnit.col]?.unit;
+    if (!unit) return null;
+    if (unit.cardId !== pendingBeforeAttack.sourceUnitId) return null;
+    return pendingBeforeAttack;
+  }, [core, pendingBeforeAttack]);
+
+  useEffect(() => {
+    if (!pendingBeforeAttack) return;
+    if (currentPhase !== 'attack') {
+      setPendingBeforeAttack(null);
+      return;
+    }
+    if (!core.selectedUnit) {
+      setPendingBeforeAttack(null);
+      return;
+    }
+    const unit = core.board[core.selectedUnit.row]?.[core.selectedUnit.col]?.unit;
+    if (!unit || unit.cardId !== pendingBeforeAttack.sourceUnitId) {
+      setPendingBeforeAttack(null);
+    }
+  }, [currentPhase, core, pendingBeforeAttack]);
 
   // 点击格子
   const handleCellClick = useCallback((row: number, col: number) => {
@@ -532,11 +590,19 @@ export function useCellInteraction({
       if (isValid) {
         const targetUnit = core.board[gameRow]?.[gameCol]?.unit;
         if (targetUnit) {
-          moves[SW_COMMANDS.ACTIVATE_ABILITY]?.({
-            abilityId: abilityMode.abilityId,
-            sourceUnitId: abilityMode.sourceUnitId,
-            targetUnitId: targetUnit.cardId,
-          });
+          if (abilityMode.context === 'beforeAttack') {
+            setPendingBeforeAttack({
+              abilityId: abilityMode.abilityId as PendingBeforeAttack['abilityId'],
+              sourceUnitId: abilityMode.sourceUnitId,
+              targetUnitId: targetUnit.cardId,
+            });
+          } else {
+            moves[SW_COMMANDS.ACTIVATE_ABILITY]?.({
+              abilityId: abilityMode.abilityId,
+              sourceUnitId: abilityMode.sourceUnitId,
+              targetUnitId: targetUnit.cardId,
+            });
+          }
           setAbilityMode(null);
         }
       }
@@ -630,7 +696,21 @@ export function useCellInteraction({
       if (core.selectedUnit) {
         const isValidAttack = validAttackPositions.some(p => p.row === gameRow && p.col === gameCol);
         if (isValidAttack) {
-          moves[SW_COMMANDS.DECLARE_ATTACK]?.({ attacker: core.selectedUnit, target: { row: gameRow, col: gameCol } });
+          moves[SW_COMMANDS.DECLARE_ATTACK]?.({
+            attacker: core.selectedUnit,
+            target: { row: gameRow, col: gameCol },
+            beforeAttack: activeBeforeAttack
+              ? {
+                  abilityId: activeBeforeAttack.abilityId,
+                  targetUnitId: activeBeforeAttack.targetUnitId,
+                  targetCardId: activeBeforeAttack.targetCardId,
+                  discardCardIds: activeBeforeAttack.discardCardIds,
+                }
+              : undefined,
+          });
+          if (activeBeforeAttack) {
+            setPendingBeforeAttack(null);
+          }
         } else {
           const clickedUnit = core.board[gameRow]?.[gameCol]?.unit;
           if (clickedUnit && clickedUnit.owner === myPlayerId) {
@@ -652,16 +732,56 @@ export function useCellInteraction({
     bloodSummonMode, bloodSummonHighlights, abilityMode, validAbilityPositions, validAbilityUnits,
     annihilateMode, funeralPyreMode, soulTransferMode,
     mindControlMode, stunMode, hypnoticLureMode,
-    afterAttackAbilityMode, afterAttackAbilityHighlights, telekinesisTargetMode, mindCaptureMode]);
+    afterAttackAbilityMode, afterAttackAbilityHighlights, telekinesisTargetMode, mindCaptureMode,
+    activeBeforeAttack]);
 
-  // 手牌点击（魔力阶段弃牌多选）
+  // 手牌点击（魔力阶段弃牌多选/攻击前弃牌）
   const handleCardClick = useCallback((cardId: string) => {
+    if (abilityMode && abilityMode.step === 'selectCards') {
+      const card = myHand.find(c => c.id === cardId);
+      if (!card) return;
+      const selected = abilityMode.selectedCardIds ?? [];
+      const isSelected = selected.includes(cardId);
+      if (isSelected) {
+        setAbilityMode({ ...abilityMode, selectedCardIds: selected.filter(id => id !== cardId) });
+        return;
+      }
+      if (abilityMode.abilityId === 'holy_arrow') {
+        if (card.cardType !== 'unit') {
+          showToast.warning('圣光箭只能弃除单位卡');
+          return;
+        }
+        const sourceUnit = core.board.flat().map(c => c.unit).find(u => u?.cardId === abilityMode.sourceUnitId);
+        if (sourceUnit && card.name === sourceUnit.card.name) {
+          showToast.warning('不能弃除同名单位');
+          return;
+        }
+        const names = new Set(
+          selected
+            .map(id => myHand.find(c => c.id === id))
+            .filter((c): c is UnitCard => !!c && c.cardType === 'unit')
+            .map(c => c.name)
+        );
+        if (card.cardType === 'unit' && names.has(card.name)) {
+          showToast.warning('不能弃除多张同名单位');
+          return;
+        }
+        setAbilityMode({ ...abilityMode, selectedCardIds: [...selected, cardId] });
+        return;
+      }
+      if (abilityMode.abilityId === 'healing') {
+        setAbilityMode({ ...abilityMode, selectedCardIds: [cardId] });
+        return;
+      }
+      setAbilityMode({ ...abilityMode, selectedCardIds: [...selected, cardId] });
+      return;
+    }
     if (currentPhase === 'magic' && isMyTurn) {
       setSelectedCardsForDiscard(prev =>
         prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]
       );
     }
-  }, [currentPhase, isMyTurn]);
+  }, [abilityMode, core, currentPhase, isMyTurn, myHand, showToast]);
 
   // 手牌选中（召唤/建造阶段单选）
   const handleCardSelect = useCallback((cardId: string | null) => {
@@ -811,6 +931,40 @@ export function useCellInteraction({
     setMindCaptureMode(null);
   }, [moves, mindCaptureMode, setMindCaptureMode]);
 
+  const handleConfirmBeforeAttackCards = useCallback(() => {
+    if (!abilityMode || abilityMode.step !== 'selectCards') return;
+    const selected = abilityMode.selectedCardIds ?? [];
+    if (abilityMode.abilityId === 'holy_arrow') {
+      if (selected.length === 0) {
+        showToast.warning('圣光箭至少弃除一张单位卡');
+        return;
+      }
+      setPendingBeforeAttack({
+        abilityId: 'holy_arrow',
+        sourceUnitId: abilityMode.sourceUnitId,
+        discardCardIds: selected,
+      });
+      setAbilityMode(null);
+      return;
+    }
+    if (abilityMode.abilityId === 'healing') {
+      if (selected.length === 0) {
+        showToast.warning('治疗需要弃除一张手牌');
+        return;
+      }
+      setPendingBeforeAttack({
+        abilityId: 'healing',
+        sourceUnitId: abilityMode.sourceUnitId,
+        targetCardId: selected[0],
+      });
+      setAbilityMode(null);
+    }
+  }, [abilityMode, showToast]);
+
+  const handleCancelBeforeAttack = useCallback(() => {
+    setPendingBeforeAttack(null);
+  }, []);
+
   // 自动跳过无可用操作的阶段
   useEffect(() => {
     if (!isMyTurn || isGameOver) return;
@@ -850,6 +1004,8 @@ export function useCellInteraction({
     stunMode, setStunMode,
     hypnoticLureMode, setHypnoticLureMode,
     telekinesisTargetMode, setTelekinesisTargetMode,
+    pendingBeforeAttack,
+    abilitySelectedCardIds: abilityMode?.step === 'selectCards' ? (abilityMode.selectedCardIds ?? []) : [],
     // 计算值
     validSummonPositions, validBuildPositions, validMovePositions, validAttackPositions,
     validAbilityPositions, validAbilityUnits, actionableUnitPositions,
@@ -861,5 +1017,6 @@ export function useCellInteraction({
     handleConfirmDiscard, handlePlayEvent, handleEndPhase,
     handleConfirmMindControl, handleConfirmStun,
     handleConfirmTelekinesis, handleConfirmMindCapture,
+    handleConfirmBeforeAttackCards, handleCancelBeforeAttack,
   };
 }

@@ -15,9 +15,11 @@ import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import type { MatchState } from '../../engine/types';
 import type { SmashUpCore, BaseInPlay, CardInstance, MinionOnBase } from './domain/types';
-import { SU_COMMANDS, HAND_LIMIT, getCurrentPlayerId, getTotalPowerOnBase } from './domain/types';
-import { getBaseDef, getMinionDef, getCardDef } from './data/cards';
+import { SU_COMMANDS, HAND_LIMIT, getCurrentPlayerId } from './domain/types';
+import { getTotalEffectivePowerOnBase } from './domain/ongoingModifiers';
+import { getBaseDef, getMinionDef, getCardDef, resolveCardName, resolveCardText } from './data/cards';
 import type { ActionCardDef } from './domain/types';
+import { useGameAudio, playDeniedSound } from '../../lib/audio/useGameAudio';
 import { CardPreview, registerCardAtlasSource } from '../../components/common/media/CardPreview';
 import { AnimatePresence, motion } from 'framer-motion';
 import { loadCardAtlasConfig } from './ui/cardAtlas';
@@ -29,6 +31,8 @@ import { FactionSelection } from './ui/FactionSelection';
 import { PromptOverlay } from './ui/PromptOverlay';
 import { getFactionMeta } from './ui/factionMeta';
 import { DeckDiscardZone } from './ui/DeckDiscardZone';
+import { SMASHUP_AUDIO_CONFIG } from './audio.config';
+import { useTutorialBridge, useTutorial } from '../../contexts/TutorialContext';
 
 type Props = BoardProps<MatchState<SmashUpCore>>;
 
@@ -62,13 +66,16 @@ const PLAYER_CONFIG = [
     },
 ];
 
-const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
+const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID, ctx }) => {
     const { t } = useTranslation('game-smashup');
     const core = G.core;
     const phase = G.sys.phase;
     const currentPid = getCurrentPlayerId(core);
     const isMyTurn = playerID === currentPid;
     const myPlayer = playerID ? core.players[playerID] : undefined;
+    const isGameOver = ctx.gameover;
+    const rootPid = playerID || '0';
+    const isWinner = !!isGameOver && isGameOver.winner === rootPid;
 
     const [selectedCardUid, setSelectedCardUid] = useState<string | null>(null);
     const [discardSelection, setDiscardSelection] = useState<Set<string>>(new Set());
@@ -79,6 +86,25 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
     // 事件流消费 → 动画驱动
     const myPid = playerID || '0';
     const gameEvents = useGameEvents({ G, myPlayerId: myPid });
+
+    // 音效系统
+    useGameAudio({
+        config: SMASHUP_AUDIO_CONFIG,
+        G: G.core,
+        ctx: {
+            currentPhase: phase,
+            isGameOver: !!isGameOver,
+            isWinner,
+        },
+        meta: {
+            currentPlayerId: currentPid,
+        },
+        eventEntries: G.sys.eventStream.entries,
+    });
+
+    // 教学系统集成
+    useTutorialBridge(G.sys.tutorial, moves as Record<string, unknown>);
+    const { isActive: isTutorialActive } = useTutorial();
 
     // 基地 DOM 引用（用于力量浮字定位）
     const baseRefsMap = useRef<Map<number, HTMLElement>>(new Map());
@@ -139,10 +165,10 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
         load(SMASHUP_ATLAS_IDS.BASE3, 'smashup/base/base3', { rows: 2, cols: 4 });
         load(SMASHUP_ATLAS_IDS.BASE4, 'smashup/base/base4', { rows: 3, cols: 4 });
         // 卡牌图集
-        load(SMASHUP_ATLAS_IDS.CARDS1, 'smashup/cards/cards1', { rows: 7, cols: 8 });
+        load(SMASHUP_ATLAS_IDS.CARDS1, 'smashup/cards/cards1', { rows: 6, cols: 8 });
         load(SMASHUP_ATLAS_IDS.CARDS2, 'smashup/cards/cards2', { rows: 7, cols: 8 });
-        load(SMASHUP_ATLAS_IDS.CARDS3, 'smashup/cards/cards3', { rows: 7, cols: 8 });
-        load(SMASHUP_ATLAS_IDS.CARDS4, 'smashup/cards/cards4', { rows: 7, cols: 8 });
+        load(SMASHUP_ATLAS_IDS.CARDS3, 'smashup/cards/cards3', { rows: 6, cols: 8 });
+        load(SMASHUP_ATLAS_IDS.CARDS4, 'smashup/cards/cards4', { rows: 6, cols: 8 });
     }, []);
 
     // --- Handlers ---
@@ -166,6 +192,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
     const handleCardClick = useCallback((card: CardInstance) => {
         // Validation for play phase / turn
         if (!isMyTurn || phase !== 'playCards') {
+            playDeniedSound();
             toast(t('ui.invalid_play'), { icon: '🚫' });
             return;
         }
@@ -213,7 +240,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
             <div className="relative z-20 flex justify-between items-start pt-6 px-[2vw] pointer-events-none">
 
                 {/* Left: Turn Tracker (Yellow Notepad) */}
-                <div className="bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 pointer-events-auto min-w-[140px] clip-path-jagged">
+                <div className="bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 pointer-events-auto min-w-[140px] clip-path-jagged" data-tutorial-id="su-turn-tracker">
                     <div className="w-3 h-3 rounded-full bg-red-400 absolute top-1 left-1/2 -translate-x-1/2 opacity-50 shadow-inner" /> {/* Pin */}
                     <motion.div
                         key={`turn-${core.turnNumber}`}
@@ -239,7 +266,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                 </div>
 
                 {/* Right: Score Sheet + Player Info */}
-                <div className="bg-white text-slate-900 p-4 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] rotate-1 max-w-[500px] pointer-events-auto rounded-sm">
+                <div className="bg-white text-slate-900 p-4 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] rotate-1 max-w-[500px] pointer-events-auto rounded-sm" data-tutorial-id="su-scoreboard">
                     <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-2 border-b border-slate-200">{t('ui.score_sheet')}</div>
                     <div className="flex gap-5">
                         {core.turnOrder.map(pid => {
@@ -248,7 +275,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                             const player = core.players[pid];
                             const isMe = pid === playerID;
                             // 派系图标
-                            const factionIcons = player.factions
+                            const factionIcons = (player.factions ?? [])
                                 .map(fid => getFactionMeta(fid))
                                 .filter(Boolean);
                             return (
@@ -258,7 +285,9 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                                     animate={isCurrent ? { scale: 1.1 } : { scale: 1 }}
                                     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                                 >
-                                    <span className="text-xs font-black uppercase mb-1">{isMe ? 'YOU' : `P${pid}`}</span>
+                                    <span className="text-xs font-black uppercase mb-1">
+                                        {isMe ? t('ui.you_short') : t('ui.player_short', { id: pid })}
+                                    </span>
                                     <motion.div
                                         key={`vp-${pid}-${player.vp}`}
                                         className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg}`}
@@ -270,9 +299,15 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
                                     </motion.div>
                                     {/* 派系图标 */}
                                     <div className="flex gap-0.5 mt-1">
-                                        {factionIcons.map(meta => (
-                                            <span key={meta!.id} className="text-sm" title={meta!.name}>{meta!.icon}</span>
-                                        ))}
+                                        {factionIcons.map(meta => {
+                                            if (!meta) return null;
+                                            const Icon = meta.icon;
+                                            return (
+                                                <span key={meta.id} title={t(meta.nameKey)}>
+                                                    <Icon className="w-4 h-4" />
+                                                </span>
+                                            );
+                                        })}
                                     </div>
                                     {/* 自己的牌库/弃牌信息已移至下方 DeckDiscardZone */}
                                 </motion.div>
@@ -283,7 +318,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
             </div>
 
             {/* --- FINISH TURN BUTTON: Fixed Position (Right Edge) --- */}
-            <div className="fixed right-[8vw] bottom-[35vh] z-50 flex pointer-events-none">
+            <div className="fixed right-[8vw] bottom-[28vh] z-50 flex pointer-events-none" data-tutorial-id="su-end-turn-btn">
                 <AnimatePresence>
                     {isMyTurn && phase === 'playCards' && (
                         <motion.div
@@ -323,13 +358,14 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
 
             {/* --- MAIN BOARD --- */}
             {/* Scrollable table area */}
-            <div className="absolute inset-0 flex items-center justify-center overflow-x-auto overflow-y-hidden z-10 no-scrollbar pt-12 pb-60">
+            <div className="absolute inset-0 flex items-center justify-center overflow-x-auto overflow-y-hidden z-10 no-scrollbar pt-12 pb-60" data-tutorial-id="su-base-area">
                 <div className="flex items-start gap-12 px-20 min-w-max">
                     {core.bases.map((base, idx) => (
                         <BaseZone
                             key={`${base.defId}-${idx}`}
                             base={base}
                             baseIndex={idx}
+                            core={core}
                             turnOrder={core.turnOrder}
                             isDeployMode={!!selectedCardUid}
                             isMyTurn={isMyTurn}
@@ -352,11 +388,11 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
             {/* Not a bar, but floating elements */}
             {
                 myPlayer && (
-                    <div className="absolute bottom-0 inset-x-0 h-[220px] z-30 pointer-events-none">
+                    <div className="absolute bottom-0 inset-x-0 h-[220px] z-30 pointer-events-none" data-tutorial-id="su-hand-area">
 
                         {/* Discard Overlay (Messy Pile) */}
                         {needDiscard && (
-                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center pointer-events-auto">
+                            <div className="absolute inset-0 bg-black/60 z-50 flex flex-col items-center justify-center pointer-events-auto">
                                 <div className="bg-white p-6 rotate-1 shadow-2xl max-w-md text-center border-4 border-red-500 border-dashed">
                                     <h2 className="text-2xl font-black text-red-600 uppercase mb-2 transform -rotate-1">{t('ui.too_many_cards')}</h2>
                                     <p className="font-bold text-slate-700 mb-4">{t('ui.discard_desc', { count: discardCount })}</p>
@@ -451,7 +487,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
 
             {/* PROMPT OVERLAY */}
             <PromptOverlay
-                prompt={core.activePrompt}
+                prompt={G.sys.prompt?.current}
                 moves={moves}
                 playerID={playerID}
             />
@@ -473,6 +509,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, moves, playerID }) => {
 const BaseZone: React.FC<{
     base: BaseInPlay;
     baseIndex: number;
+    core: SmashUpCore;
     turnOrder: string[];
     isDeployMode: boolean;
     isMyTurn: boolean;
@@ -482,9 +519,12 @@ const BaseZone: React.FC<{
     onViewMinion: (defId: string) => void;
     onViewAction: (defId: string) => void;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, turnOrder, isDeployMode, isMyTurn, myPlayerId, moves, onClick, onViewMinion, onViewAction, tokenRef }) => {
+}> = ({ base, baseIndex, core, turnOrder, isDeployMode, isMyTurn, myPlayerId, moves, onClick, onViewMinion, onViewAction, tokenRef }) => {
+    const { i18n } = useTranslation('game-smashup');
     const baseDef = getBaseDef(base.defId);
-    const totalPower = getTotalPowerOnBase(base);
+    const baseName = resolveCardName(baseDef, i18n.language) || base.defId;
+    const baseText = resolveCardText(baseDef, i18n.language);
+    const totalPower = getTotalEffectivePowerOnBase(core, base, baseIndex);
     const breakpoint = baseDef?.breakpoint || 20;
     const ratio = totalPower / breakpoint;
     const isNearBreak = ratio >= 0.8 && ratio < 1;
@@ -525,18 +565,18 @@ const BaseZone: React.FC<{
                     <CardPreview
                         previewRef={baseDef?.previewRef}
                         className="w-full h-full object-cover"
-                        title={baseDef?.name}
+                        title={baseName}
                     />
 
                     {/* Fallback Text */}
                     {!baseDef?.previewRef && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-[0.5vw]">
                             <h3 className="font-black text-[1.2vw] text-slate-800 uppercase tracking-tighter rotate-[-2deg] leading-tight mb-[0.5vw]">
-                                {baseDef?.name || base.defId}
+                                {baseName}
                             </h3>
                             <div className="bg-white/90 p-[0.3vw] shadow-sm transform rotate-1 border border-slate-200">
                                 <p className="font-mono text-[0.6vw] text-slate-700 leading-tight">
-                                    {baseDef?.abilityText}
+                                    {baseText}
                                 </p>
                             </div>
                             <div className="absolute bottom-[0.5vw] right-[0.5vw] font-black text-[1.5vw] text-slate-900/20">
@@ -608,6 +648,7 @@ const BaseZone: React.FC<{
                                 <div className="flex flex-col items-center mb-1 -mt-[2vw] z-0 space-y-[-1.2vw]">
                                     {actions.map((oa) => {
                                         const actionDef = getCardDef(oa.defId);
+                                        const actionName = resolveCardName(actionDef, i18n.language) || oa.defId;
                                         return (
                                             <motion.div
                                                 key={oa.uid}
@@ -622,7 +663,7 @@ const BaseZone: React.FC<{
                                                 {/* Background Strip */}
                                                 <div className={`absolute top-0 inset-x-0 h-[0.3vw] ${pConf.bg}`} />
                                                 <span className="text-[0.55vw] font-bold uppercase tracking-tight text-slate-700 px-1 truncate mt-1">
-                                                    {actionDef?.name || oa.defId}
+                                                    {actionName}
                                                 </span>
                                             </motion.div>
                                         );
@@ -693,7 +734,9 @@ const MinionCard: React.FC<{
     moves: Record<string, any>;
     onView: () => void;
 }> = ({ minion, index, pid, baseIndex, isMyTurn, myPlayerId, moves, onView }) => {
+    const { t, i18n } = useTranslation('game-smashup');
     const def = getMinionDef(minion.defId);
+    const resolvedName = resolveCardName(def, i18n.language) || minion.defId;
     const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
 
     // 天赋判定：有 talent 标签 + 本回合未使用 + 是我的随从 + 轮到我
@@ -739,11 +782,12 @@ const MinionCard: React.FC<{
                 <CardPreview
                     previewRef={def?.previewRef}
                     className="w-full h-full object-cover"
+                    title={resolvedName}
                 />
 
                 {!def?.previewRef && (
                     <div className="absolute inset-0 p-[0.2vw] flex items-center justify-center text-center bg-slate-50">
-                        <p className="text-[0.6vw] font-bold leading-none text-slate-800 line-clamp-4">{def?.name}</p>
+                        <p className="text-[0.6vw] font-bold leading-none text-slate-800 line-clamp-4">{resolvedName}</p>
                     </div>
                 )}
 
@@ -768,7 +812,7 @@ const MinionCard: React.FC<{
             {/* 天赋已使用标记 */}
             {hasTalent && minion.talentUsed && (
                 <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-slate-600 text-white text-[0.45vw] font-bold px-[0.3vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-10 whitespace-nowrap">
-                    已用
+                    {t('ui.talent_used')}
                 </div>
             )}
         </motion.div>
@@ -785,8 +829,16 @@ const MeFirstOverlay: React.FC<{
     moves: Record<string, any>;
     playerID: string | null;
 }> = ({ G, moves, playerID }) => {
-    const { t } = useTranslation('game-smashup');
+    const { t, i18n } = useTranslation('game-smashup');
     const responseWindow = G.sys.responseWindow?.current;
+
+    const handlePass = useCallback(() => {
+        moves['RESPONSE_PASS']?.({});
+    }, [moves]);
+
+    const handlePlaySpecial = useCallback((cardUid: string) => {
+        moves[SU_COMMANDS.PLAY_ACTION]?.({ cardUid });
+    }, [moves]);
 
     if (!responseWindow || responseWindow.windowType !== 'meFirst') return null;
 
@@ -801,14 +853,6 @@ const MeFirstOverlay: React.FC<{
         const def = getCardDef(c.defId) as ActionCardDef | undefined;
         return def?.subtype === 'special';
     }) ?? [];
-
-    const handlePass = useCallback(() => {
-        moves['RESPONSE_PASS']?.({});
-    }, [moves]);
-
-    const handlePlaySpecial = useCallback((cardUid: string) => {
-        moves[SU_COMMANDS.PLAY_ACTION]?.({ cardUid });
-    }, [moves]);
 
     return (
         <motion.div
@@ -826,12 +870,12 @@ const MeFirstOverlay: React.FC<{
             >
                 <div className="text-center mb-3">
                     <h3 className="text-xl font-black uppercase tracking-tight text-amber-800 transform rotate-1">
-                        ⚡ Me First!
+                        {t('ui.me_first_title')}
                     </h3>
                     <p className="text-sm font-bold text-slate-600 mt-1" data-testid="me-first-status">
                         {isMyResponse
-                            ? t('ui.me_first_your_turn', '轮到你响应 — 打出特殊牌或让过')
-                            : t('ui.me_first_waiting', { player: `P${currentResponderId}` })
+                            ? t('ui.me_first_your_turn')
+                            : t('ui.me_first_waiting', { player: currentResponderId })
                         }
                     </p>
                 </div>
@@ -843,6 +887,7 @@ const MeFirstOverlay: React.FC<{
                             <div className="flex flex-wrap gap-2 justify-center mb-2" data-testid="me-first-special-cards">
                                 {specialCards.map(card => {
                                     const def = getCardDef(card.defId);
+                                    const resolvedName = resolveCardName(def, i18n.language) || card.defId;
                                     return (
                                         <button
                                             key={card.uid}
@@ -850,7 +895,7 @@ const MeFirstOverlay: React.FC<{
                                             className="bg-purple-600 text-white px-3 py-2 rounded shadow-md font-bold text-sm hover:bg-purple-700 hover:scale-105 transition-all border-2 border-purple-300"
                                             data-testid={`me-first-card-${card.uid}`}
                                         >
-                                            {def?.name || card.defId}
+                                            {resolvedName}
                                         </button>
                                     );
                                 })}
@@ -863,7 +908,7 @@ const MeFirstOverlay: React.FC<{
                             className="bg-slate-700 text-white px-6 py-3 rounded shadow-lg font-black uppercase tracking-wider hover:bg-slate-800 hover:scale-105 transition-all mx-auto"
                             data-testid="me-first-pass-button"
                         >
-                            {t('ui.me_first_pass', '让过')}
+                            {t('ui.me_first_pass')}
                         </button>
                     </div>
                 )}
@@ -877,11 +922,10 @@ const MeFirstOverlay: React.FC<{
                         return (
                             <div
                                 key={pid}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 ${conf.bg} ${
-                                    isCurrent ? 'ring-2 ring-amber-400 scale-125' : isPassed ? 'opacity-40' : ''
-                                }`}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 ${conf.bg} ${isCurrent ? 'ring-2 ring-amber-400 scale-125' : isPassed ? 'opacity-40' : ''
+                                    }`}
                             >
-                                {isPassed ? '✓' : pid === playerID ? 'Y' : pid}
+                                {isPassed ? '✓' : pid === playerID ? t('ui.you_badge') : pid}
                             </div>
                         );
                     })}
@@ -899,8 +943,11 @@ const CardDetailOverlay: React.FC<{
     type: 'minion' | 'base' | 'action';
     onClose: () => void;
 }> = ({ defId, type, onClose }) => {
+    const { i18n } = useTranslation('game-smashup');
     const def = type === 'base' ? getBaseDef(defId) : getCardDef(defId);
     if (!def) return null;
+    const resolvedName = resolveCardName(def, i18n.language) || defId;
+    const resolvedText = resolveCardText(def, i18n.language);
 
     return (
         <motion.div
@@ -908,7 +955,7 @@ const CardDetailOverlay: React.FC<{
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 cursor-pointer"
+            className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-8 cursor-pointer"
         >
             <motion.div
                 initial={{ scale: 0.8, y: 50 }}
@@ -926,14 +973,14 @@ const CardDetailOverlay: React.FC<{
                 <CardPreview
                     previewRef={def.previewRef}
                     className="w-full h-full object-contain rounded-xl shadow-2xl"
-                    title={def.name}
+                    title={resolvedName}
                 />
 
                 {/* Detail Box if no preview */}
                 {!def.previewRef && (
                     <div className="absolute inset-0 bg-white rounded-xl p-6 border-4 border-slate-800 flex flex-col items-center justify-center text-center">
-                        <h2 className="text-3xl font-black uppercase mb-4">{def.name}</h2>
-                        <p className="font-mono text-lg">{type === 'base' ? (def as any).abilityText : ((def as any).text || (def as any).abilityText || (def as any).effectText)}</p>
+                        <h2 className="text-3xl font-black uppercase mb-4">{resolvedName}</h2>
+                        <p className="font-mono text-lg">{resolvedText}</p>
                     </div>
                 )}
             </motion.div>

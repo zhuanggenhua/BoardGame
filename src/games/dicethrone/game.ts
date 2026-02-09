@@ -173,6 +173,12 @@ const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThron
 };
 
 const now = () => Date.now();
+type GameModeHost = { __BG_GAME_MODE__?: string };
+const getGameMode = () => (
+    typeof globalThis !== 'undefined'
+        ? (globalThis as GameModeHost).__BG_GAME_MODE__
+        : undefined
+);
 
 /**
  * 检查攻击方是否有晕眩（daze），如果有则生成额外攻击事件
@@ -268,9 +274,7 @@ const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const initEvents: GameEvent[] = [];
 
             // 教程/本地模式：自动为所有玩家选择默认角色
-            const mode = typeof window !== 'undefined'
-                ? (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__
-                : undefined;
+            const mode = getGameMode();
             const isTutorialMode = mode === 'tutorial';
             const isLocalMode = mode === 'local';
 

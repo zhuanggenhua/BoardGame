@@ -22,6 +22,7 @@ import {
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import type { SmashUpCore, MinionOnBase, CardInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 
 beforeAll(() => {
     initAllAbilities();
@@ -73,7 +74,7 @@ describe('base_haunted_house_al9000: 随从入场后弃牌', () => {
                         deck: [], discard: [],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 } as any,
             }),
@@ -108,7 +109,7 @@ describe('base_haunted_house_al9000: 随从入场后弃牌', () => {
                         deck: [], discard: [],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 } as any,
             }),
@@ -224,7 +225,7 @@ describe('base_stadium: 控制者抽牌', () => {
                         deck: [makeCard('c1', '0'), makeCard('c2', '0')],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 } as any,
             }),
@@ -257,7 +258,7 @@ describe('base_stadium: 控制者抽牌', () => {
                         deck: [],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 } as any,
             }),
@@ -350,7 +351,7 @@ describe('base_haunted_house: 冠军弃手牌抽5', () => {
                         discard: [],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 } as any,
             }),
@@ -408,7 +409,7 @@ describe('base_haunted_house: 冠军弃手牌抽5', () => {
                         discard: [],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 } as any,
             }),
@@ -513,7 +514,7 @@ describe('base_great_library: 有随从的玩家抽牌', () => {
                         deck: [makeCard('c1', '0')],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                     '1': {
                         id: '1', vp: 0,
@@ -521,7 +522,7 @@ describe('base_great_library: 有随从的玩家抽牌', () => {
                         deck: [makeCard('c2', '1')],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['pirates', 'ninjas'],
+                        factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS],
                     },
                 } as any,
             }),
@@ -556,7 +557,7 @@ describe('base_great_library: 有随从的玩家抽牌', () => {
                         deck: [makeCard('c1', '0')],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                     '1': {
                         id: '1', vp: 0,
@@ -564,7 +565,7 @@ describe('base_great_library: 有随从的玩家抽牌', () => {
                         deck: [makeCard('c2', '1')],
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['pirates', 'ninjas'],
+                        factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS],
                     },
                 } as any,
             }),
@@ -594,7 +595,7 @@ describe('base_great_library: 有随从的玩家抽牌', () => {
                         deck: [], // 空牌库
                         minionsPlayed: 0, minionLimit: 1,
                         actionsPlayed: 0, actionLimit: 1,
-                        factions: ['aliens', 'dinosaurs'],
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
                     },
                 } as any,
             }),

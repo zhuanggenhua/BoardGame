@@ -8,7 +8,7 @@ import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { SU_EVENTS } from '../domain/types';
 import type { MinionReturnedEvent, VpAwardedEvent, SmashUpEvent, SmashUpCore, CardsDiscardedEvent, CardsDrawnEvent, MinionCardDef } from '../domain/types';
-import { setPromptContinuation, buildBaseTargetOptions } from '../domain/abilityHelpers';
+import { setPromptContinuation, buildBaseTargetOptions, getMinionPower } from '../domain/abilityHelpers';
 import { registerPromptContinuation } from '../domain/promptContinuation';
 import { getBaseDef, getCardDef } from '../data/cards';
 
@@ -37,7 +37,7 @@ function alienSupremeOverlord(ctx: AbilityContext): AbilityResult {
     // 选本基地力量最高的对手随从
     const targets = base.minions
         .filter(m => m.controller !== ctx.playerId && m.uid !== ctx.cardUid)
-        .sort((a, b) => (b.basePower + b.powerModifier) - (a.basePower + a.powerModifier));
+        .sort((a, b) => getMinionPower(ctx.state, b, ctx.baseIndex) - getMinionPower(ctx.state, a, ctx.baseIndex));
     const target = targets[0];
     if (!target) return { events: [] };
     const evt: MinionReturnedEvent = {
@@ -59,7 +59,7 @@ function alienCollector(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
     const target = base.minions.find(
-        m => m.controller !== ctx.playerId && (m.basePower + m.powerModifier) <= 3
+        m => m.controller !== ctx.playerId && getMinionPower(ctx.state, m, ctx.baseIndex) <= 3
     );
     if (!target) return { events: [] };
     const evt: MinionReturnedEvent = {
@@ -91,7 +91,7 @@ function alienDisintegrate(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
         const target = base.minions.find(
-            m => m.controller !== ctx.playerId && (m.basePower + m.powerModifier) <= 3
+            m => m.controller !== ctx.playerId && getMinionPower(ctx.state, m, i) <= 3
         );
         if (target) {
             const evt: MinionReturnedEvent = {

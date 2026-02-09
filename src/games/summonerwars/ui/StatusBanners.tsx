@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { GamePhase, CellCoord } from '../domain/types';
 import { GameButton } from './GameButton';
 import { ActionBanner } from './ActionBanner';
@@ -39,6 +40,14 @@ export interface FuneralPyreModeState {
   charges: number;
 }
 
+interface PendingBeforeAttack {
+  abilityId: 'life_drain' | 'holy_arrow' | 'healing';
+  sourceUnitId: string;
+  targetUnitId?: string;
+  targetCardId?: string;
+  discardCardIds?: string[];
+}
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -48,6 +57,7 @@ interface StatusBannersProps {
   isMyTurn: boolean;
   // 模式状态
   abilityMode: AbilityModeState | null;
+  pendingBeforeAttack: PendingBeforeAttack | null;
   bloodSummonMode: BloodSummonModeState | null;
   annihilateMode: AnnihilateModeState | null;
   soulTransferMode: SoulTransferModeState | null;
@@ -60,6 +70,8 @@ interface StatusBannersProps {
   telekinesisTargetMode: { abilityId: string; targetPosition: CellCoord } | null;
   // 回调
   onCancelAbility: () => void;
+  onConfirmBeforeAttackCards: () => void;
+  onCancelBeforeAttack: () => void;
   onCancelBloodSummon: () => void;
   onContinueBloodSummon: () => void;
   onCancelAnnihilate: () => void;
@@ -87,6 +99,7 @@ const StunBanner: React.FC<{
   onConfirmStun: (direction: 'push' | 'pull', distance: number) => void;
   onCancelStun: () => void;
 }> = ({ stunMode, onConfirmStun, onCancelStun }) => {
+  const { t } = useTranslation('game-summonerwars');
   const [direction, setDirection] = React.useState<'push' | 'pull'>('push');
   const [distance, setDistance] = React.useState(1);
 
@@ -94,9 +107,9 @@ const StunBanner: React.FC<{
     return (
       <div className="bg-yellow-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-yellow-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-yellow-200 text-sm font-bold">
-          震慑：选择召唤师直线3格内的敌方单位
+          {t('statusBanners.stun.selectTarget')}
         </span>
-        <GameButton onClick={onCancelStun} variant="secondary" size="sm">取消</GameButton>
+        <GameButton onClick={onCancelStun} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
       </div>
     );
   }
@@ -104,20 +117,20 @@ const StunBanner: React.FC<{
   // selectDirection 步骤
   return (
     <div className="bg-yellow-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-yellow-500/40 flex items-center gap-3 shadow-lg">
-      <span className="text-yellow-200 text-sm font-bold">震慑方向：</span>
+      <span className="text-yellow-200 text-sm font-bold">{t('statusBanners.stun.direction')}</span>
       <div className="flex gap-1">
         <GameButton
           onClick={() => setDirection('push')}
           variant={direction === 'push' ? 'primary' : 'secondary'}
           size="sm"
-        >推开</GameButton>
+        >{t('actions.push')}</GameButton>
         <GameButton
           onClick={() => setDirection('pull')}
           variant={direction === 'pull' ? 'primary' : 'secondary'}
           size="sm"
-        >拉近</GameButton>
+        >{t('actions.pull')}</GameButton>
       </div>
-      <span className="text-yellow-200 text-sm font-bold">距离：</span>
+      <span className="text-yellow-200 text-sm font-bold">{t('statusBanners.stun.distance')}</span>
       <div className="flex gap-1">
         {[1, 2, 3].map(d => (
           <GameButton
@@ -128,8 +141,8 @@ const StunBanner: React.FC<{
           >{d}</GameButton>
         ))}
       </div>
-      <GameButton onClick={() => onConfirmStun(direction, distance)} variant="primary" size="sm">确认</GameButton>
-      <GameButton onClick={onCancelStun} variant="secondary" size="sm">取消</GameButton>
+      <GameButton onClick={() => onConfirmStun(direction, distance)} variant="primary" size="sm">{t('actions.confirm')}</GameButton>
+      <GameButton onClick={onCancelStun} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
     </div>
   );
 };
@@ -140,10 +153,10 @@ const StunBanner: React.FC<{
 
 export const StatusBanners: React.FC<StatusBannersProps> = ({
   currentPhase, isMyTurn,
-  abilityMode, bloodSummonMode, annihilateMode, soulTransferMode, funeralPyreMode,
+  abilityMode, pendingBeforeAttack, bloodSummonMode, annihilateMode, soulTransferMode, funeralPyreMode,
   mindControlMode, stunMode, hypnoticLureMode,
   mindCaptureMode, afterAttackAbilityMode, telekinesisTargetMode,
-  onCancelAbility, onCancelBloodSummon, onContinueBloodSummon,
+  onCancelAbility, onConfirmBeforeAttackCards, onCancelBeforeAttack, onCancelBloodSummon, onContinueBloodSummon,
   onCancelAnnihilate, onConfirmAnnihilateTargets,
   onConfirmSoulTransfer, onSkipSoulTransfer, onSkipFuneralPyre,
   onConfirmMindControl, onCancelMindControl,
@@ -152,18 +165,37 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   onConfirmMindCapture, onCancelAfterAttackAbility,
   onConfirmTelekinesis, onCancelTelekinesis,
 }) => {
+  const { t } = useTranslation('game-summonerwars');
   if (abilityMode) {
     return (
       <div className="bg-amber-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-amber-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-amber-200 text-sm font-bold">
-          {abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectCard' && '复活死灵：从弃牌堆选择亡灵单位'}
-          {abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectPosition' && '复活死灵：选择召唤师相邻的空格放置'}
-          {abilityMode.abilityId === 'fire_sacrifice_summon' && '火祀召唤：选择要消灭的友方单位'}
-          {abilityMode.abilityId === 'life_drain' && '吸取生命：选择2格内的友方单位消灭'}
-          {abilityMode.abilityId === 'infection' && abilityMode.step === 'selectCard' && '感染：从弃牌堆选择疫病体'}
-          {abilityMode.abilityId === 'infection' && abilityMode.step === 'selectPosition' && '感染：确认放置位置'}
+          {abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectCard' && t('statusBanners.ability.reviveUndead.selectCard')}
+          {abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectPosition' && t('statusBanners.ability.reviveUndead.selectPosition')}
+          {abilityMode.abilityId === 'fire_sacrifice_summon' && t('statusBanners.ability.fireSacrificeSummon')}
+          {abilityMode.abilityId === 'life_drain' && t('statusBanners.ability.lifeDrain')}
+          {abilityMode.abilityId === 'infection' && abilityMode.step === 'selectCard' && t('statusBanners.ability.infection.selectCard')}
+          {abilityMode.abilityId === 'infection' && abilityMode.step === 'selectPosition' && t('statusBanners.ability.infection.selectPosition')}
+          {abilityMode.abilityId === 'holy_arrow' && abilityMode.step === 'selectCards' && t('statusBanners.ability.holyArrow.selectCards')}
+          {abilityMode.abilityId === 'healing' && abilityMode.step === 'selectCards' && t('statusBanners.ability.healing.selectCards')}
         </span>
-        <GameButton onClick={onCancelAbility} variant="secondary" size="sm">取消</GameButton>
+        {abilityMode.step === 'selectCards' && (
+          <GameButton onClick={onConfirmBeforeAttackCards} variant="primary" size="sm">{t('actions.confirmDiscard')}</GameButton>
+        )}
+        <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
+      </div>
+    );
+  }
+
+  if (pendingBeforeAttack) {
+    return (
+      <div className="bg-amber-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-amber-500/40 flex items-center gap-3 shadow-lg">
+        <span className="text-amber-200 text-sm font-bold">
+          {pendingBeforeAttack.abilityId === 'life_drain' && t('statusBanners.beforeAttack.lifeDrain')}
+          {pendingBeforeAttack.abilityId === 'holy_arrow' && t('statusBanners.beforeAttack.holyArrow')}
+          {pendingBeforeAttack.abilityId === 'healing' && t('statusBanners.beforeAttack.healing')}
+        </span>
+        <GameButton onClick={onCancelBeforeAttack} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
       </div>
     );
   }
@@ -172,18 +204,18 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
     return (
       <div className="bg-rose-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-rose-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-rose-200 text-sm font-bold">
-          {bloodSummonMode.step === 'selectTarget' && '血契召唤：选择一个友方单位（将承受2点伤害）'}
-          {bloodSummonMode.step === 'selectCard' && '血契召唤：从手牌选择费用≤2的单位卡'}
-          {bloodSummonMode.step === 'selectPosition' && '血契召唤：选择目标相邻的空格放置单位'}
-          {bloodSummonMode.step === 'confirm' && `血契召唤完成 ${bloodSummonMode.completedCount ?? 1} 次，是否继续？`}
+          {bloodSummonMode.step === 'selectTarget' && t('statusBanners.bloodSummon.selectTarget')}
+          {bloodSummonMode.step === 'selectCard' && t('statusBanners.bloodSummon.selectCard')}
+          {bloodSummonMode.step === 'selectPosition' && t('statusBanners.bloodSummon.selectPosition')}
+          {bloodSummonMode.step === 'confirm' && t('statusBanners.bloodSummon.confirm', { count: bloodSummonMode.completedCount ?? 1 })}
         </span>
         {bloodSummonMode.step === 'confirm' ? (
           <>
-            <GameButton onClick={onContinueBloodSummon} variant="primary" size="sm">继续</GameButton>
-            <GameButton onClick={onCancelBloodSummon} variant="secondary" size="sm">完成</GameButton>
+            <GameButton onClick={onContinueBloodSummon} variant="primary" size="sm">{t('actions.continue')}</GameButton>
+            <GameButton onClick={onCancelBloodSummon} variant="secondary" size="sm">{t('actions.finish')}</GameButton>
           </>
         ) : (
-          <GameButton onClick={onCancelBloodSummon} variant="secondary" size="sm">取消</GameButton>
+          <GameButton onClick={onCancelBloodSummon} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
         )}
       </div>
     );
@@ -193,13 +225,13 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
     return (
       <div className="bg-purple-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-purple-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-purple-200 text-sm font-bold">
-          {annihilateMode.step === 'selectTargets' && `除灭：选择要牺牲的友方单位（已选 ${annihilateMode.selectedTargets.length} 个）`}
-          {annihilateMode.step === 'selectDamageTarget' && `除灭：为第 ${annihilateMode.currentTargetIndex + 1} 个目标选择相邻单位造成2点伤害`}
+          {annihilateMode.step === 'selectTargets' && t('statusBanners.annihilate.selectTargets', { count: annihilateMode.selectedTargets.length })}
+          {annihilateMode.step === 'selectDamageTarget' && t('statusBanners.annihilate.selectDamageTarget', { index: annihilateMode.currentTargetIndex + 1 })}
         </span>
         {annihilateMode.step === 'selectTargets' && annihilateMode.selectedTargets.length > 0 && (
-          <GameButton onClick={onConfirmAnnihilateTargets} variant="primary" size="sm">确认选择</GameButton>
+          <GameButton onClick={onConfirmAnnihilateTargets} variant="primary" size="sm">{t('actions.confirmSelection')}</GameButton>
         )}
-        <GameButton onClick={onCancelAnnihilate} variant="secondary" size="sm">取消</GameButton>
+        <GameButton onClick={onCancelAnnihilate} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
       </div>
     );
   }
@@ -207,9 +239,9 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   if (soulTransferMode) {
     return (
       <div className="bg-cyan-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-cyan-500/40 flex items-center gap-3 shadow-lg">
-        <span className="text-cyan-200 text-sm font-bold">灵魂转移：是否将弓箭手移动到被消灭单位的位置？</span>
-        <GameButton onClick={onConfirmSoulTransfer} variant="primary" size="sm">确认移动</GameButton>
-        <GameButton onClick={onSkipSoulTransfer} variant="secondary" size="sm">跳过</GameButton>
+        <span className="text-cyan-200 text-sm font-bold">{t('statusBanners.soulTransfer.message')}</span>
+        <GameButton onClick={onConfirmSoulTransfer} variant="primary" size="sm">{t('actions.confirmMove')}</GameButton>
+        <GameButton onClick={onSkipSoulTransfer} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
       </div>
     );
   }
@@ -218,9 +250,9 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
     return (
       <div className="bg-orange-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-orange-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-orange-200 text-sm font-bold">
-          殉葬火堆弃除：选择一个受伤单位治疗 {funeralPyreMode.charges} 点（点击棋盘上的单位）
+          {t('statusBanners.funeralPyre.message', { charges: funeralPyreMode.charges })}
         </span>
-        <GameButton onClick={onSkipFuneralPyre} variant="secondary" size="sm">跳过</GameButton>
+        <GameButton onClick={onSkipFuneralPyre} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
       </div>
     );
   }
@@ -229,12 +261,12 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
     return (
       <div className="bg-cyan-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-cyan-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-cyan-200 text-sm font-bold">
-          心灵操控：选择召唤师2格内的敌方单位（已选 {mindControlMode.selectedTargets.length} 个）
+          {t('statusBanners.mindControl.message', { count: mindControlMode.selectedTargets.length })}
         </span>
         {mindControlMode.selectedTargets.length > 0 && (
-          <GameButton onClick={onConfirmMindControl} variant="primary" size="sm">确认控制</GameButton>
+          <GameButton onClick={onConfirmMindControl} variant="primary" size="sm">{t('actions.confirmControl')}</GameButton>
         )}
-        <GameButton onClick={onCancelMindControl} variant="secondary" size="sm">取消</GameButton>
+        <GameButton onClick={onCancelMindControl} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
       </div>
     );
   }
@@ -253,9 +285,9 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
     return (
       <div className="bg-pink-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-pink-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-pink-200 text-sm font-bold">
-          催眠引诱：选择一个敌方单位
+          {t('statusBanners.hypnoticLure.message')}
         </span>
-        <GameButton onClick={onCancelHypnoticLure} variant="secondary" size="sm">取消</GameButton>
+        <GameButton onClick={onCancelHypnoticLure} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
       </div>
     );
   }
@@ -264,36 +296,36 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
     return (
       <div className="bg-indigo-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-indigo-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-indigo-200 text-sm font-bold">
-          心灵捕获：控制目标还是造成 {mindCaptureMode.hits} 点伤害？
+          {t('statusBanners.mindCapture.message', { hits: mindCaptureMode.hits })}
         </span>
-        <GameButton onClick={() => onConfirmMindCapture('control')} variant="primary" size="sm">控制</GameButton>
-        <GameButton onClick={() => onConfirmMindCapture('damage')} variant="secondary" size="sm">伤害</GameButton>
+        <GameButton onClick={() => onConfirmMindCapture('control')} variant="primary" size="sm">{t('actions.control')}</GameButton>
+        <GameButton onClick={() => onConfirmMindCapture('damage')} variant="secondary" size="sm">{t('actions.damage')}</GameButton>
       </div>
     );
   }
 
   if (telekinesisTargetMode) {
-    const abilityName = telekinesisTargetMode.abilityId === 'high_telekinesis' ? '高阶念力' : '念力';
+    const abilityName = t(`statusBanners.abilityNames.${telekinesisTargetMode.abilityId}`);
     return (
       <div className="bg-teal-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-teal-500/40 flex items-center gap-3 shadow-lg">
-        <span className="text-teal-200 text-sm font-bold">{abilityName}：选择推拉方向</span>
-        <GameButton onClick={() => onConfirmTelekinesis('push')} variant="primary" size="sm">推开</GameButton>
-        <GameButton onClick={() => onConfirmTelekinesis('pull')} variant="secondary" size="sm">拉近</GameButton>
-        <GameButton onClick={onCancelTelekinesis} variant="secondary" size="sm">取消</GameButton>
+        <span className="text-teal-200 text-sm font-bold">
+          {t('statusBanners.telekinesis.message', { ability: abilityName })}
+        </span>
+        <GameButton onClick={() => onConfirmTelekinesis('push')} variant="primary" size="sm">{t('actions.push')}</GameButton>
+        <GameButton onClick={() => onConfirmTelekinesis('pull')} variant="secondary" size="sm">{t('actions.pull')}</GameButton>
+        <GameButton onClick={onCancelTelekinesis} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
       </div>
     );
   }
 
   if (afterAttackAbilityMode) {
-    const nameMap: Record<string, string> = {
-      telekinesis: '念力', high_telekinesis: '高阶念力', mind_transmission: '读心传念',
-    };
+    const abilityName = t(`statusBanners.abilityNames.${afterAttackAbilityMode.abilityId}`);
     return (
       <div className="bg-teal-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-teal-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-teal-200 text-sm font-bold">
-          {nameMap[afterAttackAbilityMode.abilityId] ?? afterAttackAbilityMode.abilityId}：选择目标
+          {t('statusBanners.afterAttack.message', { ability: abilityName })}
         </span>
-        <GameButton onClick={onCancelAfterAttackAbility} variant="secondary" size="sm">跳过</GameButton>
+        <GameButton onClick={onCancelAfterAttackAbility} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
       </div>
     );
   }

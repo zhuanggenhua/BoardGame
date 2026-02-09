@@ -10,6 +10,9 @@ export type EngineNotificationDetail = {
 };
 
 export const dispatchEngineNotification = (detail: EngineNotificationDetail): void => {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(new CustomEvent<EngineNotificationDetail>(ENGINE_NOTIFICATION_EVENT, { detail }));
+    const host = typeof globalThis !== 'undefined' ? (globalThis as { window?: unknown; CustomEvent?: unknown }) : undefined;
+    const win = host?.window as { dispatchEvent?: (event: unknown) => void } | undefined;
+    const CustomEventCtor = host?.CustomEvent as (new (type: string, init?: { detail?: EngineNotificationDetail }) => unknown) | undefined;
+    if (!win?.dispatchEvent || !CustomEventCtor) return;
+    win.dispatchEvent(new CustomEventCtor(ENGINE_NOTIFICATION_EVENT, { detail }));
 };

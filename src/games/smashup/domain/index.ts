@@ -27,8 +27,8 @@ import {
     HAND_LIMIT,
     VP_TO_WIN,
     getCurrentPlayerId,
-    getTotalPowerOnBase,
 } from './types';
+import { getEffectivePower, getTotalEffectivePowerOnBase } from './ongoingModifiers';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef } from '../data/cards';
@@ -69,11 +69,11 @@ function scoreOneBase(
     };
     events.push(...triggerBaseAbility(base.defId, 'beforeScoring', beforeCtx));
 
-    // 计算排名
+    // 计算排名（使用有效力量，含持续修正）
     const playerPowers = new Map<PlayerId, number>();
     for (const m of base.minions) {
         const prev = playerPowers.get(m.controller) ?? 0;
-        playerPowers.set(m.controller, prev + m.basePower + m.powerModifier);
+        playerPowers.set(m.controller, prev + getEffectivePower(core, m, baseIndex));
     }
     const sorted = Array.from(playerPowers.entries())
         .filter(([, p]) => p > 0)
@@ -238,7 +238,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 const base = core.bases[i];
                 const baseDef = getBaseDef(base.defId);
                 if (!baseDef) continue;
-                const totalPower = getTotalPowerOnBase(base);
+                const totalPower = getTotalEffectivePowerOnBase(core, base, i);
                 if (totalPower >= baseDef.breakpoint) {
                     eligibleBases.push({ baseIndex: i, defId: base.defId, totalPower });
                 }
@@ -291,7 +291,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     const base = core.bases[baseIndex];
                     const baseDef = getBaseDef(base.defId);
                     if (!baseDef) continue;
-                    const totalPower = getTotalPowerOnBase(base);
+                    const totalPower = getTotalEffectivePowerOnBase(core, base, baseIndex);
                     if (totalPower >= baseDef.breakpoint) {
                         foundIndex = baseIndex;
                         break;
@@ -343,10 +343,27 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (to === 'scoreBases') {
-            // Step 1: 打开 Me First! 响应窗口，等待所有玩家响应
-            // 实际记分在 onPhaseExit('scoreBases') 中执行
-            const meFirstEvt = openMeFirstWindow('scoreBases', pid, core.turnOrder, now);
-            events.push(meFirstEvt);
+            // 先检查是否有基地达到临界点，没有则跳过 Me First! 响应窗口
+            // 规则：Me First! 只在有基地需要记分时触发
+            let hasEligibleBase = false;
+            for (let i = 0; i < core.bases.length; i++) {
+                const base = core.bases[i];
+                const baseDef = getBaseDef(base.defId);
+                if (!baseDef) continue;
+                const totalPower = getTotalEffectivePowerOnBase(core, base, i);
+                if (totalPower >= baseDef.breakpoint) {
+                    hasEligibleBase = true;
+                    break;
+                }
+            }
+
+            if (hasEligibleBase) {
+                // 打开 Me First! 响应窗口，等待所有玩家响应
+                // 实际记分在 onPhaseExit('scoreBases') 中执行
+                const meFirstEvt = openMeFirstWindow('scoreBases', pid, core.turnOrder, now);
+                events.push(meFirstEvt);
+            }
+            // 无基地达标时不打开窗口，onAutoContinueCheck 会自动推进到 draw
             return events;
         }
 
@@ -505,7 +522,7 @@ export const SmashUpDomain: DomainCore<SmashUpCore, SmashUpCommand, SmashUpEvent
 
 export type { SmashUpCommand, SmashUpCore, SmashUpEvent } from './types';
 export { SU_COMMANDS, SU_EVENTS } from './types';
-export { registerAbility, resolveAbility, resolveOnPlay, resolveTalent, resolveSpecial, clearRegistry } from './abilityRegistry';
+export { registerAbility, resolveAbility, resolveOnPlay, resolveTalent, resolveSpecial, resolveOnDestroy, clearRegistry } from './abilityRegistry';
 export type { AbilityContext, AbilityResult, AbilityExecutor } from './abilityRegistry';
 export {
     registerBaseAbility,
@@ -517,3 +534,12 @@ export {
     triggerExtendedBaseAbility,
 } from './baseAbilities';
 export type { BaseTriggerTiming, BaseAbilityContext, BaseAbilityResult, BaseAbilityExecutor } from './baseAbilities';
+export {
+    registerPowerModifier,
+    clearPowerModifierRegistry,
+    getOngoingPowerModifier,
+    getEffectivePower,
+    getPlayerEffectivePowerOnBase,
+    getTotalEffectivePowerOnBase,
+} from './ongoingModifiers';
+export type { PowerModifierFn, PowerModifierContext } from './ongoingModifiers';

@@ -11,10 +11,12 @@ import {
     grantExtraMinion,
     destroyMinion,
     shuffleHandIntoDeck,
+    getMinionPower,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { CardsDrawnEvent, SmashUpEvent, DeckReshuffledEvent } from '../domain/types';
 import { drawCards } from '../domain/utils';
+import { registerTrigger } from '../domain/ongoingEffects';
 
 /** 时间法师 onPlay：额外打出一个行动 */
 function wizardChronomage(ctx: AbilityContext): AbilityResult {
@@ -80,7 +82,7 @@ function wizardNeophyte(ctx: AbilityContext): AbilityResult {
     return { events: [] };
 }
 
-// TODO: wizard_archmage (ongoing) - 每回合额外打出一个行动（需要 ongoing 效果系统）
+// wizard_archmage (ongoing) - 每回合额外打出一个行动，通过 onTurnStart 触发器实现
 
 /** 群体附魔 onPlay：展示每个对手牌库顶，你可以将其中一张放入你手牌（MVP：自动选行动卡优先） */
 function wizardMassEnchantment(ctx: AbilityContext): AbilityResult {
@@ -132,6 +134,9 @@ export function registerWizardAbilities(): void {
     for (const [id, handler] of abilities) {
         registerAbility(id, 'onPlay', handler);
     }
+
+    // 注册 ongoing 拦截器
+    registerWizardOngoingEffects();
 }
 
 /** 传送门 onPlay：展示牌库顶5张，将其中随从放入手牌，其余放牌库底（MVP：自动取所有随从） */
@@ -229,7 +234,7 @@ function wizardSacrifice(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (m.controller !== ctx.playerId) continue;
-            const totalPower = m.basePower + m.powerModifier;
+            const totalPower = getMinionPower(ctx.state, m, i);
             if (!weakest || totalPower < weakest.power) {
                 weakest = { uid: m.uid, defId: m.defId, power: totalPower, baseIndex: i, ownerId: m.owner };
             }
@@ -259,4 +264,39 @@ function wizardSacrifice(ctx: AbilityContext): AbilityResult {
     ));
 
     return { events };
+}
+
+
+// ============================================================================
+// Ongoing 拦截器注册
+// ============================================================================
+
+/** 注册巫师派系的 ongoing 拦截器 */
+function registerWizardOngoingEffects(): void {
+    // 大法师：回合开始时，控制者额外打出一个行动
+    registerTrigger('wizard_archmage', 'onTurnStart', (trigCtx) => {
+        // 找到 archmage 的控制者
+        let archmageController: string | undefined;
+        for (const base of trigCtx.state.bases) {
+            const archmage = base.minions.find(m => m.defId === 'wizard_archmage');
+            if (archmage) {
+                archmageController = archmage.controller;
+                break;
+            }
+        }
+        if (!archmageController) return [];
+        // 只在控制者的回合触发
+        if (archmageController !== trigCtx.playerId) return [];
+
+        return [{
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: {
+                playerId: archmageController,
+                limitType: 'action' as const,
+                delta: 1,
+                reason: 'wizard_archmage',
+            },
+            timestamp: trigCtx.now,
+        }];
+    });
 }

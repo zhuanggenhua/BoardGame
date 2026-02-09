@@ -46,7 +46,7 @@ export const OpponentHeader = ({
     containerRef?: RefObject<HTMLDivElement | null>;
 }) => {
     const { t } = useTranslation('game-dicethrone');
-    const heroLabel = t(`hero.${opponent.characterId}`, { defaultValue: opponent.characterId });
+    const heroLabel = t(`hero.${opponent.characterId}`);
 
     return (
         <div ref={containerRef} className="absolute top-3 left-0 right-0 z-50 flex flex-col items-center gap-1 pointer-events-none">

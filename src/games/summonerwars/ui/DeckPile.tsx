@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { CardSprite } from './CardSprite';
 import type { Card } from '../domain/types';
@@ -49,7 +50,8 @@ export const DeckPile: React.FC<DeckPileProps> = ({
   testId,
   className = '',
 }) => {
-  const label = type === 'draw' ? '牌库' : '弃牌';
+  const { t } = useTranslation('game-summonerwars');
+  const label = type === 'draw' ? t('deckPile.draw') : t('deckPile.discard');
   const isDiscard = type === 'discard';
   const hasTopCard = isDiscard && topCard;
   const isClickable = isDiscard && count > 0;
@@ -95,7 +97,7 @@ export const DeckPile: React.FC<DeckPileProps> = ({
           /* 抽牌堆 / 空弃牌堆：显示卡背 */
           <OptimizedImage
             src="summonerwars/common/cardback.png"
-            alt="card back"
+            alt={t('deckPile.cardBackAlt')}
             className="w-full h-full object-cover"
             draggable={false}
           />
@@ -123,7 +125,7 @@ export const DeckPile: React.FC<DeckPileProps> = ({
       {isClickable && (
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-[background-color] duration-200 z-20 flex items-center justify-center pointer-events-none">
           <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/60 px-2 py-1 rounded">
-            查看
+            {t('deckPile.view')}
           </span>
         </div>
       )}

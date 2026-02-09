@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { CardSprite } from './CardSprite';
 
@@ -71,6 +72,7 @@ export const EffectCards: React.FC<EffectCardsProps> = ({
   position,
   className = '',
 }) => {
+  const { t } = useTranslation('game-summonerwars');
   if (cards.length === 0) return null;
 
   return (
@@ -83,7 +85,7 @@ export const EffectCards: React.FC<EffectCardsProps> = ({
       `}
     >
       <span className="text-xs text-white/60 mb-1 px-1">
-        {isOpponent ? '对手持续效果' : '持续效果'}
+        {isOpponent ? t('ui.opponentActiveEvents') : t('ui.activeEvents')}
       </span>
       {cards.map((card, index) => (
         <EffectCardItem

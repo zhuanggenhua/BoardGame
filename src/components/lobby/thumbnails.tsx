@@ -53,7 +53,7 @@ export const DefaultGameThumbnail = ({ titleKey, icon }: DefaultGameThumbnailPro
     return (
         <div className="w-full h-full bg-[#fcfbf9] flex flex-col items-center justify-center text-[#433422] font-bold">
             <div className="text-4xl leading-none">{icon ?? '🎲'}</div>
-            <div className="mt-1 text-[10px] tracking-widest text-[#8c7b64]">{t(titleKey, { defaultValue: titleKey })}</div>
+            <div className="mt-1 text-[10px] tracking-widest text-[#8c7b64]">{t(titleKey)}</div>
         </div>
     );
 };
@@ -67,7 +67,7 @@ export const ManifestGameThumbnail = ({ manifest }: ManifestGameThumbnailProps) 
     if (!manifest.thumbnailPath) {
         return <DefaultGameThumbnail titleKey={manifest.titleKey} icon={manifest.icon} />;
     }
-    const title = t(manifest.titleKey, { defaultValue: manifest.titleKey });
+    const title = t(manifest.titleKey);
     return (
         <OptimizedImage
             src={manifest.thumbnailPath}

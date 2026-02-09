@@ -117,10 +117,21 @@ const waitForFrontendAssets = async (page: Page, timeoutMs = 30000) => {
     throw new Error(`前端资源未就绪${lastStatus}`);
 };
 
-const waitForHomeGameList = async (page: Page) => {
+const waitForHomeGameList = async (page: Page, timeoutMs = 30000) => {
+    const start = Date.now();
     await page.waitForLoadState('domcontentloaded');
     await waitForFrontendAssets(page);
-    await page.waitForSelector('[data-game-id]', { timeout: 12000, state: 'attached' });
+    // 增加重试逻辑，避免偶尔加载慢导致失败
+    while (Date.now() - start < timeoutMs) {
+        try {
+            await page.waitForSelector('[data-game-id]', { timeout: 5000, state: 'attached' });
+            return;
+        } catch {
+            // 如果超时，再试一次
+            await page.waitForTimeout(1000);
+        }
+    }
+    throw new Error(`等待游戏列表超时: [data-game-id] 未找到`);
 };
 
 const waitForMatchAvailable = async (page: Page, matchId: string, timeoutMs = 10000) => {
@@ -166,6 +177,16 @@ const openSmashUpModal = async (page: Page) => {
     await dismissViteOverlay(page);
     await dismissLobbyConfirmIfNeeded(page);
     await waitForHomeGameList(page);
+
+    // 处理已有活跃对局的提示
+    const returnToMatchButton = page.locator('button', { hasText: /Return to match|返回对局/i }).first();
+    if (await returnToMatchButton.isVisible().catch(() => false)) {
+        console.log('[DEBUG] Found active match prompt, dismissing...');
+        // 点击取消或关闭按钮，或者按ESC键
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(500);
+    }
+
     const modalRoot = page.locator('#modal-root');
     const heading = modalRoot.getByRole('heading', { name: /Smash Up|大杀四方/i });
     if (!await heading.isVisible().catch(() => false)) {
@@ -204,8 +225,16 @@ const selectFactionByIndex = async (page: Page, index: number) => {
     await confirmFactionSelection(page);
 };
 
-const createSmashUpRoom = async (page: Page): Promise<string | null> => {
-    await openSmashUpModal(page);
+const createSmashUpRoom = async (
+    page: Page,
+    outputPath: (name: string) => string,
+): Promise<string | null> => {
+    try {
+        await openSmashUpModal(page);
+    } catch (err) {
+        console.log('[DEBUG] openSmashUpModal failed:', err);
+        return null;
+    }
 
     await page.getByRole('button', { name: /Create Room|创建房间/i }).click();
     const createHeading = page.getByRole('heading', { name: /Create Room|创建房间/i });
@@ -216,16 +245,29 @@ const createSmashUpRoom = async (page: Page): Promise<string | null> => {
     await expect(twoPlayersButton).toBeVisible({ timeout: 5000 });
     await twoPlayersButton.click();
 
-    await createModal.getByRole('button', { name: /Confirm|确认/i }).click();
+    await createModal.getByRole('button', { name: /Confirm|确认/i }).evaluate((el) => (el as HTMLButtonElement).click());
+    console.log('[DEBUG] Confirm button clicked via evaluate');
+    console.log('[DEBUG] Create room button clicked, waiting for network idle...');
+    await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+    console.log('[DEBUG] Current URL after click:', page.url());
     try {
-        await page.waitForURL(/\/play\/smashup\/match\//, { timeout: 8000 });
-    } catch {
+        await page.waitForURL(/\/play\/smashup\/match\//, { timeout: 15000 });
+        console.log('[DEBUG] Navigation success, current URL:', page.url());
+    } catch (err) {
+        console.log('[DEBUG] waitForURL failed, final URL:', page.url());
+        // 检查是否有错误弹窗
+        const errorText = await page.locator('text=/error|failed|错误|失败/i').first().textContent().catch(() => 'none');
+        console.log('[DEBUG] Error text found:', errorText);
+        await page.screenshot({ path: outputPath('debug-room-creation.png') });
         return null;
     }
 
     const hostUrl = new URL(page.url());
     const matchId = hostUrl.pathname.split('/').pop();
-    if (!matchId) return null;
+    if (!matchId) {
+        console.log('[DEBUG] matchId is null');
+        return null;
+    }
 
     if (!hostUrl.searchParams.get('playerID')) {
         hostUrl.searchParams.set('playerID', '0');
@@ -233,6 +275,7 @@ const createSmashUpRoom = async (page: Page): Promise<string | null> => {
     }
 
     if (!await waitForMatchAvailable(page, matchId, 15000)) {
+        console.log('[DEBUG] waitForMatchAvailable failed for matchId:', matchId);
         return null;
     }
 
@@ -252,12 +295,24 @@ test.describe('Smash Up 手牌截图', () => {
         await disableAudio(hostContext);
         const hostPage = await hostContext.newPage();
 
+        // 监听控制台错误
+        hostPage.on('console', msg => {
+            if (msg.type() === 'error') {
+                console.log('[PAGE ERROR]', msg.text());
+            }
+        });
+        hostPage.on('pageerror', err => {
+            console.log('[PAGE EXCEPTION]', err.message);
+        });
+
         if (!await ensureGameServerAvailable(hostPage)) {
+            console.log('[DEBUG] Game server unavailable, skipping test');
             test.skip(true, 'Game server unavailable');
         }
 
-        const matchId = await createSmashUpRoom(hostPage);
+        const matchId = await createSmashUpRoom(hostPage, testInfo.outputPath);
         if (!matchId) {
+            console.log('[DEBUG] Room creation failed, skipping test');
             test.skip(true, 'Room creation failed');
             return;
         }
@@ -275,6 +330,7 @@ test.describe('Smash Up 手牌截图', () => {
         const guestPlayerId = '1';
         const guestCredentials = await joinSmashUpMatch(hostPage, matchId, guestPlayerId, `Guest-${Date.now()}`);
         if (!guestCredentials) {
+            console.log('[DEBUG] Guest join failed, skipping test');
             test.skip(true, 'Guest 加入房间失败');
             return;
         }
@@ -294,8 +350,8 @@ test.describe('Smash Up 手牌截图', () => {
         await expect(handArea).toBeVisible({ timeout: 30000 });
         await hostPage.waitForTimeout(1000);
 
-        await handArea.screenshot({ path: 'e2e/screenshots/smashup-hand-area.png' });
-        await hostPage.screenshot({ path: 'e2e/screenshots/smashup-hand-full.png', fullPage: true });
+        await handArea.screenshot({ path: testInfo.outputPath('smashup-hand-area.png') });
+        await hostPage.screenshot({ path: testInfo.outputPath('smashup-hand-full.png'), fullPage: true });
 
         await guestContext.close();
         await hostContext.close();

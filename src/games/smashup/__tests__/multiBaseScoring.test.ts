@@ -14,6 +14,7 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearPromptContinuationRegistry, resolvePromptContinuation } from '../domain/promptContinuation';
 import type { SmashUpCore, MinionOnBase, PlayerState } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { GameEvent, MatchState, Command, RandomFn } from '../../../engine/types';
 import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
 
@@ -33,7 +34,10 @@ function makeMinion(uid: string, controller: string, power: number, defId = 'd1'
     };
 }
 
-function makePlayer(id: string, factions: [string, string] = ['aliens', 'dinosaurs']): PlayerState {
+function makePlayer(
+    id: string,
+    factions: [string, string] = [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS]
+): PlayerState {
     return {
         id, vp: 0, hand: [], deck: [], discard: [],
         minionsPlayed: 0, minionLimit: 1,
@@ -52,7 +56,10 @@ const mockCommand: Command = { type: 'ADVANCE_PHASE', playerId: '0', payload: un
 function callOnPhaseExit(core: SmashUpCore): GameEvent[] | PhaseExitResult {
     // 记分逻辑在 onPhaseExit('scoreBases') 中执行
     const result = smashUpFlowHooks.onPhaseExit!({
-        state: { core, sys: { phase: 'scoreBases', responseWindow: { current: undefined }, prompt: { queue: [] } } } as MatchState<SmashUpCore>,
+        state: ({
+            core,
+            sys: { phase: 'scoreBases', responseWindow: { current: undefined }, prompt: { queue: [] } },
+        } as unknown) as MatchState<SmashUpCore>,
         from: 'scoreBases',
         to: 'draw',
         command: mockCommand,
@@ -70,7 +77,10 @@ function extractEvents(result: GameEvent[] | PhaseExitResult): GameEvent[] {
 describe('Property 14: 多基地记分提示', () => {
     it('两个基地同时达标时返回 PROMPT_CONTINUATION 而非直接记分', () => {
         const core: SmashUpCore = {
-            players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]),
+            },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
             bases: [
@@ -108,7 +118,10 @@ describe('Property 14: 多基地记分提示', () => {
 
     it('multi_base_scoring 继续函数正确记分选中的基地', () => {
         const core: SmashUpCore = {
-            players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]),
+            },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
             bases: [
@@ -143,7 +156,10 @@ describe('Property 15: 多基地记分循环', () => {
         // 此测试验证 P14 的 Prompt 创建 + P15 的继续函数正确记分
         // 完整的 Prompt 交互流程在 promptSystem.test.ts 中通过 GameTestRunner 测试
         const core: SmashUpCore = {
-            players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]),
+            },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
             bases: [
@@ -192,7 +208,10 @@ describe('Property 15: 多基地记分循环', () => {
 
     it('无基地达到临界点时不产生记分事件', () => {
         const core: SmashUpCore = {
-            players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]),
+            },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
             bases: [
@@ -210,7 +229,10 @@ describe('Property 15: 多基地记分循环', () => {
 
     it('单个基地达到临界点时正常记分', () => {
         const core: SmashUpCore = {
-            players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]),
+            },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
             bases: [
@@ -233,7 +255,10 @@ describe('Property 16: 平局 VP 分配（FlowHooks 层面）', () => {
     it('两位玩家力量相同时都获得第一名 VP', () => {
         // base_tar_pits: breakpoint=16, vpAwards=[4,3,2]
         const core: SmashUpCore = {
-            players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]),
+            },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
             bases: [{
@@ -258,19 +283,22 @@ describe('Property 16: 平局 VP 分配（FlowHooks 层面）', () => {
         expect(rankings[0].power).toBe(rankings[1].power);
     });
 
-    it('三位玩家中两位并列第一时第三名获得第三名 VP', () => {
-        // base_tar_pits: breakpoint=16, vpAwards=[4,3,2]
+    it('三位玩家中两人并列第一时第三名仍获第三名 VP', () => {
         const core: SmashUpCore = {
             players: {
                 '0': makePlayer('0'),
-                '1': makePlayer('1', ['pirates', 'ninjas']),
-                '2': makePlayer('2', ['robots', 'wizards']),
+                '1': makePlayer('1', [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]),
+                '2': makePlayer('2', [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.WIZARDS]),
             },
             turnOrder: ['0', '1', '2'],
             currentPlayerIndex: 0,
             bases: [{
                 defId: 'base_tar_pits',
-                minions: [makeMinion('m1', '0', 8), makeMinion('m2', '1', 8), makeMinion('m3', '2', 3)],
+                minions: [
+                    makeMinion('m1', '0', 10),
+                    makeMinion('m2', '1', 10),
+                    makeMinion('m3', '2', 5),
+                ],
                 ongoingActions: [],
             }],
             baseDeck: ['base_central_brain'],
@@ -298,8 +326,8 @@ describe('Property 16: 平局 VP 分配（FlowHooks 层面）', () => {
         const core: SmashUpCore = {
             players: {
                 '0': makePlayer('0'),
-                '1': makePlayer('1', ['pirates', 'ninjas']),
-                '2': makePlayer('2', ['robots', 'wizards']),
+                '1': makePlayer('1', [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]),
+                '2': makePlayer('2', [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.WIZARDS]),
             },
             turnOrder: ['0', '1', '2'],
             currentPlayerIndex: 0,
@@ -329,7 +357,10 @@ describe('Property 16: 平局 VP 分配（FlowHooks 层面）', () => {
     it('零力量玩家不获得 VP', () => {
         // base_the_jungle: breakpoint=12, vpAwards=[2,0,0]
         const core: SmashUpCore = {
-            players: { '0': makePlayer('0'), '1': makePlayer('1', ['pirates', 'ninjas']) },
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]),
+            },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
             bases: [{

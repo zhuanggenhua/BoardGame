@@ -121,20 +121,21 @@ export const BURST_PRESETS: Record<string, ParticlePreset> = {
   /** 烟尘 - 用于摧毁后的烟雾扩散（湍流飘散） */
   smoke: {
     count: 12,
-    speed: { min: 0.5, max: 1.5 },
-    size: { min: 6, max: 14 },
-    life: { min: 0.5, max: 1.0 },
-    gravity: -0.15,
+    speed: { min: 2, max: 5 },
+    size: { min: 4, max: 10 },
+    life: { min: 0.4, max: 0.8 },
+    gravity: -0.8,
     shapes: ['circle'],
     rotate: false,
     opacityDecay: true,
-    sizeDecay: false,
+    sizeDecay: true,
     direction: 'top',
     glow: true,
     glowScale: 2,
     drag: 0.97,
-    spread: 10,
-    turbulence: 0.6,
+    spread: 25,
+    turbulence: 1.2,
+    turbulenceFreq: 2,
     colorEnd: '#1e293b',
   },
   /** 火花飞溅 - 金属碰撞/格挡（streak 为主+高速+短命） */
@@ -214,17 +215,18 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const particlesRef = useRef<Particle[]>([]);
+  // 用 ref 持有回调，避免 onComplete 引用变化导致 useEffect 重跑（粒子重生）
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   const mergedPreset = useMemo<ParticlePreset>(() => {
     const base = BURST_PRESETS[preset] ?? BURST_PRESETS.explosion;
     return config ? { ...base, ...config } : base;
   }, [preset, config]);
 
-  const rgbColors = useMemo(() => color.map(parseColorToRgb), [color]);
-
-  const handleComplete = useCallback(() => {
-    if (onComplete) onComplete();
-  }, [onComplete]);
+  // 用 JSON 序列化做值比较，避免数组字面量引用变化导致 useEffect 重跑
+  const colorKey = JSON.stringify(color);
+  const rgbColors = useMemo(() => color.map(parseColorToRgb), [colorKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!active || typeof window === 'undefined') return;
@@ -266,7 +268,7 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
       if (alive > 0) {
         rafRef.current = requestAnimationFrame(loop);
       } else {
-        handleComplete();
+        onCompleteRef.current?.();
       }
     };
 
@@ -276,7 +278,7 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
       cancelAnimationFrame(rafRef.current);
       particlesRef.current = [];
     };
-  }, [active, mergedPreset, rgbColors, handleComplete, overflow]);
+  }, [active, mergedPreset, rgbColors, overflow]);
 
   if (!active || typeof window === 'undefined') return null;
 

@@ -5,6 +5,6 @@
 export { default as SummonerWars } from './game';
 export { SummonerWarsBoard } from './Board';
 export { SUMMONER_WARS_MANIFEST } from './manifest';
-export { SUMMONER_WARS_TUTORIAL } from './tutorial';
-export { SummonerWarsThumbnail } from './thumbnail';
+export { default as SUMMONER_WARS_TUTORIAL } from './tutorial';
+export { default as SummonerWarsThumbnail } from './thumbnail';
 export type { SummonerWarsState } from './game';

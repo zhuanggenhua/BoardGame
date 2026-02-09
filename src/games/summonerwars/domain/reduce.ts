@@ -144,7 +144,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
     }
 
     case SW_EVENTS.UNIT_ATTACKED: {
-      const { attacker } = payload as { attacker: CellCoord };
+      const { attacker, target } = payload as { attacker: CellCoord; target: CellCoord };
       const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
       const unit = newBoard[attacker.row][attacker.col].unit;
       if (unit) {
@@ -152,11 +152,23 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
         newBoard[attacker.row][attacker.col].unit = { ...unit, hasAttacked: true, healingMode: false };
       }
       const pid = unit?.owner as PlayerId;
+      if (!pid) return { ...core, board: newBoard };
+      let hasAttackedEnemy = false;
+      const targetCell = core.board[target.row]?.[target.col];
+      if (targetCell?.unit && targetCell.unit.owner !== pid) {
+        hasAttackedEnemy = true;
+      } else if (targetCell?.structure && targetCell.structure.owner !== pid) {
+        hasAttackedEnemy = true;
+      }
       return {
         ...core, board: newBoard,
         players: {
           ...core.players,
-          [pid]: { ...core.players[pid], attackCount: core.players[pid].attackCount + 1, hasAttackedEnemy: true },
+          [pid]: {
+            ...core.players[pid],
+            attackCount: core.players[pid].attackCount + 1,
+            hasAttackedEnemy: core.players[pid].hasAttackedEnemy || hasAttackedEnemy,
+          },
         },
       };
     }

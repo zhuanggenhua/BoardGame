@@ -31,7 +31,11 @@
     "chat": {
         "placeholder": "输入消息...",
         "gameInvite": "发送了游戏邀请",
-        "userNotFound": "未找到用户或会话"
+        "userNotFound": "未找到用户或会话",
+        "roomLabel": "房间：",
+        "meLabel": "我：",
+        "noMessages": "暂无消息",
+        "emptyValue": "--"
     },
     "modal": {
         "title": "社交",
@@ -43,6 +47,22 @@
     },
     "matchHistory": {
         "title": "对局记录",
-        "empty": "暂无对局记录"
+        "empty": "暂无对局记录",
+        "vs": "对战 {{name}}",
+        "result": {
+            "win": "胜利",
+            "loss": "失败",
+            "draw": "平局"
+        },
+        "resultShort": {
+            "win": "胜",
+            "loss": "负",
+            "draw": "平"
+        },
+        "games": {
+            "tictactoe": "井字棋",
+            "chess": "国际象棋",
+            "gomoku": "五子棋"
+        }
     }
 }

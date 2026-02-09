@@ -91,19 +91,19 @@ function DefaultContent({ result, playerID }: ContentSlotProps): React.ReactElem
     let colorClass: string;
 
     if (isDraw) {
-        title = t('endgame.draw', '平局');
-        subtitle = t('endgame.drawSubtitle', '势均力敌！');
+        title = t('endgame.draw');
+        subtitle = t('endgame.drawSubtitle');
         colorClass = 'text-amber-400';
     } else if (isWinner) {
-        title = t('endgame.victory', '胜利');
-        subtitle = t('endgame.victorySubtitle', '恭喜你赢得了比赛！');
+        title = t('endgame.victory');
+        subtitle = t('endgame.victorySubtitle');
         colorClass = 'text-emerald-400';
     } else if (isLoser) {
-        title = t('endgame.defeat', '失败');
-        subtitle = t('endgame.defeatSubtitle', '再接再厉！');
+        title = t('endgame.defeat');
+        subtitle = t('endgame.defeatSubtitle');
         colorClass = 'text-red-400';
     } else {
-        title = t('endgame.gameOver', '游戏结束');
+        title = t('endgame.gameOver');
         subtitle = '';
         colorClass = 'text-white';
     }

@@ -45,11 +45,110 @@
     "preview_cards": "包含卡牌预览",
     "minion": "随从",
     "action": "战术",
-    "discard_badge": "丢弃"
+    "discard_badge": "丢弃",
+    "prompt_select_option": "请选择一个选项继续",
+    "prompt_wait": "请稍候",
+    "played": "已打出！",
+    "vp_award": "+{{vp}} VP",
+    "player_short": "P{{id}}",
+    "you_short": "你",
+    "you_badge": "我",
+    "talent_used": "已用",
+    "card_placeholder": "卡牌",
+    "me_first_title": "⚡ 先手响应！"
+  },
+  "factions": {
+    "pirates": {
+      "name": "海盗",
+      "description": "高机动性，可以在基地间移动随从。"
+    },
+    "ninjas": {
+      "name": "忍者",
+      "description": "出其不意，隐蔽行动，暗杀随从。"
+    },
+    "dinosaurs": {
+      "name": "恐龙",
+      "description": "巨大的力量，无坚不摧。"
+    },
+    "aliens": {
+      "name": "外星人",
+      "description": "干扰对手，将随从送回手牌，控制基地。"
+    },
+    "robots": {
+      "name": "机器人",
+      "description": "微型机器人大军，快速铺场。"
+    },
+    "zombies": {
+      "name": "丧尸",
+      "description": "从弃牌堆复活，永不消逝。"
+    },
+    "wizards": {
+      "name": "巫师",
+      "description": "额外的行动，操控牌库，法术轰炸。"
+    },
+    "tricksters": {
+      "name": "捣蛋鬼",
+      "description": "设置陷阱，弃置对手手牌，制造混乱。"
+    },
+    "steampunks": {
+      "name": "蒸汽朋克",
+      "description": "利用基地行动卡，升级与回收。"
+    },
+    "ghosts": {
+      "name": "幽灵",
+      "description": "手牌越少越强，穿过物质。"
+    },
+    "killer_plants": {
+      "name": "食人花",
+      "description": "快速生长，控制随从。"
+    },
+    "bear_cavalry": {
+      "name": "熊骑兵",
+      "description": "强迫移动对手，无情碾压。"
+    },
+    "minions_of_cthulhu": {
+      "name": "克苏鲁仆从",
+      "description": "利用疯狂牌，献祭随从。"
+    },
+    "elder_things": {
+      "name": "远古物种",
+      "description": "给予疯狂牌，控制人心。"
+    },
+    "innsmouth": {
+      "name": "印斯茅斯",
+      "description": "人海战术，同样的随从集结。"
+    },
+    "miskatonic_university": {
+      "name": "米斯卡塔尼克",
+      "description": "利用疯狂牌获得优势，研究知识。"
+    }
   },
   "tutorial": {
     "title": "大杀四方教学",
     "welcome": "欢迎来到大杀四方！组合两个种族争夺基地，率先获得15点胜利分数即可获胜。",
-    "finish": "教学完成，准备好开始对战吧！"
+    "finish": "教学完成，准备好开始对战吧！",
+    "steps": {
+      "setup": "正在准备教学场景...",
+      "welcome": "欢迎来到大杀四方！\n\n在这个游戏中，你将选择两个派系混搭组成牌库，争夺场上的基地来获取胜利分数。\n\n先到 15 VP 的玩家获胜！",
+      "scoreboard": "这是记分板，显示每位玩家的胜利分数 (VP) 和所选派系。\n\n游戏目标就是让你的 VP 率先达到 15！",
+      "handIntro": "这是你的手牌区。你的牌库由两个派系的卡牌混合而成。\n\n手牌分为两种类型：\n• 随从卡 — 放在基地上贡献力量\n• 行动卡 — 执行特殊效果",
+      "turnTracker": "这里显示当前回合数和游戏阶段。\n\n每回合依次经过：出牌 → 记分 → 抽牌。",
+      "endTurnBtn": "这是结束按钮。每个阶段操作完成后，点击它推进到下一阶段。",
+      "playCardsExplain": "现在是出牌阶段！\n\n每回合你可以打出 1 张随从和 1 张行动卡（各一张）。\n\n随从放在基地上贡献力量，行动卡执行特殊效果。",
+      "playMinion": "试试打出一张随从吧！\n\n点击手牌中的随从卡，然后选择一个基地放置。",
+      "playAction": "很好！现在打出一张行动卡。\n\n点击手牌中的行动卡即可使用。",
+      "endPlayCards": "出牌完成！点击结束按钮进入下一阶段。",
+      "baseScoring": "基地记分：当一个基地上所有随从的力量总和达到或超过临界点时，该基地就会记分。\n\n记分后基地上的随从会被弃置，然后翻出一个新基地。",
+      "vpAwards": "记分时，力量排名前三的玩家分别获得基地卡上标注的 VP 奖励。\n\n力量最高的玩家获得最多 VP！",
+      "scoringPhase": "记分阶段自动处理中...",
+      "drawExplain": "抽牌阶段：每回合结束前你会抽 2 张牌补充手牌。",
+      "handLimit": "注意手牌上限是 10 张。\n\n如果抽牌后超过上限，你需要弃掉多余的牌。",
+      "endDraw": "点击结束按钮完成抽牌阶段。",
+      "opponentTurn": "现在是对手的回合，观察对手的操作...",
+      "talentIntro": "有些随从拥有天赋能力，每回合可以使用一次。\n\n留意随从卡上的天赋标记！天赋在你的回合开始时重置。",
+      "turnCycle": "回合交替进行，每位玩家轮流执行出牌→记分→抽牌。\n\n利用每回合的出牌机会，在基地上积累力量优势！",
+      "summary": "教学完成！核心要点：\n\n• 选 2 派系混搭牌库\n• 每回合出 1 随从 + 1 行动\n• 基地力量达临界点时记分\n• 先到 15 VP 获胜",
+      "finish": "你已经掌握了大杀四方的基本规则，准备好大杀四方了吗？"
+    }
   }
 }

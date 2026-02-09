@@ -188,9 +188,10 @@ export class ImageCompressor {
     }
 
     /** 动态加载 sharp */
-    private async loadSharp(): Promise<typeof import('sharp') | null> {
+    private async loadSharp(): Promise<((input: Buffer) => any) | null> {
         try {
-            return await import('sharp');
+            const mod = await import('sharp');
+            return (mod as { default?: (input: Buffer) => any }).default ?? (mod as any);
         } catch {
             console.warn('sharp 库未安装，图片压缩功能不可用');
             return null;

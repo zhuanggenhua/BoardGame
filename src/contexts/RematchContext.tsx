@@ -8,7 +8,9 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { LobbyClient } from 'boardgame.io/client';
 import { matchSocket, type RematchVoteState } from '../services/matchSocket';
 import { GAME_SERVER_URL } from '../config/server';
-import { persistMatchCredentials, readStoredMatchCredentials } from '../hooks/match/useMatchStatus';
+import { claimSeat, readStoredMatchCredentials } from '../hooks/match/useMatchStatus';
+import { getOrCreateGuestId } from '../hooks/match/ownerIdentity';
+import { useAuth } from './AuthContext';
 
 interface RematchContextValue {
     /** 重赛投票状态 */
@@ -45,6 +47,7 @@ export function RematchProvider({
     const hasRematchStartedRef = useRef(false);
     const lobbyClientRef = useRef(new LobbyClient({ server: GAME_SERVER_URL }));
     const resetTimeoutRef = useRef<number | null>(null);
+    const { user, token } = useAuth();
 
     const matchInfoRef = useRef<{ matchId?: string; playerId?: string }>({ matchId, playerId });
     useEffect(() => {
@@ -99,17 +102,20 @@ export function RematchProvider({
                             playerID: currentPlayerId,
                             credentials,
                         });
-                        const { playerCredentials: nextCredentials } = await lobbyClientRef.current.joinMatch(gameName, nextMatchID, {
-                            playerID: currentPlayerId,
-                            playerName: playerName || `Player ${currentPlayerId}`,
-                        });
-                        persistMatchCredentials(nextMatchID, {
-                            playerID: currentPlayerId,
-                            credentials: nextCredentials,
-                            matchID: nextMatchID,
-                            gameName,
-                            playerName,
-                        });
+                        const fallbackPlayerName = playerName || user?.username || `玩家${currentPlayerId}`;
+                        const guestId = user?.id ? undefined : getOrCreateGuestId();
+                        const claimResult = user?.id && token
+                            ? await claimSeat(gameName, nextMatchID, currentPlayerId, {
+                                token,
+                                playerName: user.username,
+                            })
+                            : await claimSeat(gameName, nextMatchID, currentPlayerId, {
+                                guestId,
+                                playerName: fallbackPlayerName,
+                            });
+                        if (!claimResult.success || !claimResult.credentials) {
+                            throw new Error('[RematchContext] claim-seat-failed');
+                        }
                         matchSocket.broadcastNewRoom(`/play/${gameName}/match/${nextMatchID}`);
                         window.location.href = `/play/${gameName}/match/${nextMatchID}?playerID=${currentPlayerId}`;
                         return;

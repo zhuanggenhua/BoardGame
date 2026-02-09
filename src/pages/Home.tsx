@@ -9,7 +9,19 @@ import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from '../components/auth/AuthModal';
 import { EmailBindModal } from '../components/auth/EmailBindModal';
 import { useNavigate } from 'react-router-dom';
-import { claimSeat, clearMatchCredentials, exitMatch, getOwnerActiveMatch, clearOwnerActiveMatch, rejoinMatch, getLatestStoredMatchCredentials, pruneStoredMatchCredentials } from '../hooks/match/useMatchStatus';
+import {
+    claimSeat,
+    clearMatchCredentials,
+    exitMatch,
+    getOwnerActiveMatch,
+    clearOwnerActiveMatch,
+    isOwnerActiveMatchSuppressed,
+    rejoinMatch,
+    getLatestStoredMatchCredentials,
+    pruneStoredMatchCredentials,
+    readStoredMatchCredentials,
+    validateStoredMatchSeat,
+} from '../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName, getOwnerKey as resolveOwnerKey } from '../hooks/match/ownerIdentity';
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { LanguageSwitcher } from '../components/common/i18n/LanguageSwitcher';
@@ -196,6 +208,10 @@ export const Home = () => {
             }
             const ownerActive = getOwnerActiveMatch();
             const ownerKey = resolveOwnerKey(user?.id, getGuestId());
+            if (ownerActive?.matchID && isOwnerActiveMatchSuppressed(ownerActive.matchID)) {
+                clearOwnerActiveMatch(ownerActive.matchID);
+                return null;
+            }
             if (ownerActive?.matchID && (!ownerActive.ownerKey || ownerActive.ownerKey === ownerKey)) {
                 return {
                     matchID: ownerActive.matchID,
@@ -224,6 +240,16 @@ export const Home = () => {
         void lobbyClient.getMatch(local.gameName, local.matchID)
             .then(match => {
                 if (cancelled) return;
+                const stored = readStoredMatchCredentials(local.matchID);
+                const validation = validateStoredMatchSeat(stored, match.players, local.playerID);
+                if (validation.shouldClear) {
+                    clearMatchCredentials(local.matchID);
+                    clearOwnerActiveMatch(local.matchID);
+                    setActiveMatch(null);
+                    setMyMatchRole(null);
+                    setLocalStorageTick((t) => t + 1);
+                    return;
+                }
                 setActiveMatch({
                     matchID: local.matchID,
                     gameName: local.gameName,
@@ -282,48 +308,66 @@ export const Home = () => {
                     console.log(
                         `[Home] action=claim-seat-start matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} userId=${user.id} gameName=${gameId}`
                     );
-                    const { success, credentials } = await claimSeat(
+                    const claimResult = await claimSeat(
                         gameId,
                         activeMatch.matchID,
                         myMatchRole.playerID || '0',
                         { token, playerName: user.username }
                     );
-                    if (success) {
+                    if (claimResult.success) {
                         console.log(
                             `[Home] action=claim-seat-success matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} userId=${user.id}`
                         );
-                        setMyMatchRole((prev) => (prev ? { ...prev, credentials } : prev));
+                        setMyMatchRole((prev) => (prev ? { ...prev, credentials: claimResult.credentials } : prev));
                         setLocalStorageTick((t) => t + 1);
                         navigate(`/play/${gameId}/match/${activeMatch.matchID}?playerID=${myMatchRole.playerID}`);
                         return;
                     }
                     console.warn(
-                        `[Home] action=claim-seat-failed matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} userId=${user.id}`
+                        `[Home] action=claim-seat-failed matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} userId=${user.id} error=${claimResult.error || ''} status=${claimResult.status || ''}`
                     );
+                    if (claimResult.error === 'unauthorized' || claimResult.error === 'forbidden' || claimResult.error === 'not_found') {
+                        clearMatchCredentials(activeMatch.matchID);
+                        clearOwnerActiveMatch(activeMatch.matchID);
+                        setActiveMatch(null);
+                        setMyMatchRole(null);
+                        setLocalStorageTick((t) => t + 1);
+                        toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+                        return;
+                    }
                 } else {
                     const guestId = getGuestId();
                     const guestName = getGuestName();
                     console.log(
                         `[Home] action=claim-seat-guest-start matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} guestId=${guestId} gameName=${gameId}`
                     );
-                    const { success, credentials } = await claimSeat(
+                    const claimResult = await claimSeat(
                         gameId,
                         activeMatch.matchID,
                         myMatchRole.playerID || '0',
                         { guestId, playerName: guestName }
                     );
-                    if (success) {
+                    if (claimResult.success) {
                         console.log(
                             `[Home] action=claim-seat-guest-success matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} guestId=${guestId}`
                         );
-                        setMyMatchRole((prev) => (prev ? { ...prev, credentials } : prev));
+                        setMyMatchRole((prev) => (prev ? { ...prev, credentials: claimResult.credentials } : prev));
                         setLocalStorageTick((t) => t + 1);
                         navigate(`/play/${gameId}/match/${activeMatch.matchID}?playerID=${myMatchRole.playerID}`);
                         return;
                     }
                     console.warn(
-                        `[Home] action=claim-seat-guest-failed matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} guestId=${guestId}`
+                        `[Home] action=claim-seat-guest-failed matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} guestId=${guestId} error=${claimResult.error || ''} status=${claimResult.status || ''}`
                     );
+                    if (claimResult.error === 'unauthorized' || claimResult.error === 'forbidden' || claimResult.error === 'not_found') {
+                        clearMatchCredentials(activeMatch.matchID);
+                        clearOwnerActiveMatch(activeMatch.matchID);
+                        setActiveMatch(null);
+                        setMyMatchRole(null);
+                        setLocalStorageTick((t) => t + 1);
+                        toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+                        return;
+                    }
                 }
 
                 // 无凭证：尝试重新加入空位

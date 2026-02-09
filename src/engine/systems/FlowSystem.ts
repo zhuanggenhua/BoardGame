@@ -11,7 +11,7 @@ import type { Command, GameEvent, MatchState, PlayerId, RandomFn } from '../type
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 
-const isDev = import.meta.env.DEV;
+const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
 const logDev = (...args: unknown[]) => {
     if (isDev) {
         console.log(...args);

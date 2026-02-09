@@ -55,7 +55,7 @@ export const PurifyModal: React.FC<PurifyModalProps> = ({
 
     const handleConfirm = () => {
         if (!selectedStatusId) {
-            setErrorMessage(t('purify.selectHint', { defaultValue: '请先选择要移除的负面状态。' }));
+            setErrorMessage(t('purify.selectHint'));
             return;
         }
         setErrorMessage(null);

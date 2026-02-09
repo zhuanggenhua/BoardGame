@@ -1,6 +1,26 @@
 import type { TutorialManifest, TutorialEventMatcher } from '../../engine/types';
 import { CHEAT_COMMANDS } from '../../engine';
 import { TOKEN_IDS, STATUS_IDS } from './domain/ids';
+import { MONK_CARDS } from './heroes/monk/cards';
+
+const TUTORIAL_STARTING_HAND = [
+    'card-inner-peace',
+    'card-play-six',
+    'card-meditation-2',
+    'card-boss-generous',
+];
+
+const buildTutorialDeck = (startingHand: string[]): string[] => {
+    const baseDeck = MONK_CARDS.flatMap(card => (card.type === 'upgrade' ? [card.id] : [card.id, card.id]));
+    const remaining = [...baseDeck];
+    startingHand.forEach(id => {
+        const index = remaining.indexOf(id);
+        if (index !== -1) remaining.splice(index, 1);
+    });
+    return [...startingHand, ...remaining];
+};
+
+const TUTORIAL_INITIAL_DECK = buildTutorialDeck(TUTORIAL_STARTING_HAND);
 
 const MATCH_PHASE_OFFENSIVE: TutorialEventMatcher = {
     type: 'SYS_PHASE_CHANGED',
@@ -31,7 +51,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             requireAction: false,
             showMask: true,
             aiActions: [
-                { commandType: 'SELECT_CHARACTER', payload: { characterId: 'monk' } },
+                { commandType: 'SELECT_CHARACTER', payload: { characterId: 'monk', initialDeckCardIds: TUTORIAL_INITIAL_DECK } },
                 { commandType: 'HOST_START_GAME', payload: {} },
             ],
             advanceOnEvents: [
@@ -104,7 +124,6 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'left',
             requireAction: true,
             advanceOnEvents: [
-                { type: 'SYS_PHASE_CHANGED' },
                 MATCH_PHASE_OFFENSIVE,
             ],
         },
@@ -114,9 +133,6 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'dice-tray',
             position: 'left',
             requireAction: false,
-            advanceOnEvents: [
-                { type: 'SYS_PHASE_CHANGED', match: { to: 'offensiveRoll' } },
-            ],
         },
         {
             id: 'dice-roll',
@@ -155,11 +171,11 @@ export const DiceThroneTutorial: TutorialManifest = {
             advanceOnEvents: [MATCH_PHASE_DEFENSE, MATCH_PHASE_MAIN2],
         },
         {
-            id: 'taiji-response',
+            id: 'taiji-setup',
             content: 'game-dicethrone:tutorial.steps.taijiResponse',
             highlightTarget: 'status-tokens',
             position: 'right',
-            requireAction: true,
+            requireAction: false,
             showMask: true,
             aiActions: [
                 { commandType: CHEAT_COMMANDS.SET_TOKEN, payload: { playerId: '0', tokenId: TOKEN_IDS.TAIJI, amount: 1 } },
@@ -189,17 +205,26 @@ export const DiceThroneTutorial: TutorialManifest = {
                     },
                 } } },
             ],
+        },
+        {
+            id: 'taiji-response',
+            content: 'game-dicethrone:tutorial.steps.taijiResponse',
+            highlightTarget: 'status-tokens',
+            position: 'right',
+            requireAction: false,
+            showMask: true,
             advanceOnEvents: [
-                { type: 'TOKEN_USED', match: { playerId: '0', tokenId: TOKEN_IDS.TAIJI } },
-                { type: 'TOKEN_RESPONSE_CLOSED', match: { pendingDamageId: 'tutorial-taiji' } },
+                { type: 'TOKEN_USED' },
+                { type: 'TOKEN_RESPONSE_REQUESTED' },
+                { type: 'TOKEN_RESPONSE_CLOSED' },
             ],
         },
         {
-            id: 'evasive-response',
+            id: 'evasive-setup',
             content: 'game-dicethrone:tutorial.steps.evasiveResponse',
             highlightTarget: 'status-tokens',
             position: 'right',
-            requireAction: true,
+            requireAction: false,
             showMask: true,
             aiActions: [
                 { commandType: CHEAT_COMMANDS.SET_TOKEN, payload: { playerId: '0', tokenId: TOKEN_IDS.EVASIVE, amount: 1 } },
@@ -229,9 +254,17 @@ export const DiceThroneTutorial: TutorialManifest = {
                     },
                 } } },
             ],
+        },
+        {
+            id: 'evasive-response',
+            content: 'game-dicethrone:tutorial.steps.evasiveResponse',
+            highlightTarget: 'status-tokens',
+            position: 'right',
+            requireAction: false,
+            showMask: true,
             advanceOnEvents: [
-                { type: 'TOKEN_USED', match: { playerId: '0', tokenId: TOKEN_IDS.EVASIVE } },
-                { type: 'TOKEN_RESPONSE_CLOSED', match: { pendingDamageId: 'tutorial-evasive' } },
+                { type: 'TOKEN_USED' },
+                { type: 'TOKEN_RESPONSE_CLOSED' },
             ],
         },
         {
@@ -244,6 +277,9 @@ export const DiceThroneTutorial: TutorialManifest = {
             aiActions: [
                 { commandType: CHEAT_COMMANDS.SET_STATUS, payload: { playerId: '0', statusId: STATUS_IDS.KNOCKDOWN, amount: 1 } },
                 { commandType: CHEAT_COMMANDS.SET_TOKEN, payload: { playerId: '0', tokenId: TOKEN_IDS.PURIFY, amount: 1 } },
+                // 清理残留的响应窗口状态，避免干扰净化教程
+                { commandType: CHEAT_COMMANDS.MERGE_STATE, payload: { fields: { pendingDamage: undefined, pendingAttack: undefined } } },
+                { commandType: CHEAT_COMMANDS.SET_PHASE, payload: { phase: 'main1' } },
             ],
             advanceOnEvents: [
                 { type: 'AI_CONSUMED', match: { stepId: 'purify-setup' } },
@@ -256,8 +292,9 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'right',
             requireAction: true,
             showMask: true,
+            allowManualSkip: false,
             advanceOnEvents: [
-                { type: 'TOKEN_USED', match: { playerId: '0', tokenId: TOKEN_IDS.PURIFY } },
+                { type: 'TOKEN_USED', match: { playerId: '0', tokenId: TOKEN_IDS.PURIFY, effectType: 'removeDebuff' } },
                 { type: 'STATUS_REMOVED', match: { targetId: '0', statusId: STATUS_IDS.KNOCKDOWN } },
             ],
         },
@@ -268,7 +305,6 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'top',
             requireAction: true,
             aiActions: [
-                { commandType: CHEAT_COMMANDS.DEAL_CARD_BY_ATLAS_INDEX, payload: { playerId: '0', atlasIndex: 1 } },
                 { commandType: CHEAT_COMMANDS.SET_PHASE, payload: { phase: 'main1' } },
             ],
             advanceOnEvents: [
@@ -282,7 +318,6 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'top',
             requireAction: true,
             aiActions: [
-                { commandType: CHEAT_COMMANDS.DEAL_CARD_BY_ATLAS_INDEX, payload: { playerId: '0', atlasIndex: 0 } },
                 { commandType: CHEAT_COMMANDS.SET_PHASE, payload: { phase: 'offensiveRoll' } },
                 { commandType: CHEAT_COMMANDS.SET_DICE, payload: { diceValues: [1, 1, 1, 1, 1] } },
             ],
@@ -297,7 +332,6 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'top',
             requireAction: true,
             aiActions: [
-                { commandType: CHEAT_COMMANDS.DEAL_CARD_BY_ATLAS_INDEX, payload: { playerId: '0', atlasIndex: 6 } },
                 { commandType: CHEAT_COMMANDS.SET_PHASE, payload: { phase: 'main1' } },
             ],
             advanceOnEvents: [

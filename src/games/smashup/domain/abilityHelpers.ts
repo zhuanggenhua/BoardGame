@@ -18,6 +18,20 @@ import type {
     HandShuffledIntoDeckEvent,
 } from './types';
 import { SU_EVENTS } from './types';
+import { getEffectivePower } from './ongoingModifiers';
+
+// ============================================================================
+// 力量计算便捷函数
+// ============================================================================
+
+/**
+ * 获取随从的有效力量（含持续修正）
+ * 
+ * 能力函数中所有力量比较/判断必须使用此函数，禁止直接 basePower + powerModifier。
+ */
+export function getMinionPower(state: SmashUpCore, minion: MinionOnBase, baseIndex: number): number {
+    return getEffectivePower(state, minion, baseIndex);
+}
 
 // ============================================================================
 // 随从消灭

@@ -5,9 +5,9 @@ import { SU_COMMANDS, getCurrentPlayerId } from '../domain/types';
 import type { SmashUpCore } from '../domain/types';
 import { FACTION_METADATA } from './factionMeta';
 import type { PlayerId } from '../../../engine/types';
-import { getFactionCards } from '../data/cards';
+import { getFactionCards, resolveCardName, resolveCardText, getCardDef, getBaseDef } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
-import { X, Check, Search, Layers } from 'lucide-react';
+import { X, Check, Search, Layers, ZoomIn } from 'lucide-react';
 
 interface Props {
     core: SmashUpCore;
@@ -16,9 +16,10 @@ interface Props {
 }
 
 export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => {
-    const { t } = useTranslation('game-smashup');
+    const { t, i18n } = useTranslation('game-smashup');
     const selectionState = core.factionSelection;
     const [focusedFactionId, setFocusedFactionId] = useState<string | null>(null);
+    const [viewingCard, setViewingCard] = useState<{ defId: string; type: 'minion' | 'base' | 'action' } | null>(null);
 
     if (!selectionState) return null;
 
@@ -37,26 +38,73 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
     };
 
     return (
-        <div className="absolute inset-0 z-50 bg-slate-950 flex flex-col items-center overflow-hidden font-sans selection:bg-blue-500/30">
-            {/* Background Texture/Gradient */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black opacity-80 pointer-events-none" />
+        <div data-tutorial-id="su-faction-select" className="absolute inset-0 z-50 bg-[#2d1b10] flex flex-col items-center overflow-hidden font-sans selection:bg-amber-500/30">
+            {/* Improved CSS Wood Grain (Fallback logic) */}
+            <div className="absolute inset-0 z-0 pointer-events-none"
+                style={{
+                    backgroundImage: `url('https://www.transparenttextures.com/patterns/wood-pattern.png'), linear-gradient(to bottom, transparent, rgba(0,0,0,0.4))`,
+                    backgroundBlendMode: 'multiply',
+                    opacity: 0.5
+                }}
+            />
+            {/* Subtle Vignette */}
+            <div className="absolute inset-0 z-0 pointer-events-none shadow-[inset_0_0_200px_rgba(0,0,0,0.8)]" />
 
             {/* HEADLINE AREA */}
             <motion.div
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="text-center pt-8 pb-4 relative z-10 w-full max-w-4xl mx-auto"
+                className="text-center pt-10 pb-4 relative z-20 w-full max-w-4xl mx-auto flex flex-col items-center"
             >
-                <div className="flex flex-col items-center justify-center mb-2">
-                    <span className="text-blue-400 font-bold tracking-widest uppercase text-xs mb-1 px-3 py-1 bg-blue-500/10 rounded-full border border-blue-500/20">
-                        {isMyTurn ? t('ui.your_turn_prompt') : t('ui.waiting_for_player', { id: currentPlayerId })}
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-2xl">
-                        {t('ui.select_factions_title')}
-                    </h1>
+                {/* Turn Status: Stuck Note Style */}
+                <div className="mb-10 h-16 relative flex items-center justify-center">
+                    <AnimatePresence mode="wait">
+                        {isMyTurn ? (
+                            <motion.div
+                                key="my-turn"
+                                initial={{ rotate: -15, scale: 0.5, opacity: 0, y: -50 }}
+                                animate={{ rotate: -2, scale: 1, opacity: 1, y: 0 }}
+                                exit={{ rotate: 5, scale: 0.8, opacity: 0 }}
+                                className="relative bg-[#fef3c7] py-3 px-10 shadow-[4px_4px_10px_rgba(0,0,0,0.4)] border-b-2 border-slate-800/10 rounded-sm flex items-center clip-path-jagged"
+                            >
+                                {/* Pin icon */}
+                                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-500 opacity-60 shadow-inner" />
+
+                                <span className="text-slate-800 font-black tracking-tight uppercase text-xl italic drop-shadow-sm">
+                                    {t('ui.your_turn_prompt')}
+                                </span>
+
+                                <motion.div
+                                    animate={{ rotate: [0, -2, 2, 0] }}
+                                    transition={{ repeat: Infinity, duration: 2 }}
+                                    className="absolute -right-2 -top-2 text-2xl"
+                                >
+                                    ✏️
+                                </motion.div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="waiting"
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="relative bg-[#e0f2fe] py-2 px-6 shadow-[2px_2px_8px_rgba(0,0,0,0.3)] border-l-4 border-blue-400 rotate-1 clip-path-jagged"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                    <span className="text-slate-800 font-bold uppercase text-xs tracking-widest">
+                                        {t('ui.waiting_for_player', { id: currentPlayerId })}
+                                    </span>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
-                <p className="text-slate-400 text-sm max-w-lg mx-auto">
+                <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] mb-2 uppercase italic">
+                    {t('ui.select_factions_title')}
+                </h1>
+
+                <p className="text-amber-100/60 text-sm max-w-lg mx-auto font-bold uppercase tracking-tight">
                     {t('ui.select_factions_desc')}
                 </p>
             </motion.div>
@@ -76,58 +124,59 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                         return (
                             <motion.div
                                 key={faction.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
+                                initial={{ opacity: 0, y: 20, rotate: (idx % 6) - 3 }}
+                                animate={{ opacity: 1, y: 0, rotate: (idx % 4) - 2 }}
+                                whileHover={{ rotate: 0, scale: 1.05, zIndex: 30 }}
                                 transition={{ delay: idx * 0.03 }}
                                 onClick={() => setFocusedFactionId(faction.id)}
                                 className={`
-                                    group relative flex flex-col items-center cursor-pointer perspective-1000
-                                    ${isTaken ? 'opacity-50 grayscale' : 'hover:z-10'}
+                                    group relative flex flex-col items-center cursor-pointer
+                                    ${isTaken ? 'opacity-40 grayscale pointer-events-none' : 'z-10'}
                                 `}
                             >
                                 {/* Card Stack Visual */}
-                                <div className="relative w-40 h-56 md:w-48 md:h-64 mb-4 transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-2">
-                                    {/* Back Cards (Decorations) */}
-                                    <div className="absolute inset-0 bg-slate-700 rounded-xl transform rotate-6 translate-x-2 translate-y-1 border border-white/5 opacity-60 shadow-lg" />
-                                    <div className="absolute inset-0 bg-slate-600 rounded-xl transform -rotate-3 translate-x-1 translate-y-2 border border-white/5 opacity-80 shadow-lg" />
-
+                                <div className="relative w-40 h-56 md:w-48 md:h-64 mb-4">
                                     {/* Main Cover Card */}
                                     <div className={`
-                                        absolute inset-0 rounded-xl overflow-hidden shadow-2xl border-2 transition-colors
-                                        bg-slate-800
+                                        absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_12px_rgba(0,0,0,0.4)] border-[0.4vw] transition-all
+                                        bg-white p-[0.3vw]
                                         ${isSelectedByMe
-                                            ? 'border-green-500 ring-4 ring-green-500/20'
+                                            ? 'border-green-500 scale-105 -translate-y-2'
                                             : isTaken
-                                                ? 'border-slate-600'
-                                                : 'border-white/10 group-hover:border-blue-400/50'
+                                                ? 'border-slate-300'
+                                                : 'border-white group-hover:border-amber-400 group-hover:shadow-amber-500/30'
                                         }
                                     `}>
-                                        <CardPreview
-                                            previewRef={coverCard?.previewRef}
-                                            className="w-full h-full object-cover"
-                                        />
+                                        <div className="w-full h-full bg-slate-100 overflow-hidden relative border border-slate-200">
+                                            <CardPreview
+                                                previewRef={coverCard?.previewRef}
+                                                className="w-full h-full object-cover"
+                                            />
 
-                                        {/* Overlay Gradient for Text Readability */}
-                                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
+                                            {/* Taken Status */}
+                                            {isTaken && (
+                                                <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-2 text-center z-30">
+                                                    <span className="text-2xl mb-1">🔒</span>
+                                                    <span className="font-black text-white text-xs uppercase tracking-tight">
+                                                        {t('ui.player_taken', { id: ownerId })}
+                                                    </span>
+                                                </div>
+                                            )}
 
-                                        {/* Taken Status */}
-                                        {isTaken && (
-                                            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-2 text-center">
-                                                <span className="text-3xl mb-1">🔒</span>
-                                                <span className="font-bold text-white text-sm uppercase tracking-wider">
-                                                    {t('ui.player_taken', { id: ownerId })}
-                                                </span>
+                                            {/* Overlay Gradient for Text Readability */}
+                                            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent" />
+
+                                            {/* Faction Name on Card */}
+                                            <div className="absolute bottom-2 left-2 right-2 text-left">
+                                                <h3 className="text-white font-black text-sm md:text-base leading-none mb-1 drop-shadow-md uppercase italic tracking-tighter">
+                                                    {t(faction.nameKey)}
+                                                </h3>
                                             </div>
-                                        )}
+                                        </div>
 
-                                        {/* Faction Name on Card */}
-                                        <div className="absolute bottom-3 left-3 right-3 text-left">
-                                            <h3 className="text-white font-black text-lg leading-none mb-1 text-shadow-sm filter drop-shadow-md">
-                                                {faction.name}
-                                            </h3>
-                                            <div className="flex items-center gap-1">
-                                                <div className="h-1 w-8 rounded-full" style={{ backgroundColor: faction.color }} />
-                                            </div>
+                                        {/* Faction Icon Badge - "Token" style */}
+                                        <div className="absolute -top-2 -right-2 z-40 w-10 h-10 bg-slate-900 border-2 border-white rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                                            <faction.icon size={20} strokeWidth={2.5} />
                                         </div>
                                     </div>
                                 </div>
@@ -147,17 +196,20 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setFocusedFactionId(null)}
-                            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                            className="absolute inset-0 bg-black/80"
                         />
 
-                        {/* Modal Content */}
+                        {/* Modal Content - Rulebook/Clipboard style */}
                         <motion.div
                             layoutId={focusedFactionId}
-                            className="relative w-full max-w-5xl h-[85vh] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="relative w-full max-w-5xl h-[85vh] bg-[#fdfdfd] border-4 border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.6)] rounded-sm overflow-hidden flex flex-col md:flex-row clip-path-jagged"
+                            style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1.5vw, #f1f5f9 1.5vw, #f1f5f9 1.6vw)' }}
+                            initial={{ scale: 0.9, opacity: 0, rotate: -2 }}
+                            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, rotate: 2 }}
                         >
+                            {/* Tape effect on top */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-8 bg-white/60 z-50 -translate-y-4" />
                             {/* Close Button */}
                             <button
                                 onClick={() => setFocusedFactionId(null)}
@@ -166,11 +218,11 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                 <X size={24} />
                             </button>
 
-                            {/* Left Panel: Info & Action */}
-                            <div className="w-full md:w-1/3 bg-slate-950 p-6 md:p-8 flex flex-col border-r border-white/5 relative overflow-hidden">
+                            {/* Left Panel: Info & Action - Clipboard header style */}
+                            <div className="w-full md:w-1/3 bg-white/80 p-6 md:p-8 flex flex-col border-r-2 border-dashed border-slate-300 relative overflow-hidden">
                                 {/* Ambient Background */}
                                 <div
-                                    className="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none blur-3xl saturate-200"
+                                    className="absolute top-0 right-0 w-full h-full opacity-5 pointer-events-none blur-3xl saturate-200"
                                     style={{
                                         backgroundColor: FACTION_METADATA.find(f => f.id === focusedFactionId)?.color || '#334155',
                                         background: `radial-gradient(circle at top right, ${FACTION_METADATA.find(f => f.id === focusedFactionId)?.color}, transparent 70%)`
@@ -187,34 +239,34 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                     return (
                                         <>
                                             <div className="relative z-10">
-                                                <div className="flex items-center gap-2 mb-2 opacity-70">
+                                                <div className="flex items-center gap-2 mb-2 text-slate-400">
                                                     <Layers size={16} />
-                                                    <span className="text-xs font-bold uppercase tracking-wider">{t('ui.faction_details')}</span>
+                                                    <span className="text-xs font-black uppercase tracking-widest">{t('ui.faction_details')}</span>
                                                 </div>
-                                                <h2 className="text-4xl font-black text-white mb-4">{meta.name}</h2>
+                                                <h2 className="text-4xl font-black text-slate-900 mb-4 uppercase tracking-tighter italic">{t(meta.nameKey)}</h2>
 
                                                 <div className="flex gap-2 mb-6">
-                                                    <div className="px-2 py-1 bg-white/10 rounded text-xs font-bold text-white border border-white/10">
+                                                    <div className="px-2 py-1 bg-slate-100 rounded text-xs font-black text-slate-800 border border-slate-200 shadow-sm">
                                                         {t('ui.minion_count', { count: cards.filter(c => c.type === 'minion').length })}
                                                     </div>
-                                                    <div className="px-2 py-1 bg-white/10 rounded text-xs font-bold text-white border border-white/10">
+                                                    <div className="px-2 py-1 bg-slate-100 rounded text-xs font-black text-slate-800 border border-slate-200 shadow-sm">
                                                         {t('ui.action_count', { count: cards.filter(c => c.type === 'action').length })}
                                                     </div>
                                                 </div>
 
-                                                <p className="text-slate-300 leading-relaxed mb-8">
-                                                    {meta.description}
+                                                <p className="text-slate-600 leading-relaxed mb-8 font-medium">
+                                                    {t(meta.descriptionKey)}
                                                 </p>
                                             </div>
 
                                             <div className="mt-auto relative z-10">
                                                 {isSelectedByMe ? (
-                                                    <div className="w-full py-4 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 font-bold text-center flex items-center justify-center gap-2">
-                                                        <Check size={20} />
+                                                    <div className="w-full py-4 bg-green-100 border-2 border-green-500 rounded text-green-700 font-black text-center flex items-center justify-center gap-2 uppercase italic shadow-md">
+                                                        <Check size={20} strokeWidth={3} />
                                                         {t('ui.selected')}
                                                     </div>
                                                 ) : isTaken ? (
-                                                    <div className="w-full py-4 bg-slate-800 rounded-lg text-slate-400 font-bold text-center cursor-not-allowed">
+                                                    <div className="w-full py-4 bg-slate-200 rounded text-slate-500 font-black text-center cursor-not-allowed uppercase shadow-inner">
                                                         {t('ui.taken_by_other')}
                                                     </div>
                                                 ) : (
@@ -222,11 +274,11 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                                         onClick={() => handleConfirmSelect(meta.id)}
                                                         disabled={!canSelect}
                                                         className={`
-                                                            w-full py-4 rounded-lg font-black text-lg tracking-wide uppercase transition-all
-                                                            flex items-center justify-center gap-2
+                                                            w-full py-4 rounded font-black text-xl tracking-tighter uppercase transition-all
+                                                            flex items-center justify-center gap-2 shadow-lg border-b-4
                                                             ${canSelect
-                                                                ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-blue-500/30 active:scale-95'
-                                                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'}
+                                                                ? 'bg-slate-900 border-slate-700 hover:bg-black text-white active:translate-y-1 active:border-b-0 active:shadow-none'
+                                                                : 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed border-b-0'}
                                                         `}
                                                     >
                                                         {isMyTurn
@@ -240,29 +292,48 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                 })()}
                             </div>
 
-                            {/* Right Panel: Card Grid */}
-                            <div className="flex-1 bg-slate-900 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-                                <h3 className="text-white/50 text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
-                                    <Search size={14} />
+                            {/* Right Panel: Card Grid - Rulebook content style */}
+                            <div className="flex-1 bg-white/50 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+                                <h3 className="text-slate-400 text-sm font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <Search size={14} strokeWidth={3} />
                                     <span>{t('ui.preview_cards')}</span>
                                 </h3>
 
                                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                                    {getFactionCards(focusedFactionId).map((card) => (
-                                        <div key={card.id} className="group relative aspect-[0.714] rounded-lg overflow-hidden bg-slate-800 border border-white/5 shadow-md hover:border-white/30 transition-colors">
-                                            <CardPreview
-                                                previewRef={card.previewRef}
-                                                className="w-full h-full object-cover"
-                                            />
-                                            {/* Hover info */}
-                                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 pointer-events-none">
-                                                <div className="text-white font-bold text-sm leading-tight mb-1">{card.name}</div>
-                                                <div className="text-[10px] text-white/70 uppercase tracking-wider">
-                                                    {card.type === 'minion' ? `${t('ui.minion')}: ${(card as any).power}` : t('ui.action')}
+                                    {(() => {
+                                        const cards = getFactionCards(focusedFactionId);
+                                        const meta = FACTION_METADATA.find(f => f.id === focusedFactionId);
+                                        return cards.map((card, cidx) => (
+                                            <div
+                                                key={card.id}
+                                                className="group relative aspect-[0.714] rounded-sm overflow-hidden bg-white p-[0.15vw] shadow-md border-2 border-slate-100 transition-all cursor-zoom-in hover:z-20 hover:scale-110 hover:shadow-xl"
+                                                style={{ transform: `rotate(${(cidx % 5) - 2}deg)` }}
+                                                onClick={() => setViewingCard({ defId: card.id, type: card.type })}
+                                            >
+                                                <div className="w-full h-full bg-slate-100 overflow-hidden relative">
+                                                    <CardPreview
+                                                        previewRef={card.previewRef}
+                                                        className="w-full h-full object-cover"
+                                                    />
+
+                                                    {/* Hover Action Icon */}
+                                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 p-1.5 rounded-full text-white z-30">
+                                                        <ZoomIn size={16} />
+                                                    </div>
+
+                                                    {/* Hover info */}
+                                                    <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 pointer-events-none">
+                                                        <div className="text-white font-black text-[10px] uppercase leading-none mb-1">
+                                                            {resolveCardName(card, i18n.language)}
+                                                        </div>
+                                                        <div className="text-[8px] text-amber-400 font-bold uppercase tracking-widest">
+                                                            {card.type === 'minion' ? `${t('ui.minion')}: ${(card as any).power}` : t('ui.action')}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ));
+                                    })()}
                                 </div>
                             </div>
                         </motion.div>
@@ -270,84 +341,170 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                 )}
             </AnimatePresence>
 
-            {/* FOOTER: Status Bar */}
-            <div className="absolute bottom-0 inset-x-0 bg-slate-950 border-t border-white/5 p-4 z-40">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-2 md:pb-0">
-                        {core.turnOrder.map(pid => {
-                            const selections = selectionState.playerSelections[pid] || [];
-                            const isCurrent = pid === currentPlayerId;
+            {/* FOOTER: Status Bar - Floating Score Sheet style */}
+            <div className="absolute bottom-6 inset-x-0 z-40 pointer-events-none">
+                <div className="max-w-7xl mx-auto flex items-end justify-center gap-8 px-6">
+                    {core.turnOrder.map((pid, pidx) => {
+                        const selections = selectionState.playerSelections[pid] || [];
+                        const isCurrent = pid === currentPlayerId;
 
-                            return (
-                                <div key={pid} className={`
-                                    flex items-center gap-3 px-4 py-2 rounded-full border transition-all min-w-[140px]
+                        return (
+                            <motion.div
+                                key={pid}
+                                initial={{ y: 50, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.5 + pidx * 0.1 }}
+                                className={`
+                                    flex flex-col items-center gap-2 px-6 py-3 rounded-sm border-2 pointer-events-auto transition-all
                                     ${isCurrent
-                                        ? 'bg-blue-900/30 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                                        : 'bg-slate-900/50 border-white/5'}
+                                        ? 'bg-[#fef3c7] border-amber-500 shadow-[0_10px_25px_rgba(0,0,0,0.5)] -rotate-1 z-10 scale-110'
+                                        : 'bg-white/90 border-slate-200 shadow-lg rotate-1 grayscale-[0.3]'}
+                                `}
+                            >
+                                {/* Player Avatar Circle */}
+                                <div className={`
+                                    w-12 h-12 rounded-full flex items-center justify-center font-black text-lg text-white shadow-inner border-4 border-white
+                                    ${pid === '0' ? 'bg-red-500' : pidx === 1 ? 'bg-blue-500' : 'bg-green-500'}
                                 `}>
-                                    {/* Player Avatar Circle */}
-                                    <div className={`
-                                        w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
-                                        ${isCurrent ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300'}
-                                    `}>
-                                        P{pid}
-                                    </div>
+                                    P{pid}
+                                </div>
 
-                                    {/* Selections */}
-                                    <div className="flex gap-[-8px]">
-                                        {[0, 1].map(i => {
-                                            const fid = selections[i];
-                                            const meta = fid ? FACTION_METADATA.find(f => f.id === fid) : null;
-                                            const card = fid ? getFactionCards(fid).find(c => c.type === 'minion') : null;
+                                {/* Selections */}
+                                <div className="flex gap-2">
+                                    {[0, 1].map(i => {
+                                        const fid = selections[i];
+                                        const meta = fid ? FACTION_METADATA.find(f => f.id === fid) : null;
 
-                                            return (
-                                                <div
-                                                    key={i}
-                                                    className={`
-                                                        w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center overflow-hidden
-                                                        ${!fid ? 'border-dashed border-slate-700' : ''}
-                                                    `}
-                                                    title={meta?.name}
-                                                    style={{ marginLeft: i > 0 ? '-10px' : '0' }}
-                                                >
-                                                    {card ? (
-                                                        <CardPreview
-                                                            previewRef={card.previewRef}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <span className="text-xs text-slate-600">?</span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                        return (
+                                            <div
+                                                key={i}
+                                                className={`
+                                                    w-12 h-12 rounded-sm border-2 bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm transition-all
+                                                    ${!fid ? 'border-dashed border-slate-300 opacity-40' : 'border-slate-800 rotate-[-4deg]'}
+                                                `}
+                                                title={meta ? t(meta.nameKey) : undefined}
+                                                style={{ transform: fid ? `rotate(${(i * 10) - 5}deg)` : 'none' }}
+                                            >
+                                                {meta?.icon ? (
+                                                    <div className="text-slate-900">
+                                                        <meta.icon size={28} strokeWidth={2.5} />
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-slate-400 font-black">?</span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
 
+                                <div className="flex flex-col items-center">
+                                    <span className={`text-[11px] font-black uppercase tracking-tighter leading-none ${isCurrent ? 'text-amber-800' : 'text-slate-500'}`}>
+                                        Player {pid}
+                                    </span>
                                     {isCurrent && (
-                                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse ml-auto" />
+                                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-1 animate-pulse">
+                                            {t('ui.thinking')}
+                                        </span>
                                     )}
                                 </div>
-                            );
-                        })}
-                    </div>
+                            </motion.div>
+                        );
+                    })}
                 </div>
             </div>
+
+            {/* CARD MAGNIFICATION OVERLAY */}
+            <AnimatePresence>
+                {viewingCard && (
+                    <CardDetailOverlay
+                        defId={viewingCard.defId}
+                        type={viewingCard.type}
+                        onClose={() => setViewingCard(null)}
+                    />
+                )}
+            </AnimatePresence>
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 8px;
                 }
                 .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.02);
+                    background: rgba(0, 0, 0, 0.1);
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 4px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 0px;
+                    border: 1px solid rgba(0,0,0,0.2);
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255, 255, 255, 0.2);
+                    background: rgba(255, 255, 255, 0.3);
+                }
+
+                .clip-path-jagged {
+                    clip-path: polygon(
+                        0% 0%, 5% 2%, 10% 0%, 15% 3%, 20% 0%, 25% 2%, 30% 0%, 35% 3%, 40% 0%, 45% 2%, 50% 0%, 55% 3%, 60% 0%, 65% 2%, 70% 0%, 75% 3%, 80% 0%, 85% 2%, 90% 0%, 95% 3%, 100% 0%,
+                        100% 100%, 95% 98%, 90% 100%, 85% 97%, 80% 100%, 75% 98%, 70% 100%, 65% 97%, 60% 100%, 55% 98%, 50% 100%, 45% 97%, 40% 100%, 35% 98%, 30% 100%, 25% 97%, 20% 100%, 15% 98%, 10% 100%, 5% 97%, 0% 100%
+                    );
                 }
             `}</style>
-        </div>
+        </div >
+    );
+};
+// ============================================================================
+// Overlay: Click-to-View Details (Synced with Board.tsx)
+// ============================================================================
+const CardDetailOverlay: React.FC<{
+    defId: string;
+    type: 'minion' | 'base' | 'action';
+    onClose: () => void;
+}> = ({ defId, type, onClose }) => {
+    const { i18n } = useTranslation('game-smashup');
+    const def = type === 'base' ? getBaseDef(defId) : getCardDef(defId);
+    if (!def) return null;
+    const resolvedName = resolveCardName(def, i18n.language) || defId;
+    const resolvedText = resolveCardText(def, i18n.language);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-8 cursor-pointer"
+        >
+            <motion.div
+                initial={{ scale: 0.8, y: 50 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.8, y: 50 }}
+                className={`
+                    relative rounded-sm shadow-2xl bg-white p-2 border-4 border-slate-800
+                    ${type === 'base' ? 'w-[45vw] max-w-[700px] aspect-[1.43]' : 'w-[28vw] max-w-[450px] aspect-[0.714]'}
+                `}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Close Button */}
+                <button
+                    onClick={onClose}
+                    className="absolute -top-4 -right-4 bg-red-600 text-white rounded-full w-10 h-10 font-black border-4 border-white z-50 hover:scale-110 shadow-lg flex items-center justify-center transition-transform"
+                >
+                    <X size={20} strokeWidth={3} />
+                </button>
+
+                <div className="w-full h-full bg-slate-100 relative overflow-hidden">
+                    <CardPreview
+                        previewRef={def.previewRef}
+                        className="w-full h-full object-contain"
+                        title={resolvedName}
+                    />
+
+                    {!def.previewRef && (
+                        <div className="absolute inset-0 bg-white p-8 flex flex-col items-center justify-center text-center">
+                            <h2 className="text-3xl font-black uppercase mb-4 text-slate-900 italic tracking-tighter">{resolvedName}</h2>
+                            <p className="font-bold text-lg text-slate-700 leading-relaxed">{resolvedText}</p>
+                        </div>
+                    )}
+                </div>
+            </motion.div>
+        </motion.div>
     );
 };

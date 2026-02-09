@@ -5,15 +5,17 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import type { GamePhase } from '../domain/types';
 
-const PHASE_HINTS: Record<GamePhase, string> = {
-  summon: '从手牌召唤单位到城门旁',
-  move: '移动最多3个单位，每个最多2格',
-  build: '在后方区域建造城门或建筑',
-  attack: '用最多3个单位进行攻击',
-  magic: '弃牌获取魔力',
-  draw: '抽牌至5张',
+const PHASE_HINT_KEYS: Record<GamePhase, string> = {
+  factionSelect: 'hint.factionSelect',
+  summon: 'hint.summon',
+  move: 'hint.move',
+  build: 'hint.build',
+  attack: 'hint.attack',
+  magic: 'hint.magic',
+  draw: 'hint.draw',
 };
 
 export interface ActionBannerProps {
@@ -29,7 +31,8 @@ export const ActionBanner: React.FC<ActionBannerProps> = ({
   customMessage,
   className = '',
 }) => {
-  const message = customMessage ?? (isMyTurn ? PHASE_HINTS[phase] : '等待对手行动...');
+  const { t } = useTranslation('game-summonerwars');
+  const message = customMessage ?? (isMyTurn ? t(PHASE_HINT_KEYS[phase]) : t('hint.waitingOpponent'));
 
   return (
     <AnimatePresence mode="wait">

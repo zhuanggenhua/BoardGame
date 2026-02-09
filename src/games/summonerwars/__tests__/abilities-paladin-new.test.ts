@@ -558,6 +558,57 @@ describe('圣殿牧师 - 治疗 (healing)', () => {
     expect(newState.board[4][2].unit?.healingMode).toBe(true);
   });
 
+  it('DECLARE_ATTACK 携带 beforeAttack 时弃牌并触发治疗攻击', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-priest',
+      card: makeTemplePriest('test-priest'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-ally',
+      card: makeAlly('test-ally', { life: 5 }),
+      owner: '0',
+      damage: 3,
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+    state.players['0'].attackCount = 0;
+
+    state.players['0'].hand.push(makeAlly('discard-card'));
+
+    const allMelee = createControlledRandom([0.0, 0.0]);
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 3 },
+      beforeAttack: {
+        abilityId: 'healing',
+        targetCardId: 'discard-card',
+      },
+    }, allMelee);
+
+    const discardEvents = events.filter(e => e.type === SW_EVENTS.CARD_DISCARDED);
+    expect(discardEvents.length).toBe(1);
+
+    const healModeEvents = events.filter(e => e.type === SW_EVENTS.HEALING_MODE_SET);
+    expect(healModeEvents.length).toBe(1);
+
+    const healEvents = events.filter(e =>
+      e.type === SW_EVENTS.UNIT_HEALED
+      && (e.payload as any).sourceAbilityId === 'healing'
+    );
+    expect(healEvents.length).toBe(1);
+    expect((healEvents[0].payload as any).amount).toBe(2);
+
+    expect(newState.players['0'].hand.find(c => c.id === 'discard-card')).toBeUndefined();
+    expect(newState.board[4][3].unit?.damage).toBe(1);
+  });
+
   it('治疗模式下攻击友方单位转为治疗', () => {
     const state = createPaladinState();
     clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);

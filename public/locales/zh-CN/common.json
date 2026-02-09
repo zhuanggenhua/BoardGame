@@ -1,7 +1,8 @@
 {
   "button": {
     "confirm": "确定",
-    "cancel": "取消"
+    "cancel": "取消",
+    "close": "关闭"
   },
   "category": {
     "all": "全部游戏",
@@ -41,11 +42,30 @@
     "restarting": "双方已确认，重开中…",
     "backToLobby": "返回大厅"
   },
+  "endgame": {
+    "draw": "平局",
+    "drawSubtitle": "势均力敌！",
+    "victory": "胜利",
+    "victorySubtitle": "恭喜你赢得了比赛！",
+    "defeat": "失败",
+    "defeatSubtitle": "再接再厉！",
+    "gameOver": "游戏结束"
+  },
   "accept": "接受",
   "reject": "拒绝",
   "back": "返回",
   "loading": "加载中",
   "unknownUser": "未知用户",
+  "notFound": {
+    "seoTitle": "404 - 页面未找到",
+    "seoDescription": "你访问的页面不存在。",
+    "headline": "迷失在地图之外",
+    "headlineSub": "Lost off the edge of the map",
+    "description": "您所寻找的页面似乎已被移除，或者从未存在于这个版图之上。",
+    "descriptionSub": "The hex you are looking for has been removed or never existed.",
+    "backHome": "返回大厅",
+    "footer": "BordGame System"
+  },
   "game_names": {
     "tictactoe": "井字棋",
     "dicethrone": "王权骰铸",

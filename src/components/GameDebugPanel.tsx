@@ -147,7 +147,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
     
     const handleApplyState = useCallback(() => {
         if (!moves.SYS_CHEAT_SET_STATE) {
-            setApplyError('此游戏不支持状态赋值');
+            setApplyError(t('debug.state.errorUnsupported'));
             setTimeout(() => setApplyError(null), 3000);
             return;
         }
@@ -158,10 +158,10 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
             setShowStateInput(false);
             setApplyError(null);
         } catch (err) {
-            setApplyError('JSON 格式错误');
+            setApplyError(t('debug.state.errorInvalidJson'));
             setTimeout(() => setApplyError(null), 3000);
         }
-    }, [stateInput, moves]);
+    }, [stateInput, moves, t]);
 
     // 监听当前玩家变化，实现自动切换视角
     // 优先使用领域内核的当前玩家字段（G.core.currentPlayer），回退到 ctx.currentPlayer
@@ -179,7 +179,9 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
     }, [activePlayer, setPlayerID, playerID, autoSwitch]);
 
     // 早期返回必须在所有 hooks 之后
-    if (!import.meta.env.DEV) return null;
+    const isE2EDebug = typeof window !== 'undefined'
+        && (window as Window & { __BG_E2E_DEBUG__?: boolean }).__BG_E2E_DEBUG__ === true;
+    if (!import.meta.env.DEV && !isE2EDebug) return null;
     if (!buttonPosition) return null;
 
     const handleArgChange = (moveName: string, value: string) => {
@@ -379,7 +381,9 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                         : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                                 }`}
                                             >
-                                                {copySuccess ? '✓ 已复制' : '📋 复制'}
+                                                {copySuccess
+                                                    ? `✓ ${t('debug.state.copied')}`
+                                                    : `📋 ${t('debug.state.copy')}`}
                                             </button>
                                             <button
                                                 data-testid="debug-state-toggle-input"
@@ -390,7 +394,9 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                         : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                                 }`}
                                             >
-                                                {showStateInput ? '✕ 取消' : '📝 赋值'}
+                                                {showStateInput
+                                                    ? `✕ ${t('debug.state.cancelAssign')}`
+                                                    : `📝 ${t('debug.state.assign')}`}
                                             </button>
                                         </div>
                                     </div>
@@ -402,7 +408,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                 data-testid="debug-state-input"
                                                 value={stateInput}
                                                 onChange={(e) => setStateInput(e.target.value)}
-                                                placeholder="粘贴游戏状态 JSON..."
+                                                placeholder={t('debug.state.pastePlaceholder')}
                                                 className="w-full h-32 px-2 py-1.5 text-[10px] font-mono border border-blue-300 rounded bg-white resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
                                             />
                                             <div className="flex gap-2">
@@ -418,7 +424,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                     }}
                                                     className="flex-1 px-2 py-1.5 bg-gray-500 text-white rounded text-[10px] font-bold hover:bg-gray-600"
                                                 >
-                                                    📋 从剪贴板粘贴
+                                                    {`📋 ${t('debug.state.pasteFromClipboard')}`}
                                                 </button>
                                                 <button
                                                     data-testid="debug-state-apply"
@@ -426,7 +432,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, ctx, moves, event
                                                     disabled={!stateInput.trim()}
                                                     className="flex-1 px-2 py-1.5 bg-blue-500 text-white rounded text-[10px] font-bold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    ✓ 应用状态
+                                                    {`✓ ${t('debug.state.apply')}`}
                                                 </button>
                                             </div>
                                             {applyError && (

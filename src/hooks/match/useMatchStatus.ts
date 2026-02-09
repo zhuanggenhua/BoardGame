@@ -12,6 +12,59 @@ export interface PlayerStatus {
 
 const OWNER_ACTIVE_MATCH_KEY = 'owner_active_match';
 const MATCH_CREDENTIALS_PREFIX = 'match_creds_';
+const OWNER_ACTIVE_MATCH_SUPPRESS_KEY = 'owner_active_match_suppressed';
+
+const parseOwnerActiveMatchSuppression = (raw: string | null): string[] => {
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+            return parsed.map((item) => String(item)).filter(Boolean);
+        }
+    } catch {
+        return [];
+    }
+    return [];
+};
+
+const saveOwnerActiveMatchSuppression = (matchIDs: string[]): void => {
+    if (matchIDs.length === 0) {
+        localStorage.removeItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY);
+    } else {
+        localStorage.setItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY, JSON.stringify(matchIDs));
+    }
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('owner-active-match-changed'));
+    }
+};
+
+export function getSuppressedOwnerActiveMatches(): string[] {
+    return parseOwnerActiveMatchSuppression(localStorage.getItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY));
+}
+
+export function isOwnerActiveMatchSuppressed(matchID: string): boolean {
+    if (!matchID) return false;
+    return getSuppressedOwnerActiveMatches().includes(matchID);
+}
+
+export function suppressOwnerActiveMatch(matchID: string): void {
+    if (!matchID) return;
+    const current = getSuppressedOwnerActiveMatches();
+    if (current.includes(matchID)) return;
+    saveOwnerActiveMatchSuppression([...current, matchID]);
+}
+
+export function clearOwnerActiveMatchSuppression(matchID?: string): void {
+    const current = getSuppressedOwnerActiveMatches();
+    if (current.length === 0) return;
+    if (!matchID) {
+        saveOwnerActiveMatchSuppression([]);
+        return;
+    }
+    const next = current.filter((id) => id !== matchID);
+    if (next.length === current.length) return;
+    saveOwnerActiveMatchSuppression(next);
+}
 
 export interface StoredMatchCredentials {
     matchID: string;
@@ -21,6 +74,13 @@ export interface StoredMatchCredentials {
     playerName?: string;
     updatedAt?: number;
 }
+
+export type MatchSeatValidationReason = 'missing_seat' | 'seat_empty' | 'name_mismatch';
+
+export type MatchSeatValidationResult = {
+    shouldClear: boolean;
+    reason?: MatchSeatValidationReason;
+};
 
 export interface OwnerActiveMatch {
     matchID: string;
@@ -53,6 +113,21 @@ export type ClaimSeatOptions = {
     playerName?: string;
 };
 
+export type ClaimSeatError =
+    | 'unauthorized'
+    | 'forbidden'
+    | 'not_found'
+    | 'server_error'
+    | 'invalid_response'
+    | 'network';
+
+export type ClaimSeatResult = {
+    success: boolean;
+    credentials?: string;
+    status?: number;
+    error?: ClaimSeatError;
+};
+
 /**
  * 通过 JWT 或 guestId 回归占位（无本地凭据时使用）
  */
@@ -61,7 +136,7 @@ export async function claimSeat(
     matchID: string,
     playerID: string,
     options: ClaimSeatOptions
-): Promise<{ success: boolean; credentials?: string }> {
+): Promise<ClaimSeatResult> {
     try {
         const normalizedGameName = (gameName || 'tictactoe').toLowerCase();
         const baseUrl = GAME_SERVER_URL || '';
@@ -87,20 +162,28 @@ export async function claimSeat(
 
         if (!response.ok) {
             const message = await response.text().catch(() => '');
+            const status = response.status;
+            let error: ClaimSeatError = 'network';
+            if (status === 401) error = 'unauthorized';
+            else if (status === 403) error = 'forbidden';
+            else if (status === 404) error = 'not_found';
+            else if (status >= 500) error = 'server_error';
+
             console.warn('[claimSeat] 请求失败', {
                 url,
-                status: response.status,
+                status,
                 message,
                 matchID,
                 playerID,
+                error,
             });
-            return { success: false };
+            return { success: false, status, error };
         }
 
         const data = await response.json().catch(() => null) as { playerCredentials?: string } | null;
         const credentials = data?.playerCredentials;
         if (!credentials) {
-            return { success: false };
+            return { success: false, error: 'invalid_response' };
         }
 
         persistMatchCredentials(matchID, {
@@ -114,7 +197,7 @@ export async function claimSeat(
         return { success: true, credentials };
     } catch (err) {
         console.error('[claimSeat] 请求异常:', err);
-        return { success: false };
+        return { success: false, error: 'network' };
     }
 }
 
@@ -132,6 +215,7 @@ export function getOwnerActiveMatch(): OwnerActiveMatch | null {
 
 export function setOwnerActiveMatch(payload: OwnerActiveMatch): void {
     if (!payload?.matchID) return;
+    clearOwnerActiveMatchSuppression(payload.matchID);
     localStorage.setItem(OWNER_ACTIVE_MATCH_KEY, JSON.stringify({
         ...payload,
         updatedAt: Date.now(),
@@ -179,6 +263,34 @@ export function listStoredMatchCredentials(): StoredMatchCredentials[] {
         }
     }
     return results;
+}
+
+export function validateStoredMatchSeat(
+    stored: StoredMatchCredentials | null,
+    matchPlayers: Array<{ id: number; name?: string | null }>,
+    expectedPlayerID?: string | null
+): MatchSeatValidationResult {
+    if (!stored?.playerID) {
+        return { shouldClear: false };
+    }
+
+    const resolvedPlayerID = expectedPlayerID ?? stored.playerID;
+    if (!resolvedPlayerID || String(resolvedPlayerID) !== String(stored.playerID)) {
+        return { shouldClear: false };
+    }
+
+    const seat = matchPlayers.find(player => String(player.id) === String(resolvedPlayerID));
+    if (!seat) {
+        return { shouldClear: true, reason: 'missing_seat' };
+    }
+    if (!seat.name) {
+        return { shouldClear: true, reason: 'seat_empty' };
+    }
+    if (stored.playerName && seat.name !== stored.playerName) {
+        return { shouldClear: true, reason: 'name_mismatch' };
+    }
+
+    return { shouldClear: false };
 }
 
 export function getLatestStoredMatchCredentials(): StoredMatchCredentials | null {

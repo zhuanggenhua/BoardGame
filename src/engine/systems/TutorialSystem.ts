@@ -17,7 +17,7 @@ import { DEFAULT_TUTORIAL_STATE } from '../types';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 
-const isDev = import.meta.env.DEV;
+const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
 const warnDev = (...args: unknown[]) => {
     if (isDev) {
         console.warn(...args);

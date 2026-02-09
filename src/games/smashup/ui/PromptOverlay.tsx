@@ -1,24 +1,25 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SU_COMMANDS } from '../domain/types';
-import type { PromptConfig } from '../domain/types';
-import type { PlayerId } from '../../../engine/types';
+import { useTranslation } from 'react-i18next';
+import { PROMPT_COMMANDS } from '../../../engine/systems/PromptSystem';
+import type { PromptState, PlayerId } from '../../../engine/types';
 
 interface Props {
-    prompt: PromptConfig | undefined;
+    prompt: PromptState['current'] | undefined;
     moves: Record<string, any>;
     playerID: PlayerId | null;
 }
 
 export const PromptOverlay: React.FC<Props> = ({ prompt, moves, playerID }) => {
+    const { t } = useTranslation('game-smashup');
     if (!prompt) return null;
 
     const isMyPrompt = prompt.playerId === playerID;
 
-    const handleOptionSelect = (value: any) => {
+    const handleOptionSelect = (optionId: string) => {
         if (!isMyPrompt) return;
-        moves[SU_COMMANDS.RESOLVE_PROMPT]?.({ promptId: prompt.id, result: value });
+        moves[PROMPT_COMMANDS.RESPOND]?.({ optionId });
     };
 
     return (
@@ -28,7 +29,7 @@ export const PromptOverlay: React.FC<Props> = ({ prompt, moves, playerID }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 pointer-events-auto"
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 pointer-events-auto"
             >
                 {/* Modal Container */}
                 <motion.div
@@ -42,14 +43,9 @@ export const PromptOverlay: React.FC<Props> = ({ prompt, moves, playerID }) => {
                         <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">
                             {prompt.title}
                         </h2>
-                        {prompt.description && (
-                            <p className="text-slate-400 text-sm font-medium leading-relaxed">
-                                {prompt.description}
-                            </p>
-                        )}
                         {!isMyPrompt && (
                             <div className="mt-4 bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded text-xs font-bold uppercase border border-yellow-500/50 inline-block animate-pulse">
-                                Waiting for Player {prompt.playerId}...
+                                {t('ui.waiting_for_player', { id: prompt.playerId })}
                             </div>
                         )}
                     </div>
@@ -59,7 +55,7 @@ export const PromptOverlay: React.FC<Props> = ({ prompt, moves, playerID }) => {
                         {prompt.options.map((option, idx) => (
                             <button
                                 key={`${idx}-${option.label}`}
-                                onClick={() => handleOptionSelect(option.value)}
+                                onClick={() => handleOptionSelect(option.id)}
                                 disabled={!isMyPrompt || option.disabled}
                                 className={`
                                     w-full text-left px-6 py-4 rounded-lg font-bold text-lg transition-all duration-200 border-2
@@ -76,7 +72,7 @@ export const PromptOverlay: React.FC<Props> = ({ prompt, moves, playerID }) => {
 
                     {/* Footer (Cancel/Details could go here if design allowed cancelling) */}
                     <div className="bg-slate-100 p-3 text-center text-xs text-slate-400 font-mono border-t border-slate-200 uppercase tracking-widest">
-                        {isMyPrompt ? 'Select an option to continue' : 'Please wait'}
+                        {isMyPrompt ? t('ui.prompt_select_option') : t('ui.prompt_wait')}
                     </div>
 
                 </motion.div>

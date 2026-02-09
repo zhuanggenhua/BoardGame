@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BurstParticles } from '../../../components/common/animations/BurstParticles';
 
@@ -35,6 +36,7 @@ const DestroyEffectItem: React.FC<DestroyEffectProps> = ({
   getCellPosition,
   onComplete,
 }) => {
+  const { t } = useTranslation('game-summonerwars');
   const pos = getCellPosition(effect.position.row, effect.position.col);
   const isStructure = effect.type === 'structure';
   
@@ -121,7 +123,7 @@ const DestroyEffectItem: React.FC<DestroyEffectProps> = ({
             textShadow: '0 0 0.5vw rgba(0,0,0,0.8)',
           }}
         >
-          {effect.cardName} 被摧毁！
+          {t('destroyEffect.destroyed', { name: effect.cardName })}
         </span>
       </motion.div>
     </motion.div>

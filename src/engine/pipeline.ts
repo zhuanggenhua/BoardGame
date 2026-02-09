@@ -25,7 +25,7 @@ import type {
 import { DEFAULT_TUTORIAL_STATE } from './types';
 import type { EngineSystem, GameSystemsConfig } from './systems/types';
 
-const isDev = import.meta.env.DEV;
+const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
 const logDev = (...args: unknown[]) => {
     if (isDev) {
         console.log(...args);

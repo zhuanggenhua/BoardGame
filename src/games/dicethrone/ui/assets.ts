@@ -8,11 +8,6 @@ const getCharacterAssetBase = (charId: string = 'monk') => (
 );
 
 /**
- * 所有英雄统一使用简明的文件名标准
- */
-const getAssetFileName = (filename: string) => filename;
-
-/**
  * 扩展名处理：仅 barbarian 依然保留原生的 .png 格式（因为其暂未进行优化转换）
  */
 const withExtension = (path: string, charId: string) => (

@@ -10,9 +10,9 @@ interface MatchHistoryModalProps {
 
 // 模拟数据
 const MOCK_HISTORY = [
-    { id: '1', gameName: 'Tic-Tac-Toe', result: 'win', opponent: 'Alice', date: '2024-03-10', duration: '5m' },
-    { id: '2', gameName: 'Chess', result: 'loss', opponent: 'Bob', date: '2024-03-09', duration: '25m' },
-    { id: '3', gameName: 'Gomoku', result: 'draw', opponent: 'Charlie', date: '2024-03-08', duration: '12m' },
+    { id: '1', gameKey: 'tictactoe', result: 'win', opponent: 'Alice', date: '2024-03-10', duration: '5m' },
+    { id: '2', gameKey: 'chess', result: 'loss', opponent: 'Bob', date: '2024-03-09', duration: '25m' },
+    { id: '3', gameKey: 'gomoku', result: 'draw', opponent: 'Charlie', date: '2024-03-08', duration: '12m' },
 ];
 
 export const MatchHistoryModal = ({ isOpen, onClose }: MatchHistoryModalProps) => {
@@ -42,7 +42,7 @@ export const MatchHistoryModal = ({ isOpen, onClose }: MatchHistoryModalProps) =
                 <div className="flex items-center justify-between p-4 border-b border-parchment-card-border/30 bg-parchment-base-bg">
                     <div className="flex items-center gap-2 text-parchment-base-text">
                         <Trophy size={20} />
-                        <h2 className="font-bold text-lg">{t('social:matchHistory.title', 'Match History')}</h2>
+                        <h2 className="font-bold text-lg">{t('social:matchHistory.title')}</h2>
                     </div>
                     <button
                         onClick={onClose}
@@ -56,7 +56,7 @@ export const MatchHistoryModal = ({ isOpen, onClose }: MatchHistoryModalProps) =
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                     {MOCK_HISTORY.length === 0 ? (
                         <div className="text-center text-parchment-light-text py-12 italic">
-                            {t('social:matchHistory.empty', 'No match history found.')}
+                            {t('social:matchHistory.empty')}
                         </div>
                     ) : (
                         MOCK_HISTORY.map(match => (
@@ -66,12 +66,12 @@ export const MatchHistoryModal = ({ isOpen, onClose }: MatchHistoryModalProps) =
                                         "w-10 h-10 rounded-full flex items-center justify-center font-bold text-white",
                                         match.result === 'win' ? "bg-green-500" : match.result === 'loss' ? "bg-red-500" : "bg-gray-400"
                                     )}>
-                                        {match.result === 'win' ? 'W' : match.result === 'loss' ? 'L' : 'D'}
+                                        {t(`social:matchHistory.resultShort.${match.result}`)}
                                     </div>
                                     <div>
-                                        <div className="font-bold text-parchment-base-text">{match.gameName}</div>
+                                        <div className="font-bold text-parchment-base-text">{t(`social:matchHistory.games.${match.gameKey}`)}</div>
                                         <div className="text-xs text-parchment-light-text flex items-center gap-2">
-                                            <span>vs {match.opponent}</span>
+                                            <span>{t('social:matchHistory.vs', { name: match.opponent })}</span>
                                             <span className="w-1 h-1 rounded-full bg-parchment-light-text" />
                                             <span className="flex items-center gap-1"><Calendar size={10} /> {match.date}</span>
                                         </div>
@@ -82,7 +82,7 @@ export const MatchHistoryModal = ({ isOpen, onClose }: MatchHistoryModalProps) =
                                         "font-bold text-sm uppercase tracking-wider",
                                         match.result === 'win' ? "text-green-600" : match.result === 'loss' ? "text-red-500" : "text-gray-500"
                                     )}>
-                                        {match.result}
+                                        {t(`social:matchHistory.result.${match.result}`)}
                                     </div>
                                     <div className="text-xs text-parchment-light-text flex items-center justify-end gap-1 mt-1">
                                         <Clock size={10} /> {match.duration}

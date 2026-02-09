@@ -13,8 +13,6 @@ import type {
     MinionPlayedEvent,
     ActionPlayedEvent,
     CardsDiscardedEvent,
-    MinionReturnedEvent,
-    LimitModifiedEvent,
     FactionSelectedEvent,
     AllFactionsSelectedEvent,
     MinionDestroyedEvent,
@@ -27,6 +25,7 @@ import type {
     CardToDeckBottomEvent,
     CardRecoveredFromDiscardEvent,
     HandShuffledIntoDeckEvent,
+    MinionReturnedEvent,
     PromptContinuationEvent,
     MadnessDrawnEvent,
     MadnessReturnedEvent,
@@ -36,13 +35,14 @@ import type {
 } from './types';
 import type { PlayerId } from '../../../engine/types';
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
-import { getMinionDef, getCardDef } from '../data/cards';
+import { getMinionDef, getCardDef, getBaseDefIdsForFactions } from '../data/cards';
 import type { ActionCardDef } from './types';
 import { buildDeck, drawCards } from './utils';
-import { resolveOnPlay, resolveTalent } from './abilityRegistry';
+import { resolveOnPlay, resolveTalent, resolveOnDestroy } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
-import { triggerAllBaseAbilities, triggerBaseAbility } from './baseAbilities';
+import { triggerAllBaseAbilities, triggerBaseAbility, triggerExtendedBaseAbility } from './baseAbilities';
 import { hasCthulhuExpansionFaction } from './abilityHelpers';
+import { fireTriggers, isMinionProtected } from './ongoingEffects';
 
 // ============================================================================
 // execute：命令 → 事件
@@ -60,6 +60,19 @@ export function execute(
     if ((command as any).type.startsWith('SYS_')) {
         return [];
     }
+
+    const events = executeCommand(core, command, random, now);
+    // 后处理：onDestroy 触发
+    return processDestroyTriggers(events, core, command.playerId, random, now);
+}
+
+/** 内部命令执行（不含后处理） */
+function executeCommand(
+    core: SmashUpCore,
+    command: SmashUpCommand,
+    random: RandomFn,
+    now: number
+): SmashUpEvent[] {
 
     switch (command.type) {
         case SU_COMMANDS.PLAY_MINION: {
@@ -110,6 +123,19 @@ export function execute(
                 }
             );
             events.push(...baseAbilityEvents);
+
+            // ongoing 触发：onMinionPlayed（如火焰陷阱消灭入场随从）
+            const coreAfterPlayed = reduce(core, playedEvt);
+            const ongoingTriggerEvents = fireTriggers(coreAfterPlayed, 'onMinionPlayed', {
+                state: coreAfterPlayed,
+                playerId: command.playerId,
+                baseIndex,
+                triggerMinionUid: card.uid,
+                triggerMinionDefId: card.defId,
+                random,
+                now,
+            });
+            events.push(...ongoingTriggerEvents);
 
             return events;
         }
@@ -228,6 +254,17 @@ export function execute(
                 const readiedPlayers: AllFactionsSelectedEvent['payload']['readiedPlayers'] = {};
                 let nextUid = core.nextUid;
 
+                const selectedFactions = Object.values(tempSelections).flatMap((items) => items);
+                const basePool = getBaseDefIdsForFactions(selectedFactions);
+                const shuffledBasePool = random.shuffle(basePool);
+                const baseCount = core.turnOrder.length + 1;
+                const activeBases: BaseInPlay[] = shuffledBasePool.slice(0, baseCount).map(defId => ({
+                    defId,
+                    minions: [],
+                    ongoingActions: [],
+                }));
+                const baseDeck = shuffledBasePool.slice(baseCount);
+
                 for (const pid of core.turnOrder) {
                     const factions = tempSelections[pid];
                     if (factions && factions.length === 2) {
@@ -259,7 +296,12 @@ export function execute(
 
                 const allSelectedEvt: AllFactionsSelectedEvent = {
                     type: SU_EVENTS.ALL_FACTIONS_SELECTED,
-                    payload: { readiedPlayers, nextUid },
+                    payload: {
+                        readiedPlayers,
+                        nextUid,
+                        bases: activeBases,
+                        baseDeck,
+                    },
                     timestamp: now,
                 };
                 events.push(allSelectedEvt);
@@ -314,6 +356,114 @@ export function execute(
 }
 
 // ============================================================================
+// onDestroy 后处理：扫描事件中的 MINION_DESTROYED，触发 onDestroy 能力和基地扩展时机
+// ============================================================================
+
+function filterProtectedDestroyEvents(
+    events: SmashUpEvent[],
+    core: SmashUpCore,
+    sourcePlayerId: PlayerId
+): SmashUpEvent[] {
+    return events.filter(e => {
+        if (e.type !== SU_EVENTS.MINION_DESTROYED) return true;
+        const de = e as MinionDestroyedEvent;
+        const { minionUid, fromBaseIndex } = de.payload;
+        const base = core.bases[fromBaseIndex];
+        const minion = base?.minions.find(m => m.uid === minionUid);
+        if (!minion) return true; // 找不到随从，不过滤
+        // 检查是否受保护
+        return !isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'destroy');
+    });
+}
+
+function processDestroyTriggers(
+    events: SmashUpEvent[],
+    core: SmashUpCore,
+    playerId: PlayerId,
+    random: RandomFn,
+    now: number
+): SmashUpEvent[] {
+    // 保护检查：过滤掉受保护的随从的消灭事件
+    const filteredEvents = filterProtectedDestroyEvents(events, core, playerId);
+
+    const destroyEvents = filteredEvents.filter(e => e.type === SU_EVENTS.MINION_DESTROYED) as MinionDestroyedEvent[];
+    if (destroyEvents.length === 0) return filteredEvents;
+
+    const extraEvents: SmashUpEvent[] = [];
+    for (const de of destroyEvents) {
+        const { minionUid, minionDefId, fromBaseIndex, ownerId } = de.payload;
+        const base = core.bases[fromBaseIndex];
+        const minion = base?.minions.find(m => m.uid === minionUid);
+        const destroyerId = minion?.controller ?? ownerId;
+        const localEvents: SmashUpEvent[] = [];
+
+        // 1. 触发随从自身的 onDestroy 能力
+        const executor = resolveOnDestroy(minionDefId);
+        if (executor) {
+            // 查找被消灭随从在基地上的信息（消灭前的状态）
+            const ctx: AbilityContext = {
+                state: core,
+                playerId: destroyerId,
+                cardUid: minionUid,
+                defId: minionDefId,
+                baseIndex: fromBaseIndex,
+                random,
+                now,
+            };
+            const result = executor(ctx);
+            localEvents.push(...result.events);
+        }
+
+        // 2. 触发基地扩展时机 onMinionDestroyed
+        if (base) {
+            const baseCtx = {
+                state: core,
+                baseIndex: fromBaseIndex,
+                baseDefId: base.defId,
+                playerId: ownerId,
+                minionUid,
+                minionDefId,
+                controllerId: minion?.controller ?? ownerId,
+                destroyerId,
+                now,
+            };
+            const baseEvents = triggerExtendedBaseAbility(base.defId, 'onMinionDestroyed', baseCtx);
+            localEvents.push(...(baseEvents as SmashUpEvent[]));
+        }
+
+        // 3. 触发 ongoing 拦截器 onMinionDestroyed（如逃生舱回手牌）
+        const ongoingDestroyEvents = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            playerId: ownerId,
+            baseIndex: fromBaseIndex,
+            triggerMinionUid: minionUid,
+            triggerMinionDefId: minionDefId,
+            random,
+            now,
+        });
+        localEvents.push(...ongoingDestroyEvents);
+
+        extraEvents.push(...filterProtectedDestroyEvents(localEvents, core, destroyerId));
+    }
+
+    const returnedMinionUids = new Set(
+        extraEvents
+            .filter(e => e.type === SU_EVENTS.MINION_RETURNED)
+            .map(e => (e as MinionReturnedEvent).payload.minionUid)
+    );
+
+    const cleanedEvents = returnedMinionUids.size === 0
+        ? filteredEvents
+        : filteredEvents.filter(e => {
+            if (e.type !== SU_EVENTS.MINION_DESTROYED) return true;
+            const { minionUid } = (e as MinionDestroyedEvent).payload;
+            return !returnedMinionUids.has(minionUid);
+        });
+
+    return [...cleanedEvents, ...extraEvents];
+}
+
+// ============================================================================
 // reduce：事件 → 新状态（确定性）
 // ============================================================================
 
@@ -352,7 +502,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ALL_FACTIONS_SELECTED: {
-            const { readiedPlayers, nextUid } = event.payload;
+            const { readiedPlayers, nextUid, bases, baseDeck } = event.payload;
             const newPlayers: Record<PlayerId, any> = { ...state.players };
 
             for (const [pid, data] of Object.entries(readiedPlayers)) {
@@ -378,6 +528,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 currentPlayerIndex: 0,
                 factionSelection: undefined,
                 madnessDeck,
+                bases: bases ?? state.bases,
+                baseDeck: baseDeck ?? state.baseDeck,
             };
         }
 
@@ -499,7 +651,6 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
             // 基地上的随从回各自所有者弃牌堆
             for (const m of scoredBase.minions) {
-                const owner = newPlayers[m.owner];
                 // Property 12: 随从附着的行动卡回各自所有者弃牌堆
                 for (const attached of m.attachedActions) {
                     const attachedOwner = newPlayers[attached.ownerId];

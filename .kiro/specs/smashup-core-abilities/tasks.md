@@ -1,0 +1,384 @@
+# Implementation Plan: 大杀四方核心能力实现
+
+## Overview
+
+基于 Command/Event/Reducer 架构，分四阶段（A→D）补全大杀四方核心能力系统。A 阶段核心框架和基础机制已完成，B 阶段基础派系大部分已实现，C/D 阶段的高级机制和扩展派系部分完成。剩余工作集中在：ongoing 效果拦截框架、special 时机能力、Prompt 集成能力、以及属性测试覆盖。
+
+## Tasks
+
+- [x] 1. A 阶段：核心框架与基础机制
+  - [x] 1.1 能力注册表 (abilityRegistry.ts)
+    - 实现 registerAbility/resolveAbility/resolveOnPlay/resolveTalent/resolveOnDestroy API
+    - 实现 clearRegistry/getRegistrySize 辅助函数
+    - _Requirements: 2.1, 2.5, 2.6_
+  - [x] 1.2 命令验证扩展 (commands.ts)
+    - 新增 SELECT_FACTION、USE_TALENT 命令验证
+    - 验证派系互斥、天赋每回合一次、出牌额度等约束
+    - _Requirements: 1.6, 2.3, 3.1, 3.2, 3.3_
+  - [x] 1.3 归约器扩展 (reducer.ts)
+    - 处理 20+ 事件类型的 reduce 逻辑
+    - 包含 FACTION_SELECTED、MINION_PLAYED、ACTION_PLAYED、ONGOING_ATTACHED/DETACHED、BASE_SCORED、VP_AWARDED、POWER_COUNTER_ADDED/REMOVED、MINION_DESTROYED、MINION_MOVED、MADNESS_DRAWN/RETURNED 等
+    - _Requirements: 1.3, 1.4, 3.1, 3.2, 3.4, 3.5, 4.1, 4.2, 4.3_
+  - [x] 1.4 派系选择系统
+    - 蛇形选秀流程、牌库构建、起始手牌抽取
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
+  - [x] 1.5 基地能力触发系统 (baseAbilities.ts)
+    - 实现 onMinionPlayed、beforeScoring、afterScoring、onTurnStart、onActionPlayed、onMinionDestroyed 触发时机
+    - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+  - [x] 1.6 多基地记分 (含 Prompt 选择记分顺序)
+    - 多基地达到临界点时通过 PromptSystem 让当前玩家选择顺序
+    - 记分后重新检查剩余基地
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+  - [x] 1.7 Me First 响应窗口 (meFirst.ts)
+    - 集成 ResponseWindowSystem，顺时针轮流打出 special 行动卡
+    - 所有玩家连续让过时关闭窗口
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+  - [x] 1.8 +1 力量指示物系统
+    - ADD_POWER_COUNTER/REMOVE_POWER_COUNTER 命令与事件
+    - powerModifier 下限为 0，随从离场时归零
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+  - [x] 1.9 持续行动附着/清理
+    - ONGOING_ATTACHED/DETACHED 事件处理
+    - 基地记分时清理 ongoingActions，随从离场时清理 attachedActions
+    - _Requirements: 3.2, 3.4, 3.5_
+  - [x] 1.10 Prompt 继续桥接系统 (systems.ts + promptContinuation.ts)
+    - PROMPT_CONTINUATION 事件转发到引擎层 PromptSystem
+    - SYS_PROMPT_RESOLVED 回调继续函数生成后续事件
+    - _Requirements: 2.4, 6.1, 6.2, 6.3, 6.4, 6.6_
+  - [x] 1.11 持续力量修正系统 (ongoingModifiers.ts)
+    - registerPowerModifier/getEffectivePower/getTotalEffectivePowerOnBase API
+    - 纯计算层，不修改状态
+    - _Requirements: 4.4_
+  - [x] 1.12 能力辅助函数 (abilityHelpers.ts)
+    - grantExtraMinion/grantExtraAction/drawCards/destroyMinion 等通用辅助
+    - _Requirements: 2.1, 7.1-7.8_
+  - [x] 1.13 onDestroy 后处理管线
+    - 随从被消灭时触发 onDestroy 能力
+    - _Requirements: 2.1_
+
+- [x] 2. A 阶段：核心机制测试
+  - [x] 2.1 派系选择测试 (factionSelection.test.ts)
+    - _Requirements: 1.1-1.6, 12.5_
+  - [x] 2.2 能力注册表测试 (abilityRegistry.test.ts)
+    - _Requirements: 2.1, 2.5, 2.6, 12.3_
+  - [x] 2.3 基地记分测试 (baseScoring.test.ts + multiBaseScoring.test.ts)
+    - _Requirements: 5.1-5.5, 12.4_
+  - [x] 2.4 行动卡与天赋测试 (actionAndTalent.test.ts)
+    - _Requirements: 2.3, 3.1, 12.1, 12.3_
+  - [x] 2.5 Me First 测试 (meFirst.test.ts)
+    - _Requirements: 9.1-9.5_
+  - [x] 2.6 回合循环测试 (turnCycle.test.ts)
+    - _Requirements: 12.1, 12.2_
+  - [x] 2.7 Prompt 系统测试 (promptSystem.test.ts)
+    - _Requirements: 6.1-6.6_
+  - [x] 2.8 基地能力测试 (baseAbilities.test.ts + baseAbilityIntegration.test.ts + newBaseAbilities.test.ts)
+    - _Requirements: 8.1-8.5, 12.2_
+  - [x] 2.9 持续力量修正测试 (ongoingModifiers.test.ts)
+    - _Requirements: 4.4, 12.7_
+  - [x] 2.10 onDestroy 能力测试 (onDestroyAbilities.test.ts)
+    - _Requirements: 2.1, 12.8_
+  - [x] 2.11 冒烟测试 (smashup.smoke.test.ts)
+    - _Requirements: 12.1, 12.2_
+
+- [x] 3. B 阶段：基础 8 派系能力实装（已完成部分）
+  - [x] 3.1 外星人能力 (aliens.ts)
+    - onPlay: 收回随从、额外出牌；已全部实现
+    - _Requirements: 7.3_
+  - [x] 3.2 恐龙能力 (dinosaurs.ts)
+    - onPlay: 力量增强；ongoing: 装甲/战争猛禽力量修正已实现
+    - _Requirements: 7.4_
+  - [x] 3.3 机器人能力 (robots.ts) — 已实现部分
+    - onPlay: 从牌库打出微型机器人、联动等；ongoing 力量修正已实现
+    - _Requirements: 7.5_
+  - [x] 3.4 巫师能力 (wizards.ts) — 已实现部分
+    - onPlay: 抽牌、额外行动卡；已实现大部分
+    - _Requirements: 7.6_
+  - [x] 3.5 僵尸能力 (zombies.ts)
+    - onPlay: 弃牌堆复活、弃牌堆操作；已全部实现
+    - _Requirements: 7.7_
+  - [x] 3.6 海盗能力 (pirates.ts) — 已实现部分
+    - onPlay: 移动随从到其他基地；已实现大部分
+    - _Requirements: 7.1_
+  - [x] 3.7 忍者能力 (ninjas.ts) — 已实现部分
+    - onPlay: 消灭随从、直接放置；已实现大部分
+    - _Requirements: 7.2_
+  - [x] 3.8 诡术师能力 (tricksters.ts) — 已实现部分
+    - onPlay/onDestroy: 消灭自己随从获益、转移随从；已实现部分
+    - _Requirements: 7.8_
+  - [x] 3.9 基础派系能力测试 (factionAbilities.test.ts + newFactionAbilities.test.ts + zombieWizardAbilities.test.ts + query6Abilities.test.ts + talentAbilities.test.ts)
+    - _Requirements: 7.1-7.8, 12.3, 12.8_
+
+- [x] 4. C 阶段：扩展派系与克苏鲁（已完成部分）
+  - [x] 4.1 幽灵能力 (ghosts.ts) — 已实现部分
+    - onPlay: 从弃牌堆打出；ongoing 力量修正已实现
+    - _Requirements: 10.1_
+  - [x] 4.2 熊骑兵能力 (bear_cavalry.ts)
+    - onPlay: 消灭对手随从、力量压制；已全部实现
+    - _Requirements: 10.2_
+  - [x] 4.3 蒸汽朋克能力 (steampunks.ts) — 已实现部分
+    - ongoing 力量修正已实现（steam_man/aggromotive/rotary_slug_thrower）
+    - _Requirements: 10.3_
+  - [x] 4.4 杀手植物能力 (killer_plants.ts) — 已实现部分
+    - ongoing 力量修正已实现（sleep_spores）
+    - _Requirements: 10.4_
+  - [x] 4.5 克苏鲁教团能力 (cthulhu.ts)
+    - 疯狂牌散播、牺牲机制；已实现
+    - _Requirements: 11.5_
+  - [x] 4.6 远古之物能力 (elder_things.ts)
+    - 疯狂牌散播；已实现
+    - _Requirements: 11.5_
+  - [x] 4.7 印斯茅斯能力 (innsmouth.ts) — 已实现部分
+    - 弃牌堆操作；已实现部分
+    - _Requirements: 11.5_
+  - [x] 4.8 米斯卡塔尼克大学能力 (miskatonic.ts) — 已实现部分
+    - 疯狂牌管理；已实现部分
+    - _Requirements: 11.5_
+  - [x] 4.9 疯狂牌库系统
+    - 初始化 30 张疯狂牌、抽取、离场进弃牌堆
+    - _Requirements: 11.1, 11.2, 11.3_
+  - [x] 4.10 扩展派系测试 (expansionAbilities.test.ts + cthulhuExpansionAbilities.test.ts + elderThingAbilities.test.ts + madnessDeck.test.ts + madnessAbilities.test.ts + madnessPromptAbilities.test.ts)
+    - _Requirements: 10.1-10.4, 11.1-11.5, 12.8_
+
+- [x] 5. Checkpoint — 确认已完成工作
+  - 确认所有 26 个现有测试文件（380 个测试）全部通过。
+
+- [x] 6. 实现 ongoing 效果拦截框架
+  - [x] 6.1 设计并实现 OngoingEffectInterceptor 系统
+    - 在 `domain/` 下新增 `ongoingEffects.ts`，提供注册/查询 ongoing 拦截器的 API
+    - 拦截器类型：protection（保护随从不受影响）、restriction（限制操作）、trigger（事件触发回调）
+    - 拦截器按 defId 注册，在命令验证和事件处理时查询
+    - _Requirements: 3.2, 7.2, 7.5, 7.8, 10.1, 10.3, 10.4_
+  - [x] 6.2 集成 ongoing 拦截到命令验证 (commands.ts)
+    - PLAY_MINION 验证时检查基地是否有限制（如 trickster_block_the_path）
+    - PLAY_ACTION 验证时检查基地是否禁止行动卡（如 steampunk_ornate_dome）
+    - _Requirements: 7.2, 7.5, 7.8, 10.3_
+  - [x] 6.3 集成 ongoing 触发到事件后处理
+    - 随从入场时触发 ongoing 观察者（如 trickster_flame_trap）
+    - 随从被消灭时触发 ongoing 观察者（如 robot_microbot_archive、steampunk_escape_hatch）
+    - MINION_DESTROYED 处理时检查保护效果（如 robot_warbot）
+    - _Requirements: 7.2, 7.5, 7.8, 10.3, 10.4_
+  - [x]* 6.4 编写 ongoing 效果拦截框架单元测试
+    - 测试 protection/restriction/trigger 三种拦截器的注册与触发
+    - 测试来源活跃性检查（随从/ongoing 行动卡/附着行动卡）
+    - 20 个测试全部通过
+    - _Requirements: 12.7_
+
+- [x] 7. 实现基础派系剩余 ongoing/special 能力
+  - [x] 7.1 海盗 special 时机能力
+    - pirate_king: 基地计分前移动到该基地（beforeScoring）
+    - pirate_buccaneer: 被消灭时移动到其他基地（onDestroy 替代效果）
+    - pirate_first_mate: 基地计分后移动到其他基地（afterScoring）
+    - pirate_full_sail: 移动任意数量随从（special action + Prompt）
+    - _Requirements: 7.1_
+  - [x] 7.2 忍者 ongoing/special 能力
+    - ninja_shinobi: 基地计分前打出到该基地（beforeScoring special）
+    - ninja_acolyte: 回手并额外打出随从（special）
+    - ninja_smoke_bomb: 保护随从不受对手行动影响（ongoing protection）
+    - ninja_assassination: 回合结束消灭目标随从（ongoing trigger）
+    - ninja_hidden_ninja: 基地计分前打出随从（beforeScoring special action）
+    - ninja_infiltrate: 无视基地能力（ongoing protection）
+    - _Requirements: 7.2_
+  - [x] 7.3 机器人剩余 ongoing 能力
+    - robot_warbot: 不能被消灭（ongoing protection）
+    - robot_microbot_archive: 微型机被消灭后抽牌（ongoing trigger）
+    - _Requirements: 7.5_
+  - [x] 7.4 巫师剩余 ongoing 能力
+    - wizard_archmage: 每回合额外打出一个行动（ongoing 效果）
+    - _Requirements: 7.6_
+  - [x] 7.5 诡术师剩余 ongoing 能力
+    - trickster_leprechaun: 其他玩家打出力量更低随从时消灭（ongoing trigger）
+    - trickster_brownie: 被影响时对手弃两张牌（ongoing trigger）
+    - trickster_enshrouding_mist: 额外打出随从到此基地（ongoing 效果）
+    - trickster_hideout: 保护随从不受对手行动影响（ongoing protection）
+    - trickster_mark_of_sleep: 对手下回合不能打行动（状态标记）
+    - trickster_flame_trap: 其他玩家打出随从时消灭（ongoing trigger）
+    - trickster_block_the_path: 指定派系不能打出到此基地（ongoing restriction + Prompt）
+    - trickster_pay_the_piper: 对手打出随从后弃牌（ongoing trigger）
+    - _Requirements: 7.8_
+  - [x]* 7.6 编写基础派系剩余能力单元测试
+    - 25 个测试覆盖忍者/机器人/巫师/诡术师 ongoing/special 能力
+    - baseFactionOngoing.test.ts 全部通过
+    - _Requirements: 7.1-7.8, 12.8_
+
+- [x] 8. Checkpoint — 基础派系完整性
+  - 28 个测试文件，425 个测试全部通过。基础 8 派系能力全部实现。
+
+- [x] 9. 实现扩展派系剩余能力
+  - [x] 9.1 幽灵剩余 ongoing 能力
+    - ghost_incorporeal: 附着 ghost_haunting 的随从不受其他玩家影响（ongoing protection）
+    - ghost_make_contact: 将对手随从返回手牌（onPlay）
+    - _Requirements: 10.1_
+  - [x] 9.2 蒸汽朋克剩余能力
+    - steampunk_steam_queen: 同基地己方随从不受对手行动卡影响（ongoing protection）
+    - steampunk_ornate_dome: 禁止对手打行动卡到此基地（ongoing restriction）
+    - steampunk_difference_engine: 回合结束时控制者多抽1牌（ongoing trigger）
+    - steampunk_escape_hatch: 己方随从被消灭时回手牌（ongoing trigger）
+    - steampunk_mechanic: 从弃牌堆取回行动卡（onPlay）
+    - steampunk_change_of_venue: 取回 ongoing 行动卡 + 额外行动（onPlay）
+    - steampunk_captain_ahab: 移动到有己方行动卡的基地（talent）
+    - _Requirements: 10.3_
+  - [x] 9.3 杀手植物剩余能力
+    - killer_plant_deep_roots: 保护随从不被移动（ongoing protection）
+    - killer_plant_water_lily: 回合开始时控制者抽1牌（ongoing trigger）
+    - killer_plant_sprout: 回合开始时消灭自身+搜索随从（ongoing trigger）
+    - killer_plant_choking_vines: 回合开始时消灭力量最低随从（ongoing trigger）
+    - killer_plant_venus_man_trap: 搜索牌库随从（talent）
+    - killer_plant_budding: 搜索牌库随从（onPlay）
+    - killer_plant_blossom: 额外打出3个随从（onPlay）
+    - _Requirements: 10.4_
+  - [x] 9.4 印斯茅斯剩余能力
+    - innsmouth_in_plain_sight: 力量≤2己方随从不受对手影响（ongoing protection）
+    - innsmouth_return_to_the_sea: 计分后同名随从回手牌（special）
+    - _Requirements: 11.5_
+  - [x] 9.5 米斯卡塔尼克大学剩余能力
+    - miskatonic_student: 疯狂卡转移给对手（special）
+    - miskatonic_field_trip: 手牌放牌库底+抽等量牌（onPlay）
+    - _Requirements: 11.5_
+  - [x]* 9.6 编写扩展派系剩余能力单元测试
+    - 31 个测试覆盖幽灵/蒸汽朋克/食人花/印斯茅斯/米斯卡塔尼克 ongoing/special 能力
+    - expansionOngoing.test.ts 全部通过
+    - _Requirements: 10.1-10.4, 11.5, 12.8_
+
+- [x] 10. Checkpoint — 扩展派系完整性
+  - 29 个测试文件，456 个测试全部通过。所有扩展派系和克苏鲁派系能力全部实现。
+
+- [x] 11. D 阶段：属性测试覆盖
+  - [x] 11.1 安装 fast-check 并配置属性测试基础设施
+    - `npm install -D fast-check`
+    - 创建 `__tests__/properties/` 目录和共用的状态生成器（arbitraries.ts）
+    - 生成器包括：任意派系组合、任意游戏状态、任意随从/行动卡、任意基地配置
+    - _Requirements: 12.1-12.8_
+  - [x] 11.2 Property 1: 派系互斥选择
+    - 已选派系不可被其他玩家选择（通过 validate 验证）
+    - **Validates: Requirements 1.3, 1.6**
+  - [x] 11.3 Property 2: 牌库构建正确性
+    - 合法两派系组合构建的牌库张数等于两派系卡牌总数且卡牌属于所选派系
+    - **Validates: Requirements 1.2, 1.4**
+  - [x] 11.4 Property 3: 选择完成后初始化
+    - 所有玩家选完后每人 5 张手牌且 factionSelection 清除
+    - **Validates: Requirements 1.5**
+  - [x] 11.5 Property 4: 能力注册表往返一致性
+    - 注册后解析返回同一执行函数；未注册的解析返回 undefined
+    - **Validates: Requirements 2.1, 2.5, 2.6**
+  - [x] 11.6 Property 5: onPlay 能力触发
+    - 所有已知 onPlay 随从都已注册能力；打出后事件序列包含 MINION_PLAYED
+    - **Validates: Requirements 2.2**
+  - [x] 11.7 Property 6: 天赋每回合一次
+    - talentUsed=true 时验证拒绝重复使用
+    - **Validates: Requirements 2.3**
+  - [x] 11.8 Property 7: 目标选择提示匹配合法目标
+    - PLAY_MINION 只能指定存在的基地索引；USE_TALENT 只能指定场上存在的随从
+    - **Validates: Requirements 2.4, 6.1**
+  - [x] 11.9 Property 8: 标准行动卡生命周期
+    - 打出行动卡后产生 ACTION_PLAYED 事件，actionsPlayed 增加 1
+    - **Validates: Requirements 3.1**
+  - [x] 11.10 Property 9: 持续行动卡附着
+    - ongoing 行动卡附着到基地/随从，不在弃牌堆
+    - **Validates: Requirements 3.2**
+  - [x] 11.11 Property 10: 特殊行动卡生命周期
+    - special 行动卡在 Me First 窗口中打出后从手牌移入弃牌堆
+    - **Validates: Requirements 3.3**
+  - [x] 11.12 Property 11: 基地记分时持续行动清理
+    - 记分后 ongoing 行动卡回各自所有者弃牌堆
+    - **Validates: Requirements 3.4**
+  - [x] 11.13 Property 12: 随从离场时附着行动清理
+    - 随从被消灭/基地记分时附着行动卡回各自所有者弃牌堆
+    - **Validates: Requirements 3.5**
+  - [x] 11.14 Property 13: 力量指示物不变量
+    - powerModifier >= 0；添加 N 增加 N；移除 N 减少 min(N, 当前值)
+    - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
+  - [x] 11.15 Property 14: 多基地记分提示
+    - 多基地达到临界点时力量验证正确
+    - **Validates: Requirements 5.1**
+  - [x] 11.16 Property 15: 记分循环完整性
+    - BASE_SCORED 事件移除基地并分配 VP；连续记分多个基地后所有基地都被移除
+    - **Validates: Requirements 5.2, 5.3**
+  - [x] 11.17 Property 16: VP 分配正确性
+    - BASE_SCORED 正确分配 VP 给排名玩家；零力量玩家不获得 VP
+    - **Validates: Requirements 5.4, 5.5**
+  - [x] 11.18 Property 17: 基地能力事件顺序
+    - onMinionPlayed 基地能力事件在 MINION_PLAYED 之后
+    - **Validates: Requirements 8.1, 8.2**
+  - [x] 11.19 Property 18: Me First 窗口协议
+    - Me First 窗口中只能打出 special 行动卡；非当前响应者不能打牌
+    - **Validates: Requirements 9.1, 9.2, 9.3**
+  - [x] 11.20 Property 19: 疯狂牌库生命周期
+    - 抽取 N 张使牌库减少 N；返回时回到牌库；VP 惩罚每 2 张扣 1
+    - **Validates: Requirements 11.1, 11.2, 11.3**
+
+- [x] 12. D 阶段：剩余属性测试 — 已全部完成
+  - 所有 19 个 Property 已实现并通过（coreProperties.test.ts 32 个测试）
+
+- [x] 13. Final Checkpoint — 全量回归
+  - 最终状态：30 个测试文件，489 个测试全部通过（含 32 个属性测试）
+  - 所有 19 个 Property（1-19）全部实现并通过
+
+- [x] 14. E2E 端到端测试 — 完整游戏流程与特殊交互覆盖
+  - [x] 14.1 完整流程基线（Happy Path）
+    - 创建房间 → 双人加入 → 蛇形派系选秀 → 出牌阶段 → 结束回合 → 多回合循环
+    - 覆盖手牌验证（5 张起始手牌）、记分板可见、基地可见（≥3）
+    - _Requirements: 1.1-1.6, 12.1_
+  - [x] 14.2 派系选择交互面
+    - 详情模态框（确认按钮、派系详情、随从/行动数量）
+    - 已选标记（"Selected" 徽章）
+    - 已占标记（"Taken by P0" 标记）
+    - 蛇形选秀顺序验证（P0→P1→P1→P0）
+    - _Requirements: 1.1, 1.3, 1.6_
+  - [x] 14.3 卡牌详情预览
+    - 基地点击查看详情覆盖层
+    - 详情覆盖层关闭
+    - 牌库/弃牌堆区域可见
+    - _Requirements: 12.1_
+  - [x] 14.4 弃牌交互（best-effort）
+    - 多回合积累手牌等待弃牌场景
+    - 弃牌覆盖层内容验证、按钮禁用状态、选择并丢弃
+    - _Requirements: 12.1_
+  - [x] 14.5 Me First 响应窗口（best-effort）
+    - 多回合积累力量等待基地记分触发 Me First
+    - 覆盖层内容验证、状态文本、让过按钮
+    - _Requirements: 9.1-9.5_
+  - [x] 14.6 Prompt 目标选择覆盖层（best-effort）
+    - 多回合出牌等待能力触发 Prompt
+    - 覆盖层结构验证、选项按钮、选择第一个选项
+    - _Requirements: 6.1-6.6_
+  - [x] 14.7 VP 更新与记分板显示
+    - 初始 VP 为 0 验证
+    - 多回合积累力量等待基地记分
+    - VP 变化检测
+    - _Requirements: 5.4, 5.5_
+
+- [x] 15. E2E 端到端测试 — 克苏鲁扩展特殊交互覆盖
+  - [x] 15.1 克苏鲁派系选择 → 疯狂牌库初始化
+    - P0: 克苏鲁仆从 + 远古物种，P1: 米斯卡塔尼克 + 印斯茅斯
+    - 验证进入游戏、5 张起始手牌、派系图标显示、基地可见
+    - _Requirements: 1.1, 11.1_
+  - [x] 15.2 克苏鲁 + 基础派系混搭多回合流程
+    - P0: 克苏鲁仆从 + 海盗，P1: 恐龙 + 米斯卡塔尼克
+    - 多回合出牌循环，验证 Prompt 触发（克苏鲁能力）
+    - _Requirements: 11.5, 12.1_
+  - [x] 15.3 天赋能力交互
+    - 蒸汽朋克 + 食人花（含 talent 随从）
+    - 验证金色发光环（ring-amber-400）、点击激活、已用标记
+    - _Requirements: 2.3_
+  - [x] 15.4 弃牌堆查看覆盖层
+    - 海盗 + 恐龙 vs 机器人 + 外星人（基础派系，避免 hooks 顺序 bug）
+    - 验证牌库/弃牌堆区域可见、点击弃牌堆打开覆盖层
+    - _Requirements: 12.1_
+  - [x] 15.5 克苏鲁全系对决：Prompt 献祭/散播疯狂牌
+    - P0: 克苏鲁仆从 + 印斯茅斯，P1: 远古物种 + 米斯卡塔尼克
+    - 多回合出牌，验证 Prompt 覆盖层结构、选项按钮、疯狂牌手牌检测
+    - _Requirements: 6.1, 11.1, 11.5_
+
+## Notes
+
+- Tasks 1-13 全部完成：30 个测试文件、489 个 Vitest 测试全部通过（含 32 个属性测试）
+- Task 14 E2E 基础流程：7 个用例（5 passed, 2 skipped），约 3 分钟
+- Task 15 克苏鲁扩展 E2E：5 个用例全部通过，约 2.7 分钟
+- E2E 测试文件：`e2e/smashup-gameplay.e2e.ts`（基础流程）、`e2e/smashup-cthulhu.e2e.ts`（克苏鲁扩展）
+- 弃牌/Me First/Prompt/天赋/疯狂牌测试为 best-effort（依赖游戏状态自然触发）
+- 已知游戏 bug：多回合克苏鲁派系组合可能触发 "Rendered more hooks than during the previous render"（Board.tsx 渲染问题，非测试问题）
+- Tasks marked with `*` are optional and can be skipped for faster MVP
+- ongoing 效果拦截框架（Task 6）是 Task 7/9 中大量能力的前置条件 — 已完成
+- 属性测试使用 fast-check（Task 11.1 已安装）
+- 每个属性测试引用设计文档中的 Property 编号，标注格式：Feature: smashup-core-abilities, Property N
+- Checkpoints 确保增量验证，避免大量回归

@@ -437,15 +437,15 @@ const builderPreviewConfig = {
       "id": "player-top-left",
       "type": "player-area",
       "anchor": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "pivot": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "offset": {
-        "x": 20,
+        "x": -392,
         "y": 20
       },
       "width": 200,
@@ -469,15 +469,15 @@ const builderPreviewConfig = {
       "id": "player-top-right",
       "type": "player-area",
       "anchor": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "pivot": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "offset": {
-        "x": 804,
+        "x": 392,
         "y": 20
       },
       "width": 200,
@@ -501,15 +501,15 @@ const builderPreviewConfig = {
       "id": "player-bottom",
       "type": "player-area",
       "anchor": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "pivot": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "offset": {
-        "x": 20,
+        "x": -392,
         "y": 440
       },
       "width": 200,
@@ -533,15 +533,15 @@ const builderPreviewConfig = {
       "id": "phase-hud",
       "type": "phase-hud",
       "anchor": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "pivot": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "offset": {
-        "x": 220,
+        "x": 0,
         "y": 90
       },
       "width": 584,
@@ -583,15 +583,15 @@ const builderPreviewConfig = {
       "id": "play-zone",
       "type": "play-zone",
       "anchor": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "pivot": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "offset": {
-        "x": 220,
+        "x": 0,
         "y": 290
       },
       "width": 584,
@@ -610,15 +610,15 @@ const builderPreviewConfig = {
       "id": "landlord-zone",
       "type": "play-zone",
       "anchor": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "pivot": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "offset": {
-        "x": 412,
+        "x": 0,
         "y": 200
       },
       "width": 200,
@@ -637,15 +637,15 @@ const builderPreviewConfig = {
       "id": "hand-bottom",
       "type": "hand-zone",
       "anchor": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "pivot": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "offset": {
-        "x": 220,
+        "x": 0,
         "y": 440
       },
       "width": 584,
@@ -684,15 +684,15 @@ const builderPreviewConfig = {
       "id": "action-bar",
       "type": "action-bar",
       "anchor": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "pivot": {
-        "x": 0,
+        "x": 0.5,
         "y": 0
       },
       "offset": {
-        "x": 220,
+        "x": 0,
         "y": 390
       },
       "width": 584,

@@ -205,25 +205,28 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await waitForTutorialStep(page, 'ability-explain', 15000);
     await clickNext(page);
 
-    // Step 12: ability-action — 高亮弃牌堆
+    // Step 12: ability-action — 高亮弃牌堆（requireAction: 必须使用技能）
     await waitForTutorialStep(page, 'ability-action', 10000);
+    await waitForActionPrompt(page);
 
+    // 点击己方召唤师 → 在召唤阶段直接进入复活死灵的卡牌选择模式（无中间按钮）
     const summoner = page.locator('[data-testid^="sw-unit-"][data-unit-class="summoner"][data-owner="0"]');
-    if (await summoner.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-      await summoner.first().click({ force: true });
-      await page.waitForTimeout(500);
-    }
+    await expect(summoner.first()).toBeVisible({ timeout: 5000 });
+    await summoner.first().click({ force: true });
+    await page.waitForTimeout(800);
 
-    const abilityBtn = page.locator('button:has-text("Revive"), button:has-text("复活"), [data-testid*="ability"]');
-    if (await abilityBtn.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-      await abilityBtn.first().click({ force: true });
-      await page.waitForTimeout(500);
-    }
+    // 弃牌堆卡牌选择浮层应自动弹出
+    const cardSelectorOverlay = page.locator('[data-testid="sw-card-selector-overlay"]');
+    const discardCard = cardSelectorOverlay.locator('[data-card-id]');
+    await expect(discardCard.first()).toBeVisible({ timeout: 5000 });
+    await discardCard.first().click({ force: true });
+    await page.waitForTimeout(500);
 
-    const stillOnAbilityAction = await page.locator('[data-tutorial-step="ability-action"]')
-      .isVisible({ timeout: 2000 }).catch(() => false);
-    if (stillOnAbilityAction) {
-      await clickNext(page);
+    // 选择放置位置（复活死灵需要选择召唤师相邻空格）
+    const reviveCells = page.locator('[data-valid-summon="true"]');
+    if (await reviveCells.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      await reviveCells.first().click({ force: true });
+      await page.waitForTimeout(500);
     }
 
     // Step 13: end-summon
@@ -258,26 +261,55 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await waitForTutorialStep(page, 'build-explain', 15000);
     await clickNext(page);
 
-    // Step 18: build-action
-    await waitForTutorialStep(page, 'build-action', 10000);
+    // Step 18: event-card-explain — 事件卡说明
+    await waitForTutorialStep(page, 'event-card-explain', 10000);
+    await clickNext(page);
+
+    // Step 19: event-card-action — 施放事件卡（requireAction: 必须施放）
+    await waitForTutorialStep(page, 'event-card-action', 10000);
+    await waitForActionPrompt(page);
+
+    // 点击手牌中的狱火铸剑事件卡
+    const eventCards = page.locator('[data-card-type="event"][data-can-play="true"]');
+    await expect(eventCards.first()).toBeVisible({ timeout: 10000 });
+    await eventCards.first().click({ force: true });
+    await page.waitForTimeout(500);
+
+    // 选择一个友方士兵作为附着目标
+    const eventTargets = page.locator('[data-valid-event-target="true"]');
+    if (await eventTargets.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      await eventTargets.first().click({ force: true });
+      await page.waitForTimeout(500);
+    } else {
+      // 备选：直接点击友方非召唤师单位
+      const friendlyCommons = page.locator('[data-testid^="sw-unit-"][data-owner="0"]:not([data-unit-class="summoner"])');
+      if (await friendlyCommons.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+        await friendlyCommons.first().click({ force: true });
+        await page.waitForTimeout(500);
+      }
+    }
+
+    // Step 20: build-action — 结束建造阶段
+    await waitForTutorialStep(page, 'build-action', 15000);
     await waitForActionPrompt(page);
     await clickEndPhase(page);
 
-    // Step 19: attack-explain
+    // Step 21: attack-explain
     await waitForTutorialStep(page, 'attack-explain', 15000);
     await clickNext(page);
 
-    // Step 20: melee-explain
+    // Step 22: melee-explain
     await waitForTutorialStep(page, 'melee-explain', 10000);
     await clickNext(page);
 
-    // Step 21: ranged-explain — 高亮己方召唤师
+    // Step 23: ranged-explain — 高亮己方召唤师
     await waitForTutorialStep(page, 'ranged-explain', 10000);
     await expect(page.locator('[data-tutorial-id="sw-my-summoner"]')).toBeVisible();
     await clickNext(page);
 
-    // Step 22: attack-action
+    // Step 24: attack-action（requireAction: 必须攻击）
     await waitForTutorialStep(page, 'attack-action', 10000);
+    await waitForActionPrompt(page);
     await page.waitForTimeout(500);
 
     let attackSucceeded = false;
@@ -304,58 +336,46 @@ test.describe('Summoner Wars Tutorial E2E', () => {
           await diceConfirm.click();
         }
       }
-
-      const attackResultVisible = await waitForTutorialStep(page, 'attack-result', 10000)
-        .then(() => true)
-        .catch(() => false);
-      if (attackResultVisible) {
-        await clickNext(page);
-      }
-    } else {
-      await clickNext(page);
     }
 
-    const currentStepAfterAttack = await page.evaluate(() => {
-      return document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
-    });
-    if (currentStepAfterAttack === 'attack-result') {
-      await clickNext(page);
-    }
+    // Step 25: attack-result — 高亮敌方召唤师
+    await waitForTutorialStep(page, 'attack-result', 15000);
+    await clickNext(page);
 
-    // Step 24: end-attack
+    // Step 26: end-attack
     await waitForTutorialStep(page, 'end-attack', 15000);
     await waitForActionPrompt(page);
     await clickEndPhase(page);
 
-    // Step 25: magic-explain
+    // Step 27: magic-explain
     await waitForTutorialStep(page, 'magic-explain', 15000);
     await clickNext(page);
 
-    // Step 26: magic-action
+    // Step 28: magic-action
     await waitForTutorialStep(page, 'magic-action', 10000);
     await waitForActionPrompt(page);
     await clickEndPhase(page);
 
-    // Step 27: draw-explain
+    // Step 29: draw-explain
     await waitForTutorialStep(page, 'draw-explain', 15000);
     await clickNext(page);
 
-    // Step 28: end-draw
+    // Step 30: end-draw
     await waitForTutorialStep(page, 'end-draw', 10000);
     await waitForActionPrompt(page);
     await clickEndPhase(page);
 
-    // Step 29: opponent-turn（AI 自动执行）
+    // Step 31: opponent-turn（AI 自动执行）
 
-    // Step 30: inaction-penalty — 高亮敌方召唤师
+    // Step 32: inaction-penalty — 高亮敌方召唤师
     await waitForTutorialStep(page, 'inaction-penalty', 40000);
     await clickNext(page);
 
-    // Step 31: victory-condition — 高亮己方召唤师
+    // Step 33: victory-condition — 高亮己方召唤师
     await waitForTutorialStep(page, 'victory-condition', 10000);
     await clickNext(page);
 
-    // Step 32: finish — 高亮棋盘
+    // Step 34: finish — 高亮棋盘
     await waitForTutorialStep(page, 'finish', 10000);
     await clickFinish(page);
 

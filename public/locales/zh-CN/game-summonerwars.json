@@ -7,6 +7,9 @@
   "factionSelection": {
     "title": "选择你的阵营",
     "subtitle": "每位召唤师拥有独特的军队与战术",
+    "hoverToPreview": "悬停阵营查看详情",
+    "tipAlt": "{{name}} 阵营提示",
+    "previewAlt": "阵营预览",
     "notSelected": "未选择",
     "ready": "准备",
     "waiting": "等待其他玩家...",
@@ -24,7 +27,52 @@
   },
   
   "actions": {
-    "closePreview": "关闭预览"
+    "closePreview": "关闭预览",
+    "close": "关闭",
+    "cancel": "取消",
+    "magnify": "放大查看",
+    "confirm": "确认",
+    "confirmDiscard": "确认弃牌",
+    "confirmSelection": "确认选择",
+    "confirmMove": "确认移动",
+    "confirmControl": "确认控制",
+    "continue": "继续",
+    "finish": "完成",
+    "skip": "跳过",
+    "push": "推开",
+    "pull": "拉近",
+    "control": "控制",
+    "damage": "伤害"
+  },
+  "player": {
+    "default1": "玩家1",
+    "default2": "玩家2",
+    "self": "玩家",
+    "opponent": "对手",
+    "short": "P{{id}}",
+    "youTag": "（你）"
+  },
+  "layoutEditor": {
+    "backToGame": "← 返回游戏",
+    "saveLayout": "保存布局",
+    "editLayout": "编辑布局",
+    "exitEdit": "退出编辑"
+  },
+  "ui": {
+    "mapAlt": "战场地图",
+    "opponentActiveEvents": "对方持续效果",
+    "activeEvents": "持续效果"
+  },
+  "phaseTracker": {
+    "turn": "回合 {{count}}"
+  },
+  "phaseDesc": {
+    "summon": ["从手牌召唤单位", "放置在城门相邻的空格"],
+    "move": ["移动最多3个单位", "每个单位最多移动2格", "不能对角线移动"],
+    "build": ["建造城门或建筑", "放置在后方3行或召唤师相邻"],
+    "attack": ["用最多3个单位攻击", "近战：相邻目标", "远程：最多3格直线"],
+    "magic": ["弃置手牌获取魔力", "每张牌+1魔力"],
+    "draw": ["抽牌至5张", "牌堆空时无法抽牌"]
   },
   
   "tutorial": {
@@ -43,18 +91,20 @@
       "summonExplain": "现在是召唤阶段。\n\n从手牌中选择单位卡，支付魔力费用，放置到城门旁的空格上。",
       "summonAction": "试试召唤一个单位！\n\n点击手牌中的单位卡选中，再点击城门旁高亮的空格放置。",
       "abilityExplain": "你的召唤师有「复活死灵」技能：\n\n对自己造成 2 点伤害，从弃牌堆中复活一个亡灵单位到相邻空格。\n\n弃牌堆中已有一张「亡灵战士」，点击召唤师试试！",
-      "abilityAction": "点击召唤师激活技能，选择弃牌堆中的亡灵战士放置。\n\n不想使用可以点击「下一步」跳过。",
+      "abilityAction": "点击召唤师激活「复活死灵」技能，然后从弃牌堆选择亡灵战士，放置到召唤师相邻的空格上。",
       "endSummon": "点击「结束阶段」进入移动阶段。",
       "moveExplain": "移动阶段：最多移动 3 个单位，每个最多 2 格。\n\n只能水平或垂直移动，不能穿过其他卡牌。",
       "moveAction": "点击你的单位选中，再点击高亮格子移动。\n\n试着向敌方方向推进！",
       "endMove": "可以继续移动其他单位，或点击「结束阶段」。",
-      "buildExplain": "建造阶段可以建造城门。\n\n城门是召唤单位的入口，建造更多城门能扩展你的召唤范围。",
-      "buildAction": "暂时没有传送门可建造，点击「结束阶段」跳过。",
+      "buildExplain": "建造阶段可以建造城门和施放事件卡。\n\n城门是召唤单位的入口，建造更多城门能扩展你的召唤范围。\n\n事件卡是强大的一次性效果，在指定阶段施放后立即生效。",
+      "eventCardExplain": "你的手牌中有一张「狱火铸剑」事件卡。\n\n事件卡有施放阶段限制——这张卡只能在建造阶段施放。\n\n施放后它会附着在一个友方士兵身上，给予 +2 战力，但攻击后会受到反噬伤害。",
+      "eventCardAction": "点击手牌中的「狱火铸剑」事件卡，然后选择棋盘上的一个友方士兵来附着。",
+      "buildAction": "事件卡已施放！点击「结束阶段」进入攻击阶段。",
       "attackExplain": "攻击阶段！最多用 3 个单位攻击。\n\n力量值 = 骰子数量。匹配攻击类型的骰面才造成伤害。\n\n⚠️ 不攻击的话，召唤师会受 1 点惩罚伤害！",
       "meleeExplain": "⚔️ 近战单位只能攻击上下左右相邻的目标。\n\n近战骰面 ⚔️ 命中 = 1 点伤害。",
       "rangedExplain": "🏹 你的召唤师是远程单位。\n\n远程单位可以攻击 3 格直线距离内的目标，在安全距离外输出伤害！",
-      "attackAction": "点击你的单位，再点击射程内的敌方目标发动攻击。\n\n没有目标可以点击「下一步」跳过。",
-      "attackResult": "骰子结果决定命中次数。\n\n伤害达到生命值时单位被摧毁，摧毁敌方单位还能获得 1 点魔力！",
+      "attackAction": "点击你的单位选中，再点击射程内的敌方目标发动攻击！\n\n试试用召唤师远程攻击敌方单位。",
+      "attackResult": "骰子结果决定命中次数。✦ 特殊面默认不造成伤害（除非技能另有说明）。\n\n伤害达到生命值时单位被摧毁，摧毁敌方单位还能获得 1 点魔力！",
       "endAttack": "可以继续攻击，或点击「结束阶段」。",
       "magicExplain": "魔力阶段：弃置手牌来获取魔力。\n\n每弃 1 张牌 = 1 点魔力。不需要的牌可以换成资源！",
       "magicAction": "点击手牌选择要弃置的卡牌，或直接「结束阶段」跳过。",
@@ -63,7 +113,7 @@
       "opponentTurn": "对手的回合，观察他的操作...",
       "inactionPenalty": "对手没有攻击你的单位，所以他的召唤师受到了 1 点惩罚伤害。\n\n这就是「不活动惩罚」——鼓励积极进攻！",
       "victoryCondition": "记住：保护好你的召唤师，同时想办法摧毁对方的！\n\n这就是胜利的关键。",
-      "finish": "恭喜完成教学！\n\n你已掌握了 6 个回合阶段、召唤/移动/攻击的基本操作、以及召唤师技能的使用。\n\n去挑战真正的对手吧！"
+      "finish": "恭喜完成教学！\n\n你已掌握了 6 个回合阶段、召唤/移动/攻击的基本操作、事件卡施放、以及召唤师技能的使用。\n\n去挑战真正的对手吧！"
     }
   },
   
@@ -77,6 +127,7 @@
   },
   
   "hint": {
+    "factionSelect": "选择阵营并准备开始",
     "summon": "从手牌召唤单位到城门旁",
     "move": "移动最多3个单位，每个最多2格",
     "build": "在后方区域建造城门或建筑",
@@ -92,7 +143,115 @@
     "attack": "攻击",
     "castSpell": "施放法术",
     "endPhase": "结束阶段",
-    "endTurn": "结束回合"
+    "endTurn": "结束回合",
+    "discardSelected": "弃牌 +{{count}}"
+  },
+  "cardSelector": {
+    "reviveUndead": "复活死灵：选择弃牌堆中的亡灵单位",
+    "infection": "感染：选择弃牌堆中的疫病体",
+    "default": "选择卡牌",
+    "empty": "没有符合条件的卡牌"
+  },
+  "discardPile": {
+    "title": "弃牌堆",
+    "empty": "弃牌堆为空",
+    "titleWithCount": "弃牌堆 ({{count}})",
+    "latest": "最新"
+  },
+  "deckPile": {
+    "draw": "牌库",
+    "discard": "弃牌",
+    "cardBackAlt": "卡背",
+    "view": "查看"
+  },
+  "diceResult": {
+    "meleeAttack": "近战攻击",
+    "rangedAttack": "远程攻击",
+    "damage": "{{count}} 点伤害！",
+    "miss": "未命中"
+  },
+  "handArea": {
+    "bloodSummonOnlyLowCost": "血契召唤只能选择费用≤{{maxCost}}的单位卡",
+    "insufficientMagic": "魔力不足！需要 {{cost}} 魔力，当前只有 {{current}} 魔力",
+    "eventPhaseOnly": "该事件只能在{{phase}}施放",
+    "onlyUnitInSummon": "召唤阶段只能打出单位卡",
+    "onlyStructureInBuild": "建造阶段只能打出建筑卡"
+  },
+  "destroyEffect": {
+    "destroyed": "{{name}} 被摧毁！"
+  },
+  "statusBanners": {
+    "stun": {
+      "selectTarget": "震慑：选择召唤师直线3格内的敌方单位",
+      "direction": "震慑方向：",
+      "distance": "距离："
+    },
+    "ability": {
+      "reviveUndead": {
+        "selectCard": "复活死灵：从弃牌堆选择亡灵单位",
+        "selectPosition": "复活死灵：选择召唤师相邻的空格放置"
+      },
+      "fireSacrificeSummon": "火祀召唤：选择要消灭的友方单位",
+      "lifeDrain": "吸取生命：选择2格内的友方单位消灭",
+      "infection": {
+        "selectCard": "感染：从弃牌堆选择疫病体",
+        "selectPosition": "感染：确认放置位置"
+      },
+      "holyArrow": {
+        "selectCards": "圣光箭：选择任意数量非同名单位卡弃除"
+      },
+      "healing": {
+        "selectCards": "治疗：选择要弃除的手牌"
+      }
+    },
+    "beforeAttack": {
+      "lifeDrain": "攻击前技能：吸取生命已就绪，选择攻击目标",
+      "holyArrow": "攻击前技能：圣光箭已就绪，选择攻击目标",
+      "healing": "攻击前技能：治疗已就绪，选择友方目标"
+    },
+    "bloodSummon": {
+      "selectTarget": "血契召唤：选择一个友方单位（将承受2点伤害）",
+      "selectCard": "血契召唤：从手牌选择费用≤2的单位卡",
+      "selectPosition": "血契召唤：选择目标相邻的空格放置单位",
+      "confirm": "血契召唤完成 {{count}} 次，是否继续？"
+    },
+    "annihilate": {
+      "selectTargets": "除灭：选择要牺牲的友方单位（已选 {{count}} 个）",
+      "selectDamageTarget": "除灭：为第 {{index}} 个目标选择相邻单位造成2点伤害"
+    },
+    "soulTransfer": {
+      "message": "灵魂转移：是否将弓箭手移动到被消灭单位的位置？"
+    },
+    "funeralPyre": {
+      "message": "殉葬火堆弃除：选择一个受伤单位治疗 {{charges}} 点（点击棋盘上的单位）"
+    },
+    "mindControl": {
+      "message": "心灵操控：选择召唤师2格内的敌方单位（已选 {{count}} 个）"
+    },
+    "hypnoticLure": {
+      "message": "催眠引诱：选择一个敌方单位"
+    },
+    "mindCapture": {
+      "message": "心灵捕获：控制目标还是造成 {{hits}} 点伤害？"
+    },
+    "telekinesis": {
+      "message": "{{ability}}：选择推拉方向"
+    },
+    "afterAttack": {
+      "message": "{{ability}}：选择目标"
+    },
+    "abilityNames": {
+      "telekinesis": "念力",
+      "high_telekinesis": "高阶念力",
+      "mind_transmission": "读心传念"
+    }
+  },
+  "abilityButtons": {
+    "reviveUndead": "🗡️ 复活死灵（受到2点伤害）",
+    "fireSacrificeSummon": "🔥 火祀召唤（消灭友方单位并移动）",
+    "lifeDrain": "💀 吸取生命（消灭友方，战力翻倍）",
+    "holyArrow": "✨ 圣光箭（弃牌换魔力与战力）",
+    "healing": "✨ 治疗（弃牌转换为治疗攻击）"
   },
   
   "status": {

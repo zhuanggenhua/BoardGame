@@ -171,6 +171,8 @@
   "purify": {
     "title": "Use Purify",
     "desc": "Select a negative status effect to remove",
+    "selectHint": "Please select a negative status effect to remove.",
+    "noDebuffs": "No removable negative status effects right now.",
     "cancel": "Cancel",
     "confirm": "Confirm"
   },
@@ -258,6 +260,9 @@
       "palm": "Palm",
       "taiji": "Taiji",
       "lotus": "Lotus",
+      "sword": "Sword",
+      "heart": "Heart",
+      "strength": "Strength",
       "dagger": "Dagger",
       "bag": "Bag",
       "card": "Card",
@@ -278,7 +283,12 @@
       "thunderStrikeDie": "Rolled {{value}}",
       "thunderStrikeReroll": "Rerolled to {{value}}",
       "thunderStrike2Die": "Rolled {{value}}",
-      "thunderStrike2Reroll": "Rerolled to {{value}}"
+      "thunderStrike2Reroll": "Rerolled to {{value}}",
+      "barbarianSuppress": "Rolled {{value}}",
+      "energeticStrength": "Strength! Heal 2 and inflict Concussion",
+      "energeticOther": "Draw 1 card",
+      "luckyRoll": "Rolled {{value}}",
+      "morePleaseRoll": "Rolled {{value}}"
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
@@ -324,7 +334,15 @@
     "endDefense": "End Defense",
     "nextPhase": "Next Phase",
     "closePreview": "Close Preview ✕",
-    "undoSell": "Undo Sell"
+    "undoSell": "Undo Sell",
+    "play": "Play",
+    "upgrade": "Upgrade",
+    "sell": "Sell",
+    "discard": "Discard"
+  },
+  "hints": {
+    "releaseToPlay": "Release to play",
+    "releaseToSell": "Release to sell"
   },
   "discard": {
     "mustDiscard": "Hand Limit Exceeded",
@@ -346,6 +364,7 @@
   },
   "choices": {
     "title": "Ability Resolution Choice",
+    "option": "Option {{index}}",
     "evasiveOrPurify": "Choose a status effect to gain",
     "evasiveOrPurifyToken": "Choose a token to gain",
     "lotusPalmUnblockable": {
@@ -411,6 +430,8 @@
       "description": "Basic fist attack; damage scales with number of fist faces"
     },
     "fist-technique-3": {
+      "name": "Fist Technique III",
+      "description": "Highest-level fist attack; four of a kind inflicts Knockdown.",
       "effects": {
         "damage4": "Deal 4 damage"
       }
@@ -431,6 +452,15 @@
       "effects": {
         "gainTaiji5": "Gain 5 Taiji tokens",
         "gainChoice": "Gain Evasive or Purify (your choice)"
+      }
+    },
+    "zen-forget-2": {
+      "name": "Zen Forget II",
+      "description": "3 Taiji: gain 6 Chi, plus Evasive and Purify.",
+      "effects": {
+        "gainTaiji6": "Gain 6 Taiji tokens",
+        "gainEvasive": "Gain 1 Evasive token",
+        "gainPurify": "Gain 1 Purify token"
       }
     },
     "harmony": {
@@ -615,6 +645,436 @@
     "fearless-riposte-2": {
       "name": "Fearless Riposte II",
       "description": "Alternative defense upgrade (5 dice): Offensive-defensive style"
+    },
+    "fist-technique-2": {
+      "name": "Fist Technique II",
+      "description": "Upgraded fist attack; higher damage."
+    },
+    "fist-technique-2-3": {
+      "effects": {
+        "damage7": "Deal 7 damage"
+      }
+    },
+    "fist-technique-2-4": {
+      "effects": {
+        "damage8": "Deal 8 damage"
+      }
+    },
+    "fist-technique-2-5": {
+      "effects": {
+        "damage9": "Deal 9 damage"
+      }
+    },
+    "fist-technique-3-3": {
+      "effects": {
+        "damage7": "Deal 7 damage"
+      }
+    },
+    "fist-technique-3-4": {
+      "effects": {
+        "damage8": "Deal 8 damage",
+        "inflictStun": "Inflict 1 Knockdown token"
+      }
+    },
+    "fist-technique-3-5": {
+      "effects": {
+        "damage9": "Deal 9 damage",
+        "inflictStun": "Inflict 1 Knockdown token"
+      }
+    },
+    "fireball": {
+      "name": "Fireball",
+      "description": "Deal 4/6/8 damage and gain 1 Fire Mastery.",
+      "effects": {
+        "damage4": "Deal 4 damage",
+        "damage6": "Deal 6 damage",
+        "damage8": "Deal 8 damage",
+        "gainFM1": "Gain 1 Fire Mastery"
+      }
+    },
+    "soul-burn": {
+      "name": "Soul Burn",
+      "description": "Gain Fire Mastery equal to 2× Fire Soul faces and deal 1× Fire Soul damage to all opponents.",
+      "effects": {
+        "main": "Gain Fire Mastery equal to 2× the number of Fire Soul faces, and deal that much (1× Fire Soul) undefendable damage to all opponents."
+      }
+    },
+    "fiery-combo": {
+      "name": "Fiery Combo",
+      "description": "Gain 2 Fire Mastery, deal 5 damage, plus 1 damage per Fire Mastery.",
+      "effects": {
+        "gainFM2": "Gain 2 Fire Mastery",
+        "main": "Deal 5 base damage. If you have Fire Mastery, deal +1 damage per Fire Mastery."
+      }
+    },
+    "meteor": {
+      "name": "Meteor",
+      "description": "Inflict Stun, gain 2 Fire Mastery. Then deal 1 undefendable damage per Fire Mastery. Also deal 2 damage to all opponents.",
+      "effects": {
+        "inflictStun": "Inflict Stun",
+        "gainFM2": "Gain 2 Fire Mastery",
+        "unblockable": "Deal 1 undefendable damage per Fire Mastery",
+        "collateral": "Also deal 2 damage to all opponents"
+      }
+    },
+    "pyro-blast": {
+      "name": "Pyro Blast",
+      "description": "Deal 6 damage and roll 1 die: Fire +3 damage, Lava inflicts Burn, Fire Soul gains 2 Fire Mastery, Meteor inflicts Knockdown.",
+      "effects": {
+        "damage6": "Deal 6 damage",
+        "bonusRoll": "Roll 1 die:\n- Fire: +3 damage\n- Lava: inflict Burn\n- Fire Soul: gain 2 Fire Mastery\n- Meteor: inflict Knockdown"
+      }
+    },
+    "burn-down": {
+      "name": "Burn Down",
+      "description": "Gain 1 Fire Mastery. Activate Burn Down: remove up to 4 Fire Mastery; each removed deals 3 undefendable damage.",
+      "effects": {
+        "gainFM1": "Gain 1 Fire Mastery",
+        "main": "Activate Burn Down: remove up to 4 Fire Mastery. Each removed deals 3 undefendable damage"
+      }
+    },
+    "ignite": {
+      "name": "Ignite",
+      "description": "Gain 2 Fire Mastery, then deal 4 damage plus 2 damage per Fire Mastery.",
+      "effects": {
+        "gainFM2": "Gain 2 Fire Mastery",
+        "main": "Deal 4 base damage. If you have Fire Mastery, deal +2 damage per Fire Mastery."
+      }
+    },
+    "magma-armor": {
+      "name": "Magma Armor",
+      "description": "Defense: 1x Fire deals 1 damage, 1x Fire Soul gains 1 Fire Mastery.",
+      "effects": {
+        "main": "Defensive ability: for each Fire rolled, deal 1 undefendable damage to the attacker. For each Fire Soul, gain 1 Fire Mastery."
+      }
+    },
+    "ultimate-inferno": {
+      "name": "Ultimate Inferno",
+      "description": "Inflict Knockdown and Burn, gain 3 Fire Mastery, deal 12 damage, and deal 2 damage to all other opponents.",
+      "effects": {
+        "inflictKnockdown": "Inflict 1 Knockdown token",
+        "inflictBurn": "Inflict 1 Burn token",
+        "gainFM3": "Gain 3 Fire Mastery",
+        "damage12": "Deal 12 damage",
+        "collateral": "Deal 2 collateral damage to all opponents"
+      }
+    },
+    "harmony-2": {
+      "name": "Harmony II",
+      "description": "Small Straight: deal 6 damage, then gain 3 Taiji.",
+      "effects": {
+        "damage6": "Deal 6 damage",
+        "gainTaiji3": "Then gain 3 Taiji tokens"
+      }
+    },
+    "taiji-combo-2": {
+      "name": "Taiji Combo II",
+      "description": "Deal 5 damage and roll 2 dice, then resolve face effects.",
+      "effects": {
+        "rollDie": "Roll 2 dice",
+        "damage5": "Deal 5 damage"
+      }
+    },
+    "thunder-strike-2": {
+      "name": "Thunder Strike II",
+      "description": "Roll 3 dice; deal damage equal to the total; if total ≥12, inflict Knockdown.",
+      "effects": {
+        "roll3Damage": "Roll 3 dice; deal damage equal to the total; if total ≥12, inflict Knockdown.",
+        "rerollOne": "Spend 1 Chi to reroll one die"
+      }
+    },
+    "calm-water-2": {
+      "name": "Calm Water II",
+      "description": "Large Straight: deal 9 damage, gain 3 Taiji and 1 Evasive.",
+      "effects": {
+        "damage9": "Deal 9 damage",
+        "gainTaiji3": "Then gain 3 Taiji tokens",
+        "gainEvasive": "Gain 1 Evasive token"
+      }
+    },
+    "slap": {
+      "name": "Slap",
+      "description": "Basic slash attack; damage scales with number of Sword faces.",
+      "effects": {
+        "damage4": "Deal 4 damage",
+        "damage6": "Deal 6 damage",
+        "damage8": "Deal 8 damage"
+      }
+    },
+    "all-out-strike": {
+      "name": "All-Out Strike",
+      "description": "2 Sword + 2 Strength: deal 4 undefendable damage.",
+      "effects": {
+        "damage4Unblockable": "Deal 4 undefendable damage"
+      }
+    },
+    "powerful-strike": {
+      "name": "Powerful Strike",
+      "description": "Small Straight: deal 9 damage.",
+      "effects": {
+        "damage9": "Deal 9 damage"
+      }
+    },
+    "violent-assault": {
+      "name": "Violent Assault",
+      "description": "4 Strength: inflict Daze, then deal 5 undefendable damage.",
+      "effects": {
+        "inflictDaze": "Inflict 1 Daze token",
+        "damage5Unblockable": "Deal 5 undefendable damage"
+      }
+    },
+    "steadfast": {
+      "name": "Steadfast",
+      "description": "Heal based on the number of Heart faces.",
+      "effects": {
+        "heal4": "Heal 4",
+        "heal5": "Heal 5",
+        "heal6": "Heal 6"
+      }
+    },
+    "suppress": {
+      "name": "Suppress",
+      "description": "3 Sword + 2 Strength: roll 3 dice, deal total damage; if total >14, inflict Concussion.",
+      "effects": {
+        "rollDice": "Roll 3 dice; deal damage equal to the total",
+        "concussionThreshold": "If total >14, inflict 1 Concussion token"
+      }
+    },
+    "reckless-strike": {
+      "name": "Reckless Strike",
+      "description": "Large Straight: deal 15 damage and take 4 self-damage.",
+      "effects": {
+        "damage15": "Deal 15 damage",
+        "selfDamage4": "Take 4 self-damage (only if damage was dealt)"
+      }
+    },
+    "thick-skin": {
+      "name": "Thick Skin",
+      "description": "Defense: heal 2 × Heart faces.",
+      "effects": {
+        "healByHearts": "Heal 2 × Heart faces"
+      }
+    },
+    "thick-skin-2": {
+      "name": "Thick Skin II",
+      "description": "Upgraded defense: roll 4 dice, heal 2 × Heart; if 2 Hearts, prevent 1 incoming status.",
+      "effects": {
+        "healByHearts": "Heal 2 × Heart faces",
+        "healAndPrevent": "Heal 2 × Heart; if 2 Hearts, prevent 1 status effect"
+      }
+    },
+    "reckless-strike-2": {
+      "name": "Reckless Strike II",
+      "description": "Upgraded Large Straight: deal 20 damage and take 5 self-damage.",
+      "effects": {
+        "damage20": "Deal 20 damage",
+        "selfDamage5": "Take 5 self-damage"
+      }
+    },
+    "suppress-2": {
+      "name": "Suppress II",
+      "description": "Upgraded ability with two variants: Suppress and Battle Cry.",
+      "effects": {
+        "rollDice": "Roll 3 dice; deal damage equal to the total",
+        "concussionThreshold": "If total >9, inflict 1 Concussion token"
+      }
+    },
+    "suppress-2-battle-cry": {
+      "effects": {
+        "heal2": "Heal 2",
+        "damage2Unblockable": "Deal 2 undefendable damage"
+      }
+    },
+    "steadfast-2": {
+      "name": "Steadfast II",
+      "description": "Upgraded defense: higher healing; if three of a kind, remove 1 of your status effects.",
+      "effects": {
+        "removeStatus": "Remove 1 of your status effect tokens"
+      }
+    },
+    "steadfast-2-3": {
+      "effects": {
+        "heal5": "Heal 5"
+      }
+    },
+    "steadfast-2-4": {
+      "effects": {
+        "heal6": "Heal 6"
+      }
+    },
+    "steadfast-2-5": {
+      "effects": {
+        "heal7": "Heal 7"
+      }
+    },
+    "slap-2": {
+      "name": "Slap II",
+      "description": "3/4/5 Sword: deal 5/7/9 damage. If 4 of a kind, deal undefendable damage.",
+      "effects": {
+        "damage5": "Deal 5 damage",
+        "damage7Unblockable": "Deal 7 undefendable damage",
+        "damage9Unblockable": "Deal 9 undefendable damage"
+      }
+    },
+    "slap-3": {
+      "name": "Slap III",
+      "description": "3/4/5 Sword: deal 6/8/10 damage. If 4 of a kind, deal undefendable damage.",
+      "effects": {
+        "damage6": "Deal 6 damage",
+        "damage8Unblockable": "Deal 8 undefendable damage",
+        "damage10Unblockable": "Deal 10 undefendable damage"
+      }
+    },
+    "all-out-strike-2": {
+      "name": "All-Out Strike II",
+      "description": "2 Sword + 2 Strength: deal 5 undefendable damage.",
+      "effects": {
+        "damage5Unblockable": "Deal 5 undefendable damage"
+      }
+    },
+    "all-out-strike-3": {
+      "name": "All-Out Strike III",
+      "description": "2 Sword + 2 Strength: deal 6 undefendable damage.",
+      "effects": {
+        "damage6Unblockable": "Deal 6 undefendable damage"
+      }
+    },
+    "powerful-strike-2": {
+      "name": "Powerful Strike II",
+      "description": "Small Straight: deal 8 undefendable damage.",
+      "effects": {
+        "damage8Unblockable": "Deal 8 undefendable damage"
+      }
+    },
+    "violent-assault-2": {
+      "name": "Violent Assault II",
+      "description": "Includes Violent Assault and Crush variants.",
+      "effects": {
+        "inflictDaze": "Inflict 1 Daze token",
+        "damage7Unblockable": "Deal 7 undefendable damage"
+      }
+    },
+    "violent-assault-2-crush": {
+      "effects": {
+        "inflictConcussion": "Inflict 1 Concussion token",
+        "damage2Unblockable": "Deal 2 undefendable damage"
+      }
+    },
+    "fireball-2": {
+      "name": "Fireball II",
+      "description": "Deal 4/6/8 damage and gain 2 Fire Mastery."
+    },
+    "fireball-2-3": {
+      "effects": {
+        "damage4": "Deal 4 damage"
+      }
+    },
+    "fireball-2-4": {
+      "effects": {
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "fireball-2-5": {
+      "effects": {
+        "damage8": "Deal 8 damage"
+      }
+    },
+    "soul-burn-2": {
+      "name": "Soul Burn II",
+      "description": "2x Fire Soul: inflict Burn. 3x Fire Soul: cap +1 and deal 2× Fire Soul undefendable damage.",
+      "effects": {
+        "inflictBurn": "Inflict 1 Burn token"
+      }
+    },
+    "soul-burn-3": {
+      "effects": {
+        "increaseLimit": "Increase Fire Mastery cap by 1",
+        "main": "Gain Fire Mastery equal to 2× Fire Soul faces and deal 1× Fire Soul undefendable damage to all opponents."
+      }
+    },
+    "soul-burn-4": {
+      "name": "Soul Burn (4x Fire Soul)",
+      "effects": {
+        "main": "Increase Fire Mastery cap by 1, then gain 5 Fire Mastery.",
+        "knockdown": "Inflict 1 Knockdown token"
+      }
+    },
+    "fiery-combo-2": {
+      "name": "Fiery Combo II",
+      "description": "Small Straight: gain 2 Fire Mastery and deal 5+X damage. 2 Fire + 2 Lava: gain 2 Fire Mastery, inflict Burn, deal 6 damage.",
+      "effects": {
+        "gainFM2": "Gain 2 Fire Mastery",
+        "main": "Deal 5 base damage. If you have Fire Mastery, deal +1 damage per Fire Mastery."
+      }
+    },
+    "incinerate": {
+      "effects": {
+        "gainFM2": "Gain 2 Fire Mastery",
+        "inflictBurn": "Inflict 1 Burn token",
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "meteor-2": {
+      "name": "Meteor II",
+      "description": "3x Meteor: Knockdown, Burn, Stun. 4x Meteor: gain 2 Fire Mastery, Stun, X undefendable damage, 3 collateral damage.",
+      "effects": {
+        "gainFM2": "Gain 2 Fire Mastery",
+        "inflictStun": "Inflict 1 Stun token",
+        "unblockable": "Deal 1 undefendable damage per Fire Mastery",
+        "collateral": "Deal 3 collateral damage to all opponents"
+      }
+    },
+    "meteor-shower": {
+      "effects": {
+        "inflictKnockdown": "Inflict 1 Knockdown token",
+        "inflictBurn": "Inflict 1 Burn token",
+        "inflictStun": "Inflict 1 Stun token"
+      }
+    },
+    "pyro-blast-2": {
+      "name": "Pyro Blast II",
+      "description": "Deal 6 damage and roll 2 dice: Fire +3 damage, Lava inflicts Burn, Fire Soul gains 2 Fire Mastery, Meteor inflicts Knockdown.",
+      "effects": {
+        "damage6": "Deal 6 damage",
+        "bonusRoll": "Roll 2 dice:\n- Fire: +3 damage\n- Lava: inflict Burn\n- Fire Soul: gain 2 Fire Mastery\n- Meteor: inflict Knockdown"
+      }
+    },
+    "pyro-blast-3": {
+      "name": "Pyro Blast III",
+      "description": "Deal 6 damage and roll 2 dice (you may reroll 1): Fire +3 damage, Lava inflicts Burn, Fire Soul gains 2 Fire Mastery, Meteor inflicts Knockdown.",
+      "effects": {
+        "bonusRoll": "Roll 2 dice (reroll up to 1):\n- Fire: +3 damage\n- Lava: inflict Burn\n- Fire Soul: gain 2 Fire Mastery\n- Meteor: inflict Knockdown"
+      }
+    },
+    "burn-down-2": {
+      "name": "Burn Down II",
+      "description": "Gain 1 Fire Mastery. Activate Burn Down: each removed Fire Mastery deals 3 undefendable damage.",
+      "effects": {
+        "main": "Activate Burn Down: remove any number of Fire Mastery. Each removed deals 3 undefendable damage"
+      }
+    },
+    "ignite-2": {
+      "name": "Ignite II",
+      "description": "Gain 2 Fire Mastery, inflict Burn, deal 5 + 2× Fire Mastery damage.",
+      "effects": {
+        "gainFM2": "Gain 2 Fire Mastery",
+        "inflictBurn": "Inflict 1 Burn token",
+        "main": "Deal 5 base damage. If you have Fire Mastery, deal +2 damage per Fire Mastery."
+      }
+    },
+    "magma-armor-2": {
+      "name": "Magma Armor II",
+      "description": "Defense: 1x Fire deals 1 undefendable damage, 1x Fire Soul gains 1 Fire Mastery.",
+      "effects": {
+        "main": "Defensive ability (5 dice): for each Fire rolled, gain 1 Fire Mastery and deal 1 damage. If you have Fire + Fire Soul, inflict Burn."
+      }
+    },
+    "magma-armor-3": {
+      "name": "Magma Armor III",
+      "description": "Defense: 1x Fire deals 2 undefendable damage, 1x Fire Soul gains 1 Fire Mastery.",
+      "effects": {
+        "main": "Defensive ability (5 dice): each Fire rolled gains 1 Fire Mastery and deals 1 damage. Each Fire Soul rolled gains 1 Fire Mastery and deals 1 damage. If you have Fire + Fire Soul, inflict Burn."
+      }
     }
   },
   "cards": {
@@ -750,6 +1210,90 @@
       "name": "Transfer Status!",
       "description": "Transfer 1 status effect from 1 player to another player."
     },
+    "card-energetic": {
+      "name": "Energetic!",
+      "description": "Roll 1 die: if Strength, heal 2 and inflict Concussion on 1 opponent. Otherwise draw 1 card."
+    },
+    "card-lucky": {
+      "name": "Lucky!",
+      "description": "Roll 3 dice: Heal 1 + 2×Heart."
+    },
+    "card-more-please": {
+      "name": "More Please!",
+      "description": "Roll 5 dice: +1 damage per Sword. Inflict Concussion."
+    },
+    "card-dizzy": {
+      "name": "Dizzy!",
+      "description": "If you have dealt at least 8 damage to the opponent, inflict Concussion."
+    },
+    "card-head-blow": {
+      "name": "Head Blow!",
+      "description": "Inflict Concussion on 1 opponent."
+    },
+    "card-flame-barrier": {
+      "name": "Flame Barrier",
+      "description": "Immediately gain 2 Fire Mastery."
+    },
+    "card-turning-up-the-heat": {
+      "name": "Turning Up the Heat!",
+      "description": "Gain 1 Fire Mastery. Then you may spend any amount of CP; for each CP, gain 1 Fire Mastery."
+    },
+    "card-infernal-embrace": {
+      "name": "Infernal Embrace!",
+      "description": "Roll 1 die:\nMeteor: gain Fire Mastery to the cap\nOtherwise: draw 1 card"
+    },
+    "card-fan-the-flames": {
+      "name": "Fan the Flames!",
+      "description": "Fire Mastery stack limit +1. Gain 2 Fire Mastery."
+    },
+    "card-red-hot": {
+      "name": "Red Hot!",
+      "description": "This turn, your damage +1 per Fire Mastery."
+    },
+    "card-get-fired-up": {
+      "name": "Get Fired Up!",
+      "description": "Roll 1 die:\nFire: +3 damage\nLava: inflict Burn\nFire Soul: gain 2 Fire Mastery\nMeteor: inflict Knockdown"
+    },
+    "card-magma-armor-2": {
+      "name": "Magma Armor II",
+      "description": "Upgrade Magma Armor to Level II."
+    },
+    "card-magma-armor-3": {
+      "name": "Magma Armor III",
+      "description": "Upgrade Magma Armor to Level III."
+    },
+    "card-fireball-2": {
+      "name": "Fireball II",
+      "description": "Upgrade Fireball to Level II."
+    },
+    "card-burning-soul-2": {
+      "name": "Burning Soul II",
+      "description": "Upgrade Soul Burn to Level II. Includes the 4x Fire Soul variant."
+    },
+    "card-hot-streak-2": {
+      "name": "Hot Streak II",
+      "description": "Upgrade Fiery Combo to Level II."
+    },
+    "card-meteor-2": {
+      "name": "Meteor II",
+      "description": "Upgrade Meteor to Level II."
+    },
+    "card-pyro-blast-2": {
+      "name": "Pyro Blast II",
+      "description": "Upgrade Pyro Blast to Level II."
+    },
+    "card-pyro-blast-3": {
+      "name": "Pyro Blast III",
+      "description": "Upgrade Pyro Blast to Level III."
+    },
+    "card-burn-down-2": {
+      "name": "Burn Down II",
+      "description": "Upgrade Burn Down to Level II."
+    },
+    "card-ignite-2": {
+      "name": "Ignite II",
+      "description": "Upgrade Ignite to Level II."
+    },
     "fist-technique": {
       "name": "Enlightenment!",
       "description": "Roll 1 die: if Lotus, gain 2 Chi, Evasive and Purify; otherwise draw 1 card."
@@ -837,6 +1381,7 @@
     "pressStart": "Start Game",
     "ready": "Ready",
     "readyWaiting": "Waiting for other players...",
-    "readyProgress": "Ready Progress"
+    "readyProgress": "Ready Progress",
+    "you": "You"
   }
 }

@@ -16,6 +16,7 @@ import {
     MADNESS_CARD_DEF_ID,
     CTHULHU_EXPANSION_FACTIONS,
 } from '../domain/types';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import type {
     SmashUpCore,
     PlayerState,
@@ -39,7 +40,10 @@ beforeAll(() => {
     initAllAbilities();
 });
 
-function makePlayer(id: string, factions: [string, string] = ['aliens', 'dinosaurs']): PlayerState {
+function makePlayer(
+    id: string,
+    factions: [string, string] = [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS]
+): PlayerState {
     return {
         id, vp: 0, hand: [], deck: [], discard: [],
         minionsPlayed: 0, minionLimit: 1,
@@ -51,8 +55,8 @@ function makePlayer(id: string, factions: [string, string] = ['aliens', 'dinosau
 function makeCore(overrides?: Partial<SmashUpCore>): SmashUpCore {
     return {
         players: {
-            '0': makePlayer('0', ['minions_of_cthulhu', 'aliens']),
-            '1': makePlayer('1', ['elder_things', 'pirates']),
+            '0': makePlayer('0', [SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU, SMASHUP_FACTION_IDS.ALIENS]),
+            '1': makePlayer('1', [SMASHUP_FACTION_IDS.ELDER_THINGS, SMASHUP_FACTION_IDS.PIRATES]),
         },
         turnOrder: ['0', '1'],
         currentPlayerIndex: 0,
@@ -69,22 +73,22 @@ describe('Property 19: 疯狂牌库生命周期', () => {
     describe('疯狂牌库初始化', () => {
         it('克苏鲁扩展派系存在时 hasCthulhuExpansionFaction 返回 true', () => {
             expect(hasCthulhuExpansionFaction({
-                '0': { factions: ['minions_of_cthulhu', 'aliens'] as [string, string] },
-                '1': { factions: ['pirates', 'ninjas'] as [string, string] },
+                '0': { factions: [SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU, SMASHUP_FACTION_IDS.ALIENS] },
+                '1': { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] },
             })).toBe(true);
         });
 
         it('无克苏鲁扩展派系时 hasCthulhuExpansionFaction 返回 false', () => {
             expect(hasCthulhuExpansionFaction({
-                '0': { factions: ['aliens', 'dinosaurs'] as [string, string] },
-                '1': { factions: ['pirates', 'ninjas'] as [string, string] },
+                '0': { factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS] },
+                '1': { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] },
             })).toBe(false);
         });
 
         it('所有 4 个克苏鲁扩展派系都能被识别', () => {
             for (const faction of CTHULHU_EXPANSION_FACTIONS) {
                 expect(hasCthulhuExpansionFaction({
-                    '0': { factions: [faction, 'aliens'] as [string, string] },
+                    '0': { factions: [faction, SMASHUP_FACTION_IDS.ALIENS] },
                 })).toBe(true);
             }
         });
@@ -216,10 +220,15 @@ describe('Property 19: 疯狂牌库生命周期', () => {
                 turnNumber: 1,
                 nextUid: 100,
                 factionSelection: {
-                    takenFactions: ['minions_of_cthulhu', 'aliens', 'pirates', 'ninjas'],
+                    takenFactions: [
+                        SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU,
+                        SMASHUP_FACTION_IDS.ALIENS,
+                        SMASHUP_FACTION_IDS.PIRATES,
+                        SMASHUP_FACTION_IDS.NINJAS,
+                    ],
                     playerSelections: {
-                        '0': ['minions_of_cthulhu', 'aliens'],
-                        '1': ['pirates', 'ninjas'],
+                        '0': [SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU, SMASHUP_FACTION_IDS.ALIENS],
+                        '1': [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS],
                     },
                     completedPlayers: ['0', '1'],
                 },
@@ -255,10 +264,15 @@ describe('Property 19: 疯狂牌库生命周期', () => {
                 turnNumber: 1,
                 nextUid: 100,
                 factionSelection: {
-                    takenFactions: ['aliens', 'dinosaurs', 'pirates', 'ninjas'],
+                    takenFactions: [
+                        SMASHUP_FACTION_IDS.ALIENS,
+                        SMASHUP_FACTION_IDS.DINOSAURS,
+                        SMASHUP_FACTION_IDS.PIRATES,
+                        SMASHUP_FACTION_IDS.NINJAS,
+                    ],
                     playerSelections: {
-                        '0': ['aliens', 'dinosaurs'],
-                        '1': ['pirates', 'ninjas'],
+                        '0': [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
+                        '1': [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS],
                     },
                     completedPlayers: ['0', '1'],
                 },

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { CardInstance } from '../domain/types';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { User, Swords } from 'lucide-react';
-import { getCardDef as lookupCardDef, getMinionDef as lookupMinionDef } from '../data/cards';
+import { getCardDef as lookupCardDef, getMinionDef as lookupMinionDef, resolveCardName, resolveCardText } from '../data/cards';
 
 // ============================================================================
 // Layout Constants
@@ -41,17 +41,17 @@ type HandCardProps = {
 const HandCard: React.FC<HandCardProps> = ({
     card, index, total, isSelected, isDiscardSelected, isDiscardMode, disableInteraction, onSelect, onViewDetail
 }) => {
-    const { t } = useTranslation('game-smashup');
+    const { t, i18n } = useTranslation('game-smashup');
     const [isHovered, setIsHovered] = useState(false);
     const [isShaking, setIsShaking] = useState(false);
 
     // Lookup Data
     const def = lookupCardDef(card.defId);
-    if (card.defId.includes('venus') || card.defId.includes('servitor')) {
-        console.log('HandCard Debug:', card.defId, def, 'HasPreview:', !!def?.previewRef);
-    }
     const isMinion = card.type === 'minion';
     const minionDef = isMinion ? lookupMinionDef(card.defId) : null;
+    const resolvedName = resolveCardName(def, i18n.language) || t('ui.card_placeholder');
+    const resolvedText = resolveCardText(def, i18n.language);
+    const previewTitle = resolvedText ? `${resolvedName}\n${resolvedText}` : resolvedName;
 
     // "Paper Chaos" - Tiny random rotation
     const rotationSeed = useMemo(() => {
@@ -127,7 +127,7 @@ const HandCard: React.FC<HandCardProps> = ({
                     <CardPreview
                         previewRef={def?.previewRef}
                         className="w-full h-full object-cover"
-                        title={`${def?.name || 'Card'}\n${isMinion ? minionDef?.abilityText : (def as any)?.effectText}`}
+                        title={previewTitle}
                     />
 
                     {/* 2. Fallback UI - ONLY shown if NO previewRef (Strict check) */}
@@ -154,14 +154,14 @@ const HandCard: React.FC<HandCardProps> = ({
                             {/* Footer Text */}
                             <div className="mt-auto bg-white/95 rounded p-[0.4vw] border border-slate-300 shadow-sm rotate-1 relative">
                                 <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-6 h-1.5 bg-yellow-200/50 -rotate-2"></div>
-                                <div className="text-[0.55vw] font-black text-slate-800 truncate uppercase tracking-tight">{def?.name}</div>
+                                <div className="text-[0.55vw] font-black text-slate-800 truncate uppercase tracking-tight">{resolvedName}</div>
                             </div>
                         </div>
                     )}
                 </div>
 
                 {isDiscardSelected && (
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center rounded-md z-30">
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md z-30">
                         <div className="bg-red-600 text-white font-black text-sm rotate-12 border-2 border-white px-2 py-0.5 shadow-lg rounded-sm uppercase tracking-widest">
                             {t('ui.discard_badge')}
                         </div>

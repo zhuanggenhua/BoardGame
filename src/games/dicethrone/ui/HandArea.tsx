@@ -18,6 +18,14 @@ type FlyingOutCard = {
     targetSlotId?: string;
 };
 
+type HandCardEntry = {
+    card: AbilityCard;
+    key: string;
+    index: number;
+};
+
+const buildHandCardKey = (cardId: string, sequence: number) => `${cardId}-${sequence}`;
+
 // 5. Hand Area - 拖拽交互（向上拖拽打出，拖到弃牌堆售卖）
 const DRAG_PLAY_THRESHOLD = -150; // 向上拖拽超过此距离触发打出
 
@@ -61,9 +69,9 @@ export const HandArea = ({
     onDiscardCard?: (cardId: string) => void;
 }) => {
     const { t } = useTranslation('game-dicethrone');
-    const [draggingCardId, setDraggingCardId] = React.useState<string | null>(null);
+    const [draggingCardKey, setDraggingCardKey] = React.useState<string | null>(null);
     const dragOffsetRef = React.useRef({ x: 0, y: 0 });
-    const draggingCardRef = React.useRef<AbilityCard | null>(null);
+    const draggingCardRef = React.useRef<HandCardEntry | null>(null);
     const dragEndHandledRef = React.useRef(false);
     const [showSellHint, setShowSellHint] = React.useState(false);
     const [returningCardMap, setReturningCardMap] = React.useState<
@@ -71,31 +79,47 @@ export const HandArea = ({
     >({});
     const [returningVersionMap, setReturningVersionMap] = React.useState<Record<string, number>>({});
     // 事件驱动的 hover 状态（用 onHoverStart/onHoverEnd 更新，避免 whileHover 的"元素移到鼠标下"误触发）
-    const [hoveredCardId, setHoveredCardId] = React.useState<string | null>(null);
+    const [hoveredCardKey, setHoveredCardKey] = React.useState<string | null>(null);
     // 飞出动画卡牌（成功使用后飞向目标）
     const [flyingOutCard, setFlyingOutCard] = React.useState<FlyingOutCard | null>(null);
     const pendingPlayRef = React.useRef<{
         cardId: string;
+        cardKey: string;
         card: AbilityCard;
         offset: { x: number; y: number };
         originalIndex: number;
     } | null>(null);
     const pendingPlayTimeoutRef = React.useRef<number | null>(null);
-    const handRef = React.useRef(hand);
+    const handKeysRef = React.useRef<string[]>([]);
     const cardBackImage = React.useMemo(() => buildLocalizedImageSet(ASSETS.CARD_BG, locale), [locale]);
     const handAreaRef = React.useRef<HTMLDivElement>(null);
     const dragValueMapRef = React.useRef(new Map<string, { x: MotionValue<number>; y: MotionValue<number> }>());
 
-    const getDragValues = React.useCallback((cardId: string) => {
-        const existing = dragValueMapRef.current.get(cardId);
+    const handEntries = React.useMemo<HandCardEntry[]>(() => {
+        const counts = new Map<string, number>();
+        return hand.map((card, index) => {
+            const sequence = (counts.get(card.id) ?? 0) + 1;
+            counts.set(card.id, sequence);
+            return { card, index, key: buildHandCardKey(card.id, sequence) };
+        });
+    }, [hand]);
+
+    const handKeys = React.useMemo(() => handEntries.map(entry => entry.key), [handEntries]);
+    const handKeyToCardId = React.useMemo(
+        () => new Map(handEntries.map(entry => [entry.key, entry.card.id] as const)),
+        [handEntries]
+    );
+
+    const getDragValues = React.useCallback((cardKey: string) => {
+        const existing = dragValueMapRef.current.get(cardKey);
         if (existing) return existing;
         const next = { x: motionValue(0), y: motionValue(0) };
-        dragValueMapRef.current.set(cardId, next);
+        dragValueMapRef.current.set(cardKey, next);
         return next;
     }, []);
 
-    const resetDragValues = React.useCallback((cardId: string, _source: 'drag' | 'window') => {
-        const values = dragValueMapRef.current.get(cardId);
+    const resetDragValues = React.useCallback((cardKey: string, _source: 'drag' | 'window') => {
+        const values = dragValueMapRef.current.get(cardKey);
         if (!values) return;
         animate(values.x, 0, { duration: 0.25, ease: 'easeOut' });
         animate(values.y, 0, { duration: 0.25, ease: 'easeOut' });
@@ -154,11 +178,11 @@ export const HandArea = ({
         };
     }, []);
 
-    const [visibleCardIds, setVisibleCardIds] = React.useState<Set<string>>(new Set());
-    const [flippedCardIds, setFlippedCardIds] = React.useState<Set<string>>(new Set());
-    const [dealingCardId, setDealingCardId] = React.useState<string | null>(null);
+    const [visibleCardKeys, setVisibleCardKeys] = React.useState<Set<string>>(new Set());
+    const [flippedCardKeys, setFlippedCardKeys] = React.useState<Set<string>>(new Set());
+    const [dealingCardKey, setDealingCardKey] = React.useState<string | null>(null);
     const [cardSourceMap, setCardSourceMap] = React.useState<Map<string, 'deck' | 'discard'>>(new Map());
-    const prevHandIdsRef = React.useRef<string[]>([]);
+    const prevHandKeysRef = React.useRef<string[]>([]);
     const dealTimersRef = React.useRef<number[]>([]);
     const flipTimersRef = React.useRef<number[]>([]);
 
@@ -185,19 +209,19 @@ export const HandArea = ({
         }
     }, []);
 
-    const triggerReturn = React.useCallback((cardId: string, offset: { x: number; y: number }, originalIndex: number) => {
+    const triggerReturn = React.useCallback((cardKey: string, offset: { x: number; y: number }, originalIndex: number) => {
         // 回弹时清除 hover 状态（事件驱动模型下，元素移动不会触发 onHoverStart）
-        setHoveredCardId(prev => prev === cardId ? null : prev);
+        setHoveredCardKey(prev => prev === cardKey ? null : prev);
         setReturningCardMap(prev => {
-            const prevEntry = prev[cardId];
+            const prevEntry = prev[cardKey];
             const nextVersion = (prevEntry?.version ?? 0) + 1;
             setReturningVersionMap(prevVersions => ({
                 ...prevVersions,
-                [cardId]: nextVersion,
+                [cardKey]: nextVersion,
             }));
             return {
                 ...prev,
-                [cardId]: {
+                [cardKey]: {
                     version: nextVersion,
                     offset,
                     originalIndex,
@@ -206,18 +230,18 @@ export const HandArea = ({
         });
         window.setTimeout(() => {
             setReturningCardMap(prev => {
-                if (!prev[cardId]) return prev;
+                if (!prev[cardKey]) return prev;
                 const next = { ...prev };
-                delete next[cardId];
+                delete next[cardKey];
                 return next;
             });
         }, RETURN_RESET_DELAY);
     }, [RETURN_RESET_DELAY]);
 
     React.useEffect(() => {
-        handRef.current = hand;
+        handKeysRef.current = handKeys;
         const pending = pendingPlayRef.current;
-        if (pending && !hand.some(card => card.id === pending.cardId)) {
+        if (pending && !handKeys.includes(pending.cardKey)) {
             // 卡牌成功使用（从手牌移除），触发飞出动画
             const { card, offset, originalIndex } = pending;
 
@@ -256,16 +280,16 @@ export const HandArea = ({
             }
             clearPendingPlay();
         }
-    }, [clearPendingPlay, hand]);
+    }, [clearPendingPlay, handKeys]);
 
     React.useEffect(() => {
-        const currentIds = new Set(hand.map(card => card.id));
-        dragValueMapRef.current.forEach((_value, cardId) => {
-            if (!currentIds.has(cardId)) {
-                dragValueMapRef.current.delete(cardId);
+        const currentKeys = new Set(handKeys);
+        dragValueMapRef.current.forEach((_value, cardKey) => {
+            if (!currentKeys.has(cardKey)) {
+                dragValueMapRef.current.delete(cardKey);
             }
         });
-    }, [hand]);
+    }, [handKeys]);
 
     // 监听引擎通知：处理卡牌回弹（错误显示由全局 EngineNotificationListener 处理）
     React.useEffect(() => {
@@ -276,11 +300,11 @@ export const HandArea = ({
             if (!detail?.error) return;
 
             // 卡牌仍在手牌中则触发回弹动画
-            if (!handRef.current.some(card => card.id === pending.cardId)) {
+            if (!handKeysRef.current.includes(pending.cardKey)) {
                 clearPendingPlay();
                 return;
             }
-            triggerReturn(pending.cardId, pending.offset, pending.originalIndex);
+            triggerReturn(pending.cardKey, pending.offset, pending.originalIndex);
             clearPendingPlay();
         };
 
@@ -289,91 +313,91 @@ export const HandArea = ({
     }, [clearPendingPlay, triggerReturn]);
 
     React.useEffect(() => {
-        const currentIds = hand.map(c => c.id);
-        const prevIds = prevHandIdsRef.current;
-        const newIds = currentIds.filter(id => !prevIds.includes(id));
-        const removedIds = prevIds.filter(id => !currentIds.includes(id));
-        const hasDiff = newIds.length > 0 || removedIds.length > 0;
+        const currentKeys = handKeys;
+        const prevKeys = prevHandKeysRef.current;
+        const newKeys = currentKeys.filter(key => !prevKeys.includes(key));
+        const removedKeys = prevKeys.filter(key => !currentKeys.includes(key));
+        const hasDiff = newKeys.length > 0 || removedKeys.length > 0;
 
         if (!hasDiff) {
-            prevHandIdsRef.current = currentIds;
+            prevHandKeysRef.current = currentKeys;
             return;
         }
 
         clearAnimationTimers();
-        setDealingCardId(null);
+        setDealingCardKey(null);
 
-        if (removedIds.length > 0) {
-            setVisibleCardIds(prev => {
+        if (removedKeys.length > 0) {
+            setVisibleCardKeys(prev => {
                 const next = new Set(prev);
-                removedIds.forEach(id => next.delete(id));
+                removedKeys.forEach(key => next.delete(key));
                 return next;
             });
-            setFlippedCardIds(prev => {
+            setFlippedCardKeys(prev => {
                 const next = new Set(prev);
-                removedIds.forEach(id => next.delete(id));
+                removedKeys.forEach(key => next.delete(key));
                 return next;
             });
         }
 
-        if (newIds.length > 0) {
-            const isUndoCard = (id: string) => id === undoCardId;
-            const undoIds = newIds.filter(isUndoCard);
-            const normalIds = newIds.filter(id => !isUndoCard(id));
+        if (newKeys.length > 0) {
+            const isUndoCard = (key: string) => handKeyToCardId.get(key) === undoCardId;
+            const undoKeys = newKeys.filter(isUndoCard);
+            const normalKeys = newKeys.filter(key => !isUndoCard(key));
 
             setCardSourceMap(prev => {
                 const next = new Map(prev);
-                newIds.forEach(id => {
-                    next.set(id, isUndoCard(id) ? 'discard' : 'deck');
+                newKeys.forEach(key => {
+                    next.set(key, isUndoCard(key) ? 'discard' : 'deck');
                 });
                 return next;
             });
 
-            if (undoIds.length > 0) {
-                setVisibleCardIds(prev => new Set([...prev, ...undoIds]));
-                setFlippedCardIds(prev => new Set([...prev, ...undoIds]));
-                undoIds.forEach(id => {
-                    setDealingCardId(id);
+            if (undoKeys.length > 0) {
+                setVisibleCardKeys(prev => new Set([...prev, ...undoKeys]));
+                setFlippedCardKeys(prev => new Set([...prev, ...undoKeys]));
+                undoKeys.forEach(key => {
+                    setDealingCardKey(key);
                     const clearTimerId = window.setTimeout(() => {
-                        setDealingCardId(prev => prev === id ? null : prev);
+                        setDealingCardKey(prev => prev === key ? null : prev);
                     }, DEAL_INTERVAL - 50);
                     dealTimersRef.current.push(clearTimerId);
                 });
             }
 
-            normalIds.forEach((id, i) => {
+            normalKeys.forEach((key, i) => {
                 const dealTimerId = window.setTimeout(() => {
-                    setDealingCardId(id);
-                    setVisibleCardIds(prev => new Set([...prev, id]));
+                    setDealingCardKey(key);
+                    setVisibleCardKeys(prev => new Set([...prev, key]));
                     const clearTimerId = window.setTimeout(() => {
-                        setDealingCardId(prev => prev === id ? null : prev);
+                        setDealingCardKey(prev => prev === key ? null : prev);
                     }, DEAL_INTERVAL - 50);
                     dealTimersRef.current.push(clearTimerId);
                 }, i * DEAL_INTERVAL);
                 dealTimersRef.current.push(dealTimerId);
             });
 
-            const dealEndTime = normalIds.length * DEAL_INTERVAL;
-            const sortedNewIds = [...normalIds].sort((a, b) => {
-                const idxA = currentIds.indexOf(a);
-                const idxB = currentIds.indexOf(b);
+            const dealEndTime = normalKeys.length * DEAL_INTERVAL;
+            const sortedNewKeys = [...normalKeys].sort((a, b) => {
+                const idxA = currentKeys.indexOf(a);
+                const idxB = currentKeys.indexOf(b);
                 return idxA - idxB;
             });
-            sortedNewIds.forEach((id, i) => {
+            sortedNewKeys.forEach((key, i) => {
                 const flipTimerId = window.setTimeout(() => {
-                    setFlippedCardIds(prev => new Set([...prev, id]));
+                    setFlippedCardKeys(prev => new Set([...prev, key]));
                 }, dealEndTime + i * FLIP_INTERVAL);
                 flipTimersRef.current.push(flipTimerId);
             });
         }
 
-        prevHandIdsRef.current = currentIds;
-    }, [hand, clearAnimationTimers, undoCardId]);
+        prevHandKeysRef.current = currentKeys;
+    }, [clearAnimationTimers, handKeyToCardId, handKeys, undoCardId]);
 
     const isOverDiscardPile = React.useCallback(() => {
-        if (!discardPileRef?.current || !draggingCardId) return false;
+        if (!discardPileRef?.current || !draggingCardKey) return false;
         const discardRect = discardPileRef.current.getBoundingClientRect();
-        const draggedEl = document.querySelector(`[data-card-id="${draggingCardId}"]`) as HTMLElement | null;
+        const draggedEl = document.querySelector(`[data-card-key="${draggingCardKey}"]`) as HTMLElement | null;
         if (!draggedEl) return false;
         const cardRect = draggedEl.getBoundingClientRect();
         const cardCenterX = cardRect.left + cardRect.width / 2;
@@ -383,22 +407,23 @@ export const HandArea = ({
             cardCenterX <= discardRect.right + padding &&
             cardCenterY >= discardRect.top - padding &&
             cardCenterY <= discardRect.bottom + padding;
-    }, [discardPileRef, draggingCardId]);
+    }, [discardPileRef, draggingCardKey]);
 
-    const handleDragEnd = React.useCallback((card: AbilityCard, source: 'drag' | 'window' = 'drag') => {
+    const handleDragEnd = React.useCallback((entry: HandCardEntry, source: 'drag' | 'window' = 'drag') => {
         if (!canInteract) return;
         if (dragEndHandledRef.current && source === 'drag') return;
         dragEndHandledRef.current = true;
         const { x, y } = dragOffsetRef.current;
         const overDiscard = isOverDiscardPile();
-        const currentIndex = hand.findIndex(c => c.id === card.id);
+        const currentIndex = handEntries.findIndex(item => item.key === entry.key);
         const offset = { x, y };
+        const card = entry.card;
 
         let actionTaken = false;
         // 向上拖拽打出：直接调用引擎，由引擎返回错误
         if (y < DRAG_PLAY_THRESHOLD) {
             if (onPlayCard) {
-                pendingPlayRef.current = { cardId: card.id, card, offset, originalIndex: currentIndex };
+                pendingPlayRef.current = { cardId: card.id, cardKey: entry.key, card, offset, originalIndex: currentIndex };
                 if (pendingPlayTimeoutRef.current) {
                     window.clearTimeout(pendingPlayTimeoutRef.current);
                 }
@@ -420,10 +445,10 @@ export const HandArea = ({
         }
 
         if (!actionTaken) {
-            triggerReturn(card.id, offset, currentIndex);
+            triggerReturn(entry.key, offset, currentIndex);
         }
-        resetDragValues(card.id, source);
-        setDraggingCardId(null);
+        resetDragValues(entry.key, source);
+        setDraggingCardKey(null);
         draggingCardRef.current = null;
         dragOffsetRef.current = { x: 0, y: 0 };
         onPlayHintChange?.(false);
@@ -447,7 +472,7 @@ export const HandArea = ({
         triggerReturn,
     ]);
 
-    const handleDrag = (_cardId: string, info: { offset: { x: number; y: number } }) => {
+    const handleDrag = (_cardKey: string, info: { offset: { x: number; y: number } }) => {
         dragOffsetRef.current = info.offset;
         const canSellInPhase = currentPhase === 'main1' || currentPhase === 'main2' || currentPhase === 'discard';
         const nextSellHint = canSellInPhase && isOverDiscardPile();
@@ -497,46 +522,48 @@ export const HandArea = ({
             />
             <div className="relative w-[95vw] h-full flex justify-center items-end">
                 <AnimatePresence>
-                    {hand.map((card, i) => {
-                        const isVisible = visibleCardIds.has(card.id);
+                    {handEntries.map((entry) => {
+                        const { card, key: cardKey, index: i } = entry;
+                        const isVisible = visibleCardKeys.has(cardKey);
                         if (!isVisible) return null;
 
                         const offset = i - centerIndex;
                         const rotation = offset * 5;
                         const yOffset = Math.abs(offset) * 0.8;
-                        const isDragging = draggingCardId === card.id;
-                        const isDealing = dealingCardId === card.id;
-                        const isFlipped = flippedCardIds.has(card.id);
-                        const returningEntry = returningCardMap[card.id];
+                        const isDragging = draggingCardKey === cardKey;
+                        const isDealing = dealingCardKey === cardKey;
+                        const isFlipped = flippedCardKeys.has(cardKey);
+                        const returningEntry = returningCardMap[cardKey];
                         const zIndex = isDragging ? 500 : 100 + i;
                         const isReturning = !!returningEntry;
-                        const returnVersion = returningVersionMap[card.id] ?? 0;
+                        const returnVersion = returningVersionMap[cardKey] ?? 0;
                         // 弃牌模式下禁用拖拽，改用点击
                         const canDrag = canInteract && isFlipped && !isReturning && !isDiscardMode;
                         const canClickDiscard = isDiscardMode && isFlipped && !isReturning;
                         // 动画期间（dealing/returning）统一禁用 hover
-                        const isHovered = hoveredCardId === card.id && (canDrag || canClickDiscard) && !isDragging && !isReturning && !isDealing;
-                        const dragValues = getDragValues(card.id);
+                        const isHovered = hoveredCardKey === cardKey && (canDrag || canClickDiscard) && !isDragging && !isReturning && !isDealing;
+                        const dragValues = getDragValues(cardKey);
 
                         return (
                             <motion.div
-                                key={`${card.id}-${i}-${returnVersion}`}
+                                key={`${cardKey}-${returnVersion}`}
                                 data-card-id={card.id}
+                                data-card-key={cardKey}
                                 drag={canDrag}
                                 dragElastic={0.1}
                                 dragMomentum={false}
                                 onDragStart={() => {
                                     if (!canDrag) return;
                                     dragEndHandledRef.current = false;
-                                    draggingCardRef.current = card;
+                                    draggingCardRef.current = entry;
                                     dragValues.x.set(0);
                                     dragValues.y.set(0);
-                                    setDraggingCardId(card.id);
+                                    setDraggingCardKey(cardKey);
                                     onSellButtonChange?.(true);
                                     onPlayHintChange?.(true);
                                 }}
-                                onDrag={(_, info) => canDrag && handleDrag(card.id, info)}
-                                onDragEnd={() => canDrag && handleDragEnd(card, 'drag')}
+                                onDrag={(_, info) => canDrag && handleDrag(cardKey, info)}
+                                onDragEnd={() => canDrag && handleDragEnd(entry, 'drag')}
                                 onClick={() => {
                                     // 弃牌模式下点击卡牌直接弃置
                                     if (canClickDiscard && onDiscardCard) {
@@ -545,11 +572,11 @@ export const HandArea = ({
                                 }}
                                 onHoverStart={() => {
                                     if ((canDrag || canClickDiscard) && !isDragging && !isReturning) {
-                                        setHoveredCardId(card.id);
+                                        setHoveredCardKey(cardKey);
                                     }
                                 }}
                                 onHoverEnd={() => {
-                                    setHoveredCardId(prev => prev === card.id ? null : prev);
+                                    setHoveredCardKey(prev => prev === cardKey ? null : prev);
                                 }}
                                 className={`
                                     absolute bottom-0 w-[12vw] aspect-[0.61] rounded-[0.8vw]
@@ -568,7 +595,7 @@ export const HandArea = ({
                                     className="relative w-full h-full"
                                     initial={isDealing
                                         ? (() => {
-                                            const source = cardSourceMap.get(card.id) ?? (card.id === undoCardId ? 'discard' : 'deck');
+                                            const source = cardSourceMap.get(cardKey) ?? (card.id === undoCardId ? 'discard' : 'deck');
                                             const pos = source === 'discard' ? getDiscardPileOffset() : getDeckOffset();
                                             const baseOffsetX = offset * window.innerWidth * 0.07;
                                             const baseOffsetY = yOffset * window.innerWidth * 0.01;

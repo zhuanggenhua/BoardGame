@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { X, MessageSquareWarning, Send, Loader2, AlertTriangle, Lightbulb, HelpCircle, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -28,20 +29,21 @@ const FeedbackSeverity = {
 
 type FeedbackSeverity = typeof FeedbackSeverity[keyof typeof FeedbackSeverity];
 
-const FEEDBACK_TYPE_LABELS: Record<FeedbackType, string> = {
-    [FeedbackType.BUG]: 'Bug',
-    [FeedbackType.SUGGESTION]: '建议',
-    [FeedbackType.OTHER]: '其他',
+const FEEDBACK_TYPE_LABEL_KEYS: Record<FeedbackType, string> = {
+    [FeedbackType.BUG]: 'hud.feedback.type.bug',
+    [FeedbackType.SUGGESTION]: 'hud.feedback.type.suggestion',
+    [FeedbackType.OTHER]: 'hud.feedback.type.other',
 };
 
-const FEEDBACK_SEVERITY_LABELS: Record<FeedbackSeverity, string> = {
-    [FeedbackSeverity.LOW]: '低',
-    [FeedbackSeverity.MEDIUM]: '中',
-    [FeedbackSeverity.HIGH]: '高',
-    [FeedbackSeverity.CRITICAL]: '严重',
+const FEEDBACK_SEVERITY_LABEL_KEYS: Record<FeedbackSeverity, string> = {
+    [FeedbackSeverity.LOW]: 'hud.feedback.severity.low',
+    [FeedbackSeverity.MEDIUM]: 'hud.feedback.severity.medium',
+    [FeedbackSeverity.HIGH]: 'hud.feedback.severity.high',
+    [FeedbackSeverity.CRITICAL]: 'hud.feedback.severity.critical',
 };
 
 export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
+    const { t } = useTranslation(['game', 'common']);
     const { token } = useAuth();
     const { success, error } = useToast();
     const location = useLocation();
@@ -93,7 +95,7 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
         e.preventDefault();
         if (!content.trim() && !pastedImage) return;
         if (!token) {
-            error('请先登录再提交反馈');
+            error(t('hud.feedback.errors.loginRequired'));
             return;
         }
 
@@ -120,20 +122,20 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
                 })
             });
 
-            if (!res.ok) throw new Error('Failed to submit feedback');
+            if (!res.ok) throw new Error(t('hud.feedback.errors.submitFailed'));
 
-            success('反馈已提交，感谢支持！');
+            success(t('hud.feedback.success'));
             onClose();
         } catch (err) {
             console.error(err);
-            error('提交失败，请稍后再试');
+            error(t('hud.feedback.errors.submitFailed'));
         } finally {
             setSubmitting(false);
         }
     };
 
-    const getTypeIcon = (t: FeedbackType) => {
-        switch (t) {
+    const getTypeIcon = (typeValue: FeedbackType) => {
+        switch (typeValue) {
             case FeedbackType.BUG: return <AlertTriangle size={16} />;
             case FeedbackType.SUGGESTION: return <Lightbulb size={16} />;
             default: return <HelpCircle size={16} />;
@@ -159,8 +161,8 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
                             <MessageSquareWarning size={20} />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-parchment-cream tracking-wide">反馈</h2>
-                            <p className="text-xs text-parchment-cream/70">帮助我们改进体验</p>
+                            <h2 className="text-lg font-bold text-parchment-cream tracking-wide">{t('hud.feedback.title')}</h2>
+                            <p className="text-xs text-parchment-cream/70">{t('hud.feedback.subtitle')}</p>
                         </div>
                     </div>
                     <button
@@ -174,37 +176,37 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 scrollbar-thin">
                     {/* Game Selection */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">关联游戏（可选）</label>
+                        <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">{t('hud.feedback.gameLabel')}</label>
                         <select
                             value={gameName}
                             onChange={(e) => setGameName(e.target.value)}
                             className="w-full bg-parchment-card-bg border border-parchment-brown/20 text-parchment-base-text text-sm rounded-lg focus:ring-parchment-gold focus:border-parchment-gold block p-2.5 transition-colors outline-none"
                         >
-                            <option value="">-- 通用反馈 --</option>
-                            <option value="dicethrone">骰子王座</option>
-                            <option value="tictactoe">井字棋</option>
+                            <option value="">{t('hud.feedback.gameAll')}</option>
+                            <option value="dicethrone">{t('common:game_names.dicethrone')}</option>
+                            <option value="tictactoe">{t('common:game_names.tictactoe')}</option>
                         </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         {/* Type Selection */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">类型</label>
+                            <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">{t('hud.feedback.typeLabel')}</label>
                             <div className="flex bg-parchment-card-bg p-1 rounded-lg border border-parchment-brown/20">
-                                {Object.values(FeedbackType).map((t) => (
+                                {Object.values(FeedbackType).map((typeValue) => (
                                     <button
-                                        key={t}
+                                        key={typeValue}
                                         type="button"
-                                        onClick={() => setType(t)}
+                                        onClick={() => setType(typeValue)}
                                         className={cn(
                                             "flex-1 flex items-center justify-center py-2 rounded-md text-xs font-bold transition-all gap-1.5",
-                                            type === t
+                                            type === typeValue
                                                 ? "bg-parchment-brown text-parchment-cream shadow-sm"
                                                 : "text-parchment-light-text hover:text-parchment-base-text hover:bg-parchment-brown/10"
                                         )}
                                     >
-                                        {getTypeIcon(t)}
-                                        <span>{FEEDBACK_TYPE_LABELS[t]}</span>
+                                        {getTypeIcon(typeValue)}
+                                        <span>{t(FEEDBACK_TYPE_LABEL_KEYS[typeValue])}</span>
                                     </button>
                                 ))}
                             </div>
@@ -212,14 +214,14 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
 
                         {/* Severity Selection */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">优先级</label>
+                            <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">{t('hud.feedback.severityLabel')}</label>
                             <select
                                 value={severity}
                                 onChange={(e) => setSeverity(e.target.value as FeedbackSeverity)}
                                 className="w-full bg-parchment-card-bg border border-parchment-brown/20 text-parchment-base-text text-sm rounded-lg focus:ring-parchment-gold focus:border-parchment-gold block p-2.5 transition-colors outline-none"
                             >
-                                {Object.values(FeedbackSeverity).map((s) => (
-                                    <option key={s} value={s}>{FEEDBACK_SEVERITY_LABELS[s]}</option>
+                                {Object.values(FeedbackSeverity).map((severityValue) => (
+                                    <option key={severityValue} value={severityValue}>{t(FEEDBACK_SEVERITY_LABEL_KEYS[severityValue])}</option>
                                 ))}
                             </select>
                         </div>
@@ -227,7 +229,7 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
 
                     {/* Content */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">描述</label>
+                        <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">{t('hud.feedback.contentLabel')}</label>
                         <div className="relative">
                             <textarea
                                 value={content}
@@ -235,14 +237,14 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
                                 onPaste={handlePaste}
                                 rows={6}
                                 className="block p-3 w-full text-sm text-parchment-base-text bg-parchment-card-bg rounded-lg border border-parchment-brown/20 focus:ring-parchment-gold focus:border-parchment-gold resize-none outline-none placeholder:text-parchment-light-text/50"
-                                placeholder={`请描述问题或建议...\n支持粘贴截图 (Ctrl+V)`}
+                                placeholder={t('hud.feedback.contentPlaceholder')}
                                 required={!pastedImage}
                             ></textarea>
                             {/* Paste Hint */}
                             {!pastedImage && !content && (
                                 <div className="absolute bottom-3 right-3 text-[10px] text-parchment-light-text/60 pointer-events-none flex items-center gap-1">
                                     <ImageIcon size={12} />
-                                    <span>支持截图粘贴</span>
+                                    <span>{t('hud.feedback.pasteHint')}</span>
                                 </div>
                             )}
                         </div>
@@ -257,17 +259,17 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="relative group rounded-lg overflow-hidden border border-parchment-brown/20 bg-parchment-card-bg"
                             >
-                                <img src={pastedImage} alt="Pasted" className="w-full h-auto max-h-48 object-contain bg-black/5" />
+                                <img src={pastedImage} alt={t('hud.feedback.imageAlt')} className="w-full h-auto max-h-48 object-contain bg-black/5" />
                                 <button
                                     type="button"
                                     onClick={clearImage}
                                     className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
-                                    title="删除图片"
+                                    title={t('hud.feedback.deleteImage')}
                                 >
                                     <Trash2 size={14} />
                                 </button>
                                 <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 text-white text-[10px] rounded backdrop-blur-sm">
-                                    已添加截图
+                                    {t('hud.feedback.imageAdded')}
                                 </div>
                             </motion.div>
                         )}
@@ -275,13 +277,13 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
 
                     {/* Contact Info */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">联系方式（可选）</label>
+                        <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">{t('hud.feedback.contactLabel')}</label>
                         <input
                             type="text"
                             value={contactInfo}
                             onChange={(e) => setContactInfo(e.target.value)}
                             className="bg-parchment-card-bg border border-parchment-brown/20 text-parchment-base-text text-sm rounded-lg focus:ring-parchment-gold focus:border-parchment-gold block w-full p-2.5 outline-none placeholder:text-parchment-light-text/50"
-                            placeholder="邮箱或 QQ（便于跟进）"
+                            placeholder={t('hud.feedback.contactPlaceholder')}
                         />
                     </div>
 
@@ -292,7 +294,7 @@ export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
                             className="flex items-center gap-2 px-6 py-2 bg-parchment-brown hover:bg-parchment-brown/90 text-parchment-cream rounded-lg font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                         >
                             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                            提交反馈
+                            {t('hud.feedback.submit')}
                         </button>
                     </div>
                 </form>

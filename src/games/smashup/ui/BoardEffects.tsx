@@ -10,7 +10,8 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PowerChangeEffect, ActionShowEffect, BaseScoredEffect } from './useGameEvents';
-import { getCardDef } from '../data/cards';
+import { useTranslation } from 'react-i18next';
+import { getCardDef, resolveCardName, resolveCardText } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 
 // ============================================================================
@@ -51,7 +52,10 @@ const ActionCardShowOverlay: React.FC<{
   effect: ActionShowEffect;
   onComplete: () => void;
 }> = ({ effect, onComplete }) => {
+  const { t, i18n } = useTranslation('game-smashup');
   const def = getCardDef(effect.defId);
+  const resolvedName = resolveCardName(def, i18n.language) || effect.defId;
+  const resolvedText = resolveCardText(def, i18n.language);
 
   useEffect(() => {
     const timer = setTimeout(onComplete, 800);
@@ -74,24 +78,30 @@ const ActionCardShowOverlay: React.FC<{
         className="relative w-[18vw] aspect-[0.714] bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden"
         initial={{ scale: 0.3, y: 200, rotate: -10 }}
         animate={{ scale: 1, y: 0, rotate: 2 }}
-        exit={{ scale: 0.2, y: -100, x: 300, rotate: 15, opacity: 0 }}
+        exit={{
+          scale: 0.2,
+          y: -100,
+          x: 300,
+          rotate: 15,
+          opacity: 0,
+          transition: { duration: 0.3, ease: 'easeIn' },
+        }}
         transition={{
           type: 'spring', stiffness: 400, damping: 25,
-          exit: { duration: 0.3, ease: 'easeIn' },
         }}
       >
         <CardPreview
           previewRef={def?.previewRef}
           className="w-full h-full object-cover"
-          title={def?.name}
+          title={resolvedName}
         />
         {!def?.previewRef && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-[#f3f0e8]">
             <div className="text-[1.2vw] font-black uppercase text-slate-800 mb-2">
-              {def?.name || effect.defId}
+              {resolvedName}
             </div>
             <div className="text-[0.7vw] text-slate-600 text-center font-mono">
-              {(def as any)?.effectText || ''}
+              {resolvedText}
             </div>
           </div>
         )}
@@ -104,7 +114,7 @@ const ActionCardShowOverlay: React.FC<{
           transition={{ delay: 0.15, type: 'spring', stiffness: 500 }}
           style={{ transformOrigin: 'center' }}
         >
-          PLAYED!
+          {t('ui.played')}
         </motion.div>
       </motion.div>
     </motion.div>
@@ -121,6 +131,7 @@ const VpFlyEffect: React.FC<{
   rank: number;
   onComplete: () => void;
 }> = ({ vp, playerId, rank, onComplete }) => {
+  const { t } = useTranslation('game-smashup');
   useEffect(() => {
     const timer = setTimeout(onComplete, 1200);
     return () => clearTimeout(timer);
@@ -140,8 +151,8 @@ const VpFlyEffect: React.FC<{
       transition={{ duration: 1, ease: 'easeOut' }}
     >
       <div className="flex items-center gap-2 bg-yellow-400/90 text-slate-900 px-3 py-1.5 rounded-full shadow-xl border-2 border-yellow-600">
-        <span className="text-[1.5vw] font-black">+{vp} VP</span>
-        <span className="text-[0.8vw] font-bold opacity-70">P{playerId}</span>
+        <span className="text-[1.5vw] font-black">{t('ui.vp_award', { vp })}</span>
+        <span className="text-[0.8vw] font-bold opacity-70">{t('ui.player_short', { id: playerId })}</span>
       </div>
     </motion.div>
   );

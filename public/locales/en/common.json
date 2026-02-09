@@ -1,7 +1,8 @@
 {
   "button": {
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "close": "Close"
   },
   "category": {
     "all": "All Games",
@@ -41,11 +42,30 @@
     "restarting": "Both confirmed, restarting...",
     "backToLobby": "Back to Lobby"
   },
+  "endgame": {
+    "draw": "Draw",
+    "drawSubtitle": "A hard-fought tie!",
+    "victory": "Victory",
+    "victorySubtitle": "Congratulations, you won!",
+    "defeat": "Defeat",
+    "defeatSubtitle": "Better luck next time!",
+    "gameOver": "Game Over"
+  },
   "accept": "Accept",
   "reject": "Reject",
   "back": "Back",
   "loading": "Loading",
   "unknownUser": "Unknown User",
+  "notFound": {
+    "seoTitle": "404 - Page Not Found",
+    "seoDescription": "The page you are looking for does not exist.",
+    "headline": "Lost off the edge of the map",
+    "headlineSub": "Lost off the edge of the map",
+    "description": "The hex you are looking for has been removed or never existed.",
+    "descriptionSub": "The hex you are looking for has been removed or never existed.",
+    "backHome": "Return Home",
+    "footer": "BordGame System"
+  },
   "game_names": {
     "tictactoe": "Tic-Tac-Toe",
     "dicethrone": "Dice Throne",

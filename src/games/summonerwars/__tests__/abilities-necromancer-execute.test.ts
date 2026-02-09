@@ -328,6 +328,59 @@ describe('吸取生命 (life_drain) execute 流程', () => {
     expect((strengthEvents[0].payload as any).multiplier).toBe(2);
   });
 
+  it('DECLARE_ATTACK 携带 beforeAttack 时触发牺牲并翻倍战力', () => {
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-drainer',
+      card: makeLifeDrainer('test-drainer'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 4 }, {
+      cardId: 'test-victim',
+      card: makeCultist('test-victim'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-enemy',
+      card: makeEnemy('test-enemy'),
+      owner: '1',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+    state.players['0'].attackCount = 0;
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 3 },
+      beforeAttack: {
+        abilityId: 'life_drain',
+        targetUnitId: 'test-victim',
+      },
+    });
+
+    const destroyEvents = events.filter(
+      e => e.type === SW_EVENTS.UNIT_DESTROYED && (e.payload as any).cardId === 'test-victim'
+    );
+    expect(destroyEvents.length).toBe(1);
+
+    const strengthEvents = events.filter(
+      e => e.type === SW_EVENTS.STRENGTH_MODIFIED && (e.payload as any).sourceAbilityId === 'life_drain'
+    );
+    expect(strengthEvents.length).toBe(1);
+    expect((strengthEvents[0].payload as any).multiplier).toBe(2);
+
+    const attackedEvent = events.find(e => e.type === SW_EVENTS.UNIT_ATTACKED);
+    expect(attackedEvent).toBeDefined();
+    expect((attackedEvent!.payload as any).diceCount).toBe(4);
+
+    expect(newState.board[4][4].unit).toBeUndefined();
+  });
+
   it('目标超过2格时验证拒绝', () => {
     const state = createNecroState();
     clearArea(state, [1, 2, 3, 4, 5], [1, 2, 3, 4]);

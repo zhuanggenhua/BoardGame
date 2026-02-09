@@ -73,7 +73,7 @@
       "purifyUse": "使用净化移除击倒。",
       "innerPeace": "你获得了“静心！”。打出它获得 2 气。",
       "playSix": "你获得了“玩得六啊！”。在进攻掷骰阶段使用它将一颗骰子改为 6。",
-      "meditation2": "你获得了“冒想 II”。将它拖到“冒想”技能槽上完成升级。",
+      "meditation2": "你获得了“清修 II”。将它拖到“清修”技能槽上完成升级。",
       "defenseRoll": "进入防御掷骰阶段后，防御方可掷 1 次骰并选择防御技能。",
       "defenseEnd": "防御完成后由防御方点击“结束防御”，结算伤害并进入下一阶段。",
       "finish": "以上就是双人模式基础流程。尝试发动技能、出牌并击败对手吧！"
@@ -98,6 +98,18 @@
       "name": "眩晕",
       "description": [
         "受影响的玩家跳过其下一个主要的掷骰阶段和主要的行动阶段。在该阶段结束时移除此标记。"
+      ]
+    },
+    "concussion": {
+      "name": "脑震荡",
+      "description": [
+        "在你的收入阶段开始时，跳过该阶段并移除此标记。"
+      ]
+    },
+    "daze": {
+      "name": "恍惚",
+      "description": [
+        "在你的攻击结算结束后，获得一次额外攻击并移除此标记。"
       ]
     },
     "poison": {
@@ -158,6 +170,8 @@
   "purify": {
     "title": "使用净化",
     "desc": "选择要移除的负面状态效果",
+    "selectHint": "请先选择要移除的负面状态。",
+    "noDebuffs": "当前没有可移除的负面状态。",
     "cancel": "取消",
     "confirm": "确认"
   },
@@ -201,7 +215,8 @@
     "pressStart": "开始游戏",
     "ready": "准备",
     "readyWaiting": "等待其他玩家...",
-    "readyProgress": "准备进度"
+    "readyProgress": "准备进度",
+    "you": "你"
   },
   "imageAlt": {
     "deck": "牌堆",
@@ -363,6 +378,7 @@
   },
   "choices": {
     "title": "技能结算选择",
+    "option": "选项 {{index}}",
     "evasiveOrPurify": "请选择获得的状态效果",
     "evasiveOrPurifyToken": "请选择获得的道具",
     "lotusPalmUnblockable": {
@@ -429,7 +445,10 @@
     },
     "fist-technique-3": {
       "name": "拳术 III",
-      "description": "最高级拳法攻击，4个相同骰子可施加倒地"
+      "description": "最高级拳法攻击，4个相同骰子可施加倒地",
+      "effects": {
+        "damage4": "造成4点伤害"
+      }
     },
     "fist-technique-4": {
       "effects": {
@@ -1224,6 +1243,20 @@
     "card-transfer-status": {
       "name": "乾坤大挪移！",
       "description": "将1名玩家身上的1个状态效果转移至另1名玩家。"
+    },
+    "fist-technique": {
+      "name": "顿悟！",
+      "description": "投掷1骰：如果投出莲花，获得2气、闪避和净化；否则抽取1张牌。"
+    },
+    "actions": {
+      "play": "打出",
+      "upgrade": "升级",
+      "sell": "售卖",
+      "discard": "弃牌"
+    },
+    "hints": {
+      "releaseToPlay": "松开打出",
+      "releaseToSell": "松开售卖"
     },
     "card-flame-barrier": {
       "name": "火焰护盾",

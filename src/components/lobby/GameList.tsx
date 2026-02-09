@@ -68,10 +68,10 @@ export const GameList = ({ games, onGameClick, mostPopularGameId }: GameListProp
                     <div className="flex flex-col flex-1 justify-between">
                         <div>
                             <h3 className="text-sm font-serif font-bold text-parchment-base-text leading-tight mb-0.5">
-                                {t(game.titleKey, { defaultValue: game.titleKey })}
+                                {t(game.titleKey)}
                             </h3>
                             <p className="text-[11px] text-parchment-light-text leading-tight line-clamp-2 min-h-[2.1rem]">
-                                {t(game.descriptionKey, { defaultValue: game.descriptionKey })}
+                                {t(game.descriptionKey)}
                             </p>
                         </div>
 
@@ -99,7 +99,7 @@ export const GameList = ({ games, onGameClick, mostPopularGameId }: GameListProp
                                         const sep = i18n.language.startsWith('en') ? ' ' : '';
                                         return `${min}-${max}${sep}${unit}`;
                                     })()
-                                    : t(game.playersKey, { defaultValue: game.playersKey })}
+                                    : t(game.playersKey)}
                             </span>
                         </div>
                     </div>

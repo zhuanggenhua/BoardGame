@@ -4,14 +4,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ADMIN_API_URL } from '../../config/server';
 import { useToast } from '../../contexts/ToastContext';
 import {
-    ArrowLeft, Mail, Calendar, Hash, Ban, CheckCircle, Clock,
+    ArrowLeft, Calendar, Ban, CheckCircle, Clock,
     Trophy, Gamepad2, Swords, MessageSquare, Trash2,
     ShieldAlert, Activity
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import ImageLightbox from '../../components/common/ImageLightbox';
 import DataTable, { type Column } from './components/DataTable';
-import { motion } from 'framer-motion';
 
 // --- Types ---
 
@@ -66,7 +65,6 @@ export default function UserDetailPage() {
     const [recentMatches, setRecentMatches] = useState<matchID[]>([]);
     const [loading, setLoading] = useState(true);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
-    const [actionLoading, setActionLoading] = useState(false);
 
     // Fetch Data
     const fetchUser = async () => {
@@ -132,14 +130,12 @@ export default function UserDetailPage() {
         if (!user) return;
         if (!confirm(`确定要${user.banned ? '解封' : '封禁'}该用户吗？`)) return;
 
-        setActionLoading(true);
         try {
             const isBanning = !user.banned;
             const action = isBanning ? 'ban' : 'unban';
             const reason = isBanning ? (prompt('请输入封禁原因') ?? '').trim() : '';
             if (isBanning && !reason) {
                 toastError('封禁原因不能为空');
-                setActionLoading(false);
                 return;
             }
             const res = await fetch(`${ADMIN_API_URL}/users/${user.id}/${action}`, {
@@ -157,8 +153,6 @@ export default function UserDetailPage() {
         } catch (err) {
             console.error(err);
             toastError('操作失败');
-        } finally {
-            setActionLoading(false);
         }
     };
 
@@ -170,7 +164,6 @@ export default function UserDetailPage() {
         }
         if (!confirm('确定要删除该用户吗？删除后无法恢复。')) return;
 
-        setActionLoading(true);
         try {
             const res = await fetch(`${ADMIN_API_URL}/users/${user.id}`, {
                 method: 'DELETE',
@@ -181,7 +174,6 @@ export default function UserDetailPage() {
             navigate('/admin/users');
         } catch (err) {
             toastError('删除失败');
-            setActionLoading(false);
         }
     };
 

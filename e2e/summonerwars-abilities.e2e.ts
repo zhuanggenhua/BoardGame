@@ -8,11 +8,16 @@
  * - 读心传念（攻击后选择友方士兵额外攻击）
  * - 感染（击杀后从弃牌堆选择疫病体）
  * - 抓附跟随（友方移动后选择跟随位置）
+ * - 吸取生命（攻击前牺牲友方单位）
+ * - 圣光箭（攻击前弃牌加成）
+ * - 治疗（攻击前弃牌并选择友方治疗目标）
  * 
  * 注意：攻击涉及骰子随机，部分测试使用软断言
  */
 
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
+import { createDeckByFactionId } from '../src/games/summonerwars/config/factions';
+import { BOARD_COLS, BOARD_ROWS, HAND_SIZE } from '../src/games/summonerwars/domain/helpers';
 
 // ============================================================================
 // 通用辅助函数（与 summonerwars.e2e.ts 保持一致）
@@ -50,6 +55,28 @@ const waitForMatchAvailable = async (page: Page, matchId: string, timeoutMs = 10
     await page.waitForTimeout(500);
   }
   return false;
+};
+
+const matchOwnerGuestIds = new Map<string, string>();
+
+const createGuestId = (prefix: string) => (
+  `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+);
+
+const seedMatchCredentials = async (
+  page: Page,
+  payload: { matchId: string; playerId: string; credentials: string; guestId: string; playerName: string }
+) => {
+  await page.addInitScript(({ matchId, playerId, credentials, guestId, playerName }) => {
+    localStorage.setItem('guest_id', guestId);
+    try { sessionStorage.setItem('guest_id', guestId); } catch { /* ignore */ }
+    sessionStorage.setItem('__sw_storage_reset', '1');
+    localStorage.setItem(
+      `match_creds_${matchId}`,
+      JSON.stringify({ matchID: matchId, gameName: 'summonerwars', playerID: playerId, credentials, playerName })
+    );
+    document.cookie = `bg_guest_id=${encodeURIComponent(guestId)}; path=/; SameSite=Lax`;
+  }, payload);
 };
 
 const dismissViteOverlay = async (page: Page) => {
@@ -113,6 +140,12 @@ const disableAudio = async (context: BrowserContext | Page) => {
   });
 };
 
+const enableE2EDebug = async (context: BrowserContext | Page) => {
+  await context.addInitScript(() => {
+    (window as Window & { __BG_E2E_DEBUG__?: boolean }).__BG_E2E_DEBUG__ = true;
+  });
+};
+
 const blockAudioRequests = async (context: BrowserContext) => {
   await context.route(/\.(mp3|ogg|webm|wav)(\?.*)?$/i, route => route.abort());
 };
@@ -169,35 +202,40 @@ const ensureGameServerAvailable = async (page: Page) => {
   return false;
 };
 
+const joinSummonerWarsMatch = async (
+  page: Page,
+  matchId: string,
+  playerId: string,
+  guestId: string,
+  playerName: string
+) => {
+  const gameServerBaseURL = getGameServerBaseURL();
+  const response = await page.request.post(
+    `${gameServerBaseURL}/games/summonerwars/${matchId}/join`,
+    {
+      data: {
+        playerID: playerId,
+        playerName,
+        data: { guestId },
+      },
+    }
+  );
+  if (!response.ok()) return null;
+  const data = await response.json().catch(() => null) as { playerCredentials?: string } | null;
+  return data?.playerCredentials ?? null;
+};
+
 const createSummonerWarsRoom = async (page: Page) => {
-  attachPageDiagnostics(page);
-  await page.goto('/?game=summonerwars', { waitUntil: 'domcontentloaded' });
-  await dismissViteOverlay(page);
-  await dismissLobbyConfirmIfNeeded(page);
-
-  const { modalRoot } = await ensureSummonerWarsModalOpen(page);
-  const createButton = modalRoot.locator('button:visible', { hasText: /Create Room|创建房间/i }).first();
-  const lobbyTab = modalRoot.getByRole('button', { name: /Lobby|在线大厅/i });
-  if (await lobbyTab.isVisible().catch(() => false)) await lobbyTab.click();
-
-  const returnButton = modalRoot.locator('button:visible', { hasText: /Return to match|返回当前对局/i }).first();
-  if (await returnButton.isVisible().catch(() => false)) {
-    await returnButton.click();
-    await page.waitForURL(/\/play\/summonerwars\/match\//, { timeout: 10000 });
-    return new URL(page.url()).pathname.split('/').pop() ?? null;
-  }
-
-  await expect(createButton).toBeVisible({ timeout: 20000 });
-  await createButton.click();
-  await expect(page.getByRole('heading', { name: /Create Room|创建房间/i })).toBeVisible({ timeout: 10000 });
-  const confirmButton = page.getByRole('button', { name: /Confirm|确认/i });
-  await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-  await confirmButton.click();
-  try {
-    await page.waitForURL(/\/play\/summonerwars\/match\//, { timeout: 8000 });
-  } catch { return null; }
-  const matchId = new URL(page.url()).pathname.split('/').pop() ?? null;
+  const gameServerBaseURL = getGameServerBaseURL();
+  const ownerGuestId = createGuestId('host');
+  const response = await page.request.post(`${gameServerBaseURL}/games/summonerwars/create`, {
+    data: { numPlayers: 2, setupData: { guestId: ownerGuestId } },
+  });
+  if (!response.ok()) return null;
+  const data = await response.json().catch(() => null) as { matchID?: string } | null;
+  const matchId = data?.matchID ?? null;
   if (!matchId) return null;
+  matchOwnerGuestIds.set(matchId, ownerGuestId);
   const available = await waitForMatchAvailable(page, matchId, 15000);
   return available ? matchId : null;
 };
@@ -293,6 +331,88 @@ const clickBoardElement = async (page: Page, selector: string) => {
 
 const cloneState = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+const initializeSummonerWarsCore = (coreState: any, factions: Record<string, string>) => {
+  const next = cloneState(coreState);
+  const board = Array.from({ length: BOARD_ROWS }, () => Array.from({ length: BOARD_COLS }, () => ({}))) as any[][];
+  const players = { ...next.players };
+
+  (['0', '1'] as const).forEach((pid) => {
+    const factionId = factions[pid];
+    if (!factionId) return;
+
+    const deckData = createDeckByFactionId(factionId as any);
+    const player = { ...players[pid] };
+    const isBottom = pid === '0';
+    const toArrayCoord = (pos: { row: number; col: number }) => (
+      isBottom
+        ? { row: BOARD_ROWS - 1 - pos.row, col: pos.col }
+        : { row: pos.row, col: BOARD_COLS - 1 - pos.col }
+    );
+
+    const summonerCard = { ...deckData.summoner, id: `${deckData.summoner.id}-${pid}` };
+    player.summonerId = summonerCard.id;
+    const summonerPos = toArrayCoord(deckData.summonerPosition);
+    board[summonerPos.row][summonerPos.col].unit = {
+      cardId: summonerCard.id,
+      card: summonerCard,
+      owner: pid,
+      position: summonerPos,
+      damage: 0,
+      boosts: 0,
+      hasMoved: false,
+      hasAttacked: false,
+    };
+
+    const gateCard = { ...deckData.startingGate, id: `${deckData.startingGate.id}-${pid}` };
+    const gatePos = toArrayCoord(deckData.startingGatePosition);
+    board[gatePos.row][gatePos.col].structure = {
+      cardId: gateCard.id,
+      card: gateCard,
+      owner: pid,
+      position: gatePos,
+      damage: 0,
+    };
+
+    for (const startUnit of deckData.startingUnits) {
+      const unitCard = { ...startUnit.unit, id: `${startUnit.unit.id}-${pid}` };
+      const unitPos = toArrayCoord(startUnit.position);
+      board[unitPos.row][unitPos.col].unit = {
+        cardId: unitCard.id,
+        card: unitCard,
+        owner: pid,
+        position: unitPos,
+        damage: 0,
+        boosts: 0,
+        hasMoved: false,
+        hasAttacked: false,
+      };
+    }
+
+    const deckWithIds = deckData.deck.map((card, index) => ({ ...card, id: `${card.id}-${pid}-${index}` }));
+    player.hand = deckWithIds.slice(0, HAND_SIZE);
+    player.deck = deckWithIds.slice(HAND_SIZE);
+    player.discard = [];
+    player.activeEvents = [];
+    player.moveCount = 0;
+    player.attackCount = 0;
+    player.hasAttackedEnemy = false;
+
+    players[pid] = player;
+  });
+
+  next.board = board;
+  next.players = players;
+  return next;
+};
+
+const buildBaseCoreState = (coreState: any) => {
+  const next = cloneState(coreState);
+  next.hostStarted = true;
+  next.selectedFactions = { '0': 'necromancer', '1': 'paladin' };
+  next.readyPlayers = { '0': true, '1': true };
+  return initializeSummonerWarsCore(next, next.selectedFactions);
+};
+
 // ============================================================================
 // 状态注入辅助函数
 // ============================================================================
@@ -340,13 +460,185 @@ const makeUnit = (overrides: Record<string, any>) => ({
   hasAttacked: overrides.hasAttacked ?? false,
 });
 
+/** 创建手牌单位卡 */
+const makeHandUnitCard = (id: string, name: string, overrides?: Record<string, any>) => ({
+  id,
+  name,
+  cardType: 'unit',
+  faction: overrides?.faction ?? '先锋军团',
+  cost: overrides?.cost ?? 1,
+  life: overrides?.life ?? 3,
+  strength: overrides?.strength ?? 1,
+  attackType: overrides?.attackType ?? 'melee',
+  unitClass: overrides?.unitClass ?? 'common',
+  abilities: overrides?.abilities ?? [],
+  spriteIndex: overrides?.spriteIndex ?? 0,
+  spriteAtlas: overrides?.spriteAtlas ?? 'cards',
+});
+
+/**
+ * 准备吸取生命 beforeAttack 测试状态
+ * 攻击前牺牲2格内友方单位
+ */
+const prepareLifeDrainBeforeAttackState = (coreState: any) => {
+  const next = buildBaseCoreState(coreState);
+  next.phase = 'attack';
+  next.currentPlayer = '0';
+  next.selectedUnit = undefined;
+  next.attackTargetMode = undefined;
+
+  const player = next.players?.['0'];
+  if (player) {
+    player.attackCount = 0;
+    player.hasAttackedEnemy = false;
+  }
+
+  const board = next.board;
+  const attackerPos = { row: 5, col: 2 };
+  const victimPos = { row: 4, col: 2 };
+  const targetPos = { row: 5, col: 3 };
+  clearArea(board, [attackerPos, victimPos, targetPos]);
+
+  placeUnit(board, attackerPos, makeUnit({
+    cardId: 'test-life-drainer',
+    name: '吸取者',
+    faction: '堕落王国',
+    strength: 2,
+    life: 8,
+    attackType: 'melee',
+    abilities: ['life_drain'],
+    owner: '0',
+  }));
+
+  placeUnit(board, victimPos, makeUnit({
+    cardId: 'test-life-victim',
+    name: '牺牲目标',
+    strength: 1,
+    life: 1,
+    attackType: 'melee',
+    owner: '0',
+  }));
+
+  placeUnit(board, targetPos, makeUnit({
+    cardId: 'test-life-enemy',
+    name: '敌方目标',
+    strength: 1,
+    life: 3,
+    attackType: 'melee',
+    owner: '1',
+  }));
+
+  return next;
+};
+
+/**
+ * 准备圣光箭 beforeAttack 测试状态
+ * 攻击前弃牌提升战力
+ */
+const prepareHolyArrowBeforeAttackState = (coreState: any) => {
+  const next = buildBaseCoreState(coreState);
+  next.phase = 'attack';
+  next.currentPlayer = '0';
+  next.selectedUnit = undefined;
+  next.attackTargetMode = undefined;
+
+  const player = next.players?.['0'];
+  if (player) {
+    player.attackCount = 0;
+    player.hasAttackedEnemy = false;
+    player.hand = [
+      makeHandUnitCard('holy-discard-1', '城塞骑士'),
+      makeHandUnitCard('holy-discard-2', '城塞战士'),
+      ...player.hand,
+    ];
+  }
+
+  const board = next.board;
+  const attackerPos = { row: 5, col: 2 };
+  const targetPos = { row: 5, col: 3 };
+  clearArea(board, [attackerPos, targetPos]);
+
+  placeUnit(board, attackerPos, makeUnit({
+    cardId: 'test-holy-archer',
+    name: '雅各布',
+    faction: '先锋军团',
+    strength: 2,
+    life: 7,
+    attackType: 'ranged',
+    abilities: ['holy_arrow'],
+    owner: '0',
+  }));
+
+  placeUnit(board, targetPos, makeUnit({
+    cardId: 'test-holy-enemy',
+    name: '敌方目标',
+    strength: 1,
+    life: 4,
+    attackType: 'melee',
+    owner: '1',
+  }));
+
+  return next;
+};
+
+/**
+ * 准备治疗 beforeAttack 测试状态
+ * 攻击前弃牌并选择友方治疗目标
+ */
+const prepareHealingBeforeAttackState = (coreState: any) => {
+  const next = buildBaseCoreState(coreState);
+  next.phase = 'attack';
+  next.currentPlayer = '0';
+  next.selectedUnit = undefined;
+  next.attackTargetMode = undefined;
+
+  const player = next.players?.['0'];
+  if (player) {
+    player.attackCount = 0;
+    player.hasAttackedEnemy = false;
+    player.hand = [
+      makeHandUnitCard('healing-discard', '治疗弃牌'),
+      ...player.hand,
+    ];
+  }
+
+  const board = next.board;
+  const attackerPos = { row: 5, col: 2 };
+  const allyPos = { row: 5, col: 3 };
+  clearArea(board, [attackerPos, allyPos]);
+
+  placeUnit(board, attackerPos, makeUnit({
+    cardId: 'test-healing-priest',
+    name: '圣殿牧师',
+    faction: '先锋军团',
+    strength: 2,
+    life: 2,
+    attackType: 'melee',
+    abilities: ['healing'],
+    owner: '0',
+  }));
+
+  placeUnit(board, allyPos, makeUnit({
+    cardId: 'test-healing-ally',
+    name: '受伤友军',
+    faction: '先锋军团',
+    strength: 1,
+    life: 5,
+    damage: 2,
+    attackType: 'melee',
+    owner: '0',
+  }));
+
+  return next;
+};
+
 /**
  * 准备灵魂转移测试状态
  * 亡灵弓箭手（远程，soul_transfer）攻击1HP敌方单位
  * 高战力确保大概率击杀
  */
 const prepareSoulTransferState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'attack';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -393,7 +685,7 @@ const prepareSoulTransferState = (coreState: any) => {
  * 召唤阶段：手牌有心灵操控，召唤师2格内有敌方单位
  */
 const prepareMindControlEventState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'summon';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -463,7 +755,7 @@ const prepareMindControlEventState = (coreState: any) => {
  * 移动阶段：手牌有震慑，召唤师3格直线内有敌方单位
  */
 const prepareStunEventState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'move';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -522,7 +814,7 @@ const prepareStunEventState = (coreState: any) => {
  * 召唤阶段：手牌有催眠引诱，场上有敌方士兵/冠军
  */
 const prepareHypnoticLureEventState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'summon';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -581,7 +873,7 @@ const prepareHypnoticLureEventState = (coreState: any) => {
  * 主动事件区存在殉葬火堆且有充能，场上有受伤单位
  */
 const prepareFuneralPyreState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'move';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -628,7 +920,7 @@ const prepareFuneralPyreState = (coreState: any) => {
  * 泰珂露（mind_capture）攻击1HP敌方单位
  */
 const prepareMindCaptureState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'attack';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -675,7 +967,7 @@ const prepareMindCaptureState = (coreState: any) => {
  * 清风法师（telekinesis）攻击敌方单位，攻击后触发推拉选择
  */
 const prepareTelekinesisState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'attack';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -722,7 +1014,7 @@ const prepareTelekinesisState = (coreState: any) => {
  * 古尔壮（mind_transmission）攻击敌方后，选择友方士兵额外攻击
  */
 const prepareMindTransmissionState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'attack';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -780,7 +1072,7 @@ const prepareMindTransmissionState = (coreState: any) => {
  * 亡灵疫病体（infection）攻击1HP敌方，击杀后从弃牌堆选择疫病体
  */
 const prepareInfectionState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'attack';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -844,7 +1136,7 @@ const prepareInfectionState = (coreState: any) => {
  * 抓附手（grab）相邻有友方单位，友方移动后可跟随
  */
 const prepareGrabFollowState = (coreState: any) => {
-  const next = cloneState(coreState);
+  const next = buildBaseCoreState(coreState);
   next.phase = 'move';
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
@@ -893,6 +1185,7 @@ const setupOnlineMatch = async (browser: any, baseURL: string | undefined) => {
   await blockAudioRequests(hostContext);
   await setEnglishLocale(hostContext);
   await resetMatchStorage(hostContext);
+  await enableE2EDebug(hostContext);
   await disableAudio(hostContext);
   await disableTutorial(hostContext);
   const hostPage = await hostContext.newPage();
@@ -901,6 +1194,7 @@ const setupOnlineMatch = async (browser: any, baseURL: string | undefined) => {
   await blockAudioRequests(guestContext);
   await setEnglishLocale(guestContext);
   await resetMatchStorage(guestContext);
+  await enableE2EDebug(guestContext);
   await disableAudio(guestContext);
   await disableTutorial(guestContext);
   const guestPage = await guestContext.newPage();
@@ -911,10 +1205,41 @@ const setupOnlineMatch = async (browser: any, baseURL: string | undefined) => {
 const joinAndStartGame = async (
   hostPage: Page, guestPage: Page, matchId: string,
 ) => {
-  await ensurePlayerIdInUrl(hostPage, '0');
-  await guestPage.goto(`/play/summonerwars/match/${matchId}?join=true`, { waitUntil: 'domcontentloaded' });
-  await guestPage.waitForURL(/playerID=\d/, { timeout: 20000 });
-  await completeFactionSelection(hostPage, guestPage);
+  const ownerGuestId = matchOwnerGuestIds.get(matchId);
+  if (!ownerGuestId) throw new Error(`缺少房主 guestId: ${matchId}`);
+
+  const hostName = `Host-${ownerGuestId}`;
+  const guestId = createGuestId('guest');
+  const guestName = `Guest-${guestId}`;
+
+  const hostCredentials = await joinSummonerWarsMatch(hostPage, matchId, '0', ownerGuestId, hostName);
+  if (!hostCredentials) throw new Error('房主加入失败');
+  const guestCredentials = await joinSummonerWarsMatch(guestPage, matchId, '1', guestId, guestName);
+  if (!guestCredentials) throw new Error('客人加入失败');
+
+  await seedMatchCredentials(hostPage, {
+    matchId,
+    playerId: '0',
+    credentials: hostCredentials,
+    guestId: ownerGuestId,
+    playerName: hostName,
+  });
+  await seedMatchCredentials(guestPage, {
+    matchId,
+    playerId: '1',
+    credentials: guestCredentials,
+    guestId,
+    playerName: guestName,
+  });
+
+  await hostPage.goto(`/play/summonerwars/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
+  await guestPage.goto(`/play/summonerwars/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
+
+  await expect(hostPage.getByTestId('debug-toggle')).toBeVisible({ timeout: 20000 });
+  const baseCore = buildBaseCoreState(await readCoreState(hostPage));
+  await applyCoreState(hostPage, baseCore);
+  await closeDebugPanelIfOpen(hostPage);
+
   await waitForSummonerWarsUI(hostPage);
   await waitForSummonerWarsUI(guestPage);
 };
@@ -924,6 +1249,142 @@ const joinAndStartGame = async (
 // ============================================================================
 
 test.describe('SummonerWars 特殊技能交互', () => {
+
+  test('吸取生命：攻击前牺牲友方单位并继续攻击', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const { hostContext, hostPage, guestContext, guestPage } = await setupOnlineMatch(browser, baseURL);
+
+    if (!await ensureGameServerAvailable(hostPage)) {
+      test.skip(true, '游戏服务器不可用');
+    }
+    const matchId = await createSummonerWarsRoom(hostPage);
+    if (!matchId) test.skip(true, '创建房间失败');
+
+    await joinAndStartGame(hostPage, guestPage, matchId!);
+
+    const coreState = await readCoreState(hostPage);
+    const lifeDrainCore = prepareLifeDrainBeforeAttackState(coreState);
+    await applyCoreState(hostPage, lifeDrainCore);
+    await closeDebugPanelIfOpen(hostPage);
+
+    // 选中吸取者
+    await clickBoardElement(hostPage, '[data-testid="sw-unit-5-2"]');
+
+    const lifeDrainButton = hostPage.getByRole('button', { name: /吸取生命|Life Drain/i });
+    await expect(lifeDrainButton).toBeVisible({ timeout: 5000 });
+    await lifeDrainButton.click();
+    await hostPage.waitForTimeout(300);
+
+    const abilityBanner = hostPage.getByText('吸取生命：选择2格内的友方单位消灭');
+    await expect(abilityBanner).toBeVisible({ timeout: 5000 });
+
+    // 选择牺牲单位
+    await clickBoardElement(hostPage, '[data-testid="sw-cell-4-2"]');
+    await hostPage.waitForTimeout(500);
+    const readyBanner = hostPage.getByText('攻击前技能：吸取生命已就绪，选择攻击目标');
+    await expect(readyBanner).toBeVisible({ timeout: 5000 });
+
+    // 选择攻击目标
+    await clickBoardElement(hostPage, '[data-testid="sw-cell-5-3"]');
+    const diceOverlay = hostPage.getByTestId('sw-dice-result-overlay');
+    await expect(diceOverlay).toBeVisible({ timeout: 8000 });
+
+    await hostContext.close();
+    await guestContext.close();
+  });
+
+  test('圣光箭：攻击前弃牌加成并触发攻击', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const { hostContext, hostPage, guestContext, guestPage } = await setupOnlineMatch(browser, baseURL);
+
+    if (!await ensureGameServerAvailable(hostPage)) {
+      test.skip(true, '游戏服务器不可用');
+    }
+    const matchId = await createSummonerWarsRoom(hostPage);
+    if (!matchId) test.skip(true, '创建房间失败');
+
+    await joinAndStartGame(hostPage, guestPage, matchId!);
+
+    const coreState = await readCoreState(hostPage);
+    const holyArrowCore = prepareHolyArrowBeforeAttackState(coreState);
+    await applyCoreState(hostPage, holyArrowCore);
+    await closeDebugPanelIfOpen(hostPage);
+
+    // 选中雅各布
+    await clickBoardElement(hostPage, '[data-testid="sw-unit-5-2"]');
+
+    const holyArrowButton = hostPage.getByRole('button', { name: /圣光箭|Holy Arrow/i });
+    await expect(holyArrowButton).toBeVisible({ timeout: 5000 });
+    await holyArrowButton.click();
+
+    const abilityBanner = hostPage.getByText('圣光箭：选择任意数量非同名单位卡弃除');
+    await expect(abilityBanner).toBeVisible({ timeout: 5000 });
+
+    const handArea = hostPage.getByTestId('sw-hand-area');
+    await handArea.locator('[data-card-id="holy-discard-1"]').click();
+    await handArea.locator('[data-card-id="holy-discard-2"]').click();
+
+    const confirmDiscard = hostPage.getByRole('button', { name: /确认弃牌/ });
+    await expect(confirmDiscard).toBeVisible({ timeout: 5000 });
+    await confirmDiscard.click();
+    const readyBanner = hostPage.getByText('攻击前技能：圣光箭已就绪，选择攻击目标');
+    await expect(readyBanner).toBeVisible({ timeout: 5000 });
+
+    await clickBoardElement(hostPage, '[data-testid="sw-cell-5-3"]');
+    const diceOverlay = hostPage.getByTestId('sw-dice-result-overlay');
+    await expect(diceOverlay).toBeVisible({ timeout: 8000 });
+
+    await hostContext.close();
+    await guestContext.close();
+  });
+
+  test('治疗：攻击前弃牌并选择友方目标治疗', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const { hostContext, hostPage, guestContext, guestPage } = await setupOnlineMatch(browser, baseURL);
+
+    if (!await ensureGameServerAvailable(hostPage)) {
+      test.skip(true, '游戏服务器不可用');
+    }
+    const matchId = await createSummonerWarsRoom(hostPage);
+    if (!matchId) test.skip(true, '创建房间失败');
+
+    await joinAndStartGame(hostPage, guestPage, matchId!);
+
+    const coreState = await readCoreState(hostPage);
+    const healingCore = prepareHealingBeforeAttackState(coreState);
+    await applyCoreState(hostPage, healingCore);
+    await closeDebugPanelIfOpen(hostPage);
+
+    // 选中圣殿牧师
+    await clickBoardElement(hostPage, '[data-testid="sw-unit-5-2"]');
+
+    const healingButton = hostPage.getByRole('button', { name: /治疗|Healing/i });
+    await expect(healingButton).toBeVisible({ timeout: 5000 });
+    await healingButton.click();
+
+    const abilityBanner = hostPage.getByText('治疗：选择要弃除的手牌');
+    await expect(abilityBanner).toBeVisible({ timeout: 5000 });
+
+    const handArea = hostPage.getByTestId('sw-hand-area');
+    await handArea.locator('[data-card-id="healing-discard"]').click();
+
+    const confirmDiscard = hostPage.getByRole('button', { name: /确认弃牌/ });
+    await expect(confirmDiscard).toBeVisible({ timeout: 5000 });
+    await confirmDiscard.click();
+    const readyBanner = hostPage.getByText('攻击前技能：治疗已就绪，选择友方目标');
+    await expect(readyBanner).toBeVisible({ timeout: 5000 });
+
+    // 选择友方目标进行治疗攻击
+    await clickBoardElement(hostPage, '[data-testid="sw-cell-5-3"]');
+    const diceOverlay = hostPage.getByTestId('sw-dice-result-overlay');
+    await expect(diceOverlay).toBeVisible({ timeout: 8000 });
+
+    await hostContext.close();
+    await guestContext.close();
+  });
 
   test('灵魂转移：击杀后弹出瞬移确认横幅', async ({ browser }, testInfo) => {
     test.setTimeout(120000);

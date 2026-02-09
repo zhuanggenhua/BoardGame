@@ -18,6 +18,13 @@ import { HAND_LIMIT, PHASE_ORDER } from './types';
 import { RESOURCE_IDS } from './resources';
 import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS } from './ids';
 
+type GameModeHost = { __BG_GAME_MODE__?: string };
+const getGameMode = () => (
+    typeof globalThis !== 'undefined'
+        ? (globalThis as GameModeHost).__BG_GAME_MODE__
+        : undefined
+);
+
 // ============================================================================
 // 骰子规则
 // ============================================================================
@@ -130,9 +137,7 @@ export const canAdvancePhase = (state: DiceThroneCore): boolean => {
         const playerIds = Object.keys(state.players);
         
         // 教程模式：只检查玩家 0 是否选好角色
-        const mode = typeof window !== 'undefined'
-            ? (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__
-            : undefined;
+        const mode = getGameMode();
         const isTutorialMode = mode === 'tutorial';
         const isLocalMode = mode === 'local';
         

@@ -12,7 +12,9 @@
       "reject": "拒绝",
       "requestHint": "可以请求撤回上一步操作",
       "historyCount": "可撤回 {{count}} 步",
-      "request": "申请撤回"
+      "request": "申请撤回",
+      "loading": "撤回状态加载中…",
+      "none": "暂无可撤回操作。"
     }
   },
   "hud": {
@@ -28,6 +30,8 @@
       "connected": "已连接",
       "waiting": "等待中...",
       "player": "玩家{{id}}",
+      "playerShort": "P{{id}}",
+      "playerUnknown": "玩家",
       "opponent": "对手",
       "offline": "离线",
       "searching": "搜索中",
@@ -36,12 +40,21 @@
       "tutorialTitle": "学习模式",
       "tutorialDescription": "按照指示学习游戏规则。"
     },
+    "labels": {
+      "turn": "回合：",
+      "roomId": "房间 ID",
+      "players": "玩家"
+    },
     "actions": {
       "destroy": "结束游戏",
       "destroyHint": "关闭房间，所有人退出",
+      "leaveRoom": "离开房间",
+      "leaveRoomHint": "彻底离开房间",
       "leaveKeep": "离开房间",
       "tempLeave": "暂时离开",
       "tempLeaveHint": "断开连接但保留位置",
+      "forceExit": "清理并返回",
+      "forceExitHint": "清理本地记录并返回大厅",
       "backToLobby": "返回大厅",
       "backToLobbyHint": "彻底离开房间",
       "social": "好友",
@@ -58,8 +71,69 @@
       "exit": "离开",
       "close": "关闭"
     },
+    "about": {
+      "title": "易桌游",
+      "githubTitle": "GitHub",
+      "githubSubtitle": "查看源码并参与贡献",
+      "qqTitle": "QQ群",
+      "qqSubtitle": "加入社区：",
+      "supportTitle": "如果喜欢这个项目，可以支持一点维护服务器的钱。",
+      "supportSubtitle": "我会在下面展示您的昵称信息",
+      "qrPlaceholder": "二维码",
+      "wechatLabel": "微信/WeChat",
+      "alipayLabel": "支付宝/Alipay"
+    },
+    "feedback": {
+      "title": "反馈",
+      "subtitle": "帮助我们改进体验",
+      "gameLabel": "关联游戏（可选）",
+      "gameAll": "-- 通用反馈 --",
+      "typeLabel": "类型",
+      "severityLabel": "优先级",
+      "contentLabel": "描述",
+      "contentPlaceholder": "请描述问题或建议...\n支持粘贴截图 (Ctrl+V)",
+      "pasteHint": "支持截图粘贴",
+      "imageAlt": "反馈截图",
+      "deleteImage": "删除图片",
+      "imageAdded": "已添加截图",
+      "contactLabel": "联系方式（可选）",
+      "contactPlaceholder": "邮箱或 QQ（便于跟进）",
+      "submit": "提交反馈",
+      "success": "反馈已提交，感谢支持！",
+      "errors": {
+        "loginRequired": "请先登录再提交反馈",
+        "submitFailed": "提交失败，请稍后再试"
+      },
+      "type": {
+        "bug": "Bug",
+        "suggestion": "建议",
+        "other": "其他"
+      },
+      "severity": {
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "critical": "严重"
+      }
+    },
     "actionLog": {
       "empty": "暂无行为日志"
+    },
+    "chat": {
+      "placeholder": "输入消息...",
+      "readonlyPlaceholder": "观战模式不可发言",
+      "empty": "暂无消息...",
+      "unknownPlayer": "未知玩家",
+      "preview": "{{name}}：{{message}}",
+      "maxLength": "最多{{count}}字",
+      "tooLong": "消息过长，最多 {{count}} 字。",
+      "readonlyWarning": "观战模式不可发言。",
+      "notConnected": "聊天服务未连接，请稍后重试。",
+      "connecting": "聊天连接中，请稍后重试。"
+    },
+    "fullscreen": {
+      "enterFailed": "全屏失败，请检查浏览器权限或系统全屏占用。",
+      "exitFailed": "退出全屏失败，请检查浏览器权限或系统状态。"
     },
     "toggle": {
       "collapse": "收起菜单",
@@ -77,6 +151,45 @@
     "tracks": {
       "main_theme": "经典对弈",
       "chill_piano": "轻柔钢琴"
+    }
+  },
+  "layoutEditor": {
+    "save": "保存",
+    "saving": "保存中…",
+    "saved": "已保存",
+    "savedWithPath": "已保存：{{path}}",
+    "saveFailed": "保存失败",
+    "exportFileName": "layout.config.json",
+    "import": "导入",
+    "export": "导出",
+    "finishTrack": "完成轨道（{{count}}点）",
+    "delete": "删除",
+    "backgroundAlt": "背景",
+    "tools": {
+      "select": "选择",
+      "grid": "网格",
+      "zone": "区域",
+      "track": "轨道",
+      "stackPoint": "堆叠点"
+    },
+    "grid": {
+      "rows": "行数",
+      "cols": "列数",
+      "gapX": "X间距",
+      "gapY": "Y间距",
+      "offsetX": "X偏移",
+      "offsetY": "Y偏移",
+      "width": "宽度",
+      "height": "高度",
+      "create": "创建网格"
+    },
+    "status": {
+      "grid": "网格：{{value}}",
+      "unset": "未设置",
+      "zone": "区域：{{count}}",
+      "track": "轨道：{{count}}",
+      "stackPoint": "堆叠点：{{count}}",
+      "selected": "选中：{{id}}"
     }
   },
   "debug": {
@@ -129,7 +242,16 @@
       "phase": "阶段",
       "turn": "回合",
       "activePlayer": "当前玩家",
-      "gameState": "游戏状态 (G)"
+      "gameState": "游戏状态 (G)",
+      "copy": "复制",
+      "copied": "已复制",
+      "assign": "赋值",
+      "cancelAssign": "取消",
+      "pastePlaceholder": "粘贴游戏状态 JSON...",
+      "pasteFromClipboard": "从剪贴板粘贴",
+      "apply": "应用状态",
+      "errorUnsupported": "此游戏不支持状态赋值",
+      "errorInvalidJson": "JSON 格式错误"
     },
     "reset": {
       "button": "🔄 重置游戏",

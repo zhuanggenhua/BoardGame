@@ -6,6 +6,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Swords, Crosshair, Zap } from 'lucide-react';
 import type { DiceFace } from '../config/dice';
 import { getSpriteAtlasSource, getSpriteAtlasStyle, DICE_FACE_SPRITE_MAP } from './cardAtlas';
@@ -142,6 +143,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
   duration = 2500,
   onClose,
 }) => {
+  const { t } = useTranslation('game-summonerwars');
   const [visible, setVisible] = useState(() => Boolean(results && results.length > 0));
   const timerRef = useRef<number | null>(null);
   const closeNow = useCallback(() => {
@@ -200,7 +202,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
               <div className="text-center">
                 <div className="flex items-center justify-center gap-[0.5vw] text-[1.3vw] font-black tracking-wider text-white" style={{ textShadow: '0 0 1vw rgba(255,255,255,0.3)' }}>
                   {attackType === 'melee' ? <Swords className="w-[1.4em] h-[1.4em]" /> : <Crosshair className="w-[1.4em] h-[1.4em]" />}
-                  <span>{attackType === 'melee' ? '近战攻击' : '远程攻击'}</span>
+                  <span>{attackType === 'melee' ? t('diceResult.meleeAttack') : t('diceResult.rangedAttack')}</span>
                 </div>
               </div>
 
@@ -228,10 +230,10 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
                   {hits > 0 ? (
                     <>
                       <Zap className="w-[1.2em] h-[1.2em] text-yellow-400" />
-                      <span>{hits} 点伤害！</span>
+                      <span>{t('diceResult.damage', { count: hits })}</span>
                     </>
                   ) : (
-                    '未命中'
+                    t('diceResult.miss')
                   )}
                 </div>
               </motion.div>

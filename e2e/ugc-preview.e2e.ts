@@ -23,6 +23,24 @@ const disableAudio = async (context: BrowserContext | Page) => {
   });
 };
 
+const resetMatchIdentity = async (context: BrowserContext | Page) => {
+  await context.addInitScript(() => {
+    localStorage.removeItem('owner_active_match');
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('match_creds_')) {
+        keys.push(key);
+      }
+    }
+    keys.forEach(key => localStorage.removeItem(key));
+    sessionStorage.removeItem('guest_id');
+    const guestId = `${Date.now()}-${Math.floor(Math.random() * 9000) + 1000}`;
+    localStorage.setItem('guest_id', guestId);
+    document.cookie = `bg_guest_id=${encodeURIComponent(guestId)}; path=/; SameSite=Lax`;
+  });
+};
+
 const blockAudioRequests = async (context: BrowserContext) => {
   await context.route(/\.(mp3|ogg|webm|wav)(\?.*)?$/i, route => route.abort());
 };
@@ -73,6 +91,7 @@ test.describe('UGC 斗地主预览流程', () => {
     await setEnglishLocale(context);
     await disableAudio(context);
     await disableTutorial(context);
+    await resetMatchIdentity(context);
 
     const page = await context.newPage();
 
@@ -88,7 +107,7 @@ test.describe('UGC 斗地主预览流程', () => {
     const ugcCard = page.locator(`[data-game-id="${PACKAGE_ID}"]`).first();
     await expect(ugcCard).toBeVisible({ timeout: 20000 });
 
-    await page.screenshot({ path: testInfo.outputPath('ugc-preview-lobby.png'), fullPage: true });
+    await page.screenshot({ path: 'screenshots/ugc-preview-lobby.png', fullPage: true });
 
     await ugcCard.click();
     await expect(page).toHaveURL(/game=doudizhu-preview/);
@@ -120,7 +139,25 @@ test.describe('UGC 斗地主预览流程', () => {
       .locator('[data-testid="ugc-preview-canvas"]');
     await expect(previewCanvas).toBeVisible({ timeout: 20000 });
 
-    await page.screenshot({ path: testInfo.outputPath('ugc-preview-match.png'), fullPage: true });
+    const frame = page.frameLocator(`iframe[title="UGC Remote Host ${PACKAGE_ID}"]`);
+    const handArea = frame.locator('[data-component-id="hand-bottom"] [data-hand-area="root"]');
+    const playZone = frame.locator('[data-component-id="play-zone"] [data-hand-area="root"]');
+    await expect(handArea).toBeVisible({ timeout: 20000 });
+    await expect(playZone).toBeVisible({ timeout: 20000 });
+
+    const initialHandCount = Number(await handArea.getAttribute('data-card-count') || 0);
+    const initialPlayCount = Number(await playZone.getAttribute('data-card-count') || 0);
+    await expect(initialHandCount).toBeGreaterThan(0);
+
+    await frame.locator('[data-component-id="hand-bottom"] [data-card-id]').first().click();
+    const playButton = frame.locator('[data-component-id="hand-bottom"]').getByRole('button', { name: '出牌' });
+    await expect(playButton).toBeEnabled({ timeout: 5000 });
+    await playButton.click();
+
+    await expect.poll(async () => Number(await handArea.getAttribute('data-card-count') || 0)).toBe(initialHandCount - 1);
+    await expect.poll(async () => Number(await playZone.getAttribute('data-card-count') || 0)).toBe(initialPlayCount + 1);
+
+    await page.screenshot({ path: 'screenshots/ugc-preview-match.png', fullPage: true });
 
     await context.close();
   });

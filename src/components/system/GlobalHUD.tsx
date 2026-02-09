@@ -51,7 +51,7 @@ export const GlobalHUD = () => {
                 }
                 setIsFullscreen(true);
             } catch (error) {
-                toast.error('全屏失败，请检查浏览器权限或是否被系统全屏占用。');
+                toast.error(t('hud.fullscreen.enterFailed'));
             }
             return;
         }
@@ -68,7 +68,7 @@ export const GlobalHUD = () => {
             }
             setIsFullscreen(false);
         } catch (error) {
-            toast.error('退出全屏失败，请检查浏览器权限或系统状态。');
+            toast.error(t('hud.fullscreen.exitFailed'));
         }
     };
 
@@ -106,7 +106,7 @@ export const GlobalHUD = () => {
                 )}
             </div>
         ),
-        label: t('hud.actions.settings') || 'Settings',
+        label: t('hud.actions.settings'),
         content: (
             <div>
                 <AudioControlSection isDark={isDark} />
@@ -118,7 +118,7 @@ export const GlobalHUD = () => {
     items.push({
         id: 'fullscreen',
         icon: isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />,
-        label: isFullscreen ? t('hud.actions.exitFullscreen') || '退出全屏' : t('hud.actions.fullscreen') || '全屏',
+        label: isFullscreen ? t('hud.actions.exitFullscreen') : t('hud.actions.fullscreen'),
         onClick: toggleFullscreen
     });
 
@@ -152,7 +152,7 @@ export const GlobalHUD = () => {
                     )}
                 </div>
             ),
-            label: t('hud.actions.social') || '好友',
+            label: t('hud.actions.social'),
             onClick: () => {
                 if (socialModalId) {
                     closeModal(socialModalId);

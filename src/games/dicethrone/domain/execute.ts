@@ -143,12 +143,14 @@ export function execute(
         }
 
         case 'SELECT_CHARACTER': {
-            const { characterId } = command.payload;
+            const { characterId, initialDeckCardIds: presetDeckIds } = command.payload;
             const data = CHARACTER_DATA_MAP[characterId];
             if (!data || !random) break;
 
             const initialDeck = data.getStartingDeck(random);
-            const initialDeckCardIds = initialDeck.map(c => c.id);
+            const initialDeckCardIds = presetDeckIds && presetDeckIds.length > 0
+                ? presetDeckIds
+                : initialDeck.map(c => c.id);
 
             const selectedEvent: CharacterSelectedEvent = {
                 type: 'CHARACTER_SELECTED',

@@ -2,16 +2,18 @@
  * SlashEffect - 斜切特效组件（Canvas 弧形刀光）
  *
  * 商业级斜切动画，模拟格斗/RPG 游戏的月牙形刀光：
- * - 弧形刀痕（贝塞尔曲线，非直线）
+ * - 弧形刀痕（圆弧的一部分，非直线）
  * - 刀光从起点快速扫到终点，有明确的挥砍方向感
  * - 头部极亮，尾部快速衰减消散
- * - 刀痕边缘散射火花粒子（tsParticles 风格，但内联轻量实现）
+ * - 刀痕边缘散射火花粒子（轻量内联实现）
  * - 刀光有厚度渐变：中间亮白，边缘主色半透明
  *
- * 技术选型说明：
- * - 斜切刀光是"确定性形状变换"，属于 framer-motion / Canvas 的领域
- * - tsParticles 适合大量同质随机粒子（爆炸/烟尘），不适合有明确形状的刀光
- * - 未来可替换为精灵图序列帧（预留 spriteSheet 接口）
+ * 技术要点：
+ * - 刀光主体使用 quad fill（四边形填充）方式绘制：
+ *   沿弧线采样点，在每个点沿法线偏移得到内外轮廓，
+ *   相邻采样点的四个偏移点构成四边形并 fill。
+ *   完全避免了多段 stroke + lineCap: 'round' 导致的断裂圆点问题。
+ * - 火花粒子为轻量内联实现，不依赖外部粒子引擎。
  *
  * @example
  * ```tsx
@@ -73,114 +75,131 @@ function parseColor(color: string): [number, number, number] {
 /**
  * 在 canvas 上绘制一道弧形刀光。
  *
- * 刀光形状：一段弧线（圆弧的一部分），从 startAngle 扫到 endAngle。
- * 动画通过 progress 控制当前扫过的角度范围。
+ * 核心技术：将弧线采样为一系列点，在每个点沿法线方向（径向）偏移得到
+ * 内外两条轮廓线，相邻两个采样点的四个偏移点构成一个四边形（quad），
+ * 对每个 quad 用 fill 绘制。这样完全避免了 stroke + lineCap 导致的
+ * 段间断裂/圆点问题，同时支持沿弧线方向的颜色、透明度、厚度渐变。
  *
  * 视觉层次（从底到顶）：
- * 1. 外层辉光（blur，半透明主色）
- * 2. 主刀光体（渐变：尾部暗→头部亮白）
- * 3. 内层高光（更窄更亮的白色弧线）
- * 4. 头部光点（径向渐变白色圆点）
+ * 1. 外层辉光（blur，单段完整弧 stroke，不会断裂）
+ * 2. 主刀光体（quad fill，尾暗→头亮白，厚度渐变）
+ * 3. 内层高光（窄 quad fill，白色，仅前半段）
+ * 4. 头部光晕（沿切线拉伸的椭圆 + 白点）
  */
 function drawArcSlash(
     ctx: CanvasRenderingContext2D,
     cx: number, cy: number,
     radius: number,
-    /** 弧线起始角度（弧度） */
     arcStart: number,
-    /** 弧线总跨度（弧度） */
     arcSpan: number,
-    /** 弧线厚度（像素） */
     thickness: number,
-    /** 动画进度 0→1（头部扫过的比例） */
     headProgress: number,
-    /** 尾部消散进度 0→1 */
     tailFade: number,
-    /** 主色 RGB */
     rgb: [number, number, number],
-    /** 是否绘制辉光 */
     glow: boolean,
 ) {
     const [r, g, b] = rgb;
 
-    // 当前可见弧线范围
     const visibleStart = arcStart + arcSpan * tailFade;
     const visibleEnd = arcStart + arcSpan * headProgress;
     if (visibleEnd <= visibleStart) return;
     const visibleSpan = visibleEnd - visibleStart;
 
-    // --- 外层辉光 ---
+    // --- 外层辉光（单段完整弧 stroke + blur，不分段所以不会断裂） ---
     if (glow) {
         ctx.save();
         ctx.globalAlpha = 0.4 * (1 - tailFade * 0.6);
         ctx.filter = `blur(${Math.max(8, thickness * 1.5)}px)`;
         ctx.strokeStyle = `rgb(${r},${g},${b})`;
         ctx.lineWidth = thickness * 3;
-        ctx.lineCap = 'round';
+        ctx.lineCap = 'butt';
         ctx.beginPath();
         ctx.arc(cx, cy, radius, visibleStart, visibleEnd);
         ctx.stroke();
         ctx.restore();
     }
 
-    // --- 主刀光体（渐变弧线） ---
-    // 沿弧线方向的渐变：用多段小弧线模拟
-    const segments = 32;
-    const segSpan = visibleSpan / segments;
-
+    // --- 主刀光体（quad fill 方式，沿弧线渐变） ---
+    const segments = 48;
     for (let i = 0; i < segments; i++) {
-        const t = i / segments; // 0=尾部, 1=头部
-        const segStart = visibleStart + segSpan * i;
-        const segEnd = segStart + segSpan * 1.15; // 微量重叠避免缝隙
+        const t0 = i / segments;
+        const t1 = (i + 1) / segments;
+        const a0 = visibleStart + visibleSpan * t0;
+        const a1 = visibleStart + visibleSpan * t1;
 
-        // 颜色：尾部暗主色 → 头部亮白
-        const brightness = t * t; // 二次曲线，头部更亮
+        // 颜色插值（取段中点 t）
+        const tMid = (t0 + t1) / 2;
+        const brightness = tMid * tMid;
         const cr = Math.min(255, r + (255 - r) * brightness);
         const cg = Math.min(255, g + (255 - g) * brightness);
         const cb = Math.min(255, b + (255 - b) * brightness);
+        const alpha = 0.15 + 0.85 * tMid;
 
-        // 透明度：尾部淡 → 头部实
-        const alpha = 0.15 + 0.85 * t;
+        // 厚度渐变：尾部细 → 中间粗 → 头部略收
+        const wf0 = Math.sin(t0 * Math.PI * 0.9 + 0.1) * 0.8 + 0.2;
+        const wf1 = Math.sin(t1 * Math.PI * 0.9 + 0.1) * 0.8 + 0.2;
+        const hw0 = (thickness * wf0) / 2;
+        const hw1 = (thickness * wf1) / 2;
 
-        // 厚度：尾部细 → 中间粗 → 头部略收
-        const widthFactor = Math.sin(t * Math.PI * 0.9 + 0.1) * 0.8 + 0.2;
+        // 圆弧上的法线就是径向方向（cos/sin）
+        const cos0 = Math.cos(a0), sin0 = Math.sin(a0);
+        const cos1 = Math.cos(a1), sin1 = Math.sin(a1);
+
+        // 四个顶点：外侧两点 + 内侧两点
+        const ox0 = cx + (radius + hw0) * cos0, oy0 = cy + (radius + hw0) * sin0;
+        const ox1 = cx + (radius + hw1) * cos1, oy1 = cy + (radius + hw1) * sin1;
+        const ix1 = cx + (radius - hw1) * cos1, iy1 = cy + (radius - hw1) * sin1;
+        const ix0 = cx + (radius - hw0) * cos0, iy0 = cy + (radius - hw0) * sin0;
 
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.strokeStyle = `rgb(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)})`;
-        ctx.lineWidth = thickness * widthFactor;
-        ctx.lineCap = 'round';
+        ctx.fillStyle = `rgb(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)})`;
         ctx.beginPath();
-        ctx.arc(cx, cy, radius, segStart, segEnd);
-        ctx.stroke();
+        ctx.moveTo(ox0, oy0);
+        ctx.lineTo(ox1, oy1);
+        ctx.lineTo(ix1, iy1);
+        ctx.lineTo(ix0, iy0);
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
     }
 
-    // --- 内层高光（更窄更亮的白色弧线，只在前半段） ---
-    const highlightStart = visibleStart + visibleSpan * 0.4;
+    // --- 内层高光（窄 quad fill，白色，仅前 60%→头部） ---
+    const hlStartT = 0.4;
+    const hlSegments = Math.round(segments * (1 - hlStartT));
+    const hlHalfW = thickness * 0.15;
     ctx.save();
     ctx.globalAlpha = 0.7 * (1 - tailFade);
-    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx.lineWidth = thickness * 0.3;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, highlightStart, visibleEnd);
-    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    for (let i = 0; i < hlSegments; i++) {
+        const t0 = hlStartT + (1 - hlStartT) * (i / hlSegments);
+        const t1 = hlStartT + (1 - hlStartT) * ((i + 1) / hlSegments);
+        const a0 = visibleStart + visibleSpan * t0;
+        const a1 = visibleStart + visibleSpan * t1;
+        const cos0 = Math.cos(a0), sin0 = Math.sin(a0);
+        const cos1 = Math.cos(a1), sin1 = Math.sin(a1);
+
+        ctx.beginPath();
+        ctx.moveTo(cx + (radius + hlHalfW) * cos0, cy + (radius + hlHalfW) * sin0);
+        ctx.lineTo(cx + (radius + hlHalfW) * cos1, cy + (radius + hlHalfW) * sin1);
+        ctx.lineTo(cx + (radius - hlHalfW) * cos1, cy + (radius - hlHalfW) * sin1);
+        ctx.lineTo(cx + (radius - hlHalfW) * cos0, cy + (radius - hlHalfW) * sin0);
+        ctx.closePath();
+        ctx.fill();
+    }
     ctx.restore();
 
-    // --- 头部光晕（沿切线方向拉伸的椭圆，不是圆球） ---
+    // --- 头部光晕（沿切线方向拉伸的椭圆） ---
     const headAngle = visibleEnd;
     const hx = cx + Math.cos(headAngle) * radius;
     const hy = cy + Math.sin(headAngle) * radius;
-    // 切线方向（垂直于径向）
     const tangentAngle = headAngle + Math.PI / 2;
 
-    // 沿切线方向拉伸的椭圆辉光
     ctx.save();
     ctx.globalAlpha = 0.55;
     ctx.translate(hx, hy);
     ctx.rotate(tangentAngle);
-    ctx.scale(2.2, 0.7); // 沿切线拉伸，垂直方向压扁
+    ctx.scale(2.2, 0.7);
     const glowR = thickness * 1.5;
     const headGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, glowR);
     headGrad.addColorStop(0, 'rgba(255,255,255,0.9)');
@@ -192,7 +211,7 @@ function drawArcSlash(
     ctx.fill();
     ctx.restore();
 
-    // 小白点核心（不拉伸）
+    // 小白点核心
     ctx.save();
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = '#fff';
@@ -302,6 +321,9 @@ const SlashCanvas: React.FC<{
     const sparksRef = useRef<Spark[]>([]);
     const rgb = React.useMemo(() => parseColor(color), [color]);
     const prevTimeRef = useRef(0);
+    // onComplete/lines 通过 ref 持有，避免 useEffect 依赖不稳定导致动画重启
+    const onCompleteRef = useRef(onComplete);
+    onCompleteRef.current = onComplete;
 
     // Canvas 溢出倍数：Canvas 比父容器大 OVERFLOW 倍，确保弧形刀光和火花不被裁切
     const OVERFLOW = 2;
@@ -345,6 +367,9 @@ const SlashCanvas: React.FC<{
         startTimeRef.current = performance.now();
         prevTimeRef.current = startTimeRef.current;
 
+        // 快照 lines，避免闭包引用被外部修改
+        const linesSnapshot = lines.map(l => ({ ...l }));
+
         const loop = (now: number) => {
             const elapsed = now - startTimeRef.current;
             const dt = Math.min((now - prevTimeRef.current) / 1000, 0.05);
@@ -352,13 +377,13 @@ const SlashCanvas: React.FC<{
 
             if (elapsed > totalMs) {
                 ctx.clearRect(0, 0, cw, ch);
-                onComplete();
+                onCompleteRef.current();
                 return;
             }
 
             ctx.clearRect(0, 0, cw, ch);
 
-            for (const ld of lines) {
+            for (const ld of linesSnapshot) {
                 const lineElapsed = elapsed - ld.delay;
                 if (lineElapsed < 0) continue;
 
@@ -396,7 +421,8 @@ const SlashCanvas: React.FC<{
             cancelAnimationFrame(rafRef.current);
             sparksRef.current = [];
         };
-    }, [lines, color, duration, width, glow, trail, rgb, onComplete]);
+    // lines/onComplete 通过快照/ref 持有，不放入依赖
+    }, [color, duration, width, glow, trail, rgb]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Canvas 居中于容器，溢出不裁切
     const offset = ((OVERFLOW - 1) / 2) * 100;

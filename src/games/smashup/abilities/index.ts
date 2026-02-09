@@ -21,8 +21,11 @@ import { registerInnsmouthAbilities } from './innsmouth';
 import { registerMiskatonicAbilities } from './miskatonic';
 import { registerMiskatonicPromptContinuations } from './miskatonic';
 import { registerCthulhuAbilities } from './cthulhu';
+import { registerElderThingAbilities } from './elder_things';
 import { registerBaseAbilities } from '../domain/baseAbilities';
 import { registerMultiBaseScoringContinuation } from '../domain/index';
+import { registerAllOngoingModifiers } from './ongoing_modifiers';
+import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 
 let initialized = false;
 
@@ -59,11 +62,14 @@ export function initAllAbilities(): void {
     registerMiskatonicAbilities();
     registerMiskatonicPromptContinuations();
     registerCthulhuAbilities();
+    registerElderThingAbilities();
 
-    // TODO: registerElderThingAbilities(); — 几乎全部依赖 Madness 系统
+    // 持续力量修正
+    registerAllOngoingModifiers();
 }
 
 /** 重置初始化状态（测试用） */
 export function resetAbilityInit(): void {
     initialized = false;
+    clearPowerModifierRegistry();
 }

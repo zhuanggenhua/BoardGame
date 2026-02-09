@@ -46,11 +46,13 @@ export interface DeathGhost {
 /** 技能模式状态 */
 export interface AbilityModeState {
   abilityId: string;
-  step: 'selectCard' | 'selectPosition' | 'selectUnit';
+  step: 'selectCard' | 'selectPosition' | 'selectUnit' | 'selectCards';
   sourceUnitId: string;
   selectedCardId?: string;
+  selectedCardIds?: string[];
   selectedUnitId?: string;
   targetPosition?: CellCoord;
+  context?: 'beforeAttack' | 'activated';
 }
 
 /** 灵魂转移模式状态 */

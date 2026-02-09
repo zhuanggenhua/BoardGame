@@ -6,6 +6,7 @@ import type { MatchState, ValidationResult } from '../../../engine/types';
 import type { SmashUpCommand, SmashUpCore, ActionCardDef } from './types';
 import { SU_COMMANDS, getCurrentPlayerId, HAND_LIMIT } from './types';
 import { getCardDef } from '../data/cards';
+import { isOperationRestricted } from './ongoingEffects';
 
 export function validate(
     state: MatchState<SmashUpCore>,
@@ -39,6 +40,12 @@ export function validate(
             const { baseIndex } = command.payload;
             if (baseIndex < 0 || baseIndex >= core.bases.length) {
                 return { valid: false, error: '无效的基地索引' };
+            }
+            // ongoing 限制检查：是否禁止打出随从到此基地
+            if (isOperationRestricted(core, baseIndex, command.playerId, 'play_minion', {
+                minionDefId: card.defId,
+            })) {
+                return { valid: false, error: '该基地禁止打出随从' };
             }
             return { valid: true };
         }
@@ -81,6 +88,11 @@ export function validate(
             if (card.type !== 'action') return { valid: false, error: '该卡牌不是行动卡' };
             const def = getCardDef(card.defId);
             if (!def) return { valid: false, error: '卡牌定义不存在' };
+            // ongoing 限制检查：是否禁止打出行动卡到目标基地
+            const targetBase = command.payload.targetBaseIndex;
+            if (targetBase !== undefined && isOperationRestricted(core, targetBase, command.playerId, 'play_action')) {
+                return { valid: false, error: '该基地禁止打出行动卡' };
+            }
             return { valid: true };
         }
 

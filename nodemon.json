@@ -2,34 +2,9 @@
   "$schema": "https://json.schemastore.org/nodemon.json",
   "watch": [
     "server.ts",
-    "src/server/",
-    "src/games/",
-    "src/engine/",
-    "src/systems/",
-    "src/core/types.ts",
-    "src/core/AssetLoader.ts"
+    "src/server/"
   ],
   "ext": "ts",
-  "ignore": [
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "**/__tests__/**",
-    "**/ui/**",
-    "**/*.tsx",
-    "**/rule/**",
-    "**/*.generated.*",
-    "node_modules/**",
-    "public/**",
-    ".tmp/**",
-    ".kiro/**",
-    "e2e/**",
-    "test/**",
-    "docs/**",
-    "openspec/**",
-    "design/**",
-    "design-system/**",
-    "scripts/**"
-  ],
-  "exec": "vite-node server.ts",
+  "exec": "tsx server.ts",
   "delay": "2000"
 }

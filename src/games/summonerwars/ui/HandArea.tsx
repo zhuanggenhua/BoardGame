@@ -10,9 +10,11 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import type { Card, UnitCard, EventCard, StructureCard, GamePhase } from '../domain/types';
 import { CardSprite } from './CardSprite';
 import { useToast } from '../../../contexts/ToastContext';
+import { playDeniedSound } from '../../../lib/audio/useGameAudio';
 import { resolveCardAtlasId } from './cardAtlas';
 
 /** 放大镜图标 */
@@ -179,6 +181,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
   bloodSummonSelectingCard = false,
   className = '',
 }) => {
+  const { t } = useTranslation('game-summonerwars');
   const showToast = useToast();
   
   // 追踪新增卡牌（用于发牌动画）
@@ -226,14 +229,16 @@ export const HandArea: React.FC<HandAreaProps> = ({
       if (card.cardType === 'unit' && cost <= 2) {
         onCardSelect?.(cardId);
       } else {
-        showToast.warning('血契召唤只能选择费用≤2的单位卡');
+        playDeniedSound();
+        showToast.warning(t('handArea.bloodSummonOnlyLowCost', { maxCost: 2 }));
       }
       return;
     }
     
     // 检查是否可以支付费用
     if (!canAfford) {
-      showToast.warning(`魔力不足！需要 ${cost} 魔力，当前只有 ${currentMagic} 魔力`);
+      playDeniedSound();
+      showToast.warning(t('handArea.insufficientMagic', { cost, current: currentMagic }));
       return;
     }
     
@@ -249,11 +254,9 @@ export const HandArea: React.FC<HandAreaProps> = ({
         onPlayEvent?.(cardId);
         return;
       } else {
-        const phaseNames: Record<string, string> = {
-          summon: '召唤阶段', move: '移动阶段', build: '建造阶段',
-          attack: '攻击阶段', magic: '魔力阶段', draw: '抽牌阶段',
-        };
-        showToast.warning(`该事件只能在${phaseNames[event.playPhase] ?? event.playPhase}施放`);
+        const phaseLabel = t(`phase.${event.playPhase}`);
+        playDeniedSound();
+        showToast.warning(t('handArea.eventPhaseOnly', { phase: phaseLabel }));
         return;
       }
     }
@@ -269,16 +272,19 @@ export const HandArea: React.FC<HandAreaProps> = ({
       } else {
         // 提示为什么不能打出
         if (phase === 'summon' && card.cardType !== 'unit') {
-          showToast.warning('召唤阶段只能打出单位卡');
+          playDeniedSound();
+          showToast.warning(t('handArea.onlyUnitInSummon'));
         } else if (phase === 'build' && card.cardType !== 'structure') {
-          showToast.warning('建造阶段只能打出建筑卡');
+          playDeniedSound();
+          showToast.warning(t('handArea.onlyStructureInBuild'));
         }
       }
       return;
     }
     
     if (!isMyTurn) {
-      showToast.warning('等待对手行动...');
+      playDeniedSound();
+      showToast.warning(t('hint.waitingOpponent'));
       return;
     }
     

@@ -35,6 +35,8 @@
   "actions": {
     "destroy": "销毁",
     "leave": "离开",
+    "forceExit": "清理并返回",
+    "forceExitHint": "清理本地记录并返回大厅",
     "reconnect": "重连",
     "reconnectEnter": "重连进入",
     "join": "加入",
@@ -61,7 +63,7 @@
     "mine": "我的",
     "emptySlot": "空位",
     "ownerMustReconnect": "这是您创建的房间，请重连进入",
-    "ownerRejoinOnly": "空房间仅房主可重连",
+    "ownerRejoinOnly": "空房间仅房主可重连（游客需使用原浏览器/设备，清理缓存后需重新创建）",
     "inAnotherMatch": "您当前已在另一场对局中",
     "inProgress": "对局中",
     "full": "已满"
@@ -135,7 +137,10 @@
       "description": "确定要销毁房间吗？这将结束对局且无法恢复。",
       "missingCredentials": "无法销毁房间：缺少凭证，请刷新或重新进入对局。",
       "notAllowed": "无法销毁房间：权限或凭证异常。",
-      "failed": "销毁房间失败：服务未响应或请求异常，请稍后重试。"
+      "failed": "销毁房间失败：服务未响应或请求异常，请稍后重试。",
+      "forceExitTitle": "无法销毁房间",
+      "forceExitDescription": "销毁失败可能导致你卡在对局内。可选择清理本地记录并返回大厅（房间可能仍在服务器上）。",
+      "forceExitConfirm": "清理并返回"
     },
     "autoExit": {
       "message": "房主已退出，房间已关闭，正在返回大厅…",
@@ -154,15 +159,23 @@
   },
   "error": {
     "createRoomFailed": "创建房间失败",
+    "createRoomNetwork": "无法连接游戏服务，请确认服务已启动，并检查跨域/代理设置。",
+    "createRoomCors": "浏览器拦截了跨域请求，请使用本地代理或检查 CORS 配置。",
+    "createRoomInvalidToken": "登录信息已过期或无效，请重新登录后再试。",
+    "createRoomGuestId": "游客身份异常，请刷新页面后重试。",
+    "createRoomForbidden": "当前权限不足，无法创建房间。",
+    "createRoomNotFound": "游戏服务未找到该游戏，请刷新页面后重试。",
+    "createRoomRequestSize": "请求数据异常，请刷新页面后再试。",
     "activeMatchStale": "检测到旧房间已失效，已自动清理，现在可以重新创建房间。",
     "destroyForbidden": "无法销毁房间：凭证无效或已失效，请重新进入房间后再试。",
     "destroyNetwork": "销毁房间失败：网络或服务异常，请稍后重试。",
     "destroyFailedLocalCleaned": "房间销毁请求异常，已清理本地状态以恢复操作。",
+    "localStateCleared": "已清理本地记录，可重新创建或加入房间。",
     "activeMatchExists": "您已有未结束的房间，请先返回或销毁后再创建。",
     "leaveForbidden": "无法离开房间：凭证无效或已失效，请重新进入房间后再试。",
     "leaveNetwork": "离开房间失败：网络或服务异常，请稍后重试。",
     "roomFull": "房间已满",
-    "ownerClaimFailed": "无法重连该房间：身份或凭证异常，请刷新或重新登录后再试。",
+    "ownerClaimFailed": "无法重连该房间：可能是游客身份丢失或服务器重启导致凭据失效。请使用原浏览器重试，或重新创建房间。",
     "joinRoomFailed": "加入房间失败",
     "actionFailed": "操作失败，请稍后重试。",
     "serviceUnavailable": {

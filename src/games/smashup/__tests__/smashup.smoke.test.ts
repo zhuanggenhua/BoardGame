@@ -11,6 +11,7 @@ import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createDefaultSystems } from '../../../engine';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS, getCurrentPlayerId } from '../domain/types';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities } from '../abilities';
 
 const PLAYER_IDS = ['0', '1'];
@@ -33,10 +34,10 @@ function createRunner() {
 
 /** 蛇形选秀命令序列 + ADVANCE_PHASE 推进到 playCards */
 const DRAFT_COMMANDS = [
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: 'aliens' } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: 'pirates' } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: 'ninjas' } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: 'dinosaurs' } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
     // auto-continue 到 startTurn，再 ADVANCE_PHASE 推进到 playCards
     { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
 ];
@@ -78,8 +79,8 @@ describe('smashup', () => {
             expect(core.players[pid].hand.length).toBe(5);
         }
 
-        expect(core.players['0'].factions).toEqual(['aliens', 'dinosaurs']);
-        expect(core.players['1'].factions).toEqual(['pirates', 'ninjas']);
+        expect(core.players['0'].factions).toEqual([SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS]);
+        expect(core.players['1'].factions).toEqual([SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]);
     });
 
     it('派系互斥选择', () => {
@@ -87,8 +88,8 @@ describe('smashup', () => {
         const result = runner.run({
             name: '派系互斥',
             commands: [
-                { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: 'aliens' } },
-                { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: 'aliens' } },
+                { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+                { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
             ],
         });
         expect(result.steps[0]?.success).toBe(true);
@@ -171,13 +172,12 @@ describe('smashup', () => {
             name: '阶段推进',
             commands: [
                 ...DRAFT_COMMANDS,
+                // playCards → scoreBases(auto skip, 无基地达标) → draw
                 { type: 'ADVANCE_PHASE', playerId: pid, payload: undefined },
-                // Me First! 响应：两人都让过
-                { type: 'RESPONSE_PASS', playerId: '0', payload: {} },
-                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
             ],
         });
 
+        // 无基地达标，scoreBases auto-continue 到 draw
         expect(result.finalState.sys.phase).toBe('draw');
         // ADVANCE_PHASE 步骤成功
         const advanceStep = result.steps[DRAFT_COMMANDS.length];

@@ -80,6 +80,11 @@ export function resolveSpecial(defId: string): AbilityExecutor | undefined {
     return resolveAbility(defId, 'special');
 }
 
+/** 快捷：解析 onDestroy 能力 */
+export function resolveOnDestroy(defId: string): AbilityExecutor | undefined {
+    return resolveAbility(defId, 'onDestroy');
+}
+
 /** 检查某 defId 是否注册了指定 tag 的能力 */
 export function hasAbility(defId: string, tag: AbilityTag): boolean {
     return registry.get(defId)?.has(tag) ?? false;

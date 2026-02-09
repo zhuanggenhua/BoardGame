@@ -10,6 +10,7 @@ import { AnimatePresence } from 'framer-motion';
 import { SummonEffect } from '../../../components/common/animations/SummonEffect';
 import { ConeBlast } from '../../../components/common/animations/ConeBlast';
 import { DamageFlash } from '../../../components/common/animations/DamageFlash';
+import { ImpactContainer } from '../../../components/common/animations/ImpactContainer';
 
 // ============================================================================
 // 效果类型
@@ -72,18 +73,22 @@ const ShockwaveEffect: React.FC<{
   // 近战：不需要气浪投射，直接在目标位置播放受击反馈
   if (!isRanged) {
     const tgtPos = getCellPosition(effect.position.row, effect.position.col);
+    const dmg = effect.damageAmount ?? (effect.intensity === 'strong' ? 3 : 1);
     return (
-      <div
+      <ImpactContainer
+        isActive
+        damage={dmg}
+        effects={{ shake: true, hitStop: false }}
         className="absolute pointer-events-none z-30"
-        style={{ left: `${tgtPos.left}%`, top: `${tgtPos.top}%`, width: `${tgtPos.width}%`, height: `${tgtPos.height}%` }}
+        style={{ left: `${tgtPos.left}%`, top: `${tgtPos.top}%`, width: `${tgtPos.width}%`, height: `${tgtPos.height}%`, overflow: 'visible' }}
+        onComplete={() => onComplete(effect.id)}
       >
         <DamageFlash
           active
-          damage={effect.damageAmount ?? (effect.intensity === 'strong' ? 3 : 1)}
+          damage={dmg}
           intensity={effect.intensity}
-          onComplete={() => onComplete(effect.id)}
         />
-      </div>
+      </ImpactContainer>
     );
   }
 
@@ -121,17 +126,20 @@ const DamageEffectAdapter: React.FC<{
   const dmg = effect.damageAmount ?? (isStrong ? 3 : 1);
 
   return (
-    <div
+    <ImpactContainer
+      isActive
+      damage={dmg}
+      effects={{ shake: true, hitStop: false }}
       className="absolute pointer-events-none z-30"
-      style={{ left: `${pos.left}%`, top: `${pos.top}%`, width: `${pos.width}%`, height: `${pos.height}%` }}
+      style={{ left: `${pos.left}%`, top: `${pos.top}%`, width: `${pos.width}%`, height: `${pos.height}%`, overflow: 'visible' }}
+      onComplete={() => onComplete(effect.id)}
     >
       <DamageFlash
         active
         damage={dmg}
         intensity={effect.intensity}
-        onComplete={() => onComplete(effect.id)}
       />
-    </div>
+    </ImpactContainer>
   );
 };
 

@@ -284,7 +284,7 @@ class AudioManagerClass {
     /**
      * 播放音效
      */
-    play(key: SoundKey, spriteKey?: string): number | null {
+    play(key: SoundKey, spriteKey?: string, onEnd?: () => void): number | null {
         if (this.failedKeys.has(key)) return null;
         let howl = this.sounds.get(key);
         if (!howl) {
@@ -309,13 +309,19 @@ class AudioManagerClass {
             this.sounds.set(key, howl);
         }
         this.resumeContextIfNeeded();
+        const soundId = howl.play(spriteKey);
+        if (onEnd && soundId != null) {
+            howl.once('end', onEnd, soundId);
+        }
         if (this.isContextSuspended()) {
             howl.once('unlock', () => {
                 this.resumeContextIfNeeded();
-                howl.play(spriteKey);
+                if (soundId != null && !howl.playing(soundId)) {
+                    howl.play(soundId);
+                }
             });
         }
-        return howl.play(spriteKey);
+        return soundId;
     }
 
     /**

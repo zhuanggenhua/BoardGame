@@ -41,6 +41,28 @@
 
 /* Global Styles */
 @layer base {
+    /* Responsive Root Font Size System */
+    html {
+        font-size: 16px; /* Default */
+    }
+
+    /* Large Screens (2K/4K) */
+    @media (min-width: 1921px) {
+        html {
+            font-size: 18px;
+        }
+    }
+    @media (min-width: 2561px) {
+        html {
+            font-size: 20px;
+        }
+    }
+    @media (min-width: 3841px) {
+        html {
+            font-size: 24px;
+        }
+    }
+
     body {
         @apply bg-parchment-base-bg text-parchment-base-text;
         font-family: 'Crimson Text', serif;
@@ -106,4 +128,11 @@
     .ugc-preview-container .bgio-client {
         @apply flex;
     }
+}
+
+/* 钝帧冻结：暂停所有子元素的 CSS 动画和过渡 */
+.hitstop-frozen,
+.hitstop-frozen * {
+  animation-play-state: paused !important;
+  transition: none !important;
 }

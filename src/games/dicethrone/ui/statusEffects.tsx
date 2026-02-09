@@ -171,11 +171,11 @@ export const StatusEffectBadge = ({
         }
     }
     const description = resolveI18nList(
-        t(`statusEffects.${effectId}.description`, { returnObjects: true, defaultValue: [] })
+        t(`statusEffects.${effectId}.description`, { returnObjects: true })
     );
     const info = {
         ...meta,
-        name: t(`statusEffects.${effectId}.name`, { defaultValue: effectId }) as string,
+        name: t(`statusEffects.${effectId}.name`) as string,
         description,
     };
     const [isHovered, setIsHovered] = React.useState(false);
@@ -211,7 +211,7 @@ export const StatusEffectBadge = ({
 
             <InfoTooltip
                 title={`${info.name}${stacks > 1 ? ` ×${stacks}` : ''}`}
-                content={isClickable ? [...info.description, t(`statusEffects.${STATUS_IDS.KNOCKDOWN}.clickToRemove`, { defaultValue: '点击花费 2CP 移除' })] : info.description}
+                content={isClickable ? [...info.description, t(`statusEffects.${STATUS_IDS.KNOCKDOWN}.clickToRemove`)] : info.description}
                 isVisible={isHovered}
                 position="right"
             />
@@ -304,11 +304,11 @@ export const TokenBadge = ({
         }
     }
     const description = resolveI18nList(
-        t(`tokens.${tokenId}.description`, { returnObjects: true, defaultValue: [] })
+        t(`tokens.${tokenId}.description`, { returnObjects: true })
     );
     const info = {
         ...meta,
-        name: t(`tokens.${tokenId}.name`, { defaultValue: tokenId }) as string,
+        name: t(`tokens.${tokenId}.name`) as string,
         description,
     };
     const [isHovered, setIsHovered] = React.useState(false);
@@ -437,11 +437,11 @@ export const SelectableStatusBadge = ({
         }
     }
     const description = resolveI18nList(
-        t(`statusEffects.${effectId}.description`, { returnObjects: true, defaultValue: [] })
+        t(`statusEffects.${effectId}.description`, { returnObjects: true })
     );
     const info = {
         ...meta,
-        name: t(`statusEffects.${effectId}.name`, { defaultValue: effectId }) as string,
+        name: t(`statusEffects.${effectId}.name`) as string,
         description,
     };
     const [isHovered, setIsHovered] = React.useState(false);
