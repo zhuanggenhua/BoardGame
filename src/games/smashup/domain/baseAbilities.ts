@@ -173,7 +173,7 @@ export type ExtendedBaseTrigger = BaseTriggerTiming | 'onMinionDestroyed';
 /** 扩展注册表：支持 onMinionDestroyed */
 const extendedRegistry = new Map<string, Map<string, BaseAbilityExecutor>>();
 
-function registerExtended(baseDefId: string, timing: string, executor: BaseAbilityExecutor): void {
+export function registerExtended(baseDefId: string, timing: string, executor: BaseAbilityExecutor): void {
     let timingMap = extendedRegistry.get(baseDefId);
     if (!timingMap) {
         timingMap = new Map();

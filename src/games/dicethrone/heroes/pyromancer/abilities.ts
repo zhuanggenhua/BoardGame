@@ -108,7 +108,7 @@ export const PYROMANCER_ABILITIES: AbilityDef[] = [
         effects: [
             inflictStatus(STATUS_IDS.STUN, 1, abilityEffectText('meteor', 'inflictStun')),
             {
-                description: abilityEffectText('meteor', 'main'),
+                description: abilityEffectText('meteor', 'unblockable'),
                 action: { type: 'custom', target: 'self', customActionId: 'meteor-resolve' }
             },
             damage(2, abilityEffectText('meteor', 'collateral'), { target: 'all' })

@@ -36,7 +36,7 @@ import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef } from '../data/cards';
 import { drawCards } from './utils';
 import { countMadnessCards, madnessVpPenalty } from './abilityHelpers';
-import { triggerAllBaseAbilities, triggerBaseAbility } from './baseAbilities';
+import { triggerAllBaseAbilities, triggerBaseAbility, triggerExtendedBaseAbility } from './baseAbilities';
 import { openMeFirstWindow, buildBaseTargetOptions } from './abilityHelpers';
 import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
@@ -156,17 +156,31 @@ function scoreOneBase(
     // 替换基地
     let newBaseDeck = baseDeck;
     if (newBaseDeck.length > 0) {
+        const newBaseDefId = newBaseDeck[0];
         const replaceEvt: BaseReplacedEvent = {
             type: SU_EVENTS.BASE_REPLACED,
             payload: {
                 baseIndex,
                 oldBaseDefId: base.defId,
-                newBaseDefId: newBaseDeck[0],
+                newBaseDefId,
             },
             timestamp: now,
         };
         events.push(replaceEvt);
         newBaseDeck = newBaseDeck.slice(1);
+
+        // 触发新基地的 onBaseRevealed 扩展时机（如绵羊神社：每位玩家可移动一个随从到此）
+        const revealCtx = {
+            state: core,
+            matchState: ms,
+            baseIndex,
+            baseDefId: newBaseDefId,
+            playerId: pid,
+            now,
+        };
+        const revealResult = triggerExtendedBaseAbility(newBaseDefId, 'onBaseRevealed', revealCtx);
+        events.push(...revealResult.events);
+        if (revealResult.matchState) ms = revealResult.matchState;
     }
 
     return { events, newBaseDeck, matchState: ms };

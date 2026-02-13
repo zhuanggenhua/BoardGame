@@ -319,13 +319,26 @@ export function getAttackType(
 // 召唤验证
 // ============================================================================
 
-/** 获取可召唤的位置（城门相邻的空格） */
+/** 获取可召唤的位置（城门 + 活体传送门相邻的空格） */
 export function getValidSummonPositions(state: SummonerWarsCore, playerId: PlayerId): CellCoord[] {
   const gates = getPlayerGates(state, playerId);
   const positions = new Set<string>();
   
+  // 真实建筑城门
   for (const gate of gates) {
     for (const adj of getAdjacentCells(gate.position)) {
+      if (isCellEmpty(state, adj)) {
+        positions.add(`${adj.row},${adj.col}`);
+      }
+    }
+  }
+
+  // 活体传送门（living_gate 技能的单位，如寒冰魔像）
+  const livingGateUnits = getPlayerUnits(state, playerId).filter(u =>
+    (u.card.abilities ?? []).includes('living_gate')
+  );
+  for (const lgUnit of livingGateUnits) {
+    for (const adj of getAdjacentCells(lgUnit.position)) {
       if (isCellEmpty(state, adj)) {
         positions.add(`${adj.row},${adj.col}`);
       }
@@ -440,7 +453,7 @@ export function hasAvailableActions(state: SummonerWarsCore, playerId: PlayerId)
     }
     case 'move': {
       const canMoveUnit = player.moveCount < MAX_MOVES_PER_TURN &&
-        getPlayerUnits(state, playerId).some(u => !u.hasMoved && !isImmobile(u) && getValidMoveTargetsEnhanced(state, u.position).length > 0);
+        getPlayerUnits(state, playerId).some(u => !u.hasMoved && !isImmobile(u, state) && getValidMoveTargetsEnhanced(state, u.position).length > 0);
       return canMoveUnit || hasPlayableEvents(player, phase);
     }
     case 'build': {
@@ -456,7 +469,7 @@ export function hasAvailableActions(state: SummonerWarsCore, playerId: PlayerId)
       const normalAttackAvailable = player.attackCount < MAX_ATTACKS_PER_TURN &&
         units.some(u => !u.hasAttacked && getValidAttackTargetsEnhanced(state, u.position).length > 0);
       const ferocityAvailable = units.some(u => 
-        hasFerocityAbility(u) && !u.hasAttacked && getValidAttackTargetsEnhanced(state, u.position).length > 0
+        hasFerocityAbility(u, state) && !u.hasAttacked && getValidAttackTargetsEnhanced(state, u.position).length > 0
       );
       return normalAttackAvailable || ferocityAvailable || hasPlayableEvents(player, phase);
     }
@@ -490,37 +503,44 @@ export function getDrawCount(handSize: number): number {
 import { abilityRegistry } from './abilities';
 
 /**
- * 获取单位的所有有效技能（包含临时技能 + 交缠颂歌共享技能）
- * 合并 card.abilities、tempAbilities、交缠颂歌共享的对方基础技能
+ * 获取单位自身技能（base + temp），不含状态依赖的共享技能
+ * 用于测试、纯单位查询等不需要游戏状态的场景
  */
-export function getUnitAbilities(unit: BoardUnit, state?: SummonerWarsCore): string[] {
+export function getUnitBaseAbilities(unit: BoardUnit): string[] {
   const base = unit.card.abilities ?? [];
   const temp = unit.tempAbilities ?? [];
-  let result = temp.length > 0 ? [...base, ...temp] : [...base];
+  return temp.length > 0 ? [...base, ...temp] : [...base];
+}
+
+/**
+ * 获取单位在当前游戏状态下的所有有效技能（base + temp + 交缠颂歌共享）
+ * state 必传，确保交缠颂歌等状态依赖逻辑始终生效
+ * 所有规则判定/执行/验证必须使用此函数
+ */
+export function getUnitAbilities(unit: BoardUnit, state: SummonerWarsCore): string[] {
+  const result = getUnitBaseAbilities(unit);
 
   // 交缠颂歌：检查主动事件区是否有交缠颂歌标记了本单位
-  if (state) {
-    for (const pid of ['0', '1'] as PlayerId[]) {
-      const player = state.players[pid];
-      if (!player) continue;
-      for (const ev of player.activeEvents) {
-        if (getBaseCardId(ev.id) !== CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT) continue;
-        if (!ev.entanglementTargets) continue;
-        const [t1, t2] = ev.entanglementTargets;
-        let partnerAbilities: string[] | undefined;
-        if (t1 === unit.cardId) {
-          // 本单位是目标1，获取目标2的基础技能
-          const partner = findBoardUnitByCardId(state, t2);
-          if (partner) partnerAbilities = partner.card.abilities ?? [];
-        } else if (t2 === unit.cardId) {
-          // 本单位是目标2，获取目标1的基础技能
-          const partner = findBoardUnitByCardId(state, t1);
-          if (partner) partnerAbilities = partner.card.abilities ?? [];
-        }
-        if (partnerAbilities) {
-          for (const a of partnerAbilities) {
-            if (!result.includes(a)) result.push(a);
-          }
+  for (const pid of ['0', '1'] as PlayerId[]) {
+    const player = state.players[pid];
+    if (!player) continue;
+    for (const ev of player.activeEvents) {
+      if (getBaseCardId(ev.id) !== CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT) continue;
+      if (!ev.entanglementTargets) continue;
+      const [t1, t2] = ev.entanglementTargets;
+      let partnerAbilities: string[] | undefined;
+      if (t1 === unit.cardId) {
+        // 本单位是目标1，获取目标2的基础技能
+        const partner = findBoardUnitByCardId(state, t2);
+        if (partner) partnerAbilities = partner.card.abilities ?? [];
+      } else if (t2 === unit.cardId) {
+        // 本单位是目标2，获取目标1的基础技能
+        const partner = findBoardUnitByCardId(state, t1);
+        if (partner) partnerAbilities = partner.card.abilities ?? [];
+      }
+      if (partnerAbilities) {
+        for (const a of partnerAbilities) {
+          if (!result.includes(a)) result.push(a);
         }
       }
     }
@@ -545,24 +565,45 @@ export function getStormAssaultReduction(state: SummonerWarsCore): number {
 }
 
 /**
- * 检查单位是否有禁足（immobile）技能
+ * 检查单位是否有禁足（immobile）技能（需要游戏状态）
  */
-export function isImmobile(unit: BoardUnit): boolean {
-  return getUnitAbilities(unit).includes('immobile');
+export function isImmobile(unit: BoardUnit, state: SummonerWarsCore): boolean {
+  return getUnitAbilities(unit, state).includes('immobile');
 }
 
 /**
- * 检查单位是否有冲锋（charge）技能
+ * 检查单位自身是否有禁足技能（不含状态依赖共享，用于测试）
  */
-export function hasChargeAbility(unit: BoardUnit): boolean {
-  return getUnitAbilities(unit).includes('charge');
+export function isImmobileBase(unit: BoardUnit): boolean {
+  return getUnitBaseAbilities(unit).includes('immobile');
 }
 
 /**
- * 检查单位是否有凶残（ferocity）技能
+ * 检查单位是否有冲锋（charge）技能（需要游戏状态）
  */
-export function hasFerocityAbility(unit: BoardUnit): boolean {
-  return getUnitAbilities(unit).includes('ferocity');
+export function hasChargeAbility(unit: BoardUnit, state: SummonerWarsCore): boolean {
+  return getUnitAbilities(unit, state).includes('charge');
+}
+
+/**
+ * 检查单位自身是否有冲锋技能（不含状态依赖共享，用于测试）
+ */
+export function hasChargeAbilityBase(unit: BoardUnit): boolean {
+  return getUnitBaseAbilities(unit).includes('charge');
+}
+
+/**
+ * 检查单位是否有凶残（ferocity）技能（需要游戏状态）
+ */
+export function hasFerocityAbility(unit: BoardUnit, state: SummonerWarsCore): boolean {
+  return getUnitAbilities(unit, state).includes('ferocity');
+}
+
+/**
+ * 检查单位自身是否有凶残技能（不含状态依赖共享，用于测试）
+ */
+export function hasFerocityAbilityBase(unit: BoardUnit): boolean {
+  return getUnitBaseAbilities(unit).includes('ferocity');
 }
 
 /**
@@ -577,7 +618,7 @@ export function getUnitMoveEnhancements(
   if (!unit) return { extraDistance: 0, canPassThrough: false, canPassStructures: false, isChargeUnit: false, isImmobileUnit: false, damageOnPassThrough: 0 };
 
   // 禁足检查
-  if (isImmobile(unit)) {
+  if (isImmobile(unit, state)) {
     return { extraDistance: 0, canPassThrough: false, canPassStructures: false, isChargeUnit: false, isImmobileUnit: true, damageOnPassThrough: 0 };
   }
 
@@ -585,8 +626,8 @@ export function getUnitMoveEnhancements(
   let canPassThrough = false;
   let canPassStructures = false;
   let damageOnPassThrough = 0;
-  const abilities = getUnitAbilities(unit);
-  const isChargeUnit = hasChargeAbility(unit);
+  const abilities = getUnitAbilities(unit, state);
+  const isChargeUnit = hasChargeAbility(unit, state);
 
   for (const abilityId of abilities) {
     const def = abilityRegistry.get(abilityId);
@@ -619,7 +660,7 @@ export function getUnitMoveEnhancements(
   if (unit.card.unitClass === 'common') {
     const aerialUnit = findOnGrid<BoardCell>(state.board, (cell, pos) =>
       !!cell.unit && cell.unit.owner === unit.owner && cell.unit.cardId !== unit.cardId
-      && getUnitAbilities(cell.unit).includes('aerial_strike')
+      && getUnitAbilities(cell.unit, state).includes('aerial_strike')
       && manhattanDistance(unitPos, pos) <= 2
     );
     if (aerialUnit) {
@@ -651,7 +692,7 @@ export function getDynamicMoveBoostForDisplay(
   const enhancements = getUnitMoveEnhancements(state, unitPos);
   if (enhancements.isImmobileUnit) return 0;
 
-  const abilityIds = getUnitAbilities(unit);
+  const abilityIds = getUnitAbilities(unit, state);
 
   // 扣除印刷技能自带的 extraDistance
   let innateExtra = 0;
@@ -800,12 +841,23 @@ export function getValidMoveTargetsEnhanced(state: SummonerWarsCore, from: CellC
 }
 
 /**
- * 获取单位的有效攻击范围（考虑远射技能）
+ * 获取单位的有效攻击范围（需要游戏状态，考虑远射等共享技能）
  */
-export function getEffectiveAttackRange(unit: BoardUnit): number {
-  const abilities = getUnitAbilities(unit);
+export function getEffectiveAttackRange(unit: BoardUnit, state: SummonerWarsCore): number {
+  const abilities = getUnitAbilities(unit, state);
   if (abilities.includes('ranged')) {
     return 4; // 远射：4格
+  }
+  return unit.card.attackRange;
+}
+
+/**
+ * 获取单位自身的有效攻击范围（不含状态依赖共享，用于测试）
+ */
+export function getEffectiveAttackRangeBase(unit: BoardUnit): number {
+  const abilities = getUnitBaseAbilities(unit);
+  if (abilities.includes('ranged')) {
+    return 4;
   }
   return unit.card.attackRange;
 }
@@ -833,7 +885,7 @@ export function canAttackEnhanced(
   if (attackerUnit.card.attackType === 'melee') {
     return distance === 1;
   } else {
-    const range = getEffectiveAttackRange(attackerUnit);
+    const range = getEffectiveAttackRange(attackerUnit, state);
     if (distance > range || distance === 0) return false;
     return isInStraightLine(attacker, target);
   }
@@ -848,10 +900,17 @@ export function getValidAttackTargetsEnhanced(state: SummonerWarsCore, attacker:
 }
 
 /**
- * 检查单位是否有稳固（stable）技能
+ * 检查单位是否有稳固（stable）技能（需要游戏状态）
  */
-export function hasStableAbility(unit: BoardUnit): boolean {
-  return getUnitAbilities(unit).includes('stable');
+export function hasStableAbility(unit: BoardUnit, state: SummonerWarsCore): boolean {
+  return getUnitAbilities(unit, state).includes('stable');
+}
+
+/**
+ * 检查单位自身是否有稳固技能（不含状态依赖共享，用于测试）
+ */
+export function hasStableAbilityBase(unit: BoardUnit): boolean {
+  return getUnitBaseAbilities(unit).includes('stable');
 }
 
 /**
@@ -924,10 +983,10 @@ export function getPushPullOptions(
 }
 
 /**
- * 检查单位是否有缠斗（rebound/entangle）技能
+ * 检查单位是否有缠斗（rebound/entangle）技能（需要游戏状态）
  */
-export function hasEntangleAbility(unit: BoardUnit): boolean {
-  const abilities = getUnitAbilities(unit);
+export function hasEntangleAbility(unit: BoardUnit, state: SummonerWarsCore): boolean {
+  const abilities = getUnitAbilities(unit, state);
   return abilities.includes('rebound') || abilities.includes('entangle');
 }
 
@@ -943,7 +1002,7 @@ export function getEntangleUnits(
   for (const adj of getAdjacentCells(leavingPos)) {
     if (!isValidCoord(adj)) continue;
     const unit = getUnitAt(state, adj);
-    if (unit && unit.owner !== leavingOwner && hasEntangleAbility(unit)) {
+    if (unit && unit.owner !== leavingOwner && hasEntangleAbility(unit, state)) {
       units.push(unit);
     }
   }
@@ -951,10 +1010,10 @@ export function getEntangleUnits(
 }
 
 /**
- * 检查单位是否有迷魂（evasion）技能
+ * 检查单位是否有迷魂（evasion）技能（需要游戏状态）
  */
-export function hasEvasionAbility(unit: BoardUnit): boolean {
-  return getUnitAbilities(unit).includes('evasion');
+export function hasEvasionAbility(unit: BoardUnit, state: SummonerWarsCore): boolean {
+  return getUnitAbilities(unit, state).includes('evasion');
 }
 
 /**
@@ -969,7 +1028,7 @@ export function getEvasionUnits(
   for (const adj of getAdjacentCells(attackerPos)) {
     if (!isValidCoord(adj)) continue;
     const unit = getUnitAt(state, adj);
-    if (unit && unit.owner !== attackerOwner && hasEvasionAbility(unit)) {
+    if (unit && unit.owner !== attackerOwner && hasEvasionAbility(unit, state)) {
       units.push(unit);
     }
   }

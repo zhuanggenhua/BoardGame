@@ -582,6 +582,8 @@ export function processMoveTriggers(
     const extraEvents: SmashUpEvent[] = [];
     for (const me of moveEvents) {
         const { minionUid, minionDefId, toBaseIndex } = me.payload;
+
+        // 触发 ongoing 拦截器 onMinionMoved
         const ongoingMoveEvents = fireTriggers(core, 'onMinionMoved', {
             state: core,
             matchState: state,
@@ -593,6 +595,26 @@ export function processMoveTriggers(
             now,
         });
         extraEvents.push(...ongoingMoveEvents);
+
+        // 触发基地扩展时机 onMinionMoved（如牧场：首次移动触发额外移动）
+        const targetBase = core.bases[toBaseIndex];
+        if (targetBase) {
+            const baseCtx = {
+                state: core,
+                matchState: state,
+                baseIndex: toBaseIndex,
+                baseDefId: targetBase.defId,
+                playerId,
+                minionUid,
+                minionDefId,
+                now,
+            };
+            const baseResult = triggerExtendedBaseAbility(targetBase.defId, 'onMinionMoved', baseCtx);
+            extraEvents.push(...baseResult.events);
+            if (baseResult.matchState) {
+                state.sys = baseResult.matchState.sys;
+            }
+        }
     }
 
     return [...filteredEvents, ...extraEvents];

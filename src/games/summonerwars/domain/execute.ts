@@ -189,7 +189,7 @@ export function executeCommand(
         });
 
         // 冲锋加成：直线移动3+格时获得+1战力（通过 boosts 标记）
-        const unitAbilities = getUnitAbilities(unit);
+        const unitAbilities = getUnitAbilities(unit, core);
         if (unitAbilities.includes('charge')) {
           const moveDist = manhattanDistance(from, to);
           if (moveDist >= 3 && (from.row === to.row || from.col === to.col)) {
@@ -224,7 +224,7 @@ export function executeCommand(
         if (unit.owner === playerId) {
           const grabbers = getPlayerUnits(core, playerId).filter(u =>
             u.cardId !== unit.cardId
-            && getUnitAbilities(u).includes('grab')
+            && getUnitAbilities(u, core).includes('grab')
             && manhattanDistance(u.position, from) === 1
           );
           for (const grabber of grabbers) {
@@ -308,7 +308,7 @@ export function executeCommand(
           if (!sourceUnit) {
             break;
           }
-          const sourceAbilities = getUnitAbilities(sourceUnit);
+          const sourceAbilities = getUnitAbilities(sourceUnit, core);
           if (!sourceAbilities.includes(beforeAttack.abilityId)) {
             continue;
           }
@@ -479,7 +479,7 @@ export function executeCommand(
             for (let col = 0; col < BOARD_COLS; col++) {
               const shieldUnit = workingCore.board[row]?.[col]?.unit;
               if (shieldUnit && shieldUnit.owner === targetOwner
-                && getUnitAbilities(shieldUnit).includes('divine_shield')
+                && getUnitAbilities(shieldUnit, workingCore).includes('divine_shield')
                 && manhattanDistance({ row, col }, target) <= 3) {
                 // 投掷2个骰子，计算 melee（❤️）数量
                 const shieldDice = rollDice(2, () => random.random());
@@ -520,12 +520,12 @@ export function executeCommand(
         });
 
         // 心灵捕获检查：攻击者有 mind_capture 且伤害足以消灭目标
-        const attackerAbilities = getUnitAbilities(attackerUnit);
+        const attackerAbilities = getUnitAbilities(attackerUnit, core);
         const hasMindCapture = attackerAbilities.includes('mind_capture');
         
         if (hasMindCapture && hits > 0 && targetCell?.unit) {
           const targetUnit = targetCell.unit;
-          const wouldKill = targetUnit.damage + hits >= getEffectiveLife(targetUnit);
+          const wouldKill = targetUnit.damage + hits >= getEffectiveLife(targetUnit, core);
           if (wouldKill && targetUnit.owner !== attackerUnit.owner) {
             // 生成心灵捕获请求事件（UI 让玩家选择：控制 or 伤害）
             events.push({
@@ -589,7 +589,7 @@ export function executeCommand(
           
           if (targetCell?.unit) {
             const newDamage = targetCell.unit.damage + hits;
-            if (newDamage >= getEffectiveLife(targetCell.unit)) {
+            if (newDamage >= getEffectiveLife(targetCell.unit, workingCore)) {
               events.push(...emitDestroyWithTriggers(workingCore, targetCell.unit, target, {
                 killer: { unit: attackerUnit, position: attacker },
                 playerId,
@@ -717,7 +717,7 @@ export function executeCommand(
           timestamp,
         });
         const newDamage = targetUnit.damage + 2;
-        if (newDamage >= getEffectiveLife(targetUnit)) {
+        if (newDamage >= getEffectiveLife(targetUnit, core)) {
           events.push(...emitDestroyWithTriggers(core, targetUnit, targetPos, { playerId, timestamp }));
         }
       }
@@ -888,6 +888,89 @@ export function executeCommand(
   if (destroyCount > 0) {
     for (let i = 0; i < destroyCount; i++) {
       processedEvents.push(...getFuneralPyreChargeEvents(core, timestamp));
+    }
+  }
+
+  // 后处理3：交缠颂歌清理 — 被消灭的单位是交缠目标时，弃置交缠颂歌
+  const destroyedCardIds = processedEvents
+    .filter(e => e.type === SW_EVENTS.UNIT_DESTROYED)
+    .map(e => (e.payload as Record<string, unknown>).cardId as string);
+  if (destroyedCardIds.length > 0) {
+    for (const pid of ['0', '1'] as import('./types').PlayerId[]) {
+      const player = core.players[pid];
+      if (!player) continue;
+      for (const ev of player.activeEvents) {
+        if (getBaseCardId(ev.id) !== CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT) continue;
+        if (!ev.entanglementTargets) continue;
+        const [t1, t2] = ev.entanglementTargets;
+        if (destroyedCardIds.includes(t1) || destroyedCardIds.includes(t2)) {
+          processedEvents.push({
+            type: SW_EVENTS.ACTIVE_EVENT_DISCARDED,
+            payload: { playerId: pid, cardId: ev.id },
+            timestamp,
+          });
+        }
+      }
+    }
+  }
+
+  // 后处理4：寒冰冲撞 — 建筑推拉后对相邻单位造成1伤+推拉1格
+  const structurePushEvents = processedEvents.filter(e =>
+    (e.type === SW_EVENTS.UNIT_PUSHED || e.type === SW_EVENTS.UNIT_PULLED)
+    && (e.payload as Record<string, unknown>).isStructure
+    && (e.payload as Record<string, unknown>).newPosition
+  );
+  if (structurePushEvents.length > 0) {
+    // 检查是否有寒冰冲撞主动事件
+    for (const pid of ['0', '1'] as import('./types').PlayerId[]) {
+      const player = core.players[pid];
+      if (!player) continue;
+      const hasIceRam = player.activeEvents.some(ev =>
+        getBaseCardId(ev.id) === CARD_IDS.FROST_ICE_RAM
+      );
+      if (!hasIceRam) continue;
+      for (const pushEvent of structurePushEvents) {
+        const pushPayload = pushEvent.payload as { newPosition: import('./types').CellCoord; targetPosition: import('./types').CellCoord };
+        const structureNewPos = pushPayload.newPosition;
+        // 检查移动后的建筑是否属于该玩家
+        // 注意：此时 reduce 尚未应用，建筑仍在原位置
+        const origStructure = core.board[pushPayload.targetPosition.row]?.[pushPayload.targetPosition.col]?.structure;
+        if (!origStructure || origStructure.owner !== pid) continue;
+        // 对建筑新位置相邻的单位造成1伤害（寒冰冲撞效果）
+        const adjDirs = [
+          { row: -1, col: 0 }, { row: 1, col: 0 },
+          { row: 0, col: -1 }, { row: 0, col: 1 },
+        ];
+        for (const d of adjDirs) {
+          const adjPos = { row: structureNewPos.row + d.row, col: structureNewPos.col + d.col };
+          if (adjPos.row < 0 || adjPos.row >= BOARD_ROWS || adjPos.col < 0 || adjPos.col >= BOARD_COLS) continue;
+          const adjUnit = getUnitAt(core, adjPos);
+          if (adjUnit) {
+            processedEvents.push({
+              type: SW_EVENTS.UNIT_DAMAGED,
+              payload: {
+                position: adjPos,
+                damage: 1,
+                reason: 'ice_ram',
+                sourcePlayerId: pid,
+              },
+              timestamp,
+            });
+            // 推拉1格（远离建筑方向）
+            const pushDir = { row: adjPos.row - structureNewPos.row, col: adjPos.col - structureNewPos.col };
+            const pushTarget = { row: adjPos.row + pushDir.row, col: adjPos.col + pushDir.col };
+            if (pushTarget.row >= 0 && pushTarget.row < BOARD_ROWS
+              && pushTarget.col >= 0 && pushTarget.col < BOARD_COLS
+              && isCellEmpty(core, pushTarget)) {
+              processedEvents.push({
+                type: SW_EVENTS.UNIT_PUSHED,
+                payload: { targetPosition: adjPos, newPosition: pushTarget },
+                timestamp,
+              });
+            }
+          }
+        }
+      }
     }
   }
 

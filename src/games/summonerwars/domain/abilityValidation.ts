@@ -48,7 +48,7 @@ export function validateAbilityActivation(
   }
   
   // 检查单位是否拥有该技能
-  const unitAbilities = getUnitAbilities(sourceUnit);
+  const unitAbilities = getUnitAbilities(sourceUnit, core);
   if (!unitAbilities.includes(abilityId)) {
     return { valid: false, error: '该单位没有此技能' };
   }

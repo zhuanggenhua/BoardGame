@@ -673,10 +673,22 @@
       "name": "火球",
       "description": "造成4/6/8伤害，获得1火焰精通",
       "effects": {
-        "damage4": "造成4点伤害",
-        "damage6": "造成6点伤害",
-        "damage8": "造成8点伤害",
         "gainFM1": "获得1层火焰精通"
+      }
+    },
+    "fireball-3": {
+      "effects": {
+        "damage4": "造成4点伤害"
+      }
+    },
+    "fireball-4": {
+      "effects": {
+        "damage6": "造成6点伤害"
+      }
+    },
+    "fireball-5": {
+      "effects": {
+        "damage8": "造成8点伤害"
       }
     },
     "soul-burn": {
@@ -912,6 +924,7 @@
       "name": "压制",
       "description": "2剑+2星触发：投掷3骰，造成其点数总和的伤害；若总数>14，施加脑震荡",
       "effects": {
+        "roll3Damage": "投掷3颗骰子，造成其点数总和的伤害；若总数>14，施加脑震荡",
         "rollDice": "投掷3颗骰子，造成其点数总和的伤害",
         "concussionThreshold": "如果总数大于14，施加1个脑震荡标记"
       }
@@ -944,7 +957,7 @@
       "description": "升级版大顺子：造成20点伤害，自身受到5点反伤",
       "effects": {
         "damage20": "造成20点伤害",
-        "selfDamage5": "对自己造成5点伤害"
+        "selfDamage5": "对自己造成5点伤害（仅在成功造成伤害时生效）"
       }
     },
     "suppress-2": {
@@ -961,25 +974,18 @@
         "damage2Unblockable": "造成2点不可防御伤害"
       }
     },
+    "suppress-2-mighty": {
+      "effects": {
+        "roll3Damage": "投掷3颗骰子，造成其点数总和的伤害；若总数>9，施加脑震荡"
+      }
+    },
     "steadfast-2": {
       "name": "百折不挠 II",
       "description": "升级版防御：提供更高治疗；若三连，可移除1个自身标记",
       "effects": {
-        "removeStatus": "移除1个自身的状态效果标记"
-      }
-    },
-    "steadfast-2-3": {
-      "effects": {
-        "heal5": "恢复5点生命值"
-      }
-    },
-    "steadfast-2-4": {
-      "effects": {
-        "heal6": "恢复6点生命值"
-      }
-    },
-    "steadfast-2-5": {
-      "effects": {
+        "removeStatus": "移除1个自身的状态效果标记",
+        "heal5": "恢复5点生命值",
+        "heal6": "恢复6点生命值",
         "heal7": "恢复7点生命值"
       }
     },
@@ -1036,9 +1042,18 @@
         "damage2Unblockable": "造成2点不可防御伤害"
       }
     },
+    "violent-assault-2-shake": {
+      "effects": {
+        "inflictDaze": "施加1个眩晕标记",
+        "damage7Unblockable": "造成7点不可防御伤害"
+      }
+    },
     "fireball-2": {
       "name": "火球 II",
-      "description": "造成4/6/8伤害，获得2火焰精通"
+      "description": "造成4/6/8伤害，获得2火焰精通",
+      "effects": {
+        "gainFM2": "获得2层火焰精通"
+      }
     },
     "fireball-2-3": {
       "effects": {
@@ -1119,6 +1134,7 @@
       "name": "炎爆术 III",
       "description": "造成6伤害并掷2骰（可重掷1个）：[火]+3伤害，[熔岩]燃烧，[火魂]+2精通，[陨石]击倒。",
       "effects": {
+        "damage6": "造成6点伤害",
         "bonusRoll": "投掷2颗骰子（可选重掷1个）：\n- 火：额外造成3点伤害\n- 熔岩：造成燃烧\n- 火魂：获得2火焰精通\n- 陨石：造成击倒"
       }
     },
@@ -1163,7 +1179,10 @@
     },
     "pickpocket": {
       "name": "抢夺",
-      "description": "小顺子触发：获得3CP，造成一半CP的伤害"
+      "description": "小顺子触发：获得3CP，造成一半CP的伤害",
+      "effects": {
+        "gainCp3": "获得3CP"
+      }
     },
     "steal": {
       "name": "偷窃",
@@ -1171,7 +1190,10 @@
     },
     "kidney-shot": {
       "name": "肾击",
-      "description": "大顺子触发：获得4CP，造成等同CP的伤害"
+      "description": "大顺子触发：获得4CP，造成等同CP的伤害",
+      "effects": {
+        "gainCp4": "获得4CP"
+      }
     },
     "shadow-dance": {
       "name": "暗影之舞",
@@ -1246,6 +1268,350 @@
     "fearless-riposte-2": {
       "name": "后发制人 II",
       "description": "替代防御升级（5骰）：攻守兼备的防御风格"
+    },
+    "righteous-combat": {
+      "name": "正义战法",
+      "description": "3剑+1盔触发：造成5伤害，投掷2骰获得额外效果",
+      "effects": {
+        "damage5": "造成5点伤害",
+        "roll2": "投掷2骰：剑+2伤害，盔+1伤害，心治疗2，祈祷+1CP"
+      }
+    },
+    "righteous-combat-2": {
+      "name": "正义战法 II",
+      "description": "包含执着与正义战法两个变体",
+      "effects": {
+        "heal2": "恢复2点生命值",
+        "damage2Unblockable": "造成2点不可防御伤害",
+        "damage5": "造成5点伤害",
+        "roll3": "投掷3骰：剑+2伤害，盔+1伤害，心治疗2，祈祷+1CP"
+      }
+    },
+    "righteous-combat-3": {
+      "name": "正义战法 III",
+      "description": "包含执着与正义战法两个变体（升级版）",
+      "effects": {
+        "heal2": "恢复2点生命值",
+        "damage2Unblockable": "造成2点不可防御伤害",
+        "damage6": "造成6点伤害",
+        "roll3": "投掷3骰：剑+2伤害，盔+1伤害，心治疗2，祈祷+1CP"
+      }
+    },
+    "blessing-of-might": {
+      "name": "力量祝福",
+      "description": "3剑+1祈祷触发：造成3不可防御伤害，获得暴击和精准各1",
+      "effects": {
+        "damage3": "造成3点不可防御伤害",
+        "gainCrit": "获得1个暴击标记",
+        "gainAccuracy": "获得1个精准标记"
+      }
+    },
+    "blessing-of-might-2": {
+      "name": "力量祝福 II",
+      "description": "包含进攻姿态与神力信徒两个变体",
+      "effects": {
+        "damage2Unblockable": "造成2点不可防御伤害",
+        "choice": "选择获得1个暴击或1个精准标记",
+        "damage4Unblockable": "造成4点不可防御伤害",
+        "gainCrit": "获得1个暴击标记",
+        "gainAccuracy": "获得1个精准标记"
+      }
+    },
+    "holy-strike": {
+      "name": "神圣攻击",
+      "description": "小顺子/大顺子触发：治疗并造成伤害",
+      "effects": {
+        "heal1": "恢复1点生命值",
+        "damage5": "造成5点伤害",
+        "heal2": "恢复2点生命值",
+        "damage8": "造成8点伤害"
+      }
+    },
+    "holy-strike-large": {
+      "effects": {
+        "heal2": "恢复2点生命值",
+        "damage8": "造成8点伤害"
+      }
+    },
+    "holy-strike-2": {
+      "name": "神圣攻击 II",
+      "description": "小顺子/大顺子触发：治疗并造成更高伤害",
+      "effects": {
+        "heal1": "恢复1点生命值",
+        "damage7": "造成7点伤害",
+        "heal2": "恢复2点生命值",
+        "damage9": "造成9点伤害"
+      }
+    },
+    "holy-light": {
+      "name": "圣光",
+      "description": "2心触发：治疗1，投掷1骰获得额外效果",
+      "effects": {
+        "heal1": "恢复1点生命值",
+        "rollEffect": "投掷1骰：剑→暴击，盔→守护，心→抽牌，祈祷→2CP"
+      }
+    },
+    "holy-light-2": {
+      "name": "圣光 II",
+      "description": "2心触发：治疗1，投掷3骰获得额外效果",
+      "effects": {
+        "heal1": "恢复1点生命值",
+        "roll3": "投掷3骰：剑→暴击，盔→守护，心→抽牌，祈祷→2CP"
+      }
+    },
+    "vengeance": {
+      "name": "复仇",
+      "description": "3盔+1祈祷触发：获得神罚，获得2CP",
+      "effects": {
+        "gainRetribution": "获得1个神罚标记",
+        "gain2CP": "获得2CP"
+      }
+    },
+    "vengeance-2": {
+      "name": "复仇 II",
+      "description": "包含复仇与反击两个变体",
+      "effects": {
+        "gainRetribution": "获得1个神罚标记",
+        "heal1": "恢复1点生命值",
+        "damage3Unblockable": "造成3点不可防御伤害",
+        "gainRetributionToAny": "1名玩家获得1个神罚标记",
+        "gain4CP": "获得4CP"
+      }
+    },
+    "righteous-prayer": {
+      "name": "正义祷告",
+      "description": "4祈祷触发：造成8伤害，获得暴击，获得2CP",
+      "effects": {
+        "damage8": "造成8点伤害",
+        "gainCrit": "获得1个暴击标记",
+        "gain2CP": "获得2CP"
+      }
+    },
+    "righteous-prayer-2": {
+      "name": "正义祷告 II",
+      "description": "包含繁盛与正义祷告两个变体",
+      "effects": {
+        "gain4CP": "获得4CP",
+        "damage8Unblockable": "造成8点不可防御伤害",
+        "gainCrit": "获得1个暴击标记",
+        "gain2CP": "获得2CP"
+      }
+    },
+    "holy-defense": {
+      "name": "神圣防御",
+      "description": "防御阶段（3骰）：剑→反伤，盔→防1，心→防2，祈祷→1CP",
+      "effects": {
+        "effect": "投掷3骰：剑→对攻击者造成1不可防御伤害，盔→防止1伤害，心→防止2伤害，祈祷→1CP"
+      }
+    },
+    "holy-defense-2": {
+      "name": "神圣防御 II",
+      "description": "防御阶段（4骰）：剑→反伤，盔→防1，心→防2，祈祷→1CP",
+      "effects": {
+        "effect": "投掷4骰：剑→对攻击者造成1不可防御伤害，盔→防止1伤害，心→防止2伤害，祈祷→1CP"
+      }
+    },
+    "holy-defense-3": {
+      "name": "神圣防御 III",
+      "description": "防御阶段（4骰）：剑→反伤，盔→防1，心→防2，祈祷→1CP；2盔+1祈祷→守护",
+      "effects": {
+        "effect": "投掷4骰：剑→反伤，盔→防1，心→防2，祈祷→1CP；若2盔+1祈祷→获得守护"
+      }
+    },
+    "unyielding-faith": {
+      "name": "坚毅信念",
+      "description": "5祈祷触发：治疗5，造成10不可防御伤害，获得神圣祝福",
+      "effects": {
+        "heal5": "恢复5点生命值",
+        "damage10": "造成10点不可防御伤害",
+        "gainBlessing": "获得1个神圣祝福标记"
+      }
+    },
+    "longbow": {
+      "name": "长弓",
+      "description": "基础弓箭攻击，根据弓面数量造成不同伤害"
+    },
+    "longbow-3": {
+      "name": "长弓 III",
+      "description": "3/4/5弓触发：造成5/7/9伤害，3个相同施加缠绕",
+      "effects": {
+        "damage3": "造成3点伤害",
+        "damage5": "造成5点伤害",
+        "damage7": "造成7点伤害",
+        "damage9": "造成9点伤害"
+      }
+    },
+    "longbow-4": {
+      "effects": {
+        "damage5": "造成5点伤害"
+      }
+    },
+    "longbow-5": {
+      "effects": {
+        "damage7": "造成7点伤害"
+      }
+    },
+    "longbow-2": {
+      "name": "长弓 II",
+      "description": "3/4/5弓触发：造成4/6/8伤害，4个相同施加缠绕",
+      "effects": {
+        "damage4": "造成4点伤害",
+        "damage6": "造成6点伤害",
+        "damage8": "造成8点伤害"
+      }
+    },
+    "covert-fire": {
+      "name": "隐蔽射击",
+      "description": "3弓+1月触发：施加锁定，造成4伤害",
+      "effects": {
+        "inflictTargeted": "施加1个锁定标记",
+        "damage4": "造成4点伤害"
+      }
+    },
+    "covert-fire-2": {
+      "name": "隐蔽射击 II",
+      "description": "包含精准射击与聚焦两个变体"
+    },
+    "deadeye-shot": {
+      "effects": {
+        "inflictTargeted": "施加1个锁定标记",
+        "damage6": "造成6点伤害"
+      }
+    },
+    "focus": {
+      "effects": {
+        "inflictTargeted": "施加1个锁定标记",
+        "inflictEntangle": "施加1个缠绕标记"
+      }
+    },
+    "covering-fire": {
+      "name": "掩护射击",
+      "description": "2弓+2足触发：获得闪避，造成7伤害",
+      "effects": {
+        "gainEvasive": "获得1个闪避标记",
+        "damage7": "造成7点伤害"
+      }
+    },
+    "covering-fire-2": {
+      "name": "掩护射击 II",
+      "description": "包含掩护射击与消音追踪两个变体",
+      "effects": {
+        "gainEvasive": "获得1个闪避标记",
+        "damage9": "造成9点伤害"
+      }
+    },
+    "silencing-trace": {
+      "effects": {
+        "gainEvasive": "获得1个闪避标记"
+      }
+    },
+    "exploding-arrow": {
+      "name": "爆裂箭",
+      "description": "1弓+3月触发：投掷骰子并结算效果",
+      "effects": {
+        "rollAndResolve": "投掷骰子并结算效果"
+      }
+    },
+    "exploding-arrow-2": {
+      "name": "爆裂箭 II",
+      "description": "升级版爆裂箭"
+    },
+    "exploding-arrow-3": {
+      "name": "爆裂箭 III",
+      "description": "升级版爆裂箭（可重掷）"
+    },
+    "entangling-shot": {
+      "name": "缠绕射击",
+      "description": "小顺子触发：施加缠绕，造成7伤害",
+      "effects": {
+        "inflictEntangle": "施加1个缠绕标记",
+        "damage7": "造成7点伤害"
+      }
+    },
+    "entangling-shot-2": {
+      "name": "缠绕射击 II",
+      "description": "小顺子触发：施加缠绕，造成9伤害",
+      "effects": {
+        "inflictEntangle": "施加1个缠绕标记",
+        "damage9": "造成9点伤害"
+      }
+    },
+    "eclipse": {
+      "name": "月蚀",
+      "description": "4月触发：施加锁定、缠绕、致盲，造成7伤害",
+      "effects": {
+        "inflictTargeted": "施加1个锁定标记",
+        "inflictEntangle": "施加1个缠绕标记",
+        "inflictBlinded": "施加1个致盲标记",
+        "damage7": "造成7点伤害"
+      }
+    },
+    "eclipse-2": {
+      "name": "月蚀 II",
+      "description": "包含月蚀与暗月两个变体",
+      "effects": {
+        "inflictBlinded": "施加1个致盲标记",
+        "inflictEntangle": "施加1个缠绕标记",
+        "inflictTargeted": "施加1个锁定标记",
+        "damage9": "造成9点伤害"
+      }
+    },
+    "dark-moon": {
+      "effects": {
+        "gainEvasive": "获得1个闪避标记",
+        "inflictBlinded": "施加1个致盲标记",
+        "inflictEntangle": "施加1个缠绕标记",
+        "inflictTargeted": "施加1个锁定标记"
+      }
+    },
+    "blinding-shot": {
+      "name": "致盲射击",
+      "description": "大顺子触发：施加致盲，获得闪避，造成8伤害",
+      "effects": {
+        "inflictBlinded": "施加1个致盲标记",
+        "gainEvasive": "获得1个闪避标记",
+        "damage8": "造成8点伤害"
+      }
+    },
+    "blinding-shot-2": {
+      "name": "致盲射击 II",
+      "description": "包含致盲射击与月之祝福两个变体",
+      "effects": {
+        "inflictBlinded": "施加1个致盲标记",
+        "gainEvasive": "获得1个闪避标记",
+        "damage10": "造成10点伤害"
+      }
+    },
+    "moons-blessing": {
+      "effects": {
+        "gainEvasive3": "获得3个闪避标记",
+        "inflictEntangle": "施加1个缠绕标记"
+      }
+    },
+    "lunar-eclipse": {
+      "name": "月蚀终焉",
+      "description": "终极技能！5月触发：获得闪避，施加致盲、缠绕、锁定，造成13伤害",
+      "effects": {
+        "gainEvasive": "获得1个闪避标记",
+        "inflictBlinded": "施加1个致盲标记",
+        "inflictEntangle": "施加1个缠绕标记",
+        "inflictTargeted": "施加1个锁定标记",
+        "damage13": "造成13点伤害"
+      }
+    },
+    "elusive-step": {
+      "name": "迷影步",
+      "description": "防御阶段（5骰）：根据骰面结果进行防御结算",
+      "effects": {
+        "resolveDefense": "防御结算"
+      }
+    },
+    "elusive-step-2": {
+      "name": "迷影步 II",
+      "description": "防御阶段（5骰）：升级版防御结算",
+      "effects": {
+        "resolveDefense": "防御结算"
+      }
     }
   },
   "cards": {

@@ -80,7 +80,6 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             VITE_SENTRY_DSN=${{ secrets.VITE_SENTRY_DSN }}
-            VITE_ASSETS_BASE_URL=${{ secrets.VITE_ASSETS_BASE_URL }}
 
       - name: Summary
         run: |

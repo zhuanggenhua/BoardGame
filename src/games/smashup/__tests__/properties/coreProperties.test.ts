@@ -1232,7 +1232,7 @@ describe('Property 15: 记分循环完整性', () => {
  * 收集所有在 BaseCardDef 上声明了 restrictions 的基地 defId。
  * 这些限制由 isOperationRestricted 的 "层 1" 数据驱动分支自动解析。
  */
-const basesWithRestrictions: { defId: string; rType: 'play_minion' | 'play_action'; maxPower?: number; extraPlayMax?: number }[] = [];
+const basesWithRestrictions: { defId: string; rType: 'play_minion' | 'play_action'; maxPower?: number; extraPlayMax?: number; minionPlayLimitPerTurn?: number }[] = [];
 for (const defId of getAllBaseDefIds()) {
     const def = getBaseDef(defId);
     if (!def?.restrictions) continue;
@@ -1242,6 +1242,7 @@ for (const defId of getAllBaseDefIds()) {
             rType: r.type,
             maxPower: r.condition?.maxPower,
             extraPlayMax: r.condition?.extraPlayMinionPowerMax,
+            minionPlayLimitPerTurn: r.condition?.minionPlayLimitPerTurn,
         });
     }
 }
@@ -1253,7 +1254,7 @@ describe('Property 20: 基地限制一致性', () => {
 
     test('无条件 play_minion 限制始终生效', () => {
         const unconditional = basesWithRestrictions.filter(
-            r => r.rType === 'play_minion' && r.maxPower === undefined && r.extraPlayMax === undefined,
+            r => r.rType === 'play_minion' && r.maxPower === undefined && r.extraPlayMax === undefined && r.minionPlayLimitPerTurn === undefined,
         );
         // 如 castle_of_ice：禁止一切随从
         fc.assert(
@@ -1342,6 +1343,38 @@ describe('Property 20: 基地限制一致性', () => {
                 },
             ),
             { numRuns: 30 },
+        );
+    });
+
+    test('minionPlayLimitPerTurn 条件限制：已达上限时被限制', () => {
+        const limitBases = basesWithRestrictions.filter(r => r.minionPlayLimitPerTurn !== undefined);
+        fc.assert(
+            fc.property(
+                fc.integer({ min: 0, max: Math.max(limitBases.length - 1, 0) }),
+                fc.integer({ min: 0, max: 3 }),
+                (idx, playedAtBase) => {
+                    fc.pre(limitBases.length > 0);
+                    const { defId, minionPlayLimitPerTurn } = limitBases[idx];
+                    const state: SmashUpCore = {
+                        players: {
+                            '0': makePlayer('0', [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.NINJAS], {
+                                minionsPlayedPerBase: playedAtBase > 0 ? { 0: playedAtBase } : undefined,
+                            }),
+                            '1': makePlayer('1', [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.GHOSTS]),
+                        },
+                        turnOrder: ['0', '1'], currentPlayerIndex: 0,
+                        bases: [makeBase(defId)],
+                        baseDeck: [], turnNumber: 1, nextUid: 100,
+                    };
+                    const restricted = isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 5 });
+                    if (playedAtBase >= minionPlayLimitPerTurn!) {
+                        expect(restricted).toBe(true);
+                    } else {
+                        expect(restricted).toBe(false);
+                    }
+                },
+            ),
+            { numRuns: 20 },
         );
     });
 

@@ -12,7 +12,7 @@ import { resolveCriticalImages } from './CriticalImageResolverRegistry';
 // 资源路径常量
 // ============================================================================
 
-const DEFAULT_ASSETS_BASE_URL = '/assets';
+const DEFAULT_ASSETS_BASE_URL = 'https://assets.easyboardgame.top/official';
 const COMPRESSED_SUBDIR = 'compressed';
 const LOCALIZED_ASSETS_SUBDIR = 'i18n';
 

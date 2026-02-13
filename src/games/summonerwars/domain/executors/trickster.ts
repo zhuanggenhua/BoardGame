@@ -50,7 +50,7 @@ abilityExecutorRegistry.register('mind_capture_resolve', (ctx: SWAbilityContext)
     const captureTarget = getUnitAt(core, captureTargetPos);
     if (captureTarget) {
       const newDamage = captureTarget.damage + captureHits;
-      if (newDamage >= getEffectiveLife(captureTarget)) {
+      if (newDamage >= getEffectiveLife(captureTarget, core)) {
         events.push(...emitDestroyWithTriggers(core, captureTarget, captureTargetPos, {
           killer: { unit: sourceUnit, position: sourcePosition },
           playerId: playerId as '0' | '1', timestamp, triggerOnKill: true, triggerOnDeath: true,
@@ -71,7 +71,7 @@ abilityExecutorRegistry.register('illusion', (ctx: SWAbilityContext) => {
   const illusionTarget = getUnitAt(core, illusionTargetPos);
   if (!illusionTarget) return { events };
 
-  const copiedAbilities = getUnitAbilities(illusionTarget);
+  const copiedAbilities = getUnitAbilities(illusionTarget, core);
   if (copiedAbilities.length > 0) {
     events.push({
       type: SW_EVENTS.ABILITIES_COPIED,
@@ -98,7 +98,7 @@ function executeTelekinesis(ctx: SWAbilityContext, maxRange: number): GameEvent[
 
   const pushPullTarget = getUnitAt(core, pushPullTargetPos);
   if (!pushPullTarget || pushPullTarget.card.unitClass === 'summoner') return events;
-  if (getUnitAbilities(pushPullTarget).includes('stable')) return events;
+  if (getUnitAbilities(pushPullTarget, core).includes('stable')) return events;
 
   const dist = manhattanDistance(sourcePosition, pushPullTargetPos);
   if (dist > maxRange) return events;

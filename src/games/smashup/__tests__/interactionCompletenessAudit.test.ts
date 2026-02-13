@@ -182,6 +182,8 @@ const INTERACTION_SOURCES: AuditableInteractionSource[] = [
   { id: 'base_inventors_salon', name: '发明家沙龙', interactionSourceIds: ['base_inventors_salon'] },
   { id: 'base_cat_fanciers_alley', name: '猫咪巷', interactionSourceIds: ['base_cat_fanciers_alley'] },
   { id: 'base_land_of_balance', name: '平衡之地', interactionSourceIds: ['base_land_of_balance'] },
+  { id: 'base_sheep_shrine', name: '绵羊神社', interactionSourceIds: ['base_sheep_shrine'] },
+  { id: 'base_the_pasture', name: '牧场', interactionSourceIds: ['base_the_pasture'] },
 
   // ── 多基地计分 ──
   { id: 'multi_base_scoring', name: '多基地计分', interactionSourceIds: ['multi_base_scoring'] },

@@ -219,7 +219,7 @@ export function postProcessDeathChecks(
 
       if (unit && !destroyedCardIds.has(unit.cardId)) {
         const newDamage = unit.damage + damage;
-        if (newDamage >= getEffectiveLife(unit)) {
+        if (newDamage >= getEffectiveLife(unit, workingState)) {
           // 注入完整触发链
           const destroyEvents = emitDestroyWithTriggers(workingState, unit, position, {
             playerId: sourcePlayerId ?? workingState.currentPlayer,

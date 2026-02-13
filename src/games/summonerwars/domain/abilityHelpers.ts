@@ -21,9 +21,10 @@ import { isUndeadCard } from './ids';
  */
 export function getActivatableAbilities(
   unit: BoardUnit,
-  phase: string
+  phase: string,
+  state: SummonerWarsCore
 ): string[] {
-  const abilities = getUnitAbilities(unit);
+  const abilities = getUnitAbilities(unit, state);
   const activatable: string[] = [];
   
   for (const abilityId of abilities) {
@@ -51,8 +52,8 @@ export function getActivatableAbilities(
  * @param trigger 触发类型
  * @returns 是否有该类型技能
  */
-export function hasAbilityWithTrigger(unit: BoardUnit, trigger: AbilityTrigger): boolean {
-  const abilities = getUnitAbilities(unit);
+export function hasAbilityWithTrigger(unit: BoardUnit, trigger: AbilityTrigger, state: SummonerWarsCore): boolean {
+  const abilities = getUnitAbilities(unit, state);
   for (const abilityId of abilities) {
     const abilityDef = abilityRegistry.get(abilityId);
     if (abilityDef && abilityDef.trigger === trigger) {
@@ -68,10 +69,10 @@ export function hasAbilityWithTrigger(unit: BoardUnit, trigger: AbilityTrigger):
  * @param unit 单位
  * @returns 是否有移动后技能
  */
-export function hasAfterMoveAbility(unit: BoardUnit): boolean {
+export function hasAfterMoveAbility(unit: BoardUnit, state: SummonerWarsCore): boolean {
   // 移动后技能通常是 'activated' 类型，但在移动阶段可用
   // 检查是否有在移动阶段可激活的技能
-  const abilities = getUnitAbilities(unit);
+  const abilities = getUnitAbilities(unit, state);
   for (const abilityId of abilities) {
     const abilityDef = abilityRegistry.get(abilityId);
     if (!abilityDef) continue;
@@ -90,8 +91,8 @@ export function hasAfterMoveAbility(unit: BoardUnit): boolean {
  * @param unit 单位
  * @returns 是否有攻击前技能
  */
-export function hasBeforeAttackAbility(unit: BoardUnit): boolean {
-  return hasAbilityWithTrigger(unit, 'beforeAttack');
+export function hasBeforeAttackAbility(unit: BoardUnit, state: SummonerWarsCore): boolean {
+  return hasAbilityWithTrigger(unit, 'beforeAttack', state);
 }
 
 /**

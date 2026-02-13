@@ -31,7 +31,7 @@ abilityExecutorRegistry.register('structure_shift', (ctx: SWAbilityContext) => {
   const ssUnit = getUnitAt(core, ssTargetPos);
   const isAllyStructure = (ssStructure && ssStructure.owner === playerId)
     || (ssUnit && ssUnit.owner === playerId
-      && getUnitAbilities(ssUnit).includes('mobile_structure'));
+      && getUnitAbilities(ssUnit, core).includes('mobile_structure'));
   if (!isAllyStructure) return { events };
   const ssDist = manhattanDistance(sourcePosition, ssTargetPos);
   if (ssDist > 3) return { events };
@@ -68,7 +68,7 @@ abilityExecutorRegistry.register('ice_shards', (ctx: SWAbilityContext) => {
       const structureUnit = getUnitAt(core, { row: r, col: c });
       const isAllyStructure = (structure && structure.owner === playerId)
         || (structureUnit && structureUnit.owner === playerId
-          && getUnitAbilities(structureUnit).includes('mobile_structure'));
+          && getUnitAbilities(structureUnit, core).includes('mobile_structure'));
       if (!isAllyStructure) continue;
 
       const adjDirs = [

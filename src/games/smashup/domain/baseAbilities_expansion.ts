@@ -26,7 +26,7 @@ import {
 } from './abilityHelpers';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
-import { registerBaseAbility } from './baseAbilities';
+import { registerBaseAbility, registerExtended as registerExtendedBase } from './baseAbilities';
 import { registerInterceptor, registerProtection } from './ongoingEffects';
 import type { ProtectionCheckContext } from './ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
@@ -469,6 +469,107 @@ export function registerExpansionBaseAbilities(): void {
         const ownerMinionCount = base.minions.filter(m => m.controller === ctx.targetMinion.controller).length;
         return ownerMinionCount >= 2;
     });
+
+
+    // ============================================================================
+    // 绵羊/牧场扩展基地能力
+    // ============================================================================
+
+    // ── 绵羊神社（Sheep Shrine）──────────────────────────────
+    // "这张基地入场后，每位玩家可以移动一个他们的随从到这。"
+    // 通过 onBaseRevealed 扩展时机触发，在 scoreOneBase 中 BASE_REPLACED 后调用
+    registerExtendedBase('base_sheep_shrine', 'onBaseRevealed', (ctx) => {
+        if (!ctx.matchState) return { events: [] };
+        let ms = ctx.matchState;
+        const turnOrder = ctx.state.turnOrder;
+
+        for (const pid of turnOrder) {
+            // 收集该玩家在其他基地的随从
+            const otherMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
+            for (let i = 0; i < ctx.state.bases.length; i++) {
+                if (i === ctx.baseIndex) continue;
+                const base = ctx.state.bases[i];
+                const bDef = getBaseDef(base.defId);
+                for (const m of base.minions) {
+                    if (m.controller !== pid) continue;
+                    const def = getCardDef(m.defId);
+                    otherMinions.push({
+                        uid: m.uid,
+                        defId: m.defId,
+                        baseIndex: i,
+                        label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})`,
+                    });
+                }
+            }
+            if (otherMinions.length === 0) continue;
+
+            const minionOptions = otherMinions.map((m, i) => ({
+                id: `minion-${i}`,
+                label: m.label,
+                value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.baseIndex },
+            }));
+            const options: { id: string; label: string; value: Record<string, unknown> }[] = [
+                { id: 'skip', label: '跳过', value: { skip: true } },
+                ...minionOptions,
+            ];
+
+            const interaction = createSimpleChoice(
+                `base_sheep_shrine_${pid}_${ctx.now}`, pid,
+                '绵羊神社：选择移动一个己方随从到此基地', options as any[], 'base_sheep_shrine',
+            );
+            (interaction.data as any).continuationContext = { targetBaseIndex: ctx.baseIndex };
+            ms = queueInteraction(ms, interaction);
+        }
+
+        return { events: [], matchState: ms };
+    });
+
+    // ── 牧场（The Pasture）──────────────────────────────────
+    // "每回合玩家第一次移动一个随从到这里后，移动另一基地的一个随从到这。"
+    // 通过 onMinionMoved 扩展时机触发，在 processMoveTriggers 中调用
+    registerExtendedBase('base_the_pasture', 'onMinionMoved', (ctx) => {
+        // 检查是否为本回合该玩家首次移动到此基地
+        // processMoveTriggers 在 execute 返回前调用，reducer 尚未处理 MINION_MOVED 事件
+        // 所以 moveCount === 0 表示这是首次移动
+        const moveCount = ctx.state.minionsMovedToBaseThisTurn?.[ctx.playerId]?.[ctx.baseIndex] ?? 0;
+        if (moveCount > 0) return { events: [] };
+
+        if (!ctx.matchState) return { events: [] };
+
+        // 收集其他基地上的所有随从
+        const otherMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
+        for (let i = 0; i < ctx.state.bases.length; i++) {
+            if (i === ctx.baseIndex) continue;
+            const base = ctx.state.bases[i];
+            const bDef = getBaseDef(base.defId);
+            for (const m of base.minions) {
+                // 排除刚移动过来的随从
+                if (m.uid === ctx.minionUid) continue;
+                const def = getCardDef(m.defId);
+                otherMinions.push({
+                    uid: m.uid,
+                    defId: m.defId,
+                    baseIndex: i,
+                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})`,
+                });
+            }
+        }
+
+        if (otherMinions.length === 0) return { events: [] };
+
+        const minionOptions = otherMinions.map((m, i) => ({
+            id: `minion-${i}`,
+            label: m.label,
+            value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.baseIndex },
+        }));
+
+        const interaction = createSimpleChoice(
+            `base_the_pasture_${ctx.now}`, ctx.playerId,
+            '牧场：选择另一基地的一个随从移动到这里', minionOptions as any[], 'base_the_pasture',
+        );
+        (interaction.data as any).continuationContext = { targetBaseIndex: ctx.baseIndex };
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    });
 }
 
 // ============================================================================
@@ -553,5 +654,22 @@ export function registerExpansionBaseInteractionHandlers(): void {
         const ctx = (iData as any)?.continuationContext as { balanceBaseIndex: number };
         if (!ctx) return { state, events: [] };
         return { state, events: [moveMinion(selected.minionUid!, selected.minionDefId!, selected.fromBaseIndex!, ctx.balanceBaseIndex, '平衡之地：移动己方随从到此', timestamp)] };
+    });
+
+    // 绵羊神社：移动己方随从到此基地
+    registerInteractionHandler('base_sheep_shrine', (state, _playerId, value, iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; minionUid?: string; minionDefId?: string; fromBaseIndex?: number };
+        if (selected.skip) return { state, events: [] };
+        const ctx = (iData as any)?.continuationContext as { targetBaseIndex: number };
+        if (!ctx) return { state, events: [] };
+        return { state, events: [moveMinion(selected.minionUid!, selected.minionDefId!, selected.fromBaseIndex!, ctx.targetBaseIndex, '绵羊神社：移动随从到新基地', timestamp)] };
+    });
+
+    // 牧场：移动另一基地的随从到这里
+    registerInteractionHandler('base_the_pasture', (state, _playerId, value, iData, _random, timestamp) => {
+        const selected = value as { minionUid?: string; minionDefId?: string; fromBaseIndex?: number };
+        const ctx = (iData as any)?.continuationContext as { targetBaseIndex: number };
+        if (!ctx) return { state, events: [] };
+        return { state, events: [moveMinion(selected.minionUid!, selected.minionDefId!, selected.fromBaseIndex!, ctx.targetBaseIndex, '牧场：移动随从到牧场', timestamp)] };
     });
 }

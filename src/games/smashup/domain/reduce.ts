@@ -348,6 +348,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 bases: newBases,
                 // 清空本回合消灭记录
                 turnDestroyedMinions: [],
+                // 清空本回合移动追踪
+                minionsMovedToBaseThisTurn: undefined,
                 sleepMarkedPlayers: newSleepMarked?.length ? newSleepMarked : undefined,
                 players: {
                     ...state.players,
@@ -548,8 +550,17 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 }
             }
             if (movedMinion) {
+                // 追踪本回合移动到各基地的次数（用于牧场等"首次移动"触发）
+                const mover = movedMinion.controller;
+                const prevMoves = state.minionsMovedToBaseThisTurn ?? {};
+                const playerMoves = prevMoves[mover] ?? {};
+                const updatedMoves = {
+                    ...prevMoves,
+                    [mover]: { ...playerMoves, [toBaseIndex]: (playerMoves[toBaseIndex] ?? 0) + 1 },
+                };
                 return {
                     ...state,
+                    minionsMovedToBaseThisTurn: updatedMoves,
                     bases: newBases.map((base, i) => {
                         if (i !== toBaseIndex) return base;
                         return { ...base, minions: [...base.minions, movedMinion!] };

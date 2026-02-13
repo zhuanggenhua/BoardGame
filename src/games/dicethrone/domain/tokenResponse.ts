@@ -394,6 +394,9 @@ export function shouldOpenTokenResponse(
     
     // 检查是否已有待处理伤害（避免重复打开）
     if (state.pendingDamage) return null;
+
+    // 终极技能（规则 §4.4）：伤害可被攻击方强化，但不可被防御方降低/忽略/回避
+    const isUltimate = state.pendingAttack?.isUltimate ?? false;
     
     // 先检查攻击方是否有太极可用于加伤
     // 注意：规则说"本回合获得的太极不可用于本回合增强伤害"
@@ -401,6 +404,9 @@ export function shouldOpenTokenResponse(
     if (hasOffensiveTokens(state, attackerId)) {
         return 'attackerBoost';
     }
+    
+    // 终极技能跳过防御方 Token 响应（规则 §4.4：不可被降低/忽略/回避）
+    if (isUltimate) return null;
     
     // 检查防御方是否有可用的防御 Token
     if (hasDefensiveTokens(state, defenderId)) {

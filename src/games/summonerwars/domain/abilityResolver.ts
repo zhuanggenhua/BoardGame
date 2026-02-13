@@ -603,15 +603,64 @@ export function resolveAbilityEffects(
 // ============================================================================
 
 /**
- * 获取单位的所有技能
+ * 获取单位自身技能定义（base + temp），不含状态依赖的共享技能
  */
-export function getUnitAbilities(unit: UnitInstance): AbilityDef[] {
+export function getUnitBaseAbilities(unit: UnitInstance): AbilityDef[] {
   const baseIds = unit.card.abilities ?? [];
   const tempIds = unit.tempAbilities ?? [];
-  const abilityIds = tempIds.length > 0 ? [...baseIds, ...tempIds] : baseIds;
+  const abilityIds = tempIds.length > 0 ? [...baseIds, ...tempIds] : [...baseIds];
   return abilityIds
     .map(id => abilityRegistry.get(id))
     .filter((def): def is AbilityDef => def !== undefined);
+}
+
+/**
+ * 获取单位在当前游戏状态下的所有技能定义（含交缠颂歌共享技能）
+ * state 必传，确保交缠颂歌等状态依赖逻辑始终生效
+ */
+export function getUnitAbilities(unit: UnitInstance, state: SummonerWarsCore): AbilityDef[] {
+  const baseIds = unit.card.abilities ?? [];
+  const tempIds = unit.tempAbilities ?? [];
+  let abilityIds = tempIds.length > 0 ? [...baseIds, ...tempIds] : [...baseIds];
+
+  // 交缠颂歌：检查主动事件区是否有交缠颂歌标记了本单位
+  for (const pid of ['0', '1'] as PlayerId[]) {
+    const player = state.players[pid];
+    if (!player) continue;
+    for (const ev of player.activeEvents) {
+      if (getBaseCardId(ev.id) !== CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT) continue;
+      if (!ev.entanglementTargets) continue;
+      const [t1, t2] = ev.entanglementTargets;
+      let partnerBaseAbilities: string[] | undefined;
+      if (t1 === unit.cardId) {
+        const partner = findUnitOnBoard(state, t2);
+        if (partner) partnerBaseAbilities = partner.card.abilities ?? [];
+      } else if (t2 === unit.cardId) {
+        const partner = findUnitOnBoard(state, t1);
+        if (partner) partnerBaseAbilities = partner.card.abilities ?? [];
+      }
+      if (partnerBaseAbilities) {
+        for (const a of partnerBaseAbilities) {
+          if (!abilityIds.includes(a)) abilityIds.push(a);
+        }
+      }
+    }
+  }
+
+  return abilityIds
+    .map(id => abilityRegistry.get(id))
+    .filter((def): def is AbilityDef => def !== undefined);
+}
+
+/** 按 cardId 在棋盘上查找单位 */
+function findUnitOnBoard(state: SummonerWarsCore, cardId: string): UnitInstance | undefined {
+  for (let row = 0; row < state.board.length; row++) {
+    for (let col = 0; col < (state.board[row]?.length ?? 0); col++) {
+      const unit = state.board[row]?.[col]?.unit;
+      if (unit && unit.cardId === cardId) return unit;
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -621,7 +670,7 @@ export function triggerAbilities(
   trigger: AbilityTrigger,
   ctx: AbilityContext
 ): GameEvent[] {
-  const abilities = getUnitAbilities(ctx.sourceUnit);
+  const abilities = getUnitAbilities(ctx.sourceUnit, ctx.state);
   const matchingAbilities = abilities.filter(a => a.trigger === trigger);
   
   const events: GameEvent[] = [];
@@ -683,7 +732,7 @@ export function calculateEffectiveStrength(
   targetUnit?: UnitInstance
 ): number {
   let strength = unit.card.strength;
-  const abilities = getUnitAbilities(unit);
+  const abilities = getUnitAbilities(unit, state);
 
   // 附加事件卡加成（如狱火铸剑 +2）
   if (unit.attachedCards) {
@@ -871,10 +920,11 @@ export function hasHellfireBlade(unit: UnitInstance): boolean {
 
 /**
  * 计算单位的有效生命值（考虑 life_up 等技能加成）
+ * state 必传版本，用于规则判定
  */
-export function getEffectiveLife(unit: UnitInstance): number {
+export function getEffectiveLife(unit: UnitInstance, state: SummonerWarsCore): number {
   let life = unit.card.life;
-  const abilities = getUnitAbilities(unit);
+  const abilities = getUnitAbilities(unit, state);
 
   for (const ability of abilities) {
     if (ability.trigger === 'passive') {
@@ -895,6 +945,29 @@ export function getEffectiveLife(unit: UnitInstance): number {
 }
 
 /**
+ * 计算单位自身的有效生命值（不含状态依赖共享，用于测试）
+ */
+export function getEffectiveLifeBase(unit: UnitInstance): number {
+  let life = unit.card.life;
+  const abilities = getUnitBaseAbilities(unit);
+
+  for (const ability of abilities) {
+    if (ability.trigger === 'passive') {
+      for (const effect of ability.effects) {
+        if (effect.type === 'modifyLife') {
+          const value = typeof effect.value === 'number'
+            ? effect.value
+            : (unit.boosts ?? 0);
+          life += Math.min(value, 5);
+        }
+      }
+    }
+  }
+
+  return life;
+}
+
+/**
  * 计算建筑的有效生命值（考虑 cold_snap 等光环加成）
  * 遍历场上友方单位的被动技能，检查 auraStructureLife 效果
  */
@@ -903,7 +976,7 @@ export function getEffectiveStructureLife(state: SummonerWarsCore, structure: Bo
   const friendlyUnits = getPlayerUnits(state, structure.owner);
 
   for (const unit of friendlyUnits) {
-    const abilities = getUnitAbilities(unit);
+    const abilities = getUnitAbilities(unit, state);
     for (const ability of abilities) {
       if (ability.trigger !== 'passive') continue;
       for (const effect of ability.effects) {

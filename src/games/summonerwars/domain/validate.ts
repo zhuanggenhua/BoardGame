@@ -175,7 +175,7 @@ export function validateCommand(
       const unit = getUnitAt(core, from);
       if (!unit || unit.owner !== playerId) return { valid: false, error: '无法移动该单位' };
       if (unit.hasMoved) return { valid: false, error: '该单位本回合已移动' };
-      if ((getUnitAbilities(unit)).includes('immobile')) return { valid: false, error: '该单位不能移动（禁足）' };
+      if ((getUnitAbilities(unit, core)).includes('immobile')) return { valid: false, error: '该单位不能移动（禁足）' };
       if (!canMoveToEnhanced(core, from, to)) return { valid: false, error: '无法移动到目标位置' };
       return { valid: true };
     }
@@ -188,7 +188,7 @@ export function validateCommand(
       if (!attacker || attacker.owner !== playerId) return { valid: false, error: '无法使用该单位攻击' };
       if (attacker.hasAttacked) return { valid: false, error: '该单位本回合已攻击' };
       // 凶残单位可以作为额外攻击者（不计入3次限制）
-      const hasFerocity = getUnitAbilities(attacker).includes('ferocity');
+      const hasFerocity = getUnitAbilities(attacker, core).includes('ferocity');
       if (core.players[playerId].attackCount >= MAX_ATTACKS_PER_TURN && !hasFerocity) {
         return { valid: false, error: '本回合攻击次数已用完' };
       }
@@ -201,7 +201,7 @@ export function validateCommand(
         : [];
       let hasHealingBeforeAttack = false;
       if (beforeAttackList.length > 0) {
-        const attackerAbilities = getUnitAbilities(attacker);
+        const attackerAbilities = getUnitAbilities(attacker, core);
         for (const beforeAttack of beforeAttackList) {
           if (!attackerAbilities.includes(beforeAttack.abilityId)) {
             return { valid: false, error: '该单位没有此技能' };
@@ -287,7 +287,7 @@ export function validateCommand(
       // 守卫检查：如果攻击者相邻有敌方守卫单位，必须攻击守卫单位
       const targetUnit = getUnitAt(core, targetPos);
       if (targetUnit) {
-        const targetHasGuardian = getUnitAbilities(targetUnit).includes('guardian');
+        const targetHasGuardian = getUnitAbilities(targetUnit, core).includes('guardian');
         if (!targetHasGuardian) {
           // 目标不是守卫，检查攻击者相邻是否有敌方守卫
           const adjDirs = [
@@ -299,7 +299,7 @@ export function validateCommand(
             if (adjPos.row < 0 || adjPos.row >= BOARD_ROWS || adjPos.col < 0 || adjPos.col >= BOARD_COLS) continue;
             const adjUnit = getUnitAt(core, adjPos);
             if (adjUnit && adjUnit.owner !== playerId
-              && getUnitAbilities(adjUnit).includes('guardian')
+              && getUnitAbilities(adjUnit, core).includes('guardian')
               && canAttackEnhanced(core, attackerPos, adjPos)) {
               return { valid: false, error: '相邻有守卫单位，必须攻击守卫单位' };
             }

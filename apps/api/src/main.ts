@@ -7,6 +7,7 @@ import type { Socket } from 'net';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import * as Sentry from '@sentry/nestjs';
@@ -16,24 +17,14 @@ import { GlobalHttpExceptionFilter } from './shared/filters/http-exception.filte
 if (process.env.SENTRY_DSN) {
     Sentry.init({
         dsn: process.env.SENTRY_DSN,
-        // 性能监控采样率
         tracesSampleRate: 1.0,
     });
 }
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule, {
-        cors: {
-            origin: '*',
-            credentials: true,
-        },
-        // 反馈接口可能携带 base64 图片，放宽 body 限制
-        rawBody: false,
-    });
-    // 提升 JSON body 大小限制（默认 100KB 不够反馈截图）
-    const expressApp = app.getHttpAdapter().getInstance();
-    expressApp.use(express.json({ limit: '2mb' }));
-    expressApp.use(express.urlencoded({ extended: true, limit: '2mb' }));
+    // 先创建 Express 实例并注册代理，确保代理在 NestJS 路由之前处理请求
+    const expressApp = express();
+
     const gameServerTarget =
         process.env.GAME_SERVER_PROXY_TARGET
         || process.env.GAME_SERVER_URL
@@ -45,7 +36,21 @@ async function bootstrap() {
         ws: true,
     });
 
+    // 代理必须在 NestJS 路由之前注册，否则 NestJS 会先返回 404
     expressApp.use(['/games', '/default', '/lobby-socket', '/socket.io'], gameProxy);
+
+    // 把预配置的 Express 传给 NestJS
+    const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp), {
+        cors: {
+            origin: '*',
+            credentials: true,
+        },
+        rawBody: false,
+    });
+
+    // 提升 JSON body 大小限制
+    expressApp.use(express.json({ limit: '2mb' }));
+    expressApp.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
     const distPath = join(process.cwd(), 'dist');
     const uploadsPath = join(process.cwd(), 'uploads');
@@ -72,7 +77,7 @@ async function bootstrap() {
 
     const port = Number(process.env.API_SERVER_PORT) || 18001;
     const server = await app.listen(port);
-    // 只代理游戏服相关的 WebSocket 升级，避免社交 Socket 被错误转发导致断线
+    // 只代理游戏服相关的 WebSocket 升级
     server.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
         const url = req.url || '';
         if (url.startsWith('/lobby-socket') || url.startsWith('/socket.io')) {

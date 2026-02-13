@@ -48,7 +48,7 @@ function triggerPhaseAbilities(
     for (let col = 0; col < core.board[row].length; col++) {
       const unit = core.board[row]?.[col]?.unit;
       if (!unit || unit.owner !== playerId) continue;
-      const unitAbilityIds = getUnitAbilities(unit);
+      const unitAbilityIds = getUnitAbilities(unit, core);
       for (const abilityId of abilityIds) {
         if (!unitAbilityIds.includes(abilityId)) continue;
         const def = abilityRegistry.get(abilityId);

@@ -718,7 +718,10 @@
     },
     "pickpocket": {
       "name": "Pickpocket",
-      "description": "Small Straight: Gain 3 CP, deal damage equal to half your CP"
+      "description": "Small Straight: Gain 3 CP, deal damage equal to half your CP",
+      "effects": {
+        "gainCp3": "Gain 3 CP"
+      }
     },
     "steal": {
       "name": "Steal",
@@ -726,7 +729,10 @@
     },
     "kidney-shot": {
       "name": "Kidney Shot",
-      "description": "Large Straight: Gain 4 CP, deal damage equal to your CP"
+      "description": "Large Straight: Gain 4 CP, deal damage equal to your CP",
+      "effects": {
+        "gainCp4": "Gain 4 CP"
+      }
     },
     "shadow-dance": {
       "name": "Shadow Dance",
@@ -802,6 +808,350 @@
       "name": "Fearless Riposte II",
       "description": "Alternative defense upgrade (5 dice): Offensive-defensive style"
     },
+    "righteous-combat": {
+      "name": "Righteous Combat",
+      "description": "3 Sword + 1 Helm: deal 5 damage, roll 2 dice for bonus effects",
+      "effects": {
+        "damage5": "Deal 5 damage",
+        "roll2": "Roll 2 dice: Sword +2 dmg, Helm +1 dmg, Heart heal 2, Pray +1 CP"
+      }
+    },
+    "righteous-combat-2": {
+      "name": "Righteous Combat II",
+      "description": "Two variants: Tenacity and Righteous Combat",
+      "effects": {
+        "heal2": "Heal 2",
+        "damage2Unblockable": "Deal 2 undefendable damage",
+        "damage5": "Deal 5 damage",
+        "roll3": "Roll 3 dice: Sword +2 dmg, Helm +1 dmg, Heart heal 2, Pray +1 CP"
+      }
+    },
+    "righteous-combat-3": {
+      "name": "Righteous Combat III",
+      "description": "Two variants: Tenacity and Righteous Combat (upgraded)",
+      "effects": {
+        "heal2": "Heal 2",
+        "damage2Unblockable": "Deal 2 undefendable damage",
+        "damage6": "Deal 6 damage",
+        "roll3": "Roll 3 dice: Sword +2 dmg, Helm +1 dmg, Heart heal 2, Pray +1 CP"
+      }
+    },
+    "blessing-of-might": {
+      "name": "Blessing of Might",
+      "description": "3 Sword + 1 Pray: deal 3 undefendable damage, gain 1 Crit and 1 Accuracy",
+      "effects": {
+        "damage3": "Deal 3 undefendable damage",
+        "gainCrit": "Gain 1 Crit token",
+        "gainAccuracy": "Gain 1 Accuracy token"
+      }
+    },
+    "blessing-of-might-2": {
+      "name": "Blessing of Might II",
+      "description": "Two variants: Offensive Stance and Might Disciple",
+      "effects": {
+        "damage2Unblockable": "Deal 2 undefendable damage",
+        "choice": "Choose to gain 1 Crit or 1 Accuracy token",
+        "damage4Unblockable": "Deal 4 undefendable damage",
+        "gainCrit": "Gain 1 Crit token",
+        "gainAccuracy": "Gain 1 Accuracy token"
+      }
+    },
+    "holy-strike": {
+      "name": "Holy Strike",
+      "description": "Small/Large Straight: heal and deal damage",
+      "effects": {
+        "heal1": "Heal 1",
+        "damage5": "Deal 5 damage",
+        "heal2": "Heal 2",
+        "damage8": "Deal 8 damage"
+      }
+    },
+    "holy-strike-large": {
+      "effects": {
+        "heal2": "Heal 2",
+        "damage8": "Deal 8 damage"
+      }
+    },
+    "holy-strike-2": {
+      "name": "Holy Strike II",
+      "description": "Small/Large Straight: heal and deal higher damage",
+      "effects": {
+        "heal1": "Heal 1",
+        "damage7": "Deal 7 damage",
+        "heal2": "Heal 2",
+        "damage9": "Deal 9 damage"
+      }
+    },
+    "holy-light": {
+      "name": "Holy Light",
+      "description": "2 Heart: heal 1, roll 1 die for bonus effects",
+      "effects": {
+        "heal1": "Heal 1",
+        "rollEffect": "Roll 1 die: Sword→Crit, Helm→Protect, Heart→Draw, Pray→2 CP"
+      }
+    },
+    "holy-light-2": {
+      "name": "Holy Light II",
+      "description": "2 Heart: heal 1, roll 3 dice for bonus effects",
+      "effects": {
+        "heal1": "Heal 1",
+        "roll3": "Roll 3 dice: Sword→Crit, Helm→Protect, Heart→Draw, Pray→2 CP"
+      }
+    },
+    "vengeance": {
+      "name": "Vengeance",
+      "description": "3 Helm + 1 Pray: gain 1 Retribution, gain 2 CP",
+      "effects": {
+        "gainRetribution": "Gain 1 Retribution token",
+        "gain2CP": "Gain 2 CP"
+      }
+    },
+    "vengeance-2": {
+      "name": "Vengeance II",
+      "description": "Two variants: Vengeance and Retribution",
+      "effects": {
+        "gainRetribution": "Gain 1 Retribution token",
+        "heal1": "Heal 1",
+        "damage3Unblockable": "Deal 3 undefendable damage",
+        "gainRetributionToAny": "1 player gains 1 Retribution token",
+        "gain4CP": "Gain 4 CP"
+      }
+    },
+    "righteous-prayer": {
+      "name": "Righteous Prayer",
+      "description": "4 Pray: deal 8 damage, gain 1 Crit, gain 2 CP",
+      "effects": {
+        "damage8": "Deal 8 damage",
+        "gainCrit": "Gain 1 Crit token",
+        "gain2CP": "Gain 2 CP"
+      }
+    },
+    "righteous-prayer-2": {
+      "name": "Righteous Prayer II",
+      "description": "Two variants: Prosperity and Righteous Prayer",
+      "effects": {
+        "gain4CP": "Gain 4 CP",
+        "damage8Unblockable": "Deal 8 undefendable damage",
+        "gainCrit": "Gain 1 Crit token",
+        "gain2CP": "Gain 2 CP"
+      }
+    },
+    "holy-defense": {
+      "name": "Holy Defense",
+      "description": "Defense (3 dice): Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP",
+      "effects": {
+        "effect": "Roll 3 dice: Sword→1 undefendable dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP"
+      }
+    },
+    "holy-defense-2": {
+      "name": "Holy Defense II",
+      "description": "Defense (4 dice): Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP",
+      "effects": {
+        "effect": "Roll 4 dice: Sword→1 undefendable dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP"
+      }
+    },
+    "holy-defense-3": {
+      "name": "Holy Defense III",
+      "description": "Defense (4 dice): Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP; 2 Helm + 1 Pray→Protect",
+      "effects": {
+        "effect": "Roll 4 dice: Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP; if 2 Helm + 1 Pray→gain Protect"
+      }
+    },
+    "unyielding-faith": {
+      "name": "Unyielding Faith",
+      "description": "5 Pray: heal 5, deal 10 undefendable damage, gain Blessing of Divinity",
+      "effects": {
+        "heal5": "Heal 5",
+        "damage10": "Deal 10 undefendable damage",
+        "gainBlessing": "Gain 1 Blessing of Divinity token"
+      }
+    },
+    "longbow": {
+      "name": "Longbow",
+      "description": "Basic bow attack; damage scales with number of Bow faces"
+    },
+    "longbow-3": {
+      "name": "Longbow III",
+      "description": "3/4/5 Bow: deal 5/7/9 damage; 3 of a kind inflicts Entangle",
+      "effects": {
+        "damage3": "Deal 3 damage",
+        "damage5": "Deal 5 damage",
+        "damage7": "Deal 7 damage",
+        "damage9": "Deal 9 damage"
+      }
+    },
+    "longbow-4": {
+      "effects": {
+        "damage5": "Deal 5 damage"
+      }
+    },
+    "longbow-5": {
+      "effects": {
+        "damage7": "Deal 7 damage"
+      }
+    },
+    "longbow-2": {
+      "name": "Longbow II",
+      "description": "3/4/5 Bow: deal 4/6/8 damage; 4 of a kind inflicts Entangle",
+      "effects": {
+        "damage4": "Deal 4 damage",
+        "damage6": "Deal 6 damage",
+        "damage8": "Deal 8 damage"
+      }
+    },
+    "covert-fire": {
+      "name": "Covert Fire",
+      "description": "3 Bow + 1 Moon: inflict Targeted, deal 4 damage",
+      "effects": {
+        "inflictTargeted": "Inflict 1 Targeted token",
+        "damage4": "Deal 4 damage"
+      }
+    },
+    "covert-fire-2": {
+      "name": "Covert Fire II",
+      "description": "Two variants: Deadeye Shot and Focus"
+    },
+    "deadeye-shot": {
+      "effects": {
+        "inflictTargeted": "Inflict 1 Targeted token",
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "focus": {
+      "effects": {
+        "inflictTargeted": "Inflict 1 Targeted token",
+        "inflictEntangle": "Inflict 1 Entangle token"
+      }
+    },
+    "covering-fire": {
+      "name": "Covering Fire",
+      "description": "2 Bow + 2 Foot: gain Evasive, deal 7 damage",
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive token",
+        "damage7": "Deal 7 damage"
+      }
+    },
+    "covering-fire-2": {
+      "name": "Covering Fire II",
+      "description": "Two variants: Covering Fire and Silencing Trace",
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive token",
+        "damage9": "Deal 9 damage"
+      }
+    },
+    "silencing-trace": {
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive token"
+      }
+    },
+    "exploding-arrow": {
+      "name": "Exploding Arrow",
+      "description": "1 Bow + 3 Moon: roll dice and resolve effects",
+      "effects": {
+        "rollAndResolve": "Roll dice and resolve effects"
+      }
+    },
+    "exploding-arrow-2": {
+      "name": "Exploding Arrow II",
+      "description": "Upgraded Exploding Arrow"
+    },
+    "exploding-arrow-3": {
+      "name": "Exploding Arrow III",
+      "description": "Upgraded Exploding Arrow (with reroll)"
+    },
+    "entangling-shot": {
+      "name": "Entangling Shot",
+      "description": "Small Straight: inflict Entangle, deal 7 damage",
+      "effects": {
+        "inflictEntangle": "Inflict 1 Entangle token",
+        "damage7": "Deal 7 damage"
+      }
+    },
+    "entangling-shot-2": {
+      "name": "Entangling Shot II",
+      "description": "Small Straight: inflict Entangle, deal 9 damage",
+      "effects": {
+        "inflictEntangle": "Inflict 1 Entangle token",
+        "damage9": "Deal 9 damage"
+      }
+    },
+    "eclipse": {
+      "name": "Eclipse",
+      "description": "4 Moon: inflict Targeted, Entangle, Blinded, deal 7 damage",
+      "effects": {
+        "inflictTargeted": "Inflict 1 Targeted token",
+        "inflictEntangle": "Inflict 1 Entangle token",
+        "inflictBlinded": "Inflict 1 Blinded token",
+        "damage7": "Deal 7 damage"
+      }
+    },
+    "eclipse-2": {
+      "name": "Eclipse II",
+      "description": "Two variants: Eclipse and Dark Moon",
+      "effects": {
+        "inflictBlinded": "Inflict 1 Blinded token",
+        "inflictEntangle": "Inflict 1 Entangle token",
+        "inflictTargeted": "Inflict 1 Targeted token",
+        "damage9": "Deal 9 damage"
+      }
+    },
+    "dark-moon": {
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive token",
+        "inflictBlinded": "Inflict 1 Blinded token",
+        "inflictEntangle": "Inflict 1 Entangle token",
+        "inflictTargeted": "Inflict 1 Targeted token"
+      }
+    },
+    "blinding-shot": {
+      "name": "Blinding Shot",
+      "description": "Large Straight: inflict Blinded, gain Evasive, deal 8 damage",
+      "effects": {
+        "inflictBlinded": "Inflict 1 Blinded token",
+        "gainEvasive": "Gain 1 Evasive token",
+        "damage8": "Deal 8 damage"
+      }
+    },
+    "blinding-shot-2": {
+      "name": "Blinding Shot II",
+      "description": "Two variants: Blinding Shot and Moon's Blessing",
+      "effects": {
+        "inflictBlinded": "Inflict 1 Blinded token",
+        "gainEvasive": "Gain 1 Evasive token",
+        "damage10": "Deal 10 damage"
+      }
+    },
+    "moons-blessing": {
+      "effects": {
+        "gainEvasive3": "Gain 3 Evasive tokens",
+        "inflictEntangle": "Inflict 1 Entangle token"
+      }
+    },
+    "lunar-eclipse": {
+      "name": "Lunar Eclipse",
+      "description": "Ultimate! 5 Moon: gain Evasive, inflict Blinded, Entangle, Targeted, deal 13 damage",
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive token",
+        "inflictBlinded": "Inflict 1 Blinded token",
+        "inflictEntangle": "Inflict 1 Entangle token",
+        "inflictTargeted": "Inflict 1 Targeted token",
+        "damage13": "Deal 13 damage"
+      }
+    },
+    "elusive-step": {
+      "name": "Elusive Step",
+      "description": "Defensive phase (5 dice): resolve defense based on dice results",
+      "effects": {
+        "resolveDefense": "Resolve defense"
+      }
+    },
+    "elusive-step-2": {
+      "name": "Elusive Step II",
+      "description": "Defensive phase (5 dice): upgraded defense resolution",
+      "effects": {
+        "resolveDefense": "Resolve defense"
+      }
+    },
     "fist-technique-2": {
       "name": "Fist Technique II",
       "description": "Upgraded fist attack; higher damage."
@@ -842,10 +1192,22 @@
       "name": "Fireball",
       "description": "Deal 4/6/8 damage and gain 1 Fire Mastery.",
       "effects": {
-        "damage4": "Deal 4 damage",
-        "damage6": "Deal 6 damage",
-        "damage8": "Deal 8 damage",
         "gainFM1": "Gain 1 Fire Mastery"
+      }
+    },
+    "fireball-3": {
+      "effects": {
+        "damage4": "Deal 4 damage"
+      }
+    },
+    "fireball-4": {
+      "effects": {
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "fireball-5": {
+      "effects": {
+        "damage8": "Deal 8 damage"
       }
     },
     "soul-burn": {
@@ -993,6 +1355,7 @@
       "name": "Suppress",
       "description": "2 Sword + 2 Strength: roll 3 dice, deal total damage; if total >14, inflict Concussion.",
       "effects": {
+        "roll3Damage": "Roll 3 dice, deal total as damage; if total >14, inflict Concussion",
         "rollDice": "Roll 3 dice; deal damage equal to the total",
         "concussionThreshold": "If total >14, inflict 1 Concussion token"
       }
@@ -1025,7 +1388,7 @@
       "description": "Upgraded Large Straight: deal 20 damage and take 5 self-damage.",
       "effects": {
         "damage20": "Deal 20 damage",
-        "selfDamage5": "Take 5 self-damage"
+        "selfDamage5": "Take 5 self-damage (only if damage was dealt)"
       }
     },
     "suppress-2": {
@@ -1042,25 +1405,18 @@
         "damage2Unblockable": "Deal 2 undefendable damage"
       }
     },
+    "suppress-2-mighty": {
+      "effects": {
+        "roll3Damage": "Roll 3 dice, deal total as damage; if total >9, inflict Concussion"
+      }
+    },
     "steadfast-2": {
       "name": "Steadfast II",
       "description": "Upgraded defense: higher healing; if three of a kind, remove 1 of your status effects.",
       "effects": {
-        "removeStatus": "Remove 1 of your status effect tokens"
-      }
-    },
-    "steadfast-2-3": {
-      "effects": {
-        "heal5": "Heal 5"
-      }
-    },
-    "steadfast-2-4": {
-      "effects": {
-        "heal6": "Heal 6"
-      }
-    },
-    "steadfast-2-5": {
-      "effects": {
+        "removeStatus": "Remove 1 of your status effect tokens",
+        "heal5": "Heal 5",
+        "heal6": "Heal 6",
         "heal7": "Heal 7"
       }
     },
@@ -1117,9 +1473,18 @@
         "damage2Unblockable": "Deal 2 undefendable damage"
       }
     },
+    "violent-assault-2-shake": {
+      "effects": {
+        "inflictDaze": "Inflict 1 Daze token",
+        "damage7Unblockable": "Deal 7 undefendable damage"
+      }
+    },
     "fireball-2": {
       "name": "Fireball II",
-      "description": "Deal 4/6/8 damage and gain 2 Fire Mastery."
+      "description": "Deal 4/6/8 damage and gain 2 Fire Mastery.",
+      "effects": {
+        "gainFM2": "Gain 2 Fire Mastery"
+      }
     },
     "fireball-2-3": {
       "effects": {
@@ -1200,6 +1565,7 @@
       "name": "Pyro Blast III",
       "description": "Deal 6 damage and roll 2 dice (you may reroll 1): Fire +3 damage, Lava inflicts Burn, Fire Soul gains 2 Fire Mastery, Meteor inflicts Knockdown.",
       "effects": {
+        "damage6": "Deal 6 damage",
         "bonusRoll": "Roll 2 dice (reroll up to 1):\n- Fire: +3 damage\n- Lava: inflict Burn\n- Fire Soul: gain 2 Fire Mastery\n- Meteor: inflict Knockdown"
       }
     },

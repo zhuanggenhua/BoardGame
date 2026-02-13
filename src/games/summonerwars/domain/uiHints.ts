@@ -26,7 +26,7 @@ function getActionableUnitHints(
       const remainingMoves = MAX_MOVES_PER_TURN - player.moveCount;
       if (remainingMoves > 0) {
         for (const u of units) {
-          if (!u.hasMoved && !isImmobile(u) && getValidMoveTargetsEnhanced(core, u.position).length > 0) {
+          if (!u.hasMoved && !isImmobile(u, core) && getValidMoveTargetsEnhanced(core, u.position).length > 0) {
             hints.push({
               type: 'actionable',
               position: u.position,
@@ -77,7 +77,7 @@ function getAbilityReadyHints(
     if (phase === 'move' && u.hasMoved) continue;
 
     // 获取可激活的技能
-    const activatableAbilities = getActivatableAbilities(u, phase);
+    const activatableAbilities = getActivatableAbilities(u, phase, core);
     if (activatableAbilities.length === 0) continue;
 
     // 检查是否真正可用（包含特殊条件）
