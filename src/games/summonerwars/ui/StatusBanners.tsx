@@ -225,6 +225,8 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
           {abilityMode.abilityId === 'spirit_bond' && t('statusBanners.ability.spiritBond')}
           {abilityMode.abilityId === 'ancestral_bond' && t('statusBanners.ability.ancestralBond')}
           {abilityMode.abilityId === 'structure_shift' && t('statusBanners.ability.structureShift')}
+          {abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectUnit' && t('statusBanners.ability.iceRamSelectTarget', '寒冰冲撞：选择建筑相邻的一个单位')}
+          {abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectPushDirection' && t('statusBanners.ability.iceRamSelectPush', '寒冰冲撞：选择推拉方向（或跳过）')}
           {abilityMode.abilityId === 'frost_axe' && abilityMode.step !== 'selectAttachTarget' && t('statusBanners.ability.frostAxe')}
           {abilityMode.abilityId === 'frost_axe' && abilityMode.step === 'selectAttachTarget' && t('statusBanners.ability.frostAxeSelectTarget')}
           {abilityMode.abilityId === 'vanish' && t('statusBanners.ability.vanish')}
@@ -280,13 +282,19 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
         {['spirit_bond', 'ancestral_bond', 'structure_shift'].includes(abilityMode.abilityId) && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
         )}
+        {abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectUnit' && (
+          <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
+        )}
+        {abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectPushDirection' && (
+          <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.skipPush', '跳过推拉')}</GameButton>
+        )}
         {abilityMode.abilityId === 'frost_axe' && abilityMode.step !== 'selectAttachTarget' && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
         )}
         {abilityMode.abilityId === 'frost_axe' && abilityMode.step === 'selectAttachTarget' && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
         )}
-        {!['blood_rune', 'ice_shards', 'feed_beast', 'spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'vanish'].includes(abilityMode.abilityId) && (
+        {!['blood_rune', 'ice_shards', 'feed_beast', 'spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'vanish', 'ice_ram'].includes(abilityMode.abilityId) && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
         )}
       </div>

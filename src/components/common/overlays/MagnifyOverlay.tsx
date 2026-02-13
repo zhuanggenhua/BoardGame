@@ -34,7 +34,7 @@ export const MagnifyOverlay = ({
             >
                 {closeLabel && (
                     <button
-                        className={`absolute -top-12 right-0 text-white/50 hover:text-white text-sm flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full transition-colors z-10 ${closeButtonClassName}`}
+                        className={`absolute -top-12 right-0 whitespace-nowrap text-white/50 hover:text-white text-sm flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full transition-colors z-10 ${closeButtonClassName}`}
                         onClick={onClose}
                     >
                         {closeLabel}

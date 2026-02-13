@@ -54,13 +54,15 @@ export interface DyingEntity {
 /** 技能模式状态 */
 export interface AbilityModeState {
   abilityId: string;
-  step: 'selectCard' | 'selectPosition' | 'selectUnit' | 'selectCards' | 'selectAttachTarget' | 'selectNewPosition';
+  step: 'selectCard' | 'selectPosition' | 'selectUnit' | 'selectCards' | 'selectAttachTarget' | 'selectNewPosition' | 'selectPushDirection';
   sourceUnitId: string;
   selectedCardId?: string;
   selectedCardIds?: string[];
   selectedUnitId?: string;
   targetPosition?: CellCoord;
   context?: 'beforeAttack' | 'activated';
+  /** 寒冰冲撞：建筑新位置 */
+  structurePosition?: CellCoord;
 }
 
 /** 灵魂转移模式状态 */
@@ -493,6 +495,19 @@ export function useGameEvents({
               abilityId: 'frost_axe',
               step: 'selectUnit',
               sourceUnitId: p.sourceUnitId,
+            });
+          }
+        }
+        // 寒冰冲撞：建筑移动/推拉后选择相邻单位
+        if (p.abilityId === 'ice_ram_trigger') {
+          const iceRamOwner = (event.payload as Record<string, unknown>).iceRamOwner as string;
+          const structurePosition = (event.payload as Record<string, unknown>).structurePosition as CellCoord;
+          if (iceRamOwner === myPlayerId && structurePosition) {
+            setAbilityMode({
+              abilityId: 'ice_ram',
+              step: 'selectUnit',
+              sourceUnitId: 'ice_ram',
+              structurePosition,
             });
           }
         }

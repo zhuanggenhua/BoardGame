@@ -1,39 +1,19 @@
 import type { CSSProperties } from 'react';
 import { getLocalizedAssetPath } from '../../../core';
+import {
+    type SpriteAtlasConfig,
+    computeSpriteStyle,
+    generateUniformAtlasConfig as engineGenerateUniform,
+    isSpriteAtlasConfig,
+} from '../../../engine/primitives/spriteAtlas';
 
-// --- 卡牌图集裁切配置（按行/列真实起点/尺寸）---
-export type CardAtlasConfig = {
-    imageW: number;
-    imageH: number;
-    cols: number;
-    rows: number;
-    rowStarts: number[];
-    rowHeights: number[];
-    colStarts: number[];
-    colWidths: number[];
-};
+// 向后兼容类型别名
+export type CardAtlasConfig = SpriteAtlasConfig;
 
 /** 均匀网格图集的默认配置（行列数），用于在 JSON 不存在时自动生成 */
 export type UniformAtlasDefault = {
     rows: number;
     cols: number;
-};
-
-const isNumberArray = (value: unknown): value is number[] => (
-    Array.isArray(value) && value.every((item) => typeof item === 'number')
-);
-
-const isCardAtlasConfig = (value: unknown): value is CardAtlasConfig => {
-    if (!value || typeof value !== 'object') return false;
-    const data = value as Record<string, unknown>;
-    return typeof data.imageW === 'number'
-        && typeof data.imageH === 'number'
-        && typeof data.rows === 'number'
-        && typeof data.cols === 'number'
-        && isNumberArray(data.rowStarts)
-        && isNumberArray(data.rowHeights)
-        && isNumberArray(data.colStarts)
-        && isNumberArray(data.colWidths);
 };
 
 /**
@@ -44,23 +24,7 @@ export const generateUniformAtlasConfig = (
     imageH: number,
     rows: number,
     cols: number
-): CardAtlasConfig => {
-    const cellW = imageW / cols;
-    const cellH = imageH / rows;
-    const rowStarts: number[] = [];
-    const rowHeights: number[] = [];
-    const colStarts: number[] = [];
-    const colWidths: number[] = [];
-    for (let i = 0; i < rows; i++) {
-        rowStarts.push(i * cellH);
-        rowHeights.push(cellH);
-    }
-    for (let i = 0; i < cols; i++) {
-        colStarts.push(i * cellW);
-        colWidths.push(cellW);
-    }
-    return { imageW, imageH, rows, cols, rowStarts, rowHeights, colStarts, colWidths };
-};
+): CardAtlasConfig => engineGenerateUniform(imageW, imageH, rows, cols);
 
 /**
  * 获取图片尺寸
@@ -140,19 +104,5 @@ export const loadCardAtlasConfig = async (
 };
 
 export const getCardAtlasStyle = (index: number, atlas: CardAtlasConfig) => {
-    const safeIndex = index % (atlas.cols * atlas.rows);
-    const col = safeIndex % atlas.cols;
-    const row = Math.floor(safeIndex / atlas.cols);
-    const cardW = atlas.colWidths[col] ?? atlas.colWidths[0];
-    const cardH = atlas.rowHeights[row] ?? atlas.rowHeights[0];
-    const x = atlas.colStarts[col] ?? atlas.colStarts[0];
-    const y = atlas.rowStarts[row] ?? atlas.rowStarts[0];
-    const xPos = (x / (atlas.imageW - cardW)) * 100;
-    const yPos = (y / (atlas.imageH - cardH)) * 100;
-    const bgSizeX = (atlas.imageW / cardW) * 100;
-    const bgSizeY = (atlas.imageH / cardH) * 100;
-    return {
-        backgroundSize: `${bgSizeX}% ${bgSizeY}%`,
-        backgroundPosition: `${xPos}% ${yPos}%`,
-    } as CSSProperties;
+    return computeSpriteStyle(index, atlas) as CSSProperties;
 };

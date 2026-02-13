@@ -64,8 +64,9 @@ const detectChantEntanglement: BuffDetector<GameState, BoardUnit> = (unit, gameS
   const isTarget = gameState.activeEvents.some(ev => {
     const baseId = ev.id.replace(/-\d+-\d+$/, '').replace(/-\d+$/, '');
     if (baseId !== 'barbaric-chant-of-entanglement') return false;
-    const payload = ev as any;
-    return payload.targetUnitId1 === unit.cardId || payload.targetUnitId2 === unit.cardId;
+    // reduce 中存储的字段是 entanglementTargets: [string, string]
+    const targets = (ev as any).entanglementTargets as [string, string] | undefined;
+    return targets ? targets.includes(unit.cardId) : false;
   });
   return isTarget ? { type: 'chantEntanglement' } : null;
 };

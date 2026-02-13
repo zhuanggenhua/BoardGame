@@ -151,6 +151,11 @@ export function useCellInteraction({
       const adj = getAdjacentCells(abilityMode.targetPosition);
       return adj.filter(p => isCellEmpty(core, p));
     }
+    // 寒冰冲撞第二步：选择推拉方向（目标单位相邻的空格）
+    if (abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectPushDirection' && abilityMode.targetPosition) {
+      const adj = getAdjacentCells(abilityMode.targetPosition);
+      return adj.filter(p => isCellEmpty(core, p));
+    }
     if (abilityMode.step !== 'selectPosition') return [];
     if (abilityMode.abilityId === 'revive_undead') {
       const sourcePos = findUnitPosition(core, abilityMode.sourceUnitId);
@@ -226,6 +231,12 @@ export function useCellInteraction({
         const unit = core.board[p.row]?.[p.col]?.unit;
         return unit && unit.owner === (myPlayerId as '0' | '1') && unit.cardId !== abilityMode.sourceUnitId;
       });
+    }
+    // 寒冰冲撞：建筑新位置相邻的所有单位（任意阵营）
+    if (abilityMode.abilityId === 'ice_ram' && abilityMode.structurePosition) {
+      const sp = abilityMode.structurePosition;
+      const adj = getAdjacentCells(sp);
+      return adj.filter(p => !!core.board[p.row]?.[p.col]?.unit);
     }
     // 结构变换：3格内友方建筑（含活体结构单位如寒冰魔像）
     if (abilityMode.abilityId === 'structure_shift') {
@@ -384,6 +395,15 @@ export function useCellInteraction({
     if (abilityMode && abilityMode.step === 'selectUnit') {
       const isValid = validAbilityUnits.some(p => p.row === gameRow && p.col === gameCol);
       if (isValid) {
+        // 寒冰冲撞：选择目标后进入推拉方向选择
+        if (abilityMode.abilityId === 'ice_ram') {
+          setAbilityMode({
+            ...abilityMode,
+            step: 'selectPushDirection',
+            targetPosition: { row: gameRow, col: gameCol },
+          });
+          return;
+        }
         // 结构变换目标是建筑，进入选择推拉方向步骤
         if (abilityMode.abilityId === 'structure_shift') {
           setAbilityMode({
@@ -454,6 +474,21 @@ export function useCellInteraction({
           sourceUnitId: abilityMode.sourceUnitId,
           targetPosition: abilityMode.targetPosition,
           newPosition: { row: gameRow, col: gameCol },
+        });
+        setAbilityMode(null);
+      }
+      return;
+
+    // 寒冰冲撞第二步：选择推拉方向（或跳过）
+    } else if (abilityMode && abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectPushDirection') {
+      const isValid = validAbilityPositions.some(p => p.row === gameRow && p.col === gameCol);
+      if (isValid && abilityMode.targetPosition && abilityMode.structurePosition) {
+        moves[SW_COMMANDS.ACTIVATE_ABILITY]?.({
+          abilityId: 'ice_ram',
+          sourceUnitId: 'ice_ram',
+          targetPosition: abilityMode.targetPosition,
+          structurePosition: abilityMode.structurePosition,
+          pushNewPosition: { row: gameRow, col: gameCol },
         });
         setAbilityMode(null);
       }

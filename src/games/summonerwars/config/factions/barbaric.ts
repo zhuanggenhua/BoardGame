@@ -45,7 +45,7 @@ export const SUMMONER_BARBARIC: UnitCard = {
   name: '阿布亚·石',
   unitClass: 'summoner',
   faction: 'barbaric',
-  strength: 2,
+  strength: 5,
   life: 10,
   cost: 0,
   attackType: 'ranged',

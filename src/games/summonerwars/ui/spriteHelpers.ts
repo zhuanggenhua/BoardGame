@@ -17,7 +17,10 @@ export function getUnitSpriteConfig(unit: BoardUnit): SpriteConfig {
   const card = unit.card;
   const spriteIndex = card.spriteIndex ?? 0;
   const spriteAtlas = card.spriteAtlas ?? 'cards';
-  const atlasId = getFactionAtlasId(card.faction, spriteAtlas as 'hero' | 'cards');
+  if (spriteAtlas === 'portal') {
+    return { atlasId: 'sw:portal', frameIndex: spriteIndex };
+  }
+  const atlasId = resolveCardAtlasId(card, spriteAtlas as 'hero' | 'cards');
   return { atlasId, frameIndex: spriteIndex };
 }
 

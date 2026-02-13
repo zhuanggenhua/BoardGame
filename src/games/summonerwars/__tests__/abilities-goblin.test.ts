@@ -20,7 +20,7 @@ import type { SummonerWarsCore, CellCoord, BoardUnit, UnitCard, EventCard, Playe
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import {
   canMoveToEnhanced, canAttackEnhanced,
-  isImmobile, hasChargeAbility, hasFerocityAbility,
+  isImmobileBase, hasChargeAbilityBase, hasFerocityAbilityBase,
   getValidMoveTargetsEnhanced,
 } from '../domain/helpers';
 import { calculateEffectiveStrength } from '../domain/abilityResolver';
@@ -230,7 +230,7 @@ describe('部落抓附手 - 禁足 (immobile)', () => {
       position: { row: 0, col: 0 }, damage: 0, boosts: 0,
       hasMoved: false, hasAttacked: false,
     };
-    expect(isImmobile(grabber)).toBe(true);
+    expect(isImmobileBase(grabber)).toBe(true);
   });
 
   it('isImmobile 对无 immobile 技能的单位返回 false', () => {
@@ -239,7 +239,7 @@ describe('部落抓附手 - 禁足 (immobile)', () => {
       position: { row: 0, col: 0 }, damage: 0, boosts: 0,
       hasMoved: false, hasAttacked: false,
     };
-    expect(isImmobile(rider)).toBe(false);
+    expect(isImmobileBase(rider)).toBe(false);
   });
 
   it('禁足单位无法移动（getValidMoveTargetsEnhanced 返回空）', () => {
@@ -356,7 +356,7 @@ describe('野兽骑手 - 冲锋 (charge)', () => {
       position: { row: 0, col: 0 }, damage: 0, boosts: 0,
       hasMoved: false, hasAttacked: false,
     };
-    expect(hasChargeAbility(rider)).toBe(true);
+    expect(hasChargeAbilityBase(rider)).toBe(true);
   });
 
   it('冲锋单位可以直线移动1-4格', () => {
@@ -482,7 +482,7 @@ describe('部落投石手 - 凶残 (ferocity)', () => {
       position: { row: 0, col: 0 }, damage: 0, boosts: 0,
       hasMoved: false, hasAttacked: false,
     };
-    expect(hasFerocityAbility(slinger)).toBe(true);
+    expect(hasFerocityAbilityBase(slinger)).toBe(true);
   });
 
   it('凶残单位可以在攻击次数用完后仍然攻击', () => {

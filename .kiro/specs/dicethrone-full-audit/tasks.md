@@ -21,8 +21,9 @@
   - [x] 1.4 修复僧侣审查中发现的所有问题
     - 修复代码/i18n 不一致
     - _Requirements: 1.4, 2.4, 3.4, 4.4, 5.4_
-  - [ ]* 1.5 补充僧侣缺失的测试覆盖
+  - [x]* 1.5 补充僧侣缺失的测试覆盖
     - **Property 2: CustomAction 输出与 AbilityDef 声明一致性**
+    - 已在 `ability-customaction-audit.test.ts` 中实现
     - **Validates: Requirements 3.1, 9.2**
 
 - [-] 2. 狂战士（Barbarian）全链路审查
@@ -41,8 +42,9 @@
     - 合并 steadfast-2 variant heal keys 到父级
     - 修复 reckless-strike-2 selfDamage5 缺少条件说明
     - _Requirements: 1.4, 2.4, 3.4, 4.4, 5.4_
-  - [ ]* 2.5 补充狂战士缺失的测试覆盖
+  - [x]* 2.5 补充狂战士缺失的测试覆盖
     - **Property 2: CustomAction 输出与 AbilityDef 声明一致性**
+    - 已在 `ability-customaction-audit.test.ts` 中实现
     - **Validates: Requirements 3.1, 9.2**
 
 - [x] 3. Checkpoint - 僧侣和狂战士审查完成
@@ -64,8 +66,9 @@
     - Token 定义与 i18n 一致，无问题
     - 卡牌定义与 i18n 一致，无问题
     - _Requirements: 1.4, 2.4, 3.4, 4.4, 5.4_
-  - [ ]* 4.5 补充圣骑士缺失的测试覆盖
+  - [x]* 4.5 补充圣骑士缺失的测试覆盖
     - **Property 2: CustomAction 输出与 AbilityDef 声明一致性**
+    - 已在 `ability-customaction-audit.test.ts` 中实现
     - **Validates: Requirements 3.1, 9.2**
 
 - [x] 5. 火法师（Pyromancer）全链路审查
@@ -85,8 +88,9 @@
     - P4: fireball L1 variant i18n key 结构错误（damage4/6/8 放在 fireball 下而非 fireball-3/4/5 下）→ 已重构
     - P4: fireball-2 缺少 gainFM2 effects key → 已添加
     - _Requirements: 1.4, 2.4, 3.4, 4.4, 5.4_
-  - [ ]* 5.5 补充火法师缺失的测试覆盖
+  - [x]* 5.5 补充火法师缺失的测试覆盖
     - **Property 2: CustomAction 输出与 AbilityDef 声明一致性**
+    - 已在 `ability-customaction-audit.test.ts` 中实现
     - **Validates: Requirements 3.1, 9.2**
 
 - [x] 6. Checkpoint - 圣骑士和火法师审查完成
@@ -110,8 +114,9 @@
     - Token 定义与 i18n 一致，无问题
     - 卡牌定义与 i18n 一致，无问题
     - _Requirements: 1.4, 2.4, 3.4, 4.4, 5.4_
-  - [ ]* 7.5 补充月精灵缺失的测试覆盖
+  - [x]* 7.5 补充月精灵缺失的测试覆盖
     - **Property 2: CustomAction 输出与 AbilityDef 声明一致性**
+    - 已在 `ability-customaction-audit.test.ts` 中实现
     - **Validates: Requirements 3.1, 9.2**
 
 - [x] 8. 暗影盗贼（Shadow Thief）全链路审查
@@ -130,8 +135,9 @@
     - Token 定义与 i18n 一致，无问题
     - 卡牌定义与 i18n 一致，无问题
     - _Requirements: 1.4, 2.4, 3.4, 4.4, 5.4_
-  - [ ]* 8.5 补充暗影盗贼缺失的测试覆盖
+  - [x]* 8.5 补充暗影盗贼缺失的测试覆盖
     - **Property 2: CustomAction 输出与 AbilityDef 声明一致性**
+    - 已在 `ability-customaction-audit.test.ts` 中实现
     - **Validates: Requirements 3.1, 9.2**
 
 - [x] 9. Checkpoint - 月精灵和暗影盗贼审查完成
@@ -148,9 +154,10 @@
   - [x] 10.2 修复共享状态效果不一致问题
     - 无不一致问题
     - _Requirements: 8.4_
-  - [ ]* 10.3 编写共享状态效果一致性测试
+  - [x]* 10.3 编写共享状态效果一致性测试
     - **Property 9: 共享状态效果跨英雄一致性**
     - **Property 10: 燃烧/中毒 upkeep 处理正确性**
+    - 已在 `shared-state-consistency.test.ts` 中实现（12 tests）
     - **Validates: Requirements 8.1, 8.2, 8.3**
 
 - [x] 11. UI 交互链完整性审查
@@ -188,11 +195,12 @@
   - [x] 12.3 修复规则不一致问题
     - 修复 shouldOpenTokenResponse 终极技能防御方 Token 响应跳过
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
-  - [ ]* 12.4 编写规则一致性属性测试
+  - [x]* 12.4 编写规则一致性属性测试
     - **Property 3: 可防御性判定正确性**
     - **Property 6: 阶段流转正确性**
     - **Property 7: 伤害类型处理正确性**
     - **Property 8: 状态效果叠加正确性**
+    - 已在 `rule-consistency.test.ts` 中实现（21 tests）
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5**
 
 - [x] 13. 测试覆盖完整性审查
@@ -200,14 +208,19 @@
     - 已列出所有已注册的 customAction ID（6 英雄 + common，共 ~80 个）
     - 完整覆盖审计为可选任务，当前 711 测试已覆盖核心路径
     - _Requirements: 9.1, 9.2_
-  - [ ]* 13.2 编写 customAction 覆盖完整性审计测试
+  - [x]* 13.2 编写 customAction 覆盖完整性审计测试
     - **Property 11: CustomAction 测试覆盖完整性**
+    - 已在 `ability-customaction-audit.test.ts` 中实现（24 tests）
     - **Validates: Requirements 9.2**
 
 - [x] 14. Final checkpoint - 全部审查完成
-  - DiceThrone 45 test files, 711 tests, 0 failures ✅
+  - DiceThrone 48 test files, 768 tests, 0 failures ✅
   - 审查发现并修复 1 个 P1 规则一致性 bug（终极技能 Token 响应）
   - 跨英雄共享状态一致、UI 交互链完整、阶段流转正确
+  - 所有可选测试任务已完成：
+    - `ability-customaction-audit.test.ts`（24 tests）— Tasks 1.5-8.5, 13.2
+    - `shared-state-consistency.test.ts`（12 tests）— Task 10.3
+    - `rule-consistency.test.ts`（21 tests）— Task 12.4
 
 ## Notes
 

@@ -531,7 +531,7 @@ const UnitCell: React.FC<{
         {/* 放大镜按钮 - 保持正向可读 */}
         <button
           onClick={(e) => { e.stopPropagation(); props.onMagnifyUnit(unit); }}
-          className={`absolute top-[0.2vw] left-[0.2vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 ${!isMyUnit ? 'rotate-180' : ''}`}
+          className={`absolute top-[0.2vw] right-[0.2vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 ${!isMyUnit ? 'rotate-180' : ''}`}
           style={{ zIndex: BOARD_GRID_Z.magnifyButton }}
         >
           <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
@@ -666,7 +666,7 @@ const StructureCell: React.FC<{
         {/* 放大镜按钮 - 保持正向可读 */}
         <button
           onClick={(e) => { e.stopPropagation(); props.onMagnifyStructure(structure); }}
-          className={`absolute top-[0.2vw] left-[0.2vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 ${!isMyStructure ? 'rotate-180' : ''}`}
+          className={`absolute top-[0.2vw] right-[0.2vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 ${!isMyStructure ? 'rotate-180' : ''}`}
           style={{ zIndex: BOARD_GRID_Z.magnifyButton }}
         >
           <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">

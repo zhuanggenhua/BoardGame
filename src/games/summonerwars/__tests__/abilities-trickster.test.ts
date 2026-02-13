@@ -19,8 +19,8 @@ import type { SummonerWarsCore, CellCoord, BoardUnit, UnitCard, PlayerId } from 
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import {
   canMoveToEnhanced, canAttackEnhanced,
-  hasStableAbility, getEvasionUnits, getEntangleUnits,
-  getEffectiveAttackRange, getStormAssaultReduction,
+  hasStableAbilityBase, getEvasionUnits, getEntangleUnits,
+  getEffectiveAttackRangeBase, getStormAssaultReduction,
 } from '../domain/helpers';
 import { calculateEffectiveStrength } from '../domain/abilityResolver';
 import { createInitializedCore } from './test-helpers';
@@ -608,7 +608,7 @@ describe('清风弓箭手 - 远射 (ranged)', () => {
       position: { row: 0, col: 0 }, damage: 0, boosts: 0,
       hasMoved: false, hasAttacked: false,
     };
-    expect(getEffectiveAttackRange(archer)).toBe(4);
+    expect(getEffectiveAttackRangeBase(archer)).toBe(4);
   });
 
   it('getEffectiveAttackRange 对普通远程单位返回默认范围', () => {
@@ -617,7 +617,7 @@ describe('清风弓箭手 - 远射 (ranged)', () => {
       owner: '0', position: { row: 0, col: 0 }, damage: 0, boosts: 0,
       hasMoved: false, hasAttacked: false,
     };
-    expect(getEffectiveAttackRange(normal)).toBe(3);
+    expect(getEffectiveAttackRangeBase(normal)).toBe(3);
   });
 });
 
@@ -632,7 +632,7 @@ describe('卡拉 - 稳固 (stable)', () => {
       position: { row: 0, col: 0 }, damage: 0, boosts: 0,
       hasMoved: false, hasAttacked: false,
     };
-    expect(hasStableAbility(kara)).toBe(true);
+    expect(hasStableAbilityBase(kara)).toBe(true);
   });
 
   it('hasStableAbility 对无 stable 技能的单位返回 false', () => {
@@ -641,7 +641,7 @@ describe('卡拉 - 稳固 (stable)', () => {
       position: { row: 0, col: 0 }, damage: 0, boosts: 0,
       hasMoved: false, hasAttacked: false,
     };
-    expect(hasStableAbility(normal)).toBe(false);
+    expect(hasStableAbilityBase(normal)).toBe(false);
   });
 });
 

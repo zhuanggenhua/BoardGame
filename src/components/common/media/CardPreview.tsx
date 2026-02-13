@@ -1,6 +1,7 @@
 import { useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { buildLocalizedImageSet, getLocalizedAssetPath, getLocalizedImageUrls, type CardPreviewRef } from '../../../core';
 import { OptimizedImage } from './OptimizedImage';
+import { type SpriteAtlasConfig, type SpriteAtlasSource, computeSpriteStyle } from '../../../engine/primitives/spriteAtlas';
 
 export type CardPreviewRenderer = (args: {
     previewRef: CardPreviewRef;
@@ -11,25 +12,15 @@ export type CardPreviewRenderer = (args: {
 
 export type CardSvgRenderer = (props?: Record<string, string | number>) => ReactNode;
 
-export type CardAtlasConfig = {
-    imageW: number;
-    imageH: number;
-    cols: number;
-    rows: number;
-    rowStarts: number[];
-    rowHeights: number[];
-    colStarts: number[];
-    colWidths: number[];
-};
-
-export type CardAtlasSource = {
-    image: string;
-    config: CardAtlasConfig;
-};
+// 向后兼容类型别名（游戏层可能直接引用）
+export type CardAtlasConfig = SpriteAtlasConfig;
+export type CardAtlasSource = SpriteAtlasSource;
 
 const previewRendererRegistry = new Map<string, CardPreviewRenderer>();
 const svgRendererRegistry = new Map<string, CardSvgRenderer>();
-const atlasRegistry = new Map<string, CardAtlasSource>();
+// CardPreview 专用注册表：存储 base path（不带扩展名），由 AtlasCard 用 buildLocalizedImageSet 构建实际 URL
+// 与引擎层 globalSpriteAtlasRegistry（存储运行时 webp URL）独立
+const cardAtlasRegistry = new Map<string, CardAtlasSource>();
 
 export function registerCardPreviewRenderer(id: string, renderer: CardPreviewRenderer): void {
     previewRendererRegistry.set(id, renderer);
@@ -39,12 +30,14 @@ export function registerCardSvgRenderer(id: string, renderer: CardSvgRenderer): 
     svgRendererRegistry.set(id, renderer);
 }
 
+/** 注册卡牌图集源（CardPreview 专用，存 base path） */
 export function registerCardAtlasSource(id: string, source: CardAtlasSource): void {
-    atlasRegistry.set(id, source);
+    cardAtlasRegistry.set(id, source);
 }
 
+/** 获取卡牌图集源（CardPreview 专用） */
 export function getCardAtlasSource(id: string): CardAtlasSource | undefined {
-    return atlasRegistry.get(id);
+    return cardAtlasRegistry.get(id);
 }
 
 export function getCardPreviewRenderer(id: string): CardPreviewRenderer | undefined {
@@ -55,22 +48,9 @@ export function getCardSvgRenderer(id: string): CardSvgRenderer | undefined {
     return svgRendererRegistry.get(id);
 }
 
+/** 计算图集帧的 CSS 裁切样式（委托到引擎层） */
 export function getCardAtlasStyle(index: number, atlas: CardAtlasConfig): CSSProperties {
-    const safeIndex = index % (atlas.cols * atlas.rows);
-    const col = safeIndex % atlas.cols;
-    const row = Math.floor(safeIndex / atlas.cols);
-    const cardW = atlas.colWidths[col] ?? atlas.colWidths[0];
-    const cardH = atlas.rowHeights[row] ?? atlas.rowHeights[0];
-    const x = atlas.colStarts[col] ?? atlas.colStarts[0];
-    const y = atlas.rowStarts[row] ?? atlas.rowStarts[0];
-    const xPos = (x / (atlas.imageW - cardW)) * 100;
-    const yPos = (y / (atlas.imageH - cardH)) * 100;
-    const bgSizeX = (atlas.imageW / cardW) * 100;
-    const bgSizeY = (atlas.imageH / cardH) * 100;
-    return {
-        backgroundSize: `${bgSizeX}% ${bgSizeY}%`,
-        backgroundPosition: `${xPos}% ${yPos}%`,
-    };
+    return computeSpriteStyle(index, atlas);
 }
 
 export type CardPreviewProps = {

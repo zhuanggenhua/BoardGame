@@ -11,7 +11,7 @@ import type { RandomFn } from '../../../engine/types';
 import { 
   calculateEffectiveStrength, 
   evaluateCondition,
-  getUnitAbilities,
+  getUnitBaseAbilities,
   resolveEffect,
   triggerAllUnitsAbilities,
 } from '../domain/abilityResolver';
@@ -333,7 +333,7 @@ describe('单位技能获取', () => {
       hasAttacked: false,
     };
     
-    const abilities = getUnitAbilities(warrior);
+    const abilities = getUnitBaseAbilities(warrior);
     expect(abilities.length).toBe(2);
     expect(abilities.some(a => a.id === 'blood_rage')).toBe(true);
     expect(abilities.some(a => a.id === 'power_boost')).toBe(true);
@@ -363,7 +363,7 @@ describe('单位技能获取', () => {
       hasAttacked: false,
     };
     
-    const abilities = getUnitAbilities(unit);
+    const abilities = getUnitBaseAbilities(unit);
     expect(abilities.length).toBe(0);
   });
 });

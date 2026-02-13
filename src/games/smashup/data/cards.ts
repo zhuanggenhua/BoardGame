@@ -78,7 +78,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 23,
         vpAwards: [4, 2, 1],
         faction: 'aliens',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 0 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 1 },
         restrictions: [{ type: 'play_minion', condition: { extraPlayMinionPowerMax: 2 } }],
     },
     {
@@ -88,7 +88,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 20,
         vpAwards: [4, 2, 1],
         faction: 'aliens',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 1 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 5 },
     },
     {
         id: 'base_central_brain',
@@ -97,7 +97,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 19,
         vpAwards: [4, 2, 1],
         faction: 'robots',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 2 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 8 },
         minionPowerBonus: 1,
     },
     {
@@ -107,7 +107,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 12,
         vpAwards: [2, 0, 0],
         faction: 'dinosaurs',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 3 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 9 },
     },
     {
         id: 'base_temple_of_goju',
@@ -125,7 +125,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 23,
         vpAwards: [4, 2, 1],
         faction: 'tricksters',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 5 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 11 },
     },
     {
         id: 'base_haunted_house',
@@ -134,7 +134,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 20,
         vpAwards: [5, 3, 2],
         faction: 'zombies',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 6 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 14 },
     },
     {
         id: 'base_rhodes_plaza',
@@ -143,7 +143,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 24,
         vpAwards: [0, 0, 0],
         faction: 'zombies',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 7 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 2 },
     },
     {
         id: 'base_the_factory',
@@ -152,7 +152,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 25,
         vpAwards: [2, 2, 1],
         faction: 'robots',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 8 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 7 },
     },
     {
         id: 'base_tar_pits',
@@ -161,7 +161,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 16,
         vpAwards: [4, 3, 2],
         faction: 'dinosaurs',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 9 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 15 },
     },
     {
         id: 'base_ninja_dojo',
@@ -170,7 +170,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 18,
         vpAwards: [2, 3, 2],
         faction: 'ninjas',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 10 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 0 },
     },
     {
         id: 'base_mushroom_kingdom',
@@ -179,7 +179,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 20,
         vpAwards: [5, 3, 2],
         faction: 'tricksters',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 11 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 6 },
     },
     {
         id: 'base_pirate_cove',
@@ -188,7 +188,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 17,
         vpAwards: [3, 1, 1],
         faction: 'pirates',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 12 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 3 },
     },
     {
         id: 'base_tortuga',
@@ -206,7 +206,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 22,
         vpAwards: [4, 2, 1],
         faction: 'wizards',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 14 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 10 },
     },
     {
         id: 'base_wizard_academy',
@@ -215,7 +215,7 @@ export const BASE_CARDS: BaseCardDef[] = [
         breakpoint: 20,
         vpAwards: [3, 2, 1],
         faction: 'wizards',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 15 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 12 },
     },
 ];
 registerBases(BASE_CARDS);

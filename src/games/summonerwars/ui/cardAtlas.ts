@@ -1,6 +1,6 @@
 /**
  * 召唤师战争 - 卡牌图集配置
- * 参考 dicethrone 的 CardAtlasConfig 方式，支持不同规格精灵图
+ * 底层使用引擎层 SpriteAtlasRegistry，本文件保留游戏特有的阵营映射逻辑
  */
 
 import type { CSSProperties } from 'react';
@@ -8,85 +8,35 @@ import { getOptimizedImageUrls } from '../../../core/AssetLoader';
 import { registerCardAtlasSource } from '../../../components/common/media/CardPreview';
 import type { FactionId } from '../domain/types';
 import { resolveFactionId } from '../config/factions';
+import {
+  type SpriteAtlasConfig,
+  type SpriteAtlasSource,
+  computeSpriteStyle,
+  computeSpriteAspectRatio,
+  globalSpriteAtlasRegistry,
+} from '../../../engine/primitives/spriteAtlas';
 
-/** 精灵图配置（支持不规则帧尺寸） */
-export interface SpriteAtlasConfig {
-  /** 图集总宽度 */
-  imageW: number;
-  /** 图集总高度 */
-  imageH: number;
-  /** 列数 */
-  cols: number;
-  /** 行数 */
-  rows: number;
-  /** 每列起始 X（像素） */
-  colStarts: number[];
-  /** 每列宽度（像素） */
-  colWidths: number[];
-  /** 每行起始 Y（像素） */
-  rowStarts: number[];
-  /** 每行高度（像素）- 内容高度，不含黑边 */
-  rowHeights: number[];
-}
+// 向后兼容：re-export 引擎层类型
+export type { SpriteAtlasConfig, SpriteAtlasSource };
 
-/** 精灵图源（图片 + 配置） */
-export interface SpriteAtlasSource {
-  image: string;
-  config: SpriteAtlasConfig;
-}
-
-// 精灵图源注册表
-const atlasRegistry = new Map<string, SpriteAtlasSource>();
-
-/** 注册精灵图源 */
+/** 注册精灵图源（委托到引擎层全局注册表） */
 export function registerSpriteAtlas(id: string, source: SpriteAtlasSource): void {
-  atlasRegistry.set(id, source);
+  globalSpriteAtlasRegistry.register(id, source);
 }
 
-/** 获取精灵图源 */
+/** 获取精灵图源（委托到引擎层全局注册表） */
 export function getSpriteAtlasSource(id: string): SpriteAtlasSource | undefined {
-  return atlasRegistry.get(id);
+  return globalSpriteAtlasRegistry.getSource(id);
 }
 
-/** 计算精灵图裁切样式 */
-export function getSpriteAtlasStyle(
-  index: number,
-  atlas: SpriteAtlasConfig
-): CSSProperties {
-  const safeIndex = index % (atlas.cols * atlas.rows);
-  const col = safeIndex % atlas.cols;
-  const row = Math.floor(safeIndex / atlas.cols);
-  
-  const cardW = atlas.colWidths[col] ?? atlas.colWidths[0];
-  const cardH = atlas.rowHeights[row] ?? atlas.rowHeights[0];
-  const x = atlas.colStarts[col] ?? atlas.colStarts[0];
-  const y = atlas.rowStarts[row] ?? atlas.rowStarts[0];
-  
-  // 计算背景位置百分比
-  const xPos = atlas.imageW > cardW ? (x / (atlas.imageW - cardW)) * 100 : 0;
-  const yPos = atlas.imageH > cardH ? (y / (atlas.imageH - cardH)) * 100 : 0;
-  
-  // 计算背景缩放比例
-  const bgSizeX = (atlas.imageW / cardW) * 100;
-  const bgSizeY = (atlas.imageH / cardH) * 100;
-  
-  return {
-    backgroundSize: `${bgSizeX}% ${bgSizeY}%`,
-    backgroundPosition: `${xPos}% ${yPos}%`,
-  };
+/** 计算精灵图裁切样式（委托到引擎层） */
+export function getSpriteAtlasStyle(index: number, atlas: SpriteAtlasConfig): CSSProperties {
+  return computeSpriteStyle(index, atlas);
 }
 
-/** 获取帧的宽高比 */
-export function getFrameAspectRatio(
-  index: number,
-  atlas: SpriteAtlasConfig
-): number {
-  const safeIndex = index % (atlas.cols * atlas.rows);
-  const col = safeIndex % atlas.cols;
-  const row = Math.floor(safeIndex / atlas.cols);
-  const cardW = atlas.colWidths[col] ?? atlas.colWidths[0];
-  const cardH = atlas.rowHeights[row] ?? atlas.rowHeights[0];
-  return cardW / cardH;
+/** 获取帧的宽高比（委托到引擎层） */
+export function getFrameAspectRatio(index: number, atlas: SpriteAtlasConfig): number {
+  return computeSpriteAspectRatio(index, atlas);
 }
 
 // ========== 通用精灵图配置 ==========

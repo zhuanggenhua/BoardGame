@@ -367,6 +367,11 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     const spriteIndex = 'spriteIndex' in card ? card.spriteIndex : undefined;
     const spriteAtlas = 'spriteAtlas' in card ? card.spriteAtlas : undefined;
     if (spriteIndex === undefined) return;
+    // 传送门使用全局共用图集
+    if (spriteAtlas === 'portal') {
+      setMagnifiedCard({ atlasId: 'sw:portal', frameIndex: spriteIndex });
+      return;
+    }
     const atlasType = (spriteAtlas ?? 'cards') as 'hero' | 'cards';
     const atlasId = resolveCardAtlasId(card as { id: string; faction?: string }, atlasType);
     setMagnifiedCard({ atlasId, frameIndex: spriteIndex });
@@ -897,8 +902,8 @@ export const SummonerWarsBoard: React.FC<Props> = ({
               />
 
               {/* 卡牌放大预览 */}
-              <MagnifyOverlay isOpen={!!magnifiedCard} onClose={() => setMagnifiedCard(null)} containerClassName="max-h-[85vh] max-w-[90vw]" closeLabel={t('actions.closePreview')}>
-                {magnifiedCard && <CardSprite atlasId={magnifiedCard.atlasId} frameIndex={magnifiedCard.frameIndex} className="h-[75vh] w-auto rounded-xl shadow-2xl" />}
+              <MagnifyOverlay isOpen={!!magnifiedCard} onClose={() => setMagnifiedCard(null)} containerClassName="max-h-[85vh] max-w-[90vw]">
+                {magnifiedCard && <CardSprite atlasId={magnifiedCard.atlasId} frameIndex={magnifiedCard.frameIndex} className="h-[75vh] rounded-xl shadow-2xl" style={{ minWidth: '40vw' }} />}
               </MagnifyOverlay>
 
               {/* 弃牌堆查看浮层 */}

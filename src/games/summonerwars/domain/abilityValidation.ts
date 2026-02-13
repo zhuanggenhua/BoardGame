@@ -8,7 +8,8 @@ import type { ValidationResult } from '../../../engine/types';
 import type { SummonerWarsCore, PlayerId, CellCoord, BoardUnit } from './types';
 import type { AbilityDef, ValidationContext } from './abilities';
 import { abilityRegistry } from './abilities';
-import { getUnitAbilities } from './helpers';
+import { getUnitAbilities, getUnitAt, manhattanDistance, isValidCoord, isCellEmpty } from './helpers';
+import { CARD_IDS, getBaseCardId } from './ids';
 
 /**
  * 验证技能是否可以激活
@@ -23,6 +24,27 @@ export function validateAbilityActivation(
 ): ValidationResult {
   const abilityId = payload.abilityId as string;
   const sourceUnitId = payload.sourceUnitId as string;
+
+  // 寒冰冲撞：事件卡持续效果，不走单位技能验证
+  if (abilityId === 'ice_ram') {
+    const hasIceRam = core.players[playerId]?.activeEvents.some(ev =>
+      getBaseCardId(ev.id) === CARD_IDS.FROST_ICE_RAM
+    );
+    if (!hasIceRam) return { valid: false, error: '没有寒冰冲撞主动事件' };
+    const targetPos = payload.targetPosition as CellCoord | undefined;
+    const structurePos = payload.structurePosition as CellCoord | undefined;
+    if (!targetPos || !structurePos) return { valid: false, error: '缺少目标或建筑位置' };
+    if (manhattanDistance(targetPos, structurePos) !== 1) return { valid: false, error: '目标必须与建筑相邻' };
+    const targetUnit = getUnitAt(core, targetPos);
+    if (!targetUnit) return { valid: false, error: '目标位置没有单位' };
+    const pushNewPos = payload.pushNewPosition as CellCoord | undefined;
+    if (pushNewPos) {
+      if (!isValidCoord(pushNewPos)) return { valid: false, error: '推拉目标位置无效' };
+      if (manhattanDistance(targetPos, pushNewPos) !== 1) return { valid: false, error: '推拉距离必须为1格' };
+      if (!isCellEmpty(core, pushNewPos)) return { valid: false, error: '推拉目标位置不为空' };
+    }
+    return { valid: true };
+  }
   
   // 查找源单位
   let sourceUnit: BoardUnit | undefined;

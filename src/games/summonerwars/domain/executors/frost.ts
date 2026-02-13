@@ -134,3 +134,43 @@ abilityExecutorRegistry.register('frost_axe', (ctx: SWAbilityContext) => {
   }
   return { events };
 }, { payloadContract: { required: ['choice'], optional: ['targetPosition'] } });
+
+
+/** 寒冰冲撞 — 对建筑相邻目标造成1伤 + 可选推拉1格 */
+abilityExecutorRegistry.register('ice_ram', (ctx: SWAbilityContext) => {
+  const events: GameEvent[] = [];
+  const { core, payload, ownerId: playerId, timestamp } = ctx;
+  const targetPos = payload.targetPosition as CellCoord | undefined;
+  const structurePos = payload.structurePosition as CellCoord | undefined;
+  const pushNewPos = payload.pushNewPosition as CellCoord | undefined;
+  if (!targetPos || !structurePos) return { events };
+
+  // 验证目标与建筑相邻
+  if (manhattanDistance(targetPos, structurePos) !== 1) return { events };
+  const targetUnit = getUnitAt(core, targetPos);
+  if (!targetUnit) return { events };
+
+  // 造成1伤害
+  events.push({
+    type: SW_EVENTS.UNIT_DAMAGED,
+    payload: {
+      position: targetPos,
+      damage: 1,
+      reason: 'ice_ram',
+      sourcePlayerId: playerId,
+    },
+    timestamp,
+  });
+
+  // 可选推拉1格
+  if (pushNewPos && isValidCoord(pushNewPos)
+    && manhattanDistance(targetPos, pushNewPos) === 1
+    && isCellEmpty(core, pushNewPos)) {
+    events.push({
+      type: SW_EVENTS.UNIT_PUSHED,
+      payload: { targetPosition: targetPos, newPosition: pushNewPos },
+      timestamp,
+    });
+  }
+  return { events };
+}, { payloadContract: { required: ['targetPosition', 'structurePosition'], optional: ['pushNewPosition'] } });

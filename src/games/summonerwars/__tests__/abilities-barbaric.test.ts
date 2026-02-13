@@ -24,7 +24,7 @@ import type {
 } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import { canMoveToEnhanced } from '../domain/helpers';
-import { calculateEffectiveStrength, getEffectiveLife } from '../domain/abilityResolver';
+import { calculateEffectiveStrength, getEffectiveLifeBase } from '../domain/abilityResolver';
 import { createInitializedCore } from './test-helpers';
 
 // ============================================================================
@@ -154,7 +154,7 @@ function makeArcher(id: string): UnitCard {
 function makeBarbaricSummoner(id: string): UnitCard {
   return {
     id, cardType: 'unit', name: '阿布亚·石', unitClass: 'summoner',
-    faction: 'barbaric', strength: 2, life: 10, cost: 0,
+    faction: 'barbaric', strength: 5, life: 10, cost: 0,
     attackType: 'ranged', attackRange: 3,
     abilities: ['ancestral_bond'], deckSymbols: [],
   };
@@ -269,7 +269,7 @@ describe('雌狮 - 生命强化 (life_up)', () => {
       boosts: 0,
     });
 
-    const life = getEffectiveLife(lioness);
+    const life = getEffectiveLifeBase(lioness);
     expect(life).toBe(2); // 基础2
   });
 
@@ -282,7 +282,7 @@ describe('雌狮 - 生命强化 (life_up)', () => {
       boosts: 2,
     });
 
-    const life = getEffectiveLife(lioness);
+    const life = getEffectiveLifeBase(lioness);
     expect(life).toBe(4); // 基础2 + 充能2
   });
 
@@ -295,7 +295,7 @@ describe('雌狮 - 生命强化 (life_up)', () => {
       boosts: 7,
     });
 
-    const life = getEffectiveLife(lioness);
+    const life = getEffectiveLifeBase(lioness);
     expect(life).toBe(7); // 基础2 + 最多5
   });
 });
@@ -1454,7 +1454,7 @@ describe('雌狮 - 生命强化 (life_up) 集成', () => {
       expect(newState.board[4][3].unit?.cardId).toBe('test-lioness');
     }
     // 无论如何，有效生命应该是5而不是2
-    expect(getEffectiveLife(
+    expect(getEffectiveLifeBase(
       { cardId: 'test-lioness', card: makeLioness('test-lioness'), owner: '0', position: { row: 4, col: 3 }, damage: 0, boosts: 3, hasMoved: false, hasAttacked: false }
     )).toBe(5);
   });
@@ -1498,7 +1498,7 @@ describe('雌狮 - 生命强化 (life_up) 集成', () => {
     }
     // 如果没死，验证有效生命计算正确
     else {
-      expect(getEffectiveLife(
+      expect(getEffectiveLifeBase(
         { cardId: 'test-lioness', card: makeLioness('test-lioness'), owner: '0', position: { row: 4, col: 3 }, damage: 1, boosts: 1, hasMoved: false, hasAttacked: false }
       )).toBe(3);
     }

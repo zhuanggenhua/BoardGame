@@ -25,9 +25,9 @@ import {
 import { createInitializedCore } from './test-helpers';
 import { calculateEffectiveStrength, getEffectiveStructureLife, triggerAbilities, triggerAllUnitsAbilities } from '../domain/abilityResolver';
 import {
-    isImmobile,
-    getEffectiveAttackRange,
-    hasStableAbility,
+    isImmobileBase,
+    getEffectiveAttackRangeBase,
+    hasStableAbilityBase,
     getUnitMoveEnhancements,
     getPassedThroughUnitPositions,
 } from '../domain/helpers';
@@ -535,33 +535,33 @@ describe('被动能力运行时验证 (Section 8)', () => {
     it('[immobile] 禁足单位 isImmobile 返回 true', () => {
         const card = mkUnit('imm-unit', { abilities: ['immobile'] });
         const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
-        expect(isImmobile(unit)).toBe(true);
+        expect(isImmobileBase(unit)).toBe(true);
     });
 
     it('[immobile] 普通单位 isImmobile 返回 false', () => {
         const card = mkUnit('normal-unit', {});
         const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
-        expect(isImmobile(unit)).toBe(false);
+        expect(isImmobileBase(unit)).toBe(false);
     });
 
     // --- ranged: 远射4格 ---
     it('[ranged] 远射单位攻击范围为4', () => {
         const card = mkUnit('ranged-unit', { abilities: ['ranged'], attackRange: 1 });
         const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
-        expect(getEffectiveAttackRange(unit)).toBe(4);
+        expect(getEffectiveAttackRangeBase(unit)).toBe(4);
     });
 
     it('[ranged] 普通单位攻击范围为卡牌值', () => {
         const card = mkUnit('melee-unit', { attackRange: 1 });
         const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
-        expect(getEffectiveAttackRange(unit)).toBe(1);
+        expect(getEffectiveAttackRangeBase(unit)).toBe(1);
     });
 
     // --- stable: 稳固免疫推拉 ---
     it('[stable] 稳固单位 hasStableAbility 返回 true', () => {
         const card = mkUnit('stable-unit', { abilities: ['stable'] });
         const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
-        expect(hasStableAbility(unit)).toBe(true);
+        expect(hasStableAbilityBase(unit)).toBe(true);
     });
 
     // --- cold_snap: 3格内友方建筑+1有效生命 ---

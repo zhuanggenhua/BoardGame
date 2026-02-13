@@ -615,17 +615,67 @@ describe('base_the_homeworld: 母星 E2E Pipeline 额外出牌', () => {
         // Step 1 应成功
         expect(result.steps[0]?.success).toBe(true);
         // Step 2 应成功（母星 LIMIT_MODIFIED 将 minionLimit 提升到 2）
-        console.log('Step1 events:', result.steps[0]?.events);
-        console.log('Step2 success:', result.steps[1]?.success);
-        console.log('Step2 error:', result.steps[1]?.error);
-        console.log('Step2 events:', result.steps[1]?.events);
-        console.log('Final minionLimit:', result.finalState.core.players['0'].minionLimit);
-        console.log('Final minionsPlayed:', result.finalState.core.players['0'].minionsPlayed);
-        console.log('Final base0 minions:', result.finalState.core.bases[0].minions.map(m => m.uid));
-
         expect(result.steps[1]?.success).toBe(true);
         const finalCore = result.finalState.core;
         expect(finalCore.players['0'].minionsPlayed).toBe(2);
         expect(finalCore.bases[0].minions.length).toBe(2);
+    });
+
+    it('第一个随从打到非母星基地时，不获得额外出牌机会', () => {
+        const core: SmashUpCore = {
+            players: {
+                '0': {
+                    id: '0', vp: 0,
+                    hand: [
+                        { uid: 'c1', defId: 'alien_invader', type: 'minion', owner: '0' },
+                        { uid: 'c2', defId: 'alien_collector', type: 'minion', owner: '0' },
+                    ],
+                    deck: [], discard: [],
+                    minionsPlayed: 0, minionLimit: 1,
+                    actionsPlayed: 0, actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS] as [string, string],
+                },
+                '1': {
+                    id: '1', vp: 0,
+                    hand: [], deck: [], discard: [],
+                    minionsPlayed: 0, minionLimit: 1,
+                    actionsPlayed: 0, actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] as [string, string],
+                },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [] },
+                { defId: 'base_the_jungle', minions: [], ongoingActions: [] },
+                { defId: 'base_tar_pits', minions: [], ongoingActions: [] },
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        } as SmashUpCore;
+
+        const fullState = makeFullMatchState(core);
+        const runner = createCustomRunner(fullState);
+
+        // 第一个随从打到 baseIndex=1（丛林，非母星），第二个尝试打到母星
+        const result = runner.run({
+            name: '非母星出牌不获得额外机会',
+            commands: [
+                { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'c1', baseIndex: 1 } },
+                { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'c2', baseIndex: 0 } },
+            ],
+            expect: {
+                expectError: { command: SU_COMMANDS.PLAY_MINION, error: '本回合随从额度已用完' },
+            },
+        });
+
+        // Step 1 成功
+        expect(result.steps[0]?.success).toBe(true);
+        // Step 2 失败：minionLimit 仍为 1
+        expect(result.steps[1]?.success).toBe(false);
+        expect(result.steps[1]?.error).toBe('本回合随从额度已用完');
+        // minionLimit 未增加
+        expect(result.finalState.core.players['0'].minionLimit).toBe(1);
     });
 });

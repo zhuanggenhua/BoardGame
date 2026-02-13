@@ -21,10 +21,10 @@ if (process.env.SENTRY_DSN) {
     });
 }
 
-async function bootstrap() {
-    // 先创建 Express 实例并注册代理，确保代理在 NestJS 路由之前处理请求
-    const expressApp = express();
+// 需要代理到 game-server 的路径前缀
+const PROXY_PATHS = ['/games', '/default', '/lobby-socket', '/socket.io'];
 
+async function bootstrap() {
     const gameServerTarget =
         process.env.GAME_SERVER_PROXY_TARGET
         || process.env.GAME_SERVER_URL
@@ -36,32 +36,39 @@ async function bootstrap() {
         ws: true,
     });
 
-    // 代理必须在 NestJS 路由之前注册，否则 NestJS 会先返回 404
-    expressApp.use(['/games', '/default', '/lobby-socket', '/socket.io'], gameProxy);
+    // 创建 Express 实例，先注册代理
+    // 关键：代理必须在 NestJS 路由和 body-parser 之前
+    // 否则 NestJS 会对未知路径返回 404，或 body-parser 消费 stream 导致代理挂起
+    const expressInstance = express();
+    expressInstance.use(PROXY_PATHS, gameProxy);
 
-    // 把预配置的 Express 传给 NestJS
-    const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp), {
-        cors: {
-            origin: '*',
-            credentials: true,
+    // 把预配置的 Express 传给 NestJS（ExpressAdapter）
+    const app = await NestFactory.create(
+        AppModule,
+        new ExpressAdapter(expressInstance),
+        {
+            cors: {
+                origin: '*',
+                credentials: true,
+            },
+            rawBody: false,
         },
-        rawBody: false,
-    });
+    );
 
-    // 提升 JSON body 大小限制
-    expressApp.use(express.json({ limit: '2mb' }));
-    expressApp.use(express.urlencoded({ extended: true, limit: '2mb' }));
+    // body 解析在代理之后注册，不会影响代理路径
+    expressInstance.use(express.json({ limit: '2mb' }));
+    expressInstance.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
     const distPath = join(process.cwd(), 'dist');
     const uploadsPath = join(process.cwd(), 'uploads');
     if (existsSync(uploadsPath)) {
-        expressApp.use('/assets', express.static(uploadsPath));
+        expressInstance.use('/assets', express.static(uploadsPath));
     }
     if (existsSync(distPath)) {
-        expressApp.use(express.static(distPath));
+        expressInstance.use(express.static(distPath));
 
         const spaExclude = /^\/(auth|health|social-socket|games|default|lobby-socket|socket\.io|admin|ugc|layout|feedback|review|invite|message|friend|user-settings|sponsors)(\/|$)/;
-        expressApp.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        expressInstance.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
             if (spaExclude.test(req.path)) return next();
             return res.sendFile(join(distPath, 'index.html'));
         });
@@ -76,9 +83,9 @@ async function bootstrap() {
     app.useGlobalFilters(new GlobalHttpExceptionFilter());
 
     const port = Number(process.env.API_SERVER_PORT) || 18001;
-    const server = await app.listen(port);
+    const httpServer = await app.listen(port);
     // 只代理游戏服相关的 WebSocket 升级
-    server.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
+    httpServer.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
         const url = req.url || '';
         if (url.startsWith('/lobby-socket') || url.startsWith('/socket.io')) {
             gameProxy.upgrade(req, socket, head);

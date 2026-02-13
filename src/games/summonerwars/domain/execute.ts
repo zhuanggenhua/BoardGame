@@ -914,14 +914,23 @@ export function executeCommand(
     }
   }
 
-  // 后处理4：寒冰冲撞 — 建筑推拉后对相邻单位造成1伤+推拉1格
+  // 后处理4：寒冰冲撞 — 建筑推拉/移动后发射触发事件，由玩家选择目标
+  // 收集建筑推拉事件
   const structurePushEvents = processedEvents.filter(e =>
     (e.type === SW_EVENTS.UNIT_PUSHED || e.type === SW_EVENTS.UNIT_PULLED)
     && (e.payload as Record<string, unknown>).isStructure
     && (e.payload as Record<string, unknown>).newPosition
   );
-  if (structurePushEvents.length > 0) {
-    // 检查是否有寒冰冲撞主动事件
+  // 收集 mobile_structure 单位的正常移动事件
+  const mobileStructureMoveEvents = processedEvents.filter(e => {
+    if (e.type !== SW_EVENTS.UNIT_MOVED) return false;
+    const p = e.payload as { from: CellCoord; to: CellCoord; unitId: string };
+    // 检查移动的单位是否有 mobile_structure 技能
+    const unit = findBoardUnitByCardId(core, p.unitId);
+    return unit && getUnitAbilities(unit, core).includes('mobile_structure');
+  });
+  const allStructureMoveEvents = [...structurePushEvents, ...mobileStructureMoveEvents];
+  if (allStructureMoveEvents.length > 0) {
     for (const pid of ['0', '1'] as import('./types').PlayerId[]) {
       const player = core.players[pid];
       if (!player) continue;
@@ -929,46 +938,41 @@ export function executeCommand(
         getBaseCardId(ev.id) === CARD_IDS.FROST_ICE_RAM
       );
       if (!hasIceRam) continue;
-      for (const pushEvent of structurePushEvents) {
-        const pushPayload = pushEvent.payload as { newPosition: import('./types').CellCoord; targetPosition: import('./types').CellCoord };
-        const structureNewPos = pushPayload.newPosition;
-        // 检查移动后的建筑是否属于该玩家
-        // 注意：此时 reduce 尚未应用，建筑仍在原位置
-        const origStructure = core.board[pushPayload.targetPosition.row]?.[pushPayload.targetPosition.col]?.structure;
-        if (!origStructure || origStructure.owner !== pid) continue;
-        // 对建筑新位置相邻的单位造成1伤害（寒冰冲撞效果）
+      for (const moveEvent of allStructureMoveEvents) {
+        let structureNewPos: CellCoord;
+        let structureOwner: string | undefined;
+        if (moveEvent.type === SW_EVENTS.UNIT_MOVED) {
+          // mobile_structure 正常移动
+          const mp = moveEvent.payload as { from: CellCoord; to: CellCoord; unitId: string };
+          structureNewPos = mp.to;
+          const unit = findBoardUnitByCardId(core, mp.unitId);
+          structureOwner = unit?.owner;
+        } else {
+          // 建筑推拉
+          const pp = moveEvent.payload as { targetPosition: CellCoord; newPosition: CellCoord };
+          structureNewPos = pp.newPosition;
+          const origStructure = core.board[pp.targetPosition.row]?.[pp.targetPosition.col]?.structure;
+          // 也检查 mobile_structure 单位
+          const origUnit = getUnitAt(core, pp.targetPosition);
+          structureOwner = origStructure?.owner
+            ?? (origUnit && getUnitAbilities(origUnit, core).includes('mobile_structure') ? origUnit.owner : undefined);
+        }
+        if (structureOwner !== pid) continue;
+        // 检查建筑新位置是否有相邻单位（任意阵营）
         const adjDirs = [
           { row: -1, col: 0 }, { row: 1, col: 0 },
           { row: 0, col: -1 }, { row: 0, col: 1 },
         ];
-        for (const d of adjDirs) {
+        const hasAdjacentUnit = adjDirs.some(d => {
           const adjPos = { row: structureNewPos.row + d.row, col: structureNewPos.col + d.col };
-          if (adjPos.row < 0 || adjPos.row >= BOARD_ROWS || adjPos.col < 0 || adjPos.col >= BOARD_COLS) continue;
-          const adjUnit = getUnitAt(core, adjPos);
-          if (adjUnit) {
-            processedEvents.push({
-              type: SW_EVENTS.UNIT_DAMAGED,
-              payload: {
-                position: adjPos,
-                damage: 1,
-                reason: 'ice_ram',
-                sourcePlayerId: pid,
-              },
-              timestamp,
-            });
-            // 推拉1格（远离建筑方向）
-            const pushDir = { row: adjPos.row - structureNewPos.row, col: adjPos.col - structureNewPos.col };
-            const pushTarget = { row: adjPos.row + pushDir.row, col: adjPos.col + pushDir.col };
-            if (pushTarget.row >= 0 && pushTarget.row < BOARD_ROWS
-              && pushTarget.col >= 0 && pushTarget.col < BOARD_COLS
-              && isCellEmpty(core, pushTarget)) {
-              processedEvents.push({
-                type: SW_EVENTS.UNIT_PUSHED,
-                payload: { targetPosition: adjPos, newPosition: pushTarget },
-                timestamp,
-              });
-            }
-          }
+          if (adjPos.row < 0 || adjPos.row >= BOARD_ROWS || adjPos.col < 0 || adjPos.col >= BOARD_COLS) return false;
+          return !!getUnitAt(core, adjPos);
+        });
+        if (hasAdjacentUnit) {
+          processedEvents.push(createAbilityTriggeredEvent(
+            'ice_ram_trigger', 'ice_ram', structureNewPos, timestamp,
+            { iceRamOwner: pid, structurePosition: structureNewPos },
+          ));
         }
       }
     }
