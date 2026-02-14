@@ -5,11 +5,11 @@
  * 1) alien_disintegrator: 放到拥有者牌库底
  * 2) alien_beam_up: 返回随从到手牌
  * 3) alien_crop_circles: 任意数量随从（多步）
- * 4) alien_terraform: 两步替换基地
+ * 4) alien_terraform: 三步替换基地并在新基地额外打随从
  * 5) alien_abduction: 返回随从 + 额外随从
  * 6) alien_invasion: 移动随从到另一个基地
  */
-/* eslint-disable @typescript-eslint/no-explicit-any -- 测试中需要构造简化 MatchState 与 payload 断言 */
+ 
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { MatchState, RandomFn } from '../../../engine/types';
@@ -169,8 +169,12 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     expect((returned[0] as any).payload.minionUid).toBe('m1');
   });
 
-  it('alien_terraform: 两步交互选择替换基地并产出 BASE_REPLACED', () => {
+  it('alien_terraform: 三步交互替换基地并仅能在新基地额外打随从', () => {
     const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('h1', 'alien_invader', 'minion', '0')] }),
+        '1': makePlayer('1'),
+      },
       bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3)])],
       baseDeck: ['base_new', 'base_alt'],
     });
@@ -201,6 +205,74 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       newBaseDefId: 'base_new',
       keepCards: true,
     });
+
+    const step2Current = (step2!.state.sys as any).interaction?.current;
+    expect(step2Current?.data?.sourceId).toBe('alien_terraform_play_minion');
+
+    const handler3 = getInteractionHandler('alien_terraform_play_minion');
+    expect(handler3).toBeDefined();
+    const step3 = handler3!(
+      makeMatchState(core),
+      '0',
+      { cardUid: 'h1', defId: 'alien_invader' },
+      step2Current?.data,
+      dummyRandom,
+      3002,
+    );
+    expect(step3).toBeDefined();
+    const minionPlayed = step3!.events.find(e => e.type === SU_EVENTS.MINION_PLAYED);
+    expect(minionPlayed).toBeDefined();
+    expect((minionPlayed as any).payload.baseIndex).toBe(0);
+
+    const extraMinion = step3!.events.find(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
+    expect(extraMinion).toBeDefined();
+    expect((extraMinion as any).payload).toMatchObject({
+      playerId: '0',
+      limitType: 'minion',
+      delta: 1,
+      reason: 'alien_terraform',
+    });
+  });
+
+  it('alien_terraform: 第三步选择跳过时不产生额外随从事件', () => {
+    const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('h1', 'alien_invader', 'minion', '0')] }),
+        '1': makePlayer('1'),
+      },
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3)])],
+      baseDeck: ['base_new', 'base_alt'],
+    });
+
+    const handler1 = getInteractionHandler('alien_terraform');
+    const handler2 = getInteractionHandler('alien_terraform_choose_replacement');
+    const handler3 = getInteractionHandler('alien_terraform_play_minion');
+    expect(handler1).toBeDefined();
+    expect(handler2).toBeDefined();
+    expect(handler3).toBeDefined();
+
+    const step1 = handler1!(makeMatchState(core), '0', { baseIndex: 0 }, undefined, dummyRandom, 3010);
+    const step1Current = (step1!.state.sys as any).interaction?.current;
+    const step2 = handler2!(
+      makeMatchState(core),
+      '0',
+      { newBaseDefId: 'base_new' },
+      step1Current?.data,
+      dummyRandom,
+      3011,
+    );
+    const step2Current = (step2!.state.sys as any).interaction?.current;
+
+    const step3 = handler3!(
+      makeMatchState(core),
+      '0',
+      { skip: true },
+      step2Current?.data,
+      dummyRandom,
+      3012,
+    );
+    expect(step3).toBeDefined();
+    expect(step3!.events).toEqual([]);
   });
 
   it('alien_abduction: 返回随从 + 额外随从额度', () => {

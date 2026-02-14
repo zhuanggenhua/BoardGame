@@ -496,6 +496,9 @@ describe('梅肯达·露 / 边境弓箭手 - 预备 (prepare)', () => {
     const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGED);
     expect(chargeEvents.length).toBe(1);
     expect(newState.board[4][2].unit?.boosts).toBe(1);
+    // 消耗移动次数
+    expect(newState.board[4][2].unit?.hasMoved).toBe(true);
+    expect(newState.players['0'].moveCount).toBe(1);
   });
 
   it('非移动阶段验证拒绝', () => {
@@ -538,6 +541,9 @@ describe('梅肯达·露 / 边境弓箭手 - 预备 (prepare)', () => {
     });
 
     expect(newState.board[4][2].unit?.boosts).toBe(3);
+    // 消耗移动次数
+    expect(newState.board[4][2].unit?.hasMoved).toBe(true);
+    expect(newState.players['0'].moveCount).toBe(1);
   });
 
   it('每回合只能使用一次', () => {

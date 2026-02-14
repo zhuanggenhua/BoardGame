@@ -108,7 +108,7 @@ export const ELDER_THINGS_ACTIONS: ActionCardDef[] = [
         nameEn: 'The Price of Power',
         faction: 'elder_things',
         abilityTags: ['special'],
-        specialAttachToBase: true,
+        specialNeedsBase: true,
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 44 },
     },

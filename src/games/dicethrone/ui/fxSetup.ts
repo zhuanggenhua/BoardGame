@@ -8,8 +8,11 @@
  */
 
 import React, { useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { FxRegistry, type FxRendererProps, type FeedbackPack } from '../../../engine/fx';
 import { FlyingEffectsLayer, type FlyingEffectData } from '../../../components/common/animations/FlyingEffect';
+import { UI_Z_INDEX } from '../../../core';
 
 // ============================================================================
 // Cue 常量
@@ -147,6 +150,52 @@ const HealRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }
 };
 
 // ============================================================================
+// 渲染器：原地消散（buff/token 移除时使用）
+// ============================================================================
+
+/**
+ * 原地消散动画 — 商业级 buff 移除效果
+ *
+ * 视觉：图标原地闪光 → 缩小 + 淡出 + 轻微上浮
+ * 参考：Hearthstone buff 移除、Slay the Spire 状态消失
+ */
+const DissipateEffect: React.FC<{
+  content: React.ReactNode;
+  position: { x: number; y: number };
+  onImpact: () => void;
+  onComplete: () => void;
+}> = ({ content, position, onImpact, onComplete }) => {
+  const impactFired = useRef(false);
+
+  return createPortal(
+    React.createElement(motion.div, {
+      initial: { opacity: 1, scale: 1.1, y: 0 },
+      animate: { opacity: [1, 1, 0], scale: [1.1, 1.3, 0.3], y: [0, -4, -16] },
+      transition: { duration: 0.5, ease: 'easeOut', times: [0, 0.25, 1] },
+      onUpdate: (latest: { opacity?: number }) => {
+        // 在闪光峰值（scale 最大时）触发 onImpact
+        if (!impactFired.current && typeof latest.opacity === 'number' && latest.opacity < 0.95) {
+          impactFired.current = true;
+          onImpact();
+        }
+      },
+      onAnimationComplete: onComplete,
+      style: {
+        position: 'fixed',
+        left: position.x,
+        top: position.y,
+        transform: 'translate(-50%, -50%)',
+        zIndex: UI_Z_INDEX.effect,
+        pointerEvents: 'none' as const,
+        filter: 'brightness(1.5)',
+      },
+      className: 'text-[1.8vw]',
+    }, content),
+    document.body,
+  );
+};
+
+// ============================================================================
 // 渲染器：状态效果飞行图标
 // ============================================================================
 
@@ -155,8 +204,8 @@ const HealRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }
  * - content: React.ReactNode — 图标内容
  * - color?: string — 渐变色
  * - startPos: { x: number; y: number } — 起始位置（像素）
- * - endPos: { x: number; y: number } — 结束位置（像素）
- * - isRemove?: boolean — 是否为移除动画（向上飞）
+ * - endPos: { x: number; y: number } — 结束位置（像素，获得时必填）
+ * - isRemove?: boolean — 是否为移除动画（原地消散）
  */
 const StatusRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
   const stableComplete = useStableComplete(onComplete);
@@ -165,8 +214,25 @@ const StatusRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact
   const color = event.params?.color as string | undefined;
   const startPos = event.params?.startPos as { x: number; y: number } | undefined;
   const endPos = event.params?.endPos as { x: number; y: number } | undefined;
+  const isRemove = event.params?.isRemove as boolean | undefined;
 
-  if (!content || !startPos || !endPos) {
+  if (!content || !startPos) {
+    stableComplete();
+    return null;
+  }
+
+  // 移除：原地消散（闪光 → 缩小淡出）
+  if (isRemove) {
+    return React.createElement(DissipateEffect, {
+      content,
+      position: startPos,
+      onImpact,
+      onComplete: stableComplete,
+    });
+  }
+
+  // 获得：飞行动画
+  if (!endPos) {
     stableComplete();
     return null;
   }
@@ -190,8 +256,8 @@ const StatusRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact
  * - content: React.ReactNode — 图标内容
  * - color?: string — 渐变色
  * - startPos: { x: number; y: number } — 起始位置（像素）
- * - endPos: { x: number; y: number } — 结束位置（像素）
- * - isRemove?: boolean — 是否为移除动画（向上飞）
+ * - endPos: { x: number; y: number } — 结束位置（像素，获得时必填）
+ * - isRemove?: boolean — 是否为移除动画（原地消散）
  */
 const TokenRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
   const stableComplete = useStableComplete(onComplete);
@@ -200,8 +266,25 @@ const TokenRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact 
   const color = event.params?.color as string | undefined;
   const startPos = event.params?.startPos as { x: number; y: number } | undefined;
   const endPos = event.params?.endPos as { x: number; y: number } | undefined;
+  const isRemove = event.params?.isRemove as boolean | undefined;
 
-  if (!content || !startPos || !endPos) {
+  if (!content || !startPos) {
+    stableComplete();
+    return null;
+  }
+
+  // 移除：原地消散
+  if (isRemove) {
+    return React.createElement(DissipateEffect, {
+      content,
+      position: startPos,
+      onImpact,
+      onComplete: stableComplete,
+    });
+  }
+
+  // 获得：飞行动画
+  if (!endPos) {
     stableComplete();
     return null;
   }

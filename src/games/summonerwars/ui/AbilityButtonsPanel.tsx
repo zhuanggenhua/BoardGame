@@ -121,5 +121,5 @@ export const AbilityButtonsPanel: React.FC<Props> = ({
   }
 
   if (buttons.length === 0) return null;
-  return <div className="absolute bottom-[220px] left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex gap-2">{buttons}</div>;
+  return <div className="absolute bottom-[14vw] left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex gap-2">{buttons}</div>;
 };

@@ -59,7 +59,7 @@ const collectGameEntries = async () => {
 
         const meta = await readManifestMeta(manifestPath);
         if (meta.id !== dirName) {
-            throw new Error(`[Manifest] manifest.id 与目录名不一�? ${dirName} (${meta.id})`);
+            throw new Error(`[Manifest] manifest.id 与目录名不一致: ${dirName} (${meta.id})`);
         }
 
         const gamePath = path.join(dirPath, 'game.ts');

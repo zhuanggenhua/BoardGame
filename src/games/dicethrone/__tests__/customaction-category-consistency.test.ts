@@ -235,6 +235,10 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             // 月精灵迷影步：防御技能，伤害依赖骰面结果（脚面数量）
             'moon_elf-elusive-step-resolve-1',
             'moon_elf-elusive-step-resolve-2',
+            // 火法师熔岩护甲：防御技能，伤害依赖防御投掷骰面结果（火面数量），mock 骰子无 symbol 字段
+            'magma-armor-resolve',
+            'magma-armor-2-resolve',
+            'magma-armor-3-resolve',
         ]);
 
         for (const actionId of registeredIds) {

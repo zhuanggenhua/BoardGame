@@ -59,7 +59,7 @@ const INTERACTION_SOURCES: AuditableInteractionSource[] = [
   { id: 'alien_beam_up', name: '光束捕捉', interactionSourceIds: ['alien_beam_up'] },
   { id: 'alien_crop_circles', name: '麦田怪圈', interactionSourceIds: ['alien_crop_circles', 'alien_crop_circles_choose_minion'] },
   { id: 'alien_probe', name: '探究', interactionSourceIds: ['alien_probe', 'alien_probe_choose_target'] },
-  { id: 'alien_terraform', name: '适居化', interactionSourceIds: ['alien_terraform', 'alien_terraform_choose_replacement'] },
+  { id: 'alien_terraform', name: '适居化', interactionSourceIds: ['alien_terraform', 'alien_terraform_choose_replacement', 'alien_terraform_play_minion'] },
   { id: 'alien_scout', name: '侦察兵', interactionSourceIds: ['alien_scout_return'] },
   { id: 'alien_abduction', name: '绑架', interactionSourceIds: ['alien_abduction'] },
 
@@ -92,6 +92,7 @@ const INTERACTION_SOURCES: AuditableInteractionSource[] = [
   { id: 'robot_microbot_guard', name: '微型机守护者', interactionSourceIds: ['robot_microbot_guard'] },
   { id: 'robot_tech_center', name: '技术中心', interactionSourceIds: ['robot_tech_center'] },
   { id: 'robot_zapbot', name: '高速机器人', interactionSourceIds: ['robot_zapbot'] },
+  { id: 'robot_hoverbot', name: '盘旋机器人', interactionSourceIds: ['robot_hoverbot'] },
 
   // ── 法师 ──
   { id: 'wizard_neophyte', name: '学徒', interactionSourceIds: ['wizard_neophyte'] },
@@ -105,13 +106,13 @@ const INTERACTION_SOURCES: AuditableInteractionSource[] = [
   { id: 'zombie_walker', name: '行尸', interactionSourceIds: ['zombie_walker'] },
   { id: 'zombie_grave_robbing', name: '掘墓', interactionSourceIds: ['zombie_grave_robbing'] },
   { id: 'zombie_not_enough_bullets', name: '子弹不够', interactionSourceIds: ['zombie_not_enough_bullets'] },
-  { id: 'zombie_lord', name: '僵尸领主', interactionSourceIds: ['zombie_lord_choose_base_first'] },
+  { id: 'zombie_lord', name: '僵尸领主', interactionSourceIds: ['zombie_lord_pick'] },
   { id: 'zombie_outbreak', name: '爆发', interactionSourceIds: ['zombie_outbreak_choose_base', 'zombie_outbreak_choose_minion'] },
   { id: 'zombie_mall_crawl', name: '进发商场', interactionSourceIds: ['zombie_mall_crawl'] },
   { id: 'zombie_lend_a_hand', name: '借把手', interactionSourceIds: ['zombie_lend_a_hand'] },
   { id: 'zombie_they_keep_coming', name: '它们不断来临', interactionSourceIds: ['zombie_they_keep_coming'] },
-  { id: 'zombie_theyre_coming_to_get_you', name: '它们为你而来', interactionSourceIds: ['zombie_theyre_coming_to_get_you'] },
-  { id: 'zombie_tenacious_z', name: '顽强丧尸', interactionSourceIds: ['zombie_tenacious_z'] },
+  // zombie_theyre_coming_to_get_you 和 zombie_tenacious_z 现在通过 DiscardPlayProvider 实现，不再使用交互
+  // ghost_spectre 同上
 
   // ── 诡术师 ──
   { id: 'trickster_gnome', name: '侏儒', interactionSourceIds: ['trickster_gnome'] },
@@ -125,7 +126,7 @@ const INTERACTION_SOURCES: AuditableInteractionSource[] = [
   { id: 'ghost_make_contact', name: '交朋友', interactionSourceIds: ['ghost_make_contact'] },
   { id: 'ghost_the_dead_rise', name: '亡者复苏', interactionSourceIds: ['ghost_the_dead_rise_discard'] },
   { id: 'ghost_across_the_divide', name: '跨越鸿沟', interactionSourceIds: ['ghost_across_the_divide'] },
-  { id: 'ghost_spectre', name: '幽灵触发', interactionSourceIds: ['ghost_spectre'] },
+  // ghost_spectre 现在通过 DiscardPlayProvider 实现，不再使用交互
 
   // ── 熊骑兵 ──
   { id: 'bear_cavalry_bear_cavalry', name: '熊骑兵', interactionSourceIds: ['bear_cavalry_bear_cavalry_choose_minion'] },
@@ -199,9 +200,6 @@ const INTERACTION_SOURCES: AuditableInteractionSource[] = [
 // ============================================================================
 
 const HANDLER_CHAINS: HandlerChainLink[] = [
-  // 僵尸领主：选基地 → 选随从
-  { sourceId: 'zombie_lord_choose_base_first', producesSourceIds: ['zombie_lord_choose_minion'] },
-  { sourceId: 'zombie_lord_choose_minion', producesSourceIds: ['zombie_lord_choose_base_first'] },
   // 僵尸爆发：选基地 → 选随从
   { sourceId: 'zombie_outbreak_choose_base', producesSourceIds: ['zombie_outbreak_choose_minion'] },
   // 海盗大炮：选第一个 → 选第二个
@@ -235,12 +233,20 @@ const HANDLER_CHAINS: HandlerChainLink[] = [
   { sourceId: 'alien_crop_circles_choose_minion', producesSourceIds: ['alien_crop_circles_choose_minion'] },
   // 外星人探测：选对手 → 牌库顶/底选择
   { sourceId: 'alien_probe_choose_target', producesSourceIds: ['alien_probe'] },
-  // 地形改造：选基地 → 选替换基地
+  // 地形改造：选基地 → 选替换基地 →（可选）选手牌随从打到新基地
   { sourceId: 'alien_terraform', producesSourceIds: ['alien_terraform_choose_replacement'] },
+  { sourceId: 'alien_terraform_choose_replacement', producesSourceIds: ['alien_terraform_play_minion'] },
   // 侦察兵：逐个确认是否回手（可循环）
   { sourceId: 'alien_scout_return', producesSourceIds: ['alien_scout_return'] },
-  // 亡者复苏：弃牌 → 打出
+  // 亡者复苏：弃牌 → 打出 → 选基地
   { sourceId: 'ghost_the_dead_rise_discard', producesSourceIds: ['ghost_the_dead_rise_play'] },
+  { sourceId: 'ghost_the_dead_rise_play', producesSourceIds: ['ghost_the_dead_rise_base'] },
+  // 灵魂：选目标 → 弃牌确认/力量0确认
+  { sourceId: 'ghost_spirit', producesSourceIds: ['ghost_spirit_discard', 'ghost_spirit_confirm'] },
+  // 高速机器人：选随从 → 选基地
+  { sourceId: 'robot_zapbot', producesSourceIds: ['robot_zapbot_base'] },
+  // 盘旋机器人：确认打出 → 选基地
+  { sourceId: 'robot_hoverbot', producesSourceIds: ['robot_hoverbot_base'] },
   // 熊骑兵：选随从 → 选基地
   { sourceId: 'bear_cavalry_bear_cavalry_choose_minion', producesSourceIds: ['bear_cavalry_bear_cavalry_choose_base'] },
   // 你完了：选基地 → 选随从 → 选目的地
@@ -257,8 +263,6 @@ const HANDLER_CHAINS: HandlerChainLink[] = [
   { sourceId: 'wizard_portal_order', producesSourceIds: ['wizard_portal_order'] },
   // 它们不断来临：选随从 → 选基地
   { sourceId: 'zombie_they_keep_coming', producesSourceIds: ['zombie_they_keep_coming_choose_base'] },
-  // 顽强丧尸：选打出 → 选基地
-  { sourceId: 'zombie_tenacious_z', producesSourceIds: ['zombie_tenacious_z_choose_base'] },
 ];
 
 // ============================================================================
@@ -272,15 +276,12 @@ const ORPHAN_WHITELIST = new Set([
   'pirate_sea_dogs_choose_to', // 链式中间步骤（由 pirate_sea_dogs_choose_from 产出）
   'ninja_disguise_choose_play1', // 链式中间步骤（由 ninja_disguise_choose_minions 产出）
   'ninja_disguise_choose_play2', // 链式中间步骤（由 ninja_disguise_choose_play1 产出）
-  'zombie_lord_choose_minion', // 链式中间步骤（由 zombie_lord_choose_base_first 产出）
   'zombie_they_keep_coming_choose_base', // 链式中间步骤（由 zombie_they_keep_coming 产出）
-  'zombie_tenacious_z_choose_base', // 链式中间步骤（由 zombie_tenacious_z 产出）
-  'alien_invasion_choose_base', // 链式中间步骤（由 alien_invasion_choose_minion 产出）
-  'base_pirate_cove_choose_base', // 链式中间步骤（由 base_pirate_cove 产出）
   'base_haunted_house_al9000', // 扩展包基地 handler
   'base_rlyeh', // 扩展包基地 handler
   'base_the_mothership', // 扩展包基地 handler
   'base_tortuga', // 扩展包基地 handler
+  'base_nine_lives_intercept', // 由 onMinionDestroyed trigger 内部创建交互，非标准能力源
 ]);
 
 // ============================================================================

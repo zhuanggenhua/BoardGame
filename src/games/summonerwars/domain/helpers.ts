@@ -218,13 +218,12 @@ export function getMovePath(from: CellCoord, to: CellCoord): CellCoord[] {
 
 /**
  * 获取移动路径上被穿过的单位位置（用于践踏等穿越伤害）
- * 只返回中间格上的单位（不含终点），且只返回敌方士兵
+ * 只返回中间格上的单位（不含终点），包括敌方和己方士兵（踩踏不区分敌我）
  */
 export function getPassedThroughUnitPositions(
   state: SummonerWarsCore,
   from: CellCoord,
   to: CellCoord,
-  movingUnitOwner: PlayerId,
 ): CellCoord[] {
   const distance = manhattanDistance(from, to);
   if (distance <= 1) return []; // 1格移动没有中间格
@@ -236,7 +235,8 @@ export function getPassedThroughUnitPositions(
     const intermediates = path.slice(0, -1);
     return intermediates.filter(pos => {
       const u = getUnitAt(state, pos);
-      return u && u.owner !== movingUnitOwner;
+      // 踩踏对所有被穿过的士兵造成伤害，不区分敌我
+      return u != null;
     });
   }
 
@@ -246,13 +246,10 @@ export function getPassedThroughUnitPositions(
     const mid2 = { row: to.row, col: from.col };
     const unit1 = isValidCoord(mid1) ? getUnitAt(state, mid1) : undefined;
     const unit2 = isValidCoord(mid2) ? getUnitAt(state, mid2) : undefined;
-    const hasEnemy1 = unit1 && unit1.owner !== movingUnitOwner;
-    const hasEnemy2 = unit2 && unit2.owner !== movingUnitOwner;
-
-    // 优先选择穿过敌方单位的路径（践踏设计意图）
+    // 踩踏不区分敌我，返回所有中间格上的单位
     const result: CellCoord[] = [];
-    if (hasEnemy1) result.push(mid1);
-    if (hasEnemy2) result.push(mid2);
+    if (unit1) result.push(mid1);
+    if (unit2) result.push(mid2);
     return result;
   }
 
@@ -564,13 +561,13 @@ export function getUnitAbilities(unit: BoardUnit, state: SummonerWarsCore): stri
       const [t1, t2] = ev.entanglementTargets;
       let partnerAbilities: string[] | undefined;
       if (t1 === unit.cardId) {
-        // 本单位是目标1，获取目标2的基础技能
+        // 本单位是目标1，获取目标2的基础技能（含 tempAbilities）
         const partner = findUnitByCardId(state, t2);
-        if (partner) partnerAbilities = partner.card.abilities ?? [];
+        if (partner) partnerAbilities = getUnitBaseAbilities(partner);
       } else if (t2 === unit.cardId) {
-        // 本单位是目标2，获取目标1的基础技能
+        // 本单位是目标2，获取目标1的基础技能（含 tempAbilities）
         const partner = findUnitByCardId(state, t1);
-        if (partner) partnerAbilities = partner.card.abilities ?? [];
+        if (partner) partnerAbilities = getUnitBaseAbilities(partner);
       }
       if (partnerAbilities) {
         for (const a of partnerAbilities) {
@@ -806,8 +803,8 @@ export function canMoveToEnhanced(
     }
   }
 
-  // 3格移动（飞行/迅捷/攀爬额外1格）的路径检查
-  if (distance === 3 && !canPassThrough) {
+  // 3格以上移动（飞行/迅捷/攀爬/速度强化等）的路径检查
+  if (distance >= 3 && !canPassThrough) {
     return hasValidPath(state, from, to, maxDistance, false, canPassStructures);
   }
 
@@ -952,6 +949,11 @@ export function hasStableAbilityBase(unit: BoardUnit): boolean {
  * 计算推拉后的目标位置
  * direction: 'push' = 远离 source, 'pull' = 靠近 source
  * 返回 null 表示无法推拉（出界或被阻挡）
+ *
+ * 对角线方向选择策略：当 source 和 target 处于对角线位置（|dr| == |dc|）时，
+ * 规则要求强制移动沿单一方向（水平或垂直），此时优先选择行方向（垂直）。
+ * 这是确定性的 tie-breaking 规则，确保同一局面下推拉结果一致。
+ * 桌游中此场景由当前回合玩家自由选择，但数字版为简化交互采用自动选择。
  */
 export function calculatePushPullPosition(
   state: SummonerWarsCore,
@@ -965,7 +967,7 @@ export function calculatePushPullPosition(
   const dc = targetPos.col - sourcePos.col;
 
   // 推拉必须沿直线（水平或垂直）
-  // 如果不在直线上，选择主要方向
+  // 如果不在直线上，选择主要方向（对角线时优先行方向）
   let moveRow = 0;
   let moveCol = 0;
 

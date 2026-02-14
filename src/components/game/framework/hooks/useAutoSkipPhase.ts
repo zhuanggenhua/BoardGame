@@ -5,7 +5,7 @@
  * 游戏层注入判定逻辑，框架统一处理守卫、延迟和 cleanup。
  *
  * 撤回保护（框架内置）：当检测到 undo 快照数减少（即发生了撤回恢复），
- * 在冷却期内抑制自动跳过，避免撤回后立刻被自动推进覆盖。
+ * 永久抑制自动跳过，直到玩家主动执行了新命令（快照数重新增加）。
  * 所有游戏必须传入 undoSnapshotCount，确保撤回保护全局生效。
  */
 
@@ -28,16 +28,12 @@ export interface UseAutoSkipPhaseConfig {
   enabled?: boolean;
   /**
    * 当前 undo 快照数量（G.sys.undo.snapshots.length）。
-   * 框架层通过监测此值减少来检测撤回恢复，进入冷却期抑制自动跳过。
+   * 框架层通过监测此值减少来检测撤回恢复，永久抑制自动跳过，
+   * 直到快照数重新增加（玩家执行了新命令）。
    * 所有游戏必传，确保撤回保护全局生效。
    */
   undoSnapshotCount: number;
-  /** 撤回恢复后的冷却时间（毫秒），默认 2000 */
-  undoCooldown?: number;
 }
-
-/** 撤回恢复后默认冷却 2 秒 */
-const DEFAULT_UNDO_COOLDOWN = 2000;
 
 /**
  * 自动跳过无操作阶段。
@@ -48,7 +44,7 @@ const DEFAULT_UNDO_COOLDOWN = 2000;
  * 3. 游戏未结束
  * 4. 无活跃交互模式
  * 5. hasAvailableActions 为 false
- * 6. 不在撤回恢复冷却期内
+ * 6. 未处于撤回恢复抑制状态
  */
 export function useAutoSkipPhase({
   isMyTurn,
@@ -59,30 +55,30 @@ export function useAutoSkipPhase({
   delay = 300,
   enabled = true,
   undoSnapshotCount,
-  undoCooldown = DEFAULT_UNDO_COOLDOWN,
 }: UseAutoSkipPhaseConfig): void {
-  // 撤回恢复检测：快照数减少 → 进入冷却期
+  // 撤回恢复检测：快照数减少 → 永久抑制，直到快照数重新增加
   const prevSnapshotCountRef = useRef(undoSnapshotCount);
-  const suppressUntilRef = useRef(0);
+  const suppressedRef = useRef(false);
 
   useEffect(() => {
     const prev = prevSnapshotCountRef.current;
     prevSnapshotCountRef.current = undoSnapshotCount;
 
-    // 快照数减少说明发生了撤回恢复
     if (undoSnapshotCount < prev) {
-      suppressUntilRef.current = Date.now() + undoCooldown;
+      // 快照数减少 = 撤回恢复，进入抑制状态
+      suppressedRef.current = true;
+    } else if (undoSnapshotCount > prev && suppressedRef.current) {
+      // 快照数增加 = 玩家执行了新命令，解除抑制
+      suppressedRef.current = false;
     }
-  }, [undoSnapshotCount, undoCooldown]);
+  }, [undoSnapshotCount]);
 
   useEffect(() => {
     if (!enabled) return;
     if (!isMyTurn || isGameOver) return;
     if (hasActiveInteraction) return;
     if (hasAvailableActions) return;
-
-    // 撤回冷却期内不自动跳过
-    if (Date.now() < suppressUntilRef.current) return;
+    if (suppressedRef.current) return;
 
     const timer = setTimeout(advancePhase, delay);
     return () => clearTimeout(timer);

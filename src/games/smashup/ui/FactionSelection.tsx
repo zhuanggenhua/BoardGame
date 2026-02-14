@@ -5,11 +5,12 @@ import { SU_COMMANDS, getCurrentPlayerId } from '../domain/types';
 import type { SmashUpCore } from '../domain/types';
 import { FACTION_METADATA } from './factionMeta';
 import type { PlayerId } from '../../../engine/types';
-import { getFactionCards, resolveCardName, resolveCardText, getCardDef, getBaseDef } from '../data/cards';
+import { getFactionCards, resolveCardName } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { X, Check, Search, Layers, ZoomIn, Pencil, Lock } from 'lucide-react';
 import { UI_Z_INDEX } from '../../../core';
 import { GameButton } from './GameButton';
+import { CardMagnifyOverlay } from './CardMagnifyOverlay';
 
 interface Props {
     core: SmashUpCore;
@@ -323,6 +324,13 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
                                                         className="w-full h-full object-cover"
                                                     />
 
+                                                    {/* 卡牌数量徽章 */}
+                                                    {card.count > 1 && (
+                                                        <div className="absolute top-1.5 left-1.5 z-30 min-w-[22px] h-[22px] px-1 bg-amber-500 border-2 border-white rounded-full flex items-center justify-center shadow-md">
+                                                            <span className="text-white font-black text-[10px] leading-none">×{card.count}</span>
+                                                        </div>
+                                                    )}
+
                                                     {/* Hover Action Icon */}
                                                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 p-1.5 rounded-full text-white z-30">
                                                         <ZoomIn size={16} />
@@ -421,15 +429,7 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
             </div>
 
             {/* CARD MAGNIFICATION OVERLAY */}
-            <AnimatePresence>
-                {viewingCard && (
-                    <CardDetailOverlay
-                        defId={viewingCard.defId}
-                        type={viewingCard.type}
-                        onClose={() => setViewingCard(null)}
-                    />
-                )}
-            </AnimatePresence>
+            <CardMagnifyOverlay target={viewingCard} onClose={() => setViewingCard(null)} />
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
@@ -457,62 +457,4 @@ export const FactionSelection: React.FC<Props> = ({ core, moves, playerID }) => 
         </div >
     );
 };
-// ============================================================================
-// Overlay: Click-to-View Details (Synced with Board.tsx)
-// ============================================================================
-const CardDetailOverlay: React.FC<{
-    defId: string;
-    type: 'minion' | 'base' | 'action';
-    onClose: () => void;
-}> = ({ defId, type, onClose }) => {
-    const { t } = useTranslation('game-smashup');
-    const def = type === 'base' ? getBaseDef(defId) : getCardDef(defId);
-    if (!def) return null;
-    const resolvedName = resolveCardName(def, t) || defId;
-    const resolvedText = resolveCardText(def, t);
 
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/90 flex items-center justify-center p-8 cursor-pointer"
-            style={{ zIndex: UI_Z_INDEX.magnify }}
-        >
-            <motion.div
-                initial={{ scale: 0.8, y: 50 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.8, y: 50 }}
-                className={`
-                    relative rounded-sm shadow-2xl bg-white p-2 border-4 border-slate-800
-                    ${type === 'base' ? 'w-[45vw] max-w-[700px] aspect-[1.43]' : 'w-[28vw] max-w-[450px] aspect-[0.714]'}
-                `}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Close Button */}
-                <button
-                    onClick={onClose}
-                    className="absolute -top-4 -right-4 bg-red-600 text-white rounded-full w-10 h-10 font-black border-4 border-white z-50 hover:scale-110 shadow-lg flex items-center justify-center transition-transform"
-                >
-                    <X size={20} strokeWidth={3} />
-                </button>
-
-                <div className="w-full h-full bg-slate-100 relative overflow-hidden">
-                    <CardPreview
-                        previewRef={def.previewRef}
-                        className="w-full h-full object-contain"
-                        title={resolvedName}
-                    />
-
-                    {!def.previewRef && (
-                        <div className="absolute inset-0 bg-white p-8 flex flex-col items-center justify-center text-center">
-                            <h2 className="text-3xl font-black uppercase mb-4 text-slate-900 italic tracking-tighter">{resolvedName}</h2>
-                            <p className="font-bold text-lg text-slate-700 leading-relaxed">{resolvedText}</p>
-                        </div>
-                    )}
-                </div>
-            </motion.div>
-        </motion.div>
-    );
-};

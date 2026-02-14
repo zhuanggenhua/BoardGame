@@ -456,8 +456,10 @@
     "frostAxe": "❄️ 冰霜战斧（充能/消耗充能附加士兵）",
     "iceShards": "❄️ 寒冰碎屑（消耗充能对建筑旁敌方造成伤害）",
     "highTelekinesis": "🌀 高阶念力（推拉3格内士兵或英雄）",
+    "highTelekinesisInstead": "🌀 高阶念力（代替攻击推拉）",
     "mindTransmission": "🧠 读心传念（友方士兵额外攻击）",
     "telekinesis": "🌀 念力（推拉2格内士兵或英雄）",
+    "telekinesisInstead": "🌀 念力（代替攻击推拉）",
     "illusion": "🎭 幻化（复制3格内士兵技能）",
     "guidance": "📖 指引（抽取两张卡牌）",
     "bloodRune": "🩸 鲜血符文（自伤或消耗魔力充能）",
@@ -548,6 +550,10 @@
       "name": "高阶念力",
       "description": "在本单位攻击之后，或代替本单位的攻击，可以指定其最多3个区格以内的一个士兵或英雄为目标，将目标推拉1个区格。"
     },
+    "high_telekinesis_instead": {
+      "name": "高阶念力（代替攻击）",
+      "description": "代替本单位的攻击，可以指定其最多3个区格以内的一个士兵或英雄为目标，将目标推拉1个区格。"
+    },
     "stable": {
       "name": "稳固",
       "description": "本单位不能被推拉。"
@@ -567,6 +573,10 @@
     "telekinesis": {
       "name": "念力",
       "description": "在本单位攻击之后，或代替本单位的攻击，可以指定其2个区格以内的一个士兵或英雄为目标，将目标推拉1个区格。"
+    },
+    "telekinesis_instead": {
+      "name": "念力（代替攻击）",
+      "description": "代替本单位的攻击，可以指定其2个区格以内的一个士兵或英雄为目标，将目标推拉1个区格。"
     },
     "illusion": {
       "name": "幻化",

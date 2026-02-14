@@ -1,8 +1,8 @@
 /**
  * 大杀四方 - 持续力量修正能力注册
  *
- * 将各派系�?ongoing 力量修正注册�?ongoingModifiers 系统�?
- * �?initAllAbilities() 中调用�?
+ * 将各派系?ongoing 力量修正注册表?ongoingModifiers 系统?
+ * ?initAllAbilities() 中调用）?
  */
 
 import { registerPowerModifier, registerBreakpointModifier } from '../domain/ongoingModifiers';
@@ -15,8 +15,8 @@ import { getBaseDef } from '../data/cards';
 
 function registerDinosaurModifiers(): void {
     // 重装剑龙：其他玩家回合时 +2 力量
-    // MVP：计分时视为非当前玩家回�?�?始终 +2（保守策略，计分时对手视角）
-    // 实际实现：检查当前回合玩家是否为随从控制�?
+    // MVP：计分时视为非当前玩家回??始终 +2（保守策略，计分时对手视角）
+    // 实际实现：检查当前回合玩家是否为随从控制者?
     registerPowerModifier('dino_armor_stego', (ctx: PowerModifierContext) => {
         // 只对自身生效
         if (ctx.minion.defId !== 'dino_armor_stego') return 0;
@@ -26,7 +26,7 @@ function registerDinosaurModifiers(): void {
         return 0;
     });
 
-    // 战争猛禽：同基地每个己方战争猛禽（含自身�?1 力量
+    // 战争猛禽：同基地每个己方战争猛禽（含自身）?1 力量
     registerPowerModifier('dino_war_raptor', (ctx: PowerModifierContext) => {
         if (ctx.minion.defId !== 'dino_war_raptor') return 0;
         const raptorCount = ctx.base.minions.filter(
@@ -42,14 +42,14 @@ function registerDinosaurModifiers(): void {
 }
 
 // ============================================================================
-// 机器人派�?
+// 机器人派系?
 // ============================================================================
 
 function registerRobotModifiers(): void {
-    // 微型机阿尔法号：每个其他己方随从（视为微型机�?1 力量
-    // "你的所有随从均视为微型�? �?计算场上所有己方其他随从数�?
+    // 微型机阿尔法号：每个其他己方随从（视为微型机?1 力量
+    // "你的所有随从均视为微型? ?计算场上所有己方其他随从数?
     registerPowerModifier('robot_microbot_alpha', (ctx: PowerModifierContext) => {
-        // 只对微型机阿尔法号自身生�?
+        // 只对微型机阿尔法号自身生成?
         if (ctx.minion.defId !== 'robot_microbot_alpha') return 0;
         // 计算场上所有己方其他随从数量（所有基地）
         let otherMinionCount = 0;
@@ -63,11 +63,11 @@ function registerRobotModifiers(): void {
         return otherMinionCount;
     });
 
-    // 微型机修理�?ongoing：己方每个微型机 +1 力量
-    // "你的微型�? = 所有己方随从（因为阿尔法号让所有随从视为微型机�?
-    // MVP：对同控制者的所有随从生效，每个在场的修理者叠�?+1
+    // 微型机修理者?ongoing：己方每个微型机 +1 力量
+    // "你的微型? = 所有己方随从（因为阿尔法号让所有随从视为微型机?
+    // MVP：对同控制者的所有随从生效，每个在场的修理者叠加?+1
     registerPowerModifier('robot_microbot_fixer', (ctx: PowerModifierContext) => {
-        // 计算场上与目标随从同控制者的修理者数�?
+        // 计算场上与目标随从同控制者的修理者数?
         let fixerCount = 0;
         for (const base of ctx.state.bases) {
             fixerCount += base.minions.filter(
@@ -79,7 +79,7 @@ function registerRobotModifiers(): void {
         const anyFixer = ctx.state.bases.flatMap(b => b.minions)
             .find(m => m.defId === 'robot_microbot_fixer');
         if (!anyFixer || anyFixer.controller !== ctx.minion.controller) return 0;
-        return fixerCount; // 每个修理�?+1
+        return fixerCount; // 每个修理?+1
     });
 }
 
@@ -88,7 +88,7 @@ function registerRobotModifiers(): void {
 // ============================================================================
 
 function registerGhostModifiers(): void {
-    // 不散阴魂：如果你只有2张或更少的手牌，本随�?+3 力量
+    // 不散阴魂：如果你只有2张或更少的手牌，本随从+3 力量
     registerPowerModifier('ghost_haunting', (ctx: PowerModifierContext) => {
         if (ctx.minion.defId !== 'ghost_haunting') return 0;
         const player = ctx.state.players[ctx.minion.controller];
@@ -96,9 +96,9 @@ function registerGhostModifiers(): void {
         return player.hand.length <= 2 ? 3 : 0;
     });
 
-    // 通灵之门（ongoing 行动卡附着在基地上）：手牌�?时同基地己方随从 +2 力量
+    // 通灵之门（ongoing 行动卡附着在基地上）：手牌堆?时同基地己方随从 +2 力量
     registerPowerModifier('ghost_door_to_the_beyond', (ctx: PowerModifierContext) => {
-        // 检查基地上是否有此 ongoing 行动卡，且属于目标随从的控制�?
+        // 检查基地上是否有此 ongoing 行动卡，且属于目标随从的控制者?
         const hasOngoing = ctx.base.ongoingActions.some(
             a => a.defId === 'ghost_door_to_the_beyond' && a.ownerId === ctx.minion.controller
         );
@@ -110,7 +110,7 @@ function registerGhostModifiers(): void {
 }
 
 // ============================================================================
-// 忍者派�?
+// 忍者派系?
 // ============================================================================
 
 function registerNinjaModifiers(): void {
@@ -124,7 +124,7 @@ function registerNinjaModifiers(): void {
 }
 
 // ============================================================================
-// 食人花派�?
+// 食人花派系?
 // ============================================================================
 
 function registerKillerPlantModifiers(): void {
@@ -140,7 +140,7 @@ function registerKillerPlantModifiers(): void {
         return -1;
     });
 
-    // 过度生长（ongoing 行动卡附着在基地上）：控制者回合时临界点降�?
+    // 过度生长（ongoing 行动卡附着在基地上）：控制者回合时临界点降低?
     registerBreakpointModifier('killer_plant_overgrowth', (ctx: BreakpointModifierContext) => {
         const overgrowth = ctx.base.ongoingActions.find(a => a.defId === 'killer_plant_overgrowth');
         if (!overgrowth) return 0;
@@ -155,7 +155,7 @@ function registerKillerPlantModifiers(): void {
 // ============================================================================
 
 function registerSteampunkModifiers(): void {
-    // 蒸汽人：按同基地己方行动卡数�?+力量（含基地 ongoing + 随从附着�?
+    // 蒸汽人：按同基地己方行动卡数?+力量（含基地 ongoing + 随从附着了?
     registerPowerModifier('steampunk_steam_man', (ctx: PowerModifierContext) => {
         if (ctx.minion.defId !== 'steampunk_steam_man') return 0;
         let actionCount = 0;
@@ -186,7 +186,7 @@ function registerSteampunkModifiers(): void {
         return 5;
     });
 
-    // 旋转弹头发射器（ongoing 行动卡附着在基地上）：同基地己方随�?+2 力量
+    // 旋转弹头发射器（ongoing 行动卡附着在基地上）：同基地己方随从+2 力量
     registerPowerModifier('steampunk_rotary_slug_thrower', (ctx: PowerModifierContext) => {
         const hasOngoing = ctx.base.ongoingActions.some(
             a => a.defId === 'steampunk_rotary_slug_thrower' && a.ownerId === ctx.minion.controller
@@ -200,7 +200,7 @@ function registerSteampunkModifiers(): void {
 // ============================================================================
 
 function registerBearCavalryModifiers(): void {
-    // 极地突击队：基地上唯一己方随从�?+2 力量�? 不可消灭，后者需�?ongoing 保护系统�?
+    // 极地突击队：基地上唯一己方随从?+2 力量的 不可消灭，后者需要?ongoing 保护系统）?
     registerPowerModifier('bear_cavalry_polar_commando', (ctx: PowerModifierContext) => {
         if (ctx.minion.defId !== 'bear_cavalry_polar_commando') return 0;
         const myMinionCount = ctx.base.minions.filter(
@@ -232,7 +232,7 @@ function registerBaseModifiers(): void {
     });
 }
 
-/** 注册所有持续力量修�?*/
+/** 注册所有持续力量修正*/
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
     registerDinosaurModifiers();

@@ -1,7 +1,7 @@
 /**
- * 大杀四方 - 忍者派系能�?
+ * 大杀四方 - 忍者派系能力
  *
- * 主题：消灭随从、潜入基�?
+ * 主题：消灭随从、潜入基地
  */
 
 import { registerAbility } from '../domain/abilityRegistry';
@@ -16,30 +16,30 @@ import { createSimpleChoice, queueInteraction } from '../../../engine/systems/In
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { MatchState } from '../../../engine/types';
 
-/** 注册忍者派系所有能�?*/
+/** 注册忍者派系所有能力*/
 export function registerNinjaAbilities(): void {
-    // 忍者大师：消灭本基地一个随�?
+    // 忍者大师：消灭本基地一个随从
     registerAbility('ninja_master', 'onPlay', ninjaMaster);
-    // 猛虎刺客：消灭本基地一个力量≤3的随�?
+    // 猛虎刺客：消灭本基地一个力量≤3的随从
     registerAbility('ninja_tiger_assassin', 'onPlay', ninjaTigerAssassin);
-    // 手里剑（行动卡）：消灭一个力量≤3的随从（任意基地�?
+    // 手里剑（行动卡）：消灭一个力量≤3的随从（任意基地?
     registerAbility('ninja_seeing_stars', 'onPlay', ninjaSeeingStars);
-    // 欺骗之道（行动卡）：移动己方一个随从到另一个基�?
+    // 欺骗之道（行动卡）：移动己方一个随从到另一个基地
     registerAbility('ninja_way_of_deception', 'onPlay', ninjaWayOfDeception);
-    // 伪装（行动卡）：将己方一个随从返回手牌，然后打出一个随从到该基�?
+    // 伪装（行动卡）：将己方一个随从返回手牌，然后打出一个随从到该基地
     registerAbility('ninja_disguise', 'onPlay', ninjaDisguise);
-    // 忍（special）：基地计分前打出到该基�?
+    // 忍（special）：基地计分前打出到该基地
     registerAbility('ninja_shinobi', 'special', ninjaShinobi);
-    // 侍僧（special）：回手并额外打出随�?
+    // 侍僧（special）：回手并额外打出随从
     registerAbility('ninja_acolyte', 'special', ninjaAcolyte);
-    // 隐忍（special action）：基地计分前打出手牌中的随从到该基�?
+    // 隐忍（special action）：基地计分前打出手牌中的随从到该基地
     registerAbility('ninja_hidden_ninja', 'special', ninjaHiddenNinja);
 
-    // 注册 ongoing 拦截�?
+    // 注册 ongoing 拦截?
     registerNinjaOngoingEffects();
 }
 
-/** 忍者大�?onPlay：消灭本基地一个随�?*/
+/** 忍者大师?onPlay：消灭本基地一个随从*/
 function ninjaMaster(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
@@ -58,7 +58,7 @@ function ninjaMaster(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 猛虎刺客 onPlay：消灭本基地一个力量≤3的随�?*/
+/** 猛虎刺客 onPlay：消灭本基地一个力量≤3的随从*/
 function ninjaTigerAssassin(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
@@ -79,7 +79,7 @@ function ninjaTigerAssassin(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 手里�?onPlay：消灭一个力量≤3的随从（任意基地�?*/
+/** 手里）?onPlay：消灭一个力量≤3的随从（任意基地?*/
 function ninjaSeeingStars(ctx: AbilityContext): AbilityResult {
     const targets: { uid: string; defId: string; baseIndex: number; owner: string; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
@@ -103,9 +103,9 @@ function ninjaSeeingStars(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-// ninja_poison (ongoing) - 已通过 ongoingModifiers 系统实现力量修正�?4力量�?
+// ninja_poison (ongoing) - 已通过 ongoingModifiers 系统实现力量修正?4力量的
 
-/** 欺骗之道 onPlay：选择己方一个随从移动到另一个基�?*/
+/** 欺骗之道 onPlay：选择己方一个随从移动到另一个基地*/
 function ninjaWayOfDeception(ctx: AbilityContext): AbilityResult {
     const myMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
@@ -187,8 +187,8 @@ function ninjaDisguiseSelectMinions(ctx: AbilityContext, baseIndex: number): Abi
 // ============================================================================
 
 /**
- * �?special：基地计分前，可以从手牌打出到该基地
- * MVP：自动打出（如果在手牌中�?
+ * ?special：基地计分前，可以从手牌打出到该基地
+ * MVP：自动打出（如果在手牌中心?
  */
 function ninjaShinobi(ctx: AbilityContext): AbilityResult {
     // 检查该随从是否在手牌中
@@ -214,8 +214,8 @@ function ninjaShinobi(ctx: AbilityContext): AbilityResult {
 }
 
 /**
- * 侍僧 special：将此随从从基地返回手牌，然后额外打出一个随�?
- * MVP：自动执�?
+ * 侍僧 special：将此随从从基地返回手牌，然后额外打出一个随从
+ * MVP：自动执行?
  */
 function ninjaAcolyte(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
@@ -234,13 +234,13 @@ function ninjaAcolyte(ctx: AbilityContext): AbilityResult {
     };
     events.push(returnEvt);
 
-    // 额外打出一个随�?
-    events.push(grantExtraMinion(ctx.playerId, 'ninja_acolyte', ctx.now));
+    // 额外打出一个随从到这个基地
+    events.push(grantExtraMinion(ctx.playerId, 'ninja_acolyte', ctx.now, ctx.baseIndex));
 
     return { events };
 }
 
-/** 隐忍 special action：基地计分前，选择手牌中一个随从打出到该基�?*/
+/** 隐忍 special action：基地计分前，选择手牌中一个随从打出到该基地*/
 function ninjaHiddenNinja(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const minionCards = player.hand.filter(c => c.type === 'minion');
@@ -259,10 +259,10 @@ function ninjaHiddenNinja(ctx: AbilityContext): AbilityResult {
 }
 
 // ============================================================================
-// Ongoing 拦截器注�?
+// Ongoing 拦截器注册?
 // ============================================================================
 
-/** 注册忍者派系的 ongoing 拦截�?*/
+/** 注册忍者派系的 ongoing 拦截?*/
 function registerNinjaOngoingEffects(): void {
     // 烟雾弹：保护同基地己方随从不受对手行动卡影响
     registerProtection('ninja_smoke_bomb', 'action', (ctx) => {
@@ -272,7 +272,7 @@ function registerNinjaOngoingEffects(): void {
             if (!bomb) continue;
             const baseIdx = ctx.state.bases.indexOf(base);
             if (baseIdx !== ctx.targetBaseIndex) continue;
-            // 只保护烟雾弹拥有者的随从，且来源是对�?
+            // 只保护烟雾弹拥有者的随从，且来源是对手?
             return ctx.targetMinion.controller === bomb.ownerId && ctx.sourcePlayerId !== bomb.ownerId;
         }
         return false;
@@ -300,10 +300,10 @@ function registerNinjaOngoingEffects(): void {
         return events;
     });
 
-    // 暗杀：回合结束时消灭目标随从（附着在随从上�?ongoing�?
+    // 暗杀：回合结束时消灭目标随从（附着在随从上）?ongoing?
     registerTrigger('ninja_assassination', 'onTurnEnd', (trigCtx) => {
         const events: SmashUpEvent[] = [];
-        // 查找所有附着�?assassination 的随�?
+        // 查找所有附着了?assassination 的随从
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             const base = trigCtx.state.bases[i];
             for (const m of base.minions) {
@@ -326,9 +326,9 @@ function registerNinjaOngoingEffects(): void {
         return events;
     });
 
-    // 渗透：附着此卡的随从不受基地能力影响（广义保护�?
+    // 渗透：附着此卡的随从不受基地能力影响（广义保护）?
     registerProtection('ninja_infiltrate', 'affect', (ctx) => {
-        // 检查目标随从是否附着�?infiltrate
+        // 检查目标随从是否附着了?infiltrate
         return ctx.targetMinion.attachedActions.some(a => a.defId === 'ninja_infiltrate');
     });
     // 渗透：拥有者下回合开始时自毁

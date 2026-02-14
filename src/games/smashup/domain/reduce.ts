@@ -109,9 +109,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MINION_PLAYED: {
-            const { playerId, cardUid, defId, baseIndex, power } = event.payload;
+            const { playerId, cardUid, defId, baseIndex, power, fromDiscard, discardPlaySourceId, consumesNormalLimit } = event.payload;
             const player = state.players[playerId];
-            const newHand = player.hand.filter(c => c.uid !== cardUid);
+            // 根据来源从手牌或弃牌堆移除卡牌
+            const newHand = fromDiscard ? player.hand : player.hand.filter(c => c.uid !== cardUid);
+            const newDiscard = fromDiscard ? player.discard.filter(c => c.uid !== cardUid) : player.discard;
             const minion: MinionOnBase = {
                 uid: cardUid,
                 defId,
@@ -127,6 +129,29 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 if (i !== baseIndex) return base;
                 return { ...base, minions: [...base.minions, minion] };
             });
+            // 弃牌堆出牌：追踪已使用的能力 sourceId（用于每回合限制）
+            const newUsedAbilities = fromDiscard && discardPlaySourceId
+                ? [...(player.usedDiscardPlayAbilities ?? []), discardPlaySourceId]
+                : player.usedDiscardPlayAbilities;
+            // 弃牌堆额外出牌（consumesNormalLimit=false）不消耗正常额度
+            const shouldIncrementPlayed = !fromDiscard || consumesNormalLimit !== false;
+
+            // 基地限定额度消耗：如果该基地有限定额度且全局额度已用完，优先消耗限定额度
+            const baseQuota = player.baseLimitedMinionQuota?.[baseIndex] ?? 0;
+            const globalFull = player.minionsPlayed >= player.minionLimit;
+            const useBaseQuota = shouldIncrementPlayed && globalFull && baseQuota > 0;
+            let newBaseLimitedMinionQuota = player.baseLimitedMinionQuota;
+            let finalMinionsPlayed = player.minionsPlayed;
+            if (useBaseQuota) {
+                // 消耗基地限定额度，不增加全局 minionsPlayed
+                newBaseLimitedMinionQuota = {
+                    ...player.baseLimitedMinionQuota,
+                    [baseIndex]: baseQuota - 1,
+                };
+            } else if (shouldIncrementPlayed) {
+                finalMinionsPlayed = player.minionsPlayed + 1;
+            }
+
             return {
                 ...state,
                 players: {
@@ -134,11 +159,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     [playerId]: {
                         ...player,
                         hand: newHand,
-                        minionsPlayed: player.minionsPlayed + 1,
+                        discard: newDiscard,
+                        minionsPlayed: finalMinionsPlayed,
                         minionsPlayedPerBase: {
                             ...(player.minionsPlayedPerBase ?? {}),
                             [baseIndex]: ((player.minionsPlayedPerBase ?? {})[baseIndex] ?? 0) + 1,
                         },
+                        usedDiscardPlayAbilities: newUsedAbilities,
+                        baseLimitedMinionQuota: newBaseLimitedMinionQuota,
                     },
                 },
                 bases: newBases,
@@ -369,6 +397,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         actionsPlayed: 0,
                         actionLimit: newActionLimit,
                         minionsPlayedPerBase: undefined,
+                        usedDiscardPlayAbilities: undefined,
+                        baseLimitedMinionQuota: undefined,
                     },
                 },
             };
@@ -443,9 +473,27 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.LIMIT_MODIFIED: {
-            const { playerId, limitType, delta } = event.payload;
+            const { playerId, limitType, delta, restrictToBase } = event.payload;
             const player = state.players[playerId];
             if (limitType === 'minion') {
+                // 基地限定额度：写入 baseLimitedMinionQuota
+                if (restrictToBase !== undefined) {
+                    const oldQuota = player.baseLimitedMinionQuota ?? {};
+                    return {
+                        ...state,
+                        players: {
+                            ...state.players,
+                            [playerId]: {
+                                ...player,
+                                baseLimitedMinionQuota: {
+                                    ...oldQuota,
+                                    [restrictToBase]: (oldQuota[restrictToBase] ?? 0) + delta,
+                                },
+                            },
+                        },
+                    };
+                }
+                // 全局额度
                 return {
                     ...state,
                     players: {
@@ -903,7 +951,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
         // 展示手牌（写入 pendingReveal，UI 层读取后展示）
         case SU_EVENTS.REVEAL_HAND: {
-            const { targetPlayerId, viewerPlayerId, cards, reason } = (event as RevealHandEvent).payload;
+            const { targetPlayerId, viewerPlayerId, cards, reason, sourcePlayerId } = (event as RevealHandEvent).payload;
             return {
                 ...state,
                 pendingReveal: {
@@ -911,6 +959,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     targetPlayerId,
                     viewerPlayerId,
                     cards,
+                    sourcePlayerId,
                     reason,
                 },
             };
@@ -918,7 +967,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
         // 展示牌库顶（写入 pendingReveal，UI 层读取后展示）
         case SU_EVENTS.REVEAL_DECK_TOP: {
-            const { targetPlayerId, viewerPlayerId, cards, reason } = (event as RevealDeckTopEvent).payload;
+            const { targetPlayerId, viewerPlayerId, cards, reason, sourcePlayerId } = (event as RevealDeckTopEvent).payload;
             return {
                 ...state,
                 pendingReveal: {
@@ -926,6 +975,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     targetPlayerId,
                     viewerPlayerId,
                     cards,
+                    sourcePlayerId,
                     reason,
                 },
             };

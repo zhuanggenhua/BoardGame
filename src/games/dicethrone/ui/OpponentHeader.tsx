@@ -33,6 +33,7 @@ export const OpponentHeader = ({
     tokenDefinitions,
     damageFlashActive,
     damageFlashDamage,
+    overrideHp,
 }: {
     opponent: HeroState;
     opponentName: string;
@@ -55,6 +56,8 @@ export const OpponentHeader = ({
     damageFlashActive?: boolean;
     /** 受击伤害值（用于 DamageFlash 强度） */
     damageFlashDamage?: number;
+    /** 视觉状态缓冲覆盖的 HP 值（飞行动画到达前冻结） */
+    overrideHp?: number;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const heroLabel = t(`hero.${opponent.characterId}`);
@@ -107,7 +110,7 @@ export const OpponentHeader = ({
                                     <div ref={opponentHpRef} className="flex items-center gap-[0.4vw] ml-[0.2vw]">
                                         <div className="flex items-center gap-[0.2vw]">
                                             <div className="w-[0.5vw] h-[0.5vw] bg-red-500 rounded-full shadow-[0_0_6px_rgba(239,68,68,0.4)]"></div>
-                                            <span className="text-red-400 font-bold text-[0.75vw]">{opponent.resources[RESOURCE_IDS.HP] ?? 0}</span>
+                                            <span className="text-red-400 font-bold text-[0.75vw]">{overrideHp ?? (opponent.resources[RESOURCE_IDS.HP] ?? 0)}</span>
                                         </div>
                                         <div className="flex items-center gap-[0.2vw]">
                                             <div className="w-[0.5vw] h-[0.5vw] bg-amber-500 rounded-full shadow-[0_0_6px_rgba(245,158,11,0.4)]"></div>

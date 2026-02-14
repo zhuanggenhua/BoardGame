@@ -38,6 +38,23 @@ Flow / Interaction / Undo / Log / EventStream / ResponseWindow / Tutorial / Rema
 
 Cue 注册表 + 事件总线 + 渲染层 + WebGL Shader 子系统 + FeedbackPack。游戏侧通过 `fxSetup.ts` 注册渲染器并声明反馈包（音效+震动）。`useFxBus` 接受 `{ playSound, triggerShake }` 注入反馈能力，push 时自动触发 `timing='immediate'` 反馈，渲染器 `onImpact()` 触发 `timing='on-impact'` 反馈。Shader 管线（`src/engine/fx/shader/`）提供 `ShaderCanvas` + `ShaderMaterial` + `ShaderPrecompile` + GLSL 噪声库。
 
+#### 序列特效（`pushSequence`）
+
+`FxBus.pushSequence(steps)` 支持有序特效编排——每个步骤等上一个渲染器 `onComplete` 后再播放下一个。适用于多步骤技能效果（如"移除 token → 造成伤害"）。
+
+```ts
+fxBus.pushSequence([
+  { cue: DT_FX.TOKEN, ctx: {}, params: { /* token 移除动画 */ }, delayAfter: 200 },
+  { cue: DT_FX.DAMAGE, ctx: {}, params: { /* 伤害飞行数字 */ } },
+]);
+```
+
+- `delayAfter`（ms）：该步骤完成后、下一步开始前的等待时间，默认 0（立即衔接）
+- 序列中某步 cue 未注册会自动跳过继续下一步
+- 安全超时触发也会推进序列，避免卡死
+- `cancelSequence(seqId)` 可取消正在进行的序列
+- 渲染器完全不感知自己是否在序列中，无需任何适配
+
 ---
 
 ## 精灵图集系统（`engine/primitives/spriteAtlas.ts`）（强制）
@@ -178,8 +195,91 @@ Cue 注册表 + 事件总线 + 渲染层 + WebGL Shader 子系统 + FeedbackPack
 - `useDragCard` — 卡牌拖拽交互
 - `useAutoSkipPhase` — 无可用操作时自动跳过（注入 `hasAvailableActions` + `hasActiveInteraction`）
 - `useVisualSequenceGate` — 视觉序列门控（`beginSequence`/`endSequence`/`scheduleInteraction`/`isVisualBusy`/`reset`）
+- `useVisualStateBuffer` — 视觉状态缓冲/双缓冲（`freeze`/`freezeBatch`/`release`/`clear`/`get`/`snapshot`/`isBuffering`）
 
 **系统层设计原则**：接口+通用骨架在系统层，游戏特化下沉；每游戏独立实例禁止全局单例；UGC 通过 AI 生成符合接口的代码动态注册。
+
+---
+
+## 动画表现与逻辑分离规范（强制）
+
+> 引擎架构核心原则：**逻辑层同步完成状态计算，表现层按动画节奏异步展示**。两层通过框架 Hook 解耦，游戏层无需关心时序管理。
+> 视觉特效的技术选型、粒子引擎、FX 系统等详见 `docs/ai-rules/animation-effects.md`。本节只覆盖引擎层的表现-逻辑分离基础设施。
+
+### 架构约束
+
+引擎管线（`executePipeline`）在一个 tick 内同步完成所有 reduce，core 状态立即反映最终值。但表现层需要按动画节奏逐步展示（骰子 → 攻击动画 → impact 瞬间数值变化 → 摧毁特效）。**引擎层不为表现延迟状态计算**，表现层自行管理视觉时序。
+
+### 框架基础设施
+
+引擎提供两个互补的框架 Hook，所有游戏统一使用：
+
+| Hook | 职责 | 核心 API |
+|------|------|---------|
+| `useVisualStateBuffer` | 数值属性的视觉冻结/双缓冲 | `freeze`/`freezeBatch`/`release`/`clear`/`get`/`snapshot`/`isBuffering` |
+| `useVisualSequenceGate` | 交互事件的延迟调度（动画期间不弹交互框） | `beginSequence`/`endSequence`/`scheduleInteraction`/`isVisualBusy`/`reset` |
+
+#### useVisualStateBuffer（视觉状态缓冲）
+
+在动画期间冻结受影响属性的视觉值，UI 读快照而非 core 真实值：
+
+1. **冻结**（`freeze`）：事件到来时，对受影响的 key 快照当前值（回退到变化前）
+2. **读取**（`get`）：UI 组件优先读快照值，无快照时回退到 core 真实值
+3. **释放**（`release`）：动画 impact 瞬间删除指定 key，UI 回退到 core 真实值
+4. **清空**（`clear`）：动画序列结束时清空所有快照
+
+#### 释放时机：FxLayer onEffectImpact
+
+FxLayer 提供 `onEffectImpact?: (id: string, cue: string) => void` 回调，在飞行动画到达目标（冲击帧）时触发。游戏层通过维护 `fxId → bufferKey` 映射，在 impact 回调中释放对应 key：
+
+```typescript
+// push 时记录映射
+const fxId = fxBus.push(DT_FX.DAMAGE, {}, { damage, startPos, endPos });
+if (fxId) fxImpactMap.set(fxId, `hp-${targetId}`);
+
+// FxLayer onEffectImpact 时释放
+<FxLayer
+  bus={fxBus}
+  onEffectImpact={(id) => {
+    const key = fxImpactMap.get(id);
+    if (key) { damageBuffer.release([key]); fxImpactMap.delete(id); }
+  }}
+/>
+```
+
+#### 两个 Hook 的协作
+
+- `gate.beginSequence()` + `buffer.freeze()` — 动画开始（冻结数值 + 挂起交互）
+- `buffer.release()` — impact 瞬间（数值变化可见）
+- `buffer.clear()` + `gate.endSequence()` — 动画结束（交互队列排空）
+
+### 已接入的游戏
+
+| 游戏 | 冻结属性 | 冻结时机 | 释放时机 |
+|------|---------|---------|---------|
+| SummonerWars | 棋盘单位 damage（key=`"row-col"`） | `UNIT_ATTACKED` + `UNIT_DAMAGED` 事件 | 近战 `onAttackHit` / 远程 `onEffectImpact(COMBAT_SHOCKWAVE)` |
+| DiceThrone | 玩家 HP（key=`"hp-{playerId}"`） | `DAMAGE_DEALT` / `HEAL_APPLIED` 事件 | `onEffectImpact(DAMAGE/HEAL)` |
+
+### 适用场景
+
+- 棋盘单位 damage / HP / 护甲等数值属性
+- 玩家 HP、资源值（金币/魔法值等）
+- 任何 UI 展示的数值属性，且该数值有对应的飞行动画/特效
+
+### 新游戏接入（强制）
+
+新游戏有数值变化动画时，必须使用 `useVisualStateBuffer` 管理视觉时序，禁止直接读 core 值渲染。典型接入流程：
+1. 在事件消费 Hook 中创建 `useVisualStateBuffer`，事件到来时 `freeze` 对应 key
+2. 在 `fxBus.push` 时记录 `fxId → bufferKey` 映射
+3. 在 `FxLayer.onEffectImpact` 回调中 `release` 对应 key
+4. UI 组件通过 `buffer.get(key, coreValue)` 读取视觉值
+
+### 禁止事项
+
+- ❌ 禁止在 UI 组件中用 `useState<Map>` 自行实现快照逻辑，必须使用 `useVisualStateBuffer`
+- ❌ 禁止在 reducer/execute 层延迟事件处理来解决动画时序问题（引擎层必须同步完成）
+- ❌ 禁止用 `setTimeout` 延迟读取 core 值来"等动画播完"
+- ❌ 新游戏禁止直接读 core 数值属性渲染 HP/血条，必须经过 `useVisualStateBuffer.get()` 中转
 
 ---
 
@@ -358,7 +458,7 @@ domain/
 
 ### 审查流程
 
-**第零步：锁定权威描述** — 从规则文档（`src/games/<gameId>/rule/*.md`）或卡牌图片中提取完整原文。禁止仅凭代码注释、AbilityDef.description 或 i18n 文本作为审查输入——这些是实现产物，不是需求来源。若规则文档缺失，必须向用户索要原文后再开始。
+**第零步：锁定权威描述** — 权威来源按可信度排序：① **用户在当前对话中明确给出的描述**（最高优先级）→ ② **`src/games/<gameId>/rule/*.md` 中已录入的规则文本**（经用户确认的录入产物）→ ③ **卡牌实物图片**（需辨认，看不清时必须停止并向用户确认）。**禁止将以下来源作为权威输入**：i18n JSON、AbilityDef.description、代码注释——这些是实现产物，可能已经带着错误理解。当不同来源冲突时，以用户明确给出的为准；有任何疑问时必须向用户确认后再开始。
 
 **第一步：拆分独立交互链** — 审查的原子单位不是"卡牌"或"技能"，而是**独立交互链**。任何需要独立的触发条件、玩家输入、或状态变更路径的效果，都必须作为单独的审查条目。一个卡牌/机制拆出几条链就审查几条。
 
@@ -369,6 +469,12 @@ domain/
 - **"可以/可选"语义（强制）**：描述中出现"你可以"/"可选"/"may"时，该效果必须作为独立交互链，且实现必须包含玩家确认 UI（确认/跳过按钮），禁止自动执行。审查时必须验证 UI 层存在确认入口。
 
 **第 1.5 步：逐链拆解原子操作步骤（强制）** — 对每条交互链，将描述文本中的**每个动词短语**拆解为一个原子操作步骤，形成有序步骤列表。审查时必须逐步骤验证代码实现，任何步骤缺失即为 ❌。
+
+**第 1.5 步附加：作用目标语义边界锁定（强制）** — 拆解原子步骤时，**每个步骤的作用目标（名词）必须精确锁定语义边界**，不得凭"游戏常识"或"设计直觉"自行收窄或扩大。规则：
+- **无限定词 = 不区分**："士兵"/"单位"/"卡牌" = 所有，包括敌我双方
+- **有限定词 = 严格过滤**："敌方士兵"/"友方单位"/"你的卡牌" = 仅限定范围
+- **审查时**：对实现中每个 filter/条件表达式，回溯到权威描述确认该过滤条件有描述依据。**实现中存在但描述中不存在的过滤条件 = ❌**
+- **教训**：踩踏"对每个被穿过的**士兵**造成 1 点伤害"——"士兵"无敌我限定，但实现加了 `owner !== movingUnitOwner` 只伤敌方，测试写了 `// 友方不算穿过`，语义错误被测试固化。正确实现应对所有被穿过的士兵造成伤害，包括己方。
 
 拆解示例：
 - 描述："从你的牌库搜寻一个战术并展示给所有玩家。将它放入你的手中并重洗牌库。"
@@ -419,3 +525,43 @@ domain/
 - ❌ 时立即修复或标注 TODO
 - UI/i18n 层不明确时询问用户
 - 禁止"看起来没问题"的模糊结论
+
+
+---
+
+## 领域建模前置审查（强制）
+
+> 阶段 2 完成后、阶段 3 开始前执行。禁止跳过领域建模直接写实现。
+
+核心原则：**规则文本 → 领域模型 → 实现**，禁止从规则文本直接跳到实现。
+
+### 1. 领域概念建模
+
+从规则文档提取所有领域概念（术语/状态/角色/阶段），为每个概念建立：
+- **定义**：该概念的精确语义边界（如"影响"= 移动 | 消灭 | 改力量 | 附着 | 控制权变更 | 取消能力）
+- **映射**：概念→具体事件类型/状态字段的对应关系
+
+产出：术语→事件映射表，录入 `rule/` 或 `domain/types.ts` 注释。
+
+**反模式**：规则说"被影响时触发"，实现时直接绑定 `onDestroyed` + `onMoved` 两个具体事件，遗漏了"影响"概念下的其他 4 种事件。正确做法：先定义"影响"包含哪些事件，再设计一个聚合抽象（如 `onAffected`）覆盖全部。
+
+### 2. 决策点识别
+
+规则中所有需要玩家做选择的点必须在建模阶段标记，不得在实现时跳过或自动化：
+- **强制决策**："选择一个目标"/"指定"→ 必须有交互
+- **可选决策**："你可以"/"may"→ 必须有确认/跳过 UI
+- **无决策**：自动结算，无需交互
+
+对每个决策点评估当前引擎是否支持该交互模式。不支持则提前规划扩展或标注 TODO。
+
+**反模式**：规则说"你可以将它移动到这里"，实现时自动移动跳过玩家选择，因为引擎层拦截器不支持异步交互。正确做法：建模时识别出该决策点，提前评估引擎能力。
+
+### 3. 引擎能力缺口分析
+
+将建模产出（概念/决策点/交互模式）与引擎层能力逐一比对，列出缺口和扩展计划。
+
+### 门禁检查清单
+
+- [ ] 所有领域概念已定义精确语义边界和事件映射
+- [ ] 所有玩家决策点已标记（强制/可选/无）
+- [ ] 引擎能力缺口已识别并有计划

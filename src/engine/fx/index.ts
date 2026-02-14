@@ -43,7 +43,7 @@ export type {
 export { FxRegistry } from './FxRegistry';
 
 // 调度 Hook
-export { useFxBus, type FxBus, type FxBusOptions, type FxSoundPlayer, type FxShakeTrigger } from './useFxBus';
+export { useFxBus, type FxBus, type FxBusOptions, type FxSoundPlayer, type FxShakeTrigger, type FxSequenceStep } from './useFxBus';
 
 // 渲染层
 export { FxLayer, type FxLayerProps } from './FxLayer';

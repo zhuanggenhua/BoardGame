@@ -50,7 +50,7 @@ import {
 } from './execute/helpers';
 import { executeActivateAbility } from './execute/abilities';
 import { executePlayEvent } from './execute/eventCards';
-import { getBaseCardId, CARD_IDS } from './ids';
+import { getBaseCardId, CARD_IDS, isFortressUnit } from './ids';
 
 // 辅助函数已迁移到 execute/helpers.ts
 // 保留 getPhaseDisplayName 的导出以保持向后兼容
@@ -204,7 +204,7 @@ export function executeCommand(
         // 践踏伤害：穿过敌方士兵时造成伤害（数据驱动，读取 damageOnPassThrough）
         const moveEnhancements = getUnitMoveEnhancements(core, from);
         if (moveEnhancements.damageOnPassThrough > 0) {
-          const passedPositions = getPassedThroughUnitPositions(core, from, to, unit.owner);
+          const passedPositions = getPassedThroughUnitPositions(core, from, to);
           for (const pos of passedPositions) {
             events.push({
               type: SW_EVENTS.UNIT_DAMAGED,
@@ -472,7 +472,7 @@ export function executeCommand(
         }
 
         // 神圣护盾：科琳3格内友方城塞单位被攻击时，投2骰减伤
-        if (targetCell?.unit && targetCell.unit.card.id.includes('fortress')) {
+        if (targetCell?.unit && isFortressUnit(targetCell.unit.card)) {
           const targetOwner = targetCell.unit.owner;
           // 查找目标方拥有 divine_shield 的单位（科琳）
           for (let row = 0; row < BOARD_ROWS; row++) {
@@ -858,6 +858,38 @@ export function executeCommand(
 
     default:
       console.warn('[SummonerWars] 未处理的命令:', command.type);
+  }
+
+  // 后处理0：缠斗/反弹 — 推拉导致敌方远离时造成1点伤害
+  // 规则："每当一个相邻敌方单位因为移动或被推拉而远离本单位时"
+  // MOVE_UNIT 已在命令处理中检查，此处补充 UNIT_PUSHED/UNIT_PULLED 路径
+  for (let ppIdx = 0; ppIdx < events.length; ppIdx++) {
+    const ppEvent = events[ppIdx];
+    if (ppEvent.type !== SW_EVENTS.UNIT_PUSHED && ppEvent.type !== SW_EVENTS.UNIT_PULLED) continue;
+    const ppPayload = ppEvent.payload as { targetPosition: CellCoord; newPosition?: CellCoord; isStructure?: boolean };
+    if (!ppPayload.newPosition || ppPayload.isStructure) continue;
+    const pushedUnit = getUnitAt(core, ppPayload.targetPosition);
+    if (!pushedUnit) continue;
+    const entangleUnitsForPush = getEntangleUnits(core, ppPayload.targetPosition, pushedUnit.owner);
+    for (const eu of entangleUnitsForPush) {
+      // 检查推拉后是否确实远离了缠斗单位
+      const oldDist = manhattanDistance(ppPayload.targetPosition, eu.position);
+      const newDist = manhattanDistance(ppPayload.newPosition, eu.position);
+      if (newDist > oldDist) {
+        events.splice(ppIdx + 1, 0, {
+          type: SW_EVENTS.UNIT_DAMAGED,
+          payload: {
+            position: ppPayload.newPosition,
+            damage: 1,
+            reason: 'entangle',
+            sourceUnitId: eu.cardId,
+            sourcePlayerId: eu.owner,
+          },
+          timestamp,
+        });
+        ppIdx++; // 跳过刚插入的事件
+      }
+    }
   }
 
   // 后处理1：自动补全死亡检测（UNIT_DAMAGED → UNIT_DESTROYED）

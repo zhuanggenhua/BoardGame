@@ -10,12 +10,12 @@ import { SU_EVENTS } from '../domain/types';
 import type {
     MinionReturnedEvent, VpAwardedEvent, SmashUpEvent,
     MinionCardDef, OngoingDetachedEvent, BaseReplacedEvent,
-    CardToDeckBottomEvent,
+    CardToDeckBottomEvent, MinionPlayedEvent,
     SmashUpCore,
 } from '../domain/types';
 import {
     buildBaseTargetOptions, buildMinionTargetOptions, getMinionPower,
-    grantExtraMinion, moveMinion, revealHand, revealDeckTop, shuffleBaseDeck,
+    grantExtraMinion, moveMinion, revealHand, shuffleBaseDeck,
     resolveOrPrompt,
 } from '../domain/abilityHelpers';
 import { getBaseDef, getCardDef } from '../data/cards';
@@ -211,16 +211,19 @@ function alienProbe(ctx: AbilityContext): AbilityResult {
         const targetPlayer = ctx.state.players[targetPid];
         const handCards = targetPlayer.hand.map(c => ({ uid: c.uid, defId: c.defId }));
         const deckTopCard = targetPlayer.deck.length > 0 ? [{ uid: targetPlayer.deck[0].uid, defId: targetPlayer.deck[0].defId }] : [];
+        // 展示手牌（纯展示，无后续交互冲突）
         const events: SmashUpEvent[] = [];
         if (handCards.length > 0) {
             events.push(revealHand(targetPid, ctx.playerId, handCards, 'alien_probe', ctx.now));
         }
-        if (deckTopCard.length > 0) {
-            events.push(revealDeckTop(targetPid, ctx.playerId, deckTopCard, 1, 'alien_probe', ctx.now));
-        }
-        // 单对手自动执行后，仍需链式选择放置位置
+        // 牌库顶不发 REVEAL_DECK_TOP（会和后续放置位置交互冲突卡死），
+        // 在 Prompt 标题中包含卡牌名称让玩家知道在放什么
+        const deckTopCardName = deckTopCard.length > 0
+            ? (getCardDef(deckTopCard[0].defId)?.name ?? deckTopCard[0].defId)
+            : '无';
         const interaction = createSimpleChoice(
-            `alien_probe_${ctx.now}`, ctx.playerId, '查看对手手牌后，选择将牌库顶的牌放回顶部还是底部',
+            `alien_probe_${ctx.now}`, ctx.playerId,
+            `牌库顶的牌是「${deckTopCardName}」，选择放回顶部还是底部`,
             [{ id: 'top', label: '放回牌库顶', value: { targetPlayerId: targetPid, placement: 'top' } },
              { id: 'bottom', label: '放到牌库底', value: { targetPlayerId: targetPid, placement: 'bottom' } }],
             'alien_probe',
@@ -513,21 +516,18 @@ export function registerAlienInteractionHandlers(): void {
         };
     });
 
-    // 探测第一步（多对手时）：选择目标玩家后，展示手牌+牌库顶，链式选择放置位置
+    // 探测第一步（多对手时）：选择目标玩家后，展示手牌，链式选择放置位置
     registerInteractionHandler('alien_probe_choose_target', (state, playerId, value, _iData, _random, timestamp) => {
         const { targetPlayerId } = value as { targetPlayerId: string };
         const targetPlayer = state.core.players[targetPlayerId];
         const events: SmashUpEvent[] = [];
-        // 展示手牌
+        // 展示手牌（纯展示，后续放置交互是独立的文本选择不会冲突）
         if (targetPlayer) {
             const handCards = targetPlayer.hand.map(c => ({ uid: c.uid, defId: c.defId }));
             if (handCards.length > 0) {
                 events.push(revealHand(targetPlayerId, playerId, handCards, 'alien_probe', timestamp));
             }
-            const deckTopCard = targetPlayer.deck.length > 0 ? [{ uid: targetPlayer.deck[0].uid, defId: targetPlayer.deck[0].defId }] : [];
-            if (deckTopCard.length > 0) {
-                events.push(revealDeckTop(targetPlayerId, playerId, deckTopCard, 1, 'alien_probe', timestamp));
-            }
+            // 牌库顶不发 REVEAL_DECK_TOP（会和后续放置位置交互冲突卡死）
         }
         const next = createSimpleChoice(
             `alien_probe_${timestamp}`, playerId,
@@ -596,7 +596,7 @@ export function registerAlienInteractionHandlers(): void {
         };
     });
 
-    // 地形改造：第二步执行替换 + 洗混基地牌库 + 额外随从
+    // 地形改造：第二步执行替换 + 洗混基地牌库 + 创建“在新基地额外打随从”交互
     registerInteractionHandler('alien_terraform_choose_replacement', (state, playerId, value, iData, random, timestamp) => {
         const { newBaseDefId } = value as { newBaseDefId?: string };
         const ctx = iData?.continuationContext as { baseIndex: number; oldBaseDefId: string } | undefined;
@@ -639,10 +639,88 @@ export function registerAlienInteractionHandlers(): void {
         }
         events.push(shuffleBaseDeck(shuffled, 'alien_terraform', timestamp));
 
-        // 额外出一个随从
-        events.push(grantExtraMinion(playerId, 'alien_terraform', timestamp));
+        // 可选：在新基地额外打出一个随从（通过链式交互固化基地限定，避免全局额度泄漏）
+        const player = state.core.players[playerId];
+        const minionCards = player.hand.filter(card => card.type === 'minion');
+        if (minionCards.length === 0) {
+            return { state, events };
+        }
 
-        return { state, events };
+        const options: Array<{
+            id: string;
+            label: string;
+            value: { skip: true } | { cardUid: string; defId: string };
+        }> = [
+            { id: 'skip', label: '跳过额外随从', value: { skip: true } },
+            ...minionCards.map((card, index) => {
+                const def = getCardDef(card.defId) as MinionCardDef | undefined;
+                const power = def?.power ?? 0;
+                return {
+                    id: `hand-minion-${index}`,
+                    label: `${def?.name ?? card.defId} (力量 ${power})`,
+                    value: { cardUid: card.uid, defId: card.defId },
+                };
+            }),
+        ];
+
+        const interaction = createSimpleChoice(
+            `alien_terraform_play_minion_${timestamp}`,
+            playerId,
+            '适居化：你可以在新基地上额外打出一个随从',
+            options,
+            'alien_terraform_play_minion',
+        );
+
+        return {
+            state: queueInteraction(state, {
+                ...interaction,
+                data: {
+                    ...interaction.data,
+                    continuationContext: { newBaseIndex: ctx.baseIndex },
+                },
+            }),
+            events,
+        };
+    });
+
+    // 地形改造：第三步在“新基地”可选打出一个手牌随从（原子发放额度并立即消耗）
+    registerInteractionHandler('alien_terraform_play_minion', (state, playerId, value, iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; cardUid?: string; defId?: string };
+        if (selected.skip) return { state, events: [] };
+
+        const ctx = iData?.continuationContext as { newBaseIndex: number } | undefined;
+        if (!ctx) return { state, events: [] };
+        const targetBase = state.core.bases[ctx.newBaseIndex];
+        if (!targetBase) return { state, events: [] };
+
+        const player = state.core.players[playerId];
+        const selectedCard = player.hand.find(card =>
+            card.uid === selected.cardUid &&
+            card.defId === selected.defId &&
+            card.type === 'minion',
+        );
+        if (!selectedCard) return { state, events: [] };
+
+        const def = getCardDef(selectedCard.defId) as MinionCardDef | undefined;
+        const power = def?.power ?? 0;
+
+        return {
+            state,
+            events: [
+                grantExtraMinion(playerId, 'alien_terraform', timestamp),
+                {
+                    type: SU_EVENTS.MINION_PLAYED,
+                    payload: {
+                        playerId,
+                        cardUid: selectedCard.uid,
+                        defId: selectedCard.defId,
+                        baseIndex: ctx.newBaseIndex,
+                        power,
+                    },
+                    timestamp,
+                } as MinionPlayedEvent,
+            ],
+        };
     });
 
     // 侦察兵：基地记分后选择是否回手（链式处理多个侦察兵）

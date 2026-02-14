@@ -17,7 +17,7 @@ import { getCardDef, getBaseDef } from '../data/cards';
 import { registerTrigger, registerInterceptor } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 
-/** 注册海盗派系所有能�?*/
+/** 注册海盗派系所有能力*/
 export function registerPirateAbilities(): void {
     registerAbility('pirate_saucy_wench', 'onPlay', pirateSaucyWench);
     registerAbility('pirate_broadside', 'onPlay', pirateBroadside);
@@ -25,25 +25,25 @@ export function registerPirateAbilities(): void {
     registerAbility('pirate_swashbuckling', 'onPlay', pirateSwashbuckling);
     // 炸药桶：消灭己方随从，然后消灭同基地所有力量≤被消灭随从的随从
     registerAbility('pirate_powderkeg', 'onPlay', piratePowderkeg);
-    // 小艇（行动卡）：移动至多两个己方随从到其他基�?
+    // 小艇（行动卡）：移动至多两个己方随从到其他基地
     registerAbility('pirate_dinghy', 'onPlay', pirateDinghy);
     // 全速航行（特殊行动卡）：移动己方任意数量随从到其他基地
-    registerAbility('pirate_full_sail', 'onPlay', pirateFullSail);
-    // 上海（行动卡）：移动一个对手随从到另一个基�?
+    registerAbility('pirate_full_sail', 'special', pirateFullSail);
+    // 上海（行动卡）：移动一个对手随从到另一个基地
     registerAbility('pirate_shanghai', 'onPlay', pirateShanghai);
-    // 海狗（行动卡）：移动一个随从到另一个基�?
+    // 海狗（行动卡）：移动一个随从到另一个基地
     registerAbility('pirate_sea_dogs', 'onPlay', pirateSeaDogs);
 
     // === ongoing 效果注册 ===
-    // 海盗王：基地计分前移动到该基�?
+    // 海盗王：基地计分前移动到该基地
     registerTrigger('pirate_king', 'beforeScoring', pirateKingBeforeScoring);
     // 副官：基地计分后移动到其他基地（而非弃牌堆）
     registerTrigger('pirate_first_mate', 'afterScoring', pirateFirstMateAfterScoring);
-    // 海盗（海盗）：被消灭时移动到其他基地而非进入弃牌�?
+    // 海盗（海盗）：被消灭时移动到其他基地而非进入弃牌堆?
     registerInterceptor('pirate_buccaneer', buccaneerDestroyInterceptor);
 }
 
-/** 粗鲁少妇 onPlay：消灭本基地一个力量≤2的随�?*/
+/** 粗鲁少妇 onPlay：消灭本基地一个力量≤2的随从*/
 function pirateSaucyWench(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
@@ -64,7 +64,7 @@ function pirateSaucyWench(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 侧翼开�?onPlay：选择一个效果对�?一个你有随从的基地，消灭该对手在该基地所有力量≤2的随�?*/
+/** 侧翼开路?onPlay：选择一个效果对手?一个你有随从的基地，消灭该对手在该基地所有力量≤2的随从*/
 function pirateBroadside(ctx: AbilityContext): AbilityResult {
     // 收集所有可能的 (基地, 对手) 组合
     const candidates: { baseIndex: number; opponentId: string; count: number; label: string }[] = [];
@@ -94,7 +94,7 @@ function pirateBroadside(ctx: AbilityContext): AbilityResult {
 
 /** 加农炮 onPlay：消灭至多两个力量≤2的随从 */
 function pirateCannon(ctx: AbilityContext): AbilityResult {
-    // 收集所有力量≤2的随�?
+    // 收集所有力量≤2的随从
     const allTargets: { uid: string; defId: string; baseIndex: number; owner: string; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
@@ -118,7 +118,7 @@ function pirateCannon(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 虚张声势 onPlay：你的每个随�?1力量直到回合结束 */
+/** 虚张声势 onPlay：你的每个随从1力量直到回合结束 */
 function pirateSwashbuckling(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
 
@@ -177,13 +177,13 @@ function buildFullSailChooseMinionInteraction(
 // onPlay 时机在 Me First! 窗口期间同样生效（commands.ts 允许 special 卡在响应窗口打出）
 
 // ============================================================================
-// 事件拦截器（替代效果�?
+// 事件拦截器（替代效果）?
 // ============================================================================
 
 /**
  * 海盗 (Buccaneer) 替代效果：被消灭时移动到其他基地
  *
- * MVP：自动选择第一个可用的其他基地。无其他基地时正常消灭�?
+ * MVP：自动选择第一个可用的其他基地。无其他基地时正常消灭?
  */
 function buccaneerDestroyInterceptor(
     state: SmashUpCore,
@@ -198,15 +198,15 @@ function buccaneerDestroyInterceptor(
         if (i === fromBaseIndex) continue;
         return moveMinion(minionUid, minionDefId, fromBaseIndex, i, 'pirate_buccaneer', event.timestamp);
     }
-    // 无其他基地可移，不收回拦截（正常消灭�?
+    // 无其他基地可移，不收回拦截（正常消灭?
     return undefined;
 }
 
 // ============================================================================
-// ongoing 效果触发�?
+// ongoing 效果触发器?
 // ============================================================================
 
-/** 海盗�?beforeScoring：自动移动到即将计分的基地（MVP：自动执行，不收回询问） */
+/** 海盗船?beforeScoring：自动移动到即将计分的基地（MVP：自动执行，不收回询问） */
 function pirateKingBeforeScoring(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     const scoringBaseIndex = ctx.baseIndex;
@@ -247,7 +247,7 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] {
 
 /** 小艇 onPlay：移动至多两个己方随从到其他基地 */
 function pirateDinghy(ctx: AbilityContext): AbilityResult {
-    // 收集所有己方随�?
+    // 收集所有己方随从
     const myMinions: { uid: string; defId: string; baseIndex: number; power: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
@@ -270,9 +270,9 @@ function pirateDinghy(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 上海 onPlay：移动一个对手随从到另一个基�?*/
+/** 上海 onPlay：移动一个对手随从到另一个基地*/
 function pirateShanghai(ctx: AbilityContext): AbilityResult {
-    // 收集所有对手随�?
+    // 收集所有对手随从
     const targets: { uid: string; defId: string; baseIndex: number; power: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
@@ -324,9 +324,9 @@ function pirateSeaDogs(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 炸药�?onPlay：消灭己方随从，然后消灭同基地所有力量≤被消灭随从的随从 */
+/** 炸药桶?onPlay：消灭己方随从，然后消灭同基地所有力量≤被消灭随从的随从 */
 function piratePowderkeg(ctx: AbilityContext): AbilityResult {
-    // 收集所有己方随�?
+    // 收集所有己方随从
     const myMinions: { uid: string; defId: string; power: number; baseIndex: number; owner: string; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {

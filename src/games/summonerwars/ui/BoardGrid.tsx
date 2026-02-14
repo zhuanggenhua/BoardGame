@@ -18,8 +18,9 @@ import type { AnnihilateModeState } from './StatusBanners';
 import { AbilityReadyIndicator } from './AbilityReadyIndicator';
 import { BuffIcons, getBuffGlowStyle, BuffDetailsPanel } from './BuffIcons';
 import { abilityRegistry } from '../domain/abilities';
-import { getEffectiveStructureLife } from '../domain/abilityResolver';
+import { getEffectiveStructureLife, getEffectiveLife } from '../domain/abilityResolver';
 import { StrengthBoostIndicator } from './StrengthBoostIndicator';
+import type { UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
 
 // ============================================================================
 // 辅助函数
@@ -92,6 +93,8 @@ interface BoardGridProps {
   destroyingCells?: Set<string>;
   // 临时本体缓存（死亡动画前保留）
   dyingEntities?: DyingEntity[];
+  // 视觉伤害缓冲：攻击动画期间冻结 damage 值，使用框架层 useVisualStateBuffer
+  damageBuffer?: UseVisualStateBufferReturn;
   // 回调
   onCellClick: (row: number, col: number) => void;
   onAttackHit: () => void;
@@ -378,8 +381,11 @@ const UnitCell: React.FC<{
   const { t } = useTranslation('game-summonerwars');
   const spriteConfig = getUnitSpriteConfig(unit);
   const isMyUnit = unit.owner === myPlayerId;
-  const damage = unit.damage;
-  const life = unit.card.life;
+  // 视觉伤害：攻击动画期間优先读缓冲值，避免血条在动画 impact 前就变化
+  const damage = props.damageBuffer
+    ? props.damageBuffer.get(`${row}-${col}`, unit.damage)
+    : unit.damage;
+  const life = getEffectiveLife(unit, core);
   const isUnitSelected = core.selectedUnit?.row === row && core.selectedUnit?.col === col;
   const damageRatio = damage / life;
   const hasAttached = (unit.attachedCards?.length ?? 0) > 0;
@@ -448,7 +454,7 @@ const UnitCell: React.FC<{
       data-owner={unit.owner}
       data-unit-class={unit.card.unitClass}
       data-unit-name={unit.card.name}
-      data-unit-life={unit.card.life}
+      data-unit-life={life}
       data-unit-damage={unit.damage}
       style={{
         left: `${pos.left}%`, top: `${pos.top}%`,
@@ -607,7 +613,10 @@ const StructureCell: React.FC<{
   const spriteConfig = getStructureSpriteConfig(structure);
   const isMyStructure = structure.owner === myPlayerId;
   const isNew = props.newUnitIds?.has(structure.cardId) ?? false;
-  const damage = structure.damage;
+  // 视觉伤害：攻击动画期间优先读缓冲值
+  const damage = props.damageBuffer
+    ? props.damageBuffer.get(`${row}-${col}`, structure.damage)
+    : structure.damage;
   const life = getEffectiveStructureLife(props.core, structure);
   // 卡牌目标高亮（冰川位移/攻击等模式下让建筑本体发光）
   const cardHighlight = getCardTargetHighlight(row, col, props);

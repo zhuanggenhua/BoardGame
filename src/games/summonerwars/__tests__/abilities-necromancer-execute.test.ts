@@ -258,7 +258,7 @@ describe('火祭召唤 (fire_sacrifice_summon) execute 流程', () => {
       owner: '0',
     });
 
-    state.phase = 'attack';
+    state.phase = 'summon';
     state.currentPlayer = '0';
 
     const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
@@ -600,9 +600,9 @@ describe('疫病体 - 无魂 (soulless) 集成测试', () => {
       expect(mainDamage).toBeDefined();
       expect((mainDamage!.payload as any).skipMagicReward).toBe(true);
 
-      // 敌方被消灭后，玩家0不应获得额外魔力（skipMagicReward=true → magicDelta=0）
-      // 注意：reduce 中 skipMagicReward 控制的是 attackingPlayer 的魔力
+      // 验证 reduce 后状态：玩家0不应获得额外魔力（skipMagicReward=true）
       // 疫病体(owner=0)攻击敌方(owner=1)，击杀后 attackingPlayer=0 不获得魔力
+      expect(newState.players['0'].magic).toBe(magicBefore);
   });
 });
 
@@ -660,5 +660,10 @@ describe('亡灵战士 - 血腥狂怒 onUnitDestroyed 充能', () => {
           && (e.payload as any).position?.col === 2
       );
       expect(chargeEvents.length).toBeGreaterThan(0);
+
+      // 验证 reduce 后状态：亡灵战士的 boosts 应增加
+      const warrior = newState.board[3][2].unit;
+      expect(warrior).toBeDefined();
+      expect(warrior!.boosts).toBeGreaterThan(0);
   });
 });

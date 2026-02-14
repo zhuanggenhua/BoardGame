@@ -35,6 +35,9 @@
     "me_first_your_turn": "Your response — play a Special or pass",
     "me_first_waiting": "Waiting for P{{player}} to respond...",
     "me_first_pass": "Pass",
+    "me_first_select_base": "Click an eligible base to play your Special card",
+    "me_first_click_base": "Click eligible base",
+    "cancel": "Cancel",
     "your_turn_prompt": "It's your turn now",
     "waiting_for_player": "Waiting for P{{id}}",
     "select_factions_title": "Draft Your Factions",
@@ -68,7 +71,8 @@
     "reveal_deck_top_title": "P{{player}}'s Deck Top",
     "reveal_no_cards": "No cards to reveal",
     "confirm": "Confirm",
-    "prompt_no_options": "No options available"
+    "prompt_no_options": "No options available",
+    "invalid_base_target": "This base cannot be selected"
   },
   "actionLog": {
     "playerLabel": "P{{playerId}}",

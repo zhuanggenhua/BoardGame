@@ -607,7 +607,7 @@ const ArchitectureView: React.FC = () => {
                   🌐 E2E截图: 无头浏览器 + 像素对比 → 防止 UI 视觉回归
                 </text>
                 <text x={sx + 10} y={bottomY + 90} fontSize={9} fill={aiColor} fontWeight={600}>
-                  🤖 AI逻辑审计: 描述→实现八层追踪 + 数据查询一致性 + 交叉影响 → 发现"描述≠实现"类缺陷
+                  🤖 AI逻辑审计: 八层追踪+语义一致性+元数据审计+角色反转+数据查询一致性+16条反模式
                 </text>
                 {/* Bug 覆盖率估算 */}
                 <line x1={sx + 6} y1={bottomY + 100} x2={vw - sx - 6} y2={bottomY + 100} stroke="#21262d" strokeWidth={1} />

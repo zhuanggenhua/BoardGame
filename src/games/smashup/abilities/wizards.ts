@@ -23,7 +23,7 @@ import { createSimpleChoice, queueInteraction } from '../../../engine/systems/In
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { getCardDef, getBaseDef } from '../data/cards';
 
-/** 时间法师 onPlay：额外打出一个行�?*/
+/** 时间法师 onPlay：额外打出一个行动*/
 function wizardChronomage(ctx: AbilityContext): AbilityResult {
     return { events: [grantExtraAction(ctx.playerId, 'wizard_chronomage', ctx.now)] };
 }
@@ -41,7 +41,7 @@ function wizardEnchantress(ctx: AbilityContext): AbilityResult {
     return { events: [evt] };
 }
 
-/** 秘术学习 onPlay：抽两张�?*/
+/** 秘术学习 onPlay：抽两张）?*/
 function wizardMysticStudies(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const { drawnUids } = drawCards(player, 2, ctx.random);
@@ -54,12 +54,12 @@ function wizardMysticStudies(ctx: AbilityContext): AbilityResult {
     return { events: [evt] };
 }
 
-/** 召唤 onPlay：额外打出一个随�?*/
+/** 召唤 onPlay：额外打出一个随从*/
 function wizardSummon(ctx: AbilityContext): AbilityResult {
     return { events: [grantExtraMinion(ctx.playerId, 'wizard_summon', ctx.now)] };
 }
 
-/** 时间圆环 onPlay：额外打出两个行�?*/
+/** 时间圆环 onPlay：额外打出两个行动*/
 function wizardTimeLoop(ctx: AbilityContext): AbilityResult {
     return {
         events: [
@@ -69,14 +69,22 @@ function wizardTimeLoop(ctx: AbilityContext): AbilityResult {
     };
 }
 
-/** 学徒 onPlay：展示牌库顶，如果是行动→Prompt 选择放入手牌或作为额外行动打�?*/
+/** 学徒 onPlay：展示牌库顶给所有人，如果是行动→Prompt 选择放入手牌或作为额外行动打出 */
 function wizardNeophyte(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (player.deck.length === 0) return { events: [] };
     const topCard = player.deck[0];
+
+    // 展示牌库顶给所有人（规则："展示你牌库最顶端的牌"）
+    const revealEvt = revealDeckTop(
+        ctx.playerId, 'all',
+        [{ uid: topCard.uid, defId: topCard.defId }],
+        1, 'wizard_neophyte', ctx.now,
+    );
+
     if (topCard.type !== 'action') {
-        // 不是行动卡，放回牌库顶（无需事件�?
-        return { events: [] };
+        // 不是行动卡，展示后无事发生
+        return { events: [revealEvt] };
     }
     const def = getCardDef(topCard.defId);
     const cardName = def?.name ?? topCard.defId;
@@ -93,34 +101,48 @@ function wizardNeophyte(ctx: AbilityContext): AbilityResult {
         ...interaction,
         data: { ...interaction.data, continuationContext: { cardUid: topCard.uid, defId: topCard.defId } },
     };
-    return { events: [], matchState: queueInteraction(ctx.matchState, extended) };
+    return { events: [revealEvt], matchState: queueInteraction(ctx.matchState, extended) };
 }
 
-/** 聚集秘术 onPlay：展示每个对手牌库顶，选择其中一张行动卡作为额外行动打出 */
+/** 聚集秘术 onPlay：展示每个对手牌库顶给所有人，选择其中一张行动卡作为额外行动打出 */
 function wizardMassEnchantment(ctx: AbilityContext): AbilityResult {
-    // 收集所有对手牌库顶的行动卡
+    const events: SmashUpEvent[] = [];
+    // 收集所有对手牌库顶卡牌，合并为一个展示事件（避免多人时 pendingReveal 覆盖）
+    const allRevealCards: { uid: string; defId: string }[] = [];
+    const revealTargetIds: string[] = [];
     const actionCandidates: { uid: string; defId: string; pid: string; label: string }[] = [];
     for (const pid of ctx.state.turnOrder) {
         if (pid === ctx.playerId) continue;
         const opponent = ctx.state.players[pid];
         if (opponent.deck.length === 0) continue;
         const topCard = opponent.deck[0];
+        revealTargetIds.push(pid);
+        allRevealCards.push({ uid: topCard.uid, defId: topCard.defId });
         if (topCard.type === 'action') {
             const def = getCardDef(topCard.defId);
             const name = def?.name ?? topCard.defId;
-            actionCandidates.push({ uid: topCard.uid, defId: topCard.defId, pid, label: `${name}（来自对�?${pid}）` });
+            actionCandidates.push({ uid: topCard.uid, defId: topCard.defId, pid, label: `${name}（来自对手 ${pid}）` });
         }
     }
-    if (actionCandidates.length === 0) return { events: [] };
+    // 合并展示所有对手牌库顶（一个事件，避免多人覆盖）
+    if (allRevealCards.length > 0) {
+        const targetIds = revealTargetIds.length === 1 ? revealTargetIds[0] : revealTargetIds;
+        events.push(revealDeckTop(
+            targetIds, 'all', allRevealCards,
+            allRevealCards.length, 'wizard_mass_enchantment', ctx.now, ctx.playerId,
+        ));
+    }
+    if (actionCandidates.length === 0) return { events };
+    // 交互选择
     const options = actionCandidates.map((c, i) => ({ id: `card-${i}`, label: c.label, value: { cardUid: c.uid, defId: c.defId, pid: c.pid } }));
     const interaction = createSimpleChoice(
         `wizard_mass_enchantment_${ctx.now}`, ctx.playerId,
         '选择一张行动卡作为额外行动打出', options, 'wizard_mass_enchantment',
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events, matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 注册巫师派系所有能�?*/
+/** 注册巫师派系所有能力 */
 export function registerWizardAbilities(): void {
     const abilities: Array<[string, (ctx: AbilityContext) => AbilityResult]> = [
         ['wizard_chronomage', wizardChronomage],
@@ -140,7 +162,7 @@ export function registerWizardAbilities(): void {
         registerAbility(id, 'onPlay', handler);
     }
 
-    // 注册 ongoing 拦截�?
+    // 注册 ongoing 拦截?
     registerWizardOngoingEffects();
 }
 
@@ -153,9 +175,17 @@ function wizardPortal(ctx: AbilityContext): AbilityResult {
     const minions = topCards.filter(c => c.type === 'minion');
     const others = topCards.filter(c => c.type !== 'minion');
 
+    // 展示牌库顶卡牌给所有人（规则："展示你牌库顶的5张牌"）
+    const revealEvt = revealDeckTop(
+        ctx.playerId, 'all',
+        topCards.map(c => ({ uid: c.uid, defId: c.defId })),
+        topCards.length, 'wizard_portal', ctx.now,
+    );
+
     // 没有随从：直接进入排序流程
     if (minions.length === 0) {
-        return wizardPortalOrderRemaining(ctx, others, []);
+        const result = wizardPortalOrderRemaining(ctx, others, [revealEvt]);
+        return result;
     }
 
     // 有随从：让玩家选择要拿哪些（可以不拿）
@@ -171,7 +201,7 @@ function wizardPortal(ctx: AbilityContext): AbilityResult {
     );
     const allTopCards = topCards.map(c => ({ uid: c.uid, defId: c.defId, type: c.type }));
     return {
-        events: [],
+        events: [revealEvt],
         matchState: queueInteraction(ctx.matchState, {
             ...interaction,
             data: { ...interaction.data, continuationContext: { allTopCards } },
@@ -235,13 +265,13 @@ function wizardScry(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 变化之风 onPlay：洗手牌回牌库抽5张，额外打出一个行�?*/
+/** 变化之风 onPlay：洗手牌回牌库抽5张，额外打出一个行动*/
 function wizardWindsOfChange(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const events: SmashUpEvent[] = [];
 
     // 1. 手牌洗入牌库
-    // 注意：当前打出的行动卡（ctx.cardUid）会�?ACTION_PLAYED reducer 从手牌移除，
+    // 注意：当前打出的行动卡（ctx.cardUid）会?ACTION_PLAYED reducer 从手牌移除，
     // 所以这里排除它
     const remainingHand = player.hand.filter(c => c.uid !== ctx.cardUid);
     const allCards = [...remainingHand, ...player.deck];
@@ -253,7 +283,7 @@ function wizardWindsOfChange(ctx: AbilityContext): AbilityResult {
         ctx.now
     ));
 
-    // 2. �?张牌（基于洗牌后的牌库）
+    // 2. ?张牌（基于洗牌后的牌库）
     const drawCount = Math.min(5, shuffled.length);
     if (drawCount > 0) {
         const drawnUids = shuffled.slice(0, drawCount).map(c => c.uid);
@@ -265,15 +295,15 @@ function wizardWindsOfChange(ctx: AbilityContext): AbilityResult {
         events.push(drawEvt);
     }
 
-    // 3. 额外打出一个行�?
+    // 3. 额外打出一个行动
     events.push(grantExtraAction(ctx.playerId, 'wizard_winds_of_change', ctx.now));
 
     return { events };
 }
 
-/** 献祭 onPlay：选择己方随从→消灭→抽等量力量的�?*/
+/** 献祭 onPlay：选择己方随从→消灭→抽等量力量的?*/
 function wizardSacrifice(ctx: AbilityContext): AbilityResult {
-    // 收集己方所有随�?
+    // 收集己方所有随从
     const myMinions: { uid: string; defId: string; power: number; baseIndex: number; ownerId: string; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
@@ -300,11 +330,11 @@ function wizardSacrifice(ctx: AbilityContext): AbilityResult {
 // Ongoing 拦截器注册
 // ============================================================================
 
-/** 注册巫师派系�?ongoing 拦截�?*/
+/** 注册巫师派系?ongoing 拦截?*/
 function registerWizardOngoingEffects(): void {
-    // 大法师：回合开始时，控制者额外打出一个行�?
+    // 大法师：回合开始时，控制者额外打出一个行动
     registerTrigger('wizard_archmage', 'onTurnStart', (trigCtx) => {
-        // 找到 archmage 的控制�?
+        // 找到 archmage 的控制者?
         let archmageController: string | undefined;
         for (const base of trigCtx.state.bases) {
             const archmage = base.minions.find(m => m.defId === 'wizard_archmage');
@@ -375,19 +405,34 @@ export function registerWizardInteractionHandlers(): void {
         };
     });
 
-    // 占卜：选择行动卡→展示给所有玩家→放入手牌→洗混牌库
+    // 占卜：选择行动卡→展示给所有人→放入手牌→洗混牌库
     registerInteractionHandler('wizard_scry', (state, playerId, value, _iData, random, timestamp) => {
         const { cardUid, defId } = value as { cardUid: string; defId?: string };
         const player = state.core.players[playerId];
-        // 展示给所有玩家
-        const revealCards = [{ uid: cardUid, defId: defId ?? cardUid }];
-        const revealEvt = revealDeckTop(playerId, 'all', revealCards, 1, 'wizard_scry', timestamp);
+
+        const events: SmashUpEvent[] = [];
+
+        // 展示选中的卡给所有玩家（规则："展示给所有玩家"）
+        if (defId) {
+            events.push({
+                type: SU_EVENTS.REVEAL_HAND,
+                payload: {
+                    targetPlayerId: playerId,
+                    viewerPlayerId: 'all',
+                    cards: [{ uid: cardUid, defId }],
+                    sourcePlayerId: playerId,
+                    reason: 'wizard_scry',
+                },
+                timestamp,
+            });
+        }
+
         // 放入手牌
-        const drawEvt: SmashUpEvent = {
+        events.push({
             type: SU_EVENTS.CARDS_DRAWN,
             payload: { playerId, count: 1, cardUids: [cardUid] },
             timestamp,
-        };
+        });
         // 洗混牌库（移除已抽取的卡后重新洗混）
         const remainingDeck = player.deck.filter(c => c.uid !== cardUid);
         const shuffled = random.shuffle([...remainingDeck]);
@@ -396,9 +441,10 @@ export function registerWizardInteractionHandlers(): void {
             payload: { playerId, deckUids: shuffled.map(c => c.uid) },
             timestamp,
         };
+        events.push(reshuffleEvt);
         return {
             state,
-            events: [revealEvt, drawEvt, reshuffleEvt],
+            events,
         };
     });
 

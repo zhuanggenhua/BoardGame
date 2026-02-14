@@ -85,9 +85,11 @@ function buildCtx(
     state: DiceThroneCore, actionId: string,
     opts?: { random?: () => number; params?: Record<string, any>; asDefender?: boolean }
 ): CustomActionContext {
-    // asDefender: 防御技能中 ctx.attackerId=原攻击者(1), ctx.defenderId=防御者(0)
-    const ctxAttackerId = opts?.asDefender ? '1' : '0';
-    const ctxDefenderId = opts?.asDefender ? '0' : '1';
+    // 防御上下文约定（与 attack.ts 一致）：
+    //   effectCtx.attackerId = 防御者（使用防御技能的人）= '0'
+    //   effectCtx.defenderId = 原攻击者（被防御技能影响的人）= '1'
+    const ctxAttackerId = opts?.asDefender ? '0' : '0';
+    const ctxDefenderId = opts?.asDefender ? '1' : '1';
     const effectCtx = {
         attackerId: ctxAttackerId as any, defenderId: ctxDefenderId as any,
         sourceAbilityId: actionId, state, damageDealt: 0, timestamp: 1000,
@@ -98,9 +100,10 @@ function buildCtx(
             random: opts.random,
         } as any
         : undefined;
-    // 防御技能中 attackerId=防御者自己(0)
-    const selfId = opts?.asDefender ? '0' : '0';
-    const opponentId = opts?.asDefender ? '1' : '1';
+    // 防御技能中 attackerId=防御者自己(0)，targetId 取决于 ability 定义的 target 字段
+    // 防御技能的 target='self' → targetId=防御者(0)，target='opponent' → targetId=原攻击者(1)
+    const selfId = '0';
+    const opponentId = '1';
     return {
         ctx: effectCtx,
         targetId: opponentId as any,
@@ -347,7 +350,7 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
     // 防御
     // ========================================================================
     describe('shadow_thief-defense-resolve (暗影防御I)', () => {
-        it('匕首面造成伤害，背包面抽牌，暗影面获得护盾', () => {
+        it('匕首面造成伤害给原攻击者，背包面自己抽牌，暗影面自己获得护盾', () => {
             // 骰子: dagger,dagger,bag,bag,shadow → 2匕首,2背包,1暗影（防御用4骰但这里用5骰模拟）
             const dice = [1, 2, 3, 4, 6].map(v => createShadowDie(v));
             const state = createState({ dice });
@@ -357,23 +360,26 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
                 random: () => 0.5,
             }));
 
-            // 2匕首 → 2伤害
+            // 2匕首 → 2伤害，目标是原攻击者('1')
             const dmg = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
             expect((dmg[0] as any).payload.amount).toBe(2);
+            expect((dmg[0] as any).payload.targetId).toBe('1'); // 原攻击者
 
-            // 2背包 → 抽2牌
-            expect(eventsOfType(events, 'CARD_DRAWN')).toHaveLength(2);
+            // 2背包 → 抽2牌（防御者自己'0'抽）
+            const draws = eventsOfType(events, 'CARD_DRAWN');
+            expect(draws).toHaveLength(2);
 
-            // 1暗影 → 1护盾
+            // 1暗影 → 1护盾（防御者自己'0'获得）
             const shield = eventsOfType(events, 'DAMAGE_SHIELD_GRANTED');
             expect(shield).toHaveLength(1);
             expect((shield[0] as any).payload.value).toBe(1);
+            expect((shield[0] as any).payload.targetId).toBe('0'); // 防御者自己
         });
     });
 
     describe('shadow_thief-defense-resolve-2 (暗影防御II)', () => {
-        it('2匕首施加毒液', () => {
+        it('2匕首施加毒液给原攻击者', () => {
             const dice = [1, 2, 3, 4, 5].map(v => createShadowDie(v)); // 2 dagger
             const state = createState({ dice });
             const handler = getCustomActionHandler('shadow_thief-defense-resolve-2')!;
@@ -382,9 +388,10 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             const status = eventsOfType(events, 'STATUS_APPLIED');
             expect(status).toHaveLength(1);
             expect((status[0] as any).payload.statusId).toBe('poison');
+            expect((status[0] as any).payload.targetId).toBe('1'); // 原攻击者
         });
 
-        it('1暗影获得SNEAK_ATTACK', () => {
+        it('1暗影获得SNEAK_ATTACK（给防御者自己）', () => {
             const dice = [1, 3, 3, 5, 6].map(v => createShadowDie(v)); // 1 shadow
             const state = createState({ dice });
             const handler = getCustomActionHandler('shadow_thief-defense-resolve-2')!;
@@ -392,9 +399,13 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
 
             const tokens = eventsOfType(events, 'TOKEN_GRANTED');
             expect(tokens.some((t: any) => t.payload.tokenId === TOKEN_IDS.SNEAK_ATTACK)).toBe(true);
+            // Token 给防御者自己
+            tokens.forEach((t: any) => {
+                expect(t.payload.targetId).toBe('0'); // 防御者自己
+            });
         });
 
-        it('2暗影获得SNEAK+SNEAK_ATTACK+999护盾', () => {
+        it('2暗影获得SNEAK+SNEAK_ATTACK+999护盾（全部给防御者自己）', () => {
             const dice = [1, 3, 6, 6, 5].map(v => createShadowDie(v)); // 2 shadow
             const state = createState({ dice });
             const handler = getCustomActionHandler('shadow_thief-defense-resolve-2')!;
@@ -403,9 +414,14 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             const tokens = eventsOfType(events, 'TOKEN_GRANTED');
             // 1 shadow → 1 SNEAK_ATTACK, 2 shadow → SNEAK + SNEAK_ATTACK
             expect(tokens.length).toBeGreaterThanOrEqual(3);
+            // 所有 Token 给防御者自己
+            tokens.forEach((t: any) => {
+                expect(t.payload.targetId).toBe('0'); // 防御者自己
+            });
             const shield = eventsOfType(events, 'DAMAGE_SHIELD_GRANTED');
             expect(shield).toHaveLength(1);
             expect((shield[0] as any).payload.value).toBe(999);
+            expect((shield[0] as any).payload.targetId).toBe('0'); // 防御者自己
         });
     });
 
@@ -413,7 +429,7 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
     // 恐惧反击
     // ========================================================================
     describe('shadow_thief-fearless-riposte (恐惧反击I)', () => {
-        it('匕首面造成伤害，匕首+暗影施加毒液', () => {
+        it('匕首面造成伤害给原攻击者，匕首+暗影施加毒液给原攻击者', () => {
             const dice = [1, 2, 3, 4, 6].map(v => createShadowDie(v)); // 2 dagger + 1 shadow
             const state = createState({ dice });
             const handler = getCustomActionHandler('shadow_thief-fearless-riposte')!;
@@ -422,20 +438,24 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             const dmg = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
             expect((dmg[0] as any).payload.amount).toBe(2); // 2 daggers
+            expect((dmg[0] as any).payload.targetId).toBe('1'); // 原攻击者
 
             const status = eventsOfType(events, 'STATUS_APPLIED');
             expect(status).toHaveLength(1);
+            expect((status[0] as any).payload.targetId).toBe('1'); // 原攻击者
         });
     });
 
     describe('shadow_thief-fearless-riposte-2 (恐惧反击II)', () => {
-        it('匕首面造成2×匕首伤害', () => {
+        it('匕首面造成2×匕首伤害给原攻击者', () => {
             const dice = [1, 2, 3, 4, 6].map(v => createShadowDie(v)); // 2 dagger
             const state = createState({ dice });
             const handler = getCustomActionHandler('shadow_thief-fearless-riposte-2')!;
             const events = handler(buildCtx(state, 'shadow_thief-fearless-riposte-2', { asDefender: true }));
 
-            expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(4); // 2×2
+            const dmg = eventsOfType(events, 'DAMAGE_DEALT');
+            expect((dmg[0] as any).payload.amount).toBe(4); // 2×2
+            expect((dmg[0] as any).payload.targetId).toBe('1'); // 原攻击者
         });
     });
 

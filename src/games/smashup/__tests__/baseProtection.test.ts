@@ -4,7 +4,7 @@
  * 覆盖：
  * - base_beautiful_castle: power≥5 → destroy/move/affect 保护；power<5 → 不保护
  * - base_pony_paradise: 2+ 随从 → destroy 保护；1 随从 → 不保护
- * - base_house_of_nine_lives: 拦截 MINION_DESTROYED → MINION_MOVED（其他基地消灭时）；本基地不拦截
+ * - base_house_of_nine_lives: 消灭时创建玩家选择交互（暂缓消灭）；本基地不触发；不在场不触发
  */
 
 import { describe, expect, it, beforeAll } from 'vitest';
@@ -14,8 +14,10 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import {
     clearOngoingEffectRegistry,
     isMinionProtected,
-    interceptEvent,
 } from '../domain/ongoingEffects';
+import { processDestroyTriggers } from '../domain/reducer';
+import { getInteractionHandler, clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import type { MatchState, RandomFn } from '../../../engine/types';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, MinionDestroyedEvent, MinionMovedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
@@ -24,10 +26,18 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 // 初始化
 // ============================================================================
 
+const dummyRandom: RandomFn = {
+    random: () => 0.5,
+    d: () => 1,
+    range: (min: number) => min,
+    shuffle: <T>(arr: T[]) => [...arr],
+};
+
 beforeAll(() => {
     clearRegistry();
     clearBaseAbilityRegistry();
     clearOngoingEffectRegistry();
+    clearInteractionHandlers();
     resetAbilityInit();
     initAllAbilities();
 });
@@ -193,68 +203,53 @@ describe('base_pony_paradise: 2+ 随从免疫消灭', () => {
 });
 
 // ============================================================================
-// base_house_of_nine_lives: 九命之屋 - 拦截消灭 → 移动
+// base_house_of_nine_lives: 九命之屋 - 消灭时创建玩家选择交互
 // ============================================================================
 
-describe('base_house_of_nine_lives: 拦截消灭转移动', () => {
-    it('其他基地随从被消灭时，拦截为移动到九命之屋', () => {
+describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
+    it('其他基地随从被消灭时，创建交互并暂缓消灭', () => {
         const houseBase = makeBase('base_house_of_nine_lives');
         const otherBase = makeBase('other_base', {
             minions: [makeMinion('m1', '0', 3)],
         });
-        const state = makeState({ bases: [houseBase, otherBase] });
+        const core = makeState({ bases: [houseBase, otherBase] });
+        const ms: MatchState<SmashUpCore> = {
+            core,
+            sys: { interaction: { queue: [] } } as any,
+        };
 
         const destroyEvent: MinionDestroyedEvent = {
             type: SU_EVENTS.MINION_DESTROYED,
             payload: {
                 minionUid: 'm1',
                 minionDefId: 'd1',
-                fromBaseIndex: 1, // 其他基地
+                fromBaseIndex: 1,
                 ownerId: '0',
                 reason: '被消灭',
             },
             timestamp: 1000,
         };
 
-        const result = interceptEvent(state, destroyEvent);
-        expect(result).toBeDefined();
-        expect(result).not.toBeNull();
-
-        // 应替换为 MINION_MOVED 事件
-        const moveEvent = result as MinionMovedEvent;
-        expect(moveEvent.type).toBe(SU_EVENTS.MINION_MOVED);
-        expect(moveEvent.payload.minionUid).toBe('m1');
-        expect(moveEvent.payload.toBaseIndex).toBe(0); // 移动到九命之屋
+        const result = processDestroyTriggers([destroyEvent], ms, '1', dummyRandom, 1000);
+        // MINION_DESTROYED 应被暂缓（pendingSaveMinionUids）
+        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(0);
+        // 应创建交互
+        expect(result.matchState).toBeDefined();
+        const interaction = result.matchState!.sys.interaction.current;
+        expect(interaction).toBeDefined();
+        expect((interaction!.data as any).sourceId).toBe('base_nine_lives_intercept');
     });
 
-    it('九命之屋本身的随从被消灭时不拦截', () => {
+    it('九命之屋本身的随从被消灭时不创建交互', () => {
         const houseBase = makeBase('base_house_of_nine_lives', {
             minions: [makeMinion('m1', '0', 3)],
         });
-        const state = makeState({ bases: [houseBase] });
-
-        const destroyEvent: MinionDestroyedEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'm1',
-                minionDefId: 'd1',
-                fromBaseIndex: 0, // 九命之屋本身
-                ownerId: '0',
-                reason: '被消灭',
-            },
-            timestamp: 1000,
+        const core = makeState({ bases: [houseBase] });
+        const ms: MatchState<SmashUpCore> = {
+            core,
+            sys: { interaction: { queue: [] } } as any,
         };
-
-        const result = interceptEvent(state, destroyEvent);
-        // 不拦截 → 返回 undefined
-        expect(result).toBeUndefined();
-    });
-
-    it('九命之屋不在场时不拦截', () => {
-        const otherBase = makeBase('other_base', {
-            minions: [makeMinion('m1', '0', 3)],
-        });
-        const state = makeState({ bases: [otherBase] });
 
         const destroyEvent: MinionDestroyedEvent = {
             type: SU_EVENTS.MINION_DESTROYED,
@@ -268,7 +263,68 @@ describe('base_house_of_nine_lives: 拦截消灭转移动', () => {
             timestamp: 1000,
         };
 
-        const result = interceptEvent(state, destroyEvent);
-        expect(result).toBeUndefined();
+        const result = processDestroyTriggers([destroyEvent], ms, '1', dummyRandom, 1000);
+        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(1);
+    });
+
+    it('九命之屋不在场时不创建交互', () => {
+        const otherBase = makeBase('other_base', {
+            minions: [makeMinion('m1', '0', 3)],
+        });
+        const core = makeState({ bases: [otherBase] });
+        const ms: MatchState<SmashUpCore> = {
+            core,
+            sys: { interaction: { queue: [] } } as any,
+        };
+
+        const destroyEvent: MinionDestroyedEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'm1',
+                minionDefId: 'd1',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                reason: '被消灭',
+            },
+            timestamp: 1000,
+        };
+
+        const result = processDestroyTriggers([destroyEvent], ms, '1', dummyRandom, 1000);
+        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(1);
+    });
+
+    it('交互处理：选择移动→产生 MINION_MOVED', () => {
+        const handler = getInteractionHandler('base_nine_lives_intercept');
+        expect(handler).toBeDefined();
+        const core = makeState({ bases: [makeBase('base_house_of_nine_lives'), makeBase('other')] });
+        const ms: MatchState<SmashUpCore> = {
+            core,
+            sys: { interaction: { queue: [] } } as any,
+        };
+        const result = handler!(ms, '0', {
+            move: true, minionUid: 'm1', minionDefId: 'd1', fromBaseIndex: 1, houseBaseIndex: 0,
+        }, undefined, dummyRandom, 1000);
+        expect(result).toBeDefined();
+        expect(result!.events).toHaveLength(1);
+        expect(result!.events[0].type).toBe(SU_EVENTS.MINION_MOVED);
+        expect((result!.events[0] as MinionMovedEvent).payload.toBaseIndex).toBe(0);
+    });
+
+    it('交互处理：选择不移动→恢复 MINION_DESTROYED', () => {
+        const handler = getInteractionHandler('base_nine_lives_intercept');
+        expect(handler).toBeDefined();
+        const core = makeState({ bases: [makeBase('base_house_of_nine_lives'), makeBase('other')] });
+        const ms: MatchState<SmashUpCore> = {
+            core,
+            sys: { interaction: { queue: [] } } as any,
+        };
+        const result = handler!(ms, '0', {
+            move: false, minionUid: 'm1', minionDefId: 'd1', fromBaseIndex: 1, ownerId: '0',
+        }, undefined, dummyRandom, 1000);
+        expect(result).toBeDefined();
+        expect(result!.events).toHaveLength(1);
+        expect(result!.events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
     });
 });

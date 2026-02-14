@@ -5,7 +5,7 @@
  */
 
 import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import { processDestroyTriggers, processMoveTriggers } from './reducer';
+import { processDestroyTriggers, processMoveTriggers, processAffectTriggers } from './reducer';
 import type { FlowHooks } from '../../../engine/systems/FlowSystem';
 import type {
     SmashUpCommand,
@@ -88,7 +88,6 @@ function scoreOneBase(
     // 触发 ongoing beforeScoring（如 pirate_king 移动到该基地、cthulhu_chosen +2力量）
     const beforeScoringEvents = fireTriggers(core, 'beforeScoring', {
         state: core,
-        timing: 'beforeScoring',
         playerId: pid,
         baseIndex,
         random: rng,
@@ -146,7 +145,6 @@ function scoreOneBase(
     // 触发 ongoing afterScoring（如 pirate_first_mate 移动到其他基地）
     const afterScoringEvents = fireTriggers(core, 'afterScoring', {
         state: core,
-        timing: 'afterScoring',
         playerId: pid,
         baseIndex,
         matchState: ms,
@@ -630,13 +628,14 @@ function postProcessSystemEvents(
     // 当前玩家作为 trigger 的 sourcePlayerId
     const pid = getCurrentPlayerId(state);
 
-    // processDestroyTriggers / processMoveTriggers 需要 MatchState，包装 core
-    const ms = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as MatchState<SmashUpCore>;
+    // processDestroyTriggers / processMoveTriggers / processAffectTriggers 需要 MatchState，包装 core
+    const ms = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as unknown as MatchState<SmashUpCore>;
 
     // 依次执行保护过滤 + trigger 后处理
     const afterDestroy = processDestroyTriggers(events, ms, pid, random, now);
     const afterMove = processMoveTriggers(afterDestroy.events, ms, pid, random, now);
-    return afterMove.events;
+    const afterAffect = processAffectTriggers(afterMove.events, ms, pid, random, now);
+    return afterAffect.events;
 }
 
 // ============================================================================

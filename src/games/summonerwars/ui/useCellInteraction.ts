@@ -17,7 +17,7 @@ import {
   getPlayerUnits, hasAvailableActions, isCellEmpty, isImmobile,
   getAdjacentCells, MAX_MOVES_PER_TURN, MAX_ATTACKS_PER_TURN,
   manhattanDistance, getStructureAt, findUnitPosition, getSummoner,
-  getUnitAbilities,
+  getUnitAbilities, hasStableAbility,
 } from '../domain/helpers';
 import { isUndeadCard, getBaseCardId, CARD_IDS } from '../domain/ids';
 import { getSummonerWarsUIHints } from '../domain/uiHints';
@@ -59,6 +59,7 @@ interface UseCellInteractionParams {
   setMindCaptureMode: (mode: MindCaptureModeState | null) => void;
   afterAttackAbilityMode: AfterAttackAbilityModeState | null;
   setAfterAttackAbilityMode: (mode: AfterAttackAbilityModeState | null) => void;
+  rapidFireMode: import('./modeTypes').RapidFireModeState | null;
 }
 
 // ============================================================================
@@ -72,6 +73,7 @@ export function useCellInteraction({
   abilityMode, setAbilityMode, soulTransferMode,
   mindCaptureMode, setMindCaptureMode,
   afterAttackAbilityMode, setAfterAttackAbilityMode,
+  rapidFireMode,
 }: UseCellInteractionParams) {
   const { t } = useTranslation('game-summonerwars');
   const showToast = useToast();
@@ -280,6 +282,42 @@ export function useCellInteraction({
         })
         .map(u => u.position);
     }
+    // 高阶念力（代替攻击）：3格内非召唤师单位（排除稳固）
+    if (abilityMode.abilityId === 'high_telekinesis_instead') {
+      const sourcePos = findUnitPosition(core, abilityMode.sourceUnitId);
+      if (!sourcePos) return [];
+      const targets: CellCoord[] = [];
+      for (let row = 0; row < BOARD_ROWS; row++) {
+        for (let col = 0; col < BOARD_COLS; col++) {
+          const unit = core.board[row]?.[col]?.unit;
+          if (!unit || unit.card.unitClass === 'summoner') continue;
+          if (hasStableAbility(unit, core)) continue;
+          const dist = manhattanDistance(sourcePos, { row, col });
+          if (dist > 0 && dist <= 3) {
+            targets.push({ row, col });
+          }
+        }
+      }
+      return targets;
+    }
+    // 念力（代替攻击）：2格内非召唤师单位（排除稳固）
+    if (abilityMode.abilityId === 'telekinesis_instead') {
+      const sourcePos = findUnitPosition(core, abilityMode.sourceUnitId);
+      if (!sourcePos) return [];
+      const targets: CellCoord[] = [];
+      for (let row = 0; row < BOARD_ROWS; row++) {
+        for (let col = 0; col < BOARD_COLS; col++) {
+          const unit = core.board[row]?.[col]?.unit;
+          if (!unit || unit.card.unitClass === 'summoner') continue;
+          if (hasStableAbility(unit, core)) continue;
+          const dist = manhattanDistance(sourcePos, { row, col });
+          if (dist > 0 && dist <= 2) {
+            targets.push({ row, col });
+          }
+        }
+      }
+      return targets;
+    }
     return [];
   }, [abilityMode, core, myPlayerId]);
 
@@ -375,6 +413,7 @@ export function useCellInteraction({
     const { row: gameRow, col: gameCol } = fromViewCoord({ row, col });
 
     // 任何格子交互都重置结束阶段确认状态
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- useState 声明在后方，运行时 useCallback 内无 TDZ 问题
     setEndPhaseConfirmPending(false);
 
     // 事件卡/多步骤模式优先处理
@@ -456,6 +495,28 @@ export function useCellInteraction({
               sourceUnitId: abilityMode.sourceUnitId,
               targetPosition: { row: gameRow, col: gameCol },
             });
+          } else if (abilityMode.abilityId === 'high_telekinesis_instead') {
+            // 高阶念力（代替攻击）：选择目标后进入推拉方向选择
+            const htSourcePos = findUnitPosition(core, abilityMode.sourceUnitId);
+            setAbilityMode(null);
+            setTelekinesisTargetMode({
+              abilityId: 'high_telekinesis_instead',
+              sourceUnitId: abilityMode.sourceUnitId,
+              sourcePosition: htSourcePos ?? { row: 0, col: 0 },
+              targetPosition: { row: gameRow, col: gameCol },
+            });
+            return;
+          } else if (abilityMode.abilityId === 'telekinesis_instead') {
+            // 念力（代替攻击）：选择目标后进入推拉方向选择
+            const tkSourcePos = findUnitPosition(core, abilityMode.sourceUnitId);
+            setAbilityMode(null);
+            setTelekinesisTargetMode({
+              abilityId: 'telekinesis_instead',
+              sourceUnitId: abilityMode.sourceUnitId,
+              sourcePosition: tkSourcePos ?? { row: 0, col: 0 },
+              targetPosition: { row: gameRow, col: gameCol },
+            });
+            return;
           } else {
             moves[SW_COMMANDS.ACTIVATE_ABILITY]?.({
               abilityId: abilityMode.abilityId,
@@ -798,7 +859,8 @@ export function useCellInteraction({
     || !!soulTransferMode
     || !!mindCaptureMode
     || !!afterAttackAbilityMode
-    || !!abilityMode;
+    || !!abilityMode
+    || !!rapidFireMode;
 
   // 全局禁用开关（调试用）
   const debugDisabled = typeof window !== 'undefined'

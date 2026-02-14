@@ -5,7 +5,6 @@
 import { describe, it, expect } from 'vitest';
 import { TOKEN_IDS, PALADIN_DICE_FACE_IDS as FACES } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
-import { CP_MAX } from '../domain/types';
 import type { DiceThroneCore, Die, HeroState, DiceThroneEvent } from '../domain/types';
 import { getCustomActionHandler } from '../domain/effects';
 import type { CustomActionContext } from '../domain/effects';
@@ -87,9 +86,11 @@ function buildCtx(
     state: DiceThroneCore, actionId: string,
     opts?: { random?: () => number; asDefender?: boolean }
 ): CustomActionContext {
-    // 防御技能中 ctx.attackerId=原攻击者(1), ctx.defenderId=防御者(0)
-    const ctxAttackerId = opts?.asDefender ? '1' : '0';
-    const ctxDefenderId = opts?.asDefender ? '0' : '1';
+    // 防御上下文约定（与 attack.ts 一致）：
+    //   effectCtx.attackerId = 防御者（使用防御技能的人）= '0'
+    //   effectCtx.defenderId = 原攻击者（被防御技能影响的人）= '1'
+    const ctxAttackerId = opts?.asDefender ? '0' : '0';
+    const ctxDefenderId = opts?.asDefender ? '1' : '1';
     const effectCtx = {
         attackerId: ctxAttackerId as any, defenderId: ctxDefenderId as any,
         sourceAbilityId: actionId, state, damageDealt: 0, timestamp: 1000,
@@ -100,11 +101,12 @@ function buildCtx(
             random: opts.random,
         } as any
         : undefined;
-    // targetId=自己(0) 用于圣光术等自我增益
+    // targetId='0'（防御者自己）用于圣光术等自我增益
+    // attackerId='0'（防御者自己）= effectCtx.attackerId
     return {
         ctx: effectCtx,
         targetId: '0' as any,
-        attackerId: opts?.asDefender ? '1' as any : '0' as any,
+        attackerId: '0' as any,
         sourceAbilityId: actionId, state, timestamp: 1000, random: randomFn,
         action: { type: 'custom', customActionId: actionId },
     };
@@ -213,21 +215,24 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
     // ========================================================================
     // 神圣防御
     // ========================================================================
-    describe('paladin-holy-defense (神圣防御I：投3骰)', () => {
-        it('剑面造成伤害，头盔防止1伤害，心防止2伤害，祈祷获得CP', () => {
+    describe('paladin-holy-defense (神圣防御I：基于防御骰面)', () => {
+        it('剑面造成伤害给原攻击者，头盔防止1伤害，心防止2伤害，祈祷获得CP', () => {
+            // 骰子: sword(1), helm(3), heart(5) + 2个额外 → 默认骰子 [1,2,3,4,5]
+            // 但 holy-defense I 的 diceCount=3，rollDiceCount 应为 3
             const state = createState({});
-            let callIdx = 0;
-            const rolls = [1 / 6, 3 / 6, 5 / 6]; // sword, helm, heart
+            // 设置 3 颗骰子：sword, helm, heart
+            state.dice = [1, 3, 5].map(v => createPaladinDie(v));
+            state.rollDiceCount = 3;
             const handler = getCustomActionHandler('paladin-holy-defense')!;
             const events = handler(buildCtx(state, 'paladin-holy-defense', {
                 asDefender: true,
-                random: () => rolls[callIdx++],
             }));
 
-            // sword → 1伤害
+            // sword → 1伤害，目标是原攻击者('1')
             const dmg = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
             expect((dmg[0] as any).payload.amount).toBe(1);
+            expect((dmg[0] as any).payload.targetId).toBe('1'); // 原攻击者
 
             // helm(1) + heart(2) → 防止3伤害
             const prevent = eventsOfType(events, 'PREVENT_DAMAGE');
@@ -236,15 +241,15 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
         });
     });
 
-    describe('paladin-holy-defense-3 (神圣防御III：投4骰+特殊效果)', () => {
+    describe('paladin-holy-defense-3 (神圣防御III：基于防御骰面+特殊效果)', () => {
         it('2头盔+1祈祷时额外获得守护', () => {
             const state = createState({});
-            let callIdx = 0;
-            const rolls = [3 / 6, 4 / 6, 1, 1 / 6]; // helm, helm, pray, sword
+            // 设置 4 颗骰子：helm, helm, pray, sword
+            state.dice = [3, 4, 6, 1].map(v => createPaladinDie(v));
+            state.rollDiceCount = 4;
             const handler = getCustomActionHandler('paladin-holy-defense-3')!;
             const events = handler(buildCtx(state, 'paladin-holy-defense-3', {
                 asDefender: true,
-                random: () => rolls[callIdx++],
             }));
 
             // 应有守护token
@@ -327,7 +332,7 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
     // 赦免
     // ========================================================================
     describe('paladin-absolution (赦免)', () => {
-        it('剑面对攻击者造成1不可防御伤害', () => {
+        it('剑面对原攻击者造成1不可防御伤害', () => {
             const state = createState({});
             const handler = getCustomActionHandler('paladin-absolution')!;
             const events = handler(buildCtx(state, 'paladin-absolution', {
@@ -338,6 +343,7 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
             const dmg = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
             expect((dmg[0] as any).payload.amount).toBe(1);
+            expect((dmg[0] as any).payload.targetId).toBe('1'); // 原攻击者
         });
 
         it('头盔面防止1伤害', () => {

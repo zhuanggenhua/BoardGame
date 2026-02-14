@@ -9,7 +9,7 @@
  * - 远古之物：dunwich_horror
  * - 框架修复：getEffectiveBreakpoint / processMoveTriggers
  */
-/* eslint-disable @typescript-eslint/no-explicit-any -- 测试文件：mock 随机数与事件 payload 断言 */
+ 
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import type { SmashUpCore, PlayerState, MinionOnBase, BaseInPlay, PowerCounterAddedEvent, MinionMovedEvent, MinionDestroyedEvent, MadnessDrawnEvent, MadnessReturnedEvent, CardsDrawnEvent, CardsDiscardedEvent, MinionReturnedEvent, BaseReplacedEvent, CardToDeckBottomEvent, CardInstance, LimitModifiedEvent } from '../domain/types';
@@ -1101,11 +1101,14 @@ describe('killer_plant_venus_man_trap 搜索牌库', () => {
             state, playerId: '0', cardUid: 'trap', defId: 'killer_plant_venus_man_trap',
             baseIndex: 0, random: dummyRandom, now: 0,
         } as AbilityContext);
-        // 应产生 3 个事件：CARDS_DRAWN + LIMIT_MODIFIED + DECK_RESHUFFLED
-        expect(result.events.length).toBe(3);
+        // 应产生 4 个事件：CARDS_DRAWN + LIMIT_MODIFIED + MINION_PLAYED + DECK_RESHUFFLED
+        expect(result.events.length).toBe(4);
         expect(result.events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
         expect(result.events[1].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
-        expect(result.events[2].type).toBe(SU_EVENTS.DECK_RESHUFFLED);
+        expect(result.events[2].type).toBe(SU_EVENTS.MINION_PLAYED);
+        // 验证随从被打出到此基地（baseIndex=0）
+        expect((result.events[2] as any).payload.baseIndex).toBe(0);
+        expect(result.events[3].type).toBe(SU_EVENTS.DECK_RESHUFFLED);
     });
 
     it('牌库无合格随从→不产生事件', () => {
@@ -1226,13 +1229,13 @@ describe('killer_plant_choking_vines 触发修复', () => {
 // 海盗 - pirate_full_sail 全速航行
 // ============================================================================
 
-describe('pirate_full_sail onPlay', () => {
+describe('pirate_full_sail special', () => {
     it('有己方随从→产生 Prompt（含完成选项）', () => {
         const m1 = makeMinion('m1', 'test_minion', '0', 3);
         const base = makeBase({ minions: [m1] });
         const state = makeState({ bases: [base, makeBase()] });
 
-        const executor = resolveAbility('pirate_full_sail', 'onPlay');
+        const executor = resolveAbility('pirate_full_sail', 'special');
         expect(executor).toBeDefined();
         const ms = { core: state, sys: { phase: 'playCards', interaction: { queue: [] } } } as any;
         const result = executor!({
@@ -1254,7 +1257,7 @@ describe('pirate_full_sail onPlay', () => {
         const base = makeBase({ minions: [enemyMinion] });
         const state = makeState({ bases: [base, makeBase()] });
 
-        const executor = resolveAbility('pirate_full_sail', 'onPlay');
+        const executor = resolveAbility('pirate_full_sail', 'special');
         expect(executor).toBeDefined();
         const ms = { core: state, sys: { phase: 'playCards', interaction: { queue: [] } } } as any;
         const result = executor!({

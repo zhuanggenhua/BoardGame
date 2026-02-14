@@ -2,7 +2,7 @@
  * 圣骑士 (Paladin) 专属 Custom Action 处理器
  */
 
-import { getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { getActiveDice, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
 import { RESOURCE_IDS } from '../resources';
 import { TOKEN_IDS, PALADIN_DICE_FACE_IDS as FACES } from '../ids';
 import type {
@@ -123,48 +123,35 @@ function handleHolyLightRoll3(ctx: CustomActionContext): DiceThroneEvent[] {
 /**
  * 神圣防御 (Holy Defense) 逻辑
  */
-function handleHolyDefenseRoll({ targetId, attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext, diceCount: number, isLevel3: boolean): DiceThroneEvent[] {
-    if (!random) return [];
+/**
+ * 神圣防御：基于防御投掷的骰面结果计算效果
+ * - 剑面→反伤，盔面→防1，心面→防2，祈祷面→1CP
+ * - III级额外：2盔+1祈祷→守护
+ * 注意：不是额外投骰子，而是读取防御阶段已投的骰子结果
+ */
+function handleHolyDefenseRoll({ targetId, attackerId: _attackerId, sourceAbilityId, state, timestamp, ctx }: CustomActionContext, _diceCount: number, isLevel3: boolean): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
-    const dice: BonusDieInfo[] = [];
+    // 防御上下文：ctx.attackerId = 防御者自身，ctx.defenderId = 原攻击者
+    const originalAttackerId = ctx.defenderId;
 
-    // 投掷
-    const rollResults: { value: number; face: string }[] = [];
-    for (let i = 0; i < diceCount; i++) {
-        const value = random.d(6);
-        const face = getPlayerDieFace(state, targetId, value) ?? '';
-        rollResults.push({ value, face });
-        dice.push({ index: i, value, face });
-        events.push({
-            type: 'BONUS_DIE_ROLLED',
-            payload: {
-                value,
-                face,
-                playerId: targetId,
-                targetPlayerId: targetId,
-                effectKey: 'bonusDie.effect.holyDefense',
-                effectParams: { index: i }
-            },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: timestamp + i,
-        } as BonusDieRolledEvent);
-    }
+    // 读取防御投掷的骰面计数（防御阶段结束时 state.dice 就是防御方的骰子）
+    const faceCounts = getFaceCounts(getActiveDice(state));
 
-    const swordCount = rollResults.filter(r => r.face === FACES.SWORD).length;
-    const helmCount = rollResults.filter(r => r.face === FACES.HELM).length;
-    const heartCount = rollResults.filter(r => r.face === FACES.HEART).length;
-    const prayCount = rollResults.filter(r => r.face === FACES.PRAY).length;
+    const swordCount = faceCounts[FACES.SWORD] ?? 0;
+    const helmCount = faceCounts[FACES.HELM] ?? 0;
+    const heartCount = faceCounts[FACES.HEART] ?? 0;
+    const prayCount = faceCounts[FACES.PRAY] ?? 0;
 
-    // 1. 造成伤害 (Sword)
-    if (swordCount > 0 && attackerId) {
+    // 1. 造成伤害 (Sword) → 反伤给原攻击者
+    if (swordCount > 0 && originalAttackerId) {
         const amount = swordCount;
-        const target = state.players[attackerId];
+        const target = state.players[originalAttackerId];
         const targetHp = target?.resources[RESOURCE_IDS.HP] ?? 0;
         const actualDamage = target ? Math.min(amount, targetHp) : 0;
 
         events.push({
             type: 'DAMAGE_DEALT',
-            payload: { targetId: attackerId, amount, actualDamage, sourceAbilityId, type: 'undefendable' },
+            payload: { targetId: originalAttackerId, amount, actualDamage, sourceAbilityId, type: 'undefendable' },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp: timestamp + 50
         } as DamageDealtEvent);
@@ -194,7 +181,7 @@ function handleHolyDefenseRoll({ targetId, attackerId, sourceAbilityId, state, t
         });
     }
 
-    // 4. III级特效
+    // 4. III级特效：2盔+1祈祷→守护
     if (isLevel3 && helmCount >= 2 && prayCount >= 1) {
         const current = state.players[targetId]?.tokens[TOKEN_IDS.PROTECT] ?? 0;
         const limit = getTokenStackLimit(state, targetId, TOKEN_IDS.PROTECT);
@@ -207,9 +194,6 @@ function handleHolyDefenseRoll({ targetId, attackerId, sourceAbilityId, state, t
             } as TokenGrantedEvent);
         }
     }
-
-    // 多骰展示
-    events.push(createDisplayOnlySettlement(sourceAbilityId, targetId, targetId, dice, timestamp));
 
     return events;
 }
@@ -327,9 +311,11 @@ function handleDivineFavor({ targetId, state, timestamp, random }: CustomActionC
  * 被攻击后投掷1骰防御，效果同神圣防御基础版（1骰简化版）
  * 剑→1不可防御伤害; 头盔→防止1伤害; 心→防止2伤害; 祈祷→1CP
  */
-function handleAbsolution({ targetId, attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
+function handleAbsolution({ targetId, attackerId: _attackerId, sourceAbilityId, state, timestamp, random, ctx }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
     const events: DiceThroneEvent[] = [];
+    // 防御上下文：ctx.attackerId = 防御者自身，ctx.defenderId = 原攻击者
+    const originalAttackerId = ctx.defenderId;
     const value = random.d(6);
     const face = getPlayerDieFace(state, targetId, value) ?? '';
 
@@ -347,14 +333,14 @@ function handleAbsolution({ targetId, attackerId, sourceAbilityId, state, timest
         timestamp,
     } as BonusDieRolledEvent);
 
-    if (face === FACES.SWORD && attackerId) {
-        // 剑 → 对攻击者造成 1 不可防御伤害
-        const target = state.players[attackerId];
+    if (face === FACES.SWORD && originalAttackerId) {
+        // 剑 → 对原攻击者造成 1 不可防御伤害
+        const target = state.players[originalAttackerId];
         const targetHp = target?.resources[RESOURCE_IDS.HP] ?? 0;
         const actualDamage = target ? Math.min(1, targetHp) : 0;
         events.push({
             type: 'DAMAGE_DEALT',
-            payload: { targetId: attackerId, amount: 1, actualDamage, sourceAbilityId, type: 'undefendable' },
+            payload: { targetId: originalAttackerId, amount: 1, actualDamage, sourceAbilityId, type: 'undefendable' },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp: timestamp + 10,
         } as DamageDealtEvent);

@@ -50,6 +50,7 @@ function setupWithBreakpoint(ids: PlayerId[], random: RandomFn): MatchState<Smas
             controller: '0',
             basePower: 5,
             powerModifier: 0,
+            tempPowerModifier: 0,
             attachedActions: [],
             talentUsed: false,
         }));
@@ -76,6 +77,23 @@ function setupWithBreakpointNoSpecial(ids: PlayerId[], random: RandomFn): MatchS
         if (player) {
             player.hand = [];
         }
+    }
+    return state;
+}
+
+/** 达标且仅 0 号玩家有两张特殊行动卡（用于 loopUntilAllPass 边界） */
+function setupWithBreakpointOnlyP0TwoSpecial(ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> {
+    const state = setupWithBreakpoint(ids, random);
+    const p0 = state.core.players['0'];
+    if (p0) {
+        p0.hand = [
+            { uid: 'special-0-a', defId: 'ninja_hidden_ninja', type: 'action', owner: '0' },
+            { uid: 'special-0-b', defId: 'ninja_hidden_ninja', type: 'action', owner: '0' },
+        ];
+    }
+    const p1 = state.core.players['1'];
+    if (p1) {
+        p1.hand = [];
     }
     return state;
 }
@@ -240,6 +258,97 @@ describe('Me First! 响应窗口', () => {
         const allEventTypes = result.steps.flatMap(s => s.events);
         expect(allEventTypes).toContain(RESPONSE_WINDOW_EVENTS.OPENED);
         expect(allEventTypes).toContain(RESPONSE_WINDOW_EVENTS.CLOSED);
+    });
+
+    it('loopUntilAllPass：玩家打出 special 后循环重启，全部 pass 才关闭', () => {
+        // 自定义 setup：P0 只有 special 卡（无随从），P1 有 special 卡
+        // ninja_hidden_ninja 在无手牌随从时不产生 Interaction，直接完成
+        const setupSpecialOnly = (ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> => {
+            const state = setupWithBreakpoint(ids, random);
+            // P0 只保留 special 卡，清除其他手牌（确保无随从可选，hidden_ninja 直接完成）
+            const p0 = state.core.players['0'];
+            if (p0) {
+                p0.hand = [
+                    { uid: 'special-0', defId: 'ninja_hidden_ninja', type: 'action', owner: '0' },
+                ];
+            }
+            return state;
+        };
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: setupSpecialOnly,
+        });
+        const result = runner.run({
+            name: 'loopUntilAllPass 循环',
+            commands: [
+                // 进入 scoreBases，打开 Me First! 窗口
+                ...BREAKPOINT_COMMANDS,
+                // P0 打出 special 卡（无随从可选，效果为空，但 ACTION_PLAYED 事件触发推进）
+                { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'special-0', targetBaseIndex: 0 } },
+                // P1 让过 → 到达队列末尾，但本轮有人出牌 → 循环重启
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
+                // 新一轮：P0 无 special 牌被 skipToNextRespondable 跳过 → P1 让过 → 窗口关闭
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
+            ] as any[],
+        });
+
+        // 响应窗口应已关闭
+        expect(result.finalState.sys.responseWindow.current).toBeUndefined();
+        // PLAY_ACTION 步骤成功且产生了 action_played 事件
+        const playStep = result.steps.find(s => s.commandType === SU_COMMANDS.PLAY_ACTION);
+        expect(playStep).toBeDefined();
+        expect(playStep!.success).toBe(true);
+        expect(playStep!.events).toContain(SU_EVENTS.ACTION_PLAYED);
+        // 注意：不检查 finalState 的手牌/弃牌堆，因为 draw 阶段会 reshuffle 弃牌堆回牌库再抽牌
+    });
+
+    it('loopUntilAllPass：出牌后尾部全被 skip 时应回到队首继续响应', () => {
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: setupWithBreakpointOnlyP0TwoSpecial,
+        });
+        const result = runner.run({
+            name: 'loopUntilAllPass 尾部 skip 回队首',
+            commands: [
+                ...BREAKPOINT_COMMANDS,
+                // P0 打出第一张 special；P1 无可响应内容，会被自动 skip
+                // 正确行为：窗口应重开到 P0（其手里还有第二张 special）
+                { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'special-0-a', targetBaseIndex: 0 } },
+            ] as any[],
+        });
+
+        const window = result.finalState.sys.responseWindow.current;
+        expect(window).toBeTruthy();
+        expect(window?.windowType).toBe('meFirst');
+        expect(window?.currentResponderIndex).toBe(0);
+        expect(result.finalState.sys.phase).toBe('scoreBases');
+        expect(result.finalState.core.players['0'].hand.some(c => c.uid === 'special-0-b')).toBe(true);
+    });
+
+    it('loopUntilAllPass：无人出牌时一轮 pass 即关闭', () => {
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: setupWithBreakpoint,
+        });
+        const result = runner.run({
+            name: 'loopUntilAllPass 一轮全 pass',
+            commands: [
+                ...BREAKPOINT_COMMANDS,
+                // 两人都 pass，无人出牌 → 一轮即关闭（不循环）
+                ...ME_FIRST_PASS_ALL,
+            ] as any[],
+        });
+
+        expect(result.finalState.sys.responseWindow.current).toBeUndefined();
+        // 两人的 special 卡仍在手牌
+        expect(result.finalState.core.players['0'].hand.find(c => c.uid === 'special-0')).toBeTruthy();
+        expect(result.finalState.core.players['1'].hand.find(c => c.uid === 'special-1')).toBeTruthy();
     });
 
     it('完整回合循环（无基地达标时跳过 Me First!）', () => {

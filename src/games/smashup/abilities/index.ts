@@ -1,7 +1,7 @@
 /**
  * 大杀四方 - 能力注册入口
  *
- * 在游戏初始化时调�?initAllAbilities() 注册所有派系能力�?
+ * 在游戏初始化时调用 initAllAbilities() 注册所有派系能力。
  */
 
 import { registerAlienAbilities } from './aliens';
@@ -38,6 +38,7 @@ import { registerMultiBaseScoringInteractionHandler } from '../domain/index';
 import { registerAllOngoingModifiers } from './ongoing_modifiers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
+import { clearDiscardPlayProviders } from '../domain/discardPlayability';
 
 let initialized = false;
 
@@ -46,7 +47,7 @@ export function initAllAbilities(): void {
     if (initialized) return;
     initialized = true;
 
-    // 基础�?8 派系
+    // 基础?8 派系
     registerAlienAbilities();
     registerAlienInteractionHandlers();
     registerPirateAbilities();
@@ -68,7 +69,7 @@ export function initAllAbilities(): void {
     registerBaseAbilities();
     registerBaseInteractionHandlers();
 
-    // 多基地计�?Prompt 继续函数
+    // 多基地计分 Prompt 继续函数
     registerMultiBaseScoringInteractionHandler();
 
     // 扩展派系
@@ -81,7 +82,7 @@ export function initAllAbilities(): void {
     registerKillerPlantAbilities();
     registerKillerPlantInteractionHandlers();
 
-    // 克苏鲁扩�?
+    // 克苏鲁扩展?
     registerInnsmouthAbilities();
     registerInnsmouthInteractionHandlers();
     registerMiskatonicAbilities();
@@ -100,4 +101,5 @@ export function resetAbilityInit(): void {
     initialized = false;
     clearPowerModifierRegistry();
     clearOngoingEffectRegistry();
+    clearDiscardPlayProviders();
 }

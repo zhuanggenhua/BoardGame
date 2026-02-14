@@ -83,10 +83,14 @@ export type TriggerTiming =
     | 'onMinionPlayed'     // 随从入场时
     | 'onMinionDestroyed'  // 随从被消灭时
     | 'onMinionMoved'      // 随从被移动时
+    | 'onMinionAffected'   // 随从被对手效果影响时（聚合时机：消灭/移动/力量修改/附着/控制权变更）
     | 'onTurnEnd'          // 回合结束时
     | 'onTurnStart'        // 回合开始时
     | 'beforeScoring'      // 基地计分前
     | 'afterScoring';      // 基地计分后
+
+/** 影响类型（仅 onMinionAffected 时有值） */
+export type AffectType = 'destroy' | 'move' | 'power_change' | 'attach_action';
 
 /** 触发上下文 */
 export interface TriggerContext {
@@ -104,6 +108,8 @@ export interface TriggerContext {
     triggerMinionUid?: string;
     /** 触发相关的随从 defId */
     triggerMinionDefId?: string;
+    /** 影响类型（仅 onMinionAffected 时有值） */
+    affectType?: AffectType;
     random: RandomFn;
     now: number;
 }

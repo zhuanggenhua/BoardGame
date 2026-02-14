@@ -1,7 +1,7 @@
 /**
- * 大杀四方 - 诡术师派系能�?
+ * 大杀四方 - 诡术师派系能力
  *
- * 主题：陷阱、干扰对手、消灭随�?
+ * 主题：陷阱、干扰对手、消灭随从
  */
 
 import { registerAbility } from '../domain/abilityRegistry';
@@ -51,7 +51,7 @@ function tricksterTakeTheShinies(ctx: AbilityContext): AbilityResult {
         const player = ctx.state.players[pid];
         if (player.hand.length === 0) continue;
 
-        // 随机选择至多2�?
+        // 随机选择至多2?
         const handCopy = [...player.hand];
         const discardUids: string[] = [];
         const count = Math.min(2, handCopy.length);
@@ -71,9 +71,9 @@ function tricksterTakeTheShinies(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 幻想破碎 onPlay：消灭一个已打出到随从或基地上的行动�?*/
+/** 幻想破碎 onPlay：消灭一个已打出到随从或基地上的行动?*/
 function tricksterDisenchant(ctx: AbilityContext): AbilityResult {
-    // 收集所有对手的持续行动�?
+    // 收集所有对手的持续行动?
     const targets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
@@ -105,21 +105,21 @@ function tricksterDisenchant(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 注册诡术师派系所有能�?*/
+/** 注册诡术师派系所有能力*/
 export function registerTricksterAbilities(): void {
     registerAbility('trickster_gnome', 'onPlay', tricksterGnome);
-    // 带走宝物（行动卡）：每个对手随机弃两张手�?
+    // 带走宝物（行动卡）：每个对手随机弃两张手牌
     registerAbility('trickster_take_the_shinies', 'onPlay', tricksterTakeTheShinies);
     // 幻想破碎（行动卡）：消灭一个已打出的行动卡
     registerAbility('trickster_disenchant', 'onPlay', tricksterDisenchant);
-    // 小妖�?onDestroy：被消灭后抽1张牌 + 对手随机�?张牌
+    // 小妖精?onDestroy：被消灭后抽1张牌 + 对手随机?张牌
     registerAbility('trickster_gremlin', 'onDestroy', tricksterGremlinOnDestroy);
     // 沉睡印记（行动卡）：对手下回合不能打行动
     registerAbility('trickster_mark_of_sleep', 'onPlay', tricksterMarkOfSleep);
     // 封路（ongoing）：打出时选择一个派系
     registerAbility('trickster_block_the_path', 'onPlay', tricksterBlockThePath);
 
-    // 注册 ongoing 拦截�?
+    // 注册 ongoing 拦截?
     registerTricksterOngoingEffects();
 }
 
@@ -173,11 +173,11 @@ export function registerTricksterInteractionHandlers(): void {
     });
 }
 
-/** 小妖�?onDestroy：被消灭后抽1张牌 + 每个对手随机�?张牌 */
+/** 小妖精?onDestroy：被消灭后抽1张牌 + 每个对手随机?张牌 */
 function tricksterGremlinOnDestroy(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
 
-    // �?张牌
+    // ?张牌
     const player = ctx.state.players[ctx.playerId];
     if (player && player.deck.length > 0) {
         const { drawnUids } = drawCards(player, 1, ctx.random);
@@ -190,7 +190,7 @@ function tricksterGremlinOnDestroy(ctx: AbilityContext): AbilityResult {
         }
     }
 
-    // 每个对手随机�?张牌
+    // 每个对手随机?张牌
     for (const pid of ctx.state.turnOrder) {
         if (pid === ctx.playerId) continue;
         const opponent = ctx.state.players[pid];
@@ -253,20 +253,20 @@ function tricksterMarkOfSleep(ctx: AbilityContext): AbilityResult {
 // executeMarkOfSleep 已移除，沉睡印记改为标记模式（在对手回合开始时生效）
 
 // ============================================================================
-// Ongoing 拦截器注�?
+// Ongoing 拦截器注册?
 // ============================================================================
 
-/** 注册诡术师派系的 ongoing 拦截�?*/
+/** 注册诡术师派系的 ongoing 拦截?*/
 function registerTricksterOngoingEffects(): void {
-    // 小矮妖：其他玩家打出力量更低的随从到同基地时消灭该随�?
+    // 小矮妖：其他玩家打出力量更低的随从到同基地时消灭该随从
     registerTrigger('trickster_leprechaun', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || !trigCtx.triggerMinionDefId || trigCtx.baseIndex === undefined) return [];
-        // 找到 leprechaun 所在基�?
+        // 找到 leprechaun 所在基地
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             const base = trigCtx.state.bases[i];
             const leprechaun = base.minions.find(m => m.defId === 'trickster_leprechaun');
             if (!leprechaun) continue;
-            // 只在同基地触�?
+            // 只在同基地触?
             if (i !== trigCtx.baseIndex) continue;
             // 只对其他玩家触发
             if (leprechaun.controller === trigCtx.playerId) continue;
@@ -293,15 +293,12 @@ function registerTricksterOngoingEffects(): void {
     });
 
     // 布朗尼：被对手卡牌效果影响时，对手弃两张牌
-    // 简化实现：覆盖"被消灭"和"被移动"两种最常见的"被影响"场景
-    // 完整实现需要 onAffected trigger timing（在所有"对手效果作用于该随从"的事件后统一触发），
-    // 遗漏场景：被负力量修改、被附着对手行动卡等。优先级低，当前覆盖率已满足大多数对局
-    registerTrigger('trickster_brownie', 'onMinionDestroyed', (trigCtx) => {
+    // "影响"包含：消灭、移动、负力量修改、附着对手行动卡（规则术语映射）
+    registerTrigger('trickster_brownie', 'onMinionAffected', (trigCtx) => {
         if (!trigCtx.triggerMinionDefId || trigCtx.triggerMinionDefId !== 'trickster_brownie') return [];
-        // 找到消灭 brownie 的来源玩家（即当前回合玩家，如果不是 brownie 拥有者）
         const brownieOwner = trigCtx.triggerMinion?.controller;
         if (!brownieOwner || brownieOwner === trigCtx.playerId) return [];
-        // 对手（触发消灭的玩家）弃两张牌
+        // 对手（触发影响的玩家）弃两张牌
         const opponent = trigCtx.state.players[trigCtx.playerId];
         if (!opponent || opponent.hand.length === 0) return [];
         const discardCount = Math.min(2, opponent.hand.length);
@@ -319,31 +316,10 @@ function registerTricksterOngoingEffects(): void {
         }];
     });
 
-    registerTrigger('trickster_brownie', 'onMinionMoved', (trigCtx) => {
-        if (!trigCtx.triggerMinionDefId || trigCtx.triggerMinionDefId !== 'trickster_brownie') return [];
-        const brownieOwner = trigCtx.triggerMinion?.controller;
-        if (!brownieOwner || brownieOwner === trigCtx.playerId) return [];
-        const opponent = trigCtx.state.players[trigCtx.playerId];
-        if (!opponent || opponent.hand.length === 0) return [];
-        const discardCount = Math.min(2, opponent.hand.length);
-        const discardUids: string[] = [];
-        const handCopy = [...opponent.hand];
-        for (let j = 0; j < discardCount; j++) {
-            const idx = Math.floor(trigCtx.random.random() * handCopy.length);
-            discardUids.push(handCopy[idx].uid);
-            handCopy.splice(idx, 1);
-        }
-        return [{
-            type: SU_EVENTS.CARDS_DISCARDED,
-            payload: { playerId: trigCtx.playerId, cardUids: discardUids },
-            timestamp: trigCtx.now,
-        }];
-    });
-
-    // 迷雾笼罩：此基地上可额外打出一个随从（回合开始时给额外额度）
+    // 迷雾笼罩：此基地上可额外打出一个随从到此基地（回合开始时给基地限定额度）
     registerTrigger('trickster_enshrouding_mist', 'onTurnStart', (trigCtx) => {
-        // 找到 enshrouding_mist 的拥有�?
-        for (const base of trigCtx.state.bases) {
+        for (let bi = 0; bi < trigCtx.state.bases.length; bi++) {
+            const base = trigCtx.state.bases[bi];
             const mist = base.ongoingActions.find(o => o.defId === 'trickster_enshrouding_mist');
             if (!mist) continue;
             // 只在拥有者的回合触发
@@ -355,6 +331,7 @@ function registerTricksterOngoingEffects(): void {
                     limitType: 'minion' as const,
                     delta: 1,
                     reason: 'trickster_enshrouding_mist',
+                    restrictToBase: bi,
                 },
                 timestamp: trigCtx.now,
             }];
@@ -364,11 +341,11 @@ function registerTricksterOngoingEffects(): void {
 
     // 藏身处：保护同基地己方随从不受对手行动卡影响
     registerProtection('trickster_hideout', 'action', (ctx) => {
-        // 检查目标随从是否附着�?hideout，或同基地有 hideout ongoing
+        // 检查目标随从是否附着了?hideout，或同基地有 hideout ongoing
         if (ctx.targetMinion.attachedActions.some(a => a.defId === 'trickster_hideout')) {
             return ctx.targetMinion.controller !== ctx.sourcePlayerId;
         }
-        // 也检查基地上�?ongoing
+        // 也检查基地上）?ongoing
         const base = ctx.state.bases[ctx.targetBaseIndex];
         if (base?.ongoingActions.some(o => o.defId === 'trickster_hideout')) {
             return ctx.targetMinion.controller !== ctx.sourcePlayerId;
@@ -376,7 +353,7 @@ function registerTricksterOngoingEffects(): void {
         return false;
     });
 
-    // 火焰陷阱：其他玩家打出随从到此基地时消灭该随�?
+    // 火焰陷阱：其他玩家打出随从到此基地时消灭该随从
     registerTrigger('trickster_flame_trap', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || !trigCtx.triggerMinionDefId || trigCtx.baseIndex === undefined) return [];
         for (let i = 0; i < trigCtx.state.bases.length; i++) {

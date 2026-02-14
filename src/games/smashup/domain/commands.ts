@@ -7,7 +7,12 @@ import type { SmashUpCommand, SmashUpCore, ActionCardDef } from './types';
 import { SU_COMMANDS, getCurrentPlayerId, HAND_LIMIT } from './types';
 import { getCardDef, getMinionDef } from '../data/cards';
 import { isOperationRestricted } from './ongoingEffects';
-import { getPlayerEffectivePowerOnBase } from './ongoingModifiers';
+import {
+    getEffectiveBreakpoint,
+    getPlayerEffectivePowerOnBase,
+    getTotalEffectivePowerOnBase,
+} from './ongoingModifiers';
+import { canPlayFromDiscard } from './discardPlayability';
 
 export function validate(
     state: MatchState<SmashUpCore>,
@@ -32,16 +37,46 @@ export function validate(
             }
             const player = core.players[command.playerId];
             if (!player) return { valid: false, error: '玩家不存在' };
-            if (player.minionsPlayed >= player.minionLimit) {
+
+            const { baseIndex, fromDiscard } = command.payload;
+            if (baseIndex < 0 || baseIndex >= core.bases.length) {
+                return { valid: false, error: '无效的基地索引' };
+            }
+
+            // 从弃牌堆打出：通过 discardPlayability 模块验证
+            if (fromDiscard) {
+                const discardCheck = canPlayFromDiscard(core, command.playerId, command.payload.cardUid, baseIndex);
+                if (!discardCheck) {
+                    return { valid: false, error: '该卡牌不能从弃牌堆打出到此基地' };
+                }
+                // 消耗正常额度的弃牌堆出牌需要检查额度
+                if (discardCheck.consumesNormalLimit && player.minionsPlayed >= player.minionLimit) {
+                    return { valid: false, error: '本回合随从额度已用完' };
+                }
+                // 限制检查
+                const discardCard = player.discard.find(c => c.uid === command.payload.cardUid);
+                if (!discardCard || discardCard.type !== 'minion') {
+                    return { valid: false, error: '弃牌堆中没有该随从' };
+                }
+                const minionDef = getMinionDef(discardCard.defId);
+                const basePower = minionDef?.power ?? 0;
+                if (isOperationRestricted(core, baseIndex, command.playerId, 'play_minion', {
+                    minionDefId: discardCard.defId,
+                    basePower,
+                })) {
+                    return { valid: false, error: '该基地禁止打出该随从' };
+                }
+                return { valid: true };
+            }
+
+            // 正常手牌打出：全局额度 + 基地限定额度
+            const baseQuota = player.baseLimitedMinionQuota?.[baseIndex] ?? 0;
+            if (player.minionsPlayed >= player.minionLimit && baseQuota <= 0) {
                 return { valid: false, error: '本回合随从额度已用完' };
             }
             const card = player.hand.find(c => c.uid === command.payload.cardUid);
             if (!card) return { valid: false, error: '手牌中没有该卡牌' };
             if (card.type !== 'minion') return { valid: false, error: '该卡牌不是随从' };
-            const { baseIndex } = command.payload;
-            if (baseIndex < 0 || baseIndex >= core.bases.length) {
-                return { valid: false, error: '无效的基地索引' };
-            }
             // 限制检查：是否禁止打出随从到此基地（包括基地效果和 ongoing 效果）
             const minionDef = getMinionDef(card.defId);
             const basePower = minionDef?.power ?? 0;
@@ -81,6 +116,27 @@ export function validate(
                 if (rDef.subtype !== 'special') {
                     return { valid: false, error: 'Me First! 响应只能打出特殊行动卡' };
                 }
+
+                const targetBase = command.payload.targetBaseIndex;
+                if (rDef.specialNeedsBase) {
+                    if (typeof targetBase !== 'number' || !Number.isInteger(targetBase)) {
+                        return { valid: false, error: '该特殊行动卡需要选择一个达标基地' };
+                    }
+                    const targetBaseIndex = targetBase;
+                    if (targetBaseIndex < 0 || targetBaseIndex >= core.bases.length) {
+                        return { valid: false, error: '无效的基地索引' };
+                    }
+
+                    const base = core.bases[targetBaseIndex];
+                    const totalPower = getTotalEffectivePowerOnBase(core, base, targetBaseIndex);
+                    const breakpoint = getEffectiveBreakpoint(core, targetBaseIndex);
+                    if (totalPower < breakpoint) {
+                        return { valid: false, error: '只能选择达到临界点的基地' };
+                    }
+                } else if (targetBase !== undefined) {
+                    return { valid: false, error: '该特殊行动卡不需要基地目标' };
+                }
+
                 return { valid: true };
             }
 
@@ -98,15 +154,40 @@ export function validate(
             const card = player.hand.find(c => c.uid === command.payload.cardUid);
             if (!card) return { valid: false, error: '手牌中没有该卡牌' };
             if (card.type !== 'action') return { valid: false, error: '该卡牌不是行动卡' };
-            const def = getCardDef(card.defId);
+            const def = getCardDef(card.defId) as ActionCardDef | undefined;
             if (!def) return { valid: false, error: '卡牌定义不存在' };
             // 特殊行动卡只能在 Me First! 响应窗口中打出，不能在正常出牌阶段使用
-            if ('subtype' in def && (def as ActionCardDef).subtype === 'special') {
+            if (def.subtype === 'special') {
                 return { valid: false, error: '特殊行动卡只能在基地计分前的 Me First! 窗口中打出' };
             }
-            // ongoing 限制检查：是否禁止打出行动卡到目标基地
+
+            // 持续行动卡：必须显式选择附着目标
             const targetBase = command.payload.targetBaseIndex;
-            if (targetBase !== undefined && isOperationRestricted(core, targetBase, command.playerId, 'play_action')) {
+            if (def.subtype === 'ongoing') {
+                if (typeof targetBase !== 'number' || !Number.isInteger(targetBase)) {
+                    return { valid: false, error: '持续行动卡需要选择目标基地' };
+                }
+                if (targetBase < 0 || targetBase >= core.bases.length) {
+                    return { valid: false, error: '无效的基地索引' };
+                }
+
+                const ongoingTarget = def.ongoingTarget ?? 'base';
+                const targetMinionUid = command.payload.targetMinionUid;
+                if (ongoingTarget === 'minion') {
+                    if (!targetMinionUid) {
+                        return { valid: false, error: '该持续行动卡需要选择目标随从' };
+                    }
+                    const targetMinion = core.bases[targetBase].minions.find(m => m.uid === targetMinionUid);
+                    if (!targetMinion) {
+                        return { valid: false, error: '基地上没有该随从' };
+                    }
+                } else if (targetMinionUid !== undefined) {
+                    return { valid: false, error: '该持续行动卡不需要选择随从目标' };
+                }
+            }
+
+            // ongoing 限制检查：是否禁止打出行动卡到目标基地
+            if (typeof targetBase === 'number' && isOperationRestricted(core, targetBase, command.playerId, 'play_action')) {
                 return { valid: false, error: '该基地禁止打出行动卡' };
             }
             return { valid: true };
@@ -188,9 +269,14 @@ export function validate(
             if (!core.pendingReveal) {
                 return { valid: false, error: '没有待展示的卡牌' };
             }
-            // 'all' 模式下由牌库所有者（发起者）关闭展示
+            // 'all' 模式下由发起者关闭展示
             if (core.pendingReveal.viewerPlayerId === 'all') {
-                if (command.playerId !== core.pendingReveal.targetPlayerId) {
+                const dismisser = core.pendingReveal.sourcePlayerId ?? (
+                    Array.isArray(core.pendingReveal.targetPlayerId)
+                        ? core.pendingReveal.targetPlayerId[0]
+                        : core.pendingReveal.targetPlayerId
+                );
+                if (command.playerId !== dismisser) {
                     return { valid: false, error: '只有发起者可以关闭展示' };
                 }
             } else if (command.playerId !== core.pendingReveal.viewerPlayerId) {

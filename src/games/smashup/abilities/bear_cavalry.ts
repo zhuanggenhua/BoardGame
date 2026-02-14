@@ -1,7 +1,7 @@
 /**
  * 大杀四方 - 黑熊骑兵派系能力
  *
- * 主题：消灭对手最弱随从、移动对手随�?
+ * 主题：消灭对手最弱随从、移动对手随从
  */
 
 import { registerAbility } from '../domain/abilityRegistry';
@@ -16,15 +16,15 @@ import type { ProtectionCheckContext, TriggerContext } from '../domain/ongoingEf
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 
-/** 注册黑熊骑兵派系所有能�?*/
+/** 注册黑熊骑兵派系所有能力*/
 export function registerBearCavalryAbilities(): void {
-    // 黑熊擒抱（行动卡）：每位对手消灭自己最弱随�?
+    // 黑熊擒抱（行动卡）：每位对手消灭自己最弱随从
     registerAbility('bear_cavalry_bear_hug', 'onPlay', bearCavalryBearHug);
-    // 委任（行动卡）：额外打出一个随�?
+    // 委任（行动卡）：额外打出一个随从
     registerAbility('bear_cavalry_commission', 'onPlay', bearCavalryCommission);
-    // 黑熊骑兵（随�?onPlay）：移动对手在本基地的一个随从到另一个基�?
+    // 黑熊骑兵（随从onPlay）：移动对手在本基地的一个随从到另一个基地
     registerAbility('bear_cavalry_bear_cavalry', 'onPlay', bearCavalryBearCavalryAbility);
-    // 你们已经完蛋（行动卡）：选择有己方随从的基地，移动对手随�?
+    // 你们已经完蛋（行动卡）：选择有己方随从的基地，移动对手随从
     registerAbility('bear_cavalry_youre_screwed', 'onPlay', bearCavalryYoureScrewed);
     // 与熊同行（行动卡）：移动己方一个随从到其他基地
     registerAbility('bear_cavalry_bear_rides_you', 'onPlay', bearCavalryBearRidesYou);
@@ -36,15 +36,15 @@ export function registerBearCavalryAbilities(): void {
     // === ongoing 效果注册 ===
     // 伊万将军：己方随从不收回能被消灭
     registerProtection('bear_cavalry_general_ivan', 'destroy', bearCavalryGeneralIvanChecker);
-    // 极地突击队员：唯一随从时不收回可消灭（+2力量�?ongoingModifiers 中注册）
+    // 极地突击队员：唯一随从时不收回可消灭（+2力量的ongoingModifiers 中注册）
     registerProtection('bear_cavalry_polar_commando', 'destroy', bearCavalryPolarCommandoChecker);
-    // 全面优势：保护己方随从不收回被消�?移动/影响
+    // 全面优势：保护己方随从不收回被消灭移动/影响
     registerProtection('bear_cavalry_superiority', 'destroy', bearCavalrySuperiorityChecker);
     registerProtection('bear_cavalry_superiority', 'move', bearCavalrySuperiorityChecker);
     registerProtection('bear_cavalry_superiority', 'affect', bearCavalrySuperiorityChecker);
-    // 幼熊斥候：对手随从移入时消灭弱�?
+    // 幼熊斥候：对手随从移入时消灭弱?
     registerTrigger('bear_cavalry_cub_scout', 'onMinionMoved', bearCavalryCubScoutTrigger);
-    // 制高点：消灭移入的对手随�?
+    // 制高点：消灭移入的对手随从
     registerTrigger('bear_cavalry_high_ground', 'onMinionMoved', bearCavalryHighGroundTrigger);
 }
 
@@ -54,7 +54,7 @@ function bearCavalryBearHug(ctx: AbilityContext): AbilityResult {
     const opponents = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
 
     for (const opId of opponents) {
-        // 收集该对手在所有基地上的随�?
+        // 收集该对手在所有基地上的随从
         let weakest: { minion: MinionOnBase; baseIndex: number } | null = null;
         for (let i = 0; i < ctx.state.bases.length; i++) {
             for (const m of ctx.state.bases[i].minions) {
@@ -77,7 +77,7 @@ function bearCavalryBearHug(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 委任 onPlay：额外打出一个随�?*/
+/** 委任 onPlay：额外打出一个随从*/
 function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
     return { events: [grantExtraMinion(ctx.playerId, 'bear_cavalry_commission', ctx.now)] };
 }
@@ -86,7 +86,7 @@ function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
 // ongoing 效果检查器与触发器
 // ============================================================================
 
-/** 伊万将军保护检查：控制者的随从不收回能被消�?*/
+/** 伊万将军保护检查：控制者的随从不收回能被消灭*/
 function bearCavalryGeneralIvanChecker(ctx: ProtectionCheckContext): boolean {
     for (const base of ctx.state.bases) {
         const ivan = base.minions.find(m => m.defId === 'bear_cavalry_general_ivan');
@@ -98,7 +98,7 @@ function bearCavalryGeneralIvanChecker(ctx: ProtectionCheckContext): boolean {
     return false;
 }
 
-/** 极地突击队员保护检查：基地上唯一己方随从时不收回可消�?*/
+/** 极地突击队员保护检查：基地上唯一己方随从时不收回可消灭*/
 function bearCavalryPolarCommandoChecker(ctx: ProtectionCheckContext): boolean {
     if (ctx.targetMinion.defId !== 'bear_cavalry_polar_commando') return false;
     const base = ctx.state.bases[ctx.targetBaseIndex];
@@ -107,7 +107,7 @@ function bearCavalryPolarCommandoChecker(ctx: ProtectionCheckContext): boolean {
     return myMinionCount === 1;
 }
 
-/** 全面优势保护检查：保护基地上己方随从不收回被其他玩家消�?移动/影响 */
+/** 全面优势保护检查：保护基地上己方随从不收回被其他玩家消灭移动/影响 */
 function bearCavalrySuperiorityChecker(ctx: ProtectionCheckContext): boolean {
     if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
     const base = ctx.state.bases[ctx.targetBaseIndex];
@@ -151,7 +151,7 @@ function bearCavalryCubScoutTrigger(ctx: TriggerContext): SmashUpEvent[] {
     return events;
 }
 
-/** 制高点触发：有己方随从时消灭移入的对手随�?*/
+/** 制高点触发：有己方随从时消灭移入的对手随从*/
 function bearCavalryHighGroundTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     const destBaseIndex = ctx.baseIndex;
@@ -181,13 +181,13 @@ function bearCavalryHighGroundTrigger(ctx: TriggerContext): SmashUpEvent[] {
     return events;
 }
 
-/** 黑熊骑兵 onPlay：移动对手在本基地的一个随从到另一个基�?*/
+/** 黑熊骑兵 onPlay：移动对手在本基地的一个随从到另一个基地*/
 function bearCavalryBearCavalryAbility(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
     const opponentMinions = base.minions.filter(m => m.controller !== ctx.playerId && m.uid !== ctx.cardUid);
     if (opponentMinions.length === 0) return { events: [] };
-    // 找目标基�?
+    // 找目标基地
     const otherBases = ctx.state.bases.map((b, i) => i).filter(i => i !== ctx.baseIndex);
     if (otherBases.length === 0) return { events: [] };
 
@@ -208,7 +208,7 @@ function bearCavalryBearCavalryAbility(ctx: AbilityContext): AbilityResult {
 
 /** 你们已经完蛋 onPlay：选择有己方随从的基地→选择对手随从→移动到其他基地 */
 function bearCavalryYoureScrewed(ctx: AbilityContext): AbilityResult {
-    // 找有己方随从且有对手随从的基�?
+    // 找有己方随从且有对手随从的基地
     const candidates: { baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const hasMyMinion = ctx.state.bases[i].minions.some(m => m.controller === ctx.playerId);
@@ -249,9 +249,9 @@ function bearCavalryBearRidesYou(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 你们都是美食 onPlay：选择有己方随从的基地→选择目标基地，移动所有对手随�?*/
+/** 你们都是美食 onPlay：选择有己方随从的基地→选择目标基地，移动所有对手随从*/
 function bearCavalryYourePrettyMuchBorscht(ctx: AbilityContext): AbilityResult {
-    // 找有己方随从且有对手随从的基�?
+    // 找有己方随从且有对手随从的基地
     const candidates: { baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const hasMyMinion = ctx.state.bases[i].minions.some(m => m.controller === ctx.playerId);

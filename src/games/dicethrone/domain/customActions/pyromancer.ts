@@ -9,15 +9,19 @@ import type {
     DiceThroneEvent,
     DamageDealtEvent,
     TokenGrantedEvent,
+    TokenConsumedEvent,
+    StatusAppliedEvent,
+    ChoiceRequestedEvent,
     BonusDieRolledEvent,
     TokenLimitChangedEvent,
     BonusDiceRerollRequestedEvent,
     BonusDieInfo,
     PendingBonusDiceSettlement,
 } from '../types';
-import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { registerChoiceEffectHandler } from '../choiceEffects';
 import { resourceSystem } from '../resourceSystem';
+import { buildDrawEvents } from '../deckEvents';
 
 // ============================================================================
 // 辅助函数
@@ -223,7 +227,7 @@ const resolveBurnDown = (ctx: CustomActionContext, dmgPerToken: number, limit: n
             payload: { playerId: ctx.attackerId, tokenId: TOKEN_IDS.FIRE_MASTERY, amount: toConsume, newTotal: updatedFM - toConsume },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp: timestamp + 0.1
-        } as any);
+        } as TokenConsumedEvent);
 
         events.push({
             type: 'DAMAGE_DEALT',
@@ -273,54 +277,52 @@ const resolveIgnite = (ctx: CustomActionContext, base: number, multiplier: numbe
  * 造成 dmgPerFire × [火] 伤害。
  * 获得 1x [灵魂] 烈焰精通。
  */
-const resolveMagmaArmor = (ctx: CustomActionContext, diceCount: number, dmgPerFire: number = 1): DiceThroneEvent[] => {
-    if (!ctx.random) return [];
+/**
+ * 熔岩护甲：基于防御投掷的骰面结果计算效果
+ * - 每个🔥火面造成 dmgPerFire 点伤害（对原攻击者）
+ * - 每个🔥火魂面获得 1 个火焰精通
+ * 注意：不是额外投骰子，而是读取防御阶段已投的 5 颗骰子结果
+ * 注意：防御上下文中 ctx.attackerId=防御者, ctx.defenderId=原攻击者
+ *       伤害目标必须用 ctx.defenderId（原攻击者），不能用 ctx.targetId（target='self' 指向防御者自身）
+ */
+const resolveMagmaArmor = (ctx: CustomActionContext, _diceCount: number, dmgPerFire: number = 1): DiceThroneEvent[] => {
     const events: DiceThroneEvent[] = [];
-    const diceInfo: BonusDieInfo[] = [];
-    let fmCount = 0;
-    let dmgCount = 0;
 
-    for (let i = 0; i < diceCount; i++) {
-        const roll = ctx.random.d(6);
-        const face = getPlayerDieFace(ctx.state, ctx.attackerId, roll) ?? '';
-        diceInfo.push({ index: i, value: roll, face });
-        events.push({
-            type: 'BONUS_DIE_ROLLED',
-            payload: { value: roll, face, playerId: ctx.attackerId, targetPlayerId: ctx.attackerId, effectKey: `bonusDie.effect.magmaArmor.${roll}` },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: ctx.timestamp + i
-        } as BonusDieRolledEvent);
+    // 读取防御投掷的骰面计数（防御阶段结束时 state.dice 就是防御方的骰子）
+    const activeDice = getActiveDice(ctx.state);
+    const faceCounts = getFaceCounts(activeDice);
 
-        if (face === PYROMANCER_DICE_FACE_IDS.FIRE) dmgCount++;
-        else if (face === PYROMANCER_DICE_FACE_IDS.FIERY_SOUL) fmCount++;
-    }
+    const fireCount = faceCounts[PYROMANCER_DICE_FACE_IDS.FIRE] ?? 0;
+    const fierySoulCount = faceCounts[PYROMANCER_DICE_FACE_IDS.FIERY_SOUL] ?? 0;
 
-    if (fmCount > 0) {
+    // 火魂面：获得火焰精通（给自己 = ctx.attackerId = 防御者）
+    if (fierySoulCount > 0) {
         const currentFM = getFireMasteryCount(ctx);
         const limit = ctx.state.players[ctx.attackerId]?.tokenStackLimits?.[TOKEN_IDS.FIRE_MASTERY] || 5;
         events.push({
             type: 'TOKEN_GRANTED',
-            payload: { targetId: ctx.attackerId, tokenId: TOKEN_IDS.FIRE_MASTERY, amount: fmCount, newTotal: Math.min(currentFM + fmCount, limit), sourceAbilityId: ctx.sourceAbilityId },
+            payload: { targetId: ctx.attackerId, tokenId: TOKEN_IDS.FIRE_MASTERY, amount: fierySoulCount, newTotal: Math.min(currentFM + fierySoulCount, limit), sourceAbilityId: ctx.sourceAbilityId },
             sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: ctx.timestamp + diceCount
+            timestamp: ctx.timestamp
         } as TokenGrantedEvent);
     }
-    if (dmgCount > 0) {
+
+    // 火面：对原攻击者造成伤害（ctx.defenderId = 原攻击者，不是 ctx.targetId）
+    if (fireCount > 0) {
+        const totalDamage = fireCount * dmgPerFire;
+        // 防御上下文：ctx.defenderId 是原攻击者（被防御技能影响的人）
+        const opponentId = ctx.ctx.defenderId;
         events.push({
             type: 'DAMAGE_DEALT',
-            payload: { targetId: ctx.targetId, amount: dmgCount * dmgPerFire, actualDamage: dmgCount * dmgPerFire, sourceAbilityId: ctx.sourceAbilityId },
+            payload: { targetId: opponentId, amount: totalDamage, actualDamage: totalDamage, sourceAbilityId: ctx.sourceAbilityId },
             sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: ctx.timestamp + diceCount + 0.1
+            timestamp: ctx.timestamp + 0.1
         } as DamageDealtEvent);
     }
 
-    // 多骰展示
-    if (diceCount > 1) {
-        events.push(createDisplayOnlySettlement(ctx.sourceAbilityId, ctx.attackerId, ctx.attackerId, diceInfo, ctx.timestamp));
-    }
-
     return events;
-};
+}
+
 
 /**
  * 地狱拥抱 (Infernal Embrace) 结算
@@ -346,12 +348,7 @@ const resolveInfernalEmbrace = (ctx: CustomActionContext): DiceThroneEvent[] => 
             timestamp: ctx.timestamp + 0.1
         } as TokenGrantedEvent);
     } else {
-        events.push({
-            type: 'CARD_DRAWN',
-            payload: { playerId: ctx.attackerId, amount: 1 },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: ctx.timestamp + 0.1
-        } as any);
+        events.push(...buildDrawEvents(ctx.state, ctx.attackerId, 1, ctx.random, 'ABILITY_EFFECT', ctx.timestamp + 0.1));
     }
     return events;
 };
@@ -407,7 +404,7 @@ const createPyroBlastRollEvents = (ctx: CustomActionContext, config: { diceCount
         dice.forEach((d, idx) => {
             const eff = getPyroBlastDieEffect(d.face);
             if (eff.damage) events.push({ type: 'DAMAGE_DEALT', payload: { targetId: ctx.targetId, amount: eff.damage, actualDamage: eff.damage, sourceAbilityId: ctx.sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp: ctx.timestamp + 5 + idx } as DamageDealtEvent);
-            if (eff.burn) events.push({ type: 'STATUS_APPLIED', payload: { targetId: ctx.targetId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: (ctx.state.players[ctx.targetId]?.statusEffects[STATUS_IDS.BURN] || 0) + 1, sourceAbilityId: ctx.sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp: ctx.timestamp + 5 + idx } as any);
+            if (eff.burn) events.push({ type: 'STATUS_APPLIED', payload: { targetId: ctx.targetId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: (ctx.state.players[ctx.targetId]?.statusEffects[STATUS_IDS.BURN] || 0) + 1, sourceAbilityId: ctx.sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp: ctx.timestamp + 5 + idx } as StatusAppliedEvent);
             if (eff.fm) {
                 rollingFM = Math.min(rollingFM + eff.fm, fmLimit);
                 const newTotal = rollingFM;
@@ -418,7 +415,7 @@ const createPyroBlastRollEvents = (ctx: CustomActionContext, config: { diceCount
                     timestamp: ctx.timestamp + 5 + idx
                 } as TokenGrantedEvent);
             }
-            if (eff.knockdown) events.push({ type: 'STATUS_APPLIED', payload: { targetId: ctx.targetId, statusId: STATUS_IDS.KNOCKDOWN, stacks: 1, newTotal: (ctx.state.players[ctx.targetId]?.statusEffects[STATUS_IDS.KNOCKDOWN] || 0) + 1, sourceAbilityId: ctx.sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp: ctx.timestamp + 5 + idx } as any);
+            if (eff.knockdown) events.push({ type: 'STATUS_APPLIED', payload: { targetId: ctx.targetId, statusId: STATUS_IDS.KNOCKDOWN, stacks: 1, newTotal: (ctx.state.players[ctx.targetId]?.statusEffects[STATUS_IDS.KNOCKDOWN] || 0) + 1, sourceAbilityId: ctx.sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp: ctx.timestamp + 5 + idx } as StatusAppliedEvent);
         });
     }
     return events;
@@ -484,7 +481,7 @@ const resolveSpendCpForFM = (ctx: CustomActionContext): DiceThroneEvent[] => {
         },
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp: ctx.timestamp,
-    } as any];
+    } as ChoiceRequestedEvent];
 };
 
 const resolveIncreaseFMLimit = (ctx: CustomActionContext): DiceThroneEvent[] => {
@@ -520,9 +517,9 @@ export function registerPyromancerCustomActions(): void {
     registerCustomActionHandler('ignite-resolve', (ctx) => resolveIgnite(ctx, 4, 2), { categories: ['damage', 'resource'] });
     registerCustomActionHandler('ignite-2-resolve', (ctx) => resolveIgnite(ctx, 5, 2), { categories: ['damage', 'resource'] });
 
-    registerCustomActionHandler('magma-armor-resolve', (ctx) => resolveMagmaArmor(ctx, 1), { categories: ['resource', 'other'] });
-    registerCustomActionHandler('magma-armor-2-resolve', (ctx) => resolveMagmaArmor(ctx, 2), { categories: ['resource', 'other'] });
-    registerCustomActionHandler('magma-armor-3-resolve', (ctx) => resolveMagmaArmor(ctx, 3, 2), { categories: ['resource', 'other'] });
+    registerCustomActionHandler('magma-armor-resolve', (ctx) => resolveMagmaArmor(ctx, 1), { categories: ['damage', 'resource', 'defense'] });
+    registerCustomActionHandler('magma-armor-2-resolve', (ctx) => resolveMagmaArmor(ctx, 2), { categories: ['damage', 'resource', 'defense'] });
+    registerCustomActionHandler('magma-armor-3-resolve', (ctx) => resolveMagmaArmor(ctx, 3, 2), { categories: ['damage', 'resource', 'defense'] });
 
     registerCustomActionHandler('increase-fm-limit', resolveIncreaseFMLimit, { categories: ['resource'] });
     registerCustomActionHandler('pyro-increase-fm-limit', resolveIncreaseFMLimit, { categories: ['resource'] });

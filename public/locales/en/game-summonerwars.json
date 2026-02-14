@@ -448,8 +448,10 @@
     "frostAxe": "❄️ Frost Axe (Charge or spend charges to attach)",
     "iceShards": "❄️ Ice Shards (Spend charge to damage enemies near buildings)",
     "highTelekinesis": "🌀 High Telekinesis (Push/pull soldier or hero within 3)",
+    "highTelekinesisInstead": "🌀 High Telekinesis (Instead of attack)",
     "mindTransmission": "🧠 Mind Transmission (Ally soldier extra attack)",
     "telekinesis": "🌀 Telekinesis (Push/pull soldier or hero within 2)",
+    "telekinesisInstead": "🌀 Telekinesis (Instead of attack)",
     "illusion": "🎭 Illusion (Copy abilities of soldier within 3)",
     "guidance": "📖 Guidance (Draw two cards)",
     "bloodRune": "🩸 Blood Rune (Self-damage or spend magic to charge)",
@@ -548,6 +550,10 @@
       "name": "High Telekinesis",
       "description": "After this unit attacks, or instead of attacking, you may target a soldier or champion within 3 spaces and push or pull it 1 space."
     },
+    "high_telekinesis_instead": {
+      "name": "High Telekinesis (Instead)",
+      "description": "Instead of attacking, you may target a soldier or champion within 3 spaces and push or pull it 1 space."
+    },
     "stable": {
       "name": "Stable",
       "description": "This unit cannot be pushed or pulled."
@@ -567,6 +573,10 @@
     "telekinesis": {
       "name": "Telekinesis",
       "description": "After this unit attacks, or instead of attacking, you may target a soldier or champion within 2 spaces and push or pull it 1 space."
+    },
+    "telekinesis_instead": {
+      "name": "Telekinesis (Instead)",
+      "description": "Instead of attacking, you may target a soldier or champion within 2 spaces and push or pull it 1 space."
     },
     "illusion": {
       "name": "Illusion",

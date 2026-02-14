@@ -16,6 +16,8 @@ export interface ActiveModifier {
     cardId: string;
     /** 卡牌名称 i18n key */
     nameKey: string;
+    /** 卡牌效果描述 i18n key */
+    descriptionKey: string;
     timestamp: number;
 }
 
@@ -64,6 +66,7 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
                     newModifiers.push({
                         cardId: p.cardId,
                         nameKey: typeof card.name === 'string' ? card.name : p.cardId,
+                        descriptionKey: typeof card.description === 'string' ? card.description : '',
                         timestamp: typeof timestamp === 'number' ? timestamp : 0,
                     });
                 }

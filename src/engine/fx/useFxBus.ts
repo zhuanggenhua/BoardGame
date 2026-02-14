@@ -47,11 +47,32 @@ export interface FxBusOptions {
   triggerShake?: FxShakeTrigger;
 }
 
+/** 序列步骤定义 */
+export interface FxSequenceStep {
+  /** Cue 标识 */
+  cue: FxCue;
+  /** 通用上下文 */
+  ctx: FxContext;
+  /** 特效独有参数 */
+  params?: FxParams;
+  /** 该步骤完成后、下一步开始前的延迟（ms，默认 0） */
+  delayAfter?: number;
+}
+
 export interface FxBus {
   /** 推入特效事件 */
   push: (cue: FxCue, ctx: FxContext, params?: FxParams) => string | null;
   /** 推入完整事件输入 */
   pushEvent: (input: FxEventInput) => string | null;
+  /**
+   * 推入有序特效序列 — 每个步骤等上一个完成后再播放
+   *
+   * 返回序列 ID（可用于取消），如果首步推入失败返回 null。
+   * 序列中某步失败（cue 未注册）会跳过该步继续下一步。
+   */
+  pushSequence: (steps: FxSequenceStep[]) => string | null;
+  /** 取消正在进行的序列（剩余步骤不再播放） */
+  cancelSequence: (sequenceId: string) => void;
   /** 当前活跃特效 */
   activeEffects: FxEvent[];
   /** 移除指定特效 */
@@ -86,6 +107,23 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
   // 事件 → 注册条目映射（用于 fireImpact 查找反馈包）
   const eventEntryMapRef = useRef(new Map<string, { cue: FxCue }>());
 
+  // ========================================================================
+  // 序列管理
+  // ========================================================================
+
+  /** 活跃序列：sequenceId → 剩余步骤 + 延迟定时器 */
+  interface ActiveSequence {
+    steps: FxSequenceStep[];
+    cancelled: boolean;
+    delayTimer?: ReturnType<typeof setTimeout>;
+  }
+  const sequencesRef = useRef(new Map<string, ActiveSequence>());
+  /** effect ID → 所属序列 ID + 当前步骤的 delayAfter */
+  const effectToSequenceRef = useRef(new Map<string, { seqId: string; delayAfter: number }>());
+
+  // advanceSequenceRef 提前声明，供 removeEffect 和 advanceSequence 自身引用
+  const advanceSequenceRef = useRef<(seqId: string, seq: ActiveSequence) => void>(() => {});
+
   const removeEffect = useCallback((id: string) => {
     // 清理超时定时器
     const timer = timeoutsRef.current.get(id);
@@ -95,6 +133,26 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
     }
     eventEntryMapRef.current.delete(id);
     setEffects(prev => prev.filter(e => e.id !== id));
+
+    // 序列推进：检查该 effect 是否属于某个序列
+    const seqMeta = effectToSequenceRef.current.get(id);
+    if (seqMeta) {
+      effectToSequenceRef.current.delete(id);
+      const seq = sequencesRef.current.get(seqMeta.seqId);
+      if (seq && !seq.cancelled) {
+        const delayMs = seqMeta.delayAfter;
+        if (delayMs > 0) {
+          seq.delayTimer = setTimeout(() => {
+            seq.delayTimer = undefined;
+            if (!seq.cancelled) {
+              advanceSequenceRef.current(seqMeta.seqId, seq);
+            }
+          }, delayMs);
+        } else {
+          advanceSequenceRef.current(seqMeta.seqId, seq);
+        }
+      }
+    }
   }, []);
 
   /** 触发 on-impact 反馈（音效 + 震动） */
@@ -176,6 +234,16 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
         timeoutsRef.current.delete(id);
         eventEntryMapRef.current.delete(id);
         setEffects(prev => prev.filter(e => e.id !== id));
+
+        // 超时也需要推进序列，避免序列卡死
+        const seqMeta = effectToSequenceRef.current.get(id);
+        if (seqMeta) {
+          effectToSequenceRef.current.delete(id);
+          const seq = sequencesRef.current.get(seqMeta.seqId);
+          if (seq && !seq.cancelled) {
+            advanceSequenceRef.current(seqMeta.seqId, seq);
+          }
+        }
       }, timeoutMs);
       timeoutsRef.current.set(id, timer);
     }
@@ -205,5 +273,80 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
     return pushEvent({ cue, ctx, params });
   }, [pushEvent]);
 
-  return { push, pushEvent, activeEffects: effects, removeEffect, registry, fireImpact };
+  // ========================================================================
+  // 序列：推进 / 推入 / 取消
+  // ========================================================================
+
+  /** 推进序列到下一步（通过 ref 自引用，避免 TDZ 和闭包过期） */
+  const advanceSequence = useCallback((seqId: string, seq: { steps: FxSequenceStep[]; cancelled: boolean; delayTimer?: ReturnType<typeof setTimeout> }) => {
+    if (seq.cancelled || seq.steps.length === 0) {
+      sequencesRef.current.delete(seqId);
+      return;
+    }
+
+    const nextStep = seq.steps.shift()!;
+
+    if (seq.cancelled) {
+      sequencesRef.current.delete(seqId);
+      return;
+    }
+    const effectId = pushEvent({ cue: nextStep.cue, ctx: nextStep.ctx, params: nextStep.params });
+    if (effectId) {
+      effectToSequenceRef.current.set(effectId, { seqId, delayAfter: nextStep.delayAfter ?? 0 });
+    } else {
+      // cue 未注册或被防抖跳过，通过 ref 推进下一步（避免直接自引用）
+      advanceSequenceRef.current(seqId, seq);
+    }
+  }, [pushEvent]);
+
+  // 同步最新 advanceSequence 到 ref
+  useEffect(() => {
+    advanceSequenceRef.current = advanceSequence;
+  }, [advanceSequence]);
+
+  // 组件卸载时清理所有序列延迟定时器
+  useEffect(() => {
+    const seqMap = sequencesRef.current;
+    return () => {
+      for (const seq of seqMap.values()) {
+        seq.cancelled = true;
+        if (seq.delayTimer) clearTimeout(seq.delayTimer);
+      }
+      seqMap.clear();
+    };
+  }, []);
+
+  const pushSequence = useCallback((steps: FxSequenceStep[]): string | null => {
+    if (steps.length === 0) return null;
+
+    const seqId = `seq-${generateFxId()}`;
+    const firstStep = steps[0];
+    const remainingSteps = steps.slice(1);
+
+    // 注册序列
+    const seq = { steps: remainingSteps, cancelled: false };
+    sequencesRef.current.set(seqId, seq);
+
+    // 立即推入第一步
+    const effectId = pushEvent({ cue: firstStep.cue, ctx: firstStep.ctx, params: firstStep.params });
+    if (effectId) {
+      effectToSequenceRef.current.set(effectId, { seqId, delayAfter: firstStep.delayAfter ?? 0 });
+    } else {
+      // 首步失败，尝试推进剩余步骤
+      advanceSequenceRef.current(seqId, seq);
+    }
+
+    return seqId;
+  }, [pushEvent]);
+
+  const cancelSequence = useCallback((sequenceId: string) => {
+    const seq = sequencesRef.current.get(sequenceId);
+    if (seq) {
+      seq.cancelled = true;
+      if (seq.delayTimer) clearTimeout(seq.delayTimer);
+      sequencesRef.current.delete(sequenceId);
+    }
+  }, []);
+
+  return { push, pushEvent, pushSequence, cancelSequence, activeEffects: effects, removeEffect, registry, fireImpact };
 }

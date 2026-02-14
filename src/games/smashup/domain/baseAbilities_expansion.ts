@@ -27,25 +27,25 @@ import {
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { registerBaseAbility, registerExtended as registerExtendedBase } from './baseAbilities';
-import { registerInterceptor, registerProtection } from './ongoingEffects';
+import { registerProtection, registerTrigger } from './ongoingEffects';
 import type { ProtectionCheckContext } from './ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
 
 // ============================================================================
-// 克苏鲁扩展基地能�?
+// 克苏鲁扩展基地能力
 // ============================================================================
 
-/** 注册扩展包基地能�?*/
+/** 注册扩展包基地能力*/
 export function registerExpansionBaseAbilities(): void {
 
     // ── 疯人院（The Asylum）──────────────────────────────────────
-    // "在一个玩家打出一个随从到这后，该玩家可以将一张疯狂卡从手牌或弃牌堆返回疯狂牌堆�?
+    // "在一个玩家打出一个随从到这后，该玩家可以将一张疯狂卡从手牌或弃牌堆返回疯狂牌堆?
     registerBaseAbility('base_the_asylum', 'onMinionPlayed', (ctx) => {
         if (!ctx.state.madnessDeck) return { events: [] };
         const player = ctx.state.players[ctx.playerId];
         if (!player) return { events: [] };
 
-        // 收集手牌和弃牌堆中的疯狂�?
+        // 收集手牌和弃牌堆中的疯狂卡?
         const madnessCards: { uid: string; source: 'hand' | 'discard' }[] = [];
         for (const c of player.hand) {
             if (c.defId === MADNESS_CARD_DEF_ID) {
@@ -58,7 +58,7 @@ export function registerExpansionBaseAbilities(): void {
             }
         }
 
-        // 无疯狂卡 �?不生�?Prompt
+        // 无疯狂卡 ?不生成 Prompt
         if (madnessCards.length === 0) return { events: [] };
 
         const options: { id: string; label: string; value: Record<string, unknown> }[] = [
@@ -79,7 +79,7 @@ export function registerExpansionBaseAbilities(): void {
     });
 
     // ── 印斯茅斯基地（Innsmouth Base）────────────────────────────
-    // "在一个玩家打出一个随从到这后，该玩家可以将任意玩家弃牌堆中的一张卡放到其拥有者的牌库底�?
+    // "在一个玩家打出一个随从到这后，该玩家可以将任意玩家弃牌堆中的一张卡放到其拥有者的牌库底?
     registerBaseAbility('base_innsmouth_base', 'onMinionPlayed', (ctx) => {
         // 收集所有玩家弃牌堆中的卡牌
         const discardCards: { uid: string; defId: string; ownerId: string; label: string }[] = [];
@@ -115,7 +115,7 @@ export function registerExpansionBaseAbilities(): void {
     });
 
     // ── 密斯卡托尼克大学基地（Miskatonic University Base）────────
-    // "在这个基地计分后，每位在此有随从的玩家可以将一张疯狂卡返回疯狂牌堆�?
+    // "在这个基地计分后，每位在此有随从的玩家可以将一张疯狂卡返回疯狂牌堆?
     registerBaseAbility('base_miskatonic_university_base', 'afterScoring', (ctx) => {
         if (!ctx.state.madnessDeck) return { events: [] };
         const base = ctx.state.bases[ctx.baseIndex];
@@ -145,7 +145,7 @@ export function registerExpansionBaseAbilities(): void {
                 }
             }
 
-            // 无疯狂卡 �?跳过该玩�?
+            // 无疯狂卡 ?跳过该玩家
             if (madnessCards.length === 0) continue;
 
             const options: { id: string; label: string; value: Record<string, unknown> }[] = [
@@ -170,18 +170,18 @@ export function registerExpansionBaseAbilities(): void {
     });
 
     // ── 冷原高地（Plateau of Leng）──────────────────────────────
-    // "在一个玩家首次打出一个随从到这后，如果手牌中有同名随从，可以额外打出�?
+    // "在一个玩家首次打出一个随从到这后，如果手牌中有同名随从，可以额外打出牌
     registerBaseAbility('base_plateau_of_leng', 'onMinionPlayed', (ctx) => {
         if (!ctx.minionDefId) return { events: [] };
         const player = ctx.state.players[ctx.playerId];
         if (!player) return { events: [] };
 
-        // 检查手牌中是否有同名随从（相同 defId�?
+        // 检查手牌中是否有同名随从（相同 defId?
         const sameNameMinions = player.hand.filter(
             c => c.defId === ctx.minionDefId && c.type === 'minion'
         );
 
-        // 无同名随�?�?不生�?Prompt
+        // 无同名随从?不生成 Prompt
         if (sameNameMinions.length === 0) return { events: [] };
 
         const def = getCardDef(ctx.minionDefId);
@@ -210,14 +210,14 @@ export function registerExpansionBaseAbilities(): void {
     // ============================================================================
 
     // ── 温室（Greenhouse）──────────────────────────────────────
-    // "在这个基地计分后，冠军可以从他的牌库中搜寻一张随从并将它打出到将替换本基地的基地上�?
+    // "在这个基地计分后，冠军可以从他的牌库中搜寻一张随从并将它打出到将替换本基地的基地上）?
     registerBaseAbility('base_greenhouse', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
         const winner = ctx.state.players[winnerId];
         if (!winner) return { events: [] };
 
-        // 搜索冠军牌库中的随从�?
+        // 搜索冠军牌库中的随从?
         const minionsInDeck = winner.deck.filter(c => c.type === 'minion');
         if (minionsInDeck.length === 0) return { events: [] };
 
@@ -243,20 +243,21 @@ export function registerExpansionBaseAbilities(): void {
     });
 
     // ── 神秘花园（Secret Garden）──────────────────────────────
-    // "在你的回合，你可以额外打出一个力量为2或以下的随从到这里�?
-    // 力量�? 限制通过 BaseCardDef.restrictions �?extraPlayMinionPowerMax 数据驱动实现（同母星模式�?
+    // "在你的回合，你可以额外打出一个力量为2或以下的随从到这里）?
+    // 力量的 限制通过 BaseCardDef.restrictions ?extraPlayMinionPowerMax 数据驱动实现（同母星模式）
     registerBaseAbility('base_secret_garden', 'onTurnStart', (ctx) => {
         return {
             events: [grantExtraMinion(
                 ctx.playerId,
                 '神秘花园：额外打出力量≤2的随从',
                 ctx.now,
+                ctx.baseIndex,
             )],
         };
     });
 
     // ── 发明家沙龙（Inventor's Salon）──────────────────────────
-    // "在这个基地计分后，冠军可以从他的弃牌堆中选取一张战术卡将其置入他的手牌�?
+    // "在这个基地计分后，冠军可以从他的弃牌堆中选取一张战术卡将其置入他的手牌堆?
     registerBaseAbility('base_inventors_salon', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
@@ -292,13 +293,13 @@ export function registerExpansionBaseAbilities(): void {
     // ============================================================================
 
     // ── 诡猫巷（Cat Fanciers' Alley）──────────────────────────
-    // "你的回合中一次，你可以消灭这里你的一个随从来抽一张卡�?
+    // "你的回合中一次，你可以消灭这里你的一个随从来抽一张卡牌?
     // talent 能力：onTurnStart 生成 Prompt，每回合一次（Prompt 消费即完成）
     registerBaseAbility('base_cat_fanciers_alley', 'onTurnStart', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
 
-        // 收集当前玩家在此基地的随�?
+        // 收集当前玩家在此基地的随从
         const myMinions = base.minions.filter(m => m.controller === ctx.playerId);
         if (myMinions.length === 0) return { events: [] };
 
@@ -325,7 +326,7 @@ export function registerExpansionBaseAbilities(): void {
     });
 
     // ── 魔法林地（Enchanted Glade）──────────────────────────────
-    // "在一个玩家打出一张附着行动卡到这里的一个随从上后，该玩家抽一张卡�?
+    // "在一个玩家打出一张附着行动卡到这里的一个随从上后，该玩家抽一张卡牌?
     registerBaseAbility('base_enchanted_glade', 'onActionPlayed', (ctx) => {
         // 只有附着到随从的行动卡才触发（actionTargetMinionUid 有值）
         if (!ctx.actionTargetMinionUid) return { events: [] };
@@ -347,31 +348,31 @@ export function registerExpansionBaseAbilities(): void {
     });
 
     // ── 仙灵之环（Fairy Ring）──────────────────────────────────
-    // "在一个玩家首次打出一个随从到这后，该玩家可以额外打出一个随从和一张行动卡�?
-    // 通过检查基地上该玩家的随从数量判断是否为首次（刚打出的随从已在基地上，数量�?即首次）
+    // "在一个玩家首次打出一个随从到这后，该玩家可以额外打出一个随从和一张行动卡牌?
+    // 通过检查基地上该玩家的随从数量判断是否为首次（刚打出的随从已在基地上，数量为?即首次）
     registerBaseAbility('base_fairy_ring', 'onMinionPlayed', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
 
         // 计算该玩家在此基地的随从数量（包含刚打出的）
         const playerMinionCount = base.minions.filter(m => m.controller === ctx.playerId).length;
-        // 只有首次打出（基地上该玩家只�?个随�?= 刚打出的那个）才触发
+        // 只有首次打出（基地上该玩家只有?个随从= 刚打出的那个）才触发
         if (playerMinionCount !== 1) return { events: [] };
 
         return {
             events: [
-                grantExtraMinion(ctx.playerId, '仙灵之环：首次打出随从后额外随从机会', ctx.now),
+                grantExtraMinion(ctx.playerId, '仙灵之环：首次打出随从后额外随从机会', ctx.now, ctx.baseIndex),
                 grantExtraAction(ctx.playerId, '仙灵之环：首次打出随从后额外行动机会', ctx.now),
             ],
         };
     });
 
     // ── 平衡之地（Land of Balance）──────────────────────────────
-    // "在一个玩家打出一个随从到这后，该玩家可以将他在其他基地的一个随从移动到这里�?
+    // "在一个玩家打出一个随从到这后，该玩家可以将他在其他基地的一个随从移动到这里）?
     registerBaseAbility('base_land_of_balance', 'onMinionPlayed', (ctx) => {
         const balanceBaseIndex = ctx.baseIndex;
 
-        // 收集该玩家在其他基地的随�?
+        // 收集该玩家在其他基地的随从
         const otherBaseMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
         for (let i = 0; i < ctx.state.bases.length; i++) {
             if (i === balanceBaseIndex) continue;
@@ -389,7 +390,7 @@ export function registerExpansionBaseAbilities(): void {
             }
         }
 
-        // 无其他基地随�?�?不生�?Prompt
+        // 无其他基地随从?不生成 Prompt
         if (otherBaseMinions.length === 0) return { events: [] };
 
         const minionOptions = otherBaseMinions.map((m, i) => ({
@@ -413,10 +414,12 @@ export function registerExpansionBaseAbilities(): void {
 
     // ── 九命之屋（House of Nine Lives）──────────────────────────
     // "当你的一个随从在其他基地被消灭时，你可以将它移动到这里"
-    // 通过 registerInterceptor 注册，拦截 MINION_DESTROYED 事件
-    registerInterceptor('base_house_of_nine_lives', (state, event) => {
-        if (event.type !== SU_EVENTS.MINION_DESTROYED) return undefined;
-        const { minionUid, minionDefId, fromBaseIndex } = (event as MinionDestroyedEvent).payload;
+    // 通过 registerTrigger(onMinionDestroyed) 注册，创建玩家选择交互
+    // processDestroyTriggers 的 pendingSaveMinionUids 机制会暂缓消灭事件
+    registerTrigger('base_house_of_nine_lives', 'onMinionDestroyed', (trigCtx) => {
+        const { state, triggerMinionUid, triggerMinionDefId } = trigCtx;
+        const baseIndex = trigCtx.baseIndex;
+        if (!triggerMinionUid || !triggerMinionDefId || baseIndex === undefined) return [];
 
         // 找到九命之屋的基地索引
         let houseBaseIndex = -1;
@@ -426,30 +429,44 @@ export function registerExpansionBaseAbilities(): void {
                 break;
             }
         }
-        // 九命之屋不在场→不拦截
-        if (houseBaseIndex === -1) return undefined;
+        // 九命之屋不在场→不触发
+        if (houseBaseIndex === -1) return [];
 
-        // 随从在九命之屋本身被消灭→不拦截（只拦截其他基地）
-        if (fromBaseIndex === houseBaseIndex) return undefined;
+        // 随从在九命之屋本身被消灭→不触发（只拦截其他基地）
+        if (baseIndex === houseBaseIndex) return [];
 
-        // 规则："你可以将它移动到这里"——自动移动（有意简化）
-        // 完整实现需要异步拦截机制（interceptEvent 返回 matchState + 交互），
-        // 前置条件：扩展引擎层 DomainCore.interceptEvent 签名支持返回 { event, matchState }
-        // 当前自动移动覆盖绝大多数场景，仅在玩家故意想触发 onDestroy 效果时行为不同
-        return moveMinion(minionUid, minionDefId, fromBaseIndex, houseBaseIndex, '九命之屋：随从移动到九命之屋而非被消灭', event.timestamp);
+        // 查找被消灭随从的拥有者
+        const minion = state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
+        const ownerId = minion?.owner ?? trigCtx.playerId;
+
+        // 创建玩家选择交互：移动到九命之屋 or 正常消灭
+        if (!trigCtx.matchState) return [];
+        const interaction = createSimpleChoice(
+            `nine_lives_${triggerMinionUid}_${trigCtx.now}`,
+            ownerId,
+            '九命之屋：是否将随从移动到九命之屋？',
+            [
+                { id: 'move', label: '移动到九命之屋', value: { move: true, minionUid: triggerMinionUid, minionDefId: triggerMinionDefId, fromBaseIndex: baseIndex, houseBaseIndex } },
+                { id: 'skip', label: '不移动（正常消灭）', value: { move: false, minionUid: triggerMinionUid, minionDefId: triggerMinionDefId, fromBaseIndex: baseIndex, ownerId } },
+            ],
+            'base_nine_lives_intercept',
+        );
+        const updatedMS = queueInteraction(trigCtx.matchState, interaction);
+        // 返回空事件 + 更新后的 matchState（processDestroyTriggers 检测到 matchState 变化 → pendingSaveMinionUids）
+        return { events: [], matchState: updatedMS };
     });
 
-    // ── 被动保护类基�?──────────────────────────────────────────
+    // ── 被动保护类基地──────────────────────────────────────────
 
-    // 美丽城堡（Beautiful Castle）：力量�? 的随从免疫消灭、移动和影响
-    // 保护检查时动态查找美丽城堡的基地索引，确保只保护该基地上的随�?
+    // 美丽城堡（Beautiful Castle）：力量的 的随从免疫消灭、移动和影响
+    // 保护检查时动态查找美丽城堡的基地索引，确保只保护该基地上的随从
     const beautifulCastleChecker = (ctx: ProtectionCheckContext): boolean => {
-        // 动态查找美丽城堡所在基地索�?
+        // 动态查找美丽城堡所在基地索引?
         const castleIndex = ctx.state.bases.findIndex(b => b.defId === 'base_beautiful_castle');
         if (castleIndex === -1) return false;
-        // 只保护美丽城堡上的随�?
+        // 只保护美丽城堡上的随从
         if (ctx.targetBaseIndex !== castleIndex) return false;
-        // 力量�? 才受保护
+        // 力量的 才受保护
         const power = getEffectivePower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex);
         return power >= 5;
     };
@@ -457,13 +474,13 @@ export function registerExpansionBaseAbilities(): void {
     registerProtection('base_beautiful_castle', 'move', beautifulCastleChecker);
     registerProtection('base_beautiful_castle', 'affect', beautifulCastleChecker);
 
-    // 小马乐园（Pony Paradise）：拥有 2+ 随从的玩家，其随从免疫消�?
+    // 小马乐园（Pony Paradise）：拥有 2+ 随从的玩家，其随从免疫消灭
     // 保护检查时动态查找小马乐园的基地索引，并统计该玩家在此基地的随从数量
     registerProtection('base_pony_paradise', 'destroy', (ctx: ProtectionCheckContext): boolean => {
-        // 动态查找小马乐园所在基地索�?
+        // 动态查找小马乐园所在基地索引?
         const ponyIndex = ctx.state.bases.findIndex(b => b.defId === 'base_pony_paradise');
         if (ponyIndex === -1) return false;
-        // 只保护小马乐园上的随�?
+        // 只保护小马乐园上的随从
         if (ctx.targetBaseIndex !== ponyIndex) return false;
         // 统计该随从控制者在此基地的随从数量
         const base = ctx.state.bases[ponyIndex];
@@ -574,7 +591,7 @@ export function registerExpansionBaseAbilities(): void {
 }
 
 // ============================================================================
-// 扩展包基�?交互解决处理函数
+// 扩展包基地交互解决处理函数
 // ============================================================================
 
 /** 注册扩展包基地能力的交互解决处理函数 */
@@ -672,5 +689,34 @@ export function registerExpansionBaseInteractionHandlers(): void {
         const ctx = (iData as any)?.continuationContext as { targetBaseIndex: number };
         if (!ctx) return { state, events: [] };
         return { state, events: [moveMinion(selected.minionUid!, selected.minionDefId!, selected.fromBaseIndex!, ctx.targetBaseIndex, '牧场：移动随从到牧场', timestamp)] };
+    });
+
+    // 九命之屋：玩家选择是否将随从移动到九命之屋
+    registerInteractionHandler('base_nine_lives_intercept', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as {
+            move: boolean;
+            minionUid: string;
+            minionDefId: string;
+            fromBaseIndex: number;
+            houseBaseIndex?: number;
+            ownerId?: string;
+        };
+        if (selected.move && selected.houseBaseIndex !== undefined) {
+            // 玩家选择移动到九命之屋
+            return { state, events: [moveMinion(selected.minionUid, selected.minionDefId, selected.fromBaseIndex, selected.houseBaseIndex, '九命之屋：随从移动到九命之屋而非被消灭', timestamp)] };
+        } else {
+            // 玩家选择不移动→恢复消灭事件
+            return { state, events: [{
+                type: SU_EVENTS.MINION_DESTROYED,
+                payload: {
+                    minionUid: selected.minionUid,
+                    minionDefId: selected.minionDefId,
+                    fromBaseIndex: selected.fromBaseIndex,
+                    ownerId: selected.ownerId ?? playerId,
+                    reason: '九命之屋：玩家选择不拯救',
+                },
+                timestamp,
+            } as MinionDestroyedEvent] };
+        }
     });
 }

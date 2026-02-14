@@ -12,7 +12,7 @@ import {
     drawMadnessCards, grantExtraAction, grantExtraMinion,
     returnMadnessCard, destroyMinion,
     getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions,
-    resolveOrPrompt,
+    resolveOrPrompt, revealHand,
 } from '../domain/abilityHelpers';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
@@ -126,15 +126,20 @@ function miskatonicMandatoryReading(ctx: AbilityContext): AbilityResult {
     });
 }
 
-/** 失落的知识 onPlay：手中有≥2张疯狂卡时，抽2张牌 + 额外随从 + 额外行动 */
+/** 失落的知识 onPlay：手中有≥2张疯狂卡时，展示疯狂卡，抽2张牌 + 额外随从 + 额外行动 */
 function miskatonicLostKnowledge(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     const player = ctx.state.players[ctx.playerId];
     // 检查手中疯狂卡数量（注意：打出此行动卡后手牌已减少，但 execute 的 state 是打出前的状态）
     // 在 execute 中 ctx.state 是命令执行前的状态，此时行动卡还在手牌中
     // 所以需要排除当前打出的卡来计算手牌中的疯狂卡
-    const madnessInHand = player.hand.filter(c => c.defId === MADNESS_CARD_DEF_ID && c.uid !== ctx.cardUid).length;
-    if (madnessInHand < 2) return { events };
+    const madnessCards = player.hand.filter(c => c.defId === MADNESS_CARD_DEF_ID && c.uid !== ctx.cardUid);
+    if (madnessCards.length < 2) return { events };
+
+    // 展示手中的疯狂卡给所有人看（规则："展示其"）
+    const madnessToReveal = madnessCards.map(c => ({ uid: c.uid, defId: c.defId }));
+    events.push(revealHand(ctx.playerId, 'all', madnessToReveal, 'miskatonic_lost_knowledge', ctx.now, ctx.playerId));
+
     // 抽2张牌
     const drawCount = Math.min(2, player.deck.length);
     if (drawCount > 0) {

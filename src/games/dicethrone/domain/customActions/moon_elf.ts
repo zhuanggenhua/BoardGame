@@ -184,15 +184,14 @@ function handleExplodingArrowResolve3(context: CustomActionContext): DiceThroneE
  * - 3+个足：造成4伤害 + 获得1闪避
  */
 function handleElusiveStepResolve1(context: CustomActionContext): DiceThroneEvent[] {
-    const { attackerId, sourceAbilityId, state, timestamp } = context;
+    const { attackerId, sourceAbilityId, state, timestamp, ctx } = context;
     const events: DiceThroneEvent[] = [];
     const faceCounts = getFaceCounts(getActiveDice(state));
     const footCount = faceCounts[FACE.FOOT] ?? 0;
+    // 防御上下文：ctx.attackerId = 防御者，ctx.defenderId = 原攻击者
+    const opponentId = ctx.defenderId;
 
     if (footCount >= 3) {
-        // 对攻击者造成4伤害（防御技能中 attackerId 是防御者，targetId 也是防御者）
-        // 防御技能的 ctx 中 attackerId=防御者, defenderId=攻击者
-        const opponentId = Object.keys(state.players).find(id => id !== attackerId) || attackerId;
         events.push(dealDamage(context, opponentId, 4, sourceAbilityId, timestamp));
         // 获得闪避
         const current = state.players[attackerId]?.tokens[TOKEN_IDS.EVASIVE] ?? 0;
@@ -205,7 +204,6 @@ function handleElusiveStepResolve1(context: CustomActionContext): DiceThroneEven
             timestamp,
         } as TokenGrantedEvent);
     } else if (footCount >= 2) {
-        const opponentId = Object.keys(state.players).find(id => id !== attackerId) || attackerId;
         events.push(dealDamage(context, opponentId, 2, sourceAbilityId, timestamp));
         const current = state.players[attackerId]?.tokens[TOKEN_IDS.EVASIVE] ?? 0;
         const maxStacks = 3;
@@ -217,7 +215,6 @@ function handleElusiveStepResolve1(context: CustomActionContext): DiceThroneEven
             timestamp,
         } as TokenGrantedEvent);
     } else if (footCount >= 1) {
-        const opponentId = Object.keys(state.players).find(id => id !== attackerId) || attackerId;
         events.push(dealDamage(context, opponentId, 2, sourceAbilityId, timestamp));
     }
 
@@ -231,11 +228,12 @@ function handleElusiveStepResolve1(context: CustomActionContext): DiceThroneEven
  * - 3+个足：造成5伤害 + 获得1闪避 + 施加缠绕
  */
 function handleElusiveStepResolve2(context: CustomActionContext): DiceThroneEvent[] {
-    const { attackerId, sourceAbilityId, state, timestamp } = context;
+    const { attackerId, sourceAbilityId, state, timestamp, ctx } = context;
     const events: DiceThroneEvent[] = [];
     const faceCounts = getFaceCounts(getActiveDice(state));
     const footCount = faceCounts[FACE.FOOT] ?? 0;
-    const opponentId = Object.keys(state.players).find(id => id !== attackerId) || attackerId;
+    // 防御上下文：ctx.attackerId = 防御者，ctx.defenderId = 原攻击者
+    const opponentId = ctx.defenderId;
 
     if (footCount >= 3) {
         events.push(dealDamage(context, opponentId, 5, sourceAbilityId, timestamp));
@@ -321,9 +319,9 @@ function handleVolley(context: CustomActionContext): DiceThroneEvent[] {
  * 小心！(Watch Out)：施加锁定给对手
  */
 function handleWatchOut(context: CustomActionContext): DiceThroneEvent[] {
-    const { attackerId, sourceAbilityId, state, timestamp } = context;
-    // targetId 在 cards.ts 中定义为 'self'，但实际效果是对对手施加锁定
-    const opponentId = Object.keys(state.players).find(id => id !== attackerId) || attackerId;
+    const { sourceAbilityId, state, timestamp, ctx } = context;
+    // 进攻上下文：ctx.defenderId = 对手
+    const opponentId = ctx.defenderId;
     return [applyStatus(opponentId, STATUS_IDS.TARGETED, 1, sourceAbilityId, state, timestamp)];
 }
 

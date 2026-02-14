@@ -205,6 +205,8 @@ const ACTIVATED_UI_CONFIRMED = new Map<string, string>([
     ['mind_capture_resolve', 'modal:decision — mind_capture 触发后的决策 Modal（控制/伤害）'],
     // 事件卡持续效果（ABILITY_TRIGGERED → useGameEvents → cell interaction）
     ['ice_ram',         'eventCard:ui  — 建筑移动/推拉后 useGameEvents 触发 + StatusBanners + cell interaction'],
+    ['high_telekinesis_instead', 'button:attack — 攻击阶段按钮代替攻击推拉 + cell interaction 选目标 + telekinesis 方向选择'],
+    ['telekinesis_instead', 'button:attack — 攻击阶段按钮代替攻击推拉 + cell interaction 选目标 + telekinesis 方向选择'],
 ]);
 
 /**
@@ -612,18 +614,18 @@ describe('被动能力运行时验证 (Section 8)', () => {
         const enemy = mkUnit('enemy', { faction: 'frost' });
         putUnit(core, { row: 3, col: 4 }, enemy, '1');
         // 直线移动 2 格：(3,3) → (3,5)，穿过 (3,4)
-        const passed = getPassedThroughUnitPositions(core, { row: 3, col: 3 }, { row: 3, col: 5 }, '0');
+        const passed = getPassedThroughUnitPositions(core, { row: 3, col: 3 }, { row: 3, col: 5 });
         expect(passed).toEqual([{ row: 3, col: 4 }]);
     });
 
-    it('[trample] 不穿过友方单位', () => {
+    it('[trample] 穿过友方单位也造成伤害（踩踏不区分敌我）', () => {
         const trampler = mkUnit('trample-unit', { abilities: ['trample'], faction: 'frost' });
         putUnit(core, { row: 3, col: 3 }, trampler, '0');
         // 在中间格放一个友方单位
         const ally = mkUnit('ally', { faction: 'frost' });
         putUnit(core, { row: 3, col: 4 }, ally, '0');
-        const passed = getPassedThroughUnitPositions(core, { row: 3, col: 3 }, { row: 3, col: 5 }, '0');
-        expect(passed).toEqual([]); // 友方不算穿过
+        const passed = getPassedThroughUnitPositions(core, { row: 3, col: 3 }, { row: 3, col: 5 });
+        expect(passed).toEqual([{ row: 3, col: 4 }]); // 友方也算穿过
     });
 });
 

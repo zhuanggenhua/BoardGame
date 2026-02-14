@@ -46,6 +46,18 @@ export interface ResponseWindowSystemConfig {
     }>;
 
     /**
+     * 循环响应模式：所有人连续让过才关闭窗口
+     * 
+     * 启用后，当某个响应者执行了动作（触发 responseAdvanceEvents），
+     * 到达队列末尾时不会关闭窗口，而是重新从头开始新一轮循环。
+     * 只有一整轮中所有人都 pass（没有人执行动作）时才关闭。
+     * 
+     * 适用于 Smash Up 的 Me First! 机制：每人可打 1 张特殊牌或让过，
+     * 所有人连续让过才终止。
+     */
+    loopUntilAllPass?: boolean;
+
+    /**
      * 交互锁定配置：在响应窗口内发起多步交互时锁定推进
      * payload 约定：requestEvent.payload.interaction.{id, playerId}; resolveEvents.payload.interactionId
      */
@@ -149,11 +161,13 @@ export function closeResponseWindow<TCore>(
 
 /**
  * 移动到下一个响应者
- * @returns 新窗口状态，如果所有人都已响应则返回 undefined
+ * @param loopUntilAllPass 启用循环模式时，到达队列末尾会重新开始（如果本轮有人执行了动作）
+ * @returns 新窗口状态，如果所有人都已响应（且不需要循环）则返回 undefined
  */
 export function advanceToNextResponder(
     window: ResponseWindowState['current'],
-    currentPlayerId: PlayerId
+    currentPlayerId: PlayerId,
+    loopUntilAllPass?: boolean
 ): ResponseWindowState['current'] {
     if (!window) return undefined;
     
@@ -162,6 +176,15 @@ export function advanceToNextResponder(
     
     // 所有人都已响应
     if (nextIndex >= window.responderQueue.length) {
+        if (loopUntilAllPass && window.actionTakenThisRound) {
+            // 本轮有人执行了动作，重新开始新一轮
+            return {
+                ...window,
+                currentResponderIndex: 0,
+                passedPlayers: [],
+                actionTakenThisRound: false,
+            };
+        }
         return undefined;
     }
     
@@ -201,26 +224,52 @@ const ENGINE_ALLOWED_COMMANDS = [
 function skipToNextRespondableResponder<TCore>(
     state: MatchState<TCore>,
     window: ResponseWindowState['current'] | undefined,
-    hasRespondableContent?: ResponseWindowSystemConfig['hasRespondableContent']
+    hasRespondableContent?: ResponseWindowSystemConfig['hasRespondableContent'],
+    loopUntilAllPass?: boolean
 ): ResponseWindowState['current'] | undefined {
     if (!window || !hasRespondableContent) return window;
 
-    const originalIndex = window.currentResponderIndex;
-    let index = originalIndex;
-    let passedPlayers = window.passedPlayers;
+    type CurrentWindow = NonNullable<ResponseWindowState['current']>;
 
-    while (index < window.responderQueue.length) {
-        const playerId = window.responderQueue[index];
-        if (hasRespondableContent(state.core as unknown, playerId, window.windowType, window.sourceId)) {
-            if (index === originalIndex) return window;
-            return {
-                ...window,
-                currentResponderIndex: index,
-                passedPlayers,
-            };
+    const findNextRespondable = (
+        scanWindow: CurrentWindow
+    ): ResponseWindowState['current'] | undefined => {
+        const originalIndex = scanWindow.currentResponderIndex;
+        let index = originalIndex;
+        let passedPlayers = scanWindow.passedPlayers;
+
+        while (index < scanWindow.responderQueue.length) {
+            const playerId = scanWindow.responderQueue[index];
+            if (hasRespondableContent(state.core as unknown, playerId, scanWindow.windowType, scanWindow.sourceId)) {
+                if (index === originalIndex && passedPlayers === scanWindow.passedPlayers) {
+                    return scanWindow;
+                }
+                return {
+                    ...scanWindow,
+                    currentResponderIndex: index,
+                    passedPlayers,
+                };
+            }
+            passedPlayers = [...passedPlayers, playerId];
+            index += 1;
         }
-        passedPlayers = [...passedPlayers, playerId];
-        index += 1;
+
+        return undefined;
+    };
+
+    const nextWindow = findNextRespondable(window);
+    if (nextWindow) return nextWindow;
+
+    // loopUntilAllPass：若本轮有人出过牌，即使尾部玩家都被自动 skip，
+    // 也需要重开新一轮，从队首继续检查可响应者。
+    if (loopUntilAllPass && window.actionTakenThisRound) {
+        const restartedWindow: CurrentWindow = {
+            ...window,
+            currentResponderIndex: 0,
+            passedPlayers: [],
+            actionTakenThisRound: false,
+        };
+        return findNextRespondable(restartedWindow);
     }
 
     return undefined;
@@ -245,6 +294,7 @@ export function createResponseWindowSystem<TCore>(
     const windowTypeConstraints = config.commandWindowTypeConstraints ?? {};
     const advanceEvents = config.responseAdvanceEvents ?? [];
     const interactionLock = config.interactionLock;
+    const loopUntilAllPass = config.loopUntilAllPass ?? false;
 
     /** 判断命令是否为 SYS_ 前缀系统命令（始终放行） */
     const isSysCommand = (type: string) => type.startsWith('SYS_');
@@ -301,8 +351,9 @@ export function createResponseWindowSystem<TCore>(
                 // 移动到下一个响应者
                 const nextWindow = skipToNextRespondableResponder(
                     state,
-                    advanceToNextResponder(currentWindow, targetPlayerId),
-                    hasRespondableContent
+                    advanceToNextResponder(currentWindow, targetPlayerId, loopUntilAllPass),
+                    hasRespondableContent,
+                    loopUntilAllPass
                 );
                 const events: GameEvent[] = [];
                 const cmdTimestamp = resolveCommandTimestamp(command);
@@ -382,7 +433,7 @@ export function createResponseWindowSystem<TCore>(
                     );
                     
                     if (window) {
-                        const nextWindow = skipToNextRespondableResponder(newState, window, hasRespondableContent);
+                        const nextWindow = skipToNextRespondableResponder(newState, window, hasRespondableContent, loopUntilAllPass);
                         if (nextWindow) {
                             newState = openResponseWindow(newState, nextWindow);
                         } else {
@@ -441,8 +492,9 @@ export function createResponseWindowSystem<TCore>(
                             
                             const nextWindow = skipToNextRespondableResponder(
                                 newState,
-                                advanceToNextResponder(unlockedWindow, currentResponderId!),
-                                hasRespondableContent
+                                advanceToNextResponder(unlockedWindow, currentResponderId!, loopUntilAllPass),
+                                hasRespondableContent,
+                                loopUntilAllPass
                             );
                             
                             if (nextWindow) {
@@ -484,10 +536,16 @@ export function createResponseWindowSystem<TCore>(
                     // 只有当前响应者的事件才推进
                     if (cardPayload.playerId !== currentResponderId) break;
                     
+                    // 标记本轮有人执行了动作（用于 loopUntilAllPass 循环判定）
+                    const markedWindow = loopUntilAllPass
+                        ? { ...currentWindow, actionTakenThisRound: true }
+                        : currentWindow;
+                    
                     const nextWindow = skipToNextRespondableResponder(
                         newState,
-                        advanceToNextResponder(currentWindow, currentResponderId),
-                        hasRespondableContent
+                        advanceToNextResponder(markedWindow, currentResponderId, loopUntilAllPass),
+                        hasRespondableContent,
+                        loopUntilAllPass
                     );
                     
                     if (nextWindow) {

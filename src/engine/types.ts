@@ -191,6 +191,8 @@ export interface ResponseWindowState {
         passedPlayers: PlayerId[];
         /** 交互锁：阻止推进直到交互完成（存储交互 ID） */
         pendingInteractionId?: string;
+        /** 本轮是否有人执行了响应动作（用于 loopUntilAllPass 循环判定） */
+        actionTakenThisRound?: boolean;
     };
 }
 

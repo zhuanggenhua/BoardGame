@@ -15,31 +15,31 @@ import { getCardDef, getBaseDef } from '../data/cards';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 
-/** 注册蒸汽朋克派系所有能�?*/
+/** 注册蒸汽朋克派系所有能力*/
 export function registerSteampunkAbilities(): void {
-    // 废物利用（行动卡）：从弃牌堆取回一张行动卡到手�?
+    // 废物利用（行动卡）：从弃牌堆取回一张行动卡到手牌
     registerAbility('steampunk_scrap_diving', 'onPlay', steampunkScrapDiving);
     // 机械师（随从 onPlay）：从弃牌堆打出一张持续行动卡
     registerAbility('steampunk_mechanic', 'onPlay', steampunkMechanic);
-    // 换场（行动卡）：取回一张己�?ongoing 行动卡到手牌 + 额外行动
+    // 换场（行动卡）：取回一张己?ongoing 行动卡到手牌 + 额外行动
     registerAbility('steampunk_change_of_venue', 'onPlay', steampunkChangeOfVenue);
     // 亚哈船长（talent）：移动到有己方行动卡的基地
     registerAbility('steampunk_captain_ahab', 'talent', steampunkCaptainAhab);
 
     // === ongoing 效果注册 ===
-    // steam_queen: 己方 ongoing 行动卡不受对手影�?
+    // steam_queen: 己方 ongoing 行动卡不受对手影响?
     registerInterceptor('steampunk_steam_queen', steampunkSteamQueenInterceptor);
     // ornate_dome: 禁止对手打行动卡到此基地
     registerRestriction('steampunk_ornate_dome', 'play_action', steampunkOrnateDomeChecker);
-    // difference_engine: 回合结束时控制者多�?�?
+    // difference_engine: 回合结束时控制者多??
     registerTrigger('steampunk_difference_engine', 'onTurnEnd', steampunkDifferenceEngineTrigger);
-    // escape_hatch: 随从被消灭时回手�?
+    // escape_hatch: 随从被消灭时回手牌
     registerTrigger('steampunk_escape_hatch', 'onMinionDestroyed', steampunkEscapeHatchTrigger);
-    // zeppelin: 天赋 - 移动随从到此基地或从此基地移�?
+    // zeppelin: 天赋 - 移动随从到此基地或从此基地移动?
     registerAbility('steampunk_zeppelin', 'talent', steampunkZeppelin);
 }
 
-/** 废物利用 onPlay：从弃牌堆取回一张行动卡到手�?*/
+/** 废物利用 onPlay：从弃牌堆取回一张行动卡到手牌*/
 function steampunkScrapDiving(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const actionsInDiscard = player.discard.filter(c => c.type === 'action' && c.uid !== ctx.cardUid);
@@ -56,9 +56,9 @@ function steampunkScrapDiving(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-// steampunk_steam_man (ongoing) - 已通过 ongoingModifiers 系统实现力量修正（按行动卡数+力量�?
-// steampunk_aggromotive (ongoing) - 已通过 ongoingModifiers 系统实现力量修正（有随从�?5�?
-// steampunk_rotary_slug_thrower (ongoing) - 已通过 ongoingModifiers 系统实现力量修正（己方随�?2�?
+// steampunk_steam_man (ongoing) - 已通过 ongoingModifiers 系统实现力量修正（按行动卡数+力量的
+// steampunk_aggromotive (ongoing) - 已通过 ongoingModifiers 系统实现力量修正（有随从?5?
+// steampunk_rotary_slug_thrower (ongoing) - 已通过 ongoingModifiers 系统实现力量修正（己方随从2?
 
 // ============================================================================
 // ongoing 效果检查器
@@ -93,12 +93,12 @@ function steampunkOrnateDomeChecker(ctx: RestrictionCheckContext): boolean {
     if (!base) return false;
     const dome = base.ongoingActions.find(o => o.defId === 'steampunk_ornate_dome');
     if (!dome) return false;
-    // 只限制非拥有�?
+    // 只限制非拥有者?
     return ctx.playerId !== dome.ownerId;
 }
 
 /**
- * difference_engine 触发：回合结束时控制者多�?�?
+ * difference_engine 触发：回合结束时控制者多??
  */
 /**
  * difference_engine 触发：回合结束时，如果拥有者在此基地有随从，多抽一张牌
@@ -128,9 +128,9 @@ function steampunkDifferenceEngineTrigger(ctx: TriggerContext): SmashUpEvent[] {
 
 
 /**
- * escape_hatch 触发：己方随从被消灭时回手牌（而非进弃牌堆�?
+ * escape_hatch 触发：己方随从被消灭时回手牌（而非进弃牌堆?
  * 
- * 规则：当 escape_hatch 附着在基地上时，该基地上拥有者的随从被消灭时回手�?
+ * 规则：当 escape_hatch 附着在基地上时，该基地上拥有者的随从被消灭时回手牌
  */
 function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.baseIndex === undefined || !ctx.triggerMinionUid) return [];
@@ -140,10 +140,10 @@ function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const hatch = base.ongoingActions.find(o => o.defId === 'steampunk_escape_hatch');
     if (!hatch) return [];
 
-    // 找被消灭的随�?
+    // 找被消灭的随从
     const minion = base.minions.find(m => m.uid === ctx.triggerMinionUid);
     if (!minion) return [];
-    // 只保�?hatch 拥有者的随从
+    // 只保护?hatch 拥有者的随从
     if (minion.controller !== hatch.ownerId) return [];
 
     const evt: MinionReturnedEvent = {
@@ -165,7 +165,7 @@ function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[] {
 // ============================================================================
 
 /**
- * 机械�?onPlay：从弃牌堆打出一张持续行动卡到基�?
+ * 机械臂?onPlay：从弃牌堆打出一张持续行动卡到基地
  */
 function steampunkMechanic(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
@@ -184,10 +184,10 @@ function steampunkMechanic(ctx: AbilityContext): AbilityResult {
 }
 
 /**
- * 换场 onPlay：取回一张己�?ongoing 行动卡到手牌 + 额外行动
+ * 换场 onPlay：取回一张己?ongoing 行动卡到手牌 + 额外行动
  */
 function steampunkChangeOfVenue(ctx: AbilityContext): AbilityResult {
-    // 收集所有己�?ongoing 行动�?
+    // 收集所有己?ongoing 行动?
     const myOngoings: { uid: string; defId: string; ownerId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
@@ -214,11 +214,11 @@ function steampunkChangeOfVenue(ctx: AbilityContext): AbilityResult {
 }
 
 /**
- * 亚哈船长 talent：移动到有己方行动卡的基�?
+ * 亚哈船长 talent：移动到有己方行动卡的基地
  * MVP：自动选第一个有己方 ongoing 行动卡的其他基地
  */
 function steampunkCaptainAhab(ctx: AbilityContext): AbilityResult {
-    // �?captain_ahab 当前所在基�?
+    // ?captain_ahab 当前所在基地
     let currentBaseIndex = -1;
     for (let i = 0; i < ctx.state.bases.length; i++) {
         if (ctx.state.bases[i].minions.some(m => m.uid === ctx.cardUid)) {
@@ -243,10 +243,10 @@ function steampunkCaptainAhab(ctx: AbilityContext): AbilityResult {
 
 
 /**
- * 齐柏林飞�?talent：从另一个基地移动一个你的随从到这里，或从这里移动到另一个基�?
+ * 齐柏林飞艇?talent：从另一个基地移动一个你的随从到这里，或从这里移动到另一个基地
  */
 function steampunkZeppelin(ctx: AbilityContext): AbilityResult {
-    // 找到 zeppelin 所在基�?
+    // 找到 zeppelin 所在基地
     let zepBaseIndex = -1;
     for (let i = 0; i < ctx.state.bases.length; i++) {
         if (ctx.state.bases[i].ongoingActions.some(o => o.uid === ctx.cardUid)) {
@@ -259,7 +259,7 @@ function steampunkZeppelin(ctx: AbilityContext): AbilityResult {
     const zepBase = ctx.state.bases[zepBaseIndex];
     const candidates: { id: string; label: string; value: { minionUid: string; minionDefId: string; fromBase: number; toBase: number } }[] = [];
 
-    // 方向A：从其他基地移动到这�?
+    // 方向A：从其他基地移动到这?
     for (let i = 0; i < ctx.state.bases.length; i++) {
         if (i === zepBaseIndex) continue;
         for (const m of ctx.state.bases[i].minions) {
@@ -268,13 +268,13 @@ function steampunkZeppelin(ctx: AbilityContext): AbilityResult {
             const name = def?.name ?? m.defId;
             candidates.push({
                 id: `from-${i}-${m.uid}`,
-                label: `${name} �?此基地`,
+                label: `${name} ?此基地`,
                 value: { minionUid: m.uid, minionDefId: m.defId, fromBase: i, toBase: zepBaseIndex },
             });
         }
     }
 
-    // 方向B：从这里移动到其他基�?
+    // 方向B：从这里移动到其他基地
     for (const m of zepBase.minions) {
         if (m.controller !== ctx.playerId) continue;
         const mDef = getCardDef(m.defId);
@@ -285,7 +285,7 @@ function steampunkZeppelin(ctx: AbilityContext): AbilityResult {
             const bName = bDef?.name ?? `基地${i}`;
             candidates.push({
                 id: `to-${i}-${m.uid}`,
-                label: `${mName} �?${bName}`,
+                label: `${mName} ?${bName}`,
                 value: { minionUid: m.uid, minionDefId: m.defId, fromBase: zepBaseIndex, toBase: i },
             });
         }

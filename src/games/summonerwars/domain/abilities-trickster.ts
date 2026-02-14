@@ -142,6 +142,69 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
     },
   },
 
+  // 高阶念力（代替攻击）：独立的主动技能，消耗一次攻击行动
+  {
+    id: 'high_telekinesis_instead',
+    name: abilityText('high_telekinesis', 'name'),
+    description: abilityText('high_telekinesis', 'description'),
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_aetherial_pulse_002',
+    trigger: 'activated',
+    costsAttackAction: true,
+    effects: [
+      { type: 'pushPull', target: { unitId: 'selectedTarget' }, distance: 1, direction: 'choice' },
+    ],
+    requiresTargetSelection: true,
+    targetSelection: {
+      type: 'unit',
+      filter: { type: 'isInRange', target: 'self', range: 3 },
+      count: 1,
+    },
+    validation: {
+      requiredPhase: 'attack',
+      customValidator: (ctx) => {
+        // 检查单位是否已攻击
+        if (ctx.sourceUnit.hasAttacked) {
+          return { valid: false, error: '本单位已攻击，不能代替攻击使用' };
+        }
+        // 检查攻击次数
+        const player = ctx.core.players[ctx.playerId];
+        if (player.attackCount >= 3) {
+          return { valid: false, error: '本回合攻击次数已用完' };
+        }
+
+        const targetPosition = ctx.payload.targetPosition as import('./types').CellCoord | undefined;
+        if (!targetPosition) {
+          return { valid: false, error: '必须选择推拉目标' };
+        }
+        
+        const dist = Math.abs(ctx.sourcePosition.row - targetPosition.row) + Math.abs(ctx.sourcePosition.col - targetPosition.col);
+        if (dist > 3) {
+          return { valid: false, error: '目标必须在3格以内' };
+        }
+        
+        const tkTarget = getUnitAt(ctx.core, targetPosition);
+        if (!tkTarget) {
+          return { valid: false, error: '目标位置没有单位' };
+        }
+        
+        if (tkTarget.card.unitClass === 'summoner') {
+          return { valid: false, error: '不能推拉召唤师' };
+        }
+        
+        return { valid: true };
+      },
+    },
+    ui: {
+      requiresButton: true,
+      buttonPhase: 'attack',
+      buttonLabel: 'abilityButtons.highTelekinesisInstead',
+      buttonVariant: 'secondary',
+      activationStep: 'selectUnit',
+      // 只在单位未攻击且攻击次数未满时显示
+      extraCondition: (ctx) => !ctx.unit.hasAttacked && ctx.core.players[ctx.playerId].attackCount < 3,
+    },
+  },
+
   {
     id: 'stable',
     name: abilityText('stable', 'name'),
@@ -296,6 +359,69 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
       buttonLabel: 'abilityButtons.telekinesis',
       buttonVariant: 'secondary',
       activationStep: 'selectUnit',
+    },
+  },
+
+  // 念力（代替攻击）：独立的主动技能，消耗一次攻击行动
+  {
+    id: 'telekinesis_instead',
+    name: abilityText('telekinesis', 'name'),
+    description: abilityText('telekinesis', 'description'),
+    sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_aetherial_pulse_001',
+    trigger: 'activated',
+    costsAttackAction: true,
+    effects: [
+      { type: 'pushPull', target: { unitId: 'selectedTarget' }, distance: 1, direction: 'choice' },
+    ],
+    requiresTargetSelection: true,
+    targetSelection: {
+      type: 'unit',
+      filter: { type: 'isInRange', target: 'self', range: 2 },
+      count: 1,
+    },
+    validation: {
+      requiredPhase: 'attack',
+      customValidator: (ctx) => {
+        // 检查单位是否已攻击
+        if (ctx.sourceUnit.hasAttacked) {
+          return { valid: false, error: '本单位已攻击，不能代替攻击使用' };
+        }
+        // 检查攻击次数
+        const player = ctx.core.players[ctx.playerId];
+        if (player.attackCount >= 3) {
+          return { valid: false, error: '本回合攻击次数已用完' };
+        }
+
+        const targetPosition = ctx.payload.targetPosition as import('./types').CellCoord | undefined;
+        if (!targetPosition) {
+          return { valid: false, error: '必须选择推拉目标' };
+        }
+        
+        const dist = Math.abs(ctx.sourcePosition.row - targetPosition.row) + Math.abs(ctx.sourcePosition.col - targetPosition.col);
+        if (dist > 2) {
+          return { valid: false, error: '目标必须在2格以内' };
+        }
+        
+        const tkTarget = getUnitAt(ctx.core, targetPosition);
+        if (!tkTarget) {
+          return { valid: false, error: '目标位置没有单位' };
+        }
+        
+        if (tkTarget.card.unitClass === 'summoner') {
+          return { valid: false, error: '不能推拉召唤师' };
+        }
+        
+        return { valid: true };
+      },
+    },
+    ui: {
+      requiresButton: true,
+      buttonPhase: 'attack',
+      buttonLabel: 'abilityButtons.telekinesisInstead',
+      buttonVariant: 'secondary',
+      activationStep: 'selectUnit',
+      // 只在单位未攻击且攻击次数未满时显示
+      extraCondition: (ctx) => !ctx.unit.hasAttacked && ctx.core.players[ctx.playerId].attackCount < 3,
     },
   },
 

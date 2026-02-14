@@ -10,8 +10,7 @@ import { GameButton } from './GameButton';
 import type { MatchState } from '../../../engine/types';
 import type { SmashUpCore, ActionCardDef } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
-import { getCardDef, resolveCardName, getBaseDef } from '../data/cards';
-import { getTotalEffectivePowerOnBase, getEffectiveBreakpoint } from '../domain/ongoingModifiers';
+import { getCardDef, resolveCardName } from '../data/cards';
 import { UI_Z_INDEX } from '../../../core';
 import { PLAYER_CONFIG } from './playerConfig';
 
@@ -19,21 +18,38 @@ import { PLAYER_CONFIG } from './playerConfig';
 // Me First! Response Window Overlay
 // ============================================================================
 
+export interface MeFirstPendingCard {
+    cardUid: string;
+    defId: string;
+}
+
 export const MeFirstOverlay: React.FC<{
     G: MatchState<SmashUpCore>;
     moves: Record<string, (payload?: unknown) => void>;
     playerID: string | null;
-}> = ({ G, moves, playerID }) => {
-    const { t, i18n } = useTranslation('game-smashup');
+    /** 当前待选基地的 Special 卡（需要基地目标时） */
+    pendingCard: MeFirstPendingCard | null;
+    onSelectCard: (card: MeFirstPendingCard | null) => void;
+}> = ({ G, moves, playerID, pendingCard, onSelectCard }) => {
+    const { t } = useTranslation('game-smashup');
     const responseWindow = G.sys.responseWindow?.current;
 
     const handlePass = useCallback(() => {
+        onSelectCard(null);
         moves['RESPONSE_PASS']?.({});
-    }, [moves]);
+    }, [moves, onSelectCard]);
 
-    const handlePlaySpecial = useCallback((cardUid: string, targetBaseIndex: number) => {
-        moves[SU_COMMANDS.PLAY_ACTION]?.({ cardUid, targetBaseIndex });
-    }, [moves]);
+    const handleCardClick = useCallback((cardUid: string, defId: string) => {
+        const def = getCardDef(defId) as ActionCardDef | undefined;
+        if (def?.specialNeedsBase) {
+            // 需要选基地：进入基地选择模式
+            onSelectCard({ cardUid, defId });
+        } else {
+            // 不需要选基地（如全速航行）：直接打出（不传 targetBaseIndex）
+            onSelectCard(null);
+            moves[SU_COMMANDS.PLAY_ACTION]?.({ cardUid });
+        }
+    }, [moves, onSelectCard]);
 
     if (!responseWindow || responseWindow.windowType !== 'meFirst') return null;
 
@@ -48,21 +64,6 @@ export const MeFirstOverlay: React.FC<{
         const def = getCardDef(c.defId) as ActionCardDef | undefined;
         return def?.subtype === 'special';
     }) ?? [];
-
-    // 计算达到临界点的基地（Special 卡的目标基地）
-    const eligibleBases = React.useMemo(() => {
-        const result: { baseIndex: number; name: string }[] = [];
-        for (let i = 0; i < core.bases.length; i++) {
-            const base = core.bases[i];
-            const baseDef = getBaseDef(base.defId);
-            if (!baseDef) continue;
-            const totalPower = getTotalEffectivePowerOnBase(core, base, i);
-            if (totalPower >= getEffectiveBreakpoint(core, i)) {
-                result.push({ baseIndex: i, name: baseDef.name ?? `基地 ${i + 1}` });
-            }
-        }
-        return result;
-    }, [core]);
 
     return (
         <motion.div
@@ -85,7 +86,9 @@ export const MeFirstOverlay: React.FC<{
                     </h3>
                     <p className="text-sm font-bold text-slate-600 mt-1" data-testid="me-first-status">
                         {isMyResponse
-                            ? t('ui.me_first_your_turn')
+                            ? pendingCard
+                                ? t('ui.me_first_select_base')
+                                : t('ui.me_first_your_turn')
                             : t('ui.me_first_waiting', { player: currentResponderId })
                         }
                     </p>
@@ -94,50 +97,56 @@ export const MeFirstOverlay: React.FC<{
                 {isMyResponse && (
                     <div className="flex flex-col gap-2">
                         {/* 特殊牌列表 */}
-                        {specialCards.length > 0 && (
+                        {specialCards.length > 0 && !pendingCard && (
                             <div className="flex flex-wrap gap-2 justify-center mb-2" data-testid="me-first-special-cards">
                                 {specialCards.map(card => {
                                     const def = getCardDef(card.defId);
                                     const resolvedName = resolveCardName(def, t) || card.defId;
-                                    // 只有一个达标基地时直接打出，多个时为每个基地显示按钮
-                                    if (eligibleBases.length === 1) {
-                                        return (
-                                            <GameButton
-                                                key={card.uid}
-                                                variant="danger"
-                                                size="sm"
-                                                onClick={() => handlePlaySpecial(card.uid, eligibleBases[0].baseIndex)}
-                                                data-testid={`me-first-card-${card.uid}`}
-                                            >
-                                                {resolvedName}
-                                            </GameButton>
-                                        );
-                                    }
-                                    return eligibleBases.map(eb => (
+                                    return (
                                         <GameButton
-                                            key={`${card.uid}-${eb.baseIndex}`}
+                                            key={card.uid}
                                             variant="danger"
                                             size="sm"
-                                            onClick={() => handlePlaySpecial(card.uid, eb.baseIndex)}
-                                            data-testid={`me-first-card-${card.uid}-base-${eb.baseIndex}`}
+                                            onClick={() => handleCardClick(card.uid, card.defId)}
+                                            data-testid={`me-first-card-${card.uid}`}
                                         >
-                                            {resolvedName} → {eb.name}
+                                            {resolvedName}
                                         </GameButton>
-                                    ));
+                                    );
                                 })}
                             </div>
                         )}
 
+                        {/* 选择基地提示 */}
+                        {pendingCard && (
+                            <div className="text-center mb-2">
+                                <p className="text-sm text-amber-700 font-bold">
+                                    {resolveCardName(getCardDef(pendingCard.defId), t)} — {t('ui.me_first_click_base')}
+                                </p>
+                                <GameButton
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => onSelectCard(null)}
+                                    className="mt-1"
+                                    data-testid="me-first-cancel-select"
+                                >
+                                    {t('ui.cancel')}
+                                </GameButton>
+                            </div>
+                        )}
+
                         {/* 让过按钮 */}
-                        <div className="flex justify-center">
-                            <GameButton
-                                variant="secondary"
-                                onClick={handlePass}
-                                data-testid="me-first-pass-button"
-                            >
-                                {t('ui.me_first_pass')}
-                            </GameButton>
-                        </div>
+                        {!pendingCard && (
+                            <div className="flex justify-center">
+                                <GameButton
+                                    variant="secondary"
+                                    onClick={handlePass}
+                                    data-testid="me-first-pass-button"
+                                >
+                                    {t('ui.me_first_pass')}
+                                </GameButton>
+                            </div>
+                        )}
                     </div>
                 )}
 

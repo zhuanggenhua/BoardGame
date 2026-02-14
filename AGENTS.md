@@ -30,7 +30,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/ai-rules/golden-rules.md` — **遇到 React 渲染错误/白屏/函数未定义/高频交互卡顿时必读**。含 React Hooks 示例、白屏排查流程、Vite SSR、高频交互/拖拽规范。
 - `docs/ai-rules/animation-effects.md` — **开发/修改任何动画、特效、粒子效果时必读**。含动效选型表、Canvas 粒子引擎、特效组件/架构/视觉质量规范。
 - `docs/ai-rules/asset-pipeline.md` — **新增/修改图片或音频资源引用时必读**。含压缩流程、路径规范、✅/❌ 示例。
-- `docs/ai-rules/engine-systems.md` — **开发/修改引擎系统、框架层代码、游戏 move/command 时必读**。含系统清单、框架解耦/复用、EventStream、ABILITY_TRIGGERED、afterEventsRound、**描述→实现全链路审查规范**。**当用户说"审查"、"审核"、"检查实现"、"核对"、"对一下描述和代码"等要求验证某机制实现完整性的词语时，必须先阅读本文档「描述→实现全链路审查规范」节，按规范流程执行审查并输出矩阵，禁止凭印象回答。**
+- `docs/ai-rules/engine-systems.md` — **开发/修改引擎系统、框架层代码、游戏 move/command 时必读**。含系统清单、框架解耦/复用、EventStream、动画表现与逻辑分离规范（`useVisualStateBuffer`/`useVisualSequenceGate`）、**描述→实现全链路审查规范**。**当用户说"审查"、"审核"、"检查实现"、"核对"、"对一下描述和代码"等要求验证某机制实现完整性的词语时，必须先阅读本文档「描述→实现全链路审查规范」节，按规范流程执行审查并输出矩阵，禁止凭印象回答。**
 - `docs/ai-rules/ui-ux.md` — **开发/修改 UI 组件、布局、样式、游戏界面时必读**。含审美准则、多端布局、游戏 UI 特化、设计系统引用。
 - `docs/ai-rules/global-systems.md` — **使用/修改全局 Context（Toast/Modal/音频/教学/认证）时必读**。含 Context 系统、实时服务层。
 - `docs/ai-rules/doc-index.md` — **不确定该读哪个文档时必读**。按场景查找需要阅读的文档。
@@ -79,6 +79,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ### 1.1 证据链与排查规范（修bug时强制）
 - **同名/同类函数全量排查（强制）**：定位到某个函数/类型/变量时，必须先搜索项目中是否存在**同名或同签名的其他定义**（不同文件、不同作用域、不同返回类型）。确认调用点实际 import 的是哪个定义后，才能动手修改。禁止只看到一个定义就假设它是唯一的。
+- **资源/文件归属先查消费链路（强制）**：对任何文件做出"应该提交/应该忽略/应该放 CDN/应该本地"等归属判断前，**必须先追踪该文件的实际消费链路**——运行时谁加载它、从哪个 URL/路径加载、是生成产物还是手写源码、生成脚本是什么。禁止仅凭文件名、扩展名或"看起来像元数据"就下结论。**教训**：`registry.json` 看起来是"纯 JSON 元数据应该提交到 git"，实际运行时从 R2 CDN fetch，本地副本是脚本生成产物，不该入库。
 - **事实/未知/假设**：提出方案前必须列出已知事实（来源）、未知但关键的信息、假设（含验证方法）。
 - **修 Bug 证据优先**：证据不足时不得直接改代码"试试"，只能给出最小验证步骤或临时日志方案。
 - **首次修复未解决且未定位原因**：必须添加临时日志获取证据，标注采集点与清理计划。
@@ -129,6 +130,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 - 游戏状态 → `src/games/<游戏名>/types.ts`；框架类型 → `src/core/types.ts`；引擎原语类型 → `src/engine/primitives/`；系统类型 → `src/engine/systems/`。
 - 资源管理使用 `src/core/AssetLoader.ts`。
 - **禁止用可选参数掩盖正确性依赖（强制）**：当某个参数影响规则校验/执行逻辑的正确性时，**禁止将其声明为可选参数（`param?: Type`）**。可选参数会导致 TypeScript 无法在编译期捕获"忘记传参"的错误，使缺陷静默传播。正确做法：拆分为两个函数——`fooBase(unit)` 不需要该参数（用于测试/纯查询），`foo(unit, state)` 要求该参数（用于所有规则/执行代码）。示例：`getUnitAbilities(unit, state)` vs `getUnitBaseAbilities(unit)`。此规则适用于所有层级（helpers/resolver/validation/execute），不限于特定游戏。
+- **禁止点号访问 moves 对象（强制）**：boardgame.io 的 `moves` 类型是 `Record<string, Function>`，任何 key 都合法，TypeScript 不会报错。`moves.activateAbility?.()` 在命令名不存在时静默跳过。**正确做法**：所有 moves 调用必须通过命令常量表索引（`moves[SW_COMMANDS.XXX]`），禁止 `moves.xxx()` 点号访问。
 
 ### 文件编码规范（强制）
 - **UTF-8 without BOM**：所有源码文件必须使用此编码。
@@ -202,6 +204,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 - **领域 ID 常量表**：所有稳定 ID 在 `domain/ids.ts` 定义（`as const`），禁止字符串字面量。
 - **三层模型**：`/core/ui/` 契约 → `/components/game/framework/` 骨架 → `/games/<gameId>/` 游戏层。
 - **禁止框架层 import 游戏层**；游戏特化下沉到 `games/<gameId>/`。
+- **动画表现与逻辑分离（强制）**：引擎层同步完成状态计算，表现层按动画节奏异步展示。数值属性（HP/damage/资源）必须经 `useVisualStateBuffer.get()` 中转渲染，禁止直接读 core 值。交互事件（技能确认框等）必须经 `useVisualSequenceGate` 延迟调度。详见 `docs/ai-rules/engine-systems.md`「动画表现与逻辑分离规范」节。
 - **特效/动画事件消费必须用 EventStreamSystem**，禁止用 LogSystem（刷新后重播历史）。**所有消费 EventStream 的 Hook/Effect 必须在首次挂载时跳过历史事件**（将消费指针推进到当前最新 entry.id），否则刷新后会重播。详见 `docs/ai-rules/engine-systems.md`「EventStreamSystem 使用规范」的两种强制模板和检查清单。
 - **Move payload 必须包装为对象**，禁止传裸值；命令使用常量（`UNDO_COMMANDS.*`）。
 - **新机制先查 `src/engine/primitives/` 或 `src/engine/systems/`** 是否已有能力，无则先在引擎层抽象。
@@ -230,6 +233,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
   - **commandTypes 只列业务命令**：系统命令（UNDO/CHEAT/FLOW/INTERACTION/RESPONSE_WINDOW/TUTORIAL/REMATCH）由 adapter 自动合并，禁止手动添加。
   - **ResponseWindowSystem 配置注入**：响应窗口的命令/事件白名单必须通过 `createResponseWindowSystem({ allowedCommands, responseAdvanceEvents })` 注入，禁止修改引擎文件。
   - **参考现有游戏时先检查模式时效性**：现有三个游戏仍有历史债务（DiceThrone 的 pendingInteraction），这些是反模式，新游戏禁止模仿。
+- **领域建模前置审查（强制）**：数据录入完成后、领域实现开始前，必须完成领域概念建模（术语→事件映射）、决策点识别（强制/可选/无）、引擎能力缺口分析。禁止跳过建模直接写实现。详见 `docs/ai-rules/engine-systems.md`「领域建模前置审查」节。
 
 ### 领域层编码规范（强制）
 > **写任何游戏的 domain/ 代码时必须遵守**。目标：让第 100 个游戏的代码质量与第 1 个一样。
@@ -320,7 +324,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 - **截图规范**：禁止硬编码路径，必须用 `testInfo.outputPath('name.png')`。
 - **E2E 覆盖要求**：必须覆盖"关键交互面"（按钮/Modal/Tab/表单校验），不只是跑通 happy path。
 - **静态审计要求**：新增游戏时根据游戏特征选择引擎层审计工具。选型指南见 `docs/ai-rules/engine-systems.md`「引擎测试工具总览」节。
-- **描述→实现全链路审查（强制）**：以下场景必须执行全链路审查——① 新增任何技能/Token/事件卡/被动效果/光环的实现 ② 修复"没效果"类 bug ③ 审查已有机制是否正确实现 ④ 重构涉及消费链路。审查方法：先从规则文档锁定权威描述（禁止仅凭代码注释），将描述拆分为**独立交互链**（任何需要独立触发条件、玩家输入或状态变更路径的效果 = 一条链），**再将每条链的描述逐动词拆解为原子操作步骤**（每个动词短语 = 一个可验证的代码行为），拆分后逐句逐动词回溯原文自检覆盖完整性，再逐链逐步骤检查定义层→注册层→执行层→状态层→验证层→UI 层→i18n 层→测试层八层链路，最后做交叉影响检查（新链路是否触发已有机制连锁），输出"独立交互链 × 八层"矩阵（附权威描述原文和原子步骤列表）。**禁止只测注册/写入就判定"已实现"，禁止输出"看起来没问题"的模糊结论。** **教训**：wizard_scry"搜索→展示→放入手牌→洗牌"四步只实现了两步，因为审计时没有逐动词拆解；zombie_outbreak"在没有你随从的基地额外打出"用 `grantExtraMinion` 全局额度实现，限定条件仅在入口检查、执行时不约束，玩家可在任意基地使用额度。详见 `docs/ai-rules/engine-systems.md`「描述→实现全链路审查规范」节。
+- **描述→实现全链路审查（强制）**：以下场景必须执行全链路审查——① 新增任何技能/Token/事件卡/被动效果/光环的实现 ② 修复"没效果"类 bug ③ 审查已有机制是否正确实现 ④ 重构涉及消费链路。审查方法：先锁定权威描述（优先级：用户当前对话明确给出的描述 > `rule/*.md` 已录入文本 > 卡牌图片；i18n/代码注释/AbilityDef 是实现产物不可作为权威；来源冲突时以用户明确给出的为准；有疑问时必须向用户确认），将描述拆分为**独立交互链**（任何需要独立触发条件、玩家输入或状态变更路径的效果 = 一条链），**再将每条链的描述逐动词拆解为原子操作步骤**（每个动词短语 = 一个可验证的代码行为），**同时对每个步骤的作用目标（名词）做语义边界锁定**（无限定词 = 不区分敌我；有"敌方"/"友方"等限定词 = 严格过滤；禁止自行添加描述中不存在的限定条件），拆分后逐句逐动词回溯原文自检覆盖完整性，再逐链逐步骤检查定义层→注册层→执行层→状态层→验证层→UI 层→i18n 层→测试层八层链路，最后做交叉影响检查（新链路是否触发已有机制连锁），输出"独立交互链 × 八层"矩阵（附权威描述原文和原子步骤列表）。**禁止只测注册/写入就判定"已实现"，禁止输出"看起来没问题"的模糊结论。** **教训**：wizard_scry"搜索→展示→放入手牌→洗牌"四步只实现了两步，因为审计时没有逐动词拆解；zombie_outbreak"在没有你随从的基地额外打出"用 `grantExtraMinion` 全局额度实现，限定条件仅在入口检查、执行时不约束，玩家可在任意基地使用额度；**trample"对每个被穿过的士兵造成 1 点伤害"——"士兵"无敌我限定，但实现加了 `owner !== movingUnitOwner` 只伤敌方，测试也按错误理解编写，语义错误被测试固化**。详见 `docs/ai-rules/engine-systems.md`「描述→实现全链路审查规范」节。
 - **数据查询一致性审查（强制）**：新增任何"修改/增强/共享"类机制（buff、光环、装备、交缠等）后，必须 grep 原始字段访问（如 `.card.abilities`、`.card.strength`），确认所有消费点走统一查询入口（如 `getUnitAbilities`、`calculateEffectiveStrength`）。八层纵向链路全 ✅ 不代表实现完整——消费点绕过统一入口是最常见的"没效果"根因。详见 `docs/ai-rules/testing-audit.md`「数据查询一致性审查」节。
 - **元数据语义一致性审查（强制）**：新增/修改 custom action handler 后，必须确认 `categories` 声明与 handler 实际输出事件类型一致。**核心规则：handler 产生 `DAMAGE_DEALT` → categories 必须包含 `'damage'`**。运行 `customaction-category-consistency.test.ts` 验证。详见 `docs/ai-rules/testing-audit.md`「元数据语义一致性审计」节。
 - **"可以/可选"效果必须有交互确认（强制）**：描述中"你可以"/"may"→ 必须有确认/跳过 UI，禁止自动执行。

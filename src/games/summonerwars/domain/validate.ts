@@ -340,6 +340,21 @@ export function validateCommand(
       return { valid: true };
     }
 
+    case SW_COMMANDS.DISCARD_FOR_MAGIC: {
+      if (core.phase !== 'magic') return { valid: false, error: '当前不是魔力阶段' };
+      const dmCardIds = payload.cardIds as string[] | undefined;
+      if (!dmCardIds || !Array.isArray(dmCardIds) || dmCardIds.length === 0) {
+        return { valid: false, error: '必须选择至少一张卡牌弃置' };
+      }
+      const dmPlayer = core.players[playerId];
+      for (const cardId of dmCardIds) {
+        if (!dmPlayer.hand.some(c => c.id === cardId)) {
+          return { valid: false, error: '手牌中没有该卡牌' };
+        }
+      }
+      return { valid: true };
+    }
+
     case SW_COMMANDS.END_PHASE: {
       return { valid: true };
     }

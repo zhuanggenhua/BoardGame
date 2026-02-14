@@ -92,7 +92,7 @@ export const CHAMPION_UNITS_TRICKSTER: UnitCard[] = [
     cost: 7,
     attackType: 'ranged',
     attackRange: 3,
-    abilities: ['high_telekinesis', 'stable'],
+    abilities: ['high_telekinesis', 'high_telekinesis_instead', 'stable'],
     deckSymbols: [DECK_SYMBOLS.WAVE], // 🌊 (图片确认)
     spriteIndex: SPRITE_INDEX_TRICKSTER.CHAMPION_KARA,
     spriteAtlas: 'cards',
@@ -146,7 +146,7 @@ export const COMMON_UNITS_TRICKSTER: UnitCard[] = [
     cost: 1,
     attackType: 'ranged',
     attackRange: 3,
-    abilities: ['telekinesis'],
+    abilities: ['telekinesis', 'telekinesis_instead'],
     deckSymbols: [DECK_SYMBOLS.WAVE], // 🌊 (图片确认: 波浪，非眼睛)
     spriteIndex: SPRITE_INDEX_TRICKSTER.COMMON_WIND_MAGE,
     spriteAtlas: 'cards',

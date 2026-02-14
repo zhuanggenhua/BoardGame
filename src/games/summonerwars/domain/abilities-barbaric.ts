@@ -111,6 +111,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     description: abilityText('prepare', 'description'),
     sfxKey: 'fantasy.elemental_sword_earthattack_01',
     trigger: 'activated',
+    costsMoveAction: true,
     effects: [
       { type: 'addCharge', target: 'self', value: 1 },
     ],

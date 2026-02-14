@@ -213,7 +213,7 @@ function handleBarbarianThickSkin2({ targetId, sourceAbilityId, state, timestamp
  * - 星 → 治疗2 + 对对手施加脑震荡
  * - 其他 → 抽1牌
  */
-function handleEnergeticRoll({ targetId, attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
+function handleEnergeticRoll({ ctx, targetId, attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
     const events: DiceThroneEvent[] = [];
 
@@ -244,7 +244,7 @@ function handleEnergeticRoll({ targetId, attackerId, sourceAbilityId, state, tim
         } as HealAppliedEvent);
 
         // 对对手施加脑震荡
-        const opponentId = attackerId === '0' ? '1' : '0';
+        const opponentId = ctx.defenderId;
         const opponent = state.players[opponentId];
         const currentStacks = opponent?.statusEffects[STATUS_IDS.CONCUSSION] ?? 0;
         const def = state.tokenDefinitions.find(e => e.id === STATUS_IDS.CONCUSSION);
@@ -317,6 +317,7 @@ function handleLuckyRollHeal({ attackerId, sourceAbilityId, state, timestamp, ra
  * - 施加脑震荡
  */
 function handleMorePleaseRollDamage({ ctx, targetId, attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
+    // ctx.defenderId 在进攻上下文中就是对手
     if (!random) return [];
     const events: DiceThroneEvent[] = [];
     const dice: BonusDieInfo[] = [];
@@ -359,7 +360,7 @@ function handleMorePleaseRollDamage({ ctx, targetId, attackerId, sourceAbilityId
     }
 
     // 对对手施加脑震荡
-    const opponentId = attackerId === '0' ? '1' : '0';
+    const opponentId = ctx.defenderId;
     const opponent = state.players[opponentId];
     const currentStacks = opponent?.statusEffects[STATUS_IDS.CONCUSSION] ?? 0;
     const def = state.tokenDefinitions.find(e => e.id === STATUS_IDS.CONCUSSION);

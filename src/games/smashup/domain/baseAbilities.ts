@@ -23,7 +23,7 @@ import { SU_EVENTS } from './types';
 import { getEffectivePower } from './ongoingModifiers';
 import { drawMadnessCards, destroyMinion, moveMinion, buildBaseTargetOptions } from './abilityHelpers';
 import { getCardDef, getBaseDef } from '../data/cards';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { registerExpansionBaseAbilities, registerExpansionBaseInteractionHandlers } from './baseAbilities_expansion';
 import { isBaseAbilitySuppressed } from './ongoingEffects';
@@ -74,6 +74,13 @@ export interface BaseAbilityResult {
 
 /** 基地能力执行函数签名 */
 export type BaseAbilityExecutor = (ctx: BaseAbilityContext) => BaseAbilityResult;
+
+function getContinuationContext<T>(
+    interactionData: Record<string, unknown> | undefined,
+): T | undefined {
+    if (!interactionData) return undefined;
+    return interactionData.continuationContext as T | undefined;
+}
 
 // ============================================================================
 // 注册表
@@ -145,7 +152,7 @@ export function triggerAllBaseAbilities(
     return { events, matchState: ms };
 }
 
-/** 检查基地是否有指定时机的能�?*/
+/** 检查基地是否有指定时机的能力 */
 export function hasBaseAbility(baseDefId: string, timing: BaseTriggerTiming): boolean {
     return baseAbilityRegistry.get(baseDefId)?.has(timing) ?? false;
 }
@@ -169,7 +176,7 @@ export function getBaseAbilityRegistrySize(): number {
 }
 
 // ============================================================================
-// 扩展触发时机：随从被消灭�?
+// 扩展触发时机：随从被消灭时
 // ============================================================================
 
 export type ExtendedBaseTrigger = BaseTriggerTiming | 'onMinionDestroyed';
@@ -204,13 +211,13 @@ export function triggerExtendedBaseAbility(
 // ============================================================================
 
 /** 注册所有基地能力（幂等） */
-/** 注册所有基地能力（幂等�?*/
+/** 注册所有基地能力（幂等） */
 export function registerBaseAbilities(): void {
 
-    // === 基础�?(Base Set) ===
+    // === 基础包 (Base Set) ===
 
     // base_rhodes_plaza: 罗德百货商场
-    // "在这个基地计分时，每位玩家在这里每有一个随从就获得1VP�?
+    // "在这个基地计分时，每位玩家在这里每有一个随从就获得1VP"
     registerBaseAbility('base_rhodes_plaza', 'beforeScoring', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
@@ -223,7 +230,7 @@ export function registerBaseAbilities(): void {
             if (count > 0) {
                 events.push({
                     type: SU_EVENTS.VP_AWARDED,
-                    payload: { playerId: pid, amount: count, reason: '罗德百货商场：每个随�?VP' },
+                    payload: { playerId: pid, amount: count, reason: '罗德百货商场：每个随从1VP' },
                     timestamp: ctx.now,
                 } as VpAwardedEvent);
             }
@@ -231,8 +238,8 @@ export function registerBaseAbilities(): void {
         return { events };
     });
 
-    // base_locker_room: 更衣�?
-    // "你的回合开始时，如果你有随从在这，抽一张卡牌�?
+    // base_locker_room: 更衣室
+    // "你的回合开始时，如果你有随从在这，抽一张卡牌"
     registerBaseAbility('base_locker_room', 'onTurnStart', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
@@ -256,7 +263,7 @@ export function registerBaseAbilities(): void {
     // 注册在 ongoing_modifiers.ts 的 registerBaseModifiers() 中
 
     // base_cave_of_shinies: 闪光洞穴
-    // "每当这里的一个随从被消灭后，它的拥有者获�?VP�?
+    // "每当这里的一个随从被消灭后，它的拥有者获得1VP"
     registerExtended('base_cave_of_shinies', 'onMinionDestroyed', (ctx) => {
         return {
             events: [{
@@ -272,7 +279,7 @@ export function registerBaseAbilities(): void {
     });
 
     // base_the_factory: 436-1337工厂
-    // "当这个基地计分时，冠军在这里每有5力量就获�?VP�?
+    // "当这个基地计分时，冠军在这里每有5力量就获得1VP"
     registerBaseAbility('base_the_factory', 'beforeScoring', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
@@ -295,18 +302,18 @@ export function registerBaseAbilities(): void {
                 payload: {
                     playerId: winnerId,
                     amount: bonusVp,
-                    reason: `工厂：每5力量1VP�?{maxPower}力量�?{bonusVp}VP）`,
+                    reason: `工厂：每5力量1VP（${maxPower}力量=${bonusVp}VP）`,
                 },
                 timestamp: ctx.now,
             } as VpAwardedEvent],
         };
     });
 
-    // base_tar_pits: 焦油�?
-    // "每当有一个随从在这里被消灭后，将它放到其拥有者的牌库底�?
-    // 实现：onMinionDestroyed �?从弃牌堆移到牌库�?
+    // base_tar_pits: 焦油坑
+    // "每当有一个随从在这里被消灭后，将它放到其拥有者的牌库底"
+    // 实现：onMinionDestroyed 时从弃牌堆移到牌库底
     registerExtended('base_tar_pits', 'onMinionDestroyed', (ctx) => {
-        // ctx.minionUid / ctx.minionDefId 是被消灭的随�?
+        // ctx.minionUid / ctx.minionDefId 是被消灭的随从
         if (!ctx.minionUid || !ctx.minionDefId) return { events: [] };
         return {
             events: [{
@@ -323,14 +330,14 @@ export function registerBaseAbilities(): void {
     });
 
     // base_haunted_house: 伊万斯堡城镇公墓
-    // "在这个基地计分后，冠军弃掉他的手牌并抽取5张牌�?
+    // "在这个基地计分后，冠军弃掉他的手牌并抽取5张牌"
     registerBaseAbility('base_haunted_house', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
         const winner = ctx.state.players[winnerId];
         if (!winner) return { events: [] };
         const events: SmashUpEvent[] = [];
-        // 弃掉所有手�?
+        // 弃掉所有手牌
         if (winner.hand.length > 0) {
             events.push({
                 type: SU_EVENTS.CARDS_DISCARDED,
@@ -341,7 +348,7 @@ export function registerBaseAbilities(): void {
                 timestamp: ctx.now,
             } as CardsDiscardedEvent);
         }
-        // �?张牌（从牌库顶取�?
+        // 抽5张牌（从牌库顶取）
         const drawCount = Math.min(5, winner.deck.length);
         if (drawCount > 0) {
             events.push({
@@ -357,8 +364,8 @@ export function registerBaseAbilities(): void {
         return { events };
     });
 
-    // base_temple_of_goju: 刚柔流寺�?
-    // "在这个基地计分后，将每位玩家在这里力量最高的一张随从放入他们拥有者的牌库底�?
+    // base_temple_of_goju: 刚柔流寺庙
+    // "在这个基地计分后，将每位玩家在这里力量最高的一张随从放入他们拥有者的牌库底"
     registerBaseAbility('base_temple_of_goju', 'afterScoring', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
@@ -393,7 +400,7 @@ export function registerBaseAbilities(): void {
     });
 
     // base_great_library: 大图书馆
-    // "在这个基地计分后，所有在这里有随从的玩家可以抽一张卡牌�?
+    // "在这个基地计分后，所有在这里有随从的玩家可以抽一张卡牌"
     registerBaseAbility('base_great_library', 'afterScoring', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
@@ -419,10 +426,10 @@ export function registerBaseAbilities(): void {
         return { events };
     });
 
-    // === 扩展�?(Awesome Level 9000) ===
+    // === 扩展包 (Awesome Level 9000) ===
 
     // base_haunted_house_al9000: 鬼屋
-    // "在一个玩家打出一个随从到这后，这个玩家必须弃掉一张卡牌�?
+    // "在一个玩家打出一个随从到这后，这个玩家必须弃掉一张卡牌"
     registerBaseAbility('base_haunted_house_al9000', 'onMinionPlayed', (ctx) => {
         const player = ctx.state.players[ctx.playerId];
         if (!player || player.hand.length === 0) return { events: [] };
@@ -436,7 +443,7 @@ export function registerBaseAbilities(): void {
                 } as CardsDiscardedEvent],
             };
         }
-        // 多张手牌→Prompt 选择弃哪�?
+        // 多张手牌→Prompt 选择弃哪张
         const options = player.hand.map((c, i) => {
             const def = getCardDef(c.defId);
             return { id: `card-${i}`, label: def?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId } };
@@ -444,15 +451,15 @@ export function registerBaseAbilities(): void {
         if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `base_haunted_house_al9000_${ctx.now}`, ctx.playerId,
-            '鬼屋：选择要弃掉的卡牌', options as any[], 'base_haunted_house_al9000',
+            '鬼屋：选择要弃掉的卡牌', options, 'base_haunted_house_al9000',
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     });
 
     // base_the_field_of_honor: 荣誉之地
-    // "当一个或多个随从在这里被消灭，那个将它们消灭的玩家获�?VP�?
+    // "当一个或多个随从在这里被消灭，那个将它们消灭的玩家获得1VP"
     registerExtended('base_the_field_of_honor', 'onMinionDestroyed', (ctx) => {
-        // ctx.destroyerId 是消灭�?
+        // ctx.destroyerId 是消灭者
         if (!ctx.destroyerId) return { events: [] };
         return {
             events: [{
@@ -460,7 +467,7 @@ export function registerBaseAbilities(): void {
                 payload: {
                     playerId: ctx.destroyerId,
                     amount: 1,
-                    reason: '荣誉之地：消灭随从获�?VP',
+                    reason: '荣誉之地：消灭随从获得1VP',
                 },
                 timestamp: ctx.now,
             } as VpAwardedEvent],
@@ -468,7 +475,7 @@ export function registerBaseAbilities(): void {
     });
 
     // base_the_workshop: 工坊
-    // "当一个玩家打出一个战术到这个基地时，该玩家可以额外打出一张战术�?
+    // "当一个玩家打出一个战术到这个基地时，该玩家可以额外打出一张战术"
     registerBaseAbility('base_the_workshop', 'onActionPlayed', (ctx) => {
         return {
             events: [{
@@ -484,10 +491,10 @@ export function registerBaseAbilities(): void {
         };
     });
 
-    // base_stadium: 体育�?
-    // "这里的一个随从被消灭后，它的控制者抽一张卡牌�?
+    // base_stadium: 体育场
+    // "这里的一个随从被消灭后，它的控制者抽一张卡牌"
     registerExtended('base_stadium', 'onMinionDestroyed', (ctx) => {
-        // ctx.controllerId 是被消灭随从的控制�?
+        // ctx.controllerId 是被消灭随从的控制者
         const controllerId = ctx.controllerId ?? ctx.playerId;
         const controller = ctx.state.players[controllerId];
         if (!controller || controller.deck.length === 0) return { events: [] };
@@ -505,7 +512,7 @@ export function registerBaseAbilities(): void {
     });
 
     // base_ritual_site: 仪式场所
-    // "在这个基地计分后，在它上面的所有随从洗回他们的拥有者牌库，而不收回是进入弃牌堆�?
+    // "在这个基地计分后，在它上面的所有随从洗回他们的拥有者牌库，而不收回是进入弃牌堆"
     registerBaseAbility('base_ritual_site', 'afterScoring', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
@@ -525,23 +532,23 @@ export function registerBaseAbilities(): void {
         return { events };
     });
 
-    // === 克苏鲁扩展基�?===
+    // === 克苏鲁扩展基地 ===
 
     // base_mountains_of_madness: 疯狂之山
-    // "在一个玩家打出一个随从到这后，这个玩家抽一张疯狂卡�?
+    // "在一个玩家打出一个随从到这后，这个玩家抽一张疯狂卡"
     registerBaseAbility('base_mountains_of_madness', 'onMinionPlayed', (ctx) => {
         const evt = drawMadnessCards(ctx.playerId, 1, ctx.state, 'base_mountains_of_madness', ctx.now);
         return { events: evt ? [evt] : [] };
     });
 
-    // base_rlyeh: 拉莱�?
-    // "你的回合开始时，你可以消灭这里的一个随从来获得1VP�?
+    // base_rlyeh: 拉莱耶
+    // "你的回合开始时，你可以消灭这里的一个随从来获得1VP"
     registerBaseAbility('base_rlyeh', 'onTurnStart', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
         const myMinions = base.minions.filter(m => m.controller === ctx.playerId);
         if (myMinions.length === 0) return { events: [] };
-        // 只有1个己方随从→直接提供 skip + 该随�?
+        // 只有1个己方随从→直接提供 skip + 该随从
         const minionOptions = myMinions.map((m, i) => {
             const def = getCardDef(m.defId);
             return {
@@ -550,23 +557,23 @@ export function registerBaseAbilities(): void {
                 value: { minionUid: m.uid, baseIndex: ctx.baseIndex },
             };
         });
-        const options = [
+        const options: PromptOption<{ skip: true } | { minionUid: string; baseIndex: number }>[] = [
             { id: 'skip', label: '不收回消灭', value: { skip: true } },
             ...minionOptions,
         ];
         if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `base_rlyeh_${ctx.now}`, ctx.playerId,
-            '拉莱耶：消灭一个随从获得1VP', options as any[], 'base_rlyeh',
+            '拉莱耶：消灭一个随从获得1VP', options, 'base_rlyeh',
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     });
 
-    // === 基础版需�?Prompt 的基�?===
+    // === 基础版需要 Prompt 的基地 ===
 
     // base_the_homeworld: 母星
-    // "在一个玩家打出一个随从到这后，这个玩家可以额外打出一个力量≤2的随从到这里�?
-    // 力量�? 限制通过 BaseCardDef.restrictions �?extraPlayMinionPowerMax 数据驱动实现
+    // "在一个玩家打出一个随从到这后，这个玩家可以额外打出一个力量≤2的随从到这里"
+    // 力量≤2 限制通过 BaseCardDef.restrictions 的 extraPlayMinionPowerMax 数据驱动实现
     registerBaseAbility('base_the_homeworld', 'onMinionPlayed', (ctx) => {
         return {
             events: [{
@@ -583,7 +590,7 @@ export function registerBaseAbilities(): void {
     });
 
     // base_the_mothership: 母舰
-    // "在这个基地计分后，冠军可以将这里一个力量≤3的随从放回手牌�?
+    // "在这个基地计分后，冠军可以将这里一个力量≤3的随从放回手牌"
     registerBaseAbility('base_the_mothership', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
@@ -594,7 +601,7 @@ export function registerBaseAbilities(): void {
             getEffectivePower(ctx.state, m, ctx.baseIndex) <= 3
         );
         if (eligible.length === 0) return { events: [] };
-        // 只有1个→自动选择（仍提供 skip 选项因为 "may"�?
+        // 只有1个→自动选择（仍提供 skip 选项因为 "may"）
         const minionOptions = eligible.map((m, i) => {
             const def = getCardDef(m.defId);
             return {
@@ -603,21 +610,26 @@ export function registerBaseAbilities(): void {
                 value: { minionUid: m.uid, minionDefId: m.defId },
             };
         });
-        const options: { id: string; label: string; value: Record<string, unknown> }[] = [
+        const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string }>[] = [
             { id: 'skip', label: '不收回', value: { skip: true } },
             ...minionOptions,
         ];
         if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `base_the_mothership_${ctx.now}`, winnerId,
-            '母舰：选择收回的随从', options as any[], 'base_the_mothership',
+            '母舰：选择收回的随从', options, 'base_the_mothership',
         );
-        (interaction.data as any).continuationContext = { baseIndex: ctx.baseIndex };
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        return {
+            events: [],
+            matchState: queueInteraction(ctx.matchState, {
+                ...interaction,
+                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
+            }),
+        };
     });
 
-    // base_ninja_dojo: 忍者道�?
-    // "在这个基地计分后，冠军可以消灭这里的一个随从�?
+    // base_ninja_dojo: 忍者道场
+    // "在这个基地计分后，冠军可以消灭这里的一个随从"
     registerBaseAbility('base_ninja_dojo', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
@@ -631,31 +643,31 @@ export function registerBaseAbilities(): void {
                 value: { minionUid: m.uid, baseIndex: ctx.baseIndex, minionDefId: m.defId, ownerId: m.owner },
             };
         });
-        const options: { id: string; label: string; value: Record<string, unknown> }[] = [
+        const options: PromptOption<{ skip: true } | { minionUid: string; baseIndex: number; minionDefId: string; ownerId: string }>[] = [
             { id: 'skip', label: '不消灭', value: { skip: true } },
             ...minionOptions,
         ];
         if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `base_ninja_dojo_${ctx.now}`, winnerId,
-            '忍者道场：选择消灭的随从', options as any[], 'base_ninja_dojo',
+            '忍者道场：选择消灭的随从', options, 'base_ninja_dojo',
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     });
 
-    // === 基础版需�?Prompt 的基�?===
+    // === 基础版需要 Prompt 的基地（续） ===
 
-    // base_pirate_cove: 海盗�?
-    // "在这个基地计分后，除了冠军的所有玩家可以从这里移动一个随从到其他基地而不收回是进入弃牌堆�?
-    // 注意：afterScoring 能力�?BASE_SCORED 事件处理前收集，此时随从仍在基地上�?
-    // Prompt continuation 运行时随从已进入弃牌堆，因此将随从信息存�?continuation data�?
+    // base_pirate_cove: 海盗湾
+    // "在这个基地计分后，除了冠军的所有玩家可以从这里移动一个随从到其他基地而不收回是进入弃牌堆"
+    // 注意：afterScoring 能力在 BASE_SCORED 事件处理前收集，此时随从仍在基地上。
+    // Prompt continuation 运行时随从已进入弃牌堆，因此将随从信息存入 continuation data。
     registerBaseAbility('base_pirate_cove', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
         const events: SmashUpEvent[] = [];
-        // 遍历非冠军玩家，为每位在此有随从的玩家生�?Prompt
+        // 遍历非冠军玩家，为每位在此有随从的玩家生成 Prompt
         const playerMinions = new Map<string, MinionOnBase[]>();
         for (const m of base.minions) {
             if (m.controller === winnerId) continue;
@@ -672,24 +684,26 @@ export function registerBaseAbilities(): void {
                     value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner },
                 };
             });
-            const options: { id: string; label: string; value: Record<string, unknown> }[] = [
+            const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; owner: string }>[] = [
                 { id: 'skip', label: '跳过', value: { skip: true } },
                 ...minionOptions,
             ];
             if (ctx.matchState) {
                 const interaction = createSimpleChoice(
                     `base_pirate_cove_${pid}_${ctx.now}`, pid,
-                    '海盗湾：选择移动一个随从到其他基地', options as any[], 'base_pirate_cove',
+                    '海盗湾：选择移动一个随从到其他基地', options, 'base_pirate_cove',
                 );
-                (interaction.data as any).continuationContext = { baseIndex: ctx.baseIndex };
-                ctx.matchState = queueInteraction(ctx.matchState, interaction);
+                ctx.matchState = queueInteraction(ctx.matchState, {
+                    ...interaction,
+                    data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
+                });
             }
         }
         return { events, matchState: ctx.matchState };
     });
 
     // base_tortuga: 托尔图加
-    // "冠军计分后，亚军可以移动他的一个随从到替换本基地的基地上�?
+    // "冠军计分后，亚军可以移动他的一个随从到替换本基地的基地上"
     // 注意：continuation 运行时基地已被替换，替换基地在同一 baseIndex 位置
     registerBaseAbility('base_tortuga', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length < 2) return { events: [] };
@@ -706,22 +720,27 @@ export function registerBaseAbilities(): void {
                 value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner },
             };
         });
-        const options: { id: string; label: string; value: Record<string, unknown> }[] = [
+        const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; owner: string }>[] = [
             { id: 'skip', label: '跳过', value: { skip: true } },
             ...minionOptions,
         ];
         if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `base_tortuga_${ctx.now}`, runnerUpId,
-            '托尔图加：选择移动一个随从到替换基地', options as any[], 'base_tortuga',
+            '托尔图加：选择移动一个随从到替换基地', options, 'base_tortuga',
         );
-        (interaction.data as any).continuationContext = { baseIndex: ctx.baseIndex };
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        return {
+            events: [],
+            matchState: queueInteraction(ctx.matchState, {
+                ...interaction,
+                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
+            }),
+        };
     });
 
     // base_wizard_academy: 巫师学院
-    // "在这个基地计分后，冠军查看基地牌库顶�?张牌。选择一张替换这个基地，然后以任意顺序将其余的放回�?
-    // 简化实现：让冠军选择排列顺序，第一张将成为下次替换的基�?
+    // "在这个基地计分后，冠军查看基地牌库顶的3张牌。选择一张替换这个基地，然后以任意顺序将其余的放回"
+    // 简化实现：让冠军选择排列顺序，第一张将成为下次替换的基地
     registerBaseAbility('base_wizard_academy', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
@@ -741,24 +760,29 @@ export function registerBaseAbilities(): void {
         if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `base_wizard_academy_${ctx.now}`, winnerId,
-            '巫师学院：选择排列基地牌库顶的顺序', options as any[], 'base_wizard_academy',
+            '巫师学院：选择排列基地牌库顶的顺序', options, 'base_wizard_academy',
         );
-        (interaction.data as any).continuationContext = { baseIndex: ctx.baseIndex, topCards };
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        return {
+            events: [],
+            matchState: queueInteraction(ctx.matchState, {
+                ...interaction,
+                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex, topCards } },
+            }),
+        };
     });
 
     // base_mushroom_kingdom: 蘑菇王国
-    // "在每位玩家回合开始时，该玩家可以从任意基地移动一个其他玩家的随从到这�?
+    // "在每位玩家回合开始时，该玩家可以从任意基地移动一个其他玩家的随从到这里"
     registerBaseAbility('base_mushroom_kingdom', 'onTurnStart', (ctx) => {
         const mushroomBaseIndex = ctx.baseIndex;
-        // 收集所有基地上的对手随�?
+        // 收集所有基地上的对手随从
         const opponentMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
         for (let i = 0; i < ctx.state.bases.length; i++) {
             if (i === mushroomBaseIndex) continue; // 不收回从蘑菇王国自身移动
             const base = ctx.state.bases[i];
             const bDef = getBaseDef(base.defId);
             for (const m of base.minions) {
-                if (m.controller === ctx.playerId) continue; // 排除自己的随�?
+                if (m.controller === ctx.playerId) continue; // 排除自己的随从
                 const def = getCardDef(m.defId);
                 opponentMinions.push({
                     uid: m.uid,
@@ -774,24 +798,29 @@ export function registerBaseAbilities(): void {
             label: m.label,
             value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.baseIndex },
         }));
-        const options: { id: string; label: string; value: Record<string, unknown> }[] = [
+        const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; fromBaseIndex: number }>[] = [
             { id: 'skip', label: '跳过', value: { skip: true } },
             ...minionOptions,
         ];
         if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `base_mushroom_kingdom_${ctx.now}`, ctx.playerId,
-            '蘑菇王国：选择一个对手随从移动到蘑菇王国', options as any[], 'base_mushroom_kingdom',
+            '蘑菇王国：选择一个对手随从移动到蘑菇王国', options, 'base_mushroom_kingdom',
         );
-        (interaction.data as any).continuationContext = { mushroomBaseIndex };
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        return {
+            events: [],
+            matchState: queueInteraction(ctx.matchState, {
+                ...interaction,
+                data: { ...interaction.data, continuationContext: { mushroomBaseIndex } },
+            }),
+        };
     });
 
     // === 限制类基地已通过 BaseCardDef.restrictions 数据驱动，isOperationRestricted 自动解析 ===
 
-    // === 被动保护类已�?baseAbilities_expansion.ts 中通过 registerProtection 注册 ===
+    // === 被动保护类已在 baseAbilities_expansion.ts 中通过 registerProtection 注册 ===
 
-    // === 扩展包基地能力（克苏�?AL9000/Pretty Pretty�?===
+    // === 扩展包基地能力（克苏鲁/AL9000/Pretty Pretty） ===
     registerExpansionBaseAbilities();
 }
 
@@ -833,7 +862,7 @@ export function registerBaseInteractionHandlers(): void {
     registerInteractionHandler('base_the_mothership', (state, playerId, value, iData, _random, timestamp) => {
         const selected = value as { skip?: boolean; minionUid?: string; minionDefId?: string };
         if (selected.skip) return { state, events: [] };
-        const ctx = (iData as any)?.continuationContext as { baseIndex: number };
+        const ctx = getContinuationContext<{ baseIndex: number }>(iData);
         if (!ctx) return { state, events: [] };
         return { state, events: [{
             type: SU_EVENTS.MINION_RETURNED,
@@ -859,7 +888,7 @@ export function registerBaseInteractionHandlers(): void {
     registerInteractionHandler('base_pirate_cove', (state, playerId, value, iData, _random, timestamp) => {
         const selected = value as { skip?: boolean; minionUid?: string; minionDefId?: string; owner?: string };
         if (selected.skip) return { state, events: [] };
-        const ctx = (iData as any)?.continuationContext as { baseIndex: number };
+        const ctx = getContinuationContext<{ baseIndex: number }>(iData);
         if (!ctx) return { state, events: [] };
         // 收集可用的目标基地（排除原基地）
         const baseCandidates: { baseIndex: number; label: string }[] = [];
@@ -880,20 +909,28 @@ export function registerBaseInteractionHandlers(): void {
         const options = buildBaseTargetOptions(baseCandidates);
         const interaction = createSimpleChoice(
             `base_pirate_cove_choose_base_${timestamp}`, playerId,
-            '海盗湾：选择移动到的基地', options as any[], 'base_pirate_cove_choose_base',
+            '海盗湾：选择移动到的基地', options, 'base_pirate_cove_choose_base',
         );
-        (interaction.data as any).continuationContext = {
-            minionUid: selected.minionUid,
-            minionDefId: selected.minionDefId,
-            fromBaseIndex: ctx.baseIndex,
+        return {
+            state: queueInteraction(state, {
+                ...interaction,
+                data: {
+                    ...interaction.data,
+                    continuationContext: {
+                        minionUid: selected.minionUid,
+                        minionDefId: selected.minionDefId,
+                        fromBaseIndex: ctx.baseIndex,
+                    },
+                },
+            }),
+            events: [],
         };
-        return { state: queueInteraction(state, interaction), events: [] };
     });
 
     // 海盗湾：第二步——选择目标基地后执行移动
     registerInteractionHandler('base_pirate_cove_choose_base', (state, _playerId, value, iData, _random, timestamp) => {
         const { baseIndex: targetBase } = value as { baseIndex: number };
-        const ctx = (iData as any)?.continuationContext as { minionUid: string; minionDefId: string; fromBaseIndex: number };
+        const ctx = getContinuationContext<{ minionUid: string; minionDefId: string; fromBaseIndex: number }>(iData);
         if (!ctx) return { state, events: [] };
         return { state, events: [moveMinion(
             ctx.minionUid, ctx.minionDefId, ctx.fromBaseIndex, targetBase,
@@ -905,7 +942,7 @@ export function registerBaseInteractionHandlers(): void {
     registerInteractionHandler('base_tortuga', (state, _playerId, value, iData, _random, timestamp) => {
         const selected = value as { skip?: boolean; minionUid?: string; minionDefId?: string; owner?: string };
         if (selected.skip) return { state, events: [] };
-        const ctx = (iData as any)?.continuationContext as { baseIndex: number };
+        const ctx = getContinuationContext<{ baseIndex: number }>(iData);
         if (!ctx) return { state, events: [] };
         return { state, events: [moveMinion(
             selected.minionUid!,
@@ -920,7 +957,7 @@ export function registerBaseInteractionHandlers(): void {
     // 巫师学院：重排基地牌库顶
     registerInteractionHandler('base_wizard_academy', (state, _playerId, value, iData, _random, timestamp) => {
         const selected = value as { defId: string; index: number };
-        const ctx = (iData as any)?.continuationContext as { topCards: string[] };
+        const ctx = getContinuationContext<{ topCards: string[] }>(iData);
         if (!ctx?.topCards || ctx.topCards.length === 0) return { state, events: [] };
         const chosenDefId = selected.defId;
         const remaining = ctx.topCards.filter(id => id !== chosenDefId);
@@ -939,7 +976,7 @@ export function registerBaseInteractionHandlers(): void {
     registerInteractionHandler('base_mushroom_kingdom', (state, _playerId, value, iData, _random, timestamp) => {
         const selected = value as { skip?: boolean; minionUid?: string; minionDefId?: string; fromBaseIndex?: number };
         if (selected.skip) return { state, events: [] };
-        const ctx = (iData as any)?.continuationContext as { mushroomBaseIndex: number };
+        const ctx = getContinuationContext<{ mushroomBaseIndex: number }>(iData);
         if (!ctx) return { state, events: [] };
         return { state, events: [moveMinion(
             selected.minionUid!,

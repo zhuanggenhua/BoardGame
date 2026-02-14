@@ -85,6 +85,7 @@ interface StatusBannersProps {
   onContinueBloodSummon: () => void;
   onCancelAnnihilate: () => void;
   onConfirmAnnihilateTargets: () => void;
+  onSkipAnnihilateDamage: () => void;
   onConfirmSoulTransfer: () => void;
   onSkipSoulTransfer: () => void;
   onSkipFuneralPyre: () => void;
@@ -179,7 +180,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   mindCaptureMode, afterAttackAbilityMode, rapidFireMode, telekinesisTargetMode,
   onCancelAbility, onConfirmBeforeAttackCards, onConfirmBloodRune, onConfirmIceShards, onConfirmFeedBeastSelfDestroy,
   onCancelBeforeAttack, onCancelBloodSummon, onContinueBloodSummon,
-  onCancelAnnihilate, onConfirmAnnihilateTargets,
+  onCancelAnnihilate, onConfirmAnnihilateTargets, onSkipAnnihilateDamage,
   onConfirmSoulTransfer, onSkipSoulTransfer, onSkipFuneralPyre,
   onConfirmMindControl, onCancelMindControl,
   onConfirmEntanglement, onCancelEntanglement,
@@ -348,6 +349,9 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
         </span>
         {annihilateMode.step === 'selectTargets' && annihilateMode.selectedTargets.length > 0 && (
           <GameButton onClick={onConfirmAnnihilateTargets} variant="primary" size="sm">{t('actions.confirmSelection')}</GameButton>
+        )}
+        {annihilateMode.step === 'selectDamageTarget' && (
+          <GameButton onClick={onSkipAnnihilateDamage} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
         )}
         <GameButton onClick={onCancelAnnihilate} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
       </div>

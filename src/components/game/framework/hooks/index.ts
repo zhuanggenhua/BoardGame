@@ -18,3 +18,6 @@ export type { UseAutoSkipPhaseConfig } from './useAutoSkipPhase';
 
 export { useVisualSequenceGate } from './useVisualSequenceGate';
 export type { UseVisualSequenceGateReturn } from './useVisualSequenceGate';
+
+export { useVisualStateBuffer } from './useVisualStateBuffer';
+export type { UseVisualStateBufferReturn } from './useVisualStateBuffer';

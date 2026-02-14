@@ -419,6 +419,10 @@ export const SW_EVENTS = {
   ABILITIES_COPIED: 'sw:abilities_copied',
   // 单位附加（冰霜战斧）
   UNIT_ATTACHED: 'sw:unit_attached',
+  // 消耗移动次数（技能代替移动，如预备）
+  MOVE_ACTION_CONSUMED: 'sw:move_action_consumed',
+  // 消耗攻击次数（技能代替攻击，如高阶念力）
+  ATTACK_ACTION_CONSUMED: 'sw:attack_action_consumed',
 } as const;
 
 // ============================================================================

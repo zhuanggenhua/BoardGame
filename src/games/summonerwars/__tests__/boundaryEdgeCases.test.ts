@@ -468,9 +468,8 @@ describe('弃牌换魔力边界', () => {
     const core = createMinimalCore({ phase: 'magic' as GamePhase });
     const prevMagic = core.players['0'].magic;
 
-    // DISCARD_FOR_MAGIC 没有 validate 校验，直接走 execute
-    // execute 中 validCards.length === 0 时不产生事件
-    // 这里验证 reduce MAGIC_CHANGED delta=0 的行为
+    // DISCARD_FOR_MAGIC 有 validate 校验（空列表会被拒绝）
+    // 这里直接验证 reduce MAGIC_CHANGED delta=0 的行为
     const result = reduce(core, {
       type: SW_EVENTS.MAGIC_CHANGED,
       payload: { playerId: '0', delta: 0 },
@@ -553,6 +552,36 @@ describe('推拉到棋盘边缘', () => {
     // 拉向 row=6，但 source 在那里... source 不是单位，只是位置参考
     // isCellEmpty 检查 row=6 col=3 → 空的（source 只是坐标参考）
     expect(result).toEqual({ row: 6, col: 3 });
+  });
+
+  it('对角线目标推拉 → 优先行方向（确定性 tie-breaking）', () => {
+    const core = createMinimalCore();
+    // source(3,3), target(4,4) → 完美对角线，|dr|==|dc|==1
+    placeUnit(core, { row: 4, col: 4 }, { card: makeUnitCard('diag-target'), owner: '1' });
+    const sourcePos: CellCoord = { row: 3, col: 3 };
+
+    // 推：远离 source，对角线时优先行方向 → row+1
+    const pushResult = calculatePushPullPosition(core, { row: 4, col: 4 }, sourcePos, 1, 'push');
+    expect(pushResult).toEqual({ row: 5, col: 4 });
+
+    // 拉：靠近 source，对角线时优先行方向 → row-1
+    const pullResult = calculatePushPullPosition(core, { row: 4, col: 4 }, sourcePos, 1, 'pull');
+    expect(pullResult).toEqual({ row: 3, col: 4 });
+  });
+
+  it('非对称对角线 → 选择主要方向', () => {
+    const core = createMinimalCore();
+    // source(3,3), target(5,4) → |dr|=2 > |dc|=1 → 行方向
+    placeUnit(core, { row: 5, col: 4 }, { card: makeUnitCard('asym-target'), owner: '1' });
+    const sourcePos: CellCoord = { row: 3, col: 3 };
+
+    const pushResult = calculatePushPullPosition(core, { row: 5, col: 4 }, sourcePos, 1, 'push');
+    expect(pushResult).toEqual({ row: 6, col: 4 });
+
+    // source(3,3), target(4,1) → |dr|=1 < |dc|=2 → 列方向（推向 col-1=0）
+    placeUnit(core, { row: 4, col: 1 }, { card: makeUnitCard('asym-target2'), owner: '1' });
+    const pushResult2 = calculatePushPullPosition(core, { row: 4, col: 1 }, sourcePos, 1, 'push');
+    expect(pushResult2).toEqual({ row: 4, col: 0 });
   });
 });
 

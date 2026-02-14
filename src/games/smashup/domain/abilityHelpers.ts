@@ -24,6 +24,10 @@ import type {
     BaseDeckShuffledEvent,
     RevealHandEvent,
     RevealDeckTopEvent,
+    CardInstance,
+    SmashUpEvent,
+    CardsDrawnEvent,
+    DeckReshuffledEvent,
 } from './types';
 import { SU_EVENTS } from './types';
 import { getEffectivePower } from './ongoingModifiers';
@@ -159,33 +163,167 @@ export function shuffleBaseDeck(
 
 /** 生成展示手牌事件 */
 export function revealHand(
-    targetPlayerId: PlayerId,
+    targetPlayerId: PlayerId | PlayerId[],
     viewerPlayerId: PlayerId,
     cards: { uid: string; defId: string }[],
     reason: string,
-    now: number
+    now: number,
+    sourcePlayerId?: PlayerId,
 ): RevealHandEvent {
     return {
         type: SU_EVENTS.REVEAL_HAND,
-        payload: { targetPlayerId, viewerPlayerId, cards, reason },
+        payload: { targetPlayerId, viewerPlayerId, cards, reason, sourcePlayerId },
         timestamp: now,
     };
 }
 
 /** 生成展示牌库顶事件 */
 export function revealDeckTop(
-    targetPlayerId: PlayerId,
+    targetPlayerId: PlayerId | PlayerId[],
     viewerPlayerId: PlayerId,
     cards: { uid: string; defId: string }[],
     count: number,
     reason: string,
-    now: number
+    now: number,
+    sourcePlayerId?: PlayerId,
 ): RevealDeckTopEvent {
     return {
         type: SU_EVENTS.REVEAL_DECK_TOP,
-        payload: { targetPlayerId, viewerPlayerId, cards, count, reason },
+        payload: { targetPlayerId, viewerPlayerId, cards, count, reason, sourcePlayerId },
         timestamp: now,
     };
+}
+
+// ============================================================================
+// 牌库顶翻牌通用 helper
+// ============================================================================
+
+/**
+ * 从牌库顶翻牌 → 展示给所有玩家 → 按条件筛选 → 命中放手牌 → 未命中放牌库底
+ *
+ * 通用模式，替代各技能中重复的 deck.slice + CARDS_DRAWN + DECK_RESHUFFLED 硬编码。
+ *
+ * 支持两种翻牌模式：
+ * - 固定数量：翻 count 张，按 predicate 筛选
+ * - 搜索模式：逐张翻直到找到 maxPick 张满足条件的卡（count 不传）
+ *
+ * revealTo 控制展示范围：
+ * - 'all' = 展示给所有玩家（生成 REVEAL_DECK_TOP 事件）
+ * - 'none' = 不展示（私有搜索，由 PromptOverlay 展示给操作者）
+ * - PlayerId = 展示给指定玩家
+ */
+export function revealAndPickFromDeck(params: {
+    player: { deck: CardInstance[] };
+    playerId: PlayerId;
+    /** 翻多少张（不传 = 逐张翻直到满足 maxPick） */
+    count?: number;
+    /** 筛选条件：返回 true 的卡被"命中" */
+    predicate: (card: CardInstance) => boolean;
+    /** 最多拿几张命中的卡 */
+    maxPick: number;
+    /** 未命中的卡去哪（默认 deck_bottom） */
+    missTarget?: 'deck_bottom' | 'deck_top';
+    /** 展示给谁：'all' = 所有人，'none' = 不展示，PlayerId = 指定玩家（默认 'none'） */
+    revealTo?: PlayerId | 'all' | 'none';
+    /** 触发来源（用于事件 reason） */
+    reason: string;
+    now: number;
+}): { events: SmashUpEvent[]; picked: CardInstance[]; missed: CardInstance[] } {
+    const { player, playerId, predicate, maxPick, reason, now } = params;
+    const missTarget = params.missTarget ?? 'deck_bottom';
+    const revealTo = params.revealTo ?? 'none';
+
+    if (player.deck.length === 0) return { events: [], picked: [], missed: [] };
+
+    const picked: CardInstance[] = [];
+    const missed: CardInstance[] = [];
+
+    if (params.count !== undefined) {
+        // 固定数量模式：翻 count 张
+        const topCards = player.deck.slice(0, params.count);
+        for (const card of topCards) {
+            if (predicate(card) && picked.length < maxPick) {
+                picked.push(card);
+            } else {
+                missed.push(card);
+            }
+        }
+    } else {
+        // 搜索模式：逐张翻直到找到 maxPick 张
+        for (const card of player.deck) {
+            if (picked.length >= maxPick) break;
+            if (predicate(card)) {
+                picked.push(card);
+            } else {
+                missed.push(card);
+            }
+        }
+    }
+
+    if (picked.length === 0 && missed.length === 0) return { events: [], picked: [], missed: [] };
+
+    const allRevealed = [...picked, ...missed];
+    const events: SmashUpEvent[] = [];
+
+    // 1. 展示事件（仅当 revealTo 不为 'none' 时生成）
+    if (revealTo !== 'none') {
+        events.push(revealDeckTop(
+            playerId, revealTo,
+            allRevealed.map(c => ({ uid: c.uid, defId: c.defId })),
+            allRevealed.length, reason, now,
+        ));
+    }
+
+    // 2. 命中的卡放入手牌
+    if (picked.length > 0) {
+        events.push({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: { playerId, count: picked.length, cardUids: picked.map(c => c.uid) },
+            timestamp: now,
+        } as CardsDrawnEvent);
+    }
+
+    // 3. 未命中的卡放牌库底/顶 → 重建牌库
+    if (missed.length > 0) {
+        const processedUids = new Set(allRevealed.map(c => c.uid));
+        const remainingDeck = player.deck.filter(c => !processedUids.has(c.uid));
+        const newDeckUids = missTarget === 'deck_bottom'
+            ? [...remainingDeck.map(c => c.uid), ...missed.map(c => c.uid)]
+            : [...missed.map(c => c.uid), ...remainingDeck.map(c => c.uid)];
+        events.push({
+            type: SU_EVENTS.DECK_RESHUFFLED,
+            payload: { playerId, deckUids: newDeckUids },
+            timestamp: now,
+        } as DeckReshuffledEvent);
+    }
+
+    return { events, picked, missed };
+}
+
+/**
+ * 查看牌库顶1张并展示给指定观察者
+ *
+ * 用于 wizardNeophyte / robotHoverbot / zombieWalker 等"看1张"类技能。
+ * 自动生成 REVEAL_DECK_TOP 事件。
+ *
+ * @returns 牌库顶卡牌 + 展示事件（牌库为空返回 undefined）
+ */
+export function peekDeckTop(
+    player: { deck: CardInstance[] },
+    playerId: PlayerId,
+    /** 展示给谁：'all' = 所有玩家，playerId = 仅自己 */
+    revealTo: PlayerId | 'all',
+    reason: string,
+    now: number,
+): { card: CardInstance; revealEvent: RevealDeckTopEvent } | undefined {
+    if (player.deck.length === 0) return undefined;
+    const card = player.deck[0];
+    const revealEvent = revealDeckTop(
+        playerId, revealTo,
+        [{ uid: card.uid, defId: card.defId }],
+        1, reason, now,
+    );
+    return { card, revealEvent };
 }
 
 // ============================================================================
@@ -196,11 +334,13 @@ export function revealDeckTop(
 export function grantExtraMinion(
     playerId: PlayerId,
     reason: string,
-    now: number
+    now: number,
+    /** 限定额度只能用于指定基地（不设则为全局额度） */
+    restrictToBase?: number,
 ): LimitModifiedEvent {
     return {
         type: SU_EVENTS.LIMIT_MODIFIED,
-        payload: { playerId, limitType: 'minion', delta: 1, reason },
+        payload: { playerId, limitType: 'minion', delta: 1, reason, ...(restrictToBase !== undefined ? { restrictToBase } : {}) },
         timestamp: now,
     };
 }

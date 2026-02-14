@@ -1,8 +1,8 @@
 /**
  * 大杀四方 - 远古之物派系能力
  *
- * 主题：疯狂卡操控、惩罚持有疯狂卡的对�?
- * 克苏鲁扩展派系，核心机制围绕 Madness 牌库�?
+ * 主题：疯狂卡操控、惩罚持有疯狂卡的对手?
+ * 克苏鲁扩展派系，核心机制围绕 Madness 牌库底
  */
 
 import { registerAbility } from '../domain/abilityRegistry';
@@ -14,6 +14,7 @@ import {
     getMinionPower,
     buildMinionTargetOptions,
     addPowerCounter,
+    revealHand,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import type {
@@ -31,41 +32,41 @@ import type { SmashUpCore, CardToDeckBottomEvent } from '../domain/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 
-/** 注册远古之物派系所有能�?*/
+/** 注册远古之物派系所有能力*/
 export function registerElderThingAbilities(): void {
-    // 拜亚�?onPlay：如果其他玩家有随从在本基地，抽一张疯狂卡
+    // 拜亚基?onPlay：如果其他玩家有随从在本基地，抽一张疯狂卡
     registerAbility('elder_thing_byakhee', 'onPlay', elderThingByakhee);
-    // �?�?onPlay：每个对手可抽疯狂卡，不收回抽的让你抽一张牌（MVP：对手全部抽疯狂卡）
+    // ??onPlay：每个对手可抽疯狂卡，不收回抽的让你抽一张牌（MVP：对手全部抽疯狂卡）
     registerAbility('elder_thing_mi_go', 'onPlay', elderThingMiGo);
     // 精神错乱（行动卡）：每个对手抽两张疯狂卡
     registerAbility('elder_thing_insanity', 'onPlay', elderThingInsanity);
-    // 疯狂接触（行动卡）：每个对手抽一张疯狂卡，你抽一张牌并额外打出一张行�?
+    // 疯狂接触（行动卡）：每个对手抽一张疯狂卡，你抽一张牌并额外打出一张行动
     registerAbility('elder_thing_touch_of_madness', 'onPlay', elderThingTouchOfMadness);
     // 疯狂之力（行动卡）：所有对手弃掉手牌中的疯狂卡并洗弃牌堆回牌库
     registerAbility('elder_thing_power_of_madness', 'onPlay', elderThingPowerOfMadness);
-    // 散播恐怖（行动卡）：每位对手随机弃牌直到弃出非疯狂�?
+    // 散播恐怖（行动卡）：每位对手随机弃牌直到弃出非疯狂卡?
     registerAbility('elder_thing_spreading_horror', 'onPlay', elderThingSpreadingHorror);
     // 开始召唤（行动卡）：弃牌堆随从放牌库顶 + 额外行动
     registerAbility('elder_thing_begin_the_summoning', 'onPlay', elderThingBeginTheSummoning);
-    // 深不收回可测的目的（行动卡）：对手展示手牌，有疯狂卡的必须消灭一个随�?
+    // 深不收回可测的目的（行动卡）：对手展示手牌，有疯狂卡的必须消灭一个随从
     registerAbility('elder_thing_unfathomable_goals', 'onPlay', elderThingUnfathomableGoals);
 
     // 远古之物 onPlay：消灭两个己方随从或放牌库底 + 不收回受对手影响
     registerAbility('elder_thing_elder_thing', 'onPlay', elderThingElderThingOnPlay);
-    // 修格�?onPlay：对手选择抽疯狂卡或被消灭随从
+    // 修格斯?onPlay：对手选择抽疯狂卡或被消灭随从
     registerAbility('elder_thing_shoggoth', 'onPlay', elderThingShoggoth);
 
     // === ongoing 效果注册 ===
     // 郦威奇恐怖：回合结束时消灭附着了此卡的随从
     registerTrigger('elder_thing_dunwich_horror', 'onTurnEnd', elderThingDunwichHorrorTrigger);
-    // 力量的代价：基地计分前按对手疑狂卡数给己方随�?力量
+    // 力量的代价：基地计分前按对手疑狂卡数给己方随从力量
     registerAbility('elder_thing_the_price_of_power', 'special', elderThingPriceOfPowerSpecial);
-    // 远古之物：不收回受对手卡牌影响（保护 destroy + move�?
+    // 远古之物：不收回受对手卡牌影响（保护 destroy + move?
     registerProtection('elder_thing_elder_thing', 'destroy', elderThingProtectionChecker);
     registerProtection('elder_thing_elder_thing', 'move', elderThingProtectionChecker);
 }
 
-/** 拜亚�?onPlay：如果其他玩家有随从在本基地，抽一张疯狂卡 */
+/** 拜亚基?onPlay：如果其他玩家有随从在本基地，抽一张疯狂卡 */
 function elderThingByakhee(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
@@ -79,7 +80,7 @@ function elderThingByakhee(ctx: AbilityContext): AbilityResult {
     return { events: evt ? [evt] : [] };
 }
 
-/** �?�?onPlay：每个对手可抽疯狂卡，不收回抽的让你抽一张牌（MVP：对手全部抽疯狂卡） */
+/** ??onPlay：每个对手可抽疯狂卡，不收回抽的让你抽一张牌（MVP：对手全部抽疯狂卡） */
 function elderThingMiGo(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     for (const pid of ctx.state.turnOrder) {
@@ -88,7 +89,7 @@ function elderThingMiGo(ctx: AbilityContext): AbilityResult {
         if (evt) {
             events.push(evt);
         } else {
-            // 疯狂牌库空了，对手无法抽 �?你抽一张牌
+            // 疯狂牌库空了，对手无法抽 ?你抽一张牌
             const player = ctx.state.players[ctx.playerId];
             const { drawnUids } = drawCards(player, 1, ctx.random);
             if (drawnUids.length > 0) {
@@ -104,7 +105,7 @@ function elderThingMiGo(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 精神错乱 onPlay：每个对手抽两张疯狂�?*/
+/** 精神错乱 onPlay：每个对手抽两张疯狂卡?*/
 function elderThingInsanity(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     for (const pid of ctx.state.turnOrder) {
@@ -115,7 +116,7 @@ function elderThingInsanity(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 疯狂接触 onPlay：每个对手抽一张疯狂卡，你抽一张牌并额外打出一张行�?*/
+/** 疯狂接触 onPlay：每个对手抽一张疯狂卡，你抽一张牌并额外打出一张行动*/
 function elderThingTouchOfMadness(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
 
@@ -138,21 +139,33 @@ function elderThingTouchOfMadness(ctx: AbilityContext): AbilityResult {
         events.push(drawEvt);
     }
 
-    // 额外打出一张行�?
+    // 额外打出一张行动
     events.push(grantExtraAction(ctx.playerId, 'elder_thing_touch_of_madness', ctx.now));
 
     return { events };
 }
 
-/** 疯狂之力 onPlay：所有对手弃掉手牌中的疯狂卡并洗弃牌堆回牌库 */
+/** 疯狂之力 onPlay：所有对手展示手牌，弃掉手牌中的疯狂卡并洗弃牌堆回牌库 */
 function elderThingPowerOfMadness(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
+
+    // 收集所有对手的手牌用于合并展示（避免多人时 pendingReveal 覆盖）
+    const allRevealCards: { uid: string; defId: string }[] = [];
+    const revealTargetIds: string[] = [];
 
     for (const pid of ctx.state.turnOrder) {
         if (pid === ctx.playerId) continue;
         const opponent = ctx.state.players[pid];
 
-        // 找出手牌中的疯狂�?
+        // 收集对手手牌（规则："所有其他玩家展示他们的手牌"）
+        if (opponent.hand.length > 0) {
+            revealTargetIds.push(pid);
+            for (const c of opponent.hand) {
+                allRevealCards.push({ uid: c.uid, defId: c.defId });
+            }
+        }
+
+        // 找出手牌中的疯狂卡
         const madnessInHand = opponent.hand.filter(c => c.defId === MADNESS_CARD_DEF_ID);
         if (madnessInHand.length > 0) {
             const discardEvt: CardsDiscardedEvent = {
@@ -176,10 +189,17 @@ function elderThingPowerOfMadness(ctx: AbilityContext): AbilityResult {
         }
     }
 
+    // 合并展示所有对手手牌（一个事件，避免多人覆盖）
+    if (allRevealCards.length > 0) {
+        const targetIds = revealTargetIds.length === 1 ? revealTargetIds[0] : revealTargetIds;
+        events.unshift(revealHand(targetIds, 'all', allRevealCards, 'elder_thing_power_of_madness', ctx.now, ctx.playerId));
+    }
+
     return { events };
 }
 
-/** 散播恐�?onPlay：每位对手随机弃牌直到弃出一张非疯狂�?*/
+
+/** 散播恐惧?onPlay：每位对手随机弃牌直到弃出一张非疯狂卡?*/
 function elderThingSpreadingHorror(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
 
@@ -188,12 +208,12 @@ function elderThingSpreadingHorror(ctx: AbilityContext): AbilityResult {
         const opponent = ctx.state.players[pid];
         if (opponent.hand.length === 0) continue;
 
-        // 随机排列手牌，依次弃掉直到弃出非疯狂�?
+        // 随机排列手牌，依次弃掉直到弃出非疯狂卡?
         const shuffledHand = ctx.random.shuffle([...opponent.hand]);
         const discardUids: string[] = [];
         for (const card of shuffledHand) {
             discardUids.push(card.uid);
-            if (card.defId !== MADNESS_CARD_DEF_ID) break; // 弃出非疯狂卡，停�?
+            if (card.defId !== MADNESS_CARD_DEF_ID) break; // 弃出非疯狂卡，停止?
         }
 
         if (discardUids.length > 0) {
@@ -209,7 +229,7 @@ function elderThingSpreadingHorror(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 开始召�?onPlay：从弃牌堆选一个随从放牌库�?+ 额外行动 */
+/** 开始召唤?onPlay：从弃牌堆选一个随从放牌库底+ 额外行动 */
 function elderThingBeginTheSummoning(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     const player = ctx.state.players[ctx.playerId];
@@ -237,13 +257,47 @@ function elderThingBeginTheSummoning(ctx: AbilityContext): AbilityResult {
 function elderThingUnfathomableGoals(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
 
+    // 先收集所有对手手牌，合并成一个展示事件（避免多人覆盖）
+    const allRevealCards: { uid: string; defId: string }[] = [];
+    const revealTargetIds: string[] = [];
     for (const pid of ctx.state.turnOrder) {
         if (pid === ctx.playerId) continue;
         const opponent = ctx.state.players[pid];
-        const hasMadness = opponent.hand.some(c => c.defId === MADNESS_CARD_DEF_ID);
-        if (!hasMadness) continue;
+        if (opponent.hand.length > 0) {
+            revealTargetIds.push(pid);
+            for (const c of opponent.hand) {
+                allRevealCards.push({ uid: c.uid, defId: c.defId });
+            }
+        }
+    }
+    if (allRevealCards.length > 0) {
+        const targetIds = revealTargetIds.length === 1 ? revealTargetIds[0] : revealTargetIds;
+        events.push(revealHand(targetIds, 'all', allRevealCards, 'elder_thing_unfathomable_goals', ctx.now, ctx.playerId));
+    }
 
-        // 收集该对手的所有随从
+    // 收集所有有疯狂卡的对手，按顺序处理
+    const opponentsWithMadness: string[] = [];
+    for (const pid of ctx.state.turnOrder) {
+        if (pid === ctx.playerId) continue;
+        const opponent = ctx.state.players[pid];
+        if (opponent.hand.some(c => c.defId === MADNESS_CARD_DEF_ID)) {
+            opponentsWithMadness.push(pid);
+        }
+    }
+
+    // 链式处理：处理第一个对手，剩余的通过 continuationContext 传递
+    return unfathomableGoalsProcessNext(ctx, events, opponentsWithMadness, 0);
+}
+
+/** 深不可测的目的：链式处理对手消灭随从 */
+function unfathomableGoalsProcessNext(
+    ctx: AbilityContext,
+    events: SmashUpEvent[],
+    opponents: string[],
+    idx: number,
+): AbilityResult {
+    while (idx < opponents.length) {
+        const pid = opponents[idx];
         const opMinions: { uid: string; defId: string; baseIndex: number; owner: string; power: number }[] = [];
         for (let i = 0; i < ctx.state.bases.length; i++) {
             for (const m of ctx.state.bases[i].minions) {
@@ -251,13 +305,17 @@ function elderThingUnfathomableGoals(ctx: AbilityContext): AbilityResult {
                 opMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, owner: m.owner, power: getMinionPower(ctx.state, m, i) });
             }
         }
-        if (opMinions.length === 0) continue;
-        if (opMinions.length === 1) {
-            // 只有一个随从，直接消灭
-            events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, opMinions[0].baseIndex, opMinions[0].owner, 'elder_thing_unfathomable_goals', ctx.now));
+        if (opMinions.length === 0) {
+            idx++;
             continue;
         }
-        // 多个随从：让对手选择消灭哪个
+        if (opMinions.length === 1) {
+            // 只有一个随从，直接消灭，继续下一个对手
+            events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, opMinions[0].baseIndex, opMinions[0].owner, 'elder_thing_unfathomable_goals', ctx.now));
+            idx++;
+            continue;
+        }
+        // 多个随从：让对手选择消灭哪个，剩余对手通过 continuationContext 链式处理
         const options = opMinions.map(m => {
             const def = getCardDef(m.defId) as MinionCardDef | undefined;
             const name = def?.name ?? m.defId;
@@ -269,6 +327,10 @@ function elderThingUnfathomableGoals(ctx: AbilityContext): AbilityResult {
             `elder_thing_unfathomable_goals_${pid}_${ctx.now}`, pid,
             '你手中有疯狂卡，必须消灭一个自己的随从', buildMinionTargetOptions(options), 'elder_thing_unfathomable_goals',
         );
+        (interaction.data as any).continuationContext = {
+            opponents,
+            opponentIdx: idx,
+        };
         return { events, matchState: queueInteraction(ctx.matchState, interaction) };
     }
 
@@ -282,12 +344,12 @@ function elderThingUnfathomableGoals(ctx: AbilityContext): AbilityResult {
 
 /** 远古之物保护检查：不收回受对手卡牌影响 */
 function elderThingProtectionChecker(ctx: ProtectionCheckContext): boolean {
-    // 只保�?elder_thing_elder_thing 自身，且只拦截对手发起的效果
+    // 只保护?elder_thing_elder_thing 自身，且只拦截对手发起的效果
     if (ctx.targetMinion.defId !== 'elder_thing_elder_thing') return false;
     return ctx.sourcePlayerId !== ctx.targetMinion.controller;
 }
 
-/** 远古之物 onPlay：消灭两个己方其他随从或将本随从放到牌库底�?*/
+/** 远古之物 onPlay：消灭两个己方其他随从或将本随从放到牌库底?*/
 function elderThingElderThingOnPlay(ctx: AbilityContext): AbilityResult {
     // 收集己方其他随从
     const otherMinions: { uid: string; defId: string; baseIndex: number; owner: string; label: string }[] = [];
@@ -313,7 +375,7 @@ function elderThingElderThingOnPlay(ctx: AbilityContext): AbilityResult {
         return { events: [evt] };
     }
 
-    // �?2 个其他随从→ Prompt 选择
+    // ?2 个其他随从→ Prompt 选择
     const options = [
         { id: 'destroy', label: '消灭两个己方其他随从', value: { choice: 'destroy' } },
         { id: 'deckbottom', label: '将本随从放到牌库底底', value: { choice: 'deckbottom' } },
@@ -327,10 +389,10 @@ function elderThingElderThingOnPlay(ctx: AbilityContext): AbilityResult {
 }
 
 // ============================================================================
-// 修格�?(Shoggoth) - onPlay
+// 修格斯?(Shoggoth) - onPlay
 // ============================================================================
 
-/** 修格斯 onPlay：每个对手可抽疯狂卡，不收回抽则消灭该对手在此基地的一个随�?*/
+/** 修格斯 onPlay：每个对手可抽疯狂卡，不收回抽则消灭该对手在此基地的一个随从*/
 function elderThingShoggoth(ctx: AbilityContext): AbilityResult {
     const opponents = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
     if (opponents.length === 0) return { events: [] };
@@ -443,14 +505,56 @@ export function registerElderThingInteractionHandlers(): void {
         return { state, events };
     });
 
-    // 深不可测的目的：对手选择消灭自己的随从
-    registerInteractionHandler('elder_thing_unfathomable_goals', (state, _playerId, value, _iData, _random, timestamp) => {
+    // 深不可测的目的：对手选择消灭自己的随从（链式处理多个对手）
+    registerInteractionHandler('elder_thing_unfathomable_goals', (state, _playerId, value, iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return { state, events: [] };
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return { state, events: [] };
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'elder_thing_unfathomable_goals', timestamp)] };
+        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'elder_thing_unfathomable_goals', timestamp)];
+
+        // 链式处理下一个对手
+        const ctx = (iData as any)?.continuationContext as { opponents: string[]; opponentIdx: number } | undefined;
+        if (!ctx) return { state, events };
+        const nextIdx = ctx.opponentIdx + 1;
+        if (nextIdx >= ctx.opponents.length) return { state, events };
+
+        // 查找下一个需要选择的对手
+        for (let i = nextIdx; i < ctx.opponents.length; i++) {
+            const pid = ctx.opponents[i];
+            const opMinions: { uid: string; defId: string; baseIndex: number; owner: string }[] = [];
+            for (let bi = 0; bi < state.core.bases.length; bi++) {
+                for (const m of state.core.bases[bi].minions) {
+                    if (m.controller !== pid) continue;
+                    opMinions.push({ uid: m.uid, defId: m.defId, baseIndex: bi, owner: m.owner });
+                }
+            }
+            if (opMinions.length === 0) continue;
+            if (opMinions.length === 1) {
+                events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, opMinions[0].baseIndex, opMinions[0].owner, 'elder_thing_unfathomable_goals', timestamp));
+                continue;
+            }
+            // 多个随从：创建交互
+            const options = opMinions.map(m => {
+                const def = getCardDef(m.defId) as MinionCardDef | undefined;
+                const name = def?.name ?? m.defId;
+                const baseDef = getBaseDef(state.core.bases[m.baseIndex].defId);
+                const baseName = baseDef?.name ?? `基地 ${m.baseIndex + 1}`;
+                return { uid: m.uid, defId: m.defId, baseIndex: m.baseIndex, label: `${name} @ ${baseName}` };
+            });
+            const interaction = createSimpleChoice(
+                `elder_thing_unfathomable_goals_${pid}_${timestamp}`, pid,
+                '你手中有疯狂卡，必须消灭一个自己的随从', buildMinionTargetOptions(options), 'elder_thing_unfathomable_goals',
+            );
+            (interaction.data as any).continuationContext = {
+                opponents: ctx.opponents,
+                opponentIdx: i,
+            };
+            return { state: queueInteraction(state, interaction), events };
+        }
+
+        return { state, events };
     });
 }
 
@@ -470,14 +574,29 @@ function elderThingPriceOfPowerSpecial(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[scoringBaseIndex];
     if (!base) return { events };
 
-    // 统计所有对手手牌中的疯狂卡数量（对手必须在该基地有随从）
+    // 收集所有对手手牌用于合并展示（规则："所有有随从在这里的其他玩家展示他们的手牌"）
+    const allRevealCards: { uid: string; defId: string }[] = [];
+    const revealTargetIds: string[] = [];
     let totalMadness = 0;
     for (const pid of ctx.state.turnOrder) {
         if (pid === ctx.playerId) continue;
         if (!base.minions.some(m => m.controller === pid)) continue;
         const opponent = ctx.state.players[pid];
+        if (opponent.hand.length > 0) {
+            revealTargetIds.push(pid);
+            for (const c of opponent.hand) {
+                allRevealCards.push({ uid: c.uid, defId: c.defId });
+            }
+        }
         totalMadness += opponent.hand.filter(c => c.defId === MADNESS_CARD_DEF_ID).length;
     }
+
+    // 合并展示所有对手手牌（一个事件，避免多人覆盖）
+    if (allRevealCards.length > 0) {
+        const targetIds = revealTargetIds.length === 1 ? revealTargetIds[0] : revealTargetIds;
+        events.push(revealHand(targetIds, 'all', allRevealCards, 'elder_thing_the_price_of_power', ctx.now, ctx.playerId));
+    }
+
     if (totalMadness === 0) return { events };
 
     // 给己方在该基地的随从轮流 +2 力量

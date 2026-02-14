@@ -12,7 +12,7 @@
 
 import type { CellCoord } from './types';
 import { isCellEmpty, getPlayerUnits } from './helpers';
-import { isUndeadCard } from './ids';
+import { isUndeadCard, isPlagueZombieCard } from './ids';
 import { TRICKSTER_ABILITIES } from './abilities-trickster';
 import { GOBLIN_ABILITIES } from './abilities-goblin';
 import { PALADIN_ABILITIES } from './abilities-paladin';
@@ -184,6 +184,10 @@ export interface AbilityDef {
   usesPerTurn?: number;
   /** 音效 key */
   sfxKey?: string;
+  /** 消耗一次移动行动（技能代替移动，如预备） */
+  costsMoveAction?: boolean;
+  /** 消耗一次攻击行动（技能代替攻击，如高阶念力） */
+  costsAttackAction?: boolean;
   /** 交互链声明（多步交互技能必填，用于契约校验） */
   interactionChain?: InteractionChain;
   /** 验证规则（用于主动技能） */
@@ -570,8 +574,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
           return { valid: false, error: '弃牌堆中没有该单位卡' };
         }
         
-        const isPlagueZombie = card.id.includes('plague-zombie') || card.name.includes('疫病体');
-        if (!isPlagueZombie) {
+        if (!isPlagueZombieCard(card)) {
           return { valid: false, error: '只能召唤疫病体' };
         }
         

@@ -74,6 +74,25 @@ export function getBaseCardId(id: string): string {
 }
 
 /**
+ * 判断卡牌是否为疫病体
+ *
+ * 疫病体判定：id 含 'plague-zombie' 或名称含 '疫病体'
+ */
+export function isPlagueZombieCard(card: { id: string; name: string }): boolean {
+  return card.id.includes('plague-zombie') || card.name.includes('疫病体');
+}
+
+/**
+ * 判断卡牌是否为城塞单位
+ *
+ * 城塞判定：名称含 '城塞'（中文）或 'Fortress'（英文）
+ * 注意：不能用 id.includes('fortress')，因为起始单位 id 被覆盖为 paladin-start-xxx
+ */
+export function isFortressUnit(card: { id: string; name: string; cardType?: string }): boolean {
+  return card.name.includes('城塞') || card.name.toLowerCase().includes('fortress');
+}
+
+/**
  * 判断卡牌是否为亡灵单位
  *
  * 亡灵判定：id 含 'undead'、名称含 '亡灵'、或阵营为 necromancer
@@ -84,3 +103,4 @@ export function isUndeadCard(card: { id: string; name: string; cardType: string;
     || card.name.includes('亡灵')
     || (card as UnitCard).faction === 'necromancer';
 }
+

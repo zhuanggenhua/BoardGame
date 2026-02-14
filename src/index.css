@@ -119,6 +119,25 @@
         scrollbar-width: none;
     }
 
+    /* 横向细滚动条（卡牌展示区） */
+    .smashup-h-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    }
+    .smashup-h-scrollbar::-webkit-scrollbar {
+        height: 6px;
+    }
+    .smashup-h-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .smashup-h-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 3px;
+    }
+    .smashup-h-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.4);
+    }
+
     .underline-center {
         @apply absolute bottom-0 left-1/2 w-0 h-[1.5px] bg-current transition-all duration-300 group-hover:w-full group-hover:left-0 pointer-events-none;
     }

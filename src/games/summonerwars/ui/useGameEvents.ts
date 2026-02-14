@@ -18,6 +18,9 @@ import { SW_FX } from './fxSetup';
 import { playSound } from '../../../lib/audio/useGameAudio';
 import { resolveDamageSoundKey, resolveDestroySoundKey } from '../audio.config';
 import type { UseVisualSequenceGateReturn } from '../../../components/game/framework/hooks/useVisualSequenceGate';
+import { useVisualStateBuffer } from '../../../components/game/framework/hooks/useVisualStateBuffer';
+import type { UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
+import { isPlagueZombieCard } from '../domain/ids';
 import type { RapidFireModeState } from './modeTypes';
 
 // ============================================================================
@@ -160,6 +163,11 @@ export function useGameEvents({
   // 临时本体缓存（攻击动画期间保留）
   const [dyingEntities, setDyingEntities] = useState<DyingEntity[]>([]);
 
+  // 视觉伤害缓冲：攻击动画期间冻结受影响格子的 damage 值，
+  // 避免 core 已 reduce 但动画未播完导致血条提前变化
+  // 使用框架层 useVisualStateBuffer 替代内联 Map 实现
+  const damageBuffer = useVisualStateBuffer();
+
   // 技能模式
   const [abilityMode, setAbilityMode] = useState<AbilityModeState | null>(null);
 
@@ -262,6 +270,7 @@ export function useGameEvents({
       pendingDestroyRef.current = [];
       setDiceResult(null);
       setDyingEntities([]);
+      damageBuffer.clear();
       // 撤回导致 EventStream 回退时，清理所有 UI 交互状态
       // 防止撤回后残留的技能按钮仍可点击（如锻造师 frost_axe 充能）
       setAbilityMode(null);
@@ -305,6 +314,17 @@ export function useGameEvents({
           attackType: p.attackType, hits: p.hits, attackEventId: entry.id, damages: [],
         };
 
+        // 快照目标格及周围格子的当前 damage 值（core 此时已 reduce，需要回退到攻击前的值）
+        // 攻击前的 damage = 当前 damage - 即将到来的伤害（伤害事件紧随攻击事件）
+        // 但此刻伤害事件尚未被本 hook 处理，所以我们先快照当前值，
+        // 后续 UNIT_DAMAGED 事件到来时再从快照中减去对应伤害
+        const targetCell = core.board[p.target.row]?.[p.target.col];
+        if (targetCell?.unit) {
+          damageBuffer.freeze(`${p.target.row}-${p.target.col}`, targetCell.unit.damage);
+        } else if (targetCell?.structure) {
+          damageBuffer.freeze(`${p.target.row}-${p.target.col}`, targetCell.structure.damage);
+        }
+
         onDiceRollSoundRef.current?.(p.diceCount ?? p.diceResults?.length ?? 1);
 
         setDiceResult({
@@ -318,6 +338,19 @@ export function useGameEvents({
         const p = event.payload as { position: CellCoord; damage: number };
         if (pendingAttackRef.current) {
           pendingAttackRef.current.damages.push({ position: p.position, damage: p.damage, eventId: entry.id });
+          // 快照中回退伤害：core 已 reduce 了这笔伤害，但视觉上应保持攻击前的值
+          // 直到动画 impact 时才释放
+          const cellKey = `${p.position.row}-${p.position.col}`;
+          const currentVisual = damageBuffer.get(cellKey, -1);
+          if (currentVisual !== -1) {
+            // 已有快照：保持攻击前的值（即 core.damage - 本次伤害）
+            damageBuffer.freeze(cellKey, currentVisual - p.damage);
+          } else {
+            // 溅射等非主目标：快照为 core 当前值减去本次伤害
+            const cell = core.board[p.position.row]?.[p.position.col];
+            const coreDamage = cell?.unit?.damage ?? cell?.structure?.damage ?? 0;
+            damageBuffer.freeze(cellKey, coreDamage - p.damage);
+          }
         } else {
           const soundKey = resolveDamageSoundKey(p.damage);
           fxBusRef.current.push(SW_FX.COMBAT_DAMAGE, {
@@ -355,7 +388,7 @@ export function useGameEvents({
           const player = core.players[myPlayerId as PlayerId];
           const hasValidCard = player?.discard.some(c => {
             if (p.cardType === 'plagueZombie') {
-              return c.cardType === 'unit' && (c.id.includes('plague-zombie') || c.name.includes('疫病体'));
+              return c.cardType === 'unit' && isPlagueZombieCard(c);
             }
             return false;
           });
@@ -635,13 +668,22 @@ export function useGameEvents({
       pendingDestroyRef.current = [];
       setDyingEntities([]);
     }
+    // 释放视觉快照，回归 core 真实值
+    damageBuffer.clear();
     // 结束视觉序列，排空交互队列（感染/灵魂转移/念力等延迟到此刻触发）
     gateRef.current.endSequence();
   }, []);
 
+  // 释放视觉快照中指定格子的伤害（动画 impact 时调用）
+  // 删除快照 key，让 UI 回退到 core 真实值，血条在 impact 瞬间变化
+  const releaseDamageSnapshot = useCallback((positions: CellCoord[]) => {
+    damageBuffer.release(positions.map(pos => `${pos.row}-${pos.col}`));
+  }, [damageBuffer]);
+
   return {
     diceResult,
     dyingEntities,
+    damageBuffer,
     isVisualBusy: gate.isVisualBusy,
     abilityMode,
     setAbilityMode,
@@ -657,5 +699,6 @@ export function useGameEvents({
     handleCloseDiceResult,
     clearPendingAttack,
     flushPendingDestroys,
+    releaseDamageSnapshot,
   };
 }

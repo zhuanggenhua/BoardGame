@@ -144,6 +144,34 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       };
     }
 
+    // 消耗移动次数但不移动单位（技能代替移动，如预备）
+    case SW_EVENTS.MOVE_ACTION_CONSUMED: {
+      const { position } = payload as { position: CellCoord };
+      const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
+      const unit = newBoard[position.row]?.[position.col]?.unit;
+      if (!unit) return { ...core, board: newBoard };
+      newBoard[position.row][position.col].unit = { ...unit, hasMoved: true };
+      const pid = unit.owner as PlayerId;
+      return {
+        ...core, board: newBoard,
+        players: { ...core.players, [pid]: { ...core.players[pid], moveCount: core.players[pid].moveCount + 1 } },
+      };
+    }
+
+    // 消耗攻击次数（技能代替攻击，如高阶念力）
+    case SW_EVENTS.ATTACK_ACTION_CONSUMED: {
+      const { position: aacPos } = payload as { position: CellCoord };
+      const aacBoard = core.board.map(row => row.map(cell => ({ ...cell })));
+      const aacUnit = aacBoard[aacPos.row]?.[aacPos.col]?.unit;
+      if (!aacUnit) return { ...core, board: aacBoard };
+      aacBoard[aacPos.row][aacPos.col].unit = { ...aacUnit, hasAttacked: true };
+      const aacPid = aacUnit.owner as PlayerId;
+      return {
+        ...core, board: aacBoard,
+        players: { ...core.players, [aacPid]: { ...core.players[aacPid], attackCount: core.players[aacPid].attackCount + 1 } },
+      };
+    }
+
     case SW_EVENTS.UNIT_ATTACKED: {
       const { attacker, target } = payload as { attacker: CellCoord; target: CellCoord };
       const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
@@ -271,6 +299,8 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       if (foundUnit && cell) {
         const destroyedCard = foundUnit.card;
         const attachedUnitCards = (foundUnit.attachedUnits ?? []).map(au => au.card);
+        // 附加的事件卡（如狱火铸剑）也需要弃置（规则：被摧毁卡牌下的卡牌会被弃置）
+        const attachedEventCards = foundUnit.attachedCards ?? [];
         const actualOwner = destroyedOwner ?? foundUnit.owner;
         const ownerPlayer = core.players[actualOwner as PlayerId];
         const rewardPlayerId = killerPlayerId && killerPlayerId !== actualOwner && !skipMagicReward
@@ -315,7 +345,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
                 board: newBoard,
                 players: {
                   ...core.players,
-                  [actualOwner]: { ...ownerWithUpdatedEvents, hand: [...ownerWithUpdatedEvents.hand, destroyedCard], discard: [...ownerWithUpdatedEvents.discard, ...attachedUnitCards] },
+                  [actualOwner]: { ...ownerWithUpdatedEvents, hand: [...ownerWithUpdatedEvents.hand, destroyedCard], discard: [...ownerWithUpdatedEvents.discard, ...attachedUnitCards, ...attachedEventCards] },
                   ...(rewardPlayerId
                     ? {
                       [rewardPlayerId]: {
@@ -332,7 +362,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
               board: newBoard,
               players: {
                 ...core.players,
-                [actualOwner]: { ...ownerWithUpdatedEvents, discard: [...ownerWithUpdatedEvents.discard, destroyedCard, ...attachedUnitCards] },
+                [actualOwner]: { ...ownerWithUpdatedEvents, discard: [...ownerWithUpdatedEvents.discard, destroyedCard, ...attachedUnitCards, ...attachedEventCards] },
                 ...(rewardPlayerId
                   ? {
                     [rewardPlayerId]: {
@@ -355,7 +385,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
             board: newBoard,
             players: {
               ...core.players,
-              [actualOwner]: { ...ownerWithEvents, hand: [...ownerWithEvents.hand, destroyedCard], discard: [...ownerWithEvents.discard, ...attachedUnitCards] },
+              [actualOwner]: { ...ownerWithEvents, hand: [...ownerWithEvents.hand, destroyedCard], discard: [...ownerWithEvents.discard, ...attachedUnitCards, ...attachedEventCards] },
               ...(rewardPlayerId
                 ? {
                   [rewardPlayerId]: {
@@ -372,7 +402,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
           board: newBoard,
           players: {
             ...core.players,
-            [actualOwner]: { ...ownerWithEvents, discard: [...ownerWithEvents.discard, destroyedCard, ...attachedUnitCards] },
+            [actualOwner]: { ...ownerWithEvents, discard: [...ownerWithEvents.discard, destroyedCard, ...attachedUnitCards, ...attachedEventCards] },
             ...(rewardPlayerId
               ? {
                 [rewardPlayerId]: {

@@ -74,6 +74,8 @@ export interface ActionCardDef {
     previewRef?: CardPreviewRef;
     /** ongoing 行动卡的附着目标：'base'（默认）或 'minion'（附着到随从上） */
     ongoingTarget?: 'base' | 'minion';
+    /** 特殊行动卡是否需要选择目标基地（Me First! 窗口中高亮可选基地） */
+    specialNeedsBase?: boolean;
 }
 
 /** 卡牌定义联合类型 */
@@ -194,6 +196,10 @@ export interface PlayerState {
     actionLimit: number;
     /** 本回合每个基地已打出随从数（baseIndex → count），用于北极基地等限制 */
     minionsPlayedPerBase?: Record<number, number>;
+    /** 本回合已使用的弃牌堆出牌能力 sourceId 集合（用于每回合限制） */
+    usedDiscardPlayAbilities?: string[];
+    /** 基地限定额外随从额度（baseIndex → 额外额度），只能打到指定基地 */
+    baseLimitedMinionQuota?: Record<number, number>;
     /** 选择的派系 */
     factions: [FactionId, FactionId];
 }
@@ -258,10 +264,13 @@ export interface SmashUpCore {
      */
     pendingReveal?: {
         type: 'hand' | 'deck_top';
-        targetPlayerId: string;
+        /** 被展示手牌的玩家（单人或多人） */
+        targetPlayerId: string | string[];
         /** 查看者玩家 ID，'all' 表示所有玩家可见 */
         viewerPlayerId: string | 'all';
         cards: { uid: string; defId: string }[];
+        /** 触发展示的玩家（viewerPlayerId='all' 时由此玩家关闭展示） */
+        sourcePlayerId?: string;
         reason: string;
     };
 }
@@ -313,6 +322,8 @@ export interface PlayMinionCommand extends Command<typeof SU_COMMANDS.PLAY_MINIO
     payload: {
         cardUid: string;
         baseIndex: number;
+        /** 从弃牌堆打出（而非手牌）。由"它们为你而来"等持续效果启用 */
+        fromDiscard?: boolean;
     };
 }
 
@@ -419,6 +430,12 @@ export interface MinionPlayedEvent extends GameEvent<typeof SU_EVENTS.MINION_PLA
         defId: string;
         baseIndex: number;
         power: number;
+        /** 从弃牌堆打出（而非手牌） */
+        fromDiscard?: boolean;
+        /** 弃牌堆出牌来源能力 ID（用于每回合限制追踪） */
+        discardPlaySourceId?: string;
+        /** 是否消耗正常随从额度 */
+        consumesNormalLimit?: boolean;
     };
 }
 
@@ -513,6 +530,8 @@ export interface LimitModifiedEvent extends GameEvent<typeof SU_EVENTS.LIMIT_MOD
         limitType: 'minion' | 'action';
         delta: number;
         reason: string;
+        /** 限定额度只能用于指定基地（不设则为全局额度） */
+        restrictToBase?: number;
     };
 }
 
@@ -738,12 +757,14 @@ export interface BaseDeckReorderedEvent extends GameEvent<typeof SU_EVENTS.BASE_
 /** 展示手牌事件（外星人 Probe / 密大 Book of Iter 等能力） */
 export interface RevealHandEvent extends GameEvent<typeof SU_EVENTS.REVEAL_HAND> {
     payload: {
-        /** 被查看的玩家 */
-        targetPlayerId: string;
+        /** 被查看的玩家（单人或多人） */
+        targetPlayerId: string | string[];
         /** 查看者 */
         viewerPlayerId: string;
         /** 被展示的卡牌列表 */
         cards: { uid: string; defId: string }[];
+        /** 触发展示的玩家（viewerPlayerId='all' 时由此玩家关闭展示） */
+        sourcePlayerId?: string;
         /** 触发原因 */
         reason: string;
     };
@@ -752,14 +773,16 @@ export interface RevealHandEvent extends GameEvent<typeof SU_EVENTS.REVEAL_HAND>
 /** 展示牌库顶事件（外星人 Scout Ship 等能力） */
 export interface RevealDeckTopEvent extends GameEvent<typeof SU_EVENTS.REVEAL_DECK_TOP> {
     payload: {
-        /** 牌库所有者 */
-        targetPlayerId: string;
+        /** 牌库所有者（单人或多人） */
+        targetPlayerId: string | string[];
         /** 查看者 */
         viewerPlayerId: string;
         /** 牌库顶卡牌 */
         cards: { uid: string; defId: string }[];
         /** 展示数量 */
         count: number;
+        /** 触发展示的玩家（viewerPlayerId='all' 时由此玩家关闭展示） */
+        sourcePlayerId?: string;
         /** 触发原因 */
         reason: string;
     };

@@ -455,54 +455,114 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
-    // magma-armor-resolve: 投1骰，fire面=1伤害，fiery_soul面=1FM
+    // magma-armor-resolve: 基于防御投掷骰面，fire面=1伤害/个，fiery_soul面=1FM/个
+    // 防御上下文：attackerId=防御者(0), defenderId=原攻击者(1), target='self' → targetId=0
+    // 伤害应作用于原攻击者(1)，不是防御者自身(0)
     // ========================================================================
     describe('magma-armor-resolve (熔岩盔甲 I)', () => {
-        it('投出fire面时造成1点伤害', () => {
-            const state = createState({ attackerFM: 0 });
-            // 固定投出1 → fire面
+        /** 构建防御上下文（防御技能的 attackerId=防御者, defenderId=原攻击者） */
+        function buildDefenseCtx(state: DiceThroneCore, actionId: string): CustomActionContext {
+            const effectCtx = {
+                attackerId: '0' as any, // 防御者
+                defenderId: '1' as any, // 原攻击者
+                sourceAbilityId: actionId,
+                state,
+                damageDealt: 0,
+                timestamp: 1000,
+            };
+            return {
+                ctx: effectCtx,
+                targetId: '0' as any, // target='self' → 防御者自身
+                attackerId: '0' as any,
+                sourceAbilityId: actionId,
+                state,
+                timestamp: 1000,
+                action: { type: 'custom', customActionId: actionId },
+            };
+        }
+
+        it('防御骰有fire面时对原攻击者造成对应伤害', () => {
+            // 骰子: 2个fire + 1个magma + 1个fiery_soul + 1个meteor
+            const dice = [1, 2, 4, 5, 6].map(v => createPyroDie(v));
+            const state = createState({ attackerFM: 0, dice });
             const handler = getCustomActionHandler('magma-armor-resolve')!;
-            const events = handler(buildCtx(state, 'magma-armor-resolve', {
-                random: () => 1 / 6, // d(6) → ceil(1/6 * 6) = 1 → fire
-            }));
+            const events = handler(buildDefenseCtx(state, 'magma-armor-resolve'));
 
             const dmgEvents = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmgEvents).toHaveLength(1);
-            expect((dmgEvents[0] as any).payload.amount).toBe(1); // 1 × dmgPerFire(1)
+            expect((dmgEvents[0] as any).payload.amount).toBe(2); // 2个fire × dmgPerFire(1)
+            // 伤害目标必须是原攻击者(1)，不是防御者自身(0)
+            expect((dmgEvents[0] as any).payload.targetId).toBe('1');
         });
 
-        it('投出fiery_soul面时获得1FM', () => {
-            const state = createState({ attackerFM: 0 });
+        it('防御骰有fiery_soul面时获得对应FM', () => {
+            // 骰子: 2个fiery_soul + 3个magma
+            const dice = [5, 5, 4, 4, 4].map(v => createPyroDie(v));
+            const state = createState({ attackerFM: 0, dice });
             const handler = getCustomActionHandler('magma-armor-resolve')!;
-            const events = handler(buildCtx(state, 'magma-armor-resolve', {
-                random: () => 5 / 6, // d(6) → ceil(5/6 * 6) = 5 → fiery_soul
-            }));
+            const events = handler(buildDefenseCtx(state, 'magma-armor-resolve'));
 
             const tokenEvents = eventsOfType(events, 'TOKEN_GRANTED');
             expect(tokenEvents).toHaveLength(1);
-            expect((tokenEvents[0] as any).payload.amount).toBe(1);
+            expect((tokenEvents[0] as any).payload.amount).toBe(2);
+            // FM 给自己（防御者 = attackerId = '0'）
+            expect((tokenEvents[0] as any).payload.targetId).toBe('0');
+        });
+
+        it('防御骰无fire和fiery_soul面时无效果', () => {
+            // 骰子: 全部magma和meteor
+            const dice = [4, 4, 4, 6, 6].map(v => createPyroDie(v));
+            const state = createState({ attackerFM: 0, dice });
+            const handler = getCustomActionHandler('magma-armor-resolve')!;
+            const events = handler(buildDefenseCtx(state, 'magma-armor-resolve'));
+
+            expect(events).toHaveLength(0);
         });
     });
 
     // ========================================================================
-    // magma-armor-3-resolve: 投3骰，fire面=2伤害/个，fiery_soul面=1FM/个
+    // magma-armor-3-resolve: 基于防御投掷骰面，fire面=2伤害/个，fiery_soul面=1FM/个
     // ========================================================================
     describe('magma-armor-3-resolve (熔岩盔甲 III)', () => {
-        it('fire面每个造成2点伤害（dmgPerFire=2）', () => {
-            const state = createState({ attackerFM: 0 });
-            let callCount = 0;
+        /** 构建防御上下文 */
+        function buildDefenseCtx(state: DiceThroneCore, actionId: string): CustomActionContext {
+            const effectCtx = {
+                attackerId: '0' as any,
+                defenderId: '1' as any,
+                sourceAbilityId: actionId,
+                state,
+                damageDealt: 0,
+                timestamp: 1000,
+            };
+            return {
+                ctx: effectCtx,
+                targetId: '0' as any,
+                attackerId: '0' as any,
+                sourceAbilityId: actionId,
+                state,
+                timestamp: 1000,
+                action: { type: 'custom', customActionId: actionId },
+            };
+        }
+
+        it('fire面每个造成2点伤害（dmgPerFire=2），目标为原攻击者', () => {
+            // 骰子: 3个fire + 1个fiery_soul + 1个meteor
+            const dice = [1, 2, 3, 5, 6].map(v => createPyroDie(v));
+            const state = createState({ attackerFM: 0, dice });
             const handler = getCustomActionHandler('magma-armor-3-resolve')!;
-            // 3颗骰子全投fire (值1,2,3)
-            const events = handler(buildCtx(state, 'magma-armor-3-resolve', {
-                random: () => {
-                    callCount++;
-                    return [1 / 6, 2 / 6, 3 / 6][callCount - 1]; // → 1,2,3 全是fire
-                },
-            }));
+            const events = handler(buildDefenseCtx(state, 'magma-armor-3-resolve'));
 
             const dmgEvents = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmgEvents).toHaveLength(1);
-            expect((dmgEvents[0] as any).payload.amount).toBe(6); // 3 × 2
+            expect((dmgEvents[0] as any).payload.amount).toBe(6); // 3个fire × dmgPerFire(2)
+            // 伤害目标必须是原攻击者(1)
+            expect((dmgEvents[0] as any).payload.targetId).toBe('1');
+
+            // 同时获得 1 FM（给自己 = 防御者 = '0'）
+            const tokenEvents = eventsOfType(events, 'TOKEN_GRANTED');
+            expect(tokenEvents).toHaveLength(1);
+            expect((tokenEvents[0] as any).payload.amount).toBe(1);
+            expect((tokenEvents[0] as any).payload.targetId).toBe('0');
         });
     });
 
@@ -627,6 +687,8 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
 
         it('投出非meteor面时抽1牌', () => {
             const state = createState({ attackerFM: 2 });
+            // 需要在 deck 中放入卡牌，buildDrawEvents 才能正确生成 CARD_DRAWN 事件
+            state.players['0'].deck = [{ id: 'test-card-1' } as any];
             const handler = getCustomActionHandler('pyro-infernal-embrace')!;
             const events = handler(buildCtx(state, 'pyro-infernal-embrace', {
                 random: () => 1 / 6, // d(6) → 1 → fire
@@ -634,9 +696,43 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
 
             const drawEvents = eventsOfType(events, 'CARD_DRAWN');
             expect(drawEvents).toHaveLength(1);
+            expect(drawEvents[0].payload.cardId).toBe('test-card-1');
             // 不应获得FM
             const tokenEvents = eventsOfType(events, 'TOKEN_GRANTED');
             expect(tokenEvents).toHaveLength(0);
+        });
+
+        it('牌库为空时从弃牌堆洗牌后抽牌', () => {
+            const state = createState({ attackerFM: 2 });
+            state.players['0'].deck = [];
+            state.players['0'].discard = [{ id: 'discard-card-1' } as any];
+            const handler = getCustomActionHandler('pyro-infernal-embrace')!;
+            // 构造包含 shuffle 方法的完整 random mock
+            const ctx = buildCtx(state, 'pyro-infernal-embrace', {
+                random: () => 1 / 6,
+            });
+            // 补充 shuffle 方法
+            (ctx.random as any).shuffle = <T>(arr: T[]): T[] => [...arr];
+            const events = handler(ctx);
+
+            // 应先洗牌再抽牌
+            const shuffleEvents = eventsOfType(events, 'DECK_SHUFFLED');
+            expect(shuffleEvents).toHaveLength(1);
+            const drawEvents = eventsOfType(events, 'CARD_DRAWN');
+            expect(drawEvents).toHaveLength(1);
+        });
+
+        it('牌库和弃牌堆都为空时不生成抽牌事件', () => {
+            const state = createState({ attackerFM: 2 });
+            state.players['0'].deck = [];
+            state.players['0'].discard = [];
+            const handler = getCustomActionHandler('pyro-infernal-embrace')!;
+            const events = handler(buildCtx(state, 'pyro-infernal-embrace', {
+                random: () => 1 / 6,
+            }));
+
+            const drawEvents = eventsOfType(events, 'CARD_DRAWN');
+            expect(drawEvents).toHaveLength(0);
         });
     });
 

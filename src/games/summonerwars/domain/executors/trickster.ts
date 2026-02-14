@@ -9,8 +9,7 @@ import {
   getUnitAt,
   getUnitAbilities,
   manhattanDistance,
-  isValidCoord,
-  isCellEmpty,
+  calculatePushPullPosition,
 } from '../helpers';
 import { getEffectiveLife } from '../abilityResolver';
 import { emitDestroyWithTriggers } from '../execute/helpers';
@@ -88,7 +87,7 @@ abilityExecutorRegistry.register('illusion', (ctx: SWAbilityContext) => {
   return { events };
 });
 
-/** 念力 / 高阶念力（共享逻辑） */
+/** 念力 / 高阶念力（共享逻辑，使用 calculatePushPullPosition 统一方向计算） */
 function executeTelekinesis(ctx: SWAbilityContext, maxRange: number): GameEvent[] {
   const events: GameEvent[] = [];
   const { core, sourcePosition, payload, timestamp } = ctx;
@@ -103,20 +102,9 @@ function executeTelekinesis(ctx: SWAbilityContext, maxRange: number): GameEvent[
   const dist = manhattanDistance(sourcePosition, pushPullTargetPos);
   if (dist > maxRange) return events;
 
-  const dr = pushPullTargetPos.row - sourcePosition.row;
-  const dc = pushPullTargetPos.col - sourcePosition.col;
-  let moveRow = 0;
-  let moveCol = 0;
-  if (pushPullDirection === 'push') {
-    if (Math.abs(dr) >= Math.abs(dc)) { moveRow = dr > 0 ? 1 : -1; }
-    else { moveCol = dc > 0 ? 1 : -1; }
-  } else {
-    if (Math.abs(dr) >= Math.abs(dc)) { moveRow = dr > 0 ? -1 : 1; }
-    else { moveCol = dc > 0 ? -1 : 1; }
-  }
-
-  const newPos = { row: pushPullTargetPos.row + moveRow, col: pushPullTargetPos.col + moveCol };
-  if (isValidCoord(newPos) && isCellEmpty(core, newPos)) {
+  // 使用统一的推拉位置计算函数（含对角线方向选择策略）
+  const newPos = calculatePushPullPosition(core, pushPullTargetPos, sourcePosition, 1, pushPullDirection);
+  if (newPos) {
     const eventType = pushPullDirection === 'pull' ? SW_EVENTS.UNIT_PULLED : SW_EVENTS.UNIT_PUSHED;
     events.push({
       type: eventType,
@@ -133,6 +121,16 @@ abilityExecutorRegistry.register('telekinesis', (ctx) => ({
 
 abilityExecutorRegistry.register('high_telekinesis', (ctx) => ({
   events: executeTelekinesis(ctx, 3),
+}));
+
+// 高阶念力（代替攻击）：复用相同的推拉逻辑
+abilityExecutorRegistry.register('high_telekinesis_instead', (ctx) => ({
+  events: executeTelekinesis(ctx, 3),
+}));
+
+// 念力（代替攻击）：复用相同的推拉逻辑，范围2格
+abilityExecutorRegistry.register('telekinesis_instead', (ctx) => ({
+  events: executeTelekinesis(ctx, 2),
 }));
 
 /** 读心传念 */

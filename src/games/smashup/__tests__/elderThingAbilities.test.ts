@@ -443,7 +443,7 @@ describe('远古之物派系能力', () => {
     });
 
     describe('elder_thing_unfathomable_goals（深不可测的目的）', () => {
-        it('有疯狂卡的对手多个随从时创建 Prompt', () => {
+        it('有疯狂卡的对手多个随从时创建 Prompt，且先展示手牌', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -464,13 +464,18 @@ describe('远古之物派系能力', () => {
             });
 
             const events = execPlayAction(state, '0', 'a1');
+            // 展示对手手牌给所有人看
+            const revealEvents = events.filter(e => e.type === SU_EVENTS.REVEAL_HAND);
+            expect(revealEvents.length).toBe(1);
+            expect((revealEvents[0] as any).payload.targetPlayerId).toBe('1');
+            expect((revealEvents[0] as any).payload.viewerPlayerId).toBe('all');
             // 多个随从 → 创建 Prompt 让对手选择消灭哪个
             const interactions = getLastInteractions();
             expect(interactions.length).toBe(1);
             expect(interactions[0]?.data?.sourceId).toBe('elder_thing_unfathomable_goals');
         });
 
-        it('有疯狂卡的对手只有一个随从时直接消灭', () => {
+        it('有疯狂卡的对手只有一个随从时直接消灭，且先展示手牌', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -490,12 +495,16 @@ describe('远古之物派系能力', () => {
             });
 
             const events = execPlayAction(state, '0', 'a1');
+            // 展示对手手牌
+            const revealEvents = events.filter(e => e.type === SU_EVENTS.REVEAL_HAND);
+            expect(revealEvents.length).toBe(1);
+            expect((revealEvents[0] as any).payload.viewerPlayerId).toBe('all');
             const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
             expect(destroyEvents.length).toBe(1);
             expect((destroyEvents[0] as any).payload.minionUid).toBe('m1');
         });
 
-        it('无疯狂卡的对手不受影响', () => {
+        it('无疯狂卡的对手不受影响，但仍展示手牌', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -513,11 +522,14 @@ describe('远古之物派系能力', () => {
             });
 
             const events = execPlayAction(state, '0', 'a1');
+            // 即使无疯狂卡也要展示手牌（规则要求）
+            const revealEvents = events.filter(e => e.type === SU_EVENTS.REVEAL_HAND);
+            expect(revealEvents.length).toBe(1);
             const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
             expect(destroyEvents.length).toBe(0);
         });
 
-        it('有疯狂卡但无随从的对手不产生消灭事件', () => {
+        it('有疯狂卡但无随从的对手不产生消灭事件，但展示手牌', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -531,6 +543,9 @@ describe('远古之物派系能力', () => {
             });
 
             const events = execPlayAction(state, '0', 'a1');
+            // 展示手牌
+            const revealEvents = events.filter(e => e.type === SU_EVENTS.REVEAL_HAND);
+            expect(revealEvents.length).toBe(1);
             const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
             expect(destroyEvents.length).toBe(0);
         });

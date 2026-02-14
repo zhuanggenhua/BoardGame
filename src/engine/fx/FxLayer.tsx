@@ -28,6 +28,8 @@ export interface FxLayerProps {
   };
   /** 特效完成回调（可选，用于游戏侧后续逻辑如 flush 摧毁特效） */
   onEffectComplete?: (id: string, cue: string) => void;
+  /** 特效 impact 回调（可选，飞行动画到达目标时触发，用于释放视觉状态缓冲等） */
+  onEffectImpact?: (id: string, cue: string) => void;
   /** 额外 className */
   className?: string;
 }
@@ -40,6 +42,7 @@ export const FxLayer: React.FC<FxLayerProps> = ({
   bus,
   getCellPosition,
   onEffectComplete,
+  onEffectImpact,
   className = '',
 }) => {
   const { activeEffects, removeEffect, registry, fireImpact } = bus;
@@ -47,14 +50,17 @@ export const FxLayer: React.FC<FxLayerProps> = ({
   // 稳定化外部回调引用
   const onCompleteRef = useRef(onEffectComplete);
   onCompleteRef.current = onEffectComplete;
+  const onImpactRef = useRef(onEffectImpact);
+  onImpactRef.current = onEffectImpact;
 
   const handleComplete = useCallback((id: string, cue: string) => {
     onCompleteRef.current?.(id, cue);
     removeEffect(id);
   }, [removeEffect]);
 
-  const handleImpact = useCallback((id: string) => {
+  const handleImpact = useCallback((id: string, cue: string) => {
     fireImpact(id);
+    onImpactRef.current?.(id, cue);
   }, [fireImpact]);
 
   return (
@@ -74,7 +80,7 @@ export const FxLayer: React.FC<FxLayerProps> = ({
               event={event}
               getCellPosition={getCellPosition}
               onComplete={() => handleComplete(event.id, event.cue)}
-              onImpact={() => handleImpact(event.id)}
+              onImpact={() => handleImpact(event.id, event.cue)}
             />
           );
         })}

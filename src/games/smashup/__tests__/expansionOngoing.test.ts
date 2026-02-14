@@ -486,9 +486,13 @@ describe('食人花 ongoing 能力', () => {
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
 
-            // 只有一个候选→自动抽取 (CARDS_DRAWN + LIMIT_MODIFIED + DECK_RESHUFFLED)
-            expect(result.events).toHaveLength(3);
+            // 只有一个候选→自动抽取 (CARDS_DRAWN + LIMIT_MODIFIED + MINION_PLAYED + DECK_RESHUFFLED)
+            expect(result.events).toHaveLength(4);
             expect(result.events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
+            expect(result.events[1].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
+            expect(result.events[2].type).toBe(SU_EVENTS.MINION_PLAYED);
+            // 验证随从被打出到此基地（baseIndex=0）
+            expect((result.events[2] as any).payload.baseIndex).toBe(0);
         });
     });
 

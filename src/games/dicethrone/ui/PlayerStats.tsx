@@ -40,6 +40,7 @@ export const PlayerStats = ({
     isShaking,
     damageFlashActive,
     damageFlashDamage,
+    overrideHp,
 }: {
     player: HeroState;
     hpRef?: RefObject<HTMLDivElement | null>;
@@ -51,11 +52,13 @@ export const PlayerStats = ({
     damageFlashActive?: boolean;
     /** 受击伤害值 */
     damageFlashDamage?: number;
+    /** 视觉状态缓冲覆盖的 HP 值（飞行动画到达前冻结） */
+    overrideHp?: number;
 }) => {
     const { t } = useTranslation('game-dicethrone');
 
     // 构建 PlayerPanelData
-    const health = player.resources[RESOURCE_IDS.HP] ?? 0;
+    const health = overrideHp ?? (player.resources[RESOURCE_IDS.HP] ?? 0);
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     // 计算总护盾值
     const shield = player.damageShields?.reduce((sum, s) => sum + s.value, 0) ?? 0;

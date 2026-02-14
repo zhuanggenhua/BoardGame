@@ -10,7 +10,7 @@
  * 注意：
  * - 炎术士骰面：1,2,3→fire  4→magma  5→fiery_soul  6→meteor
  * - FIRE_MASTERY 无 activeUse → 不触发 TOKEN_RESPONSE_REQUESTED
- * - magma-armor 基础版投 1 骰（diceCount=1），不生成 displayOnly settlement
+ * - magma-armor 基于防御投掷骰面计算效果（fire面=伤害，fiery_soul面=FM），不额外投骰
  * - 多数纯 buff 技能使用 custom action（target: 'self'，categories 全为 resource/token）→ 跳过防御
  * - soul-burn 拆分为 FM(preDefense) + 伤害(withDamage)，伤害从 pendingAttack.attackDiceFaceCounts 读取骰面
  */
@@ -81,10 +81,9 @@ describe('炎术士 GTR 技能覆盖', () => {
     describe('火球术 (fireball)', () => {
         it('3 火造成 4 伤害 + 获得 1 火焰精通（经过防御阶段）', () => {
             // 进攻骰: [1,1,1,4,5] → 3 fire + 1 magma + 1 fiery_soul
-            // 防御骰: [6,6,6,6,6] → 5 meteor（magma-armor 投 1 骰）
-            // magma-armor 额外骰: 消耗 1 个 random → 值 6 → meteor → 无 fire/fiery_soul → 无效果
+            // 防御骰: [6,6,6,6,6] → 5 meteor（magma-armor 读取防御骰面：无 fire/fiery_soul → 无效果）
             // 流程：offensiveRoll exit → preDefense: +1 FM → isDefendable=true → defensiveRoll
-            //   → magma-armor 投 1 骰 → 无 settlement（1 骰不生成 displayOnly）
+            //   → magma-armor 读取防御骰面 → 无效果
             //   → 4 伤害 → main2
             const random = createQueuedRandom([1, 1, 1, 4, 5, 6, 6, 6, 6, 6, 6]);
             const runner = new GameTestRunner({
@@ -126,10 +125,9 @@ describe('炎术士 GTR 技能覆盖', () => {
             // 进攻骰: [5,5,1,4,6] → 2 fiery_soul + 1 fire + 1 magma + 1 meteor
             // soul-burn-fm: +2 FM (preDefense)
             // soul-burn-damage: 按骰面上 fiery_soul 数量造成伤害 = 2 (withDamage)
-            // 防御骰: [6,6,6,6,6] → 5 meteor（magma-armor 投 1 骰）
-            // magma-armor 额外骰: 消耗 1 个 random → 值 6 → meteor → 无效果
+            // 防御骰: [6,6,6,6,6] → 5 meteor（magma-armor 读取防御骰面：无 fire/fiery_soul → 无效果）
             // 流程：offensiveRoll exit → preDefense: +2 FM → isDefendable=true → defensiveRoll
-            //   → magma-armor 投 1 骰 → 2 伤害 → main2
+            //   → magma-armor 读取防御骰面 → 2 伤害 → main2
             const random = createQueuedRandom([5, 5, 1, 4, 6, 6, 6, 6, 6, 6, 6]);
             const runner = new GameTestRunner({
                 domain: DiceThroneDomain, systems: testSystems,

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { BoardProps } from 'boardgame.io/react';
+import type { GameBoardProps } from '../../engine/transport/protocol';
 
 import { HAND_LIMIT, type TokenResponsePhase } from './domain/types';
 import type { MatchState } from '../../engine/types';
@@ -33,6 +33,7 @@ import { TutorialSelectionGate } from '../../components/game/framework';
 import { OpponentHeader } from './ui/OpponentHeader';
 import { LeftSidebar } from './ui/LeftSidebar';
 import { CenterBoard } from './ui/CenterBoard';
+import { playSound as playSoundFn } from '../../lib/audio/useGameAudio';
 import { RightSidebar } from './ui/RightSidebar';
 import { BoardOverlays } from './ui/BoardOverlays';
 import { GameHints } from './ui/GameHints';
@@ -60,7 +61,7 @@ import { useAttackShowcase } from './hooks/useAttackShowcase';
 import { AttackShowcaseOverlay } from './ui/AttackShowcaseOverlay';
 
 type DiceThroneMatchState = MatchState<DiceThroneCore>;
-type DiceThroneBoardProps = BoardProps<DiceThroneMatchState>;
+type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
 // --- Main Layout ---
 export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, moves, playerID, reset, matchData, isMultiplayer }) => {
     const G = rawG.core;
@@ -242,8 +243,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
     const fxBus = useFxBus(diceThroneFxRegistry, {
         playSound: (key) => {
             // 音效由 FeedbackPack 自动触发，这里只是注入播放函数
-            const { playSound } = require('../../lib/audio/useGameAudio');
-            playSound(key);
+            playSoundFn(key);
         },
         triggerShake: (intensity, type) => {
             // 震动由 FeedbackPack 自动触发
@@ -319,7 +319,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
 
     // 焦点玩家判断（统一的操作权判断）
     const isFocusPlayer = !isSpectator && access.focusPlayerId === rootPid;
-    const hasPendingInteraction = Boolean(pendingInteraction);
+    const _hasPendingInteraction = Boolean(pendingInteraction);
     // 阶段推进权限：从 useDiceThroneState 获取（领域校验 + 交互判断），叠加焦点玩家判断
     // 进攻技能特写期间阻止所有操作
     const canAdvancePhase = isFocusPlayer && access.canAdvancePhase && !isAttackShowcaseVisible;
@@ -664,7 +664,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
 
     // 使用 useAnimationEffects Hook 管理飞行动画效果（基于 FX 引擎）
     // 事件流消费采用模式 A（单一游标），统一处理伤害/治疗等事件
-    useAnimationEffects({
+    const { damageBuffer, fxImpactMapRef, advanceQueue } = useAnimationEffects({
         fxBus,
         players: { player, opponent },
         currentPlayerId: rootPid,
@@ -774,10 +774,26 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                         tokenDefinitions={G.tokenDefinitions}
                         damageFlashActive={opponentImpact.flash.isActive}
                         damageFlashDamage={opponentImpact.flash.damage}
+                        overrideHp={damageBuffer.isBuffering ? damageBuffer.get(`hp-${otherPid}`, opponent.resources[RESOURCE_IDS.HP] ?? 0) : undefined}
                     />
                 )}
 
-                <FxLayer bus={fxBus} getCellPosition={() => ({ left: 0, top: 0, width: 0, height: 0 })} />
+                <FxLayer
+                    bus={fxBus}
+                    getCellPosition={() => ({ left: 0, top: 0, width: 0, height: 0 })}
+                    onEffectImpact={(id) => {
+                        // 飞行动画到达目标：释放对应 HP 冻结
+                        const bufferKey = fxImpactMapRef.current.get(id);
+                        if (bufferKey) {
+                            damageBuffer.release([bufferKey]);
+                            fxImpactMapRef.current.delete(id);
+                        }
+                    }}
+                    onEffectComplete={(id) => {
+                        // 动画完成：推进队列中的下一步（伤害→治疗序列化）
+                        advanceQueue(id);
+                    }}
+                />
                 <div className="absolute inset-x-0 top-[2vw] bottom-0 z-10 pointer-events-none">
                     <LeftSidebar
                         currentPhase={currentPhase}
@@ -797,6 +813,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, ctx, 
                         isSelfShaking={selfImpact.shake.isShaking}
                         selfDamageFlashActive={selfImpact.flash.isActive}
                         selfDamageFlashDamage={selfImpact.flash.damage}
+                        overrideHp={damageBuffer.isBuffering ? damageBuffer.get(`hp-${rootPid}`, player.resources[RESOURCE_IDS.HP] ?? 0) : undefined}
                     />
 
                     <CenterBoard

@@ -23,6 +23,9 @@ import type {
     CardInstance,
     BaseInPlay,
     PlayerState,
+    PowerCounterAddedEvent,
+    PowerCounterRemovedEvent,
+    TempPowerAddedEvent,
 } from './types';
 import type { PlayerId } from '../../../engine/types';
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
@@ -35,6 +38,7 @@ import type { AbilityContext } from './abilityRegistry';
 import { triggerAllBaseAbilities, triggerBaseAbility, triggerExtendedBaseAbility } from './baseAbilities';
 import { fireTriggers, isMinionProtected } from './ongoingEffects';
 import { reduce } from './reduce';
+import { canPlayFromDiscard } from './discardPlayability';
 
 // ============================================================================
 // execute：命令 → 事件
@@ -46,7 +50,7 @@ export function execute(
     random: RandomFn
 ): SmashUpEvent[] {
     const now = typeof command.timestamp === 'number' ? command.timestamp : 0;
-    const core = state.core;
+    const _core = state.core;
 
     // 系统命令（SYS_ 前缀）由引擎层处理，领域层不生成事件
     if ((command as { type: string }).type.startsWith('SYS_')) {
@@ -61,7 +65,7 @@ export function execute(
         state.sys = updatedState.sys;
     }
     
-    // 后处理：onDestroy 触发 → onMove 触发
+    // 后处理：onDestroy 触发 → onMove 触发 → onAffected 触发
     const afterDestroy = processDestroyTriggers(events, state, command.playerId, random, now);
     if (afterDestroy.matchState) {
         state.sys = afterDestroy.matchState.sys;
@@ -70,7 +74,11 @@ export function execute(
     if (afterMove.matchState) {
         state.sys = afterMove.matchState.sys;
     }
-    return afterMove.events;
+    const afterAffect = processAffectTriggers(afterMove.events, state, command.playerId, random, now);
+    if (afterAffect.matchState) {
+        state.sys = afterAffect.matchState.sys;
+    }
+    return afterAffect.events;
 }
 
 /** 内部命令执行（不含后处理） */
@@ -89,7 +97,10 @@ function executeCommand(
     switch (command.type) {
         case SU_COMMANDS.PLAY_MINION: {
             const player = core.players[command.playerId];
-            const card = player.hand.find(c => c.uid === command.payload.cardUid)!;
+            const fromDiscard = command.payload.fromDiscard;
+            const card = fromDiscard
+                ? player.discard.find(c => c.uid === command.payload.cardUid)!
+                : player.hand.find(c => c.uid === command.payload.cardUid)!;
             const minionDef = getMinionDef(card.defId);
             const baseIndex = command.payload.baseIndex;
             const events: SmashUpEvent[] = [];
@@ -103,6 +114,11 @@ function executeCommand(
                     defId: card.defId,
                     baseIndex,
                     power: minionDef?.power ?? 0,
+                    fromDiscard: fromDiscard || undefined,
+                    ...(fromDiscard ? (() => {
+                        const info = canPlayFromDiscard(core, command.playerId, card.uid, baseIndex);
+                        return info ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit } : {};
+                    })() : {}),
                 },
                 sourceCommandType: command.type,
                 timestamp: now,
@@ -484,12 +500,20 @@ export function processDestroyTriggers(
 
     const extraEvents: SmashUpEvent[] = [];
     let ms: MatchState<SmashUpCore> | undefined;
+    // 待拯救随从：trigger 创建了交互（玩家选择是否拯救）但未产生 MINION_RETURNED，
+    // 需要暂缓 MINION_DESTROYED，等交互解决后再决定消灭或拯救
+    const pendingSaveMinionUids = new Set<string>();
+
     for (const de of destroyEvents) {
         const { minionUid, minionDefId, fromBaseIndex, ownerId } = de.payload;
         const base = core.bases[fromBaseIndex];
         const minion = base?.minions.find(m => m.uid === minionUid);
         const destroyerId = minion?.controller ?? ownerId;
         const localEvents: SmashUpEvent[] = [];
+        // 记录本次 trigger 前的交互队列长度，用于检测是否创建了新交互
+        const currentMS = ms ?? state;
+        const interactionCountBefore =
+            (currentMS.sys.interaction.current ? 1 : 0) + currentMS.sys.interaction.queue.length;
 
         // 1. 触发随从自身的 onDestroy 能力
         const executor = resolveOnDestroy(minionDefId);
@@ -541,21 +565,37 @@ export function processDestroyTriggers(
         localEvents.push(...ongoingDestroyEvents.events);
         if (ongoingDestroyEvents.matchState) ms = ongoingDestroyEvents.matchState;
 
-        extraEvents.push(...filterProtectedDestroyEvents(localEvents, core, destroyerId));
+        const filteredLocal = filterProtectedDestroyEvents(localEvents, core, destroyerId);
+        extraEvents.push(...filteredLocal);
+
+        // 检测"待拯救"模式：trigger 创建了新交互但未产生 MINION_RETURNED
+        // 典型场景：九命之屋创建玩家选择交互，暂缓消灭等待玩家决定
+        const hasReturn = filteredLocal.some(e => e.type === SU_EVENTS.MINION_RETURNED);
+        if (!hasReturn && ms) {
+            const interactionCountAfter =
+                (ms.sys.interaction.current ? 1 : 0) + ms.sys.interaction.queue.length;
+            if (interactionCountAfter > interactionCountBefore) {
+                pendingSaveMinionUids.add(minionUid);
+            }
+        }
     }
 
-    const returnedMinionUids = new Set(
+    // 需要抑制的随从 uid：已被 MINION_RETURNED 拯救 + 待交互拯救
+    const suppressedMinionUids = new Set(
         extraEvents
             .filter(e => e.type === SU_EVENTS.MINION_RETURNED)
             .map(e => (e as MinionReturnedEvent).payload.minionUid)
     );
+    for (const uid of pendingSaveMinionUids) {
+        suppressedMinionUids.add(uid);
+    }
 
-    const cleanedEvents = returnedMinionUids.size === 0
+    const cleanedEvents = suppressedMinionUids.size === 0
         ? filteredEvents
         : filteredEvents.filter(e => {
             if (e.type !== SU_EVENTS.MINION_DESTROYED) return true;
             const { minionUid } = (e as MinionDestroyedEvent).payload;
-            return !returnedMinionUids.has(minionUid);
+            return !suppressedMinionUids.has(minionUid);
         });
 
     return { events: [...cleanedEvents, ...extraEvents], matchState: ms };
@@ -638,6 +678,129 @@ export function processMoveTriggers(
     }
 
     return { events: [...filteredEvents, ...extraEvents], matchState: ms };
+}
+
+// ============================================================================
+// onAffected 后处理：扫描"影响"类事件，触发 onMinionAffected
+// 影响 = 消灭 | 移动 | 负力量修改 | 附着对手行动卡
+// ============================================================================
+
+/** 后处理：触发 onMinionAffected（聚合时机） */
+export function processAffectTriggers(
+    events: SmashUpEvent[],
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    random: RandomFn,
+    now: number
+): PostProcessResult {
+    const core = state.core;
+    const extraEvents: SmashUpEvent[] = [];
+    let ms: MatchState<SmashUpCore> | undefined;
+
+    for (const evt of events) {
+        let minionUid: string | undefined;
+        let minionDefId: string | undefined;
+        let baseIndex: number | undefined;
+        let affectType: import('./ongoingEffects').AffectType | undefined;
+        let sourcePlayerId: PlayerId = playerId;
+
+        switch (evt.type) {
+            case SU_EVENTS.MINION_DESTROYED: {
+                const de = evt as MinionDestroyedEvent;
+                minionUid = de.payload.minionUid;
+                minionDefId = de.payload.minionDefId;
+                baseIndex = de.payload.fromBaseIndex;
+                affectType = 'destroy';
+                break;
+            }
+            case SU_EVENTS.MINION_MOVED: {
+                const me = evt as MinionMovedEvent;
+                minionUid = me.payload.minionUid;
+                minionDefId = me.payload.minionDefId;
+                baseIndex = me.payload.fromBaseIndex;
+                affectType = 'move';
+                break;
+            }
+            case SU_EVENTS.POWER_COUNTER_ADDED: {
+                const pe = evt as PowerCounterAddedEvent;
+                // 只有负力量修改算"影响"
+                if (pe.payload.amount < 0) {
+                    minionUid = pe.payload.minionUid;
+                    baseIndex = pe.payload.baseIndex;
+                    affectType = 'power_change';
+                    // 从基地上查找随从 defId
+                    const base = core.bases[baseIndex];
+                    const minion = base?.minions.find(m => m.uid === minionUid);
+                    minionDefId = minion?.defId;
+                }
+                break;
+            }
+            case SU_EVENTS.POWER_COUNTER_REMOVED: {
+                const pe = evt as PowerCounterRemovedEvent;
+                // 移除正力量计数器也算负影响
+                if (pe.payload.amount > 0) {
+                    minionUid = pe.payload.minionUid;
+                    baseIndex = pe.payload.baseIndex;
+                    affectType = 'power_change';
+                    const base = core.bases[baseIndex];
+                    const minion = base?.minions.find(m => m.uid === minionUid);
+                    minionDefId = minion?.defId;
+                }
+                break;
+            }
+            case SU_EVENTS.TEMP_POWER_ADDED: {
+                const te = evt as TempPowerAddedEvent;
+                if (te.payload.amount < 0) {
+                    minionUid = te.payload.minionUid;
+                    baseIndex = te.payload.baseIndex;
+                    affectType = 'power_change';
+                    const base = core.bases[baseIndex];
+                    const minion = base?.minions.find(m => m.uid === minionUid);
+                    minionDefId = minion?.defId;
+                }
+                break;
+            }
+            case SU_EVENTS.ONGOING_ATTACHED: {
+                const oe = evt as OngoingAttachedEvent;
+                // 只有附着到随从上才算"影响"
+                if (oe.payload.targetType === 'minion' && oe.payload.targetMinionUid) {
+                    minionUid = oe.payload.targetMinionUid;
+                    baseIndex = oe.payload.targetBaseIndex;
+                    affectType = 'attach_action';
+                    sourcePlayerId = oe.payload.ownerId;
+                    const base = core.bases[baseIndex];
+                    const minion = base?.minions.find(m => m.uid === minionUid);
+                    minionDefId = minion?.defId;
+                }
+                break;
+            }
+        }
+
+        if (!minionUid || !minionDefId || baseIndex === undefined || !affectType) continue;
+
+        // 查找被影响随从，确认来源是对手
+        const base = core.bases[baseIndex];
+        const minion = base?.minions.find(m => m.uid === minionUid);
+        if (!minion) continue;
+
+        const result = fireTriggers(core, 'onMinionAffected', {
+            state: core,
+            matchState: ms ?? state,
+            playerId: sourcePlayerId,
+            baseIndex,
+            triggerMinionUid: minionUid,
+            triggerMinionDefId: minionDefId,
+            triggerMinion: minion,
+            affectType,
+            random,
+            now,
+        });
+        extraEvents.push(...result.events);
+        if (result.matchState) ms = result.matchState;
+    }
+
+    if (extraEvents.length === 0) return { events };
+    return { events: [...events, ...extraEvents], matchState: ms };
 }
 
 // reduce 函数已提取到 ./reduce.ts

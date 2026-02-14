@@ -2,6 +2,7 @@
 
 > 本文档是 `AGENTS.md` 的补充，包含动效技术选型、Canvas 粒子引擎、特效组件的完整规范。
 > **触发条件**：开发/修改任何动画、特效、粒子效果时阅读。
+> **引擎层动画架构**（表现与逻辑分离、`useVisualStateBuffer`、`useVisualSequenceGate`）见 `docs/ai-rules/engine-systems.md`「动画表现与逻辑分离规范」节。
 
 ---
 
@@ -120,6 +121,26 @@ registry.register('fx.summon', SummonRenderer, { timeoutMs: 4000 }, {
 - **适用**：一个 cue 触发时总是产生相同反馈（如召唤光柱总是震动）。强度可通过 `ctx.intensity` 动态调整，但“是否触发”不应有条件。
 - **不适用**：反馈是否触发取决于运行时状态（如 hits 数量、玩家阶段、特定条件）。这类反馈应由调用侧手动编排，与同一时序链中的其他反馈（音效等）统一管理。
 - **未来扩展**：若条件反馈场景增多（≥3 个不同条件触发），可考虑 UE 拆分 Cue 模式（注册不同 cue 如 `fx.combat.shockwave.light` / `fx.combat.shockwave.heavy`，每个带不同 FeedbackPack），而非在 FeedbackPack 内嵌条件函数。
+
+### 序列特效（`pushSequence`）（强制）
+
+多步骤技能效果（如"移除 token → 造成伤害"、"施加状态 → 治疗"）必须使用 `fxBus.pushSequence()` 编排，禁止并行 push 多个效果让玩家看到同时发生。
+
+```ts
+// 示例：移除 token 动画 → 等 200ms → 伤害飞行数字
+fxBus.pushSequence([
+  { cue: DT_FX.TOKEN, ctx: {}, params: { /* token 移除 */ }, delayAfter: 200 },
+  { cue: DT_FX.DAMAGE, ctx: {}, params: { /* 伤害数字 */ } },
+]);
+```
+
+- 每个步骤等上一个渲染器 `onComplete` 后再播放下一个
+- `delayAfter`（ms）：该步骤完成后、下一步开始前的等待时间，默认 0
+- 序列中某步 cue 未注册会自动跳过继续下一步
+- 安全超时触发也会推进序列，避免卡死
+- `cancelSequence(seqId)` 可取消正在进行的序列
+- 渲染器完全不感知自己是否在序列中，无需适配
+- 返回 `sequenceId`（string），可用于取消
 
 ### 新增特效流程
 1. 在 `src/components/common/animations/` 实现底层动画组件（如已有则复用）

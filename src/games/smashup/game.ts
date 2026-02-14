@@ -54,6 +54,7 @@ const systems: EngineSystem<SmashUpCore>[] = [
         responseAdvanceEvents: [
             { eventType: 'su:action_played', windowTypes: ['meFirst'] },
         ],
+        loopUntilAllPass: true,
         hasRespondableContent: (state, playerId, windowType) => {
             if (windowType !== 'meFirst') return true;
             const core = state as SmashUpCore;

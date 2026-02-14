@@ -6,8 +6,10 @@
 
 import type { GameEvent } from '../../../../engine/types';
 import type { SummonerWarsCore, PlayerId } from '../types';
+import { SW_EVENTS } from '../types';
 import { findBoardUnitByCardId, createAbilityTriggeredEvent } from './helpers';
 import { abilityExecutorRegistry } from '../executors';
+import { abilityRegistry } from '../abilities';
 import type { SWAbilityContext } from '../executors/types';
 
 /**
@@ -76,4 +78,22 @@ export function executeActivateAbility(
 
   const result = executor(ctx);
   events.push(...result.events);
+
+  // 通用机制：技能声明 costsMoveAction 时自动消耗一次移动行动
+  const abilityDef = abilityRegistry.get(abilityId);
+  if (abilityDef?.costsMoveAction) {
+    events.push({
+      type: SW_EVENTS.MOVE_ACTION_CONSUMED,
+      payload: { position: sourcePosition, unitId: sourceUnitId, sourceAbilityId: abilityId },
+      timestamp,
+    });
+  }
+  // 通用机制：技能声明 costsAttackAction 时自动消耗一次攻击行动
+  if (abilityDef?.costsAttackAction) {
+    events.push({
+      type: SW_EVENTS.ATTACK_ACTION_CONSUMED,
+      payload: { position: sourcePosition, unitId: sourceUnitId, sourceAbilityId: abilityId },
+      timestamp,
+    });
+  }
 }

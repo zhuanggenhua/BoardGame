@@ -1,30 +1,36 @@
 /**
  * 大杀四方 - 交互选择覆盖层
  *
- * 三种展示模式：
- * 1. 内联面板（≤3 选项）：底部浮动面板，卡图+并排按钮，不遮挡游戏
- * 2. 卡牌展示（多卡选择）：全屏半透明遮罩 + 卡牌横排
- * 3. 列表模式（>3 文本选项）：全屏深色面板 + 滚动列表
+ * 四种展示模式：
+ * 1. 纯展示模式（pendingReveal）：全屏遮罩 + 卡牌横排 + 确认按钮
+ * 2. 内联面板（≤3 选项）：底部浮动面板，卡图+并排按钮，不遮挡游戏
+ * 3. 卡牌展示（多卡选择）：全屏半透明遮罩 + 卡牌横排
+ * 4. 列表模式（>3 文本选项）：全屏深色面板 + 滚动列表
  *
  * 风格遵循 smashup 设计系统：深色物理感，禁止毛玻璃，使用 GameButton
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import { GameButton } from './GameButton';
+import { CardMagnifyOverlay, type CardMagnifyTarget } from './CardMagnifyOverlay';
 import { INTERACTION_COMMANDS, asSimpleChoice, type InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { PlayerId } from '../../../engine/types';
 import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardDef, getBaseDef, resolveCardName } from '../data/cards';
 import type { CardPreviewRef } from '../../../core';
+import type { SmashUpCore } from '../domain/types';
 
 interface Props {
     interaction: InteractionDescriptor | undefined;
     moves: Record<string, any>;
     playerID: PlayerId | null;
+    /** 纯展示模式：展示 pendingReveal 中的卡牌，点确认关闭 */
+    pendingReveal?: SmashUpCore['pendingReveal'];
+    onDismissReveal?: () => void;
 }
 
 /** 从选项 value 中提取 defId（卡牌/随从/基地） */
@@ -61,10 +67,32 @@ function resolveI18nKeys(text: string, t: (key: string, opts?: any) => string): 
     });
 }
 
-export const PromptOverlay: React.FC<Props> = ({ interaction, moves, playerID }) => {
+/** 鼠标滚轮转水平滚动 */
+function useWheelToHScroll() {
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const handler = (e: WheelEvent) => {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                e.preventDefault();
+                el.scrollLeft += e.deltaY;
+            }
+        };
+        el.addEventListener('wheel', handler, { passive: false });
+        return () => el.removeEventListener('wheel', handler);
+    }, []);
+    return ref;
+}
+
+export const PromptOverlay: React.FC<Props> = ({ interaction, moves, playerID, pendingReveal, onDismissReveal }) => {
     const prompt = asSimpleChoice(interaction);
     const { t } = useTranslation('game-smashup');
+    const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
+    const revealScrollRef = useWheelToHScroll();
+    const cardScrollRef = useWheelToHScroll();
 
+    // 所有 hooks 必须在条件返回之前调用（React hooks 规则）
     const isMyPrompt = !!prompt && prompt.playerId === playerID;
     const isMulti = !!prompt?.multi && isMyPrompt;
     const minSelections = isMulti ? (prompt?.multi?.min ?? 0) : 0;
@@ -103,6 +131,114 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, moves, playerID })
             label: resolveI18nKeys(opt.label, t),
         }));
     }, [prompt?.options, t]);
+
+    // ====== 纯展示模式（pendingReveal 优先于交互） ======
+    if (pendingReveal) {
+        const isViewer = pendingReveal.viewerPlayerId === 'all' || pendingReveal.viewerPlayerId === playerID;
+        // 关闭权限：viewerPlayerId='all' 时由 sourcePlayerId 关闭，否则由查看者关闭
+        const dismisser = pendingReveal.viewerPlayerId === 'all'
+            ? (pendingReveal.sourcePlayerId ?? (
+                Array.isArray(pendingReveal.targetPlayerId)
+                    ? pendingReveal.targetPlayerId[0]
+                    : pendingReveal.targetPlayerId
+            ))
+            : pendingReveal.viewerPlayerId;
+        const canDismiss = playerID === dismisser;
+        const cards = pendingReveal.cards;
+        // 标题：多人展示时显示"所有对手的手牌"
+        const targetLabel = Array.isArray(pendingReveal.targetPlayerId)
+            ? pendingReveal.targetPlayerId.map(id => `P${id}`).join(', ')
+            : `P${pendingReveal.targetPlayerId}`;
+        const revealTitle = pendingReveal.type === 'hand'
+            ? t('ui.reveal_hand_title', { player: targetLabel, defaultValue: 'P{{player}} 的手牌' })
+            : t('ui.reveal_deck_top_title', { player: targetLabel, defaultValue: 'P{{player}} 的牌库顶' });
+
+        return (
+            <AnimatePresence>
+                <motion.div
+                    key="prompt-reveal"
+                    data-testid="card-reveal-overlay"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 flex flex-col items-center justify-center bg-black/70 pointer-events-auto"
+                    style={{ zIndex: UI_Z_INDEX.overlay }}
+                >
+                    <h2 className="text-xl font-black text-amber-100 uppercase tracking-tight mb-5 drop-shadow-lg">
+                        {revealTitle}
+                    </h2>
+                    {!isViewer && (
+                        <div className="mb-4 text-sm text-yellow-400/80 font-bold animate-pulse">
+                            {t('ui.waiting_for_player', { id: pendingReveal.viewerPlayerId })}
+                        </div>
+                    )}
+                    {isViewer && cards.length > 0 ? (
+                        <div ref={revealScrollRef} className="flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-4 smashup-h-scrollbar" data-testid="reveal-cards-area">
+                            {cards.map((card, idx) => {
+                                const def = getCardDef(card.defId);
+                                const name = def ? resolveCardName(def, t) : card.defId;
+                                return (
+                                    <motion.div
+                                        key={card.uid}
+                                        initial={{ y: 40, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
+                                        className="flex-shrink-0 flex flex-col items-center gap-1.5 group relative"
+                                        data-testid={`reveal-card-${card.uid}`}
+                                    >
+                                        <div className="rounded shadow-xl overflow-hidden ring-1 ring-white/20">
+                                            {def?.previewRef ? (
+                                                <CardPreview
+                                                    previewRef={def.previewRef}
+                                                    className="w-[130px] aspect-[0.714] bg-slate-900 rounded"
+                                                    alt={name}
+                                                />
+                                            ) : (
+                                                <div className="w-[130px] aspect-[0.714] bg-slate-800 rounded flex items-center justify-center p-2">
+                                                    <span className="text-white text-xs font-bold text-center">{name}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {/* 放大镜按钮 */}
+                                        <button
+                                            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-1 rounded-full border border-white shadow-md hover:bg-blue-600 hover:scale-110 cursor-zoom-in z-10"
+                                            onClick={(e) => { e.stopPropagation(); setMagnifyTarget({ defId: card.defId, type: def?.type ?? 'action' }); }}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                        </button>
+                                        <span className="text-[11px] font-bold text-white/70 max-w-[130px] truncate text-center">
+                                            {name}
+                                        </span>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    ) : isViewer ? (
+                        <div className="text-sm text-slate-400 text-center py-6">
+                            {t('ui.reveal_no_cards', { defaultValue: '没有可展示的卡牌' })}
+                        </div>
+                    ) : (
+                        <div className="text-sm text-slate-400 text-center py-6">
+                            {t('ui.prompt_wait', { defaultValue: '等待对方确认…' })}
+                        </div>
+                    )}
+                    <div className="mt-5">
+                        {canDismiss ? (
+                            <GameButton variant="primary" size="sm" onClick={onDismissReveal} data-testid="reveal-dismiss-btn">
+                                {t('ui.confirm', { defaultValue: '确认' })}
+                            </GameButton>
+                        ) : (
+                            <span className="text-xs text-slate-500 font-mono uppercase tracking-widest">
+                                {t('ui.prompt_wait', { defaultValue: '等待对方确认…' })}
+                            </span>
+                        )}
+                    </div>
+                    <CardMagnifyOverlay target={magnifyTarget} onClose={() => setMagnifyTarget(null)} />
+                </motion.div>
+            </AnimatePresence>
+        );
+    }
+
 
     if (!prompt) return null;
 
@@ -204,7 +340,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, moves, playerID })
                     )}
 
                     {isMyPrompt && (
-                        <div className="flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-4 no-scrollbar">
+                        <div ref={cardScrollRef} className="flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-4 smashup-h-scrollbar">
                             {cardOptions.map((option, idx) => {
                                 const defId = extractDefId(option.value);
                                 const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
@@ -251,6 +387,19 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, moves, playerID })
                                                 <Check size={12} strokeWidth={3} className="text-black" />
                                             </div>
                                         )}
+                                        {/* 放大镜按钮（多选模式下右上角被勾选占用，放左上角） */}
+                                        {defId && (
+                                            <button
+                                                className={`absolute ${isMulti ? '-top-2 -left-2' : '-top-2 -right-2'} opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-1 rounded-full border border-white shadow-md hover:bg-blue-600 hover:scale-110 cursor-zoom-in z-20`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const cardType = getBaseDef(defId) ? 'base' as const : (def && 'type' in def ? def.type : 'action' as const);
+                                                    setMagnifyTarget({ defId, type: cardType });
+                                                }}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                            </button>
+                                        )}
                                     </motion.div>
                                 );
                             })}
@@ -283,6 +432,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, moves, playerID })
                             )}
                         </div>
                     )}
+                    <CardMagnifyOverlay target={magnifyTarget} onClose={() => setMagnifyTarget(null)} />
                 </motion.div>
             </AnimatePresence>
         );

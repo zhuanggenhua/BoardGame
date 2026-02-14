@@ -36,7 +36,7 @@ import {
   type ConditionNode as PrimitiveConditionNode,
   type ExpressionNode as PrimitiveExpressionNode,
 } from '../../../engine/primitives';
-import { getBaseCardId, isUndeadCard, CARD_IDS } from './ids';
+import { getBaseCardId, isUndeadCard, isPlagueZombieCard, isFortressUnit, CARD_IDS } from './ids';
 
 // ============================================================================
 // 效果解析上下文
@@ -215,7 +215,7 @@ registerConditionHandler(swConditionRegistry, 'hasCardInDiscard', (params, ctx) 
       return isUndeadCard(card);
     }
     if (cardType === 'plagueZombie') {
-      return card.id.includes('plague-zombie') || card.name?.includes('疫病体');
+      return isPlagueZombieCard(card);
     }
     return card.cardType === cardType;
   });
@@ -479,8 +479,8 @@ export function resolveEffect(
       const targets = resolveTargetUnits(effect.target, ctx);
       for (const target of targets) {
         // 检查目标是否有稳固（stable）技能（含交缠颂歌共享）
-        const targetAbilityDefs = getUnitAbilities(target, ctx.state);
-        if (targetAbilityDefs.some(a => a.id === 'stable')) {
+        const targetAbilityIds = getUnitAbilities(target, ctx.state);
+        if (targetAbilityIds.includes('stable')) {
           // 稳固免疫推拉，不生成事件
           continue;
         }
@@ -621,7 +621,7 @@ export function getUnitBaseAbilities(unit: UnitInstance): AbilityDef[] {
 export function getUnitAbilities(unit: UnitInstance, state: SummonerWarsCore): AbilityDef[] {
   const baseIds = unit.card.abilities ?? [];
   const tempIds = unit.tempAbilities ?? [];
-  let abilityIds = tempIds.length > 0 ? [...baseIds, ...tempIds] : [...baseIds];
+  const abilityIds = tempIds.length > 0 ? [...baseIds, ...tempIds] : [...baseIds];
 
   // 交缠颂歌：检查主动事件区是否有交缠颂歌标记了本单位
   for (const pid of ['0', '1'] as PlayerId[]) {
@@ -634,10 +634,18 @@ export function getUnitAbilities(unit: UnitInstance, state: SummonerWarsCore): A
       let partnerBaseAbilities: string[] | undefined;
       if (t1 === unit.cardId) {
         const partner = findUnitOnBoard(state, t2);
-        if (partner) partnerBaseAbilities = partner.card.abilities ?? [];
+        if (partner) {
+          const base = partner.card.abilities ?? [];
+          const temp = partner.tempAbilities ?? [];
+          partnerBaseAbilities = temp.length > 0 ? [...base, ...temp] : [...base];
+        }
       } else if (t2 === unit.cardId) {
         const partner = findUnitOnBoard(state, t1);
-        if (partner) partnerBaseAbilities = partner.card.abilities ?? [];
+        if (partner) {
+          const base = partner.card.abilities ?? [];
+          const temp = partner.tempAbilities ?? [];
+          partnerBaseAbilities = temp.length > 0 ? [...base, ...temp] : [...base];
+        }
       }
       if (partnerBaseAbilities) {
         for (const a of partnerBaseAbilities) {
@@ -827,7 +835,7 @@ export function calculateEffectiveStrength(
       for (let col = 0; col < BOARD_COLS; col++) {
         const other = state.board[row]?.[col]?.unit;
         if (other && other.owner === unit.owner && other.cardId !== unit.cardId
-          && other.card.id.includes('fortress')
+          && isFortressUnit(other.card)
           && manhattanDistance(unit.position, { row, col }) <= 2) {
           strength += 1;
         }
