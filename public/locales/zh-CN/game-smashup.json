@@ -40,6 +40,7 @@
     "me_first_select_base": "点击一个达标基地来打出特殊牌",
     "me_first_click_base": "点击达标基地",
     "cancel": "取消",
+    "continue": "继续",
     "your_turn_prompt": "现在轮到你了",
     "waiting_for_player": "正在等待 P{{id}}",
     "select_factions_title": "选择你的派系",

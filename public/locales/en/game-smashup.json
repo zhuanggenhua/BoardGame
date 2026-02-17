@@ -40,6 +40,7 @@
     "me_first_select_base": "Click an eligible base to play your Special card",
     "me_first_click_base": "Click eligible base",
     "cancel": "Cancel",
+    "continue": "Continue",
     "your_turn_prompt": "It's your turn now",
     "waiting_for_player": "Waiting for P{{id}}",
     "select_factions_title": "Draft Your Factions",
