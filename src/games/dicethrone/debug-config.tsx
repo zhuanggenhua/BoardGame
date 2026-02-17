@@ -4,6 +4,8 @@
  */
 
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { resolveCardDisplayName } from '../../components/game/framework/debug/cardNameResolver';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface DiceThroneDebugConfigProps {
@@ -12,6 +14,7 @@ interface DiceThroneDebugConfigProps {
 }
 
 export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G, dispatch }) => {
+    const { t } = useTranslation('game-dicethrone');
     // ========== 资源作弊 ==========
     const [cheatPlayer, setCheatPlayer] = useState<string>('0');
     const [cheatResource, setCheatResource] = useState<string>('cp');
@@ -43,10 +46,6 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
         );
     }, [playerDeck, deckIndex]);
 
-    // 获取卡牌显示名称（i18n 中文）
-    const getCardDisplayName = (card: any): string => {
-        return card.i18n?.['zh-CN']?.name || card.id;
-    };
     const sortedDeckCards = useMemo(() => {
         return [...playerDeck].sort((a: any, b: any) => {
             const ai = a.previewRef?.type === 'atlas' ? a.previewRef.index : 999;
@@ -286,7 +285,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                         <div className="text-[9px] text-green-600 mb-1">
                             牌库剩余: {playerDeck.length} 张
                             {cardInDeck ? (
-                                <span className="ml-1 text-green-700">| 牌库中存在: {getCardDisplayName(cardInDeck)}</span>
+                                <span className="ml-1 text-green-700">| 牌库中存在: {resolveCardDisplayName(cardInDeck, t)}</span>
                             ) : (
                                 <span className="ml-1 text-red-400">| 牌库中不存在该索引</span>
                             )}
@@ -338,7 +337,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                                         }`}>
                                             {card.type === 'upgrade' ? '升级' : '行动'}
                                         </span>
-                                        <span className="flex-1 truncate">{getCardDisplayName(card)}</span>
+                                        <span className="flex-1 truncate">{resolveCardDisplayName(card, t)}</span>
                                         <span className="text-purple-500 text-[9px]">💎{card.cpCost}</span>
                                         <span className="text-green-500 text-[8px]">✓ 可发</span>
                                     </div>
@@ -372,7 +371,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                                     }`}>
                                         {card.type === 'upgrade' ? '升级' : '行动'}
                                     </span>
-                                    <span className="flex-1 truncate">{getCardDisplayName(card)}</span>
+                                    <span className="flex-1 truncate">{resolveCardDisplayName(card, t)}</span>
                                     <span className="text-purple-500">💎{card.cpCost}</span>
                                 </div>
                             ))}

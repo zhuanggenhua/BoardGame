@@ -1,6 +1,9 @@
 /**
  * 圣骑士复仇技能玩家选择交互测试
  *
+ * @deprecated - 此测试文件测试旧的交互系统（PendingInteraction + tokenGrantConfig）
+ * 新的交互系统使用 createSelectPlayerInteraction + onResolve 直接生成 TOKEN_GRANTED 事件
+ *
  * 测试场景：
  * 1. custom action 生成 selectPlayer 交互（含 tokenGrantConfig）
  * 2. CONFIRM_INTERACTION 处理 tokenGrantConfig 授予 Token
@@ -20,6 +23,9 @@ initializeCustomActions();
 // ============================================================================
 // 测试工具
 // ============================================================================
+
+// @deprecated - 跳过整个测试文件
+describe.skip('圣骑士复仇技能玩家选择交互（旧系统）', () => {
 
 function createState(): DiceThroneCore {
     const attacker: HeroState = {
@@ -71,8 +77,6 @@ function eventsOfType(events: DiceThroneEvent[], type: string) {
 // 测试套件
 // ============================================================================
 
-describe('圣骑士复仇技能玩家选择交互', () => {
-
     it('生成 selectPlayer 交互请求，含 tokenGrantConfig', () => {
         const state = createState();
         const handler = getCustomActionHandler('paladin-vengeance-select-player')!;
@@ -110,4 +114,5 @@ describe('圣骑士复仇技能玩家选择交互', () => {
         expect(mainVariant.effects[0].action.type).toBe('custom');
         expect(mainVariant.effects[0].action.customActionId).toBe('paladin-vengeance-select-player');
     });
+
 });

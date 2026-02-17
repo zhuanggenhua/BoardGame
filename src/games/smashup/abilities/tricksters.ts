@@ -105,6 +105,24 @@ function tricksterDisenchant(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+/** 隐蔽迷雾 onPlay：打出当回合给予额外随从（与大法师同理，ongoing 能力在进入场上时生效） */
+function tricksterEnshroudingMistOnPlay(ctx: AbilityContext): AbilityResult {
+    // 打出当回合立即给予额外随从（限定到此基地）
+    return {
+        events: [{
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: {
+                playerId: ctx.playerId,
+                limitType: 'minion' as const,
+                delta: 1,
+                reason: 'trickster_enshrouding_mist',
+                restrictToBase: ctx.baseIndex,
+            },
+            timestamp: ctx.now,
+        } as LimitModifiedEvent],
+    };
+}
+
 /** 注册诡术师派系所有能力*/
 export function registerTricksterAbilities(): void {
     registerAbility('trickster_gnome', 'onPlay', tricksterGnome);
@@ -118,6 +136,8 @@ export function registerTricksterAbilities(): void {
     registerAbility('trickster_mark_of_sleep', 'onPlay', tricksterMarkOfSleep);
     // 封路（ongoing）：打出时选择一个派系
     registerAbility('trickster_block_the_path', 'onPlay', tricksterBlockThePath);
+    // 隐蔽迷雾（ongoing）：打出当回合也给予额外随从（与大法师同理）
+    registerAbility('trickster_enshrouding_mist', 'onPlay', tricksterEnshroudingMistOnPlay);
 
     // 注册 ongoing 拦截?
     registerTricksterOngoingEffects();
@@ -338,30 +358,6 @@ function registerTricksterOngoingEffects(): void {
                 type: SU_EVENTS.LIMIT_MODIFIED,
                 payload: {
                     playerId: mist.ownerId,
-                    limitType: 'minion' as const,
-                    delta: 1,
-                    reason: 'trickster_enshrouding_mist',
-                    restrictToBase: bi,
-                },
-                timestamp: trigCtx.now,
-            }];
-        }
-        return [];
-    });
-
-    // 迷雾笼罩：打出当回合也给予额外随从（与大法师同理，ongoing 能力在进入场上时生效）
-    registerTrigger('trickster_enshrouding_mist', 'onActionPlayed', (trigCtx) => {
-        // 只有打出的是隐蔽迷雾本身时才触发
-        if (trigCtx.triggerActionDefId !== 'trickster_enshrouding_mist') return [];
-        // 找到刚打出的隐蔽迷雾所在基地
-        for (let bi = 0; bi < trigCtx.state.bases.length; bi++) {
-            const base = trigCtx.state.bases[bi];
-            const mist = base.ongoingActions.find(o => o.defId === 'trickster_enshrouding_mist' && o.ownerId === trigCtx.playerId);
-            if (!mist) continue;
-            return [{
-                type: SU_EVENTS.LIMIT_MODIFIED,
-                payload: {
-                    playerId: trigCtx.playerId,
                     limitType: 'minion' as const,
                     delta: 1,
                     reason: 'trickster_enshrouding_mist',

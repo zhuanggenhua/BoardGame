@@ -28,6 +28,10 @@ export const CHEAT_COMMANDS = {
     DEAL_CARD_BY_INDEX: 'SYS_CHEAT_DEAL_CARD_BY_INDEX',
     /** 根据图集索引将牌库卡牌移入弃牌堆 */
     DEAL_CARD_TO_DISCARD: 'SYS_CHEAT_DEAL_CARD_TO_DISCARD',
+    /** 刷新基地（SmashUp 专用） */
+    REFRESH_BASE: 'SYS_CHEAT_REFRESH_BASE',
+    /** 刷新所有基地（SmashUp 专用） */
+    REFRESH_ALL_BASES: 'SYS_CHEAT_REFRESH_ALL_BASES',
     /** 设置骰子面 */
     SET_DICE: 'SYS_CHEAT_SET_DICE',
     /** 设置 Token 数量 */
@@ -103,6 +107,11 @@ export interface DealCardToDiscardPayload {
     atlasIndex: number;
 }
 
+export interface RefreshBasePayload {
+    /** 要刷新的基地索引 */
+    baseIndex: number;
+}
+
 // ============================================================================
 // 通用资源修改器接口
 // ============================================================================
@@ -126,6 +135,10 @@ export interface CheatResourceModifier<TCore> {
     dealCardByAtlasIndex?: (core: TCore, playerId: PlayerId, atlasIndex: number) => TCore;
     /** 根据图集索引将牌库卡牌移入弃牌堆（可选） */
     dealCardToDiscard?: (core: TCore, playerId: PlayerId, atlasIndex: number) => TCore;
+    /** 刷新基地（可选，SmashUp 专用） */
+    refreshBase?: (core: TCore, baseIndex: number) => { core: TCore; events: Array<{ type: string; payload: unknown; timestamp: number }> };
+    /** 刷新所有基地（可选，SmashUp 专用） */
+    refreshAllBases?: (core: TCore) => { core: TCore; events: Array<{ type: string; payload: unknown; timestamp: number }> };
 }
 
 // ============================================================================
@@ -311,6 +324,27 @@ export function createCheatSystem<TCore>(
                 return {
                     halt: true,
                     state: { ...state, core: newCore },
+                };
+            }
+
+            // 处理刷新基地命令（SmashUp 专用）
+            if (command.type === CHEAT_COMMANDS.REFRESH_BASE && modifier.refreshBase) {
+                const payload = command.payload as RefreshBasePayload;
+                const result = modifier.refreshBase(state.core, payload.baseIndex);
+                return {
+                    halt: true,
+                    state: { ...state, core: result.core },
+                    events: result.events,
+                };
+            }
+
+            // 处理刷新所有基地命令（SmashUp 专用）
+            if (command.type === CHEAT_COMMANDS.REFRESH_ALL_BASES && modifier.refreshAllBases) {
+                const result = modifier.refreshAllBases(state.core);
+                return {
+                    halt: true,
+                    state: { ...state, core: result.core },
+                    events: result.events,
                 };
             }
 

@@ -228,6 +228,7 @@ describe('CustomAction 覆盖完整性审计', () => {
         // 暗影盗贼（通过 TokenDef passiveTrigger 或 flowHooks 调用）
         'shadow_thief-steal-cp',
         'shadow_thief-sneak-attack-use',
+        'shadow_thief-cornucopia-discard', // 聚宝盆旧版 handler（向后兼容）
         // 僧侣（通用状态移除，由卡牌系统直接调用）
         'remove-status-self',
     ]);

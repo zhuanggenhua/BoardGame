@@ -74,6 +74,7 @@ interface StatusBannersProps {
   afterAttackAbilityMode: AfterAttackAbilityModeState | null;
   rapidFireMode: import('./modeTypes').RapidFireModeState | null;
   telekinesisTargetMode: { abilityId: string; targetPosition: CellCoord } | null;
+  magicEventChoiceMode: { cardId: string } | null;
   // 回调
   onCancelAbility: () => void;
   onConfirmBeforeAttackCards: () => void;
@@ -109,6 +110,9 @@ interface StatusBannersProps {
   onConfirmTelekinesis: (direction: 'push' | 'pull') => void;
   onCancelTelekinesis: () => void;
   onAfterMoveSelfCharge: () => void;
+  onPlayMagicEvent: () => void;
+  onDiscardMagicEvent: () => void;
+  onCancelMagicEventChoice: () => void;
 }
 
 // ============================================================================
@@ -176,7 +180,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   currentPhase, isMyTurn, core,
   abilityMode, pendingBeforeAttack, bloodSummonMode, annihilateMode, soulTransferMode, funeralPyreMode,
   mindControlMode, chantEntanglementMode, sneakMode, glacialShiftMode, withdrawMode, stunMode, hypnoticLureMode,
-  mindCaptureMode, afterAttackAbilityMode, rapidFireMode, telekinesisTargetMode,
+  mindCaptureMode, afterAttackAbilityMode, rapidFireMode, telekinesisTargetMode, magicEventChoiceMode,
   onCancelAbility, onConfirmBeforeAttackCards, onConfirmBloodRune, onConfirmIceShards, onConfirmFeedBeastSelfDestroy,
   onCancelBeforeAttack, onCancelBloodSummon, onContinueBloodSummon,
   onCancelAnnihilate, onConfirmAnnihilateTargets, onSkipAnnihilateDamage,
@@ -192,8 +196,39 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   onConfirmRapidFire, onCancelRapidFire,
   onConfirmTelekinesis, onCancelTelekinesis,
   onAfterMoveSelfCharge,
+  onPlayMagicEvent, onDiscardMagicEvent, onCancelMagicEventChoice,
 }) => {
   const { t } = useTranslation('game-summonerwars');
+
+  // 调试日志（详细输出所有模式状态）
+  console.log('[StatusBanners] Render:', {
+    magicEventChoiceMode,
+    abilityMode: abilityMode?.abilityId,
+    pendingBeforeAttack: pendingBeforeAttack?.abilityId,
+    bloodSummonMode: bloodSummonMode?.step,
+    currentPhase,
+    isMyTurn,
+  });
+
+  // 监听 magicEventChoiceMode 变化
+  React.useEffect(() => {
+    console.log('[StatusBanners] magicEventChoiceMode changed:', magicEventChoiceMode);
+  }, [magicEventChoiceMode]);
+
+  // 魔力阶段事件卡选择模式优先级最高
+  if (magicEventChoiceMode) {
+    console.log('[StatusBanners] Rendering magic event choice banner');
+    return (
+      <div className="bg-purple-900/95 px-4 py-2 rounded-lg border border-purple-500/40 flex items-center gap-3 shadow-lg">
+        <span className="text-purple-200 text-sm font-bold">
+          {t('statusBanners.magicEventChoice.message', '选择：打出事件卡或弃牌换魔力')}
+        </span>
+        <GameButton onClick={onPlayMagicEvent} variant="primary" size="sm">{t('actions.playEvent', '打出')}</GameButton>
+        <GameButton onClick={onDiscardMagicEvent} variant="secondary" size="sm">{t('actions.discardForMagic', '弃牌')}</GameButton>
+        <GameButton onClick={onCancelMagicEventChoice} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
+      </div>
+    );
+  }
 
   // 获取源单位的充能数（用于检查按钮是否应该禁用）
   let sourceUnitBoosts = 0;

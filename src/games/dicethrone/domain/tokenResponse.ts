@@ -51,6 +51,41 @@ export function getUsableTokensForTiming(
 }
 
 /**
+ * 获取玩家在攻击掷骰阶段结束时可用的 Token 列表（暴击、精准）
+ * @param expectedDamage 预期伤害（用于暴击的门控条件：伤害≥5）
+ */
+export function getUsableTokensForOffensiveRollEnd(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    expectedDamage: number
+): TokenDef[] {
+    const player = state.players[playerId];
+    if (!player) return [];
+
+    return (state.tokenDefinitions ?? []).filter(def => {
+        if (def.category !== 'consumable') return false;
+        if (!def.activeUse?.timing?.includes('onOffensiveRollEnd')) return false;
+        if ((player.tokens[def.id] ?? 0) <= 0) return false;
+        
+        // 暴击门控：伤害≥5
+        if (def.id === TOKEN_IDS.CRIT && expectedDamage < 5) return false;
+        
+        return true;
+    });
+}
+
+/**
+ * 检查玩家是否有攻击掷骰阶段结束时可用的 Token
+ */
+export function hasOffensiveRollEndTokens(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    expectedDamage: number
+): boolean {
+    return getUsableTokensForOffensiveRollEnd(state, playerId, expectedDamage).length > 0;
+}
+
+/**
  * 检查玩家是否有可用于减伤的 Token（beforeDamageReceived）
  */
 export function hasDefensiveTokens(state: DiceThroneCore, playerId: PlayerId): boolean {

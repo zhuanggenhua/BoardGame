@@ -196,12 +196,11 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
     }
 
     // 有需要玩家确认的阶段结束技能时，halt 阶段推进
-    // 玩家确认/跳过后再次 ADVANCE_PHASE 时，flowHalted 已为 true，不再重复 halt
-    if (!state.sys?.flowHalted) {
-      const needsConfirmation = hasConfirmablePhaseEndAbility(core, playerId, from as GamePhase);
-      if (needsConfirmation) {
-        return { events, halt: true };
-      }
+    // 即使 flowHalted 已为 true，仍需检查是否还有技能需要确认
+    // 只有当所有技能都确认/跳过后，才允许阶段推进
+    const needsConfirmation = hasConfirmablePhaseEndAbility(core, playerId, from as GamePhase);
+    if (needsConfirmation) {
+      return { events, halt: true };
     }
 
     return { events };

@@ -6,7 +6,7 @@
 import type { GameEvent } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import { INTERACTION_EVENTS, queueInteraction, resolveInteraction, createSimpleChoice } from '../../../engine/systems/InteractionSystem';
-import type { PromptOption } from '../../../engine/systems/InteractionSystem';
+import type { PromptOption, SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type {
     DiceThroneCore,
@@ -41,7 +41,10 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
             let newState = state;
             const nextEvents: GameEvent[] = [];
 
+            console.log('[DT Systems] afterEvents called with', events.length, 'events');
+            
             for (const event of events) {
+                console.log('[DT Systems] Processing event', event.type);
                 const dtEvent = event as DiceThroneEvent;
                 
                 // 处理 CHOICE_REQUESTED 事件 -> 创建 Prompt
@@ -83,22 +86,56 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     newState = queueInteraction(newState, interaction);
                 }
 
-                // ---- INTERACTION_REQUESTED → queue dt:card-interaction ----
+                // ---- INTERACTION_REQUESTED → queue interaction with onResolve callback ----
+                // 新的交互工厂（createSelectStatusInteraction 等）返回 INTERACTION_REQUESTED 事件
+                // 这些事件包含 onResolve 回调，需要在交互解决时调用
                 if (dtEvent.type === 'INTERACTION_REQUESTED') {
-                    const payload = (dtEvent as InteractionRequestedEvent).payload;
-                    const interaction: InteractionDescriptor = {
-                        id: `dt-interaction-${payload.interaction.id}`,
-                        kind: 'dt:card-interaction',
-                        playerId: payload.interaction.playerId,
-                        data: payload.interaction,
+                    const payload = dtEvent.payload as {
+                        kind?: string;
+                        playerId: string;
+                        sourceId?: string;
+                        data?: { options?: PromptOption[]; [key: string]: unknown };
+                        onResolve?: (value: unknown) => DiceThroneEvent[];
+                        // 兼容 createSimpleChoice 返回的字段（直接在 payload 上）
+                        id?: string;
+                        title?: string;
+                        options?: PromptOption[];
                     };
-                    newState = queueInteraction(newState, interaction);
+                    
+                    // 检查是否是新的交互格式（payload 包含 id 和 data）
+                    if (payload.id && payload.data) {
+                        // 直接使用 payload 作为 InteractionDescriptor
+                        const interaction: InteractionDescriptor = {
+                            id: payload.id,
+                            kind: payload.kind ?? 'simple-choice',
+                            playerId: payload.playerId,
+                            data: payload.data,
+                        };
+                        
+                        // 如果有 onResolve 回调，将其存储在 interaction.data 中
+                        // 这样在 SYS_INTERACTION_RESOLVED 时可以通过 payload.interactionData 访问
+                        if (payload.onResolve) {
+                            (interaction.data as { onResolve?: (value: unknown) => DiceThroneEvent[] }).onResolve = payload.onResolve;
+                        }
+                        
+                        newState = queueInteraction(newState, interaction);
+                    }
+                }
+                
+                // ---- INTERACTION_QUEUED → queue (新模式) ----
+                // 新的 custom action handlers 直接产生 INTERACTION_QUEUED 事件
+                if (dtEvent.type === 'INTERACTION_QUEUED') {
+                    const payload = dtEvent.payload as { interaction: InteractionDescriptor };
+                    newState = queueInteraction(newState, payload.interaction);
                 }
 
+                // @deprecated - 旧交互系统已废弃
+                /*
                 // ---- INTERACTION_COMPLETED / INTERACTION_CANCELLED → resolve ----
                 if (dtEvent.type === 'INTERACTION_COMPLETED' || dtEvent.type === 'INTERACTION_CANCELLED') {
                     newState = resolveInteraction(newState);
                 }
+                */
 
                 // ---- TOKEN_RESPONSE_REQUESTED → queue/update dt:token-response ----
                 // 业务数据仅存 core.pendingDamage；sys.interaction 只做阻塞标记
@@ -160,6 +197,28 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 const resolvedEvent = handlePromptResolved(event);
                 if (resolvedEvent) {
                     nextEvents.push(resolvedEvent);
+                }
+                
+                // ---- SYS_INTERACTION_RESOLVED → 调用 onResolve 回调生成后续事件 ----
+                // 根据交互类型和响应值生成相应的领域事件
+                if (event.type === INTERACTION_EVENTS.RESOLVED) {
+                    const payload = event.payload as {
+                        interactionId: string;
+                        value: unknown;
+                        sourceId?: string;
+                        interactionData?: unknown;
+                    };
+                    
+                    // 检查 interactionData 中是否有 onResolve 回调
+                    // createSelectStatusInteraction 等工厂函数会将 onResolve 存储在这里
+                    const interactionData = payload.interactionData as { onResolve?: (value: unknown) => DiceThroneEvent[] } | undefined;
+                    if (interactionData?.onResolve && typeof interactionData.onResolve === 'function') {
+                        // 调用 onResolve 回调生成后续事件
+                        const resolvedEvents = interactionData.onResolve(payload.value);
+                        if (Array.isArray(resolvedEvents)) {
+                            nextEvents.push(...resolvedEvents);
+                        }
+                    }
                 }
 
                 // ---- 被动能力触发器：ABILITY_ACTIVATED + pray 面 → 获得 CP ----
@@ -240,10 +299,10 @@ export function handlePromptResolved(
         type: 'CHOICE_RESOLVED',
         payload: {
             playerId: payload.playerId,
-            statusId: payload.value.statusId,
-            tokenId: payload.value.tokenId,
-            value: payload.value.value,
-            customId: payload.value.customId,
+            statusId: payload.value?.statusId,
+            tokenId: payload.value?.tokenId,
+            value: payload.value?.value ?? 0,
+            customId: payload.value?.customId,
             sourceAbilityId: payload.sourceId,
         },
         sourceCommandType: 'RESOLVE_CHOICE',

@@ -122,6 +122,10 @@ src/components/
 │       ├── ResourceTraySkeleton.tsx
 │       ├── SpotlightSkeleton.tsx
 │       ├── types.ts
+│       ├── debug/
+│       │   ├── cardNameResolver.ts
+│       │   └── __tests__/
+│       │       └── cardNameResolver.test.ts
 │       └── hooks/
 │           ├── index.ts
 │           ├── useAutoSkipPhase.ts

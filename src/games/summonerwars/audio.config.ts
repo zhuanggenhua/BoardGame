@@ -4,8 +4,9 @@
  */
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig, SoundKey } from '../../lib/audio/types';
 import { pickDiceRollSoundKey, pickRandomSoundKey } from '../../lib/audio/audioUtils';
+import { createFeedbackResolver } from '../../lib/audio/defineEvents';
 import type { GamePhase, PlayerId, SummonerWarsCore, FactionId } from './domain/types';
-import { SW_EVENTS } from './domain/types';
+import { SW_EVENTS } from './domain/events';
 import { resolveFactionId } from './config/factions';
 import { abilityRegistry, NECROMANCER_ABILITIES } from './domain/abilities';
 import { TRICKSTER_ABILITIES } from './domain/abilities-trickster';
@@ -415,24 +416,17 @@ export const SUMMONER_WARS_AUDIO_CONFIG: GameAudioConfig = {
             { currentPlayerId: PlayerId }
         >;
 
-        // ==== 有动画/FX 的事件：返回 null，音效由动画层在 onImpact 播放 ====
-        if (type === SW_EVENTS.UNIT_ATTACKED) return null;
-        if (type === SW_EVENTS.UNIT_DAMAGED) return null;
-        if (type === SW_EVENTS.UNIT_DESTROYED) return null;
-        if (type === SW_EVENTS.STRUCTURE_DESTROYED) return null;
-        if (type === SW_EVENTS.UNIT_SUMMONED) return null;
+        // ========== 特殊处理逻辑（覆盖框架默认）==========
 
-        // ==== 能力音效（战斗事件已排除，此处仅处理非战斗能力） ====
+        // 能力音效（战斗事件已排除，此处仅处理非战斗能力）
         const abilitySound = resolveAbilitySound(event);
         if (abilitySound) return abilitySound;
 
-        if (type === SW_EVENTS.FACTION_SELECTED) return SELECTION_KEY;
-        if (type === SW_EVENTS.PLAYER_READY) return POSITIVE_SIGNAL_KEY;
-        if (type === SW_EVENTS.HOST_STARTED || type === SW_EVENTS.GAME_INITIALIZED) return UPDATE_CHIME_KEY;
-        if (type === SW_EVENTS.PHASE_CHANGED) return 'fantasy.gothic_fantasy_sound_fx_pack_vol.musical.drums_of_fate_001';
-        if (type === SW_EVENTS.TURN_CHANGED) return TURN_CHANGED_KEY;
-        
-        if (type === SW_EVENTS.UNIT_MOVED) {
+        // FACTION_SELECTED：UI 层已播放，跳过 EventStream
+        if (type === SW_EVENTS.FACTION_SELECTED.type) return null;
+
+        // UNIT_MOVED：根据阵营选择移动音效
+        if (type === SW_EVENTS.UNIT_MOVED.type) {
             const movePayload = (event as AudioEvent & { payload?: { to?: { row: number; col: number } } }).payload;
             const to = movePayload?.to;
             const movedUnit = to ? runtime.G?.board?.[to.row]?.[to.col]?.unit : undefined;
@@ -444,7 +438,9 @@ export const SUMMONER_WARS_AUDIO_CONFIG: GameAudioConfig = {
             }
             return MOVE_FALLBACK_KEY;
         }
-        if (type === SW_EVENTS.STRUCTURE_BUILT) {
+
+        // STRUCTURE_BUILT：根据建筑类型选择音效
+        if (type === SW_EVENTS.STRUCTURE_BUILT.type) {
             const buildPayload = (event as AudioEvent & { payload?: { card?: { isGate?: boolean } } }).payload;
             if (buildPayload?.card?.isGate) {
                 return pickRandomSoundKey('summonerwars.gate_build', GATE_BUILD_KEYS, { minGap: 1 });
@@ -452,52 +448,21 @@ export const SUMMONER_WARS_AUDIO_CONFIG: GameAudioConfig = {
             return pickRandomSoundKey('summonerwars.wall_build', WALL_BUILD_KEYS, { minGap: 1 });
         }
 
-        if (type === SW_EVENTS.UNIT_HEALED || type === SW_EVENTS.STRUCTURE_HEALED) return HEAL_KEY;
-
-        if (type === SW_EVENTS.MAGIC_CHANGED) {
+        // MAGIC_CHANGED：根据增减选择音效
+        if (type === SW_EVENTS.MAGIC_CHANGED.type) {
             const delta = (event as AudioEvent & { payload?: { delta?: number } }).payload?.delta ?? 0;
             return delta >= 0 ? MAGIC_GAIN_KEY : MAGIC_SPEND_KEY;
         }
 
-        if (type === SW_EVENTS.CARD_DRAWN) return CARD_DRAW_KEY;
-        if (type === SW_EVENTS.CARD_DISCARDED || type === SW_EVENTS.ACTIVE_EVENT_DISCARDED) return CARD_DISCARD_KEY;
-        if (type === SW_EVENTS.EVENT_PLAYED || type === SW_EVENTS.EVENT_ATTACHED) return EVENT_PLAY_KEY;
-        if (type === SW_EVENTS.CARD_RETRIEVED) return CARD_DRAW_KEY;
-
-        if (type === SW_EVENTS.UNIT_CHARGED || type === SW_EVENTS.FUNERAL_PYRE_CHARGED) return UNIT_CHARGE_KEY;
-        if (type === SW_EVENTS.HEALING_MODE_SET) return HEAL_MODE_KEY;
-
-        if (type === SW_EVENTS.DAMAGE_REDUCED) return STRUCTURE_DAMAGE_KEY;
-        if (type === SW_EVENTS.EXTRA_ATTACK_GRANTED) return POSITIVE_SIGNAL_KEY;
-        if (type === SW_EVENTS.STRENGTH_MODIFIED) {
+        // STRENGTH_MODIFIED：根据增减选择音效
+        if (type === SW_EVENTS.STRENGTH_MODIFIED.type) {
             const delta = (event as AudioEvent & { payload?: { delta?: number } }).payload?.delta ?? 0;
             return delta >= 0 ? UNIT_CHARGE_KEY : MAGIC_SPEND_KEY;
         }
-        if (type === SW_EVENTS.ABILITIES_COPIED) return MAGIC_SHOCK_KEY;
 
-        // 冰霜战斧附加（无动画，路径①即时播放冰系音效）
-        if (type === SW_EVENTS.UNIT_ATTACHED) {
-            return pickRandomSoundKey('summonerwars.unit_attached', ICE_KEYS, { minGap: 1 });
-        }
-
-        if (type === SW_EVENTS.UNIT_PUSHED || type === SW_EVENTS.UNIT_PULLED || type === SW_EVENTS.UNITS_SWAPPED) {
-            return pickRandomSoundKey('summonerwars.move_swing', MOVE_SWING_KEYS, { minGap: 1 });
-        }
-
-        if (type === SW_EVENTS.CONTROL_TRANSFERRED || type === SW_EVENTS.ABILITY_TRIGGERED || type === SW_EVENTS.HYPNOTIC_LURE_MARKED) {
-            return MAGIC_SHOCK_KEY;
-        }
-
-        if (
-            type === SW_EVENTS.SUMMON_FROM_DISCARD_REQUESTED
-            || type === SW_EVENTS.SOUL_TRANSFER_REQUESTED
-            || type === SW_EVENTS.MIND_CAPTURE_REQUESTED
-            || type === SW_EVENTS.GRAB_FOLLOW_REQUESTED
-        ) {
-            return PROMPT_KEY;
-        }
-
-        return null;
+        // ========== 使用框架自动生成的默认音效 ==========
+        const baseFeedbackResolver = createFeedbackResolver(SW_EVENTS);
+        return baseFeedbackResolver(event);
     },
     bgmRules: [
         {

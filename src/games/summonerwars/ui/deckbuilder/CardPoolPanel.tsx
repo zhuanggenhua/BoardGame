@@ -132,6 +132,8 @@ interface CardSectionProps {
 }
 
 const CardSection: React.FC<CardSectionProps> = ({ title, cards, currentDeck, onAdd, onMagnify, isSummonerSection }) => {
+    const { t } = useTranslation('game-summonerwars');
+    
     return (
         <div className="mb-5">
             <h3 className="text-amber-500/80 font-bold uppercase text-xs mb-2 flex items-center gap-2">

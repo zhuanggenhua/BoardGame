@@ -111,6 +111,8 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
 
     const random = createQueuedRandom(manifest.randomPolicy!.values!);
 
+    // TODO: 更新教程测试以适配新的交互系统 - 已完成
+    // 旧系统使用 MODIFY_DIE + CONFIRM_INTERACTION，新系统使用 SYS_INTERACTION_RESPOND
     it('完整教程流程', () => {
         let s: MatchState<DiceThroneCore> = {
             core: DiceThroneDomain.setup(playerIds, random),
@@ -158,12 +160,15 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-play-six' }, 'B: play-six');
         // card-play-six cpCost=1 → CP 应从 INITIAL_CP 减到 INITIAL_CP-1
         expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(INITIAL_CP - 1);
+        
+        // 新交互系统：card-play-six 创建 simple-choice 交互（选择骰子值）
         const sysCurrentInteraction = s.sys.interaction.current;
         expect(sysCurrentInteraction).toBeDefined();
-        expect(sysCurrentInteraction?.kind).toBe('dt:card-interaction');
-        const interactionId = (sysCurrentInteraction!.data as { id: string }).id;
-        s = exec(s, 'MODIFY_DIE', '0', { dieId: 0, newValue: 6 }, 'B: modify-die');
-        s = exec(s, 'CONFIRM_INTERACTION', '0', { interactionId }, 'B: confirm-interaction');
+        expect(sysCurrentInteraction?.kind).toBe('simple-choice');
+        
+        // 使用 SYS_INTERACTION_RESPOND 响应交互
+        // card-play-six 允许将1颗骰子改为6，只有一个选项（值=6）
+        s = exec(s, 'SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }, 'B: modify-die-to-6');
         expect(s.sys.tutorial.step?.id).toBe('dice-confirm');
 
         s = exec(s, 'CONFIRM_ROLL', '0', {}, 'B: confirm');

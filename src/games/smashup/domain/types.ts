@@ -413,61 +413,11 @@ export type SmashUpCommand =
 // 事件类型
 // ============================================================================
 
-export const SU_EVENTS = {
-    MINION_PLAYED: 'su:minion_played',
-    ACTION_PLAYED: 'su:action_played',
-    BASE_SCORED: 'su:base_scored',
-    VP_AWARDED: 'su:vp_awarded',
-    CARDS_DRAWN: 'su:cards_drawn',
-    CARDS_DISCARDED: 'su:cards_discarded',
-    TURN_STARTED: 'su:turn_started',
-    TURN_ENDED: 'su:turn_ended',
-    BASE_REPLACED: 'su:base_replaced',
-    DECK_RESHUFFLED: 'su:deck_reshuffled',
-    /** 玩家牌库重排（仅重排牌库，不碰弃牌堆） */
-    DECK_REORDERED: 'su:deck_reordered',
-    MINION_RETURNED: 'su:minion_returned',
-    LIMIT_MODIFIED: 'su:limit_modified',
-    // === 新增 ===
-    FACTION_SELECTED: 'su:faction_selected',
-    ALL_FACTIONS_SELECTED: 'su:all_factions_selected',
-    MINION_DESTROYED: 'su:minion_destroyed',
-    MINION_MOVED: 'su:minion_moved',
-    POWER_COUNTER_ADDED: 'su:power_counter_added',
-    POWER_COUNTER_REMOVED: 'su:power_counter_removed',
-    ONGOING_ATTACHED: 'su:ongoing_attached',
-    ONGOING_DETACHED: 'su:ongoing_detached',
-    TALENT_USED: 'su:talent_used',
-    CARD_TO_DECK_TOP: 'su:card_to_deck_top',
-    CARD_TO_DECK_BOTTOM: 'su:card_to_deck_bottom',
-    CARD_TRANSFERRED: 'su:card_transferred',
-    CARD_RECOVERED_FROM_DISCARD: 'su:card_recovered_from_discard',
-    HAND_SHUFFLED_INTO_DECK: 'su:hand_shuffled_into_deck',
-    /** 疯狂卡抽取（从疯狂牌库到玩家手牌） */
-    MADNESS_DRAWN: 'su:madness_drawn',
-    /** 疯狂卡返回（从玩家手牌回疯狂牌库） */
-    MADNESS_RETURNED: 'su:madness_returned',
-    /** 基地牌库重排（巫师学院等能力） */
-    BASE_DECK_REORDERED: 'su:base_deck_reordered',
-    /** 展示手牌（外星人 Probe / 密大 Book of Iter 等能力） */
-    REVEAL_HAND: 'su:reveal_hand',
-    /** 展示牌库顶（外星人 Scout Ship 等能力） */
-    REVEAL_DECK_TOP: 'su:reveal_deck_top',
-    /** 关闭卡牌展示 */
-    REVEAL_DISMISSED: 'su:reveal_dismissed',
-    /** 临时力量修正（回合结束自动清零） */
-    TEMP_POWER_ADDED: 'su:temp_power_added',
-    /** 临界点临时修正（回合结束自动清零） */
-    BREAKPOINT_MODIFIED: 'su:breakpoint_modified',
-    /** 基地牌库洗混 */
-    BASE_DECK_SHUFFLED: 'su:base_deck_shuffled',
-    /** special 能力限制组使用记录（每基地每回合一次） */
-    SPECIAL_LIMIT_USED: 'su:special_limit_used',
-    /** 能力执行反馈（搜索失败等，纯 UI 提示，不影响状态） */
-    ABILITY_FEEDBACK: 'su:ability_feedback',
-} as const;
+// 事件定义已迁移到 domain/events.ts，使用 defineEvents() 框架
+// 导入 SU_EVENT_TYPES 以获取事件类型常量
+export { SU_EVENT_TYPES as SU_EVENTS } from './events';
 
-export interface MinionPlayedEvent extends GameEvent<typeof SU_EVENTS.MINION_PLAYED> {
+export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
     payload: {
         playerId: PlayerId;
         cardUid: string;
@@ -483,7 +433,7 @@ export interface MinionPlayedEvent extends GameEvent<typeof SU_EVENTS.MINION_PLA
     };
 }
 
-export interface ActionPlayedEvent extends GameEvent<typeof SU_EVENTS.ACTION_PLAYED> {
+export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
     payload: {
         playerId: PlayerId;
         cardUid: string;
@@ -491,7 +441,7 @@ export interface ActionPlayedEvent extends GameEvent<typeof SU_EVENTS.ACTION_PLA
     };
 }
 
-export interface BaseScoredEvent extends GameEvent<typeof SU_EVENTS.BASE_SCORED> {
+export interface BaseScoredEvent extends GameEvent<'su:base_scored'> {
     payload: {
         baseIndex: number;
         baseDefId: string;
@@ -500,7 +450,7 @@ export interface BaseScoredEvent extends GameEvent<typeof SU_EVENTS.BASE_SCORED>
     };
 }
 
-export interface VpAwardedEvent extends GameEvent<typeof SU_EVENTS.VP_AWARDED> {
+export interface VpAwardedEvent extends GameEvent<'su:vp_awarded'> {
     payload: {
         playerId: PlayerId;
         amount: number;
@@ -508,7 +458,7 @@ export interface VpAwardedEvent extends GameEvent<typeof SU_EVENTS.VP_AWARDED> {
     };
 }
 
-export interface CardsDrawnEvent extends GameEvent<typeof SU_EVENTS.CARDS_DRAWN> {
+export interface CardsDrawnEvent extends GameEvent<'su:cards_drawn'> {
     payload: {
         playerId: PlayerId;
         count: number;
@@ -516,28 +466,28 @@ export interface CardsDrawnEvent extends GameEvent<typeof SU_EVENTS.CARDS_DRAWN>
     };
 }
 
-export interface CardsDiscardedEvent extends GameEvent<typeof SU_EVENTS.CARDS_DISCARDED> {
+export interface CardsDiscardedEvent extends GameEvent<'su:cards_discarded'> {
     payload: {
         playerId: PlayerId;
         cardUids: string[];
     };
 }
 
-export interface TurnStartedEvent extends GameEvent<typeof SU_EVENTS.TURN_STARTED> {
+export interface TurnStartedEvent extends GameEvent<'su:turn_started'> {
     payload: {
         playerId: PlayerId;
         turnNumber: number;
     };
 }
 
-export interface TurnEndedEvent extends GameEvent<typeof SU_EVENTS.TURN_ENDED> {
+export interface TurnEndedEvent extends GameEvent<'su:turn_ended'> {
     payload: {
         playerId: PlayerId;
         nextPlayerIndex: number;
     };
 }
 
-export interface BaseReplacedEvent extends GameEvent<typeof SU_EVENTS.BASE_REPLACED> {
+export interface BaseReplacedEvent extends GameEvent<'su:base_replaced'> {
     payload: {
         baseIndex: number;
         oldBaseDefId: string;
@@ -547,7 +497,7 @@ export interface BaseReplacedEvent extends GameEvent<typeof SU_EVENTS.BASE_REPLA
     };
 }
 
-export interface DeckReshuffledEvent extends GameEvent<typeof SU_EVENTS.DECK_RESHUFFLED> {
+export interface DeckReshuffledEvent extends GameEvent<'su:deck_reshuffled'> {
     payload: {
         playerId: PlayerId;
         deckUids: string[];
@@ -555,7 +505,7 @@ export interface DeckReshuffledEvent extends GameEvent<typeof SU_EVENTS.DECK_RES
 }
 
 /** 玩家牌库重排事件（仅重排牌库中的卡，不碰弃牌堆） */
-export interface DeckReorderedEvent extends GameEvent<typeof SU_EVENTS.DECK_REORDERED> {
+export interface DeckReorderedEvent extends GameEvent<'su:deck_reordered'> {
     payload: {
         playerId: PlayerId;
         /** 重排后的牌库 UID 顺序 */
@@ -564,7 +514,7 @@ export interface DeckReorderedEvent extends GameEvent<typeof SU_EVENTS.DECK_REOR
 }
 
 /** 随从被收回手牌 */
-export interface MinionReturnedEvent extends GameEvent<typeof SU_EVENTS.MINION_RETURNED> {
+export interface MinionReturnedEvent extends GameEvent<'su:minion_returned'> {
     payload: {
         minionUid: string;
         minionDefId: string;
@@ -577,7 +527,7 @@ export interface MinionReturnedEvent extends GameEvent<typeof SU_EVENTS.MINION_R
 }
 
 /** 出牌额度修改 */
-export interface LimitModifiedEvent extends GameEvent<typeof SU_EVENTS.LIMIT_MODIFIED> {
+export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
     payload: {
         playerId: PlayerId;
         limitType: 'minion' | 'action';
@@ -634,14 +584,14 @@ export type SmashUpEvent =
 // 新增事件接口
 // ============================================================================
 
-export interface FactionSelectedEvent extends GameEvent<typeof SU_EVENTS.FACTION_SELECTED> {
+export interface FactionSelectedEvent extends GameEvent<'su:faction_selected'> {
     payload: {
         playerId: PlayerId;
         factionId: string;
     };
 }
 
-export interface AllFactionsSelectedEvent extends GameEvent<typeof SU_EVENTS.ALL_FACTIONS_SELECTED> {
+export interface AllFactionsSelectedEvent extends GameEvent<'su:all_factions_selected'> {
     payload: {
         readiedPlayers: Record<PlayerId, {
             deck: CardInstance[];

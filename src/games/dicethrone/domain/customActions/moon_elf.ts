@@ -71,7 +71,7 @@ function dealDamage(
         state: ctx.state,
         timestamp,
         autoCollectTokens: false,
-        autoCollectStatus: false,
+        autoCollectStatus: true,  // 启用状态修正收集（锁定等 debuff）
         autoCollectShields: false,
     });
     

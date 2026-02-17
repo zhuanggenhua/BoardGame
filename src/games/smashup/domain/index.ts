@@ -363,7 +363,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
                 const interaction = createSimpleChoice(
                     `multi_base_scoring_${now}`, pid,
-                    '选择先记分的基地', buildBaseTargetOptions(candidates) as any[], 'multi_base_scoring',
+                    '选择先记分的基地', buildBaseTargetOptions(candidates, state) as any[], 'multi_base_scoring',
                 );
                 const updatedState = queueInteraction(state, interaction);
 

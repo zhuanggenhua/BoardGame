@@ -313,8 +313,17 @@ export const createMatchViaAPI = async (page: Page, guestId: string): Promise<st
 export const setupTwoPlayerMatch = async (
     browser: { newContext: (opts?: { baseURL?: string }) => Promise<BrowserContext> },
     baseURL: string | undefined,
+    options?: { enableE2EDebug?: boolean },
 ): Promise<TwoPlayerSetup | null> => {
     const hostContext = await browser.newContext({ baseURL });
+    
+    // 如果启用 E2E 调试模式，注入标志
+    if (options?.enableE2EDebug) {
+        await hostContext.addInitScript(() => {
+            (window as any).__BG_E2E_DEBUG__ = true;
+        });
+    }
+    
     await initContext(hostContext, { storageKey: '__smashup_storage_reset' });
     const hostPage = await hostContext.newPage();
 
@@ -334,6 +343,14 @@ export const setupTwoPlayerMatch = async (
     await waitForFactionSelection(hostPage);
 
     const guestContext = await browser.newContext({ baseURL });
+    
+    // Guest context 也需要设置
+    if (options?.enableE2EDebug) {
+        await guestContext.addInitScript(() => {
+            (window as any).__BG_E2E_DEBUG__ = true;
+        });
+    }
+    
     await initContext(guestContext, { storageKey: '__smashup_storage_reset' });
     const guestPage = await guestContext.newPage();
 

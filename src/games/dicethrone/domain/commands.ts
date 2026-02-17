@@ -156,17 +156,16 @@ export interface TransferStatusCommand extends Command<'TRANSFER_STATUS'> {
     };
 }
 
-/** 确认交互命令 */
+/** 确认交互命令（已废弃 - 迁移到 InteractionSystem 的 RESPOND 命令） */
 export interface ConfirmInteractionCommand extends Command<'CONFIRM_INTERACTION'> {
     payload: {
-        /** 交互 ID */
         interactionId: string;
-        /** 选中的骰子 ID 列表（用于 selectDie 类型交互的批量重掷） */
         selectedDiceIds?: number[];
+        selectedPlayerId?: PlayerId;
     };
 }
 
-/** 取消交互命令 */
+/** 取消交互命令（已废弃 - 迁移到 InteractionSystem 的 CANCEL 命令） */
 export interface CancelInteractionCommand extends Command<'CANCEL_INTERACTION'> {
     payload: Record<string, never>;
 }
@@ -247,8 +246,8 @@ export type DiceThroneCommand =
     | RerollDieCommand
     | RemoveStatusCommand
     | TransferStatusCommand
-    | ConfirmInteractionCommand
-    | CancelInteractionCommand
+    // | ConfirmInteractionCommand  // 已废弃 - 使用 InteractionSystem
+    // | CancelInteractionCommand   // 已废弃 - 使用 InteractionSystem
     | UseTokenCommand
     | SkipTokenResponseCommand
     | UsePurifyCommand

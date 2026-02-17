@@ -112,10 +112,15 @@ export function useCellInteraction({
   const [selectedHandCardId, setSelectedHandCardId] = useState<string | null>(null);
   const [selectedCardsForDiscard, setSelectedCardsForDiscard] = useState<string[]>([]);
   const [pendingBeforeAttack, setPendingBeforeAttack] = useState<PendingBeforeAttack | null>(null);
+  const [magicEventChoiceMode, setMagicEventChoiceMode] = useState<{ cardId: string } | null>(null);
+  const [endPhaseConfirmPending, setEndPhaseConfirmPending] = useState(false);
 
-  // 离开魔力阶段时自动清空弃牌选中
+  // 离开魔力阶段时自动清空弃牌选中和事件卡选择模式
   useEffect(() => {
-    if (currentPhase !== 'magic') setSelectedCardsForDiscard([]);
+    if (currentPhase !== 'magic') {
+      setSelectedCardsForDiscard([]);
+      setMagicEventChoiceMode(null);
+    }
   }, [currentPhase]);
 
   // ---------- 事件卡模式子 hook ----------
@@ -788,7 +793,28 @@ export function useCellInteraction({
 
   // 手牌点击（魔力阶段弃牌多选/攻击前弃牌）
   const handleCardClick = useCallback((cardId: string) => {
+    console.log('[useCellInteraction] handleCardClick called:', { cardId, currentPhase, isMyTurn });
     setEndPhaseConfirmPending(false);
+
+    // 魔力阶段事件卡选择模式：点击事件卡进入选择模式
+    if (currentPhase === 'magic' && isMyTurn) {
+      console.log('[useCellInteraction] Magic phase detected');
+      const card = myHand.find(c => c.id === cardId);
+      console.log('[useCellInteraction] Found card:', card ? { name: card.name, cardType: card.cardType } : 'not found');
+      if (card && card.cardType === 'event') {
+        const event = card as import('../domain/types').EventCard;
+        const cost = event.cost;
+        const currentMagic = core.players[myPlayerId as '0' | '1'].magic;
+        const canAfford = cost <= currentMagic;
+        console.log('[useCellInteraction] Event card check:', { eventName: event.name, playPhase: event.playPhase, cost, currentMagic, canAfford });
+        if ((event.playPhase === 'magic' || event.playPhase === 'any') && canAfford) {
+          // 进入选择模式：打出或弃牌
+          console.log('[useCellInteraction] Setting magicEventChoiceMode');
+          setMagicEventChoiceMode({ cardId });
+          return;
+        }
+      }
+    }
 
     if (abilityMode && abilityMode.step === 'selectCards') {
       const card = myHand.find(c => c.id === cardId);
@@ -834,7 +860,7 @@ export function useCellInteraction({
         prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]
       );
     }
-  }, [abilityMode, core, currentPhase, isMyTurn, myHand, showToast]);
+  }, [abilityMode, core, currentPhase, isMyTurn, myHand, myPlayerId, setAbilityMode, setMagicEventChoiceMode, showToast, t]);
 
   // 手牌选中（召唤/建造阶段单选）
   const handleCardSelect = useCallback((cardId: string | null) => {
@@ -874,13 +900,14 @@ export function useCellInteraction({
 
   // ---------- 阶段控制 ----------
 
-  const [endPhaseConfirmPending, setEndPhaseConfirmPending] = useState(false);
-
   useEffect(() => { setEndPhaseConfirmPending(false); }, [currentPhase]);
 
   const handleEndPhase = useCallback(() => {
     if (eventCardModes.hasActiveEventMode) {
       eventCardModes.clearAllEventModes();
+    }
+    if (magicEventChoiceMode) {
+      setMagicEventChoiceMode(null);
     }
     if (endPhaseConfirmPending) {
       setEndPhaseConfirmPending(false);
@@ -893,7 +920,7 @@ export function useCellInteraction({
     }
     dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
   }, [dispatch, currentPhase, actionableUnitPositions.length, endPhaseConfirmPending,
-    eventCardModes.hasActiveEventMode, eventCardModes.clearAllEventModes]);
+    eventCardModes.hasActiveEventMode, eventCardModes.clearAllEventModes, magicEventChoiceMode]);
 
   // ---------- 外部技能确认 ----------
 
@@ -998,7 +1025,8 @@ export function useCellInteraction({
     || !!mindCaptureMode
     || !!afterAttackAbilityMode
     || !!abilityMode
-    || !!rapidFireMode;
+    || !!rapidFireMode
+    || !!magicEventChoiceMode;
 
   // 全局禁用开关（调试用）
   const debugDisabled = typeof window !== 'undefined'
@@ -1018,6 +1046,23 @@ export function useCellInteraction({
     undoSnapshotCount,
   });
 
+  // 魔力阶段事件卡选择回调
+  const handlePlayMagicEvent = useCallback(() => {
+    if (!magicEventChoiceMode) return;
+    eventCardModes.handlePlayEvent(magicEventChoiceMode.cardId);
+    setMagicEventChoiceMode(null);
+  }, [magicEventChoiceMode, eventCardModes.handlePlayEvent]);
+
+  const handleDiscardMagicEvent = useCallback(() => {
+    if (!magicEventChoiceMode) return;
+    dispatch(SW_COMMANDS.DISCARD_FOR_MAGIC, { cardIds: [magicEventChoiceMode.cardId] });
+    setMagicEventChoiceMode(null);
+  }, [magicEventChoiceMode, dispatch]);
+
+  const handleCancelMagicEventChoice = useCallback(() => {
+    setMagicEventChoiceMode(null);
+  }, []);
+
   // ---------- 返回 ----------
 
   return {
@@ -1025,6 +1070,8 @@ export function useCellInteraction({
     selectedHandCardId, selectedCardsForDiscard,
     endPhaseConfirmPending, setEndPhaseConfirmPending,
     pendingBeforeAttack,
+    magicEventChoiceMode,
+    setMagicEventChoiceMode,
     abilitySelectedCardIds: abilityMode?.step === 'selectCards' ? (abilityMode.selectedCardIds ?? []) : [],
     // 事件卡模式（透传）
     eventTargetMode: eventCardModes.eventTargetMode,
@@ -1075,6 +1122,7 @@ export function useCellInteraction({
     handleConfirmTelekinesis: eventCardModes.handleConfirmTelekinesis,
     handleConfirmMindCapture,
     handleConfirmBeforeAttackCards, handleCancelBeforeAttack,
+    handlePlayMagicEvent, handleDiscardMagicEvent, handleCancelMagicEventChoice,
     clearAllEventModes: eventCardModes.clearAllEventModes,
   };
 }

@@ -160,7 +160,8 @@ describe('REORDER_CARD_TO_END 重排卡牌到末尾', () => {
 // 3. CANCEL_INTERACTION
 // ============================================================================
 
-describe('CANCEL_INTERACTION 取消交互', () => {
+// @deprecated - CANCEL_INTERACTION 命令已废弃，使用 InteractionSystem 的 CANCEL 命令
+describe.skip('CANCEL_INTERACTION 取消交互', () => {
     it('取消交互后卡牌回手牌、CP 返还、pendingInteraction 清除', () => {
         let state = setupToMain1();
         const player0 = state.core.players['0'];

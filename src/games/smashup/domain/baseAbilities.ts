@@ -480,15 +480,31 @@ export function registerBaseAbilities(): void {
             };
         }
         // 多张手牌→Prompt 选择弃哪张
-        const options = player.hand.map((c, i) => {
+        if (!ctx.matchState) return { events: [] };
+        
+        // 先生成初始选项（基于当前状态）
+        const initialOptions = player.hand.map((c, i) => {
             const def = getCardDef(c.defId);
             return { id: `card-${i}`, label: def?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId } };
         });
-        if (!ctx.matchState) return { events: [] };
+        
         const interaction = createSimpleChoice(
-            `base_haunted_house_al9000_${ctx.now}`, ctx.playerId,
-            '鬼屋：选择要弃掉的卡牌', options, 'base_haunted_house_al9000',
+            `base_haunted_house_al9000_${ctx.now}`,
+            ctx.playerId,
+            '鬼屋：选择要弃掉的卡牌',
+            initialOptions,
+            { sourceId: 'base_haunted_house_al9000' },
         );
+        
+        // 注入选项生成器（用于队列中的交互）
+        (interaction.data as any).optionsGenerator = (state: any) => {
+            const currentPlayer = state.core.players[ctx.playerId];
+            return currentPlayer.hand.map((c: any, i: number) => {
+                const def = getCardDef(c.defId);
+                return { id: `card-${i}`, label: def?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId } };
+            });
+        };
+        
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     });
 
@@ -952,7 +968,7 @@ export function registerBaseInteractionHandlers(): void {
             )] };
         }
         // 多个目标基地→链式交互选择
-        const options = buildBaseTargetOptions(baseCandidates);
+        const options = buildBaseTargetOptions(baseCandidates, state.core);
         const interaction = createSimpleChoice(
             `base_pirate_cove_choose_base_${timestamp}`, playerId,
             '海盗湾：选择移动到的基地', options, 'base_pirate_cove_choose_base',

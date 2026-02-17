@@ -18,32 +18,27 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { setupDTOnlineMatch, selectCharacter, waitForGameBoard } from './helpers/dicethrone';
 
 test.describe('DiceThrone - 选择骰子修改', () => {
-  test.beforeEach(async ({ page }) => {
-    // 禁用音频
-    await page.addInitScript(() => {
-      localStorage.setItem('audio_muted', 'true');
-      localStorage.setItem('audio_master_volume', '0');
-      (window as any).__BG_DISABLE_AUDIO__ = true;
-    });
+  test('修改1个骰子：选择骰子并设置目标值', async ({ browser }, testInfo) => {
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const setup = await setupDTOnlineMatch(browser, baseURL);
+    
+    if (!setup) {
+      test.skip(true, '游戏服务器不可用或创建房间失败');
+      return;
+    }
+    
+    const { hostPage, guestPage } = setup;
 
-    await page.goto('/play/dicethrone/local');
-    await page.waitForLoadState('networkidle');
-  });
-
-  test('修改1个骰子：选择骰子并设置目标值', async ({ page }) => {
     // 1. 选择英雄并开始游戏
-    const heroCard = page.locator('[data-testid="hero-card"]').first();
-    await expect(heroCard).toBeVisible({ timeout: 10000 });
-    await heroCard.click();
-
-    const startButton = page.getByRole('button', { name: /开始游戏|Start Game/i });
-    await expect(startButton).toBeVisible({ timeout: 5000 });
-    await startButton.click();
-
+    await selectCharacter(hostPage, 'paladin');
+    await selectCharacter(guestPage, 'shadow_thief');
+    
     // 等待游戏开始
-    await expect(page.getByTestId('dt-phase-banner')).toBeVisible({ timeout: 10000 });
+    await waitForGameBoard(hostPage);
+    await waitForGameBoard(guestPage);
 
     // 2. 推进到主要阶段1（可以打出卡牌）
     const advanceButton = page.getByRole('button', { name: /推进阶段|Advance Phase/i });

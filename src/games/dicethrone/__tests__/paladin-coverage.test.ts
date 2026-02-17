@@ -2,7 +2,7 @@
  * 圣骑士 (Paladin) GTR 技能运行时覆盖测试
  *
  * 通过 GameTestRunner 走完整管线验证技能效果：
- * 1. blessing-of-might — 不可防御 3 伤害 + 暴击 + 精准（TOKEN_RESPONSE 流程）
+ * 1. blessing-of-might — 不可防御 3 伤害 + 暴击 + 精准（onOffensiveRollEnd CHOICE 流程）
  * 2. holy-strike-small — 小顺 5 伤害 + 治疗 1（可防御，BONUS_DICE_REROLL 流程）
  * 3. vengeance — 获得神罚 + 2 CP（无伤害，跳过防御）
  * 4. unyielding-faith — 终极：不可防御 10 伤害 + 治疗 5 + 神圣祝福
@@ -12,8 +12,8 @@
  * - holy-defense 生成 displayOnly 的 BONUS_DICE_REROLL_REQUESTED
  *   SKIP_BONUS_DICE_REROLL 必须由 settlement.attackerId（防御方）发出
  * - grantToken 效果在 preDefense 时机执行
- *   不可防御攻击结算时 shouldOpenTokenResponse 检测到 CRIT → TOKEN_RESPONSE_REQUESTED
- *   SKIP_TOKEN_RESPONSE 必须由 pendingDamage.responderId（攻击方）发出
+ *   暴击/精准 Token 的时机是 onOffensiveRollEnd，会在攻击掷骰阶段结束时触发 CHOICE_REQUESTED
+ *   SYS_INTERACTION_RESPOND 'skip' 跳过使用 Token
  */
 
 import { describe, it, expect } from 'vitest';
@@ -83,9 +83,11 @@ describe('圣骑士 GTR 技能覆盖', () => {
     describe('力量祝福 (blessing-of-might)', () => {
         it('3 剑 + 1 祈祷造成 3 不可防御伤害 + 获得暴击和精准', () => {
             // 进攻骰: [1,1,1,6,3] → 3 sword + 1 pray + 1 helm
-            // 流程：preDefense 授予 CRIT+ACCURACY → 不可防御 → resolveAttack → 3 伤害
-            //   → TOKEN_RESPONSE_REQUESTED (攻击方有 CRIT) → halt
-            //   → SKIP_TOKEN_RESPONSE '0' → auto-continue → main2
+            // 流程：preDefense 授予 CRIT+ACCURACY → 不可防御
+            //   → offensiveRoll exit → CHOICE_REQUESTED (onOffensiveRollEnd Token)
+            //   → 由于伤害=3 < 5，暴击被门控，只有精准可用
+            //   → SYS_INTERACTION_RESPOND 跳过 → resolveAttack → 3 伤害 → main2
+            // 选项顺序：option-0=ACCURACY, option-1=skip（暴击因伤害<5被门控）
             const random = createQueuedRandom([1, 1, 1, 6, 3]);
             const runner = new GameTestRunner({
                 domain: DiceThroneDomain, systems: testSystems,
@@ -99,8 +101,8 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'blessing-of-might' }),
-                    cmd('ADVANCE_PHASE', '0'),       // offensiveRoll exit → halt (TOKEN_RESPONSE)
-                    cmd('SKIP_TOKEN_RESPONSE', '0'), // 攻击方跳过 → auto-continue → main2
+                    cmd('ADVANCE_PHASE', '0'),       // offensiveRoll exit → halt (CHOICE_REQUESTED for onOffensiveRollEnd tokens)
+                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-1' }), // 跳过使用 Token (option-1=skip，因为只有 ACCURACY 可用) → auto-continue → main2
                 ],
                 expect: {
                     turnPhase: 'main2',

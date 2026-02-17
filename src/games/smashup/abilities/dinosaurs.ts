@@ -217,7 +217,7 @@ function dinoRampage(ctx: AbilityContext): AbilityResult {
         }
     }
     // 数据驱动：强制效果，单候选自动执行
-    return resolveOrPrompt(ctx, buildBaseTargetOptions(baseCandidates), {
+    return resolveOrPrompt(ctx, buildBaseTargetOptions(baseCandidates, ctx.state), {
         id: 'dino_rampage',
         title: '选择要降低爆破点的基地',
         sourceId: 'dino_rampage',

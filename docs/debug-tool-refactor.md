@@ -158,5 +158,47 @@ const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
    - 提取通用的调试 UI 组件（数字选择器、玩家选择器等）
    - 提供作弊指令构建器工具函数
 
+## 卡牌名称显示通用化（2026-02-17）
+
+### 问题
+三个游戏的调试面板卡牌名称显示方式不一致：
+- **SmashUp**：使用 `resolveCardName(def, t)` 获取国际化名称 ✅
+- **DiceThrone**：硬编码 `card.i18n?.['zh-CN']?.name || card.id` ❌
+- **SummonerWars**：直接使用 `card.name` 字段 ❌
+
+### 解决方案
+创建通用的卡牌名称解析器，支持三种游戏的不同数据结构。
+
+#### 新增文件
+- `src/components/game/framework/debug/cardNameResolver.ts` - 通用解析器
+- `src/components/game/framework/debug/__tests__/cardNameResolver.test.ts` - 单元测试（7 个测试用例全部通过）
+
+#### 解析策略
+函数 `resolveCardDisplayName()` 按以下优先级尝试解析：
+1. **DiceThrone 风格**：读取 `card.i18n[locale].name`，回退到英文
+2. **SmashUp 风格**：使用 i18n 翻译函数 `t(key)`，支持 `cards.{id}.name` 格式
+3. **SummonerWars 风格**：直接返回 `card.name` 字段
+4. **回退**：返回 `card.id`
+
+#### 修改的文件
+- `src/games/dicethrone/debug-config.tsx` - 移除本地 `getCardDisplayName`，使用通用函数
+- `src/games/summonerwars/debug-config.tsx` - 替换所有 `card.name` 直接访问
+- `src/games/smashup/debug-config.tsx` - 内部使用 `resolveCardDisplayName` 替代 `resolveCardName`
+
+#### 优势
+- **统一接口**：所有游戏使用相同的函数签名
+- **自动适配**：根据卡牌数据结构自动选择解析策略
+- **可测试**：独立的单元测试覆盖所有场景
+- **可扩展**：新游戏只需确保卡牌数据符合三种模式之一
+
+#### 验证方式
+启动游戏并打开调试面板（F12），检查：
+- **DiceThrone**：牌库速查表显示中文卡牌名称（如"致命一击"）
+- **SummonerWars**：精灵图索引速查表显示中文卡牌名称（如"骷髅战士"）
+- **SmashUp**：牌库预览显示中文卡牌名称（如"外星入侵者"）
+
+所有游戏的手牌预览也应正确显示国际化名称。
+
 ## 贡献者
 - 重构设计与实现：2026-01-27
+- 卡牌名称通用化：2026-02-17

@@ -390,7 +390,8 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
             if (evasionRoll?.success) {
                 pendingDamage = { ...state.pendingDamage, currentDamage: 0, isFullyEvaded: true, lastEvasionRoll: evasionRoll };
             } else if (evasionRoll) {
-                pendingDamage = { ...state.pendingDamage, lastEvasionRoll: evasionRoll };
+                // 闪避失败：显式设置 isFullyEvaded: false
+                pendingDamage = { ...state.pendingDamage, isFullyEvaded: false, lastEvasionRoll: evasionRoll };
             }
         }
     }

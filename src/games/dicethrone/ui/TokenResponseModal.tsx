@@ -6,6 +6,7 @@ import type { PendingDamage, HeroState, TokenResponsePhase } from '../domain/typ
 import type { TokenDef } from '../domain/tokenTypes';
 import clsx from 'clsx';
 import { type StatusAtlases, TOKEN_META, getStatusEffectIconNode } from './statusEffects';
+import { TOKEN_IDS } from '../domain/ids';
 
 interface TokenResponseModalProps {
     /** 待处理的伤害 */
@@ -29,9 +30,116 @@ interface TokenResponseModalProps {
 }
 
 /**
+ * 获取 Token 的效果类型分类
+ */
+function getTokenCategory(tokenDef: TokenDef): 'boost' | 'reduce' | 'reflect' | 'undefendable' | 'evasive' | 'unknown' {
+    const effectType = tokenDef.activeUse?.effect.type;
+    
+    // 闪避类
+    if (effectType === 'rollToNegate') return 'evasive';
+    
+    // 根据 tokenId 判断特殊效果
+    if (tokenDef.id === TOKEN_IDS.RETRIBUTION) return 'reflect';
+    if (tokenDef.id === TOKEN_IDS.ACCURACY) return 'undefendable';
+    if (tokenDef.id === TOKEN_IDS.PROTECT) return 'reduce';
+    if (tokenDef.id === TOKEN_IDS.CRIT) return 'boost';
+    
+    // 通用判断
+    if (effectType === 'modifyDamageDealt') return 'boost';
+    if (effectType === 'modifyDamageReceived') return 'reduce';
+    
+    return 'unknown';
+}
+
+/**
+ * 计算 Token 使用后的效果预览
+ */
+function getTokenEffectPreview(
+    tokenDef: TokenDef,
+    currentDamage: number,
+    amount: number = 1
+): { damageChange: number; description: string; canUse: boolean } {
+    const category = getTokenCategory(tokenDef);
+    
+    switch (category) {
+        case 'boost': {
+            // 暴击：+4 伤害，需要当前伤害≥5
+            if (tokenDef.id === TOKEN_IDS.CRIT) {
+                const canUse = currentDamage >= 5;
+                return {
+                    damageChange: canUse ? 4 : 0,
+                    description: canUse ? '+4 伤害' : '需要伤害≥5',
+                    canUse,
+                };
+            }
+            // 太极等通用加伤
+            const value = tokenDef.activeUse?.effect.value ?? 1;
+            return {
+                damageChange: Math.abs(value) * amount,
+                description: `+${Math.abs(value) * amount} 伤害`,
+                canUse: true,
+            };
+        }
+        
+        case 'reduce': {
+            // 守护：伤害减半（向上取整）
+            if (tokenDef.id === TOKEN_IDS.PROTECT) {
+                const reduction = Math.ceil(currentDamage / 2);
+                return {
+                    damageChange: -reduction,
+                    description: `伤害减半 (-${reduction})`,
+                    canUse: true,
+                };
+            }
+            // 太极等通用减伤
+            const value = tokenDef.activeUse?.effect.value ?? -1;
+            return {
+                damageChange: value * amount,
+                description: `${value * amount} 伤害`,
+                canUse: true,
+            };
+        }
+        
+        case 'reflect': {
+            // 神罚：反弹伤害的一半（向上取整），不减少自己受到的伤害
+            const reflectAmount = Math.ceil(currentDamage / 2);
+            return {
+                damageChange: 0, // 不减伤
+                description: `反弹 ${reflectAmount} 伤害给对手`,
+                canUse: true,
+            };
+        }
+        
+        case 'undefendable': {
+            // 精准：使攻击不可防御
+            return {
+                damageChange: 0,
+                description: '使攻击不可防御',
+                canUse: true,
+            };
+        }
+        
+        case 'evasive': {
+            return {
+                damageChange: 0,
+                description: '掷骰 1-2 完全闪避',
+                canUse: true,
+            };
+        }
+        
+        default:
+            return {
+                damageChange: 0,
+                description: '未知效果',
+                canUse: false,
+            };
+    }
+}
+
+/**
  * Token 响应弹窗
- * - 攻击阶段：攻击方可消耗 damage modifier Token 增加伤害
- * - 防御阶段：防御方可消耗 damage modifier Token 减少伤害，或消耗闪避尝试完全躲避
+ * - 攻击阶段：攻击方可消耗 Token 增加伤害或使攻击不可防御
+ * - 防御阶段：防御方可消耗 Token 减少伤害、反弹伤害或尝试闪避
  *
  * usableTokens 由领域层 getUsableTokensForTiming 提供，UI 不再自行过滤
  */
@@ -47,30 +155,23 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
     statusIconAtlas,
 }) => {
     const { t } = useTranslation('game-dicethrone');
-    const [boostAmount, setBoostAmount] = React.useState(1);
 
     const isAttackerPhase = responsePhase === 'attackerBoost';
     const isDefenderPhase = responsePhase === 'defenderMitigation';
 
-    // 从已过滤的可用 token 中按 effect type 分类
-    const boostToken = usableTokens.find(def => {
-        const effectType = def.activeUse?.effect.type;
-        return effectType === 'modifyDamageDealt' || effectType === 'modifyDamageReceived';
+    // 按效果类型分组 token
+    const boostTokens = usableTokens.filter(def => {
+        const cat = getTokenCategory(def);
+        return cat === 'boost' || cat === 'undefendable';
     });
-    const evasiveToken = usableTokens.find(def =>
-        def.activeUse?.effect.type === 'rollToNegate'
-    );
+    const defenseTokens = usableTokens.filter(def => {
+        const cat = getTokenCategory(def);
+        return cat === 'reduce' || cat === 'reflect';
+    });
+    const evasiveTokens = usableTokens.filter(def => getTokenCategory(def) === 'evasive');
 
-    const boostCount = boostToken ? (responderState.tokens[boostToken.id] ?? 0) : 0;
-    const evasiveCount = evasiveToken ? (responderState.tokens[evasiveToken.id] ?? 0) : 0;
-
-    // 攻击方只能用增益 Token 加伤
-    const canUseBoost = boostToken && boostCount > 0;
-    // 防御方可用增益 Token 减伤或闪避
-    const canUseEvasive = isDefenderPhase && evasiveToken && evasiveCount > 0 && !pendingDamage.isFullyEvaded;
-
-    // 只有在“刚刚用完 Token 导致已无可用标记”时才自动跳过。
-    const hasAnyAction = Boolean(canUseBoost || canUseEvasive);
+    // 检查是否有任何可用操作
+    const hasAnyAction = usableTokens.length > 0 && !pendingDamage.isFullyEvaded;
     const hadAnyActionRef = React.useRef<boolean>(hasAnyAction);
 
     React.useEffect(() => {
@@ -83,31 +184,10 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
         return;
     }, [hasAnyAction, onSkip, pendingDamage.id, responsePhase]);
 
-    // 最大增益使用量
-    const maxBoostAmount = isAttackerPhase
-        ? boostCount
-        : Math.min(boostCount, pendingDamage.currentDamage);
-
-    // 预览伤害
-    const previewDamage = isAttackerPhase
-        ? pendingDamage.currentDamage + boostAmount
-        : Math.max(0, pendingDamage.currentDamage - boostAmount);
-
-    const handleBoostChange = (delta: number) => {
-        setBoostAmount(prev => Math.max(1, Math.min(maxBoostAmount, prev + delta)));
-    };
-
-    const handleUseBoost = () => {
-        if (boostToken) {
-            onUseToken(boostToken.id, boostAmount);
-        }
-        setBoostAmount(1);
-    };
-
     const isOpen = Boolean(pendingDamage && responsePhase);
 
     // 辅助函数：渲染 Token 图标
-    const renderTokenIcon = (tokenId: string, _fallbackIcon: string) => {
+    const renderTokenIcon = (tokenId: string) => {
         const meta = TOKEN_META[tokenId];
         if (meta && statusIconAtlas) {
             return (
@@ -116,8 +196,77 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
                 </div>
             );
         }
-        // 无精灵图时显示渐变圆形
-        return <div className={`w-8 h-8 flex-shrink-0 rounded-full bg-gradient-to-br ${meta?.color ?? 'from-gray-500 to-gray-600'}`} />;
+        // 无精灵图时不显示图标
+        return null;
+    };
+
+    // 渲染单个 Token 卡片
+    const renderTokenCard = (tokenDef: TokenDef, borderColor: string) => {
+        const tokenCount = responderState.tokens[tokenDef.id] ?? 0;
+        if (tokenCount <= 0) return null;
+
+        const preview = getTokenEffectPreview(tokenDef, pendingDamage.currentDamage);
+        const category = getTokenCategory(tokenDef);
+        
+        // 暴击需要伤害≥5才能使用
+        const isDisabled = !preview.canUse;
+
+        return (
+            <div 
+                key={tokenDef.id}
+                className={clsx(
+                    "bg-slate-800/40 rounded-xl p-4 border",
+                    borderColor,
+                    isDisabled && "opacity-50"
+                )}
+            >
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        {renderTokenIcon(tokenDef.id)}
+                        <span className="font-bold text-white">
+                            {t(`tokens.${tokenDef.id}.name`)}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                            ({tokenCount} {t('tokenResponse.available')})
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                        <span className={clsx(
+                            "text-sm",
+                            category === 'boost' && "text-red-300",
+                            category === 'reduce' && "text-blue-300",
+                            category === 'reflect' && "text-purple-300",
+                            category === 'undefendable' && "text-amber-300",
+                            category === 'evasive' && "text-cyan-300",
+                            isDisabled && "text-slate-500"
+                        )}>
+                            {preview.description}
+                        </span>
+                        {/* 暴击门控条件提示 */}
+                        {tokenDef.id === TOKEN_IDS.CRIT && !preview.canUse && (
+                            <div className="text-xs text-red-400 mt-1">
+                                当前伤害 {pendingDamage.currentDamage}，需要 ≥5
+                            </div>
+                        )}
+                    </div>
+                    <GameButton
+                        size="sm"
+                        variant={category === 'evasive' ? 'glass' : 'primary'}
+                        onClick={() => onUseToken(tokenDef.id, 1)}
+                        disabled={isDisabled}
+                        className={clsx(
+                            "ml-4",
+                            category === 'evasive' && "border-cyan-500/50 hover:bg-cyan-500/20 text-cyan-100"
+                        )}
+                    >
+                        {t('tokenResponse.useToken')}
+                    </GameButton>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -180,99 +329,28 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
                 )}
 
                 {/* Token 使用区域 */}
-                <div className="flex flex-col gap-4">
-                    {/* 增益 Token（伤害加成/减免） */}
-                    {canUseBoost && boostToken && maxBoostAmount > 0 && (
-                        <div className="bg-slate-800/40 rounded-xl p-4 border border-purple-500/20">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    {renderTokenIcon(boostToken.id, boostToken.icon)}
-                                    <span className="font-bold text-white">
-                                        {t(`tokens.${boostToken.id}.name`)}
-                                    </span>
-                                    <span className="text-xs text-slate-400">
-                                        ({boostCount} {t('tokenResponse.available')})
-                                    </span>
-                                </div>
-                                <div className="text-xs text-slate-400 hidden sm:block">
-                                    {isAttackerPhase
-                                        ? t('tokenResponse.boostHint')
-                                        : t('tokenResponse.reduceHint')}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-2 bg-black/20 p-1 rounded-lg">
-                                    <button
-                                        onClick={() => handleBoostChange(-1)}
-                                        disabled={boostAmount <= 1}
-                                        className="w-8 h-8 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-bold transition-colors"
-                                    >
-                                        -
-                                    </button>
-                                    <span className="text-xl font-black text-white w-8 text-center">
-                                        {boostAmount}
-                                    </span>
-                                    <button
-                                        onClick={() => handleBoostChange(1)}
-                                        disabled={boostAmount >= maxBoostAmount}
-                                        className="w-8 h-8 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-bold transition-colors"
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                                <div className="text-xs text-slate-500">
-                                    → {isAttackerPhase ? '+' : '-'}{boostAmount} {t('tokenResponse.damage')}
-                                    {' = '}
-                                    <span className={isAttackerPhase ? 'text-red-400' : 'text-blue-400'}>
-                                        {previewDamage}
-                                    </span>
-                                </div>
-                                <GameButton
-                                    size="sm"
-                                    variant="primary"
-                                    onClick={handleUseBoost}
-                                    className="ml-auto"
-                                >
-                                    {t('tokenResponse.useToken')}
-                                </GameButton>
-                            </div>
-                        </div>
+                <div className="flex flex-col gap-3">
+                    {/* 攻击方：加伤/不可防御 Token */}
+                    {isAttackerPhase && boostTokens.map(tokenDef => 
+                        renderTokenCard(tokenDef, "border-red-500/20")
                     )}
 
-                    {/* 闪避 Token */}
-                    {canUseEvasive && evasiveToken && (
-                        <div className="bg-slate-800/40 rounded-xl p-4 border border-cyan-500/20">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    {renderTokenIcon(evasiveToken.id, evasiveToken.icon)}
-                                    <span className="font-bold text-white">
-                                        {t(`tokens.${evasiveToken.id}.name`)}
-                                    </span>
-                                    <span className="text-xs text-slate-400">
-                                        ({evasiveCount} {t('tokenResponse.available')})
-                                    </span>
-                                </div>
-                            </div>
+                    {/* 防御方：减伤/反弹 Token */}
+                    {isDefenderPhase && defenseTokens.map(tokenDef => 
+                        renderTokenCard(tokenDef, 
+                            getTokenCategory(tokenDef) === 'reflect' 
+                                ? "border-purple-500/20" 
+                                : "border-blue-500/20"
+                        )
+                    )}
 
-                            <div className="flex items-center justify-between mt-3">
-                                <span className="text-xs text-cyan-300">
-                                    {t('tokenResponse.evasiveDesc')}
-                                </span>
-                                <GameButton
-                                    size="sm"
-                                    variant="glass"
-                                    className="border-cyan-500/50 hover:bg-cyan-500/20 text-cyan-100"
-                                    onClick={() => onUseToken(evasiveToken.id, 1)}
-                                >
-                                    {t('tokenResponse.useEvasive')}
-                                </GameButton>
-                            </div>
-                        </div>
+                    {/* 防御方：闪避 Token */}
+                    {isDefenderPhase && !pendingDamage.isFullyEvaded && evasiveTokens.map(tokenDef => 
+                        renderTokenCard(tokenDef, "border-cyan-500/20")
                     )}
 
                     {/* 无可用 Token 提示 */}
-                    {!canUseBoost && !canUseEvasive && (
+                    {!hasAnyAction && (
                         <div className="text-center py-4 text-slate-500 font-medium">
                             {t('tokenResponse.noTokens')}
                         </div>

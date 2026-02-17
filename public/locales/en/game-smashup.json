@@ -277,7 +277,7 @@
     },
     "alien_crop_circles": {
       "name": "Crop Circles",
-      "effectText": "Return any number of minions from one base to their owners' hands."
+      "effectText": "Choose a base. Return each minion on that base to its owner's hand."
     },
     "alien_terraform": {
       "name": "Terraforming",

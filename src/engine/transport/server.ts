@@ -297,6 +297,49 @@ export class GameTransportServer {
     }
 
     /**
+     * 测试专用：直接注入对局状态
+     * 
+     * 此方法绕过正常的命令执行流程，直接修改服务器状态并广播到所有客户端。
+     * 仅在测试环境使用。
+     * 
+     * @param matchID 对局 ID
+     * @param state 新的对局状态
+     */
+    async injectState(matchID: string, state: MatchState<unknown>): Promise<void> {
+        // 环境检查
+        if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'development') {
+            throw new Error('injectState is only available in test/development environment');
+        }
+
+        // 加载或获取活跃对局
+        let match = this.activeMatches.get(matchID);
+        if (!match) {
+            match = await this.loadMatch(matchID);
+            if (!match) {
+                throw new Error(`Match ${matchID} not found`);
+            }
+        }
+
+        // 更新状态
+        match.state = state;
+        match.stateID += 1;
+
+        // 持久化到存储
+        const storedState: StoredMatchState = {
+            G: state,
+            _stateID: match.stateID,
+            randomSeed: match.randomSeed,
+            randomCursor: match.getRandomCursor(),
+        };
+        await this.storage.setState(matchID, storedState);
+
+        // 广播到所有客户端
+        this.broadcastState(match);
+
+        console.log(`[TEST] State injected for match ${matchID}`);
+    }
+
+    /**
      * 主动断开某个玩家在对局内的所有连接（离座释放权限）
      */
     disconnectPlayer(matchID: string, playerID: string, options?: { disconnectSockets?: boolean }): void {

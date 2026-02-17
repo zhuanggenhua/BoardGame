@@ -122,8 +122,8 @@ export function canActivateAbility(
   if (!abilityDef) return false;
 
   // 对于 onPhaseEnd 触发的技能，不检查 requiredPhase
-  // 因为它们已经由 PHASE_END_ABILITIES 配置保证在正确阶段触发
-  // 检查 requiredPhase 会导致阶段推进 halt 后第二次检查时阶段已变化而失败
+  // 因为它们在 onPhaseExit 中触发，此时阶段可能已经推进
+  // 但技能确认/跳过仍需要在原阶段的上下文中进行
   if (abilityDef.trigger !== 'onPhaseEnd' && abilityDef.validation?.requiredPhase && abilityDef.validation.requiredPhase !== core.phase) {
     return false;
   }

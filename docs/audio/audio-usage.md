@@ -7,7 +7,7 @@
 ## 音频资源架构（强制）
 
 **三层架构**：
-1. **通用注册表**（`public/assets/common/audio/registry.json`）：所有音效资源的唯一来源，包含 key 和物理路径映射。
+1. **通用注册表**（`src/assets/audio/registry.json`，构建时从 `public/assets/common/audio/` 生成）：所有音效资源的唯一来源，包含 key 和物理路径映射。代码中通过静态 import 加载，Vite 会自动打包。
 2. **游戏配置**（`src/games/<gameId>/audio.config.ts`）：定义事件音效的映射规则（`feedbackResolver`），使用通用注册表中的 key。
 3. **FX 系统**（`src/games/<gameId>/ui/fxSetup.ts`）：直接使用通用注册表中的 key 定义 `FeedbackPack`，不依赖游戏配置常量。
 
@@ -46,8 +46,12 @@ AUDIO_OGG_BITRATE=96k npm run compress:audio -- public/assets/common/audio
 node scripts/audio/generate_common_audio_registry.js
 ```
 
-- 产出：`public/assets/common/audio/registry.json`
+- 产出：`public/assets/common/audio/registry.json`（生成后需复制到 `src/assets/audio/registry.json`）
 - **注意**：生成脚本会优先使用 `compressed/` 变体；若同 key 同时存在原始与压缩版本，将自动保留压缩版本并跳过原始文件。
+- **部署说明**：
+  - 开发环境：代码从 `src/assets/audio/registry.json` 静态 import，修改后刷新即可生效
+  - 生产环境：Vite 构建时自动打包 JSON 到产物中
+  - 音频文件本身仍从 CDN 加载（通过 `VITE_ASSETS_BASE_URL` 配置）
 
 ### 2.3 生成音频清单文档
 使用脚本：`scripts/audio/generate_audio_assets_md.js`

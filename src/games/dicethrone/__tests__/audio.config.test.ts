@@ -18,7 +18,7 @@ const DICE_ROLL_MULTI_KEYS = [
     'dice.decks_and_cards_sound_fx_pack.few_dice_roll_005',
 ];
 const READY_SIGNAL_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
-const HOST_STARTED_SIGNAL_KEY = 'ui.fantasy_ui_sound_fx_pack_vol.signals.signal_update_b_003';
+const HOST_STARTED_SIGNAL_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
 const PHASE_CHANGED_KEY = 'fantasy.gothic_fantasy_sound_fx_pack_vol.musical.drums_of_fate_002';
 
 const originalRandom = Math.random;
@@ -159,12 +159,12 @@ describe('DiceThrone 音效配置', () => {
             expect(taijiCombo?.sfxKey).toBe(ABILITY_SFX_KEYS.taijiCombo);
         });
 
-        it('防御技能不播放音效', () => {
+        it('防御技能不播放事件音效（UI 层已播放本地音效）', () => {
             const meditation = MONK_ABILITIES.find(a => a.id === 'meditation');
             expect(meditation).toBeDefined();
             expect(meditation?.sfxKey).toBeUndefined();
 
-            // ABILITY_ACTIVATED 事件在 feedbackResolver 中返回 null（技能音效由动画冲击帧驱动）
+            // ABILITY_ACTIVATED 事件在 feedbackResolver 中返回 null（UI 层已播放本地音效）
             const event: AudioEvent = {
                 type: 'ABILITY_ACTIVATED',
                 payload: { playerId: 'player1', abilityId: 'meditation', isDefense: true },
@@ -178,6 +178,7 @@ describe('DiceThrone 音效配置', () => {
                 ctx: {},
                 meta: {},
             };
+            // UI 层已在点击时播放音效，事件层不重复播放
             expect(resolveKey(event, mockContext)).toBeNull();
         });
     });

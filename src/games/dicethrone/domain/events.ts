@@ -2,6 +2,7 @@
  * DiceThrone 事件类型定义
  */
 
+import { defineEvents } from '../../../lib/audio/defineEvents';
 import type { GameEvent, PlayerId } from '../../../engine/types';
 import type { DtResponseWindowType } from './core-types';
 import type {
@@ -13,6 +14,119 @@ import type {
     BonusDieInfo,
 } from './core-types';
 import type { AbilityDef } from './combat';
+
+// ============================================================================
+// 音频事件常量（面向百游戏 + 适宜 AI）
+// ============================================================================
+
+// 音效 key 常量
+const DICE_ROLL_SINGLE_KEY = 'dice.general.tabletop_audio_dice.plastic_dice.plastic_dice_roll_01';
+const DICE_LOCK_KEY = 'ui.general.modern_ui_sound_fx_pack_vol.menu_navigation.menu_navigation_select_001';
+const ROLL_CONFIRM_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
+const DIE_MODIFY_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_001';
+
+const CARD_PLAY_KEY = 'card.handling.decks_and_cards_sound_fx_pack.card_placing_001';
+const CARD_DRAW_KEY = 'card.handling.decks_and_cards_sound_fx_pack.card_take_001';
+const CARD_DISCARD_KEY = 'card.fx.decks_and_cards_sound_fx_pack.fx_discard_001';
+const CARD_SELL_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
+const CARD_REORDER_KEY = 'card.handling.decks_and_cards_sound_fx_pack.cards_scrolling_001';
+const DECK_SHUFFLE_KEY = 'card.handling.decks_and_cards_sound_fx_pack.cards_shuffle_fast_001';
+
+const TURN_CHANGE_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
+const CHOICE_REQUEST_KEY = 'ui.fantasy_ui_sound_fx_pack_vol.notifications_pop_ups.popup_a_001';
+const CHOICE_RESOLVE_KEY = 'ui.general.modern_ui_sound_fx_pack_vol.menu_navigation.menu_navigation_select_001';
+
+const RESPONSE_WINDOW_OPEN_KEY = 'ui.fantasy_ui_sound_fx_pack_vol.notifications_pop_ups.popup_a_001';
+const RESPONSE_WINDOW_CLOSE_KEY = 'ui.general.modern_ui_sound_fx_pack_vol.menu_navigation.menu_navigation_close_001';
+
+const ATTACK_INITIATE_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_sword_1';
+const ATTACK_PRE_DEFENSE_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_small_1';
+const ATTACK_UNDEFENDABLE_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_astral_flare_001';
+
+const SHIELD_GRANT_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a';
+const DAMAGE_PREVENT_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.purged_a';
+
+const BONUS_DICE_SETTLE_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
+const EXTRA_ATTACK_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_sword_1';
+const ABILITY_RESELECT_KEY = 'ui.fantasy_ui_sound_fx_pack_vol.notifications_pop_ups.popup_a_001';
+const PASSIVE_UPGRADE_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_glyphic_resonance_001';
+
+/**
+ * DiceThrone 事件音频配置
+ * 
+ * 规则：
+ * - 'ui': 本地 UI 交互音（选择角色/准备/开始），只在本地播放
+ * - 'immediate': 即时游戏反馈音（投骰子/出牌/阶段切换），走 EventStream
+ * - 'fx': 动画驱动音效（伤害/治疗/状态/Token），走 FX 系统
+ * - 'silent': 静默事件（状态同步/内部更新），无音效
+ */
+export const DT_EVENTS = defineEvents({
+  // ========== UI 交互（本地播放）==========
+  CHARACTER_SELECTED: 'ui',      // 选择角色（UI 层播放）
+  PLAYER_READY: 'ui',            // 玩家准备（UI 层播放）
+  HOST_STARTED: 'ui',            // 房主开始（UI 层播放）
+
+  // ========== 即时反馈（EventStream）==========
+  DICE_ROLLED: { audio: 'immediate', sound: DICE_ROLL_SINGLE_KEY },
+  BONUS_DIE_ROLLED: { audio: 'immediate', sound: DICE_ROLL_SINGLE_KEY },
+  DIE_LOCK_TOGGLED: { audio: 'immediate', sound: DICE_LOCK_KEY },
+  ROLL_CONFIRMED: { audio: 'immediate', sound: ROLL_CONFIRM_KEY },
+  DIE_MODIFIED: { audio: 'immediate', sound: DIE_MODIFY_KEY },
+  DIE_REROLLED: { audio: 'immediate', sound: DICE_ROLL_SINGLE_KEY },
+  BONUS_DIE_REROLLED: { audio: 'immediate', sound: DICE_ROLL_SINGLE_KEY },
+  
+  CARD_PLAYED: { audio: 'immediate', sound: CARD_PLAY_KEY },
+  CARD_DRAWN: { audio: 'immediate', sound: CARD_DRAW_KEY },
+  CARD_DISCARDED: { audio: 'immediate', sound: CARD_DISCARD_KEY },
+  CARD_SOLD: { audio: 'immediate', sound: CARD_SELL_KEY },
+  SELL_UNDONE: { audio: 'immediate', sound: CARD_DRAW_KEY },
+  CARD_REORDERED: { audio: 'immediate', sound: CARD_REORDER_KEY },
+  DECK_SHUFFLED: { audio: 'immediate', sound: DECK_SHUFFLE_KEY },
+  
+  TURN_CHANGED: { audio: 'immediate', sound: TURN_CHANGE_KEY },
+  ROLL_LIMIT_CHANGED: { audio: 'immediate', sound: CHOICE_RESOLVE_KEY },
+  
+  CHOICE_REQUESTED: { audio: 'immediate', sound: CHOICE_REQUEST_KEY },
+  CHOICE_RESOLVED: { audio: 'immediate', sound: CHOICE_RESOLVE_KEY },
+  
+  RESPONSE_WINDOW_OPENED: { audio: 'immediate', sound: RESPONSE_WINDOW_OPEN_KEY },
+  RESPONSE_WINDOW_CLOSED: { audio: 'immediate', sound: RESPONSE_WINDOW_CLOSE_KEY },
+  TOKEN_RESPONSE_REQUESTED: { audio: 'immediate', sound: RESPONSE_WINDOW_OPEN_KEY },
+  TOKEN_RESPONSE_CLOSED: { audio: 'immediate', sound: RESPONSE_WINDOW_CLOSE_KEY },
+  
+  ATTACK_INITIATED: { audio: 'immediate', sound: ATTACK_INITIATE_KEY },
+  ATTACK_PRE_DEFENSE_RESOLVED: { audio: 'immediate', sound: ATTACK_PRE_DEFENSE_KEY },
+  ATTACK_MADE_UNDEFENDABLE: { audio: 'immediate', sound: ATTACK_UNDEFENDABLE_KEY },
+  
+  DAMAGE_SHIELD_GRANTED: { audio: 'immediate', sound: SHIELD_GRANT_KEY },
+  DAMAGE_PREVENTED: { audio: 'immediate', sound: DAMAGE_PREVENT_KEY },
+  
+  BONUS_DICE_REROLL_REQUESTED: { audio: 'immediate', sound: RESPONSE_WINDOW_OPEN_KEY },
+  BONUS_DICE_SETTLED: { audio: 'immediate', sound: BONUS_DICE_SETTLE_KEY },
+  EXTRA_ATTACK_TRIGGERED: { audio: 'immediate', sound: EXTRA_ATTACK_KEY },
+  ABILITY_RESELECTION_REQUIRED: { audio: 'immediate', sound: ABILITY_RESELECT_KEY },
+  PASSIVE_ABILITY_UPGRADED: { audio: 'immediate', sound: PASSIVE_UPGRADE_KEY },
+
+  // ========== 动画驱动（FX 系统）==========
+  DAMAGE_DEALT: 'fx',            // 伤害（飞行动画 onImpact）
+  HEAL_APPLIED: 'fx',            // 治疗（飞行动画 onImpact）
+  STATUS_APPLIED: 'fx',          // 状态施加（飞行动画 onImpact）
+  STATUS_REMOVED: 'fx',          // 状态移除（飞行动画 onImpact）
+  TOKEN_GRANTED: 'fx',           // Token 授予（飞行动画 onImpact）
+  TOKEN_CONSUMED: 'fx',          // Token 消耗（飞行动画 onImpact）
+  TOKEN_USED: 'fx',              // Token 使用（飞行动画 onImpact）
+  TOKEN_LIMIT_CHANGED: 'fx',     // Token 上限变化（飞行动画 onImpact）
+  CP_CHANGED: 'fx',              // CP 变化（飞行动画 onImpact）
+  PREVENT_DAMAGE: 'fx',          // 伤害减免（飞行动画 onImpact）
+  
+  ABILITY_ACTIVATED: 'fx',       // 技能激活（技能自带音效）
+  ATTACK_RESOLVED: 'fx',         // 攻击结算（技能自带音效）
+  ABILITY_REPLACED: 'fx',        // 技能替换（升级卡音效）
+
+  // ========== 静默事件 ==========
+  HERO_INITIALIZED: 'silent',    // 英雄初始化（内部状态）
+  RESPONSE_WINDOW_RESPONDER_CHANGED: 'silent', // 响应者变更（内部状态）
+});
 
 // ============================================================================
 // 事件定义
@@ -502,14 +616,14 @@ export interface RollLimitChangedEvent extends GameEvent<'ROLL_LIMIT_CHANGED'> {
     };
 }
 
-/** 交互请求事件 */
+/** 交互请求事件（已废弃 - 迁移到 InteractionSystem 的 INTERACTION_REQUESTED） */
 export interface InteractionRequestedEvent extends GameEvent<'INTERACTION_REQUESTED'> {
     payload: {
         interaction: PendingInteraction;
     };
 }
 
-/** 交互完成事件 */
+/** 交互完成事件（已废弃 - InteractionSystem 自动处理） */
 export interface InteractionCompletedEvent extends GameEvent<'INTERACTION_COMPLETED'> {
     payload: {
         interactionId: string;
@@ -517,15 +631,12 @@ export interface InteractionCompletedEvent extends GameEvent<'INTERACTION_COMPLE
     };
 }
 
-/** 交互取消事件 */
+/** 交互取消事件（已废弃 - InteractionSystem 自动处理） */
 export interface InteractionCancelledEvent extends GameEvent<'INTERACTION_CANCELLED'> {
     payload: {
         interactionId: string;
-        /** 源卡牌 ID（用于还原卡牌） */
         sourceCardId: string;
-        /** 源卡牌 CP 消耗（用于返还 CP） */
         cpCost: number;
-        /** 执行交互的玩家 ID */
         playerId: PlayerId;
     };
 }
@@ -702,9 +813,9 @@ export type DiceThroneEvent =
     | DieModifiedEvent
     | DieRerolledEvent
     | RollLimitChangedEvent
-    | InteractionRequestedEvent
-    | InteractionCompletedEvent
-    | InteractionCancelledEvent
+    // | InteractionRequestedEvent    // 已废弃 - 使用 InteractionSystem
+    // | InteractionCompletedEvent    // 已废弃 - 使用 InteractionSystem
+    // | InteractionCancelledEvent    // 已废弃 - 使用 InteractionSystem
     | TokenResponseRequestedEvent
     | TokenUsedEvent
     | TokenResponseClosedEvent

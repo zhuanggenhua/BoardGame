@@ -222,6 +222,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
   }, [phase, isMyTurn, currentMagic]);
 
   const handleCardClick = useCallback((cardId: string) => {
+    console.log('[HandArea] Card clicked:', { cardId, phase, isMyTurn });
     const card = cards.find(c => c.id === cardId);
     if (!card) return;
 
@@ -239,18 +240,11 @@ export const HandArea: React.FC<HandAreaProps> = ({
       return;
     }
 
-    // 魔力阶段弃牌不需要检查费用 — 弃牌是为了获得魔力，不是消耗魔力
-    // 但魔力阶段的事件卡（playPhase=magic/any）仍需检查费用
+    // 魔力阶段：所有卡牌点击都走 onCardClick（包括事件卡）
+    // 事件卡会在 useCellInteraction 中进入选择模式（打出或弃牌）
+    // 其他卡牌用于弃牌换魔力
     if (phase === 'magic' && isMyTurn) {
-      // 事件卡在魔力阶段可以打出（需要检查费用）
-      if (card.cardType === 'event') {
-        const event = card as EventCard;
-        if ((event.playPhase === 'magic' || event.playPhase === 'any') && canAfford) {
-          onPlayEvent?.(cardId);
-          return;
-        }
-      }
-      // 其余情况：选中/取消选中用于弃牌（无需费用检查）
+      console.log('[HandArea] Magic phase detected, calling onCardClick', { cardId, phase, isMyTurn });
       onCardClick?.(cardId);
       return;
     }

@@ -541,10 +541,14 @@ function resolveEffectAction(
             for (let i = 0; i < diceCount; i++) {
                 const value = random.d(6);
                 const face = getPlayerDieFace(state, attackerId, value) ?? '';
-                rollDice.push({ index: i, value, face });
-
+                
                 // 查找匹配的条件效果
                 const matchedEffect = action.conditionalEffects?.find(e => e.face === face);
+                
+                // 使用自定义 effectKey（如果提供），否则使用通用 key
+                const effectKey = matchedEffect?.effectKey ?? `bonusDie.effect.${face}`;
+                
+                rollDice.push({ index: i, value, face, effectKey });
 
                 // 生成 BONUS_DIE_ROLLED 事件（总是提供 effectKey）
                 const bonusDieEvent: BonusDieRolledEvent = {
@@ -554,8 +558,8 @@ function resolveEffectAction(
                         face,
                         playerId: targetId,
                         targetPlayerId: targetId,
-                        // 骰面效果描述：使用通用的 bonusDie.effect.{face} key
-                        effectKey: `bonusDie.effect.${face}`,
+                        // 骰面效果描述：使用自定义 effectKey 或通用 key
+                        effectKey,
                     },
                     sourceCommandType: 'ABILITY_EFFECT',
                     timestamp,

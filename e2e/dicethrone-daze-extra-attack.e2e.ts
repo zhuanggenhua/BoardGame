@@ -8,20 +8,24 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { setupDTOnlineMatch, selectCharacter, waitForGameBoard } from './helpers/dicethrone';
 
 test.describe('晕眩额外攻击机制', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.goto('/play/dicethrone/local');
-        await page.waitForLoadState('networkidle');
-    });
+    test('晕眩应该在攻击结束后触发额外攻击', async ({ browser }, testInfo) => {
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupDTOnlineMatch(browser, baseURL);
+        
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+        
+        const { hostPage, guestPage } = setup;
 
-    test('晕眩应该在攻击结束后触发额外攻击', async ({ page }) => {
         // 1. 选择野蛮人 vs 圣骑士
-        await page.getByRole('button', { name: /野蛮人|Barbarian/i }).click();
-        await page.getByRole('button', { name: /圣骑士|Paladin/i }).click();
-        await page.getByRole('button', { name: /开始游戏|Start Game/i }).click();
-
-        await page.waitForSelector('[data-testid="game-board"]', { timeout: 10000 });
+        await selectCharacter(hostPage, 'barbarian');
+        await selectCharacter(guestPage, 'paladin');
+        await waitForGameBoard(hostPage);
 
         // 2. 给野蛮人添加晕眩状态
         await page.evaluate(() => {

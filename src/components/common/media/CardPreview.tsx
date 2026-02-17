@@ -1,6 +1,6 @@
 import { useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { buildLocalizedImageSet, getLocalizedImageUrls, type CardPreviewRef } from '../../../core';
+import { buildLocalizedImageSet, getLocalizedImageUrls, isImagePreloaded, markImageLoaded, type CardPreviewRef } from '../../../core';
 import { OptimizedImage } from './OptimizedImage';
 import { type SpriteAtlasConfig, computeSpriteStyle } from '../../../engine/primitives/spriteAtlas';
 import {
@@ -115,9 +115,6 @@ export function CardPreview({
 // Atlas 精灵图卡牌（带 shimmer 占位）
 // ============================================================================
 
-/** 已加载的精灵图 URL 缓存（全局共享，避免重复检测） */
-const loadedAtlasCache = new Set<string>();
-
 interface AtlasCardProps {
     atlasId: string;
     index: number;
@@ -131,21 +128,24 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
     const { i18n } = useTranslation();
     const effectiveLocale = locale || i18n.language || 'zh-CN';
     const source = getCardAtlasSource(atlasId);
+
+    // 使用统一的 isImagePreloaded 检查（与 CriticalImageGate 共享缓存）
+    const preloaded = source ? isImagePreloaded(source.image, effectiveLocale) : false;
+    const [loaded, setLoaded] = useState(() => preloaded);
+
     const localizedUrls = source ? getLocalizedImageUrls(source.image, effectiveLocale) : null;
     const checkUrls = localizedUrls
         ? [localizedUrls.primary.webp, localizedUrls.fallback.webp].filter(Boolean)
         : [];
     const checkKey = checkUrls.join('|');
 
-    // 精灵图是否已加载（缓存命中时直接 true）
-    const [loaded, setLoaded] = useState(() => checkUrls.some((url) => loadedAtlasCache.has(url)));
-
     useEffect(() => {
-        if (checkUrls.length === 0) {
+        // 如果已预加载，直接标记为已加载
+        if (source && isImagePreloaded(source.image, effectiveLocale)) {
             setLoaded(true);
             return;
         }
-        if (checkUrls.some((url) => loadedAtlasCache.has(url))) {
+        if (checkUrls.length === 0) {
             setLoaded(true);
             return;
         }
@@ -160,7 +160,8 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             const url = checkUrls[idx];
             const img = new Image();
             img.onload = () => {
-                loadedAtlasCache.add(url);
+                // 注册到统一缓存，供其他组件复用
+                if (source) markImageLoaded(source.image, effectiveLocale);
                 if (!cancelled) setLoaded(true);
             };
             img.onerror = () => tryLoad(idx + 1);
@@ -172,7 +173,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             cancelled = true;
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [checkKey]);
+    }, [checkKey, source?.image, effectiveLocale]);
 
     if (!source) return null;
 

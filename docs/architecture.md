@@ -375,6 +375,12 @@ src/games/<gameId>/
 | `TutorialSelectionGate` | 教程选择门控 |
 | `PlayerOccupancyBadge` | 玩家占位徽章 |
 
+**调试工具**（`/components/game/framework/debug/`）：
+
+| 工具 | 职责 |
+|------|------|
+| `cardNameResolver` | 通用卡牌名称解析器（支持三种游戏数据结构） |
+
 框架层 Hooks（`/components/game/framework/hooks/`）：
 
 | Hook | 职责 |

@@ -34,7 +34,7 @@ function miskatonicThoseMeddlingKids(ctx: AbilityContext): AbilityResult {
         const baseName = baseDef?.name ?? `基地 ${i + 1}`;
         candidates.push({ baseIndex: i, label: `${baseName}（${actionCount}张行动卡）` });
     }
-    return resolveOrPrompt(ctx, buildBaseTargetOptions(candidates), {
+    return resolveOrPrompt(ctx, buildBaseTargetOptions(candidates, ctx.state), {
         id: 'miskatonic_those_meddling_kids',
         title: '选择一个基地消灭其上所有行动卡',
         sourceId: 'miskatonic_those_meddling_kids',

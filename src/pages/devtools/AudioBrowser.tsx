@@ -13,6 +13,8 @@ import {
   COMMON_AUDIO_BASE_PATH,
   type AudioRegistryEntry,
 } from '../../lib/audio/commonRegistry';
+// 直接 import src/ 下的 JSON
+import phraseMappingsData from '../../assets/audio/phrase-mappings.zh-CN.json';
 
 // ============================================================================
 // 类型与常量
@@ -348,17 +350,13 @@ const AudioBrowser: React.FC = () => {
 
   // 加载完整短语中文映射表
   useEffect(() => {
-    fetch('/assets/common/audio/phrase-mappings.zh-CN.json')
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        const phrases = data.phrases ?? {};
-        console.log(`[AudioBrowser] 短语映射表加载成功，${Object.keys(phrases).length} 条`);
-        setPhraseMappings(phrases);
-      })
-      .catch((err) => console.error('[AudioBrowser] 短语映射表加载失败，使用英文', err));
+    try {
+      const phrases = (phraseMappingsData as { phrases?: Record<string, string> }).phrases ?? {};
+      console.log(`[AudioBrowser] 短语映射表加载成功，${Object.keys(phrases).length} 条`);
+      setPhraseMappings(phrases);
+    } catch (err) {
+      console.error('[AudioBrowser] 短语映射表加载失败，使用英文', err);
+    }
   }, []);
 
   // 创建精确匹配的 friendlyName 函数

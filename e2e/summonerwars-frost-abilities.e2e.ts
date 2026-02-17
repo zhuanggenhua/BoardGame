@@ -35,6 +35,8 @@ const prepareIceShardsState = (coreState: any) => {
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
   next.abilityUsageCount = {};
+  // 确保阶段为 build（ice_shards 在 build 阶段结束触发）
+  next.phase = 'build';
 
   const board = next.board;
 
@@ -143,28 +145,36 @@ test.describe('极地矮人阵营特色交互', () => {
       await waitForPhase(hostPage, 'build');
       await hostPage.waitForTimeout(1000);
 
+      // 验证状态注入成功：贾穆德有充能，敌方单位存在
+      const verifyState = await readCoreState(hostPage);
+      const jamudUnit = verifyState.board[jamudPos.row]?.[jamudPos.col]?.unit;
+      expect(jamudUnit).toBeTruthy();
+      expect(jamudUnit.boosts).toBeGreaterThanOrEqual(1);
+      const enemyUnit = verifyState.board[enemyPos.row]?.[enemyPos.col]?.unit;
+      expect(enemyUnit).toBeTruthy();
+      expect(enemyUnit.owner).toBe('1');
+
       // 记录敌方单位初始伤害
-      const beforeState = await readCoreState(hostPage);
-      const enemyBefore = beforeState.board[enemyPos.row][enemyPos.col]?.unit;
-      const initialDamage = enemyBefore?.damage ?? 0;
+      const initialDamage = enemyUnit?.damage ?? 0;
 
       // 点击"结束阶段"退出 build 阶段，触发 ice_shards onPhaseEnd
       const endPhaseBtn = hostPage.getByTestId('sw-end-phase');
       await expect(endPhaseBtn).toBeVisible({ timeout: 5000 });
+      
       await endPhaseBtn.click();
-      await hostPage.waitForTimeout(2000);
-
+      
       // ice_shards 是 CONFIRMABLE_PHASE_END_ABILITIES，会 halt 阶段推进
-      const confirmBtn = hostPage.locator('.bg-amber-900\\/90 button, .bg-amber-900 button').filter({ hasText: /Confirm|确认/i }).first();
-      const skipBtn = hostPage.locator('.bg-amber-900\\/90 button, .bg-amber-900 button').filter({ hasText: /Skip|跳过/i }).first();
-
-      await expect(confirmBtn).toBeVisible({ timeout: 10000 });
-      await expect(skipBtn).toBeVisible({ timeout: 3000 });
-      await expect(confirmBtn).toBeEnabled({ timeout: 2000 });
+      // 按钮文本来自 i18n: actions.confirm = "确认"/"Confirm", actions.skip = "跳过"/"Skip"
+      const confirmBtn = hostPage.locator('button').filter({ hasText: /^Confirm$|^确认$/i }).first();
+      const skipBtn = hostPage.locator('button').filter({ hasText: /^Skip$|^跳过$/i }).first();
+      
+      // 等待按钮出现（5秒超时）
+      await expect(confirmBtn).toBeVisible({ timeout: 5000 });
+      await expect(confirmBtn).toBeEnabled({ timeout: 1000 });
 
       // 点击"确认"执行寒冰碎屑
       await confirmBtn.click();
-      await hostPage.waitForTimeout(2000);
+      await hostPage.waitForTimeout(500);
 
       // 验证敌方单位受到伤害
       const afterState = await readCoreState(hostPage);
@@ -204,24 +214,25 @@ test.describe('极地矮人阵营特色交互', () => {
       await waitForPhase(hostPage, 'build');
       await hostPage.waitForTimeout(1000);
 
-      // 记录初始状态
-      const beforeState = await readCoreState(hostPage);
-      const jamudBefore = beforeState.board[jamudPos.row][jamudPos.col]?.unit;
+      // 验证状态注入成功
+      const verifyState = await readCoreState(hostPage);
+      const jamudBefore = verifyState.board[jamudPos.row]?.[jamudPos.col]?.unit;
+      expect(jamudBefore).toBeTruthy();
       const initialBoosts = jamudBefore?.boosts ?? 0;
+      expect(initialBoosts).toBeGreaterThanOrEqual(1);
 
       // 结束 build 阶段触发 ice_shards
       const endPhaseBtn = hostPage.getByTestId('sw-end-phase');
       await expect(endPhaseBtn).toBeVisible({ timeout: 5000 });
       await endPhaseBtn.click();
-      await hostPage.waitForTimeout(2000);
 
       // 等待横幅出现
-      const skipButton = hostPage.locator('.bg-amber-900\\/90 button, .bg-amber-900 button').filter({ hasText: /Skip|跳过/i }).first();
-      await expect(skipButton).toBeVisible({ timeout: 10000 });
+      const skipButton = hostPage.locator('button').filter({ hasText: /^Skip$|^跳过$/i }).first();
+      await expect(skipButton).toBeVisible({ timeout: 5000 });
 
       // 点击"跳过"
       await skipButton.click();
-      await hostPage.waitForTimeout(1500);
+      await hostPage.waitForTimeout(500);
 
       // 验证充能未消耗
       const afterState = await readCoreState(hostPage);

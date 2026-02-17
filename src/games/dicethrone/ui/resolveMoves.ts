@@ -23,8 +23,8 @@ export type DiceThroneMoveMap = {
     rerollDie: (dieId: number) => void;
     removeStatus: (targetPlayerId: string, statusId?: string) => void;
     transferStatus: (fromPlayerId: string, toPlayerId: string, statusId: string) => void;
-    confirmInteraction: (interactionId: string, selectedDiceIds?: number[]) => void;
-    cancelInteraction: () => void;
+    // confirmInteraction: (interactionId: string, selectedDiceIds?: number[], selectedPlayerId?: string) => void; // @deprecated - 使用 InteractionSystem
+    // cancelInteraction: () => void; // @deprecated - 使用 InteractionSystem
     // Token 响应相关
     useToken: (tokenId: string, amount: number) => void;
     skipTokenResponse: () => void;
@@ -63,8 +63,8 @@ export const resolveMoves = (
     rerollDie: (dieId) => dispatch('REROLL_DIE', { dieId }),
     removeStatus: (targetPlayerId, statusId) => dispatch('REMOVE_STATUS', { targetPlayerId, statusId }),
     transferStatus: (fromPlayerId, toPlayerId, statusId) => dispatch('TRANSFER_STATUS', { fromPlayerId, toPlayerId, statusId }),
-    confirmInteraction: (interactionId, selectedDiceIds) => dispatch('CONFIRM_INTERACTION', { interactionId, selectedDiceIds }),
-    cancelInteraction: () => dispatch('CANCEL_INTERACTION', {}),
+    // confirmInteraction: (interactionId, selectedDiceIds, selectedPlayerId) => dispatch('CONFIRM_INTERACTION', { interactionId, selectedDiceIds, selectedPlayerId }),
+    // cancelInteraction: () => dispatch('CANCEL_INTERACTION', {}),
     // Token 响应
     useToken: (tokenId, amount) => dispatch('USE_TOKEN', { tokenId, amount }),
     skipTokenResponse: () => dispatch('SKIP_TOKEN_RESPONSE', {}),

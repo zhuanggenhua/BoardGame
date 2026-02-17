@@ -17,7 +17,6 @@ import { BonusDieOverlay } from './BonusDieOverlay';
 import { CardSpotlightOverlay } from './CardSpotlightOverlay';
 import { TokenResponseModal } from './TokenResponseModal';
 import { PurifyModal } from './PurifyModal';
-import { InteractionOverlay } from './InteractionOverlay';
 import { EndgameOverlay } from '../../../components/game/framework/widgets/EndgameOverlay';
 import type { StatusAtlases } from './statusEffects';
 import type { AbilityCard, DieFace, HeroState, PendingInteraction, TokenResponsePhase, PendingBonusDiceSettlement, CharacterId, TurnPhase } from '../domain/types';
@@ -98,19 +97,7 @@ export interface BoardOverlaysProps {
     /** 当前阶段可用的 Token 列表（由领域层过滤） */
     usableTokens: TokenDef[];
     onUseToken: (tokenId: string, amount: number) => void;
-    onSkipTokenResponse: () => void;
-
-    // 交互覆盖层
-    isStatusInteraction: boolean;
-    pendingInteraction?: PendingInteraction;
-    players: Record<PlayerId, HeroState>;
-    currentPlayerId: PlayerId;
-    onSelectStatus: (playerId: string, statusId: string) => void;
-    onSelectPlayer: (playerId: string) => void;
-    onConfirmStatusInteraction: () => void;
-    onCancelInteraction: () => void;
-
-    // 净化相关
+    onSkipTokenResponse: () => void;// 净化相关
     viewPlayer: HeroState;
     purifiableStatusIds: string[];
 
@@ -302,28 +289,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         locale={props.locale}
                         statusIconAtlas={props.statusIconAtlas}
                     />
-                )}
-
-                {/* 状态交互覆盖层 */}
-                {props.isStatusInteraction && props.pendingInteraction && props.pendingInteraction.playerId === props.currentPlayerId && (
-                    <InteractionOverlay
-                        key="interaction"
-                        interaction={{
-                            ...props.pendingInteraction,
-                            selected: props.pendingInteraction.selected || [],
-                        }}
-                        players={props.players}
-                        currentPlayerId={props.currentPlayerId}
-                        onSelectStatus={props.onSelectStatus}
-                        onSelectPlayer={props.onSelectPlayer}
-                        onConfirm={props.onConfirmStatusInteraction}
-                        onCancel={props.onCancelInteraction}
-                        statusIconAtlas={props.statusIconAtlas}
-                        locale={props.locale}
-                    />
-                )}
-
-                {/* 额外骰子特写 / 重掷交互 */}
+                )}{/* 额外骰子特写 / 重掷交互 */}
                 {(props.bonusDie.show || props.pendingBonusDiceSettlement) && (
                     <BonusDieOverlay
                         key="bonus-die"

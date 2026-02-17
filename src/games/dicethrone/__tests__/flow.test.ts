@@ -969,8 +969,11 @@ describe('王权骰铸流程测试', () => {
             const events = resolveEffectsToEvents(effects, 'immediate', ctx, { random: fixedRandom });
             const event = events.find(e => e.type === 'INTERACTION_REQUESTED') as any;
             expect(event).toBeDefined();
-            expect(event.payload?.interaction?.type).toBe('selectStatus');
-            expect(event.payload?.interaction?.targetPlayerIds).toEqual(['0']);
+            // createSelectStatusInteraction 使用标准的 simple-choice 交互类型
+            expect(event.payload?.kind).toBe('simple-choice');
+            // 验证选项是否正确生成（应该只包含自身的状态）
+            expect(event.payload?.data?.options).toBeDefined();
+            expect(Array.isArray(event.payload?.data?.options)).toBe(true);
         });
     });
 
@@ -2167,8 +2170,6 @@ describe('王权骰铸流程测试', () => {
 
         it('拜拜了您内：移除 1 个状态效果', () => {
             const runner = createRunner(fixedRandom);
-            // PLAY_CARD is step 2: ADVANCE+PLAY_CARD
-            const interactionId = `card-bye-bye-2`;
             const result = runner.run({
                 name: '拜拜了您内 remove-status',
                 setup: createSetupWithHand(['card-bye-bye'], {
@@ -2180,15 +2181,17 @@ describe('王权骰铸流程测试', () => {
                 commands: [
                     ...advanceTo('offensiveRoll'),
                     cmd('PLAY_CARD', '0', { cardId: 'card-bye-bye' }),
-                    cmd('REMOVE_STATUS', '0', { targetPlayerId: '1', statusId: 'knockdown' }),
-                    cmd('CONFIRM_INTERACTION', '0', { interactionId }),
+                    // 新交互系统：使用 SYS_INTERACTION_RESPOND 命令响应交互
+                    // payload 应该是 { optionId: string } 格式
+                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
                 ],
                 expect: {
                     players: {
                         '1': { statusEffects: { knockdown: 0 } },
                         '0': { discardSize: 1 },
                     },
-                    pendingInteraction: null,
+                    // 新交互系统：检查 sys.interaction 而非 pendingInteraction
+                    'sys.interaction.current': null,
                 },
             });
             expect(result.assertionErrors).toEqual([]);

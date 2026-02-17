@@ -17,7 +17,11 @@
     "customDeck": "Custom Deck",
     "clickToBuild": "Click to Build",
     "customDeckLabel": "Custom Deck",
-    "customDeckSummoner": "Summoner: {{name}}"
+    "customDeckSummoner": "Summoner: {{name}}",
+    "editDeck": "Edit Deck",
+    "newDeck": "New Deck",
+    "loadingDecks": "Loading decks...",
+    "loadDeckFailed": "Failed to load deck, please try again"
   },
   "factions": {
     "necromancer": "Fallen Kingdom",
@@ -51,6 +55,8 @@
     "bloodRuneCharge": "Spend 1 Magic to Charge",
     "feedBeastSelfDestroy": "Self-destruct",
     "chargeSelf": "Charge Self",
+    "playEvent": "Play",
+    "discardForMagic": "Discard",
     "attachToSoldier": "Attach to Soldier"
   },
   "player": {
@@ -342,6 +348,9 @@
   "statusBanners": {
     "insufficientMagic": "Insufficient magic",
     "insufficientCharge": "Requires at least 1 charge",
+    "magicEventChoice": {
+      "message": "Choose: Play event card or discard for magic"
+    },
     "stun": {
       "selectTarget": "Stun: Select an enemy unit within 3 straight spaces of your summoner",
       "direction": "Stun direction:",

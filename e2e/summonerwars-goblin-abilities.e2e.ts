@@ -31,7 +31,7 @@ const prepareVanishState = (coreState: any) => {
   const player = next.players?.['0'];
   if (!player) throw new Error('无法读取玩家0状态');
   player.attackCount = 0;
-  next.abilityUsage = {};
+  next.abilityUsageCount = {};
   const board = next.board;
   let summonerPos: { row: number; col: number } | null = null;
   let allyPos: { row: number; col: number } | null = null;
@@ -66,12 +66,51 @@ const prepareVanishState = (coreState: any) => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const prepareBloodRuneState = (coreState: any) => {
   const next = cloneState(coreState);
+  // 确保阶段为 build（blood_rune 在 attack 阶段开始触发，测试需要先在 build 阶段注入状态）
   next.phase = 'build';
   next.currentPlayer = '0';
+  next.abilityUsageCount = {};
   const player = next.players?.['0'];
   if (!player) throw new Error('无法读取玩家0状态');
   player.magic = 3;
-  return { state: next };
+  
+  // 查找或创建布拉夫（有 blood_rune 技能）
+  let blarfPos: { row: number; col: number } | null = null;
+  for (let row = 0; row < 8 && !blarfPos; row++) {
+    for (let col = 0; col < 6 && !blarfPos; col++) {
+      const unit = next.board[row]?.[col]?.unit;
+      if (unit && unit.owner === '0' && unit.card.abilities?.includes('blood_rune')) {
+        blarfPos = { row, col };
+      }
+    }
+  }
+  
+  // 如果棋盘上没有布拉夫，创建一个
+  if (!blarfPos) {
+    for (let row = 4; row < 7; row++) {
+      for (let col = 0; col < 6; col++) {
+        if (!next.board[row][col].unit && !next.board[row][col].structure) {
+          next.board[row][col].unit = {
+            instanceId: `goblin-blarf-e2e-${row}-${col}`,
+            cardId: 'goblin-blarf',
+            card: {
+              id: 'goblin-blarf', cardType: 'unit', name: '布拉夫', faction: 'goblin',
+              cost: 5, life: 7, strength: 3, attackType: 'melee', attackRange: 1,
+              unitClass: 'champion', deckSymbols: [], abilities: ['blood_rune', 'power_boost'],
+            },
+            owner: '0', position: { row, col }, damage: 0, boosts: 0,
+            hasMoved: false, hasAttacked: false,
+          };
+          blarfPos = { row, col };
+          break;
+        }
+      }
+      if (blarfPos) break;
+    }
+  }
+  
+  if (!blarfPos) throw new Error('无法放置布拉夫');
+  return { state: next, blarfPos };
 };
 
 // ============================================================================
@@ -141,31 +180,38 @@ test.describe('洞穴地精阵营特色交互', () => {
     const { hostPage, hostContext, guestContext } = match;
 
     try {
+      // blood_rune 触发时机：attack 阶段开始（onPhaseStart）
+      // 策略：先推进到 build 阶段，注入状态（确保魔力充足+布拉夫存在），再点击"结束阶段"进入 attack
       await advanceToPhase(hostPage, 'build');
       const coreState = await readCoreState(hostPage);
-      const { state: bloodRuneCore } = prepareBloodRuneState(coreState);
+      const { state: bloodRuneCore, blarfPos } = prepareBloodRuneState(coreState);
       await applyCoreState(hostPage, bloodRuneCore);
       await closeDebugPanelIfOpen(hostPage);
-
       await waitForPhase(hostPage, 'build');
+
+      // 记录布拉夫初始伤害
+      const blarf = hostPage.locator(`[data-testid="sw-unit-${blarfPos.row}-${blarfPos.col}"][data-owner="0"]`).first();
+      await expect(blarf).toBeVisible({ timeout: 8000 });
+      const initialDamage = parseInt(await blarf.getAttribute('data-unit-damage') ?? '0');
+
+      // 点击"结束阶段"从 build → attack，触发 blood_rune onPhaseStart
       const endPhaseBtn = hostPage.getByTestId('sw-end-phase');
       await expect(endPhaseBtn).toBeVisible({ timeout: 5000 });
       await endPhaseBtn.click();
-      await hostPage.waitForTimeout(1000);
+      await hostPage.waitForTimeout(2000);
 
+      // blood_rune 按钮文本来自 i18n: actions.bloodRuneDamage / actions.bloodRuneCharge
       const damageButton = hostPage.locator('button').filter({ hasText: /自伤1点|Take 1 Damage/i });
       const chargeButton = hostPage.locator('button').filter({ hasText: /花1魔力充能|Spend 1 Magic to Charge/i });
-      await expect(damageButton).toBeVisible({ timeout: 8000 });
+      await expect(damageButton).toBeVisible({ timeout: 10000 });
       await expect(chargeButton).toBeVisible({ timeout: 3000 });
 
-      const blarf = hostPage.locator(`[data-testid^="sw-unit-"][data-owner="0"][data-unit-name="布拉夫"]`).first();
-      await expect(blarf).toBeVisible({ timeout: 5000 });
-      const initialDamage = parseInt(await blarf.getAttribute('data-unit-damage') ?? '0');
-
+      // 选择"自伤1点"
       await damageButton.click();
-      await hostPage.waitForTimeout(1000);
+      await hostPage.waitForTimeout(1500);
       await expect(damageButton).toBeHidden({ timeout: 5000 });
 
+      // 验证布拉夫受到1点伤害
       await expect.poll(async () => {
         const currentDamage = parseInt(await blarf.getAttribute('data-unit-damage') ?? '0');
         return currentDamage;

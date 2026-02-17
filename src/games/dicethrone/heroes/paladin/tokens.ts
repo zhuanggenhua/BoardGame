@@ -19,7 +19,7 @@ export const PALADIN_TOKENS: TokenDef[] = [
 
     /**
      * 暴击 (Crit) - 条件性加伤
-     * 攻击伤害≥5时可消耗此标记，+4伤害。不能用于溅射伤害。
+     * 攻击掷骰阶段对敌方造成的伤害≥5时可消耗此标记，+4伤害。不能用于溅射伤害。
      * 不叠加（stackLimit=1）
      */
     {
@@ -31,7 +31,7 @@ export const PALADIN_TOKENS: TokenDef[] = [
         stackLimit: 1,
         category: 'consumable',
         activeUse: {
-            timing: ['beforeDamageDealt'],
+            timing: ['onOffensiveRollEnd'],
             consumeAmount: 1,
             effect: {
                 type: 'modifyDamageDealt',
@@ -56,7 +56,7 @@ export const PALADIN_TOKENS: TokenDef[] = [
         stackLimit: 1,
         category: 'consumable',
         activeUse: {
-            timing: ['beforeDamageDealt'],
+            timing: ['onOffensiveRollEnd'],
             consumeAmount: 1,
             effect: {
                 type: 'modifyDamageDealt',

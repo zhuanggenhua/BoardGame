@@ -17,7 +17,11 @@
     "customDeck": "自定义牌组",
     "clickToBuild": "点击进入构建",
     "customDeckLabel": "自定义牌组",
-    "customDeckSummoner": "召唤师: {{name}}"
+    "customDeckSummoner": "召唤师: {{name}}",
+    "editDeck": "编辑牌组",
+    "newDeck": "新建牌组",
+    "loadingDecks": "加载牌组中...",
+    "loadDeckFailed": "加载牌组失败，请重试"
   },
   "factions": {
     "necromancer": "堕落王国",
@@ -51,6 +55,8 @@
     "bloodRuneCharge": "花1魔力充能",
     "feedBeastSelfDestroy": "自毁",
     "chargeSelf": "充能自身",
+    "playEvent": "打出",
+    "discardForMagic": "弃牌",
     "attachToSoldier": "附加到士兵"
   },
   "player": {
@@ -350,6 +356,9 @@
   "statusBanners": {
     "insufficientMagic": "魔力不足",
     "insufficientCharge": "需要至少1点充能",
+    "magicEventChoice": {
+      "message": "选择：打出事件卡或弃牌换魔力"
+    },
     "stun": {
       "selectTarget": "震慑：选择召唤师直线3格内的敌方单位",
       "direction": "震慑方向：",

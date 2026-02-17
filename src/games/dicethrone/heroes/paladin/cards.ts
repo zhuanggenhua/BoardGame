@@ -83,10 +83,10 @@ export const PALADIN_CARDS: AbilityCard[] = [
             action: {
                 type: 'rollDie', target: 'self', diceCount: 1,
                 conditionalEffects: [
-                    { face: PALADIN_FACES.SWORD, drawCard: 2 },
-                    { face: PALADIN_FACES.HELM, heal: 3 },
-                    { face: PALADIN_FACES.HEART, heal: 4 },
-                    { face: PALADIN_FACES.PRAY, cp: 3 },
+                    { face: PALADIN_FACES.SWORD, drawCard: 2, effectKey: 'bonusDie.effect.divineFavor.sword' },
+                    { face: PALADIN_FACES.HELM, heal: 3, effectKey: 'bonusDie.effect.divineFavor.helm' },
+                    { face: PALADIN_FACES.HEART, heal: 4, effectKey: 'bonusDie.effect.divineFavor.heart' },
+                    { face: PALADIN_FACES.PRAY, cp: 3, effectKey: 'bonusDie.effect.divineFavor.pray' },
                 ],
             },
             timing: 'immediate'
@@ -105,10 +105,10 @@ export const PALADIN_CARDS: AbilityCard[] = [
             action: {
                 type: 'rollDie', target: 'self', diceCount: 1,
                 conditionalEffects: [
-                    { face: PALADIN_FACES.SWORD, bonusDamage: 3 },
-                    { face: PALADIN_FACES.HELM, grantDamageShield: { value: 3 } },
-                    { face: PALADIN_FACES.HEART, grantDamageShield: { value: 5 } },
-                    { face: PALADIN_FACES.PRAY, grantDamageShield: { value: 2 }, cp: 2 },
+                    { face: PALADIN_FACES.SWORD, bonusDamage: 3, effectKey: 'bonusDie.effect.absolution.sword' },
+                    { face: PALADIN_FACES.HELM, grantDamageShield: { value: 3 }, effectKey: 'bonusDie.effect.absolution.helm' },
+                    { face: PALADIN_FACES.HEART, grantDamageShield: { value: 5 }, effectKey: 'bonusDie.effect.absolution.heart' },
+                    { face: PALADIN_FACES.PRAY, grantDamageShield: { value: 2 }, cp: 2, effectKey: 'bonusDie.effect.absolution.pray' },
                 ],
             },
             timing: 'immediate'
@@ -128,7 +128,7 @@ export const PALADIN_CARDS: AbilityCard[] = [
             action: {
                 type: 'rollDie', target: 'self', diceCount: 1,
                 conditionalEffects: [
-                    { face: PALADIN_FACES.PRAY, cp: 4 },
+                    { face: PALADIN_FACES.PRAY, cp: 4, effectKey: 'bonusDie.effect.godsGrace.pray' },
                 ],
                 defaultEffect: { drawCard: 1 },
             },

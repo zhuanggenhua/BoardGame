@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
-import type { AbilityCard, Die, TurnPhase } from '../types';
-import { DiceActions, DiceTray, type DiceInteractionConfig } from './DiceTray';
+import type { AbilityCard, Die, TurnPhase, PendingInteraction } from '../types';
+import { DiceActions, DiceTray } from './DiceTray';
 import { DiscardPile } from './DiscardPile';
 import { GameButton } from './components/GameButton';
 import { UI_Z_INDEX } from '../../../core';
@@ -33,7 +33,8 @@ export const RightSidebar = ({
     onUndoDiscard,
     discardHighlighted,
     sellButtonVisible,
-    diceInteractionConfig,
+    interaction,
+    dispatch,
     activeModifiers,
     passiveAbilityProps,
 }: {
@@ -56,14 +57,15 @@ export const RightSidebar = ({
     onAdvance: () => void;
     discardPileRef: RefObject<HTMLDivElement | null>;
     discardCards: AbilityCard[];
-    /** 点击弃牌堆放大按钮时触发，传入最近的卡片列表 */
     onInspectRecentCards?: (cards: AbilityCard[]) => void;
     canUndoDiscard: boolean;
     onUndoDiscard: () => void;
     discardHighlighted: boolean;
     sellButtonVisible: boolean;
-    /** 骰子交互模式配置 */
-    diceInteractionConfig?: DiceInteractionConfig;
+    /** 当前骰子交互（从 sys.interaction.current 读取） */
+    interaction?: PendingInteraction;
+    /** dispatch 函数（用于响应交互） */
+    dispatch: (type: string, payload?: unknown) => void;
     /** 已激活的攻击修正卡 */
     activeModifiers?: ActiveModifier[];
     /** 被动能力面板 props */
@@ -93,7 +95,8 @@ export const RightSidebar = ({
                     isRolling={isRolling}
                     rerollingDiceIds={rerollingDiceIds}
                     locale={locale}
-                    interactionConfig={diceInteractionConfig}
+                    interaction={interaction}
+                    dispatch={dispatch}
                     isPassiveRerollMode={!!passiveAbilityProps?.rerollSelectingAction}
                 />
                 <DiceActions
@@ -106,7 +109,8 @@ export const RightSidebar = ({
                     canInteract={canInteractDice}
                     isRolling={isRolling}
                     setIsRolling={setIsRolling}
-                    interactionConfig={diceInteractionConfig}
+                    interaction={interaction}
+                    dispatch={dispatch}
                 />
                 {/* 下一阶段按钮：始终占位，隐藏时使用 invisible 且禁用 pointer-events */}
                 <div className={`w-full flex justify-center ${showAdvancePhaseButton ? '' : 'invisible pointer-events-none'}`}>

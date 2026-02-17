@@ -82,7 +82,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
                 action: {
                     type: 'rollDie', target: 'self', diceCount: 1,
                     conditionalEffects: [
-                        { face: PYROMANCER_DICE_FACE_IDS.FIRE, grantToken: { tokenId: TOKEN_IDS.FIRE_MASTERY, value: 2 } },
+                        { face: PYROMANCER_DICE_FACE_IDS.FIRE, grantToken: { tokenId: TOKEN_IDS.FIRE_MASTERY, value: 2 }, effectKey: 'bonusDie.effect.infernalEmbrace.fire' },
                     ],
                     defaultEffect: { drawCard: 1 },
                 },

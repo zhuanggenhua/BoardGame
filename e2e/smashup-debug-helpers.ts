@@ -344,6 +344,21 @@ export const waitForMinionSelect = async (page: Page, timeout = 10000) => {
     );
 };
 
+/** 点击高亮的随从（ring-purple-400）- 用于交互驱动的随从选择 */
+export const clickHighlightedMinionByIndex = async (page: Page, index = 0) => {
+    const result = await page.evaluate((idx) => {
+        // 查找所有带 ring-purple-400 的随从卡片（可选随从）
+        const selectableMinions = document.querySelectorAll('[class*="ring-purple-400"]');
+        if (selectableMinions[idx]) {
+            (selectableMinions[idx] as HTMLElement).click();
+            return `clicked-minion-${idx}`;
+        }
+        return 'not-found';
+    }, index);
+    await page.waitForTimeout(500);
+    return result;
+};
+
 /** 检查是否处于基地选择模式 */
 export const isBaseSelectMode = async (page: Page) => {
     return page.evaluate(() => document.querySelectorAll('[class*="ring-amber-400"]').length > 0).catch(() => false);

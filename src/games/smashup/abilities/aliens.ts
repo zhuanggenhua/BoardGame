@@ -201,7 +201,7 @@ function alienCropCircles(ctx: AbilityContext): AbilityResult {
     }
     if (baseCandidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return { events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-        `alien_crop_circles_${ctx.now}`, ctx.playerId, '选择一个基地，将随从返回手牌', buildBaseTargetOptions(baseCandidates), 'alien_crop_circles',
+        `alien_crop_circles_${ctx.now}`, ctx.playerId, '选择一个基地，将随从返回手牌', buildBaseTargetOptions(baseCandidates, ctx.state), 'alien_crop_circles',
     )) };
 }
 
@@ -244,15 +244,26 @@ function alienProbe(ctx: AbilityContext): AbilityResult {
 }
 
 function alienTerraform(ctx: AbilityContext): AbilityResult {
+    console.log('[alien_terraform] onPlay triggered, playerId:', ctx.playerId);
+    console.log('[alien_terraform] bases count:', ctx.state.bases.length);
+    console.log('[alien_terraform] matchState exists:', !!ctx.matchState);
     const baseCandidates: { baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const baseDef = getBaseDef(ctx.state.bases[i].defId);
         baseCandidates.push({ baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` });
     }
-    if (baseCandidates.length === 0) return { events: [] };
-    return { events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-        `alien_terraform_${ctx.now}`, ctx.playerId, '选择要替换的基地', buildBaseTargetOptions(baseCandidates), 'alien_terraform',
-    )) };
+    console.log('[alien_terraform] baseCandidates:', baseCandidates);
+    if (baseCandidates.length === 0) {
+        console.log('[alien_terraform] no base candidates, returning empty');
+        return { events: [] };
+    }
+    const interaction = createSimpleChoice(
+        `alien_terraform_${ctx.now}`, ctx.playerId, '选择要替换的基地', buildBaseTargetOptions(baseCandidates, ctx.state), 'alien_terraform',
+    );
+    console.log('[alien_terraform] created interaction:', interaction.id, 'kind:', interaction.kind, 'playerId:', interaction.playerId);
+    const newMatchState = queueInteraction(ctx.matchState, interaction);
+    console.log('[alien_terraform] queued interaction, current:', newMatchState.sys.interaction?.current?.id);
+    return { events: [], matchState: newMatchState };
 }
 
 function alienAbduction(ctx: AbilityContext): AbilityResult {
@@ -367,7 +378,7 @@ export function registerAlienInteractionHandlers(): void {
         if (baseCandidates.length === 0) return undefined;
         const next = createSimpleChoice(
             `alien_invasion_base_${timestamp}`, playerId,
-            '选择要移动到的基地', buildBaseTargetOptions(baseCandidates), 'alien_invasion_choose_base',
+            '选择要移动到的基地', buildBaseTargetOptions(baseCandidates, state.core), 'alien_invasion_choose_base',
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBaseIndex } } }), events: [] };
     });
@@ -411,126 +422,15 @@ export function registerAlienInteractionHandlers(): void {
         } as MinionReturnedEvent] };
     });
 
-    // 麦田怪圈：第一步选择基地，进入“任意数量随从”选择
+    // 麦田怪圈：选择基地后，自动返回该基地所有随从（强制效果）
     registerInteractionHandler('alien_crop_circles', (state, playerId, value, _iData, _random, timestamp) => {
         const { baseIndex } = value as { baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
 
-        const options = base.minions.map((m, index) => {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const power = getMinionPower(state.core, m, baseIndex);
-            return {
-                id: `minion-${index}`,
-                label: `${name} (力量 ${power})`,
-                value: { minionUid: m.uid, minionDefId: m.defId },
-            };
-        });
-
-        if (options.length === 0) return { state, events: [] };
-
-        const promptOptions: Array<{
-            id: string;
-            label: string;
-            value: { minionUid: string; minionDefId: string } | { done: true };
-        }> = [
-            ...options,
-            { id: 'done', label: '完成选择', value: { done: true } },
-        ];
-
-        const next = createSimpleChoice(
-            `alien_crop_circles_choose_minion_${timestamp}`,
-            playerId,
-            '麦田怪圈：选择要返回手牌的随从（可选多个）',
-            promptOptions,
-            'alien_crop_circles_choose_minion',
-        );
-        return {
-            state: queueInteraction(state, {
-                ...next,
-                data: {
-                    ...next.data,
-                    continuationContext: { baseIndex, selectedMinionUids: [] as string[] },
-                },
-            }),
-            events: [],
-        };
-    });
-
-    // 麦田怪圈：第二步循环选择随从，done 或无剩余选项时统一结算
-    registerInteractionHandler('alien_crop_circles_choose_minion', (state, playerId, value, iData, _random, timestamp) => {
-        const selected = value as { done?: boolean; minionUid?: string };
-        const ctx = iData?.continuationContext as { baseIndex: number; selectedMinionUids?: string[] } | undefined;
-        if (!ctx) return undefined;
-
-        const selectedMinionUids = [...(ctx.selectedMinionUids ?? [])];
-
-        if (selected.done || !selected.minionUid) {
-            return {
-                state,
-                events: buildCropCirclesReturnEvents(state.core, ctx.baseIndex, selectedMinionUids, timestamp, playerId),
-            };
-        }
-
-        if (!selectedMinionUids.includes(selected.minionUid)) {
-            selectedMinionUids.push(selected.minionUid);
-        }
-
-        const base = state.core.bases[ctx.baseIndex];
-        if (!base) return { state, events: [] };
-
-        const selectedSet = new Set(selectedMinionUids);
-        const remainingOptions = base.minions
-            .filter(m => !selectedSet.has(m.uid))
-            .map((m, index) => {
-                const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? m.defId;
-                const power = getMinionPower(state.core, m, ctx.baseIndex);
-                return {
-                    id: `minion-${index}`,
-                    label: `${name} (力量 ${power})`,
-                    value: { minionUid: m.uid, minionDefId: m.defId },
-                };
-            });
-
-        if (remainingOptions.length === 0) {
-            return {
-                state,
-                events: buildCropCirclesReturnEvents(state.core, ctx.baseIndex, selectedMinionUids, timestamp, playerId),
-            };
-        }
-
-        const promptOptions: Array<{
-            id: string;
-            label: string;
-            value: { minionUid: string; minionDefId: string } | { done: true };
-        }> = [
-            ...remainingOptions,
-            { id: 'done', label: '完成选择', value: { done: true } },
-        ];
-
-        const next = createSimpleChoice(
-            `alien_crop_circles_choose_minion_${timestamp}`,
-            playerId,
-            '麦田怪圈：选择要返回手牌的随从（可选多个）',
-            promptOptions,
-            'alien_crop_circles_choose_minion',
-        );
-
-        return {
-            state: queueInteraction(state, {
-                ...next,
-                data: {
-                    ...next.data,
-                    continuationContext: {
-                        baseIndex: ctx.baseIndex,
-                        selectedMinionUids,
-                    },
-                },
-            }),
-            events: [],
-        };
+        // 直接返回该基地所有随从（强制效果："返回每个在这个基地上的随从"）
+        const events = buildCropCirclesReturnEvents(state.core, baseIndex, base.minions.map(m => m.uid), timestamp, playerId);
+        return { state, events };
     });
 
     // 探测第一步（多对手时）：选择目标玩家后，展示手牌，链式选择放置位置
@@ -579,14 +479,17 @@ export function registerAlienInteractionHandlers(): void {
         const { baseIndex } = value as { baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
-        if (state.core.baseDeck.length === 0) return undefined;
+        if (state.core.baseDeck.length === 0) {
+            // 基地牌库为空，无法替换，给出反馈
+            return { state, events: [buildAbilityFeedback(playerId, 'feedback.base_deck_empty', timestamp)] };
+        }
 
         const options = state.core.baseDeck.map((baseDefId, index) => {
             const baseDef = getBaseDef(baseDefId);
             return {
                 id: `replacement-${index}`,
                 label: baseDef?.name ?? baseDefId,
-                value: { newBaseDefId: baseDefId },
+                value: { newBaseDefId: baseDefId, baseDefId }, // 添加 baseDefId 触发卡牌展示模式
             };
         });
 

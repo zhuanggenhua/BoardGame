@@ -9,12 +9,11 @@ import type {
     DiceThroneEvent,
     TokenGrantedEvent,
     PreventDamageEvent,
-    PendingInteraction,
-    InteractionRequestedEvent,
 } from '../types';
 import { CP_MAX } from '../types';
 import { registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { createSelectPlayerInteraction } from '../interactions';
 
 // ============================================================================
 // 圣骑士技能处理器
@@ -203,41 +202,68 @@ function handleBlessingPrevent({ targetId, state, timestamp, action }: CustomAct
  * 复仇 II 主技能 — 选择任意玩家授予 1 层弹反
  */
 function handleVengeanceSelectPlayer({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
-    const interaction: PendingInteraction = {
-        id: `${sourceAbilityId}-${timestamp}`,
+    return [createSelectPlayerInteraction({
         playerId: targetId,
-        sourceCardId: sourceAbilityId,
-        type: 'selectPlayer',
-        titleKey: 'interaction.selectPlayerForRetribution',
-        selectCount: 1,
-        selected: [],
+        sourceAbilityId,
+        count: 1,
         targetPlayerIds: Object.keys(state.players),
-        tokenGrantConfig: { tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 },
-    };
-    return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
+        titleKey: 'interaction.selectPlayerForRetribution',
+        onResolve: ([selectedPlayerId]) => {
+            const currentTokens = state.players[selectedPlayerId]?.tokens[TOKEN_IDS.RETRIBUTION] ?? 0;
+            return [{
+                type: 'TOKEN_GRANTED',
+                payload: {
+                    targetId: selectedPlayerId,
+                    tokenId: TOKEN_IDS.RETRIBUTION,
+                    amount: 1,
+                    newTotal: currentTokens + 1,
+                    sourceAbilityId,
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp,
+            } as TokenGrantedEvent];
+        },
+    })];
 }
 
 /**
  * 祝圣! (Consecrate) — 选择1名玩家获得守护、弹反、暴击和精准
  */
 function handleConsecrate({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
-    const interaction: PendingInteraction = {
-        id: `${sourceAbilityId}-${timestamp}`,
+    return [createSelectPlayerInteraction({
         playerId: targetId,
-        sourceCardId: sourceAbilityId,
-        type: 'selectPlayer',
-        titleKey: 'interaction.selectPlayerForConsecrate',
-        selectCount: 1,
-        selected: [],
+        sourceAbilityId,
+        count: 1,
         targetPlayerIds: Object.keys(state.players),
-        tokenGrantConfigs: [
-            { tokenId: TOKEN_IDS.PROTECT, amount: 1 },
-            { tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 },
-            { tokenId: TOKEN_IDS.CRIT, amount: 1 },
-            { tokenId: TOKEN_IDS.ACCURACY, amount: 1 },
-        ],
-    };
-    return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
+        titleKey: 'interaction.selectPlayerForConsecrate',
+        onResolve: ([selectedPlayerId]) => {
+            const player = state.players[selectedPlayerId];
+            if (!player) return [];
+            
+            const tokens = [
+                { tokenId: TOKEN_IDS.PROTECT, amount: 1 },
+                { tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 },
+                { tokenId: TOKEN_IDS.CRIT, amount: 1 },
+                { tokenId: TOKEN_IDS.ACCURACY, amount: 1 },
+            ];
+            
+            return tokens.map((token, index) => {
+                const currentTokens = player.tokens[token.tokenId] ?? 0;
+                return {
+                    type: 'TOKEN_GRANTED',
+                    payload: {
+                        targetId: selectedPlayerId,
+                        tokenId: token.tokenId,
+                        amount: token.amount,
+                        newTotal: currentTokens + token.amount,
+                        sourceAbilityId,
+                    },
+                    sourceCommandType: 'ABILITY_EFFECT',
+                    timestamp: timestamp + index,
+                } as TokenGrantedEvent;
+            });
+        },
+    })];
 }
 
 // 注册

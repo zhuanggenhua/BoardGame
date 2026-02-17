@@ -43,6 +43,7 @@ export type PassiveTiming =
 export type ActiveTiming =
     | 'beforeDamageDealt'     // 造成伤害前（太极加伤）
     | 'beforeDamageReceived'  // 受到伤害前（太极减伤、闪避）
+    | 'onOffensiveRollEnd'    // 攻击掷骰阶段结束时（暴击、精准）
     | 'anytime';              // 任意时点（净化）
 
 // ============================================================================
@@ -177,6 +178,12 @@ export interface RollDieConditionalEffect {
         titleKey: string;
         options: ChoiceOption[];
     };
+    /** 
+     * 自定义效果描述 i18n key（用于 displayOnly 面板）
+     * 如果未指定，使用通用的 `bonusDie.effect.${face}` key
+     * 用于同一骰面在不同技能中有不同效果的情况（如 holy-light-2 的剑面给暴击 token 而非 +2 伤害）
+     */
+    effectKey?: string;
 }
 
 /**

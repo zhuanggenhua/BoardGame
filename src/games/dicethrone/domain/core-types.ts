@@ -174,71 +174,54 @@ export interface PendingAttack {
     resolvedDamage?: number;
     /** 攻击方骰面计数快照（用于 postDamage 阶段的连击判定，因为防御阶段会重置骰子） */
     attackDiceFaceCounts?: Record<string, number>;
+    /** 攻击掷骰阶段结束时的 Token 选择是否已完成（暴击/精准） */
+    offensiveRollEndTokenResolved?: boolean;
 }
 
 // ============================================================================
-// 卡牌交互系统类型
+// 卡牌交互系统类型（已废弃 - 迁移到 InteractionSystem）
 // ============================================================================
+// 注意：以下类型已废弃，保留仅用于测试兼容性
+// 新代码应使用 src/games/dicethrone/domain/interactions/ 中的工厂函数
 
-/** 交互类型 */
+/** 交互类型（已废弃） */
 export type CardInteractionType =
-    | 'selectDie'           // 选择骰子
-    | 'modifyDie'           // 修改骰子数值
-    | 'selectPlayer'        // 选择玩家
-    | 'selectStatus'        // 选择状态效果
-    | 'selectTargetStatus'; // 选择目标玩家的状态效果（转移用）
+    | 'selectDie'
+    | 'modifyDie'
+    | 'selectPlayer'
+    | 'selectStatus'
+    | 'selectTargetStatus';
 
-/** 待处理的卡牌交互 */
+/** 待处理的卡牌交互（已废弃） */
 export interface PendingInteraction {
-    /** 交互 ID */
     id: string;
-    /** 执行交互的玩家 */
     playerId: PlayerId;
-    /** 来源卡牌 ID */
     sourceCardId: string;
-    /** 交互类型 */
     type: CardInteractionType;
-    /** 提示文本 key */
     titleKey: string;
-    /** 需要选择的数量 */
     selectCount: number;
-    /** 已选择的项目 */
     selected: string[];
-    /** 可选择的目标玩家 ID 列表（用于 selectPlayer/selectStatus） */
     targetPlayerIds?: PlayerId[];
-    /** 骰子修改配置 */
     dieModifyConfig?: {
-        /** 修改模式: set=设置为指定值, adjust=增减, copy=复制另一颗, any=任意修改 */
         mode: 'set' | 'adjust' | 'copy' | 'any';
-        /** 设置的目标值（mode=set） */
         targetValue?: number;
-        /** 调整范围（mode=adjust） */
         adjustRange?: { min: number; max: number };
     };
-    /** 状态转移配置（用于 transfer） */
     transferConfig?: {
-        /** 已选择的源玩家 */
         sourcePlayerId?: PlayerId;
-        /** 已选择的状态 ID */
         statusId?: string;
     };
-    /** Token 授予配置（用于 selectPlayer + grantToken） */
     tokenGrantConfig?: {
-        /** 要授予的 Token ID */
         tokenId: string;
-        /** 授予的数量 */
         amount: number;
     };
-    /** 多 Token 授予配置（用于 selectPlayer + 批量 grantToken，如祝圣） */
     tokenGrantConfigs?: Array<{
-        /** 要授予的 Token ID */
         tokenId: string;
-        /** 授予的数量 */
         amount: number;
     }>;
-    /** 是否针对对手的骰子（card-give-hand） */
     targetOpponentDice?: boolean;
 }
+
 
 /**
  * 伤害护盾
@@ -314,6 +297,8 @@ export interface BonusDieInfo {
     value: number;
     /** 骰面符号 */
     face: DieFace;
+    /** 效果描述 i18n key（用于 displayOnly 展示） */
+    effectKey?: string;
 }
 
 /**

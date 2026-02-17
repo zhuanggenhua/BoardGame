@@ -205,7 +205,7 @@ export const MONK_CARDS: AbilityCard[] = [
                     { tokenId: TOKEN_IDS.TAIJI, value: 2 },
                     { tokenId: TOKEN_IDS.EVASIVE, value: 1 },
                     { tokenId: TOKEN_IDS.PURIFY, value: 1 },
-                ] },
+                ], effectKey: 'bonusDie.effect.enlightenmentLotus' },
             ],
             defaultEffect: { drawCard: 1 },
         },

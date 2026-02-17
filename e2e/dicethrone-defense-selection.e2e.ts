@@ -8,20 +8,24 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { setupDTOnlineMatch, selectCharacter, waitForGameBoard } from './helpers/dicethrone';
 
 test.describe('DiceThrone - 防御技能选择', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.goto('/play/dicethrone/local');
-        await page.waitForLoadState('networkidle');
-    });
-
-    test('影贼有两个防御技能时显示选择界面', async ({ page }) => {
-        // 1. 选择影贼作为玩家1
-        await page.click('text=影贼');
-        await page.click('text=开始游戏');
+    test('影贼有两个防御技能时显示选择界面', async ({ browser }, testInfo) => {
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupDTOnlineMatch(browser, baseURL);
         
-        // 等待游戏开始
-        await page.waitForSelector('text=进攻投掷', { timeout: 10000 });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+        
+        const { hostPage } = setup;
+
+        // 1. 选择影贼作为玩家1
+        await selectCharacter(hostPage, 'shadow_thief');
+        await selectCharacter(setup.guestPage, 'paladin');
+        await waitForGameBoard(hostPage);
         
         // 2. 跳过玩家1的回合到玩家2
         await page.click('text=推进阶段');

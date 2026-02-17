@@ -127,6 +127,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                                 <BonusDieSpotlightContent
                                     value={die.value}
                                     face={die.face}
+                                    effectKey={die.effectKey}
                                     locale={locale}
                                     size="7vw"
                                     rollingDurationMs={600 + die.index * 100}

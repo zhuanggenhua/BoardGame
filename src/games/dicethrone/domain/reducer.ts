@@ -511,67 +511,63 @@ const handleRollLimitChanged: EventHandler<Extract<DiceThroneEvent, { type: 'ROL
 ) => ({ ...state, rollLimit: event.payload.newLimit });
 
 /**
- * 处理交互请求事件
+ * 处理交互请求事件（已废弃 - 迁移到 InteractionSystem）
  */
-const handleInteractionRequested: EventHandler<Extract<DiceThroneEvent, { type: 'INTERACTION_REQUESTED' }>> = (
-    state
-) => {
-    // pendingInteraction 已迁移到 sys.interaction（单一权威）
-    // pendingCardSpotlight/lastPlayedCard 已迁移到 EventStream
-    // reducer 不再写入任何状态
-    return state;
-};
+// const handleInteractionRequested: EventHandler<Extract<DiceThroneEvent, { type: 'INTERACTION_REQUESTED' }>> = (
+//     state
+// ) => {
+//     return state;
+// };
 
 /**
- * 处理交互完成事件
+ * 处理交互完成事件（已废弃 - 迁移到 InteractionSystem）
  */
-const handleInteractionCompleted: EventHandler<Extract<DiceThroneEvent, { type: 'INTERACTION_COMPLETED' }>> = (
-    state
-) => {
-    // pendingInteraction 已迁移到 sys.interaction，reducer 不再管理
-    return state;
-};
+// const handleInteractionCompleted: EventHandler<Extract<DiceThroneEvent, { type: 'INTERACTION_COMPLETED' }>> = (
+//     state
+// ) => {
+//     return state;
+// };
 
 /**
- * 处理交互取消事件
+ * 处理交互取消事件（已废弃 - 迁移到 InteractionSystem）
  * - 清除 pendingInteraction
  * - 把卡牌从弃牌堆还回手牌
  * - 返还已扣除的 CP
  */
-const handleInteractionCancelled: EventHandler<Extract<DiceThroneEvent, { type: 'INTERACTION_CANCELLED' }>> = (
-    state,
-    event
-) => {
-    const { sourceCardId, cpCost, playerId } = event.payload;
-    let players = state.players;
+// const handleInteractionCancelled: EventHandler<Extract<DiceThroneEvent, { type: 'INTERACTION_CANCELLED' }>> = (
+//     state,
+//     event
+// ) => {
+//     const { sourceCardId, cpCost, playerId } = event.payload;
+//     let players = state.players;
 
-    const player = state.players[playerId];
-    if (player && sourceCardId) {
-        const [card, newDiscard] = removeCard(player.discard, sourceCardId);
-        let newHand = player.hand;
-        let finalDiscard = player.discard;
-        if (card) {
-            newHand = [...player.hand, card];
-            finalDiscard = newDiscard;
-        }
+//     const player = state.players[playerId];
+//     if (player && sourceCardId) {
+//         const [card, newDiscard] = removeCard(player.discard, sourceCardId);
+//         let newHand = player.hand;
+//         let finalDiscard = player.discard;
+//         if (card) {
+//             newHand = [...player.hand, card];
+//             finalDiscard = newDiscard;
+//         }
 
-        let newResources = player.resources;
-        if (cpCost > 0) {
-            const currentCp = player.resources[RESOURCE_IDS.CP] ?? 0;
-            newResources = { ...player.resources, [RESOURCE_IDS.CP]: currentCp + cpCost };
-        }
+//         let newResources = player.resources;
+//         if (cpCost > 0) {
+//             const currentCp = player.resources[RESOURCE_IDS.CP] ?? 0;
+//             newResources = { ...player.resources, [RESOURCE_IDS.CP]: currentCp + cpCost };
+//         }
 
-        players = {
-            ...state.players,
-            [playerId]: { ...player, hand: newHand, discard: finalDiscard, resources: newResources },
-        };
-    }
+//         players = {
+//             ...state.players,
+//             [playerId]: { ...player, hand: newHand, discard: finalDiscard, resources: newResources },
+//         };
+//     }
 
-    return {
-        ...state,
-        players,
-    };
-};
+//     return {
+//         ...state,
+//         players,
+//     };
+// };
 
 // ============================================================================
 // 奖励骰重掷事件处理器
@@ -765,12 +761,13 @@ export const reduce = (
             return handleDieRerolled(state, event);
         case 'ROLL_LIMIT_CHANGED':
             return handleRollLimitChanged(state, event);
-        case 'INTERACTION_REQUESTED':
-            return handleInteractionRequested(state, event);
-        case 'INTERACTION_COMPLETED':
-            return handleInteractionCompleted(state, event);
-        case 'INTERACTION_CANCELLED':
-            return handleInteractionCancelled(state, event);
+        // 已废弃 - 迁移到 InteractionSystem
+        // case 'INTERACTION_REQUESTED':
+        //     return handleInteractionRequested(state, event);
+        // case 'INTERACTION_COMPLETED':
+        //     return handleInteractionCompleted(state, event);
+        // case 'INTERACTION_CANCELLED':
+        //     return handleInteractionCancelled(state, event);
         case 'TOKEN_RESPONSE_REQUESTED':
             return handleTokenResponseRequested(state, event);
         case 'TOKEN_USED':

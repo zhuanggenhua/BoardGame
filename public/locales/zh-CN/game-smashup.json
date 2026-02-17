@@ -277,7 +277,7 @@
     },
     "alien_crop_circles": {
       "name": "麦田怪圈",
-      "effectText": "将任意数量的随从从一个基地中返回到其拥有者的手牌中。"
+      "effectText": "选择一个基地。返回每个在这个基地上的随从到它的拥有者的手上。"
     },
     "alien_terraform": {
       "name": "适居化",

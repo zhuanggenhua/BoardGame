@@ -473,19 +473,33 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, dispatch, events,
                                                 const playerName = user?.username || getGuestName();
                                                 const guestId = user?.id ? undefined : getGuestId();
                                                 
+                                                console.log('[DebugPanel] 开始创建新房间', { gameId, playerName, guestId });
+                                                
                                                 // 1. 创建新房间
-                                                const { matchID: newMatchID } = await matchApi.createMatch(
+                                                const createResult = await matchApi.createMatch(
                                                     gameId,
                                                     { numPlayers: 2, setupData: guestId ? { guestId } : undefined },
                                                     token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
                                                 );
-                                                const { playerCredentials: newCredentials } = await matchApi.joinMatch(gameId, newMatchID, {
-                                                    playerID: '0',
-                                                    playerName,
-                                                });
+                                                
+                                                console.log('[DebugPanel] 房间创建成功', { matchID: createResult.matchID });
+                                                
+                                                // 使用 claim-seat 而不是 joinMatch，因为 joinMatch 不支持传递认证信息
+                                                const { playerCredentials: newCredentials } = await matchApi.claimSeat(
+                                                    gameId,
+                                                    createResult.matchID,
+                                                    '0',
+                                                    {
+                                                        token,
+                                                        guestId: guestId,
+                                                        playerName,
+                                                    }
+                                                );
+                                                
+                                                console.log('[DebugPanel] 加入房间成功');
                                                 
                                                 // 2. 广播新房间地址给其他玩家（在跳转前广播）
-                                                const newRoomUrl = `/play/${gameId}/match/${newMatchID}`;
+                                                const newRoomUrl = `/play/${gameId}/match/${createResult.matchID}`;
                                                 matchSocket.broadcastNewRoom(newRoomUrl);
                                                 
                                                 // 3. 退出旧房间并准备延迟销毁（如果有凭据）
@@ -502,33 +516,37 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, dispatch, events,
                                                                     credentials: oldCredentials,
                                                                 });
                                                             }
-                                                        } catch {
-                                                            // 离开房间失败可忽略（房间可能已不存在）
+                                                        } catch (leaveError) {
+                                                            console.warn('[DebugPanel] 离开旧房间失败（可忽略）:', leaveError);
                                                         }
                                                         localStorage.removeItem(`match_creds_${currentMatchId}`);
                                                     }
                                                 }
 
+                                                // 延迟销毁旧房间（仅当有凭据时）
                                                 if (currentMatchId && currentPlayerID && oldCredentials) {
                                                     const delayMs = 8000;
                                                     window.setTimeout(() => {
-                                                        void destroyMatch(gameId, currentMatchId, currentPlayerID, oldCredentials as string);
+                                                        void destroyMatch(gameId, currentMatchId, currentPlayerID, oldCredentials);
                                                     }, delayMs);
                                                 }
                                                 
                                                 // 4. 保存新凭据
-                                                persistMatchCredentials(newMatchID, {
+                                                persistMatchCredentials(createResult.matchID, {
                                                     playerID: '0',
                                                     credentials: newCredentials,
-                                                    matchID: newMatchID,
+                                                    matchID: createResult.matchID,
                                                     gameName: gameId,
                                                     playerName,
                                                 });
                                                 
+                                                console.log('[DebugPanel] 准备跳转到新房间', { url: newRoomUrl });
+                                                
                                                 // 5. 跳转到新房间
                                                 navigate(`${newRoomUrl}?playerID=0`);
                                             } catch (error) {
-                                                console.error('[Reset] 创建房间失败:', error);
+                                                console.error('[DebugPanel] 创建房间失败:', error);
+                                                alert(`创建房间失败: ${error instanceof Error ? error.message : String(error)}`);
                                             } finally {
                                                 setIsCreatingRoom(false);
                                             }

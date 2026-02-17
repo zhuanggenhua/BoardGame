@@ -8,20 +8,24 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { setupDTOnlineMatch, selectCharacter, waitForGameBoard } from './helpers/dicethrone';
 
 test.describe('神圣祝福致死伤害触发', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.goto('/play/dicethrone/local');
-        await page.waitForLoadState('networkidle');
-    });
+    test('神圣祝福应该在致死伤害时触发', async ({ browser }, testInfo) => {
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupDTOnlineMatch(browser, baseURL);
+        
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+        
+        const { hostPage, guestPage } = setup;
 
-    test('神圣祝福应该在致死伤害时触发', async ({ page }) => {
         // 1. 选择圣骑士 vs 影贼
-        await page.getByRole('button', { name: /圣骑士|Paladin/i }).click();
-        await page.getByRole('button', { name: /影贼|Shadow Thief/i }).click();
-        await page.getByRole('button', { name: /开始游戏|Start Game/i }).click();
-
-        await page.waitForSelector('[data-testid="game-board"]', { timeout: 10000 });
+        await selectCharacter(hostPage, 'paladin');
+        await selectCharacter(guestPage, 'shadow_thief');
+        await waitForGameBoard(hostPage);
 
         // 2. 给圣骑士添加神圣祝福 token
         await page.evaluate(() => {

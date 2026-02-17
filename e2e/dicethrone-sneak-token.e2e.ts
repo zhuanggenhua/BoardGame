@@ -8,21 +8,24 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { setupDTOnlineMatch, selectCharacter, waitForGameBoard } from './helpers/dicethrone';
 
 test.describe('潜行 Token 免伤机制', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.goto('/play/dicethrone/local');
-        await page.waitForLoadState('networkidle');
-    });
+    test('潜行 token 应该在受伤时自动触发并免除伤害', async ({ browser }, testInfo) => {
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupDTOnlineMatch(browser, baseURL);
+        
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+        
+        const { hostPage, guestPage } = setup;
 
-    test('潜行 token 应该在受伤时自动触发并免除伤害', async ({ page }) => {
         // 1. 选择影贼 vs 圣骑士
-        await page.getByRole('button', { name: /影贼|Shadow Thief/i }).click();
-        await page.getByRole('button', { name: /圣骑士|Paladin/i }).click();
-        await page.getByRole('button', { name: /开始游戏|Start Game/i }).click();
-
-        // 等待游戏加载
-        await page.waitForSelector('[data-testid="game-board"]', { timeout: 10000 });
+        await selectCharacter(hostPage, 'shadow_thief');
+        await selectCharacter(guestPage, 'paladin');
+        await waitForGameBoard(hostPage);
 
         // 2. 使用作弊命令给影贼添加潜行 token
         await page.evaluate(() => {

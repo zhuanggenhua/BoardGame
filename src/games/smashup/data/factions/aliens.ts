@@ -87,7 +87,7 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
         nameEn: 'Probe',
         faction: 'aliens',
         count: 1,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 31 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 33 },
     },
     {
         id: 'alien_crop_circles',
@@ -97,7 +97,7 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
         nameEn: 'Crop Circles',
         faction: 'aliens',
         count: 2,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 32 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 31 },
     },
     {
         id: 'alien_terraform',
@@ -107,7 +107,7 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
         nameEn: 'Terraforming',
         faction: 'aliens',
         count: 1,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 33 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 34 },
     },
     {
         id: 'alien_abduction',
@@ -117,7 +117,7 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
         nameEn: 'Abduction',
         faction: 'aliens',
         count: 1,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 34 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 35 },
     },
     {
         id: 'alien_jammed_signal',
@@ -129,7 +129,7 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
         abilityTags: ['ongoing'],
         ongoingTarget: 'base',
         count: 2,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 35 },
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 32 },
     },
 ];
 

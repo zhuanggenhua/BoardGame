@@ -161,7 +161,7 @@ function robotTechCenter(ctx: AbilityContext): AbilityResult {
     // Prompt 选择（包含取消选项）
     const interaction = createSimpleChoice(
         `robot_tech_center_${ctx.now}`, ctx.playerId,
-        '选择一个基地（按该基地上你的随从数抽牌）', buildBaseTargetOptions(candidates),
+        '选择一个基地（按该基地上你的随从数抽牌）', buildBaseTargetOptions(candidates, ctx.state),
         { sourceId: 'robot_tech_center', autoCancelOption: true },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -268,7 +268,7 @@ export function registerRobotInteractionHandlers(): void {
         });
         const next = createSimpleChoice(
             `robot_zapbot_base_${timestamp}`, playerId,
-            '选择打出随从的基地', buildBaseTargetOptions(baseCandidates), 'robot_zapbot_base',
+            '选择打出随从的基地', buildBaseTargetOptions(baseCandidates, state.core), 'robot_zapbot_base',
         );
         return {
             state: queueInteraction(state, {
@@ -322,7 +322,7 @@ export function registerRobotInteractionHandlers(): void {
         });
         const next = createSimpleChoice(
             `robot_hoverbot_base_${timestamp}`, playerId,
-            '选择打出随从的基地', buildBaseTargetOptions(baseCandidates), 'robot_hoverbot_base',
+            '选择打出随从的基地', buildBaseTargetOptions(baseCandidates, state.core), 'robot_hoverbot_base',
         );
         return {
             state: queueInteraction(state, {

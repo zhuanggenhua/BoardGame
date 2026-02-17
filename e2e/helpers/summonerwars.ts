@@ -77,6 +77,54 @@ export const createSWRoomViaAPI = async (page: Page): Promise<string | null> => 
   }
 };
 
+/**
+ * 通过 UI 创建 SW 房间（旧版兼容）
+ * 导航到首页，点击创建房间，返回 matchID
+ */
+export const createSummonerWarsRoom = async (page: Page): Promise<string | null> => {
+  try {
+    await page.goto('/?game=summonerwars', { waitUntil: 'domcontentloaded' });
+    // 等待游戏卡片加载
+    await page.waitForSelector('[data-game-id="summonerwars"]', { timeout: 15000 }).catch(() => {});
+    
+    // 点击游戏卡片打开详情弹窗
+    await page.locator('[data-game-id="summonerwars"]').click();
+    await page.waitForTimeout(500);
+    
+    // 点击 "Create Room" 按钮
+    const createBtn = page.locator('button').filter({ hasText: /Create Room|创建房间/i });
+    await expect(createBtn).toBeVisible({ timeout: 5000 });
+    await createBtn.click();
+    
+    // 等待导航到对局页面
+    await page.waitForURL(/\/play\/summonerwars\/match\//, { timeout: 15000 });
+    
+    // 从 URL 提取 matchID
+    const url = page.url();
+    const match = url.match(/\/match\/([^/?]+)/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+};
+
+/** 确保 URL 中包含正确的 playerID */
+export const ensurePlayerIdInUrl = async (page: Page, expectedPlayerId: string) => {
+  const url = page.url();
+  if (!url.includes(`playerID=${expectedPlayerId}`)) {
+    const newUrl = url.includes('playerID=')
+      ? url.replace(/playerID=\d+/, `playerID=${expectedPlayerId}`)
+      : `${url}${url.includes('?') ? '&' : '?'}playerID=${expectedPlayerId}`;
+    await page.goto(newUrl, { waitUntil: 'domcontentloaded' });
+  }
+};
+
+/** 通过 UI 点击选择阵营（按索引） */
+export const selectFaction = async (page: Page, factionIndex: number) => {
+  const factionCards = page.locator('.grid > div');
+  await factionCards.nth(factionIndex).click();
+};
+
 // ============================================================================
 // 棋盘就绪检测
 // ============================================================================
@@ -271,18 +319,58 @@ export const advanceToPhase = async (page: Page, targetPhase: string, maxSteps =
   const endPhaseBtn = page.getByTestId('sw-end-phase');
   for (let i = 0; i < maxSteps; i++) {
     const currentPhase = await page.getByTestId('sw-action-banner').getAttribute('data-phase');
-    if (currentPhase === targetPhase) return;
-    await expect(endPhaseBtn).toBeVisible({ timeout: 5000 });
-    await endPhaseBtn.click();
-    await page.waitForTimeout(800);
-    // 检查是否需要二次确认（endPhaseConfirmPending）
-    const stillSamePhase = await page.getByTestId('sw-action-banner').getAttribute('data-phase');
-    if (stillSamePhase === currentPhase) {
-      await endPhaseBtn.click();
-      await page.waitForTimeout(800);
+    console.log(`[advanceToPhase] Step ${i}: currentPhase=${currentPhase}, target=${targetPhase}`);
+    
+    if (currentPhase === targetPhase) {
+      console.log(`[advanceToPhase] Reached target phase: ${targetPhase}`);
+      return;
     }
-    await page.waitForTimeout(500);
+    
+    // 检查按钮是否可见且可点击
+    const isVisible = await endPhaseBtn.isVisible().catch(() => false);
+    const isEnabled = await endPhaseBtn.isEnabled().catch(() => false);
+    console.log(`[advanceToPhase] End phase button - visible: ${isVisible}, enabled: ${isEnabled}`);
+    
+    if (!isVisible || !isEnabled) {
+      console.log(`[advanceToPhase] Button not clickable, waiting...`);
+      await page.waitForTimeout(500);
+      continue;
+    }
+    
+    await endPhaseBtn.click();
+    console.log(`[advanceToPhase] Clicked end phase button`);
+    
+    // 检查是否进入了技能确认模式（阶段 halt）
+    // 如果出现了确认/跳过按钮，说明阶段推进被 halt，不要再次点击
+    // 注意：必须等待足够时间让 UI 渲染完成
+    await page.waitForTimeout(800);
+    
+    const confirmBtn = page.locator('button').filter({ hasText: /^Confirm$|^确认$/i }).first();
+    const skipBtn = page.locator('button').filter({ hasText: /^Skip$|^跳过$/i }).first();
+    
+    const confirmVisible = await confirmBtn.isVisible().catch(() => false);
+    const skipVisible = await skipBtn.isVisible().catch(() => false);
+    
+    console.log(`[advanceToPhase] Confirm button visible: ${confirmVisible}, Skip button visible: ${skipVisible}`);
+    
+    if (confirmVisible || skipVisible) {
+      console.log(`[advanceToPhase] Confirm/Skip buttons detected, phase is halted`);
+      return;
+    }
+    
+    // 再次检查阶段是否变化
+    const newPhase = await page.getByTestId('sw-action-banner').getAttribute('data-phase');
+    console.log(`[advanceToPhase] After click, phase changed: ${currentPhase} -> ${newPhase}`);
+    
+    if (newPhase === currentPhase) {
+      console.log(`[advanceToPhase] WARNING: Phase did not advance after click!`);
+    }
+    
+    await page.waitForTimeout(300);
   }
+  
+  const finalPhase = await page.getByTestId('sw-action-banner').getAttribute('data-phase');
+  console.log(`[advanceToPhase] Max steps reached. Final phase: ${finalPhase}, target: ${targetPhase}`);
 };
 
 /** 深拷贝状态 */
@@ -310,21 +398,44 @@ export const setupSWOnlineMatch = async (
   hostFactionId: string,
   guestFactionId: string,
 ): Promise<SWMatchSetup | null> => {
+  console.log('[DEBUG] Creating match...');
   // 房主上下文
   const hostContext = await browser.newContext({ baseURL });
   await initSWContext(hostContext, '__sw_storage_reset');
   const hostPage = await hostContext.newPage();
+  
+  // 监听页面错误
+  hostPage.on('console', msg => {
+    if (msg.type() === 'error') {
+      console.log('[HOST PAGE ERROR]', msg.text());
+    }
+  });
+  hostPage.on('pageerror', err => {
+    console.log('[HOST PAGE EXCEPTION]', err.message);
+  });
 
   // 先导航到首页预热 Vite 模块缓存
   await hostPage.goto('/', { waitUntil: 'domcontentloaded' });
   await hostPage.waitForSelector('[data-game-id]', { timeout: 15000 }).catch(() => {});
 
-  if (!(await ensureGameServerAvailable(hostPage))) return null;
+  if (!(await ensureGameServerAvailable(hostPage))) {
+    console.log('[DEBUG] Match creation failed');
+    return null;
+  }
+  console.log('[DEBUG] Game server available');
 
   const matchId = await createSWRoomViaAPI(hostPage);
-  if (!matchId) return null;
+  if (!matchId) {
+    console.log('[DEBUG] createSWRoomViaAPI failed');
+    return null;
+  }
+  console.log('[DEBUG] Match created:', matchId);
 
-  if (!(await waitForMatchAvailable(hostPage, GAME_NAME, matchId, 20000))) return null;
+  if (!(await waitForMatchAvailable(hostPage, GAME_NAME, matchId, 20000))) {
+    console.log('[DEBUG] waitForMatchAvailable failed');
+    return null;
+  }
+  console.log('[DEBUG] Match available');
 
   // 导航到对局页面
   await hostPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });

@@ -706,17 +706,22 @@ export function buildMinionTargetOptions(
 /**
  * 构建基地目标选择的交互选项
  * 
- * @param candidates 候选基地列表
- * @returns 引擎层 PromptOption 数组
+ * @param candidates 候选基地列表，包含 baseIndex 和 label
+ * @param state 游戏状态，用于自动提取 baseDefId（触发卡牌展示模式）
+ * @returns 引擎层 PromptOption 数组，自动添加 baseDefId 以触发卡牌展示模式
  */
 export function buildBaseTargetOptions(
-    candidates: { baseIndex: number; label: string }[]
-): EnginePromptOption<{ baseIndex: number }>[] {
-    return candidates.map((c, i) => ({
-        id: `base-${i}`,
-        label: c.label,
-        value: { baseIndex: c.baseIndex },
-    }));
+    candidates: { baseIndex: number; label: string }[],
+    state?: SmashUpCore
+): EnginePromptOption<{ baseIndex: number; baseDefId?: string }>[] {
+    return candidates.map((c, i) => {
+        const baseDefId = state?.bases[c.baseIndex]?.defId;
+        return {
+            id: `base-${i}`,
+            label: c.label,
+            value: { baseIndex: c.baseIndex, ...(baseDefId && { baseDefId }) },
+        };
+    });
 }
 
 // ============================================================================

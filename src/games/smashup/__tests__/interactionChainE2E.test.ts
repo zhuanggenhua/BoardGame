@@ -1508,33 +1508,23 @@ describe('P3: alien_crop_circles（麦田怪圈）循环链', () => {
         const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
         expect(choice1.sourceId).toBe('alien_crop_circles');
 
-        // Step 2: 选 base0 → 循环选随从
+        // Step 2: 选 base0 → 自动返回所有随从（强制效果）
         const baseOpt = findOption(choice1, (o: any) => o.value?.baseIndex === 0);
         const r2 = respond(r1.finalState, '0', baseOpt, 'crop_circles step2: 选基地');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
-        expect(choice2.sourceId).toBe('alien_crop_circles_choose_minion');
+        expect(r2.finalState.sys.interaction.current).toBeUndefined();
 
-        // Step 3: 选 m1 → 继续循环
-        const m1Opt = findOption(choice2, (o: any) => o.value?.minionUid === 'm1');
-        const r3 = respond(r2.finalState, '0', m1Opt, 'crop_circles step3: 选随从1');
-
-        expect(r3.steps[0]?.success).toBe(true);
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
-        expect(choice3.sourceId).toBe('alien_crop_circles_choose_minion');
-
-        // Step 4: 完成选择
-        const r4 = respond(r3.finalState, '0', 'done', 'crop_circles step4: 完成');
-
-        expect(r4.steps[0]?.success).toBe(true);
-        expect(r4.finalState.sys.interaction.current).toBeUndefined();
-
-        // 验证：m1 返回手牌，m2 和 m3 留在 base0
-        const fc = r4.finalState.core;
-        expect(fc.bases[0].minions.find(m => m.uid === 'm1')).toBeUndefined();
-        expect(fc.bases[0].minions.some(m => m.uid === 'm2')).toBe(true);
-        expect(fc.bases[0].minions.some(m => m.uid === 'm3')).toBe(true);
+        // 验证：所有随从（m1, m2, m3）都返回手牌
+        const fc = r2.finalState.core;
+        expect(fc.bases[0].minions).toHaveLength(0); // 基地上没有随从了
+        
+        // 验证所有随从都返回到各自拥有者手牌
+        const p0Hand = fc.players['0'].hand;
+        const p1Hand = fc.players['1'].hand;
+        expect(p0Hand.some(c => c.uid === 'm1')).toBe(true); // m1 属于玩家 0
+        expect(p1Hand.some(c => c.uid === 'm2')).toBe(true); // m2 属于玩家 1
+        expect(p0Hand.some(c => c.uid === 'm3')).toBe(true); // m3 属于玩家 0
     });
 });
 

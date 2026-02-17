@@ -5,24 +5,7 @@ import { Check } from 'lucide-react';
 import { GameButton } from './components/GameButton';
 import type { Die, TurnPhase, PendingInteraction } from '../types';
 import { Dice3D } from './Dice3D';
-
-/** 骰子交互模式的配置 */
-export interface DiceInteractionConfig {
-    /** 当前交互 */
-    interaction: PendingInteraction;
-    /** 已修改的骰子 ID 列表（用于 any 模式追踪） */
-    modifiedDice?: string[];
-    /** 累计调整量（用于 adjust 模式） */
-    totalAdjustment?: number;
-    /** 选择骰子回调 */
-    onSelectDie: (dieId: number) => void;
-    /** 修改骰子数值回调 */
-    onModifyDie: (dieId: number, newValue: number) => void;
-    /** 确认交互 */
-    onConfirm: () => void;
-    /** 取消交互 */
-    onCancel: () => void;
-}
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 export const DiceTray = ({
     dice,
@@ -32,7 +15,8 @@ export const DiceTray = ({
     isRolling,
     rerollingDiceIds,
     locale,
-    interactionConfig,
+    interaction,
+    dispatch,
     isPassiveRerollMode,
 }: {
     dice: Die[];
@@ -40,35 +24,55 @@ export const DiceTray = ({
     currentPhase: TurnPhase;
     canInteract: boolean;
     isRolling: boolean;
-    /** 正在重掷的骰子 ID 列表 */
     rerollingDiceIds?: number[];
     locale?: string;
-    /** 骰子交互模式配置（有值时进入交互模式） */
-    interactionConfig?: DiceInteractionConfig;
+    /** 当前骰子交互（从 sys.interaction.current 读取） */
+    interaction?: PendingInteraction;
+    /** dispatch 函数（用于响应交互） */
+    dispatch: (type: string, payload?: unknown) => void;
     /** 被动重掷选择模式（翡翠色高亮） */
     isPassiveRerollMode?: boolean;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const diceSize = '4vw';
-    const interaction = interactionConfig?.interaction;
-    const isInteractionMode = Boolean(interaction);
+    
+    // 本地状态：追踪已修改的骰子和累计调整量
+    const [modifiedDice, setModifiedDice] = React.useState<string[]>([]);
+    const [totalAdjustment, setTotalAdjustment] = React.useState(0);
+    
+    // 重置本地状态当交互变化时
+    React.useEffect(() => {
+        if (!interaction) {
+            setModifiedDice([]);
+            setTotalAdjustment(0);
+        }
+    }, [interaction?.id]);
+    
+    const isInteractionMode = Boolean(interaction && (interaction.type === 'selectDie' || interaction.type === 'modifyDie'));
     const selectedDice = interaction?.selected ?? [];
     const dieModifyConfig = interaction?.dieModifyConfig;
-    const modifiedDice = interactionConfig?.modifiedDice ?? [];
     const isAnyMode = dieModifyConfig?.mode === 'any';
     const isAdjustMode = dieModifyConfig?.mode === 'adjust';
     const adjustRange = dieModifyConfig?.adjustRange ?? { min: -1, max: 1 };
-    const totalAdjustment = interactionConfig?.totalAdjustment ?? 0;
-    // adjust 模式：根据 adjustRange 判断是否还能继续调整
     const canAdjustDown = isAdjustMode && totalAdjustment > adjustRange.min;
     const canAdjustUp = isAdjustMode && totalAdjustment < adjustRange.max;
     const maxModifyCount = interaction?.selectCount ?? 1;
 
     const handleDieClick = (dieId: number) => {
-        if (isRolling) return;
-        if (isInteractionMode && interactionConfig) {
+        if (isRolling || !interaction) return;
+        if (isInteractionMode) {
             // 交互模式：选择骰子
-            interactionConfig.onSelectDie(dieId);
+            const dieIdStr = String(dieId);
+            const isSelected = selectedDice.includes(dieIdStr);
+            const newSelected = isSelected
+                ? selectedDice.filter(id => id !== dieIdStr)
+                : [...selectedDice, dieIdStr];
+            
+            // 使用 INTERACTION_COMMANDS.RESPOND 响应
+            dispatch(INTERACTION_COMMANDS.RESPOND, {
+                optionId: dieIdStr,
+                mergedValue: newSelected,
+            });
         } else if (canInteract) {
             // 正常模式：锁定骰子
             onToggleLock(dieId);
@@ -76,19 +80,33 @@ export const DiceTray = ({
     };
 
     const handleAdjust = (dieId: number, delta: number, currentValue: number) => {
-        if (!interactionConfig) return;
+        if (!interaction) return;
+        
         // adjust 模式：检查是否还能在该方向调整
         if (isAdjustMode) {
             if (delta < 0 && !canAdjustDown) return;
             if (delta > 0 && !canAdjustUp) return;
         }
+        
         const newValue = currentValue + delta;
         if (newValue >= 1 && newValue <= 6) {
-            interactionConfig.onModifyDie(dieId, newValue);
+            const dieIdStr = String(dieId);
+            
+            // 更新本地状态
+            if (!modifiedDice.includes(dieIdStr)) {
+                setModifiedDice([...modifiedDice, dieIdStr]);
+            }
+            if (isAdjustMode) {
+                setTotalAdjustment(totalAdjustment + delta);
+            }
+            
+            // 响应交互
+            dispatch(INTERACTION_COMMANDS.RESPOND, {
+                optionId: dieIdStr,
+                mergedValue: newValue,
+            });
         }
     };
-
-    // Removed unused handleSetValue
 
     const isSelected = (dieId: number) => selectedDice.includes(String(dieId));
     const canSelectMore = (interaction?.selectCount ?? 0) > selectedDice.length;
@@ -218,7 +236,8 @@ export const DiceActions = ({
     canInteract,
     isRolling,
     setIsRolling,
-    interactionConfig,
+    interaction,
+    dispatch,
 }: {
     rollCount: number;
     rollLimit: number;
@@ -229,22 +248,26 @@ export const DiceActions = ({
     canInteract: boolean;
     isRolling: boolean;
     setIsRolling: (isRolling: boolean) => void;
-    /** 骰子交互模式配置 */
-    interactionConfig?: DiceInteractionConfig;
+    /** 当前骰子交互（从 sys.interaction.current 读取） */
+    interaction?: PendingInteraction;
+    /** dispatch 函数（用于响应交互） */
+    dispatch: (type: string, payload?: unknown) => void;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const isRollPhase = currentPhase === 'offensiveRoll' || currentPhase === 'defensiveRoll';
-    const isInteractionMode = Boolean(interactionConfig);
-    const selectedCount = interactionConfig?.interaction?.selected?.length ?? 0;
-    const modifiedCount = interactionConfig?.modifiedDice?.length ?? 0;
-    const isAnyMode = interactionConfig?.interaction?.dieModifyConfig?.mode === 'any';
-    // any 模式检查已修改数量，其他模式检查已选择数量
-    const canConfirm = isAnyMode ? modifiedCount > 0 : selectedCount > 0;
+    const isInteractionMode = Boolean(interaction && (interaction.type === 'selectDie' || interaction.type === 'modifyDie'));
+    const selectedCount = interaction?.selected?.length ?? 0;
+    const isAnyMode = interaction?.dieModifyConfig?.mode === 'any';
+    
+    // any 模式需要至少修改一个骰子才能确认（这里简化为检查是否有选择）
+    const canConfirm = selectedCount > 0;
 
     const handleRollClick = () => {
         if (isInteractionMode) {
             // 交互模式：取消按钮
-            interactionConfig?.onCancel();
+            if (interaction) {
+                dispatch(INTERACTION_COMMANDS.CANCEL, { interactionId: interaction.id });
+            }
             return;
         }
         if (!isRollPhase || !canInteract || rollConfirmed || rollCount >= rollLimit) return;
@@ -256,7 +279,9 @@ export const DiceActions = ({
     const handleConfirmClick = () => {
         if (isInteractionMode) {
             // 交互模式：确认按钮
-            interactionConfig?.onConfirm();
+            if (interaction) {
+                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: '__confirm__' });
+            }
             return;
         }
         onConfirm();

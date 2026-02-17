@@ -731,6 +731,15 @@ router.get('/games/:name/leaderboard', async (ctx) => {
 app.use(router.routes());
 app.use(router.allowedMethods());
 
+// 测试路由（仅在测试/开发环境启用）
+if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+    const { createTestRoutes } = await import('./src/server/routes/test.js');
+    const testRouter = createTestRoutes(gameTransport, storage);
+    app.use(testRouter.routes());
+    app.use(testRouter.allowedMethods());
+    console.log('[Server] 测试模式已启用 - Test API endpoints available at /test/*');
+}
+
 // ============================================================================
 // 大厅缓存与广播
 // ============================================================================

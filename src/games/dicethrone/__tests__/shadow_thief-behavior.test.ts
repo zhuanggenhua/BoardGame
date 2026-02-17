@@ -687,11 +687,14 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
     // 伏击
     // ========================================================================
     describe('shadow_thief-sneak-attack-use (伏击：骰值加伤)', () => {
-        it('投出5时增加5点伤害到pendingAttack', () => {
+        it('投出5时增加5点伤害到pendingDamage', () => {
             const state = createState({});
-            state.pendingAttack = {
-                attackerId: '0', defenderId: '1', isDefendable: true,
-                damage: 3, bonusDamage: 0,
+            // 使用 pendingDamage 而非 pendingAttack（新系统）
+            state.pendingDamage = {
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                baseDamage: 3,
+                modifiers: [],
             } as any;
             const handler = getCustomActionHandler('shadow_thief-sneak-attack-use')!;
             const events = handler(buildCtx(state, 'shadow_thief-sneak-attack-use', {
@@ -699,7 +702,9 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             }));
 
             expect(eventsOfType(events, 'BONUS_DIE_ROLLED')).toHaveLength(1);
-            expect(state.pendingAttack!.damage).toBe(8); // 3+5
+            // 检查 TOKEN_USED 事件的 damageModifier
+            const tokenUsedEvent = events.find(e => e.type === 'TOKEN_USED') as any;
+            expect(tokenUsedEvent?.payload?.damageModifier).toBe(5);
         });
     });
 

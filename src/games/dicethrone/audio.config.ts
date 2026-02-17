@@ -2,11 +2,13 @@
  * DiceThrone 音频配置
  * 
  * 职责：
- * - feedbackResolver：处理无动画的即时音效（投骰子、阶段切换、CP 变化等）
+ * - feedbackResolver：自动生成（基于 DT_EVENTS 配置）
  * - 有动画的事件音效（伤害、治疗、状态、Token）由 animationSoundConfig.ts 管理
  */
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig, SoundKey } from '../../lib/audio/types';
 import { pickDiceRollSoundKey } from '../../lib/audio/audioUtils';
+import { createFeedbackResolver } from '../../lib/audio/defineEvents';
+import { DT_EVENTS } from './domain/events';
 import type { DiceThroneCore, TurnPhase, SelectableCharacterId } from './domain/types';
 import { findPlayerAbility } from './domain/abilityLookup';
 import { findHeroCard } from './heroes';
@@ -108,8 +110,12 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
             { currentPlayerId: string }
         >;
         const { G } = runtime;
+        const type = event.type;
 
-        if (event.type === 'DICE_ROLLED') {
+        // ========== 特殊处理逻辑（覆盖框架默认）==========
+
+        // DICE_ROLLED：使用自定义骰子音效选择逻辑
+        if (type === 'DICE_ROLLED') {
             const results = (event as AudioEvent & { payload?: { results?: number[] } }).payload?.results ?? [];
             return pickDiceRollSoundKey(
                 'dicethrone.dice_roll',
@@ -119,30 +125,16 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
             );
         }
 
-        if (event.type === 'CP_CHANGED') {
-            // CP 变化音效由 FX 飞行动画 onImpact 播放，feedbackResolver 不再处理
-            return null;
-        }
-
-        if (event.type === 'CARD_PLAYED') {
+        // CARD_PLAYED：检查卡牌自带音效
+        if (type === 'CARD_PLAYED') {
             const cardId = (event as AudioEvent & { payload?: { cardId?: string } }).payload?.cardId;
             const card = findCardById(G, cardId);
             const hasEffectSfx = card?.effects?.some(effect => effect.sfxKey);
             if (hasEffectSfx) return null;
-            return card?.sfxKey ?? 'card.handling.decks_and_cards_sound_fx_pack.card_placing_001';
+            return card?.sfxKey ?? DT_EVENTS.CARD_PLAYED.sound;
         }
 
-        if (event.type === 'ABILITY_ACTIVATED') {
-            return null;
-        }
-
-        // DAMAGE_DEALT：音效由动画层在 onImpact 播放（配置见 domain/animationSoundConfig.ts）
-        if (event.type === 'DAMAGE_DEALT') return null;
-
-        // HEAL_APPLIED：音效由动画层在 onImpact 播放（配置见 domain/animationSoundConfig.ts）
-        if (event.type === 'HEAL_APPLIED') return null;
-
-        const type = event.type;
+        // CHARACTER_SELECTED / PLAYER_READY / HOST_STARTED：UI 层已播放，跳过 EventStream
         const eventPlayerId = (event as AudioEvent & { payload?: { playerId?: string } }).payload?.playerId;
         const currentPlayerId = runtime.meta?.currentPlayerId;
         const shouldTraceSelectionAudio =
@@ -159,13 +151,22 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
         };
 
         if (type === 'CHARACTER_SELECTED') {
-            // 角色选择点击音由本地 UI 按钮负责，避免通过事件流广播给其他客户端
-            traceSelectionAudio('skip', null, 'character_selected_local_ui');
+            // 角色选择音效：本地玩家由 UI 层播放（即时反馈），远程玩家不播放（选角是本地操作）
+            if (!currentPlayerId) {
+                traceSelectionAudio('skip', null, 'current_player_unknown');
+                return null;
+            }
+            if (eventPlayerId && currentPlayerId && eventPlayerId === currentPlayerId) {
+                traceSelectionAudio('skip', null, 'local_player_selected_character');
+                return null;
+            }
+            // 其他玩家选角时也不播放音效（选角是本地操作，不需要提示其他玩家）
+            traceSelectionAudio('skip', null, 'other_player_selected_character');
             return null;
         }
 
         if (type === 'PLAYER_READY') {
-            // 自己点击 Ready 时已在本地按钮播放点击音，事件音仅用于提示“其他玩家已准备”
+            // 自己点击 Ready 时已在本地按钮播放点击音，事件音仅用于提示"其他玩家已准备"
             if (!currentPlayerId) {
                 traceSelectionAudio('skip', null, 'current_player_unready');
                 return null;
@@ -180,7 +181,7 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
         }
 
         if (type === 'HOST_STARTED') {
-            // Host 自己点击开始时已在本地按钮播放点击音，事件音仅用于提示“他人已开始”
+            // Host 自己点击开始时已在本地按钮播放点击音，事件音仅用于提示"他人已开始"
             if (!currentPlayerId) {
                 traceSelectionAudio('skip', null, 'current_player_unready');
                 return null;
@@ -189,16 +190,18 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
                 traceSelectionAudio('skip', null, 'local_player_started');
                 return null;
             }
-            const key = 'ui.fantasy_ui_sound_fx_pack_vol.signals.signal_update_b_003';
+            // 开始游戏使用回合开始音效（开始游戏本质也是开始回合）
+            const key = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
             traceSelectionAudio('play', key, 'other_player_started');
             return key;
         }
 
+        // SYS_PHASE_CHANGED：特殊处理开局阶段切换
         if (type === 'SYS_PHASE_CHANGED') {
             const phasePayload = (event as AudioEvent & { payload?: { from?: string; to?: string } }).payload;
             const phaseFrom = phasePayload?.from;
 
-            // 开局从 setup 自动连推到主阶段时，避免与“开始对局”提示音叠加造成一次点击多次响
+            // 开局从 setup 自动连推到主阶段时，避免与"开始对局"提示音叠加造成一次点击多次响
             if (phaseFrom === 'setup') {
                 traceSelectionAudio('skip', null, 'startup_phase_from_setup');
                 return null;
@@ -212,103 +215,27 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
             return key;
         }
 
-        if (type === 'TURN_CHANGED') {
-            return 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
-        }
-
-        if (type.startsWith('BONUS_')) {
-            if (type.includes('REROLL')) {
-                return 'dice.decks_and_cards_sound_fx_pack.dice_roll_velvet_002';
-            }
-            return 'dice.decks_and_cards_sound_fx_pack.single_die_roll_001';
-        }
-
-        if (type.startsWith('DIE_')) {
-            if (type.includes('LOCK')) {
-                return 'dice.decks_and_cards_sound_fx_pack.single_die_roll_005';
-            }
-            if (type.includes('MODIFIED')) {
-                return 'dice.decks_and_cards_sound_fx_pack.single_die_roll_005';
-            }
-            if (type.includes('REROLL')) {
-                return 'dice.decks_and_cards_sound_fx_pack.dice_roll_velvet_002';
-            }
-        }
-
-        if (type.startsWith('ROLL_')) {
-            if (type.includes('CONFIRM') || type.includes('LIMIT')) {
-                return 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.buttons.tab_switching_button.uiclick_tab_switching_button_01_krst_none';
-            }
-        }
-
-        // STATUS / TOKEN 事件：有飞行动画，音效由动画层 onImpact 播放（配置见 domain/animationSoundConfig.ts）
-        if (type === 'STATUS_APPLIED') return null;
-        if (type === 'STATUS_REMOVED') return null;
-        if (type === 'TOKEN_GRANTED') return null;
-        if (type === 'TOKEN_USED' || type === 'TOKEN_CONSUMED') return null;
-
-        if (type.startsWith('TOKEN_')) {
-            if (type.includes('RESPONSE_CLOSED')) {
-                return 'ui.general.ui_menu_sound_fx_pack_vol.signals.negative.signal_negative_spring_a';
-            }
-            if (type.includes('RESPONSE_REQUESTED')) {
-                return 'status.general.player_status_sound_fx_pack_vol.action_and_interaction.ready_a';
-            }
-        }
-
-        if (type.startsWith('CHOICE_')) {
-            if (type.includes('RESOLVED')) {
-                return 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
-            }
-            return 'status.general.player_status_sound_fx_pack_vol.action_and_interaction.ready_a';
-        }
-
-        if (type.startsWith('RESPONSE_WINDOW_')) {
-            if (type.includes('OPEN')) {
-                return 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_spring_a';
-            }
-            if (type.includes('CLOSED')) {
-                return 'ui.general.ui_menu_sound_fx_pack_vol.signals.negative.signal_negative_spring_a';
-            }
+        // ABILITY_ACTIVATED：技能激活事件返回 null（UI 层已在点击时播放本地音效）
+        if (type === 'ABILITY_ACTIVATED') {
+            // UI 层（AbilityOverlays.tsx）已在点击时播放 dialog_choice 音效
+            // 事件层不再重复播放，避免音效叠加
             return null;
         }
 
-        if (type === 'DAMAGE_SHIELD_GRANTED') {
-            return 'magic.water.10.water_shield';
-        }
-
-        if (type === 'DAMAGE_PREVENTED') {
-            return 'fantasy.medieval_fantasy_sound_fx_pack_vol.armor.shield_impact_a';
-        }
-
-        if (type.startsWith('ATTACK_')) {
-            if (type.includes('INITIATED')) {
-                const payload = (event as AudioEvent & { payload?: { attackerId?: string; sourceAbilityId?: string } }).payload;
-                if (payload?.attackerId && payload?.sourceAbilityId) {
-                    const match = findPlayerAbility(G, payload.attackerId, payload.sourceAbilityId);
-                    const explicitKey = match?.variant?.sfxKey ?? match?.ability?.sfxKey;
-                    if (explicitKey) return null;
-                }
-                return 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_sword_1';
+        // ATTACK_INITIATED：检查技能自带音效
+        if (type === 'ATTACK_INITIATED') {
+            const payload = (event as AudioEvent & { payload?: { attackerId?: string; sourceAbilityId?: string } }).payload;
+            if (payload?.attackerId && payload?.sourceAbilityId) {
+                const match = findPlayerAbility(G, payload.attackerId, payload.sourceAbilityId);
+                const explicitKey = match?.variant?.sfxKey ?? match?.ability?.sfxKey;
+                if (explicitKey) return null;
             }
-            if (type.includes('PRE_DEFENSE')) {
-                return 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_small_1';
-            }
+            // 回退到框架默认
         }
 
-        if (type === 'DECK_SHUFFLED' || type === 'CARD_REORDERED' || type.startsWith('CARD_') || type === 'SELL_UNDONE') {
-            const cardSoundMap: Record<string, string> = {
-                CARD_DRAWN: 'card.handling.decks_and_cards_sound_fx_pack.card_take_001',
-                CARD_DISCARDED: 'card.fx.decks_and_cards_sound_fx_pack.fx_discard_001',
-                CARD_SOLD: 'card.fx.decks_and_cards_sound_fx_pack.fx_discard_for_gold_001',
-                SELL_UNDONE: 'card.fx.decks_and_cards_sound_fx_pack.fx_boost_001',
-                CARD_REORDERED: 'card.handling.decks_and_cards_sound_fx_pack.cards_scrolling_001',
-                DECK_SHUFFLED: 'card.handling.decks_and_cards_sound_fx_pack.cards_shuffle_fast_001',
-            };
-            return cardSoundMap[type] ?? null;
-        }
-
-        return null;
+        // ========== 使用框架自动生成的默认音效 ==========
+        const baseFeedbackResolver = createFeedbackResolver(DT_EVENTS);
+        return baseFeedbackResolver(event);
     },
     bgmRules: [
         {

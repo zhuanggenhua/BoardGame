@@ -236,6 +236,173 @@ npm run dev                   # 编译无报错（游戏可在大厅列表看到
 
 ---
 
+## 阶段 1.5：机制分解与数据结构设计（强制前置）
+
+**目标**：在录入数据前，先将游戏机制分解为引擎原语组合，设计面向百游戏的通用数据结构，避免后期重构。
+
+### 1.5.1 机制分解与引擎原语映射（强制）
+
+> **核心原则：面向百游戏设计，不依赖现有游戏的具体实现。**
+
+将新游戏的核心机制分解为引擎原语的组合：
+
+| 机制类别 | 游戏中的表现 | 引擎原语映射 | 是否需要扩展 |
+|---------|------------|------------|------------|
+| **随机性** | 骰子/抽牌/洗牌 | `dice.ts` / `zones.ts` | ? |
+| **资源管理** | 魔力/行动点/金币 | `resources.ts` | ? |
+| **状态效果** | buff/debuff/标记 | `tags.ts` (层数/持续时间/层级匹配) | ? |
+| **数值修改** | 攻击力加成/伤害减免 | `modifier.ts` (flat/percent/priority) | ? |
+| **动态属性** | 可被 buff 修改的属性 | `attribute.ts` (base + modifiers) | ? |
+| **能力系统** | 技能/被动/光环 | `ability.ts` (注册/查找/执行器) | ? |
+| **目标选择** | 选择敌人/友军/格子 | `target.ts` | ? |
+| **条件判断** | 触发条件/激活条件 | `condition.ts` + `expression.ts` | ? |
+| **效果执行** | 伤害/治疗/移动/抽牌 | `effects.ts` | ? |
+| **空间关系** | 棋盘/网格/区域 | `zones.ts` (grid/stack/hand) | ? |
+| **伤害计算** | 伤害修正/防御/护甲 | `damageCalculation.ts` | ? |
+
+**输出产物**：
+1. **引擎原语组合方案**：列出需要使用的 primitives 及其组合方式
+2. **缺口清单**：列出现有 primitives 无法覆盖的机制（需新增或扩展）
+3. **复用策略**：哪些机制可以直接用现有 primitives，哪些需要游戏层封装
+
+### 1.5.2 数据结构设计（强制）
+
+> **核心原则：数据结构必须支持未来扩展，面向百游戏设计，禁止"先录入再重构"。**
+
+在录入具体数据前，先设计通用数据结构：
+
+#### 实体类型分析
+
+列出游戏中的所有实体类型（如卡牌/单位/骰子/资源/状态），对每种实体类型回答：
+
+1. **领域语义**：该实体在游戏规则中的核心作用（如"单位=可移动可攻击的棋子"）
+2. **共性字段**：所有该类实体都有的字段（如 id/name/cost）
+3. **变体字段**：部分实体有的字段（如 attack/defense/range）
+4. **扩展性需求**：未来可能新增的字段（如 rarity/tags/keywords）
+5. **引用关系**：该实体引用哪些其他实体（如卡牌引用技能）
+6. **引擎原语映射**：该实体的哪些属性应该用引擎原语表达（如 hp 用 `resources.ts`，buff 用 `tags.ts`）
+
+#### 数据结构设计模板
+
+```ts
+// ❌ 错误示例：字段不完整，未来需要重构
+interface Card {
+    id: string;
+    name: string;
+    cost: number;
+}
+
+// ✅ 正确示例：考虑扩展性，字段完整，面向百游戏
+interface Card {
+    id: string;
+    name: string;
+    type: 'action' | 'unit' | 'event';  // 类型区分（必须）
+    cost: number;  // 费用（若游戏有资源系统）
+    
+    // 可选字段（根据游戏机制决定）
+    rarity?: 'common' | 'rare' | 'epic';  // 稀有度
+    tags?: string[];  // 标签（如 'magic' | 'melee'）
+    abilities?: string[];  // 技能 ID 引用（不嵌套对象）
+    effects?: Effect[];  // 效果定义（结构化）
+    
+    // 触发条件（若有）
+    trigger?: {
+        phase?: GamePhase;  // 触发阶段
+        event?: string;  // 触发事件
+        condition?: Condition;  // 触发条件
+    };
+    
+    // 使用限制（若有）
+    usageLimit?: {
+        perTurn?: number;  // 每回合次数
+        perGame?: number;  // 每局次数
+        cooldown?: number;  // 冷却回合
+    };
+    
+    // 目标选择（若有）
+    targeting?: {
+        type: 'self' | 'opponent' | 'any_unit' | 'any_cell';
+        filter?: Condition;  // 目标过滤条件
+        count?: number | 'all';  // 目标数量
+    };
+}
+```
+
+#### 数据驱动反模式清单（强制）
+
+在设计数据结构时，必须避免以下反模式：
+
+| 反模式 | 错误示例 | 正确做法 | 为什么错误 |
+|--------|---------|---------|-----------|
+| **硬编码技能逻辑** | `validate()` 中 `switch (abilityId)` 每个技能一个 case | 技能定义包含 `validation` 配置，使用通用验证函数 | 第 100 个游戏会有 10000 行 switch |
+| **UI 状态混入 core** | `core.lastPlayedCard`（纯展示） | 通过 EventStream 传递给 UI | core 应该只包含规则判定需要的数据 |
+| **交互状态混入 core** | `core.pendingAttack`（等待输入） | 使用 `sys.interaction` | 交互状态是系统层职责，不是领域层 |
+| **缺少目标字段** | `grantStatus: { statusId, value }` + 执行层猜测目标 | `grantStatus: { statusId, value, target: 'opponent' }` | 数据不完整导致执行层需要"猜测" |
+| **缺少触发条件** | 技能只有效果描述，触发条件在代码里硬编码 | 技能定义包含 `trigger: { phase, event }` | 触发逻辑应该数据驱动，不是代码驱动 |
+| **缺少使用限制** | 技能只有费用，没有"每回合一次"等限制 | 技能定义包含 `usageLimit: { perTurn: 1 }` | 限制规则应该在数据中声明 |
+| **对象嵌套引用** | `card.abilities: Ability[]`（嵌套对象） | `card.abilities: string[]`（ID 引用） | 嵌套导致数据冗余和更新不一致 |
+| **散落的状态字段** | `unit.stunned`, `unit.poisoned`, `unit.buffed` | `unit.tags: TagContainer` | 第 100 个游戏会有 100 种状态字段 |
+| **ad-hoc 修正字段** | `unit.attackBonus`, `unit.defenseBonus` | `unit.attack: Attribute` (base + modifiers) | 修正逻辑应该用 modifier 系统 |
+
+#### 数据完整性自检清单（强制）
+
+设计完数据结构后，逐项检查：
+
+- [ ] 所有实体类型都有唯一 ID 字段（`id: string`）
+- [ ] 所有实体类型都有类型区分字段（`type: 'xxx'`）
+- [ ] 所有引用关系都是 ID 引用，不是对象嵌套
+- [ ] 所有"可能被 buff 修改"的数值都映射到 `Attribute` 或 `resources.ts`
+- [ ] 所有"需要玩家选择"的操作都有目标选择规则（`targeting` 字段）
+- [ ] 所有"有使用限制"的能力都有限制字段（`usageLimit`）
+- [ ] 所有"有触发条件"的效果都有触发规则（`trigger` 字段）
+- [ ] 所有状态效果都映射到 `TagContainer`，不是散落的布尔字段
+- [ ] 所有数值修改都映射到 `modifier.ts`，不是 ad-hoc 的 `xxxBonus` 字段
+
+### 1.5.3 引擎能力缺口分析（强制）
+
+对照 `src/engine/primitives/` 和 `src/engine/systems/`，列出：
+
+1. **可直接复用**：已有的 primitives/systems 可以直接使用
+2. **需要扩展**：已有的 primitives/systems 需要增加新功能
+3. **需要新增**：完全没有的能力，需要新建 primitive/system
+
+**输出产物**：
+- 引擎能力缺口清单（Markdown 表格）
+- 每个缺口的优先级（P0 阻塞 / P1 重要 / P2 可延后）
+- 每个缺口的预计实现阶段（阶段 3 / 阶段 4 / 阶段 6）
+
+### 1.5.4 面向百游戏的设计检查（强制）
+
+> **核心问题：如果未来有 100 个游戏，这个设计会不会导致代码爆炸？**
+
+对每个设计决策，问自己：
+
+1. **如果有 100 个游戏，每个游戏都这样做，会发生什么？**
+   - ❌ 每个游戏在 `validate()` 中加 100 行 switch → 10000 行 switch
+   - ✅ 每个游戏在数据中声明验证规则 → 数据驱动，代码不增长
+
+2. **这个字段/逻辑是游戏特有的，还是可以抽象为通用能力？**
+   - ❌ `core.diceThroneSpecificField` → 只有一个游戏用
+   - ✅ `core.resources: ResourceContainer` → 所有游戏都能用
+
+3. **这个实现是否依赖"已有游戏的具体实现"？**
+   - ❌ "参考 DiceThrone 的 `CombatAbilityManager`" → 耦合具体游戏
+   - ✅ "使用 `engine/primitives/ability.ts`" → 依赖通用抽象
+
+4. **如果规则变化，需要改多少地方？**
+   - ❌ 改技能触发条件需要改 validate/execute/UI 三处 → 散落逻辑
+   - ✅ 只改技能定义的 `trigger` 字段 → 单一数据源
+
+### 验收
+
+- 机制分解表已完成，引擎原语映射明确
+- 数据结构设计已完成，通过完整性自检清单
+- 引擎能力缺口清单已输出，优先级明确
+- 面向百游戏的设计检查已通过（无"代码爆炸"风险）
+- 用户确认数据结构设计合理，可以开始录入
+
+---
+
 ## 阶段 2：数据录入（规则文档 + 游戏数据 + 类型定义）
 
 **目标**：完成规则文档录入、静态游戏数据录入、核心类型定义，不写业务逻辑。需要新增引擎原语的部分可标记延后。

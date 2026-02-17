@@ -6,6 +6,8 @@ import path from 'path'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const devPort = Number(env.VITE_DEV_PORT) || 5173
+  const gameServerPort = Number(env.GAME_SERVER_PORT) || 18000
+  const apiServerPort = Number(env.API_SERVER_PORT) || 18001
 
   return {
     plugins: [react()],
@@ -28,12 +30,12 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '/games': {
-          target: 'http://127.0.0.1:18000',
+          target: `http://127.0.0.1:${gameServerPort}`,
           changeOrigin: true,
         },
         // socket.io 传输层（/game namespace 用于游戏状态同步）
         '/socket.io': {
-          target: 'http://127.0.0.1:18000',
+          target: `http://127.0.0.1:${gameServerPort}`,
           changeOrigin: true,
           ws: true,
           configure: (proxy) => {
@@ -44,7 +46,7 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/lobby-socket': {
-          target: 'http://127.0.0.1:18000',
+          target: `http://127.0.0.1:${gameServerPort}`,
           changeOrigin: true,
           ws: true,
           configure: (proxy) => {
@@ -55,11 +57,11 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/auth': {
-          target: 'http://127.0.0.1:18001',
+          target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
         },
         '/admin': {
-          target: 'http://127.0.0.1:18001',
+          target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
           bypass: (req) => {
             if (req.headers.accept?.includes('text/html')) {
@@ -68,19 +70,19 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/feedback': {
-          target: 'http://127.0.0.1:18001',
+          target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
         },
         '/sponsors': {
-          target: 'http://127.0.0.1:18001',
+          target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
         },
         '/notifications': {
-          target: 'http://127.0.0.1:18001',
+          target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
         },
         '/social-socket': {
-          target: 'http://127.0.0.1:18001',
+          target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
           ws: true,
           configure: (proxy) => {
@@ -91,18 +93,18 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/ugc': {
-          target: 'http://127.0.0.1:18001',
+          target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
         },
         // UGC 上传资源代理（后端 uploads/ 目录）
         // 注意：public/assets/ 下的静态文件（音频/图片等）由 Vite 直接 serve
         // 仅代理 UGC 动态上传的资源（uploads/ugc/...）
         '/assets/ugc': {
-          target: 'http://127.0.0.1:18001',
+          target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
         },
         '/layout': {
-          target: 'http://127.0.0.1:18001',
+          target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
         },
 

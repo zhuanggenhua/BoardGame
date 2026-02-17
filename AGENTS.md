@@ -59,8 +59,30 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ## ⚡ 核心行为准则 (MUST)
 
+### 0. 面向百游戏设计规范（强制）
+> **每次设计/重构前必须自检：这样能不能支持未来 100 个游戏？**
+
+- **显式 > 隐式**：配置显式声明，不依赖命名推断或隐式规则。AI 能直接看到配置，不需要"记住"规则。
+- **智能默认 + 可覆盖**：框架提供通用默认值（覆盖 90% 场景），游戏层可覆盖特殊需求（10% 场景）。
+- **单一真实来源**：每个配置只在一个地方定义，不跨文件查找，不重复声明。
+- **类型安全**：编译期检查，防止配置错误。运行时验证作为补充，不作为主要手段。
+- **最小化游戏层代码**：新增游戏的样板代码 ≤ 20 行。框架层提供辅助函数自动生成重复逻辑。
+- **框架可进化**：框架层可以添加新功能/新默认值，游戏层无需修改。
+- **自检问题**：
+  - 新增游戏时，这个系统需要写多少行代码？（目标：≤ 20 行）
+  - 配置是显式的还是隐式的？（AI 能直接看到吗？）
+  - 框架提供了默认值吗？（90% 场景能用默认吗？）
+  - 类型系统能捕获错误吗？（编译期还是运行期？）
+  - 第 100 个游戏的代码量和第 1 个一样少吗？
+
 ### 1. 沟通与开发原则
 - **中文优先（强制）**：所有交互、UI 文本、代码注释、设计文档必须使用中文。
+- **DRY 原则（强制）**：相同逻辑只实现一次，通过函数/组件/配置复用。禁止复制粘贴代码。发现重复代码必须立即提取为公共函数/组件/配置。
+- **禁止硬编码（强制）**：
+  - ❌ 禁止硬编码数值/字符串，使用常量表（`domain/ids.ts`）
+  - ❌ 禁止 `switch-case` 硬编码技能/卡牌逻辑，使用注册表模式
+  - ❌ 禁止在多处重复定义相同的配置/描述，使用单一数据源
+  - ✅ 正确：配置驱动、注册表模式、常量表、单一真实来源
 - **破坏性变更/激进重构**：默认采取破坏性改动并拒绝向后兼容，主动清理过时代码、接口与文档。交付必须完整具体，禁止占位或 `NotImplemented`。
 - **方案与需求对齐（推荐）**：编码前先给出推荐方案与理由，必要时补充需确认的需求点；在未明确需求时，避免进行非必要的重构或样式调整。
 - **多方案必须标注最正确方案（强制）**：当给出多个方案时，必须明确写出"最正确方案"，并说明理由。**评判标准优先级**：架构正确性 > 可维护性 > 一致性 > 风险/成本。**禁止以"改动最小"作为最正确方案的首要理由**。
@@ -96,8 +118,16 @@ Keep this managed block so 'openspec update' can refresh the instructions.
   - **领域层契约变化**：core 状态字段增删、命令/事件类型变更、FlowHooks/系统配置项变化。
   - **跨模块约定变更**：i18n namespace 调整、音频注册表结构变化、资源路径规范变更。
   - **文档更新范围判定**：优先更新 `docs/ai-rules/` 下的规范文档（影响后续开发行为）；其次更新 `docs/framework/`、`docs/refactor/` 等架构文档；游戏规则变化更新 `src/games/<gameId>/rule/`。若不确定该更新哪个文档，先查 `docs/ai-rules/doc-index.md`。
+- **图片描述与代码实现同步（强制）**：当根据图片素材中的描述文本修改代码实现时，必须同步更新相关描述文档（游戏规则文档、能力/卡牌描述、技能说明等），确保文档描述与代码实现保持一致。禁止只改代码不更新描述，或只改描述不更新代码。**适用场景**：① 根据卡牌图片录入/修改技能效果 ② 根据规则书图片更新游戏机制 ③ 根据素材图片调整 UI 文案。**更新范围**：代码实现（`domain/`、`execute.ts`、`abilities-*.ts`）+ 描述文档（`rule/*.md`、i18n JSON、卡牌配置注释）必须同步修改。
 
-### 1.1 证据链与排查规范（修bug时强制）
+### 1.1 测试有效性规范（强制）
+- **禁止绕过测试逃避问题（强制）**：测试必须真正验证功能正确性，不得用"截图但不检查内容"、"只验证不报错"、"跳过关键断言"等方式绕过验证。测试通过必须意味着功能确实正确。
+- **图片/资源类测试必须验证内容（强制）**：测试图集索引、卡牌图片、资源加载等视觉内容时，必须通过以下方式之一验证：① 读取实际渲染的图片 URL 并断言包含正确的索引/路径；② 使用视觉回归测试工具对比像素差异；③ 通过调试面板注入特定卡牌并验证 UI 显示的卡牌名称与预期一致。禁止只截图不验证。
+- **测试失败必须暴露问题（强制）**：当功能有 bug 时，测试必须失败并给出明确的错误信息。如果测试在有 bug 的情况下仍然通过，说明测试无效，必须重写。
+- **E2E 测试必须模拟真实用户操作（强制）**：E2E 测试必须通过 UI 交互验证功能，不得直接读取内部状态后就声称"测试通过"。状态读取只能用于辅助定位问题，不能替代 UI 验证。
+- **测试结果必须保留（强制）**：Playwright 配置必须设置 `preserveOutput: 'always'`，禁止自动清理测试结果。每次运行测试不应删除之前测试的截图和报告，以便回溯和对比。测试结果目录应该累积保存，由开发者手动清理。
+
+### 1.2 证据链与排查规范（修bug时强制）
 - **同名/同类函数全量排查（强制）**：定位到某个函数/类型/变量时，必须先搜索项目中是否存在**同名或同签名的其他定义**（不同文件、不同作用域、不同返回类型）。确认调用点实际 import 的是哪个定义后，才能动手修改。禁止只看到一个定义就假设它是唯一的。
 - **回归 bug 先 diff 再修（强制）**：遇到"之前好好的现在不行了"类问题，第一步必须 `git log` + `git show`/`git diff` 对比最后正常版本，找到引入问题的变更点。禁止跳过 diff 直接假设根因并重写代码。详见 `docs/ai-rules/golden-rules.md`「Bug 修复必须先 diff 原始版本」节。
 - **资源/文件归属先查消费链路（强制）**：对任何文件做出"应该提交/应该忽略/应该放 CDN/应该本地"等归属判断前，**必须先追踪该文件的实际消费链路**——运行时谁加载它、从哪个 URL/路径加载、是生成产物还是手写源码、生成脚本是什么。禁止仅凭文件名、扩展名或"看起来像元数据"就下结论。**教训**：`registry.json` 看起来是"纯 JSON 元数据应该提交到 git"，实际运行时从 R2 CDN fetch，本地副本是脚本生成产物，不该入库。
@@ -108,6 +138,13 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **连续两次未解决**：必须切换为"假设列表 → 验证方法 → 多方案对比"排查模式。
 - **临时日志规则**：允许临时日志用于排障，不得引入额外 debug 开关，问题解决后必须清理。
 - **输出总结**：每次回复末尾必须包含 `## 总结` 区块。
+- **百游戏自检（强制）**：每次修改代码后，必须在总结中回答"这样能不能支持未来 100 个游戏？"，并检查以下维度：
+  - ❌ 是否引入游戏特化硬编码（如 `if (gameId === 'dicethrone')`）
+  - ❌ 是否破坏框架复用性（如在框架层 import 游戏层）
+  - ❌ 是否违反数据驱动原则（如用 switch-case 硬编码技能逻辑）
+  - ✅ 配置是否显式声明（AI 能直接看到吗？）
+  - ✅ 是否提供了智能默认值（90% 场景能用默认吗？）
+  - ✅ 新增游戏需要写多少行代码（目标：≤ 20 行）
 
 ### 2. 工具链与调研规范
 - **核心工具 (MCP)**：Serena MCP（首选，代码检索/增删改查）、Sequential Thinking（分步思考）、Context7 MCP（官方库文档）。
@@ -127,7 +164,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **弹窗（强制）**：禁止 `window.prompt/alert/location.reload`，用 Modal + 状态更新。
 - **CSS 布局（强制）**：`overflow` 会被父级覆盖，修改前必须 `grep` 检查所有父容器。
 - **遗罩/层级**：先用 `elementsFromPoint` 证明"谁在最上层"再改层级；Portal 外层必须显式 `z-index`。
-- **WebSocket**：`vite.config.ts` 中 `hmr` 严禁自定义端口；端口占用用 `taskkill /F /IM node.exe`。
+- **WebSocket**：`vite.config.ts` 中 `hmr` 严禁自定义端口；端口占用用 `npm run clean:ports` 或 `npm run test:e2e:cleanup` 清理特定端口，禁止 `taskkill /F /IM node.exe`。
 - **Bug 修复先 diff 原始版本（强制）**：修"之前好好的现在不行了"类 bug 时，必须先 `git show/diff` 对比最后正常版本，逐行找变更点。禁止在未 diff 的情况下假设根因并重写代码。
 
 ### 动画/动效（核心规则）
@@ -161,15 +198,21 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
   - **禁止批量修改**：必须用 `strReplace` 逐个修复，每次只修复一处。
   - 常见截断：`随�?` → `随从`、`能�?` → `能力`、`消�?` → `消灭`、`牌库�?` → `牌库底`。
   - **禁止 `git restore` 恢复用户已修改的文件**。
-- **PowerShell 文件操作（强制）**：
-  - **禁止使用 `Set-Content`、`Out-File`、`>` 重定向写入源码文件**——这些命令默认编码不是 UTF-8 without BOM，会破坏中文字符。
-  - **唯一允许的 PowerShell 写入方式**：
-    ```powershell
-    [System.IO.File]::WriteAllText($file, $content, [System.Text.UTF8Encoding]::new($false))
+- **文件操作工具选型（强制）**：
+  - **优先级**：IDE 工具 > Node.js 脚本（`.mjs`）> PowerShell（仅只读）
+  - **IDE 工具**：单文件小范围修改、简单替换
+  - **Node.js 脚本**：大段代码（>50 行）、精确行号定位、复杂逻辑、多文件操作。模板：
+    ```javascript
+    import { readFileSync, writeFileSync } from 'fs';
+    const content = readFileSync('file.ts', 'utf-8');
+    const lines = content.split('\n');
+    // 定位 + 替换逻辑
+    const newLines = [...lines.slice(0, start), newCode, ...lines.slice(end + 1)];
+    writeFileSync('file.ts', newLines.join('\n'), 'utf-8');
     ```
-  - **推荐做法**：优先使用 IDE 工具（`fsWrite`/`strReplace`/`editCode`）写文件，避免 PowerShell 编码陷阱。
-  - **`-replace` 管道 + `Set-Content` 是典型反模式**：即使只替换英文内容，文件中的中文也会被破坏。
-  - **正则批量替换必须先备份（强制）**：使用 PowerShell `-replace` 或任何正则批量修改文件前，必须先用 `git stash` 或 `Copy-Item` 备份相关文件。正则替换容易破坏编码或产生意外匹配，无备份时禁止执行。
+  - **PowerShell**：仅允许只读（`Get-Content`/`Select-String`），禁止写入（`Set-Content`/`Out-File`/`>`）
+  - **降级策略**：IDE 工具失败 → Node.js 脚本，禁止降级到 PowerShell 写入
+  - **批量替换必须先备份**：`git stash` 或 `Copy-Item`
 
 ---
 
@@ -225,6 +268,47 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 
 ---
 
+## 🎯 设计原则（强制）
+
+### 核心原则
+- **DRY (Don't Repeat Yourself)**：相同逻辑只实现一次，通过函数/组件/配置复用。禁止复制粘贴代码。
+- **KISS (Keep It Simple, Stupid)**：优先选择最简单的解决方案。复杂度必须有明确收益（性能/可维护性/扩展性）。
+- **YAGNI (You Aren't Gonna Need It)**：只实现当前需要的功能，不做"未来可能用到"的预设计。扩展性通过抽象而非预实现。
+
+### SOLID 原则
+- **单一职责（SRP）**：一个类/函数只做一件事。`validate.ts` 只做校验，`execute.ts` 只做执行，`reduce.ts` 只做状态更新。
+- **开闭原则（OCP）**：对扩展开放，对修改关闭。新增技能/卡牌不应修改 `validate.ts`/`execute.ts`，应通过注册表扩展。
+- **里氏替换（LSP）**：子类型必须能替换父类型。所有 `AbilityDef` 必须符合相同接口，不得有特殊假设。
+- **接口隔离（ISP）**：不强迫依赖不需要的接口。UI 组件只接收必要的 props，不传递整个 `state`。
+- **依赖倒置（DIP）**：依赖抽象而非具体实现。游戏层依赖引擎接口（`createAbilityRegistry`），不依赖具体实现。
+
+### 常用设计模式（强制）
+- **注册表模式（Registry）**：技能/卡牌/事件处理器必须通过注册表管理，禁止 `switch-case` 硬编码。
+  - ✅ `abilityRegistry.register(id, def)` + `abilityRegistry.get(id)`
+  - ❌ `switch (abilityId) { case 'fireball': ... case 'heal': ... }`
+- **工厂模式（Factory）**：复杂对象创建通过工厂函数，隐藏构造细节。
+  - ✅ `createSimpleChoice(id, playerId, title, options)`
+  - ❌ 手动构建 `{ type: 'choice', id, playerId, data: { ... } }`
+- **策略模式（Strategy）**：算法/行为通过配置注入，不硬编码。
+  - ✅ `AbilityDef` 中声明 `validation` / `effects` / `ui` 配置
+  - ❌ 在 `validate.ts` 中为每个技能写独立验证逻辑
+- **观察者模式（Observer）**：事件驱动架构，通过 `EventStreamSystem` 解耦。
+  - ✅ `emit(event)` → 订阅者自动响应
+  - ❌ 直接调用 UI 更新函数
+- **组合优于继承**：优先用组合/配置而非类继承。
+  - ✅ `{ ...baseAbility, effects: [...baseEffects, customEffect] }`
+  - ❌ `class FireballAbility extends BaseAbility`
+
+### 反模式清单（禁止）
+- ❌ **God Object**：一个对象/文件包含过多职责（如 `game.ts` 超过 1000 行）
+- ❌ **Magic Number/String**：硬编码数值/字符串，应用常量表（`domain/ids.ts`）
+- ❌ **Copy-Paste Programming**：复制代码后微调，应提取公共函数
+- ❌ **Premature Optimization**：在性能问题出现前优化，应先保证正确性
+- ❌ **Feature Envy**：函数频繁访问其他对象的数据，应移到该对象内部
+- ❌ **Shotgun Surgery**：一个改动需要修改多个文件，说明职责划分不清
+
+---
+
 ## 引擎与框架（核心规则）
 
 > **修改引擎/框架层代码或游戏 move/command 时必须先阅读 `docs/ai-rules/engine-systems.md`**
@@ -274,6 +358,32 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 
 ### 领域层编码规范（强制）
 > **写任何游戏的 domain/ 代码时必须遵守**。目标：让第 100 个游戏的代码质量与第 1 个一样。
+
+#### 动态选项生成（强制）
+- **问题**：同时触发多个交互时，后续交互创建时基于初始状态，可能包含已失效的选项（如已弃掉的手牌、已消灭的随从）。
+- **错误做法**：
+  ```typescript
+  // ❌ 错误：创建交互时直接传入当前手牌，后续交互弹出时手牌可能已变化
+  const handCards = state.players[playerId].hand;
+  createInteraction({
+    type: 'choice',
+    options: handCards.map(card => ({ id: card.id, label: card.name }))
+  });
+  ```
+- **正确做法**：
+  ```typescript
+  // ✅ 正确：使用 optionsGenerator 延迟生成，确保基于最新状态
+  const interaction = createInteraction({
+    type: 'choice',
+    options: state.players[playerId].hand.map(card => ({ id: card.id, label: card.name }))
+  });
+  (interaction.data as any).optionsGenerator = (state) => {
+    return state.players[playerId].hand.map(card => ({ id: card.id, label: card.name }));
+  };
+  ```
+- **适用场景**：所有"选择手牌/场上单位/弃牌堆卡牌"类交互。
+- **工作原理**：第一个交互使用初始选项，后续交互从队列弹出时调用生成器刷新选项。
+- **历史债务**：SmashUp 的幽灵/鬼屋已迁移，其他游戏的"选择手牌/单位"交互需逐步迁移。
 
 #### Reducer 必须结构共享（强制）
 - `reduce(core, event)` 中**禁止 `JSON.parse(JSON.stringify())`**（全量深拷贝）。
@@ -331,6 +441,12 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 > **新增/修改图片或音频资源引用时必须先阅读 `docs/ai-rules/asset-pipeline.md`**
 
 - **所有图片必须压缩后使用**：用 `OptimizedImage` / `getOptimizedImageUrls`，路径不含 `compressed/`（自动补全）。
+- **图片压缩规范（强制）**：
+  - **运行时使用**：所有图片必须通过 `OptimizedImage` / `getOptimizedImageUrls` 使用，路径不含 `compressed/`（自动补全）
+  - **AI 读取/分析**：任何需要读取/分析图片内容的场景（OCR、数据录入、视觉验证），优先读取 `public/assets/i18n/zh-CN/<gameId>/images/compressed/*.webp`
+    - 未压缩则先运行 `npm run assets:compress` 生成 WebP 压缩版本
+    - 禁止直接读取原始大图（体积大、加载慢），除非压缩流程失败需要回退
+    - 压缩命令：`npm run assets:compress` 会自动扫描所有游戏资源目录，生成 WebP 格式并保存到 `compressed/` 子目录
 - **国际化资源架构（强制）**：
   - **当前状态**：所有游戏图片资源已迁移到 `public/assets/i18n/zh-CN/<gameId>/` 目录。
   - **代码行为**：`OptimizedImage` 和 `CardPreview` 会自动从 `i18next` 获取当前语言（`i18n.language`），无需手动传递 `locale` prop。路径自动转换：`dicethrone/images/foo.png` → `i18n/zh-CN/dicethrone/images/foo.png`。
@@ -341,24 +457,26 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
     - **核心原则**：图片资源需要国际化（路径包含 `/i18n/{locale}/`），图集配置文件不需要国际化。
   - **未来扩展**：英文版上线时，将英文图片放入 `i18n/en/<gameId>/`，代码无需修改。
   - **CDN 部署**：运行 `npm run assets:upload -- --sync` 同步到 CDN。
-- **音频资源架构（强制）**：
-  - **通用注册表**（`public/assets/common/audio/registry.json`）：所有音效资源的唯一来源，包含 key 和物理路径映射。
-  - **游戏配置**（`audio.config.ts`）：定义事件→音效的映射规则（`feedbackResolver`），使用通用注册表中的 key。
-  - **FX 系统**（`fxSetup.ts`）：直接使用通用注册表中的 key 定义 `FeedbackPack`，不依赖游戏配置常量。
-  - **禁止重复定义**：音效 key 只在通用注册表中定义一次，游戏层和 FX 层直接引用 key 字符串，不再定义常量。
-- **音效配置路径（当前 + 长期规划）**：
-  - **当前架构（过渡期）**：
-    - **路径① 即时播放（feedbackResolver）**：无动画的事件音（投骰子/出牌/阶段切换/魔法值变化）走 EventStream，`feedbackResolver` 返回 `SoundKey`（纯字符串）即时播放。有动画的事件（伤害/状态/Token）`feedbackResolver` 返回 `null`，由动画层 `onImpact` 回调直接调用 `playSound(key)`。
-    - **路径② 动画驱动（params.soundKey / onImpact）**：有 FX 特效的事件音（召唤光柱/攻击气浪/充能旋涡）通过 `FeedbackPack` 在 `fxSetup.ts` 注册时声明，`useFxBus` 在 push 时从 `event.params.soundKey` 读取。飞行动画（伤害数字/状态增减/Token 获得消耗）在 `onImpact` 回调中直接 `playSound(resolvedKey)`。
-    - **UI 交互音**：UI 点击音走 `GameButton`，拒绝音走 `playDeniedSound()`，key 来自通用注册表。
-    - **选择原则**：有 FX 特效 → 路径②（FeedbackPack）；有飞行动画无特效 → 路径②（onImpact 回调）；无动画 → 路径①；UI 交互 → UI 交互音。
-    - **避免重复**：同一事件只能选择一条路径，有动画的事件 `feedbackResolver` 必须返回 `null`。
-    - **已废弃**：`DeferredSoundMap` 已删除，`AudioTiming`/`EventSoundResult` 已移除，`feedbackResolver` 不再返回 `{ key, timing }` 对象。
-  - **长期目标架构（FeedbackPack 单一配置源）**：
-    - **核心变化**：`feedbackResolver` 只处理"无动画的即时音效"，所有有动画的事件音效统一在 `fxSetup.ts` 的 `FeedbackPack` 中声明，删除动画层的硬编码 `playSound()` 调用。
-    - **迁移状态**：✅ SummonerWars 已完成；✅ DiceThrone 已完成迁移到 FX 引擎；⏸️ SmashUp 无事件音效系统。
-    - **新游戏规范**：新增游戏必须直接采用长期架构。
-    - **详见**：`docs/refactor/audio-architecture-improvement.md`
+- **音频架构（强制）**：
+  - **设计规范**：显式 > 隐式、智能默认 + 可覆盖、单一真实来源、类型安全
+  - **事件定义**（`domain/events.ts`）：使用 `defineEvents()` 定义音频策略
+    ```typescript
+    // 1. 声明音效 key 常量
+    const CARD_DRAW_KEY = 'card.handling.decks_and_cards_sound_fx_pack.card_take_001';
+    const TURN_CHANGE_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
+    
+    // 2. 定义事件（完整形式：{ audio: 策略, sound: key }）
+    export const EVENTS = defineEvents({
+      'game:card_drawn': { audio: 'immediate', sound: CARD_DRAW_KEY },
+      'game:turn_changed': { audio: 'immediate', sound: TURN_CHANGE_KEY },
+      'game:state_synced': { audio: 'silent', sound: null },
+    });
+    ```
+  - **音效策略**：`'ui'`（本地交互）| `'immediate'`（即时反馈）| `'fx'`（动画驱动）| `'silent'`（无音效）
+  - **feedbackResolver**：基础版 `createFeedbackResolver(EVENTS)`（1 行），高级版保留特殊逻辑 + 调用基础版（~30 行）
+  - **禁止重复播放**：每个事件的音效只在一个地方播放（UI 层 / EventStream / FX 系统）
+  - **百游戏标准**：新增游戏事件定义 ≤ 20 行，feedbackResolver 1 行或 ~30 行，UI 组件 0 行音效代码
+  - **完整形式强制（强制）**：所有 'immediate' 事件必须使用完整形式 `{ audio: 'immediate', sound: KEY }`，禁止简洁形式 `'immediate'`（会导致 sound 为 null）
 
 ---
 
@@ -372,8 +490,40 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 - 详细规范见 `docs/automated-testing.md`。
 - **工具**：Playwright E2E / Vitest / GameTestRunner / 引擎层审计工厂（`src/engine/testing/`）。
 - **GameTestRunner 优先（强制）**：GameTestRunner 行为测试是最优先、最可靠的测试手段。审计工厂（entityIntegritySuite / interactionChainAudit / interactionCompletenessAudit）是补充，用于批量覆盖注册表引用完整性和交互链完整性。
-- **命令**：`npm run test:e2e`（E2E）、`npm test -- <路径>`（Vitest）。
+- **命令**：
+  - 开发模式（推荐）：先运行 `npm run dev` 启动所有服务，再在另一终端运行 `npm run test:e2e`
+  - CI 模式：`npm run test:e2e:ci`（自动启动服务器，适用于 CI/CD 环境）
+  - 清理端口：`npm run test:e2e:cleanup`（测试异常退出导致端口占用时使用）
 - **截图规范**：禁止硬编码路径，必须用 `testInfo.outputPath('name.png')`。
+- **禁止杀掉所有 Node.js 进程（强制）**：
+  - ❌ 禁止：`taskkill /F /IM node.exe`、`killall node`、`pkill node`、`Get-Process node | Stop-Process -Force`
+  - 原因：会杀掉所有 Node.js 进程（其他项目服务器、VS Code 语言服务器、调试器、正在运行的测试等）
+  - ✅ 正确：**优先清理单个测试的端口**（查找 PID 后 `taskkill /F /PID <PID>`），或使用 `node scripts/infra/port-allocator.js <workerId>` 清理特定 worker
+  - ⚠️ 谨慎使用：`npm run test:e2e:cleanup` 会清理所有测试环境端口，会中断其他并行测试
+  - 详见 `docs/automated-testing.md`「危险操作警告」节
+- **E2E 测试环境依赖（强制）**：
+  - **端到端测试失败时必须先检查服务依赖（强制）**：E2E 测试依赖前端开发服务器（Vite）、游戏服务器（game-server）、API 服务器（api-server）三个进程同时运行。
+  - **推荐工作流**：
+    1. **开发模式**（手动启动服务，推荐）：
+       - 终端 1：`npm run dev`（启动所有服务）
+       - 终端 2：`npm run test:e2e`（运行测试）
+    2. **CI 模式**（自动启动服务）：
+       - 单终端：`npm run test:e2e:ci`
+    3. **清理端口占用**（测试异常退出后）：
+       - `npm run test:e2e:cleanup`
+  - **测试失败排查顺序**：
+    1. **检查端口配置**：读取 `.env` 文件确认 `VITE_DEV_PORT`（默认 3000）、`GAME_SERVER_PORT`（默认 18000）、`API_SERVER_PORT`（默认 18001）配置正确。
+    2. **检查服务状态**：运行 `netstat -ano | findstr ":<端口号>"` 或 `Get-NetTCPConnection -LocalPort <端口号>` 确认三个端口是否被占用。
+    3. **验证服务可达性**：
+       - 前端：访问 `http://localhost:3000`（或 `.env` 中配置的端口）
+       - 游戏服务器：访问 `http://localhost:18000/games`（应返回游戏列表）
+       - API 服务器：访问 `http://localhost:18001/auth/status`（应返回认证状态）
+    4. **验证代理配置**：检查 `vite.config.ts` 中的 `server.proxy` 配置是否与 `.env` 端口一致。
+    5. **清理遗留连接**：运行 `npm run test:e2e:cleanup` 清理测试遗留的端口占用和 WebSocket 连接。
+  - **端口冲突处理**：若端口被占用，优先运行 `npm run test:e2e:cleanup` 清理，或手动使用 `taskkill /F /PID <PID>` 终止占用进程（确认非关键进程后）。
+  - **测试超时排查**：若测试超时（timeout），优先检查是否为服务未启动或端口配置错误，而非直接修改测试代码的超时时间。
+  - **为什么会端口占用**：E2E 测试会创建多个 BrowserContext 和 WebSocket 连接，如果测试异常退出或清理不完整，这些连接可能不会被正确关闭，导致端口持续被占用。使用 `npm run test:e2e:cleanup` 可以强制清理所有相关进程。
+- **E2E 测试必须使用 Fixture（强制）**：新增 E2E 测试必须使用 `e2e/fixtures/index.ts` 提供的 fixture，禁止手写房间创建和清理代码。使用 `import { test, expect } from './fixtures'` 替代 `@playwright/test`。特殊场景需要自定义配置时，使用工厂函数（`createSmashUpMatch` 等）。详见 `docs/automated-testing.md`「使用 Fixture 简化测试」节。
 - **E2E 覆盖要求（强制）**：必须覆盖交互链（用户操作→系统响应→状态变更的完整流程）和特殊交互（非标准流程、边界条件、异常处理）。同种类型的交互只需覆盖一个代表性用例，可省略重复测试。
 - **静态审计要求**：新增游戏时根据游戏特征选择引擎层审计工具。选型指南见 `docs/ai-rules/engine-systems.md`「引擎测试工具总览」节。
 - **描述→实现全链路审查（强制）**：以下场景必须执行——① 新增技能/Token/事件卡/被动/光环 ② 修复"没效果"类 bug ③ 审查已有机制 ④ 重构消费链路。**当用户说"审计"/"审查"/"审核"/"检查实现"/"核对"等词时，必须先阅读 `docs/ai-rules/testing-audit.md`「描述→实现全链路审查规范」节，按规范流程执行并输出矩阵，禁止凭印象回答。** 该文档为审查规范的唯一权威来源。

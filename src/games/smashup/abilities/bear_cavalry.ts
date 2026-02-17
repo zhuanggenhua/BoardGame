@@ -296,7 +296,7 @@ function bearCavalryYoureScrewed(ctx: AbilityContext): AbilityResult {
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const interaction = createSimpleChoice(
         `bear_cavalry_youre_screwed_choose_base_${ctx.now}`, ctx.playerId,
-        '选择有己方随从的基地', buildBaseTargetOptions(candidates),
+        '选择有己方随从的基地', buildBaseTargetOptions(candidates, ctx.state),
         { sourceId: 'bear_cavalry_youre_screwed_choose_base', autoCancelOption: true },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -340,7 +340,7 @@ function bearCavalryYourePrettyMuchBorscht(ctx: AbilityContext): AbilityResult {
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const interaction = createSimpleChoice(
         `bear_cavalry_borscht_choose_from_${ctx.now}`, ctx.playerId,
-        '选择基地（移动所有对手随从）', buildBaseTargetOptions(candidates),
+        '选择基地（移动所有对手随从）', buildBaseTargetOptions(candidates, ctx.state),
         { sourceId: 'bear_cavalry_borscht_choose_from', autoCancelOption: true },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -505,7 +505,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         }
         const next = createSimpleChoice(
             `bear_cavalry_commission_choose_base_${timestamp}`, playerId,
-            '委任：选择打出随从的基地', buildBaseTargetOptions(baseCandidates), 'bear_cavalry_commission_choose_base',
+            '委任：选择打出随从的基地', buildBaseTargetOptions(baseCandidates, state.core), 'bear_cavalry_commission_choose_base',
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { cardUid, defId, power } } }), events: [] };
     });
@@ -556,7 +556,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         });
         const next = createSimpleChoice(
             `bear_cavalry_commission_move_dest_${timestamp}`, playerId,
-            '委任：选择移动到的基地', buildBaseTargetOptions(options), 'bear_cavalry_commission_move_dest',
+            '委任：选择移动到的基地', buildBaseTargetOptions(options, state.core), 'bear_cavalry_commission_move_dest',
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBase } } }), events: [] };
     });
@@ -584,7 +584,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         });
         const next = createSimpleChoice(
             `bear_cavalry_bear_cavalry_choose_base_${timestamp}`, playerId,
-            '选择要移动到的基地', buildBaseTargetOptions(options), 'bear_cavalry_bear_cavalry_choose_base',
+            '选择要移动到的基地', buildBaseTargetOptions(options, state.core), 'bear_cavalry_bear_cavalry_choose_base',
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBase } } }), events: [] };
     });
@@ -642,7 +642,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         });
         const next = createSimpleChoice(
             `bear_cavalry_youre_screwed_choose_dest_${timestamp}`, playerId,
-            '选择目标基地', buildBaseTargetOptions(options), 'bear_cavalry_youre_screwed_choose_dest',
+            '选择目标基地', buildBaseTargetOptions(options, state.core), 'bear_cavalry_youre_screwed_choose_dest',
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBase } } }), events: [] };
     });
@@ -669,7 +669,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         });
         const next = createSimpleChoice(
             `bear_cavalry_bear_rides_you_choose_base_${timestamp}`, playerId,
-            '选择目标基地', buildBaseTargetOptions(options), 'bear_cavalry_bear_rides_you_choose_base',
+            '选择目标基地', buildBaseTargetOptions(options, state.core), 'bear_cavalry_bear_rides_you_choose_base',
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBase } } }), events: [] };
     });
@@ -696,7 +696,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         if (destBases.length === 0) return { state, events: [] };
         const next = createSimpleChoice(
             `bear_cavalry_borscht_choose_dest_${timestamp}`, playerId,
-            '选择目标基地（移动对手随从到此处）', buildBaseTargetOptions(destBases), 'bear_cavalry_borscht_choose_dest',
+            '选择目标基地（移动对手随从到此处）', buildBaseTargetOptions(destBases, state.core), 'bear_cavalry_borscht_choose_dest',
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { fromBase } } }), events: [] };
     });

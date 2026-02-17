@@ -815,6 +815,10 @@ const COMMAND_TYPES = [
     'SKIP_BONUS_DICE_REROLL',
     // 被动能力（如教皇税）
     'USE_PASSIVE_ABILITY',
+    // 系统命令（InteractionSystem）- 新交互系统需要
+    'SYS_INTERACTION_RESPOND',
+    'SYS_INTERACTION_TIMEOUT',
+    'SYS_INTERACTION_CANCEL',
 ];
 
 // 适配器配置

@@ -84,6 +84,18 @@ export interface SimpleChoiceData<T = unknown> {
      * - false：可选效果或"你可以"类效果，始终让玩家确认
      */
     autoResolveIfSingle?: boolean;
+    /**
+     * 动态选项生成器（可选）。
+     * 当交互从队列弹出时，调用此函数基于当前最新状态生成选项列表。
+     * 用于解决"同时触发多个交互时，后续交互看到过期状态"的问题。
+     * 
+     * 使用场景：
+     * - 连续弃牌（幽灵 + 鬼屋）：第二次弃牌时应该看到第一次弃牌后的手牌
+     * - 连续选择场上单位：第一次选择后单位可能已被消灭/移动
+     * 
+     * 如果提供了 optionsGenerator，则 options 字段会在交互弹出时被覆盖。
+     */
+    optionsGenerator?: <TCore>(state: { core: TCore; sys: any }) => PromptOption<T>[];
 }
 
 /**
@@ -242,6 +254,10 @@ export function createSliderChoice(
 
 /**
  * 将交互加入队列（替代旧 queuePrompt）
+ * 
+ * 如果交互有 optionsGenerator：
+ * - 成为 current 时：立即基于当前状态生成选项
+ * - 加入 queue 时：保留生成器，延迟到 resolveInteraction 时生成
  */
 export function queueInteraction<TCore>(
     state: MatchState<TCore>,
@@ -252,6 +268,19 @@ export function queueInteraction<TCore>(
     const { current, queue } = state.sys.interaction;
 
     if (!current) {
+        // 如果当前没有交互，新交互立即成为 current
+        // 如果有选项生成器，立即基于当前状态生成选项
+        if (interaction.kind === 'simple-choice') {
+            const data = interaction.data as SimpleChoiceData;
+            if (data.optionsGenerator) {
+                const freshOptions = data.optionsGenerator(state);
+                interaction = {
+                    ...interaction,
+                    data: { ...data, options: freshOptions },
+                };
+            }
+        }
+
         return {
             ...state,
             sys: {
@@ -261,6 +290,7 @@ export function queueInteraction<TCore>(
         };
     }
 
+    // 否则加入队列（选项生成延迟到 resolveInteraction 时）
     return {
         ...state,
         sys: {
@@ -275,13 +305,28 @@ export function queueInteraction<TCore>(
 
 /**
  * 解决当前交互并弹出下一个
+ * 
+ * 如果下一个交互有 optionsGenerator，则基于当前最新状态生成选项。
+ * 这确保了串行交互（如连续弃牌）中，后续交互看到的是最新状态。
  */
 export function resolveInteraction<TCore>(
     state: MatchState<TCore>,
 ): MatchState<TCore> {
     const { queue } = state.sys.interaction;
-    const next = queue[0];
+    let next = queue[0];
     const newQueue = queue.slice(1);
+
+    // 如果下一个交互有选项生成器，基于当前状态生成选项
+    if (next && next.kind === 'simple-choice') {
+        const data = next.data as SimpleChoiceData;
+        if (data.optionsGenerator) {
+            const freshOptions = data.optionsGenerator(state);
+            next = {
+                ...next,
+                data: { ...data, options: freshOptions },
+            };
+        }
+    }
 
     return {
         ...state,

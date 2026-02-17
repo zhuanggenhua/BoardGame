@@ -188,10 +188,10 @@ export const HOLY_LIGHT_2: AbilityDef = {
             action: {
                 type: 'rollDie', target: 'self', diceCount: 3,
                 conditionalEffects: [
-                    { face: FACES.SWORD, grantToken: { tokenId: TOKEN_IDS.CRIT, value: 1 } },
-                    { face: FACES.HELM, grantToken: { tokenId: TOKEN_IDS.PROTECT, value: 1 } },
-                    { face: FACES.HEART, drawCard: 1 },
-                    { face: FACES.PRAY, cp: 2 },
+                    { face: FACES.SWORD, grantToken: { tokenId: TOKEN_IDS.CRIT, value: 1 }, effectKey: 'bonusDie.effect.holyLight2.sword' },
+                    { face: FACES.HELM, grantToken: { tokenId: TOKEN_IDS.PROTECT, value: 1 }, effectKey: 'bonusDie.effect.holyLight2.helm' },
+                    { face: FACES.HEART, drawCard: 1, effectKey: 'bonusDie.effect.holyLight2.heart' },
+                    { face: FACES.PRAY, cp: 2, effectKey: 'bonusDie.effect.holyLight2.pray' },
                 ],
             },
             timing: 'withDamage'
@@ -398,10 +398,10 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
                 action: {
                     type: 'rollDie', target: 'self', diceCount: 1,
                     conditionalEffects: [
-                        { face: FACES.SWORD, grantToken: { tokenId: TOKEN_IDS.CRIT, value: 1 } },
-                        { face: FACES.HELM, grantToken: { tokenId: TOKEN_IDS.PROTECT, value: 1 } },
-                        { face: FACES.HEART, drawCard: 1 },
-                        { face: FACES.PRAY, cp: 2 },
+                        { face: FACES.SWORD, grantToken: { tokenId: TOKEN_IDS.CRIT, value: 1 }, effectKey: 'bonusDie.effect.holyLight2.sword' },
+                        { face: FACES.HELM, grantToken: { tokenId: TOKEN_IDS.PROTECT, value: 1 }, effectKey: 'bonusDie.effect.holyLight2.helm' },
+                        { face: FACES.HEART, drawCard: 1, effectKey: 'bonusDie.effect.holyLight2.heart' },
+                        { face: FACES.PRAY, cp: 2, effectKey: 'bonusDie.effect.holyLight2.pray' },
                     ],
                 },
                 timing: 'withDamage'

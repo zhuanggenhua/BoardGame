@@ -124,7 +124,7 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     expect((resolved!.events[0] as any).payload.reason).toBe('alien_beam_up');
   });
 
-  it('alien_crop_circles: 两步交互可只返回已选随从（任意数量）', () => {
+  it('alien_crop_circles: 选择基地后自动返回所有随从（强制效果）', () => {
     const core = makeState({
       bases: [makeBase('base_old', [
         makeMinion('m1', 'minion_a', '0', 3),
@@ -132,39 +132,21 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       ])],
     });
 
-    const handler1 = getInteractionHandler('alien_crop_circles');
-    expect(handler1).toBeDefined();
-    const step1 = handler1!(makeMatchState(core), '0', { baseIndex: 0 }, undefined, dummyRandom, 2000);
-    expect(step1).toBeDefined();
-    const step1Current = (step1!.state.sys as any).interaction?.current;
-    expect(step1Current?.data?.sourceId).toBe('alien_crop_circles_choose_minion');
-
-    const handler2 = getInteractionHandler('alien_crop_circles_choose_minion');
-    expect(handler2).toBeDefined();
-    const step2 = handler2!(
-      makeMatchState(core),
-      '0',
-      { minionUid: 'm1' },
-      step1Current?.data,
-      dummyRandom,
-      2001,
-    );
-    expect(step2).toBeDefined();
-    const step2Current = (step2!.state.sys as any).interaction?.current;
-    expect(step2Current?.data?.sourceId).toBe('alien_crop_circles_choose_minion');
-
-    const step3 = handler2!(
-      makeMatchState(core),
-      '0',
-      { done: true },
-      step2Current?.data,
-      dummyRandom,
-      2002,
-    );
-    expect(step3).toBeDefined();
-    const returned = step3!.events.filter(e => e.type === SU_EVENTS.MINION_RETURNED);
-    expect(returned).toHaveLength(1);
-    expect((returned[0] as any).payload.minionUid).toBe('m1');
+    const handler = getInteractionHandler('alien_crop_circles');
+    expect(handler).toBeDefined();
+    
+    // 选择基地后，直接返回该基地所有随从
+    const result = handler!(makeMatchState(core), '0', { baseIndex: 0 }, undefined, dummyRandom, 2000);
+    expect(result).toBeDefined();
+    
+    // 应该产生 2 个 MINION_RETURNED 事件（基地上有 2 个随从）
+    const returned = result!.events.filter(e => e.type === SU_EVENTS.MINION_RETURNED);
+    expect(returned).toHaveLength(2);
+    
+    // 验证两个随从都被返回
+    const returnedUids = returned.map(e => (e as any).payload.minionUid);
+    expect(returnedUids).toContain('m1');
+    expect(returnedUids).toContain('m2');
   });
 
   it('alien_terraform: 三步交互替换基地并仅能在新基地额外打随从', () => {

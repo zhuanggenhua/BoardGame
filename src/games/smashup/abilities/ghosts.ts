@@ -75,17 +75,35 @@ function ghostGhost(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const discardable = player.hand.filter(c => c.uid !== ctx.cardUid);
     if (discardable.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.hand_empty', ctx.now)] };
-    // Prompt 选择弃哪张（可跳过）
-    const options = discardable.map((c, i) => {
+    
+    // 先生成初始选项（基于当前状态）
+    const initialOptions = discardable.map((c, i) => {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
         return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } };
     });
     const skipOption = { id: 'skip', label: '跳过', value: { skip: true } };
+    
     const interaction = createSimpleChoice(
-        `ghost_ghost_${ctx.now}`, ctx.playerId,
-        '选择要弃掉的手牌（可跳过）', [...options, skipOption] as any[], 'ghost_ghost',
+        `ghost_ghost_${ctx.now}`,
+        ctx.playerId,
+        '选择要弃掉的手牌（可跳过）',
+        [...initialOptions, skipOption] as any[],
+        { sourceId: 'ghost_ghost' },
     );
+    
+    // 注入选项生成器（用于队列中的交互）
+    (interaction.data as any).optionsGenerator = (state: any) => {
+        const currentPlayer = state.core.players[ctx.playerId];
+        const currentDiscardable = currentPlayer.hand.filter((c: any) => c.uid !== ctx.cardUid);
+        const options = currentDiscardable.map((c: any, i: number) => {
+            const def = getCardDef(c.defId);
+            const name = def?.name ?? c.defId;
+            return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } };
+        });
+        return [...options, { id: 'skip', label: '跳过', value: { skip: true } }];
+    };
+    
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -460,7 +478,7 @@ export function registerGhostInteractionHandlers(): void {
         });
         const next = createSimpleChoice(
             `ghost_the_dead_rise_base_${timestamp}`, playerId,
-            '亡者崛起：选择打出随从的基地', buildBaseTargetOptions(baseCandidates), 'ghost_the_dead_rise_base',
+            '亡者崛起：选择打出随从的基地', buildBaseTargetOptions(baseCandidates, state.core), 'ghost_the_dead_rise_base',
         );
         return {
             state: queueInteraction(state, {

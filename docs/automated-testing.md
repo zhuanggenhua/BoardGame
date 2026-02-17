@@ -195,12 +195,172 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 4. 测试隔离：每个测试应该独立，不依赖其他测试的状态
 5. 快照测试：谨慎使用，优先使用断言
 6. 异步测试：使用 `async/await`，设置合理的超时时间
+7. **随机数处理（强制）**：测试中涉及随机数（骰子、抽牌、洗牌等）时，必须使用固定值或可控的伪随机序列，禁止依赖真随机。做法：
+   - GameTestRunner 的 `random` 参数传入返回固定值的函数（如 `() => 0.5`）
+   - E2E 测试使用 `applyDiceValues` 等调试面板 API 注入预设骰子值
+   - 测试 setup 中直接构造确定性初始状态，跳过随机初始化
+   - 目的：确保测试结果可重复、可调试、不因随机波动导致偶发失败
 
 ---
 
 ## E2E 测试
 
 测试文件位于 `e2e/` 目录。
+
+### 使用 Fixture 简化测试（推荐）
+
+项目提供了 Playwright Fixture 来自动管理对局创建和清理，大幅减少样板代码。
+
+#### 基础用法
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('测试名称', async ({ smashupMatch }) => {
+  const { hostPage, guestPage, matchId } = smashupMatch;
+  
+  // 直接开始测试，无需 setup 代码
+  await hostPage.click('[data-testid="play-card"]');
+  await expect(hostPage.getByText('Card played')).toBeVisible();
+  
+  // 无需手动 cleanup，fixture 自动处理
+});
+```
+
+#### 可用的 Fixture
+
+| Fixture | 说明 | 默认配置 |
+|---------|------|----------|
+| `smashupMatch` | SmashUp 对局 | Host: 派系 [0,1], Guest: 派系 [2,3] |
+| `dicethroneMatch` | DiceThrone 对局 | Host: Monk, Guest: Barbarian |
+| `summonerwarsMatch` | SummonerWars 对局 | Host: Necromancer, Guest: Trickster |
+
+#### 自定义配置
+
+如需自定义派系/角色，使用工厂函数：
+
+```typescript
+import { test, expect, createSmashUpMatch } from './fixtures';
+
+test('自定义派系', async ({ browser }, testInfo) => {
+  const setup = await createSmashUpMatch(browser, testInfo.project.use.baseURL, {
+    hostFactions: [9, 0],  // 幽灵 + 海盗
+    guestFactions: [1, 2], // 忍者 + 恐龙
+  });
+  
+  if (!setup) {
+    test.skip();
+    return;
+  }
+  
+  const { hostPage, guestPage } = setup;
+  // 测试代码...
+});
+```
+
+#### 代码量对比
+
+**重构前**（每个测试 23-35 行）：
+```typescript
+test('test', async ({ browser }, testInfo) => {
+  // 15-20 行 setup 代码
+  const hostContext = await browser.newContext(...);
+  await initContext(...);
+  const matchId = await createRoom(...);
+  // ...
+  
+  // 5-10 行测试代码
+  await hostPage.click(...);
+  
+  // 3-5 行 cleanup
+  await hostContext.close();
+  await guestContext.close();
+});
+```
+
+**重构后**（每个测试 5-10 行）：
+```typescript
+test('test', async ({ smashupMatch }) => {
+  const { hostPage } = smashupMatch;
+  
+  // 5-10 行测试代码
+  await hostPage.click(...);
+  
+  // 自动 cleanup
+});
+```
+
+**减少代码量：60-70%**
+
+### 传统方式（不推荐，仅用于特殊场景）
+
+如果 fixture 不满足需求，可以使用传统的 helper 函数：
+
+```typescript
+import { setupSmashUpOnlineMatch } from './helpers/smashup';
+
+test('test', async ({ browser }, testInfo) => {
+  const setup = await setupSmashUpOnlineMatch(browser, testInfo.project.use.baseURL);
+  if (!setup) {
+    test.skip();
+    return;
+  }
+  
+  try {
+    // 测试代码
+  } finally {
+    await setup.hostContext.close();
+    await setup.guestContext.close();
+  }
+});
+```
+
+### E2E 测试失败排查规范（强制）
+
+**当 E2E 测试失败时，必须按以下顺序排查，禁止跳过步骤直接猜测原因：**
+
+1. **先读代码，再调试**
+   - ❌ 错误做法：看到超时/卡住就假设"有 bug"，直接修改测试或增加等待时间
+   - ✅ 正确做法：先读取相关源码，理解业务逻辑和 UI 交互设计
+   - 示例：SummonerWars 的"结束阶段"按钮在 `move`/`attack` 阶段有防误操作机制，需要点击两次（第一次确认，第二次执行）。这不是 bug，是设计特性。
+
+2. **理解测试失败的真实原因**
+   - 读取失败日志，定位卡住/超时的具体步骤
+   - 检查相关 UI 组件的 `disabled`/`onClick`/`useEffect` 逻辑
+   - 检查状态管理（useState/useCallback）和条件渲染
+   - 检查是否有"确认模式"、"二次确认"、"等待动画"等设计
+
+3. **验证是设计特性还是真正的 bug**
+   - 设计特性：防误操作、二次确认、动画延迟、状态门控
+   - 真正的 bug：逻辑错误、状态不同步、事件未触发、死锁
+
+4. **修复策略**
+   - 设计特性 → 更新测试代码适配设计（如增加等待、处理确认流程）
+   - 真正的 bug → 修复源码逻辑
+
+**反面教材**：
+```typescript
+// ❌ 错误：未读代码就假设"阶段推进有 bug"
+// 实际：move 阶段有可移动单位时需要二次确认
+await page.click('[data-testid="end-phase"]');
+await page.waitForTimeout(5000); // 盲目增加等待
+```
+
+**正确做法**：
+```typescript
+// ✅ 正确：读代码后理解确认机制，测试代码适配设计
+// src/games/summonerwars/ui/useCellInteraction.ts:
+// if ((currentPhase === 'move' || currentPhase === 'attack') && actionableUnitPositions.length > 0) {
+//   setEndPhaseConfirmPending(true);  // 第一次点击进入确认模式
+//   return;
+// }
+
+// 测试代码处理确认流程
+const endPhaseBtn = page.getByTestId('sw-end-phase');
+await endPhaseBtn.click(); // 第一次点击：进入确认模式
+await page.waitForTimeout(500);
+await endPhaseBtn.click(); // 第二次点击：确认并推进阶段
+```
 
 ### 运行方式
 
@@ -431,6 +591,66 @@ npx vitest <文件路径>
 
 # VS Code 调试器：在测试文件中设置断点，使用 "JavaScript Debug Terminal" 运行
 ```
+
+### ⚠️ 危险操作警告（强制）
+
+**禁止使用以下命令清理进程**：
+
+```bash
+# ❌ 禁止：杀掉所有 Node.js 进程
+taskkill /F /IM node.exe
+killall node
+
+# ❌ 禁止：杀掉所有进程（包括其他项目、IDE、工具）
+taskkill /F /IM node.exe 2>$null
+Get-Process node | Stop-Process -Force
+```
+
+**为什么禁止**：
+- 会杀掉所有 Node.js 进程，包括其他项目的服务器
+- 会杀掉 VS Code 的语言服务器、调试器等工具
+- 会杀掉正在运行的其他测试
+- 会导致数据丢失和状态不一致
+
+**正确做法**：
+
+```bash
+# ✅ 清理单个测试的端口（推荐，不影响其他并行测试）
+# 1. 查找占用端口的 PID
+netstat -ano | findstr :5173    # Windows
+lsof -ti:5173                   # Linux/Mac
+
+# 2. 只杀掉该测试的进程
+taskkill /F /PID <PID>          # Windows
+kill -9 <PID>                   # Linux/Mac
+
+# ✅ 清理所有测试环境端口（会影响所有并行测试，谨慎使用）
+npm run test:e2e:cleanup        # 清理测试环境端口（5173/19000/19001）
+
+# ✅ 清理开发环境端口（不影响测试）
+npm run clean:ports             # 清理开发环境端口（3000/18000/18001）
+
+# ✅ 清理特定 worker 的端口（并行测试）
+node scripts/infra/port-allocator.js <workerId>  # workerId: 0, 1, 2...
+```
+
+**并行测试端口分配**：
+- Worker 0: 3000, 18000, 18001
+- Worker 1: 3100, 18100, 18101
+- Worker 2: 3200, 18200, 18201
+- 每个 worker 使用独立端口范围（+100 偏移）
+
+**如果测试环境混乱**：
+
+1. 先检查端口占用：`npm run test:e2e:check`
+2. **优先清理单个测试的端口**（不影响其他测试）：
+   ```bash
+   # 查找并杀掉特定端口的进程
+   netstat -ano | findstr :5173
+   taskkill /F /PID <PID>
+   ```
+3. 如果需要清理所有测试端口（会中断其他并行测试）：`npm run test:e2e:cleanup`
+4. 最后手段：重启终端/IDE（不要杀掉所有进程）
 
 ---
 

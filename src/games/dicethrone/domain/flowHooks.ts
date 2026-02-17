@@ -18,6 +18,8 @@ import type {
     AbilityActivatedEvent,
     ExtraAttackTriggeredEvent,
     TokenConsumedEvent,
+    ChoiceRequestedEvent,
+    ChoiceResolvedEvent,
 } from './types';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import { canAdvancePhase, getNextPhase, getNextPlayerId, getPlayerDieFace, getResponderQueue } from './rules';
@@ -29,6 +31,8 @@ import { reduce } from './reducer';
 import { getGameMode, applyEvents } from './utils';
 import type { ResponseWindowOpenedEvent } from './events';
 import { createDamageCalculation } from '../../../engine/primitives';
+import { getUsableTokensForOffensiveRollEnd } from './tokenResponse';
+import { getPlayerAbilityBaseDamage } from './abilityLookup';
 
 /**
  * 检查攻击方是否有晕眩（daze）
@@ -330,6 +334,47 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     ? applyEvents(core, preDefenseEvents as DiceThroneEvent[], reduce)
                     : core;
 
+                // ========== 攻击掷骰阶段结束时 Token 使用（暴击、精准） ==========
+                // 检查攻击方是否有可用的 onOffensiveRollEnd 时机 Token
+                const attackerId = core.pendingAttack.attackerId;
+                const sourceAbilityId = core.pendingAttack.sourceAbilityId;
+                const expectedDamage = sourceAbilityId 
+                    ? getPlayerAbilityBaseDamage(coreAfterPreDefense, attackerId, sourceAbilityId) + (core.pendingAttack.bonusDamage ?? 0)
+                    : 0;
+                const offensiveRollEndTokens = getUsableTokensForOffensiveRollEnd(coreAfterPreDefense, attackerId, expectedDamage);
+                
+                // 检查是否已经处理过 Token 选择（避免重复询问）
+                if (offensiveRollEndTokens.length > 0 && !core.pendingAttack.offensiveRollEndTokenResolved) {
+                    // 创建选择事件让玩家选择是否使用 Token
+                    const tokenOptions = offensiveRollEndTokens.map(def => ({
+                        tokenId: def.id,
+                        value: 1,
+                        customId: `use-${def.id}`,
+                        labelKey: `tokens.${def.id}.name`,
+                    }));
+                    // 添加跳过选项
+                    tokenOptions.push({
+                        tokenId: undefined as any,
+                        value: 0,
+                        customId: 'skip',
+                        labelKey: 'tokenResponse.skip',
+                    });
+                    
+                    const choiceEvent: ChoiceRequestedEvent = {
+                        type: 'CHOICE_REQUESTED',
+                        payload: {
+                            playerId: attackerId,
+                            sourceAbilityId: sourceAbilityId ?? 'offensive-roll-end-token',
+                            titleKey: 'offensiveRollEndToken.title',
+                            options: tokenOptions,
+                        },
+                        sourceCommandType: command.type,
+                        timestamp,
+                    };
+                    events.push(choiceEvent);
+                    return { events, halt: true };
+                }
+
                 if (core.pendingAttack.isDefendable) {
                     // 攻击可防御，切换到防御阶段
                     return { events, overrideNextPhase: 'defensiveRoll' };
@@ -507,7 +552,25 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             // 确认所有阻塞已清除
             const hasActiveInteraction = state.sys.interaction?.current !== undefined;
             const hasActiveResponseWindow = state.sys.responseWindow?.current !== undefined;
-            if (!hasActiveInteraction && !hasActiveResponseWindow) {
+            // Token 响应窗口通过 pendingDamage 管理，需要等待玩家 USE_TOKEN 或 SKIP_TOKEN_RESPONSE
+            const hasPendingDamage = core.pendingDamage !== null && core.pendingDamage !== undefined;
+            
+            // 检查是否有 SYS_INTERACTION_RESOLVED 事件待处理
+            // 如果有，说明选择刚刚完成，需要等待 CHOICE_RESOLVED 事件被生成和处理
+            const hasInteractionResolved = events.some(e => e.type === 'SYS_INTERACTION_RESOLVED');
+            
+            // 检查是否有 offensiveRollEnd Token 选择的 CHOICE_RESOLVED 事件待处理
+            // 只有 Token 选择（use-crit, use-accuracy, skip）需要等待 offensiveRollEndTokenResolved 标志
+            // 其他选择（如技能效果选择）不需要等待
+            const tokenChoiceCustomIds = ['use-crit', 'use-accuracy', 'skip'];
+            const hasTokenChoiceResolved = events.some(e => 
+                e.type === 'CHOICE_RESOLVED' && 
+                tokenChoiceCustomIds.includes((e as ChoiceResolvedEvent).payload?.customId ?? '')
+            );
+            const tokenChoiceAlreadyResolved = core.pendingAttack?.offensiveRollEndTokenResolved === true;
+            const shouldWaitForTokenChoice = hasTokenChoiceResolved && !tokenChoiceAlreadyResolved;
+            
+            if (!hasActiveInteraction && !hasActiveResponseWindow && !hasPendingDamage && !shouldWaitForTokenChoice && !hasInteractionResolved) {
                 return { autoContinue: true, playerId: core.activePlayerId };
             }
             return undefined;

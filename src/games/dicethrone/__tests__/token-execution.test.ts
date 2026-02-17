@@ -27,10 +27,10 @@ import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import { INITIAL_HEALTH, INITIAL_CP } from '../domain/types';
 import { getCustomActionHandler } from '../domain/effects';
-import { resolveEffectsToEvents } from '../domain/effects';
 import { processTokenUsage, shouldOpenTokenResponse } from '../domain/tokenResponse';
 import { initializeCustomActions } from '../domain/customActions';
 import { BARBARIAN_TOKENS } from '../heroes/barbarian/tokens';
+import { PALADIN_TOKENS } from '../heroes/paladin/tokens';
 import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
 
 initializeCustomActions();
@@ -936,10 +936,12 @@ describe('晕眩 (Daze) 额外攻击执行', () => {
 // ============================================================================
 
 describe('Token 响应窗口判定', () => {
-    it('攻击方有暴击 Token 时应打开 attackerBoost', () => {
+    it('攻击方有太极 Token 时应打开 attackerBoost', () => {
+        // 注意：暴击 Token 已改为 onOffensiveRollEnd 时机，不再触发 Token 响应窗口
+        // 使用太极 Token 测试 beforeDamageDealt 时机
         const baseSetup = createNoResponseSetupWithEmptyHand();
         const state = baseSetup(['0', '1'], fixedRandom);
-        state.core.players['0'].tokens[TOKEN_IDS.CRIT] = 1;
+        state.core.players['0'].tokens[TOKEN_IDS.TAIJI] = 1;
 
         const responseType = shouldOpenTokenResponse(state.core, '0', '1', 3);
         expect(responseType).toBe('attackerBoost');
@@ -960,6 +962,17 @@ describe('Token 响应窗口判定', () => {
         state.core.players['0'].tokens[TOKEN_IDS.PURIFY] = 1;
 
         const responseType = shouldOpenTokenResponse(state.core, '0', '1', 2);
+        expect(responseType).toBeNull();
+    });
+
+    it('暴击 Token 不触发 Token 响应窗口（已改为 onOffensiveRollEnd 时机）', () => {
+        const baseSetup = createNoResponseSetupWithEmptyHand();
+        const state = baseSetup(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.CRIT] = 1;
+
+        // 暴击 Token 的时机是 onOffensiveRollEnd，不是 beforeDamageDealt
+        // 所以不会触发 Token 响应窗口
+        const responseType = shouldOpenTokenResponse(state.core, '0', '1', 3);
         expect(responseType).toBeNull();
     });
 });
@@ -1004,5 +1017,239 @@ describe('净化 (Purify) Token 语义', () => {
         expect(events).toHaveLength(1);
         expect(events[0].type).toBe('TOKEN_USED');
         expect((events[0] as any).payload.effectType).toBe('removeDebuff');
+    });
+});
+
+
+// ============================================================================
+// 神罚 (Retribution) — 反弹伤害集成测试
+// ============================================================================
+
+describe('神罚 (Retribution) 反弹伤害集成测试', () => {
+    it('神罚使用后应反弹伤害给攻击者，自己仍受全额伤害', () => {
+        const retributionDef = {
+            id: TOKEN_IDS.RETRIBUTION,
+            name: '神罚',
+            stackLimit: 1,
+            category: 'consumable' as const,
+            icon: '⚡',
+            colorTheme: '',
+            description: [],
+            activeUse: {
+                timing: ['beforeDamageReceived' as const],
+                consumeAmount: 1,
+                effect: { type: 'modifyDamageReceived' as const, value: 0 },
+            },
+        };
+
+        // 测试 10 点伤害 → 反弹 ceil(10/2) = 5 点
+        const mockState = {
+            players: {
+                '0': {
+                    tokens: { [TOKEN_IDS.RETRIBUTION]: 1 },
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                },
+            },
+            pendingDamage: {
+                originalDamage: 10,
+                currentDamage: 10,
+                responseType: 'beforeDamageReceived',
+            },
+        };
+
+        const { result } = processTokenUsage(
+            mockState as any,
+            retributionDef as any,
+            '0',
+            1,
+            undefined,
+            'beforeDamageReceived'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.damageModifier).toBe(0); // 不减伤
+        expect(result.extra?.reflectDamage).toBe(5); // ceil(10/2) = 5
+    });
+
+    it('神罚反弹伤害向上取整（奇数伤害）', () => {
+        const retributionDef = {
+            id: TOKEN_IDS.RETRIBUTION,
+            name: '神罚',
+            stackLimit: 1,
+            category: 'consumable' as const,
+            icon: '⚡',
+            colorTheme: '',
+            description: [],
+            activeUse: {
+                timing: ['beforeDamageReceived' as const],
+                consumeAmount: 1,
+                effect: { type: 'modifyDamageReceived' as const, value: 0 },
+            },
+        };
+
+        // 测试 9 点伤害 → 反弹 ceil(9/2) = 5 点
+        const mockState = {
+            players: {
+                '0': {
+                    tokens: { [TOKEN_IDS.RETRIBUTION]: 1 },
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                },
+            },
+            pendingDamage: {
+                originalDamage: 9,
+                currentDamage: 9,
+                responseType: 'beforeDamageReceived',
+            },
+        };
+
+        const { result } = processTokenUsage(
+            mockState as any,
+            retributionDef as any,
+            '0',
+            1,
+            undefined,
+            'beforeDamageReceived'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.extra?.reflectDamage).toBe(5); // ceil(9/2) = 5
+    });
+
+    it('神罚只在 beforeDamageReceived 时机可用', () => {
+        const retributionDef = PALADIN_TOKENS.find(t => t.id === TOKEN_IDS.RETRIBUTION);
+        expect(retributionDef).toBeDefined();
+        expect(retributionDef!.activeUse?.timing).toContain('beforeDamageReceived');
+        expect(retributionDef!.activeUse?.timing).not.toContain('beforeDamageDealt');
+    });
+});
+
+// ============================================================================
+// 守护 (Protect) — 伤害减半集成测试
+// ============================================================================
+
+describe('守护 (Protect) 伤害减半集成测试', () => {
+    it('守护使用后伤害减半（向上取整）', () => {
+        const protectDef = {
+            id: TOKEN_IDS.PROTECT,
+            name: '守护',
+            stackLimit: 1,
+            category: 'consumable' as const,
+            icon: '🛡️',
+            colorTheme: '',
+            description: [],
+            activeUse: {
+                timing: ['beforeDamageReceived' as const],
+                consumeAmount: 1,
+                effect: { type: 'modifyDamageReceived' as const, value: 0 },
+            },
+        };
+
+        // 测试 7 点伤害 → 减 ceil(7/2) = 4 点
+        const mockState = {
+            players: {
+                '0': {
+                    tokens: { [TOKEN_IDS.PROTECT]: 1 },
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                },
+            },
+            pendingDamage: {
+                originalDamage: 7,
+                currentDamage: 7,
+                responseType: 'beforeDamageReceived',
+            },
+        };
+
+        const { result } = processTokenUsage(
+            mockState as any,
+            protectDef as any,
+            '0',
+            1,
+            undefined,
+            'beforeDamageReceived'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.damageModifier).toBe(-4); // -ceil(7/2) = -4
+    });
+
+    it('守护只在 beforeDamageReceived 时机可用', () => {
+        const protectDef = PALADIN_TOKENS.find(t => t.id === TOKEN_IDS.PROTECT);
+        expect(protectDef).toBeDefined();
+        expect(protectDef!.activeUse?.timing).toContain('beforeDamageReceived');
+        expect(protectDef!.activeUse?.timing).not.toContain('beforeDamageDealt');
+    });
+});
+
+// ============================================================================
+// 暴击 (Crit) — 门控条件测试
+// ============================================================================
+
+describe('暴击 (Crit) 门控条件测试', () => {
+    it('伤害≥5时可使用暴击，+4伤害', () => {
+        const critDef = PALADIN_TOKENS.find(t => t.id === TOKEN_IDS.CRIT);
+        expect(critDef).toBeDefined();
+
+        const mockState = {
+            players: {
+                '0': {
+                    tokens: { [TOKEN_IDS.CRIT]: 1 },
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                },
+            },
+            pendingDamage: {
+                originalDamage: 5,
+                currentDamage: 5,
+                responseType: 'beforeDamageDealt',
+            },
+        };
+
+        const { result } = processTokenUsage(
+            mockState as any,
+            critDef as any,
+            '0',
+            1,
+            undefined,
+            'beforeDamageDealt'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.damageModifier).toBe(4);
+    });
+
+    it('伤害<5时不能使用暴击', () => {
+        const critDef = PALADIN_TOKENS.find(t => t.id === TOKEN_IDS.CRIT);
+        expect(critDef).toBeDefined();
+
+        const mockState = {
+            players: {
+                '0': {
+                    tokens: { [TOKEN_IDS.CRIT]: 1 },
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                },
+            },
+            pendingDamage: {
+                originalDamage: 4,
+                currentDamage: 4,
+                responseType: 'beforeDamageDealt',
+            },
+        };
+
+        const { result } = processTokenUsage(
+            mockState as any,
+            critDef as any,
+            '0',
+            1,
+            undefined,
+            'beforeDamageDealt'
+        );
+
+        expect(result.success).toBe(false);
+    });
+
+    it('暴击只在 onOffensiveRollEnd 时机可用', () => {
+        const critDef = PALADIN_TOKENS.find(t => t.id === TOKEN_IDS.CRIT);
+        expect(critDef).toBeDefined();
+        expect(critDef!.activeUse?.timing).toContain('onOffensiveRollEnd');
+        expect(critDef!.activeUse?.timing).not.toContain('beforeDamageReceived');
     });
 });

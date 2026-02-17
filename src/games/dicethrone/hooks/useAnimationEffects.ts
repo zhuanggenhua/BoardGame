@@ -6,6 +6,21 @@
  * 
  * 事件流消费遵循 EventStreamSystem 模式 A（过滤式消费），
  * 单一游标统一处理所有事件类型，避免游标推进遗漏导致重复触发。
+ * 
+ * ## 护盾动画优化（2026-02-16）
+ * 
+ * 问题：当防御技能授予大额护盾（如暗影守护 999 护盾）完全吸收伤害时，
+ * UI 仍会播放伤害飞行动画，导致 HP 数字先跳变再恢复的视觉问题。
+ * 
+ * 根因：DAMAGE_DEALT 事件的 actualDamage 字段在事件创建时计算（不考虑护盾），
+ * reducer 消耗护盾后 HP 不变，但 UI 层读取 actualDamage 播放动画。
+ * 
+ * 解决方案：在事件消费阶段扫描 DAMAGE_SHIELD_GRANTED 事件，识别大额护盾
+ * （value >= 100），标记被保护的目标，跳过这些目标的伤害动画。
+ * 
+ * 限制：使用阈值启发式（>= 100），适用于"完全免疫"类护盾（如暗影守护 999）。
+ * 不支持部分护盾吸收的精确动画（如护盾 3 吸收 8 伤害中的 3，仍播放 5 伤害动画）。
+ * 若未来需要精确支持，需在 reducer 中计算 netDamage 并写回事件或侧信道。
  */
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -122,16 +137,29 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
      * 构建单个伤害事件的 FX 参数
      * 返回 null 表示该事件不需要动画（无效目标等）
      */
-    const buildDamageStep = useCallback((dmgEvent: DamageDealtEvent): AnimStep | null => {
+    /**
+     * 构建单个伤害事件的 FX 参数
+     * 返回 null 表示该事件不需要动画（无效目标/护盾完全抵消等）
+     * 
+     * @param dmgEvent 伤害事件
+     * @param shieldedTargets 本批次中被大额护盾完全保护的目标集合（护盾值 >= FULL_IMMUNITY_SHIELD_THRESHOLD）
+     */
+    const buildDamageStep = useCallback((dmgEvent: DamageDealtEvent, shieldedTargets?: Set<string>): AnimStep | null => {
         const damage = dmgEvent.payload.actualDamage ?? 0;
         if (damage <= 0) return null;
+
+        const targetId = dmgEvent.payload.targetId;
+
+        // 如果目标在本批次中被大额护盾保护（如暗影守护 999 护盾），跳过伤害动画。
+        // 这避免了"先播放伤害动画，HP 数字跳变，然后又恢复"的视觉问题。
+        if (shieldedTargets?.has(targetId)) return null;
 
         const sourceId = dmgEvent.payload.sourceAbilityId ?? '';
         const isDot = sourceId.startsWith('upkeep-');
         const cue = isDot ? DT_FX.DOT_DAMAGE : DT_FX.DAMAGE;
-        const soundKey = isDot ? undefined : resolveDamageImpactKey(damage, dmgEvent.payload.targetId, currentPlayerId);
-        const targetPlayer = dmgEvent.payload.targetId === opponentId ? opponent : player;
-        const bufferKey = `hp-${dmgEvent.payload.targetId}`;
+        const soundKey = isDot ? undefined : resolveDamageImpactKey(damage, targetId, currentPlayerId);
+        const targetPlayer = targetId === opponentId ? opponent : player;
+        const bufferKey = `hp-${targetId}`;
 
         if (!targetPlayer) return null;
 
@@ -139,7 +167,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         const coreHp = targetPlayer.resources[RESOURCE_IDS.HP] ?? 0;
         const frozenHp = coreHp + damage;
 
-        const isOpponent = dmgEvent.payload.targetId === opponentId;
+        const isOpponent = targetId === opponentId;
         const startPos = getEffectStartPos(isOpponent ? opponentId : currentPlayerId);
         const endPos = getElementCenter(isOpponent ? refs.opponentHp.current : refs.selfHp.current);
 
@@ -289,10 +317,32 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         const healSteps: AnimStep[] = [];
         const cpSteps: AnimStep[] = [];
 
+        // 先扫描本批次中的大额护盾事件（如暗影守护 999 护盾），
+        // 标记被完全保护的目标，后续 DAMAGE_DEALT 对这些目标不播放伤害动画
+        // 
+        // 注意：这是一个启发式方法，使用阈值 >= 100 来判断"完全免除伤害"的护盾。
+        // 适用于暗影守护（999 护盾）等"完全免疫"类技能。
+        // 
+        // TODO: 如果未来需要支持部分护盾吸收的精确动画（如护盾 3 吸收 8 伤害中的 3，
+        // 仍需播放剩余 5 伤害的动画），需要改为在 reducer 中计算 netDamage 并写回事件或侧信道。
+        const shieldedTargets = new Set<string>();
+        const FULL_IMMUNITY_SHIELD_THRESHOLD = 100; // 护盾值 >= 此阈值视为完全免疫
+        
+        for (const entry of newEntries) {
+            const event = entry.event as { type: string; payload: Record<string, unknown> };
+            if (event.type === 'DAMAGE_SHIELD_GRANTED') {
+                const shieldValue = (event.payload.value as number) ?? 0;
+                const targetId = event.payload.targetId as string;
+                if (targetId && shieldValue >= FULL_IMMUNITY_SHIELD_THRESHOLD) {
+                    shieldedTargets.add(targetId);
+                }
+            }
+        }
+
         for (const entry of newEntries) {
             const event = entry.event as { type: string; payload: Record<string, unknown> };
             if (event.type === 'DAMAGE_DEALT') {
-                const step = buildDamageStep(event as unknown as DamageDealtEvent);
+                const step = buildDamageStep(event as unknown as DamageDealtEvent, shieldedTargets);
                 if (step) damageSteps.push(step);
             } else if (event.type === 'HEAL_APPLIED') {
                 const step = buildHealStep(event as unknown as HealAppliedEvent);

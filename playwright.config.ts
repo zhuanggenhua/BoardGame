@@ -5,51 +5,84 @@ import path from 'path';
 // Load environment variables from .env file
 dotenv.config({ quiet: true });
 
-const port = process.env.PW_PORT || process.env.E2E_PORT || '3000';
+// ============================================================================
+// E2E 测试端口配置 - 完全隔离方案
+// ============================================================================
+// 
+// 🎯 设计原则：测试环境与开发环境完全隔离
+//
+// 1. 开发环境（npm run dev）：
+//    - 端口：3000, 18000, 18001
+//    - 用途：日常开发、手动测试
+//
+// 2. E2E 测试环境（npm run test:e2e）：
+//    - 端口：5173, 19000, 19001（完全不同的端口）
+//    - 用途：自动化测试
+//    - 隔离：不会与开发环境冲突
+//
+// 3. 并行测试环境（npm run test:e2e:parallel）：
+//    - 端口：6000+, 20000+, 20001+（每个 worker 独立）
+//    - 用途：大量并行测试
+//
+// ============================================================================
+
+// E2E 测试使用独立的端口范围，与开发环境完全隔离
+const E2E_PORTS = {
+    frontend: 5173,      // Vite 默认端口，与开发环境的 3000 不同
+    gameServer: 19000,   // 与开发环境的 18000 不同
+    apiServer: 19001,    // 与开发环境的 18001 不同
+};
+
+const DEV_PORTS = {
+    frontend: 3000,
+    gameServer: 18000,
+    apiServer: 18001,
+};
+
+// E2E 测试服务器启动策略
+// 1. PW_START_SERVERS=true（CI 模式）：强制启动独立测试服务器
+// 2. PW_USE_DEV_SERVERS=true：使用开发环境服务器（不推荐）
+// 3. 默认：启动独立测试服务器
+const forceStartServers = process.env.PW_START_SERVERS === 'true';
+const useDevServers = process.env.PW_USE_DEV_SERVERS === 'true';
+const shouldStartServers = forceStartServers || !useDevServers;
+
+// 根据模式选择端口
+const PORTS = useDevServers ? DEV_PORTS : E2E_PORTS;
+
+const port = process.env.PW_PORT || process.env.E2E_PORT || PORTS.frontend.toString();
 const baseURL = process.env.VITE_FRONTEND_URL || `http://localhost:${port}`;
-const gameServerPort = process.env.GAME_SERVER_PORT || process.env.PW_GAME_SERVER_PORT || '18001';
-const reuseExistingServer = true;
+const gameServerPort = process.env.GAME_SERVER_PORT || process.env.PW_GAME_SERVER_PORT || PORTS.gameServer.toString();
+const apiServerPort = process.env.API_SERVER_PORT || process.env.PW_API_SERVER_PORT || PORTS.apiServer.toString();
 
-// 默认使用已运行的服务器（开发模式），设置 PW_START_SERVERS=true 强制启动（CI 模式）
-const shouldStartServers = process.env.PW_START_SERVERS === 'true';
+// 日志：显示当前测试模式
+if (useDevServers) {
+    console.log('⚠️  E2E 测试模式：使用开发服务器（端口 3000/18000/18001）');
+} else {
+    console.log('✅ E2E 测试模式：独立测试环境（端口 5173/19000/19001）');
+}
 
-// 细粒度控制（向后兼容）
-const shouldStartFrontend = shouldStartServers && !process.env.PW_SKIP_FRONTEND_SERVER;
-const shouldStartGameServer = shouldStartServers && !process.env.PW_SKIP_GAME_SERVER;
-const shouldStartApiServer = shouldStartServers && !process.env.PW_SKIP_API_SERVER;
-
+// WebServer 配置：默认启动独立的测试服务器（完全隔离）
 const webServerConfig = shouldStartServers
     ? [
-        ...(shouldStartFrontend
-            ? [
-                {
-                    command: `node scripts/ugc/ugc-publish-preview.mjs && npm run generate:manifests && npx vite --port ${port} --strictPort`,
-                    url: baseURL,
-                    reuseExistingServer,
-                    timeout: 120000,
-                },
-            ]
-            : []),
-        ...(shouldStartGameServer
-            ? [
-                {
-                    command: `node scripts/ugc/ugc-publish-preview.mjs && npm run generate:manifests && cross-env USE_PERSISTENT_STORAGE=false GAME_SERVER_PORT=${gameServerPort} npm run dev:game`,
-                    url: `http://localhost:${gameServerPort}/games`,
-                    reuseExistingServer,
-                    timeout: 120000,
-                },
-            ]
-            : []),
-        ...(shouldStartApiServer
-            ? [
-                {
-                    command: 'npm run dev:api',
-                    url: 'http://localhost:18001/health',
-                    reuseExistingServer,
-                    timeout: 120000,
-                },
-            ]
-            : []),
+        {
+            command: `npx vite --port ${port} --strictPort`,
+            url: baseURL,
+            reuseExistingServer: true,
+            timeout: 120000,
+        },
+        {
+            command: `cross-env USE_PERSISTENT_STORAGE=false GAME_SERVER_PORT=${gameServerPort} npm run dev:game`,
+            url: `http://localhost:${gameServerPort}/games`,
+            reuseExistingServer: true,
+            timeout: 120000,
+        },
+        {
+            command: `cross-env API_SERVER_PORT=${apiServerPort} npm run dev:api`,
+            url: `http://localhost:${apiServerPort}/health`,
+            reuseExistingServer: true,
+            timeout: 120000,
+        },
     ]
     : undefined;
 
@@ -60,21 +93,21 @@ export default defineConfig({
     expect: {
         timeout: 5000
     },
-    // 当前所有测试共享同一个游戏服务器进程，服务端无 per-test 状态隔离，
-    // 因此必须串行执行。未来添加服务端状态重置后可改为并行。
+    // 串行执行（服务端无 per-test 状态隔离）
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: 0,
     workers: 1,
     reporter: 'list',
     outputDir: './test-results',
+    preserveOutput: 'always',
     use: {
-        // Priority: ENV variable > configured port > Default localhost:5173
         baseURL,
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
     },
-    ...(webServerConfig ? { webServer: webServerConfig } : {}),
+    // 默认启动独立的测试服务器（完全隔离）
+    webServer: webServerConfig,
     projects: [
         {
             name: 'chromium',

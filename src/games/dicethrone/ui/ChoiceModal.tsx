@@ -146,9 +146,6 @@ export const ChoiceModal = ({
                 ) : (
                     <div className="flex flex-wrap gap-4 w-full justify-center">
                         {choice?.options.map(option => {
-                            const meta = (option.tokenId ? TOKEN_META[option.tokenId] : undefined)
-                                || (option.statusId ? STATUS_EFFECT_META[option.statusId] : undefined)
-                                || { color: 'from-slate-500 to-slate-600' };
                             return (
                                 <GameButton
                                     key={option.id}
@@ -156,11 +153,6 @@ export const ChoiceModal = ({
                                     disabled={!canResolve}
                                     variant={canResolve ? 'primary' : 'secondary'}
                                     className="min-w-[120px]"
-                                    icon={
-                                        <span className="w-6 h-6 inline-block align-middle mr-1 rounded-full overflow-hidden border border-white/30 bg-black/30">
-                                            {getStatusEffectIconNode(meta, locale, 'choice', statusIconAtlas)}
-                                        </span>
-                                    }
                                 >
                                     {resolveOptionLabel(option.label)}
                                 </GameButton>

@@ -216,7 +216,7 @@ function zombieOutbreak(ctx: AbilityContext): AbilityResult {
     const handMinions = player.hand.filter(c => c.type === 'minion' && c.uid !== ctx.cardUid);
     if (handMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.hand_empty', ctx.now)] };
     // 第一步：选择基地
-    const baseOptions = buildBaseTargetOptions(emptyBases);
+    const baseOptions = buildBaseTargetOptions(emptyBases, ctx.state);
     const interaction = createSimpleChoice(
         `zombie_outbreak_base_${ctx.now}`, ctx.playerId,
         '爆发：选择一个没有你随从的基地', baseOptions as any[], 'zombie_outbreak_choose_base',
@@ -561,7 +561,7 @@ export function registerZombieInteractionHandlers(): void {
         }
         const next = createSimpleChoice(
             `zombie_they_keep_coming_base_${timestamp}`, playerId,
-            '选择要打出随从的基地', buildBaseTargetOptions(candidates), 'zombie_they_keep_coming_choose_base',
+            '选择要打出随从的基地', buildBaseTargetOptions(candidates, state.core), 'zombie_they_keep_coming_choose_base',
         );
         return {
             state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { cardUid, defId, power } } }),

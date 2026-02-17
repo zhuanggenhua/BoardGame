@@ -51,6 +51,23 @@ export type BgmGroupId = 'normal' | 'battle' | (string & {});
 /** feedbackResolver 的返回值：音效 key */
 export type EventSoundResult = SoundKey;
 
+/**
+ * 音频事件元数据标记
+ * 用于框架层自动过滤不应通过事件流播放音效的事件
+ */
+export interface AudioEventMetadata {
+    /**
+     * 是否为 UI 本地交互事件
+     * - true: 音效由 UI 组件本地播放（如按钮点击），事件流不再播放
+     * - false/undefined: 正常通过事件流播放音效
+     * 
+     * 典型场景：
+     * - 选角/选派系确认按钮：用户点击时 GameButton 已播放点击音，
+     *   事件广播到其他客户端时不应重复播放
+     */
+    isLocalUIEvent?: boolean;
+}
+
 export interface AudioEvent {
     type: string;
     /** 事件级音效 key（优先级最高） */
@@ -58,6 +75,8 @@ export interface AudioEvent {
     /** 事件级音效分类（用于统一映射） */
     audioCategory?: AudioCategory;
     sfxKey?: SoundKey;
+    /** 音频事件元数据（框架层自动过滤） */
+    audioMetadata?: AudioEventMetadata;
     [key: string]: unknown;
 }
 
@@ -65,6 +84,9 @@ export interface AudioEvent {
  * 统一反馈解析器：仅处理无动画的事件音效
  * - 返回 SoundKey：框架立即播放
  * - 返回 null：无音效（有动画的事件由动画层自行解析 key 并在 onImpact 播放）
+ * 
+ * 注意：框架层会自动过滤 `audioMetadata.isLocalUIEvent === true` 的事件，
+ * 这些事件不会调用 feedbackResolver，因此无需在 resolver 中手动检查。
  */
 export type FeedbackResolver = (
     event: AudioEvent,

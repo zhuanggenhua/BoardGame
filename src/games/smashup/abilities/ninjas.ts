@@ -239,7 +239,7 @@ function ninjaDisguise(ctx: AbilityContext): AbilityResult {
 
     const interaction = createSimpleChoice(
         `ninja_disguise_base_${ctx.now}`, ctx.playerId,
-        '伪装：选择一个基地', buildBaseTargetOptions(baseCandidates),
+        '伪装：选择一个基地', buildBaseTargetOptions(baseCandidates, ctx.state),
         { sourceId: 'ninja_disguise_choose_base', autoCancelOption: true },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ctx.cardUid } } }) };
@@ -532,7 +532,7 @@ export function registerNinjaInteractionHandlers(): void {
         if (candidates.length === 0) return undefined;
         const next = createSimpleChoice(
             `ninja_way_of_deception_base_${timestamp}`, playerId,
-            '选择目标基地', buildBaseTargetOptions(candidates), 'ninja_way_of_deception_choose_base',
+            '选择目标基地', buildBaseTargetOptions(candidates, state.core), 'ninja_way_of_deception_choose_base',
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: minion.defId, fromBaseIndex: baseIndex } } }), events: [] };
     });

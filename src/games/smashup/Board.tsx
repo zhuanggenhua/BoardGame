@@ -51,6 +51,7 @@ import { UndoProvider } from '../../contexts/UndoContext';
 import { TutorialSelectionGate } from '../../components/game/framework';
 import { LoadingScreen } from '../../components/system/LoadingScreen';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
+import { SmashUpDebugConfig } from './debug-config';
 import { UI_Z_INDEX } from '../../core';
 import type { PlayConstraint } from './domain/types';
 
@@ -1232,7 +1233,9 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID }) =
             </AnimatePresence>
 
             {/* DEBUG PANEL */}
-            <GameDebugPanel G={G} dispatch={dispatch} playerID={playerID} autoSwitch={isLocalMatch} />
+            <GameDebugPanel G={G} dispatch={dispatch} playerID={playerID} autoSwitch={isLocalMatch}>
+                <SmashUpDebugConfig G={G} dispatch={dispatch} />
+            </GameDebugPanel>
 
             {/* PREVIEW OVERLAY */}
             <CardMagnifyOverlay target={viewingCard} onClose={() => setViewingCard(null)} />

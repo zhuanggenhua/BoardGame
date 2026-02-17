@@ -2,10 +2,11 @@
  * 大杀四方 (Smash Up) 音频配置
  * 仅保留事件解析/规则，音效资源统一来自 registry
  */
-import type { AudioEvent, GameAudioConfig } from '../../lib/audio/types';
+import type { GameAudioConfig } from '../../lib/audio/types';
+import { createFeedbackResolver } from '../../lib/audio/defineEvents';
 import { pickRandomSoundKey } from '../../lib/audio/audioUtils';
 import type { GamePhase, SmashUpCore } from './domain/types';
-import { SU_EVENTS } from './domain/types';
+import { SU_EVENTS, SU_EVENT_TYPES } from './domain/events';
 import { SMASHUP_FACTION_IDS } from './domain/ids';
 
 type SmashUpAudioCtx = {
@@ -37,21 +38,14 @@ const STINGER_LOSE_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinge
 const SELECTION_KEY = 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none';
 const POSITIVE_SIGNAL_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
 const UPDATE_CHIME_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
-const TURN_NOTIFY_KEY = 'ui.fantasy_ui_sound_fx_pack_vol.notifications_pop_ups.popup_a_001';
-const PROMPT_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_spring_a';
 
 const MINION_PLAY_KEY = 'card.handling.decks_and_cards_sound_fx_pack.card_placing_001';
 const ACTION_PLAY_KEY = 'card.fx.decks_and_cards_sound_fx_pack.fx_magic_deck_001';
 const CARD_DRAW_KEY = 'card.handling.decks_and_cards_sound_fx_pack.card_take_001';
 const CARD_DISCARD_KEY = 'card.fx.decks_and_cards_sound_fx_pack.fx_discard_001';
-const CARD_SHUFFLE_KEY = 'card.handling.decks_and_cards_sound_fx_pack.cards_shuffle_fast_001';
-const CARD_SCROLL_KEY = 'card.handling.decks_and_cards_sound_fx_pack.cards_scrolling_001';
 
 const MOVE_KEY = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_play_1';
-const MINION_DESTROY_KEY = 'puzzle.16.tiny_pop_01';
 const POWER_GAIN_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a';
-const POWER_LOSE_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.purged_a';
-const TALENT_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_001';
 const MADNESS_KEY = 'magic.dark.32.dark_spell_01';
 
 const ZOMBIE_MINION_KEYS = [
@@ -120,9 +114,9 @@ const ROBOT_MINION_KEYS = [
     'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_a',
 ];
 const ROBOT_ACTION_KEYS = [
-    'cyberpunk.cyberpunk_sound_fx_pack_vol.machinery.mechanical_gears',
-    'cyberpunk.cyberpunk_sound_fx_pack_vol.machinery.cyber_drill',
-    'cyberpunk.cyberpunk_sound_fx_pack_vol.machinery.mind_reader_machine',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_a1',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_a2',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_b1',
 ];
 const GHOST_MINION_KEYS = [
     'magic.general.spells_variations_vol_2.haunted_wrath.magevil_haunted_wrath_01_krst_none',
@@ -130,9 +124,9 @@ const GHOST_MINION_KEYS = [
     'magic.general.spells_variations_vol_2.haunted_wrath.magevil_haunted_wrath_03_krst_none',
 ];
 const GHOST_ACTION_KEYS = [
-    'magic.general.spells_variations_vol_3.wailing_rite.magevil_wailing_rite_01_krst_none',
-    'magic.general.spells_variations_vol_3.wailing_rite.magevil_wailing_rite_02_krst_none',
-    'magic.general.spells_variations_vol_3.wailing_rite.magevil_wailing_rite_03_krst_none',
+    'magic.general.spells_variations_vol_3.wailing_rite.magevil_wailing_rite_04_krst_none',
+    'magic.general.spells_variations_vol_3.wailing_rite.magevil_wailing_rite_05_krst_none',
+    'magic.general.spells_variations_vol_3.wailing_rite.magevil_wailing_rite_06_krst_none',
 ];
 const TRICKSTER_MINION_KEYS = [
     'monster.general.khron_studio_monster_library_vol_3_assets.goblin.goblin_attack.creahmn_goblin_attack_01',
@@ -150,9 +144,9 @@ const STEAMPUNK_MINION_KEYS = [
     'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_click_c',
 ];
 const STEAMPUNK_ACTION_KEYS = [
-    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.steam_engine_speed_up_short_a',
-    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.steam_engine_speed_up_short_b',
-    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.steam_engine_speed_up_short_c',
+    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_release_a',
+    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_release_i',
+    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_pressure_a',
 ];
 const KILLER_PLANT_MINION_KEYS = [
     'ambient.khron_studio_sound_of_survival_vol_1_assets.items.item_or_weapon_hit_plants.weapmisc_item_or_weapon_hit_plants_01_krst',
@@ -243,36 +237,6 @@ const collectFactionPreloadKeys = (factionIds: string[]): string[] => {
     return Array.from(keys);
 };
 
-const EVENT_SOUND_MAP: Record<string, string> = {
-    [SU_EVENTS.FACTION_SELECTED]: SELECTION_KEY,
-    [SU_EVENTS.ALL_FACTIONS_SELECTED]: TURN_NOTIFY_KEY,
-    [SU_EVENTS.MINION_PLAYED]: MINION_PLAY_KEY,
-    [SU_EVENTS.ACTION_PLAYED]: ACTION_PLAY_KEY,
-    [SU_EVENTS.BASE_SCORED]: POSITIVE_SIGNAL_KEY,
-    [SU_EVENTS.VP_AWARDED]: POSITIVE_SIGNAL_KEY,
-    [SU_EVENTS.CARDS_DRAWN]: CARD_DRAW_KEY,
-    [SU_EVENTS.CARDS_DISCARDED]: CARD_DISCARD_KEY,
-    [SU_EVENTS.TURN_STARTED]: TURN_NOTIFY_KEY,
-    [SU_EVENTS.TURN_ENDED]: UPDATE_CHIME_KEY,
-    [SU_EVENTS.BASE_REPLACED]: UPDATE_CHIME_KEY,
-    [SU_EVENTS.DECK_RESHUFFLED]: CARD_SHUFFLE_KEY,
-    [SU_EVENTS.MINION_RETURNED]: CARD_SCROLL_KEY,
-    [SU_EVENTS.LIMIT_MODIFIED]: POSITIVE_SIGNAL_KEY,
-    [SU_EVENTS.MINION_DESTROYED]: MINION_DESTROY_KEY,
-    [SU_EVENTS.POWER_COUNTER_ADDED]: POWER_GAIN_KEY,
-    [SU_EVENTS.POWER_COUNTER_REMOVED]: POWER_LOSE_KEY,
-    [SU_EVENTS.ONGOING_ATTACHED]: ACTION_PLAY_KEY,
-    [SU_EVENTS.ONGOING_DETACHED]: CARD_DISCARD_KEY,
-    [SU_EVENTS.TALENT_USED]: TALENT_KEY,
-    [SU_EVENTS.CARD_TO_DECK_TOP]: CARD_SCROLL_KEY,
-    [SU_EVENTS.CARD_TO_DECK_BOTTOM]: CARD_SCROLL_KEY,
-    [SU_EVENTS.CARD_TRANSFERRED]: CARD_SCROLL_KEY,
-    [SU_EVENTS.CARD_RECOVERED_FROM_DISCARD]: CARD_DRAW_KEY,
-    [SU_EVENTS.HAND_SHUFFLED_INTO_DECK]: CARD_SHUFFLE_KEY,
-    [SU_EVENTS.MADNESS_DRAWN]: MADNESS_KEY,
-    [SU_EVENTS.MADNESS_RETURNED]: MADNESS_KEY,
-};
-
 const resolveFactionSound = (defId: string | undefined, cardType: 'minion' | 'action' | 'talent'): string | null => {
     if (!defId) return null;
     if (defId === 'special_madness') {
@@ -345,25 +309,8 @@ const resolveFactionSound = (defId: string | undefined, cardType: 'minion' | 'ac
     return null;
 };
 
-const resolveSmashUpSound = (event: AudioEvent): string | null => {
-    const type = event.type;
-    if (type === SU_EVENTS.MINION_MOVED) {
-        return MOVE_KEY;
-    }
-    if (type === SU_EVENTS.MINION_PLAYED) {
-        const defId = (event.payload as { defId?: string })?.defId;
-        return resolveFactionSound(defId, 'minion') ?? EVENT_SOUND_MAP[type] ?? null;
-    }
-    if (type === SU_EVENTS.ACTION_PLAYED || type === SU_EVENTS.ONGOING_ATTACHED) {
-        const defId = (event.payload as { defId?: string })?.defId;
-        return resolveFactionSound(defId, 'action') ?? EVENT_SOUND_MAP[type] ?? null;
-    }
-    if (type === SU_EVENTS.TALENT_USED) {
-        const defId = (event.payload as { defId?: string })?.defId;
-        return resolveFactionSound(defId, 'talent') ?? EVENT_SOUND_MAP[type] ?? null;
-    }
-    return EVENT_SOUND_MAP[type] ?? null;
-};
+// 创建基础 feedbackResolver（框架自动处理 events.ts 中的 sound 配置）
+const baseFeedbackResolver = createFeedbackResolver(SU_EVENTS);
 
 export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
     criticalSounds: [
@@ -519,7 +466,46 @@ export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
         ],
     },
     feedbackResolver: (event) => {
-        return resolveSmashUpSound(event);
+        const type = event.type;
+        
+        // ========== 特殊处理逻辑（覆盖框架默认）==========
+        
+        // FACTION_SELECTED：UI 层已播放，EventStream 跳过
+        if (type === SU_EVENT_TYPES.FACTION_SELECTED) {
+            return null;
+        }
+        
+        // MINION_MOVED：移动音效
+        if (type === SU_EVENT_TYPES.MINION_MOVED) {
+            return MOVE_KEY;
+        }
+        
+        // MINION_PLAYED：根据阵营选择音效
+        if (type === SU_EVENT_TYPES.MINION_PLAYED) {
+            const defId = (event.payload as { defId?: string })?.defId;
+            const factionSound = resolveFactionSound(defId, 'minion');
+            if (factionSound) return factionSound;
+            // 回退到框架默认
+        }
+        
+        // ACTION_PLAYED / ONGOING_ATTACHED：根据阵营选择音效
+        if (type === SU_EVENT_TYPES.ACTION_PLAYED || type === SU_EVENT_TYPES.ONGOING_ATTACHED) {
+            const defId = (event.payload as { defId?: string })?.defId;
+            const factionSound = resolveFactionSound(defId, 'action');
+            if (factionSound) return factionSound;
+            // 回退到框架默认
+        }
+        
+        // TALENT_USED：根据阵营选择音效
+        if (type === SU_EVENT_TYPES.TALENT_USED) {
+            const defId = (event.payload as { defId?: string })?.defId;
+            const factionSound = resolveFactionSound(defId, 'talent');
+            if (factionSound) return factionSound;
+            // 回退到框架默认
+        }
+        
+        // ========== 使用框架自动生成的默认音效 ==========
+        return baseFeedbackResolver(event);
     },
     bgmRules: [
         {

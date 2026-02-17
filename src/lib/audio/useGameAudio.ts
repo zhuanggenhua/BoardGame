@@ -364,6 +364,21 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
             if (!event) {
                 continue;
             }
+            
+            // 框架层自动过滤 UI 本地交互事件（音效已由 UI 组件本地播放）
+            if (gameId === 'dicethrone' && DT_TRACE_EVENT_TYPES.has(event.type)) {
+                const eventId = (entry as { id?: number }).id;
+                console.log(`[DT_AUDIO_TRACE] source=event_stream action=check_metadata eventId=${eventId ?? 'none'} type=${event.type} hasAudioMetadata=${!!event.audioMetadata} isLocalUIEvent=${event.audioMetadata?.isLocalUIEvent ?? 'undefined'}`);
+            }
+            
+            if (event.audioMetadata?.isLocalUIEvent) {
+                if (gameId === 'dicethrone' && DT_TRACE_EVENT_TYPES.has(event.type)) {
+                    const eventId = (entry as { id?: number }).id;
+                    console.log(`[DT_AUDIO_TRACE] source=event_stream action=skip_local_ui eventId=${eventId ?? 'none'} type=${event.type} reason=isLocalUIEvent`);
+                }
+                continue;
+            }
+            
             const key = resolveFeedback(
                 event,
                 runtimeContextRef.current,

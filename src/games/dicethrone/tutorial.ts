@@ -210,6 +210,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'advance-phase-button',
             position: 'left',
             requireAction: true,
+            allowedCommands: ['ADVANCE_PHASE'],
             advanceOnEvents: [MATCH_PHASE_DEFENSE, MATCH_PHASE_MAIN2],
         },
         {
@@ -279,7 +280,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'hand-area',
             position: 'top',
             requireAction: true,
-            allowedCommands: ['PLAY_CARD'],
+            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
             advanceOnEvents: [
                 { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-enlightenment' } },
             ],
@@ -291,6 +292,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             position: 'right',
             requireAction: true,
             allowManualSkip: false,
+            allowedCommands: ['USE_PURIFY', 'USE_TOKEN'],
             advanceOnEvents: [
                 { type: 'TOKEN_USED', match: { playerId: '0', tokenId: TOKEN_IDS.PURIFY, effectType: 'removeDebuff' } },
                 { type: 'STATUS_REMOVED', match: { targetId: '0', statusId: STATUS_IDS.KNOCKDOWN } },
@@ -304,6 +306,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'hand-area',
             position: 'top',
             requireAction: true,
+            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
             advanceOnEvents: [
                 { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-inner-peace' } },
             ],
@@ -314,6 +317,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'hand-area',
             position: 'top',
             requireAction: true,
+            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
             advanceOnEvents: [
                 { type: 'ABILITY_REPLACED', match: { playerId: '0', oldAbilityId: 'meditation' } },
             ],

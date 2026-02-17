@@ -502,7 +502,7 @@ function buildMoveToBaseInteraction(
     if (candidates.length === 0) return null;
     const interaction = createSimpleChoice(
         `${interactionIdPrefix}_base_${now}`, playerId,
-        '选择目标基地', buildBaseTargetOptions(candidates), sourceId,
+        '选择目标基地', buildBaseTargetOptions(candidates, state), sourceId,
     );
     return {
         ...interaction,
@@ -634,7 +634,7 @@ export function registerPirateInteractionHandlers(): void {
         if (candidates.length === 0) return { state, events: [] };
         const next = createSimpleChoice(
             `pirate_sea_dogs_from_${timestamp}`, playerId,
-            '选择来源基地（移动该派系所有对手随从）', buildBaseTargetOptions(candidates), 'pirate_sea_dogs_choose_from',
+            '选择来源基地（移动该派系所有对手随从）', buildBaseTargetOptions(candidates, state.core), 'pirate_sea_dogs_choose_from',
         );
         (next.data as any).continuationContext = { factionId };
         return { state: queueInteraction(state, next), events: [] };
@@ -654,7 +654,7 @@ export function registerPirateInteractionHandlers(): void {
         if (destCandidates.length === 0) return { state, events: [] };
         const next = createSimpleChoice(
             `pirate_sea_dogs_to_${timestamp}`, playerId,
-            '选择目标基地', buildBaseTargetOptions(destCandidates), 'pirate_sea_dogs_choose_to',
+            '选择目标基地', buildBaseTargetOptions(destCandidates, state.core), 'pirate_sea_dogs_choose_to',
         );
         (next.data as any).continuationContext = { factionId: ctx.factionId, fromBase };
         return { state: queueInteraction(state, next), events: [] };

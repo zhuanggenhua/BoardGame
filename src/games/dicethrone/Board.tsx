@@ -47,7 +47,6 @@ import { useSpectatorMoves } from '../../engine';
 // 游戏特定 Hooks
 import { useInteractionState } from './hooks/useInteractionState';
 import { useAnimationEffects } from './hooks/useAnimationEffects';
-import { useDiceInteractionConfig } from './hooks/useDiceInteractionConfig';
 import { useCardSpotlight } from './hooks/useCardSpotlight';
 import { useActiveModifiers } from './hooks/useActiveModifiers';
 import { useUIState } from './hooks/useUIState';
@@ -263,7 +262,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     // 使用 useInteractionState Hook 管理交互状态（从 sys.interaction 读取）
     const sysInteraction = rawG.sys.interaction?.current;
-    const pendingInteraction: PendingInteraction | undefined = sysInteraction?.kind === 'dt:card-interaction'
+    const pendingInteraction: PendingInteraction | undefined = sysInteraction?.kind?.startsWith('dt:')
         ? sysInteraction.data as PendingInteraction
         : undefined;
     const { localState: localInteraction, handlers: interactionHandlers } = useInteractionState(pendingInteraction);
@@ -473,25 +472,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             onCancelRerollSelect: () => setRerollSelectingAction(null),
         };
     }, [playerPassives, passiveActionUsability, player.resources, rerollSelectingAction, handlePassiveActionClick]);
-
-    // 使用 useDiceInteractionConfig Hook 生成骰子交互配置（简化132行代码）
-    const diceInteractionConfig = useDiceInteractionConfig({
-        pendingInteraction,
-        isInteractionOwner,
-        localState: localInteraction,
-        dice: G.dice,
-        engineMoves: {
-            modifyDie: engineMoves.modifyDie,
-            confirmInteraction: engineMoves.confirmInteraction,
-        },
-        onCancel: handleCancelInteraction,
-        setRerollingDiceIds,
-        onSelectDieLocal: interactionHandlers.selectDie,
-        onModifyDieLocal: (dieId, newValue) => {
-            interactionHandlers.modifyDie(dieId, newValue, G.dice);
-            engineMoves.modifyDie(dieId, newValue);
-        },
-    });
 
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
@@ -977,7 +957,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         }}
                         discardHighlighted={discardHighlighted}
                         sellButtonVisible={sellButtonVisible}
-                        diceInteractionConfig={diceInteractionConfig}
+                        interaction={pendingInteraction}
+                        dispatch={dispatch}
                         activeModifiers={activeModifiers}
                         passiveAbilityProps={passiveAbilityProps}
                     />

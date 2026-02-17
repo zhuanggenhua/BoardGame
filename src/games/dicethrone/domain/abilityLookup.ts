@@ -86,6 +86,31 @@ export function playerAbilityHasDamage(
 }
 
 /**
+ * 计算技能的预期基础伤害（用于暴击门控判断）
+ * 只计算显式 damage action 的 value，不包括 rollDie/custom action 的动态伤害
+ * 
+ * 注意：这是一个保守估计，实际伤害可能更高（如 rollDie 的 bonusDamage）
+ */
+export function getPlayerAbilityBaseDamage(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    abilityId: string
+): number {
+    const effects = getPlayerAbilityEffects(state, playerId, abilityId);
+    let totalDamage = 0;
+    
+    for (const effect of effects) {
+        if (!effect.action) continue;
+        // 只计算显式 damage action
+        if (effect.action.type === 'damage' && typeof effect.action.value === 'number') {
+            totalDamage += effect.action.value;
+        }
+    }
+    
+    return totalDamage;
+}
+
+/**
  * 判断该技能（所属的 AbilityDef）是否包含指定标签
  * 注意：标签目前定义在 AbilityDef 上，而不是 Variant 上。
  */

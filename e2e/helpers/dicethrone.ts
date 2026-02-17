@@ -1,151 +1,382 @@
 /**
- * DiceThrone E2E 测试专用工具函数
- *
- * 包含：调试面板操作、角色状态注入、在线对局创建、教学流程辅助。
- * 通用函数（locale/audio/storage/server）从 ./common 导入。
+ * DiceThrone E2E 测试辅助函数
  */
 
 import { expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import {
-    initContext,
     getGameServerBaseURL,
+    blockAudioRequests,
+    setEnglishLocale,
+    resetMatchStorage,
+    disableTutorial,
+    disableAudio,
+    dismissViteOverlay,
+    waitForHomeGameList,
+    dismissLobbyConfirmIfNeeded,
     ensureGameServerAvailable,
-    waitForMatchAvailable,
-    seedMatchCredentials,
-    joinMatchViaAPI,
+    initContext,
 } from './common';
 
-export const GAME_NAME = 'dicethrone';
+const GAME_NAME = 'dicethrone';
 
 // ============================================================================
-// 棋盘就绪检测
+// API 交互
 // ============================================================================
 
-/** 等待棋盘 UI 就绪（手牌区/骰子区/教学覆盖层任一可见） */
-export const waitForBoardReady = async (page: Page, timeout = 20000) => {
-    await page.waitForFunction(
-        () => {
-            const selectors = [
-                '[data-tutorial-id="advance-phase-button"]',
-                '[data-tutorial-id="dice-roll-button"]',
-                '[data-tutorial-id="hand-area"]',
-            ];
-            const hasBoard = selectors.some((sel) => {
-                const el = document.querySelector(sel) as HTMLElement | null;
-                if (!el) return false;
-                const style = window.getComputedStyle(el);
-                if (!style || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
-                const rects = el.getClientRects();
-                return rects.length > 0 && rects[0].width > 0 && rects[0].height > 0;
-            });
-            if (hasBoard) return true;
-            if (document.querySelector('[data-tutorial-step]')) return true;
-            return false;
-        },
-        { timeout },
-    );
-};
-
-/** 等待主要阶段 (1) 可见 */
-export const waitForMainPhase = async (page: Page, timeout = 20000) => {
-    await expect(page.getByText(/Main Phase \(1\)|主要阶段 \(1\)/)).toBeVisible({ timeout });
-};
-
-// ============================================================================
-// 角色选择
-// ============================================================================
-
-/** 检查角色选择界面是否可见 */
-export const isCharacterSelectionVisible = async (page: Page) => {
-    const heading = page.getByText(/Select Your Hero|选择你的英雄/i).first();
-    if (await heading.isVisible({ timeout: 1500 }).catch(() => false)) return true;
-    return await page.locator('[data-char-id]').first().isVisible({ timeout: 1500 }).catch(() => false);
-};
-
-// ============================================================================
-// 大厅 / 房间创建
-// ============================================================================
-
-/** 打开 DiceThrone 游戏弹窗 */
-export const openDiceThroneModal = async (page: Page) => {
-    await page.goto('/?game=dicethrone', { waitUntil: 'domcontentloaded' });
-    const modalRoot = page.locator('#modal-root');
-    const modalHeading = modalRoot.getByRole('heading', { name: /Dice Throne|王权骰铸/i }).first();
-    const modalReadyButton = modalRoot
-        .locator('button:visible', { hasText: /Create Room|创建房间|Return to match|返回当前对局/i })
-        .first();
-    const gameCard = page.locator('[data-game-id="dicethrone"]').first();
-
-    const headingVisible = await modalHeading.isVisible({ timeout: 1500 }).catch(() => false);
-    const buttonVisible = await modalReadyButton.isVisible({ timeout: 1500 }).catch(() => false);
-    if (headingVisible || buttonVisible) return;
-
-    await expect(gameCard).toBeVisible({ timeout: 15000 });
-    await gameCard.evaluate((node) => (node as HTMLElement | null)?.click());
-
-    await expect
-        .poll(
-            async () => {
-                const h = await modalHeading.isVisible().catch(() => false);
-                const b = await modalReadyButton.isVisible().catch(() => false);
-                return h || b;
-            },
-            { timeout: 20000 },
-        )
-        .toBe(true);
-};
-
-/** 通过 API 创建房间并注入凭据 */
-export const createRoomViaAPI = async (page: Page): Promise<string | null> => {
+export const createDTRoomViaAPI = async (page: Page, guestId?: string): Promise<string | null> => {
     try {
-        const guestId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        await page.addInitScript(
-            (id) => {
-                localStorage.setItem('guest_id', id);
-                sessionStorage.setItem('guest_id', id);
-                document.cookie = `bg_guest_id=${encodeURIComponent(id)}; path=/; SameSite=Lax`;
-            },
-            guestId,
-        );
-
-        const res = await page.request.post(
-            `${getGameServerBaseURL()}/games/dicethrone/create`,
-            { data: { numPlayers: 2, setupData: { guestId, ownerKey: `guest:${guestId}`, ownerType: 'guest' } } },
-        );
-        if (!res.ok()) return null;
-        const resData = (await res.json().catch(() => null)) as { matchID?: string } | null;
-        const matchID = resData?.matchID;
-        if (!matchID) return null;
-
-        const claimRes = await page.request.post(
-            `${getGameServerBaseURL()}/games/dicethrone/${matchID}/claim-seat`,
-            { data: { playerID: '0', playerName: 'Host-E2E', guestId } },
-        );
-        if (!claimRes.ok()) return null;
-        const claimData = (await claimRes.json().catch(() => null)) as { playerCredentials?: string } | null;
-        const credentials = claimData?.playerCredentials;
-        if (!credentials) return null;
-
-        await seedMatchCredentials(page, GAME_NAME, matchID, '0', credentials);
-        return matchID;
+        const actualGuestId = guestId ?? `dt_e2e_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        const gameServerBaseURL = getGameServerBaseURL();
+        const url = `${gameServerBaseURL}/games/${GAME_NAME}/create`;
+        
+        const response = await page.request.post(url, {
+            data: { numPlayers: 2, setupData: { guestId: actualGuestId } },
+        });
+        
+        if (!response.ok()) return null;
+        const data = (await response.json().catch(() => null)) as { matchID?: string } | null;
+        return data?.matchID ?? null;
     } catch {
         return null;
     }
 };
 
-// ============================================================================
-// 调试面板操作
-// ============================================================================
-
-/** 打开调试面板 */
-export const ensureDebugPanelOpen = async (page: Page) => {
-    const panel = page.getByTestId('debug-panel');
-    if (await panel.isVisible().catch(() => false)) return;
-    await page.getByTestId('debug-toggle').click();
-    await expect(panel).toBeVisible({ timeout: 5000 });
+export const joinDTMatchViaAPI = async (
+    page: Page,
+    matchId: string,
+    playerId: string,
+    playerName: string,
+    guestId?: string,
+): Promise<string | null> => {
+    const gameServerBaseURL = getGameServerBaseURL();
+    const url = `${gameServerBaseURL}/games/${GAME_NAME}/${matchId}/join`;
+    
+    const response = await page.request.post(url, {
+        data: {
+            playerID: playerId,
+            playerName,
+            ...(guestId ? { data: { guestId } } : {}),
+        },
+    });
+    
+    if (!response.ok()) return null;
+    const data = (await response.json().catch(() => null)) as { playerCredentials?: string } | null;
+    return data?.playerCredentials ?? null;
 };
 
-/** 关闭调试面板 */
+export const seedDTMatchCredentials = async (
+    context: BrowserContext,
+    matchId: string,
+    playerId: string,
+    credentials: string,
+) => {
+    await context.addInitScript(
+        ({ matchId, playerId, credentials }) => {
+            const payload = {
+                matchID: matchId,
+                playerID: playerId,
+                credentials,
+                gameName: 'dicethrone',
+                updatedAt: Date.now(),
+            };
+            localStorage.setItem(`match_creds_${matchId}`, JSON.stringify(payload));
+            window.dispatchEvent(new Event('match-credentials-changed'));
+        },
+        { matchId, playerId, credentials },
+    );
+};
+
+// ============================================================================
+// 游戏交互
+// ============================================================================
+
+export const waitForCharacterSelection = async (page: Page, timeout = 20000) => {
+    await expect(page.locator('h2').filter({ hasText: /选择你的英雄|Select Your Hero/i })).toBeVisible({ timeout });
+};
+
+export const selectCharacter = async (page: Page, characterId: string) => {
+    const characterCard = page.locator(`[data-character-id="${characterId}"]`);
+    await expect(characterCard).toBeVisible({ timeout: 8000 });
+    await characterCard.click();
+    
+    // DiceThrone 的角色选择不需要确认按钮，点击后直接选中
+    // 等待一小段时间让状态更新
+    await page.waitForTimeout(500);
+};
+
+export const readyAndStartGame = async (hostPage: Page, guestPage: Page) => {
+    // Guest 点击准备按钮
+    const guestReadyButton = guestPage.getByRole('button', { name: /Ready|准备/i });
+    await expect(guestReadyButton).toBeVisible({ timeout: 5000 });
+    await guestReadyButton.click();
+    
+    // 等待 Guest 页面状态更新（显示 "Ready, Waiting..." 或类似文本）
+    await guestPage.waitForTimeout(1000);
+    
+    // 等待 Host 页面接收到 Guest 的 Ready 状态
+    // 检查 Host 页面是否仍然在角色选择界面（而不是被重定向）
+    await hostPage.waitForTimeout(2000);
+    
+    // 验证 Host 页面仍然在角色选择界面
+    const heroSelectionTitle = hostPage.locator('h2').filter({ hasText: /选择你的英雄|Select Your Hero/i });
+    const isStillOnSelection = await heroSelectionTitle.isVisible({ timeout: 1000 }).catch(() => false);
+    
+    if (!isStillOnSelection) {
+        // 如果不在角色选择界面，说明页面被重定向了
+        const currentUrl = hostPage.url();
+        const pageContent = await hostPage.content();
+        throw new Error(`Host 页面不在角色选择界面。当前 URL: ${currentUrl}\n页面内容片段: ${pageContent.substring(0, 500)}`);
+    }
+
+    // Host 点击开始游戏按钮 - 使用更宽松的选择器
+    // 尝试多种可能的文本匹配
+    const hostStartButton = hostPage.getByRole('button', { name: /Start Game|开始游戏|Press.*Start|按.*开始/i });
+    
+    // 等待按钮出现并启用
+    await expect(hostStartButton).toBeVisible({ timeout: 8000 });
+    await expect(hostStartButton).toBeEnabled({ timeout: 3000 });
+    
+    await hostStartButton.click();
+    await hostPage.waitForTimeout(1000);
+};
+
+export const waitForGameBoard = async (page: Page, timeout = 30000) => {
+    // 等待游戏棋盘的关键元素出现（使用 tutorial-id 定位骰子投掷按钮）
+    await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toBeVisible({ timeout });
+};
+
+// ============================================================================
+// 双人对局设置
+// ============================================================================
+
+export interface DTMatchSetup {
+    hostContext: BrowserContext;
+    guestContext: BrowserContext;
+    hostPage: Page;
+    guestPage: Page;
+    matchId: string;
+}
+
+export const setupDTOnlineMatch = async (
+    browser: Browser,
+    baseURL: string | undefined,
+): Promise<DTMatchSetup | null> => {
+    const hostContext = await browser.newContext({ baseURL });
+    await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+    const hostPage = await hostContext.newPage();
+
+    await hostPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+
+    if (!(await ensureGameServerAvailable(hostPage))) return null;
+
+    const hostGuestId = `e2e_host_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const matchId = await createDTRoomViaAPI(hostPage, hostGuestId);
+    if (!matchId) return null;
+
+    const hostCredentials = await joinDTMatchViaAPI(hostPage, matchId, '0', `Host-${Date.now()}`, hostGuestId);
+    if (!hostCredentials) return null;
+
+    await seedDTMatchCredentials(hostContext, matchId, '0', hostCredentials);
+    await hostPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
+    await waitForCharacterSelection(hostPage);
+
+    const guestContext = await browser.newContext({ baseURL });
+    await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+    const guestPage = await guestContext.newPage();
+
+    const guestGuestId = `e2e_guest_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const guestCredentials = await joinDTMatchViaAPI(hostPage, matchId, '1', `Guest-${Date.now()}`, guestGuestId);
+    if (!guestCredentials) return null;
+
+    await seedDTMatchCredentials(guestContext, matchId, '1', guestCredentials);
+    await guestPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
+    await waitForCharacterSelection(guestPage);
+
+    return { hostContext, guestContext, hostPage, guestPage, matchId };
+};
+
+export const cleanupDTMatch = async (setup: DTMatchSetup) => {
+    await setup.guestContext.close();
+    await setup.hostContext.close();
+};
+
+
+// ============================================================================
+// 状态操作（作弊命令）
+// ============================================================================
+
+/**
+ * 设置骰子值（使用作弊命令）
+ */
+export const applyDiceValues = async (page: Page, values: number[]) => {
+    await page.evaluate((vals) => {
+        const dispatch = (window as any).__BG_DISPATCH__;
+        if (dispatch) {
+            dispatch({
+                type: 'SYS_CHEAT_SET_DICE',
+                payload: { diceValues: vals },
+            });
+        }
+    }, values);
+    await page.waitForTimeout(300);
+};
+
+/**
+ * 推进到攻击掷骰阶段
+ */
+export const advanceToOffensiveRoll = async (page: Page) => {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+        const cancelBtn = page.getByRole('button', { name: /Cancel.*Select Ability|取消/i });
+        if (await cancelBtn.isVisible({ timeout: 300 }).catch(() => false)) {
+            await cancelBtn.click();
+            await page.waitForTimeout(300);
+        }
+        
+        const phaseBanner = page.getByTestId('dt-phase-banner');
+        const phaseText = await phaseBanner.textContent().catch(() => '');
+        if (phaseText?.includes('进攻投掷') || phaseText?.includes('Offensive Roll')) {
+            return;
+        }
+        
+        const nextPhaseButton = page.locator('[data-tutorial-id="advance-phase-button"]');
+        if (await nextPhaseButton.isEnabled({ timeout: 1000 }).catch(() => false)) {
+            await nextPhaseButton.click();
+            await page.waitForTimeout(800);
+        } else {
+            await page.waitForTimeout(300);
+        }
+    }
+};
+
+/**
+ * 读取 core 状态
+ */
+export const readCoreState = async (page: Page) => {
+    return await page.evaluate(() => {
+        const state = (window as any).__BG_STATE__;
+        return state;
+    });
+};
+
+/**
+ * 直接注入 core 状态（使用作弊命令）
+ */
+export const applyCoreStateDirect = async (page: Page, coreState: unknown) => {
+    await page.evaluate((state) => {
+        const dispatch = (window as any).__BG_DISPATCH__;
+        if (dispatch) {
+            dispatch({
+                type: 'SYS_CHEAT_SET_STATE',
+                payload: { state },
+            });
+        }
+    }, coreState);
+    await page.waitForTimeout(500);
+};
+
+/**
+ * 通过 dispatch 修改状态
+ */
+export const patchCoreViaDispatch = async (page: Page, patch: unknown) => {
+    await page.evaluate((p) => {
+        const dispatch = (window as any).__BG_DISPATCH__;
+        if (dispatch) {
+            dispatch({
+                type: 'SYS_CHEAT_MERGE_STATE',
+                payload: { fields: p },
+            });
+        }
+    }, patch);
+    await page.waitForTimeout(300);
+};
+
+// ============================================================================
+// 其他辅助函数
+// ============================================================================
+
+/**
+ * 等待主要阶段
+ */
+export const waitForMainPhase = async (page: Page, timeout = 20000) => {
+    await expect(page.getByText(/Main Phase|主要阶段/i)).toBeVisible({ timeout });
+};
+
+/**
+ * 等待棋盘准备就绪
+ */
+export const waitForBoardReady = async (page: Page, timeout = 30000) => {
+    await waitForGameBoard(page, timeout);
+};
+
+/**
+ * 从 URL 获取玩家 ID
+ */
+export const getPlayerIdFromUrl = (page: Page): string | null => {
+    const url = page.url();
+    const match = url.match(/playerID=(\d+)/);
+    return match ? match[1] : null;
+};
+
+/**
+ * 设置玩家 token
+ */
+export const setPlayerToken = async (page: Page, playerId: string, tokenId: string, amount: number) => {
+    await page.evaluate(({ pid, tid, amt }) => {
+        const dispatch = (window as any).__BG_DISPATCH__;
+        if (dispatch) {
+            dispatch({
+                type: 'SYS_CHEAT_SET_TOKEN',
+                payload: {
+                    playerId: pid,
+                    tokenId: tid,
+                    amount: amt,
+                },
+            });
+        }
+    }, { pid: playerId, tid: tokenId, amt: amount });
+    await page.waitForTimeout(300);
+};
+
+/**
+ * 获取模态框容器（通过标题）
+ */
+export const getModalContainerByHeading = (page: Page, heading: string | RegExp) => {
+    return page.locator('[role="dialog"]').filter({ has: page.getByRole('heading', { name: heading }) });
+};
+
+/**
+ * 断言手牌可见
+ */
+export const assertHandCardsVisible = async (page: Page) => {
+    const handArea = page.getByTestId('dt-hand-area');
+    await expect(handArea).toBeVisible({ timeout: 5000 });
+    const cards = handArea.locator('[data-card-id]');
+    await expect(cards.first()).toBeVisible({ timeout: 3000 });
+};
+
+/**
+ * 等待教学步骤
+ */
+export const waitForTutorialStep = async (page: Page, stepId: string, timeout = 10000) => {
+    await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({ timeout });
+};
+
+/**
+ * 分发本地命令
+ */
+export const dispatchLocalCommand = async (page: Page, command: { type: string; payload?: unknown }) => {
+    await page.evaluate((cmd) => {
+        const dispatch = (window as any).__BG_DISPATCH__;
+        if (dispatch) {
+            dispatch(cmd);
+        }
+    }, command);
+    await page.waitForTimeout(300);
+};
+
+/**
+ * 关闭调试面板（如果打开）
+ */
 export const closeDebugPanelIfOpen = async (page: Page) => {
     const panel = page.getByTestId('debug-panel');
     if (await panel.isVisible().catch(() => false)) {
@@ -154,481 +385,7 @@ export const closeDebugPanelIfOpen = async (page: Page) => {
     }
 };
 
-/** 切换到调试面板的控制 Tab */
-export const ensureDebugControlsTab = async (page: Page) => {
-    await ensureDebugPanelOpen(page);
-    const controlsTab = page.getByRole('button', { name: /⚙️|System|系统/i });
-    if (await controlsTab.isVisible().catch(() => false)) await controlsTab.click();
-};
-
-/** 切换到调试面板的状态 Tab */
-export const ensureDebugStateTab = async (page: Page) => {
-    await ensureDebugPanelOpen(page);
-    const stateTab = page.getByTestId('debug-tab-state');
-    if (await stateTab.isVisible().catch(() => false)) await stateTab.click();
-};
-
-/** 读取当前 core 状态 */
-export const readCoreState = async (page: Page) => {
-    await ensureDebugStateTab(page);
-    const raw = await page.getByTestId('debug-state-json').innerText();
-    const parsed = JSON.parse(raw) as { core?: Record<string, unknown> };
-    return JSON.parse(JSON.stringify(parsed?.core ?? parsed)) as Record<string, unknown>;
-};
-
-/** 写入 core 状态（通过 updater 函数） */
-export const applyCoreState = async (
-    page: Page,
-    updater: (core: Record<string, unknown>) => Record<string, unknown>,
-) => {
-    const core = await readCoreState(page);
-    const nextCore = updater(core);
-    const stateInput = page.getByTestId('debug-state-input');
-    if (!await stateInput.isVisible().catch(() => false)) {
-        await page.getByTestId('debug-state-toggle-input').click();
-    }
-    await stateInput.fill(JSON.stringify(nextCore));
-    await page.getByTestId('debug-state-apply').click();
-    await closeDebugPanelIfOpen(page);
-};
-
-/** 直接写入 core 状态对象 */
-export const applyCoreStateDirect = async (page: Page, coreState: unknown) => {
-    await ensureDebugStateTab(page);
-    await page.getByTestId('debug-state-toggle-input').click();
-    const input = page.getByTestId('debug-state-input');
-    await expect(input).toBeVisible({ timeout: 3000 });
-    await input.fill(JSON.stringify(coreState));
-    await page.getByTestId('debug-state-apply').click();
-    await expect(input).toBeHidden({ timeout: 5000 }).catch(() => {});
-};
-
-/** 设置骰子值 */
-export const applyDiceValues = async (page: Page, values: number[]) => {
-    await ensureDebugControlsTab(page);
-    const diceSection = page.getByTestId('dt-debug-dice');
-    const diceInputs = diceSection.locator('input[type="number"]');
-    await expect(diceInputs).toHaveCount(5);
-    for (let i = 0; i < 5; i += 1) {
-        await diceInputs.nth(i).fill(String(values[i] ?? 1));
-    }
-    await diceSection.getByTestId('dt-debug-dice-apply').click();
-    await closeDebugPanelIfOpen(page);
-};
-
-// ============================================================================
-// 玩家状态操作
-// ============================================================================
-
-/** 设置玩家 CP 值 */
-export const setPlayerCp = async (page: Page, playerId: string, value: number) => {
-    await applyCoreState(page, (core) => {
-        const players = core.players as Record<string, Record<string, unknown>> | undefined;
-        const player = players?.[playerId];
-        if (!player) return core;
-        player.resources = (player.resources as Record<string, unknown>) ?? {};
-        (player.resources as Record<string, unknown>).cp = value;
-        return core;
-    });
-};
-
-/** 设置玩家 Token 值 */
-export const setPlayerToken = async (page: Page, playerId: string, tokenId: string, value: number) => {
-    await applyCoreState(page, (core) => {
-        const players = core.players as Record<string, Record<string, unknown>> | undefined;
-        const player = players?.[playerId];
-        if (!player) return core;
-        player.tokens = (player.tokens as Record<string, unknown>) ?? {};
-        (player.tokens as Record<string, number>)[tokenId] = value;
-        return core;
-    });
-};
-
-/** 确保指定卡牌在手牌中 */
-export const ensureCardInHand = async (page: Page, cardId: string, playerId = '0') => {
-    await applyCoreState(page, (core) => {
-        const players = core.players as Record<string, Record<string, unknown>> | undefined;
-        const player = players?.[playerId];
-        if (!player) return core;
-        const takeCard = (list: Array<{ id?: string }>) => {
-            const idx = list.findIndex((c) => c?.id === cardId);
-            if (idx === -1) return null;
-            return list.splice(idx, 1)[0];
-        };
-        player.hand = (player.hand as Array<{ id?: string }>) ?? [];
-        player.deck = (player.deck as Array<{ id?: string }>) ?? [];
-        player.discard = (player.discard as Array<{ id?: string }>) ?? [];
-        const card =
-            takeCard(player.hand as Array<{ id?: string }>) ??
-            takeCard(player.deck as Array<{ id?: string }>) ??
-            takeCard(player.discard as Array<{ id?: string }>);
-        if (card) (player.hand as Array<{ id?: string }>).push(card);
-        return core;
-    });
-};
-
-// ============================================================================
-// 交互辅助
-// ============================================================================
-
-/** 从 URL 获取 playerID */
-export const getPlayerIdFromUrl = (page: Page, fallback: string) => {
-    try {
-        return new URL(page.url()).searchParams.get('playerID') ?? fallback;
-    } catch {
-        return fallback;
-    }
-};
-
-/** 推进到攻击掷骰阶段 */
-export const advanceToOffensiveRoll = async (page: Page, timeout = 15000) => {
-    const offensivePhaseText = page.getByText(/Offensive Roll|进攻掷骰/i);
-    const nextPhaseButton = page.locator('[data-tutorial-id="advance-phase-button"]');
-    const deadline = Date.now() + timeout;
-    while (Date.now() < deadline) {
-        if (await offensivePhaseText.isVisible().catch(() => false)) return;
-        if (await nextPhaseButton.isEnabled().catch(() => false)) {
-            await nextPhaseButton.click();
-            await page.waitForTimeout(500);
-            continue;
-        }
-        await page.waitForTimeout(300);
-    }
-    throw new Error('未能在超时内到达 offensiveRoll 阶段');
-};
-
-/** 拖拽卡牌向上（出牌） */
-export const dragCardUp = async (page: Page, cardId: string, distance = 220) => {
-    const card = page.locator(`[data-card-key^="${cardId}-"]`).first();
-    await expect(card).toBeVisible({ timeout: 15000 });
-    const box = await card.boundingBox();
-    if (!box) throw new Error(`卡牌 ${cardId} 没有 boundingBox`);
-    const startX = box.x + box.width / 2;
-    const startY = box.y + box.height / 2;
-    await page.mouse.move(startX, startY);
-    await page.mouse.down();
-    await page.mouse.move(startX, startY - distance, { steps: 10 });
-    await page.mouse.up();
-};
-
 /**
- * 通过 LocalGameProvider 暴露的 dispatch 直接分发命令（本地/教程模式专用）。
- * 当 framer-motion 拖拽在 Playwright 中不可靠时，用此函数替代 dragCardUp。
+ * 设置在线对局（旧版兼容函数）
  */
-export const dispatchLocalCommand = async (
-    page: Page,
-    commandType: string,
-    payload: Record<string, unknown> = {},
-) => {
-    await page.evaluate(
-        ({ type, pl }) => {
-            const w = window as Window & { __BG_LOCAL_DISPATCH__?: (type: string, payload: unknown) => void };
-            if (!w.__BG_LOCAL_DISPATCH__) throw new Error('__BG_LOCAL_DISPATCH__ 未暴露，非本地/教程模式');
-            w.__BG_LOCAL_DISPATCH__(type, pl);
-        },
-        { type: commandType, pl: payload },
-    );
-};
-
-/**
- * 通过 dispatch SYS_CHEAT_SET_STATE 修改 core 状态（本地/教程模式专用）。
- * 避免使用 debug panel UI 交互（在某些场景下 debug panel 交互不稳定）。
- * patches 格式：{ "players.0.tokens.purify": 1, "players.0.resources.cp": 2 }
- */
-export const patchCoreViaDispatch = async (
-    page: Page,
-    patches: Record<string, unknown>,
-) => {
-    await page.evaluate(
-        (p) => {
-            const w = window as Window & {
-                __BG_LOCAL_DISPATCH__?: (type: string, payload: unknown) => void;
-                __BG_LOCAL_STATE__?: { core?: Record<string, unknown> };
-            };
-            if (!w.__BG_LOCAL_DISPATCH__) throw new Error('__BG_LOCAL_DISPATCH__ 未暴露');
-            if (!w.__BG_LOCAL_STATE__) throw new Error('__BG_LOCAL_STATE__ 未暴露');
-            const core = JSON.parse(JSON.stringify(w.__BG_LOCAL_STATE__.core ?? {})) as Record<string, unknown>;
-            // 应用 patches（支持点号路径）
-            for (const [path, value] of Object.entries(p)) {
-                const parts = path.split('.');
-                let obj = core as Record<string, unknown>;
-                for (let i = 0; i < parts.length - 1; i++) {
-                    if (obj[parts[i]] === undefined || obj[parts[i]] === null) {
-                        obj[parts[i]] = {};
-                    }
-                    obj = obj[parts[i]] as Record<string, unknown>;
-                }
-                obj[parts[parts.length - 1]] = value;
-            }
-            w.__BG_LOCAL_DISPATCH__('SYS_CHEAT_SET_STATE', { state: core });
-        },
-        patches,
-    );
-};
-
-/** 等待教学步骤 */
-export const waitForTutorialStep = async (page: Page, stepId: string, timeout = 15000) => {
-    await page.waitForFunction(
-        (target) => {
-            const el = document.querySelector('[data-tutorial-step]');
-            return el && el.getAttribute('data-tutorial-step') === target;
-        },
-        stepId,
-        { timeout },
-    );
-};
-
-/** 关闭 Token 响应弹窗 */
-export const closeTokenResponseModal = async (modal: ReturnType<Page['locator']>) => {
-    const button = modal.getByRole('button', { name: /Skip|Confirm|跳过|确认/i }).first();
-    if (await button.isVisible().catch(() => false)) await button.click({ force: true });
-};
-
-/** 通过 heading 定位弹窗容器 */
-export const getModalContainerByHeading = async (page: Page, heading: RegExp, timeout = 8000) => {
-    const headingLocator = page.getByRole('heading', { name: heading });
-    await expect(headingLocator).toBeVisible({ timeout });
-    return headingLocator.locator('..').locator('..');
-};
-
-/** 尝试点击 Pass 按钮 */
-export const maybePassResponse = async (page: Page) => {
-    const passButton = page.getByRole('button', { name: /Pass|跳过/i });
-    if (await passButton.isVisible()) {
-        await passButton.click();
-        return true;
-    }
-    return false;
-};
-
-/** 检查房间是否已不存在 */
-export const isRoomMissing = async (page: Page) => {
-    return await page
-        .getByText(/房间不存在|Returning to lobby|Room not found/i)
-        .first()
-        .isVisible({ timeout: 500 })
-        .catch(() => false);
-};
-
-/** 验证手牌数量和可见性 */
-export const assertHandCardsVisible = async (page: Page, expectedCount: number, label: string) => {
-    const handArea = page.locator('[data-tutorial-id="hand-area"]');
-    await expect(handArea, `[${label}] 手牌区域未显示`).toBeVisible();
-    const handCards = page.locator('[data-card-key]');
-    let attempts = 0;
-    const maxAttempts = 15;
-    while (attempts < maxAttempts) {
-        const cardCount = await handCards.count();
-        if (cardCount === expectedCount) {
-            const firstCard = handCards.first();
-            const firstOpacity = await firstCard.evaluate((el) => window.getComputedStyle(el).opacity);
-            const firstBox = await firstCard.boundingBox();
-            if (parseFloat(firstOpacity) === 0) throw new Error(`[${label}] 手牌透明度为 0`);
-            if (!firstBox || firstBox.width === 0 || firstBox.height === 0) throw new Error(`[${label}] 手牌没有尺寸`);
-            return;
-        }
-        await page.waitForTimeout(1000);
-        attempts++;
-    }
-    const finalCount = await handCards.count();
-    throw new Error(`[${label}] 期望 ${expectedCount} 张手牌，实际 ${finalCount} 张`);
-};
-
-// ============================================================================
-// 在线对局创建（双人）
-// ============================================================================
-
-export interface DiceThroneMatchSetup {
-    hostPage: Page;
-    guestPage: Page;
-    hostContext: BrowserContext;
-    guestContext: BrowserContext;
-    autoStarted: boolean;
-}
-
-/** 检测对局启动状态 */
-export const detectMatchStartState = async (
-    page: Page,
-    timeout = 20000,
-): Promise<'started' | 'selection' | 'unknown'> => {
-    const deadline = Date.now() + timeout;
-    while (Date.now() < deadline) {
-        if (await isRoomMissing(page).catch(() => false)) return 'unknown';
-        const inMainPhase = await page
-            .getByText(/Main Phase \(1\)|主要阶段 \(1\)/)
-            .isVisible({ timeout: 500 })
-            .catch(() => false);
-        if (inMainPhase) return 'started';
-        if (await isCharacterSelectionVisible(page)) return 'selection';
-        await page.waitForTimeout(500);
-    }
-    return 'unknown';
-};
-
-/** 等待房间就绪（角色选择/主阶段/手牌任一出现） */
-export const waitForRoomReady = async (page: Page, timeout = 45000) => {
-    const deadline = Date.now() + timeout;
-    let iteration = 0;
-    let reloaded = false;
-    while (Date.now() < deadline) {
-        if (await isRoomMissing(page)) throw new Error('房间不存在');
-        const hasMainPhase = await page.getByText(/Main Phase \(1\)|主要阶段 \(1\)/).first().isVisible({ timeout: 500 }).catch(() => false);
-        if (hasMainPhase) return;
-        const hasSelection = await page.getByText(/Select Your Hero|选择你的英雄/i).first().isVisible({ timeout: 500 }).catch(() => false);
-        const hasCharCard = await page.locator('[data-char-id]').first().isVisible({ timeout: 500 }).catch(() => false);
-        if (hasSelection || hasCharCard) return;
-        const hasHandCard = await page.locator('[data-card-key]').first().isVisible({ timeout: 500 }).catch(() => false);
-        if (hasHandCard) return;
-        const hasPlayerBoard = await page.locator('[data-tutorial-id="player-board"], img[alt="Player Board"], img[alt="玩家面板"]').first().isVisible({ timeout: 500 }).catch(() => false);
-        if (hasPlayerBoard) return;
-        // 检查 TURN ORDER（游戏已开始的标志）
-        const hasTurnOrder = await page.getByText(/TURN ORDER|回合顺序/i).first().isVisible({ timeout: 500 }).catch(() => false);
-        if (hasTurnOrder) return;
-        // 如果卡在 loading 超过 20 秒且还没 reload 过，尝试 reload
-        if (!reloaded && iteration > 25) {
-            const bodyText = await page.evaluate(() => document.body.innerText.substring(0, 200)).catch(() => '');
-            if (bodyText.includes('Loading') || bodyText.includes('加载')) {
-                console.log(`[waitForRoomReady] 卡在加载中，尝试 reload`);
-                await page.reload({ waitUntil: 'domcontentloaded' });
-                reloaded = true;
-            }
-        }
-        // 每 10 次迭代输出一次诊断
-        if (iteration % 10 === 0) {
-            const url = page.url();
-            const title = await page.title().catch(() => 'unknown');
-            console.log(`[waitForRoomReady] iteration=${iteration} url=${url} title=${title}`);
-        }
-        iteration++;
-        await page.waitForTimeout(300);
-    }
-    // 超时前输出最终诊断
-    const finalUrl = page.url();
-    const finalTitle = await page.title().catch(() => 'unknown');
-    console.log(`[waitForRoomReady] TIMEOUT url=${finalUrl} title=${finalTitle}`);
-    throw new Error('房间未在超时内就绪');
-};
-
-/**
- * 创建在线双人对局。
- * 返回 null 表示服务器不可用或创建失败（调用方应 skip）。
- */
-export const setupOnlineMatch = async (
-    browser: Browser,
-    baseURL: string | undefined,
-    hostChar: string,
-    guestChar: string,
-): Promise<DiceThroneMatchSetup | null> => {
-    // 房主上下文
-    const hostContext = await browser.newContext({ baseURL });
-    await initContext(hostContext, { storageKey: '__dt_storage_reset' });
-    const hostPage = await hostContext.newPage();
-
-    // 先导航到首页预热 Vite 模块缓存（避免直接导航到对局页面时模块加载不完整）
-    await hostPage.goto('/', { waitUntil: 'domcontentloaded' });
-    // 等待 React 应用完全加载（游戏列表渲染 = Vite 模块缓存已预热）
-    await hostPage.waitForSelector('[data-game-id]', { timeout: 15000 }).catch(() => {});
-
-    if (!(await ensureGameServerAvailable(hostPage))) return null;
-
-    const matchId = await createRoomViaAPI(hostPage);
-    if (!matchId) return null;
-
-    if (!(await waitForMatchAvailable(hostPage, GAME_NAME, matchId, 20000))) return null;
-
-    await hostPage.goto(`/play/dicethrone/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
-
-    // 等待 host 先建立 WebSocket 连接（避免并发连接竞争）
-    await waitForRoomReady(hostPage, 30000);
-
-    // 客人上下文
-    const guestContext = await browser.newContext({ baseURL });
-    await initContext(guestContext, { storageKey: '__dt_storage_reset_g' });
-    const guestPage = await guestContext.newPage();
-
-    // guest 也先预热 Vite 模块缓存
-    await guestPage.goto('/', { waitUntil: 'domcontentloaded' });
-    await guestPage.waitForSelector('[data-game-id]', { timeout: 15000 }).catch(() => {});
-
-    const guestCredentials = await joinMatchViaAPI(guestPage, GAME_NAME, matchId, '1', 'Guest-E2E');
-    if (!guestCredentials) {
-        await hostContext.close();
-        await guestContext.close();
-        return null;
-    }
-    await seedMatchCredentials(guestContext, GAME_NAME, matchId, '1', guestCredentials);
-    await guestPage.goto(`/play/dicethrone/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
-
-    try {
-        await waitForRoomReady(guestPage, 60000);
-    } catch {
-        if ((await isRoomMissing(hostPage).catch(() => false)) || (await isRoomMissing(guestPage).catch(() => false))) {
-            await hostContext.close();
-            await guestContext.close();
-            return null;
-        }
-        throw new Error('房间就绪超时');
-    }
-
-    const hostStartState = await detectMatchStartState(hostPage, 20000);
-    const guestStartState = await detectMatchStartState(guestPage, 20000);
-    let autoStarted = hostStartState === 'started' || guestStartState === 'started';
-
-    if (autoStarted) {
-        try {
-            await waitForMainPhase(hostPage, 20000);
-            await waitForMainPhase(guestPage, 20000);
-        } catch {
-            autoStarted = false;
-        }
-    }
-
-    if (!autoStarted) {
-        // 等待角色选择
-        const selectionDeadline = Date.now() + 25000;
-        let hostReady = hostStartState === 'selection';
-        let guestReady = guestStartState === 'selection';
-        while (Date.now() < selectionDeadline) {
-            const hostMainPhase = await hostPage.getByText(/Main Phase \(1\)|主要阶段 \(1\)/).isVisible({ timeout: 500 }).catch(() => false);
-            const guestMainPhase = await guestPage.getByText(/Main Phase \(1\)|主要阶段 \(1\)/).isVisible({ timeout: 500 }).catch(() => false);
-            if (hostMainPhase && guestMainPhase) {
-                autoStarted = true;
-                break;
-            }
-            if (!hostReady) hostReady = await isCharacterSelectionVisible(hostPage);
-            if (!guestReady) guestReady = await isCharacterSelectionVisible(guestPage);
-            if (hostReady && guestReady) break;
-            await hostPage.waitForTimeout(500);
-        }
-
-        if (autoStarted) {
-            await waitForMainPhase(hostPage, 20000);
-            await waitForMainPhase(guestPage, 20000);
-            return { hostPage, guestPage, hostContext, guestContext, autoStarted };
-        }
-
-        if (!hostReady || !guestReady) throw new Error('角色选择界面未加载');
-
-        await hostPage.waitForSelector(`[data-char-id="${hostChar}"]`, { state: 'visible', timeout: 10000 });
-        await guestPage.waitForSelector(`[data-char-id="${guestChar}"]`, { state: 'visible', timeout: 10000 });
-        await hostPage.locator(`[data-char-id="${hostChar}"]`).first().evaluate((n) => (n as HTMLElement).click());
-        await guestPage.locator(`[data-char-id="${guestChar}"]`).first().evaluate((n) => (n as HTMLElement).click());
-        await hostPage.waitForTimeout(1000);
-        await guestPage.waitForTimeout(1000);
-
-        const readyButton = guestPage.getByRole('button', { name: /Ready|准备/i });
-        await expect(readyButton).toBeVisible({ timeout: 20000 });
-        await expect(readyButton).toBeEnabled({ timeout: 20000 });
-        await readyButton.click();
-
-        const startButton = hostPage.getByRole('button', { name: /Start Game|开始游戏/i });
-        await expect(startButton).toBeVisible({ timeout: 20000 });
-        await expect(startButton).toBeEnabled({ timeout: 20000 });
-        await startButton.click();
-
-        await waitForMainPhase(hostPage, 15000);
-        await waitForMainPhase(guestPage, 15000);
-    }
-
-    return { hostPage, guestPage, hostContext, guestContext, autoStarted };
-};
+export const setupOnlineMatch = setupDTOnlineMatch;

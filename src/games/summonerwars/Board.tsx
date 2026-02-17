@@ -933,6 +933,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                     mindCaptureMode={mindCaptureMode}
                     afterAttackAbilityMode={afterAttackAbilityMode}
                     telekinesisTargetMode={interaction.telekinesisTargetMode}
+                    magicEventChoiceMode={interaction.magicEventChoiceMode}
                     onCancelAbility={handleCancelAbility}
                     onConfirmBeforeAttackCards={interaction.handleConfirmBeforeAttackCards}
                     onConfirmBloodRune={handleConfirmBloodRune}
@@ -968,6 +969,9 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                     onConfirmTelekinesis={handleConfirmTelekinesis}
                     onCancelTelekinesis={handleCancelTelekinesis}
                     onAfterMoveSelfCharge={handleAfterMoveSelfCharge}
+                    onPlayMagicEvent={interaction.handlePlayMagicEvent}
+                    onDiscardMagicEvent={interaction.handleDiscardMagicEvent}
+                    onCancelMagicEventChoice={interaction.handleCancelMagicEventChoice}
                   />
                 </div>
 

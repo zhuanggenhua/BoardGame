@@ -24,6 +24,11 @@ import { DeckBuilderDrawer } from './DeckBuilderDrawer';
 import { UI_Z_INDEX } from '../../../core';
 import type { SerializedCustomDeck } from '../config/deckSerializer';
 import type { TFunction } from 'i18next';
+import { listCustomDecks, getCustomDeck, type SavedDeckSummary } from '../../../api/custom-deck';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useToast } from '../../../contexts/ToastContext';
+import { CustomDeckCard } from './CustomDeckCard';
+import { getSummonerAtlasIdByFaction } from './helpers/customDeckHelpers';
 
 // 玩家配色
 const PLAYER_COLORS: Record<string, { bg: string; border: string; text: string; glow: string }> = {
@@ -33,15 +38,6 @@ const PLAYER_COLORS: Record<string, { bg: string; border: string; text: string; 
 const getPlayerShortLabel = (t: TFunction, pid: string) => t('player.short', {
   id: pid === '0' ? 1 : 2,
 });
-
-/** 根据阵营 ID 获取召唤师精灵图 atlasId */
-function getSummonerAtlasId(factionId: string): string {
-  const entry = FACTION_CATALOG.find(f => f.id === factionId);
-  if (!entry) return '';
-  const match = entry.heroImagePath.match(/hero\/(\w+)\//);
-  const dir = match?.[1] ?? 'Necromancer';
-  return `sw:${dir.toLowerCase()}:hero`;
-}
 
 export interface FactionSelectionProps {
   isOpen: boolean;
@@ -59,6 +55,7 @@ export interface FactionSelectionProps {
 
 /** 自定义牌组选择信息（用于 UI 展示） */
 interface CustomDeckInfo {
+  deckId: string;
   deckName: string;
   summonerName: string;
   summonerFaction: FactionId;
@@ -77,6 +74,8 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
   onSelectCustomDeck,
 }) => {
   const { t, i18n } = useTranslation('game-summonerwars');
+  const { token } = useAuth();
+  const toast = useToast();
   
   // 确保精灵图注册表已初始化（使用当前语言）
   useEffect(() => {
@@ -96,6 +95,109 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
 
   // 自定义牌组选择状态（按玩家 ID 存储）
   const [customDeckSelections, setCustomDeckSelections] = useState<Record<string, CustomDeckInfo>>({});
+  
+  // 已保存的自定义牌组列表
+  const [savedDecks, setSavedDecks] = useState<SavedDeckSummary[]>([]);
+  
+  // 当前选中的自定义牌组 ID（用于高亮显示）
+  const [selectedCustomDeckId, setSelectedCustomDeckId] = useState<string | null>(null);
+  
+  // 编辑中的牌组 ID（用于传递给 DeckBuilderDrawer）
+  const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
+  
+  // 加载已保存的自定义牌组列表
+  useEffect(() => {
+    // 测试数据注入（仅用于 E2E 测试，仅在开发环境生效）
+    if (import.meta.env.DEV && typeof window !== 'undefined' && (window as any).__TEST_CUSTOM_DECKS__) {
+      setSavedDecks((window as any).__TEST_CUSTOM_DECKS__);
+      return;
+    }
+    
+    if (!token) return;
+    
+    let cancelled = false;
+    
+    const fetchDecks = async () => {
+      try {
+        const decks = await listCustomDecks(token);
+        if (!cancelled) {
+          setSavedDecks(decks);
+        }
+      } catch (err) {
+        console.warn('[FactionSelection] 加载自定义牌组列表失败:', err);
+        if (!cancelled) {
+          toast.error(
+            { kind: 'i18n', ns: 'game-summonerwars', key: 'factionSelection.loadDeckFailed' },
+            undefined,
+            { dedupeKey: 'load-deck-list-failed' }
+          );
+        }
+      }
+    };
+    
+    void fetchDecks();
+    
+    return () => { cancelled = true; };
+  }, [token, toast]);
+  
+  /**
+   * 刷新自定义牌组列表
+   * 用于牌组保存/删除后更新列表
+   */
+  const refreshDeckList = useCallback(async () => {
+    if (!token) return;
+    
+    try {
+      const decks = await listCustomDecks(token);
+      setSavedDecks(decks);
+    } catch (err) {
+      console.warn('[FactionSelection] 刷新自定义牌组列表失败:', err);
+      toast.error(
+        { kind: 'i18n', ns: 'game-summonerwars', key: 'factionSelection.loadDeckFailed' },
+        undefined,
+        { dedupeKey: 'refresh-deck-list-failed' }
+      );
+    }
+  }, [token, toast]);
+  
+  // 预加载自定义牌组的召唤师精灵图（优化版：并行加载 + 错误处理）
+  useEffect(() => {
+    if (savedDecks.length === 0) return;
+    
+    let cancelled = false;
+    
+    const preloadImages = async () => {
+      const loadPromises = savedDecks.map(deck => {
+        return new Promise<void>((resolve) => {
+          const atlasId = getSummonerAtlasIdByFaction(deck.summonerFaction);
+          const source = getSpriteAtlasSource(atlasId);
+          
+          if (!source) {
+            resolve(); // 没有图片源，直接完成
+            return;
+          }
+          
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => {
+            console.warn(`[FactionSelection] 预加载精灵图失败: ${atlasId}`);
+            resolve(); // 失败也继续，不阻塞其他图片
+          };
+          img.src = source.image;
+        });
+      });
+      
+      try {
+        await Promise.all(loadPromises);
+      } catch (err) {
+        console.warn('[FactionSelection] 精灵图预加载失败:', err);
+      }
+    };
+    
+    void preloadImages();
+    
+    return () => { cancelled = true; };
+  }, [savedDecks]);
 
   // 当前玩家已选阵营（包括自定义牌组的情况）
   const myFaction = selectedFactions[currentPlayerId];
@@ -127,7 +229,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
     const factionsToPreload = new Set<FactionId>();
     
     // 收集所有已选择的阵营（动态遍历所有玩家）
-    Object.entries(selectedFactions).forEach(([pid, faction]) => {
+    Object.entries(selectedFactions).forEach(([_pid, faction]) => {
       if (faction && faction !== 'unselected') {
         factionsToPreload.add(faction);
       }
@@ -139,7 +241,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
       if (!entry) return;
 
       // 预加载 hero 精灵图
-      const heroAtlasId = getSummonerAtlasId(factionId);
+      const heroAtlasId = getSummonerAtlasIdByFaction(factionId);
       const heroSource = getSpriteAtlasSource(heroAtlasId);
       if (heroSource) {
         const img = new Image();
@@ -166,10 +268,65 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
   const [isDeckBuilderOpen, setIsDeckBuilderOpen] = useState(false);
 
   // 点击卡牌放大查看召唤师
-  const handleMagnifyCard = useCallback((factionId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // 不触发选择
-    const atlasId = getSummonerAtlasId(factionId);
+  const handleMagnifyCard = useCallback((factionId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation(); // 不触发选择
+    const atlasId = getSummonerAtlasIdByFaction(factionId);
     if (atlasId) setMagnifySprite({ atlasId, frameIndex: 0 });
+  }, []);
+  
+  /**
+   * 处理自定义牌组选择
+   * 加载完整牌组数据并通知父组件
+   */
+  const handleSelectCustomDeck = useCallback(async (deckId: string) => {
+    if (!token) return;
+    
+    try {
+      // 1. 获取完整牌组数据
+      const fullDeck = await getCustomDeck(token, deckId);
+      
+      // 2. 更新选中状态
+      setSelectedCustomDeckId(deckId);
+      
+      // 3. 存储牌组信息（用于 PlayerStatusCard 显示）
+      setCustomDeckSelections(prev => ({
+        ...prev,
+        [currentPlayerId]: {
+          deckId: fullDeck.id,
+          deckName: fullDeck.name,
+          summonerName: fullDeck.summonerId,
+          summonerFaction: fullDeck.summonerFaction,
+        },
+      }));
+      
+      // 4. 通知父组件
+      onSelectCustomDeck?.(fullDeck);
+    } catch (err) {
+      console.error('[FactionSelection] 加载自定义牌组失败:', err);
+      toast.error(
+        { kind: 'i18n', ns: 'game-summonerwars', key: 'factionSelection.loadDeckFailed' },
+        undefined,
+        { dedupeKey: `select-deck-${deckId}-failed` }
+      );
+    }
+  }, [token, currentPlayerId, onSelectCustomDeck, toast]);
+  
+  /**
+   * 处理编辑牌组
+   * 打开构建器并传递牌组 ID
+   */
+  const handleEditDeck = useCallback((deckId: string) => {
+    setEditingDeckId(deckId);
+    setIsDeckBuilderOpen(true);
+  }, []);
+  
+  /**
+   * 处理新建牌组
+   * 打开构建器且不传递牌组 ID
+   */
+  const handleNewDeck = useCallback(() => {
+    setEditingDeckId(null);
+    setIsDeckBuilderOpen(true);
   }, []);
 
   /**
@@ -268,15 +425,38 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
               );
             })}
 
-            {/* Custom Deck Placeholder */}
-            {currentPlayerId && (
+            {/* 自定义牌组卡片（最多显示 2 个） */}
+            {savedDecks.slice(0, 2).map((deck, deckIndex) => {
+              const isSelectedByMe = selectedCustomDeckId === deck.id;
+              // 多玩家占用逻辑：检查哪些玩家选择了这个自定义牌组
+              const occupyingPlayers = playerIds.filter(
+                pid => customDeckSelections[pid]?.deckId === deck.id
+              );
+              
+              return (
+                <CustomDeckCard
+                  key={deck.id}
+                  deck={deck}
+                  index={availableFactions.length + deckIndex}
+                  isSelectedByMe={isSelectedByMe}
+                  occupyingPlayers={occupyingPlayers}
+                  t={t}
+                  onSelect={() => handleSelectCustomDeck(deck.id)}
+                  onEdit={() => handleEditDeck(deck.id)}
+                  onMagnify={handleMagnifyCard}
+                />
+              );
+            })}
+            
+            {/* "+"按钮（仅当自定义牌组数量 < 2 时显示） */}
+            {savedDecks.length < 2 && (
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ scale: 1.02, y: -4 }}
                 whileTap={{ scale: 0.98 }}
                 transition={{
-                  delay: availableFactions.length * 0.06,
+                  delay: (availableFactions.length + savedDecks.length) * 0.06,
                   duration: 0.3,
                   scale: { type: 'spring', stiffness: 400, damping: 20 }
                 }}
@@ -284,13 +464,13 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                   'relative rounded-lg overflow-hidden cursor-pointer group',
                   'border-2 border-dashed border-white/20 hover:border-amber-400/60 transition-colors shadow-lg flex flex-col items-center justify-center bg-white/5'
                 )}
-                onClick={() => setIsDeckBuilderOpen(true)}
+                onClick={handleNewDeck}
               >
                 <div className="w-16 h-16 rounded-full border-2 border-white/20 flex items-center justify-center mb-4 group-hover:border-amber-400/80 transition-colors">
                   <span className="text-3xl text-white/50 group-hover:text-amber-400 font-light">+</span>
                 </div>
                 <div className="text-white/70 font-bold uppercase tracking-widest text-sm group-hover:text-amber-100">
-                  {t('factionSelection.customDeck')}
+                  {t('factionSelection.newDeck')}
                 </div>
                 <div className="text-white/30 text-[10px] mt-1">
                   {t('factionSelection.clickToBuild')}
@@ -414,9 +594,14 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
       {/* Deck Builder Drawer */}
       <DeckBuilderDrawer
         isOpen={isDeckBuilderOpen}
-        onClose={() => setIsDeckBuilderOpen(false)}
+        onClose={() => {
+          setIsDeckBuilderOpen(false);
+          setEditingDeckId(null);
+        }}
         onConfirm={handleConfirmCustomDeck}
         currentPlayerId={currentPlayerId}
+        initialDeckId={editingDeckId ?? undefined}
+        onDeckSaved={refreshDeckList}
       />
     </motion.div>
   );
@@ -440,7 +625,7 @@ interface FactionCardProps {
 const FactionCard: React.FC<FactionCardProps> = ({
   faction, index, isSelectedByMe, occupyingPlayers, t, onSelect, onHover, onMagnify,
 }) => {
-  const atlasId = getSummonerAtlasId(faction.id);
+  const atlasId = getSummonerAtlasIdByFaction(faction.id);
 
   return (
     <motion.div

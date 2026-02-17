@@ -154,6 +154,9 @@ export function execute(
                 sourceCommandType: command.type,
                 timestamp,
             };
+            console.log('[execute SELECT_CHARACTER] Generated event (sound handled by event stream):', {
+                type: selectedEvent.type,
+            });
             events.push(selectedEvent);
             break;
         }
@@ -481,117 +484,15 @@ export function execute(
             break;
         }
 
-        case 'CONFIRM_INTERACTION': {
-            const interaction = pendingInteraction;
-            if (!interaction) break;
+        // 已废弃 - 迁移到 InteractionSystem
+        // case 'CONFIRM_INTERACTION': {
+        //     ... (约 150 行代码已删除)
+        // }
 
-            // 处理 selectDie 类型交互的批量重掷
-            const payload = command.payload as { interactionId: string; selectedDiceIds?: number[] };
-            if (interaction.type === 'selectDie' && payload.selectedDiceIds) {
-                for (const dieId of payload.selectedDiceIds) {
-                    const die = state.dice.find(d => d.id === dieId);
-                    const newValue = random.d(6);
-                    const rerollEvent: DieRerolledEvent = {
-                        type: 'DIE_REROLLED',
-                        payload: {
-                            dieId,
-                            oldValue: die?.value ?? newValue,
-                            newValue,
-                            playerId: command.playerId,
-                        },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    };
-                    events.push(rerollEvent);
-                }
-            }
-
-            // 处理 selectPlayer + tokenGrantConfig 类型交互（如 Vengeance）
-            if (interaction.type === 'selectPlayer' && interaction.tokenGrantConfig && interaction.selected.length > 0) {
-                const targetPlayerId = interaction.selected[0] as PlayerId;
-                const { tokenId, amount } = interaction.tokenGrantConfig;
-                const currentTokens = state.players[targetPlayerId]?.tokens[tokenId] ?? 0;
-                const tokenLimit = getTokenStackLimit(state, targetPlayerId, tokenId);
-                const actualAmount = Math.min(amount, tokenLimit - currentTokens);
-                
-                if (actualAmount > 0) {
-                    const tokenEvent: TokenGrantedEvent = {
-                        type: 'TOKEN_GRANTED',
-                        payload: {
-                            targetId: targetPlayerId,
-                            tokenId,
-                            amount: actualAmount,
-                            newTotal: currentTokens + actualAmount,
-                            sourceAbilityId: interaction.sourceCardId,
-                        },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    };
-                    events.push(tokenEvent);
-                }
-            }
-
-            // 处理 selectPlayer + tokenGrantConfigs 批量授予（如祝圣）
-            if (interaction.type === 'selectPlayer' && interaction.tokenGrantConfigs && interaction.selected.length > 0) {
-                const targetPlayerId = interaction.selected[0] as PlayerId;
-                for (const { tokenId, amount } of interaction.tokenGrantConfigs) {
-                    const currentTokens = state.players[targetPlayerId]?.tokens[tokenId] ?? 0;
-                    const tokenLimit = getTokenStackLimit(state, targetPlayerId, tokenId);
-                    const actualAmount = Math.min(amount, tokenLimit - currentTokens);
-                    if (actualAmount > 0) {
-                        events.push({
-                            type: 'TOKEN_GRANTED',
-                            payload: {
-                                targetId: targetPlayerId,
-                                tokenId,
-                                amount: actualAmount,
-                                newTotal: currentTokens + actualAmount,
-                                sourceAbilityId: interaction.sourceCardId,
-                            },
-                            sourceCommandType: command.type,
-                            timestamp,
-                        } as TokenGrantedEvent);
-                    }
-                }
-            }
-
-            const event: InteractionCompletedEvent = {
-                type: 'INTERACTION_COMPLETED',
-                payload: {
-                    interactionId: payload.interactionId,
-                    sourceCardId: interaction.sourceCardId,
-                },
-                sourceCommandType: command.type,
-                timestamp,
-            };
-            events.push(event);
-            break;
-        }
-
-        case 'CANCEL_INTERACTION': {
-            // 从 sys.interaction 获取卡牌信息
-            const interaction = pendingInteraction;
-            if (interaction) {
-                // 查找卡牌的 CP 成本
-                const player = state.players[interaction.playerId];
-                const card = player?.discard.find(c => c.id === interaction.sourceCardId);
-                const cpCost = card?.cpCost ?? 0;
-                
-                const event: InteractionCancelledEvent = {
-                    type: 'INTERACTION_CANCELLED',
-                    payload: {
-                        interactionId: interaction.id,
-                        sourceCardId: interaction.sourceCardId,
-                        cpCost,
-                        playerId: interaction.playerId,
-                    },
-                    sourceCommandType: command.type,
-                    timestamp,
-                };
-                events.push(event);
-            }
-            break;
-        }
+        // 已废弃 - 迁移到 InteractionSystem
+        // case 'CANCEL_INTERACTION': {
+        //     ... (约 20 行代码已删除)
+        // }
 
         case 'USE_TOKEN':
         case 'SKIP_TOKEN_RESPONSE':

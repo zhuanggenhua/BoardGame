@@ -106,12 +106,12 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         [isMyPrompt, minSelections, selectedIds.length],
     );
 
-    // 检测卡牌展示模式：超过半数选项有可展示的卡牌预览
+    // 检测卡牌展示模式：只要有卡牌选项就使用卡牌模式
     const cardOptionCount = useMemo(() => {
         if (!prompt || !hasOptions) return 0;
         return prompt.options.filter(opt => isCardOption(opt)).length;
     }, [prompt, hasOptions]);
-    const useCardMode = cardOptionCount > 0 && cardOptionCount >= (prompt?.options?.length ?? 0) / 2;
+    const useCardMode = cardOptionCount > 0;
 
     // 上下文卡图（牌库顶查看等场景）
     const contextPreviewRef = useMemo(() => prompt ? extractContextPreview(prompt) : undefined, [prompt]);
@@ -453,6 +453,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 const previewRef = def?.previewRef;
                                 const name = def ? resolveCardName(def, t) : option.label;
                                 const isSelected = selectedIds.includes(option.id);
+                                const isBase = !!getBaseDef(defId ?? '');
+                                const cardWidth = isBase ? 'w-[200px]' : 'w-[130px]';
+                                const cardAspect = isBase ? 'aspect-[1.43]' : 'aspect-[0.714]';
 
                                 return (
                                     <motion.div
@@ -477,15 +480,15 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             {previewRef ? (
                                                 <CardPreview
                                                     previewRef={previewRef}
-                                                    className="w-[130px] aspect-[0.714] bg-slate-900 rounded"
+                                                    className={`${cardWidth} ${cardAspect} bg-slate-900 rounded`}
                                                 />
                                             ) : (
-                                                <div className="w-[130px] aspect-[0.714] bg-slate-800 rounded flex items-center justify-center p-2">
+                                                <div className={`${cardWidth} ${cardAspect} bg-slate-800 rounded flex items-center justify-center p-2`}>
                                                     <span className="text-white text-xs font-bold text-center">{option.label}</span>
                                                 </div>
                                             )}
                                         </div>
-                                        <div className={`mt-1.5 text-center text-[11px] font-bold truncate max-w-[130px] ${isSelected ? 'text-amber-300' : 'text-white/70'}`}>
+                                        <div className={`mt-1.5 text-center text-[11px] font-bold truncate ${isBase ? 'max-w-[200px]' : 'max-w-[130px]'} ${isSelected ? 'text-amber-300' : 'text-white/70'}`}>
                                             {name || option.label}
                                         </div>
                                         {isMulti && isSelected && (
