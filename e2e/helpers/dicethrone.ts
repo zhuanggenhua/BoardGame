@@ -169,8 +169,13 @@ export const setupDTOnlineMatch = async (
     await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
     const guestPage = await guestContext.newPage();
 
+    // 先导航到首页，确保 guestPage 有正确的 cookie
+    await guestPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await guestPage.waitForTimeout(500);
+
     const guestGuestId = `e2e_guest_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    const guestCredentials = await joinDTMatchViaAPI(hostPage, matchId, '1', `Guest-${Date.now()}`, guestGuestId);
+    // 使用 guestPage 的 request 而不是 hostPage，确保 cookie 正确
+    const guestCredentials = await joinDTMatchViaAPI(guestPage, matchId, '1', `Guest-${Date.now()}`, guestGuestId);
     if (!guestCredentials) return null;
 
     await seedDTMatchCredentials(guestContext, matchId, '1', guestCredentials);
@@ -232,6 +237,17 @@ export const readCoreState = async (page: Page) => {
     const raw = await page.getByTestId('debug-state-json').innerText();
     const parsed = JSON.parse(raw);
     return parsed?.core ?? parsed?.G?.core ?? parsed;
+};
+
+/**
+ * 读取事件流（EventStream）
+ */
+export const readEventStream = async (page: Page) => {
+    await ensureDebugStateTab(page);
+    const raw = await page.getByTestId('debug-state-json').innerText();
+    const parsed = JSON.parse(raw);
+    const sys = parsed?.sys ?? parsed?.G?.sys;
+    return sys?.eventStream?.entries ?? [];
 };
 
 /**

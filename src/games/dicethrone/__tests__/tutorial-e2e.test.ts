@@ -111,8 +111,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
 
     const random = createQueuedRandom(manifest.randomPolicy!.values!);
 
-    // TODO: 更新教程测试以适配新的交互系统 - 已完成
-    // 旧系统使用 MODIFY_DIE + CONFIRM_INTERACTION，新系统使用 SYS_INTERACTION_RESPOND
+    // 教程测试已适配新的交互系统（使用 SYS_INTERACTION_RESPOND）
     it('完整教程流程', () => {
         let s: MatchState<DiceThroneCore> = {
             core: DiceThroneDomain.setup(playerIds, random),

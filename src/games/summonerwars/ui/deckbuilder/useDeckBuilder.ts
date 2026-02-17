@@ -47,6 +47,11 @@ export interface AddCardResult {
     reason?: string;
 }
 
+export interface UseDeckBuilderOptions {
+    /** 牌组保存/删除后的回调（用于通知父组件刷新） */
+    onDeckSaved?: () => void;
+}
+
 export interface UseDeckBuilderReturn {
     // 状态
     currentDeck: DeckDraft;
@@ -175,7 +180,8 @@ function draftToPayload(draft: DeckDraft, name: string): CustomDeckPayload {
 // Hook 实现
 // ============================================================================
 
-export function useDeckBuilder(): UseDeckBuilderReturn {
+export function useDeckBuilder(options: UseDeckBuilderOptions = {}): UseDeckBuilderReturn {
+    const { onDeckSaved } = options;
     const { token } = useAuth();
 
     // 核心状态
@@ -354,10 +360,13 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
 
             // 更新当前牌组名称
             setCurrentDeck(prev => ({ ...prev, name }));
+            
+            // 通知父组件刷新
+            onDeckSaved?.();
         } finally {
             setIsLoading(false);
         }
-    }, [currentDeck, editingDeckId]);
+    }, [currentDeck, editingDeckId, onDeckSaved]);
 
     // ========================================================================
     // 持久化：加载牌组
@@ -419,10 +428,13 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
                 setEditingDeckId(null);
                 setCurrentDeck(INITIAL_DECK);
             }
+            
+            // 通知父组件刷新
+            onDeckSaved?.();
         } finally {
             setIsLoading(false);
         }
-    }, [editingDeckId]);
+    }, [editingDeckId, onDeckSaved]);
 
     // ========================================================================
     // 牌组确认（用于对局选择）

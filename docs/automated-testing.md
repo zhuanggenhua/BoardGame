@@ -445,6 +445,97 @@ npm run test:e2e:ci
 - `PW_START_SERVERS=true` — 强制启动服务器（CI 模式）
 - 默认（不设置）— 使用已运行的服务器（开发模式）
 
+### 端口配置与隔离（重要）
+
+E2E 测试使用独立的端口范围，与开发环境完全隔离，避免冲突。
+
+#### 端口分配
+
+| 环境 | Frontend | Game Server | API Server |
+|------|----------|-------------|------------|
+| 开发环境 | 3000 | 18000 | 18001 |
+| E2E 测试 | 5173 | 19000 | 19001 |
+
+#### 测试模式
+
+**1. 隔离模式（推荐，默认）**
+```bash
+npm run test:e2e
+```
+- 使用独立的测试端口（5173/19000/19001）
+- 不会影响开发环境
+- 测试失败不会破坏开发服务器状态
+
+**2. 开发服务器模式（不推荐）**
+```bash
+# 设置环境变量
+$env:PW_USE_DEV_SERVERS = "true"  # PowerShell
+export PW_USE_DEV_SERVERS=true    # Bash
+
+# 运行测试
+npm run test:e2e
+
+# 清除环境变量
+$env:PW_USE_DEV_SERVERS = $null   # PowerShell
+unset PW_USE_DEV_SERVERS          # Bash
+```
+- 使用开发环境端口（3000/18000/18001）
+- 需要先手动启动 `npm run dev`
+- 测试会影响开发环境状态
+- 仅用于调试特定问题
+
+#### 端口配置原理
+
+Playwright 配置文件（`playwright.config.ts`）根据 `PW_USE_DEV_SERVERS` 环境变量自动选择端口：
+
+```typescript
+// 根据模式选择端口
+const PORTS = useDevServers ? DEV_PORTS : E2E_PORTS;
+
+// 设置环境变量，让测试代码能够读取正确的端口
+if (!process.env.PW_GAME_SERVER_PORT) {
+    process.env.PW_GAME_SERVER_PORT = PORTS.gameServer.toString();
+}
+```
+
+测试辅助函数（`e2e/helpers/common.ts`）通过环境变量获取端口：
+
+```typescript
+export const getGameServerBaseURL = () => {
+    const envUrl = process.env.PW_GAME_SERVER_URL || process.env.VITE_GAME_SERVER_URL;
+    if (envUrl) return normalizeUrl(envUrl);
+    const port = process.env.GAME_SERVER_PORT || process.env.PW_GAME_SERVER_PORT || '18000';
+    return `http://localhost:${port}`;
+};
+```
+
+#### 常见问题
+
+**问题：测试失败，错误信息"房间不存在或已被删除"**
+
+原因：测试代码连接到错误的端口（如连接到 19000 但服务器运行在 18000）
+
+解决方案：
+1. 检查是否设置了 `PW_USE_DEV_SERVERS` 环境变量
+2. 如果使用开发服务器模式，确保 `npm run dev` 正在运行
+3. 如果使用隔离模式，清除 `PW_USE_DEV_SERVERS` 环境变量
+4. 检查测试日志中的实际请求 URL（`pw:api → POST http://localhost:xxxxx/...`）
+
+**问题：端口被占用**
+
+解决方案：
+```bash
+# 查看端口占用
+netstat -ano | findstr :19000  # Windows
+lsof -ti:19000                 # Linux/Mac
+
+# 清理测试环境端口
+npm run test:e2e:cleanup
+
+# 清理开发环境端口
+npm run clean:ports
+```
+
 ### 覆盖原则
 
 **硬性要求**：E2E 必须覆盖"交互面"而不只是"完整流程"。

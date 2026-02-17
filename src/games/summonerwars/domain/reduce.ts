@@ -19,7 +19,6 @@ import type {
 } from './types';
 import { SW_EVENTS, SW_SELECTION_EVENTS } from './types';
 import { BOARD_ROWS, BOARD_COLS, HAND_SIZE, clampMagic } from './helpers';
-import { getEffectiveLife } from './abilityResolver';
 import {
   drawFromTop,
   removeFromHand,
@@ -101,11 +100,17 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
     }
 
     case SW_EVENTS.EVENT_PLAYED: {
-      const { playerId, cardId, card, isActive, isAttachment } = payload as {
-        playerId: PlayerId; cardId: string; card: EventCard; isActive: boolean; isAttachment?: boolean;
+      const { playerId, cardId, card, isActive, isAttachment, isStructureEvent } = payload as {
+        playerId: PlayerId; cardId: string; card: EventCard; isActive: boolean; isAttachment?: boolean; isStructureEvent?: boolean;
       };
       const player = core.players[playerId];
       const { hand: newHand } = removeFromHand(player.hand, cardId);
+      
+      // 建筑类事件卡：从手牌移除，但不进入 activeEvents 或 discard（已经变成建筑了）
+      if (isStructureEvent) {
+        return { ...core, players: { ...core.players, [playerId]: { ...player, hand: newHand } } };
+      }
+      
       if (isAttachment) {
         return { ...core, players: { ...core.players, [playerId]: { ...player, hand: newHand } } };
       } else if (isActive) {

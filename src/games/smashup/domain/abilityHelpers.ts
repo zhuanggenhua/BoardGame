@@ -715,7 +715,7 @@ export function buildBaseTargetOptions(
     state?: SmashUpCore
 ): EnginePromptOption<{ baseIndex: number; baseDefId?: string }>[] {
     return candidates.map((c, i) => {
-        const baseDefId = state?.bases[c.baseIndex]?.defId;
+        const baseDefId = state?.bases?.[c.baseIndex]?.defId;
         return {
             id: `base-${i}`,
             label: c.label,

@@ -59,15 +59,8 @@ describe('刷新基地作弊功能', () => {
         expect(result.core.bases[1].defId).toBe('base_old_2'); // 其他基地不变
         expect(result.core.baseDeck).toEqual(['base_new_2', 'base_new_3']); // 新基地从牌库移除
 
-        // 验证事件生成
-        expect(result.events).toHaveLength(1);
-        expect(result.events[0].type).toBe('su:base_replaced');
-        expect(result.events[0].payload).toMatchObject({
-            baseIndex: 0,
-            oldBaseDefId: 'base_old_1',
-            newBaseDefId: 'base_new_1',
-            keepCards: false,
-        });
+        // 不再生成事件（直接修改状态）
+        expect(result.events).toEqual([]);
     });
 
     it('应该清空基地上的随从和行动卡', () => {
@@ -278,17 +271,8 @@ describe('刷新基地作弊功能', () => {
             // 验证基地牌库正确更新
             expect(result.core.baseDeck).toEqual(['base_new_4']);
 
-            // 验证生成了3个事件
-            expect(result.events).toHaveLength(3);
-            result.events.forEach((event, i) => {
-                expect(event.type).toBe('su:base_replaced');
-                expect(event.payload).toMatchObject({
-                    baseIndex: i,
-                    oldBaseDefId: `base_old_${i + 1}`,
-                    newBaseDefId: `base_new_${i + 1}`,
-                    keepCards: false,
-                });
-            });
+            // 不再生成事件（直接修改状态）
+            expect(result.events).toEqual([]);
         });
 
         it('基地牌库不足时应该返回原状态', () => {

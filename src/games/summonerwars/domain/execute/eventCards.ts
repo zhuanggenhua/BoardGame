@@ -58,6 +58,7 @@ export function executePlayEvent(
     
     const cardBaseId = getBaseCardId(eventCard.id);
     const isAttachment = cardBaseId === CARD_IDS.NECRO_HELLFIRE_BLADE;
+    const isStructureEvent = eventCard.life !== undefined; // 建筑类事件卡
     const summoner = getSummoner(core, playerId);
     
     events.push({
@@ -65,9 +66,39 @@ export function executePlayEvent(
       payload: { 
         playerId, cardId, card: eventCard,
         isActive: eventCard.isActive ?? false, isAttachment,
+        isStructureEvent, // 标记为建筑类事件卡
       },
       timestamp,
     });
+
+    // 建筑类事件卡：有 life 字段的事件卡打出后变成建筑
+    if (isStructureEvent && targets && targets.length > 0) {
+      const position = targets[0];
+      events.push({
+        type: SW_EVENTS.STRUCTURE_BUILT,
+        payload: {
+          playerId, // 添加 playerId 字段，与 reduce 处理器一致
+          cardId: eventCard.id,
+          position,
+          card: {
+            id: eventCard.id,
+            cardType: 'structure' as const,
+            name: eventCard.name,
+            faction: eventCard.faction,
+            cost: eventCard.cost,
+            life: eventCard.life,
+            isGate: false,
+            deckSymbols: eventCard.deckSymbols,
+            spriteIndex: eventCard.spriteIndex,
+            spriteAtlas: eventCard.spriteAtlas,
+          },
+          owner: playerId,
+        },
+        timestamp,
+      });
+      // 建筑类事件卡打出后不进入 activeEvents，直接返回
+      return;
+    }
 
     switch (cardBaseId) {
       case CARD_IDS.NECRO_HELLFIRE_BLADE: {

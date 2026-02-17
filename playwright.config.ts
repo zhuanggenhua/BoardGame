@@ -50,10 +50,17 @@ const shouldStartServers = forceStartServers || !useDevServers;
 // 根据模式选择端口
 const PORTS = useDevServers ? DEV_PORTS : E2E_PORTS;
 
+// 设置环境变量，让测试代码能够读取正确的端口（必须在 getGameServerBaseURL 调用之前）
+// 强制覆盖，确保测试使用正确的端口
+process.env.GAME_SERVER_PORT = PORTS.gameServer.toString();
+process.env.PW_GAME_SERVER_PORT = PORTS.gameServer.toString();
+process.env.API_SERVER_PORT = PORTS.apiServer.toString();
+process.env.PW_API_SERVER_PORT = PORTS.apiServer.toString();
+
 const port = process.env.PW_PORT || process.env.E2E_PORT || PORTS.frontend.toString();
 const baseURL = process.env.VITE_FRONTEND_URL || `http://localhost:${port}`;
-const gameServerPort = process.env.GAME_SERVER_PORT || process.env.PW_GAME_SERVER_PORT || PORTS.gameServer.toString();
-const apiServerPort = process.env.API_SERVER_PORT || process.env.PW_API_SERVER_PORT || PORTS.apiServer.toString();
+const gameServerPort = PORTS.gameServer.toString();
+const apiServerPort = PORTS.apiServer.toString();
 
 // 日志：显示当前测试模式
 if (useDevServers) {

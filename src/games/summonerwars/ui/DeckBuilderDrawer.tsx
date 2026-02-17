@@ -41,7 +41,7 @@ export const DeckBuilderDrawer: React.FC<DeckBuilderDrawerProps> = ({
     onDeckSaved,
 }) => {
     const { t } = useTranslation('game-summonerwars');
-    const deckBuilder = useDeckBuilder();
+    const deckBuilder = useDeckBuilder({ onDeckSaved });
     const {
         currentDeck,
         selectedFactionId,
@@ -69,20 +69,6 @@ export const DeckBuilderDrawer: React.FC<DeckBuilderDrawerProps> = ({
             resetDeck();
         }
     }, [isOpen, initialDeckId, loadDeck, resetDeck]);
-    
-    // 包装 saveDeck 函数，保存成功后通知父组件刷新
-    const handleSaveDeck = React.useCallback(async (name: string) => {
-        await saveDeck(name);
-        // 通知父组件刷新牌组列表
-        onDeckSaved?.();
-    }, [saveDeck, onDeckSaved]);
-    
-    // 包装 deleteDeck 函数，删除成功后通知父组件刷新
-    const handleDeleteDeck = React.useCallback(async (deckId: string) => {
-        await deleteDeck(deckId);
-        // 通知父组件刷新牌组列表
-        onDeckSaved?.();
-    }, [deleteDeck, onDeckSaved]);
 
     /**
      * 确认使用当前编辑中的牌组
@@ -177,9 +163,9 @@ export const DeckBuilderDrawer: React.FC<DeckBuilderDrawerProps> = ({
                                 freeMode={freeMode}
                                 onToggleFreeMode={toggleFreeMode}
                                 onRemoveCard={removeCard}
-                                onSave={handleSaveDeck}
+                                onSave={saveDeck}
                                 onLoad={loadDeck}
-                                onDelete={handleDeleteDeck}
+                                onDelete={deleteDeck}
                                 onConfirm={onConfirm ? handleConfirmDeck : undefined}
                             />
                         </div>

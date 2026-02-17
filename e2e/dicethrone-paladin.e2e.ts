@@ -19,32 +19,38 @@ import {
 
 /** 推进到攻击掷骰阶段 */
 const advanceToOffensiveRoll = async (page: import('@playwright/test').Page) => {
-    for (let attempt = 0; attempt < 10; attempt += 1) {
+    // 使用调试面板读取当前阶段
+    const { readCoreState } = await import('./helpers/dicethrone');
+    
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+        // 关闭可能出现的技能选择弹窗
         const cancelBtn = page.getByRole('button', { name: /Cancel.*Select Ability|取消/i });
         if (await cancelBtn.isVisible({ timeout: 300 }).catch(() => false)) {
             await cancelBtn.click();
             await page.waitForTimeout(300);
         }
-        // 检查当前阶段 - 使用阶段列表中的高亮项
-        const offensiveRollPhase = page.locator('text=/4\\. Offensive Roll Phase|4\\. 掷骰攻击阶段/i');
-        const isOffensiveRoll = await offensiveRollPhase.isVisible({ timeout: 300 }).catch(() => false);
         
-        if (isOffensiveRoll) {
-            // 检查是否是当前激活的阶段（通常会有特殊样式）
-            const phaseText = await offensiveRollPhase.textContent().catch(() => '');
-            if (phaseText) {
-                return;
-            }
+        // 读取当前阶段
+        const state = await readCoreState(page);
+        const currentPhase = state.sys?.phase || state.phase;
+        
+        // 如果已经在攻击掷骰阶段，返回
+        if (currentPhase === 'offensiveRoll') {
+            return;
         }
         
+        // 点击推进阶段按钮
         const nextPhaseButton = page.locator('[data-tutorial-id="advance-phase-button"]');
         if (await nextPhaseButton.isEnabled({ timeout: 1000 }).catch(() => false)) {
             await nextPhaseButton.click();
-            await page.waitForTimeout(800);
+            await page.waitForTimeout(1000);
         } else {
-            await page.waitForTimeout(300);
+            // 如果按钮不可用，等待一下再重试
+            await page.waitForTimeout(500);
         }
     }
+    
+    throw new Error('无法推进到攻击掷骰阶段（超过 15 次尝试）');
 };
 
 test.describe('DiceThrone Paladin E2E', () => {

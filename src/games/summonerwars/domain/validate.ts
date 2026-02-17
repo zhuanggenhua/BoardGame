@@ -21,7 +21,6 @@ import {
   MAX_MOVES_PER_TURN,
   MAX_ATTACKS_PER_TURN,
   getUnitAt,
-  getStructureAt,
   isAdjacent,
   isCellEmpty,
   canMoveToEnhanced,
@@ -33,6 +32,7 @@ import {
   getSummoner,
   getUnitAbilities,
   findUnitPositionByInstanceId,
+  isValidCoord,
 } from './helpers';
 import { getPhaseDisplayName } from './execute';
 import { validateAbilityActivation } from './abilityValidation';
@@ -313,6 +313,7 @@ export function validateCommand(
 
     case SW_COMMANDS.PLAY_EVENT: {
       const cardId = payload.cardId as string;
+      const targets = payload.targets as CellCoord[] | undefined;
       const player = core.players[playerId];
       const card = player.hand.find(c => c.id === cardId);
       if (!card || card.cardType !== 'event') return { valid: false, error: '无效的事件卡' };
@@ -321,6 +322,25 @@ export function validateCommand(
       if (eventCard.playPhase !== 'any' && eventCard.playPhase !== core.phase) {
         return { valid: false, error: `该事件只能在${getPhaseDisplayName(eventCard.playPhase)}施放` };
       }
+      
+      // 建筑类事件卡验证
+      if (eventCard.life !== undefined) {
+        if (!targets || targets.length === 0) {
+          return { valid: false, error: '必须选择放置位置' };
+        }
+        const position = targets[0];
+        if (!isValidCoord(position)) {
+          return { valid: false, error: '放置位置无效' };
+        }
+        if (!isCellEmpty(core, position)) {
+          return { valid: false, error: '放置位置必须为空' };
+        }
+        // 建筑类事件卡必须在建造阶段打出
+        if (eventCard.playPhase !== 'build') {
+          return { valid: false, error: '建筑类事件卡只能在建造阶段打出' };
+        }
+      }
+      
       return { valid: true };
     }
 

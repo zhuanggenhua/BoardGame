@@ -430,14 +430,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 });
                 return { ...state, bases: updatedBases, baseDeck: [...newBaseDeck, oldBaseDefId] };
             }
-            // 默认模式：替换基地（删除旧基地，插入新空基地）
+            // 默认模式：插入新空基地（配合 BASE_SCORED 删除旧基地后使用）
             const newBase: BaseInPlay = {
                 defId: newBaseDefId,
                 minions: [],
                 ongoingActions: [],
             };
             const newBases = [...state.bases];
-            newBases.splice(baseIndex, 1, newBase); // 替换：删除1个，插入1个
+            newBases.splice(baseIndex, 0, newBase);
             return { ...state, bases: newBases, baseDeck: newBaseDeck };
         }
 

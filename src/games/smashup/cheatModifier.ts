@@ -99,7 +99,7 @@ export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
      * 刷新指定基地（从基地牌库抽取新基地替换）
      * @param core 游戏状态
      * @param baseIndex 要刷新的基地索引
-     * @returns 更新后的状态和事件
+     * @returns 更新后的状态（不生成事件，直接替换状态）
      */
     refreshBase: (core: SmashUpCore, baseIndex: number): { core: SmashUpCore; events: Array<{ type: string; payload: unknown; timestamp: number }> } => {
         // 验证基地索引
@@ -124,27 +124,15 @@ export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
             baseDeckLength: core.baseDeck.length,
         });
 
-        // 生成 BASE_REPLACED 事件（keepCards=false，清空随从和行动卡）
-        const event = {
-            type: 'su:base_replaced' as const,
-            payload: {
-                baseIndex,
-                oldBaseDefId: oldBase.defId,
-                newBaseDefId,
-                keepCards: false,
-            },
-            timestamp: Date.now(),
-        };
-
-        // 更新状态：移除旧基地，插入新基地，更新基地牌库
-        const newBaseDeck = core.baseDeck.filter(id => id !== newBaseDefId);
+        // 直接替换基地（不使用事件，避免与 BASE_SCORED 的插入逻辑冲突）
+        const newBaseDeck = core.baseDeck.slice(1);
         const newBase = {
             defId: newBaseDefId,
             minions: [],
             ongoingActions: [],
         };
         const newBases = [...core.bases];
-        newBases.splice(baseIndex, 1, newBase);
+        newBases[baseIndex] = newBase; // 直接替换
 
         const newCore = {
             ...core,
@@ -152,13 +140,13 @@ export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
             baseDeck: newBaseDeck,
         };
 
-        return { core: newCore, events: [event] };
+        return { core: newCore, events: [] };
     },
 
     /**
      * 刷新所有基地（从基地牌库抽取新基地替换所有场上基地）
      * @param core 游戏状态
-     * @returns 更新后的状态和事件
+     * @returns 更新后的状态（不生成事件，直接替换状态）
      */
     refreshAllBases: (core: SmashUpCore): { core: SmashUpCore; events: Array<{ type: string; payload: unknown; timestamp: number }> } => {
         const basesCount = core.bases.length;
@@ -179,44 +167,20 @@ export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
             baseDeckLength: core.baseDeck.length,
         });
 
-        const events: Array<{ type: string; payload: unknown; timestamp: number }> = [];
-        let updatedCore = core;
+        // 直接替换所有基地
+        const newBases = core.baseDeck.slice(0, basesCount).map(defId => ({
+            defId,
+            minions: [],
+            ongoingActions: [],
+        }));
+        const newBaseDeck = core.baseDeck.slice(basesCount);
 
-        // 依次刷新每个基地
-        for (let i = 0; i < basesCount; i++) {
-            const oldBase = updatedCore.bases[i];
-            const newBaseDefId = updatedCore.baseDeck[0];
+        const newCore = {
+            ...core,
+            bases: newBases,
+            baseDeck: newBaseDeck,
+        };
 
-            // 生成 BASE_REPLACED 事件
-            const event = {
-                type: 'su:base_replaced' as const,
-                payload: {
-                    baseIndex: i,
-                    oldBaseDefId: oldBase.defId,
-                    newBaseDefId,
-                    keepCards: false,
-                },
-                timestamp: Date.now(),
-            };
-            events.push(event);
-
-            // 更新状态
-            const newBaseDeck = updatedCore.baseDeck.filter(id => id !== newBaseDefId);
-            const newBase = {
-                defId: newBaseDefId,
-                minions: [],
-                ongoingActions: [],
-            };
-            const newBases = [...updatedCore.bases];
-            newBases.splice(i, 1, newBase);
-
-            updatedCore = {
-                ...updatedCore,
-                bases: newBases,
-                baseDeck: newBaseDeck,
-            };
-        }
-
-        return { core: updatedCore, events };
+        return { core: newCore, events: [] };
     },
 };
