@@ -190,7 +190,7 @@ export async function claimSeat(
 export async function playAgain(
     gameName: string,
     matchID: string,
-    options: { playerID: string; credentials: string },
+    options: { playerID: string; credentials: string; guestId?: string },
 ): Promise<{ nextMatchID: string }> {
     // 先获取当前对局信息以复用 numPlayers 和 setupData
     const matchInfo = await getMatch(gameName, matchID);
@@ -201,6 +201,8 @@ export async function playAgain(
     const setupData: Record<string, unknown> = {};
     if (prevSetupData.ownerKey) setupData.ownerKey = prevSetupData.ownerKey;
     if (prevSetupData.ownerType) setupData.ownerType = prevSetupData.ownerType;
+    // 匿名用户需要传递 guestId 以通过服务端 owner 验证
+    if (options.guestId) setupData.guestId = options.guestId;
 
     const { matchID: nextMatchID } = await createMatch(gameName, { numPlayers, setupData });
     return { nextMatchID };

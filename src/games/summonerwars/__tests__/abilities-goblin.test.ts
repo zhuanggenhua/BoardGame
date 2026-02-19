@@ -24,7 +24,7 @@ import {
   isImmobileBase, hasChargeAbilityBase, hasFerocityAbilityBase,
   getValidMoveTargetsEnhanced,
 } from '../domain/helpers';
-import { calculateEffectiveStrength } from '../domain/abilityResolver';
+import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { createInitializedCore } from './test-helpers';
 
 // ============================================================================
@@ -468,7 +468,7 @@ describe('野兽骑手 - 冲锋 (charge)', () => {
     };
     state.board[4][4].unit = rider;
 
-    const strength = calculateEffectiveStrength(rider, state);
+    const strength = getEffectiveStrengthValue(rider, state);
     expect(strength).toBe(4); // 基础3 + 冲锋1
   });
 });
@@ -812,7 +812,7 @@ describe('布拉夫 - 力量强化 (power_boost)', () => {
     };
     state.board[4][2].unit = blarf;
 
-    const strength = calculateEffectiveStrength(blarf, state);
+    const strength = getEffectiveStrengthValue(blarf, state);
     expect(strength).toBe(3); // 基础0 + 充能3
   });
 
@@ -825,7 +825,7 @@ describe('布拉夫 - 力量强化 (power_boost)', () => {
     };
     state.board[4][2].unit = blarf;
 
-    const strength = calculateEffectiveStrength(blarf, state);
+    const strength = getEffectiveStrengthValue(blarf, state);
     expect(strength).toBe(5); // 基础0 + 最多5
   });
 
@@ -838,7 +838,7 @@ describe('布拉夫 - 力量强化 (power_boost)', () => {
     };
     state.board[4][2].unit = blarf;
 
-    const strength = calculateEffectiveStrength(blarf, state);
+    const strength = getEffectiveStrengthValue(blarf, state);
     expect(strength).toBe(0); // 基础0 + 充能0
   });
 });
@@ -1410,7 +1410,7 @@ describe('洞穴地精事件卡 - 成群结队（围攻加成）', () => {
       deckSymbols: [],
     } as EventCard);
 
-    const strength = calculateEffectiveStrength(attacker, state, target);
+    const strength = getEffectiveStrengthValue(attacker, state, target);
     // 基础1 + 2个友方相邻目标 = 3
     expect(strength).toBe(3);
   });
@@ -1444,7 +1444,7 @@ describe('洞穴地精事件卡 - 成群结队（围攻加成）', () => {
     }};
 
     // 无成群结队事件
-    const strength = calculateEffectiveStrength(attacker, state, target);
+    const strength = getEffectiveStrengthValue(attacker, state, target);
     expect(strength).toBe(1); // 仅基础战力
   });
 });

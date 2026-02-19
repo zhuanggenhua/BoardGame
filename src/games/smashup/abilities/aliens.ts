@@ -284,9 +284,7 @@ function alienTerraform(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `alien_terraform_${ctx.now}`, ctx.playerId, '选择要替换的基地', buildBaseTargetOptions(baseCandidates, ctx.state), { sourceId: 'alien_terraform', targetType: 'base' }
     );
-    console.log('[alien_terraform] created interaction:', interaction.id, 'kind:', interaction.kind, 'playerId:', interaction.playerId);
     const newMatchState = queueInteraction(ctx.matchState, interaction);
-    console.log('[alien_terraform] queued interaction, current:', newMatchState.sys.interaction?.current?.id);
     return { events: [], matchState: newMatchState };
 }
 

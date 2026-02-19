@@ -54,7 +54,7 @@ export const MatchRoom = () => {
     const { gameId, matchId } = useParams();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { tutorial, startTutorial, closeTutorial, isActive, currentStep } = useTutorial();
+    const { startTutorial, closeTutorial, isActive, currentStep } = useTutorial();
     const { openModal, closeModal } = useModalStack();
     const toast = useToast();
     const { t, i18n } = useTranslation('lobby');
@@ -88,6 +88,7 @@ export const MatchRoom = () => {
                 gameId={gameId}
                 gameState={props?.G}
                 locale={i18n.language}
+                playerID={props?.playerID}
                 enabled={!isUgcGame}
                 loadingDescription={t('matchRoom.loadingResources')}
             >
@@ -180,7 +181,12 @@ export const MatchRoom = () => {
     const hasTutorialBoard = Boolean(WrappedBoard && engineConfig && gameId);
 
     const [isLeaving, setIsLeaving] = useState(false);
-    const [isGameNamespaceReady, setIsGameNamespaceReady] = useState(true);
+    const [isGameNamespaceReady, setIsGameNamespaceReady] = useState(() => {
+        // 如果有 gameId，namespace 需要加载，初始为 false 避免 Board 先挂载再卸载
+        if (!gameId) return true;
+        const namespace = `game-${gameId}`;
+        return i18n.hasLoadedNamespace(namespace);
+    });
     const [destroyModalId, setDestroyModalId] = useState<string | null>(null);
     const [forceExitModalId, setForceExitModalId] = useState<string | null>(null);
     const [shouldShowMatchError, setShouldShowMatchError] = useState(false);
@@ -244,8 +250,10 @@ export const MatchRoom = () => {
     // 自动加入逻辑（调试重置跳转）
     const [isAutoJoining, setIsAutoJoining] = useState(false);
     const autoJoinStartedRef = useRef(false);
+    // 自动加入完成后的宽限期（防止 validateStoredMatchSeat 在 matchStatus 刷新前清除凭据）
+    const autoJoinGraceRef = useRef(false);
     useEffect(() => {
-        if (!shouldAutoJoin || !gameId || !matchId || isTutorialRoute || isAutoJoining) return;
+        if (!shouldAutoJoin || !gameId || !matchId || isTutorialRoute) return;
         if (autoJoinStartedRef.current) {
             return;
         }
@@ -253,25 +261,15 @@ export const MatchRoom = () => {
 
         let cancelled = false;
         let retryTimer: number | undefined;
-        const safeSetIsAutoJoining = (value: boolean) => {
-            if (!cancelled) {
-                setIsAutoJoining(value);
-            }
-        };
 
-        // 如果已有凭据，直接使用
+        // 如果已有凭据，直接触发 localStorageTick 让 navigate effect 处理跳转
         const stored = localStorage.getItem(`match_creds_${matchId}`);
         if (stored) {
             try {
                 const data = JSON.parse(stored);
-                // 如果已有玩家 1 的凭据，直接跳转
-                if (data?.playerID === '1') {
-                    window.location.href = `/play/${gameId}/match/${matchId}?playerID=1`;
-                    return;
-                }
-                // 如果是玩家0凭据（可能是同浏览器另一标签），不使用，继续自动加入
-                if (data?.playerID !== '0') {
-                    // 其他情况默认跳过
+                if (data?.playerID) {
+                    // 已有凭据，触发 tick 让 navigate effect 更新 URL
+                    setLocalStorageTick((t) => t + 1);
                     return;
                 }
             } catch {
@@ -279,11 +277,10 @@ export const MatchRoom = () => {
             }
         }
 
-        safeSetIsAutoJoining(true);
+        setIsAutoJoining(true);
         const guestId = getOrCreateGuestId();
         const playerName = t('player.guest', { id: guestId, ns: 'lobby' });
 
-        // 先查询房间状态，找到可用位置（带重试）
         let retryCount = 0;
         const maxRetries = 5;
 
@@ -306,55 +303,38 @@ export const MatchRoom = () => {
                 const openSeat = [...matchInfo.players]
                     .sort((a, b) => a.id - b.id)
                     .find(p => !p.name);
-                // 找一个空位
                 if (!openSeat) {
-                    safeSetIsAutoJoining(false);
+                    if (!cancelled) setIsAutoJoining(false);
                     return;
                 }
                 const targetPlayerID = String(openSeat.id);
                 const { success } = await rejoinMatch(gameId, matchId, targetPlayerID, playerName, { guestId });
                 if (cancelled) return;
                 if (success) {
-                    window.location.href = `/play/${gameId}/match/${matchId}?playerID=${targetPlayerID}`;
+                    // rejoinMatch 内部已调用 persistMatchCredentials，
+                    // 会触发 match-credentials-changed 事件 → localStorageTick 更新
+                    // → storedPlayerID 有值 → navigate effect 自动更新 URL
+                    // 设置宽限期，防止 validateStoredMatchSeat 在 matchStatus 刷新前清除凭据
+                    autoJoinGraceRef.current = true;
+                    window.setTimeout(() => { autoJoinGraceRef.current = false; }, 5000);
+                    // 显式触发 tick，确保 storedMatchCreds 立即重新计算
+                    setLocalStorageTick((t) => t + 1);
+                    setIsAutoJoining(false);
                 } else {
-                    // 加入失败，重试
                     retryCount++;
                     if (retryCount < maxRetries) {
                         scheduleRetry(500);
                     } else {
-                        // 最后再检查一次是否已有凭据
-                        const finalStored = localStorage.getItem(`match_creds_${matchId}`);
-                        if (finalStored) {
-                            try {
-                                const data = JSON.parse(finalStored);
-                                if (data?.playerID) {
-                                    window.location.href = `/play/${gameId}/match/${matchId}?playerID=${data.playerID}`;
-                                    return;
-                                }
-                            } catch { /* parse error, ignore */ }
-                        }
-                        safeSetIsAutoJoining(false);
+                        if (!cancelled) setIsAutoJoining(false);
                     }
                 }
             } catch {
                 if (cancelled) return;
-                // 出错也重试
                 retryCount++;
                 if (retryCount < maxRetries) {
                     scheduleRetry(500);
                 } else {
-                    // 最后再检查一次是否已有凭据
-                    const finalStored = localStorage.getItem(`match_creds_${matchId}`);
-                    if (finalStored) {
-                        try {
-                            const data = JSON.parse(finalStored);
-                            if (data?.playerID) {
-                                window.location.href = `/play/${gameId}/match/${matchId}?playerID=${data.playerID}`;
-                                return;
-                            }
-                        } catch { /* parse error, ignore */ }
-                    }
-                    safeSetIsAutoJoining(false);
+                    if (!cancelled) setIsAutoJoining(false);
                 }
             }
         };
@@ -367,8 +347,9 @@ export const MatchRoom = () => {
             if (retryTimer !== undefined) {
                 window.clearTimeout(retryTimer);
             }
+            autoJoinStartedRef.current = false;
         };
-    }, [shouldAutoJoin, gameId, matchId, isTutorialRoute, isAutoJoining, t]);
+    }, [shouldAutoJoin, gameId, matchId, isTutorialRoute, t]);
 
     // 获取凭据
     const credentials = useMemo(() => {
@@ -460,6 +441,8 @@ export const MatchRoom = () => {
         if (isTutorialRoute) return;
         if (!matchId || !statusPlayerID) return;
         if (matchStatus.isLoading || matchStatus.players.length === 0) return;
+        // 自动加入过程中或刚完成自动加入时跳过验证（matchStatus 可能还未反映新加入的玩家）
+        if (shouldAutoJoin || isAutoJoining || autoJoinGraceRef.current) return;
 
         const stored = readStoredMatchCredentials(matchId);
         const validation = validateStoredMatchSeat(stored, matchStatus.players, statusPlayerID);
@@ -469,7 +452,7 @@ export const MatchRoom = () => {
         clearOwnerActiveMatch(matchId);
         setLocalStorageTick((t) => t + 1);
         toast.warning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
-    }, [isTutorialRoute, matchId, statusPlayerID, matchStatus.isLoading, matchStatus.players, toast]);
+    }, [isTutorialRoute, matchId, statusPlayerID, matchStatus.isLoading, matchStatus.players, toast, shouldAutoJoin, isAutoJoining]);
     useEffect(() => {
         if (!isTutorialRoute) return;
         // 等待 i18n 命名空间加载完成，避免在 namespace 加载期间启动教程
@@ -481,6 +464,7 @@ export const MatchRoom = () => {
         if (!isActive && !tutorialStartedRef.current) {
             const impl = gameId ? GAME_IMPLEMENTATIONS[gameId] : null;
             if (impl?.tutorial) {
+                tutorialStartedRef.current = true;
                 startTutorial(impl.tutorial!);
             }
         }
@@ -585,7 +569,10 @@ export const MatchRoom = () => {
     useEffect(() => {
         if (isTutorialRoute || !matchId || !lobbyPresence.isMissing) return;
         // 自动加入过程中不检查房间是否缺失（lobby 快照可能尚未包含该房间）
-        if (shouldAutoJoin || isAutoJoining) return;
+        if (shouldAutoJoin || isAutoJoining || autoJoinGraceRef.current) return;
+        // 如果 matchStatus 没有报错，说明房间仍然存在（可能只是游戏结束后从大厅列表移除了）
+        // 此时不应该跳转，让玩家看到结果和再来一局按钮
+        if (!matchStatus.error) return;
         if (handledMissingMatchRef.current === matchId) return;
         handledMissingMatchRef.current = matchId;
         clearMatchLocalState();
@@ -595,7 +582,7 @@ export const MatchRoom = () => {
             { dedupeKey: `matchRoom.missing.${matchId}` }
         );
         navigateBackToLobby();
-    }, [isTutorialRoute, matchId, lobbyPresence.isMissing, toast, shouldAutoJoin, isAutoJoining]);
+    }, [isTutorialRoute, matchId, lobbyPresence.isMissing, matchStatus.error, toast, shouldAutoJoin, isAutoJoining]);
 
     const handleForceExitLocal = () => {
         clearMatchLocalState();

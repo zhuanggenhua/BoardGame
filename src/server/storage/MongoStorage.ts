@@ -4,7 +4,7 @@
  * 实现 MatchStorage 接口，支持 TTL 自动过期
  */
 
-import mongoose, { Schema, Document, Model, type SchemaDefinitionProperty } from 'mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 import type {
     MatchStorage,
     MatchMetadata,
@@ -15,15 +15,14 @@ import type {
     ListMatchesOpts,
 } from '../../engine/transport/storage';
 import { hasOccupiedPlayers } from '../matchOccupancy';
+import logger from '../../../server/logger';
 
 // 房间文档接口
 interface IMatchDocument extends Document {
     matchID: string;
     gameName: string;
     state: StoredMatchState | null;
-    initialState: StoredMatchState | null;
     metadata: MatchMetadata | null;
-    log: unknown[];
     /** TTL 秒数，0 表示不保存（所有人离开即销毁）*/
     ttlSeconds: number;
     /** 过期时间（MongoDB TTL 索引使用） */
@@ -38,9 +37,7 @@ const MatchSchema = new Schema<IMatchDocument>(
         matchID: { type: String, required: true, unique: true, index: true },
         gameName: { type: String, required: true, index: true },
         state: { type: Schema.Types.Mixed, default: null },
-        initialState: { type: Schema.Types.Mixed, default: null },
         metadata: { type: Schema.Types.Mixed, default: null },
-        log: { type: [Schema.Types.Mixed], default: [] } as SchemaDefinitionProperty<unknown[]>,
         ttlSeconds: { type: Number, default: 0 },
         expiresAt: { type: Date, default: null }, // TTL 索引
     },
@@ -84,7 +81,7 @@ export class MongoStorage implements MatchStorage {
         // 这里只确保模型已初始化
         getMatchModel();
         this.bootTimeMs = Date.now();
-        console.log('[MongoStorage] 已连接');
+        logger.info('[MongoStorage] 已连接');
     }
 
     async createMatch(matchID: string, data: CreateMatchData): Promise<void> {
@@ -119,7 +116,7 @@ export class MongoStorage implements MatchStorage {
             if (existingMatches.length > 0) {
                 const matchIds = existingMatches.map(doc => doc.matchID);
                 await Match.deleteMany({ matchID: { $in: matchIds } });
-                console.log(`[MongoStorage] 覆盖旧房间 ownerKey=${ownerKey} ownerType=${ownerType ?? 'unknown'} count=${matchIds.length}`);
+                logger.info(`[MongoStorage] 覆盖旧房间 ownerKey=${ownerKey} ownerType=${ownerType ?? 'unknown'} count=${matchIds.length}`);
             }
         }
         
@@ -129,14 +126,12 @@ export class MongoStorage implements MatchStorage {
             matchID,
             gameName: data.metadata.gameName,
             state: data.initialState,
-            initialState: data.initialState,
             metadata: data.metadata,
-            log: [],
             ttlSeconds,
             expiresAt,
         });
 
-        console.log(`[MongoStorage] 创建房间 matchID=${matchID} ttlSeconds=${ttlSeconds} ownerKey=${ownerKey ?? 'null'} ownerType=${ownerType ?? 'unknown'}`);
+        logger.info(`[MongoStorage] 创建房间 matchID=${matchID} ttlSeconds=${ttlSeconds} ownerKey=${ownerKey ?? 'null'} ownerType=${ownerType ?? 'unknown'}`);
     }
 
     async setState(matchID: string, state: StoredMatchState): Promise<void> {
@@ -149,7 +144,7 @@ export class MongoStorage implements MatchStorage {
         // 简单超限告警（保留最少监控）
         const stateSize = JSON.stringify(stateToSave).length;
         if (stateSize > 8 * 1024 * 1024) {
-            console.warn(`[MongoStorage] 状态过大: matchID=${matchID}, size=${(stateSize / 1024 / 1024).toFixed(2)}MB`);
+            logger.warn(`[MongoStorage] 状态过大: matchID=${matchID}, size=${(stateSize / 1024 / 1024).toFixed(2)}MB`);
         }
         
         const update: Record<string, unknown> = { state: stateToSave };
@@ -163,20 +158,20 @@ export class MongoStorage implements MatchStorage {
      */
     private sanitizeStateForStorage(state: StoredMatchState): StoredMatchState {
         if (!state || typeof state !== 'object') {
-            console.warn('[MongoStorage] sanitize: state 不是对象');
+            logger.warn('[MongoStorage] sanitize: state 不是对象');
             return state;
         }
         // 状态结构是 { G: { sys, core }, _stateID, ... }
         // 游戏状态在 G 里面，G 的结构是 { sys, core }
         const G = (state as { G?: Record<string, unknown> }).G;
         if (!G) {
-            console.warn('[MongoStorage] sanitize: G 不存在');
+            logger.warn('[MongoStorage] sanitize: G 不存在');
             return state;
         }
         
         const sys = G.sys as Record<string, unknown> | undefined;
         if (!sys) {
-            console.warn('[MongoStorage] sanitize: sys 不存在');
+            logger.warn('[MongoStorage] sanitize: sys 不存在');
             return state;
         }
         
@@ -192,20 +187,7 @@ export class MongoStorage implements MatchStorage {
             };
         }
 
-        // 限制日志条目数量（保留最近 10 条，并清理大型事件 payload）
-        if (sanitizedSys.log && typeof sanitizedSys.log === 'object') {
-            const log = sanitizedSys.log as { entries?: unknown[]; maxEntries?: number };
-            if (Array.isArray(log.entries)) {
-                // 只保留最近 10 条日志
-                const recentEntries = log.entries.slice(-10);
-                // 清理每个日志条目中的大型对象
-                const cleanedEntries = recentEntries.map(entry => this.cleanLogEntry(entry));
-                sanitizedSys.log = {
-                    ...log,
-                    entries: cleanedEntries,
-                };
-            }
-        }
+        // LogSystem 已移除，log.entries 始终为空，无需裁剪
 
         const sanitizedState: StoredMatchState = {
             ...state,
@@ -216,42 +198,6 @@ export class MongoStorage implements MatchStorage {
         };
         
         return sanitizedState;
-    }
-
-    /**
-     * 清理单个日志条目，移除大型嵌套对象
-     */
-    private cleanLogEntry(entry: unknown): unknown {
-        if (!entry || typeof entry !== 'object') return entry;
-        const e = entry as { type?: string; data?: unknown };
-        
-        if (e.type !== 'event' || !e.data) return entry;
-        
-        const event = e.data as { type?: string; payload?: Record<string, unknown> };
-        if (!event.payload) return entry;
-
-        // 清理特定事件类型中的大型对象
-        const cleanedPayload = { ...event.payload };
-        
-        // ABILITY_REPLACED 事件：移除完整的 newAbilityDef，只保留 ID
-        if (event.type === 'ABILITY_REPLACED' && cleanedPayload.newAbilityDef) {
-            const abilityDef = cleanedPayload.newAbilityDef as { id?: string };
-            cleanedPayload.newAbilityDef = { id: abilityDef.id ?? 'unknown' };
-        }
-        
-        // DECK_SHUFFLED 事件：移除完整的牌库顺序，只保留数量
-        if (event.type === 'DECK_SHUFFLED' && Array.isArray(cleanedPayload.deckCardIds)) {
-            cleanedPayload.deckCardCount = (cleanedPayload.deckCardIds as unknown[]).length;
-            delete cleanedPayload.deckCardIds;
-        }
-
-        return {
-            ...e,
-            data: {
-                ...event,
-                payload: cleanedPayload,
-            },
-        };
     }
 
     async setMetadata(matchID: string, metadata: MatchMetadata): Promise<void> {
@@ -274,7 +220,7 @@ export class MongoStorage implements MatchStorage {
                 }
             }
         } catch (error) {
-            console.warn('[MongoStorage] 读取房间元数据用于 TTL 刷新失败:', error);
+            logger.warn('[MongoStorage] 读取房间元数据用于 TTL 刷新失败:', error);
         }
 
         if (ttlSeconds === 0) {
@@ -283,11 +229,11 @@ export class MongoStorage implements MatchStorage {
             const metadataWith = metadata as MatchMetadata & { disconnectedSince?: number | null };
             if (connected) {
                 if (metadataWith.disconnectedSince) {
-                    console.log(`[MongoStorage] 清理断线标记 matchID=${matchID} reason=reconnected`);
+                    logger.info(`[MongoStorage] 清理断线标记 matchID=${matchID} reason=reconnected`);
                     delete metadataWith.disconnectedSince;
                 }
             } else if (!metadataWith.disconnectedSince) {
-                console.log(`[MongoStorage] 记录断线时间 matchID=${matchID}`);
+                logger.info(`[MongoStorage] 记录断线时间 matchID=${matchID}`);
                 metadataWith.disconnectedSince = Date.now();
             }
         }
@@ -326,7 +272,7 @@ export class MongoStorage implements MatchStorage {
     async wipe(matchID: string): Promise<void> {
         const Match = getMatchModel();
         await Match.deleteOne({ matchID });
-        console.log(`[MongoStorage] 删除房间 ${matchID}`);
+        logger.info(`[MongoStorage] 删除房间 ${matchID}`);
     }
 
     async listMatches(opts?: ListMatchesOpts): Promise<string[]> {
@@ -383,14 +329,14 @@ export class MongoStorage implements MatchStorage {
             const metadata = doc.metadata as MatchMetadata | null;
             if (!metadata?.players) {
                 toDelete.push(doc.matchID);
-                console.log(`[Cleanup] 删除 ${doc.matchID}: 无 metadata.players（损坏数据）`);
+                logger.info(`[Cleanup] 删除 ${doc.matchID}: 无 metadata.players（损坏数据）`);
             }
             // 不再基于 "name 为空" 删除房间
         }
 
         if (toDelete.length > 0) {
             await Match.deleteMany({ matchID: { $in: toDelete } });
-            console.log(`[MongoStorage] 清理损坏房间: ${toDelete.length} 个`);
+            logger.info(`[MongoStorage] 清理损坏房间: ${toDelete.length} 个`);
         }
 
         return toDelete.length;
@@ -445,7 +391,7 @@ export class MongoStorage implements MatchStorage {
                         await Match.updateOne({ matchID: doc.matchID }, { metadata });
                     }
                     const reason = isStaleConnected ? 'stale_after_restart' : 'ghost_connection';
-                    console.warn(`[Cleanup] 强制标记断线 matchID=${doc.matchID} reason=${reason} connected=${connectedCount} occupied=${occupiedCount} idleMs=${idleMs}`);
+                    logger.warn(`[Cleanup] 强制标记断线 matchID=${doc.matchID} reason=${reason} connected=${connectedCount} occupied=${occupiedCount} idleMs=${idleMs}`);
                     continue;
                 }
                 if (metadata?.disconnectedSince) {
@@ -458,7 +404,7 @@ export class MongoStorage implements MatchStorage {
             if (!metadata) continue;
             const disconnectedSince = typeof metadata.disconnectedSince === 'number' ? metadata.disconnectedSince : undefined;
             if (!disconnectedSince) {
-                console.log(`[Cleanup] 标记断线时间 matchID=${doc.matchID} reason=disconnected_since_missing connected=${connectedCount} occupied=${occupiedCount}`);
+                logger.info(`[Cleanup] 标记断线时间 matchID=${doc.matchID} reason=disconnected_since_missing connected=${connectedCount} occupied=${occupiedCount}`);
                 metadata.disconnectedSince = now;
                 await Match.updateOne({ matchID: doc.matchID }, { metadata });
                 continue;
@@ -466,15 +412,15 @@ export class MongoStorage implements MatchStorage {
 
             if (now - disconnectedSince >= graceMs) {
                 toDelete.push(doc.matchID);
-                console.log(`[Cleanup] 删除临时房间 matchID=${doc.matchID} reason=ephemeral_disconnected_timeout`);
+                logger.info(`[Cleanup] 删除临时房间 matchID=${doc.matchID} reason=ephemeral_disconnected_timeout`);
             } else {
-                console.log(`[Cleanup] 等待断线宽限 matchID=${doc.matchID} remainingMs=${graceMs - (now - disconnectedSince)} connected=${connectedCount} occupied=${occupiedCount}`);
+                logger.info(`[Cleanup] 等待断线宽限 matchID=${doc.matchID} remainingMs=${graceMs - (now - disconnectedSince)} connected=${connectedCount} occupied=${occupiedCount}`);
             }
         }
 
         if (toDelete.length > 0) {
             await Match.deleteMany({ matchID: { $in: toDelete } });
-            console.log(`[MongoStorage] 清理临时房间: ${toDelete.length} 个`);
+            logger.info(`[MongoStorage] 清理临时房间: ${toDelete.length} 个`);
         }
 
         return toDelete.length;
@@ -505,13 +451,13 @@ export class MongoStorage implements MatchStorage {
             const stale = matches.slice(1);
             for (const match of stale) {
                 toDelete.push(match.matchID);
-                console.log(`[Cleanup] 删除重复房间 ownerKey=${ownerKey} matchID=${match.matchID}`);
+                logger.info(`[Cleanup] 删除重复房间 ownerKey=${ownerKey} matchID=${match.matchID}`);
             }
         }
 
         if (toDelete.length > 0) {
             await Match.deleteMany({ matchID: { $in: toDelete } });
-            console.log(`[MongoStorage] 清理重复 ownerKey 房间: ${toDelete.length} 个`);
+            logger.info(`[MongoStorage] 清理重复 ownerKey 房间: ${toDelete.length} 个`);
         }
 
         return toDelete.length;
@@ -541,13 +487,13 @@ export class MongoStorage implements MatchStorage {
             const players = metadata?.players as Record<string, { name?: string; credentials?: string; isConnected?: boolean }> | undefined;
             if (!hasOccupiedPlayers(players)) {
                 toDelete.push(doc.matchID);
-                console.log(`[Cleanup] 删除遗留房间 matchID=${doc.matchID} reason=legacy_owner`);
+                logger.info(`[Cleanup] 删除遗留房间 matchID=${doc.matchID} reason=legacy_owner`);
             }
         }
 
         if (toDelete.length > 0) {
             await Match.deleteMany({ matchID: { $in: toDelete } });
-            console.log(`[MongoStorage] 清理遗留房间: ${toDelete.length} 个`);
+            logger.info(`[MongoStorage] 清理遗留房间: ${toDelete.length} 个`);
         }
 
         return toDelete.length;
@@ -567,7 +513,7 @@ export class MongoStorage implements MatchStorage {
             updatedAt: { $lt: cutoffTime },
         });
 
-        console.log(`[MongoStorage] 清理过期房间 (>${hoursOld}h): ${result.deletedCount} 个`);
+        logger.info(`[MongoStorage] 清理过期房间 (>${hoursOld}h): ${result.deletedCount} 个`);
         return result.deletedCount ?? 0;
     }
 

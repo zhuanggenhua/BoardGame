@@ -88,7 +88,6 @@ describe('MongoStorage 行为', () => {
             matchID: 'match-1',
             gameName: 'tictactoe',
             state: null,
-            initialState: null,
             metadata: {
                 gameName: 'tictactoe',
                 players: {
@@ -117,7 +116,6 @@ describe('MongoStorage 行为', () => {
             matchID: 'dup-old',
             gameName: 'tictactoe',
             state: null,
-            initialState: null,
             metadata: {
                 gameName: 'tictactoe',
                 players: { 0: { id: 0 }, 1: { id: 1 } },
@@ -131,7 +129,6 @@ describe('MongoStorage 行为', () => {
             matchID: 'dup-new',
             gameName: 'tictactoe',
             state: null,
-            initialState: null,
             metadata: {
                 gameName: 'tictactoe',
                 players: { 0: { id: 0 }, 1: { id: 1 } },
@@ -160,7 +157,6 @@ describe('MongoStorage 行为', () => {
             matchID: 'ephemeral-empty',
             gameName: 'tictactoe',
             state: null,
-            initialState: null,
             metadata: {
                 gameName: 'tictactoe',
                 players: {
@@ -178,7 +174,6 @@ describe('MongoStorage 行为', () => {
             matchID: 'ephemeral-active',
             gameName: 'tictactoe',
             state: null,
-            initialState: null,
             metadata: {
                 gameName: 'tictactoe',
                 players: {
@@ -210,7 +205,6 @@ describe('MongoStorage 行为', () => {
             matchID: 'ephemeral-stale',
             gameName: 'tictactoe',
             state: null,
-            initialState: null,
             metadata: {
                 gameName: 'tictactoe',
                 players: {
@@ -258,7 +252,6 @@ describe('MongoStorage 行为', () => {
             matchID: 'legacy-empty',
             gameName: 'tictactoe',
             state: null,
-            initialState: null,
             metadata: {
                 gameName: 'tictactoe',
                 players: legacyPlayers,
@@ -272,7 +265,6 @@ describe('MongoStorage 行为', () => {
             matchID: 'legacy-occupied',
             gameName: 'tictactoe',
             state: null,
-            initialState: null,
             metadata: {
                 gameName: 'tictactoe',
                 players: occupiedPlayers,
@@ -319,7 +311,6 @@ describe('MongoStorage 行为', () => {
             matchID: 'ghost-conn',
             gameName: 'tictactoe',
             state: null,
-            initialState: null,
             metadata: {
                 gameName: 'tictactoe',
                 players: {

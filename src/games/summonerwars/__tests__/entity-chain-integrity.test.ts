@@ -23,7 +23,7 @@ import {
     type RefChain,
 } from '../../../engine/testing/entityIntegritySuite';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
-import { calculateEffectiveStrength, getEffectiveStructureLife, triggerAbilities, triggerAllUnitsAbilities } from '../domain/abilityResolver';
+import { getEffectiveStrengthValue, getEffectiveStructureLife, triggerAbilities, triggerAllUnitsAbilities } from '../domain/abilityResolver';
 import {
     isImmobileBase,
     getEffectiveAttackRangeBase,
@@ -486,14 +486,14 @@ describe('被动能力运行时验证 (Section 8)', () => {
         const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
         // 放一个友方建筑在相邻位置
         putStructure(core, { row: 4, col: 4 }, '0');
-        const str = calculateEffectiveStrength(unit, core);
+        const str = getEffectiveStrengthValue(unit, core);
         expect(str).toBe(3); // 2 base + 1 from adjacent building
     });
 
     it('[frost_bolt] 无相邻建筑时不加成', () => {
         const card = mkUnit('fb-unit2', { abilities: ['frost_bolt'], strength: 2, faction: 'frost' });
         const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
-        const str = calculateEffectiveStrength(unit, core);
+        const str = getEffectiveStrengthValue(unit, core);
         expect(str).toBe(2);
     });
 
@@ -504,7 +504,7 @@ describe('被动能力运行时验证 (Section 8)', () => {
         // 放两个友方建筑在2格内
         putStructure(core, { row: 4, col: 4 }, '0');
         putStructure(core, { row: 3, col: 3 }, '0');
-        const str = calculateEffectiveStrength(unit, core);
+        const str = getEffectiveStrengthValue(unit, core);
         expect(str).toBe(5); // 3 base + 2 buildings
     });
 
@@ -515,7 +515,7 @@ describe('被动能力运行时验证 (Section 8)', () => {
         // 放一个友方城塞单位在2格内（card.id 包含 'fortress'）
         const fortressCard = mkUnit('fortress-guard', { strength: 3, faction: 'frost' });
         putUnit(core, { row: 3, col: 3 }, fortressCard, '0');
-        const str = calculateEffectiveStrength(unit, core);
+        const str = getEffectiveStrengthValue(unit, core);
         expect(str).toBe(3); // 2 base + 1 fortress unit
     });
 

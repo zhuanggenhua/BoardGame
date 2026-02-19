@@ -17,7 +17,7 @@ import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from '../domain';
 import type { SummonerWarsCore, CellCoord, BoardUnit, UnitCard, EventCard, PlayerId, StructureCard } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import { canAttackEnhanced, manhattanDistance, getPlayerUnits } from '../domain/helpers';
-import { calculateEffectiveStrength } from '../domain/abilityResolver';
+import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { generateInstanceId } from '../domain/utils';
 import { createInitializedCore } from './test-helpers';
 
@@ -223,7 +223,7 @@ describe('瓦伦蒂娜 - 城塞精锐 (fortress_elite)', () => {
     };
     state.board[4][2].unit = valentina;
 
-    const strength = calculateEffectiveStrength(valentina, state);
+    const strength = getEffectiveStrengthValue(valentina, state);
     expect(strength).toBe(2); // 基础2，无城塞加成
   });
 
@@ -245,7 +245,7 @@ describe('瓦伦蒂娜 - 城塞精锐 (fortress_elite)', () => {
       owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(valentina, state);
+    const strength = getEffectiveStrengthValue(valentina, state);
     expect(strength).toBe(3); // 基础2 + 城塞1
   });
 
@@ -272,7 +272,7 @@ describe('瓦伦蒂娜 - 城塞精锐 (fortress_elite)', () => {
       owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(valentina, state);
+    const strength = getEffectiveStrengthValue(valentina, state);
     expect(strength).toBe(4); // 基础2 + 城塞2
   });
 
@@ -294,7 +294,7 @@ describe('瓦伦蒂娜 - 城塞精锐 (fortress_elite)', () => {
       owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(valentina, state);
+    const strength = getEffectiveStrengthValue(valentina, state);
     expect(strength).toBe(2); // 基础2，3格外不计入
   });
 
@@ -315,7 +315,7 @@ describe('瓦伦蒂娜 - 城塞精锐 (fortress_elite)', () => {
       owner: '1',
     });
 
-    const strength = calculateEffectiveStrength(valentina, state);
+    const strength = getEffectiveStrengthValue(valentina, state);
     expect(strength).toBe(2); // 敌方不计入
   });
 });
@@ -337,7 +337,7 @@ describe('雅各布 - 辉光射击 (radiant_shot)', () => {
     state.board[4][2].unit = jacob;
     state.players['0'].magic = 0;
 
-    const strength = calculateEffectiveStrength(jacob, state);
+    const strength = getEffectiveStrengthValue(jacob, state);
     expect(strength).toBe(2); // 基础2
   });
 
@@ -351,7 +351,7 @@ describe('雅各布 - 辉光射击 (radiant_shot)', () => {
     state.board[4][2].unit = jacob;
     state.players['0'].magic = 1;
 
-    const strength = calculateEffectiveStrength(jacob, state);
+    const strength = getEffectiveStrengthValue(jacob, state);
     expect(strength).toBe(2); // 基础2 + floor(1/2)=0
   });
 
@@ -365,7 +365,7 @@ describe('雅各布 - 辉光射击 (radiant_shot)', () => {
     state.board[4][2].unit = jacob;
     state.players['0'].magic = 4;
 
-    const strength = calculateEffectiveStrength(jacob, state);
+    const strength = getEffectiveStrengthValue(jacob, state);
     expect(strength).toBe(4); // 基础2 + floor(4/2)=2
   });
 
@@ -379,7 +379,7 @@ describe('雅各布 - 辉光射击 (radiant_shot)', () => {
     state.board[4][2].unit = jacob;
     state.players['0'].magic = 10;
 
-    const strength = calculateEffectiveStrength(jacob, state);
+    const strength = getEffectiveStrengthValue(jacob, state);
     expect(strength).toBe(7); // 基础2 + floor(10/2)=5
   });
 });

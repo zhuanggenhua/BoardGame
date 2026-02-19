@@ -191,7 +191,7 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
             const state = createState({ attackerBlessing: 1, attackerHP: 3 });
             const handler = getCustomActionHandler('paladin-blessing-prevent')!;
             const ctx = buildCtx(state, 'paladin-blessing-prevent');
-            // 注入致死伤害参数（applyOnDamageReceivedTriggers 会自动注入）
+            // 注入致死伤害参数（createDamageCalculation 的 PassiveTriggerHandler 会自动注入）
             ctx.action = { ...ctx.action, params: { damageAmount: 10 } } as any;
             const events = handler(ctx);
 

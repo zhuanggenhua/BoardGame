@@ -25,6 +25,27 @@
 
 ---
 
+## React useEffect 执行时序（强制）
+
+> **子组件的 effect 先于父组件执行**。React 渲染自上而下（parent → child），但 effect 执行自下而上（child → parent）。
+
+- **核心规则**：当父子组件各有 `useEffect` 且存在依赖关系时，不能假设父组件的 effect 先执行。
+- **典型陷阱**：父组件 effect 设置数据 → 子组件 effect 消费数据。实际执行顺序相反，子组件 effect 先跑，此时数据还没准备好。
+- **教训案例**：
+  ```
+  MatchRoom（父）的 effect 调用 startTutorial() 设置 pendingStartRef
+  Board（子）的 effect 调用 bindDispatch() 消费 pendingStartRef
+  
+  预期时序：startTutorial → bindDispatch（先设置再消费）
+  实际时序：bindDispatch → startTutorial（子先于父，消费时数据为空）
+  ```
+- **解决方案**：跨组件 effect 通信时，必须处理两种时序——"生产者先执行"和"消费者先执行"。用 ref 暂存 + 双向检查：
+  - 消费者先到：暂存消费能力（如 controller），等生产者到达时直接使用
+  - 生产者先到：暂存数据（如 pendingStartRef），等消费者到达时消费
+- **防重入条件必须区分"已完成"和"未开始"**：`controller 存在` 不等于 `教程已启动`，可能只是 Board 先挂载了。
+
+---
+
 ## 白屏问题排查流程（强制）
 
 > **白屏时禁止盲目修改代码**，必须先获取证据。

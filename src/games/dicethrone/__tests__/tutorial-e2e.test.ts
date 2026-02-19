@@ -5,9 +5,9 @@
  * 模拟客户端 TutorialContext 的行为：执行 AI 操作 → consumeAi → 手动推进。
  *
  * 教程流程（与 tutorial.ts 步骤顺序一致）：
- *   setup → intro系列 → 弃牌教学 → 首次攻击 → 对手防御 → 卡牌介绍
- *   → AI回合（掌击+攻击）→ 击倒说明 → 悟道（获取净化）→ 净化移除击倒
- *   → 静心 → 清修升级 → 结束
+ *   setup → intro系列 → 弃牌教学 → 首次攻击 → 对手防御
+ *   → main2阶段（顿悟+静心）→ AI回合（掌击+攻击）
+ *   → 击倒说明 → 净化移除击倒 → 清修升级 → 结束
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -118,8 +118,9 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
      * 公共流程：从初始状态走到 AI 回合完成
      * 返回状态处于 knockdown-explain 步骤
      *
-     * 流程：setup → intro系列 → 弃牌(sell deep-thought) → 首次攻击
-     *       → 对手防御 → 卡牌介绍 → AI回合 → knockdown-explain
+     * 流程：setup → intro系列 → 弃牌(sell deep-thought) → 撤回弃牌(undo)
+     *       → 首次攻击 → 对手防御 → main2介绍 → 顿悟(main2) → 静心(main2)
+     *       → AI回合介绍 → AI回合（掌击+攻击）→ knockdown-explain
      */
     const runToKnockdownExplain = (): MatchState<DiceThroneCore> => {
         let s: MatchState<DiceThroneCore> = {
@@ -144,7 +145,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
             s = nextStep(s, `A: skip ${id}`);
         }
 
-        // 弃牌教学：开局 main1，手上 4 张牌，卖掉 deep-thought 换 1 CP
+        // 弃牌+撤回教学：卖掉 deep-thought → 撤回，教会玩家弃牌和撤回操作
         expect(s.sys.tutorial.step?.id).toBe('sell-card-intro');
         expect(s.sys.tutorial.step?.allowedCommands).toContain('SELL_CARD');
         const handBeforeSell = s.core.players['0'].hand;
@@ -155,7 +156,16 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         expect(s.core.players['0'].hand.length).toBe(3);
         expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(INITIAL_CP + 1);
 
-        // 段 B：首次攻击（CP = INITIAL_CP + 1 = 3）
+        // 撤回弃牌教学
+        expect(s.sys.tutorial.step?.id).toBe('undo-sell-intro');
+        s = nextStep(s, 'A: skip undo-sell-intro');
+
+        expect(s.sys.tutorial.step?.id).toBe('undo-sell');
+        s = exec(s, 'UNDO_SELL_CARD', '0', {}, 'A: undo-sell');
+        expect(s.core.players['0'].hand.length).toBe(4);
+        expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(INITIAL_CP);
+
+        // 段 B：首次攻击（CP = INITIAL_CP = 2，未卖牌）
         expect(s.sys.tutorial.step?.id).toBe('advance');
         s = exec(s, 'ADVANCE_PHASE', '0', {}, 'B: main1→offensive');
         expect(s.sys.phase).toBe('offensiveRoll');
@@ -167,9 +177,9 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         s = exec(s, 'ROLL_DICE', '0', {}, 'B: roll');
         expect(s.sys.tutorial.step?.id).toBe('play-six');
 
-        // play-six 花费 1 CP（CP: 3→2）
+        // play-six 花费 1 CP（CP: 2→1）
         s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-play-six' }, 'B: play-six');
-        expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(INITIAL_CP);
+        expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(INITIAL_CP - 1);
         expect(s.sys.interaction.current).toBeDefined();
         expect(s.sys.interaction.current?.kind).toBe('multistep-choice');
 
@@ -186,19 +196,31 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         expect(s.sys.phase).toBe('defensiveRoll');
         expect(s.sys.tutorial.step?.id).toBe('opponent-defense');
 
-        // opponent-defense: AI 防御掷骰
+        // opponent-defense: AI 防御掷骰 → 进入 main2
         const opponentDefenseStep = s.sys.tutorial.step!;
         s = consumeAiActions(s, 'opponent-defense', opponentDefenseStep.aiActions!, 'B: opponent-defense');
         expect(s.sys.phase).toBe('main2');
-        expect(s.sys.tutorial.step?.id).toBe('card-enlightenment');
 
-        // 跳过卡牌介绍 → ai-turn
-        s = nextStep(s, 'C: skip card-enlightenment');
+        // 段 C：main2 阶段打出顿悟和静心
+        expect(s.sys.tutorial.step?.id).toBe('main2-intro');
+        s = nextStep(s, 'C: skip main2-intro');
+
+        expect(s.sys.tutorial.step?.id).toBe('enlightenment-play');
+        s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-enlightenment' }, 'C: play-enlightenment');
+        expect(s.core.players['0'].tokens[TOKEN_IDS.PURIFY]).toBeGreaterThanOrEqual(1);
+        expect(s.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBeGreaterThanOrEqual(2);
+
+        expect(s.sys.tutorial.step?.id).toBe('inner-peace');
+        s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-inner-peace' }, 'C: play-inner-peace');
+        expect(s.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBeGreaterThanOrEqual(4);
+
+        // 段 D：AI 回合
+        expect(s.sys.tutorial.step?.id).toBe('ai-turn-intro');
+        s = nextStep(s, 'D: skip ai-turn-intro');
         expect(s.sys.tutorial.step?.id).toBe('ai-turn');
 
-        // AI 完整回合
         const aiTurnStep = s.sys.tutorial.step!;
-        s = consumeAiActions(s, 'ai-turn', aiTurnStep.aiActions!, 'C: ai-turn');
+        s = consumeAiActions(s, 'ai-turn', aiTurnStep.aiActions!, 'D: ai-turn');
         expect(s.sys.phase).toBe('main1');
         expect(s.core.activePlayerId).toBe('0');
         expect(s.core.players['0'].statusEffects[STATUS_IDS.KNOCKDOWN]).toBe(1);
@@ -210,23 +232,15 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
     it('完整教程流程', () => {
         let s = runToKnockdownExplain();
 
-        // 段 D — 净化教程（Turn 2 P0 main1，手牌: enlightenment, inner-peace, meditation-2）
-        s = nextStep(s, 'D: skip knockdown-explain');
-        expect(s.sys.tutorial.step?.id).toBe('enlightenment-play');
-
-        s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-enlightenment' }, 'D: play-enlightenment');
-        expect(s.core.players['0'].tokens[TOKEN_IDS.PURIFY]).toBeGreaterThanOrEqual(1);
+        // 段 E — 净化 + 升级（Turn 2 P0 main1，手牌: meditation-2）
+        // 顿悟和静心已在 main2 打出，净化标记已获得
+        s = nextStep(s, 'E: skip knockdown-explain');
         expect(s.sys.tutorial.step?.id).toBe('purify-use');
 
-        s = exec(s, 'USE_PURIFY', '0', { statusId: STATUS_IDS.KNOCKDOWN }, 'D: use-purify');
+        s = exec(s, 'USE_PURIFY', '0', { statusId: STATUS_IDS.KNOCKDOWN }, 'E: use-purify');
         expect(s.core.players['0'].statusEffects[STATUS_IDS.KNOCKDOWN] ?? 0).toBe(0);
         expect(s.core.players['0'].tokens[TOKEN_IDS.PURIFY]).toBe(0);
 
-        // 段 E — 补充卡牌教学
-        expect(s.sys.tutorial.step?.id).toBe('inner-peace');
-
-        s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-inner-peace' }, 'E: play-inner-peace');
-        expect(s.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBeGreaterThanOrEqual(2);
         expect(s.sys.tutorial.step?.id).toBe('meditation-2');
 
         const cpBeforeMeditation = s.core.players['0'].resources[RESOURCE_IDS.CP] ?? 0;
@@ -245,10 +259,9 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         let s = runToKnockdownExplain();
 
         s = nextStep(s, 'skip knockdown-explain');
-        s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-enlightenment' }, 'play-enlightenment');
         s = exec(s, 'USE_PURIFY', '0', { statusId: STATUS_IDS.KNOCKDOWN }, 'use-purify');
 
-        s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-inner-peace' }, 'play-inner-peace');
+        expect(s.sys.tutorial.step?.id).toBe('meditation-2');
         const cpBeforeMeditation2 = s.core.players['0'].resources[RESOURCE_IDS.CP] ?? 0;
         expect(cpBeforeMeditation2).toBeGreaterThanOrEqual(2);
 
@@ -263,9 +276,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         let s = runToKnockdownExplain();
 
         s = nextStep(s, 'skip knockdown-explain');
-        s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-enlightenment' }, 'play-enlightenment');
         s = exec(s, 'USE_PURIFY', '0', { statusId: STATUS_IDS.KNOCKDOWN }, 'use-purify');
-        s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-inner-peace' }, 'play-inner-peace');
 
         // 注入额外手牌 + 强制 CP=1，模拟 CP 不足但有牌可卖的场景
         const dummyCard = { ...s.core.players['0'].hand[0], id: 'card-dummy-for-sell' };

@@ -3,7 +3,8 @@
  * 将 AbilityEffect 转换为 DiceThroneEvent（事件驱动）
  */
 
-import type { PlayerId, RandomFn } from '../../../engine/types';
+import type { PlayerId, RandomFn, GameEvent } from '../../../engine/types';
+import { createDamageCalculation, type PassiveTriggerHandler } from '../../../engine/primitives/damageCalculation';
 import type { EffectAction, RollDieConditionalEffect, RollDieDefaultEffect } from './tokenTypes';
 
 export type { RollDieConditionalEffect, RollDieDefaultEffect };
@@ -221,128 +222,67 @@ export function createDisplayOnlySettlement(
 // ============================================================================
 
 /**
- * 处理 onDamageReceived 被动触发（基于 tokenDefinitions）
- * - 支持 modifyStat / removeStatus / custom
- * - custom 中的 PREVENT_DAMAGE 会即时折算到当前伤害，并标记 applyImmediately
+ * 创建 DiceThrone 专用的 PassiveTriggerHandler
+ *
+ * 封装 custom action handler 的调用逻辑，实现引擎层 PassiveTriggerHandler 接口。
+ * 将 getCustomActionHandler 查找、CustomActionContext 构建、PREVENT_DAMAGE 提取
+ * 统一包装，供 createDamageCalculation 在 collectStatusModifiers 中调用。
  */
-function applyOnDamageReceivedTriggers(
+export function createDTPassiveTriggerHandler(
     ctx: EffectContext,
-    targetId: PlayerId,
-    baseDamage: number,
-    options: { timestamp: number; random?: RandomFn; sfxKey?: string }
-): { damage: number; events: DiceThroneEvent[]; modifiers: import('./events').DamageModifier[] } {
-    const events: DiceThroneEvent[] = [];
-    const modifiers: import('./events').DamageModifier[] = [];
-    const { state } = ctx;
-    const target = state.players[targetId];
-    if (!target) {
-        return { damage: baseDamage, events, modifiers };
-    }
-
-    const tokenDefinitions = state.tokenDefinitions ?? [];
-    let nextDamage = baseDamage;
-
-    for (const def of tokenDefinitions) {
-        if (def.passiveTrigger?.timing !== 'onDamageReceived') {
-            continue;
-        }
-
-        const stacks = def.category === 'debuff'
-            ? (target.statusEffects[def.id] ?? 0)
-            : (target.tokens[def.id] ?? 0);
-
-        if (stacks <= 0) {
-            continue;
-        }
-
-        const actions = def.passiveTrigger.actions ?? [];
-        for (const action of actions) {
-            switch (action.type) {
-                case 'modifyStat': {
-                    const delta = action.value ?? 0;
-                    if (delta !== 0) {
-                        const totalDelta = delta * stacks;
-                        nextDamage += totalDelta;
-                        // 记录修正，用于 DAMAGE_DEALT 事件的 modifiers 字段（ActionLog breakdown）
-                        modifiers.push({
-                            type: 'status',
-                            value: totalDelta,
-                            sourceId: def.id,
-                            sourceName: def.name,
-                        });
-                    }
-                    break;
-                }
-                case 'removeStatus': {
-                    if (!action.statusId) break;
-                    const currentStacks = target.statusEffects[action.statusId] ?? 0;
-                    if (currentStacks <= 0) break;
-                    const removeStacks = Math.min(currentStacks, action.value ?? currentStacks);
-                    events.push({
-                        type: 'STATUS_REMOVED',
-                        payload: { targetId, statusId: action.statusId, stacks: removeStacks },
-                        sourceCommandType: 'ABILITY_EFFECT',
-                        timestamp: options.timestamp,
-                        sfxKey: options.sfxKey,
-                    } as StatusRemovedEvent);
-                    break;
-                }
-                case 'custom': {
-                    const actionId = action.customActionId;
-                    if (!actionId) break;
-                    const handler = getCustomActionHandler(actionId);
-                    if (!handler) {
-                        console.warn(`[DiceThrone] 未注册的 customAction: ${actionId}`);
-                        break;
-                    }
-                    const actionWithParams: EffectAction = {
-                        ...action,
-                        params: {
-                            ...(action as any).params,
-                            damageAmount: nextDamage,
-                            tokenId: def.id,
-                            tokenStacks: stacks,
-                        },
-                    };
-                    const handlerCtx: CustomActionContext = {
-                        ctx,
-                        targetId,
-                        attackerId: ctx.attackerId,
-                        sourceAbilityId: ctx.sourceAbilityId,
-                        state,
-                        timestamp: options.timestamp,
-                        random: options.random,
-                        action: actionWithParams,
-                    };
-                    const handledEvents = handler(handlerCtx);
-                    if (options.sfxKey) {
-                        handledEvents.forEach(handledEvent => {
-                            if (!handledEvent.sfxKey) {
-                                handledEvent.sfxKey = options.sfxKey;
-                            }
-                        });
-                    }
-                    handledEvents.forEach(handledEvent => {
-                        if (handledEvent.type === 'PREVENT_DAMAGE') {
-                            const payload = (handledEvent as PreventDamageEvent).payload;
-                            const preventAmount = payload.amount ?? 0;
-                            if (preventAmount > 0) {
-                                nextDamage = Math.max(0, nextDamage - preventAmount);
-                            }
-                            payload.applyImmediately = true;
-                        }
-                    });
-                    events.push(...handledEvents);
-                    break;
-                }
-                default:
-                    break;
+    random?: RandomFn,
+): PassiveTriggerHandler {
+    return {
+        handleCustomAction(actionId, context) {
+            const handler = getCustomActionHandler(actionId);
+            if (!handler) {
+                console.warn(`[DiceThrone] 未注册的 customAction: ${actionId}`);
+                return { events: [], preventAmount: 0 };
             }
-        }
-    }
 
-    return { damage: Math.max(0, nextDamage), events, modifiers };
+            // 构建 EffectAction，注入 damageAmount/tokenId/tokenStacks 参数
+            const actionWithParams: EffectAction = {
+                type: 'custom',
+                customActionId: actionId,
+                params: {
+                    damageAmount: context.damageAmount,
+                    tokenId: context.tokenId,
+                    tokenStacks: context.tokenStacks,
+                },
+            };
+
+            const handlerCtx: CustomActionContext = {
+                ctx,
+                targetId: context.targetId,
+                attackerId: context.attackerId,
+                sourceAbilityId: context.sourceAbilityId ?? ctx.sourceAbilityId,
+                state: context.state,
+                timestamp: context.timestamp,
+                random: context.random ?? random,
+                action: actionWithParams,
+            };
+
+            const handledEvents = handler(handlerCtx);
+
+            // 提取 PREVENT_DAMAGE 事件的减免量，并标记 applyImmediately
+            let preventAmount = 0;
+            for (const evt of handledEvents) {
+                if (evt.type === 'PREVENT_DAMAGE') {
+                    const payload = (evt as PreventDamageEvent).payload;
+                    const amount = payload.amount ?? 0;
+                    if (amount > 0) {
+                        preventAmount += amount;
+                    }
+                    payload.applyImmediately = true;
+                }
+            }
+
+            return { events: handledEvents as GameEvent[], preventAmount };
+        },
+    };
 }
+
+
 
 /**
  * 将单个效果动作转换为事件
@@ -369,21 +309,35 @@ function resolveEffectAction(
                     : [targetId];
 
             for (const dmgTargetId of damageTargets) {
-                let totalValue = (action.value ?? 0) + (bonusDamage ?? 0);
+                const baseDamage = (action.value ?? 0) + (bonusDamage ?? 0);
+                if (baseDamage <= 0) continue;
 
-                let passiveModifiers: import('./events').DamageModifier[] = [];
-                if (totalValue > 0) {
-                    const passiveResult = applyOnDamageReceivedTriggers(ctx, dmgTargetId, totalValue, {
-                        timestamp,
-                        random,
-                        sfxKey,
-                    });
-                    totalValue = passiveResult.damage;
-                    events.push(...passiveResult.events);
-                    passiveModifiers = passiveResult.modifiers;
-                }
+                // 统一使用 createDamageCalculation 引擎原语计算伤害
+                const calc = createDamageCalculation({
+                    baseDamage,
+                    source: { playerId: attackerId, abilityId: sourceAbilityId },
+                    target: { playerId: dmgTargetId },
+                    state,
+                    autoCollectTokens: true,
+                    autoCollectStatus: true,
+                    autoCollectShields: true,
+                    passiveTriggerHandler: createDTPassiveTriggerHandler(ctx, random),
+                    timestamp,
+                });
+                const result = calc.resolve();
 
-                if (totalValue <= 0) continue;
+                // 收集 PassiveTrigger 产生的副作用事件（removeStatus / custom handler）
+                events.push(...result.sideEffectEvents);
+
+                if (result.finalDamage <= 0) continue;
+
+                // 将引擎层 modifiers 转为 DamageModifier 格式（用于 Token 响应窗口的 pendingDamage）
+                const passiveModifiers: import('./events').DamageModifier[] = result.modifiers.map(m => ({
+                    type: m.type as 'defense' | 'token' | 'shield' | 'status',
+                    value: m.value,
+                    sourceId: m.sourceId,
+                    sourceName: m.sourceName,
+                }));
 
                 // target: 'all'/'allOpponents' 的全体伤害不触发 Token 响应窗口
                 if (action.target !== 'all' && action.target !== 'allOpponents') {
@@ -392,7 +346,7 @@ function resolveEffectAction(
                         state,
                         attackerId,
                         dmgTargetId,
-                        totalValue
+                        result.finalDamage
                     );
 
                     if (tokenResponseType) {
@@ -403,7 +357,7 @@ function resolveEffectAction(
                         const pendingDamage = createPendingDamage(
                             attackerId,
                             dmgTargetId,
-                            totalValue,
+                            result.finalDamage,
                             responseType,
                             sourceAbilityId,
                             timestamp,
@@ -419,16 +373,17 @@ function resolveEffectAction(
                 // 没有可用 Token，直接生成伤害事件
                 const dmgTarget = state.players[dmgTargetId];
                 const dmgTargetHp = dmgTarget?.resources[RESOURCE_IDS.HP] ?? 0;
-                const actualDamage = dmgTarget ? Math.min(totalValue, dmgTargetHp) : 0;
+                const actualDamage = dmgTarget ? Math.min(result.finalDamage, dmgTargetHp) : 0;
 
                 const event: DamageDealtEvent = {
                     type: 'DAMAGE_DEALT',
                     payload: {
                         targetId: dmgTargetId,
-                        amount: totalValue,
+                        amount: result.finalDamage,
                         actualDamage,
                         sourceAbilityId,
                         ...(passiveModifiers.length > 0 ? { modifiers: passiveModifiers } : {}),
+                        breakdown: result.breakdown,
                     },
                     sourceCommandType: 'ABILITY_EFFECT',
                     timestamp,

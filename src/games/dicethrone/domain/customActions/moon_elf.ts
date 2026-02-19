@@ -636,7 +636,7 @@ function handleEntangleEffect(context: CustomActionContext): DiceThroneEvent[] {
 }
 
 // 锁定 (Targeted) 是持续效果，受伤时 +2 伤害，不会自动移除。
-// 伤害修正通过 TokenDef.passiveTrigger.actions[modifyStat] 在 applyOnDamageReceivedTriggers 中自动处理。
+// 伤害修正通过 TokenDef.passiveTrigger.actions[modifyStat]，由 createDamageCalculation 的 collectStatusModifiers 自动处理。
 // 移除只能通过净化等主动手段。
 
 // ============================================================================

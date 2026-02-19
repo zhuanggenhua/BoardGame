@@ -24,7 +24,7 @@ import type {
 } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import { canMoveToEnhanced } from '../domain/helpers';
-import { calculateEffectiveStrength, getEffectiveLifeBase } from '../domain/abilityResolver';
+import { getEffectiveStrengthValue, getEffectiveLifeBase } from '../domain/abilityResolver';
 import { getSummonerWarsUIHints } from '../domain/uiHints';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
 
@@ -227,7 +227,7 @@ describe('蒙威尊者 - 力量强化 (power_up)', () => {
       boosts: 0,
     });
 
-    const strength = calculateEffectiveStrength(moka, state);
+    const strength = getEffectiveStrengthValue(moka, state);
     expect(strength).toBe(1); // 基础1
   });
 
@@ -240,7 +240,7 @@ describe('蒙威尊者 - 力量强化 (power_up)', () => {
       boosts: 3,
     });
 
-    const strength = calculateEffectiveStrength(moka, state);
+    const strength = getEffectiveStrengthValue(moka, state);
     expect(strength).toBe(4); // 基础1 + 充能3
   });
 
@@ -253,7 +253,7 @@ describe('蒙威尊者 - 力量强化 (power_up)', () => {
       boosts: 8,
     });
 
-    const strength = calculateEffectiveStrength(moka, state);
+    const strength = getEffectiveStrengthValue(moka, state);
     expect(strength).toBe(6); // 基础1 + 最多5
   });
 });

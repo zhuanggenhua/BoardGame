@@ -447,19 +447,11 @@ const validatePlayCard = (
 ): ValidationResult => {
     const actingPlayerId = playerId;
 
-    console.log('[validatePlayCard] 开始验证:', {
-        playerId: actingPlayerId,
-        cardId: cmd.payload.cardId,
-        phase,
-    });
-
     const player = state.players[actingPlayerId];
     if (!player) {
         console.warn('[validatePlayCard] 验证失败 - 玩家不存在:', { playerId: actingPlayerId });
         return fail('player_not_found');
     }
-    
-    console.log('[validatePlayCard] 手牌:', player.hand.map(c => ({ id: c.id, name: c.name })));
     
     const card = player.hand.find(c => c.id === cmd.payload.cardId);
     if (!card) {
@@ -470,8 +462,6 @@ const validatePlayCard = (
         });
         return fail('card_not_in_hand');
     }
-    
-    console.log('[validatePlayCard] 找到卡牌:', { id: card.id, name: card.name, timing: card.timing, cpCost: card.cpCost });
 
     // 主要阶段牌：仅允许当前回合玩家
     if (card.timing === 'main' && !isMoveAllowed(playerId, state.activePlayerId)) {
@@ -503,7 +493,6 @@ const validatePlayCard = (
         return fail(checkResult.reason);
     }
     
-    console.log('[validatePlayCard] 验证通过');
     return ok();
 };
 
@@ -951,14 +940,6 @@ export const validateCommand = (
     phase: TurnPhase,
     pendingInteraction?: InteractionDescriptor
 ): ValidationResult => {
-    // 诊断日志：追踪所有命令验证
-    console.log('[validateCommand] 验证命令:', {
-        type: command.type,
-        playerId: command.playerId,
-        phase,
-        payload: command.payload,
-    });
-
     if (command.type.startsWith('SYS_')) {
         return ok();
     }

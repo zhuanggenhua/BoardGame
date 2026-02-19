@@ -438,7 +438,7 @@ src/games/<gameId>/
 项目有两个独立的服务端进程：
 
 **游戏服务（`server.ts`）**：
-- GameTransportServer — 游戏状态同步（WebSocket / socket.io）
+- GameTransportServer — 游戏状态同步（WebSocket / socket.io + MsgPack 序列化）
 - socket.io namespace — 大厅/重赛/聊天实时通道
 - HybridStorage — 状态持久化（MongoDB）
 - 清单驱动注册 — 只加载 `enabled=true` 的游戏
@@ -519,17 +519,28 @@ runner.runAll([
 ```
 用户点击 UI
   → Board.tsx 调用 dispatch('ATTACK', { target: 'B' })
-    → GameTransportClient 发送 socket 'command' 事件
-      → GameTransportServer.executeCommandInternal 构造 Command
-        → executePipeline(config, state, command, random, playerIds)
-          → Systems.beforeCommand（Undo 快照、Flow 拦截等）
-          → Domain.validate → Domain.execute → Event[]
-          → Domain.reduce（逐事件更新 core）
-          → Systems.afterEvents（多轮：Log/EventStream/ActionLog/Flow 自动推进）
-          → applyGameoverCheck（检测游戏结束，写入 sys.gameover）
-        ← PipelineResult { success, state, events }
-      → 持久化状态到 MongoDB
-    → GameTransportServer 广播状态（经 playerView 过滤）
+    → GameProvider 拦截命令
+      ├─ 乐观引擎 processCommand()
+      │   ├─ Random Probe 检测：pipeline 未调用随机数 → 确定性命令
+      │   │   → 本地 executePipeline 预测状态 → 立即更新 UI（零延迟）
+      │   │   → AnimationMode 决定是否保留 EventStream（乐观动画 or 等确认）
+      │   └─ Random Probe 检测：pipeline 调用了随机数 → 非确定性命令
+      │       → 丢弃乐观结果，等待服务端确认
+      └─ GameTransportClient 发送 socket 'command' 事件
+           → GameTransportServer.executeCommandInternal 构造 Command
+             → executePipeline(config, state, command, random, playerIds)
+               → Systems.beforeCommand（Undo 快照、Flow 拦截等）
+               → Domain.validate → Domain.execute → Event[]
+               → Domain.reduce（逐事件更新 core）
+               → Systems.afterEvents（多轮：Log/EventStream/ActionLog/Flow 自动推进）
+               → applyGameoverCheck（检测游戏结束，写入 sys.gameover）
+             ← PipelineResult { success, state, events }
+           → 持久化状态到 MongoDB
+         → GameTransportServer 广播状态（经 playerView 过滤 + stripStateForTransport 裁剪 sys 层大体积数据）
+    → GameProvider.reconcile() 对比确认状态与预测状态
+      ├─ 一致 → 保持乐观状态，丢弃已确认的 pending 命令
+      └─ 不一致 → 回滚到确认状态，基于新状态 replay 剩余 pending 命令
+         → 携带 optimisticEventWatermark 过滤已播放的动画事件
   → React 重渲染 Board.tsx
 ```
 
@@ -538,9 +549,10 @@ runner.runAll([
 ```
 事件产生 → EventStreamSystem 追加 entry（带自增 id）
   → UI 层 useEffect 监听 G.sys.eventStream.entries
-    → 对比 lastSeenEventId，只处理新事件
-      → FxRegistry 查找渲染器 → 播放特效
-      → AudioManager 查找音效 key → 播放音效
+    → useEventStreamCursor 管理游标（自动处理：首次挂载跳过历史、Undo 回退重置、乐观引擎 entries 暂空）
+      → consumeNew() 返回新事件 + didReset 标志
+        → FxRegistry 查找渲染器 → 播放特效
+        → AudioManager 查找音效 key → 播放音效
 ```
 
 ---
@@ -634,6 +646,13 @@ runner.runAll([
 - 教程模式通过 `TutorialRandomPolicy` 覆盖随机数（fixed/sequence 两种模式）
 - `reduce` 必须是纯函数，禁止读取外部状态
 - 时间戳由管线统一分配（基于日志最后条目递增），不使用 `Date.now()`
+
+### 14.5 传输优化
+
+- **MsgPack 序列化**：所有 socket.io 连接使用 `socket.io-msgpack-parser`，比 JSON 减少 ~28% 体积
+- **传输裁剪**（`stripStateForTransport`）：广播前裁剪 `sys` 层大体积数据（undo.snapshots → `snapshotCount`、eventStream.entries → `nextId`、tutorial.steps → `totalSteps`），不碰 `core`
+- **playerView 过滤**：领域层隐藏对手手牌/牌库内容（`previewRef` 置空），弃牌堆公开
+- 实测体积：DiceThrone ~44 KB（MsgPack）、SummonerWars ~16 KB（MsgPack），每步操作 Delta ~0.6 KB，但绝对体积小不值得做增量同步
 
 ---
 

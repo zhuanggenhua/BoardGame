@@ -7,12 +7,13 @@ export * from './types';
 
 // 系统实现
 export { createFlowSystem, getCurrentPhase, setPhase, FLOW_COMMANDS, FLOW_EVENTS, type FlowHooks, type FlowSystemConfig, type PhaseChangedEvent, type PhaseExitResult, type PhaseEnterResult, type CanAdvanceResult } from './FlowSystem';
-export { createUndoSystem, UNDO_COMMANDS, type UndoSystemConfig } from './UndoSystem';
+export { createUndoSystem, getUndoSnapshotCount, UNDO_COMMANDS, type UndoSystemConfig } from './UndoSystem';
 export { createInteractionSystem, createSimpleChoice, createMultistepChoice, queueInteraction, resolveInteraction, asSimpleChoice, asMultistepChoice, INTERACTION_COMMANDS, INTERACTION_EVENTS, type InteractionDescriptor, type InteractionState, type SimpleChoiceData, type MultistepChoiceData, type InteractionSystemConfig } from './InteractionSystem';
 export { createSimpleChoiceSystem, type SimpleChoiceSystemConfig } from './SimpleChoiceSystem';
 export { createMultistepChoiceSystem, type MultistepChoiceSystemConfig } from './MultistepChoiceSystem';
 export { useMultistepInteraction, type MultistepInteractionState } from './useMultistepInteraction';
 export { createLogSystem, getCommands, getEvents, getEventsByType, getRecentLogs } from './LogSystem';
+// ⚠️ LogSystem 已废弃，上述导出仅保留向后兼容。生产日志由 Winston 独立记录。
 export { createEventStreamSystem, getEventStreamEntries } from './EventStreamSystem';
 export { createActionLogSystem, type ActionLogSystemConfig } from './ActionLogSystem';
 export { createRematchSystem, resetRematchState, getPlayerVote, isRematchReady, getVotedPlayers, REMATCH_COMMANDS } from './RematchSystem';
@@ -25,7 +26,6 @@ export { CharacterSelectionSystem, CHARACTER_SELECTION_COMMANDS, type CharacterS
 import { createUndoSystem } from './UndoSystem';
 import { createInteractionSystem } from './InteractionSystem';
 import { createSimpleChoiceSystem } from './SimpleChoiceSystem';
-import { createLogSystem } from './LogSystem';
 import { createEventStreamSystem } from './EventStreamSystem';
 import { createRematchSystem } from './RematchSystem';
 import { createActionLogSystem } from './ActionLogSystem';
@@ -46,7 +46,6 @@ export interface BaseSystemsConfig {
 export function createBaseSystems<TCore>(config: BaseSystemsConfig = {}): EngineSystem<TCore>[] {
     const { actionLog, undo } = config;
     return [
-        createLogSystem(),
         createActionLogSystem(actionLog),
         createUndoSystem(undo),
         createInteractionSystem(),

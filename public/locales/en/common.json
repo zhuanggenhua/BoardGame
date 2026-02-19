@@ -6,10 +6,11 @@
   },
   "category": {
     "all": "All Games",
-    "strategy": "Strategy",
-    "casual": "Casual",
-    "party": "Party",
+    "card": "Card",
+    "dice": "Dice",
     "abstract": "Abstract",
+    "wargame": "Wargame",
+    "casual": "Casual",
     "tools": "Tools"
   },
   "game_tags": {
@@ -17,7 +18,8 @@
     "combat": "Combat",
     "ugc": "UGC",
     "tactical": "Tactical",
-    "card_driven": "Card Driven"
+    "card_driven": "Card Driven",
+    "casual": "Casual"
   },
   "game_details": {
     "best_players": "Best Players",

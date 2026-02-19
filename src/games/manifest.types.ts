@@ -1,6 +1,6 @@
 export type GameManifestType = 'game' | 'tool';
 
-export type GameCategory = 'strategy' | 'casual' | 'party' | 'abstract' | 'tools';
+export type GameCategory = 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
 
 export interface GameManifestEntry {
     id: string;

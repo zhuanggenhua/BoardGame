@@ -273,6 +273,8 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                     return { halt: true, error: TUTORIAL_ERRORS.INVALID_MANIFEST };
                 }
 
+                console.warn('[TutorialSystem] START: 教程启动', { manifestId: manifest.id, stepsCount: manifest.steps.length, firstStepId: manifest.steps[0]?.id });
+
                 activeStepValidator = manifest.stepValidator;
                 const nextTutorial = deriveStepState(manifest, 0);
                 const timestamp = resolveTimestamp(command);
@@ -334,6 +336,17 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
         afterEvents: ({ state, events, command }): HookResult<TCore> | void => {
             if (!state.sys.tutorial.active) {
                 return;
+            }
+
+            // 诊断日志：追踪事件匹配
+            const step = state.sys.tutorial.step;
+            if (step?.advanceOnEvents && step.advanceOnEvents.length > 0) {
+                console.warn('[TutorialSystem] afterEvents:', {
+                    stepId: step.id,
+                    advanceOnEvents: step.advanceOnEvents.map((m: TutorialEventMatcher) => m.type),
+                    receivedEvents: events.map((e: GameEvent) => e.type),
+                    eventCount: events.length,
+                });
             }
 
             const matched = shouldAdvance(events, state.sys.tutorial.step?.advanceOnEvents);

@@ -18,6 +18,7 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { createDeckByFactionId } from '../src/games/summonerwars/config/factions';
 import { BOARD_COLS, BOARD_ROWS, HAND_SIZE } from '../src/games/summonerwars/domain/helpers';
+import { cloneState } from './helpers/summonerwars';
 
 // ============================================================================
 // 通用辅助函数（与 summonerwars.e2e.ts 保持一致）
@@ -328,8 +329,6 @@ const clickBoardElement = async (page: Page, selector: string) => {
   }, selector);
   if (!clicked) throw new Error(`棋盘元素未找到: ${selector}`);
 };
-
-const cloneState = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 const initializeSummonerWarsCore = (coreState: any, factions: Record<string, string>) => {
   const next = cloneState(coreState);

@@ -41,6 +41,8 @@ interface TutorialContextType {
     /** 动画完成回调：通知教程系统动画已播放完毕，可以推进到下一步 */
     animationComplete: () => void;
     bindDispatch: (dispatch: (type: string, payload?: unknown) => void) => void;
+    /** Board 卸载时清理 controller，防止残留的 dispatch 指向已销毁的 Provider */
+    unbindDispatch: () => void;
     syncTutorialState: (tutorial: TutorialState) => void;
 }
 
@@ -81,6 +83,17 @@ const normalizeTutorialState = (nextTutorial: TutorialState): TutorialState => {
     };
 };
 
+/**
+ * 获取教程总步骤数（兼容传输裁剪后的状态）
+ *
+ * 传输层会将 steps 清空并写入 totalSteps 字段以减少传输体积。
+ */
+function getTutorialStepCount(tutorial: TutorialState): number {
+    const transportTotal = (tutorial as TutorialState & { totalSteps?: number }).totalSteps;
+    if (typeof transportTotal === 'number' && transportTotal > 0) return transportTotal;
+    return tutorial.steps?.length ?? 0;
+}
+
 export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [tutorial, setTutorial] = useState<TutorialState>({ ...DEFAULT_TUTORIAL_STATE });
     const [isControllerReady, setIsControllerReady] = useState(false);
@@ -92,6 +105,8 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // 兜底 timer：防止 bindDispatch 永远不执行导致教程卡死
     const fallbackTimerRef = useRef<number | undefined>(undefined);
     const toast = useToast();
+    const toastRef = useRef(toast);
+    toastRef.current = toast;
 
     const bindDispatch = useCallback((dispatch: DispatchFn) => {
         // 清除兜底 timer（正常路径：bindDispatch 被调用）
@@ -102,10 +117,17 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         controllerRef.current = buildTutorialController(dispatch);
         setIsControllerReady(true);
+        const hasPending = !!pendingStartRef.current;
+        console.warn('[TutorialContext] bindDispatch:', { hasPending, pendingId: pendingStartRef.current?.id });
         if (pendingStartRef.current) {
             controllerRef.current.start(pendingStartRef.current);
             pendingStartRef.current = null;
         }
+    }, []);
+
+    const unbindDispatch = useCallback(() => {
+        controllerRef.current = null;
+        setIsControllerReady(false);
     }, []);
 
     const syncTutorialState = useCallback((nextTutorial: TutorialState) => {
@@ -128,33 +150,31 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             fallbackTimerRef.current = undefined;
         }
         
-        // 立即重置 tutorial state，清除上一个教程的残留数据：
-        // 1. 避免旧教程的提示（TutorialOverlay）在新教程加载期间继续显示
-        // 2. 使 MatchRoom 的 isTutorialReset 判断成立（manifestId=null, steps=[]），允许重新启动
-        setTutorial({ ...DEFAULT_TUTORIAL_STATE });
         executedAiStepsRef.current = new Set();
-        // 始终存入 pendingStartRef，由 bindDispatch 消费。
-        // 不直接调用 controllerRef.current.start()，因为 controllerRef 可能残留上一个对局
-        // （联机 Board 卸载后 controllerRef 不会被清空），直接 dispatch 会发给已断开的联机服务器。
+        
+        // 如果 controller 已就绪（Board 已挂载且 bindDispatch 已执行），直接启动。
+        // 这是最常见的路径：namespace 加载完成 → Board 挂载 → bindDispatch → MatchRoom effect 调用 startTutorial。
+        if (controllerRef.current) {
+            controllerRef.current.start(manifest);
+            pendingStartRef.current = null;
+            return;
+        }
+        
+        // Controller 尚未就绪（Board 还没挂载），存入 pendingStartRef，
+        // 等 Board 挂载时 bindDispatch 消费。
         pendingStartRef.current = manifest;
         
-        // 清空旧 controller，强制等待新 Board 挂载后重新 bindDispatch
-        controllerRef.current = null;
-        setIsControllerReady(false);
-        
-        // 兜底机制：10 秒后如果 tutorial.active 仍然是 false，强制启动
+        // 兜底机制：10 秒后如果仍未启动，提示用户
         fallbackTimerRef.current = window.setTimeout(() => {
-            console.warn('[TutorialContext] 教程启动超时（10秒），尝试兜底处理');
             fallbackTimerRef.current = undefined;
             
-            // 检查是否真的卡住了（pendingStartRef 还有值说明 bindDispatch 没被调用）
-            if (pendingStartRef.current && !controllerRef.current) {
-                console.error('[TutorialContext] 兜底失败：Board 未挂载，无法启动教程');
-                toast.error('教程加载超时，请刷新页面重试');
-            } else if (pendingStartRef.current && controllerRef.current) {
-                console.warn('[TutorialContext] 兜底：强制启动教程');
+            if (pendingStartRef.current && controllerRef.current) {
+                // controller 在等待期间就绪了，直接启动
                 controllerRef.current.start(pendingStartRef.current);
                 pendingStartRef.current = null;
+            } else if (pendingStartRef.current) {
+                console.error('[TutorialContext] 教程启动超时：Board 未挂载');
+                toastRef.current.error('教程加载超时，请刷新页面重试');
             }
         }, 10000);
     }, []);
@@ -235,11 +255,12 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const value = useMemo<TutorialContextType>(() => {
         const currentStep = tutorial.step ?? tutorial.steps[tutorial.stepIndex] ?? null;
+        const stepCount = getTutorialStepCount(tutorial);
         return {
             tutorial,
             currentStep,
             isActive: tutorial.active,
-            isLastStep: tutorial.active && tutorial.stepIndex >= tutorial.steps.length - 1,
+            isLastStep: tutorial.active && tutorial.stepIndex >= stepCount - 1,
             isPendingAnimation: tutorial.active && !!tutorial.pendingAnimationAdvance,
             isAiExecuting,
             isAiExecutingRef,
@@ -249,9 +270,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             consumeAi,
             animationComplete,
             bindDispatch,
+            unbindDispatch,
             syncTutorialState,
         };
-    }, [tutorial, isAiExecuting, bindDispatch, closeTutorial, consumeAi, animationComplete, nextStep, startTutorial, syncTutorialState]);
+    }, [tutorial, isAiExecuting, bindDispatch, unbindDispatch, closeTutorial, consumeAi, animationComplete, nextStep, startTutorial, syncTutorialState]);
 
     return (
         <TutorialContext.Provider value={value}>
@@ -279,19 +301,17 @@ export const useTutorialBridge = (tutorial: TutorialState, dispatch: (type: stri
 
     useEffect(() => {
         if (!context) return;
-        const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${tutorial.steps?.length ?? 0}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}`;
+        const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${getTutorialStepCount(tutorial)}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}`;
         if (lastSyncSignatureRef.current === signature) return;
         lastSyncSignatureRef.current = signature;
         context.syncTutorialState(tutorial);
     }, [context, tutorial]);
 
-    // 每次 Board 挂载时无条件重新绑定 dispatch。
-    // 不能只依赖 [context, dispatch] 的引用变化：当 Board 因 isGameNamespaceReady 切换而卸载/重挂载时，
-    // LocalGameProvider 的 dispatch 引用可能不变（useCallback 依赖稳定），导致 effect 不重新执行，
-    // pendingStartRef 里的 manifest 永远不被消费，教程卡在初始化。
     useEffect(() => {
-        // 通过 ref 访问最新值，避免闭包捕获旧引用
         contextRef.current?.bindDispatch((...args) => dispatchRef.current(...args));
-    // 空依赖：每次挂载执行一次
+        return () => {
+            // Board 卸载时清理 controller，防止残留 dispatch 指向已销毁的 Provider
+            contextRef.current?.unbindDispatch();
+        };
     }, []);  
 };

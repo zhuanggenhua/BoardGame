@@ -19,7 +19,7 @@ const buildManifest = (override: Partial<GameManifestEntry> = {}): GameManifestE
     enabled: true,
     titleKey: 'games.demo.title',
     descriptionKey: 'games.demo.description',
-    category: 'strategy',
+    category: 'card',
     playersKey: 'games.demo.players',
     icon: '🎲',
     ...override,

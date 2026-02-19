@@ -12,7 +12,7 @@
 
 import type { PlayerId } from '../../../engine/types';
 import type { SmashUpCore, MinionOnBase, BaseInPlay } from './types';
-import { getBaseDef } from '../data/cards';
+import { getBaseDef, getCardDef } from '../data/cards';
 
 // ============================================================================
 // 类型定义
@@ -205,6 +205,77 @@ export function getRegisteredModifierIds(): {
 // 力量计算
 // ============================================================================
 
+/** 力量修正明细（单个来源） */
+export interface PowerModifierDetail {
+    /** 来源随从/卡牌 defId */
+    sourceDefId: string;
+    /** 显示名称（i18n key，如 cards.xxx.name） */
+    sourceName: string;
+    /** 修正值 */
+    value: number;
+}
+
+/**
+ * 获取随从的持续力量修正明细列表
+ *
+ * 与 getOngoingPowerModifier 逻辑一致，但返回每个非零修正的来源信息，
+ * 而非仅返回总和。用于 ActionLog breakdown 展示。
+ */
+export function getOngoingPowerModifierDetails(
+    state: SmashUpCore,
+    minion: MinionOnBase,
+    baseIndex: number
+): PowerModifierDetail[] {
+    if (modifierRegistry.length === 0) return [];
+
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+
+    const details: PowerModifierDetail[] = [];
+    for (const entry of modifierRegistry) {
+        const ctx: PowerModifierContext = { state, minion, baseIndex, base };
+        const value = entry.modifier(ctx);
+        if (value !== 0) {
+            // 通过 getCardDef 获取 i18n 名称，fallback 到 defId
+            const cardDef = getCardDef(entry.sourceDefId);
+            details.push({
+                sourceDefId: entry.sourceDefId,
+                sourceName: cardDef?.name ?? entry.sourceDefId,
+                value,
+            });
+        }
+    }
+    return details;
+}
+
+/**
+ * 获取随从的完整力量 breakdown
+ *
+ * 组合基础力量、永久修正、临时修正和持续修正明细。
+ * 不修改现有 getEffectivePower 的计算逻辑。
+ */
+export function getEffectivePowerBreakdown(
+    state: SmashUpCore,
+    minion: MinionOnBase,
+    baseIndex: number
+): {
+    basePower: number;
+    permanentModifier: number;
+    tempModifier: number;
+    ongoingDetails: PowerModifierDetail[];
+    finalPower: number;
+} {
+    const ongoingDetails = getOngoingPowerModifierDetails(state, minion, baseIndex);
+    const ongoingTotal = ongoingDetails.reduce((sum, d) => sum + d.value, 0);
+    return {
+        basePower: minion.basePower,
+        permanentModifier: minion.powerModifier,
+        tempModifier: minion.tempPowerModifier ?? 0,
+        ongoingDetails,
+        finalPower: Math.max(0, minion.basePower + minion.powerModifier + (minion.tempPowerModifier ?? 0) + ongoingTotal),
+    };
+}
+
 /**
  * 计算随从的持续力量修正总和
  * 
@@ -228,6 +299,8 @@ export function getOngoingPowerModifier(
     }
     return total;
 }
+
+
 
 /**
  * 获取随从的有效力量（含持续修正）

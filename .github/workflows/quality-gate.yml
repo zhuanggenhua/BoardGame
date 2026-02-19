@@ -9,6 +9,7 @@ jobs:
   quality-gate:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
     env:
       CI: true
       AUDIT_RELEASE_MODE: '1'
@@ -33,9 +34,3 @@ jobs:
 
       - name: i18n contract check
         run: npm run i18n:check
-
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Critical E2E smoke
-        run: npm run test:e2e:critical

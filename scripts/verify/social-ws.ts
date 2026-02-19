@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import msgpackParser from 'socket.io-msgpack-parser';
 import { setTimeout as delay } from 'node:timers/promises';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../apps/api/src/app.module';
@@ -67,6 +68,7 @@ const waitForHealth = async () => {
 
 const connectSocket = async (token: string) => new Promise<ReturnType<typeof io>>((resolve, reject) => {
     const socket = io(API_BASE_URL, {
+        parser: msgpackParser,
         path: '/social-socket',
         auth: { token },
         transports: ['websocket'],

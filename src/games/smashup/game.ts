@@ -8,7 +8,6 @@ import {
     createCheatSystem,
     createActionLogSystem,
     createEventStreamSystem,
-    createLogSystem,
     createInteractionSystem,
     createSimpleChoiceSystem,
     createMultistepChoiceSystem,
@@ -41,7 +40,6 @@ initAllAbilities();
 
 const systems: EngineSystem<SmashUpCore>[] = [
     createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-    createLogSystem(),
     createActionLogSystem<SmashUpCore>({
         commandAllowlist: ACTION_ALLOWLIST,
         formatEntry: formatSmashUpActionEntry,

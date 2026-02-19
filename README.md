@@ -49,7 +49,7 @@ AI 驱动的现代化桌游平台，专注于**桌游教学**与**联机对战**
 
 ## ✨ 特性
 
-- **多人实时对战** — 基于自研游戏引擎 + Socket.IO，功能有房间创建/加入/观战/重赛/日志/撤回
+- **多人实时对战** — 基于自研游戏框架 + Socket.IO，功能有房间创建/加入/观战/重赛/日志/撤回，内置乐观更新引擎实现低延迟操作体验
 - **丰富的游戏库** — 召唤之战 (Summoner Wars)、王权骰铸 (Dice Throne)、Smash Up、井字棋等
 - **本地同屏模式** — 同一设备上和朋友面对面对战
 - **交互式教程** — 内置 Tutorial 引擎，支持 AI 自动演示和分步引导
@@ -79,7 +79,7 @@ AI 驱动的现代化桌游平台，专注于**桌游教学**与**联机对战**
 ```
 ├── src/
 │   ├── games/           # 游戏实现（每个游戏一个目录）
-│   ├── engine/          # 引擎层（Undo / Flow / Prompt / Tutorial 等系统）
+│   ├── engine/          # 引擎层（Undo / Flow / Prompt / Tutorial / EventStream / Transport 等系统）
 │   ├── components/      # UI 组件（大厅 / 对局 / 社交 / 管理后台）
 │   ├── contexts/        # React Context（Auth / Audio / Social / Modal 等）
 │   ├── services/        # Socket 服务（lobby / match / social）

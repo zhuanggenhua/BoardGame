@@ -20,11 +20,46 @@
 
 | 组件 | 路径 | 职责 |
 |------|------|------|
-| `GameTransportServer` | `src/engine/transport/server.ts` | 服务端：管理对局生命周期、执行管线、广播状态、持久化 |
-| `GameTransportClient` | `src/engine/transport/client.ts` | 客户端：socket.io 连接、命令发送、状态同步 |
+| `GameTransportServer` | `src/engine/transport/server.ts` | 服务端：管理对局生命周期、执行管线、playerView 过滤 + 传输裁剪（`stripStateForTransport`）、广播状态、持久化 |
+| `GameTransportClient` | `src/engine/transport/client.ts` | 客户端：socket.io 连接（MsgPack 序列化）、命令发送、状态同步 |
 | `GameProvider` / `LocalGameProvider` | `src/engine/transport/react.tsx` | React 集成：在线/本地模式的 Provider + BoardBridge |
 | `GameBoardProps` | `src/engine/transport/protocol.ts` | Board 组件 Props 契约 |
 | `createGameEngine` | `src/engine/adapter.ts` | 适配器工厂：Domain + Systems → GameEngineConfig |
+| `OptimisticEngine` | `src/engine/transport/latency/optimisticEngine.ts` | 客户端乐观更新引擎：本地预测 + 服务端调和 |
+| `CommandBatcher` | `src/engine/transport/latency/commandBatcher.ts` | 命令批处理（合并高频命令减少网络往返） |
+| `LocalInteractionManager` | `src/engine/transport/latency/localInteractionManager.ts` | 本地交互管理（乐观模式下的交互队列） |
+| `LatencyOptimizationConfig` | `src/engine/transport/latency/types.ts` | 延迟优化配置类型（每个游戏的 `latencyConfig.ts`） |
+
+#### 乐观更新引擎（Optimistic Engine）
+
+客户端延迟优化子系统，通过本地预测 + 服务端调和实现低延迟交互体验。
+
+核心流程：
+1. 玩家操作 → `processCommand()` 本地执行 `executePipeline` 预测状态 → 立即更新 UI
+2. 命令同时发送到服务端 → 服务端执行并广播确认状态
+3. `reconcile()` 对比确认状态与预测状态 → 一致则保持，不一致则回滚
+
+关键机制：
+- **Random Probe 自动检测**：包装 `RandomFn` 追踪 pipeline 执行期间是否调用了随机数。调用了 → 丢弃乐观结果（等服务端确认）；未调用 → 保留乐观结果。游戏层无需手动声明 `commandDeterminism`（可选覆盖）。
+- **AnimationMode**：按命令粒度控制 `'optimistic'`（保留 EventStream 立即触发动画）或 `'wait-confirm'`（剥离 EventStream 等确认后触发）。默认 `'wait-confirm'`。
+- **EventStream 水位线**（`optimisticEventWatermark`）：记录已通过乐观动画播放的最大事件 ID，回滚时过滤已播放事件防止动画重复。
+- **Pending 命令队列 + Replay**：服务端确认后基于新状态重放剩余 pending 命令，而非直接覆盖。`snapshotPhase` 校验防止已执行命令被重复 replay。
+
+游戏层接入：在 `src/games/<gameId>/latencyConfig.ts` 导出 `LatencyOptimizationConfig`。大多数情况下只需空配置（Random Probe 自动处理），仅在需要强制声明确定性或自定义动画模式时才配置。
+
+#### 传输优化
+
+**序列化**：所有 socket.io 连接（游戏/大厅/社交）统一使用 `socket.io-msgpack-parser`（MsgPack 二进制序列化），比 JSON 减少 ~28% 体积。
+
+**传输裁剪**（`stripStateForTransport`）：服务端在 `playerView` 过滤之后、`socket.emit` 之前，统一裁剪客户端不需要的大体积 sys 数据：
+
+| 裁剪项 | 裁剪方式 | 客户端保留 | 原因 |
+|--------|---------|-----------|------|
+| `sys.undo.snapshots` | 清空数组 | `snapshotCount`（快照数量） | 快照含完整 MatchState 深拷贝，泄漏隐私（对手手牌/牌库） |
+| `sys.eventStream.entries` | 清空数组 | `nextId`（cursor 水位线） | 客户端通过 cursor 实时消费，重连/广播时不需要历史 |
+| `sys.tutorial.steps` | 清空数组 | `totalSteps`（步骤总数） | 客户端只用 `step`（当前步骤）和 `stepIndex` |
+
+> ⚠️ 裁剪只动 `sys` 层，不碰 `core`（游戏领域状态）。卡牌预览（`previewRef`）、弃牌堆等展示数据不受影响。对手手牌隐藏是 `playerView` 的职责，不是传输裁剪。
 
 #### GameBoardProps 契约（强制）
 
@@ -816,6 +851,10 @@ if (fxId) fxImpactMap.set(fxId, `hp-${targetId}`);
 ## EventStreamSystem 使用规范（强制）
 
 特效/动画/音效消费必须用 `getEventStreamEntries(G)`（EventStreamSystem），禁止用 `getEvents(G)`（LogSystem）。原因：LogSystem 持久化全量日志刷新后完整恢复，EventStream 实时消费通道带自增 `id`，撤销时清空。
+
+### 乐观引擎兼容（强制理解）
+
+乐观引擎的 `processCommand` / `reconcile` 过程中，`setState` 会被多次调用。`wait-confirm` 模式会剥离 EventStream（entries 暂时为空），这不是 Undo 回退。`useEventStreamCursor` 已内置处理：entries 为空时保持游标不变，只有当 entries 的最大 ID 真正回退（小于游标值）时才判定为 Undo 回退。消费者无需额外处理。
 
 ### 首次挂载跳过历史事件（强制）
 

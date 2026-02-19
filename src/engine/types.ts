@@ -75,7 +75,7 @@ export interface UndoState {
 }
 
 /**
- * 日志条目
+ * @deprecated LogSystem 已移除，保留类型定义仅用于向后兼容（旧快照/存储迁移）
  */
 export interface LogEntry {
     timestamp: number;
@@ -84,7 +84,7 @@ export interface LogEntry {
 }
 
 /**
- * 日志系统状态
+ * @deprecated LogSystem 已移除，保留类型定义仅用于向后兼容
  */
 export interface LogState {
     entries: LogEntry[];
@@ -350,7 +350,10 @@ export interface SystemState {
     undo: UndoState;
     /** 交互系统状态（替代旧 PromptSystem） */
     interaction: import('./systems/InteractionSystem').InteractionState;
-    /** 日志系统状态 */
+    /**
+     * @deprecated LogSystem 已移除。保留空壳字段用于向后兼容旧快照/存储。
+     * 生产日志由 Winston（server/logger.ts）独立记录。
+     */
     log: LogState;
     /** 事件流系统状态 */
     eventStream: EventStreamState;

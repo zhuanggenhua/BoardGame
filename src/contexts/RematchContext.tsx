@@ -96,12 +96,13 @@ export function RematchProvider({
             if (currentMatchId && currentPlayerId && gameName && credentials) {
                 if (currentPlayerId === '0') {
                     try {
+                        const guestId = user?.id ? undefined : getOrCreateGuestId();
                         const { nextMatchID } = await matchApi.playAgain(gameName, currentMatchId, {
                             playerID: currentPlayerId,
                             credentials,
+                            guestId,
                         });
                         const fallbackPlayerName = playerName || user?.username || `玩家${currentPlayerId}`;
-                        const guestId = user?.id ? undefined : getOrCreateGuestId();
                         const claimResult = user?.id && token
                             ? await claimSeat(gameName, nextMatchID, currentPlayerId, {
                                 token,

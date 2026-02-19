@@ -13,6 +13,7 @@ import http from 'node:http';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import { Server as IOServer, Socket as IOSocket } from 'socket.io';
+import msgpackParser from 'socket.io-msgpack-parser';
 import { nanoid } from 'nanoid';
 import { connectDB } from './src/server/db';
 import { MAX_CHAT_LENGTH, sanitizeChatText } from './src/server/chatUtils';
@@ -110,7 +111,7 @@ if (!JWT_SECRET) {
         throw new Error('[Server] JWT_SECRET 必须在生产环境配置');
     }
     JWT_SECRET = 'boardgame-secret-key-change-in-production';
-    console.warn('[Server] JWT_SECRET 未配置，使用开发默认值');
+    logger.warn('[Server] JWT_SECRET 未配置，使用开发默认值');
 }
 
 const RAW_WEB_ORIGINS = (process.env.WEB_ORIGINS || '')
@@ -174,9 +175,9 @@ const archiveMatchResult = async ({
             createdAt: new Date(metadata?.createdAt || Date.now()),
             endedAt: new Date(),
         });
-        console.log(`[Archive] 归档对局 ${matchID}`);
+        logger.info(`[Archive] 归档对局 matchID=${matchID}`);
     } catch (err) {
-        console.error('[Archive] 归档失败:', err);
+        logger.error('[Archive] 归档失败:', err);
     }
 };
 
@@ -235,7 +236,9 @@ app.use(requestLogger);
 const httpServer = http.createServer(app.callback());
 
 // 创建 socket.io 服务器（统一实例，多 namespace）
+// 使用 MessagePack 序列化替代 JSON，减少 20-30% 传输体积
 const io = new IOServer(httpServer, {
+    parser: msgpackParser,
     cors: {
         origin: CORS_ORIGINS,
         methods: ['GET', 'POST'],
@@ -327,7 +330,7 @@ app.use(async (ctx, next) => {
         ctx.body = { error: message };
         // 非 4xx 错误打印日志
         if (status >= 500) {
-            console.error(`[Server] ${ctx.method} ${ctx.path} → ${status}:`, message);
+            logger.error(`[Server] ${ctx.method} ${ctx.path} → ${status}:`, message);
         }
     }
 });
@@ -398,7 +401,7 @@ const cleanupMissingOwnerRoom = async (
 
     matchSubscribers.delete(matchID);
     rematchStateByMatch.delete(matchID);
-    console.warn(`[RoomCleanup] reason=missing_owner context=${context ?? 'unknown'} matchID=${matchID}`);
+    logger.warn(`[RoomCleanup] reason=missing_owner context=${context ?? 'unknown'} matchID=${matchID}`);
     return true;
 };
 
@@ -735,7 +738,7 @@ router.get('/games/:name/leaderboard', async (ctx) => {
                 .slice(0, 50),
         };
     } catch (err) {
-        console.error('Leaderboard error:', err);
+        logger.error('Leaderboard error:', err);
         ctx.status = 500;
         ctx.body = { error: 'Internal Server Error' };
     }
@@ -750,7 +753,7 @@ if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
     const testRouter = createTestRoutes(gameTransport, storage);
     app.use(testRouter.routes());
     app.use(testRouter.allowedMethods());
-    console.log('[Server] 测试模式已启用 - Test API endpoints available at /test/*');
+    logger.info('[Server] 测试模式已启用 - Test API endpoints available at /test/*');
 }
 
 // ============================================================================
@@ -1168,7 +1171,9 @@ async function handleMatchLeft(matchID?: string, gameNameFromUrl?: string) {
 // ============================================================================
 
 // 创建独立的大厅 Socket.IO 服务器（使用 /lobby-socket 路径，与客户端 lobbySocket.ts 一致）
+// 使用 MessagePack 序列化替代 JSON，减少传输体积
 const lobbySocketIO = new IOServer(httpServer, {
+    parser: msgpackParser,
     path: '/lobby-socket',
     cors: {
         origin: CORS_ORIGINS,
@@ -1179,13 +1184,13 @@ const lobbySocketIO = new IOServer(httpServer, {
 lobbyIO = lobbySocketIO;
 
 lobbySocketIO.on('connection', (socket) => {
-    console.log(`[LobbyIO] 新连接: ${socket.id}`);
+    logger.info(`[LobbyIO] 新连接: ${socket.id}`);
 
     // 订阅大厅更新
     socket.on(LOBBY_EVENTS.SUBSCRIBE_LOBBY, async (payload?: { gameId?: string }) => {
         const requestedGame = normalizeGameName(payload?.gameId);
         if (!requestedGame) {
-            console.warn(`[LobbyIO] ${socket.id} 订阅大厅失败：非法 gameId`, payload?.gameId);
+            logger.warn(`[LobbyIO] ${socket.id} 订阅大厅失败：非法 gameId`, payload?.gameId);
             return;
         }
 
@@ -1195,14 +1200,14 @@ lobbySocketIO.on('connection', (socket) => {
             subscriptions.add(LOBBY_ALL);
             lobbyAllSubscribers.add(socket.id);
             socket.join(LOBBY_ALL_ROOM);
-            console.log(`[LobbyIO] ${socket.id} 订阅大厅(${LOBBY_ALL}) (当前 ${lobbyAllSubscribers.size} 个订阅者)`);
+            logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${LOBBY_ALL}) (当前 ${lobbyAllSubscribers.size} 个订阅者)`);
             await sendLobbySnapshotAll(socket);
             startLobbyHeartbeat();
             return;
         }
 
         if (!isSupportedGame(requestedGame)) {
-            console.warn(`[LobbyIO] ${socket.id} 订阅大厅失败：非法 gameId`, payload?.gameId);
+            logger.warn(`[LobbyIO] ${socket.id} 订阅大厅失败：非法 gameId`, payload?.gameId);
             return;
         }
 
@@ -1210,7 +1215,7 @@ lobbySocketIO.on('connection', (socket) => {
         ensureGameState(requestedGame);
         lobbySubscribersByGame.get(requestedGame)!.add(socket.id);
         socket.join(getLobbyRoomName(requestedGame));
-        console.log(`[LobbyIO] ${socket.id} 订阅大厅(${requestedGame}) (当前 ${lobbySubscribersByGame.get(requestedGame)!.size} 个订阅者)`);
+        logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${requestedGame}) (当前 ${lobbySubscribersByGame.get(requestedGame)!.size} 个订阅者)`);
 
         await sendLobbySnapshot(socket, requestedGame);
         startLobbyHeartbeat();
@@ -1225,7 +1230,7 @@ lobbySocketIO.on('connection', (socket) => {
             subscriptions.forEach((gameId) => removeLobbySubscription(socket, gameId));
             subscriptions.clear();
             socket.data.lobbyGameIds = undefined;
-            console.log(`[LobbyIO] ${socket.id} 取消全部订阅`);
+            logger.info(`[LobbyIO] ${socket.id} 取消全部订阅`);
             return;
         }
 
@@ -1235,7 +1240,7 @@ lobbySocketIO.on('connection', (socket) => {
         if (subscriptions.size === 0) {
             socket.data.lobbyGameIds = undefined;
         }
-        console.log(`[LobbyIO] ${socket.id} 取消订阅 ${gameId}`);
+        logger.info(`[LobbyIO] ${socket.id} 取消订阅 ${gameId}`);
     });
 
     // 断开连接清理
@@ -1261,7 +1266,7 @@ lobbySocketIO.on('connection', (socket) => {
         }
         socket.data.chatMatchId = undefined;
 
-        console.log(`[LobbyIO] ${socket.id} 断开连接`);
+        logger.info(`[LobbyIO] ${socket.id} 断开连接`);
     });
 
     // ========== 重赛投票事件处理 ==========
@@ -1269,7 +1274,7 @@ lobbySocketIO.on('connection', (socket) => {
     socket.on(REMATCH_EVENTS.JOIN_MATCH, (payload?: { matchId?: string; playerId?: string }) => {
         const { matchId, playerId } = payload || {};
         if (!matchId || !playerId) {
-            console.warn(`[RematchIO] ${socket.id} 加入对局失败：缺少 matchId 或 playerId`);
+            logger.warn(`[RematchIO] ${socket.id} 加入对局失败：缺少 matchId 或 playerId`);
             return;
         }
 
@@ -1293,7 +1298,7 @@ lobbySocketIO.on('connection', (socket) => {
 
         const state = rematchStateByMatch.get(matchId)!;
         socket.emit(REMATCH_EVENTS.STATE_UPDATE, state);
-        console.log(`[RematchIO] ${socket.id} 加入对局 ${matchId} (玩家 ${playerId})`);
+        logger.info(`[RematchIO] ${socket.id} 加入对局 ${matchId} (玩家 ${playerId})`);
     });
 
     socket.on(REMATCH_EVENTS.LEAVE_MATCH, () => {
@@ -1308,7 +1313,7 @@ lobbySocketIO.on('connection', (socket) => {
         }
         socket.data.rematchMatchId = undefined;
         socket.data.rematchPlayerId = undefined;
-        console.log(`[RematchIO] ${socket.id} 离开对局`);
+        logger.info(`[RematchIO] ${socket.id} 离开对局`);
     });
 
     socket.on(REMATCH_EVENTS.DEBUG_NEW_ROOM, (data?: { url?: string }) => {
@@ -1332,7 +1337,7 @@ lobbySocketIO.on('connection', (socket) => {
         state.ready = votedPlayers.length >= 2;
         state.revision += 1;
 
-        console.log(`[RematchIO] ${socket.id} 投票: ${playerId} -> ${state.votes[playerId]}, ready=${state.ready}`);
+        logger.info(`[RematchIO] ${socket.id} 投票: ${playerId} -> ${state.votes[playerId]}, ready=${state.ready}`);
 
         lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, state);
 
@@ -1363,7 +1368,7 @@ lobbySocketIO.on('connection', (socket) => {
 
         socket.data.chatMatchId = matchId;
         socket.join(`matchchat:${matchId}`);
-        console.log(`[MatchChat] ${socket.id} 加入对局聊天 ${matchId}`);
+        logger.info(`[MatchChat] ${socket.id} 加入对局聊天 ${matchId}`);
     });
 
     socket.on(MATCH_CHAT_EVENTS.LEAVE, () => {
@@ -1413,7 +1418,7 @@ async function startServer() {
                 }
             }
         } catch (err) {
-            console.error('[MongoStorage] 启动清理空房间失败:', err);
+            logger.error('[MongoStorage] 启动清理空房间失败:', err);
         }
 
         try {
@@ -1424,7 +1429,7 @@ async function startServer() {
                 }
             }
         } catch (err) {
-            console.error('[MongoStorage] 启动清理临时房间失败:', err);
+            logger.error('[MongoStorage] 启动清理临时房间失败:', err);
         }
 
         // 定时清理断线超时的临时房间
@@ -1437,7 +1442,7 @@ async function startServer() {
                     }
                 }
             } catch (err) {
-                console.error('[HybridStorage] 定时清理临时房间失败:', err);
+                logger.error('[HybridStorage] 定时清理临时房间失败:', err);
             }
         }, 60 * 1000);
 
@@ -1449,7 +1454,7 @@ async function startServer() {
                 }
             }
         } catch (err) {
-            console.error('[MongoStorage] 启动清理遗留房间失败:', err);
+            logger.error('[MongoStorage] 启动清理遗留房间失败:', err);
         }
 
         try {
@@ -1460,7 +1465,7 @@ async function startServer() {
                 }
             }
         } catch (err) {
-            console.error('[MongoStorage] 启动清理重复 ownerKey 房间失败:', err);
+            logger.error('[MongoStorage] 启动清理重复 ownerKey 房间失败:', err);
         }
     }
 
@@ -1469,24 +1474,24 @@ async function startServer() {
 
     // 启动 HTTP 服务器
     httpServer.listen(GAME_SERVER_PORT, () => {
-        console.log(`🎮 游戏服务器运行在 http://localhost:${GAME_SERVER_PORT}`);
-        console.log('📡 大厅广播服务已启动 (namespace: /lobby-socket)');
-        console.log(`🎯 游戏传输层已启动 (namespace: /game)`);
-        console.log(`📦 已注册 ${SERVER_ENGINES.length} 个游戏引擎, ${SERVER_GAME_IDS.length} 个游戏 ID`);
+        logger.info(`🎮 游戏服务器运行在 http://localhost:${GAME_SERVER_PORT}`);
+        logger.info('📡 大厅广播服务已启动 (namespace: /lobby-socket)');
+        logger.info(`🎯 游戏传输层已启动 (namespace: /game)`);
+        logger.info(`📦 已注册 ${SERVER_ENGINES.length} 个游戏引擎, ${SERVER_GAME_IDS.length} 个游戏 ID`);
     });
 }
 
 startServer().catch((err) => {
-    console.error('❌ 服务器启动失败:', err);
+    logger.error('❌ 服务器启动失败:', err);
     process.exit(1);
 });
 
 // Graceful shutdown — nodemon 重启时先关闭 socket 连接，避免 Vite WS proxy ECONNABORTED
 function gracefulShutdown(signal: string) {
-    console.log(`\n🛑 收到 ${signal}，正在关闭服务器...`);
+    logger.info(`\n🛑 收到 ${signal}，正在关闭服务器...`);
     io.close(() => {
         httpServer.close(() => {
-            console.log('✅ 服务器已关闭');
+            logger.info('✅ 服务器已关闭');
             process.exit(0);
         });
     });

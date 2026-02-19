@@ -22,7 +22,7 @@ import {
   hasStableAbilityBase, getEvasionUnits, getEntangleUnits,
   getEffectiveAttackRangeBase, getStormAssaultReduction,
 } from '../domain/helpers';
-import { calculateEffectiveStrength } from '../domain/abilityResolver';
+import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
 
 // ============================================================================
@@ -1358,7 +1358,7 @@ describe('欺心巫族事件卡 - 催眠引诱 (hypnotic-lure)', () => {
     });
 
     // 计算战力：基础3 + 催眠引诱1 = 4
-    const strength = calculateEffectiveStrength(summoner, state, luredUnit);
+    const strength = getEffectiveStrengthValue(summoner, state, luredUnit);
     expect(strength).toBe(4); // 3 + 1
   });
 
@@ -1392,7 +1392,7 @@ describe('欺心巫族事件卡 - 催眠引诱 (hypnotic-lure)', () => {
       targetUnitId: 'test-lured', // 不同的目标
     });
 
-    const strength = calculateEffectiveStrength(summoner, state, otherUnit);
+    const strength = getEffectiveStrengthValue(summoner, state, otherUnit);
     expect(strength).toBe(3); // 基础战力，无加成
   });
 });

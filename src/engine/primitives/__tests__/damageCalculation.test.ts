@@ -383,4 +383,450 @@ describe('DamageCalculation', () => {
       expect(result.breakdown.steps.length).toBeGreaterThan(0);
     });
   });
+
+  describe('PassiveTrigger 增强', () => {
+    // 辅助：构造带 passiveTrigger 的 tokenDefinition
+    function makePassiveTriggerState(opts: {
+      targetStatusEffects?: Record<string, number>;
+      targetTokens?: Record<string, number>;
+      tokenDefs: any[];
+    }) {
+      return mockState({
+        core: {
+          players: {
+            '0': { tokens: {}, statusEffects: {}, damageShields: [] },
+            '1': {
+              tokens: opts.targetTokens ?? {},
+              statusEffects: opts.targetStatusEffects ?? {},
+              damageShields: [],
+            },
+          },
+          tokenDefinitions: opts.tokenDefs,
+        },
+      });
+    }
+
+    describe('removeStatus 动作', () => {
+      it('生成 STATUS_REMOVED 事件并添加到 sideEffectEvents', () => {
+        const state = makePassiveTriggerState({
+          targetStatusEffects: { poison: 2, burn: 3 },
+          tokenDefs: [{
+            id: 'poison',
+            name: '中毒',
+            category: 'debuff',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'removeStatus', statusId: 'burn', value: 1 },
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 5,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+          timestamp: 1000,
+        });
+
+        const result = calc.resolve();
+        expect(result.finalDamage).toBe(5); // removeStatus 不影响伤害
+        expect(result.sideEffectEvents).toHaveLength(1);
+        expect(result.sideEffectEvents[0].type).toBe('STATUS_REMOVED');
+        expect(result.sideEffectEvents[0].payload).toEqual({
+          targetId: '1',
+          statusId: 'burn',
+          stacks: 1,
+        });
+        expect(result.sideEffectEvents[0].timestamp).toBe(1000);
+      });
+
+      it('移除层数不超过当前层数', () => {
+        const state = makePassiveTriggerState({
+          targetStatusEffects: { poison: 1, burn: 2 },
+          tokenDefs: [{
+            id: 'poison',
+            name: '中毒',
+            category: 'debuff',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'removeStatus', statusId: 'burn', value: 5 }, // 请求移除 5 层，但只有 2 层
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 5,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+        });
+
+        const result = calc.resolve();
+        expect(result.sideEffectEvents).toHaveLength(1);
+        expect(result.sideEffectEvents[0].payload.stacks).toBe(2); // min(5, 2)
+      });
+
+      it('目标无该状态时不生成事件', () => {
+        const state = makePassiveTriggerState({
+          targetStatusEffects: { poison: 1 },
+          tokenDefs: [{
+            id: 'poison',
+            name: '中毒',
+            category: 'debuff',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'removeStatus', statusId: 'burn' }, // 目标没有 burn
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 5,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+        });
+
+        const result = calc.resolve();
+        expect(result.sideEffectEvents).toHaveLength(0);
+      });
+
+      it('未指定 value 时移除全部层数', () => {
+        const state = makePassiveTriggerState({
+          targetStatusEffects: { poison: 1, burn: 4 },
+          tokenDefs: [{
+            id: 'poison',
+            name: '中毒',
+            category: 'debuff',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'removeStatus', statusId: 'burn' }, // 无 value，移除全部
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 5,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+        });
+
+        const result = calc.resolve();
+        expect(result.sideEffectEvents).toHaveLength(1);
+        expect(result.sideEffectEvents[0].payload.stacks).toBe(4);
+      });
+    });
+
+    describe('custom 动作', () => {
+      it('调用 handler 并将 preventAmount 转为负值 flat modifier', () => {
+        const state = makePassiveTriggerState({
+          targetTokens: { evasion: 2 },
+          tokenDefs: [{
+            id: 'evasion',
+            name: '闪避',
+            category: 'token',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'custom', customActionId: 'PREVENT_DAMAGE' },
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 10,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+          passiveTriggerHandler: {
+            handleCustomAction: (_actionId, ctx) => ({
+              events: [{
+                type: 'PREVENT_DAMAGE',
+                payload: { amount: 3, targetId: ctx.targetId },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: ctx.timestamp,
+              }],
+              preventAmount: 3,
+            }),
+          },
+          timestamp: 1000,
+        });
+
+        const result = calc.resolve();
+        expect(result.finalDamage).toBe(7); // 10 - 3
+        expect(result.sideEffectEvents).toHaveLength(1);
+        expect(result.sideEffectEvents[0].type).toBe('PREVENT_DAMAGE');
+      });
+
+      it('未注入 handler 时跳过 custom 动作（向后兼容）', () => {
+        const state = makePassiveTriggerState({
+          targetTokens: { evasion: 1 },
+          tokenDefs: [{
+            id: 'evasion',
+            name: '闪避',
+            category: 'token',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'custom', customActionId: 'PREVENT_DAMAGE' },
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 10,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+          // 不注入 passiveTriggerHandler
+        });
+
+        const result = calc.resolve();
+        expect(result.finalDamage).toBe(10); // 无 handler，不减伤
+        expect(result.sideEffectEvents).toHaveLength(0);
+      });
+
+      it('handler 抛出异常时跳过该动作，伤害计算继续', () => {
+        const state = makePassiveTriggerState({
+          targetTokens: { evasion: 1 },
+          tokenDefs: [{
+            id: 'evasion',
+            name: '闪避',
+            category: 'token',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'custom', customActionId: 'BROKEN_ACTION' },
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 10,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+          passiveTriggerHandler: {
+            handleCustomAction: () => {
+              throw new Error('handler 内部错误');
+            },
+          },
+        });
+
+        const result = calc.resolve();
+        expect(result.finalDamage).toBe(10); // 异常被捕获，伤害不变
+        expect(result.sideEffectEvents).toHaveLength(0);
+      });
+
+      it('handler 传入正确的上下文参数', () => {
+        let capturedContext: any = null;
+        const state = makePassiveTriggerState({
+          targetTokens: { evasion: 3 },
+          tokenDefs: [{
+            id: 'evasion',
+            name: '闪避',
+            category: 'token',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'custom', customActionId: 'TEST_ACTION' },
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'flame-strike' },
+          target: { playerId: '1' },
+          baseDamage: 8,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+          passiveTriggerHandler: {
+            handleCustomAction: (actionId, ctx) => {
+              capturedContext = { actionId, ...ctx };
+              return { events: [], preventAmount: 0 };
+            },
+          },
+          timestamp: 2000,
+        });
+
+        calc.resolve();
+        expect(capturedContext).not.toBeNull();
+        expect(capturedContext.actionId).toBe('TEST_ACTION');
+        expect(capturedContext.targetId).toBe('1');
+        expect(capturedContext.attackerId).toBe('0');
+        expect(capturedContext.sourceAbilityId).toBe('flame-strike');
+        expect(capturedContext.damageAmount).toBe(8);
+        expect(capturedContext.tokenId).toBe('evasion');
+        expect(capturedContext.tokenStacks).toBe(3);
+        expect(capturedContext.timestamp).toBe(2000);
+      });
+
+      it('preventAmount 为 0 时不添加 modifier', () => {
+        const state = makePassiveTriggerState({
+          targetTokens: { evasion: 1 },
+          tokenDefs: [{
+            id: 'evasion',
+            name: '闪避',
+            category: 'token',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'custom', customActionId: 'NO_PREVENT' },
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 10,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+          passiveTriggerHandler: {
+            handleCustomAction: () => ({
+              events: [{ type: 'SOME_EVENT', payload: {}, sourceCommandType: 'ABILITY_EFFECT', timestamp: 0 }],
+              preventAmount: 0,
+            }),
+          },
+        });
+
+        const result = calc.resolve();
+        expect(result.finalDamage).toBe(10); // preventAmount=0，不减伤
+        expect(result.sideEffectEvents).toHaveLength(1); // 但副作用事件仍然收集
+      });
+    });
+
+    describe('混合动作', () => {
+      it('同一 PassiveTrigger 包含 modifyStat + removeStatus + custom', () => {
+        const state = makePassiveTriggerState({
+          targetStatusEffects: { thorns: 2, burn: 1 },
+          tokenDefs: [{
+            id: 'thorns',
+            name: '荆棘',
+            category: 'debuff',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [
+                { type: 'modifyStat', value: -1 },       // 每层减 1 伤害
+                { type: 'removeStatus', statusId: 'burn' }, // 移除 burn
+                { type: 'custom', customActionId: 'REFLECT' },
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 10,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+          passiveTriggerHandler: {
+            handleCustomAction: () => ({
+              events: [{ type: 'REFLECT_DAMAGE', payload: { amount: 2 }, sourceCommandType: 'ABILITY_EFFECT', timestamp: 0 }],
+              preventAmount: 2,
+            }),
+          },
+        });
+
+        const result = calc.resolve();
+        // 10 - 2 (modifyStat: -1 * 2 stacks) - 2 (custom preventAmount) = 6
+        expect(result.finalDamage).toBe(6);
+        // sideEffectEvents: STATUS_REMOVED + REFLECT_DAMAGE
+        expect(result.sideEffectEvents).toHaveLength(2);
+        expect(result.sideEffectEvents[0].type).toBe('STATUS_REMOVED');
+        expect(result.sideEffectEvents[1].type).toBe('REFLECT_DAMAGE');
+      });
+    });
+
+    describe('debuff vs token category', () => {
+      it('debuff category 从 statusEffects 取层数', () => {
+        const state = makePassiveTriggerState({
+          targetStatusEffects: { armor: 3 },
+          targetTokens: {},
+          tokenDefs: [{
+            id: 'armor',
+            name: '护甲',
+            category: 'debuff',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [{ type: 'modifyStat', value: -1 }],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 10,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+        });
+
+        const result = calc.resolve();
+        expect(result.finalDamage).toBe(7); // 10 - 3
+      });
+
+      it('非 debuff category 从 tokens 取层数', () => {
+        const state = makePassiveTriggerState({
+          targetStatusEffects: {},
+          targetTokens: { evasion: 2 },
+          tokenDefs: [{
+            id: 'evasion',
+            name: '闪避',
+            category: 'token',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              actions: [{ type: 'modifyStat', value: -2 }],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 10,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+        });
+
+        const result = calc.resolve();
+        expect(result.finalDamage).toBe(6); // 10 - (2 * 2)
+      });
+    });
+  });
 });

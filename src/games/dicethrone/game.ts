@@ -10,7 +10,6 @@ import {
     createCheatSystem,
     createEventStreamSystem,
     createFlowSystem,
-    createLogSystem,
     createInteractionSystem,
     createSimpleChoiceSystem,
     createMultistepChoiceSystem,
@@ -700,7 +699,6 @@ function findDiceThroneCard(
 const systems = [
     createFlowSystem<DiceThroneCore>({ hooks: diceThroneFlowHooks }),
     createEventStreamSystem(),
-    createLogSystem({ maxEntries: 20 }),  // 极度减少，不考虑回放
     createActionLogSystem({
         commandAllowlist: ACTION_LOG_ALLOWLIST,
         formatEntry: formatDiceThroneActionEntry,

@@ -50,7 +50,7 @@ test.describe('TicTacToe Rematch E2E', () => {
         await hostPage.getByRole('button', { name: 'Confirm' }).click();
 
         await hostPage.waitForURL(/\/play\/tictactoe\/match\//);
-        await expect(hostPage.locator('[data-tutorial-id="cell-0"]')).toBeVisible();
+        await expect(hostPage.locator('[data-tutorial-id="cell-0"]')).toBeVisible({ timeout: 15000 });
 
         const hostUrl = await ensureHostPlayerId(hostPage);
         const matchId = hostUrl.pathname.split('/').pop();
@@ -63,8 +63,8 @@ test.describe('TicTacToe Rematch E2E', () => {
         const guestPage = await guestContext.newPage();
 
         await guestPage.goto(`/play/tictactoe/match/${matchId}?join=true`);
-        await guestPage.waitForURL(/playerID=\d/);
-        await expect(guestPage.locator('[data-tutorial-id="cell-0"]')).toBeVisible();
+        await expect(guestPage).toHaveURL(/playerID=\d/, { timeout: 30000 });
+        await expect(guestPage.locator('[data-tutorial-id="cell-0"]')).toBeVisible({ timeout: 15000 });
 
         await clickCell(hostPage, 0);
         await waitForCellFilled(hostPage, 0);

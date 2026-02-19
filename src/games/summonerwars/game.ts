@@ -12,7 +12,6 @@ import {
     createInteractionSystem,
     createSimpleChoiceSystem,
     createMultistepChoiceSystem,
-    createLogSystem,
     createRematchSystem,
     createResponseWindowSystem,
     createTutorialSystem,
@@ -132,7 +131,6 @@ const summonerWarsCheatModifier: CheatResourceModifier<SummonerWarsCore> = {
 const systems = [
     createFlowSystem<SummonerWarsCore>({ hooks: summonerWarsFlowHooks }),
     createEventStreamSystem(),
-    createLogSystem(),
     createActionLogSystem({
         commandAllowlist: ACTION_ALLOWLIST,
         formatEntry: formatSummonerWarsActionEntry,

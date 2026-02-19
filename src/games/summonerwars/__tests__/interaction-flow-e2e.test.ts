@@ -25,7 +25,7 @@ import { SW_COMMANDS, SW_EVENTS } from '../domain/types';
 import type { SummonerWarsCore, PlayerId, CellCoord, BoardUnit, UnitCard, EventCard } from '../domain/types';
 import type { RandomFn, MatchState, GameEvent } from '../../../engine/types';
 import { getUnitAt, getUnitAbilities, manhattanDistance } from '../domain/helpers';
-import { calculateEffectiveStrength } from '../domain/abilityResolver';
+import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { CARD_IDS, getBaseCardId } from '../domain/ids';
 
 // ============================================================================
@@ -140,7 +140,7 @@ describe('交缠颂歌 E2E 流程', () => {
     expect(abilitiesBefore).toContain('prepare');
     expect(abilitiesBefore).toContain('rapid_fire');
     expect(abilitiesBefore).not.toContain('power_up');
-    const strengthBefore = calculateEffectiveStrength(unitB, core);
+    const strengthBefore = getEffectiveStrengthValue(unitB, core);
     expect(strengthBefore).toBe(2); // 基础战力2，无 power_up 加成
 
     // --- 步骤1：打出交缠颂歌事件卡 ---
@@ -185,7 +185,7 @@ describe('交缠颂歌 E2E 流程', () => {
     // --- 步骤4：验证 unitB 的战力因 power_up 而提升 ---
     // unitB 没有充能（boosts=0），所以 power_up 加成为0
     const unitBOnBoard = getUnitAt(coreAfterPlay, { row: 4, col: 4 })!;
-    const strengthAfterNoCharge = calculateEffectiveStrength(unitBOnBoard, coreAfterPlay);
+    const strengthAfterNoCharge = getEffectiveStrengthValue(unitBOnBoard, coreAfterPlay);
     expect(strengthAfterNoCharge).toBe(2); // 基础2 + power_up(0充能) = 2
 
     // 给 unitB 充能后再检查战力
@@ -196,7 +196,7 @@ describe('交缠颂歌 E2E 流程', () => {
     coreWithCharge.board = boardCopy;
 
     const unitBCharged = getUnitAt(coreWithCharge, { row: 4, col: 4 })!;
-    const strengthWithCharge = calculateEffectiveStrength(unitBCharged, coreWithCharge);
+    const strengthWithCharge = getEffectiveStrengthValue(unitBCharged, coreWithCharge);
     expect(strengthWithCharge).toBe(4); // 基础2 + power_up(2充能) = 4
 
     // --- 步骤5：实际攻击，验证骰子数量反映了 buff 后的战力 ---
@@ -729,7 +729,7 @@ describe('圣洁审判 E2E 流程', () => {
     putUnit(core, { row: 3, col: 3 }, enemy, '1');
 
     // 攻击前验证基础战力
-    const strengthBefore = calculateEffectiveStrength(knight, core);
+    const strengthBefore = getEffectiveStrengthValue(knight, core);
     expect(strengthBefore).toBe(2);
 
     // 手动放入圣洁审判事件卡
@@ -755,7 +755,7 @@ describe('圣洁审判 E2E 流程', () => {
 
     // 验证城塞士兵战力+1
     const knightAfter = getUnitAt(coreAfterJudgment, { row: 4, col: 3 })!;
-    const strengthAfter = calculateEffectiveStrength(knightAfter, coreAfterJudgment);
+    const strengthAfter = getEffectiveStrengthValue(knightAfter, coreAfterJudgment);
     expect(strengthAfter).toBe(3); // 基础2 + 圣洁审判+1 = 3
 
     // --- 实际攻击验证骰子数量 ---
@@ -811,7 +811,7 @@ describe('灵魂羁绊 E2E 流程', () => {
     putUnit(core, { row: 3, col: 4 }, enemy, '1');
 
     // 验证蒙威尊者初始战力（基础1 + power_up(0充能) = 1）
-    const mokaStrengthBefore = calculateEffectiveStrength(moka, core);
+    const mokaStrengthBefore = getEffectiveStrengthValue(moka, core);
     expect(mokaStrengthBefore).toBe(1);
 
     // --- 步骤1：灵魂法师使用 spirit_bond transfer 转移充能到蒙威尊者 ---
@@ -837,7 +837,7 @@ describe('灵魂羁绊 E2E 流程', () => {
     expect(mokaAfter!.boosts).toBeGreaterThan(0);
 
     // --- 步骤2：验证蒙威尊者战力因 power_up 提升 ---
-    const mokaStrengthAfter = calculateEffectiveStrength(mokaAfter!, coreAfterTransfer);
+    const mokaStrengthAfter = getEffectiveStrengthValue(mokaAfter!, coreAfterTransfer);
     // 基础1 + power_up(充能数) = 1 + mokaAfter.boosts
     expect(mokaStrengthAfter).toBe(1 + mokaAfter!.boosts);
 

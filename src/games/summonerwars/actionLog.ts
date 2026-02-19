@@ -15,12 +15,14 @@ import type {
 } from '../../engine/types';
 import { FLOW_COMMANDS } from '../../engine';
 import { FLOW_EVENTS } from '../../engine/systems/FlowSystem';
-import { buildDamageSourceAnnotation, type DamageSourceResolver } from '../../engine/primitives/actionLogHelpers';
+import { buildDamageSourceAnnotation, buildDamageBreakdownSegment, type DamageSourceResolver } from '../../engine/primitives/actionLogHelpers';
 import { SW_COMMANDS, SW_EVENTS } from './domain';
 import type { SummonerWarsCore } from './domain/types';
 import { abilityRegistry } from './domain/abilities';
+import { calculateEffectiveStrength } from './domain/abilityResolver';
 import { getSummonerWarsCardPreviewMeta } from './ui/cardPreviewHelper';
 import { getCardIdFromInstanceId } from './domain/utils';
+import { getBaseCardId } from './domain/ids';
 import type { DiceFaceResult } from './config/dice';
 
 // ============================================================================
@@ -69,12 +71,17 @@ const SW_NS = 'game-summonerwars';
 // ============================================================================
 
 /**
- * 将 SW 的 sourceAbilityId / reason 解析为可显示标签。
+ * 将 SW 的 sourceAbilityId / reason / 事件卡 ID 解析为可显示标签。
  * 新游戏只需仿照此模式实现一次，无需重复编写 breakdown 构建逻辑。
+ *
+ * 解析优先级：
+ * 1. 技能注册表（abilityRegistry）— 覆盖所有已注册的能力 ID
+ * 2. 已知 reason 字符串 → i18n key 映射
+ * 3. 事件卡 ID（通过 cardPreviewHelper 解析）— 覆盖所有 buff 来源的事件卡
  */
-const swDamageSourceResolver: DamageSourceResolver = {
+export const swDamageSourceResolver: DamageSourceResolver = {
     resolve(sourceId: string) {
-        // 1. 技能注册表查找
+        // 1. 技能注册表查找（charge、fortress_elite、radiant_shot 等）
         const ability = abilityRegistry.get(sourceId);
         if (ability?.name) {
             const isI18n = ability.name.includes('.');
@@ -91,6 +98,14 @@ const swDamageSourceResolver: DamageSourceResolver = {
         ]);
         if (knownReasons.has(sourceId)) {
             return { label: reasonKey, isI18n: true, ns: SW_NS };
+        }
+        // 3. 事件卡 ID 查找（necro-hellfire-blade、goblin-swarm 等 buff 来源）
+        //    通过 cardPreviewHelper 数据驱动解析，自动覆盖所有已注册的卡牌
+        const baseId = getBaseCardId(sourceId);
+        const cardMeta = getSummonerWarsCardPreviewMeta(baseId);
+        if (cardMeta?.name) {
+            const isI18n = cardMeta.name.includes('.');
+            return { label: cardMeta.name, isI18n, ns: isI18n ? SW_NS : undefined };
         }
         return null;
     },
@@ -323,9 +338,42 @@ export function formatSummonerWarsActionEntry({
                     if (actualDamage !== undefined) {
                         segments.push(i18nSeg('actionLog.attackDamage', { damage: actualDamage }));
                     }
-                    // 显示战力加成（若有充能加成）
+                    // 显示战力 breakdown（有 buff 时用 tooltip，无 buff 时保持原格式）
                     if (baseStrength !== undefined && diceCount !== undefined && diceCount !== baseStrength) {
-                        segments.push(i18nSeg('actionLog.attackBonus', { base: baseStrength, total: diceCount }));
+                        // 尝试从棋盘获取攻击者单位，计算完整 breakdown
+                        const cmdPayload = command.payload as { attacker?: { row: number; col: number }; target?: { row: number; col: number } };
+                        const attackerPos = cmdPayload.attacker;
+                        const targetPos = attackEvent?.payload?.target;
+                        const attackerUnit = attackerPos ? core.board?.[attackerPos.row]?.[attackerPos.col]?.unit : undefined;
+                        const targetUnit = targetPos ? core.board?.[targetPos.row]?.[targetPos.col]?.unit : undefined;
+
+                        let usedBreakdown = false;
+                        if (attackerUnit) {
+                            const strengthResult = calculateEffectiveStrength(attackerUnit, core, targetUnit ?? undefined);
+                            if (strengthResult.modifiers.length > 0) {
+                                // 有 buff 修正：使用 buildDamageBreakdownSegment 生成带 tooltip 的 breakdown
+                                const breakdownSeg = buildDamageBreakdownSegment(
+                                    diceCount,
+                                    {
+                                        modifiers: strengthResult.modifiers.map(m => ({
+                                            type: 'flat',
+                                            value: m.value,
+                                            sourceId: m.source,
+                                            sourceName: m.sourceName,
+                                        })),
+                                    },
+                                    swDamageSourceResolver,
+                                    SW_NS,
+                                );
+                                segments.push(i18nSeg('actionLog.attackStrength'));
+                                segments.push(breakdownSeg);
+                                usedBreakdown = true;
+                            }
+                        }
+                        // 无法获取 breakdown 时回退到原格式
+                        if (!usedBreakdown) {
+                            segments.push(i18nSeg('actionLog.attackBonus', { base: baseStrength, total: diceCount }));
+                        }
                     }
                 }
                 return {

@@ -144,9 +144,6 @@ export function execute(
                 sourceCommandType: command.type,
                 timestamp,
             };
-            console.log('[execute SELECT_CHARACTER] Generated event (sound handled by event stream):', {
-                type: selectedEvent.type,
-            });
             events.push(selectedEvent);
             break;
         }

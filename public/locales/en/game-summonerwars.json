@@ -204,6 +204,9 @@
     "sourceAbility": "(source: {{abilityName}})",
     "damageFrom": " from:",
     "damageFromAbility": "(source: {{abilityName}})",
+    "damageSource": {
+      "original": "Base Strength"
+    },
     "damageReason": {
       "curse": "(curse recoil)",
       "entangle": "(entangle)",
@@ -220,6 +223,7 @@
     },
     "attackDamage": "→ dealt {{damage}} damage",
     "attackBonus": "(power {{base}}→{{total}})",
+    "attackStrength": "Strength: ",
     "structureBuilt": "Structure built:",
     "structureHealed": "Structure healed {{amount}}:",
     "structureDestroyed": "Structure destroyed:",

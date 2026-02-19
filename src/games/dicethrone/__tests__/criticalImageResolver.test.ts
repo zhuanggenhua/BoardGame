@@ -27,11 +27,9 @@ describe('diceThroneCriticalImageResolver', () => {
     it('无状态时返回选角界面资源为 critical', () => {
         const result = diceThroneCriticalImageResolver(undefined);
         expect(result.phaseKey).toBe('no-state');
-        // 通用资源在 critical 中
         for (const p of COMMON_CRITICAL_PATHS) {
             expect(result.critical).toContain(p);
         }
-        // player-board 在 critical 中（selection 标签）
         for (const c of IMPLEMENTED_CHARACTERS) {
             expect(result.critical).toContain(`dicethrone/images/${c}/player-board`);
         }
@@ -40,7 +38,6 @@ describe('diceThroneCriticalImageResolver', () => {
     it('选角阶段：selection 标签资源为 critical，gameplay 独有资源为 warm', () => {
         const result = diceThroneCriticalImageResolver(makeState(false));
         expect(result.phaseKey).toBe('setup');
-        // dice 应在 warm 中（gameplay 标签，不在 selection 中）
         for (const c of IMPLEMENTED_CHARACTERS) {
             expect(result.warm).toContain(`dicethrone/images/${c}/dice`);
             expect(result.warm).toContain(`dicethrone/images/${c}/ability-cards`);
@@ -48,13 +45,33 @@ describe('diceThroneCriticalImageResolver', () => {
         }
     });
 
-    it('游戏进行中：已选角色的全部资源类型都在 critical 中', () => {
+    it('游戏进行中（有 playerID）：自己角色 critical，对手角色 warm', () => {
         const result = diceThroneCriticalImageResolver(
             makeState(true, { '0': 'monk', '1': 'barbarian' }),
+            undefined,
+            '0', // 当前玩家是 0 号（monk）
         );
         expect(result.phaseKey).toContain('playing');
 
-        // 核心断言：每个已选角色的每种资源类型都必须在 critical 中
+        // 自己的角色（monk）全部资源在 critical
+        const myAssets = getAllCharAssets('monk');
+        for (const asset of myAssets) {
+            expect(result.critical, `自己的 ${asset} 应在 critical`).toContain(asset);
+        }
+
+        // 对手的角色（barbarian）全部资源在 warm
+        const opponentAssets = getAllCharAssets('barbarian');
+        for (const asset of opponentAssets) {
+            expect(result.warm, `对手的 ${asset} 应在 warm`).toContain(asset);
+            expect(result.critical, `对手的 ${asset} 不应在 critical`).not.toContain(asset);
+        }
+    });
+
+    it('游戏进行中（无 playerID）：所有已选角色都在 critical（兜底）', () => {
+        const result = diceThroneCriticalImageResolver(
+            makeState(true, { '0': 'monk', '1': 'barbarian' }),
+        );
+        // 无 playerID 时无法区分，全部进 critical
         for (const charId of ['monk', 'barbarian'] as const) {
             const allAssets = getAllCharAssets(charId);
             for (const asset of allAssets) {
@@ -63,19 +80,25 @@ describe('diceThroneCriticalImageResolver', () => {
         }
     });
 
-    it('游戏进行中：骰子图集在 critical 中（曾经遗漏的 bug）', () => {
+    it('对手骰子在 warm 中（有 playerID 时）', () => {
         const result = diceThroneCriticalImageResolver(
             makeState(true, { '0': 'pyromancer', '1': 'shadow_thief' }),
+            undefined,
+            '0',
         );
+        // 自己的骰子在 critical
         expect(result.critical).toContain('dicethrone/images/pyromancer/dice');
-        expect(result.critical).toContain('dicethrone/images/shadow_thief/dice');
+        // 对手的骰子在 warm
+        expect(result.warm).toContain('dicethrone/images/shadow_thief/dice');
+        expect(result.critical).not.toContain('dicethrone/images/shadow_thief/dice');
     });
 
     it('未选角色的资源在 warm 中', () => {
         const result = diceThroneCriticalImageResolver(
             makeState(true, { '0': 'monk', '1': 'barbarian' }),
+            undefined,
+            '0',
         );
-        // pyromancer 未选，应在 warm 中
         expect(result.warm).toContain('dicethrone/images/pyromancer/ability-cards');
         expect(result.warm).toContain('dicethrone/images/pyromancer/dice');
     });
@@ -83,6 +106,8 @@ describe('diceThroneCriticalImageResolver', () => {
     it('critical 和 warm 无重叠', () => {
         const result = diceThroneCriticalImageResolver(
             makeState(true, { '0': 'monk', '1': 'paladin' }),
+            undefined,
+            '0',
         );
         const criticalSet = new Set(result.critical);
         for (const w of result.warm) {
@@ -91,7 +116,6 @@ describe('diceThroneCriticalImageResolver', () => {
     });
 
     it('CHARACTER_ASSET_TYPES 覆盖所有已知资源类型', () => {
-        // 防护性测试：确保资源类型列表包含已知的关键资源
         const keys = CHARACTER_ASSET_TYPES.map(a => a.key);
         expect(keys).toContain('player-board');
         expect(keys).toContain('tip');

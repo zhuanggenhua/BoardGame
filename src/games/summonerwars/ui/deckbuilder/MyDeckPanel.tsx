@@ -73,11 +73,9 @@ export const MyDeckPanel: React.FC<MyDeckPanelProps> = ({
             return;
         }
         
-        console.log('[MyDeckPanel] 开始保存牌组:', deckName);
         setIsSaving(true);
         try {
             await onSave(deckName);
-            console.log('[MyDeckPanel] 保存成功');
             toast.success(
                 { kind: 'i18n', ns: 'game-summonerwars', key: 'deckBuilder.saveSuccess' },
                 undefined,

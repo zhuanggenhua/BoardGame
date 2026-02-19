@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from '../domain';
 import type { SummonerWarsCore, CellCoord, BoardUnit, UnitCard, EventCard, PlayerId } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
-import { calculateEffectiveStrength } from '../domain/abilityResolver';
+import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
 
 // ============================================================================
@@ -858,7 +858,7 @@ describe('圣洁审判事件卡', () => {
       deckSymbols: [],
     });
 
-    const strength = calculateEffectiveStrength(ally, state);
+    const strength = getEffectiveStrengthValue(ally, state);
     expect(strength).toBe(2); // 基础1 + 圣洁审判1
   });
 
@@ -886,7 +886,7 @@ describe('圣洁审判事件卡', () => {
       deckSymbols: [],
     });
 
-    const strength = calculateEffectiveStrength(ally, state);
+    const strength = getEffectiveStrengthValue(ally, state);
     expect(strength).toBe(1); // 基础1，无加成
   });
 
@@ -913,7 +913,7 @@ describe('圣洁审判事件卡', () => {
       deckSymbols: [],
     });
 
-    const strength = calculateEffectiveStrength(champion, state);
+    const strength = getEffectiveStrengthValue(champion, state);
     expect(strength).toBe(3); // 基础3，冠军不受加成
   });
 

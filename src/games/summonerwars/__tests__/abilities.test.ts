@@ -9,7 +9,7 @@ import { SummonerWarsDomain, SW_EVENTS } from '../domain';
 import type { SummonerWarsCore, CellCoord, BoardUnit } from '../domain/types';
 import type { RandomFn } from '../../../engine/types';
 import { 
-  calculateEffectiveStrength, 
+  getEffectiveStrengthValue, 
   evaluateCondition,
   getUnitBaseAbilities,
   resolveEffect,
@@ -108,7 +108,7 @@ describe('古尔-达斯 - 暴怒', () => {
     expect(summoner!.damage).toBe(0);
     
     // 召唤师没有暴怒技能，战力应该不变
-    const effectiveStrength = calculateEffectiveStrength(summoner!, state);
+    const effectiveStrength = getEffectiveStrengthValue(summoner!, state);
     expect(effectiveStrength).toBe(summoner!.card.strength);
   });
 
@@ -144,7 +144,7 @@ describe('古尔-达斯 - 暴怒', () => {
     state.board[4][3].unit = testUnit;
     
     // 计算有效战力：基础2 + 伤害3 = 5
-    const effectiveStrength = calculateEffectiveStrength(testUnit, state);
+    const effectiveStrength = getEffectiveStrengthValue(testUnit, state);
     expect(effectiveStrength).toBe(5);
   });
 });
@@ -184,7 +184,7 @@ describe('亡灵战士 - 血腥狂怒 + 力量强化', () => {
     
     state.board[4][3].unit = warrior;
     
-    const effectiveStrength = calculateEffectiveStrength(warrior, state);
+    const effectiveStrength = getEffectiveStrengthValue(warrior, state);
     expect(effectiveStrength).toBe(2); // 基础战力
   });
 
@@ -219,7 +219,7 @@ describe('亡灵战士 - 血腥狂怒 + 力量强化', () => {
     state.board[4][3].unit = warrior;
     
     // 战力 = 基础2 + 充能3 = 5
-    const effectiveStrength = calculateEffectiveStrength(warrior, state);
+    const effectiveStrength = getEffectiveStrengthValue(warrior, state);
     expect(effectiveStrength).toBe(5);
   });
 
@@ -253,7 +253,7 @@ describe('亡灵战士 - 血腥狂怒 + 力量强化', () => {
     state.board[4][3].unit = warrior;
     
     // 战力 = 基础2 + min(充能8, 5) = 7
-    const effectiveStrength = calculateEffectiveStrength(warrior, state);
+    const effectiveStrength = getEffectiveStrengthValue(warrior, state);
     expect(effectiveStrength).toBe(7);
   });
 });
@@ -564,7 +564,7 @@ describe('组合技能', () => {
     state.board[4][3].unit = hybridUnit;
     
     // 计算有效战力：基础2 + 暴怒3 + 力量强化2 = 7
-    const effectiveStrength = calculateEffectiveStrength(hybridUnit, state);
+    const effectiveStrength = getEffectiveStrengthValue(hybridUnit, state);
     expect(effectiveStrength).toBe(7);
   });
 
@@ -598,7 +598,7 @@ describe('组合技能', () => {
     state.board[4][3].unit = warrior;
     
     // 战力 = 基础2 + min(10, 5) = 7
-    const effectiveStrength = calculateEffectiveStrength(warrior, state);
+    const effectiveStrength = getEffectiveStrengthValue(warrior, state);
     expect(effectiveStrength).toBe(7);
   });
 });

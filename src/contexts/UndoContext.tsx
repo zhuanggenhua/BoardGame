@@ -1,6 +1,7 @@
 import React, { useEffect, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import type { MatchState } from '../engine/types';
+import { getUndoSnapshotCount } from '../engine/systems/UndoSystem';
 
 interface UndoContextValue {
     G: MatchState<unknown>;
@@ -88,7 +89,7 @@ export const useUndoStatus = (): {
 
     const { G, playerID } = undoState;
     const normalizedPlayerId = String(playerID);
-    const history = G.sys?.undo?.snapshots || [];
+    const snapshotCount = getUndoSnapshotCount(G.sys?.undo);
     const request = G.sys?.undo?.pendingRequest;
     const requesterId = request?.requesterId != null ? String(request.requesterId) : null;
     
@@ -103,7 +104,7 @@ export const useUndoStatus = (): {
         // 对方请求撤回，需要我审批
         status = 'canReview';
         hasNotification = true; // 显示红点提醒
-    } else if (history.length > 0 && !request) {
+    } else if (snapshotCount > 0 && !request) {
         // 可以发起撤回请求
         status = 'canRequest';
         hasNotification = false;

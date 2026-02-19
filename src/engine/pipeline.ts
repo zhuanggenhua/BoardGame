@@ -90,7 +90,7 @@ export function createInitialSystemState(
         },
         log: {
             entries: [],
-            maxEntries: 1000,
+            maxEntries: 0, // LogSystem 已移除，保留空壳兼容旧快照
         },
         eventStream: {
             entries: [],

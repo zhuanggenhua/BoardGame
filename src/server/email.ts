@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { DEFAULT_LANGUAGE, type SupportedLanguage } from '../lib/i18n/types';
 import { tServer } from './i18n';
+import logger from '../../server/logger';
 
 /**
  * 邮件服务配置
@@ -74,7 +75,7 @@ export async function sendVerificationEmailWithCode(
     const t = (key: string, params?: Record<string, string | number>) => tServer(locale, key, params);
 
     if (!smtpUser || !process.env.SMTP_PASS) {
-        console.error('SMTP 配置缺失，请设置环境变量');
+        logger.error('SMTP 配置缺失，请设置环境变量');
         return { success: false, message: t('email.error.missingConfig') };
     }
 
@@ -88,12 +89,12 @@ export async function sendVerificationEmailWithCode(
             html: buildEmailHtml(code, t, 'email.template'),
         });
 
-        console.log(`验证码已发送至 ${email}: ${code}`);
+        logger.info(`验证码已发送至 ${email}: ${code}`);
         return { success: true, message: t('email.success.sent') };
     } catch (error) {
-        console.error('发送邮件失败 (网络原因):', error);
+        logger.error('发送邮件失败 (网络原因):', error);
 
-        // --- 模拟模式 Fallback ---
+        // --- 模拟模式 Fallback（刻意用 console.log 在终端显示验证码给开发者） ---
         console.log('\n==================================================');
         console.log(' [开发模式] 模拟邮件发送');
         console.log(` 收件人: ${email}`);
@@ -113,7 +114,7 @@ export async function sendPasswordResetEmailWithCode(
     const t = (key: string, params?: Record<string, string | number>) => tServer(locale, key, params);
 
     if (!smtpUser || !process.env.SMTP_PASS) {
-        console.error('SMTP 配置缺失，请设置环境变量');
+        logger.error('SMTP 配置缺失，请设置环境变量');
         return { success: false, message: t('email.error.missingConfig') };
     }
 
@@ -127,12 +128,12 @@ export async function sendPasswordResetEmailWithCode(
             html: buildEmailHtml(code, t, 'email.reset.template'),
         });
 
-        console.log(`密码重置验证码已发送至 ${email}: ${code}`);
+        logger.info(`密码重置验证码已发送至 ${email}: ${code}`);
         return { success: true, message: t('email.success.sent') };
     } catch (error) {
-        console.error('发送密码重置邮件失败 (网络原因):', error);
+        logger.error('发送密码重置邮件失败 (网络原因):', error);
 
-        // --- 模拟模式 Fallback ---
+        // --- 模拟模式 Fallback（刻意用 console.log 在终端显示验证码给开发者） ---
         console.log('\n==================================================');
         console.log(' [开发模式] 模拟密码重置邮件发送');
         console.log(` 收件人: ${email}`);

@@ -5,6 +5,7 @@
  */
 
 import { io, Socket } from 'socket.io-client';
+import msgpackParser from 'socket.io-msgpack-parser';
 import { GAME_SERVER_URL } from '../config/server';
 
 // 重赛事件常量（与服务端 server.ts 保持一致）
@@ -80,6 +81,7 @@ class MatchSocketService {
         }
         this.isConnecting = true;
         this.socket = io(GAME_SERVER_URL, {
+            parser: msgpackParser,
             path: '/lobby-socket',
             transports: ['websocket', 'polling'],
             reconnection: true,

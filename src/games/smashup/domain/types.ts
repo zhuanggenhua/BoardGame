@@ -448,12 +448,26 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
     };
 }
 
+/** 单个随从的力量 breakdown（用于 ActionLog 展示） */
+export interface MinionPowerBreakdown {
+    /** 随从 defId */
+    defId: string;
+    /** 基础力量 */
+    basePower: number;
+    /** 最终力量 */
+    finalPower: number;
+    /** 非零修正列表（永久/临时/ongoing） */
+    modifiers: { sourceDefId: string; sourceName: string; value: number }[];
+}
+
 export interface BaseScoredEvent extends GameEvent<'su:base_scored'> {
     payload: {
         baseIndex: number;
         baseDefId: string;
         /** 排名与 VP：按力量降序 */
         rankings: { playerId: PlayerId; power: number; vp: number }[];
+        /** 每位玩家的随从力量 breakdown（可选，用于 ActionLog 展示） */
+        minionBreakdowns?: Record<PlayerId, MinionPowerBreakdown[]>;
     };
 }
 

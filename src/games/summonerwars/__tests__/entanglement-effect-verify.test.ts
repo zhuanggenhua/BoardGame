@@ -11,7 +11,7 @@ import {
   canAttackEnhanced, getEffectiveAttackRange,
   hasChargeAbility,
 } from '../domain/helpers';
-import { calculateEffectiveStrength } from '../domain/abilityResolver';
+import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
 
 function createTestRandom(): RandomFn {
@@ -119,7 +119,7 @@ describe('交缠颂歌共享技能实际效果验证', () => {
     });
 
     const unit2 = newState.board[4][4].unit!;
-    const strength = calculateEffectiveStrength(unit2, newState);
+    const strength = getEffectiveStrengthValue(unit2, newState);
     console.log('普通兵获得 power_up 后战力:', strength, '(基础2 + 2充能 = 4)');
     // unit2 基础战力2，有2充能，获得 power_up 后应该是 2 + min(2, 5) = 4
     expect(strength).toBe(4);

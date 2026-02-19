@@ -6,7 +6,7 @@ const entry: GameManifestEntry = {
     enabled: true,
     titleKey: 'games.dicethrone.title',
     descriptionKey: 'games.dicethrone.description',
-    category: 'strategy',
+    category: 'dice',
     playersKey: 'games.dicethrone.players',
     icon: '🎲',
     thumbnailPath: 'dicethrone/thumbnails/fengm',

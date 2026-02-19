@@ -167,11 +167,7 @@ export function createUndoSystem<TCore>(
             }
 
             if (pendingSnapshot) {
-                const beforeCount = nextState.sys.undo.snapshots.length;
                 nextState = appendSnapshot(nextState, pendingSnapshot, maxSnapshots);
-                if (IS_SERVER) {
-                    console.log(`[UndoServer] snapshot-saved command=${type} before=${beforeCount} after=${nextState.sys.undo.snapshots.length}`);
-                }
             }
 
             pendingSnapshot = null;
@@ -188,6 +184,11 @@ export function createUndoSystem<TCore>(
 // 撤销处理函数
 // ============================================================================
 
+/**
+ * 深拷贝快照状态
+ * 手写递归实现，能正确处理包含函数的对象（跳过函数值）
+ * structuredClone 遇到函数会抛 DataCloneError，不适用于此场景
+ */
 function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
     if (value === null || typeof value !== 'object') return value;
     if (seen.has(value as object)) return seen.get(value as object) as T;
@@ -228,6 +229,7 @@ function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
     return cloned as T;
 }
 
+
 function createSnapshot<TCore>(
     state: MatchState<TCore>
 ): MatchState<TCore> {
@@ -243,8 +245,8 @@ function createSnapshot<TCore>(
                 snapshots: [], // 快照中不保存快照历史
             },
             log: {
-                ...state.sys.log,
-                entries: state.sys.log.entries.slice(-5), // 快照中只保留最近 5 条日志
+                entries: [],
+                maxEntries: 0,
             },
             eventStream: {
                 ...state.sys.eventStream,
@@ -467,6 +469,25 @@ function handleCancelUndo<TCore>(
     logUndoServer('request-canceled', { playerId });
 
     return handleRejectUndo(state);
+}
+
+// ============================================================================
+// 客户端辅助函数
+// ============================================================================
+
+/**
+ * 获取 undo 快照数量（兼容传输裁剪后的状态）
+ *
+ * 传输层会将 snapshots 清空并写入 snapshotCount 字段以减少传输体积。
+ * 此函数统一处理两种情况，客户端应使用此函数而非直接读 snapshots.length。
+ */
+export function getUndoSnapshotCount(undo: UndoState | undefined | null): number {
+    if (!undo) return 0;
+    // 传输裁剪后的状态：snapshots 为空数组，snapshotCount 记录实际数量
+    const transportCount = (undo as UndoState & { snapshotCount?: number }).snapshotCount;
+    if (typeof transportCount === 'number' && transportCount > 0) return transportCount;
+    // 未裁剪的状态（服务端/本地模式）：直接读 snapshots.length
+    return undo.snapshots?.length ?? 0;
 }
 
 // ============================================================================

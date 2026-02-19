@@ -8,6 +8,7 @@ import type {
     ListMatchesOpts,
 } from '../../engine/transport/storage';
 import { mongoStorage, MongoStorage } from './MongoStorage';
+import logger from '../../../server/logger';
 
 const DISCONNECT_GRACE_MS = 5 * 60 * 1000;
 
@@ -164,7 +165,7 @@ export class HybridStorage implements MatchStorage {
             this.memory.setState(matchID, state);
             return;
         }
-        console.warn(`[HybridStorage] setState 未找到房间 matchID=${matchID}`);
+        logger.warn(`[HybridStorage] setState 未找到房间 matchID=${matchID}`);
     }
 
     async setMetadata(matchID: string, metadata: MatchMetadata): Promise<void> {
@@ -178,7 +179,7 @@ export class HybridStorage implements MatchStorage {
             this.memory.setMetadata(matchID, nextMetadata);
             return;
         }
-        console.warn(`[HybridStorage] setMetadata 未找到房间 matchID=${matchID}`);
+        logger.warn(`[HybridStorage] setMetadata 未找到房间 matchID=${matchID}`);
     }
 
     async fetch(matchID: string, opts: FetchOpts): Promise<FetchResult> {
@@ -260,7 +261,7 @@ export class HybridStorage implements MatchStorage {
 
         const total = cleanedMongo + cleanedMemory;
         if (total > 0) {
-            console.log(`[HybridStorage] 清理临时房间: ${total} 个 (mongo=${cleanedMongo}, memory=${cleanedMemory})`);
+            logger.info(`[HybridStorage] 清理临时房间: ${total} 个 (mongo=${cleanedMongo}, memory=${cleanedMemory})`);
         }
         return total;
     }

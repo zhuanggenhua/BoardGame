@@ -62,6 +62,17 @@ import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passi
 
 type DiceThroneMatchState = MatchState<DiceThroneCore>;
 type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
+
+/** 教程 targetId → 对应的命令类型映射（用于白名单放行） */
+const TUTORIAL_TARGET_COMMAND_MAP: Record<string, string[]> = {
+    'advance-phase-button': ['ADVANCE_PHASE'],
+    'ability-slots': ['SELECT_ABILITY'],
+    'dice-roll-button': ['ROLL_DICE'],
+    'dice-confirm-button': ['CONFIRM_ROLL'],
+    'discard-pile': ['SELL_CARD', 'UNDO_SELL_CARD'],
+    'hand-area': ['PLAY_CARD', 'SELL_CARD', 'MODIFY_DIE'],
+};
+
 // --- Main Layout ---
 export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispatch, playerID, reset, matchData, isMultiplayer }) => {
     const G = rawG.core;
@@ -665,12 +676,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }, [locale]);
 
     const shouldBlockTutorialAction = React.useCallback((targetId: string) => {
-        return Boolean(
-            isTutorialActive
-            && tutorialStep?.requireAction
-            && tutorialStep.highlightTarget
-            && tutorialStep.highlightTarget !== targetId
-        );
+        if (!isTutorialActive || !tutorialStep?.requireAction) return false;
+        // highlightTarget 匹配 → 不拦截
+        if (!tutorialStep.highlightTarget || tutorialStep.highlightTarget === targetId) return false;
+        // allowedCommands 白名单包含该 targetId 对应的命令 → 不拦截
+        const commands = TUTORIAL_TARGET_COMMAND_MAP[targetId];
+        if (commands && tutorialStep.allowedCommands?.some(cmd => commands.includes(cmd))) return false;
+        return true;
     }, [isTutorialActive, tutorialStep]);
 
     const advanceTutorialIfNeeded = React.useCallback((targetId: string) => {

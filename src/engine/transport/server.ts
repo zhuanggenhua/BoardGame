@@ -18,7 +18,7 @@ import type {
 import type {
     MatchPlayerInfo,
 } from './protocol';
-import { gameLogger } from '../../../server/logger.js';
+import logger, { gameLogger } from '../../../server/logger.js';
 import {
     executePipeline,
     createSeededRandom,
@@ -392,7 +392,7 @@ export class GameTransportServer {
         // 广播到所有客户端
         this.broadcastState(match);
 
-        console.log(`[TEST] State injected for match ${matchID}`);
+        logger.info(`[TEST] State injected for match ${matchID}`);
     }
 
     /**
@@ -425,7 +425,7 @@ export class GameTransportServer {
                     }
                 })
                 .catch((error) => {
-                    console.warn('[GameTransport] disconnect player sockets failed', {
+                    logger.warn('[GameTransport] disconnect player sockets failed', {
                         matchID,
                         playerID,
                         error,
@@ -467,7 +467,7 @@ export class GameTransportServer {
                     sockets.forEach((s) => s.disconnect(true));
                 })
                 .catch((error) => {
-                    console.warn('[GameTransport] disconnect room sockets failed', { matchID, error });
+                    logger.warn('[GameTransport] disconnect room sockets failed', { matchID, error });
                 });
         }
     }
@@ -533,8 +533,8 @@ export class GameTransportServer {
             }
         }
 
-        // 发送当前状态（经 playerView 过滤）
-        const viewState = this.applyPlayerView(match, playerID);
+        // 发送当前状态（经 playerView 过滤 + 传输裁剪）
+        const viewState = this.stripStateForTransport(this.applyPlayerView(match, playerID));
         const matchPlayers = this.buildMatchPlayers(match);
         socket.emit('state:sync', matchID, viewState, matchPlayers);
 
@@ -647,8 +647,8 @@ export class GameTransportServer {
                 }
             }
 
-            // 批次成功 - 返回权威状态（裁剪 EventStream）
-            const authoritative = this.stripEventStreamFromState(match.state);
+            // 批次成功 - 返回权威状态（传输裁剪）
+            const authoritative = this.stripStateForTransport(match.state);
             socket.emit('batch:confirmed', matchID, batchId, authoritative);
         } finally {
             // 消费 batch 执行期间排队的普通命令和 batch 任务（与 handleCommand 保持一致）
@@ -699,7 +699,7 @@ export class GameTransportServer {
             }
         }
 
-        const authoritative = this.stripEventStreamFromState(match.state);
+        const authoritative = this.stripStateForTransport(match.state);
         socket.emit('batch:confirmed', matchID, batchId, authoritative);
     }
 
@@ -709,7 +709,7 @@ export class GameTransportServer {
     private async rollbackToStateID(match: ActiveMatch, targetStateID: number): Promise<void> {
         const result = await this.storage.fetch(match.matchID, { state: true });
         if (!result.state || result.state._stateID !== targetStateID) {
-            console.error(`[GameTransport] Rollback failed: state ${targetStateID} not found`);
+            logger.error(`[GameTransport] Rollback failed: state ${targetStateID} not found`);
             return;
         }
 
@@ -721,27 +721,68 @@ export class GameTransportServer {
     }
 
     /**
-     * 裁剪 EventStream（避免客户端重播历史）
+     * 传输前状态裁剪（统一入口）
+     *
+     * 在 playerView 过滤之后、socket.emit 之前调用，移除客户端不需要的大体积数据：
+     * 1. undo.snapshots — 完整 MatchState 深拷贝，客户端只需 length（判断能否撤回）
+     *    ⚠️ 安全：快照含所有玩家完整状态（手牌/牌库），不过滤会泄漏隐私信息
+     * 2. eventStream.entries — 客户端通过 cursor 消费，重连/广播时不需要历史
+     * 3. log.entries — 引擎级调试日志（command/event 完整对象），客户端 UI 层不读取
+     * 4. tutorial.steps — 客户端只用 step（当前步骤）和 stepIndex，steps 数组只需 length
      */
-    private stripEventStreamFromState(state: MatchState<unknown>): MatchState<unknown> {
-        if (!state.sys?.eventStream) {
-            return state;
+    private stripStateForTransport(viewState: unknown): unknown {
+        const state = viewState as { sys?: Record<string, unknown> };
+        if (!state.sys) return viewState;
+
+        const sys = state.sys;
+        const patches: Record<string, unknown> = {};
+
+        // 1. undo: 清空 snapshots，保留 length 供客户端判断"能否撤回"
+        const undo = sys.undo as { snapshots?: unknown[]; maxSnapshots?: number; pendingRequest?: unknown } | undefined;
+        if (undo?.snapshots && undo.snapshots.length > 0) {
+            patches.undo = {
+                ...undo,
+                snapshots: [],
+                /** 客户端通过此字段判断是否有可撤回的快照 */
+                snapshotCount: undo.snapshots.length,
+            };
         }
 
-        const lastId = state.sys.eventStream.entries.length > 0
-            ? state.sys.eventStream.entries[state.sys.eventStream.entries.length - 1].id
-            : state.sys.eventStream.nextId - 1;
+        // 2. eventStream: 清空 entries，保留 nextId（cursor 水位线）
+        const es = sys.eventStream as { entries?: unknown[]; nextId?: number; maxEntries?: number } | undefined;
+        if (es?.entries && es.entries.length > 0) {
+            const lastEntry = es.entries[es.entries.length - 1] as { id?: number } | undefined;
+            patches.eventStream = {
+                ...es,
+                entries: [],
+                nextId: (lastEntry?.id ?? (es.nextId ?? 1) - 1) + 1,
+            };
+        }
+
+        // 3. log: LogSystem 已移除，无需裁剪（entries 始终为空）
+
+        // 4. tutorial: 只保留 step + stepIndex + 标量字段，steps 数组替换为空数组 + totalSteps
+        const tutorial = sys.tutorial as {
+            active?: boolean;
+            steps?: unknown[];
+            step?: unknown;
+            stepIndex?: number;
+        } | undefined;
+        if (tutorial?.steps && tutorial.steps.length > 0) {
+            patches.tutorial = {
+                ...tutorial,
+                steps: [],
+                /** 客户端通过此字段判断 isLastStep */
+                totalSteps: tutorial.steps.length,
+            };
+        }
+
+        // 无需裁剪
+        if (Object.keys(patches).length === 0) return viewState;
 
         return {
             ...state,
-            sys: {
-                ...state.sys,
-                eventStream: {
-                    ...state.sys.eventStream,
-                    entries: [],
-                    nextId: lastId + 1,
-                },
-            },
+            sys: { ...sys, ...patches },
         };
     }
 
@@ -753,20 +794,6 @@ export class GameTransportServer {
     ): Promise<boolean> {
         const startTime = Date.now();
         const { engineConfig, state, random, playerIds } = match;
-
-        // 诊断日志：PLAY_CARD 命令的状态快照
-        if (commandType === 'PLAY_CARD') {
-            const player = (state.core as any).players?.[playerID];
-            gameLogger.commandExecuted(match.matchID, 'PLAY_CARD_ATTEMPT', playerID, 0);
-            console.log('[GameTransport] PLAY_CARD 状态快照:', {
-                matchID: match.matchID,
-                playerID,
-                cardId: (payload as any)?.cardId,
-                handCardIds: player?.hand?.map((c: any) => c.id) ?? [],
-                handSize: player?.hand?.length ?? 0,
-                phase: (state.sys as any)?.flow?.phase,
-            });
-        }
 
         const command: Command = {
             type: commandType,
@@ -873,7 +900,7 @@ export class GameTransportServer {
         if (match.metadata.players[playerID]) {
             match.metadata.players[playerID].isConnected = false;
             this.storage.setMetadata(match.matchID, match.metadata).catch((err) => {
-                console.error(`[GameTransport] setMetadata 失败（断线标记可能未持久化） matchID=${match.matchID} playerID=${playerID}`, err);
+                logger.error(`[GameTransport] setMetadata 失败（断线标记可能未持久化） matchID=${match.matchID} playerID=${playerID}`, err);
             });
         }
 
@@ -935,9 +962,9 @@ export class GameTransportServer {
         const nsp = this.io.of('/game');
         const matchPlayers = this.buildMatchPlayers(match);
 
-        // 对每个已连接的玩家发送经 playerView 过滤的状态
+        // 对每个已连接的玩家发送经 playerView 过滤 + 传输裁剪的状态
         for (const [playerID, sockets] of match.connections) {
-            const viewState = this.applyPlayerView(match, playerID);
+            const viewState = this.stripStateForTransport(this.applyPlayerView(match, playerID));
             for (const sid of sockets) {
                 nsp.to(sid).emit('state:update', match.matchID, viewState, matchPlayers);
             }
@@ -945,7 +972,7 @@ export class GameTransportServer {
 
         // 旁观者使用 spectator 视图（当前默认完整视图）
         if (match.spectatorSockets.size > 0) {
-            const spectatorView = this.applyPlayerView(match, null);
+            const spectatorView = this.stripStateForTransport(this.applyPlayerView(match, null));
             for (const sid of match.spectatorSockets) {
                 nsp.to(sid).emit('state:update', match.matchID, spectatorView, matchPlayers);
             }

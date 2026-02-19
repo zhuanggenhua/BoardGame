@@ -6,10 +6,11 @@
   },
   "category": {
     "all": "全部游戏",
-    "strategy": "策略",
-    "casual": "休闲",
-    "party": "派对",
+    "card": "卡牌",
+    "dice": "骰子",
     "abstract": "抽象",
+    "wargame": "战棋",
+    "casual": "休闲",
     "tools": "工具"
   },
   "game_tags": {
@@ -17,7 +18,8 @@
     "combat": "对战",
     "ugc": "UGC",
     "tactical": "战棋",
-    "card_driven": "卡牌"
+    "card_driven": "卡牌",
+    "casual": "休闲"
   },
   "game_details": {
     "best_players": "最佳人数",

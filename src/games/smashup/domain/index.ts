@@ -21,6 +21,7 @@ import type {
     BaseReplacedEvent,
     DeckReshuffledEvent,
     MinionPlayedEvent,
+    MinionPowerBreakdown,
 } from './types';
 import {
     PHASE_ORDER,
@@ -30,7 +31,7 @@ import {
     VP_TO_WIN,
     getCurrentPlayerId,
 } from './types';
-import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint } from './ongoingModifiers';
+import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown } from './ongoingModifiers';
 import { fireTriggers, interceptEvent as ongoingInterceptEvent } from './ongoingEffects';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
@@ -143,9 +144,26 @@ function scoreOneBase(
         });
     }
 
+    // 收集每位玩家的随从力量 breakdown（用于 ActionLog 展示）
+    const minionBreakdowns: Record<PlayerId, MinionPowerBreakdown[]> = {};
+    for (const m of updatedBase.minions) {
+        const bd = getEffectivePowerBreakdown(updatedCore, m, baseIndex);
+        if (!minionBreakdowns[m.controller]) minionBreakdowns[m.controller] = [];
+        minionBreakdowns[m.controller].push({
+            defId: m.defId,
+            basePower: bd.basePower,
+            finalPower: bd.finalPower,
+            modifiers: [
+                ...(bd.permanentModifier !== 0 ? [{ sourceDefId: m.defId, sourceName: 'actionLog.powerModifier.permanent', value: bd.permanentModifier }] : []),
+                ...(bd.tempModifier !== 0 ? [{ sourceDefId: m.defId, sourceName: 'actionLog.powerModifier.temp', value: bd.tempModifier }] : []),
+                ...bd.ongoingDetails.map(d => ({ sourceDefId: d.sourceDefId, sourceName: d.sourceName, value: d.value })),
+            ],
+        });
+    }
+
     const scoreEvt: BaseScoredEvent = {
         type: SU_EVENTS.BASE_SCORED,
-        payload: { baseIndex, baseDefId: base.defId, rankings },
+        payload: { baseIndex, baseDefId: base.defId, rankings, minionBreakdowns },
         timestamp: now,
     };
     events.push(scoreEvt);

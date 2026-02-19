@@ -19,7 +19,6 @@ import {
     createInteractionSystem,
     createSimpleChoiceSystem,
     createEventStreamSystem,
-    createLogSystem,
 } from '../../../engine';
 import { smashUpFlowHooks } from '../domain/index';
 import { createSmashUpEventSystem } from '../domain/systems';
@@ -30,7 +29,6 @@ import { createSmashUpEventSystem } from '../domain/systems';
 
 export const smashUpTestSystems: EngineSystem<SmashUpCore>[] = [
     createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-    createLogSystem(),
     createInteractionSystem(),
     createSimpleChoiceSystem(),
     createEventStreamSystem(),

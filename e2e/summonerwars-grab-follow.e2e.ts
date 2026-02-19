@@ -17,6 +17,7 @@
  */
 
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
+import { cloneState } from './helpers/summonerwars';
 
 // ============================================================================
 // 辅助函数（从 summonerwars.e2e.ts 复用）
@@ -360,8 +361,6 @@ const applyCoreState = async (page: Page, coreState: unknown) => {
   await page.getByTestId('debug-state-apply').click();
   await expect(input).toBeHidden({ timeout: 5000 }).catch(() => { });
 };
-
-const cloneState = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 const clickBoardElement = async (page: Page, selector: string) => {
   const clicked = await page.evaluate((sel) => {

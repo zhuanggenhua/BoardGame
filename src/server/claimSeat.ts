@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import type { MatchMetadata, StoredMatchState } from '../engine/transport/storage';
+import logger from '../../server/logger';
 
 export type GameJwtPayload = {
     userId?: string;
@@ -59,7 +60,7 @@ export const createClaimSeatHandler = ({
         const body = ctx.request.body;
         const playerIDInput = body?.playerID;
         if (playerIDInput === undefined || playerIDInput === null || (typeof playerIDInput === 'string' && !playerIDInput.trim())) {
-            console.warn(`[claim-seat] rejected reason=missing_player_id matchID=${matchID} origin=${origin || ''}`);
+            logger.warn(`[claim-seat] rejected reason=missing_player_id matchID=${matchID} origin=${origin || ''}`);
             ctx.throw(400, 'playerID is required');
             return;
         }
@@ -72,7 +73,7 @@ export const createClaimSeatHandler = ({
         if (rawToken) {
             payload = verifyGameToken(rawToken, jwtSecret);
             if (!payload?.userId) {
-                console.warn(`[claim-seat] rejected reason=invalid_token matchID=${matchID} origin=${origin || ''} hasAuth=${!!authHeader}`);
+                logger.warn(`[claim-seat] rejected reason=invalid_token matchID=${matchID} origin=${origin || ''} hasAuth=${!!authHeader}`);
                 ctx.throw(401, 'Invalid token');
                 return;
             }
@@ -81,7 +82,7 @@ export const createClaimSeatHandler = ({
         } else {
             const guestId = typeof body?.guestId === 'string' ? body.guestId.trim() : '';
             if (!guestId) {
-                console.warn(`[claim-seat] rejected reason=missing_guest matchID=${matchID} origin=${origin || ''}`);
+                logger.warn(`[claim-seat] rejected reason=missing_guest matchID=${matchID} origin=${origin || ''}`);
                 ctx.throw(401, 'Guest id is required');
                 return;
             }
@@ -89,7 +90,7 @@ export const createClaimSeatHandler = ({
             actorLabel = expectedOwnerKey;
         }
 
-        console.log(`[claim-seat] start matchID=${matchID} playerID=${resolvedPlayerID} actor=${actorLabel} origin=${origin || ''}`);
+        logger.info(`[claim-seat] start matchID=${matchID} playerID=${resolvedPlayerID} actor=${actorLabel} origin=${origin || ''}`);
 
         const { metadata, state } = await db.fetch(matchID, { metadata: true, state: true });
         if (!metadata) {
@@ -102,7 +103,7 @@ export const createClaimSeatHandler = ({
         const setupDataFromState = (stateG?.__setupData as { ownerKey?: string } | undefined) || undefined;
         const ownerKey = setupDataFromMeta?.ownerKey ?? setupDataFromState?.ownerKey;
         if (!ownerKey || ownerKey !== expectedOwnerKey) {
-            console.warn(
+            logger.warn(
                 `[claim-seat] rejected reason=owner_mismatch matchID=${matchID} ownerKey=${ownerKey || ''} expected=${expectedOwnerKey}`
             );
             ctx.throw(403, 'Not match owner');
@@ -112,7 +113,7 @@ export const createClaimSeatHandler = ({
         const players = metadata.players as Record<string, { name?: string; credentials?: string }> | undefined;
         const player = players?.[resolvedPlayerID];
         if (!player) {
-            console.warn(`[claim-seat] rejected reason=player_not_found matchID=${matchID} playerID=${resolvedPlayerID}`);
+            logger.warn(`[claim-seat] rejected reason=player_not_found matchID=${matchID} playerID=${resolvedPlayerID}`);
             ctx.throw(404, 'Player ' + resolvedPlayerID + ' not found');
             return;
         }
@@ -127,7 +128,7 @@ export const createClaimSeatHandler = ({
         }
 
         await db.setMetadata(matchID, metadata);
-        console.log(`[claim-seat] success matchID=${matchID} playerID=${resolvedPlayerID} actor=${actorLabel}`);
+        logger.info(`[claim-seat] success matchID=${matchID} playerID=${resolvedPlayerID} actor=${actorLabel}`);
         ctx.body = { playerID: resolvedPlayerID, playerCredentials };
     };
 };

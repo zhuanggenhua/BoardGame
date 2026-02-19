@@ -131,6 +131,14 @@
     "talentUsed": "天赋触发：",
     "baseScored": "基地结算：",
     "baseScoredRanking": "{{playerId}} +{{vp}}VP",
+    "baseScoredRankingWithBreakdown": "{{playerId}} +{{vp}}VP 力量：",
+    "powerModifier": {
+      "permanent": "力量指示物",
+      "temp": "临时力量修正"
+    },
+    "damageSource": {
+      "original": "基础力量"
+    },
     "vpAwarded": "{{playerId}} 获得 {{amount}}VP",
     "cardsDrawn": "{{playerId}} 抽{{count}}张牌",
     "cardsDiscarded": "{{playerId}} 弃置{{count}}张牌",

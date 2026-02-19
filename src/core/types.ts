@@ -84,10 +84,12 @@ export interface CriticalImageResolverResult {
  * 关键图片解析器函数签名
  * @param gameState 当前对局状态（由各游戏自行断言类型）
  * @param locale 可选的语言代码
+ * @param playerID 当前玩家 ID（用于区分自己/对手的资源优先级）
  */
 export type CriticalImageResolver = (
     gameState: unknown,
     locale?: string,
+    playerID?: string | null,
 ) => CriticalImageResolverResult;
 
 // ============================================================================

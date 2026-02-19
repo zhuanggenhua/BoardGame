@@ -225,7 +225,6 @@ export const HandArea: React.FC<HandAreaProps> = ({
   }, [phase, isMyTurn, currentMagic]);
 
   const handleCardClick = useCallback((cardId: string) => {
-    console.log('[HandArea] Card clicked:', { cardId, phase, isMyTurn });
     const card = cards.find(c => c.id === cardId);
     if (!card) return;
 

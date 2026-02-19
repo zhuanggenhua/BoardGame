@@ -4,6 +4,7 @@ import { Undo2 } from 'lucide-react';
 import { UI_Z_INDEX } from '../../../../core';
 import { FabMenu } from '../../../system/FabMenu';
 import { UNDO_COMMANDS } from '../../../../engine';
+import { getUndoSnapshotCount } from '../../../../engine/systems/UndoSystem';
 import type { MatchState } from '../../../../engine/types';
 
 interface UndoFabProps {
@@ -38,7 +39,7 @@ export const UndoFab: React.FC<UndoFabProps> = ({
     // 游戏结束或观战者不显示
     if (isGameOver || !playerID) return null;
 
-    const history = G.sys?.undo?.snapshots || [];
+    const snapshotCount = getUndoSnapshotCount(G.sys?.undo);
     const request = G.sys?.undo?.pendingRequest;
 
     // 获取当前玩家
@@ -50,7 +51,7 @@ export const UndoFab: React.FC<UndoFabProps> = ({
     const isCurrentPlayer = normalizedCurrentPlayer !== null && playerID === normalizedCurrentPlayer;
 
     // 申请逻辑：存在历史 + 无请求 + 不是当前行动玩家
-    const canRequest = history.length > 0 && !request && !isCurrentPlayer;
+    const canRequest = snapshotCount > 0 && !request && !isCurrentPlayer;
 
     // 审查逻辑：存在请求 + 不是发起者 + 是当前行动玩家
     const canReview = !!request && request.requesterId !== playerID && isCurrentPlayer;
@@ -135,7 +136,7 @@ export const UndoFab: React.FC<UndoFabProps> = ({
                                 <div className="flex items-center gap-2 text-white/40 text-[10px]">
                                     <Undo2 size={12} />
                                     <span>
-                                        {t('controls.undo.historyCount', { count: history.length })}
+                                        {t('controls.undo.historyCount', { count: snapshotCount })}
                                     </span>
                                 </div>
                             </div>

@@ -7,6 +7,7 @@
 
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { waitForState, waitForCoreState, waitForPhaseChange } from './helpers/waitForState';
+import { cloneState } from './helpers/summonerwars';
 
 const setEnglishLocale = async (context: BrowserContext | Page) => {
   await context.addInitScript(() => {
@@ -594,8 +595,6 @@ const advancePhase = async (page: Page, fromPhase: string) => {
   await expect.poll(() => getCurrentPhase(page), { timeout: 8000 }).not.toBe(fromPhase);
   return getCurrentPhase(page);
 };
-
-const cloneState = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 const normalizePhaseState = (coreState: any, phase: string) => {
   const next = cloneState(coreState);

@@ -736,14 +736,35 @@ export function triggerAllUnitsAbilities(
 }
 
 /**
- * 计算单位的有效战力（考虑技能加成）
+ * 战力计算结果（含 breakdown 明细）
+ */
+export interface StrengthResult {
+  /** 基础战力（卡牌面板值） */
+  baseStrength: number;
+  /** 最终战力（含所有 buff，下限 0） */
+  finalStrength: number;
+  /** 各 buff 修正明细 */
+  modifiers: Array<{
+    /** buff 来源 ID（能力 ID / 事件卡 ID） */
+    source: string;
+    /** buff 显示名称 */
+    sourceName: string;
+    /** 贡献值 */
+    value: number;
+  }>;
+}
+
+/**
+ * 计算单位的有效战力（考虑技能加成），返回含 breakdown 的完整结果
  */
 export function calculateEffectiveStrength(
   unit: UnitInstance,
   state: SummonerWarsCore,
   targetUnit?: UnitInstance
-): number {
-  let strength = unit.card.strength;
+): StrengthResult {
+  const baseStrength = unit.card.strength;
+  let strength = baseStrength;
+  const modifiers: StrengthResult['modifiers'] = [];
   const abilities = getUnitAbilities(unit, state);
   const abilityIds = new Set(abilities.map(a => a.id));
 
@@ -752,6 +773,7 @@ export function calculateEffectiveStrength(
     for (const attached of unit.attachedCards) {
       if (getBaseCardId(attached.id) === CARD_IDS.NECRO_HELLFIRE_BLADE) {
         strength += 2;
+        modifiers.push({ source: CARD_IDS.NECRO_HELLFIRE_BLADE, sourceName: '狱火铸剑', value: 2 });
       }
     }
   }
@@ -762,6 +784,7 @@ export function calculateEffectiveStrength(
     for (const ev of player.activeEvents) {
       if (getBaseCardId(ev.id) === CARD_IDS.TRICKSTER_HYPNOTIC_LURE && ev.targetUnitId === targetUnit.instanceId) {
         strength += 1;
+        modifiers.push({ source: CARD_IDS.TRICKSTER_HYPNOTIC_LURE, sourceName: '催眠引诱', value: 1 });
       }
     }
   }
@@ -790,7 +813,14 @@ export function calculateEffectiveStrength(
             : evaluateExpression(effect.value, ctx);
           // 数据驱动上限：由 AbilityDef 的 maxBonus 字段控制
           const capped = effect.maxBonus != null ? Math.min(value, effect.maxBonus) : value;
-          strength += capped;
+          if (capped !== 0) {
+            strength += capped;
+            modifiers.push({
+              source: ability.id,
+              sourceName: ability.name ?? ability.id,
+              value: capped,
+            });
+          }
         }
       }
     }
@@ -820,37 +850,51 @@ export function calculateEffectiveStrength(
           adjacentAllies++;
         }
       }
-      strength += adjacentAllies;
+      if (adjacentAllies > 0) {
+        strength += adjacentAllies;
+        modifiers.push({ source: CARD_IDS.GOBLIN_SWARM, sourceName: '成群结队', value: adjacentAllies });
+      }
     }
   }
 
   // 冲锋加成：野兽骑手冲锋3+格时+1战力（通过 boosts 标记）
   if (abilityIds.has('charge') && unit.boosts > 0) {
     strength += unit.boosts;
+    modifiers.push({ source: 'charge', sourceName: '冲锋', value: unit.boosts });
   }
 
   // 城塞精锐：2格内每有一个友方城塞单位+1战力
   if (abilityIds.has('fortress_elite')) {
+    let eliteBonus = 0;
     for (let row = 0; row < BOARD_ROWS; row++) {
       for (let col = 0; col < BOARD_COLS; col++) {
         const other = state.board[row]?.[col]?.unit;
         if (other && other.owner === unit.owner && other.instanceId !== unit.instanceId
           && isFortressUnit(other.card)
           && manhattanDistance(unit.position, { row, col }) <= 2) {
-          strength += 1;
+          eliteBonus += 1;
         }
       }
+    }
+    if (eliteBonus > 0) {
+      strength += eliteBonus;
+      modifiers.push({ source: 'fortress_elite', sourceName: '城塞精锐', value: eliteBonus });
     }
   }
 
   // 辉光射击：每2点魔力+1战力
   if (abilityIds.has('radiant_shot')) {
     const playerMagic = state.players[unit.owner]?.magic ?? 0;
-    strength += Math.floor(playerMagic / 2);
+    const radiantBonus = Math.floor(playerMagic / 2);
+    if (radiantBonus > 0) {
+      strength += radiantBonus;
+      modifiers.push({ source: 'radiant_shot', sourceName: '辉光射击', value: radiantBonus });
+    }
   }
 
   // 冰霜飞弹：相邻每有一个友方建筑+1战力
   if (abilityIds.has('frost_bolt')) {
+    let frostBonus = 0;
     const dirs = [
       { row: -1, col: 0 }, { row: 1, col: 0 },
       { row: 0, col: -1 }, { row: 0, col: 1 },
@@ -861,28 +905,37 @@ export function calculateEffectiveStrength(
       const adjCell = state.board[adjPos.row]?.[adjPos.col];
       // 友方建筑 或 友方活体结构单位（寒冰魔像）
       if (adjCell?.structure && adjCell.structure.owner === unit.owner) {
-        strength += 1;
+        frostBonus += 1;
       } else if (adjCell?.unit && adjCell.unit.owner === unit.owner
         && getUnitAbilities(adjCell.unit, state).map(a => a.id).includes('mobile_structure')) {
-        strength += 1;
+        frostBonus += 1;
       }
+    }
+    if (frostBonus > 0) {
+      strength += frostBonus;
+      modifiers.push({ source: 'frost_bolt', sourceName: '冰霜飞弹', value: frostBonus });
     }
   }
 
   // 高阶冰霜飞弹：2格内每有一个友方建筑+1战力
   if (abilityIds.has('greater_frost_bolt')) {
+    let greaterFrostBonus = 0;
     for (let row = 0; row < BOARD_ROWS; row++) {
       for (let col = 0; col < BOARD_COLS; col++) {
         const dist = manhattanDistance(unit.position, { row, col });
         if (dist === 0 || dist > 2) continue;
         const cell = state.board[row]?.[col];
         if (cell?.structure && cell.structure.owner === unit.owner) {
-          strength += 1;
+          greaterFrostBonus += 1;
         } else if (cell?.unit && cell.unit.owner === unit.owner
           && getUnitAbilities(cell.unit, state).map(a => a.id).includes('mobile_structure')) {
-          strength += 1;
+          greaterFrostBonus += 1;
         }
       }
+    }
+    if (greaterFrostBonus > 0) {
+      strength += greaterFrostBonus;
+      modifiers.push({ source: 'greater_frost_bolt', sourceName: '高阶冰霜飞弹', value: greaterFrostBonus });
     }
   }
 
@@ -894,10 +947,27 @@ export function calculateEffectiveStrength(
     });
     if (hasHolyJudgment) {
       strength += 1;
+      modifiers.push({ source: CARD_IDS.PALADIN_HOLY_JUDGMENT, sourceName: '圣洁审判', value: 1 });
     }
   }
 
-  return Math.max(0, strength);
+  return {
+    baseStrength,
+    finalStrength: Math.max(0, strength),
+    modifiers,
+  };
+}
+
+/**
+ * 获取单位有效战力数值（向后兼容便捷函数）
+ * 仅需数值时使用此函数，需要 breakdown 明细时使用 calculateEffectiveStrength
+ */
+export function getEffectiveStrengthValue(
+  unit: UnitInstance,
+  state: SummonerWarsCore,
+  targetUnit?: UnitInstance
+): number {
+  return calculateEffectiveStrength(unit, state, targetUnit).finalStrength;
 }
 
 /**

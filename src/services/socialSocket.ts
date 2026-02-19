@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import msgpackParser from 'socket.io-msgpack-parser';
 import { AUTH_API_URL } from '../config/server';
 
 export const SOCIAL_EVENTS = {
@@ -82,6 +83,7 @@ class SocialSocketService {
             console.log('[SocialSocket] Connecting to', baseUrl, 'path: /social-socket');
 
             this.socket = io(baseUrl, {
+                parser: msgpackParser,
                 path: '/social-socket',
                 auth: { token },
                 transports: ['websocket', 'polling'],
@@ -166,6 +168,13 @@ class SocialSocketService {
                 console.error(`[SocialSocket] Error in listener for ${event}:`, err);
             }
         });
+    }
+
+    /**
+     * 向服务端发送事件
+     */
+    emit(event: string, payload?: unknown): void {
+        this.socket?.emit(event, payload);
     }
 
     get connected(): boolean {

@@ -27,7 +27,7 @@ export interface UseAutoSkipPhaseConfig {
   /** 额外的全局禁用判定（如 hostStarted 等游戏特定条件） */
   enabled?: boolean;
   /**
-   * 当前 undo 快照数量（G.sys.undo.snapshots.length）。
+   * 当前 undo 快照数量（通过 getUndoSnapshotCount(G.sys?.undo) 获取）。
    * 框架层通过监测此值减少来检测撤回恢复，永久抑制自动跳过，
    * 直到快照数重新增加（玩家执行了新命令）。
    * 所有游戏必传，确保撤回保护全局生效。

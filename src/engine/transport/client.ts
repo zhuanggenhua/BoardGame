@@ -8,6 +8,7 @@
  */
 
 import { io, type Socket } from 'socket.io-client';
+import msgpackParser from 'socket.io-msgpack-parser';
 import type { MatchPlayerInfo, ServerToClientEvents, ClientToServerEvents } from './protocol';
 
 // ============================================================================
@@ -89,6 +90,7 @@ export class GameTransportClient {
         const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
             `${this.config.server}/game`,
             {
+                parser: msgpackParser,
                 transports: ['websocket'],
                 reconnection: true,
                 reconnectionAttempts: Infinity,

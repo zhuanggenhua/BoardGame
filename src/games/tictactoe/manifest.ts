@@ -6,7 +6,7 @@ const entry: GameManifestEntry = {
     enabled: true,
     titleKey: 'games.tictactoe.title',
     descriptionKey: 'games.tictactoe.description',
-    category: 'strategy',
+    category: 'abstract',
     playersKey: 'games.tictactoe.players',
     icon: '#',
 };

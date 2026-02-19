@@ -99,6 +99,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **改游戏规则/机制前先读规则文档（强制）**：修改会影响玩法/回合/结算/效果等"规则或机制"时，必须先读 `src/games/<gameId>/rule/` 下的规则文档。
 - **Git 变更回退与暂存规范（强制）**：涉及 `git restore`/`reset --hard`/`stash` 等操作时，**必须先说明原因并获得许可**。PowerShell 恢复文件禁止用管道/Out-File，必须用 `cmd /c "git show <ref>:<file> > <file>"`。
 - **禁止使用 --no-verify（强制）**：`git commit --no-verify` 和 `git push --no-verify` 会跳过 lint-staged 和 pre-push 钩子，可能导致不合规代码入库。任何情况下都禁止使用。
+- **提交前必须手动执行 pre-push 钩子（强制）**：`git commit` 之前必须先运行 `npm run build && npm run i18n:check && npm run test:games`（即 pre-push 钩子内容），全部通过后才能提交。禁止先提交再发现钩子失败后回退。
 - **文件移动/复制规范（强制）**：
   - **禁止使用 `robocopy /MOVE`**：移动操作会删除源文件，中途失败会导致数据丢失。
   - **推荐做法**：
@@ -172,6 +173,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 > **遇到以下问题时必须先阅读 `docs/ai-rules/golden-rules.md`**：React 渲染错误、白屏、函数未定义、高频交互异常
 
 - **React Hooks（强制）**：禁止在条件语句或 return 之后调用 Hooks。`if (condition) return null` 必须放在所有 Hooks 之后。
+- **React Effect 时序（强制）**：子组件的 `useEffect` 先于父组件执行。跨组件 effect 通信必须处理两种时序（生产者先到 / 消费者先到），防重入条件必须区分"已完成"和"未开始"。详见 `docs/ai-rules/golden-rules.md`。
 - **白屏排查（强制）**：白屏时禁止盲目修代码，必须先通过 E2E 测试或控制台日志获取证据。
 - **Vite SSR（强制）**：Vite SSR 将 `function` 声明转为变量赋值导致提升失效，注册函数放文件末尾。
 - **const/let 声明顺序（强制）**：`const`/`let` 不会提升，在声明前引用会触发 TDZ 导致白屏。新增/移动代码块时必须检查引用的变量是否已在上方声明。
@@ -280,6 +282,8 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 | 传输层客户端 | `src/engine/transport/client.ts` |
 | 传输层 React 集成 | `src/engine/transport/react.tsx` |
 | Board Props 契约 | `src/engine/transport/protocol.ts` |
+| 乐观更新引擎 | `src/engine/transport/latency/optimisticEngine.ts` |
+| 延迟优化类型 | `src/engine/transport/latency/types.ts` |
 | 国际化入口 | `src/lib/i18n/` |
 | 音频管理器 | `src/lib/audio/AudioManager.ts` |
 | **日志系统** | **`server/logger.ts`**（生产日志，详见 `docs/logging-system.md`） |

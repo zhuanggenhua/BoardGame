@@ -15,8 +15,9 @@ import type {
 import { FLOW_COMMANDS } from '../../engine';
 import { FLOW_EVENTS } from '../../engine/systems/FlowSystem';
 import { SU_COMMANDS, SU_EVENTS } from './domain';
-import type { SmashUpCore } from './domain/types';
+import type { SmashUpCore, MinionPowerBreakdown } from './domain/types';
 import { getSmashUpCardPreviewMeta } from './ui/cardPreviewHelper';
+import { buildDamageBreakdownSegment, type DamageSourceResolver } from '../../engine/primitives/actionLogHelpers';
 
 // ============================================================================
 // 白名单定义
@@ -76,6 +77,34 @@ const buildReasonSegments = (
     // fallback：纯文本
     return [i18nSeg('actionLog.reasonSuffix', { reason })];
 };
+
+// ============================================================================
+// DamageSourceResolver（力量 breakdown 来源解析）
+// ============================================================================
+
+/**
+ * SmashUp 力量来源解析器
+ *
+ * 将 sourceDefId 翻译为可显示标签（卡牌名称 i18n key）。
+ * 特殊 key（永久/临时修正）直接返回 i18n key。
+ */
+export const suPowerSourceResolver: DamageSourceResolver = {
+    resolve(sourceId: string) {
+        // 永久/临时修正的特殊 key
+        if (sourceId.startsWith('actionLog.powerModifier.')) {
+            return { label: sourceId, isI18n: true, ns: SU_NS };
+        }
+        // 卡牌名称
+        const meta = getSmashUpCardPreviewMeta(sourceId);
+        if (meta?.name) {
+            const isI18n = meta.name.includes('.');
+            return { label: meta.name, isI18n, ns: isI18n ? SU_NS : undefined };
+        }
+        return null;
+    },
+};
+
+
 
 // ============================================================================
 // ActionLog 格式化
@@ -331,16 +360,50 @@ export function formatSmashUpActionEntry({
                 break;
             }
             case SU_EVENTS.BASE_SCORED: {
-                const payload = event.payload as { baseDefId: string; rankings: { playerId: PlayerId; vp: number }[] };
+                const payload = event.payload as {
+                    baseDefId: string;
+                    rankings: { playerId: PlayerId; power: number; vp: number }[];
+                    minionBreakdowns?: Record<PlayerId, MinionPowerBreakdown[]>;
+                };
                 const segments: ActionLogSegment[] = [i18nSeg('actionLog.baseScored')];
                 const baseSegment = buildCardSegment(payload.baseDefId);
                 if (baseSegment) segments.push(baseSegment);
                 payload.rankings.forEach((ranking) => {
                     segments.push(textSegment(' '));
-                    segments.push(i18nSeg('actionLog.baseScoredRanking', {
-                        playerId: ranking.playerId,
-                        vp: ranking.vp,
-                    }));
+                    // 检查该玩家的随从是否有力量修正
+                    const breakdowns = payload.minionBreakdowns?.[ranking.playerId];
+                    const hasModifiers = breakdowns?.some(bd => bd.modifiers.length > 0);
+                    if (hasModifiers && breakdowns) {
+                        // 有修正：显示玩家 + 力量 breakdown tooltip + VP
+                        const totalPower = breakdowns.reduce((sum, bd) => sum + bd.finalPower, 0);
+                        // 构建总力量 breakdown：合并所有随从的基础力量和修正
+                        const allModifiers = breakdowns.flatMap(bd => bd.modifiers.map(m => ({
+                            type: 'flat',
+                            value: m.value,
+                            sourceId: m.sourceDefId,
+                            sourceName: m.sourceName,
+                        })));
+                        const breakdownSeg = buildDamageBreakdownSegment(
+                            totalPower,
+                            {
+                                damage: totalPower,
+                                modifiers: allModifiers,
+                            },
+                            suPowerSourceResolver,
+                            SU_NS,
+                        );
+                        segments.push(i18nSeg('actionLog.baseScoredRankingWithBreakdown', {
+                            playerId: ranking.playerId,
+                            vp: ranking.vp,
+                        }));
+                        segments.push(breakdownSeg);
+                    } else {
+                        // 无修正：保持原格式
+                        segments.push(i18nSeg('actionLog.baseScoredRanking', {
+                            playerId: ranking.playerId,
+                            vp: ranking.vp,
+                        }));
+                    }
                 });
                 pushEntry(event.type, segments, actorId, entryTimestamp, index);
                 break;

@@ -197,7 +197,8 @@ export const getGamesByCategory = (category: string) => {
         // "全部游戏" 选项下不再显示工具类项目
         return games.filter(g => g.type !== 'tool');
     }
-    return games.filter(g => !g.isUgc && g.category === category);
+    // 同时匹配 category 和 tags，让一个游戏可以出现在多个分类下
+    return games.filter(g => g.category === category || g.tags?.includes(category));
 };
 
 export default GAMES_REGISTRY;

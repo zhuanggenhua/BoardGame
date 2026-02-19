@@ -9,6 +9,7 @@ import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { MsgpackIoAdapter } from './adapters/msgpack-io.adapter';
 import * as Sentry from '@sentry/nestjs';
 import { GlobalHttpExceptionFilter } from './shared/filters/http-exception.filter';
 
@@ -28,6 +29,9 @@ async function bootstrap() {
         },
         rawBody: false,
     });
+
+    // 使用 MessagePack 序列化的 socket.io 适配器
+    app.useWebSocketAdapter(new MsgpackIoAdapter(app));
 
     const expressApp = app.getHttpAdapter().getInstance();
     expressApp.use(express.json({ limit: '2mb' }));

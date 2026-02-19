@@ -533,7 +533,7 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
     describe('锁定 (Targeted) 持续效果验证', () => {
         it('锁定使受到的伤害+2（通过 tokenDefinitions 的 onDamageReceived 触发）', async () => {
             // 锁定的 +2 伤害通过 TokenDef.passiveTrigger.actions[modifyStat] 实现，
-            // 由 effects.ts 的 applyOnDamageReceivedTriggers 自动处理。
+            // 由 createDamageCalculation 的 collectStatusModifiers 自动处理。
             // 这里验证 TokenDef 配置正确性。
             const { MOON_ELF_TOKENS } = await import('../heroes/moon_elf/tokens');
             const targetedDef = MOON_ELF_TOKENS.find((t: any) => t.id === STATUS_IDS.TARGETED);

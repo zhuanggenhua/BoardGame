@@ -5,6 +5,7 @@
  */
 
 import { io, Socket } from 'socket.io-client';
+import msgpackParser from 'socket.io-msgpack-parser';
 import { GAME_SERVER_URL } from '../config/server';
 import i18n from '../lib/i18n';
 
@@ -163,6 +164,7 @@ class LobbySocketService {
         console.log('[LobbySocket]', tLobbySocket('connecting'));
 
         this.socket = io(GAME_SERVER_URL, {
+            parser: msgpackParser,
             path: '/lobby-socket',
             transports: ['websocket', 'polling'],
             reconnection: true,

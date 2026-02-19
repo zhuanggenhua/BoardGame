@@ -104,6 +104,20 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         setConversations([]);
     }, [token]);
 
+    // 心跳定时器：定期发送 heartbeat 刷新服务端在线状态缓存（TTL 60s，每 30s 发一次）
+    useEffect(() => {
+        if (!token) return;
+
+        const HEARTBEAT_INTERVAL = 30_000;
+        const timer = setInterval(() => {
+            if (socialSocket.connected) {
+                socialSocket.emit(SOCIAL_EVENTS.HEARTBEAT);
+            }
+        }, HEARTBEAT_INTERVAL);
+
+        return () => clearInterval(timer);
+    }, [token]);
+
     // WebSocket 事件绑定：只清理监听，不主动断开连接
     useEffect(() => {
         if (!token || !user) {

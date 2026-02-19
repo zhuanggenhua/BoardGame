@@ -235,6 +235,7 @@ export async function preloadCriticalImages(
     gameId: string,
     gameState?: unknown,
     locale?: string,
+    playerID?: string | null,
 ): Promise<string[]> {
     const assets = gameAssetsRegistry.get(gameId);
     const staticCritical = assets?.criticalImages ?? [];
@@ -242,7 +243,7 @@ export async function preloadCriticalImages(
 
     let resolved: CriticalImageResolverResult = { critical: [], warm: [] };
     if (gameState !== undefined) {
-        resolved = resolveCriticalImages(gameId, gameState, locale);
+        resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
     }
 
     // 合并去重
@@ -402,8 +403,16 @@ async function preloadOptimizedImage(src: string): Promise<void> {
         fallback = preferWebp ? avif : webp;
     }
 
+    // 临时调试日志：确认预加载的实际 URL
+    if (src.includes('dice')) {
+        console.debug(`[AssetLoader:dice] preloadOptimizedImage src=${src} preferAvif=${preferAvif} primary=${primary}`);
+    }
+
     if (preloadedImages.has(primary)) return;
     const ok = await preloadImageWithResult(primary);
+    if (src.includes('dice')) {
+        console.debug(`[AssetLoader:dice] preloadOptimizedImage result ok=${ok} primary=${primary}`);
+    }
     if (!ok && fallback && !preloadedImages.has(fallback)) {
         await preloadImageWithResult(fallback);
     }
@@ -575,6 +584,11 @@ export function buildLocalizedImageSet(src: string, locale?: string): string {
     // 根据已检测的格式支持能力选择最佳格式，未检测完成时 fallback 到 webp
     const url = (avifSupportedSync && primary.avif) ? primary.avif
         : primary.webp || primary.avif;
+    // 临时调试日志：确认格式选择和缓存命中
+    if (src.includes('dice')) {
+        const cached = preloadedImages.has(url);
+        console.debug(`[AssetLoader:dice] buildLocalizedImageSet src=${src} avifSync=${avifSupportedSync} url=${url} cached=${cached}`);
+    }
     return `url("${url}")`;
 }
 

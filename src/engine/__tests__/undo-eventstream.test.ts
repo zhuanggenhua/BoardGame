@@ -8,7 +8,6 @@ import { describe, it, expect } from 'vitest';
 import { executePipeline, createInitialSystemState, createSeededRandom } from '../pipeline';
 import { createEventStreamSystem, getEventStreamEntries } from '../systems/EventStreamSystem';
 import { createUndoSystem, UNDO_COMMANDS } from '../systems/UndoSystem';
-import { createLogSystem } from '../systems/LogSystem';
 import type { Command, DomainCore, GameEvent, MatchState, ValidationResult } from '../types';
 import { computeEventStreamDelta } from '../../games/summonerwars/ui/useGameEvents';
 
@@ -42,7 +41,6 @@ const systems = [
     requiredApprovals: 1,
     snapshotCommandAllowlist: ['INCREMENT'],
   }),
-  createLogSystem<TestCore>(),
 ];
 
 const playerIds = ['0', '1'];

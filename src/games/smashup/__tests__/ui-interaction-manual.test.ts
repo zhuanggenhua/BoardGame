@@ -10,7 +10,7 @@ import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import {
-    createFlowSystem, createLogSystem, createActionLogSystem, createUndoSystem,
+    createFlowSystem, createActionLogSystem, createUndoSystem,
     createInteractionSystem, createRematchSystem, createResponseWindowSystem,
     createTutorialSystem, createEventStreamSystem, createSimpleChoiceSystem,
 } from '../../../engine';
@@ -71,7 +71,6 @@ function makeState(overrides: Partial<SmashUpCore> = {}): SmashUpCore {
 function buildSystems(): EngineSystem<SmashUpCore>[] {
     return [
         createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-        createLogSystem<SmashUpCore>(),
         createActionLogSystem<SmashUpCore>(),
         createUndoSystem<SmashUpCore>(),
         createInteractionSystem<SmashUpCore>(),

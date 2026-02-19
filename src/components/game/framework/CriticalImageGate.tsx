@@ -7,6 +7,7 @@ export interface CriticalImageGateProps {
     gameId?: string;
     gameState?: unknown;
     locale?: string;
+    playerID?: string | null;
     enabled?: boolean;
     loadingDescription?: string;
     children: React.ReactNode;
@@ -26,6 +27,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     gameId,
     gameState,
     locale,
+    playerID,
     enabled = true,
     loadingDescription,
     children,
@@ -43,9 +45,9 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
 
     const phaseKey = useMemo(() => {
         if (!effectiveEnabled || !gameId || !gameState) return '';
-        const resolved = resolveCriticalImages(gameId, gameState, locale);
+        const resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
         return resolved.phaseKey ?? '';
-    }, [effectiveEnabled, gameId, gameState, locale]);
+    }, [effectiveEnabled, gameId, gameState, locale, playerID]);
 
     const runKey = `${gameId ?? ''}:${locale ?? ''}:${phaseKey}:${stateKey}`;
 
@@ -83,7 +85,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
 
         inFlightRef.current = true;
         setReady(false);
-        preloadCriticalImages(gameId, currentState, locale)
+        preloadCriticalImages(gameId, currentState, locale, playerID)
             .then((warmPaths) => {
                 lastReadyKeyRef.current = runKey;
                 setReady(true);
@@ -97,7 +99,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
             .finally(() => {
                 inFlightRef.current = false;
             });
-    }, [effectiveEnabled, gameId, locale, phaseKey, runKey, stateKey]);
+    }, [effectiveEnabled, gameId, locale, phaseKey, playerID, runKey, stateKey]);
 
     // needsPreload 同步阻塞：phaseKey 变化的同一渲染帧就拦住，不泄漏一帧给 children
     if (!ready || needsPreload) {

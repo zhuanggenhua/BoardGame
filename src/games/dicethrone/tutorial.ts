@@ -8,7 +8,7 @@ import { MONK_CARDS } from './heroes/monk/cards';
 
 /** 玩家起手牌（教程流程顺序） */
 const TUTORIAL_STARTING_HAND = [
-    'card-deep-thought',   // 弃牌教学用（开局卖掉换 CP）
+    'card-deep-thought',   // 弃牌+撤回教学用（卖掉后撤回）
     'card-play-six',
     'card-enlightenment',
     'card-inner-peace',
@@ -164,6 +164,25 @@ export const DiceThroneTutorial: TutorialManifest = {
                 { type: 'CARD_SOLD', match: { playerId: '0' } },
             ],
         },
+        // 撤回弃牌教学：告知玩家可以撤回最近一张弃牌
+        {
+            id: 'undo-sell-intro',
+            content: 'game-dicethrone:tutorial.steps.undoSellIntro',
+            highlightTarget: 'discard-pile',
+            position: 'left',
+            infoStep: true,
+        },
+        {
+            id: 'undo-sell',
+            content: 'game-dicethrone:tutorial.steps.undoSell',
+            highlightTarget: 'discard-pile',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: ['UNDO_SELL_CARD'],
+            advanceOnEvents: [
+                { type: 'SELL_UNDONE', match: { playerId: '0' } },
+            ],
+        },
 
         // ==== 段 B：首次攻击 (Turn 1, P0) ====
         {
@@ -243,13 +262,46 @@ export const DiceThroneTutorial: TutorialManifest = {
             ],
             advanceOnEvents: [MATCH_PHASE_MAIN2],
         },
-        // 卡牌介绍放在 opponent-defense 和 ai-turn 之间，
-        // 避免 AI_CONSUMED 清除下一个有 aiActions 步骤的数据
+
+        // ==== 段 C：main2 阶段打出顿悟和静心 ====
+        // 顿悟 timing='main'，只能在 main1/main2 打出
+        // 此时处于 P0 的 main2 阶段，正确时机
         {
-            id: 'card-enlightenment',
-            content: 'game-dicethrone:tutorial.steps.cardEnlightenment',
+            id: 'main2-intro',
+            content: 'game-dicethrone:tutorial.steps.main2Intro',
             highlightTarget: 'hand-area',
             position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'enlightenment-play',
+            content: 'game-dicethrone:tutorial.steps.enlightenmentPlay',
+            highlightTarget: 'hand-area',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
+            advanceOnEvents: [
+                { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-enlightenment' } },
+            ],
+        },
+        {
+            id: 'inner-peace',
+            content: 'game-dicethrone:tutorial.steps.innerPeace',
+            highlightTarget: 'hand-area',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
+            advanceOnEvents: [
+                { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-inner-peace' } },
+            ],
+        },
+
+        // ==== 段 D：AI 回合（P0 main2 已操作完，推进到 AI 回合） ====
+        // infoStep 作为缓冲，避免 AI_CONSUMED 清除下一个有 aiActions 步骤的数据
+        {
+            id: 'ai-turn-intro',
+            content: 'game-dicethrone:tutorial.steps.aiTurnIntro',
+            position: 'center',
             infoStep: true,
         },
         {
@@ -265,7 +317,7 @@ export const DiceThroneTutorial: TutorialManifest = {
                 { commandType: 'PLAY_CARD', playerId: '1', payload: { cardId: 'card-palm-strike' } },
                 // AI 推进到攻击掷骰
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
-                // AI 掷骰 + 确认（全1 = 5拳 → 拳法-5, 8伤害）
+                // AI 掷骰 + 确认（全6 = 5拳 → 拳法-5, 8伤害）
                 { commandType: 'ROLL_DICE', playerId: '1', payload: {} },
                 { commandType: 'CONFIRM_ROLL', playerId: '1', payload: {} },
                 { commandType: 'SELECT_ABILITY', playerId: '1', payload: { abilityId: 'fist-technique-5' } },
@@ -273,8 +325,9 @@ export const DiceThroneTutorial: TutorialManifest = {
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
                 { commandType: 'ROLL_DICE', playerId: '0', payload: {} },
                 { commandType: 'CONFIRM_ROLL', playerId: '0', payload: {} },
-                // 结算攻击 → P1 main2
+                // 结算攻击（halt: 因 P0 有 Token 触发响应窗口）→ P0 跳过 Token 响应
                 { commandType: 'ADVANCE_PHASE', playerId: '0', payload: {} },
+                { commandType: 'SKIP_TOKEN_RESPONSE', playerId: '0', payload: {} },
                 // 结束 AI 回合 (main2 → discard → auto-chain → P0 main1)
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
@@ -284,24 +337,13 @@ export const DiceThroneTutorial: TutorialManifest = {
             ],
         },
 
-        // ==== 段 D：净化教程（通过自然游戏流） ====
+        // ==== 段 E：净化教程 + 升级（Turn 2 P0 main1） ====
         {
             id: 'knockdown-explain',
             content: 'game-dicethrone:tutorial.steps.knockdownExplain',
             highlightTarget: 'status-tokens',
             position: 'right',
             infoStep: true,
-        },
-        {
-            id: 'enlightenment-play',
-            content: 'game-dicethrone:tutorial.steps.enlightenmentPlay',
-            highlightTarget: 'hand-area',
-            position: 'top',
-            requireAction: true,
-            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
-            advanceOnEvents: [
-                { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-enlightenment' } },
-            ],
         },
         {
             id: 'purify-use',
@@ -314,19 +356,6 @@ export const DiceThroneTutorial: TutorialManifest = {
             advanceOnEvents: [
                 { type: 'TOKEN_USED', match: { playerId: '0', tokenId: TOKEN_IDS.PURIFY, effectType: 'removeDebuff' } },
                 { type: 'STATUS_REMOVED', match: { targetId: '0', statusId: STATUS_IDS.KNOCKDOWN } },
-            ],
-        },
-
-        // ==== 段 E：补充卡牌教学 ====
-        {
-            id: 'inner-peace',
-            content: 'game-dicethrone:tutorial.steps.innerPeace',
-            highlightTarget: 'hand-area',
-            position: 'top',
-            requireAction: true,
-            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
-            advanceOnEvents: [
-                { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-inner-peace' } },
             ],
         },
         {

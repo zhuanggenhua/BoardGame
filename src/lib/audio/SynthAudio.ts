@@ -38,8 +38,6 @@ export function playSynthSound(key: string): void {
     const preset = SYNTH_PRESETS[key];
     if (!preset) return;
 
-    console.log(`[SynthAudio] Playing synthesis for: ${key}`);
-
     const ctx = getAudioContext();
 
     const doPlay = () => {

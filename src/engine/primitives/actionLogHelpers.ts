@@ -108,12 +108,19 @@ function extractSourceId(payload: DamageLogPayload): string | undefined {
  * @param payload 伤害 payload（含 breakdown/modifiers/sourceId）
  * @param resolver 游戏层来源解析器
  * @param fallbackNs 无法解析时的 i18n namespace（用于 fallback 文案）
+ * @param options 可选配置（自定义基础值标签，不同游戏可使用不同标签如"基础伤害"/"基础战力"/"基础力量"）
  */
 export function buildDamageBreakdownSegment(
     damage: number,
     payload: DamageLogPayload,
     resolver: DamageSourceResolver,
     fallbackNs?: string,
+    options?: {
+        /** 自定义基础值标签（默认 'actionLog.damageSource.original'） */
+        baseLabel?: string;
+        baseLabelIsI18n?: boolean;
+        baseLabelNs?: string;
+    },
 ): ActionLogSegment {
     const lines: BreakdownLine[] = [];
     const sourceId = extractSourceId(payload);
@@ -153,10 +160,16 @@ export function buildDamageBreakdownSegment(
         // 旧格式（向后兼容）：推算基础伤害 + 各修改器
         const modTotal = payload.modifiers.reduce((sum, m) => sum + m.value, 0);
         const baseDamage = damage - modTotal;
+
+        // 使用自定义基础值标签或默认标签
+        const effectiveBaseLabel = options?.baseLabel ?? 'actionLog.damageSource.original';
+        const effectiveBaseLabelIsI18n = options?.baseLabel ? (options.baseLabelIsI18n ?? false) : true;
+        const effectiveBaseLabelNs = options?.baseLabel ? options.baseLabelNs : fallbackNs;
+
         lines.push({
-            label: 'actionLog.damageSource.original',
-            labelIsI18n: true,
-            labelNs: fallbackNs,
+            label: effectiveBaseLabel,
+            labelIsI18n: effectiveBaseLabelIsI18n,
+            labelNs: effectiveBaseLabelNs,
             value: baseDamage,
             color: 'neutral',
         });
@@ -187,6 +200,8 @@ export function buildDamageBreakdownSegment(
         lines,
     };
 }
+
+
 
 /**
  * 构建伤害来源标注 segments（轻量版，无 breakdown tooltip）

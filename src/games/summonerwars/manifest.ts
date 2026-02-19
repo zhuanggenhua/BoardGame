@@ -6,7 +6,7 @@ const entry: GameManifestEntry = {
     enabled: true,
     titleKey: 'games.summonerwars.title',
     descriptionKey: 'games.summonerwars.description',
-    category: 'strategy',
+    category: 'wargame',
     playersKey: 'games.summonerwars.players',
     icon: '⚔️',
     thumbnailPath: 'summonerwars/thumbnails/cover',

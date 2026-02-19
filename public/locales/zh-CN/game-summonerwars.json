@@ -204,6 +204,9 @@
     "sourceAbility": "（来源技能：{{abilityName}}）",
     "damageFrom": " 来自：",
     "damageFromAbility": "（来源：{{abilityName}}）",
+    "damageSource": {
+      "original": "基础战力"
+    },
     "damageReason": {
       "curse": "（诅咒反伤）",
       "entangle": "（交缠）",
@@ -220,6 +223,7 @@
     },
     "attackDamage": "→ 造成 {{damage}} 点伤害",
     "attackBonus": "（战力 {{base}}→{{total}}）",
+    "attackStrength": "战力：",
     "structureBuilt": "建造建筑：",
     "structureHealed": "建筑回复 {{amount}} 点生命：",
     "structureDestroyed": "建筑被摧毁：",

@@ -73,11 +73,14 @@
       "meditation2": "Your hand has Meditation II — drag it onto the Meditation ability slot to upgrade.",
       "finish": "That's the 1v1 core flow. Try activating abilities, playing cards, and defeating your opponent!",
       "opponentDefense": "Your opponent is rolling for defense. The defender auto-selects a defensive ability and rolls.",
-      "cardEnlightenment": "Cards can turn the tide: play action or upgrade cards in Main phases, and dice modifier cards during Offensive Roll. Next up is your opponent's turn.",
-      "aiTurn": "Your opponent's turn begins — watch how they play cards and attack.",
+      "aiTurn": "Opponent's turn in progress...",
       "knockdownExplain": "The opponent played Palm Strike, inflicting Knockdown on you! Knockdown forces you to skip offensive roll, but you can remove it with Purify.",
       "enlightenmentPlay": "Play the Enlightenment card from your hand to roll 1 die. Rolling a Lotus face grants Taiji, Evasive, and Purify tokens.",
-      "sellCardIntro": "You can **sell cards for CP** anytime! **Drag a card to the discard pile** on the left to sell it and gain **1 CP**. Selling is always available, regardless of phase. Try selling a card now!"
+      "sellCardIntro": "You can **sell cards for CP** anytime! **Drag a card to the discard pile** on the left to sell it and gain **1 CP**. Selling is always available, regardless of phase. Try selling a card now!",
+      "main2Intro": "Attack resolved! Now entering Main Phase 2. You can play action or upgrade cards here, same as Main Phase 1.",
+      "aiTurnIntro": "Your actions are done. Now it's your opponent's turn. Watch how they play cards and attack.",
+      "undoSellIntro": "You can undo your last sold card! Click the discard pile on the left to take it back. Useful if you sell the wrong card by mistake.",
+      "undoSell": "Click the discard pile to undo the last sold card."
     }
   },
   "statusEffects": {

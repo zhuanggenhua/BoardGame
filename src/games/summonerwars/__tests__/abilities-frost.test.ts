@@ -20,7 +20,7 @@ import type {
 } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import { canMoveToEnhanced, getStructureAt, getUnitAt } from '../domain/helpers';
-import { calculateEffectiveStrength } from '../domain/abilityResolver';
+import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
 
 // ============================================================================
@@ -244,7 +244,7 @@ describe('冰霜法师 - 冰霜飞弹 (frost_bolt)', () => {
       cardId: 'test-mage', card: makeFrostMage('test-mage'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(mage, state);
+    const strength = getEffectiveStrengthValue(mage, state);
     expect(strength).toBe(1); // 基础1，无建筑加成
   });
 
@@ -260,7 +260,7 @@ describe('冰霜法师 - 冰霜飞弹 (frost_bolt)', () => {
       cardId: 'portal-1', card: makePortal('portal-1'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(mage, state);
+    const strength = getEffectiveStrengthValue(mage, state);
     expect(strength).toBe(2); // 基础1 + 建筑1
   });
 
@@ -279,7 +279,7 @@ describe('冰霜法师 - 冰霜飞弹 (frost_bolt)', () => {
       cardId: 'parapet-1', card: makeParapet('parapet-1'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(mage, state);
+    const strength = getEffectiveStrengthValue(mage, state);
     expect(strength).toBe(3); // 基础1 + 建筑2
   });
 
@@ -296,7 +296,7 @@ describe('冰霜法师 - 冰霜飞弹 (frost_bolt)', () => {
       cardId: 'portal-far', card: makePortal('portal-far'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(mage, state);
+    const strength = getEffectiveStrengthValue(mage, state);
     expect(strength).toBe(1); // 基础1，非相邻不计入
   });
 
@@ -312,7 +312,7 @@ describe('冰霜法师 - 冰霜飞弹 (frost_bolt)', () => {
       cardId: 'enemy-portal', card: makePortal('enemy-portal'), owner: '1',
     });
 
-    const strength = calculateEffectiveStrength(mage, state);
+    const strength = getEffectiveStrengthValue(mage, state);
     expect(strength).toBe(1); // 敌方不计入
   });
 
@@ -329,7 +329,7 @@ describe('冰霜法师 - 冰霜飞弹 (frost_bolt)', () => {
       cardId: 'golem-1', card: makeIceGolem('golem-1'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(mage, state);
+    const strength = getEffectiveStrengthValue(mage, state);
     expect(strength).toBe(2); // 基础1 + 活体结构1
   });
 });
@@ -347,7 +347,7 @@ describe('纳蒂亚娜 - 高阶冰霜飞弹 (greater_frost_bolt)', () => {
       cardId: 'test-natiana', card: makeNatiana('test-natiana'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(natiana, state);
+    const strength = getEffectiveStrengthValue(natiana, state);
     expect(strength).toBe(2); // 基础2
   });
 
@@ -363,7 +363,7 @@ describe('纳蒂亚娜 - 高阶冰霜飞弹 (greater_frost_bolt)', () => {
       cardId: 'portal-1', card: makePortal('portal-1'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(natiana, state);
+    const strength = getEffectiveStrengthValue(natiana, state);
     expect(strength).toBe(3); // 基础2 + 建筑1
   });
 
@@ -382,7 +382,7 @@ describe('纳蒂亚娜 - 高阶冰霜飞弹 (greater_frost_bolt)', () => {
       cardId: 'parapet-1', card: makeParapet('parapet-1'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(natiana, state);
+    const strength = getEffectiveStrengthValue(natiana, state);
     expect(strength).toBe(4); // 基础2 + 建筑2
   });
 
@@ -399,7 +399,7 @@ describe('纳蒂亚娜 - 高阶冰霜飞弹 (greater_frost_bolt)', () => {
       cardId: 'portal-far', card: makePortal('portal-far'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(natiana, state);
+    const strength = getEffectiveStrengthValue(natiana, state);
     expect(strength).toBe(2); // 基础2，3格外不计入
   });
 
@@ -415,7 +415,7 @@ describe('纳蒂亚娜 - 高阶冰霜飞弹 (greater_frost_bolt)', () => {
       cardId: 'golem-1', card: makeIceGolem('golem-1'), owner: '0',
     });
 
-    const strength = calculateEffectiveStrength(natiana, state);
+    const strength = getEffectiveStrengthValue(natiana, state);
     expect(strength).toBe(3); // 基础2 + 活体结构1
   });
 });

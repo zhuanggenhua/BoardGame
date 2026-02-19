@@ -1,21 +1,22 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-export type Category = 'All' | 'strategy' | 'casual' | 'party' | 'abstract' | 'tools';
+export type Category = 'All' | 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
 
 interface CategoryPillsProps {
     activeCategory: Category;
     onSelect: (category: Category) => void;
 }
 
-const categories: Category[] = ['All', 'strategy', 'casual', 'party', 'abstract', 'tools'];
+const categories: Category[] = ['All', 'card', 'dice', 'abstract', 'wargame', 'casual', 'tools'];
 
 const categoryLabelKeys: Record<Category, string> = {
     All: 'category.all',
-    strategy: 'category.strategy',
-    casual: 'category.casual',
-    party: 'category.party',
+    card: 'category.card',
+    dice: 'category.dice',
     abstract: 'category.abstract',
+    wargame: 'category.wargame',
+    casual: 'category.casual',
     tools: 'category.tools',
 };
 

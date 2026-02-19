@@ -2,6 +2,7 @@ import { readFile } from 'fs/promises';
 import { join, resolve, sep } from 'path';
 import { createUgcGame } from '../games/ugc-wrapper/game';
 import { getUgcPackageModel } from './models/UgcPackage';
+import logger from '../../server/logger';
 
 export const parseNumberArray = (value: unknown): number[] | undefined => {
     if (!Array.isArray(value)) return undefined;
@@ -59,13 +60,13 @@ export const resolveUgcFilePath = (entryPath: string): string | null => {
 export const loadUgcDomainCode = async (entryPath: string, packageId: string): Promise<string | null> => {
     const filePath = resolveUgcFilePath(entryPath);
     if (!filePath) {
-        console.warn(`[UGC] 入口路径无效: packageId=${packageId} path=${entryPath}`);
+        logger.warn(`[UGC] 入口路径无效: packageId=${packageId} path=${entryPath}`);
         return null;
     }
     try {
         return await readFile(filePath, 'utf-8');
     } catch (error) {
-        console.warn(`[UGC] 读取规则失败: packageId=${packageId} path=${entryPath}`, error);
+        logger.warn(`[UGC] 读取规则失败: packageId=${packageId} path=${entryPath}`, error);
         return null;
     }
 };
@@ -107,13 +108,13 @@ export const buildUgcServerGames = async (options?: {
         const packageId = typeof pkg.packageId === 'string' ? pkg.packageId.trim() : '';
         const ownerId = typeof pkg.ownerId === 'string' ? pkg.ownerId.trim() : '';
         if (!packageId || !ownerId) {
-            console.warn('[UGC] 已发布包数据缺失，跳过');
+            logger.warn('[UGC] 已发布包数据缺失，跳过');
             continue;
         }
         const gameId = normalizeGameId(packageId);
         if (!gameId) continue;
         if (manifestGameIds.has(gameId)) {
-            console.warn(`[UGC] 游戏 ID 重复，跳过: ${packageId}`);
+            logger.warn(`[UGC] 游戏 ID 重复，跳过: ${packageId}`);
             continue;
         }
         const manifest = (pkg.manifest && typeof pkg.manifest === 'object')
@@ -121,7 +122,7 @@ export const buildUgcServerGames = async (options?: {
             : null;
         const entryPath = resolveUgcEntryPath(manifest, ownerId, packageId);
         if (!entryPath) {
-            console.warn(`[UGC] 缺少规则入口，跳过: packageId=${packageId}`);
+            logger.warn(`[UGC] 缺少规则入口，跳过: packageId=${packageId}`);
             continue;
         }
         const domainCode = await loadUgcDomainCode(entryPath, packageId);
@@ -133,7 +134,7 @@ export const buildUgcServerGames = async (options?: {
                 .map((item) => item.trim())
                 .filter((item) => item.length > 0)
             : undefined;
-        console.log(`[UGC] 注册包: packageId=${packageId}, gameId=${gameId}, commandTypes=`, commandTypes);
+        logger.info(`[UGC] 注册包: packageId=${packageId}, gameId=${gameId}, commandTypes=${JSON.stringify(commandTypes)}`);
         try {
             const ugcResult = await createUgcGame({
                 packageId: gameId,
@@ -142,12 +143,12 @@ export const buildUgcServerGames = async (options?: {
                 maxPlayers,
                 commandTypes,
             });
-            console.log(`[UGC] 成功创建游戏: gameId=${gameId}`);
+            logger.info(`[UGC] 成功创建游戏: gameId=${gameId}`);
             engineConfigs.push(ugcResult.engineConfig);
             manifestGameIds.add(gameId);
             gameIds.push(gameId);
         } catch (error) {
-            console.warn(`[UGC] 创建规则失败: packageId=${packageId}`, error);
+            logger.warn(`[UGC] 创建规则失败: packageId=${packageId}`, error);
         }
     }
 

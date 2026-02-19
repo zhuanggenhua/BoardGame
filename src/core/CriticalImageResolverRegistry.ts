@@ -36,13 +36,14 @@ export function resolveCriticalImages(
     gameId: string,
     gameState: unknown,
     locale?: string,
+    playerID?: string | null,
 ): CriticalImageResolverResult {
     const resolver = resolverRegistry.get(gameId);
     if (!resolver) {
         return { critical: [], warm: [] };
     }
     try {
-        return resolver(gameState, locale);
+        return resolver(gameState, locale, playerID);
     } catch (e) {
         console.warn(`[CriticalImageResolver] 游戏 ${gameId} 解析器执行失败，回退到静态清单`, e);
         return { critical: [], warm: [] };

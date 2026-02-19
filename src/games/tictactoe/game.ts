@@ -7,7 +7,6 @@
 import type { ActionLogEntry, ActionLogSegment, Command, GameEvent, MatchState } from '../../engine/types';
 import {
     createActionLogSystem,
-    createLogSystem,
     createInteractionSystem,
     createSimpleChoiceSystem,
     createMultistepChoiceSystem,
@@ -62,7 +61,6 @@ function formatTicTacToeActionEntry({
 
 // 创建系统集合
 const systems = [
-    createLogSystem(),
     createActionLogSystem({
         commandAllowlist: ACTION_ALLOWLIST,
         formatEntry: formatTicTacToeActionEntry,

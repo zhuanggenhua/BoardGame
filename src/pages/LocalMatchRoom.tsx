@@ -55,6 +55,7 @@ export const LocalMatchRoom = () => {
                 gameId={gameId}
                 gameState={props?.G}
                 locale={i18n.language}
+                playerID={props?.playerID}
                 loadingDescription={t('matchRoom.loadingResources')}
             >
                 <Board {...props} />
@@ -79,8 +80,6 @@ export const LocalMatchRoom = () => {
     if (!isGameNamespaceReady) {
         return <LoadingScreen description={t('matchRoom.loadingResources')} />;
     }
-
-    console.log('[LocalMatch] 创建游戏，种子:', gameSeed);
 
     return (
         <div className="relative w-full h-screen bg-black overflow-hidden font-sans">

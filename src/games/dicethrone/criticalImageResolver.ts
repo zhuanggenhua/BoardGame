@@ -104,10 +104,12 @@ function isInSetupPhase(core: DiceThroneCore): boolean {
  * 策略：
  * 1. 无状态：选角界面资源为 critical，gameplay 资源为 warm
  * 2. 角色选择阶段：selection 标签资源为 critical，gameplay 标签资源为 warm
- * 3. 游戏进行中：已选角色全部资源为 critical，未选角色为 warm
+ * 3. 游戏进行中：自己角色全部资源为 critical，对手角色全部资源为 warm
  */
 export const diceThroneCriticalImageResolver: CriticalImageResolver = (
     gameState: unknown,
+    _locale?: string,
+    playerID?: string | null,
 ): CriticalImageResolverResult => {
     const state = gameState as MatchState<DiceThroneCore>;
     const core = state?.core;
@@ -136,18 +138,32 @@ export const diceThroneCriticalImageResolver: CriticalImageResolver = (
         return { critical, warm, phaseKey: 'setup' };
     }
 
-    // 游戏进行中：已选角色全部资源为 critical
+    // 游戏进行中：自己角色 critical，对手角色 warm
     if (selectedCharacters.length === 0) {
         return { critical: [...COMMON_CRITICAL_PATHS], warm: [], phaseKey: 'playing:none' };
     }
 
+    // 按 playerID 区分自己和对手的角色
+    const myCharId = playerID ? core.selectedCharacters[playerID] : null;
+    const myChar = (myCharId && myCharId !== 'unselected')
+        ? myCharId as SelectableCharacterId : null;
+
+    // 自己的角色 → critical，对手的角色 → warm
+    const myChars = myChar ? [myChar] : selectedCharacters;
+    const opponentChars = myChar
+        ? selectedCharacters.filter(c => c !== myChar)
+        : [];
+
     const critical = [
         ...COMMON_CRITICAL_PATHS,
-        ...selectedCharacters.flatMap(getAllCharAssets),
+        ...myChars.flatMap(getAllCharAssets),
     ];
 
     const unselected = IMPLEMENTED_CHARACTERS.filter(c => !selectedCharacters.includes(c));
-    const warm = unselected.flatMap(getAllCharAssets);
+    const warm = [
+        ...opponentChars.flatMap(getAllCharAssets),
+        ...unselected.flatMap(getAllCharAssets),
+    ];
 
     const sortedChars = [...selectedCharacters].sort().join(',');
     return { critical, warm, phaseKey: `playing:${sortedChars}` };

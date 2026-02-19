@@ -22,6 +22,7 @@ import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebu
 import { SummonerWarsDebugConfig } from './debug-config';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { UndoProvider } from '../../contexts/UndoContext';
+import { getUndoSnapshotCount } from '../../engine/systems/UndoSystem';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { useRematch } from '../../contexts/RematchContext';
 import { useGameMode } from '../../contexts/GameModeContext';
@@ -300,7 +301,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     core, dispatch,
     currentPhase, isMyTurn, isGameOver: !!isGameOver,
     myPlayerId, activePlayerId, myHand, fromViewCoord,
-    undoSnapshotCount: G.sys?.undo?.snapshots?.length ?? 0,
+    undoSnapshotCount: getUndoSnapshotCount(G.sys?.undo),
     abilityMode, setAbilityMode, soulTransferMode,
     mindCaptureMode, setMindCaptureMode,
     afterAttackAbilityMode, setAfterAttackAbilityMode,

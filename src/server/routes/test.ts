@@ -17,12 +17,12 @@ class SnapshotStorage {
     private snapshots: Map<string, StoredMatchState> = new Map();
 
     async save(snapshotId: string, state: StoredMatchState): Promise<void> {
-        this.snapshots.set(snapshotId, JSON.parse(JSON.stringify(state)));
+        this.snapshots.set(snapshotId, structuredClone(state));
     }
 
     async load(snapshotId: string): Promise<StoredMatchState | undefined> {
         const snapshot = this.snapshots.get(snapshotId);
-        return snapshot ? JSON.parse(JSON.stringify(snapshot)) : undefined;
+        return snapshot ? structuredClone(snapshot) : undefined;
     }
 
     async delete(snapshotId: string): Promise<void> {

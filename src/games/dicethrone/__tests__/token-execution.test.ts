@@ -611,9 +611,9 @@ describe('锁定 (Targeted) 伤害修正', () => {
         expect((modifyAction as any).value).toBe(2);
     });
 
-    it('锁定伤害修正逻辑在 applyOnDamageReceivedTriggers 中处理', () => {
+    it('锁定伤害修正逻辑在 collectStatusModifiers 中处理', () => {
         // 锁定状态的伤害修正通过 TokenDef.passiveTrigger 定义
-        // effects.ts 的 applyOnDamageReceivedTriggers 函数会扫描所有 onDamageReceived 时机的 token
+        // createDamageCalculation 的 collectStatusModifiers 会扫描所有 onDamageReceived 时机的 token
         // 并应用 modifyStat action，将伤害 +2
         // 完整的集成测试见 moon-elf-abilities.test.ts 的"锁定：受到伤害 +2，结算后移除"测试
         expect(true).toBe(true);

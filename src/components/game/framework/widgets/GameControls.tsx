@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNDO_COMMANDS } from '../../../../engine';
+import { getUndoSnapshotCount } from '../../../../engine/systems/UndoSystem';
 import type { MatchState } from '../../../../engine/types';
 
 interface GameControlsProps {
@@ -15,7 +16,7 @@ export const GameControls: React.FC<GameControlsProps> = ({ G, dispatch, playerI
 
     const normalizedPlayerId = String(playerID);
 
-    const history = G.sys?.undo?.snapshots || [];
+    const snapshotCount = getUndoSnapshotCount(G.sys?.undo);
     const request = G.sys?.undo?.pendingRequest;
 
     // 逻辑：
@@ -36,7 +37,7 @@ export const GameControls: React.FC<GameControlsProps> = ({ G, dispatch, playerI
     // 1. 存在历史记录
     // 2. 当前没有正在进行的申请
     // 3. 你不是当前行动玩家（意味着现在是对手的回合，你想要撤销你上一次的行动）
-    const canRequest = history.length > 0 && !request && !isCurrentPlayer;
+    const canRequest = snapshotCount > 0 && !request && !isCurrentPlayer;
 
     // 审查逻辑：
     // 你可以审查申请，如果：
@@ -54,7 +55,7 @@ export const GameControls: React.FC<GameControlsProps> = ({ G, dispatch, playerI
         playerID: normalizedPlayerId,
         currentPlayer: normalizedCurrentPlayer,
         isCurrentPlayer,
-        historyLen: history.length,
+        historyLen: snapshotCount,
         request,
         canRequest,
         canReview,

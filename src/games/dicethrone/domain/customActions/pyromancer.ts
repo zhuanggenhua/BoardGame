@@ -78,16 +78,13 @@ const resolveSoulBurnDamage = (ctx: CustomActionContext): DiceThroneEvent[] => {
     if (dmg > 0) {
         const opponentIds = Object.keys(ctx.state.players).filter(id => id !== ctx.attackerId);
         opponentIds.forEach((targetId, idx) => {
-            // 使用新伤害计算管线（基础伤害，无修正）
+            // 使用新伤害计算管线（基础伤害，自动收集所有修正）
             const damageCalc = createDamageCalculation({
                 source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
                 target: { playerId: targetId },
                 baseDamage: dmg,
                 state: ctx.state,
                 timestamp: ctx.timestamp + 0.1 + (idx * 0.01),
-                autoCollectTokens: false,
-                autoCollectStatus: false,
-                autoCollectShields: false,
             });
             events.push(...damageCalc.toEvents());
         });
@@ -138,9 +135,7 @@ const resolveFieryCombo = (ctx: CustomActionContext): DiceThroneEvent[] => {
             source: TOKEN_IDS.FIRE_MASTERY,
             description: 'tokens.fire_mastery.name',
         }] : [],
-        autoCollectTokens: false, // 手动处理，避免使用旧状态
-        autoCollectStatus: false,
-        autoCollectShields: false,
+        autoCollectTokens: false, // 手动处理 FM 修正：FM 刚授予但 state 未更新，自动收集会用旧值导致数值错误
     });
     
     events.push(...damageCalc.toEvents());
@@ -176,9 +171,7 @@ const resolveFieryCombo2 = (ctx: CustomActionContext): DiceThroneEvent[] => {
             source: TOKEN_IDS.FIRE_MASTERY,
             description: 'tokens.fire_mastery.name',
         }] : [],
-        autoCollectTokens: false, // 手动处理
-        autoCollectStatus: false,
-        autoCollectShields: false,
+        autoCollectTokens: false, // 手动处理 FM 修正：FM 可能未在 tokenDefinitions 中定义 damageBonus，需手动添加
     });
     
     return damageCalc.toEvents();
@@ -211,16 +204,13 @@ const resolveMeteor = (ctx: CustomActionContext): DiceThroneEvent[] => {
     // FM 伤害目标是对手，不是 ctx.targetId（custom action target='self' 导致 targetId 指向自己）
     const opponentId = ctx.ctx.defenderId;
     if (updatedFM > 0) {
-        // 使用新伤害计算管线（伤害值 = FM 数量）
+        // 使用新伤害计算管线（伤害值 = FM 数量，自动收集所有修正）
         const damageCalc = createDamageCalculation({
             source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: updatedFM,
             state: ctx.state,
             timestamp: timestamp + 0.1,
-            autoCollectTokens: false,
-            autoCollectStatus: false,
-            autoCollectShields: false,
         });
         events.push(...damageCalc.toEvents());
     }
@@ -267,9 +257,6 @@ const resolveBurnDown = (ctx: CustomActionContext, dmgPerToken: number, limit: n
             baseDamage: toConsume * dmgPerToken,
             state: ctx.state,
             timestamp: timestamp + 0.2,
-            autoCollectTokens: false,
-            autoCollectStatus: false,
-            autoCollectShields: false,
         });
         events.push(...damageCalc.toEvents());
     }
@@ -318,9 +305,7 @@ const resolveIgnite = (ctx: CustomActionContext, base: number, multiplier: numbe
             source: TOKEN_IDS.FIRE_MASTERY,
             description: 'tokens.fire_mastery.name',
         }] : [],
-        autoCollectTokens: false, // 手动处理，避免重复
-        autoCollectStatus: false,
-        autoCollectShields: false,
+        autoCollectTokens: false, // 手动处理 FM 修正：使用乘法系数（2x FM），自动收集只支持 1x，需手动计算
     });
     
     events.push(...damageCalc.toEvents());
@@ -371,16 +356,13 @@ const resolveMagmaArmor = (ctx: CustomActionContext, _diceCount: number, dmgPerF
         // 防御上下文：ctx.defenderId 是原攻击者（被防御技能影响的人）
         const opponentId = ctx.ctx.defenderId;
         
-        // 使用新伤害计算管线
+        // 使用新伤害计算管线（自动收集所有修正）
         const damageCalc = createDamageCalculation({
             source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: totalDamage,
             state: ctx.state,
             timestamp: ctx.timestamp + 0.1,
-            autoCollectTokens: false,
-            autoCollectStatus: false,
-            autoCollectShields: false,
         });
         events.push(...damageCalc.toEvents());
     }
@@ -439,9 +421,6 @@ const resolveMagmaArmor3 = (ctx: CustomActionContext): DiceThroneEvent[] => {
             baseDamage: totalDamage,
             state: ctx.state,
             timestamp: ctx.timestamp + 0.1,
-            autoCollectTokens: false,
-            autoCollectStatus: false,
-            autoCollectShields: false,
         });
         events.push(...damageCalc.toEvents());
     }

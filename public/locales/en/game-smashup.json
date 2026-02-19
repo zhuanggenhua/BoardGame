@@ -131,6 +131,14 @@
     "talentUsed": "Talent triggered:",
     "baseScored": "Base scored:",
     "baseScoredRanking": "{{playerId}} +{{vp}}VP",
+    "baseScoredRankingWithBreakdown": "{{playerId}} +{{vp}}VP Power:",
+    "powerModifier": {
+      "permanent": "Power Counters",
+      "temp": "Temp Power Modifier"
+    },
+    "damageSource": {
+      "original": "Base Power"
+    },
     "vpAwarded": "{{playerId}} gains {{amount}}VP",
     "cardsDrawn": "{{playerId}} draws {{count}} cards",
     "cardsDiscarded": "{{playerId}} discards {{count}} cards",

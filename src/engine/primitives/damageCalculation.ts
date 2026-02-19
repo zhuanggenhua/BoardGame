@@ -56,6 +56,30 @@ export interface DamageContext {
 }
 
 /**
+ * PassiveTrigger handler 注入接口
+ *
+ * 游戏层实现此接口，注入到 DamageCalculationConfig 中，
+ * 使引擎层能处理 custom 类型的 PassiveTrigger 动作而不直接依赖游戏层代码。
+ */
+export interface PassiveTriggerHandler {
+  /** 处理 custom 类型的 passiveTrigger 动作 */
+  handleCustomAction(
+    actionId: string,
+    context: {
+      targetId: string;
+      attackerId: string;
+      sourceAbilityId?: string;
+      state: any;
+      timestamp: number;
+      random?: any;
+      damageAmount: number;
+      tokenId: string;
+      tokenStacks: number;
+    }
+  ): { events: GameEvent[]; preventAmount: number };
+}
+
+/**
  * 伤害计算配置
  */
 export interface DamageCalculationConfig extends DamageContext {
@@ -74,6 +98,9 @@ export interface DamageCalculationConfig extends DamageContext {
   /** 是否自动收集护盾减免（默认 true） */
   autoCollectShields?: boolean;
   
+  /** PassiveTrigger handler（游戏层注入） */
+  passiveTriggerHandler?: PassiveTriggerHandler;
+
   /** 时间戳 */
   timestamp?: number;
 }
@@ -134,6 +161,9 @@ export interface DamageResult {
   
   /** 计算明细（用于 ActionLog） */
   breakdown: DamageBreakdown;
+  
+  /** 副作用事件（PassiveTrigger 的 removeStatus/custom 产生） */
+  sideEffectEvents: GameEvent[];
 }
 
 // ============================================================================
@@ -144,6 +174,8 @@ export interface DamageResult {
 export class DamageCalculation {
   private config: DamageCalculationConfig;
   private modifierStack: ModifierStack<DamageContext>;
+  /** 收集阶段累积的副作用事件（removeStatus / custom handler 产生） */
+  private collectedSideEffects: GameEvent[] = [];
 
   /**
    * 统一获取核心状态。
@@ -229,26 +261,29 @@ export class DamageCalculation {
   /**
    * 收集状态修正
    * 
-   * 从目标收集减伤状态（如护甲）
+   * 从目标收集减伤状态（如护甲），并处理 PassiveTrigger 的全部动作类型：
+   * - modifyStat: 转为 flat modifier（已有逻辑）
+   * - removeStatus: 生成 STATUS_REMOVED 事件
+   * - custom: 调用 passiveTriggerHandler，将 preventAmount 转为负值 flat modifier
    */
   private collectStatusModifiers(): void {
-    const { target } = this.config;
+    const { target, source } = this.config;
     const coreState = this.getCoreState();
     
     const targetPlayer = coreState?.players?.[target.playerId];
-    if (!targetPlayer?.statusEffects) return;
+    if (!targetPlayer) return;
     
-    // 从 tokenDefinitions 查找有 damageReduction 或 passiveTrigger 的状态
     const tokenDefs = coreState?.tokenDefinitions || [];
+    const timestamp = this.config.timestamp || Date.now();
     
-    Object.entries(targetPlayer.statusEffects).forEach(([statusId, stacks]) => {
-      if (typeof stacks !== 'number' || stacks <= 0) return;
-      
-      const statusDef = tokenDefs.find((t: any) => t.id === statusId);
-      if (!statusDef) return;
-      
-      // 处理 damageReduction 字段（旧机制）
-      if (statusDef.damageReduction) {
+    // 1. 处理 damageReduction 字段（旧机制）—— 仅从 statusEffects 收集
+    if (targetPlayer.statusEffects) {
+      Object.entries(targetPlayer.statusEffects).forEach(([statusId, stacks]) => {
+        if (typeof stacks !== 'number' || stacks <= 0) return;
+        
+        const statusDef = tokenDefs.find((t: any) => t.id === statusId);
+        if (!statusDef?.damageReduction) return;
+        
         this.modifierStack = addModifier(this.modifierStack, {
           id: `status-${statusId}`,
           type: 'flat',
@@ -257,28 +292,106 @@ export class DamageCalculation {
           source: statusId,
           description: `Status: ${statusDef.name || statusId}`,
         });
-      }
+      });
+    }
+    
+    // 2. 处理 passiveTrigger.timing === 'onDamageReceived'（新机制）
+    //    遍历所有 tokenDefinitions，根据 category 从 statusEffects 或 tokens 取层数
+    for (const def of tokenDefs) {
+      if (def.passiveTrigger?.timing !== 'onDamageReceived') continue;
       
-      // 处理 passiveTrigger.timing === 'onDamageReceived' 的状态（新机制）
-      if (statusDef.passiveTrigger?.timing === 'onDamageReceived') {
-        const actions = statusDef.passiveTrigger.actions || [];
-        for (const action of actions) {
-          if (action.type === 'modifyStat' && typeof action.value === 'number') {
+      // 根据 category 决定从 statusEffects 还是 tokens 取层数
+      const stacks = def.category === 'debuff'
+        ? (targetPlayer.statusEffects?.[def.id] ?? 0)
+        : (targetPlayer.tokens?.[def.id] ?? 0);
+      
+      if (typeof stacks !== 'number' || stacks <= 0) continue;
+      
+      const actions = def.passiveTrigger.actions || [];
+      for (const action of actions) {
+        switch (action.type) {
+          case 'modifyStat': {
+            if (typeof action.value !== 'number') break;
             const value = action.value * stacks;
             if (value !== 0) {
               this.modifierStack = addModifier(this.modifierStack, {
-                id: `status-${statusId}-passive`,
+                id: `status-${def.id}-passive`,
                 type: 'flat',
                 value,
                 priority: 20,
-                source: statusId,
-                description: `Status: ${statusDef.name || statusId}`,
+                source: def.id,
+                description: `Status: ${def.name || def.id}`,
               });
             }
+            break;
           }
+          
+          case 'removeStatus': {
+            if (!action.statusId) break;
+            const currentStacks = targetPlayer.statusEffects?.[action.statusId] ?? 0;
+            if (currentStacks <= 0) break;
+            const removeStacks = Math.min(currentStacks, action.value ?? currentStacks);
+            this.collectedSideEffects.push({
+              type: 'STATUS_REMOVED',
+              payload: {
+                targetId: target.playerId,
+                statusId: action.statusId,
+                stacks: removeStacks,
+              },
+              sourceCommandType: 'ABILITY_EFFECT',
+              timestamp,
+            } as GameEvent);
+            break;
+          }
+          
+          case 'custom': {
+            const actionId = action.customActionId;
+            if (!actionId) break;
+            
+            // 未注入 handler 时跳过所有 custom 动作（向后兼容）
+            const handler = this.config.passiveTriggerHandler;
+            if (!handler) break;
+            
+            try {
+              const handlerResult = handler.handleCustomAction(actionId, {
+                targetId: target.playerId,
+                attackerId: source.playerId,
+                sourceAbilityId: source.abilityId,
+                state: this.config.state,
+                timestamp,
+                damageAmount: this.config.baseDamage,
+                tokenId: def.id,
+                tokenStacks: stacks,
+              });
+              
+              // 将 preventAmount 转为负值 flat modifier
+              if (handlerResult.preventAmount > 0) {
+                this.modifierStack = addModifier(this.modifierStack, {
+                  id: `custom-prevent-${def.id}-${actionId}`,
+                  type: 'flat',
+                  value: -handlerResult.preventAmount,
+                  priority: 25,
+                  source: def.id,
+                  description: `Status: ${def.name || def.id}`,
+                });
+              }
+              
+              // 副作用事件添加到收集列表
+              if (handlerResult.events.length > 0) {
+                this.collectedSideEffects.push(...handlerResult.events);
+              }
+            } catch (err) {
+              console.error(`[DamageCalculation] custom handler "${actionId}" 执行异常:`, err);
+              // 跳过该动作，伤害计算继续
+            }
+            break;
+          }
+          
+          default:
+            break;
         }
       }
-    });
+    }
   }
   
   /**
@@ -342,6 +455,7 @@ export class DamageCalculation {
       finalDamage,
       actualDamage: finalDamage,
       breakdown,
+      sideEffectEvents: [...this.collectedSideEffects],
     };
   }
   

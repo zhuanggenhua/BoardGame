@@ -40,7 +40,7 @@ import {
 import { rollDice, countHits } from '../config/dice';
 import { createDeckByFactionId } from '../config/factions';
 import { buildGameDeckFromCustom } from '../config/deckBuilder';
-import { calculateEffectiveStrength, getEffectiveLife, getEffectiveStructureLife, triggerAbilities, hasHellfireBlade } from './abilityResolver';
+import { getEffectiveStrengthValue, getEffectiveLife, getEffectiveStructureLife, triggerAbilities, hasHellfireBlade } from './abilityResolver';
 import { reduceEvent } from './reduce';
 import type { AbilityContext } from './abilityResolver';
 import {
@@ -427,7 +427,7 @@ export function executeCommand(
         const healTargetCell = workingCore.board[target.row]?.[target.col];
         const healTargetUnit = healTargetCell?.unit;
         if (healTargetUnit && healTargetUnit.owner === attackerUnit.owner) {
-          const healStrengthBase = calculateEffectiveStrength(attackerUnit, workingCore, healTargetUnit);
+          const healStrengthBase = getEffectiveStrengthValue(attackerUnit, workingCore, healTargetUnit);
           const healStrength = applyBeforeAttackStrength(healStrengthBase);
           const healAttackType = getAttackType(workingCore, attacker, target);
           const healDiceResults = rollDice(healStrength, () => random.random());
@@ -463,7 +463,7 @@ export function executeCommand(
 
       if (attackerUnit && canAttackEnhanced(workingCore, attacker, target)) {
         const targetCell = workingCore.board[target.row]?.[target.col];
-        const effectiveStrengthBase = calculateEffectiveStrength(attackerUnit, workingCore, targetCell?.unit ?? undefined);
+        const effectiveStrengthBase = getEffectiveStrengthValue(attackerUnit, workingCore, targetCell?.unit ?? undefined);
         let effectiveStrength = applyBeforeAttackStrength(effectiveStrengthBase);
         const attackType = getAttackType(workingCore, attacker, target);
 
