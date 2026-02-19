@@ -27,6 +27,14 @@ import { MatchRoom } from './pages/MatchRoom';
 import { LocalMatchRoom } from './pages/LocalMatchRoom';
 import { NotFound } from './pages/NotFound';
 import { MaintenancePage } from './pages/Maintenance';
+
+/**
+ * 教程路由专用包装组件。
+ * 与在线对局使用不同的组件类型，强制 React 在路由切换时完全卸载/重建 MatchRoom，
+ * 防止从在线对局导航到教程时组件实例复用导致 state/ref 泄漏（教程卡在"初始化中"）。
+ */
+const TutorialMatchRoom = () => <MatchRoom />;
+
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -78,8 +86,9 @@ const App = () => {
                           <Route path="/dev/ugc" element={<React.Suspense fallback={<LoadingScreen title={t('matchRoom.devTools.ugcBuilder')} />}><UnifiedBuilder /></React.Suspense>} />
                           <Route path="/dev/ugc/runtime-view" element={<React.Suspense fallback={<LoadingScreen title={t('matchRoom.devTools.runtimeView')} />}><UGCRuntimeViewPage /></React.Suspense>} />
                           <Route path="/dev/ugc/sandbox" element={<React.Suspense fallback={<LoadingScreen title={t('matchRoom.devTools.ugcSandbox')} />}><UGCSandbox /></React.Suspense>} />
-                          {/* 教程路由回退（如需要），或映射到对局路由 */}
-                          <Route path="/play/:gameId/tutorial" element={<MatchRoom />} />
+                          {/* 教程路由：使用 TutorialMatchRoom 包装组件（不同组件类型），
+                              强制 React 在在线↔教程路由切换时完全卸载/重建，防止状态泄漏 */}
+                          <Route path="/play/:gameId/tutorial" element={<TutorialMatchRoom />} />
                           <Route path="/maintenance" element={<MaintenancePage />} />
 
                           {/* Admin Routes */}

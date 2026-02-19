@@ -256,7 +256,8 @@
       "upkeepPoison": "中毒",
       "retribution": "报复反伤",
       "ability": "{{abilityName}}",
-      "unknown": "未知来源"
+      "unknown": "未知来源",
+      "shieldReduction": "护盾减伤"
     },
     "damageOriginal": "（原始 {{amount}}）",
     "damageModifiers": "（原始 {{original}}，{{modifiers}}）",
@@ -625,6 +626,11 @@
     "cancel": "返回选择技能",
     "confirm": "确定结束"
   },
+  "abilityChoice": {
+    "title": "选择发动技能",
+    "description": "该技能有多个变体同时满足条件，请选择要发动的变体：",
+    "skip": "不发动技能"
+  },
   "choices": {
     "title": "技能结算选择",
     "option": "选项 {{index}}",
@@ -642,7 +648,8 @@
       "confirmSpend": "花费 {{count}} CP",
       "sliderHint": "花费 {{value}} CP → 获得 {{value}} 火焰专精",
       "skip": "不花费"
-    }
+    },
+    "critOrAccuracy": "选择获得一个标记"
   },
   "common": {
     "cancel": "取消",
@@ -780,16 +787,19 @@
       }
     },
     "fireball-3": {
+      "name": "火球术 (3火)",
       "effects": {
         "damage4": "造成4点伤害"
       }
     },
     "fireball-4": {
+      "name": "火球术 (4火)",
       "effects": {
         "damage6": "造成6点伤害"
       }
     },
     "fireball-5": {
+      "name": "火球术 (5火)",
       "effects": {
         "damage8": "造成8点伤害"
       }
@@ -1160,16 +1170,19 @@
       }
     },
     "fireball-2-3": {
+      "name": "火球术 II (3火)",
       "effects": {
         "damage4": "造成4点伤害"
       }
     },
     "fireball-2-4": {
+      "name": "火球术 II (4火)",
       "effects": {
         "damage6": "造成6点伤害"
       }
     },
     "fireball-2-5": {
+      "name": "火球术 II (5火)",
       "effects": {
         "damage8": "造成8点伤害"
       }
@@ -1183,6 +1196,7 @@
       }
     },
     "soul-burn-3": {
+      "name": "燃烧之灵 (3火魂)",
       "effects": {
         "fm": "获得2×火魂骰面数量的火焰精通",
         "inflictBurn": "施加1个燃烧标记",
@@ -1206,6 +1220,7 @@
       }
     },
     "incinerate": {
+      "name": "引燃",
       "effects": {
         "gainFM2": "获得2层火焰精通",
         "inflictBurn": "施加1个燃烧标记",
@@ -1223,6 +1238,7 @@
       }
     },
     "meteor-shower": {
+      "name": "流星雨 (3陨石)",
       "effects": {
         "inflictKnockdown": "施加1个击倒标记",
         "inflictBurn": "施加1个燃烧标记",
@@ -1374,7 +1390,7 @@
     },
     "fearless-riposte-2": {
       "name": "后发制人 II",
-      "description": "替代防御升级（5骰）：攻守兼备的防御风格"
+      "description": "防御阶段（5骰）：造成2×匕首数伤害，若有匕首+暗影则造成毒液"
     },
     "righteous-combat": {
       "name": "正义战法",
@@ -1452,17 +1468,17 @@
     },
     "holy-light": {
       "name": "圣光",
-      "description": "2心触发：治疗1，投掷1骰获得额外效果",
+      "description": "2心触发：恢复1×❤面数量血量，投掷1骰获得额外效果",
       "effects": {
-        "heal1": "恢复1点生命值",
+        "healByHearts": "恢复 1×❤面数量 的生命值",
         "rollEffect": "投掷1骰：剑→暴击，盔→守护，心→抽牌，祈祷→2CP"
       }
     },
     "holy-light-2": {
       "name": "圣光 II",
-      "description": "2心触发：治疗1，投掷3骰获得额外效果",
+      "description": "2心触发：恢复1×❤面数量血量，投掷3骰获得额外效果",
       "effects": {
-        "heal1": "恢复1点生命值",
+        "healByHearts": "恢复 1×❤面数量 的生命值",
         "roll3": "投掷3骰：剑→暴击，盔→守护，心→抽牌，祈祷→2CP"
       }
     },

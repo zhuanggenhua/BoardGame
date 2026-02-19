@@ -26,8 +26,11 @@ import {
     getRollerId,
     getNextPlayerId,
     getResponderQueue,
+    getTokenStackLimit,
 } from './rules';
 import { findPlayerAbility, playerAbilityHasDamage } from './abilityLookup';
+import { applyEvents } from './utils';
+import { reduce } from './reducer';
 
 import { DICETHRONE_COMMANDS } from './ids';
 import { CHARACTER_DATA_MAP } from './characters';
@@ -204,9 +207,13 @@ export function execute(
             // - 排除 rollerId（当前投掷方），因为他们可以主动出牌
             // - triggerId 是对手（优先响应）
             // 例如：防御阶段防御方确认骰面，攻击方可以响应（强制重投等）
+            // 
+            // 关键：必须用 ROLL_CONFIRMED 事件应用后的状态来检查响应窗口
+            // 否则 rollConfirmed 仍为 false，requireRollConfirmed 的卡牌（如抬一手）会被过滤掉
+            const stateAfterConfirm = applyEvents(state, [event] as DiceThroneEvent[], reduce);
             const playerIds = Object.keys(state.players);
             const opponentId = playerIds.find(pid => pid !== rollerId) || rollerId;
-            const responderQueue = getResponderQueue(state, 'afterRollConfirmed', opponentId, undefined, rollerId, phase);
+            const responderQueue = getResponderQueue(stateAfterConfirm, 'afterRollConfirmed', opponentId, undefined, rollerId, phase);
             if (responderQueue.length > 0) {
                 const windowId = `afterRollConfirmed-${timestamp}`;
                 const responseWindowEvent: ResponseWindowOpenedEvent = {
@@ -481,6 +488,28 @@ export function execute(
                 // 交互完成由 systems.ts 自动处理：
                 // 当 STATUS_REMOVED/STATUS_APPLIED 事件触发时，systems.ts 检测当前交互类型
                 // 并生成带正确 interactionId 的 INTERACTION_COMPLETED
+            }
+            break;
+        }
+
+        case 'GRANT_TOKENS': {
+            const { targetPlayerId, tokens } = command.payload as {
+                targetPlayerId: PlayerId;
+                tokens: Array<{ tokenId: string; amount: number }>;
+            };
+            const targetPlayer = state.players[targetPlayerId];
+            if (targetPlayer && tokens?.length > 0) {
+                for (const { tokenId, amount } of tokens) {
+                    const currentAmount = targetPlayer.tokens[tokenId] ?? 0;
+                    const maxStacks = getTokenStackLimit(state, targetPlayerId, tokenId);
+                    const newTotal = Math.min(currentAmount + amount, maxStacks);
+                    events.push({
+                        type: 'TOKEN_GRANTED',
+                        payload: { targetId: targetPlayerId, tokenId, amount, newTotal },
+                        sourceCommandType: command.type,
+                        timestamp,
+                    } as DiceThroneEvent);
+                }
             }
             break;
         }

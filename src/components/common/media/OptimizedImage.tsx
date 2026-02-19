@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ImgHTMLAttributes } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getOptimizedImageUrls, getLocalizedImageUrls, isImagePreloaded, markImageLoaded } from '../../../core/AssetLoader';
+import { getLocalizedImageUrls, isImagePreloaded, markImageLoaded } from '../../../core/AssetLoader';
 
 type OptimizedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
     /** 原始资源路径（相对于游戏目录，如 dicethrone/images/...） */
@@ -28,7 +28,7 @@ export const SHIMMER_BG: React.CSSProperties = {
  * 0 = localized 路径（i18n/{locale}/...）
  * 1 = fallbackSrc（显式指定的备选源）
  */
-export const OptimizedImage = ({ src, fallbackSrc, locale, alt, onError, onLoad: onLoadProp, style: styleProp, placeholder = true, className, ...rest }: OptimizedImageProps) => {
+export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, onError, onLoad: onLoadProp, style: styleProp, placeholder = true, className, ...rest }: OptimizedImageProps) => {
     const { i18n } = useTranslation();
     // 优先使用传入的 locale，否则从 i18next 获取当前语言
     const effectiveLocale = locale || i18n.language || 'zh-CN';
@@ -106,10 +106,6 @@ export const OptimizedImage = ({ src, fallbackSrc, locale, alt, onError, onLoad:
     }
 
     return (
-        <picture>
-            <source type="image/avif" srcSet={activeUrls.avif} />
-            <source type="image/webp" srcSet={activeUrls.webp} />
-            <img ref={imgRef} src={activeUrls.webp} alt={alt ?? ''} onError={handleError} onLoad={handleLoad} style={imgStyle} className={className} {...rest} />
-        </picture>
+        <img ref={imgRef} src={activeUrls.webp} alt={alt ?? ''} onError={handleError} onLoad={handleLoad} style={imgStyle} className={className} {...rest} />
     );
 };

@@ -1444,7 +1444,7 @@ describe('梅肯达·露 / 边境弓箭手 - 连续射击 (rapid_fire)', () => {
     // DECLARE_ATTACK 只发射 ABILITY_TRIGGERED，不自动消耗充能
     const rapidFireTrigger = events.filter(e =>
       e.type === SW_EVENTS.ABILITY_TRIGGERED
-      && (e.payload as Record<string, unknown>).abilityId === 'rapid_fire_extra_attack'
+      && (e.payload as Record<string, unknown>).actionId === 'rapid_fire_extra_attack'
     );
     expect(rapidFireTrigger.length).toBe(1);
 
@@ -1559,7 +1559,7 @@ describe('梅肯达·露 / 边境弓箭手 - 连续射击 (rapid_fire)', () => {
     // ABILITY_TRIGGERED 仍会发射（afterAttack 触发器不检查充能）
     const rapidFireTrigger = events.filter(e =>
       e.type === SW_EVENTS.ABILITY_TRIGGERED
-      && (e.payload as Record<string, unknown>).abilityId === 'rapid_fire_extra_attack'
+      && (e.payload as Record<string, unknown>).actionId === 'rapid_fire_extra_attack'
     );
     expect(rapidFireTrigger.length).toBe(1);
 
@@ -1650,7 +1650,7 @@ describe('梅肯达·露 / 边境弓箭手 - 连续射击 (rapid_fire)', () => {
     // 确认 afterAttack 触发了 rapid_fire 通知事件
     const triggerEvents = attackEvents.filter(e =>
       e.type === SW_EVENTS.ABILITY_TRIGGERED
-      && (e.payload as Record<string, unknown>).abilityId === 'rapid_fire_extra_attack'
+      && (e.payload as Record<string, unknown>).actionId === 'rapid_fire_extra_attack'
     );
     expect(triggerEvents.length).toBe(1);
 

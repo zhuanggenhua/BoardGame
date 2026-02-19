@@ -43,6 +43,9 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
     resultRef.current = result;
     stepCountRef.current = stepCount;
 
+    // 防止 auto-confirm（step 达到 maxSteps）和手动 confirm 重复 dispatch
+    const confirmedRef = useRef(false);
+
     // 交互 ID 变化时重置本地状态
     useEffect(() => {
         if (data) {
@@ -51,6 +54,7 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
             setResult(null);
         }
         setStepCount(0);
+        confirmedRef.current = false;
     }, [interactionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const step = useCallback((payload: unknown) => {
@@ -74,31 +78,39 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
             // 直接使用上方已计算好的 newResult，不依赖 ref（避免 React 批量更新导致 ref 仍是旧值）
             if (data.maxSteps !== undefined && next >= data.maxSteps) {
                 if (newResult === null) return next;
+                if (confirmedRef.current) return next; // 已经 confirm 过，跳过
+                confirmedRef.current = true;
                 const commands = data.toCommands(newResult);
+                // 捕获当前 interactionId，防止闭包中引用变化
+                const confirmId = interactionId;
                 // 用 queueMicrotask 确保在当前 React 渲染批次完成后再 dispatch
                 queueMicrotask(() => {
                     for (const cmd of commands) {
                         dispatch(cmd.type, cmd.payload);
                     }
-                    dispatch(INTERACTION_COMMANDS.CONFIRM, {});
+                    dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: confirmId });
                 });
             }
             return next;
         });
-    }, [data, dispatch]);
+    }, [data, dispatch, interactionId]);
 
     const confirm = useCallback(() => {
         if (!data || resultRef.current === null) return;
+        if (confirmedRef.current) return; // 已经 confirm 过（auto-confirm 或重复点击），跳过
         const minSteps = data.minSteps ?? 0;
         if (stepCountRef.current < minSteps) return;
 
+        confirmedRef.current = true;
         const commands = data.toCommands(resultRef.current);
+        // 捕获当前 interactionId，防止闭包中引用变化
+        const confirmId = interactionId;
         for (const cmd of commands) {
             dispatch(cmd.type, cmd.payload);
         }
-        // 所有业务命令 dispatch 完后，发送确认信号 resolve 交互
-        dispatch(INTERACTION_COMMANDS.CONFIRM, {});
-    }, [data, dispatch]);
+        // 所有业务命令 dispatch 完后，发送确认信号 resolve 交互（携带 interactionId 防止误 resolve 下一个交互）
+        dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: confirmId });
+    }, [data, dispatch, interactionId]);
 
     const cancel = useCallback(() => {
         if (!interaction) return;

@@ -558,8 +558,7 @@ export function injectPendingInteraction(
         const config = interaction.dieModifyConfig;
         const mode = config?.mode ?? 'set';
         const selectCount = interaction.selectCount ?? 1;
-        const maxSteps = (mode === 'copy') ? 1
-            : (mode === 'adjust' || mode === 'any') ? undefined
+        const maxSteps = (mode === 'adjust' || mode === 'any') ? undefined
             : selectCount;
 
         const multistepData: MultistepChoiceData<DiceModifyStep, DiceModifyResult> = {

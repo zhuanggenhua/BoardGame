@@ -24,7 +24,6 @@ export interface ToggleDieLockCommand extends Command<'TOGGLE_DIE_LOCK'> {
 
 /** 确认骰子结果命令 */
 export interface ConfirmRollCommand extends Command<'CONFIRM_ROLL'> {
-    // payload 允许额外字段（如 LocalInteractionManager 生成的 steps），但 execute 层不使用
     payload: Record<string, unknown>;
 }
 
@@ -224,6 +223,16 @@ export interface UsePassiveAbilityCommand extends Command<'USE_PASSIVE_ABILITY'>
     };
 }
 
+/** 授予 Token 命令（交互确认后授予目标玩家 Token） */
+export interface GrantTokensCommand extends Command<'GRANT_TOKENS'> {
+    payload: {
+        /** 目标玩家 ID */
+        targetPlayerId: PlayerId;
+        /** 要授予的 Token 列表 */
+        tokens: Array<{ tokenId: string; amount: number }>;
+    };
+}
+
 /** 所有 DiceThrone 命令 */
 export type DiceThroneCommand =
     | RollDiceCommand
@@ -255,4 +264,5 @@ export type DiceThroneCommand =
     | PayToRemoveKnockdownCommand
     | RerollBonusDieCommand
     | SkipBonusDiceRerollCommand
-    | UsePassiveAbilityCommand;
+    | UsePassiveAbilityCommand
+    | GrantTokensCommand;

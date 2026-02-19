@@ -31,7 +31,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/ai-rules/animation-effects.md` — **开发/修改任何动画、特效、粒子效果时必读**。含动效选型表、Canvas 粒子引擎、特效组件/架构/视觉质量规范。
 - `docs/ai-rules/asset-pipeline.md` — **新增/修改图片或音频资源引用时必读**。含压缩流程、路径规范、✅/❌ 示例。
 - `docs/ai-rules/engine-systems.md` — **开发/修改引擎系统、框架层代码、游戏 move/command 时必读**。含系统清单、传输层架构（`GameBoardProps`/`GameTransportServer`）、游戏结束检测（`sys.gameover`）、框架解耦/复用、EventStream、动画表现与逻辑分离规范（`useVisualStateBuffer`/`useVisualSequenceGate`）、`createSimpleChoice` API 使用规范（两种调用约定、multi 参数位置、`PromptOption.displayMode` 渲染模式声明、选项 defId 要求）、领域建模前置审查。
-- `docs/ai-rules/testing-audit.md` — **审查实现完整性/新增功能补测试/修"没效果"类 bug 时必读**。含**通用实现缺陷检查维度（D1-D24 穷举框架）**、描述→实现全链路审查规范（唯一权威来源）、数据查询一致性审查、元数据语义一致性审计、引擎 API 调用契约审计（D3 子项）、交互模式语义匹配（D5 子项）、验证层有效性门控（D7 子项）、验证-执行前置条件对齐（D2 子项）、引擎批处理时序与 UI 交互对齐（D8 子项）、事件产生门控普适性检查（D8 子项）、Reducer 消耗路径审计（D11）、写入-消耗对称（D12）、多来源竞争（D13）、回合清理完整（D14）、UI 状态同步（D15）、条件优先级（D16）、隐式依赖（D17）、否定路径（D18）、组合场景（D19）、状态可观测性（D20）、触发频率门控（D21）、伤害计算管线配置（D22）、架构假设一致性（D23）、Handler 共返状态一致性（D24）、效果语义一致性审查、审计反模式清单、测试策略与工具选型。**当用户说"审计"、"审查"、"审核"、"核对"、"对一下描述和代码"等词时，必须先阅读本文档。"检查"不算触发词，不自动启动审计流程。**
+- `docs/ai-rules/testing-audit.md` — **审查实现完整性/新增功能补测试/修"没效果"类 bug 时必读**。含**通用实现缺陷检查维度（D1-D24 穷举框架）**、描述→实现全链路审查规范（唯一权威来源）、数据查询一致性审查、元数据语义一致性审计、引擎 API 调用契约审计（D3 子项）、交互模式语义匹配（D5 子项）、验证层有效性门控（D7 子项）、验证-执行前置条件对齐（D2 子项）、引擎批处理时序与 UI 交互对齐（D8 子项）、事件产生门控普适性检查（D8 子项）、多系统 afterEvents 优先级竞争（D8 子项）、Reducer 消耗路径审计（D11）、写入-消耗对称（D12）、多来源竞争（D13）、回合清理完整（D14）、UI 状态同步（D15）、条件优先级（D16）、隐式依赖（D17）、否定路径（D18）、组合场景（D19）、状态可观测性（D20）、触发频率门控（D21）、伤害计算管线配置（D22）、架构假设一致性（D23）、Handler 共返状态一致性（D24）、效果语义一致性审查、审计反模式清单、测试策略与工具选型。**当用户说"审计"、"审查"、"审核"、"核对"、"对一下描述和代码"等词时，必须先阅读本文档。"检查"不算触发词，不自动启动审计流程。**
 - `docs/ai-rules/ui-ux.md` — **开发/修改 UI 组件、布局、样式、游戏界面时必读**。含审美准则、多端布局、游戏 UI 特化、设计系统引用。
 - `docs/ai-rules/global-systems.md` — **使用/修改全局 Context（Toast/Modal/音频/教学/认证）时必读**。含 Context 系统、实时服务层。
 - `docs/ai-rules/doc-index.md` — **不确定该读哪个文档时必读**。按场景查找需要阅读的文档。
@@ -579,6 +579,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 - **阶段结束技能时序对齐（强制）**：阶段结束时需要玩家确认的技能（描述含"你可以"/"may"），`onPhaseExit` 必须返回 `{ halt: true }` 阻止阶段推进，UI 跳过时必须 dispatch `ADVANCE_PHASE` 恢复流程。**事件产生门控必须普适生效**：`triggerPhaseAbilities` 等循环中的门控函数（如 `canActivateAbility`）禁止用 `abilityId === 'xxx'` 限定为特定技能，必须对所有同类技能生效。详见 `docs/ai-rules/testing-audit.md`「D8 子项：引擎批处理时序与 UI 交互对齐」。
 - **"可以/可选"效果必须有交互确认（强制）**：描述中"你可以"/"may"→ 必须有确认/跳过 UI，禁止自动执行。
 - **测试必须验证状态变更（强制）**：事件发射 ≠ 状态生效，必须断言 reduce 后的最终状态。详见 `docs/ai-rules/testing-audit.md`「审计反模式清单」。
+- **多系统协作测试必须断言所有相关系统状态（强制）**：涉及多个引擎系统协作的功能（如响应窗口+交互系统），测试必须同时断言所有相关系统的状态字段。只断言 `sys.interaction.current` 存在但不断言 `sys.responseWindow.current` 仍打开 = 测试通过但功能实际无效。详见 `docs/ai-rules/testing-audit.md`「D8 子项：多系统 afterEvents 优先级竞争」。
 - **E2E 测试禁止使用本地模式（强制）**：除井字棋外所有游戏 `allowLocalMode=false`，E2E 测试必须使用 `setupOnlineMatch` 创建在线对局，通过调试面板（`readCoreState`/`applyCoreStateDirect`/`applyDiceValues`）注入状态。禁止使用 `page.goto('/play/<gameId>/local')`（井字棋除外）、禁止假设 `window.__BG_DISPATCH__`/`window.__BG_STATE__` 等全局变量存在。
 
 ---

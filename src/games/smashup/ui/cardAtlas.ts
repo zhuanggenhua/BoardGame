@@ -56,15 +56,6 @@ export const loadCardAtlasConfig = async (
 
     // 从压缩版图片获取实际尺寸，生成均匀网格配置
     try {
-        const compressedPath = `${imageBase.split('/').slice(0, -1).join('/')}/compressed/${fileName}.avif`;
-        const imgUrl = getLocalizedAssetPath(compressedPath, PROBE_LOCALE);
-        const { width, height } = await getImageSize(imgUrl);
-        return generateUniformAtlasConfig(width, height, defaultGrid.rows, defaultGrid.cols);
-    } catch {
-        // AVIF 失败，尝试 webp
-    }
-
-    try {
         const webpPath = `${imageBase.split('/').slice(0, -1).join('/')}/compressed/${fileName}.webp`;
         const imgUrl = getLocalizedAssetPath(webpPath, PROBE_LOCALE);
         const { width, height } = await getImageSize(imgUrl);

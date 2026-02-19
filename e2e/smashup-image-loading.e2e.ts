@@ -26,7 +26,7 @@ test.describe('SmashUp Image Loading', () => {
         const imageRequests: string[] = [];
         page.on('request', (request) => {
             const url = request.url();
-            if ((url.includes('.avif') || url.includes('.webp')) && url.includes('smashup')) {
+            if (url.includes('.webp') && url.includes('smashup')) {
                 imageRequests.push(url);
             }
         });

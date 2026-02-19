@@ -326,6 +326,7 @@ export function executeTokenCommand(
             const thresholdTriggered = settlement.threshold ? totalDamage >= settlement.threshold : false;
             
             // 发出 BONUS_DICE_SETTLED 事件
+            // displayOnly 标记传递给 systems.ts，避免误 resolve 其他活跃交互
             events.push({
                 type: 'BONUS_DICE_SETTLED',
                 payload: {
@@ -335,6 +336,7 @@ export function executeTokenCommand(
                     attackerId: settlement.attackerId,
                     targetId: settlement.targetId,
                     sourceAbilityId: settlement.sourceAbilityId,
+                    ...(settlement.displayOnly ? { displayOnly: true } : {}),
                 },
                 sourceCommandType: command.type,
                 timestamp,

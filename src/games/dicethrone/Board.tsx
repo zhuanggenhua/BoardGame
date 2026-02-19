@@ -22,8 +22,10 @@ import { useToast } from '../../contexts/ToastContext';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { loadStatusAtlases, type StatusAtlases } from './ui/statusEffects';
-import { getAbilitySlotId } from './ui/AbilityOverlays';
+import { getAbilitySlotId, ABILITY_SLOT_MAP } from './ui/AbilityOverlays';
 import type { AbilityOverlaysHandle } from './ui/AbilityOverlays';
+import { AbilityChoiceModal, type AbilityChoiceOption } from './ui/AbilityChoiceModal';
+import { findPlayerAbility } from './domain/abilityLookup';
 import { HandArea } from './ui/HandArea';
 import { loadCardAtlasConfig } from './ui/cardAtlas';
 
@@ -72,6 +74,32 @@ const TUTORIAL_TARGET_COMMAND_MAP: Record<string, string[]> = {
     'discard-pile': ['SELL_CARD', 'UNDO_SELL_CARD'],
     'hand-area': ['PLAY_CARD', 'SELL_CARD', 'MODIFY_DIE'],
 };
+
+/**
+ * 判断同 slot 的多个满足变体是否为"分歧型"（需要玩家选择）
+ * - 增量型（如火球 3火/4火/5火）：所有 trigger 都是 diceSet 且骰面 key 集合相同，只是数量递增 → 自动选最高优先级
+ * - 分歧型（如燃烧之灵 2火魂 vs 炙热之魂 2岩浆+2火魂）：trigger 类型不同或骰面 key 集合不同 → 弹窗选择
+ */
+function hasDivergentVariants(state: DiceThroneCore, playerId: string, variantIds: string[]): boolean {
+    const triggers = variantIds.map(vid => {
+        const match = findPlayerAbility(state, playerId, vid);
+        return match?.variant?.trigger ?? match?.ability.trigger ?? null;
+    });
+
+    // 任何 trigger 查不到，保守弹窗
+    if (triggers.some(t => !t)) return true;
+
+    // 如果不全是 diceSet 类型 → 分歧型
+    if (!triggers.every(t => t!.type === 'diceSet')) return true;
+
+    // 全是 diceSet，比较骰面 key 集合是否一致
+    const faceKeySets = triggers.map(t => {
+        const faces = (t as { faces: Record<string, number> }).faces;
+        return Object.keys(faces).sort().join(',');
+    });
+    const firstKeySet = faceKeySets[0];
+    return !faceKeySets.every(ks => ks === firstKeySet);
+}
 
 // --- Main Layout ---
 export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispatch, playerID, reset, matchData, isMultiplayer }) => {
@@ -359,12 +387,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const canSelectAbility = canOperateView && isViewRolling && isRollPhase
         && (currentPhase === 'defensiveRoll' ? true : G.rollConfirmed) && !isAttackShowcaseVisible;
 
-    // 响应窗口状态
+    // 同一 slot 多 variant 选择：玩家点击 slot 时，如果该 slot 有多个 variant 同时满足，弹窗让玩家选
+    const [abilityChoiceOptions, setAbilityChoiceOptions] = React.useState<AbilityChoiceOption[]>([]);
+
+    // 响应窗口状态（必须在引用它的 effect 之前声明）
     const responseWindow = access.responseWindow;
     const isResponseWindowOpen = !!responseWindow;
     // 当前响应者 ID（从队列中获取）
     const currentResponderId = responseWindow?.responderQueue[responseWindow.currentResponderIndex];
     const isResponder = isResponseWindowOpen && currentResponderId === rootPid;
+
+    // （variant 选择弹窗由 onSelectAbility 回调触发，不需要自动弹出）
 
     // 自己的手牌永远显示
     const handOwner = player;
@@ -487,6 +520,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 被动重掷：骰子选择回调
     const handlePassiveRerollDieSelect = React.useCallback((dieId: number) => {
         if (!rerollSelectingAction) return;
+        // 不能重掷被锁定的骰子
+        const die = G.dice.find(d => d.id === dieId);
+        if (!die || die.isKept) return;
         engineMoves.usePassiveAbility(
             rerollSelectingAction.passiveId,
             rerollSelectingAction.actionIndex,
@@ -495,7 +531,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         setRerollSelectingAction(null);
         setRerollingDiceIds([dieId]);
         setTimeout(() => setRerollingDiceIds([]), 600);
-    }, [rerollSelectingAction, engineMoves, setRerollingDiceIds]);
+    }, [rerollSelectingAction, engineMoves, setRerollingDiceIds, G.dice]);
 
     const passiveAbilityProps = React.useMemo(() => {
         if (playerPassives.length === 0) return null;
@@ -578,9 +614,20 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 );
             }
         } else if (activeInteraction.type === 'selectPlayer') {
-            // 移除玩家所有状态
+            // 根据交互意图决定操作
             if (localInteraction.selectedPlayer) {
-                engineMoves.removeStatus(localInteraction.selectedPlayer);
+                const tokenConfigs = activeInteraction.tokenGrantConfigs ?? (
+                    activeInteraction.tokenGrantConfig
+                        ? [activeInteraction.tokenGrantConfig]
+                        : null
+                );
+                if (tokenConfigs) {
+                    // 授予 token（祝圣、复仇等）
+                    engineMoves.grantTokens(localInteraction.selectedPlayer, tokenConfigs);
+                } else {
+                    // 移除玩家所有状态
+                    engineMoves.removeStatus(localInteraction.selectedPlayer);
+                }
             }
         } else if (activeInteraction.type === 'selectTargetStatus') {
             // 转移状态
@@ -932,6 +979,46 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         canHighlightAbility={canHighlightAbility}
                         onSelectAbility={(abilityId) => {
                             if (shouldBlockTutorialAction('ability-slots')) return;
+                            // 进攻阶段确认骰面后，检查该 slot 是否有多个 variant 同时满足
+                            if (currentPhase === 'offensiveRoll' && G.rollConfirmed) {
+                                const slotId = getAbilitySlotId(abilityId);
+                                if (slotId) {
+                                    const mapping = ABILITY_SLOT_MAP[slotId];
+                                    if (mapping) {
+                                        // 从 availableAbilityIdsForRoller 中找出属于该 slot 的所有满足条件的 variant
+                                        // 不能用 id.startsWith(baseId-) 判断归属，因为 variant id 不一定以 base id 为前缀
+                                        // （如 blazing-soul 属于 soul-burn ability，但 id 不以 soul-burn 开头）
+                                        const slotVariants = availableAbilityIdsForRoller.filter(id => {
+                                            const match = findPlayerAbility(G, rollerId, id);
+                                            if (!match) return false;
+                                            return mapping.ids.includes(match.ability.id);
+                                        });
+                                        if (slotVariants.length >= 2 && hasDivergentVariants(G, rollerId, slotVariants)) {
+                                            const options: AbilityChoiceOption[] = [];
+                                            for (const vid of slotVariants) {
+                                                const match = findPlayerAbility(G, rollerId, vid);
+                                                if (!match) continue;
+                                                options.push({
+                                                    abilityId: vid,
+                                                    name: match.variant
+                                                        ? `abilities.${vid}.name`
+                                                        : match.ability.name ?? vid,
+                                                    description: match.variant
+                                                        ? `abilities.${vid}.description`
+                                                        : match.ability.description,
+                                                    slotId,
+                                                });
+                                            }
+                                            if (options.length >= 2) {
+                                                setAbilityChoiceOptions(options);
+                                                openModal('abilityChoice');
+                                                advanceTutorialIfNeeded('ability-slots');
+                                                return;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             engineMoves.selectAbility(abilityId);
                             advanceTutorialIfNeeded('ability-slots');
                         }}
@@ -1178,6 +1265,21 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     selectedCharacters={G.selectedCharacters}
                     playerNames={playerNames}
                     hostPlayerId={G.hostPlayerId}
+                />
+
+                {/* 同一 slot 多 variant 选择弹窗：点击 slot 时该 slot 有多个 variant 满足条件 */}
+                <AbilityChoiceModal
+                    isOpen={modals.abilityChoice}
+                    options={abilityChoiceOptions}
+                    onSelect={(abilityId) => {
+                        closeModal('abilityChoice');
+                        setAbilityChoiceOptions([]);
+                        engineMoves.selectAbility(abilityId);
+                    }}
+                    onSkip={() => {
+                        closeModal('abilityChoice');
+                        setAbilityChoiceOptions([]);
+                    }}
                 />
             </div>
         </UndoProvider>

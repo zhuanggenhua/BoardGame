@@ -27,7 +27,6 @@
 | `createGameEngine` | `src/engine/adapter.ts` | 适配器工厂：Domain + Systems → GameEngineConfig |
 | `OptimisticEngine` | `src/engine/transport/latency/optimisticEngine.ts` | 客户端乐观更新引擎：本地预测 + 服务端调和 |
 | `CommandBatcher` | `src/engine/transport/latency/commandBatcher.ts` | 命令批处理（合并高频命令减少网络往返） |
-| `LocalInteractionManager` | `src/engine/transport/latency/localInteractionManager.ts` | 本地交互管理（乐观模式下的交互队列） |
 | `LatencyOptimizationConfig` | `src/engine/transport/latency/types.ts` | 延迟优化配置类型（每个游戏的 `latencyConfig.ts`） |
 
 #### 乐观更新引擎（Optimistic Engine）

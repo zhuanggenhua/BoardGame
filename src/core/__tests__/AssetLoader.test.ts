@@ -14,9 +14,9 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
         });
     });
 
-    it('位图资源生成 avif/webp 路径', () => {
+    it('位图资源统一生成 webp 路径', () => {
         const urls = getOptimizedImageUrls('dicethrone/thumbnails/fengm.png');
-        expect(urls.avif).toBe('/assets/dicethrone/thumbnails/compressed/fengm.avif');
+        expect(urls.avif).toBe('/assets/dicethrone/thumbnails/compressed/fengm.webp');
         expect(urls.webp).toBe('/assets/dicethrone/thumbnails/compressed/fengm.webp');
     });
 });

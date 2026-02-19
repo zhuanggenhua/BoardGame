@@ -12,6 +12,7 @@ import type { TutorialAiAction, TutorialManifest, TutorialState, TutorialStepSna
 export type { TutorialManifest } from '../engine/types';
 import { DEFAULT_TUTORIAL_STATE } from '../engine/types';
 import { TUTORIAL_COMMANDS } from '../engine/systems/TutorialSystem';
+import { useGameMode } from './GameModeContext';
 
 type TutorialNextReason = 'manual' | 'auto';
 
@@ -40,9 +41,9 @@ interface TutorialContextType {
     consumeAi: (stepId?: string) => void;
     /** 动画完成回调：通知教程系统动画已播放完毕，可以推进到下一步 */
     animationComplete: () => void;
-    bindDispatch: (dispatch: (type: string, payload?: unknown) => void) => void;
+    bindDispatch: (dispatch: (type: string, payload?: unknown) => void) => number;
     /** Board 卸载时清理 controller，防止残留的 dispatch 指向已销毁的 Provider */
-    unbindDispatch: () => void;
+    unbindDispatch: (generation?: number) => void;
     syncTutorialState: (tutorial: TutorialState) => void;
 }
 
@@ -102,6 +103,8 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const controllerRef = useRef<TutorialController | null>(null);
     const pendingStartRef = useRef<TutorialManifest | null>(null);
     const executedAiStepsRef = useRef<Set<string>>(new Set());
+    // 代际计数器：防止旧 Board 的 unbindDispatch 清除新 Board 的 controller
+    const bindGenerationRef = useRef(0);
     // 兜底 timer：防止 bindDispatch 永远不执行导致教程卡死
     const fallbackTimerRef = useRef<number | undefined>(undefined);
     const toast = useToast();
@@ -115,19 +118,25 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             fallbackTimerRef.current = undefined;
         }
         
+        bindGenerationRef.current += 1;
+        
         controllerRef.current = buildTutorialController(dispatch);
         setIsControllerReady(true);
-        const hasPending = !!pendingStartRef.current;
-        console.warn('[TutorialContext] bindDispatch:', { hasPending, pendingId: pendingStartRef.current?.id });
         if (pendingStartRef.current) {
             controllerRef.current.start(pendingStartRef.current);
             pendingStartRef.current = null;
         }
+        return bindGenerationRef.current;
     }, []);
 
-    const unbindDispatch = useCallback(() => {
-        controllerRef.current = null;
-        setIsControllerReady(false);
+    // unbindDispatch 不再主动清除 controller。
+    // 原因：CriticalImageGate / StrictMode / i18n 加载等场景会导致 Board 反复卸载重挂载，
+    // 每次卸载都会触发 unbindDispatch，但教程仍在运行中，清除 controller 会导致教程卡死。
+    // controller 的生命周期改为：bindDispatch 设置 → closeTutorial 清除。
+    // dispatch 函数通过 dispatchRef 间接引用，Board 重挂载时 ref 会自动更新到新的 dispatch。
+    const unbindDispatch = useCallback((_generation?: number) => {
+        // 不清除 controller — 教程运行期间 controller 需要保持可用
+        // controller 内部通过 dispatchRef 间接调用，Board 重挂载后 ref 自动指向新 dispatch
     }, []);
 
     const syncTutorialState = useCallback((nextTutorial: TutorialState) => {
@@ -139,11 +148,6 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, []);
 
     const startTutorial = useCallback((manifest: TutorialManifest) => {
-        // 防重入：如果已经有 pending 的 manifest，且是同一个，跳过
-        if (pendingStartRef.current?.id === manifest.id) {
-            return;
-        }
-        
         // 清除旧的兜底 timer
         if (fallbackTimerRef.current !== undefined) {
             window.clearTimeout(fallbackTimerRef.current);
@@ -153,15 +157,13 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         executedAiStepsRef.current = new Set();
         
         // 如果 controller 已就绪（Board 已挂载且 bindDispatch 已执行），直接启动。
-        // 这是最常见的路径：namespace 加载完成 → Board 挂载 → bindDispatch → MatchRoom effect 调用 startTutorial。
         if (controllerRef.current) {
             controllerRef.current.start(manifest);
             pendingStartRef.current = null;
             return;
         }
         
-        // Controller 尚未就绪（Board 还没挂载），存入 pendingStartRef，
-        // 等 Board 挂载时 bindDispatch 消费。
+        // Controller 尚未就绪（Board 还没挂载），存入 pendingStartRef
         pendingStartRef.current = manifest;
         
         // 兜底机制：10 秒后如果仍未启动，提示用户
@@ -185,6 +187,17 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const closeTutorial = useCallback(() => {
         controllerRef.current?.close();
+        // 教程关闭时清除 controller（唯一清除点）
+        controllerRef.current = null;
+        // 清除未消费的 pending start，防止下次 bindDispatch 时误启动旧教程
+        pendingStartRef.current = null;
+        if (fallbackTimerRef.current !== undefined) {
+            window.clearTimeout(fallbackTimerRef.current);
+            fallbackTimerRef.current = undefined;
+        }
+        // 重置教程状态，防止 tutorial.active 残留影响后续在线对局
+        setTutorial({ ...DEFAULT_TUTORIAL_STATE });
+        setIsControllerReady(false);
     }, []);
 
     const consumeAi = useCallback((stepId?: string) => {
@@ -227,9 +240,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             setIsAiExecuting(true);
             isAiExecutingRef.current = true;
-            aiActions.forEach((action: TutorialAiAction) => {
-                // 注入 __tutorialAiCommand 标记，让 LocalGameProvider 在命令失败时静默
-                // 同时注入 __tutorialPlayerId 供 adapter 识别 AI 执行者
+
+            // 逐个执行 AI actions
+            for (let i = 0; i < aiActions.length; i++) {
+                const action = aiActions[i] as TutorialAiAction;
                 const actionPayload: Record<string, unknown> = {
                     ...(action.payload as Record<string, unknown> ?? {}),
                     __tutorialAiCommand: true,
@@ -238,12 +252,15 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     actionPayload.__tutorialPlayerId = action.playerId;
                 }
                 controller.dispatchCommand(action.commandType, actionPayload);
-            });
+            }
+
             isAiExecutingRef.current = false;
             setIsAiExecuting(false);
+
+            // 始终调用 consumeAi 清除 aiActions（防止 effect 重复触发）
+            // 但只在全部成功时才自动推进
             controller.consumeAi(stepId);
 
-            // 同步调用 next，避免 consumeAi 触发状态更新后 effect 清理导致 advanceTimer 被取消
             if (shouldAutoAdvanceAfterAi) {
                 controller.next('auto');
             }
@@ -292,6 +309,8 @@ export const useTutorial = () => {
 
 export const useTutorialBridge = (tutorial: TutorialState, dispatch: (type: string, payload?: unknown) => void) => {
     const context = useContext(TutorialContext);
+    const gameMode = useGameMode();
+    const isTutorialMode = gameMode?.mode === 'tutorial';
     const lastSyncSignatureRef = useRef<string | null>(null);
     // 用 ref 保持最新的 context 和 dispatch，供挂载时的 effect 使用
     const contextRef = useRef(context);
@@ -301,17 +320,21 @@ export const useTutorialBridge = (tutorial: TutorialState, dispatch: (type: stri
 
     useEffect(() => {
         if (!context) return;
+        // 只在教程模式下同步状态，防止在线对局的 sys.tutorial 污染 TutorialContext
+        if (!isTutorialMode) return;
         const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${getTutorialStepCount(tutorial)}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}`;
         if (lastSyncSignatureRef.current === signature) return;
         lastSyncSignatureRef.current = signature;
         context.syncTutorialState(tutorial);
-    }, [context, tutorial]);
+    }, [context, tutorial, isTutorialMode]);
 
     useEffect(() => {
-        contextRef.current?.bindDispatch((...args) => dispatchRef.current(...args));
+        // 只在教程模式下注册 controller，在线/本地模式的 Board 不应污染教程状态
+        if (!isTutorialMode) return;
+        // bindDispatch 返回代际号，cleanup 时传入以防止旧 Board 误清新 Board 的 controller
+        const gen = contextRef.current?.bindDispatch((...args) => dispatchRef.current(...args));
         return () => {
-            // Board 卸载时清理 controller，防止残留 dispatch 指向已销毁的 Provider
-            contextRef.current?.unbindDispatch();
+            contextRef.current?.unbindDispatch(gen);
         };
-    }, []);  
+    }, [isTutorialMode]);  
 };

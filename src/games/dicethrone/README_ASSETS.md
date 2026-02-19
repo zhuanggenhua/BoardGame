@@ -28,7 +28,6 @@ public/assets/dicethrone/
 │   │   ├── tip.png                      # 技能提示板
 │   │   ├── dice.png                     # 骰面图集
 │   │   ├── compressed/                  # 压缩后的资源（实际加载）
-│   │   │   ├── ability-cards.avif
 │   │   │   ├── ability-cards.webp
 │   │   │   └── ...
 │   │   └── status-icons/                # 状态图标
@@ -48,7 +47,7 @@ public/assets/dicethrone/
 
 所有角色头像存放在一张图集中：
 
-**文件路径**: `public/assets/dicethrone/images/Common/character-portraits.avif/webp`
+**文件路径**: `public/assets/dicethrone/images/Common/character-portraits.webp`
 
 **图集规格**：
 - 总尺寸：3950 x 4096 px
@@ -83,8 +82,8 @@ const CHARACTER_PORTRAIT_INDEX: Record<string, number> = {
 
 | 素材 | 路径 | 用途 |
 |------|------|------|
-| 玩家面板 | `images/<hero>/player-board.avif/webp/png` | 技能槽背景 |
-| 技能提示板 | `images/<hero>/tip.avif/webp/png` | 技能提示信息 |
+| 玩家面板 | `images/<hero>/player-board.webp/png` | 技能槽背景 |
+| 技能提示板 | `images/<hero>/tip.webp/png` | 技能提示信息 |
 
 ### 2.3 代码配置
 
@@ -257,7 +256,7 @@ if (previewRef.type === 'atlas') {
 
 ### 5.1 压缩工具
 
-项目使用自定义脚本将 PNG 压缩为 AVIF 和 WebP 格式：
+项目使用自定义脚本将 PNG 压缩为 WebP 格式：
 
 ```bash
 # 压缩指定目录下的图片
@@ -268,7 +267,7 @@ node scripts/compress-images.js public/assets/dicethrone/images/monk
 
 | 原始格式 | 压缩格式       | 存放位置                    |
 | -------- | -------------- | --------------------------- |
-| `.png`   | `.avif`, `.webp` | `compressed/` 子目录      |
+| `.png`   | `.webp`        | `compressed/` 子目录      |
 
 ### 5.3 图集配置生成
 

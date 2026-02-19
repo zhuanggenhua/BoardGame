@@ -62,6 +62,8 @@ export function getUsableTokensForOffensiveRollEnd(
     const player = state.players[playerId];
     if (!player) return [];
 
+    const isAlreadyUnblockable = state.pendingAttack ? !state.pendingAttack.isDefendable : false;
+
     return (state.tokenDefinitions ?? []).filter(def => {
         if (def.category !== 'consumable') return false;
         if (!def.activeUse?.timing?.includes('onOffensiveRollEnd')) return false;
@@ -69,6 +71,9 @@ export function getUsableTokensForOffensiveRollEnd(
         
         // 暴击门控：伤害≥5
         if (def.id === TOKEN_IDS.CRIT && expectedDamage < 5) return false;
+
+        // 精准门控：攻击已经不可防御时，精准无意义
+        if (def.id === TOKEN_IDS.ACCURACY && isAlreadyUnblockable) return false;
         
         return true;
     });

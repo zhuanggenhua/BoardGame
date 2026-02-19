@@ -35,11 +35,24 @@ function handleGainCp({ attackerId, sourceAbilityId, state, timestamp, action }:
 }
 
 // ============================================================================
+// 骰子目标解析辅助函数
+// ============================================================================
+
+/**
+ * 根据 EffectAction.target 解析 targetOpponentDice 标志
+ * - 'select' / 'opponent' → true（可选择对手骰子）
+ * - 'self' / 默认 → false（只能选择自己骰子）
+ */
+export function resolveTargetOpponentDice(action: CustomActionContext['action']): boolean {
+    return action.target === 'opponent' || action.target === 'select';
+}
+
+// ============================================================================
 // 骰子修改处理器
 // ============================================================================
 
 /** 将1颗骰子改至6 */
-function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -49,6 +62,7 @@ function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp }: CustomAc
         selectCount: 1,
         selected: [],
         dieModifyConfig: { mode: 'set', targetValue: 6 },
+        targetOpponentDice: resolveTargetOpponentDice(action),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -69,7 +83,7 @@ function handleRemoveSelfStatus({ attackerId, sourceAbilityId, timestamp }: Cust
 }
 
 /** 将1颗骰子改为另1颗的值 */
-function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -79,12 +93,13 @@ function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp }: CustomA
         selectCount: 2,
         selected: [],
         dieModifyConfig: { mode: 'copy' },
+        targetOpponentDice: resolveTargetOpponentDice(action),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
 /** 改变任意1颗骰子的数值 */
-function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -94,12 +109,13 @@ function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp }: CustomA
         selectCount: 1,
         selected: [],
         dieModifyConfig: { mode: 'any' },
+        targetOpponentDice: resolveTargetOpponentDice(action),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
 /** 改变任意2颗骰子的数值 */
-function handleModifyDieAny2({ attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleModifyDieAny2({ attackerId, sourceAbilityId, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -109,12 +125,13 @@ function handleModifyDieAny2({ attackerId, sourceAbilityId, timestamp }: CustomA
         selectCount: 2,
         selected: [],
         dieModifyConfig: { mode: 'any' },
+        targetOpponentDice: resolveTargetOpponentDice(action),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
 /** 增/减1颗骰子数值1点 */
-function handleModifyDieAdjust1({ attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleModifyDieAdjust1({ attackerId, sourceAbilityId, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -124,6 +141,7 @@ function handleModifyDieAdjust1({ attackerId, sourceAbilityId, timestamp }: Cust
         selectCount: 1,
         selected: [],
         dieModifyConfig: { mode: 'adjust', adjustRange: { min: -1, max: 1 } },
+        targetOpponentDice: resolveTargetOpponentDice(action),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -133,7 +151,7 @@ function handleModifyDieAdjust1({ attackerId, sourceAbilityId, timestamp }: Cust
 // ============================================================================
 
 /** 强制对手重掷1颗骰子 */
-function handleRerollOpponentDie1({ attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleRerollOpponentDie1({ attackerId, sourceAbilityId, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -142,13 +160,13 @@ function handleRerollOpponentDie1({ attackerId, sourceAbilityId, timestamp }: Cu
         titleKey: 'interaction.selectOpponentDieToReroll',
         selectCount: 1,
         selected: [],
-        targetOpponentDice: true,
+        targetOpponentDice: resolveTargetOpponentDice(action),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
 /** 重掷至多2颗骰子 */
-function handleRerollDie2({ attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleRerollDie2({ attackerId, sourceAbilityId, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -157,12 +175,13 @@ function handleRerollDie2({ attackerId, sourceAbilityId, timestamp }: CustomActi
         titleKey: 'interaction.selectDiceToReroll',
         selectCount: 2,
         selected: [],
+        targetOpponentDice: resolveTargetOpponentDice(action),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
 /** 重掷至多5颗骰子（我又行了！/ 就这？） */
-function handleRerollDie5({ attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleRerollDie5({ attackerId, sourceAbilityId, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -171,6 +190,7 @@ function handleRerollDie5({ attackerId, sourceAbilityId, timestamp }: CustomActi
         titleKey: 'interaction.selectDiceToReroll',
         selectCount: 5,
         selected: [],
+        targetOpponentDice: resolveTargetOpponentDice(action),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -205,6 +225,7 @@ function handleRemoveAllStatus({ attackerId, sourceAbilityId, state, timestamp }
         selectCount: 1,
         selected: [],
         targetPlayerIds: Object.keys(state.players),
+        requiresTargetWithStatus: true,
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }

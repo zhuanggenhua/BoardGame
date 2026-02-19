@@ -169,21 +169,6 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
-    // 教会税升级
-    // ========================================================================
-    describe('paladin-upgrade-tithes (教会税升级)', () => {
-        it('发出 PASSIVE_ABILITY_UPGRADED 事件', () => {
-            const state = createState({});
-            const handler = getCustomActionHandler('paladin-upgrade-tithes')!;
-            const events = handler(buildCtx(state, 'paladin-upgrade-tithes'));
-
-            const upgradeEvents = eventsOfType(events, 'PASSIVE_ABILITY_UPGRADED');
-            expect(upgradeEvents).toHaveLength(1);
-            expect((upgradeEvents[0] as any).payload.passiveId).toBe('tithes');
-        });
-    });
-
-    // ========================================================================
     // 神圣祝福
     // ========================================================================
     describe('paladin-blessing-prevent (神圣祝福：免疫致死+HP设为1)', () => {

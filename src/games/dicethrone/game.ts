@@ -176,6 +176,7 @@ function formatDiceThroneActionEntry({
             type: 'card',
             cardId: card.id,
             previewText: card.name ?? cardId,
+            previewRef: card.previewRef,
             ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
         };
 
@@ -767,6 +768,7 @@ const COMMAND_TYPES = [
     'REROLL_DIE',
     'REMOVE_STATUS',
     'TRANSFER_STATUS',
+    'GRANT_TOKENS',
     // CONFIRM_INTERACTION 和 CANCEL_INTERACTION 已废弃 - 使用 InteractionSystem 的 RESPOND/CANCEL
     // 选角相关
     'SELECT_CHARACTER',

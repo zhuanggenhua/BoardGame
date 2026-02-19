@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { UI_Z_INDEX } from '../../../core';
 
 export const MagnifyOverlay = ({
@@ -18,9 +19,14 @@ export const MagnifyOverlay = ({
     closeLabel?: string;
     closeButtonClassName?: string;
 }) => {
+    const portalRoot = useMemo(() => {
+        if (typeof document === 'undefined') return null;
+        return document.getElementById('modal-root') ?? document.body;
+    }, []);
+
     if (!isOpen) return null;
 
-    return (
+    const overlay = (
         <div
             className={`fixed inset-0 bg-black/30 flex items-center justify-center p-8 backdrop-blur-sm animate-in fade-in duration-200 ${overlayClassName}`}
             style={{ zIndex: UI_Z_INDEX.magnify }}
@@ -48,4 +54,7 @@ export const MagnifyOverlay = ({
             </div>
         </div>
     );
+
+    // 使用 portal 渲染到 modal-root，避免被父级 transform/overflow 裁剪
+    return portalRoot ? createPortal(overlay, portalRoot) : overlay;
 };

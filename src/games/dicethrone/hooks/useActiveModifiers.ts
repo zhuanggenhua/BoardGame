@@ -47,9 +47,8 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
             if (type === 'CARD_PLAYED') {
                 const p = payload as { cardId: string };
                 const card = findHeroCard(p.cardId);
-                // 只追踪有 withDamage effect 的卡牌（真正的攻击修正卡）
-                // timing: 'roll' 不足以区分，骰子操作卡也是 roll 阶段但不修改伤害
-                if (card && card.type === 'action' && card.effects?.some(e => e.timing === 'withDamage')) {
+                // 追踪投掷阶段打出的行动卡（timing: 'roll' 的 action 卡 = 攻击修正卡）
+                if (card && card.type === 'action' && card.timing === 'roll') {
                     newModifiers.push({
                         cardId: p.cardId,
                         nameKey: typeof card.name === 'string' ? card.name : p.cardId,

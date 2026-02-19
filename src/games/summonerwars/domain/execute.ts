@@ -1040,8 +1040,8 @@ export function executeCommand(
         });
         if (hasAdjacentUnit) {
           processedEvents.push(createAbilityTriggeredEvent(
-            'ice_ram_trigger', structureCardId, structureNewPos, timestamp,
-            { iceRamOwner: pid, structurePosition: structureNewPos },
+            'ice_ram', structureCardId, structureNewPos, timestamp,
+            { actionId: 'ice_ram_trigger', iceRamOwner: pid, structurePosition: structureNewPos },
           ));
         }
       }

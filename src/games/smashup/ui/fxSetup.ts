@@ -16,6 +16,7 @@ import { FxRegistry, type FxRendererProps, type FeedbackPack } from '../../../en
 import { getCardDef, resolveCardName, resolveCardText } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { UI_Z_INDEX } from '../../../core';
+import { Zap } from 'lucide-react';
 import i18next from 'i18next';
 
 // ============================================================================
@@ -30,6 +31,8 @@ export const SU_FX = {
   ACTION_SHOW: 'fx.action-show',
   /** 基地记分 VP 飞行 */
   BASE_SCORED: 'fx.base-scored',
+  /** 持续效果/触发器激活 */
+  ABILITY_TRIGGERED: 'fx.ability-triggered',
 } as const;
 
 // ============================================================================
@@ -211,12 +214,103 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
 };
 
 // ============================================================================
+// 渲染器：持续效果/触发器激活
+// ============================================================================
+
+/**
+ * params:
+ * - sourceDefId: string — 触发源卡牌 defId
+ * - position: { left: number; top: number } | undefined — 屏幕坐标（可选）
+ */
+/** 持续效果/触发器激活渲染器（导出供特效预览使用） */
+export const AbilityTriggeredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
+  const stableComplete = useStableComplete(onComplete);
+  const sourceDefId = event.params?.sourceDefId as string | undefined;
+  const position = event.params?.position as { left: number; top: number } | undefined;
+
+  const impactFired = useRef(false);
+  useEffect(() => {
+    if (!impactFired.current) {
+      impactFired.current = true;
+      onImpact();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const timer = setTimeout(stableComplete, 1600);
+    return () => clearTimeout(timer);
+  }, [stableComplete]);
+
+  if (!sourceDefId) { stableComplete(); return null; }
+
+  const t = i18next.getFixedT(null, 'game-smashup');
+  const def = getCardDef(sourceDefId);
+  const resolvedName = resolveCardName(def, t) || sourceDefId;
+
+  // 默认位置：屏幕中上方
+  const pos = position ?? { left: window.innerWidth / 2, top: window.innerHeight * 0.25 };
+
+  return React.createElement(motion.div, {
+    className: 'fixed pointer-events-none select-none flex flex-col items-center gap-1',
+    style: {
+      left: pos.left,
+      top: pos.top,
+      transform: 'translate(-50%, -50%)',
+      zIndex: UI_Z_INDEX.overlayRaised,
+    },
+    initial: { opacity: 0, scale: 0.3, y: 10 },
+    animate: { opacity: [0, 1, 1, 0], scale: [0.3, 1.1, 1, 0.8], y: [10, 0, 0, -40] },
+    transition: { duration: 1.5, times: [0, 0.15, 0.6, 1], ease: 'easeOut' },
+  },
+    // 闪光脉冲背景
+    React.createElement(motion.div, {
+      className: 'absolute rounded-full',
+      style: {
+        background: 'radial-gradient(circle, rgba(251,191,36,0.5) 0%, rgba(251,191,36,0) 70%)',
+        width: '12vw',
+        height: '12vw',
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+      },
+      initial: { scale: 0.3, opacity: 0 },
+      animate: { scale: [0.3, 1.8, 0], opacity: [0, 0.7, 0] },
+      transition: { duration: 1.0, ease: 'easeOut' },
+    }),
+    // 触发图标（SVG）
+    React.createElement(motion.div, {
+      className: 'drop-shadow-lg text-amber-400',
+      style: { width: '2.5vw', height: '2.5vw' },
+      initial: { scale: 0, rotate: -30 },
+      animate: { scale: [0, 1.4, 1], rotate: [-30, 10, 0] },
+      transition: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] },
+    }, React.createElement(Zap, { className: 'w-full h-full', fill: 'currentColor', strokeWidth: 1.5 })),
+    // 卡牌名 + "触发！"标签
+    React.createElement(motion.div, {
+      className: 'bg-amber-900/90 text-amber-100 px-3 py-1.5 rounded-md shadow-lg border border-amber-600/50 whitespace-nowrap flex items-center gap-2',
+      style: { fontFamily: "'Caveat', 'Comic Sans MS', cursive" },
+      initial: { opacity: 0, y: 8, scale: 0.8 },
+      animate: { opacity: 1, y: 0, scale: 1 },
+      transition: { delay: 0.12, duration: 0.3, ease: [0.34, 1.56, 0.64, 1] },
+    },
+      React.createElement('span', {
+        className: 'text-[1.1vw] font-black tracking-wide',
+      }, resolvedName),
+      React.createElement('span', {
+        className: 'text-[0.7vw] font-bold text-amber-400 bg-amber-800/60 px-1.5 py-0.5 rounded',
+      }, t('ui.triggered')),
+    ),
+  );
+};
+
+// ============================================================================
 // 音效 key 常量
 // ============================================================================
 
 const POWER_GAIN_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a';
 const ACTION_PLAY_KEY = 'card.fx.decks_and_cards_sound_fx_pack.fx_magic_deck_001';
 const UPDATE_CHIME_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
+const TALENT_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_001';
 
 // ============================================================================
 // 反馈包
@@ -235,6 +329,11 @@ const ACTION_SHOW_FEEDBACK: FeedbackPack = {
 /** 基地记分：impact 时播放音效 */
 const BASE_SCORED_FEEDBACK: FeedbackPack = {
   sound: { key: UPDATE_CHIME_KEY, timing: 'on-impact' },
+};
+
+/** 触发器激活：即时播放音效 */
+const ABILITY_TRIGGERED_FEEDBACK: FeedbackPack = {
+  sound: { key: TALENT_KEY, timing: 'immediate' },
 };
 
 // ============================================================================
@@ -257,6 +356,11 @@ function createRegistry(): FxRegistry {
   registry.register(SU_FX.BASE_SCORED, BaseScoredRenderer, {
     timeoutMs: 3000,
   }, BASE_SCORED_FEEDBACK);
+
+  registry.register(SU_FX.ABILITY_TRIGGERED, AbilityTriggeredRenderer, {
+    timeoutMs: 2500,
+    maxConcurrent: 1,
+  }, ABILITY_TRIGGERED_FEEDBACK);
 
   return registry;
 }

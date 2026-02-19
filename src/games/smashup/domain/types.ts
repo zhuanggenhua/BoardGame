@@ -599,7 +599,8 @@ export type SmashUpEvent =
     | BreakpointModifiedEvent
     | BaseDeckShuffledEvent
     | SpecialLimitUsedEvent
-    | AbilityFeedbackEvent;
+    | AbilityFeedbackEvent
+    | AbilityTriggeredEvent;
 
 // ============================================================================
 // 新增事件接口
@@ -879,5 +880,17 @@ export interface AbilityFeedbackEvent extends GameEvent<typeof SU_EVENTS.ABILITY
         messageParams?: Record<string, string | number>;
         /** 提示级别 */
         tone?: 'info' | 'warning';
+    };
+}
+
+/** 持续效果/触发器激活事件（纯 FX 动画，reducer 不处理） */
+export interface AbilityTriggeredEvent extends GameEvent<typeof SU_EVENTS.ABILITY_TRIGGERED> {
+    payload: {
+        /** 触发源卡牌 defId */
+        sourceDefId: string;
+        /** 触发时机 */
+        timing: string;
+        /** 触发发生的基地索引（可选） */
+        baseIndex?: number;
     };
 }

@@ -40,9 +40,7 @@ describe('ManifestGameThumbnail', () => {
     it('存在 thumbnailPath 时渲染优化图片', () => {
         const manifest = buildManifest({ thumbnailPath: 'demo/thumbnails/cover' });
         const html = renderToStaticMarkup(<ManifestGameThumbnail manifest={manifest} />);
-        expect(html).toContain('<picture>');
-        // 优化图片会自动指向 i18n/zh-CN/ 和 compressed/ 目录（avif/webp）
+        // 优化图片会自动指向 i18n/zh-CN/ 和 compressed/ 目录（webp）
         expect(html).toContain('src="/assets/i18n/zh-CN/demo/thumbnails/compressed/cover.webp"');
-        expect(html).toContain('image/avif');
     });
 });

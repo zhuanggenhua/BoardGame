@@ -202,6 +202,31 @@ export function defineEvents<T extends Record<string, EventConfig>>(
 }
 
 /**
+ * 从事件定义中自动收集需要预加载的音效 key
+ * 
+ * 提取所有 'immediate' 和 'ui' 策略的非空 sound key，
+ * 去重后返回。游戏层可直接用于 criticalSounds 或 contextualPreloadKeys。
+ * 
+ * @example
+ * ```typescript
+ * // 游戏层 audio.config.ts
+ * criticalSounds: [
+ *   ...collectPreloadKeys(EVENTS),  // 自动收集，零维护
+ *   ...EXTRA_KEYS,                  // 游戏层额外的非事件音效
+ * ],
+ * ```
+ */
+export function collectPreloadKeys<T extends EventDefinitions>(events: T): string[] {
+  const keys = new Set<string>();
+  for (const def of Object.values(events)) {
+    if ((def.audio === 'immediate' || def.audio === 'ui') && def.sound) {
+      keys.add(def.sound);
+    }
+  }
+  return Array.from(keys);
+}
+
+/**
  * 自动生成 feedbackResolver
  * 
  * 规则：

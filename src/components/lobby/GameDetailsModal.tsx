@@ -138,8 +138,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 }
             });
 
-            // 请求初始数据
-            lobbySocket.requestRefresh(normalizedGameId);
+            // subscribe() 已自动向服务端发送订阅请求并获取快照，无需额外 requestRefresh
 
             return () => {
                 clearTimeout(storageTimeout);

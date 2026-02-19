@@ -45,10 +45,18 @@ export function createMultistepChoiceSystem<TCore>(
 
             // ---- multistep-choice 确认 ----
             if (command.type === INTERACTION_COMMANDS.CONFIRM) {
+                const payloadInteractionId = (command.payload as any)?.interactionId;
+
                 if (!current) {
-                    // 交互已被引擎层自动 resolve（如 set 模式 afterEvents 自动完成），静默成功
+                    // 交互已被引擎层自动 resolve（如 afterEvents 自动完成），静默跳过
                     return { halt: true };
                 }
+
+                // 携带 interactionId 但与当前交互不匹配 → 该 CONFIRM 针对的交互已被 afterEvents 自动 resolve，静默跳过
+                if (payloadInteractionId && current.id !== payloadInteractionId) {
+                    return { halt: true };
+                }
+
                 if (current.kind !== 'multistep-choice') {
                     return { halt: true, error: '没有待确认的多步交互' };
                 }

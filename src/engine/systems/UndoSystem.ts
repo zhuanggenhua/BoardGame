@@ -32,6 +32,31 @@ export interface UndoSystemConfig {
      */
     snapshotCommandAllowlist?: CommandAllowlist;
 
+    /**
+     * 事件驱动快照：当 afterEvents 中检测到这些事件类型时，自动创建快照。
+     * 快照捕获的是事件 reduce 完成后的状态（即"新回合刚开始"的状态）。
+     * 
+     * 典型用途：回合切换时固定创建快照，确保玩家至少能回滚到回合开始。
+     * 示例：`snapshotEventTypes: ['sw:turn_changed']`
+     */
+    snapshotEventTypes?: string[];
+
+    /**
+     * 回合开始自动快照（通用，推荐）。
+     * 
+     * 设为 true 时，UndoSystem 自动检测 FlowSystem 的 SYS_PHASE_CHANGED 事件，
+     * 当阶段切换到 `turnStartPhase` 时创建快照。
+     * 
+     * 需要配合 `turnStartPhase` 指定回合起始阶段名（如 'summon'、'upkeep'）。
+     * 如果不指定 `turnStartPhase`，则不生效。
+     */
+    snapshotOnNewTurn?: boolean;
+
+    /**
+     * 回合起始阶段名（配合 snapshotOnNewTurn 使用）。
+     * 当 SYS_PHASE_CHANGED.to === turnStartPhase 时，视为新回合开始。
+     */
+    turnStartPhase?: string;
 }
 
 
@@ -84,8 +109,15 @@ export function createUndoSystem<TCore>(
         // 由具体游戏提供：哪些“领域命令”会产生可撤回快照。
         // 最正确方案：撤回语义属于游戏规则的一部分，必须在游戏目录内显式声明。
         snapshotCommandAllowlist,
+        snapshotEventTypes,
+        snapshotOnNewTurn = false,
+        turnStartPhase,
     } = config;
     const normalizedAllowlist = normalizeCommandAllowlist(snapshotCommandAllowlist);
+    // 事件驱动快照：检测到特定事件时自动创建快照（如回合切换）
+    const eventTypeSet = snapshotEventTypes && snapshotEventTypes.length > 0
+        ? new Set(snapshotEventTypes)
+        : null;
 
     let pendingSnapshot: MatchState<TCore> | null = null;
     let shouldClearPendingRequest = false;
@@ -155,7 +187,7 @@ export function createUndoSystem<TCore>(
             pendingSnapshot = createSnapshot(snapshotSource);
         },
 
-        afterEvents: ({ state, command }): HookResult<TCore> | void => {
+        afterEvents: ({ state, command, events }): HookResult<TCore> | void => {
             const type = command.type;
             const isUndoCommand = Object.values(UNDO_COMMANDS).includes(type as typeof UNDO_COMMANDS[keyof typeof UNDO_COMMANDS]);
             if (isUndoCommand) return;
@@ -168,6 +200,21 @@ export function createUndoSystem<TCore>(
 
             if (pendingSnapshot) {
                 nextState = appendSnapshot(nextState, pendingSnapshot, maxSnapshots);
+            }
+
+            // 事件驱动快照：检测到回合切换等关键事件时，用当前状态（事件 reduce 后）创建快照
+            // 这样回滚至少能回到"新回合刚开始"的状态
+            // 支持两种模式：
+            // 1. snapshotEventTypes：自定义事件类型列表（灵活，游戏层完全控制）
+            // 2. snapshotOnNewTurn + turnStartPhase：通用回合切换检测（推荐，基于 FlowSystem）
+            const hasSnapshotEvent = eventTypeSet && events.some(e => eventTypeSet.has(e.type));
+            const hasNewTurn = snapshotOnNewTurn && turnStartPhase && events.some(
+                e => e.type === 'SYS_PHASE_CHANGED'
+                    && (e as { payload?: { to?: string } }).payload?.to === turnStartPhase
+            );
+            if (hasSnapshotEvent || hasNewTurn) {
+                const eventSnapshot = createSnapshot(nextState);
+                nextState = appendSnapshot(nextState, eventSnapshot, maxSnapshots);
             }
 
             pendingSnapshot = null;

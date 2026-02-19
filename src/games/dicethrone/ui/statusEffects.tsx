@@ -465,6 +465,8 @@ export const SelectableStatusBadge = ({
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const meta = STATUS_EFFECT_META[effectId] || TOKEN_META[effectId] || { color: 'from-gray-500 to-gray-600' };
+    const isToken = !STATUS_EFFECT_META[effectId] && Boolean(TOKEN_META[effectId]);
+    const i18nPrefix = isToken ? 'tokens' : 'statusEffects';
 
     let hasSprite = false;
     if (atlas && meta.frameId) {
@@ -475,11 +477,11 @@ export const SelectableStatusBadge = ({
         }
     }
     const description = resolveI18nList(
-        t(`statusEffects.${effectId}.description`, { returnObjects: true })
+        t(`${i18nPrefix}.${effectId}.description`, { returnObjects: true })
     );
     const info = {
         ...meta,
-        name: t(`statusEffects.${effectId}.name`) as string,
+        name: t(`${i18nPrefix}.${effectId}.name`) as string,
         description,
     };
     const [isHovered, setIsHovered] = React.useState(false);

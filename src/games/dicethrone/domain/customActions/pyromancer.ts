@@ -2,7 +2,7 @@
  * 烈焰术士 (Pyromancer) 专属 Custom Action 处理器
  */
 
-import { getActiveDice, getFaceCounts, getPlayerDieFace } from '../rules';
+import { getActiveDice, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
 import { RESOURCE_IDS } from '../resources';
 import { STATUS_IDS, TOKEN_IDS, PYROMANCER_DICE_FACE_IDS } from '../ids';
 import type {
@@ -500,8 +500,74 @@ const createPyroBlastRollEvents = (ctx: CustomActionContext, config: { diceCount
 };
 
 /**
+ * 火之高兴！(Get Fired Up)：攻击修正。投掷1骰，根据骰面触发不同效果
+ * - 火焰(FIRE)：增加3伤害（写入 pendingAttack.bonusDamage）
+ * - 熔岩(MAGMA)：施加灼烧给对手
+ * - 火魂(FIERY_SOUL)：获得2火焰专精
+ * - 流星(METEOR)：施加倒地给对手
+ */
+const resolveGetFiredUpRoll = (ctx: CustomActionContext): DiceThroneEvent[] => {
+    const { attackerId, sourceAbilityId, state, timestamp, random } = ctx;
+    if (!random) return [];
+    const events: DiceThroneEvent[] = [];
+    const opponentId = ctx.ctx.defenderId;
+
+    const value = random.d(6);
+    const face = getPlayerDieFace(state, attackerId, value) ?? '';
+
+    let effectKey = `bonusDie.effect.${face}`;
+    if (face === PYROMANCER_DICE_FACE_IDS.FIRE) {
+        effectKey = 'bonusDie.effect.fire';
+        // 增加3伤害到 pendingAttack
+        if (state.pendingAttack && state.pendingAttack.attackerId === attackerId) {
+            state.pendingAttack.bonusDamage = (state.pendingAttack.bonusDamage ?? 0) + 3;
+        }
+    } else if (face === PYROMANCER_DICE_FACE_IDS.MAGMA) {
+        effectKey = 'bonusDie.effect.magma';
+        // 施加灼烧给对手
+        const current = state.players[opponentId]?.statusEffects[STATUS_IDS.BURN] ?? 0;
+        const def = state.tokenDefinitions.find(e => e.id === STATUS_IDS.BURN);
+        const max = def?.stackLimit || 99;
+        events.push({
+            type: 'STATUS_APPLIED',
+            payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: Math.min(current + 1, max), sourceAbilityId },
+            sourceCommandType: 'ABILITY_EFFECT', timestamp,
+        } as StatusAppliedEvent);
+    } else if (face === PYROMANCER_DICE_FACE_IDS.FIERY_SOUL) {
+        effectKey = 'bonusDie.effect.fiery_soul';
+        // 获得2火焰专精
+        const current = state.players[attackerId]?.tokens[TOKEN_IDS.FIRE_MASTERY] ?? 0;
+        const max = getTokenStackLimit(state, attackerId, TOKEN_IDS.FIRE_MASTERY);
+        events.push({
+            type: 'TOKEN_GRANTED',
+            payload: { targetId: attackerId, tokenId: TOKEN_IDS.FIRE_MASTERY, amount: 2, newTotal: Math.min(current + 2, max), sourceAbilityId },
+            sourceCommandType: 'ABILITY_EFFECT', timestamp,
+        } as TokenGrantedEvent);
+    } else if (face === PYROMANCER_DICE_FACE_IDS.METEOR) {
+        effectKey = 'bonusDie.effect.meteor';
+        // 施加倒地给对手
+        const current = state.players[opponentId]?.statusEffects[STATUS_IDS.KNOCKDOWN] ?? 0;
+        const def = state.tokenDefinitions.find(e => e.id === STATUS_IDS.KNOCKDOWN);
+        const max = def?.stackLimit || 99;
+        events.push({
+            type: 'STATUS_APPLIED',
+            payload: { targetId: opponentId, statusId: STATUS_IDS.KNOCKDOWN, stacks: 1, newTotal: Math.min(current + 1, max), sourceAbilityId },
+            sourceCommandType: 'ABILITY_EFFECT', timestamp,
+        } as StatusAppliedEvent);
+    }
+
+    events.unshift({
+        type: 'BONUS_DIE_ROLLED',
+        payload: { value, face, playerId: attackerId, targetPlayerId: opponentId, effectKey },
+        sourceCommandType: 'ABILITY_EFFECT', timestamp,
+    } as BonusDieRolledEvent);
+
+    return events;
+};
+
+/**
  * 烈焰赤红 (Red Hot)：每个烈焰精通增加 1 点伤害到当前攻击
- * 作为 withDamage timing 使用，通过 pendingAttack.bonusDamage 增加
+ * 作为 immediate timing 使用，通过 pendingAttack.bonusDamage 增加
  */
 const resolveDmgPerFM = (ctx: CustomActionContext): DiceThroneEvent[] => {
     const fmCount = getFireMasteryCount(ctx);
@@ -603,6 +669,7 @@ export function registerPyromancerCustomActions(): void {
     registerCustomActionHandler('pyro-increase-fm-limit', resolveIncreaseFMLimit, { categories: ['resource'] });
 
     registerCustomActionHandler('pyro-details-dmg-per-fm', resolveDmgPerFM, { categories: ['damage'] });
+    registerCustomActionHandler('pyro-get-fired-up-roll', resolveGetFiredUpRoll, { categories: ['dice', 'damage', 'status', 'token'] });
     registerCustomActionHandler('pyro-spend-cp-for-fm', resolveSpendCpForFM, { categories: ['resource', 'choice'] });
 
     registerCustomActionHandler('pyro-blast-2-roll', (ctx) => createPyroBlastRollEvents(ctx, { diceCount: 2, dieEffectKey: 'bonusDie.effect.pyroBlast2Die', rerollEffectKey: 'bonusDie.effect.pyroBlast2Reroll' }), { categories: ['dice', 'other'] });

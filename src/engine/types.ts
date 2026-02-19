@@ -139,6 +139,8 @@ export type ActionLogSegment =
           previewText?: string;
           /** 可选：previewText 为 i18n key 时的 namespace，渲染时延迟翻译 */
           previewTextNs?: string;
+          /** 可选：直接内联 previewRef，优先于 cardPreviewRegistry 查找 */
+          previewRef?: import('../core').CardPreviewRef;
       }
     | {
           type: 'i18n';

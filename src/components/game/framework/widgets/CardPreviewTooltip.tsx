@@ -159,16 +159,19 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
                 portalRoot
             )}
 
-            {/* 点击放大预览 */}
-            <MagnifyOverlay isOpen={isMagnified} onClose={() => setIsMagnified(false)}>
-                <div className={`relative bg-transparent ${magnifySize.width}`} style={{ aspectRatio: aspectRatio ?? (192 / 308) }}>
-                    <CardPreview
-                        previewRef={previewRef}
-                        locale={locale}
-                        className="w-full h-full object-contain rounded-xl shadow-2xl"
-                    />
-                </div>
-            </MagnifyOverlay>
+            {/* 点击放大预览（portal 到 modal-root，避免被 FabMenu Panel 的 stacking context 限制） */}
+            {isMagnified && portalRoot && createPortal(
+                <MagnifyOverlay isOpen={isMagnified} onClose={() => setIsMagnified(false)}>
+                    <div className={`relative bg-transparent ${magnifySize.width}`} style={{ aspectRatio: aspectRatio ?? (192 / 308) }}>
+                        <CardPreview
+                            previewRef={previewRef}
+                            locale={locale}
+                            className="w-full h-full object-contain rounded-xl shadow-2xl"
+                        />
+                    </div>
+                </MagnifyOverlay>,
+                portalRoot
+            )}
         </span>
     );
 };

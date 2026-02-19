@@ -27,6 +27,14 @@ import type { EventStreamEntry } from '../types';
 export interface UseEventStreamCursorConfig {
     /** eventStream 的 entries 数组 */
     entries: EventStreamEntry[];
+    /**
+     * 重连令牌（可选）
+     *
+     * 当此值变化时（如从 0 变为 1），游标自动重置到当前 entries 最新位置，
+     * 跳过所有已有事件，防止重连后重播历史动画。
+     * GameProvider 在 onConnectionChange(true) 时递增此值。
+     */
+    reconnectToken?: number;
 }
 
 export interface ConsumeResult {
@@ -45,6 +53,14 @@ export interface UseEventStreamCursorReturn {
     consumeNew: () => ConsumeResult;
     /** 当前游标值（只读，调试用） */
     getCursor: () => number;
+    /**
+     * 重置游标到当前 entries 最新位置（跳过所有已有事件）。
+     * 
+     * 用于重连场景：断线重连后服务端发送完整状态，
+     * 客户端不应重播断线期间的历史事件。
+     * GameProvider 在 onConnectionChange(true) 时调用。
+     */
+    resetToLatest: () => void;
 }
 
 /**
@@ -72,13 +88,25 @@ export interface UseEventStreamCursorReturn {
  * ```
  */
 export function useEventStreamCursor(config: UseEventStreamCursorConfig): UseEventStreamCursorReturn {
-    const { entries } = config;
+    const { entries, reconnectToken } = config;
 
     const lastSeenIdRef = useRef<number>(-1);
     const isFirstCallRef = useRef(true);
+    const lastReconnectTokenRef = useRef(reconnectToken ?? 0);
 
     const consumeNew = useCallback((): ConsumeResult => {
         const curLen = entries.length;
+
+        // ── 重连检测：reconnectToken 变化时重置游标 ──
+        const currentToken = reconnectToken ?? 0;
+        if (currentToken !== lastReconnectTokenRef.current) {
+            lastReconnectTokenRef.current = currentToken;
+            // 重置游标到当前 entries 最新位置，跳过所有已有事件
+            if (curLen > 0) {
+                lastSeenIdRef.current = entries[curLen - 1].id;
+            }
+            return { entries: [], didReset: false };
+        }
 
         // ── 首次调用：跳过历史事件 ──
         if (isFirstCallRef.current) {
@@ -109,9 +137,17 @@ export function useEventStreamCursor(config: UseEventStreamCursorConfig): UseEve
             lastSeenIdRef.current = newEntries[newEntries.length - 1].id;
         }
         return { entries: newEntries, didReset: false };
-    }, [entries]);
+    }, [entries, reconnectToken]);
 
     const getCursor = useCallback(() => lastSeenIdRef.current, []);
 
-    return { consumeNew, getCursor };
+    const resetToLatest = useCallback(() => {
+        const curLen = entries.length;
+        if (curLen > 0) {
+            lastSeenIdRef.current = entries[curLen - 1].id;
+        }
+        // entries 为空时保持游标不变（重连后 state:sync 的 entries 被 strip 了）
+    }, [entries]);
+
+    return { consumeNew, getCursor, resetToLatest };
 }

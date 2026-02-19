@@ -211,7 +211,7 @@ export const handleDeckShuffled: EventHandler<Extract<DiceThroneEvent, { type: '
 };
 
 /**
- * 处理技能替换事件（升级卡使用）
+ * 处理技能替换事件（升级卡使用，同时支持普通技能和被动技能）
  */
 export const handleAbilityReplaced: EventHandler<Extract<DiceThroneEvent, { type: 'ABILITY_REPLACED' }>> = (
     state,
@@ -221,9 +221,16 @@ export const handleAbilityReplaced: EventHandler<Extract<DiceThroneEvent, { type
     const player = state.players[playerId];
     if (!player) return { ...state, lastSoldCardId: undefined };
 
-    // 1) 替换技能定义
-    const newAbilities = player.abilities.map(a =>
-        a.id === oldAbilityId ? { ...newAbilityDef, id: oldAbilityId } : a);
+    // 1) 替换技能定义（普通技能或被动技能）
+    const isPassive = player.passiveAbilities?.some(p => p.id === oldAbilityId);
+    const newAbilities = isPassive
+        ? player.abilities
+        : player.abilities.map(a =>
+            a.id === oldAbilityId ? { ...newAbilityDef, id: oldAbilityId } : a);
+    const newPassiveAbilities = isPassive && player.passiveAbilities
+        ? player.passiveAbilities.map(p =>
+            p.id === oldAbilityId ? { ...newAbilityDef, id: oldAbilityId } as unknown as typeof p : p)
+        : player.passiveAbilities;
 
     // 2) 更新技能等级
     const newAbilityLevels = { ...player.abilityLevels, [oldAbilityId]: newLevel };
@@ -253,6 +260,7 @@ export const handleAbilityReplaced: EventHandler<Extract<DiceThroneEvent, { type
             [playerId]: {
                 ...player,
                 abilities: newAbilities,
+                passiveAbilities: newPassiveAbilities,
                 abilityLevels: newAbilityLevels,
                 upgradeCardByAbilityId,
                 hand: newHand,

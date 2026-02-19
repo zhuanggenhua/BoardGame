@@ -257,7 +257,8 @@
       "upkeepPoison": "Poison",
       "retribution": "Retribution Reflect",
       "ability": "{{abilityName}}",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "shieldReduction": "Shield reduction"
     },
     "damageOriginal": "(Original {{amount}})",
     "damageModifiers": "(Original {{original}}, {{modifiers}})",
@@ -611,6 +612,11 @@
     "cancel": "Cancel (Select Ability)",
     "confirm": "End Phase"
   },
+  "abilityChoice": {
+    "title": "Choose Ability",
+    "description": "Multiple variants of this ability match your dice. Choose one to activate:",
+    "skip": "Skip (No Ability)"
+  },
   "choices": {
     "title": "Ability Resolution Choice",
     "option": "Option {{index}}",
@@ -628,7 +634,8 @@
       "confirmSpend": "Spend {{count}} CP",
       "sliderHint": "Spend {{value}} CP → Gain {{value}} Fire Mastery",
       "skip": "Skip"
-    }
+    },
+    "critOrAccuracy": "Choose a token to gain"
   },
   "common": {
     "cancel": "Cancel",
@@ -909,7 +916,7 @@
     },
     "fearless-riposte-2": {
       "name": "Fearless Riposte II",
-      "description": "Alternative defense upgrade (5 dice): Offensive-defensive style"
+      "description": "Defensive phase (5 dice): Deal 2× Dagger count damage; if Dagger+Shadow, inflict Poison"
     },
     "righteous-combat": {
       "name": "Righteous Combat",
@@ -987,17 +994,17 @@
     },
     "holy-light": {
       "name": "Holy Light",
-      "description": "2 Heart: heal 1, roll 1 die for bonus effects",
+      "description": "2 Heart: heal 1×❤ count, roll 1 die for bonus effects",
       "effects": {
-        "heal1": "Heal 1",
+        "healByHearts": "Heal 1 × number of ❤ faces",
         "rollEffect": "Roll 1 die: Sword→Crit, Helm→Protect, Heart→Draw, Pray→2 CP"
       }
     },
     "holy-light-2": {
       "name": "Holy Light II",
-      "description": "2 Heart: heal 1, roll 3 dice for bonus effects",
+      "description": "2 Heart: heal 1×❤ count, roll 3 dice for bonus effects",
       "effects": {
-        "heal1": "Heal 1",
+        "healByHearts": "Heal 1 × number of ❤ faces",
         "roll3": "Roll 3 dice: Sword→Crit, Helm→Protect, Heart→Draw, Pray→2 CP"
       }
     },

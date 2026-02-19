@@ -34,6 +34,8 @@ export interface ModalState {
     purify: boolean;
     /** 确认移除击倒弹窗 */
     removeKnockdown: boolean;
+    /** 多技能选择弹窗（多个不同技能同时满足条件时弹出） */
+    abilityChoice: boolean;
 }
 
 /**
@@ -108,6 +110,7 @@ export function useUIState(): UIState {
         confirmSkip: false,
         purify: false,
         removeKnockdown: false,
+        abilityChoice: false,
     });
     
     // 视图模式

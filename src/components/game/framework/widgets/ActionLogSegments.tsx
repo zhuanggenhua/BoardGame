@@ -51,7 +51,8 @@ const CardSegmentRenderer: React.FC<{
     const { t } = useTranslation(ns || undefined);
     const rawText = segment.previewText || segment.cardId;
     const displayText = segment.previewTextNs ? t(rawText, { defaultValue: rawText }) : rawText;
-    const previewRef = getCardPreviewRef?.(segment.cardId);
+    // 优先使用 segment 内联的 previewRef，其次走 registry 查找
+    const previewRef = segment.previewRef ?? getCardPreviewRef?.(segment.cardId) ?? null;
 
     if (!previewRef) {
         return <span>{displayText}</span>;

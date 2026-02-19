@@ -380,7 +380,7 @@ describe('布拉夫 - 鲜血符文 (blood_rune)', () => {
     // 应有 ABILITY_TRIGGERED 事件（包含 sourcePosition 供 UI 定位）
     const triggerEvents = events.filter(e => e.type === SW_EVENTS.ABILITY_TRIGGERED);
     expect(triggerEvents.length).toBe(2); // 1个技能激活 + 1个 custom else 分支
-    const customEvent = triggerEvents.find(e => (e.payload as any).abilityId === 'blood_rune_choice');
+    const customEvent = triggerEvents.find(e => (e.payload as any).actionId === 'blood_rune_choice');
     expect(customEvent).toBeDefined();
     expect((customEvent!.payload as any).sourcePosition).toBeDefined();
   });
@@ -492,7 +492,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
 
     const triggerEvents = events.filter(e => e.type === SW_EVENTS.ABILITY_TRIGGERED);
     expect(triggerEvents.length).toBe(2); // 1个技能激活 + 1个 custom else 分支
-    const customEvent = triggerEvents.find(e => (e.payload as any).abilityId === 'ice_shards_damage');
+    const customEvent = triggerEvents.find(e => (e.payload as any).actionId === 'ice_shards_damage');
     expect(customEvent).toBeDefined();
     expect((customEvent!.payload as any).sourcePosition).toBeDefined();
   });
@@ -529,7 +529,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
     });
     const events = result.events ?? [];
     const iceShardsEvent = events.find(e =>
-      e.type === SW_EVENTS.ABILITY_TRIGGERED && (e.payload as any).abilityId === 'ice_shards_damage'
+      e.type === SW_EVENTS.ABILITY_TRIGGERED && (e.payload as any).actionId === 'ice_shards_damage'
     );
     expect(iceShardsEvent).toBeUndefined();
   });
@@ -671,7 +671,7 @@ describe('巨食兽 - 喂养巨食兽 (feed_beast)', () => {
 
     const triggerEvents = events.filter(e => e.type === SW_EVENTS.ABILITY_TRIGGERED);
     expect(triggerEvents.length).toBe(2); // 1个技能激活 + 1个 custom else 分支
-    const customEvent = triggerEvents.find(e => (e.payload as any).abilityId === 'feed_beast_check');
+    const customEvent = triggerEvents.find(e => (e.payload as any).actionId === 'feed_beast_check');
     expect(customEvent).toBeDefined();
     expect((customEvent!.payload as any).sourcePosition).toBeDefined();
   });

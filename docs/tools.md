@@ -115,7 +115,6 @@ scripts/
 
 - `IMAGE_MAX_EDGE`：最大边长
 - `IMAGE_WEBP_QUALITY`：WebP 质量
-- `IMAGE_AVIF_QUALITY`：AVIF 质量
 - `--clean` / `IMAGE_CLEAN=1`：清理 `compressed/`
 
 ### 音频压缩（compress_audio）

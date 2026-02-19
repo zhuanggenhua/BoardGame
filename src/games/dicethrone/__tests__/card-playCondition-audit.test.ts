@@ -53,9 +53,24 @@ const hasSelfDiceTarget = (card: AbilityCard): boolean => {
     ) ?? false;
 };
 
-/** 判断是否为攻击修正卡（效果 timing=withDamage） */
+/** 
+ * 判断是否为攻击修正卡
+ * 攻击修正卡 = timing=roll 且效果中包含自带投掷（rollDie）或修改 pendingAttack 的 custom action
+ * 这些卡不需要 requireDiceExists（它们自带投掷或不操作已有骰子）
+ */
 const isAttackModifier = (card: AbilityCard): boolean => {
-    return card.effects?.some(e => e.timing === 'withDamage') ?? false;
+    if (card.timing !== 'roll') return false;
+    // 攻击修正卡的 custom action ID 列表（自带投掷或修改 pendingAttack.bonusDamage）
+    const attackModifierActionIds = [
+        'more-please-roll-damage',       // 狂战士：再来一次（投5骰加伤）
+        'moon_elf-action-volley',        // 月精灵：齐射（投5骰加伤）
+        'moon_elf-action-watch-out',     // 月精灵：看箭（投1骰加伤）
+        'pyro-details-dmg-per-fm',       // 火法师：烈焰赤红（FM加伤）
+        'pyro-get-fired-up-roll',        // 火法师：火之高兴（投1骰条件效果）
+    ];
+    return card.effects?.some(e =>
+        e.action?.type === 'custom' && attackModifierActionIds.includes(e.action.customActionId ?? '')
+    ) ?? false;
 };
 
 describe('卡牌 playCondition 一致性审计', () => {

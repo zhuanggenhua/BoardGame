@@ -473,11 +473,12 @@ export function fireTriggers(
         if (entry.timing !== timing) continue;
         if (!isSourceActive(state, entry.sourceDefId)) continue;
         const result = entry.callback({ ...fullCtx, matchState });
-        if (Array.isArray(result)) {
-            events.push(...result);
-        } else {
-            events.push(...result.events);
-            if (result.matchState) matchState = result.matchState;
+        const triggerEvents = Array.isArray(result) ? result : result.events;
+        if (triggerEvents.length > 0) {
+            events.push(...triggerEvents);
+        }
+        if (!Array.isArray(result) && result.matchState) {
+            matchState = result.matchState;
         }
     }
     return { events, matchState };

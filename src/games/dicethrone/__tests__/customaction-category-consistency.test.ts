@@ -231,6 +231,8 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             'more-please-roll-damage',
             // 火法师 FM 伤害：依赖 FM 数量且需要消耗 FM
             'pyro-details-dmg-per-fm',
+            // 火法师火之高兴：投掷1骰，只有火焰面才加伤（通过 pendingAttack.bonusDamage 间接传递）
+            'pyro-get-fired-up-roll',
             // 月精灵迷影步：防御技能，伤害依赖骰面结果（脚面数量）
             'moon_elf-elusive-step-resolve-1',
             'moon_elf-elusive-step-resolve-2',

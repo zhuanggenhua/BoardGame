@@ -222,6 +222,8 @@ export interface InteractionDescriptor {
         amount: number;
     }>;
     targetOpponentDice?: boolean;
+    /** 为 true 时，UI 只允许选择已有状态效果/token 的玩家（如"移除所有状态"） */
+    requiresTargetWithStatus?: boolean;
 }
 
 /** @deprecated 使用 InteractionDescriptor 代替 */

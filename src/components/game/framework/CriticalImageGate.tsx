@@ -56,6 +56,11 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     const needsPreload = effectiveEnabled && !!gameId && stateKey === 'ready'
         && lastReadyKeyRef.current !== runKey;
 
+    // 记录 inFlight 期间是否有新的 runKey 到达，需要在当前预加载完成后重跑
+    const pendingRunKeyRef = useRef<string | null>(null);
+    // 强制触发 effect 重新执行的计数器
+    const [retryTick, setRetryTick] = useState(0);
+
     useEffect(() => {
         gameStateRef.current = gameState;
     }, [gameState]);
@@ -65,12 +70,17 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
             setReady(true);
             inFlightRef.current = false;
             lastReadyKeyRef.current = null;
+            pendingRunKeyRef.current = null;
             return;
         }
         if (stateKey !== 'ready') {
             return;
         }
         if (inFlightRef.current) {
+            // 已有预加载进行中，但 runKey 变了 → 记录待处理
+            if (lastReadyKeyRef.current !== runKey) {
+                pendingRunKeyRef.current = runKey;
+            }
             return;
         }
 
@@ -83,6 +93,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
             return;
         }
 
+        pendingRunKeyRef.current = null;
         inFlightRef.current = true;
         setReady(false);
         preloadCriticalImages(gameId, currentState, locale, playerID)
@@ -98,8 +109,14 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
             })
             .finally(() => {
                 inFlightRef.current = false;
+                // 预加载期间有新的 runKey 到达 → 触发 effect 重新执行
+                if (pendingRunKeyRef.current) {
+                    pendingRunKeyRef.current = null;
+                    setRetryTick(t => t + 1);
+                }
             });
-    }, [effectiveEnabled, gameId, locale, phaseKey, playerID, runKey, stateKey]);
+     
+    }, [effectiveEnabled, gameId, locale, phaseKey, playerID, runKey, stateKey, retryTick]);
 
     // needsPreload 同步阻塞：phaseKey 变化的同一渲染帧就拦住，不泄漏一帧给 children
     if (!ready || needsPreload) {

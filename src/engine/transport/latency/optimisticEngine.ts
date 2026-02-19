@@ -35,7 +35,7 @@ export interface OptimisticEngine {
     processCommand(type: string, payload: unknown, playerId: string): ProcessCommandResult;
 
     /** 服务端确认状态到达时调用 */
-    reconcile(confirmedState: MatchState<unknown>): ReconcileResult;
+    reconcile(confirmedState: MatchState<unknown>, meta?: { stateID?: number }): ReconcileResult;
 
     /** 获取当前应渲染的状态（乐观状态或确认状态） */
     getCurrentState(): MatchState<unknown> | null;
@@ -112,12 +112,15 @@ export function applyAnimationMode(
  *
  * 用于计算乐观动画水位线。
  * 若 EventStream 为空，返回 null。
+ *
+ * 注意：entries 按 ID 递增排列，直接取最后一个元素即可。
+ * 避免 Math.max(...spread) 在大数组上的栈溢出风险。
  */
 export function getMaxEventId(
     eventStream: MatchState<unknown>['sys']['eventStream'],
 ): number | null {
     if (!eventStream || eventStream.entries.length === 0) return null;
-    return Math.max(...eventStream.entries.map(e => e.id));
+    return eventStream.entries[eventStream.entries.length - 1].id;
 }
 
 /**
@@ -252,6 +255,42 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
     let optimisticEventWatermark: EventStreamWatermark = null;
 
     /**
+     * wait-confirm 模式下的事件水位线
+     *
+     * 当 wait-confirm 命令被乐观执行时，EventStream 被替换为 previousState 的版本。
+     * 客户端的 EventStream 游标已消费到 previousState 的 maxEventId。
+     * 回滚到服务端状态时，服务端状态可能包含游标已消费的事件，
+     * 需要用此水位线过滤，防止动画重复播放。
+     */
+    let waitConfirmWatermark: EventStreamWatermark = null;
+
+    /**
+     * 最后一次服务端确认的 stateID
+     *
+     * 用于推算 pending 命令的 predictedStateID（confirmedStateID + 1, +2, ...）。
+     * reconcile 时用 stateID 精确匹配替代 JSON.stringify 深度比较。
+     * null 表示尚未收到服务端 stateID（旧版服务端不传 meta）。
+     */
+    let confirmedStateID: number | null = null;
+
+    /**
+     * 未预测命令屏障
+     *
+     * 当某个命令因非确定性（Random Probe 检测到随机数调用、显式声明 non-deterministic、
+     * 或 pipeline 执行失败）而未被乐观预测时，设置此屏障。
+     *
+     * 屏障激活期间，后续所有 processCommand 调用都跳过预测，
+     * 因为它们的预测基础状态（confirmedState）不包含未预测命令的效果，
+     * 预测结果必然不准确。
+     *
+     * 典型场景：USE_TOKEN（含随机数）未预测 → SKIP_TOKEN_RESPONSE 不应预测，
+     * 否则回滚时 optimisticEventWatermark 会错误过滤掉 BONUS_DIE_ROLLED 等服务端事件。
+     *
+     * reconcile 时清除屏障（服务端确认状态已包含未预测命令的效果）。
+     */
+    let unpredictedBarrier = false;
+
+    /**
      * 判断命令是否有显式确定性声明
      *
      * 返回值：
@@ -311,7 +350,11 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
             if (cmd.snapshotPhase !== undefined) {
                 const currentPhase = (currentState as MatchState<unknown> & { sys: { phase?: string } }).sys?.phase;
                 if (currentPhase !== cmd.snapshotPhase) {
-                    // 服务端已执行，跳过（不 break，后续命令可能仍有效）
+                    // 服务端已执行此命令（phase 已推进），跳过。
+                    // 使用 continue 而非 break：后续命令可能属于新 phase，仍需尝试重放。
+                    // 极端情况：两个连续 ADVANCE_PHASE 命令，第一个被跳过后第二个可能导致
+                    // 状态超前一个 phase。实际中极少发生（用户不会连续快速推进两个阶段），
+                    // 且服务端确认后会立即调和修正。
                     continue;
                 }
             }
@@ -363,9 +406,15 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
             }
 
+            // 未预测命令屏障：前序命令未被预测，当前预测基础状态不完整，跳过预测
+            if (unpredictedBarrier) {
+                return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
+            }
+
             // 显式声明为非确定性：跳过预测，直接发送
             const explicitDecl = getExplicitDeterminism(type, currentState, payload);
             if (explicitDecl === 'non-deterministic') {
+                unpredictedBarrier = true;
                 return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
             }
 
@@ -394,6 +443,7 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
 
                 // Random Probe 自动检测：若 pipeline 执行期间调用了随机数 → 丢弃乐观结果
                 if (useProbe && randomProbe.wasUsed()) {
+                    unpredictedBarrier = true;
                     return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
                 }
 
@@ -412,6 +462,18 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                     }
                 }
 
+                // wait-confirm 模式：记录 previousState 的 EventStream 水位线
+                // 客户端游标已消费到此位置，回滚时需要过滤这些已消费的事件
+                if (mode === 'wait-confirm') {
+                    const prevMaxId = getMaxEventId(currentState.sys.eventStream);
+                    if (prevMaxId !== null) {
+                        waitConfirmWatermark = Math.max(
+                            waitConfirmWatermark ?? 0,
+                            prevMaxId,
+                        );
+                    }
+                }
+
                 // 加入 pending 队列
                 pendingCommands.push({
                     seq: nextSeq++,
@@ -420,6 +482,11 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                     playerId,
                     predictedState,
                     previousState: currentState,
+                    // 推算预测的 stateID：confirmedStateID + pending 队列位置
+                    // 每个命令执行后服务端 stateID 递增 1
+                    predictedStateID: confirmedStateID !== null
+                        ? confirmedStateID + pendingCommands.length + 1
+                        : undefined,
                     // 记录发出时的 phase，供 replayPending 校验（防止服务端已执行后重复 replay）
                     snapshotPhase: (currentState as MatchState<unknown> & { sys: { phase?: string } }).sys?.phase,
                 });
@@ -431,13 +498,21 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
             }
         },
 
-        reconcile(serverState: MatchState<unknown>): ReconcileResult {
+        reconcile(serverState: MatchState<unknown>, meta?: { stateID?: number }): ReconcileResult {
             // 更新确认状态
             confirmedState = serverState;
+
+            // 更新 confirmedStateID（用于后续 processCommand 推算 predictedStateID）
+            if (meta?.stateID !== undefined) {
+                confirmedStateID = meta.stateID;
+            }
 
             if (pendingCommands.length === 0) {
                 // 无 pending 命令，直接使用确认状态，重置水位线
                 optimisticEventWatermark = null;
+                waitConfirmWatermark = null;
+                // 清除未预测命令屏障：服务端确认状态已包含所有命令的效果
+                unpredictedBarrier = false;
                 return {
                     stateToRender: serverState,
                     didRollback: false,
@@ -445,20 +520,35 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 };
             }
 
-            // 尝试识别服务端确认的是哪个 pending 命令：
-            // 若服务端状态与 pending[0].predictedState.core 深度相等，
-            // 说明服务端执行了 pending[0]（确定性命令本地预测准确），丢弃它。
-            // 这样可以避免"方案 C"重放已确认命令导致状态超前的问题。
+            // 尝试识别服务端确认的是哪个 pending 命令。
             //
-            // 若不匹配（对手命令广播、或非确定性命令导致状态偏差），
-            // 则不丢弃任何 pending 命令，直接基于服务端状态重放所有 pending 命令。
+            // 优先使用 stateID 精确匹配（O(1)，无误判风险）：
+            //   服务端每次命令执行后 stateID 递增 1，
+            //   pending[0].predictedStateID 是基于 confirmedStateID 推算的预期值。
+            //   若 meta.stateID === pending[0].predictedStateID，说明服务端确认了 pending[0]。
+            //
+            // Fallback 到 JSON.stringify 深度比较（向后兼容旧版服务端不传 stateID）：
+            //   若 pending[0].predictedState.core 与 serverState.core 序列化相同，
+            //   说明本地预测准确，服务端确认了 pending[0]。
+            //   风险：两个不同命令产生相同 core 序列化时会误判（极低概率）。
             const baseForReplay = serverState;
             let commandsToReplay = pendingCommands;
+            let firstCommandConfirmed = false;
 
-            const firstPredicted = pendingCommands[0].predictedState;
+            const firstPending = pendingCommands[0];
             if (
-                JSON.stringify(firstPredicted.core) === JSON.stringify(serverState.core)
+                meta?.stateID !== undefined &&
+                firstPending.predictedStateID !== undefined
             ) {
+                // stateID 精确匹配
+                firstCommandConfirmed = meta.stateID === firstPending.predictedStateID;
+            } else {
+                // Fallback: JSON.stringify 深度比较
+                firstCommandConfirmed =
+                    JSON.stringify(firstPending.predictedState.core) === JSON.stringify(serverState.core);
+            }
+
+            if (firstCommandConfirmed) {
                 // 服务端确认了 pending[0]，丢弃它，基于服务端状态重放剩余
                 commandsToReplay = pendingCommands.slice(1);
             }
@@ -467,17 +557,33 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
             pendingCommands = replayed;
 
             if (pendingCommands.length === 0) {
-                // 所有 pending 命令在新状态下失败或已全部确认，回滚到确认状态
-                const watermark = optimisticEventWatermark;
+                // 所有 pending 命令已消费（确认或失效）
+                // 清除未预测命令屏障
+                unpredictedBarrier = false;
+                //
+                // 水位线策略：
+                // - 命令通过 core 匹配正常确认（firstCommandConfirmed）：
+                //   乐观动画已播放，服务端事件与乐观事件一致，无需过滤 → null
+                //   此时不算回滚（didRollback: false），预测准确
+                // - 状态发散（对手命令/非确定性结果）导致 pending 全部失效：
+                //   需要过滤已播放的乐观事件，防止重复播放
+                //   同时需要过滤 wait-confirm 模式下客户端游标已消费的事件
+                const watermark = firstCommandConfirmed
+                    ? null
+                    : (optimisticEventWatermark ?? waitConfirmWatermark);
                 optimisticEventWatermark = null;
+                waitConfirmWatermark = null;
                 return {
                     stateToRender: serverState,
-                    didRollback: true,
+                    didRollback: !firstCommandConfirmed,
                     optimisticEventWatermark: watermark,
                 };
             }
 
             // 返回最新的乐观预测状态（无回滚）
+            // 清除屏障：confirmed state 已包含未预测命令的效果，
+            // replayed pending 基于完整状态，后续预测可以恢复
+            unpredictedBarrier = false;
             const latestPredicted = pendingCommands[pendingCommands.length - 1].predictedState;
             return {
                 stateToRender: latestPredicted,
@@ -499,6 +605,9 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
             confirmedState = null;
             nextSeq = 1;
             optimisticEventWatermark = null;
+            waitConfirmWatermark = null;
+            confirmedStateID = null;
+            unpredictedBarrier = false;
         },
 
         setPlayerIds(ids: string[]): void {

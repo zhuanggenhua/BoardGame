@@ -39,6 +39,7 @@ import type {
     RerollBonusDieCommand,
     SkipBonusDiceRerollCommand,
     UsePassiveAbilityCommand,
+    GrantTokensCommand,
 } from './types';
 import {
     getRollerId,
@@ -922,8 +923,37 @@ const validateUsePassiveAbility = (
             });
             return fail('die_not_found');
         }
+        // 必须已投掷过至少一次才能重掷
+        if (state.rollCount === 0) {
+            return fail('no_roll_yet');
+        }
+        // 不能重掷被锁定的骰子
+        if (die.isKept) {
+            return fail('die_is_locked');
+        }
     }
 
+    return ok();
+};
+
+/**
+ * 验证授予 Token 命令
+ * 
+ * 前置条件：存在 selectPlayer 类型的交互，且交互数据中包含 tokenGrantConfigs/tokenGrantConfig。
+ * 验证目标玩家在交互的 targetPlayerIds 中。
+ */
+const validateGrantTokens = (
+    _state: DiceThroneCore,
+    _cmd: GrantTokensCommand,
+    playerId: PlayerId,
+    pendingInteraction?: InteractionDescriptor
+): ValidationResult => {
+    if (!pendingInteraction) {
+        return fail('no_pending_interaction');
+    }
+    if (pendingInteraction.playerId !== playerId) {
+        return fail('player_mismatch');
+    }
     return ok();
 };
 
@@ -977,6 +1007,7 @@ export const validateCommand = (
     if (isCommandType(command, 'REROLL_BONUS_DIE')) return validateRerollBonusDie(state, command, playerId);
     if (isCommandType(command, 'SKIP_BONUS_DICE_REROLL')) return validateSkipBonusDiceReroll(state, command, playerId);
     if (isCommandType(command, 'USE_PASSIVE_ABILITY')) return validateUsePassiveAbility(state, command, playerId, phase);
+    if (isCommandType(command, 'GRANT_TOKENS')) return validateGrantTokens(state, command, playerId, pendingInteraction);
 
     const _exhaustive: never = command;
     return fail(`unknown_command: ${(_exhaustive as DiceThroneCommand).type}`);

@@ -173,10 +173,27 @@ export const PICKPOCKET_2: AbilityDef = {
     type: 'offensive',
     description: abilityText('pickpocket-2', 'description'),
     sfxKey: SHADOW_THIEF_SFX_DAGGER,
-    trigger: { type: 'smallStraight' },
-    effects: [
-        gainCp(4, abilityEffectText('pickpocket-2', 'gainCp4')),
-        { description: '造成一半CP的伤害 (向上取整)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-half-cp', params: { bonusCp: 4 } } }
+    variants: [
+        {
+            // 迅捷突袭 II：小顺子触发
+            id: 'pickpocket-2',
+            trigger: { type: 'smallStraight' },
+            effects: [
+                gainCp(4, abilityEffectText('pickpocket-2', 'gainCp4')),
+                { description: '造成一半CP的伤害 (向上取整)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-half-cp', params: { bonusCp: 4 } } }
+            ],
+            priority: 1
+        },
+        {
+            // 暗影突袭：2匕首+2暗影触发
+            id: 'shadow-assault',
+            trigger: { type: 'diceSet', faces: { [FACE.DAGGER]: 2, [FACE.SHADOW]: 2 } },
+            effects: [
+                { description: '造成1/2 CP伤害 (向上取整)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-half-cp' } },
+                { description: '施加中毒', action: { type: 'grantStatus', target: 'opponent', statusId: 'poison', value: 1 } }
+            ],
+            priority: 2
+        }
     ]
 };
 
@@ -186,40 +203,29 @@ export const KIDNEY_SHOT_2: AbilityDef = {
     type: 'offensive',
     description: abilityText('kidney-shot-2', 'description'),
     sfxKey: SHADOW_THIEF_SFX_DAGGER,
-    trigger: { type: 'largeStraight' },
-    effects: [
-        gainCp(4, abilityEffectText('kidney-shot-2', 'gainCp4')),
-        { description: '造成等同CP的伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-full-cp', params: { bonusCp: 4 } } }
-    ]
-};
-
-// "Shadow Assault" (暗影突袭) - Replaces Shadow Dance (or Steal?)
-export const SHADOW_ASSAULT: AbilityDef = {
-    id: 'shadow-dance', // Replaces Shadow Dance slot
-    name: abilityText('shadow-assault', 'name'),
-    type: 'offensive',
-    description: abilityText('shadow-assault', 'description'),
-    sfxKey: SHADOW_THIEF_SFX_SHADOW,
-    trigger: { type: 'diceSet', faces: { [FACE.DAGGER]: 2, [FACE.SHADOW]: 2 } },
-    effects: [
-        { description: '造成1/2 CP伤害 (向上取整)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-half-cp' } },
-        { description: '施加中毒', action: { type: 'grantStatus', target: 'opponent', statusId: 'poison', value: 1 } }
-    ]
-};
-
-// "Piercing Attack" (穿刺攻击) - Replaces Steal (or Cornucopia?)
-export const PIERCING_ATTACK: AbilityDef = {
-    id: 'steal', // Replaces Steal slot
-    name: abilityText('piercing-attack', 'name'),
-    type: 'offensive',
-    description: abilityText('piercing-attack', 'description'),
-    sfxKey: SHADOW_THIEF_SFX_DAGGER,
-    trigger: { type: 'diceSet', faces: { [FACE.DAGGER]: 1, [FACE.BAG]: 1, [FACE.CARD]: 1, [FACE.SHADOW]: 1 } },
-    effects: [
-        gainCp(1, 'Gain 1 CP'),
-        grantToken(TOKEN_IDS.SNEAK_ATTACK, 1, 'Gain Sneak Attack'),
-        { description: 'Draw 1 Card', action: { type: 'drawCard', target: 'self', value: 1 }, timing: 'withDamage' },
-        { description: 'Inflict Poison', action: { type: 'grantStatus', target: 'opponent', statusId: 'poison', value: 1 } }
+    variants: [
+        {
+            // 破隐一击 II：大顺子触发
+            id: 'kidney-shot-2',
+            trigger: { type: 'largeStraight' },
+            effects: [
+                gainCp(4, abilityEffectText('kidney-shot-2', 'gainCp4')),
+                { description: '造成等同CP的伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-full-cp', params: { bonusCp: 4 } } }
+            ],
+            priority: 1
+        },
+        {
+            // 穿刺攻击：匕首+钱袋+卡牌+暗影各1个触发
+            id: 'piercing-attack',
+            trigger: { type: 'diceSet', faces: { [FACE.DAGGER]: 1, [FACE.BAG]: 1, [FACE.CARD]: 1, [FACE.SHADOW]: 1 } },
+            effects: [
+                gainCp(1, 'Gain 1 CP'),
+                grantToken(TOKEN_IDS.SNEAK_ATTACK, 1, 'Gain Sneak Attack'),
+                { description: 'Draw 1 Card', action: { type: 'drawCard', target: 'self', value: 1 }, timing: 'withDamage' },
+                { description: 'Inflict Poison', action: { type: 'grantStatus', target: 'opponent', statusId: 'poison', value: 1 } }
+            ],
+            priority: 2
+        }
     ]
 };
 

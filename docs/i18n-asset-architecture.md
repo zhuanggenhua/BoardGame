@@ -39,14 +39,14 @@ public/assets/
 中间: 'https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/cards1'
   ↓ getOptimizedImageUrls(localizedPath)
 输出: {
-  avif: 'https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.avif',
+  avif: 'https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.webp',
   webp: 'https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.webp'
 }
 ```
 
 ### OptimizedImage（`<img>` 标签场景）
 
-自动从 `i18next` 获取 locale，使用 `<picture>` 标签同时提供 avif 和 webp：
+自动从 `i18next` 获取 locale，使用 `<img>` 标签加载 webp 格式：
 
 ```tsx
 // 自动使用当前语言
@@ -58,17 +58,17 @@ public/assets/
 
 ### buildLocalizedImageSet（CSS background-image 场景）
 
-用于精灵图等需要 CSS 背景的场景，只返回 AVIF 格式的 `url()`：
+用于精灵图等需要 CSS 背景的场景，只返回 WebP 格式的 `url()`：
 
 ```tsx
 const bg = buildLocalizedImageSet('smashup/cards/cards1', locale);
-// 返回: url("https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.avif")
+// 返回: url("https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.webp")
 ```
 
-**注意**：此函数只返回 AVIF 格式，不再使用 `image-set()` 语法。原因：
+**注意**：此函数只返回 WebP 格式，不使用 `image-set()` 语法。原因：
 - 所有素材只在国际化目录下，不需要 fallback
-- `image-set()` 会导致浏览器同时请求 avif 和 webp，浪费带宽
-- 现代浏览器都支持 AVIF
+- `image-set()` 会导致浏览器同时请求多种格式，浪费带宽
+- 现代浏览器都支持 WebP，avif 收益不大且增加复杂度
 
 
 ## 精灵图（Sprite Atlas）本地化

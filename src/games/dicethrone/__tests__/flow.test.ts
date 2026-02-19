@@ -1918,6 +1918,9 @@ describe('王权骰铸流程测试', () => {
         });
 
         it('俺也一样：copy 模式修改骰子为另一颗值', () => {
+            // 骰子值: [2, 5, 1, 3, 4]
+            // copy 模式：选 die0(值=2) 为源，选 die1(值=5) 为目标 → die1 变为 2
+            // diceModifyToCommands 会生成 2 条命令：源骰子保持原值 + 目标骰子复制源值
             const runner = createRunner(createQueuedRandom([2, 5, 1, 3, 4]));
             const interactionId = `card-me-too-3`;
             const result = runner.run({
@@ -1927,6 +1930,8 @@ describe('王权骰铸流程测试', () => {
                     ...advanceTo('offensiveRoll'),
                     cmd('ROLL_DICE', '0'),
                     cmd('PLAY_CARD', '0', { cardId: 'card-me-too' }),
+                    // copy 模式需要 2 条 MODIFY_DIE：源骰子(保持原值) + 目标骰子(复制源值)
+                    cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 2 }),
                     cmd('MODIFY_DIE', '0', { dieId: 1, newValue: 2 }),
                 ],
                 expect: {

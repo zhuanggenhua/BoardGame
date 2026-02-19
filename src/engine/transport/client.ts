@@ -25,7 +25,7 @@ export interface GameTransportClientConfig {
     /** 认证凭证 */
     credentials?: string;
     /** 状态更新回调 */
-    onStateUpdate?: (state: unknown, matchPlayers: MatchPlayerInfo[]) => void;
+    onStateUpdate?: (state: unknown, matchPlayers: MatchPlayerInfo[], meta?: { stateID?: number }) => void;
     /** 连接状态变更回调 */
     onConnectionChange?: (connected: boolean) => void;
     /** 玩家连接/断开回调 */
@@ -119,11 +119,11 @@ export class GameTransportClient {
             this.config.onStateUpdate?.(state, matchPlayers);
         });
 
-        socket.on('state:update', (matchID, state, matchPlayers) => {
+        socket.on('state:update', (matchID, state, matchPlayers, meta) => {
             if (this._destroyed || matchID !== this.config.matchID) return;
             this._latestState = state;
             this._matchPlayers = matchPlayers;
-            this.config.onStateUpdate?.(state, matchPlayers);
+            this.config.onStateUpdate?.(state, matchPlayers, meta);
         });
 
         socket.on('error', (matchID, error) => {

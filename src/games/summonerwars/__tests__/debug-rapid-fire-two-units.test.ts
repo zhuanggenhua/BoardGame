@@ -131,7 +131,7 @@ describe('两个弓箭手连续射击', () => {
     console.log('archerA hasAttacked:', s1.board[4][1].unit?.hasAttacked);
     console.log('rapid_fire triggered:', e1.some(e => 
       e.type === SW_EVENTS.ABILITY_TRIGGERED && 
-      (e.payload as any).abilityId === 'rapid_fire_extra_attack'
+      (e.payload as any).actionId === 'rapid_fire_extra_attack'
     ));
 
     console.log('=== 步骤2：弓箭手A 确认 rapid_fire ===');
@@ -171,7 +171,7 @@ describe('两个弓箭手连续射击', () => {
     console.log('archerB hasAttacked:', s4.board[4][3].unit?.hasAttacked);
     console.log('rapid_fire triggered for B:', e4.some(e => 
       e.type === SW_EVENTS.ABILITY_TRIGGERED && 
-      (e.payload as any).abilityId === 'rapid_fire_extra_attack'
+      (e.payload as any).actionId === 'rapid_fire_extra_attack'
     ));
     console.log('usageCount after B attack:', JSON.stringify(s4.abilityUsageCount));
 

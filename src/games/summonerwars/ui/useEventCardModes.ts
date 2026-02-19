@@ -76,6 +76,7 @@ export function useEventCardModes({
     setEventTargetMode(null);
     setBloodSummonMode(null);
     setAnnihilateMode(null);
+    setFuneralPyreMode(null);
     setMindControlMode(null);
     setStunMode(null);
     setHypnoticLureMode(null);
@@ -88,7 +89,7 @@ export function useEventCardModes({
   }, [setSelectedHandCardId]);
 
   const hasActiveEventMode = !!(eventTargetMode || bloodSummonMode || annihilateMode
-    || mindControlMode || stunMode || hypnoticLureMode || chantEntanglementMode
+    || funeralPyreMode || mindControlMode || stunMode || hypnoticLureMode || chantEntanglementMode
     || sneakMode || glacialShiftMode || withdrawMode || telekinesisTargetMode);
 
   // 阶段切换时自动取消所有多步骤事件卡模式

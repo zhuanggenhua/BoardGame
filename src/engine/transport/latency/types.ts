@@ -95,47 +95,6 @@ export interface OptimisticConfig {
 }
 
 // ============================================================================
-// 本地交互配置
-// ============================================================================
-
-/**
- * 本地交互 reducer
- *
- * 处理中间步骤的状态更新，返回更新后的本地状态。
- * 仅在客户端执行，不发送网络命令。
- */
-export type LocalInteractionReducer<TLocalState = unknown> = (
-    state: TLocalState,
-    stepType: string,
-    payload: unknown,
-) => TLocalState;
-
-/**
- * 单个本地交互声明
- *
- * 描述一个多步交互的中间步骤命令类型和本地 reducer。
- */
-export interface LocalInteractionDeclaration<TLocalState = unknown> {
-    /** 中间步骤命令类型列表 */
-    localSteps: string[];
-    /** 本地 reducer：处理中间步骤的状态更新 */
-    localReducer: LocalInteractionReducer<TLocalState>;
-}
-
-/** 本地交互配置 */
-export interface LocalInteractionConfig {
-    /** 是否启用本地交互状态管理 */
-    enabled: boolean;
-    /**
-     * 本地交互命令声明
-     *
-     * key: 最终提交的命令类型
-     * value: 该交互的中间步骤命令类型和本地 reducer
-     */
-    interactions?: Record<string, LocalInteractionDeclaration>;
-}
-
-// ============================================================================
 // 命令批处理配置
 // ============================================================================
 
@@ -164,8 +123,6 @@ export interface BatchingConfig {
 export interface LatencyOptimizationConfig {
     /** 乐观更新配置 */
     optimistic?: OptimisticConfig;
-    /** 本地交互配置 */
-    localInteraction?: LocalInteractionConfig;
     /** 命令批处理配置 */
     batching?: BatchingConfig;
 }
@@ -193,6 +150,14 @@ export interface PendingCommand {
     predictedState: MatchState<unknown>;
     /** 预测前的状态（用于回滚） */
     previousState: MatchState<unknown>;
+    /**
+     * 预测的服务端 stateID（可选）
+     *
+     * 基于 confirmedStateID + pending 队列位置推算。
+     * reconcile 时用于与服务端传来的 stateID 精确匹配，
+     * 替代 JSON.stringify 深度比较。
+     */
+    predictedStateID?: number;
     /**
      * 命令发出时的阶段快照（可选）
      *
@@ -273,37 +238,6 @@ export interface BatcherState {
 }
 
 // ============================================================================
-// 本地交互管理器内部类型
-// ============================================================================
-
-/** 本地交互中间步骤记录 */
-export interface LocalInteractionStep {
-    /** 步骤命令类型 */
-    stepType: string;
-    /** 步骤 payload */
-    payload: unknown;
-}
-
-/**
- * 本地交互状态
- *
- * 记录一个多步交互的完整生命周期状态，
- * 包括初始快照、当前状态和已执行的中间步骤。
- */
-export interface LocalInteractionState<TLocalState = unknown> {
-    /** 交互 ID */
-    interactionId: string;
-    /** 交互开始时的状态快照（用于取消时恢复） */
-    initialSnapshot: TLocalState;
-    /** 当前本地状态 */
-    currentState: TLocalState;
-    /** 已执行的中间步骤记录 */
-    steps: LocalInteractionStep[];
-    /** 对应的最终提交命令类型 */
-    commitCommandType: string;
-}
-
-// ============================================================================
 // 公共接口类型（供外部消费）
 // ============================================================================
 
@@ -336,12 +270,3 @@ export interface ReconcileResult {
     optimisticEventWatermark: EventStreamWatermark;
 }
 
-/**
- * LocalInteractionManager 的 commit 返回值
- */
-export interface LocalInteractionCommitResult {
-    /** 最终提交的命令类型 */
-    commandType: string;
-    /** 最终提交的命令 payload */
-    payload: unknown;
-}

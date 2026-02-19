@@ -103,9 +103,9 @@ export const DiceTray = ({
     const canSelectMore = currentSelectCount < maxSelectCount;
 
     const handleDieClick = (dieId: number) => {
-        if (isRolling || !multistepInteraction) return;
+        if (isRolling) return;
 
-        if (isInteractionMode && !isAnyMode) {
+        if (isInteractionMode && !isAnyMode && multistepInteraction) {
             // set / copy / selectDie 模式：点击骰子 = step(select/toggle)
             if (isSelectMode) {
                 multistepInteraction.step({ action: 'toggle', dieId } as DiceSelectStep);

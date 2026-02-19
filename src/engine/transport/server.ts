@@ -534,7 +534,11 @@ export class GameTransportServer {
         }
 
         // 发送当前状态（经 playerView 过滤 + 传输裁剪）
-        const viewState = this.stripStateForTransport(this.applyPlayerView(match, playerID));
+        // 重连同步时清空 eventStream entries，避免客户端重播历史事件
+        const viewState = this.stripStateForTransport(
+            this.applyPlayerView(match, playerID),
+            { stripEventStream: true },
+        );
         const matchPlayers = this.buildMatchPlayers(match);
         socket.emit('state:sync', matchID, viewState, matchPlayers);
 
@@ -626,9 +630,9 @@ export class GameTransportServer {
         const snapshotStateID = match.stateID;
 
         try {
-            // 批次内命令串行执行
+            // 批次内命令串行执行（抑制中间广播，避免客户端收到中间状态导致动画重播）
             for (const cmd of commands) {
-                const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload);
+                const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, { suppressBroadcast: true });
                 if (!success) {
                     // 命令失败 - 从内存快照恢复到批次开始前的状态
                     match.state = snapshotState;
@@ -647,8 +651,10 @@ export class GameTransportServer {
                 }
             }
 
-            // 批次成功 - 返回权威状态（传输裁剪）
-            const authoritative = this.stripStateForTransport(match.state);
+            // 批次成功 - 广播最终状态给所有玩家（包括对手），然后发送确认给发送者
+            this.broadcastState(match);
+            // batch:confirmed 是乐观更新的确认响应，客户端已通过本地预测消费了事件
+            const authoritative = this.stripStateForTransport(match.state, { stripEventStream: true });
             socket.emit('batch:confirmed', matchID, batchId, authoritative);
         } finally {
             // 消费 batch 执行期间排队的普通命令和 batch 任务（与 handleCommand 保持一致）
@@ -681,8 +687,9 @@ export class GameTransportServer {
         const snapshotState = match.state;
         const snapshotStateID = match.stateID;
 
+        // 批次内命令串行执行（抑制中间广播，避免客户端收到中间状态导致动画重播）
         for (const cmd of commands) {
-            const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload);
+            const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, { suppressBroadcast: true });
             if (!success) {
                 match.state = snapshotState;
                 match.stateID = snapshotStateID;
@@ -699,7 +706,9 @@ export class GameTransportServer {
             }
         }
 
-        const authoritative = this.stripStateForTransport(match.state);
+        // 批次成功 - 广播最终状态给所有玩家，然后发送确认给发送者
+        this.broadcastState(match);
+        const authoritative = this.stripStateForTransport(match.state, { stripEventStream: true });
         socket.emit('batch:confirmed', matchID, batchId, authoritative);
     }
 
@@ -726,11 +735,15 @@ export class GameTransportServer {
      * 在 playerView 过滤之后、socket.emit 之前调用，移除客户端不需要的大体积数据：
      * 1. undo.snapshots — 完整 MatchState 深拷贝，客户端只需 length（判断能否撤回）
      *    ⚠️ 安全：快照含所有玩家完整状态（手牌/牌库），不过滤会泄漏隐私信息
-     * 2. eventStream.entries — 客户端通过 cursor 消费，重连/广播时不需要历史
+     * 2. eventStream.entries — 仅在重连/batch确认时清空；正常广播时保留（客户端需消费事件驱动动画）
      * 3. log.entries — 引擎级调试日志（command/event 完整对象），客户端 UI 层不读取
      * 4. tutorial.steps — 客户端只用 step（当前步骤）和 stepIndex，steps 数组只需 length
+     *
+     * @param options.stripEventStream 是否清空 eventStream.entries（默认 false）
+     *   - true: 用于 state:sync（重连）和 batch:confirmed（乐观确认），客户端不需要历史事件
+     *   - false: 用于 state:update（正常广播），客户端需要消费事件驱动动画/特效/交互
      */
-    private stripStateForTransport(viewState: unknown): unknown {
+    private stripStateForTransport(viewState: unknown, options?: { stripEventStream?: boolean }): unknown {
         const state = viewState as { sys?: Record<string, unknown> };
         if (!state.sys) return viewState;
 
@@ -748,15 +761,19 @@ export class GameTransportServer {
             };
         }
 
-        // 2. eventStream: 清空 entries，保留 nextId（cursor 水位线）
-        const es = sys.eventStream as { entries?: unknown[]; nextId?: number; maxEntries?: number } | undefined;
-        if (es?.entries && es.entries.length > 0) {
-            const lastEntry = es.entries[es.entries.length - 1] as { id?: number } | undefined;
-            patches.eventStream = {
-                ...es,
-                entries: [],
-                nextId: (lastEntry?.id ?? (es.nextId ?? 1) - 1) + 1,
-            };
+        // 2. eventStream: 仅在 stripEventStream=true 时清空 entries（重连/批次确认）
+        //    broadcastState 需要保留 entries，供客户端 EventStream 消费（如技能触发事件）
+        const shouldStripEventStream = options?.stripEventStream ?? false;
+        if (shouldStripEventStream) {
+            const es = sys.eventStream as { entries?: unknown[]; nextId?: number; maxEntries?: number } | undefined;
+            if (es?.entries && es.entries.length > 0) {
+                const lastEntry = es.entries[es.entries.length - 1] as { id?: number } | undefined;
+                patches.eventStream = {
+                    ...es,
+                    entries: [],
+                    nextId: (lastEntry?.id ?? (es.nextId ?? 1) - 1) + 1,
+                };
+            }
         }
 
         // 3. log: LogSystem 已移除，无需裁剪（entries 始终为空）
@@ -791,6 +808,7 @@ export class GameTransportServer {
         playerID: string,
         commandType: string,
         payload: unknown,
+        options?: { suppressBroadcast?: boolean },
     ): Promise<boolean> {
         const startTime = Date.now();
         const { engineConfig, state, random, playerIds } = match;
@@ -813,7 +831,6 @@ export class GameTransportServer {
         const duration = Date.now() - startTime;
 
         if (!result.success) {
-            // 记录失败日志
             gameLogger.commandFailed(
                 match.matchID,
                 commandType,
@@ -848,8 +865,10 @@ export class GameTransportServer {
         };
         await this.storage.setState(match.matchID, storedState);
 
-        // 广播状态（每个玩家收到经 playerView 过滤的版本）
-        this.broadcastState(match);
+        // 广播状态（批次执行期间抑制中间广播，仅在批次完成后统一广播）
+        if (!options?.suppressBroadcast) {
+            this.broadcastState(match);
+        }
 
         // 检查游戏结束（管线已将结果写入 sys.gameover）
         const gameOver = result.state.sys.gameover;
@@ -962,11 +981,14 @@ export class GameTransportServer {
         const nsp = this.io.of('/game');
         const matchPlayers = this.buildMatchPlayers(match);
 
+        // 附带 stateID 元数据，供乐观引擎精确匹配（替代 JSON.stringify 深度比较）
+        const meta = { stateID: match.stateID };
+
         // 对每个已连接的玩家发送经 playerView 过滤 + 传输裁剪的状态
         for (const [playerID, sockets] of match.connections) {
             const viewState = this.stripStateForTransport(this.applyPlayerView(match, playerID));
             for (const sid of sockets) {
-                nsp.to(sid).emit('state:update', match.matchID, viewState, matchPlayers);
+                nsp.to(sid).emit('state:update', match.matchID, viewState, matchPlayers, meta);
             }
         }
 
@@ -974,7 +996,7 @@ export class GameTransportServer {
         if (match.spectatorSockets.size > 0) {
             const spectatorView = this.stripStateForTransport(this.applyPlayerView(match, null));
             for (const sid of match.spectatorSockets) {
-                nsp.to(sid).emit('state:update', match.matchID, spectatorView, matchPlayers);
+                nsp.to(sid).emit('state:update', match.matchID, spectatorView, matchPlayers, meta);
             }
         }
     }

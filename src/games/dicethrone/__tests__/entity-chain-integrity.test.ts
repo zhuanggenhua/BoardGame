@@ -347,9 +347,9 @@ const cardEffectRules: EffectContractRule<AbilityEffect>[] = [
             const t = getActionType(e);
             if (t === undefined) return false;
             if (t !== 'custom' && !ACTIONS_REQUIRING_RANDOM.has(t)) return false;
-            // 攻击修改器卡（timing: 'withDamage'）在战斗结算阶段执行，不需要 immediate 标记
+            // 技能效果（timing: 'withDamage'）在战斗结算阶段执行，不需要 immediate 标记
             // 执行路径：resolveAttack() → resolveEffectsToEvents(effects, 'withDamage', ctx) → custom action handler
-            // 所有 withDamage 卡牌都有完整的 custom action handler 实现（见 domain/customActions/）
+            // 注意：卡牌效果已全部迁移为 timing: 'immediate'，withDamage 仅用于技能效果（如 monk 的冥想/太极连击）
             if (e.timing === 'withDamage') return false;
             return true;
         },

@@ -17,7 +17,7 @@ test('SmashUp 图片应该使用 i18n/zh-CN/ 前缀', async ({ page }) => {
     page.on('request', (request) => {
         const url = request.url();
         // 只关注 SmashUp 的图片请求
-        if ((url.includes('.avif') || url.includes('.webp')) && url.includes('smashup')) {
+        if (url.includes('.webp') && url.includes('smashup')) {
             imageRequests.push(url);
             
             // 检查路径格式

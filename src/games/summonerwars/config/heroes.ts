@@ -59,7 +59,7 @@ export interface HeroConfig {
 }
 
 // ========== 瑞特-塔鲁斯（死灵法师） ==========
-// 使用压缩后的 webp/avif 格式（通过 getOptimizedImageUrls 自动转换）
+// 使用压缩后的 webp 格式（通过 getOptimizedImageUrls 自动转换）
 const NECROMANCER_SPRITE_SHEET = 'summonerwars/hero/Necromancer/Necromancer.png';
 const NECROMANCER_FRAME_WIDTH = 512;
 const NECROMANCER_FRAME_HEIGHT = 376;

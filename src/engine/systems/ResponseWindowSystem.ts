@@ -465,6 +465,14 @@ export function createResponseWindowSystem<TCore>(
             // 如果有，说明本轮可能有更高优先级的系统（如 SmashUpEventSystem priority=50）
             // 会创建新的 interaction，此时不应立即解锁响应窗口，等下一轮再检查
             const hasInteractionResolved = events.some(e => e.type === INTERACTION_EVENTS.RESOLVED);
+
+            // 前瞻检查：同一批事件中是否包含交互锁定请求事件（如 INTERACTION_REQUESTED）
+            // 用于 responseAdvanceEvents 推进时判断——如果同批事件中有交互请求，
+            // 应走锁定分支而非直接推进，避免因事件顺序（CARD_PLAYED 先于 INTERACTION_REQUESTED）
+            // 导致窗口在交互创建前就被关闭
+            const hasInteractionLockRequest = interactionLock
+                ? events.some(e => e.type === interactionLock.requestEvent)
+                : false;
             
             for (const event of events) {
                 const eventTimestamp = resolveEventTimestamp(event);
@@ -545,7 +553,12 @@ export function createResponseWindowSystem<TCore>(
                 {
                     const currentWindow = newState.sys.responseWindow?.current;
                     if (currentWindow && currentWindow.pendingInteractionId && !newState.sys.interaction.current) {
-                        if (hasInteractionResolved) {
+                        // 同批事件中有交互锁定请求（如 INTERACTION_REQUESTED），但更高优先级的系统
+                        // （如 DiceThroneEventSystem）尚未执行，sys.interaction.current 还是空的。
+                        // 此时不能解锁，等下一轮 afterEvents 再检查。
+                        if (hasInteractionLockRequest) {
+                            // 不做任何操作，等待交互被创建
+                        } else if (hasInteractionResolved) {
                             // 本轮有 RESOLVED，推迟到下一轮检查（发出内部驱动事件）
                             additionalEvents.push({
                                 type: RESPONSE_WINDOW_EVENTS._CHECK_UNLOCK,
@@ -639,8 +652,13 @@ export function createResponseWindowSystem<TCore>(
                     const currentResponderId = getCurrentResponderId(currentWindow);
                     // 只有当前响应者的事件才推进
                     if (cardPayload.playerId !== currentResponderId) break;
+                    // 前瞻：同批事件中有交互锁定请求（如 INTERACTION_REQUESTED），
+                    // 但 InteractionSystem（优先级更高）尚未执行，sys.interaction.current 还是空的。
+                    // 此时不能推进窗口，等后续 interactionLock 分支处理锁定。
+                    if (hasInteractionLockRequest) {
+                        break;
+                    }
                     // 有活跃的交互时暂不推进（等交互完成后由状态驱动解锁推进）
-                    // 同时设置 pendingInteractionId 和 actionTakenThisRound，让状态驱动解锁在交互完成后自动恢复推进
                     if (newState.sys.interaction?.current) {
                         const interactionId = newState.sys.interaction.current.id;
                         const markedForLock = loopUntilAllPass

@@ -55,7 +55,7 @@ export interface ServerToClientEvents {
         state: unknown,
         matchPlayers: MatchPlayerInfo[],
         /** 元数据，用于乐观更新校验 */
-        meta?: { commandSeq?: number },
+        meta?: { stateID?: number },
     ) => void;
 
     /** 命令执行错误 */

@@ -56,6 +56,7 @@
     "check:arch": "node scripts/infra/check-architecture.cjs",
     "typecheck": "tsc --noEmit",
     "assets:upload": "node scripts/assets/upload-to-r2.js",
+    "assets:upload:force": "cross-env FORCE_UPLOAD=1 node scripts/assets/upload-to-r2.js",
     "assets:check": "node scripts/assets/upload-to-r2.js --check",
     "assets:sync": "node scripts/assets/upload-to-r2.js --sync",
     "prepare": "simple-git-hooks"

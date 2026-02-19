@@ -23,6 +23,7 @@ import type {
 } from '../types';
 import { registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { resolveTargetOpponentDice } from './common';
 
 const FACE = SHADOW_THIEF_DICE_FACE_IDS;
 
@@ -166,7 +167,7 @@ function handleStealCpWithAmount({ targetId, attackerId, sourceAbilityId, state,
 }
 
 /** 暗影操控：改1骰；若有 Sneak 则改2骰 */
-function handleShadowManipulation({ attackerId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleShadowManipulation({ attackerId, sourceAbilityId, state, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const sneakStacks = state.players[attackerId]?.tokens[TOKEN_IDS.SNEAK] ?? 0;
     const selectCount = sneakStacks > 0 ? 2 : 1;
     const interaction: PendingInteraction = {
@@ -178,6 +179,7 @@ function handleShadowManipulation({ attackerId, sourceAbilityId, state, timestam
         selectCount,
         selected: [],
         dieModifyConfig: { mode: 'any' },
+        targetOpponentDice: resolveTargetOpponentDice(action),
     };
     return [{
         type: 'INTERACTION_REQUESTED',
@@ -743,13 +745,13 @@ export function registerShadowThiefCustomActions(): void {
     registerCustomActionHandler('shadow_thief-shadow-dance-roll-2', handleShadowDanceRoll2, { categories: ['dice', 'damage', 'resource', 'card'] });
     registerCustomActionHandler('shadow_thief-cornucopia', handleCornucopia, { categories: ['card', 'other'] });
     registerCustomActionHandler('shadow_thief-cornucopia-discard', handleCornucopiaDiscard, { categories: ['other'] });
-    registerCustomActionHandler('shadow_thief-cornucopia-2', handleCornucopia2, { categories: ['other', 'resource'] });
+    registerCustomActionHandler('shadow_thief-cornucopia-2', handleCornucopia2, { categories: ['card', 'resource', 'other'] });
     registerCustomActionHandler('shadow_thief-shadow-shank-damage', handleShadowShankDamage, { categories: ['damage'] });
 
     registerCustomActionHandler('shadow_thief-defense-resolve', handleDefenseResolve, { categories: ['status', 'defense', 'token'] });
     registerCustomActionHandler('shadow_thief-defense-resolve-2', handleShadowDefense2, { categories: ['status', 'defense', 'token'] });
-    registerCustomActionHandler('shadow_thief-fearless-riposte', handleFearlessRiposte, { categories: ['damage', 'defense'] });
-    registerCustomActionHandler('shadow_thief-fearless-riposte-2', handleFearlessRiposte2, { categories: ['damage', 'defense'] });
+    registerCustomActionHandler('shadow_thief-fearless-riposte', handleFearlessRiposte, { categories: ['damage', 'defense', 'status'] });
+    registerCustomActionHandler('shadow_thief-fearless-riposte-2', handleFearlessRiposte2, { categories: ['damage', 'defense', 'status'] });
 
 
     registerCustomActionHandler('shadow_thief-shadow-coins', handleShadowCoins, { categories: ['resource'] });

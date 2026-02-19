@@ -81,6 +81,7 @@ export const SU_EVENTS = defineEvents({
   'su:special_limit_used': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   
   'su:ability_feedback': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
+  'su:ability_triggered': 'fx',        // 持续效果/触发器激活（FX 动画）
 
   // ========== 动画驱动（FX 系统）==========
   'su:base_scored': 'fx',             // 基地得分（飞行动画 onImpact）
@@ -131,4 +132,5 @@ export const SU_EVENT_TYPES = {
   BASE_DECK_SHUFFLED: SU_EVENTS['su:base_deck_shuffled'].type,
   SPECIAL_LIMIT_USED: SU_EVENTS['su:special_limit_used'].type,
   ABILITY_FEEDBACK: SU_EVENTS['su:ability_feedback'].type,
+  ABILITY_TRIGGERED: SU_EVENTS['su:ability_triggered'].type,
 } as const;

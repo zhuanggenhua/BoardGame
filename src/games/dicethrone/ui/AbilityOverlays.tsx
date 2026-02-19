@@ -5,7 +5,6 @@ import { saveDiceThroneAbilityLayout } from '../../../api/layout';
 import { UI_Z_INDEX } from '../../../core';
 import { playSound } from '../../../lib/audio/useGameAudio';
 import { DEFAULT_ABILITY_SLOT_LAYOUT } from './abilitySlotLayout';
-import { TOKEN_IDS } from '../domain/ids';
 import type { CardPreviewRef } from '../../../core';
 import type { AbilityCard } from '../types';
 // 导入所有英雄的卡牌定义
@@ -27,18 +26,24 @@ const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
 };
 
 // 被动能力配置（按角色）
-const PASSIVE_ABILITIES: Record<string, { slotId: string; cardId: string; tokenId?: string }[]> = {
+const PASSIVE_ABILITIES: Record<string, { slotId: string; cardId: string }[]> = {
     paladin: [
         {
             slotId: 'fist',  // 使用 fist 槽位（左上角）
             cardId: 'card-tithes-2',  // 对应的升级卡
-            tokenId: TOKEN_IDS.TITHES_UPGRADED,  // 关联的 token（用于判断是否已升级）
         }
     ],
 };
 
+/** 从升级卡定义中提取目标技能 ID */
+const getUpgradeTargetFromCard = (card?: AbilityCard): string | null => {
+    if (!card || card.type !== 'upgrade' || !card.effects) return null;
+    const action = card.effects.find(e => e.action?.type === 'replaceAbility')?.action;
+    return action?.type === 'replaceAbility' ? (action.targetAbilityId ?? null) : null;
+};
 
-const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] }> = {
+
+export const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] }> = {
     // 基础技能 ID（跨英雄）— 每个槽位包含所有英雄对应的技能 ID
     fist: { labelKey: 'abilitySlots.fist', ids: ['fist-technique', 'fireball', 'slap', 'longbow', 'dagger-strike'] },
     chi: { labelKey: 'abilitySlots.chi', ids: ['zen-forget', 'soul-burn', 'all-out-strike', 'vengeance', 'covert-fire', 'pickpocket'] },
@@ -197,7 +202,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         abilityLevels,
         characterId = 'monk', // 用于查找对应角色的升级卡定义
         locale,
-        playerTokens,
+        playerTokens: _playerTokens,
     }, ref) => {
         const { t } = useTranslation('game-dicethrone');
 
@@ -281,8 +286,10 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                         // 渲染被动能力
                         const heroCards = HERO_CARDS_MAP[characterId];
                         const passiveCard = heroCards?.find(c => c.id === passiveAbility.cardId);
-                        const isUpgraded = passiveAbility.tokenId 
-                            ? (playerTokens?.[passiveAbility.tokenId] ?? 0) > 0 
+                        // 通过 abilityLevels 判断是否已升级（与普通技能统一）
+                        const passiveBaseId = getUpgradeTargetFromCard(passiveCard);
+                        const isUpgraded = passiveBaseId
+                            ? (abilityLevels?.[passiveBaseId] ?? 1) > 1
                             : false;
                         const mapping = ABILITY_SLOT_MAP[slot.id];
                         const slotLabel = mapping ? t(mapping.labelKey) : slot.id;

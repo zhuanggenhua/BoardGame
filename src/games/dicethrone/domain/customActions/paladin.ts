@@ -108,23 +108,6 @@ function handleHolyDefenseRoll3(ctx: CustomActionContext): DiceThroneEvent[] {
 } // Corrected: Leve3 passes true
 
 /**
- * 教会税升级 (Upgrade Tithes)
- * 升级被动能力：抽牌费用降为 2CP，触发祈祷面时额外获得 1CP
- */
-function handleUpgradeTithes({ targetId, timestamp }: CustomActionContext): DiceThroneEvent[] {
-    return [{
-        type: 'PASSIVE_ABILITY_UPGRADED',
-        payload: {
-            playerId: targetId,
-            passiveId: 'tithes',
-            newLevel: 2,
-        },
-        sourceCommandType: 'ABILITY_EFFECT',
-        timestamp,
-    } as DiceThroneEvent];
-}
-
-/**
  * 神圣祝福 (Blessing of Divinity) — 免疫致死伤害
  * 当受到致死伤害时，移除此标记，免除伤害并回复 5 HP（最终 HP = 1 + 5 = 6）
  *
@@ -240,12 +223,29 @@ function handleConsecrate({ targetId, sourceAbilityId, state, timestamp }: Custo
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
+/**
+ * 圣光治疗：恢复 1×❤面数量 的血量
+ * 卡牌描述："恢复 1×❤ 血量并掷骰"
+ */
+function handleHolyLightHeal({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
+    const faceCounts = getFaceCounts(getActiveDice(state));
+    const heartCount = faceCounts[FACES.HEART] ?? 0;
+    const healAmount = heartCount * 1; // 1×❤面数量
+
+    return [{
+        type: 'HEAL_APPLIED',
+        payload: { targetId, amount: healAmount, sourceAbilityId },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as DiceThroneEvent];
+}
+
 // 注册
 export function registerPaladinCustomActions(): void {
     registerCustomActionHandler('paladin-holy-defense', handleHolyDefenseRollBase, { categories: ['dice', 'damage', 'defense'] });
     registerCustomActionHandler('paladin-holy-defense-2', handleHolyDefenseRoll2, { categories: ['dice', 'damage', 'defense'] });
     registerCustomActionHandler('paladin-holy-defense-3', handleHolyDefenseRoll3, { categories: ['dice', 'damage', 'defense'] });
-    registerCustomActionHandler('paladin-upgrade-tithes', handleUpgradeTithes, { categories: ['resource'] });
+    registerCustomActionHandler('paladin-holy-light-heal', handleHolyLightHeal, { categories: ['resource'] });
 
     registerCustomActionHandler('paladin-blessing-prevent', handleBlessingPrevent, { categories: ['token', 'defense'] });
     registerCustomActionHandler('paladin-vengeance-select-player', handleVengeanceSelectPlayer, {

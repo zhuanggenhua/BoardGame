@@ -21,7 +21,6 @@ public/assets/
 │   │       └── <资源分类>/
 │   │           ├── foo.png      # 原始图片
 │   │           └── compressed/
-│   │               ├── foo.avif
 │   │               └── foo.webp
 │   └── en/                      # 英文资源（未来）
 │       └── <gameId>/
@@ -29,7 +28,6 @@ public/assets/
     └── <资源分类>/
         ├── foo.png
         └── compressed/
-            ├── foo.avif
             └── foo.webp
 ```
 
@@ -51,7 +49,7 @@ public/assets/
 
 1. **压缩命令**：`npm run compress:images -- public/assets/<gameId>`
 2. **压缩脚本**：`scripts/assets/compress_images.js`（启动器）+ `scripts/assets/compress_images.py`（实现）
-3. **输出位置**：同级 `compressed/` 子目录，生成 `.avif` 和 `.webp`
+3. **输出位置**：同级 `compressed/` 子目录，生成 `.webp`
 
 ### 前端引用方式
 
@@ -59,7 +57,7 @@ public/assets/
 |------|-----------|------|
 | `<img>` 标签 | `OptimizedImage` | `<OptimizedImage src="dicethrone/images/foo.png" />` （自动使用 locale="zh-CN"） |
 | CSS 背景 | `buildOptimizedImageSet` | `background: ${buildOptimizedImageSet('dicethrone/images/foo.png')}` |
-| 精灵图裁切 | `getOptimizedImageUrls` | `const { avif, webp } = getOptimizedImageUrls('dicethrone/images/foo.png')` |
+| 精灵图裁切 | `getOptimizedImageUrls` | `const { webp } = getOptimizedImageUrls('dicethrone/images/foo.png')` |
 | 精灵图 CSS 背景 | `buildLocalizedImageSet` | `backgroundImage: buildLocalizedImageSet('dicethrone/images/atlas', locale)` |
 
 **locale 处理规则**：
@@ -70,7 +68,7 @@ public/assets/
 ### 路径规则（强制）
 
 - `src` 传相对路径（如 `dicethrone/images/foo.png`），**不带** `/assets/` 前缀
-- 内部自动补全 `/assets/` 并转换为 `compressed/foo.avif` / `compressed/foo.webp`
+- 内部自动补全 `/assets/` 并转换为 `compressed/foo.webp`
 - **禁止在路径中硬编码 `compressed/` 子目录**（如 `'dicethrone/images/compressed/foo.png'`）
 - **原因**：`getOptimizedImageUrls()` 会自动插入 `compressed/`，硬编码会导致路径重复（`compressed/compressed/`）
 
@@ -80,7 +78,7 @@ public/assets/
 
 **原因**：`buildLocalizedImageSet` 内部会自动：
 1. 调用 `getLocalizedAssetPath` 添加 `i18n/{locale}/` 前缀
-2. 调用 `buildOptimizedImageSet` 生成 `compressed/*.avif` 和 `compressed/*.webp` 的 `image-set()`
+2. 调用 `buildOptimizedImageSet` 生成 `compressed/*.webp` 的 URL
 
 **正确流程**：
 ```typescript
@@ -96,10 +94,7 @@ const imagePath = `${baseDir}${data.meta.image.replace('.png', '')}`;
 
 // 3. 在 CSS 中使用（buildLocalizedImageSet 自动处理）
 backgroundImage: buildLocalizedImageSet(imagePath, locale)
-// 生成：image-set(
-//   url('/assets/i18n/zh-CN/dicethrone/images/paladin/compressed/status-icons-atlas.avif') type('image/avif'),
-//   url('/assets/i18n/zh-CN/dicethrone/images/paladin/compressed/status-icons-atlas.webp') type('image/webp')
-// )
+// 生成：url('/assets/i18n/zh-CN/dicethrone/images/paladin/compressed/status-icons-atlas.webp')
 ```
 
 **错误示例**：
@@ -107,11 +102,11 @@ backgroundImage: buildLocalizedImageSet(imagePath, locale)
 // ❌ 错误 1：保留了 .png 扩展名
 const imagePath = `${baseDir}${data.meta.image}`;
 // 结果：'dicethrone/images/paladin/status-icons-atlas.png'
-// buildLocalizedImageSet 会生成错误路径：.../compressed/status-icons-atlas.png.avif
+// buildLocalizedImageSet 会生成错误路径：.../compressed/status-icons-atlas.png.webp
 
 // ❌ 错误 2：没有去掉扩展名就传给 getOptimizedImageUrls
-const { avif, webp } = getOptimizedImageUrls(imagePath);
-// 结果：.../compressed/status-icons-atlas.png.avif（错误）
+const { webp } = getOptimizedImageUrls(imagePath);
+// 结果：.../compressed/status-icons-atlas.png.webp（错误）
 ```
 
 ### ✅ 正确示例
@@ -142,15 +137,15 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 // ❌ 直接使用原始图片
 <img src="/assets/dicethrone/images/foo.png" />
 
-// ❌ 手动拼接 avif/webp
-<img src="/assets/dicethrone/images/compressed/foo.avif" />
+// ❌ 手动拼接 webp
+<img src="/assets/dicethrone/images/compressed/foo.webp" />
 ```
 
 ### 新增游戏资源检查清单
 
 1. ✅ 原始图片放入 `public/assets/<gameId>/` 对应目录
 2. ✅ 运行 `npm run compress:images -- public/assets/<gameId>`
-3. ✅ 确认 `compressed/` 子目录生成 `.avif/.webp` 文件
+3. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件
 4. ✅ 代码中使用 `OptimizedImage` 或 `getOptimizedImageUrls`
 5. ✅ **确认路径中不含 `compressed/` 子目录**
 6. ❌ **禁止**直接写 `<img src="/assets/xxx.png" />`

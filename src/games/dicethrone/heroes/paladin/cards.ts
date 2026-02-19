@@ -14,7 +14,8 @@ import {
     BLESSING_OF_MIGHT_2,
     VENGEANCE_2,
     RIGHTEOUS_PRAYER_2,
-    HOLY_STRIKE_2
+    HOLY_STRIKE_2,
+    PALADIN_TITHES_UPGRADED,
 } from './abilities';
 import type { AbilityDef } from '../../domain/combat';
 
@@ -235,11 +236,7 @@ export const PALADIN_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-tithes-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PALADIN, index: 6 },
-        effects: [{
-            description: '升级教会税',
-            action: { type: 'custom', target: 'self', customActionId: 'paladin-upgrade-tithes' },
-            timing: 'immediate'
-        }]
+        effects: [replaceAbility('tithes', PALADIN_TITHES_UPGRADED as unknown as AbilityDef, 2, '升级教会税至 II 级')]
     },
 
     // 注入通用卡牌

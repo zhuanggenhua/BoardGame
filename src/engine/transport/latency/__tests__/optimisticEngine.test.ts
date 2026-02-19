@@ -419,4 +419,78 @@ describe('OptimisticEngine 单元测试', () => {
         expect(result.stateToRender).toBeNull();
         expect(result.shouldSend).toBe(true);
     });
+
+    it('非确定性命令后的确定性命令也跳过预测（unpredictedBarrier）', () => {
+        // 模拟 USE_TOKEN（随机）→ SKIP_TOKEN_RESPONSE（确定性）场景
+        // SKIP_TOKEN_RESPONSE 不应被预测，因为 USE_TOKEN 未被预测，
+        // 预测基础状态不包含 USE_TOKEN 的效果
+        const engine = createTestEngine({
+            INCREMENT: 'deterministic',
+            DECREMENT: 'deterministic',
+            RANDOM_ADD: 'non-deterministic',
+        });
+        engine.reconcile(createTestState(10));
+
+        // 非确定性命令：设置屏障
+        const r1 = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r1.stateToRender).toBeNull();
+        expect(engine.hasPendingCommands()).toBe(false);
+
+        // 确定性命令：因屏障存在，也跳过预测
+        const r2 = engine.processCommand('INCREMENT', {}, '0');
+        expect(r2.stateToRender).toBeNull();
+        expect(r2.shouldSend).toBe(true);
+        expect(engine.hasPendingCommands()).toBe(false);
+
+        // reconcile 清除屏障
+        engine.reconcile(createTestState(14)); // 服务端处理了 RANDOM_ADD + INCREMENT
+        
+        // 屏障清除后，确定性命令恢复预测
+        const r3 = engine.processCommand('INCREMENT', {}, '0');
+        expect(r3.stateToRender).not.toBeNull();
+        expect((r3.stateToRender!.core as CounterCore).value).toBe(15);
+    });
+
+    it('Random Probe 检测到随机数后也设置屏障', () => {
+        // 不声明 commandDeterminism，全部走 Random Probe
+        const engine = createTestEngine({});
+        engine.reconcile(createTestState(10));
+
+        // RANDOM_ADD 调用 random.d(6)，probe 检测为非确定性 → 设置屏障
+        const r1 = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r1.stateToRender).toBeNull();
+
+        // INCREMENT 本身是确定性的，但因屏障存在，跳过预测
+        const r2 = engine.processCommand('INCREMENT', {}, '0');
+        expect(r2.stateToRender).toBeNull();
+        expect(engine.hasPendingCommands()).toBe(false);
+    });
+
+    it('屏障不影响 reconcile 后的回滚水位线', () => {
+        // 确保屏障场景下不会产生错误的 optimisticEventWatermark
+        const engine = createTestEngine({
+            RANDOM_ADD: 'non-deterministic',
+            INCREMENT: 'deterministic',
+        });
+        engine.reconcile(createTestState(10));
+
+        // 非确定性命令 → 屏障激活
+        engine.processCommand('RANDOM_ADD', {}, '0');
+        // 确定性命令 → 因屏障跳过预测，不产生水位线
+        engine.processCommand('INCREMENT', {}, '0');
+
+        // 服务端确认（包含 RANDOM_ADD 产生的事件）
+        const serverState = createTestState(14, 5);
+        serverState.sys.eventStream.entries = [
+            { id: 1, event: { type: 'VALUE_CHANGED', payload: { delta: 3 }, timestamp: 0 } },
+            { id: 2, event: { type: 'VALUE_CHANGED', payload: { delta: 1 }, timestamp: 0 } },
+        ];
+        const result = engine.reconcile(serverState);
+
+        // 无乐观预测 → 无水位线 → 不过滤任何事件
+        expect(result.optimisticEventWatermark).toBeNull();
+        expect(result.didRollback).toBe(false);
+        // 服务端事件完整保留
+        expect(result.stateToRender.sys.eventStream.entries).toHaveLength(2);
+    });
 });

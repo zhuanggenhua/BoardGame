@@ -173,3 +173,61 @@
   - ❌ 连续多次"试试"不同方案而不质疑最初的假设
   - ✅ 先 diff → 发现变更点 → 验证变更点是否为根因 → 最小修复
 - **适用场景**：任何"之前好好的，现在不行了"类型的 bug。尤其是重构/迁移后出现的回归问题。
+
+
+---
+
+## useEffect 中无条件 setState 导致不必要的 unmount/remount（强制）
+
+> **"刷新就好"类 bug，第一时间排查哪些 useEffect 会触发子树 unmount/remount。**
+
+- **问题模式**：`useEffect` 中无条件执行 `setState(false)` 再异步 `setState(true)`，即使值已经是 `true`。当该 state 控制子树是否渲染（如 `if (!ready) return <Loading />`），会导致子树先卸载再重新挂载。子树中的 ref 在第一次挂载时被设置，卸载时不会重置（ref 属于父组件），第二次挂载时因 ref 残留而跳过关键逻辑。
+- **典型错误模式**：
+  ```tsx
+  // ❌ 错误：namespace 已加载时仍然 false→true 翻转，导致子树 unmount/remount
+  useEffect(() => {
+      setIsReady(false);  // 即使已经 ready，也先设为 false
+      loadSomething().then(() => setIsReady(true));
+  }, [dep]);
+
+  // 子树中的 ref 在第一次挂载时设为 true，unmount 时不重置
+  // 第二次挂载时 ref 仍为 true → 跳过初始化逻辑
+
+  // ✅ 正确：已加载时跳过翻转
+  useEffect(() => {
+      if (isAlreadyLoaded(dep)) {
+          setIsReady(true);
+          return;
+      }
+      setIsReady(false);
+      loadSomething().then(() => setIsReady(true));
+  }, [dep]);
+  ```
+- **教训案例**：i18n namespace loading effect 无条件 `setIsGameNamespaceReady(false)`，从同游戏在线对局进入教程时 namespace 已加载，但仍触发 false→true 翻转 → `LocalGameProvider` 子树 unmount/remount → `tutorialStartedRef` 残留为 `true` → 第二次挂载时 `startTutorial` 被跳过 → 教程卡死。
+- **排查规则**：遇到"刷新正常、导航过来不正常"的问题，优先检查：
+  1. 哪些 `useEffect` 会在依赖不变时仍触发 `setState`？
+  2. 该 `setState` 是否控制子树渲染（条件渲染 / early return）？
+  3. 子树 unmount/remount 后，父组件的 ref 是否残留了旧值？
+
+---
+
+## 跨模式状态隔离（强制）
+
+> **不同游戏模式（online/tutorial/local）之间的全局 Context 状态必须严格隔离。**
+
+- **问题**：共享的 Context（如 `TutorialContext`）如果在所有模式下都同步状态，在线对局的状态会污染教程模式的初始条件，反之亦然。
+- **典型错误模式**：
+  ```tsx
+  // ❌ 错误：所有模式都同步 tutorial 状态到全局 Context
+  useTutorialBridge(G.sys.tutorial, dispatch);  // 在线模式也会执行
+
+  // ✅ 正确：只在教程模式下同步
+  useEffect(() => {
+      if (!isTutorialMode) return;  // 非教程模式不同步
+      context.syncTutorialState(tutorial);
+  }, [tutorial, isTutorialMode]);
+  ```
+- **通用规则**：
+  1. Bridge/Sync 类 Hook 必须有模式守卫，只在对应模式下执行写操作
+  2. 模式切换时（如从在线对局返回再进教程），Context 的 cleanup 必须彻底重置状态
+  3. 新增全局 Context 的 sync 逻辑时，自检：这个 sync 在其他模式下执行会不会污染状态？

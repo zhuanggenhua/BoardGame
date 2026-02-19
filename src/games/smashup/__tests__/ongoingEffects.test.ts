@@ -365,6 +365,8 @@ describe('持续效果拦截框架', () => {
             });
 
             expect(events).toHaveLength(2);
+            expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
+            expect(events[1].type).toBe(SU_EVENTS.CARDS_DRAWN);
         });
     });
 
@@ -414,6 +416,7 @@ describe('持续效果拦截框架', () => {
             });
 
             expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_RETURNED);
         });
 
         test('来源在其他基地也算活跃', () => {

@@ -209,7 +209,7 @@ describe('InteractionOverlay', () => {
 
             render(
                 <InteractionOverlay
-                    interaction={selectPlayerInteraction}
+                    interaction={{ ...selectPlayerInteraction, requiresTargetWithStatus: true }}
                     players={playersWithoutStatus}
                     currentPlayerId="0"
                     {...mockHandlers}

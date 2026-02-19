@@ -182,7 +182,10 @@ export const HOLY_LIGHT_2: AbilityDef = {
     sfxKey: PALADIN_SFX_LIGHT,
     trigger: { type: 'diceSet', faces: { [FACES.HEART]: 2 } },
     effects: [
-        heal(1, abilityEffectText('holy-light-2', 'heal1')),
+        {
+            description: abilityEffectText('holy-light-2', 'healByHearts'),
+            action: { type: 'custom', target: 'self', customActionId: 'paladin-holy-light-heal' },
+        },
         {
             description: abilityEffectText('holy-light-2', 'roll3'),
             action: {
@@ -392,7 +395,10 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         sfxKey: PALADIN_SFX_LIGHT,
         trigger: { type: 'diceSet', faces: { [FACES.HEART]: 2 } },
         effects: [
-            heal(1, abilityEffectText('holy-light', 'heal1')),
+            {
+                description: abilityEffectText('holy-light', 'healByHearts'),
+                action: { type: 'custom', target: 'self', customActionId: 'paladin-holy-light-heal' },
+            },
             {
                 description: abilityEffectText('holy-light', 'rollEffect'),
                 action: {

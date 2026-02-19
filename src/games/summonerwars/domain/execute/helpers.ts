@@ -78,7 +78,9 @@ export function createAbilityTriggeredEvent(
   timestamp: number,
   extra?: Record<string, unknown>,
 ): GameEvent {
-  const abilityName = abilityRegistry.get(abilityId)?.name;
+  // 支持带前缀的 abilityId（如 'afterMove:spirit_bond'），提取真实 ID 查 registry
+  const baseId = abilityId.includes(':') ? abilityId.split(':')[1] : abilityId;
+  const abilityName = abilityRegistry.get(baseId)?.name;
   return {
     type: SW_EVENTS.ABILITY_TRIGGERED,
     payload: {

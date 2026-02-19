@@ -135,6 +135,7 @@ export function formatSmashUpActionEntry({
                 type: 'card',
                 cardId,
                 previewText: meta.name,
+                previewRef: meta.previewRef,
                 ...(isI18nKey ? { previewTextNs: SU_NS } : {}),
             };
         }

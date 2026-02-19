@@ -470,11 +470,17 @@ export function resolveEffect(
         events.push(...handler({ ctx, params: effect.params, abilityId, timestamp }));
       } else {
         // 未注册的 actionId → 通用 ABILITY_TRIGGERED 事件（由 execute.ts/reduce.ts 消费）
+        // 使用父级 abilityId 确保 ActionLog 能从 registry 查到国际化名称
+        // skipUsageCount: true — 通知事件不消耗使用次数，由后续 ACTIVATE_ABILITY 消耗
+        const parentAbility = abilityRegistry.get(abilityId);
         events.push(createAbilityTriggeredEvent({
-          abilityId: effect.actionId,
+          abilityId,
+          abilityName: parentAbility?.name,
+          actionId: effect.actionId,
           params: effect.params,
           sourceUnitId: ctx.sourceUnit.instanceId,
           sourcePosition: ctx.sourcePosition,
+          skipUsageCount: true,
         }, timestamp));
       }
       break;

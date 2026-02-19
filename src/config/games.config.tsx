@@ -120,8 +120,7 @@ const selectAssetVariant = (asset?: UgcAssetManifestEntry): UgcAssetVariant | un
         const primary = asset.variants.find((variant) => variant.id === asset.primaryVariantId);
         if (primary?.url) return primary;
     }
-    const preferred = asset.variants.find((variant) => variant.format === 'webp' && variant.url)
-        ?? asset.variants.find((variant) => variant.format === 'avif' && variant.url);
+    const preferred = asset.variants.find((variant) => variant.format === 'webp' && variant.url);
     return preferred ?? asset.variants.find((variant) => variant.url);
 };
 

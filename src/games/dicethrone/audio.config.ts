@@ -7,7 +7,7 @@
  */
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig, SoundKey } from '../../lib/audio/types';
 import { pickDiceRollSoundKey } from '../../lib/audio/audioUtils';
-import { createFeedbackResolver } from '../../lib/audio/defineEvents';
+import { createFeedbackResolver, collectPreloadKeys } from '../../lib/audio/defineEvents';
 import { DT_EVENTS } from './domain/events';
 import type { DiceThroneCore, TurnPhase, SelectableCharacterId } from './domain/types';
 import { findPlayerAbility } from './domain/abilityLookup';
@@ -47,19 +47,18 @@ const DICE_ROLL_MULTI_KEYS = [
 ];
 const DICE_ROLL_KEYS = [DICE_ROLL_SINGLE_KEY, ...DICE_ROLL_MULTI_KEYS];
 
+// 模块级预构建：避免在 feedbackResolver 每次调用时重建查找表
+const baseDtFeedbackResolver = createFeedbackResolver(DT_EVENTS);
+
 export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
+    // 自动收集 DT_EVENTS 中所有 immediate/ui 策略的音效 key（零维护）
+    // 额外补充非事件驱动的高频音效（骰子等由 FX 或手动播放）
+    // SYS_PHASE_CHANGED 是引擎层系统事件，不在 DT_EVENTS 中，需手动补充
     criticalSounds: [
+        ...collectPreloadKeys(DT_EVENTS),
         ...DICE_ROLL_KEYS,
         'dice.decks_and_cards_sound_fx_pack.dice_handling_001',
-        'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none',
-        'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a',
-        'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a',
-        'card.handling.decks_and_cards_sound_fx_pack.card_placing_001',
-        'card.handling.decks_and_cards_sound_fx_pack.card_take_001',
-        'card.fx.decks_and_cards_sound_fx_pack.fx_discard_001',
-        'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_mana_surge_001',
-        'status.general.player_status_sound_fx_pack.fantasy.fantasy_dispel_001',
-        'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_01_krst',
+        'fantasy.gothic_fantasy_sound_fx_pack_vol.musical.drums_of_fate_002',
     ],
     bgm: [
         // --- normal 组（4 首）---
@@ -231,8 +230,7 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
         }
 
         // ========== 使用框架自动生成的默认音效 ==========
-        const baseFeedbackResolver = createFeedbackResolver(DT_EVENTS);
-        return baseFeedbackResolver(event);
+        return baseDtFeedbackResolver(event);
     },
     bgmRules: [
         {

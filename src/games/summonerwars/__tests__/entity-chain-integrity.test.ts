@@ -1022,7 +1022,7 @@ describe('完整流程验证 (Section 9)', () => {
         const events = result.events ?? [];
         const iceShardsEvent = events.find(e =>
             e.type === SW_EVENTS.ABILITY_TRIGGERED
-            && (e.payload as Record<string, unknown>).abilityId === 'ice_shards_damage'
+            && (e.payload as Record<string, unknown>).actionId === 'ice_shards_damage'
         );
         expect(iceShardsEvent).toBeDefined();
     });
@@ -1572,7 +1572,7 @@ describe('边界/异常场景验证 (Section 10)', () => {
         const events = result.events ?? [];
         const iceShardsEvent = events.find(e =>
             e.type === SW_EVENTS.ABILITY_TRIGGERED
-            && (e.payload as Record<string, unknown>).abilityId === 'ice_shards_damage'
+            && (e.payload as Record<string, unknown>).actionId === 'ice_shards_damage'
         );
         expect(iceShardsEvent).toBeUndefined();
     });

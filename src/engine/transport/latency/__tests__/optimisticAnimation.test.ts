@@ -347,20 +347,24 @@ describe('Property E: processCommand 返回正确的 animationMode', () => {
 
 describe('Property F: 水位线等于乐观事件最大 ID', () => {
     // Feature: optimistic-animation, Property F: 水位线等于乐观事件最大 ID
-    it('getMaxEventId 返回 entries 中最大 id', () => {
+    it('getMaxEventId 返回 entries 中最大 id（entries 按 ID 递增排列）', () => {
         fc.assert(
             fc.property(
-                fc.array(fc.integer({ min: 1, max: 1000 }), { minLength: 1, maxLength: 20 }),
-                (ids) => {
-                    const entries = ids.map((id: number) => ({
+                // EventStreamSystem 保证 entries 按 nextId 递增 push，生成排序后的 ID 数组
+                fc.array(fc.integer({ min: 1, max: 1000 }), { minLength: 1, maxLength: 20 })
+                    .map(ids => [...new Set(ids)].sort((a, b) => a - b)),
+                (sortedIds) => {
+                    fc.pre(sortedIds.length > 0);
+                    const entries = sortedIds.map((id: number) => ({
                         id,
                         event: { type: 'VALUE_CHANGED', payload: { delta: 1 }, timestamp: 0 } as GameEvent,
                     }));
-                    const eventStream = { entries, maxEntries: 100, nextId: Math.max(...ids) + 1 };
+                    const eventStream = { entries, maxEntries: 100, nextId: sortedIds[sortedIds.length - 1] + 1 };
 
                     const result = getMaxEventId(eventStream);
 
-                    expect(result).toBe(Math.max(...ids));
+                    // entries 按 ID 递增排列，最后一个元素即最大值
+                    expect(result).toBe(sortedIds[sortedIds.length - 1]);
                 },
             ),
             { numRuns: 100 },

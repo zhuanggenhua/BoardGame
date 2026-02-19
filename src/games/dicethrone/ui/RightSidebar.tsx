@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { RefObject } from 'react';
 import type { AbilityCard, Die, TurnPhase } from '../types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
 import { useMultistepInteraction } from '../../../engine/systems/useMultistepInteraction';
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
+import {
+    diceModifyReducer, diceModifyToCommands,
+    diceSelectReducer, diceSelectToCommands,
+} from '../domain/systems';
 import { DiceActions, DiceTray } from './DiceTray';
 import { DiscardPile } from './DiscardPile';
 import { GameButton } from './components/GameButton';
@@ -83,9 +87,40 @@ export const RightSidebar = ({
         ((interaction.data as any)?.meta?.dtType === 'modifyDie' ||
          (interaction.data as any)?.meta?.dtType === 'selectDie');
 
-    const diceInteraction = isDiceMultistep
-        ? interaction as InteractionDescriptor<MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>>
-        : undefined;
+    // 序列化边界修复：服务端状态经 JSON 传输后，multistep-choice 的函数（localReducer/toCommands）丢失。
+    // 根据 meta 中的纯数据重新注入客户端函数，确保 useMultistepInteraction 能正常工作。
+    const diceInteraction = useMemo(() => {
+        if (!isDiceMultistep || !interaction) return undefined;
+        const data = interaction.data as MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>;
+        // 检查函数是否存在（乐观状态中函数完整，服务端状态中函数丢失）
+        if (typeof data?.localReducer === 'function' && typeof data?.toCommands === 'function') {
+            return interaction as InteractionDescriptor<MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>>;
+        }
+        // 函数丢失：根据 meta.dtType 重新注入
+        const meta = (data as any)?.meta;
+        if (!meta) return undefined;
+        let hydratedData: MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>;
+        if (meta.dtType === 'modifyDie') {
+            const config = meta.dieModifyConfig;
+            hydratedData = {
+                ...data,
+                initialResult: data.initialResult ?? { modifications: {}, modCount: 0, totalAdjustment: 0 },
+                localReducer: (current: any, step: any) => diceModifyReducer(current, step, config),
+                toCommands: diceModifyToCommands as any,
+            };
+        } else {
+            hydratedData = {
+                ...data,
+                initialResult: data.initialResult ?? { selectedDiceIds: [] },
+                localReducer: diceSelectReducer as any,
+                toCommands: diceSelectToCommands as any,
+            };
+        }
+        return {
+            ...interaction,
+            data: hydratedData,
+        } as InteractionDescriptor<MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>>;
+    }, [isDiceMultistep, interaction]);
 
     const multistepInteraction = useMultistepInteraction(diceInteraction, dispatch);
 

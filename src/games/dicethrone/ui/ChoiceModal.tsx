@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
-import { STATUS_EFFECT_META, TOKEN_META, getStatusEffectIconNode } from './statusEffects';
+import { TOKEN_META, getStatusEffectIconNode } from './statusEffects';
 import type { StatusAtlases } from './statusEffects';
+import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
+import { UI_Z_INDEX } from '../../../core';
+import { resolveI18nList } from './utils';
 
 interface ChoiceOption {
     id: string;
@@ -146,25 +149,135 @@ export const ChoiceModal = ({
                         />
                     )
                 ) : (
-                    <div className="flex flex-wrap gap-4 w-full justify-center">
-                        {choice?.options.map(option => {
-                            const isCancelOption = option.id === '__cancel__';
+                    (() => {
+                        // 检测是否所有选项都是 token 类型（排除 __cancel__）
+                        const nonCancelOptions = choice?.options.filter(o => o.id !== '__cancel__') ?? [];
+                        const isTokenChoice = nonCancelOptions.length > 0 && nonCancelOptions.every(o => o.tokenId);
+                        const cancelOption = choice?.options.find(o => o.id === '__cancel__');
+
+                        if (isTokenChoice) {
+                            // Token 图标模式：渲染可点击的 token 图标 + 悬浮 tooltip
                             return (
-                                <GameButton
-                                    key={option.id}
-                                    onClick={() => onResolve(option.id)}
-                                    disabled={!canResolve}
-                                    variant={isCancelOption ? 'secondary' : canResolve ? 'primary' : 'secondary'}
-                                    className="min-w-[120px]"
-                                >
-                                    {resolveOptionLabel(option.label)}
-                                </GameButton>
+                                <div className="flex flex-col items-center gap-4 w-full">
+                                    <div className="flex gap-6 justify-center">
+                                        {nonCancelOptions.map(option => (
+                                            <TokenChoiceIcon
+                                                key={option.id}
+                                                option={option}
+                                                canResolve={canResolve}
+                                                onResolve={onResolve}
+                                                locale={locale}
+                                                statusIconAtlas={statusIconAtlas}
+                                                t={t}
+                                            />
+                                        ))}
+                                    </div>
+                                    {cancelOption && (
+                                        <GameButton
+                                            onClick={() => onResolve(cancelOption.id)}
+                                            disabled={!canResolve}
+                                            variant="secondary"
+                                            className="min-w-[100px]"
+                                        >
+                                            {resolveOptionLabel(cancelOption.label)}
+                                        </GameButton>
+                                    )}
+                                </div>
                             );
-                        })}
-                    </div>
+                        }
+
+                        // 默认按钮模式
+                        return (
+                            <div className="flex flex-wrap gap-4 w-full justify-center">
+                                {choice?.options.map(option => {
+                                    const isCancelOption = option.id === '__cancel__';
+                                    return (
+                                        <GameButton
+                                            key={option.id}
+                                            onClick={() => onResolve(option.id)}
+                                            disabled={!canResolve}
+                                            variant={isCancelOption ? 'secondary' : canResolve ? 'primary' : 'secondary'}
+                                            className="min-w-[120px]"
+                                        >
+                                            {resolveOptionLabel(option.label)}
+                                        </GameButton>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()
                 )}
             </div>
         </GameModal>
+    );
+};
+
+/** 可点击的 Token 图标选项（带悬浮 tooltip） */
+const TokenChoiceIcon = ({
+    option,
+    canResolve,
+    onResolve,
+    locale,
+    statusIconAtlas,
+    t,
+}: {
+    option: ChoiceOption;
+    canResolve: boolean;
+    onResolve: (optionId: string) => void;
+    locale?: string;
+    statusIconAtlas?: StatusAtlases | null;
+    t: (key: string, opts?: Record<string, unknown>) => string;
+}) => {
+    const [isHovered, setIsHovered] = React.useState(false);
+    const tokenId = option.tokenId!;
+    const meta = TOKEN_META[tokenId] || { color: 'from-gray-500 to-gray-600' };
+
+    // 检查精灵图是否存在
+    let hasSprite = false;
+    if (statusIconAtlas && meta.frameId) {
+        if (meta.atlasId && statusIconAtlas[meta.atlasId]) {
+            hasSprite = Boolean(statusIconAtlas[meta.atlasId].frames[meta.frameId]);
+        } else {
+            hasSprite = Object.values(statusIconAtlas).some(config => Boolean(config.frames[meta.frameId!]));
+        }
+    }
+
+    const name = t(`tokens.${tokenId}.name`);
+    const description = resolveI18nList(
+        t(`tokens.${tokenId}.description`, { returnObjects: true })
+    );
+
+    return (
+        <div
+            className="relative flex flex-col items-center gap-2 cursor-pointer"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onClick={() => canResolve && onResolve(option.id)}
+        >
+            <div
+                className={`
+                    w-16 h-16 rounded-full flex items-center justify-center overflow-hidden
+                    ${hasSprite
+                        ? 'bg-transparent'
+                        : `bg-gradient-to-br ${meta.color ?? 'from-gray-500 to-gray-600'} border border-white/30`}
+                    transition-all duration-200
+                    ${canResolve ? 'hover:scale-110 hover:ring-2 hover:ring-amber-400 cursor-pointer' : 'opacity-50 cursor-not-allowed'}
+                    shadow-lg
+                `}
+            >
+                {getStatusEffectIconNode(meta, locale, 'choice', statusIconAtlas)}
+            </div>
+            <span className={`text-sm font-medium ${canResolve ? 'text-slate-200' : 'text-slate-500'}`}>
+                {name}
+            </span>
+            <InfoTooltip
+                title={name}
+                content={description}
+                isVisible={isHovered}
+                position="bottom"
+                zIndex={UI_Z_INDEX.modalTooltip}
+            />
+        </div>
     );
 };
 

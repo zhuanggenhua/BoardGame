@@ -1,15 +1,17 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import type { ComponentType } from 'react';
+import { useEffect, useLayoutEffect, useState, useMemo, useRef, useCallback } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import * as matchApi from '../services/matchApi';
 import { GAME_IMPLEMENTATIONS } from '../games/registry';
-import { GameProvider, LocalGameProvider, BoardBridge } from '../engine/transport/react';
+import { GameProvider, LocalGameProvider, BoardBridge, useGameClient } from '../engine/transport/react';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { GameBoardProps } from '../engine/transport/protocol';
+import type { MatchState } from '../engine/types';
 import { useDebug } from '../contexts/DebugContext';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
+import { useGameMode } from '../contexts/GameModeContext';
 import { RematchProvider } from '../contexts/RematchContext';
 import {
     useMatchStatus,
@@ -48,6 +50,59 @@ const SYSTEM_ERRORS = new Set(['unauthorized', 'match_not_found', 'sync_timeout'
 // 教程系统正常拦截，不弹 toast（用户跟着教程走时的正常行为）
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
 
+/**
+ * 教程 dispatch 桥接组件
+ *
+ * 放在 LocalGameProvider 内部、CriticalImageGate/BoardBridge 外部。
+ * 作用：在 Board 渲染之前就调用 bindDispatch，让教程 START 命令可以在
+ * CriticalImageGate 预加载期间执行。
+ *
+ * 问题背景：CriticalImageGate 阻塞 Board 渲染 → Board 中的 useTutorialBridge
+ * 无法调用 bindDispatch → pending START 命令无法消费 → 教程卡在 setup 阶段
+ * 的预加载上，完成后又要预加载 playing 阶段，导致双重延迟甚至卡死。
+ *
+ * 有了这个桥接组件，START 命令在预加载期间就执行，state 直接跳到 playing 阶段，
+ * CriticalImageGate 只需预加载一次 playing 阶段的资源。
+ */
+const TutorialDispatchBridge = ({ children }: { children: ReactNode }) => {
+    const { dispatch, state } = useGameClient();
+    const { bindDispatch, unbindDispatch, syncTutorialState } = useTutorial();
+    const gameMode = useGameMode();
+    const isTutorialMode = gameMode?.mode === 'tutorial';
+    const dispatchRef = useRef(dispatch);
+    dispatchRef.current = dispatch;
+    const contextRef = useRef({ bindDispatch, unbindDispatch, syncTutorialState });
+    contextRef.current = { bindDispatch, unbindDispatch, syncTutorialState };
+
+    // 提前 bindDispatch，不等 Board 渲染
+    // 使用 useLayoutEffect 确保在 CriticalImageGate 的 useEffect 之前执行，
+    // 这样 START 命令的 setState 会同步触发重新渲染，CriticalImageGate 直接看到
+    // playing 阶段的 state，只需预加载一次。
+    useLayoutEffect(() => {
+        if (!isTutorialMode) return;
+        const gen = contextRef.current.bindDispatch(
+            (...args: [string, unknown?]) => dispatchRef.current(...args),
+        );
+        return () => {
+            contextRef.current.unbindDispatch(gen);
+        };
+    }, [isTutorialMode]);
+
+    // 提前同步教程状态（Board 被 CriticalImageGate 阻塞时也能同步）
+    const lastSyncRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!isTutorialMode || !state) return;
+        const tutorial = (state as MatchState).sys.tutorial;
+        if (!tutorial) return;
+        const sig = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}`;
+        if (lastSyncRef.current === sig) return;
+        lastSyncRef.current = sig;
+        contextRef.current.syncTutorialState(tutorial);
+    }, [isTutorialMode, state]);
+
+    return <>{children}</>;
+};
+
 export const MatchRoom = () => {
     usePerformanceMonitor();
     const { playerID: debugPlayerID, setPlayerID } = useDebug();
@@ -80,6 +135,10 @@ export const MatchRoom = () => {
     }, [toast, i18n, gameId]);
 
     // 包装 Board 组件（注入 CriticalImageGate）
+    // 注意：不能依赖 t 函数引用，否则 i18n namespace 加载完成时 t 变化
+    // → WrappedBoard 重建 → Board 卸载重挂载 → CriticalImageGate 重新预加载 → 循环
+    const tRef = useRef(t);
+    tRef.current = t;
     const WrappedBoard = useMemo<ComponentType<GameBoardProps> | null>(() => {
         if (!gameId || !GAME_IMPLEMENTATIONS[gameId]) return null;
         const Board = GAME_IMPLEMENTATIONS[gameId].board as unknown as ComponentType<GameBoardProps>;
@@ -90,14 +149,14 @@ export const MatchRoom = () => {
                 locale={i18n.language}
                 playerID={props?.playerID}
                 enabled={!isUgcGame}
-                loadingDescription={t('matchRoom.loadingResources')}
+                loadingDescription={tRef.current('matchRoom.loadingResources')}
             >
                 <Board {...props} />
             </CriticalImageGate>
         );
         Wrapped.displayName = 'WrappedOnlineBoard';
         return Wrapped;
-    }, [gameId, i18n.language, isUgcGame, t]);
+    }, [gameId, i18n.language, isUgcGame]);
 
     // 从游戏实现中获取引擎配置（教学模式用）
     const engineConfig = useMemo(() => {
@@ -200,8 +259,17 @@ export const MatchRoom = () => {
     useEffect(() => {
         if (!gameId) return;
         const namespace = `game-${gameId}`;
-        let isActive = true;
 
+        // 如果 namespace 已加载（如从同游戏的在线对局返回后进入教程），
+        // 跳过 false→true 的状态翻转，避免不必要的 unmount/remount 循环。
+        // 该循环会导致 LocalGameProvider 重建、tutorialStartedRef 残留为 true，
+        // 使 startTutorial useLayoutEffect 在第二次挂载时跳过启动。
+        if (i18n.hasLoadedNamespace(namespace)) {
+            setIsGameNamespaceReady(true);
+            return;
+        }
+
+        let isActive = true;
         setIsGameNamespaceReady(false);
         i18n.loadNamespaces(namespace)
             .then(() => {
@@ -453,7 +521,13 @@ export const MatchRoom = () => {
         setLocalStorageTick((t) => t + 1);
         toast.warning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
     }, [isTutorialRoute, matchId, statusPlayerID, matchStatus.isLoading, matchStatus.players, toast, shouldAutoJoin, isAutoJoining]);
-    useEffect(() => {
+    // 教程启动 effect
+    // 使用 useLayoutEffect 确保在 CriticalImageGate 的 useEffect 之前执行。
+    // 配合 TutorialDispatchBridge 的 useLayoutEffect（先 bindDispatch），
+    // startTutorial 可以直接通过 controller 执行 START 命令，
+    // setState 在 useLayoutEffect 中同步触发重新渲染，
+    // CriticalImageGate 直接看到 playing 阶段的 state，只需预加载一次。
+    useLayoutEffect(() => {
         if (!isTutorialRoute) return;
         // 等待 i18n 命名空间加载完成，避免在 namespace 加载期间启动教程
         // （namespace 加载会导致 Board 卸载重挂载，重置游戏状态）
@@ -470,11 +544,38 @@ export const MatchRoom = () => {
         }
     }, [startTutorial, isTutorialRoute, isActive, gameId, isGameNamespaceReady]);
 
+    // 组件真正卸载时清理教程
+    // 使用 setTimeout(0) 延迟执行：如果是 StrictMode 的 unmount→remount，
+    // remount 会在同一微任务内发生，可以在 setTimeout 回调前取消清理。
+    // 如果是真正卸载（路由切换），setTimeout 回调正常执行。
+    const closeTutorialRef = useRef(closeTutorial);
+    closeTutorialRef.current = closeTutorial;
+    const cleanupTimerRef = useRef<number | undefined>(undefined);
+    useEffect(() => {
+        // mount 时取消待执行的清理（StrictMode remount 场景）
+        if (cleanupTimerRef.current !== undefined) {
+            window.clearTimeout(cleanupTimerRef.current);
+            cleanupTimerRef.current = undefined;
+        }
+        return () => {
+            if (tutorialStartedRef.current) {
+                // 延迟清理：给 StrictMode remount 一个取消的机会
+                cleanupTimerRef.current = window.setTimeout(() => {
+                    cleanupTimerRef.current = undefined;
+                    if (tutorialStartedRef.current) {
+                        tutorialStartedRef.current = false;
+                        closeTutorialRef.current();
+                    }
+                }, 0);
+            }
+        };
+    }, []);
+
     useEffect(() => {
         if (!isTutorialRoute) return;
-        if (isActive) {
-            tutorialStartedRef.current = true;
-        }
+        if (!isActive) return;
+        // 教程已激活时同步标记（兜底：如果 startTutorial 之外的路径激活了教程）
+        tutorialStartedRef.current = true;
     }, [isTutorialRoute, isActive]);
 
     useEffect(() => {
@@ -508,14 +609,6 @@ export const MatchRoom = () => {
             return () => window.clearTimeout(timer);
         }
     }, [isTutorialRoute, isActive, navigate]);
-
-    useEffect(() => {
-        return () => {
-            if (tutorialStartedRef.current) {
-                closeTutorial();
-            }
-        };
-    }, [closeTutorial]);
 
     useEffect(() => {
         // 关键约束：教程提示层只允许在 /tutorial 路由出现。
@@ -830,10 +923,12 @@ export const MatchRoom = () => {
                     <GameModeProvider mode="tutorial">
                         {hasTutorialBoard && engineConfig && WrappedBoard ? (
                             <LocalGameProvider config={engineConfig} numPlayers={2} seed={`tutorial-${gameId}`} playerId="0" onCommandRejected={handleCommandRejected}>
-                                <BoardBridge
-                                    board={WrappedBoard}
-                                    loading={<LoadingScreen title={t('matchRoom.title.tutorial')} description={t('matchRoom.loadingResources')} />}
-                                />
+                                <TutorialDispatchBridge>
+                                    <BoardBridge
+                                        board={WrappedBoard}
+                                        loading={<LoadingScreen title={t('matchRoom.title.tutorial')} description={t('matchRoom.loadingResources')} />}
+                                    />
+                                </TutorialDispatchBridge>
                             </LocalGameProvider>
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-white/50">

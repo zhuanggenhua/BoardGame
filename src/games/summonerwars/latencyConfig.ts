@@ -7,6 +7,7 @@
  */
 
 import type { LatencyOptimizationConfig } from '../../engine/transport/latency/types';
+import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { SW_COMMANDS } from './domain/types';
 
 // ============================================================================
@@ -88,6 +89,9 @@ export const summonerWarsLatencyConfig: LatencyOptimizationConfig = {
             [SW_COMMANDS.DECLARE_ATTACK]: 'optimistic',
             // 阶段推进 → 立即反馈
             [SW_COMMANDS.END_PHASE]: 'optimistic',
+            // 引擎层阶段推进（FlowSystem）→ 确定性，立即反馈
+            // 避免 onPhaseStart 技能事件（如幻化）等待服务端确认
+            [FLOW_COMMANDS.ADVANCE_PHASE]: 'optimistic',
             // 魔力弃牌 → 立即反馈
             [SW_COMMANDS.DISCARD_FOR_MAGIC]: 'optimistic',
         },

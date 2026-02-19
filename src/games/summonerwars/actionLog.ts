@@ -47,9 +47,8 @@ export const ACTION_ALLOWLIST = [
 ] as const;
 
 /**
- * 撤回快照白名单：只包含"玩家主动决策点"命令。
+ * 撤回快照白名单：玩家主动决策点 + 阶段切换。
  * 连锁/系统命令不产生独立快照，与前序决策共享撤回点：
- * - ADVANCE_PHASE：系统自动推进阶段，非玩家决策
  * - BLOOD_SUMMON_STEP：召唤的连锁子步骤
  * - ACTIVATE_ABILITY：攻击/阶段结束触发的技能确认
  * - FUNERAL_PYRE_HEAL：回合开始触发的治疗选择
@@ -62,6 +61,8 @@ export const UNDO_ALLOWLIST = [
     SW_COMMANDS.DISCARD_FOR_MAGIC,
     SW_COMMANDS.END_PHASE,
     SW_COMMANDS.PLAY_EVENT,
+    // 阶段切换：确保每个阶段开始时都有快照，回滚不会跳过整个回合
+    FLOW_COMMANDS.ADVANCE_PHASE,
 ] as const;
 
 const SW_NS = 'game-summonerwars';
@@ -132,9 +133,12 @@ const textSegment = (text: string): ActionLogSegment => ({ type: 'text', text })
 
 const formatDelta = (delta: number) => (delta >= 0 ? `+${delta}` : `${delta}`);
 
-const formatAbilityName = (abilityId?: string) => (
-    abilityId ? (abilityRegistry.get(abilityId)?.name ?? abilityId) : ''
-);
+const formatAbilityName = (abilityId?: string) => {
+    if (!abilityId) return '';
+    // 支持带前缀的 abilityId（如 'afterMove:spirit_bond'），提取真实 ID 查 registry
+    const baseId = abilityId.includes(':') ? abilityId.split(':')[1] : abilityId;
+    return abilityRegistry.get(baseId)?.name ?? abilityRegistry.get(abilityId)?.name ?? abilityId;
+};
 
 const buildCardSegment = (cardId?: string): ActionLogSegment | null => {
     if (!cardId) return null;
@@ -148,6 +152,7 @@ const buildCardSegment = (cardId?: string): ActionLogSegment | null => {
             type: 'card',
             cardId: resolvedId,
             previewText: meta.name,
+            previewRef: meta.previewRef,
             ...(isI18nKey ? { previewTextNs: SW_NS } : {}),
         };
     }

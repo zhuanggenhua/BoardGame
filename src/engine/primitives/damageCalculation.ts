@@ -418,7 +418,7 @@ export class DamageCalculation {
         value: -totalShield,
         priority: 100,  // 护盾最后应用
         source: 'shield',
-        description: 'Shield reduction',
+        description: 'actionLog.damageSource.shieldReduction',
       });
     }
   }

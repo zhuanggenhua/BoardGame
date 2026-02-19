@@ -11,6 +11,7 @@
 - **GameTestRunner 行为测试最优先**，审计工具是补充。
 - **同类测试去重**：多个实体共享同一 handler/executor/reducer 分支时，只需一个代表性行为测试，其余用契约测试覆盖数据定义。≥5 个同类用 `test.each`。仅当条件分支/交互路径/边界行为/交叉影响不同时才需独立测试。
 - **事件发射 ≠ 状态生效**：必须断言 reduce 后的最终状态，禁止只测注册/写入就判定"已实现"。
+- **多系统协作必须断言所有相关系统状态（强制）**：涉及多个引擎系统协作的功能（如响应窗口+交互系统、流程系统+交互系统），测试必须同时断言所有相关系统的状态字段，不能只断言其中一个。典型：测试只断言 `sys.interaction.current` 存在但不断言 `sys.responseWindow.current` 仍打开 → 测试通过但功能实际无效。
 
 ## 测试工具选型
 
@@ -74,7 +75,7 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 | D5 | 交互完整 | 玩家决策点都有对应 UI？**交互模式与描述语义匹配？** **UI 组件是否复用唯一来源？** |
 | D6 | 副作用传播 | 新增效果是否触发已有机制的连锁？ |
 | D7 | 资源守恒 | 代价/消耗/限制正确扣除和恢复？**有代价操作的验证层是否拒绝必然无效果的激活？** |
-| D8 | 时序正确 | 触发顺序和生命周期正确？**引擎批处理时序与 UI 异步交互是否对齐？阶段结束副作用与阶段推进的执行顺序是否导致验证层状态不一致？事件产生门控是否对所有同类技能普适生效（禁止硬编码特定 abilityId）？状态写入时机是否在消费窗口内（写入后是否有机会被消费，还是会被清理逻辑先抹掉）？** |
+| D8 | 时序正确 | 触发顺序和生命周期正确？**引擎批处理时序与 UI 异步交互是否对齐？阶段结束副作用与阶段推进的执行顺序是否导致验证层状态不一致？事件产生门控是否对所有同类技能普适生效（禁止硬编码特定 abilityId）？状态写入时机是否在消费窗口内（写入后是否有机会被消费，还是会被清理逻辑先抹掉）？多系统协作时，同批事件的处理顺序（按 priority）是否导致低优先级系统的状态驱动检查在高优先级系统执行前误触发？** |
 | D9 | 幂等与重入 | 重复触发/撤销重做安全？ |
 | D10 | 元数据一致 | categories/tags/meta 与实际行为匹配？ |
 | D11 | **Reducer 消耗路径** | 事件写入的资源/额度/状态，在 reducer 消耗时走的分支是否正确？**多种额度来源并存时消耗优先级是否正确？** |
@@ -246,6 +247,34 @@ Handler: handleXxx
 - 临时状态有回合清理逻辑
 
 > **示例（SummonerWars 群情激愤）**：阶段顺序 `summon → move → build → attack → magic → draw`。群情激愤在 magic 阶段写入 `extraAttacks=1`，但 attack 阶段已过。`TURN_CHANGED` 清理 `extraAttacks=0`。写入(magic) → 清理(TURN_CHANGED) 之间不包含消费窗口(attack) = ❌ extraAttacks 永远不会被消费。修复：扩展消费窗口，允许持有 `extraAttacks > 0` 的单位在任意阶段发起攻击（跨阶段攻击）
+
+**D8 子项：多系统 afterEvents 优先级竞争（强制）**（新增/修改引擎系统的 afterEvents 逻辑，或修"功能在测试中正常但实际无效"时触发）：多个引擎系统按 priority 顺序处理同一批事件时，低优先级系统的"状态驱动检查"可能在高优先级系统执行前误触发。**核心原则：系统 A（priority=15）在 afterEvents 中设置 `pendingInteractionId` 后，立即检查 `sys.interaction.current` 是否为空来决定是否解锁——但系统 B（priority=22）尚未执行 `queueInteraction`，`sys.interaction.current` 确实为空，导致系统 A 误判"交互已完成"并解锁/关闭窗口。** 审查方法：
+1. **识别状态驱动检查**：grep 所有系统的 `afterEvents` 中读取其他系统管理的状态字段（如 `sys.interaction.current`、`sys.responseWindow.current`）的逻辑
+2. **检查 priority 顺序**：读取方的 priority 是否低于写入方？如果是，同一轮 afterEvents 中读取方先执行，读到的是旧值
+3. **检查前瞻守卫**：读取方是否有"同批事件中是否包含写入方的触发事件"的前瞻检查？没有 = ❌ 可能误触发
+4. **测试必须断言所有相关系统的状态**：测试只断言 `sys.interaction.current` 存在但不断言 `sys.responseWindow.current` 仍打开 = ❌ 无法发现窗口被提前关闭的 bug
+
+**典型缺陷模式**：
+- ❌ ResponseWindowSystem（priority=15）处理 `INTERACTION_REQUESTED` 后设置 `pendingInteractionId`，随即检查 `sys.interaction.current` 为空 → 误判交互已完成 → 解锁并关闭窗口。但 DiceThroneEventSystem（priority=22）尚未执行 `queueInteraction`
+- ❌ 测试只断言 `sys.interaction.current` 存在（交互确实被创建了），但 `sys.responseWindow.current` 已被关闭 → 测试通过但功能实际无效（UI 失去响应窗口上下文）
+
+**修复策略**：
+- **前瞻守卫（推荐）**：在状态驱动检查前，检查同批事件中是否包含会触发高优先级系统写入的事件（如 `hasInteractionLockRequest`），如果有则跳过本轮检查，等下一轮 afterEvents
+- **延迟检查**：发出内部驱动事件（如 `_CHECK_UNLOCK`），在下一轮 afterEvents 中再检查
+- **提升 priority**：将读取方的 priority 调整到写入方之后（通常不推荐，会影响其他逻辑）
+
+> **示例（DiceThrone 弹一手/响应窗口）**：ResponseWindowSystem（priority=15）在 afterEvents 中处理 `INTERACTION_REQUESTED` 事件后设置 `pendingInteractionId`，紧接着状态驱动解锁检查发现 `pendingInteractionId` 存在 + `sys.interaction.current` 为空 → 解锁并关闭窗口。但 DiceThroneEventSystem（priority=22）尚未执行，`queueInteraction` 还没调用。修复：添加 `hasInteractionLockRequest` 前瞻守卫，同批事件中有 `INTERACTION_REQUESTED` 时跳过解锁检查
+
+**测试规范（强制）**：涉及多系统协作的功能（如响应窗口+交互系统），测试必须同时断言所有相关系统的状态：
+```typescript
+// ❌ 错误：只断言交互存在
+expect(state.sys.interaction?.current).toBeDefined();
+
+// ✅ 正确：同时断言交互存在 + 响应窗口仍打开 + 窗口被交互锁定
+expect(state.sys.interaction?.current).toBeDefined();
+expect(state.sys.responseWindow?.current).toBeDefined();
+expect(state.sys.responseWindow?.current?.pendingInteractionId).toBeDefined();
+```
 
 **D11 Reducer 消耗路径（强制）**（新增/修改额度授予、资源写入、或修"额度/资源消耗不对"时触发）：能力/事件写入的资源/额度/状态，在 reducer 消耗时走的分支是否正确。**核心原则：写入正确 ≠ 消耗正确。审计必须追踪到 reducer 中消耗该资源的具体分支逻辑，验证条件判断和优先级。** 审查方法：
 1. **追踪写入点**：能力/事件将资源写入哪个字段（如 `baseLimitedMinionQuota`、`minionLimit`、`charges`）
@@ -578,6 +607,7 @@ Handler: handleXxx
 | 新增/修改底层验证函数 | D23,D1,D2 | D5,D8 |
 | 新增跨阶段/非常规目标机制 | D23,D1,D5 | D2,D8 |
 | 修"交互选项缺失/弹窗为空" | D24,D5,D3 | D8,D12,D17 |
+| 修"功能在测试中正常但实际无效" | D8,D3,D10 | D5,D17 |
 | 修"操作影响了不该影响的数据" | D12,D11,D3 | D16,D18 |
 | 新增/修改 handler 共返 events+interaction | D24,D8,D12 | D3,D17 |
 
@@ -735,3 +765,5 @@ ID 只出现在定义+注册 = 消费层缺失。
 | 群情激愤在 magic 阶段写入 `extraAttacks=1`，但 attack 阶段已过，`TURN_CHANGED` 清理 `extraAttacks=0`。写入→清理之间不包含消费窗口，extraAttacks 永远不会被消费。排查时只验证写入链（事件卡打出→执行→reduce 写入）全部正常，忽略了"写入后何时能用"的时序问题 | 写入-消费窗口不对齐：写入时机在消费窗口之后，状态被回合清理抹掉。排查盲区：只验证写入链不验证消费时序 | D8 | summonerwars |
 | 亡者崛起 handler 返回 `CARDS_DISCARDED`（弃手牌）+ 新 interaction（从弃牌堆选随从），但 `CARDS_DISCARDED` 尚未 reduce，刚弃的牌仍在 `player.hand` 而非 `player.discard`。选项只从 `player.discard` 过滤 → 刚弃的随从不在候选列表 → 弹窗为空/无选项 | Handler 共返状态不一致：handler 同时返回 events 和新 interaction，新 interaction 的选项基于未 reduce 的旧状态构建，缺失 events 带来的状态变更 | D24 | smashup |
 | 实地考察（Field Trip）选择部分手牌放入牌库底，结果全部手牌被清空。`HAND_SHUFFLED_INTO_DECK` reducer 无条件 `hand: []`，但 Field Trip 只移动选中的手牌，未选中的手牌被误清空 | Reducer 操作范围超出 payload 语义：同一事件类型被全量操作（Winds of Change 移动全部手牌）和部分操作（Field Trip 移动选中手牌）复用，reducer 只兼容全量场景，部分操作时误清空未选中数据 | D12 | smashup |
+| 弹一手/惊不惊喜等骰子修改卡在响应窗口打出后无效果：ResponseWindowSystem（priority=15）处理 `INTERACTION_REQUESTED` 后设置 `pendingInteractionId`，紧接着状态驱动解锁检查发现 `sys.interaction.current` 为空 → 误判交互已完成 → 关闭窗口。DiceThroneEventSystem（priority=22）尚未执行 `queueInteraction`。测试只断言 `sys.interaction.current` 存在但不断言 `sys.responseWindow.current` → 测试通过但功能实际无效 | 多系统 afterEvents 优先级竞争：低优先级系统的状态驱动检查在高优先级系统执行前误触发。测试遗漏：只断言单个系统状态不断言协作系统状态 | D8 | dicethrone |
+| `targetOpponentDice` 在所有骰子修改 handler 中硬编码为 `false`，导致响应窗口中打出的骰子修改卡（target=select/opponent）无法作用于对手骰子 | 元数据硬编码：handler 未根据 `action.target` 动态解析目标，所有骰子修改交互都默认操作自己的骰子 | D10+D1 | dicethrone |

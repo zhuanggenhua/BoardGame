@@ -123,7 +123,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
             {
                 description: abilityEffectText('card-red-hot', 'dmgPerFM'),
                 action: { type: 'custom', target: 'self', customActionId: 'pyro-details-dmg-per-fm' },
-                timing: 'withDamage' // Modifies damage
+                timing: 'immediate'
             }
         ],
     },
@@ -138,18 +138,8 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
         effects: [
             {
                 description: abilityEffectText('card-get-fired-up', 'roll'),
-                action: {
-                    type: 'rollDie',
-                    target: 'self',
-                    diceCount: 1,
-                    conditionalEffects: [
-                        { face: PYROMANCER_DICE_FACE_IDS.FIRE, bonusDamage: 3, effectKey: 'bonusDie.effect.fire' },
-                        { face: PYROMANCER_DICE_FACE_IDS.MAGMA, grantStatus: { statusId: STATUS_IDS.BURN, value: 1 }, effectKey: 'bonusDie.effect.magma' },
-                        { face: PYROMANCER_DICE_FACE_IDS.FIERY_SOUL, grantToken: { tokenId: TOKEN_IDS.FIRE_MASTERY, value: 2 }, effectKey: 'bonusDie.effect.fiery_soul' },
-                        { face: PYROMANCER_DICE_FACE_IDS.METEOR, grantStatus: { statusId: STATUS_IDS.KNOCKDOWN, value: 1 }, effectKey: 'bonusDie.effect.meteor' },
-                    ]
-                },
-                timing: 'withDamage'
+                action: { type: 'custom', target: 'self', customActionId: 'pyro-get-fired-up-roll' },
+                timing: 'immediate'
             }
         ],
     },

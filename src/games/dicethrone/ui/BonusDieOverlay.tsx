@@ -174,7 +174,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                         transition={{ delay: 0.8 }}
                     >
                         <GameButton
-                            onClick={displayOnly ? onClose : onSkipReroll}
+                            onClick={displayOnly ? (onSkipReroll ?? onClose) : onSkipReroll}
                             variant={canReroll ? 'primary' : 'secondary'}
                             size="md"
                             className="!text-[1.1vw] !px-[2.5vw] !py-[0.8vw]"

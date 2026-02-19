@@ -8,21 +8,14 @@ try:
 except ImportError as exc:
     raise SystemExit("缺少 Pillow 依赖，请先执行: python -m pip install Pillow") from exc
 
-try:
-    import pillow_avif  # type: ignore
-except Exception:
-    pillow_avif = None
-
 DEFAULT_ROOT = Path.cwd() / "public" / "assets"
 SKIP_DIR = "compressed"
 VALID_EXTS = {".png", ".jpg", ".jpeg"}
 MAX_EDGE = int(os.getenv("IMAGE_MAX_EDGE", "2048"))
 WEBP_QUALITY = int(os.getenv("IMAGE_WEBP_QUALITY", "82"))
-AVIF_QUALITY = int(os.getenv("IMAGE_AVIF_QUALITY", "50"))
 CLEAN_OUTPUT = os.getenv("IMAGE_CLEAN", "0") == "1"
 
 WEBP_ENABLED = True
-AVIF_ENABLED = True
 
 stats = {
     "file_count": 0,
@@ -93,11 +86,8 @@ def save_variant(
     original_size: int,
     source_mtime: float,
 ) -> int | None:
-    global AVIF_ENABLED
     global WEBP_ENABLED
 
-    if format_name == "AVIF" and not AVIF_ENABLED:
-        return None
     if format_name == "WEBP" and not WEBP_ENABLED:
         return None
 
@@ -123,10 +113,7 @@ def save_variant(
     except Exception:
         if dest.exists():
             dest.unlink()
-        if format_name == "AVIF":
-            AVIF_ENABLED = False
-            print("AVIF 不可用，已跳过后续 AVIF 输出。")
-        elif format_name == "WEBP":
+        if format_name == "WEBP":
             WEBP_ENABLED = False
             print("WEBP 不可用，已跳过后续 WEBP 输出。")
         return None
@@ -167,20 +154,12 @@ def handle_file(src: Path, root: Path) -> None:
             original_size,
             source_mtime,
         )
-        avif_size = save_variant(
-            working,
-            variant_base.with_suffix(".avif"),
-            "AVIF",
-            AVIF_QUALITY,
-            original_size,
-            source_mtime,
-        )
 
-        output_size = avif_size or webp_size
+        output_size = webp_size
         if output_size is None:
             stats["skipped_count"] += 1
             relative = src.relative_to(root)
-            print(f"已跳过: {relative}（无法生成 WebP/AVIF）")
+            print(f"已跳过: {relative}（无法生成 WebP）")
             return
 
     stats["file_count"] += 1
@@ -190,13 +169,7 @@ def handle_file(src: Path, root: Path) -> None:
     resize_note = ""
     if resized:
         resize_note = f" (已缩放至 {working.size[0]}x{working.size[1]})"
-    format_note_parts = []
-    if avif_size is not None:
-        format_note_parts.append(f"avif {format_bytes(avif_size)}")
-    if webp_size is not None:
-        format_note_parts.append(f"webp {format_bytes(webp_size)}")
-    format_note = " / ".join(format_note_parts) if format_note_parts else "无输出"
-    print(f"已处理: {relative} {format_bytes(original_size)} -> {format_note}{resize_note}")
+    print(f"已处理: {relative} {format_bytes(original_size)} -> webp {format_bytes(output_size)}{resize_note}")
 
 
 def walk_dir(root: Path) -> None:
@@ -222,25 +195,17 @@ def main() -> None:
     saved = stats["total_bytes"] - stats["output_bytes"]
     summary = (
         f"完成。处理 {stats['file_count']} 张，原始 {format_bytes(stats['total_bytes'])}，"
-        f"优选输出 {format_bytes(stats['output_bytes'])}，节省 {format_bytes(saved)}。"
+        f"WebP 输出 {format_bytes(stats['output_bytes'])}，节省 {format_bytes(saved)}。"
     )
     skipped = (
-        f"（{stats['skipped_count']} 张无法生成 WebP/AVIF 已跳过）"
+        f"（{stats['skipped_count']} 张无法生成 WebP 已跳过）"
         if stats["skipped_count"] > 0
         else ""
     )
-    variants = ""
-    if stats["variant_count"] > 0:
-        variants = (
-            f" 额外生成 {stats['variant_count']} 个 WebP/AVIF，"
-            f"共 {format_bytes(stats['variant_bytes'])}。"
-        )
-    if stats["variant_skipped"] > 0:
-        variants += f"（{stats['variant_skipped']} 个体积不占优）"
     resized_info = ""
     if stats["resized_count"] > 0:
         resized_info = f"（{stats['resized_count']} 张已缩放）"
-    print(f"{summary}{skipped}{variants}{resized_info}")
+    print(f"{summary}{skipped}{resized_info}")
 
 
 if __name__ == "__main__":

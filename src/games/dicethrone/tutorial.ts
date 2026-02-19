@@ -255,6 +255,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             content: 'game-dicethrone:tutorial.steps.opponentDefense',
             position: 'center',
             requireAction: false,
+            allowManualSkip: false,
             aiActions: [
                 { commandType: 'ROLL_DICE', playerId: '1', payload: {} },
                 { commandType: 'CONFIRM_ROLL', playerId: '1', payload: {} },

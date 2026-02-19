@@ -3,9 +3,9 @@
  * 
  * 使用方式：
  *   npm run assets:upload             — 增量上传（仅上传新增或变更的文件）
- *   npm run assets:upload -- --force   — 强制上传所有文件
- *   npm run assets:upload -- --check   — 只检查差异，不上传
- *   npm run assets:upload -- --sync    — 同步（上传新增/变更 + 删除远程多余文件）
+ *   npm run assets:upload:force       — 强制上传所有文件（跳过变更检测，用于更新 Cache-Control 等元数据）
+ *   npm run assets:check              — 只检查差异，不上传
+ *   npm run assets:sync               — 同步（上传新增/变更 + 删除远程多余文件）
  * 
  * 环境变量（在 .env 中配置）：
  * - R2_ACCOUNT_ID: Cloudflare 账户 ID
@@ -24,7 +24,7 @@ import mime from 'mime-types';
 // R2 配置
 const R2_ENDPOINT = `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
-const COMPRESSED_EXTS = new Set(['.ogg', '.webp', '.avif']);
+const COMPRESSED_EXTS = new Set(['.ogg', '.webp']);
 const COMPRESSED_DIR_NAME = 'compressed';
 const DATA_EXTS = new Set(['.json', '.svg']);
 const AUDIO_DIR_NAMES = new Set(['sfx', 'bgm']);
@@ -39,9 +39,10 @@ const s3Client = new S3Client({
   },
 });
 
-const forceUpload = process.argv.includes('--force');
-const checkOnly = process.argv.includes('--check');
-const syncMode = process.argv.includes('--sync');
+// 支持环境变量（npm 脚本传参）和 CLI 参数两种方式
+const forceUpload = process.env.FORCE_UPLOAD === '1' || process.argv.includes('--force-upload');
+const checkOnly = process.env.CHECK_ONLY === '1' || process.argv.includes('--check');
+const syncMode = process.env.SYNC_MODE === '1' || process.argv.includes('--sync');
 
 // 递归获取所有文件
 function getAllFiles(dir, fileList = []) {
@@ -111,6 +112,21 @@ async function listRemoteObjects(prefix) {
   return remoteMap;
 }
 
+// 静态资源缓存策略：
+// - 资源路径不含 content hash，同一路径内容可能更新
+// - CDN 边缘缓存 1 天（s-maxage），更新后最多 24h 全网生效
+// - 浏览器缓存也是 1 天（max-age），确保用户能及时拿到新资源
+const CACHE_CONTROL_MEDIA = 'public, max-age=86400, s-maxage=86400';
+// JSON/SVG 等数据文件可能更新较频繁，缓存 1 小时
+const CACHE_CONTROL_DATA = 'public, max-age=3600, s-maxage=3600';
+
+/** 根据文件类型返回合适的 Cache-Control */
+function getCacheControl(localPath) {
+  const ext = extname(localPath).toLowerCase();
+  if (DATA_EXTS.has(ext)) return CACHE_CONTROL_DATA;
+  return CACHE_CONTROL_MEDIA;
+}
+
 // 上传单个文件
 async function uploadFile(fileContent, remotePath, localPath) {
   const contentType = mime.lookup(localPath) || 'application/octet-stream';
@@ -120,6 +136,7 @@ async function uploadFile(fileContent, remotePath, localPath) {
     Key: remotePath,
     Body: fileContent,
     ContentType: contentType,
+    CacheControl: getCacheControl(localPath),
   });
   
   await s3Client.send(command);

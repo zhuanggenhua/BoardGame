@@ -1184,7 +1184,7 @@ const lobbySocketIO = new IOServer(httpServer, {
 lobbyIO = lobbySocketIO;
 
 lobbySocketIO.on('connection', (socket) => {
-    logger.info(`[LobbyIO] 新连接: ${socket.id}`);
+    logger.debug(`[LobbyIO] 新连接: ${socket.id}`);
 
     // 订阅大厅更新
     socket.on(LOBBY_EVENTS.SUBSCRIBE_LOBBY, async (payload?: { gameId?: string }) => {
@@ -1197,10 +1197,15 @@ lobbySocketIO.on('connection', (socket) => {
         const subscriptions = getLobbySubscriptions(socket);
 
         if (requestedGame === LOBBY_ALL) {
+            const isNew = !subscriptions.has(LOBBY_ALL);
             subscriptions.add(LOBBY_ALL);
             lobbyAllSubscribers.add(socket.id);
             socket.join(LOBBY_ALL_ROOM);
-            logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${LOBBY_ALL}) (当前 ${lobbyAllSubscribers.size} 个订阅者)`);
+            if (isNew) {
+                logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${LOBBY_ALL}) (当前 ${lobbyAllSubscribers.size} 个订阅者)`);
+            } else {
+                logger.debug(`[LobbyIO] ${socket.id} 刷新大厅(${LOBBY_ALL})`);
+            }
             await sendLobbySnapshotAll(socket);
             startLobbyHeartbeat();
             return;
@@ -1211,11 +1216,16 @@ lobbySocketIO.on('connection', (socket) => {
             return;
         }
 
+        const isNew = !subscriptions.has(requestedGame);
         subscriptions.add(requestedGame);
         ensureGameState(requestedGame);
         lobbySubscribersByGame.get(requestedGame)!.add(socket.id);
         socket.join(getLobbyRoomName(requestedGame));
-        logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${requestedGame}) (当前 ${lobbySubscribersByGame.get(requestedGame)!.size} 个订阅者)`);
+        if (isNew) {
+            logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${requestedGame}) (当前 ${lobbySubscribersByGame.get(requestedGame)!.size} 个订阅者)`);
+        } else {
+            logger.debug(`[LobbyIO] ${socket.id} 刷新大厅(${requestedGame})`);
+        }
 
         await sendLobbySnapshot(socket, requestedGame);
         startLobbyHeartbeat();
@@ -1240,7 +1250,7 @@ lobbySocketIO.on('connection', (socket) => {
         if (subscriptions.size === 0) {
             socket.data.lobbyGameIds = undefined;
         }
-        logger.info(`[LobbyIO] ${socket.id} 取消订阅 ${gameId}`);
+        logger.debug(`[LobbyIO] ${socket.id} 取消订阅 ${gameId}`);
     });
 
     // 断开连接清理
@@ -1266,7 +1276,7 @@ lobbySocketIO.on('connection', (socket) => {
         }
         socket.data.chatMatchId = undefined;
 
-        logger.info(`[LobbyIO] ${socket.id} 断开连接`);
+        logger.debug(`[LobbyIO] ${socket.id} 断开连接`);
     });
 
     // ========== 重赛投票事件处理 ==========

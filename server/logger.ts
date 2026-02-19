@@ -47,17 +47,18 @@ const logger = winston.createLogger({
       level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
     }),
 
-    // 所有日志（按日期轮转，保留 30 天）
+    // 所有日志（按日期轮转，保留 30 天，旧日志自动压缩）
     new DailyRotateFile({
       dirname: LOG_DIR,
       filename: 'app-%DATE%.log',
       datePattern: 'YYYY-MM-DD',
       maxSize: '100m',
       maxFiles: '30d',
+      zippedArchive: true,
       format: logFormat,
     }),
 
-    // 错误日志单独存储
+    // 错误日志单独存储（旧日志自动压缩）
     new DailyRotateFile({
       dirname: LOG_DIR,
       filename: 'error-%DATE%.log',
@@ -65,6 +66,7 @@ const logger = winston.createLogger({
       level: 'error',
       maxSize: '100m',
       maxFiles: '90d',
+      zippedArchive: true,
       format: logFormat,
     }),
   ],

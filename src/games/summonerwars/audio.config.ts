@@ -4,9 +4,10 @@
  */
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig, SoundKey } from '../../lib/audio/types';
 import { pickDiceRollSoundKey, pickRandomSoundKey } from '../../lib/audio/audioUtils';
-import { createFeedbackResolver } from '../../lib/audio/defineEvents';
+import { collectPreloadKeys } from '../../lib/audio/defineEvents';
 import type { GamePhase, PlayerId, SummonerWarsCore, FactionId } from './domain/types';
-import { SW_EVENTS } from './domain/events';
+import { SW_EVENTS } from './domain/types';
+import { SW_EVENTS as SW_AUDIO_EVENTS } from './domain/events';
 import { resolveFactionId } from './config/factions';
 import { abilityRegistry, NECROMANCER_ABILITIES } from './domain/abilities';
 import { TRICKSTER_ABILITIES } from './domain/abilities-trickster';
@@ -350,20 +351,29 @@ export function resolveDestroySoundKey(type: 'unit' | 'structure', isGate?: bool
         : STRUCTURE_DESTROY_KEY;
 }
 
+// 预构建事件类型→音效 key 映射表
+// SW_AUDIO_EVENTS（events.ts defineEvents）的 type 是 "UNIT_SUMMONED" 等 key 名
+// 实际事件类型是 SW_EVENTS（types.ts）的 'sw:unit_summoned' 等字符串
+// 需要桥接两者的映射关系
+const EVENT_SOUND_MAP: Record<string, string> = {};
+for (const [key, def] of Object.entries(SW_AUDIO_EVENTS)) {
+    if (def.audio === 'immediate' && def.sound) {
+        const actualType = (SW_EVENTS as Record<string, string>)[key];
+        if (actualType) {
+            EVENT_SOUND_MAP[actualType] = def.sound;
+        }
+    }
+}
+
 export const SUMMONER_WARS_AUDIO_CONFIG: GameAudioConfig = {
+    // 自动收集 SW_AUDIO_EVENTS 中所有 immediate/ui 策略的音效 key（零维护）
+    // 额外补充 feedbackResolver 动态覆盖的音效（非事件声明，框架无法自动收集）
     criticalSounds: [
-        SELECTION_KEY,
-        POSITIVE_SIGNAL_KEY,
-        UPDATE_CHIME_KEY,
-        SUMMON_KEY,
-        MOVE_FALLBACK_KEY,
-        BUILD_KEY,
-        ...WALL_BUILD_KEYS,
-        CARD_DRAW_KEY,
-        CARD_DISCARD_KEY,
-        DAMAGE_LIGHT_KEY,
+        ...collectPreloadKeys(SW_AUDIO_EVENTS),
         MAGIC_GAIN_KEY,
         MAGIC_SPEND_KEY,
+        MOVE_FALLBACK_KEY,
+        DAMAGE_LIGHT_KEY,
         ...DICE_ROLL_KEYS,
     ],
     bgm: [
@@ -423,10 +433,10 @@ export const SUMMONER_WARS_AUDIO_CONFIG: GameAudioConfig = {
         if (abilitySound) return abilitySound;
 
         // FACTION_SELECTED：UI 层已播放，跳过 EventStream
-        if (type === SW_EVENTS.FACTION_SELECTED.type) return null;
+        if (type === SW_EVENTS.FACTION_SELECTED) return null;
 
         // UNIT_MOVED：根据阵营选择移动音效
-        if (type === SW_EVENTS.UNIT_MOVED.type) {
+        if (type === SW_EVENTS.UNIT_MOVED) {
             const movePayload = (event as AudioEvent & { payload?: { to?: { row: number; col: number } } }).payload;
             const to = movePayload?.to;
             const movedUnit = to ? runtime.G?.board?.[to.row]?.[to.col]?.unit : undefined;
@@ -440,7 +450,7 @@ export const SUMMONER_WARS_AUDIO_CONFIG: GameAudioConfig = {
         }
 
         // STRUCTURE_BUILT：根据建筑类型选择音效
-        if (type === SW_EVENTS.STRUCTURE_BUILT.type) {
+        if (type === SW_EVENTS.STRUCTURE_BUILT) {
             const buildPayload = (event as AudioEvent & { payload?: { card?: { isGate?: boolean } } }).payload;
             if (buildPayload?.card?.isGate) {
                 return pickRandomSoundKey('summonerwars.gate_build', GATE_BUILD_KEYS, { minGap: 1 });
@@ -449,20 +459,19 @@ export const SUMMONER_WARS_AUDIO_CONFIG: GameAudioConfig = {
         }
 
         // MAGIC_CHANGED：根据增减选择音效
-        if (type === SW_EVENTS.MAGIC_CHANGED.type) {
+        if (type === SW_EVENTS.MAGIC_CHANGED) {
             const delta = (event as AudioEvent & { payload?: { delta?: number } }).payload?.delta ?? 0;
             return delta >= 0 ? MAGIC_GAIN_KEY : MAGIC_SPEND_KEY;
         }
 
         // STRENGTH_MODIFIED：根据增减选择音效
-        if (type === SW_EVENTS.STRENGTH_MODIFIED.type) {
+        if (type === SW_EVENTS.STRENGTH_MODIFIED) {
             const delta = (event as AudioEvent & { payload?: { delta?: number } }).payload?.delta ?? 0;
             return delta >= 0 ? UNIT_CHARGE_KEY : MAGIC_SPEND_KEY;
         }
 
-        // ========== 使用框架自动生成的默认音效 ==========
-        const baseFeedbackResolver = createFeedbackResolver(SW_EVENTS);
-        return baseFeedbackResolver(event);
+        // ========== 使用预构建的事件→音效映射表 ==========
+        return EVENT_SOUND_MAP[type] ?? null;
     },
     bgmRules: [
         {

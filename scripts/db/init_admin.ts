@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../apps/api/src/app.module';
-import { AdminInitService } from '../apps/api/src/modules/auth/admin-init.service';
+import { AppModule } from '../../apps/api/src/app.module';
+import { AdminInitService } from '../../apps/api/src/modules/auth/admin-init.service';
 
 const readArg = (name: string): string | null => {
     const prefix = `--${name}=`;

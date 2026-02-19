@@ -450,6 +450,8 @@ export interface AbilityTriggeredPayload {
   sourcePosition: CellCoord;
   /** 技能名称（resolveAbilityEffects 头部事件携带） */
   abilityName?: string;
+  /** custom action 的原始 actionId（区别于父技能 abilityId，UI 层用此字段匹配交互） */
+  actionId?: string;
   /** 效果类型标识（如 preventMagicGain / extraMove） */
   effectType?: string;
   /** 自定义参数 */

@@ -63,6 +63,7 @@
     "prompt_select_option": "Select an option to continue",
     "prompt_wait": "Please wait",
     "played": "Played!",
+    "triggered": "Triggered!",
     "vp_award": "+{{vp}} VP",
     "player_short": "P{{id}}",
     "you_short": "YOU",

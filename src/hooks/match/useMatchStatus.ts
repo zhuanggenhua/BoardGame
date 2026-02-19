@@ -511,14 +511,20 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
     const [error, setError] = useState<string | null>(null);
     const failureCountRef = useRef(0);
     const lastFailureAtRef = useRef<number | null>(null);
+    // 用 ref 持有最新的 gameName/matchID，避免 fetchMatchStatus 依赖变化导致 useEffect 反复重建 interval
+    const gameNameRef = useRef(gameName);
+    const matchIDRef = useRef(matchID);
+    gameNameRef.current = gameName;
+    matchIDRef.current = matchID;
 
-    // 获取房间状态
+    // 获取房间状态（无外部依赖，引用稳定）
     const fetchMatchStatus = useCallback(async () => {
-        if (!matchID) return;
+        const currentMatchID = matchIDRef.current;
+        if (!currentMatchID) return;
 
         try {
-            const effectiveGameName = gameName || 'tictactoe';
-            const match = await matchApi.getMatch(effectiveGameName, matchID);
+            const effectiveGameName = gameNameRef.current || 'tictactoe';
+            const match = await matchApi.getMatch(effectiveGameName, currentMatchID);
             setPlayers(match.players.map(p => ({
                 id: p.id,
                 name: p.name,
@@ -538,7 +544,7 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
             if (shouldExposeError) {
                 // 404 说明房间已不存在，清理本地凭据（避免创建后短暂抖动误判）
                 if (errorMessage.includes('404') || errorMessage.includes('not found')) {
-                    clearMatchCredentials(matchID);
+                    clearMatchCredentials(currentMatchID);
                 }
                 setError(prev => prev ?? '房间不存在或已被删除');
             } else {
@@ -547,7 +553,7 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
         } finally {
             setIsLoading(false);
         }
-    }, [gameName, matchID]);
+    }, []); // 依赖为空，引用永远稳定
 
     // 定期轮询房间状态
     useEffect(() => {
@@ -559,7 +565,7 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
         const interval = setInterval(fetchMatchStatus, 3000);
 
         return () => clearInterval(interval);
-    }, [matchID, fetchMatchStatus, error]);
+    }, [matchID, error, fetchMatchStatus]);
 
     // 报错后低频重试，避免错误态卡死
     useEffect(() => {

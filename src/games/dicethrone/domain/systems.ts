@@ -231,17 +231,15 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 if (dtEvent.type === 'INTERACTION_REQUESTED') {
                     const payload = (dtEvent as InteractionRequestedEvent).payload;
                     const pendingInteraction = payload.interaction;
-                    const eventTimestamp = typeof dtEvent.timestamp === 'number' ? dtEvent.timestamp : 0;
-
+                    
                     // 骰子修改类交互 → multistep-choice
                     if (pendingInteraction.type === 'modifyDie') {
                         const config = pendingInteraction.dieModifyConfig;
-                        const mode = config?.mode ?? 'set';
                         const selectCount = pendingInteraction.selectCount ?? 1;
 
-                        // copy 模式：UI 层需要选 2 颗骰子，但 toCommands 只生成 1 个 MODIFY_DIE
+                        // copy 模式：UI 层需要选 2 颗骰子（源+目标），toCommands 生成 2 个 MODIFY_DIE
                         // set/any/adjust 模式：maxSteps=selectCount（选满后自动 confirm）
-                        const maxSteps = (mode === 'copy') ? 1 : selectCount;
+                        const maxSteps = selectCount;
 
                         const multistepData: MultistepChoiceData<DiceModifyStep, DiceModifyResult> = {
                             title: pendingInteraction.titleKey,
@@ -303,17 +301,23 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
 
                     if (isStatusType) {
                         const targetPlayerIds = pendingInteraction.targetPlayerIds || Object.keys(newState.core.players);
-                        const hasAnyStatus = targetPlayerIds.some(pid => {
-                            const player = newState.core.players[pid];
-                            if (!player) return false;
-                            const hasEffects = Object.values(player.statusEffects).some(v => v > 0);
-                            const hasTokens = Object.values(player.tokens ?? {}).some(v => v > 0);
-                            return hasEffects || hasTokens;
-                        });
-                        if (!hasAnyStatus) {
-                            // 无可选项，自动跳过交互（直接 resolve，不生成事件）
-                            newState = resolveInteraction(newState);
-                            continue;
+                        // 只有明确要求目标有状态的交互（如"移除所有状态"）才检查并跳过
+                        const needsTargetWithStatus = pendingInteraction.requiresTargetWithStatus === true
+                            || pendingInteraction.type === 'selectStatus'
+                            || pendingInteraction.type === 'selectTargetStatus';
+                        if (needsTargetWithStatus) {
+                            const hasAnyStatus = targetPlayerIds.some(pid => {
+                                const player = newState.core.players[pid];
+                                if (!player) return false;
+                                const hasEffects = Object.values(player.statusEffects).some(v => v > 0);
+                                const hasTokens = Object.values(player.tokens ?? {}).some(v => v > 0);
+                                return hasEffects || hasTokens;
+                            });
+                            if (!hasAnyStatus) {
+                                // 无可选项，自动跳过交互（直接 resolve，不生成事件）
+                                newState = resolveInteraction(newState);
+                                continue;
+                            }
                         }
                     }
 
@@ -387,6 +391,9 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
 
                 // ---- BONUS_DICE_REROLL_REQUESTED → queue dt:bonus-dice ----
                 // 业务数据仅存 core.pendingBonusDiceSettlement；sys.interaction 只做阻塞标记
+                // displayOnly 模式（如正义冲击 rollDie 多骰展示）也创建交互阻塞，
+                // 确保 autoContinue 不会在用户看到 overlay 前推进阶段。
+                // 用户点击 Continue → SKIP_BONUS_DICE_REROLL → BONUS_DICE_SETTLED → resolveInteraction
                 if (dtEvent.type === 'BONUS_DICE_REROLL_REQUESTED') {
                     const payload = (dtEvent as BonusDiceRerollRequestedEvent).payload;
                     const interaction: EngineInteractionDescriptor = {

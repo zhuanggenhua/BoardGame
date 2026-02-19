@@ -1310,3 +1310,46 @@ describe('毒液状态效果 - 完整流程测试', () => {
         expect(result.assertionErrors).toHaveLength(0);
     });
 });
+
+// ============================================================================
+// 恐惧反击完整流程测试（毒液施加验证）
+// ============================================================================
+
+describe('暗影刺客 - 恐惧反击毒液施加', () => {
+    it('恐惧反击 I：匕首+暗影施加毒液给原攻击者', () => {
+        // 进攻方 5 骰：[1,1,1,1,1] 全 dagger → dagger-strike-5
+        // 防御方 5 骰：[1,2,6,3,4] = 2 dagger + 1 shadow + 2 bag
+        const queuedRandom = createQueuedRandom([1, 1, 1, 1, 1, 1, 2, 6, 3, 4]);
+
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: testSystems,
+            playerIds: ['0', '1'],
+            random: queuedRandom,
+            setup: createShadowThiefSetup(),
+            assertFn: assertState,
+            silent: true,
+        });
+
+        const result = runner.run({
+            name: '恐惧反击 I - 匕首+暗影施加毒液',
+            commands: [
+                ...enterDefensiveRollCommands,
+                // 防御阶段：选择恐惧反击（5骰）
+                cmd('SELECT_ABILITY', '1', { abilityId: 'fearless-riposte' }),
+                cmd('ROLL_DICE', '1'),     // 5 × d(6) → [1,2,6,3,4] = 2 dagger + 1 shadow + 2 bag
+                cmd('CONFIRM_ROLL', '1'),
+                cmd('ADVANCE_PHASE', '1'), // defensiveRoll → 攻击结算 → main2
+            ],
+            expect: {
+                turnPhase: 'main2',
+            },
+        });
+
+        expect(result.assertionErrors).toHaveLength(0);
+
+        // 验证原攻击者（玩家0）被施加了毒液
+        const attackerPoison = result.finalState.core.players['0'].statusEffects[STATUS_IDS.POISON] ?? 0;
+        expect(attackerPoison).toBeGreaterThanOrEqual(1);
+    });
+});

@@ -47,9 +47,28 @@ export function getAssetsBaseUrl(): string {
 // 资源注册表
 // ============================================================================
 
-const gameAssetsRegistry = new Map<string, GameAssets>();
-const preloadedImages = new Map<string, HTMLImageElement>();
-const preloadedAudio = new Map<string, HTMLAudioElement>();
+// HMR 时模块会被重新执行，模块级变量会被重置为空 Map，
+// 导致所有已缓存的图片/音频标记丢失，触发全量重新预加载（好几秒的白屏）。
+// 将缓存挂到 window 上，使其在 HMR 时存活。
+const _win = typeof window !== 'undefined' ? window as Window & {
+    __BG_ASSET_CACHE__?: {
+        gameAssetsRegistry: Map<string, GameAssets>;
+        preloadedImages: Map<string, HTMLImageElement>;
+        preloadedAudio: Map<string, HTMLAudioElement>;
+    };
+} : undefined;
+
+if (_win && !_win.__BG_ASSET_CACHE__) {
+    _win.__BG_ASSET_CACHE__ = {
+        gameAssetsRegistry: new Map(),
+        preloadedImages: new Map(),
+        preloadedAudio: new Map(),
+    };
+}
+
+const gameAssetsRegistry = _win?.__BG_ASSET_CACHE__?.gameAssetsRegistry ?? new Map<string, GameAssets>();
+const preloadedImages = _win?.__BG_ASSET_CACHE__?.preloadedImages ?? new Map<string, HTMLImageElement>();
+const preloadedAudio = _win?.__BG_ASSET_CACHE__?.preloadedAudio ?? new Map<string, HTMLAudioElement>();
 
 // ============================================================================
 // 公共 API
@@ -65,7 +84,7 @@ export function registerGameAssets(gameId: string, assets: GameAssets): void {
 
 /**
  * 获取图片路径
- * 自动处理压缩格式优先级：.avif > .webp > 原始格式
+ * 自动处理压缩格式：优先使用 .webp 压缩格式
  * 
  * @param gameId 游戏 ID
  * @param key 资源键名
@@ -88,7 +107,7 @@ export function getImagePath(
         const basePath = relativePath.replace(/\.[^.]+$/, '');
         const dir = basePath.substring(0, basePath.lastIndexOf('/'));
         const filename = basePath.substring(basePath.lastIndexOf('/') + 1);
-        return assetsPath(`${dir}/${COMPRESSED_SUBDIR}/${filename}.avif`);
+        return assetsPath(`${dir}/${COMPRESSED_SUBDIR}/${filename}.webp`);
     }
 
     return assetsPath(relativePath);
@@ -165,62 +184,8 @@ export async function preloadGameAssets(gameId: string): Promise<void> {
 
 /** 关键图片超时（ms） */
 const CRITICAL_PRELOAD_TIMEOUT_MS = 10_000;
-const SUPPORT_DETECTION_TIMEOUT_MS = 200;
-
-// 最小化格式探测图片
-const AVIF_TEST_DATA =
-    'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAG1pZjFhdmlmAAAAAG1ldGEAAA';
-const WEBP_TEST_DATA =
-    'data:image/webp;base64,UklGRiIAAABXRUJQVlA4TAYAAAAvAAAAAAfQ//73v/+BiOh/AAA=';
-
-let avifSupportPromise: Promise<boolean> | null = null;
-let webpSupportPromise: Promise<boolean> | null = null;
-
-/**
- * 同步格式偏好缓存
- * 异步检测完成后写入，供 buildLocalizedImageSet 等同步函数使用。
- * null = 尚未检测完成，true/false = 检测结果
- */
-let avifSupportedSync: boolean | null = null;
-// webp 检测结果也缓存，供未来扩展使用（当前 buildLocalizedImageSet 仅判断 avif）
-let _webpSupportedSync: boolean | null = null;
-
-const detectImageSupport = (dataUrl: string): Promise<boolean> => {
-    if (typeof Image === 'undefined') return Promise.resolve(false);
-    return new Promise((resolve) => {
-        let done = false;
-        const img = new Image();
-        const finish = (supported: boolean) => {
-            if (done) return;
-            done = true;
-            resolve(supported);
-        };
-        const timer = setTimeout(() => finish(false), SUPPORT_DETECTION_TIMEOUT_MS);
-        img.onload = () => {
-            clearTimeout(timer);
-            finish(true);
-        };
-        img.onerror = () => {
-            clearTimeout(timer);
-            finish(false);
-        };
-        img.src = dataUrl;
-    });
-};
-
-const supportsAvif = () => {
-    avifSupportPromise ??= detectImageSupport(AVIF_TEST_DATA).then(r => { avifSupportedSync = r; return r; });
-    return avifSupportPromise;
-};
-
-const supportsWebp = () => {
-    webpSupportPromise ??= detectImageSupport(WEBP_TEST_DATA).then(r => { _webpSupportedSync = r; return r; });
-    return webpSupportPromise;
-};
-
-// 模块加载时立即启动格式检测，确保 buildLocalizedImageSet 等同步函数尽早获得结果
-supportsAvif();
-supportsWebp();
+/** 单张图片预加载超时（ms），CDN 有缓存时通常 <1s，超时说明网络异常 */
+const SINGLE_IMAGE_TIMEOUT_MS = 5_000;
 
 /**
  * 预加载关键图片（第一阶段：阻塞门禁）
@@ -255,6 +220,7 @@ export async function preloadCriticalImages(
     }
 
     const effectiveLocale = locale || 'zh-CN';
+    const startTime = performance.now();
     const promises = criticalPaths
         .filter(Boolean)
         .map((p) => {
@@ -263,11 +229,15 @@ export async function preloadCriticalImages(
         });
 
     // Promise.allSettled + 10s 超时竞争
-    const startTime = Date.now();
     await Promise.race([
         Promise.allSettled(promises),
         new Promise<void>((resolve) => setTimeout(resolve, CRITICAL_PRELOAD_TIMEOUT_MS)),
     ]);
+
+    const elapsed = performance.now() - startTime;
+    if (elapsed > 500) {
+        console.warn(`[AssetLoader] ${gameId} 关键图片预加载耗时 ${elapsed.toFixed(0)}ms（${criticalPaths.length} 张）`);
+    }
 
     return warmPaths;
 }
@@ -325,9 +295,8 @@ export function clearGameAssetsCache(gameId: string): void {
 export function markImageLoaded(src: string, locale?: string): void {
     const effectiveLocale = locale || 'zh-CN';
     const localizedPath = getLocalizedAssetPath(src, effectiveLocale);
-    const { avif, webp } = getOptimizedImageUrls(localizedPath);
-    if (avif) preloadedImages.set(avif, new Image());
-    if (webp && webp !== avif) preloadedImages.set(webp, new Image());
+    const { webp } = getOptimizedImageUrls(localizedPath);
+    if (webp) preloadedImages.set(webp, new Image());
 }
 
 /**
@@ -340,15 +309,15 @@ export function isImagePreloaded(src: string, locale?: string): boolean {
     const effectiveLocale = locale || 'zh-CN';
     const localizedPath = getLocalizedAssetPath(src, effectiveLocale);
     
-    // 如果 src 已经是 compressed/ 下的 URL，直接检查 avif/webp 变体
+    // 如果 src 已经是 compressed/ 下的 URL，直接检查 webp 变体
     if (localizedPath.includes(`/${COMPRESSED_SUBDIR}/`)) {
         const base = stripExtension(localizedPath);
-        return preloadedImages.has(`${base}.avif`) || preloadedImages.has(`${base}.webp`);
+        return preloadedImages.has(`${base}.webp`);
     }
 
     // 转换为 optimized URL 后检查
-    const { avif, webp } = getOptimizedImageUrls(localizedPath);
-    return preloadedImages.has(avif) || preloadedImages.has(webp);
+    const { webp } = getOptimizedImageUrls(localizedPath);
+    return preloadedImages.has(webp);
 }
 
 // ============================================================================
@@ -370,52 +339,40 @@ async function preloadImage(src: string): Promise<void> {
     });
 }
 
-async function preloadImageWithResult(src: string): Promise<boolean> {
+async function preloadImageWithResult(src: string, timeoutMs?: number): Promise<boolean> {
     return new Promise((resolve) => {
+        let done = false;
         const img = new Image();
+        const finish = (ok: boolean) => {
+            if (done) return;
+            done = true;
+            resolve(ok);
+        };
+        const timer = timeoutMs != null
+            ? setTimeout(() => {
+                console.debug(`[AssetLoader] 图片加载超时（${timeoutMs}ms），跳过: ${src}`);
+                finish(false);
+            }, timeoutMs)
+            : null;
         img.onload = () => {
+            if (timer) clearTimeout(timer);
             preloadedImages.set(src, img);
-            resolve(true);
+            finish(true);
         };
         img.onerror = () => {
-            console.warn(`[AssetLoader] 图片加载失败: ${src}`);
-            resolve(false);
+            if (timer) clearTimeout(timer);
+            console.debug(`[AssetLoader] 图片加载失败（将尝试备选格式）: ${src}`);
+            finish(false);
         };
         img.src = src;
     });
 }
 
 async function preloadOptimizedImage(src: string): Promise<void> {
-    const { avif, webp } = getOptimizedImageUrls(src);
-    if (!avif && !webp) return;
-    if (avif === webp) {
-        if (preloadedImages.has(avif)) return;
-        await preloadImage(avif);
-        return;
-    }
-
-    const preferAvif = await supportsAvif();
-    let primary = avif;
-    let fallback = webp;
-    if (!preferAvif) {
-        const preferWebp = await supportsWebp();
-        primary = preferWebp ? webp : avif;
-        fallback = preferWebp ? avif : webp;
-    }
-
-    // 临时调试日志：确认预加载的实际 URL
-    if (src.includes('dice')) {
-        console.debug(`[AssetLoader:dice] preloadOptimizedImage src=${src} preferAvif=${preferAvif} primary=${primary}`);
-    }
-
-    if (preloadedImages.has(primary)) return;
-    const ok = await preloadImageWithResult(primary);
-    if (src.includes('dice')) {
-        console.debug(`[AssetLoader:dice] preloadOptimizedImage result ok=${ok} primary=${primary}`);
-    }
-    if (!ok && fallback && !preloadedImages.has(fallback)) {
-        await preloadImageWithResult(fallback);
-    }
+    const { webp } = getOptimizedImageUrls(src);
+    if (!webp) return;
+    if (preloadedImages.has(webp)) return;
+    await preloadImageWithResult(webp, SINGLE_IMAGE_TIMEOUT_MS);
 }
 
 async function preloadAudioFile(src: string): Promise<void> {
@@ -456,7 +413,7 @@ const isSvgSource = (src: string) => /\.svg(\?|#|$)/i.test(src);
 /** 移除扩展名 */
 const stripExtension = (src: string) => {
     if (isPassthroughSource(src)) return src;
-    return src.replace(/\.(avif|webp|png|jpe?g)$/i, '');
+    return src.replace(/\.(webp|png|jpe?g)$/i, '');
 };
 
 const stripAssetsBasePrefix = (normalized: string) => {
@@ -485,8 +442,8 @@ export function assetsPath(path: string): string {
 }
 
 /**
- * 获取优化图片 URL（avif/webp）
- * 用于 <picture> 或 <img> srcset
+ * 获取优化图片 URL（webp）
+ * 用于 <img> src
  */
 export type ImageUrlSet = { avif: string; webp: string };
 export type LocalizedImageUrls = { primary: ImageUrlSet; fallback: ImageUrlSet };
@@ -508,9 +465,10 @@ export function getOptimizedImageUrls(src: string): ImageUrlSet {
     const dir = lastSlash >= 0 ? base.substring(0, lastSlash) : '';
     const filename = lastSlash >= 0 ? base.substring(lastSlash + 1) : base;
     const compressedBase = dir ? `${dir}/${COMPRESSED_SUBDIR}/${filename}` : `${COMPRESSED_SUBDIR}/${filename}`;
+    const webpUrl = `${compressedBase}.webp`;
     return {
-        avif: `${compressedBase}.avif`,
-        webp: `${compressedBase}.webp`,
+        avif: webpUrl,  // 统一使用 webp，avif 收益不大且增加复杂度
+        webp: webpUrl,
     };
 }
 
@@ -571,9 +529,7 @@ export function getLocalizedImageUrls(src: string, locale?: string): LocalizedIm
 /**
  * 构建语言化图片集（用于 CSS background-image）
  * 
- * 所有素材已迁移到国际化目录。
- * 根据浏览器格式支持能力选择 avif（优先）或 webp，
- * 与 preloadOptimizedImage 的格式选择逻辑保持一致，确保预加载命中。
+ * 所有素材已迁移到国际化目录，统一使用 webp 格式。
  */
 export function buildLocalizedImageSet(src: string, locale?: string): string {
     if (!isString(src) || !src) {
@@ -581,24 +537,16 @@ export function buildLocalizedImageSet(src: string, locale?: string): string {
         return '';
     }
     const { primary } = getLocalizedImageUrls(src, locale);
-    // 根据已检测的格式支持能力选择最佳格式，未检测完成时 fallback 到 webp
-    const url = (avifSupportedSync && primary.avif) ? primary.avif
-        : primary.webp || primary.avif;
-    // 临时调试日志：确认格式选择和缓存命中
-    if (src.includes('dice')) {
-        const cached = preloadedImages.has(url);
-        console.debug(`[AssetLoader:dice] buildLocalizedImageSet src=${src} avifSync=${avifSupportedSync} url=${url} cached=${cached}`);
-    }
-    return `url("${url}")`;
+    return `url("${primary.webp}")`;
 }
 
 /**
  * 构建优化图片集（用于 CSS background-image）
- * 返回支持 image-set 的 CSS 值
+ * 统一使用 webp 格式
  */
 export function buildOptimizedImageSet(src: string): string {
-    const { avif, webp } = getOptimizedImageUrls(src);
-    return `image-set(url("${avif}") type("image/avif"), url("${webp}") type("image/webp"))`;
+    const { webp } = getOptimizedImageUrls(src);
+    return `url("${webp}")`;
 }
 
 /**

@@ -958,7 +958,7 @@ describe('交缠颂歌 + 连续射击共享 E2E', () => {
     // 验证 afterAttack 触发了 rapid_fire 的 ABILITY_TRIGGERED 事件
     const rapidFireTrigger = mokaAttackEvents.find(e =>
       e.type === SW_EVENTS.ABILITY_TRIGGERED
-      && (e.payload as Record<string, unknown>).abilityId === 'rapid_fire_extra_attack'
+      && (e.payload as Record<string, unknown>).actionId === 'rapid_fire_extra_attack'
     );
     expect(rapidFireTrigger).toBeDefined();
 
@@ -1043,7 +1043,7 @@ describe('交缠颂歌 + 连续射击共享 E2E', () => {
     // 验证 afterAttack 触发了 rapid_fire
     const rapidFireTrigger = archerAttackEvents.find(e =>
       e.type === SW_EVENTS.ABILITY_TRIGGERED
-      && (e.payload as Record<string, unknown>).abilityId === 'rapid_fire_extra_attack'
+      && (e.payload as Record<string, unknown>).actionId === 'rapid_fire_extra_attack'
     );
     expect(rapidFireTrigger).toBeDefined();
 

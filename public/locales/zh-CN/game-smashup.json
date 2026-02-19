@@ -63,6 +63,7 @@
     "prompt_select_option": "请选择一个选项继续",
     "prompt_wait": "请稍候",
     "played": "已打出！",
+    "triggered": "触发！",
     "vp_award": "+{{vp}} VP",
     "player_short": "P{{id}}",
     "you_short": "你",

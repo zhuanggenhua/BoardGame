@@ -352,6 +352,8 @@ class LobbySocketService {
         const resolvedGameId = normalizedGameId === LOBBY_ALL ? LOBBY_ALL : normalizedGameId;
         const state = this.ensureState(resolvedGameId);
 
+        // 记录订阅前是否已有其他订阅者（已有则服务端已订阅，无需重复 emit）
+        const alreadySubscribed = state.callbacks.size > 0;
         state.callbacks.add(callback);
 
         // 如果已有房间数据，立即通知新订阅者
@@ -359,10 +361,10 @@ class LobbySocketService {
             callback(state.matches);
         }
 
-        // 确保已连接
+        // 确保已连接；仅在首个订阅者时向服务端发送订阅请求
         if (!this.socket?.connected) {
             this.connect();
-        } else {
+        } else if (!alreadySubscribed) {
             this.socket.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: resolvedGameId });
         }
 
@@ -371,7 +373,6 @@ class LobbySocketService {
             state.callbacks.delete(callback);
 
             if (state.callbacks.size === 0) {
-                // 日志已移除：无订阅者提示过于频繁
                 if (this.socket?.connected) {
                     this.socket.emit(LOBBY_EVENTS.UNSUBSCRIBE_LOBBY, { gameId: resolvedGameId });
                 }
@@ -384,26 +385,29 @@ class LobbySocketService {
 
     /**
      * 手动请求刷新房间列表
+     * 注意：subscribe() 首次订阅时已自动向服务端发送 SUBSCRIBE_LOBBY 并获取快照，
+     * 通常不需要额外调用此方法。仅在需要强制刷新时使用。
      */
     requestRefresh(gameId?: string): void {
+        if (!this.socket?.connected) return;
+
         if (gameId) {
             const normalizedGameId = normalizeGameName(gameId);
             if (!normalizedGameId) return;
             const resolvedGameId = normalizedGameId === LOBBY_ALL ? LOBBY_ALL : normalizedGameId;
-            this.ensureState(resolvedGameId);
-            if (this.socket?.connected) {
+            const state = this.getState(resolvedGameId);
+            // 仅在有活跃订阅者时才请求刷新
+            if (state && state.callbacks.size > 0) {
                 this.socket.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: resolvedGameId });
             }
             return;
         }
 
-        if (this.socket?.connected) {
-            this.lobbyStateByGame.forEach((state, activeGameId) => {
-                if (state.callbacks.size > 0) {
-                    this.socket?.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: activeGameId });
-                }
-            });
-        }
+        this.lobbyStateByGame.forEach((state, activeGameId) => {
+            if (state.callbacks.size > 0) {
+                this.socket?.emit(LOBBY_EVENTS.SUBSCRIBE_LOBBY, { gameId: activeGameId });
+            }
+        });
     }
 
     /**

@@ -23,43 +23,6 @@ import type { LatencyOptimizationConfig } from '../../engine/transport/latency/t
  */
 
 // ============================================================================
-// 本地交互声明
-// ============================================================================
-
-interface DiceLocalState {
-    lockedDice: Set<number>;
-    modifiedValues: Map<number, number>;
-}
-
-function diceLocalReducer(
-    state: unknown,
-    stepType: string,
-    payload: unknown,
-): unknown {
-    const diceState = state as DiceLocalState;
-    const p = payload as { dieId: number; newValue?: number };
-
-    switch (stepType) {
-        case 'TOGGLE_DIE_LOCK': {
-            const newLocked = new Set(diceState.lockedDice);
-            if (newLocked.has(p.dieId)) {
-                newLocked.delete(p.dieId);
-            } else {
-                newLocked.add(p.dieId);
-            }
-            return { ...diceState, lockedDice: newLocked };
-        }
-        case 'MODIFY_DIE': {
-            const newModified = new Map(diceState.modifiedValues);
-            newModified.set(p.dieId, p.newValue ?? 1);
-            return { ...diceState, modifiedValues: newModified };
-        }
-        default:
-            return diceState;
-    }
-}
-
-// ============================================================================
 // 导出配置
 // ============================================================================
 
@@ -75,15 +38,6 @@ export const diceThroneLatencyConfig: LatencyOptimizationConfig = {
             'SELECT_ABILITY': 'optimistic',
             'RESPONSE_PASS': 'optimistic',
             'SKIP_TOKEN_RESPONSE': 'optimistic',
-        },
-    },
-    localInteraction: {
-        enabled: true,
-        interactions: {
-            CONFIRM_ROLL: {
-                localSteps: ['TOGGLE_DIE_LOCK', 'MODIFY_DIE'],
-                localReducer: diceLocalReducer,
-            },
         },
     },
     batching: {

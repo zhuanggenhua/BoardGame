@@ -49,7 +49,6 @@ const DAMAGE_PREVENT_KEY = 'status.general.player_status_sound_fx_pack_vol.posit
 const BONUS_DICE_SETTLE_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
 const EXTRA_ATTACK_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_sword_1';
 const ABILITY_RESELECT_KEY = 'ui.fantasy_ui_sound_fx_pack_vol.notifications_pop_ups.popup_a_001';
-const PASSIVE_UPGRADE_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_glyphic_resonance_001';
 
 /**
  * DiceThrone 事件音频配置
@@ -105,7 +104,6 @@ export const DT_EVENTS = defineEvents({
   BONUS_DICE_SETTLED: { audio: 'immediate', sound: BONUS_DICE_SETTLE_KEY },
   EXTRA_ATTACK_TRIGGERED: { audio: 'immediate', sound: EXTRA_ATTACK_KEY },
   ABILITY_RESELECTION_REQUIRED: { audio: 'immediate', sound: ABILITY_RESELECT_KEY },
-  PASSIVE_ABILITY_UPGRADED: { audio: 'immediate', sound: PASSIVE_UPGRADE_KEY },
 
   // ========== 动画驱动（FX 系统）==========
   DAMAGE_DEALT: 'fx',            // 伤害（飞行动画 onImpact）
@@ -766,15 +764,6 @@ export interface ExtraAttackTriggeredEvent extends GameEvent<'EXTRA_ATTACK_TRIGG
     };
 }
 
-/** 被动能力升级事件（如教皇税 I → II） */
-export interface PassiveAbilityUpgradedEvent extends GameEvent<'PASSIVE_ABILITY_UPGRADED'> {
-    payload: {
-        playerId: PlayerId;
-        /** 被动能力 ID */
-        passiveId: string;
-    };
-}
-
 /** 所有 DiceThrone 事件 */
 export type DiceThroneEvent =
     | DiceRolledEvent
@@ -828,5 +817,4 @@ export type DiceThroneEvent =
     | BonusDiceRerollRequestedEvent
     | BonusDieRerolledEvent
     | BonusDiceSettledEvent
-    | ExtraAttackTriggeredEvent
-    | PassiveAbilityUpgradedEvent;
+    | ExtraAttackTriggeredEvent;

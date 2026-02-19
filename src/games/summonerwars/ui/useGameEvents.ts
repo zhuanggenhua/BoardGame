@@ -257,6 +257,73 @@ export function useGameEvents({
   const entries = getEventStreamEntries(G);
   const { consumeNew } = useEventStreamCursor({ entries });
 
+  // ============================================================================
+  // 刷新恢复：首次挂载时扫描 EventStream 历史，恢复未完成的交互型阶段技能
+  // ============================================================================
+  // 问题：useEventStreamCursor 首次调用跳过所有历史事件（防止重播动画），
+  // 但阶段开始/结束触发的交互型技能（幻化、鲜血符文、寒冰碎屑、喟养巨食兽）
+  // 需要玩家交互，跳过后 UI 不会进入选择模式，技能"丢失"。
+  // 解决：首次挂载时反向扫描历史，找到最后一个未处理的交互型技能事件并恢复。
+  const hasRecoveredRef = useRef(false);
+  useEffect(() => {
+    if (hasRecoveredRef.current) return;
+    hasRecoveredRef.current = true;
+    if (entries.length === 0) return;
+
+    // 可恢复的阶段技能映射：eventStream 中的 abilityId → UI 恢复配置
+    // 只包含阶段开始/结束触发的交互型技能，不包含攻击后/移动后技能
+    const RECOVERABLE_PHASE_ABILITIES: Record<string, {
+      phases: string[];  // 该技能有效的阶段
+      uiAbilityId: string;  // setAbilityMode 的 abilityId
+      step: string;
+    }> = {
+      'illusion_copy': { phases: ['move'], uiAbilityId: 'illusion', step: 'selectUnit' },
+      'blood_rune_choice': { phases: ['attack'], uiAbilityId: 'blood_rune', step: 'selectUnit' },
+      'ice_shards_damage': { phases: ['build'], uiAbilityId: 'ice_shards', step: 'selectUnit' },
+      'feed_beast_check': { phases: ['attack'], uiAbilityId: 'feed_beast', step: 'selectUnit' },
+    };
+
+    // 反向扫描：找最后一个可恢复的 ABILITY_TRIGGERED 事件
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const entry = entries[i];
+      if (entry.event.type !== SW_EVENTS.ABILITY_TRIGGERED) continue;
+      const p = entry.event.payload as {
+        abilityId?: string; actionId?: string; sourceUnitId?: string; sourcePosition?: CellCoord;
+      };
+      const recoveryKey = p.actionId ?? p.abilityId;
+      if (!recoveryKey || !RECOVERABLE_PHASE_ABILITIES[recoveryKey]) continue;
+
+      const config = RECOVERABLE_PHASE_ABILITIES[recoveryKey];
+
+      // 检查当前阶段是否匹配
+      if (!config.phases.includes(currentPhase)) break;
+
+      // 检查后续是否已有 ACTIVATE_ABILITY 处理（说明技能已完成）
+      const hasBeenHandled = entries.slice(i + 1).some(e => {
+        if (e.event.type !== SW_EVENTS.ABILITY_TRIGGERED) return false;
+        const ep = e.event.payload as { abilityId?: string; skipUsageCount?: boolean };
+        // ACTIVATE_ABILITY 执行后会产生不带 skipUsageCount 的 ABILITY_TRIGGERED
+        return ep.abilityId === config.uiAbilityId && !ep.skipUsageCount;
+      });
+      if (hasBeenHandled) break;
+
+      // 检查源单位是否仍在场上且属于当前玩家
+      if (!p.sourcePosition) break;
+      const unit = core.board[p.sourcePosition.row]?.[p.sourcePosition.col]?.unit;
+      if (!unit || unit.owner !== myPlayerId) break;
+
+      // 恢复 UI 模式
+      setAbilityMode({
+        abilityId: config.uiAbilityId,
+        step: config.step as AbilityActivationStep,
+        sourceUnitId: p.sourceUnitId ?? '',
+      });
+      break;
+    }
+  // 仅首次挂载执行，依赖项为初始值
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 监听事件流
   useLayoutEffect(() => {
     if (entries.length >= EVENT_STREAM_WARN && entries.length >= eventStreamLogRef.current + EVENT_STREAM_STEP) {
@@ -494,8 +561,10 @@ export function useGameEvents({
       // 攻击后技能触发（念力/高阶念力/读心传念）
       if (event.type === SW_EVENTS.ABILITY_TRIGGERED) {
         const p = event.payload as {
-          abilityId: string; sourceUnitId: string; sourcePosition: CellCoord;
+          abilityId: string; actionId?: string; sourceUnitId: string; sourcePosition: CellCoord;
         };
+        // custom action else 分支产生的事件用 actionId 匹配（abilityId 为父技能 ID，用于 ActionLog 国际化）
+        const matchId = p.actionId ?? p.abilityId;
         if (['telekinesis', 'high_telekinesis', 'mind_transmission'].includes(p.abilityId)) {
           // 检查是否是我的单位
           const unit = core.board[p.sourcePosition.row]?.[p.sourcePosition.col]?.unit;
@@ -511,7 +580,7 @@ export function useGameEvents({
           }
         }
         // 连续射击：攻击后可选消耗充能进行额外攻击
-        if (p.abilityId === 'rapid_fire_extra_attack') {
+        if (matchId === 'rapid_fire_extra_attack') {
           const unit = core.board[p.sourcePosition.row]?.[p.sourcePosition.col]?.unit;
           if (unit && unit.owner === myPlayerId && (unit.boosts ?? 0) >= 1) {
             const captured = {
@@ -524,7 +593,7 @@ export function useGameEvents({
           }
         }
         // 撤退：攻击后可选消耗充能/魔力推拉自身1-2格
-        if (p.abilityId === 'withdraw') {
+        if (matchId === 'withdraw') {
           const unit = core.board[p.sourcePosition.row]?.[p.sourcePosition.col]?.unit;
           if (unit && unit.owner === myPlayerId) {
             const hasCharge = (unit.boosts ?? 0) >= 1;
@@ -538,7 +607,7 @@ export function useGameEvents({
           }
         }
         // 幻化：移动阶段开始时自动进入目标选择模式
-        if (p.abilityId === 'illusion_copy') {
+        if (matchId === 'illusion_copy') {
           const unit = core.board[p.sourcePosition?.row]?.[p.sourcePosition?.col]?.unit;
           if (unit && unit.owner === myPlayerId) {
             const captured = { sourceUnitId: p.sourceUnitId };
@@ -553,7 +622,7 @@ export function useGameEvents({
         }
         // 指引：召唤阶段开始时自动抓牌（已在 abilityResolver 中直接处理，无需 UI 交互）
         // 鲜血符文：攻击阶段开始时进入选择模式
-        if (p.abilityId === 'blood_rune_choice') {
+        if (matchId === 'blood_rune_choice') {
           const unit = core.board[p.sourcePosition?.row]?.[p.sourcePosition?.col]?.unit;
           if (unit && unit.owner === myPlayerId) {
             const captured = { sourceUnitId: p.sourceUnitId };
@@ -567,7 +636,7 @@ export function useGameEvents({
           }
         }
         // 寒冰碎屑：建造阶段结束时进入确认模式
-        if (p.abilityId === 'ice_shards_damage') {
+        if (matchId === 'ice_shards_damage') {
           const unit = core.board[p.sourcePosition?.row]?.[p.sourcePosition?.col]?.unit;
           if (unit && unit.owner === myPlayerId) {
             const captured = { sourceUnitId: p.sourceUnitId };
@@ -581,7 +650,7 @@ export function useGameEvents({
           }
         }
         // 喟养巨食兽：攻击阶段结束时进入选择模式
-        if (p.abilityId === 'feed_beast_check') {
+        if (matchId === 'feed_beast_check') {
           const unit = core.board[p.sourcePosition?.row]?.[p.sourcePosition?.col]?.unit;
           if (unit && unit.owner === myPlayerId) {
             const captured = { sourceUnitId: p.sourceUnitId };
@@ -598,7 +667,7 @@ export function useGameEvents({
         // afterMove 技能触发：移动后自动进入技能选择模式
         // ================================================================
         // 祖灵交流：充能自身或转移给3格内友方
-        if (p.abilityId === 'afterMove:spirit_bond') {
+        if (matchId === 'afterMove:spirit_bond') {
           const unit = core.board[p.sourcePosition?.row]?.[p.sourcePosition?.col]?.unit;
           if (unit && unit.owner === myPlayerId) {
             const captured = { sourceUnitId: p.sourceUnitId };
@@ -612,7 +681,7 @@ export function useGameEvents({
           }
         }
         // 祖灵羁绊：充能+转移给3格内友方（可选）
-        if (p.abilityId === 'afterMove:ancestral_bond') {
+        if (matchId === 'afterMove:ancestral_bond') {
           const unit = core.board[p.sourcePosition?.row]?.[p.sourcePosition?.col]?.unit;
           if (unit && unit.owner === myPlayerId) {
             const captured = { sourceUnitId: p.sourceUnitId };
@@ -626,7 +695,7 @@ export function useGameEvents({
           }
         }
         // 结构变换：推拉3格内友方建筑（可选）
-        if (p.abilityId === 'afterMove:structure_shift') {
+        if (matchId === 'afterMove:structure_shift') {
           const unit = core.board[p.sourcePosition?.row]?.[p.sourcePosition?.col]?.unit;
           if (unit && unit.owner === myPlayerId) {
             const captured = { sourceUnitId: p.sourceUnitId };
@@ -640,7 +709,7 @@ export function useGameEvents({
           }
         }
         // 冰霜战斧：充能或消耗充能附加（可选）
-        if (p.abilityId === 'afterMove:frost_axe') {
+        if (matchId === 'afterMove:frost_axe') {
           const unit = core.board[p.sourcePosition?.row]?.[p.sourcePosition?.col]?.unit;
           if (unit && unit.owner === myPlayerId) {
             const captured = { sourceUnitId: p.sourceUnitId };
@@ -654,7 +723,7 @@ export function useGameEvents({
           }
         }
         // 寒冰冲撞：建筑移动/推拉后选择相邻单位
-        if (p.abilityId === 'ice_ram_trigger') {
+        if (matchId === 'ice_ram_trigger') {
           const iceRamOwner = (event.payload as Record<string, unknown>).iceRamOwner as string;
           const structurePosition = (event.payload as Record<string, unknown>).structurePosition as CellCoord;
           if (iceRamOwner === myPlayerId && structurePosition) {

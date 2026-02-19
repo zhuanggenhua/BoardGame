@@ -50,7 +50,6 @@ import { createOptimisticEngine, filterPlayedEvents, type OptimisticEngine as Op
 import type { EventStreamWatermark } from './latency/types';
 
 import { createCommandBatcher, type CommandBatcher } from './latency/commandBatcher';
-import { createLocalInteractionManager, type LocalInteractionManager } from './latency/localInteractionManager';
 
 // re-export 供外部使用（测试等场景）
 export { filterPlayedEvents };
@@ -178,7 +177,6 @@ export function GameProvider({
     // 延迟优化组件 refs
     const optimisticEngineRef = useRef<OptimisticEngineType | null>(null);
     const batcherRef = useRef<CommandBatcher | null>(null);
-    const localInteractionRef = useRef<LocalInteractionManager | null>(null);
     // 批次 ID 计数器
     const batchSeqRef = useRef(0);
 
@@ -236,27 +234,13 @@ export function GameProvider({
         };
     }, [latencyConfig]);
 
-    // 初始化本地交互管理器
-    useEffect(() => {
-        if (!latencyConfig?.localInteraction?.enabled) {
-            localInteractionRef.current = null;
-            return;
-        }
-        localInteractionRef.current = createLocalInteractionManager({
-            interactions: (latencyConfig.localInteraction.interactions ?? {}) as Record<string, {
-                localSteps: string[];
-                localReducer: (state: unknown, stepType: string, payload: unknown) => unknown;
-            }>,
-        });
-    }, [latencyConfig]);
-
     useEffect(() => {
         const client = new GameTransportClient({
             server,
             matchID: matchId,
             playerID: playerId,
             credentials,
-            onStateUpdate: (newState, players) => {
+            onStateUpdate: (newState, players, meta) => {
                 // 乐观更新引擎：调和服务端确认状态
                 const engine = optimisticEngineRef.current;
                 let finalState: MatchState<unknown>;
@@ -265,7 +249,7 @@ export function GameProvider({
                     if (players.length > 0) {
                         engine.setPlayerIds(players.map((p) => String(p.id)));
                     }
-                    const result = engine.reconcile(newState as MatchState<unknown>);
+                    const result = engine.reconcile(newState as MatchState<unknown>, meta);
                     if (result.didRollback && result.optimisticEventWatermark !== null) {
                         // 回滚：过滤已通过乐观动画播放的事件，防止重复播放
                         finalState = filterPlayedEvents(result.stateToRender, result.optimisticEventWatermark);
@@ -325,42 +309,8 @@ export function GameProvider({
             }
         };
 
-        // 0. 本地交互管理器：中间步骤本地消费，不发网络
-        const localMgr = localInteractionRef.current;
-        if (localMgr) {
-            const interactions = latencyConfig?.localInteraction?.interactions ?? {};
-            
-            // 提交命令：commit 后用生成的 payload 继续走 optimistic + batcher 路径
-            if (type in interactions && localMgr.isActive()) {
-                const { commandType, payload: commitPayload } = localMgr.commit();
-                dispatchToNetwork(commandType, commitPayload);
-                return;
-            }
-            
-            // 中间步骤：只有在活跃交互中才本地消费
-            const isLocalStep = Object.values(interactions).some(
-                (decl) => (decl as { localSteps: string[] }).localSteps.includes(type),
-            );
-            if (isLocalStep) {
-                if (!localMgr.isActive()) {
-                    // 首个中间步骤：自动开始交互
-                    // 查找该 localStep 属于哪个交互（取第一个匹配的）
-                    const interactionId = Object.keys(interactions).find(
-                        (key) => (interactions[key] as { localSteps: string[] }).localSteps.includes(type),
-                    );
-                    if (interactionId) {
-                        localMgr.begin(interactionId, { lockedDice: new Set() });
-                    }
-                }
-                if (localMgr.isActive()) {
-                    localMgr.update(type, payload);
-                    return;
-                }
-            }
-        }
-
         dispatchToNetwork(type, payload);
-    }, [playerId, latencyConfig]);  
+    }, [playerId]);  
 
     // 注册测试工具访问器（仅在测试环境生效）
     useEffect(() => {

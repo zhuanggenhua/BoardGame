@@ -3,7 +3,7 @@
  * 仅保留事件解析/规则，音效资源统一来自 registry
  */
 import type { GameAudioConfig } from '../../lib/audio/types';
-import { createFeedbackResolver } from '../../lib/audio/defineEvents';
+import { createFeedbackResolver, collectPreloadKeys } from '../../lib/audio/defineEvents';
 import { pickRandomSoundKey } from '../../lib/audio/audioUtils';
 import type { GamePhase, SmashUpCore } from './domain/types';
 import { SU_EVENTS, SU_EVENT_TYPES } from './domain/events';
@@ -313,16 +313,9 @@ const resolveFactionSound = (defId: string | undefined, cardType: 'minion' | 'ac
 const baseFeedbackResolver = createFeedbackResolver(SU_EVENTS);
 
 export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
+    // 自动收集 SU_EVENTS 中所有 immediate/ui 策略的音效 key（零维护）
     criticalSounds: [
-        SELECTION_KEY,
-        POSITIVE_SIGNAL_KEY,
-        UPDATE_CHIME_KEY,
-        MINION_PLAY_KEY,
-        ACTION_PLAY_KEY,
-        CARD_DRAW_KEY,
-        CARD_DISCARD_KEY,
-        MOVE_KEY,
-        POWER_GAIN_KEY,
+        ...collectPreloadKeys(SU_EVENTS),
     ],
     bgm: [
         {

@@ -15,7 +15,6 @@ import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { initHeroState, createCharacterDice } from './characters';
-import { getPassiveAbilityUpgrade } from './passiveAbilityUpgrades';
 import { getChoiceEffectHandler, registerChoiceEffectHandler } from './choiceEffects';
 import { removeCard } from './utils';
 import {
@@ -808,25 +807,6 @@ export const reduce = (
             return handleBonusDiceSettled(state, event);
         case 'EXTRA_ATTACK_TRIGGERED':
             return handleExtraAttackTriggered(state, event);
-        case 'PASSIVE_ABILITY_UPGRADED': {
-            const { playerId, passiveId } = event.payload as { playerId: string; passiveId: string };
-            const player = state.players[playerId];
-            if (!player?.passiveAbilities) return state;
-            const upgradedDef = getPassiveAbilityUpgrade(passiveId);
-            if (!upgradedDef) return state;
-            return {
-                ...state,
-                players: {
-                    ...state.players,
-                    [playerId]: {
-                        ...player,
-                        passiveAbilities: player.passiveAbilities.map(p =>
-                            p.id === passiveId ? upgradedDef : p
-                        ),
-                    },
-                },
-            };
-        }
         case 'CHARACTER_SELECTED':
             return handleCharacterSelected(state, event);
         case 'HERO_INITIALIZED':
