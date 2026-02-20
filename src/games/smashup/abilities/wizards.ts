@@ -355,7 +355,7 @@ function wizardSacrifice(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `wizard_sacrifice_${ctx.now}`, ctx.playerId,
         '选择要牺牲的随从（抽取等量力量的牌）',
-        buildMinionTargetOptions(options),
+        buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
         { sourceId: 'wizard_sacrifice', targetType: 'minion', autoCancelOption: true },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };

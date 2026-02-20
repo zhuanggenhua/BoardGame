@@ -105,11 +105,11 @@ describe('狂战士技能定义', () => {
             expect(ability!.effects![0].action.customActionId).toBe('barbarian-suppress-roll');
         });
 
-        it('鲁莽打击 - 终极技能，5个力量面触发', () => {
+        it('鲁莽一击 - 终极技能，大顺子触发', () => {
             const ability = BARBARIAN_ABILITIES.find(a => a.id === 'reckless-strike');
             expect(ability).toBeDefined();
             expect(ability!.tags).toContain('ultimate');
-            expect(ability!.trigger!.type).toBe('diceSet');
+            expect(ability!.trigger!.type).toBe('largeStraight');
             // 15 伤害 + 自伤 4
             expect(ability!.effects![0].action.value).toBe(15);
             expect(ability!.effects![1].action.type).toBe('damage');

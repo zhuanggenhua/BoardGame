@@ -120,7 +120,7 @@ export const BARBARIAN_ABILITIES: AbilityDef[] = [
         description: abilityText('reckless-strike', 'description'),
         tags: ['ultimate'],
         sfxKey: BARBARIAN_SFX_ULTIMATE,
-        trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.STRENGTH]: 5 } },
+        trigger: { type: 'largeStraight' },
         effects: [damage(15, abilityEffectText('reckless-strike', 'damage15')), { description: abilityEffectText('reckless-strike', 'selfDamage4'), action: { type: 'damage', target: 'self', value: 4 }, timing: 'postDamage', condition: { type: 'onHit' } }],
     },
     {

@@ -1,6 +1,6 @@
 # Audio Asset Symbols (Flat & Grouped)
 
-Generated on: 2026/2/10 11:44:47
+Generated on: 2026/2/20 14:15:51
 Total Metadata Symbols: 1659 (from 6776 physical files)
 
 > [!TIP]

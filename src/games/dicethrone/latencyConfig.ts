@@ -32,12 +32,15 @@ export const diceThroneLatencyConfig: LatencyOptimizationConfig = {
         // commandDeterminism 不声明 → 全部走 Random Probe 自动检测
         // 乐观动画：确定性命令立即播放动画，不等服务端确认
         animationMode: {
-            'ADVANCE_PHASE': 'optimistic',
             'TOGGLE_DIE_LOCK': 'optimistic',
             'CONFIRM_ROLL': 'optimistic',
             'SELECT_ABILITY': 'optimistic',
-            'RESPONSE_PASS': 'optimistic',
             'SKIP_TOKEN_RESPONSE': 'optimistic',
+            // 种子同步后，随机命令也可以乐观预测并立即播放动画
+            'ROLL_DICE': 'optimistic',
+            'REROLL_DIE': 'optimistic',
+            'REROLL_BONUS_DIE': 'optimistic',
+            // 注：ADVANCE_PHASE / RESPONSE_PASS 由引擎层内置 optimistic 默认值，无需重复声明
         },
     },
     batching: {

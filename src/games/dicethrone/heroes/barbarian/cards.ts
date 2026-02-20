@@ -139,6 +139,7 @@ export const BARBARIAN_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-more-please', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.BARBARIAN, index: 2 },
+        isAttackModifier: true,
         effects: [
             {
                 description: '投掷5骰：增加 1x剑 伤害；施加脑震荡',

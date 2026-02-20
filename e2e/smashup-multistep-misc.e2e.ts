@@ -99,7 +99,7 @@ test.describe('SmashUp 机器人多步交互', () => {
         await initContext(context, { storageKey: '__smashup_robot_multi_reset' });
     });
 
-    test('robot_zapbot: 选手牌力量≤2随从 → 选基地 → 额外随从打出', async ({ page }, testInfo) => {
+    test('robot_zapbot: 打出后获得额外随从额度（无弹窗）', async ({ page }, testInfo) => {
         await gotoLocalSmashUp(page);
         await completeFactionSelectionLocal(page, [FACTION.ROBOTS, FACTION.PIRATES, FACTION.NINJAS, FACTION.ALIENS]);
         await waitForHandArea(page);
@@ -127,50 +127,14 @@ test.describe('SmashUp 机器人多步交互', () => {
         await clickHandCard(page, 0);
         await page.waitForTimeout(300);
 
-        // 选基地打出 zapbot — 基地高亮
+        // 选基地打出 zapbot
         await waitForBaseSelect(page);
         await clickHighlightedBase(page, 0);
         await page.waitForTimeout(1500);
 
-        // zapbot 的 onPlay 触发：选手牌力量≤2随从（PromptOverlay 或手牌直选）
-        const hasPrompt = await isPromptVisible(page);
-        await page.screenshot({ path: testInfo.outputPath('step1-zapbot-prompt.png'), fullPage: true });
-
-        if (hasPrompt) {
-            // 选择随从（非跳过）
-            const zapResult = await page.evaluate(() => {
-                const overlays = document.querySelectorAll('.fixed[style*="z-index"]');
-                for (const overlay of overlays) {
-                    const style = (overlay as HTMLElement).style;
-                    if (style.zIndex && parseInt(style.zIndex) >= 300) {
-                        const btns = overlay.querySelectorAll('button:not([disabled])');
-                        for (const btn of btns) {
-                            const text = btn.textContent || '';
-                            if (!text.match(/跳过|Skip/i)) {
-                                (btn as HTMLElement).click();
-                                return 'clicked-minion';
-                            }
-                        }
-                        if (btns.length > 0) { (btns[0] as HTMLElement).click(); return 'clicked-first'; }
-                    }
-                }
-                return 'not-found';
-            });
-            console.log('zapbot 选随从:', zapResult);
-            await page.waitForTimeout(1000);
-
-            // 第二步：选基地 — 可能棋盘直选或 PromptOverlay
-            const hasBase = await isBaseSelectMode(page);
-            if (hasBase) {
-                await clickHighlightedBase(page, 0);
-            } else if (await isPromptVisible(page)) {
-                await clickPromptOption(page, 0);
-            }
-            await page.waitForTimeout(1000);
-        }
-
+        // zapbot 的 onPlay 直接给额度，不弹窗
         expect(await isPromptVisible(page)).toBe(false);
-        await page.screenshot({ path: testInfo.outputPath('step2-final.png'), fullPage: true });
+        await page.screenshot({ path: testInfo.outputPath('zapbot-no-prompt.png'), fullPage: true });
     });
 
     test('robot_hoverbot: 确认打出牌库顶随从 → 选基地', async ({ page }, testInfo) => {

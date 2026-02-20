@@ -33,7 +33,7 @@ function tricksterGnome(ctx: AbilityContext): AbilityResult {
         return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
     });
     // "你可以"效果：添加跳过选项
-    const minionOptions = buildMinionTargetOptions(options);
+    const minionOptions = buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
     minionOptions.push(createSkipOption());
     return resolveOrPrompt(ctx, minionOptions, {
         id: 'trickster_gnome',

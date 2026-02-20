@@ -62,7 +62,7 @@ function pirateSaucyWench(ctx: AbilityContext): AbilityResult {
     // "你可以"：添加跳过选项
     const allOptions = [
         { id: 'skip', label: '跳过（不消灭随从）', value: { skip: true } },
-        ...buildMinionTargetOptions(options),
+        ...buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }),
     ] as any[];
     const interaction = createSimpleChoice(
         `pirate_saucy_wench_${ctx.now}`, ctx.playerId,
@@ -122,7 +122,7 @@ function pirateCannon(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `pirate_cannon_first_${ctx.now}`, ctx.playerId,
         '加农炮：点击第一个要消灭的力量≤2的随从',
-        buildMinionTargetOptions(options),
+        buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }),
         { sourceId: 'pirate_cannon_choose_first', targetType: 'minion' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -173,7 +173,7 @@ function buildFullSailChooseMinionInteraction(
     }
     if (myMinions.length === 0) return null;
     const options = [
-        ...buildMinionTargetOptions(myMinions),
+        ...buildMinionTargetOptions(myMinions, { state: state, sourcePlayerId: playerId }),
         { id: 'done', label: '完成移动', value: { done: true } },
     ];
     const interaction = createSimpleChoice(
@@ -365,7 +365,7 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
         });
         const allOptions = [
             { id: 'skip', label: '跳过（不移动随从）', value: { skip: true } },
-            ...buildMinionTargetOptions(options),
+            ...buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
         ] as any[];
         const interaction = createSimpleChoice(
             `pirate_first_mate_choose_first_${mate.uid}_${ctx.now}`, controllerId,
@@ -398,7 +398,7 @@ function pirateDinghy(ctx: AbilityContext): AbilityResult {
     if (myMinions.length === 0) return { events: [] };
     const options = myMinions.map(m => ({ uid: m.uid, defId: m.defId, baseIndex: m.baseIndex, label: m.label }));
     const interaction = createSimpleChoice(
-        `pirate_dinghy_first_${ctx.now}`, ctx.playerId, '选择要移动的己方随从（至多2个，第1个）', buildMinionTargetOptions(options), { sourceId: 'pirate_dinghy_choose_first', targetType: 'minion' }
+        `pirate_dinghy_first_${ctx.now}`, ctx.playerId, '选择要移动的己方随从（至多2个，第1个）', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'pirate_dinghy_choose_first', targetType: 'minion' }
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -484,7 +484,7 @@ function piratePowderkeg(ctx: AbilityContext): AbilityResult {
     if (myMinions.length === 0) return { events: [] };
     const options = myMinions.map(m => ({ uid: m.uid, defId: m.defId, baseIndex: m.baseIndex, label: m.label }));
     const interaction = createSimpleChoice(
-        `pirate_powderkeg_${ctx.now}`, ctx.playerId, '选择要牺牲的己方随从（同基地力量≤它的随从也会被消灭）', buildMinionTargetOptions(options), { sourceId: 'pirate_powderkeg', targetType: 'minion' }
+        `pirate_powderkeg_${ctx.now}`, ctx.playerId, '选择要牺牲的己方随从（同基地力量≤它的随从也会被消灭）', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'pirate_powderkeg', targetType: 'minion' }
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -586,7 +586,7 @@ export function registerPirateInteractionHandlers(): void {
             '加农炮：点击第二个要消灭的力量≤2的随从（可选）',
             [
                 { id: 'skip', label: '跳过（不消灭第二个）', value: { skip: true } },
-                ...buildMinionTargetOptions(remaining),
+                ...buildMinionTargetOptions(remaining, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' }),
             ] as any[],
             'pirate_cannon_choose_second'
         );
@@ -740,7 +740,7 @@ export function registerPirateInteractionHandlers(): void {
             `pirate_dinghy_second_${timestamp}`, playerId, '选择第二个要移动的随从（可选）',
             [
                 { id: 'skip', label: '跳过（不移动第二个）', value: { skip: true } },
-                ...buildMinionTargetOptions(remaining),
+                ...buildMinionTargetOptions(remaining, { state: state.core, sourcePlayerId: playerId }),
             ] as any[],
             { sourceId: 'pirate_dinghy_choose_second', targetType: 'minion' }
         );
@@ -916,7 +916,7 @@ export function registerPirateInteractionHandlers(): void {
         });
         const allOptions = [
             { id: 'skip', label: '跳过（不移动第二个）', value: { skip: true } },
-            ...buildMinionTargetOptions(options),
+            ...buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId }),
         ] as any[];
         const interaction = createSimpleChoice(
             `pirate_first_mate_choose_second_${timestamp}`, playerId,

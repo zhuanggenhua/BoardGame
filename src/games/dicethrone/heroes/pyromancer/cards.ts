@@ -119,6 +119,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
         timing: 'roll', // 'roll' timing usually covers Attack Modifiers in simplified model, or 'instant'
         description: cardText('card-red-hot', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PYROMANCER, index: 7 },
+        isAttackModifier: true,
         effects: [
             {
                 description: abilityEffectText('card-red-hot', 'dmgPerFM'),
@@ -135,6 +136,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-get-fired-up', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PYROMANCER, index: 13 },
+        isAttackModifier: true,
         effects: [
             {
                 description: abilityEffectText('card-get-fired-up', 'roll'),

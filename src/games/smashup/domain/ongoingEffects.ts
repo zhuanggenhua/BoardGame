@@ -322,6 +322,38 @@ export function isMinionProtected(
 }
 
 /**
+ * 检查随从是否受到非消耗型保护（用于目标选择过滤）
+ *
+ * 消耗型保护（如 tooth_and_claw）不应在目标选择阶段过滤，
+ * 而应在事件产生后通过 filterProtectedDestroyEvents 消耗处理。
+ */
+export function isMinionProtectedNonConsumable(
+    state: SmashUpCore,
+    targetMinion: MinionOnBase,
+    targetBaseIndex: number,
+    sourcePlayerId: PlayerId,
+    protectionType: ProtectionType
+): boolean {
+    if (protectionRegistry.length === 0) return false;
+
+    const ctx: ProtectionCheckContext = {
+        state,
+        targetMinion,
+        targetBaseIndex,
+        sourcePlayerId,
+        protectionType,
+    };
+
+    for (const entry of protectionRegistry) {
+        if (entry.protectionType !== protectionType) continue;
+        if (entry.consumable) continue; // 跳过消耗型保护
+        if (!isSourceActive(state, entry.sourceDefId)) continue;
+        if (entry.checker(ctx)) return true;
+    }
+    return false;
+}
+
+/**
  * 查找消耗型保护来源卡牌
  *
  * 当 isMinionProtected 返回 true 且保护来源是消耗型（如 trickster_hideout），

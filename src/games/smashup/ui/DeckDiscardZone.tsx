@@ -69,7 +69,8 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn,
 
         return {
             title: `${t('ui.discard_pile', { defaultValue: '弃牌堆' })} (${discard.length})`,
-            cards: discard.map(c => ({ uid: c.uid, defId: c.defId })),
+            // 反转顺序：最新弃掉的卡在左边
+            cards: [...discard].reverse().map(c => ({ uid: c.uid, defId: c.defId })),
             onClose: handleCloseDiscard,
             // 有可打出的卡牌时，传递选择相关 props
             ...(playableCards && playableCards.length > 0 && {
@@ -130,7 +131,7 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn,
             >
                 <div className="relative w-[7.5vw] aspect-[0.714]">
                     {hasPlayableFromDiscard && (
-                        <div className="absolute -inset-2 rounded-lg z-0">
+                        <div className="absolute -inset-2 rounded-lg z-0 pointer-events-none">
                             <div className="absolute inset-0 rounded-lg bg-amber-400/40 animate-ping" />
                             <div className="absolute inset-0 rounded-lg bg-amber-400/30 animate-pulse shadow-[0_0_20px_6px_rgba(251,191,36,0.5)]" />
                         </div>

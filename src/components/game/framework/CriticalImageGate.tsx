@@ -10,6 +10,8 @@ export interface CriticalImageGateProps {
     playerID?: string | null;
     enabled?: boolean;
     loadingDescription?: string;
+    /** 首次预加载完成后回调（每次 phaseKey 变化后重新触发） */
+    onReady?: () => void;
     children: React.ReactNode;
 }
 
@@ -30,6 +32,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     playerID,
     enabled = true,
     loadingDescription,
+    onReady,
     children,
 }) => {
     // E2E 测试可通过 window.__E2E_SKIP_IMAGE_GATE__ 跳过图片预加载门禁
@@ -99,6 +102,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         if (lastReadyKeyRef.current === runKey) {
             // 同步快速路径已标记完成，确保 ready 状态同步
             if (!ready) setReady(true);
+            onReady?.();
             return;
         }
 
@@ -114,12 +118,14 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
             .then((warmPaths) => {
                 lastReadyKeyRef.current = runKey;
                 setReady(true);
+                onReady?.();
                 preloadWarmImages(warmPaths, locale);
             })
             .catch((err) => {
                 console.error('[CriticalImageGate] 预加载失败:', err);
                 lastReadyKeyRef.current = runKey;
                 setReady(true);
+                onReady?.();
             })
             .finally(() => {
                 inFlightRef.current = false;

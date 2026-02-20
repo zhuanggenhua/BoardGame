@@ -204,3 +204,96 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
         expect(interaction?.data?.sourceId).not.toBe('robot_microbot_reclaimer');
     });
 });
+
+// ============================================================================
+// robot_microbot_fixer（微型机修理者）— onPlay 额外出牌
+// ============================================================================
+
+describe('robot_microbot_fixer（微型机修理者 onPlay）', () => {
+    it('第一个随从打出时获得额外随从额度', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('f1', 'robot_microbot_fixer', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = makeMatchState(state);
+        const result = runCommand(ms, {
+            type: SU_COMMANDS.PLAY_MINION, playerId: '0',
+            payload: { cardUid: 'f1', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(result.success).toBe(true);
+        // 第一个随从 → 额外出牌 → minionLimit 从 1 增加到 2
+        expect(result.finalState.core.players['0'].minionLimit).toBe(2);
+    });
+
+    it('非第一个随从打出时不获得额外额度', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('f1', 'robot_microbot_fixer', 'minion', '0')],
+                    minionsPlayed: 1, // 已打出过一个
+                    minionLimit: 2,   // 有额外额度
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = makeMatchState(state);
+        const result = runCommand(ms, {
+            type: SU_COMMANDS.PLAY_MINION, playerId: '0',
+            payload: { cardUid: 'f1', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(result.success).toBe(true);
+        // 非第一个随从 → 不额外出牌 → minionLimit 保持 2
+        expect(result.finalState.core.players['0'].minionLimit).toBe(2);
+    });
+});
+
+// ============================================================================
+// robot_microbot_reclaimer — onPlay 额外出牌验证
+// ============================================================================
+
+describe('robot_microbot_reclaimer（微型机回收者 onPlay 额外出牌）', () => {
+    it('第一个随从打出时获得额外随从额度', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('r1', 'robot_microbot_reclaimer', 'minion', '0')],
+                    // 无微型机弃牌，不会创建交互，方便单独验证额外出牌
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = makeMatchState(state);
+        const result = runCommand(ms, {
+            type: SU_COMMANDS.PLAY_MINION, playerId: '0',
+            payload: { cardUid: 'r1', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(result.success).toBe(true);
+        // 第一个随从 → 额外出牌 → minionLimit 从 1 增加到 2
+        expect(result.finalState.core.players['0'].minionLimit).toBe(2);
+    });
+
+    it('非第一个随从打出时不获得额外额度', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('r1', 'robot_microbot_reclaimer', 'minion', '0')],
+                    minionsPlayed: 1,
+                    minionLimit: 2,
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = makeMatchState(state);
+        const result = runCommand(ms, {
+            type: SU_COMMANDS.PLAY_MINION, playerId: '0',
+            payload: { cardUid: 'r1', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(result.success).toBe(true);
+        // 非第一个随从 → 不额外出牌 → minionLimit 保持 2
+        expect(result.finalState.core.players['0'].minionLimit).toBe(2);
+    });
+});

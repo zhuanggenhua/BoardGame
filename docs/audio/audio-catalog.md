@@ -1,7 +1,7 @@
 # 音效语义目录
 
 > 自动生成。`node scripts/audio/generate_audio_catalog.js`
-> 7337 条 → 533 组
+> 10298 条 → 597 组
 
 ## 查找流程
 
@@ -20,6 +20,7 @@
 | coins | 8 | 33 | 金币（掉落/奖励/收集） |
 | combat | 52 | 1104 | 战斗（剑/斧/拳/弓/盾/爆炸） |
 | cyberpunk | 19 | 357 | 赛博朋克（科幻UI/武器） |
+| dark_fantasy_studio | 64 | 2961 |  |
 | dice | 6 | 29 | 骰子（投掷/碰撞/滚动） |
 | fantasy | 80 | 530 | 奇幻（弓箭/盾/治疗/火焰） |
 | magic | 159 | 1737 | 魔法（施法/元素/光暗/召唤） |
@@ -174,6 +175,75 @@
 | pulse_and_surge | 16 | `cyberpunk.*pulse_and_surge` | cyber_pulse, cyber_surge, mini_electric_sw... |
 | vehicles | 32 | `cyberpunk.*vehicles` | vehicle_cr_x1_001_l_to, vehicle_cr_x1_002_... |
 | weapons | 30 | `cyberpunk.*weapons` | weapon_carnage, weapon_jackie_tungstenfeet... |
+
+## dark_fantasy_studio
+
+| 语义 | # | grep | 子关键词 |
+|------|---|------|----------|
+| abyss | 57 | `dark_fantasy_studio.*abyss` | abyss |
+| agony | 29 | `dark_fantasy_studio.*agony` | agony |
+| alien_voices | 41 | `dark_fantasy_studio.*alien_voices` | alien_hit_and_death, alien_voices |
+| atmosphere_vol1 | 10 | `dark_fantasy_studio.*atmosphere_vol1` | atmos |
+| atmosphere_vol2 | 10 | `dark_fantasy_studio.*atmosphere_vol2` | atmos_2 |
+| bell | 1 | `dark_fantasy_studio.*bell` | bell |
+| birds | 25 | `dark_fantasy_studio.*birds` | birds |
+| broken_glass | 42 | `dark_fantasy_studio.*broken_glass` | broken_glass |
+| chaos | 49 | `dark_fantasy_studio.*chaos` | chaos |
+| cinematic_horror | 52 | `dark_fantasy_studio.*cinematic_horror` | complexe_cinematic_horror |
+| cracking_wood | 27 | `dark_fantasy_studio.*cracking_wood` | noise_alchemy_craking_wood |
+| creature | 20 | `dark_fantasy_studio.*creature` | creature |
+| creepy_loops | 55 | `dark_fantasy_studio.*creepy_loops` | creepy_loops |
+| creepy_wind | 80 | `dark_fantasy_studio.*creepy_wind` | creepy_wind |
+| crow | 46 | `dark_fantasy_studio.*crow` | crow |
+| cyborg | 60 | `dark_fantasy_studio.*cyborg` | cyborg |
+| dark_horns | 51 | `dark_fantasy_studio.*dark_horns` | dark_horns |
+| deep_space_danger | 40 | `dark_fantasy_studio.*deep_space_danger` | noise_alchemy_deep_space_danger |
+| dimensional_portal | 100 | `dark_fantasy_studio.*dimensional_portal` | dimensional_portal, dimensional_portal_10_... |
+| dissonant_vocals | 39 | `dark_fantasy_studio.*dissonant_vocals` | dissonant_vocals |
+| dragon | 49 | `dark_fantasy_studio.*dragon` | dragon |
+| dragon_wings | 22 | `dark_fantasy_studio.*dragon_wings` | noise_alchemy_dragon_wings |
+| dungeon_atmosphere | 14 | `dark_fantasy_studio.*dungeon_atmosphere` | dungeon_atmosphere |
+| dungeon_noises | 60 | `dark_fantasy_studio.*dungeon_noises` | dungeons_noises |
+| evil_laugh | 54 | `dark_fantasy_studio.*evil_laugh` | evil_laugh |
+| flesh_and_blood | 50 | `dark_fantasy_studio.*flesh_and_blood` | flesh_and_blood |
+| ghostly | 51 | `dark_fantasy_studio.*ghostly` | ghostly |
+| glitch | 70 | `dark_fantasy_studio.*glitch` | glitch |
+| gun_reload_and_shot | 46 | `dark_fantasy_studio.*gun_reload_and_shot` | dark_fantasy_studio_reload, dark_fantasy_s... |
+| horror_rising | 20 | `dark_fantasy_studio.*horror_rising` | horror_rising |
+| insects | 31 | `dark_fantasy_studio.*insects` | insects |
+| interface | 66 | `dark_fantasy_studio.*interface` | interface, interface_combined |
+| jingles | 44 | `dark_fantasy_studio.*jingles` | jingle |
+| jumpscare | 62 | `dark_fantasy_studio.*jumpscare` | jump_scare |
+| lamentations | 35 | `dark_fantasy_studio.*lamentations` | lamentations |
+| metallic_philosophy | 46 | `dark_fantasy_studio.*metallic_philosophy` | metallic |
+| monk | 38 | `dark_fantasy_studio.*monk` | monk |
+| music_box | 51 | `dark_fantasy_studio.*music_box` | music_box |
+| power_up | 34 | `dark_fantasy_studio.*power_up` | power_up |
+| reality_glitch | 43 | `dark_fantasy_studio.*reality_glitch` | noise_alchemy_reality_glitch |
+| rip | 15 | `dark_fantasy_studio.*rip` | rip |
+| riser_impact | 49 | `dark_fantasy_studio.*riser_impact` | riser_impact |
+| risers | 50 | `dark_fantasy_studio.*risers` | risers |
+| rocks_and_boulders | 49 | `dark_fantasy_studio.*rocks_and_boulders` | rocks_and_boulders |
+| sci_fi_voices | 286 | `dark_fantasy_studio.*sci_fi_voices` | sci_fi_voices_1, sci_fi_voices_1_activated... |
+| shipwreck | 44 | `dark_fantasy_studio.*shipwreck` | dark_fantasy_studio_shipwreck |
+| sirens | 30 | `dark_fantasy_studio.*sirens` | sirens |
+| smashed | 52 | `dark_fantasy_studio.*smashed` | smashed |
+| spaceship_door | 41 | `dark_fantasy_studio.*spaceship_door` | spaceship_door |
+| steam | 30 | `dark_fantasy_studio.*steam` | steam |
+| stingers | 50 | `dark_fantasy_studio.*stingers` | stingers |
+| sub_boom | 52 | `dark_fantasy_studio.*sub_boom` | sub_boom |
+| swords | 43 | `dark_fantasy_studio.*swords` | swords |
+| thunder | 48 | `dark_fantasy_studio.*thunder` | dark_fantasy_studio_thunder |
+| video_game_menu | 47 | `dark_fantasy_studio.*video_game_menu` | video_game_menu |
+| waterphone | 50 | `dark_fantasy_studio.*waterphone` | dark_fantasy_studio_waterphone |
+| whispers | 50 | `dark_fantasy_studio.*whispers` | whispers |
+| whooshes | 50 | `dark_fantasy_studio.*whooshes` | whooshes |
+| whooshes_vol2 | 50 | `dark_fantasy_studio.*whooshes_vol2` | whooshes_vol_2 |
+| wind | 10 | `dark_fantasy_studio.*wind` | wind |
+| witch | 41 | `dark_fantasy_studio.*witch` | witch |
+| woman_terror_breath | 20 | `dark_fantasy_studio.*woman_terror_breath` | woman_terror_breath |
+| woman_terror_scream | 49 | `dark_fantasy_studio.*woman_terror_scream` | woman_terror_scream |
+| zombie_voices | 35 | `dark_fantasy_studio.*zombie_voices` | zombies |
 
 ## dice
 

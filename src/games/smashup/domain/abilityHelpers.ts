@@ -10,7 +10,7 @@ import type { PromptOption as EnginePromptOption, SimpleChoiceConfig } from '../
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import type { AbilityContext, AbilityResult } from './abilityRegistry';
 import { resolveOnPlay } from './abilityRegistry';
-import { isMinionProtected, type ProtectionType } from './ongoingEffects';
+import { isMinionProtected, isMinionProtectedNonConsumable, type ProtectionType } from './ongoingEffects';
 import type {
     SmashUpCore,
     MinionOnBase,
@@ -455,19 +455,21 @@ export function grantExtraMinion(
     /** 限定额度只能用于指定基地（不设则为全局额度） */
     restrictToBase?: number,
     /** 额外选项 */
-    options?: { sameNameOnly?: boolean; sameNameDefId?: string },
+    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number },
 ): LimitModifiedEvent {
     return {
         type: SU_EVENTS.LIMIT_MODIFIED,
         payload: {
             playerId, limitType: 'minion', delta: 1, reason,
             ...(restrictToBase !== undefined ? { restrictToBase } : {}),
+            ...(options?.powerMax !== undefined ? { powerMax: options.powerMax } : {}),
             ...(options?.sameNameOnly ? { sameNameOnly: true } : {}),
             ...(options?.sameNameDefId ? { sameNameDefId: options.sameNameDefId } : {}),
         },
         timestamp: now,
     };
 }
+
 
 /** 生成额外行动额度事件 */
 export function grantExtraAction(
@@ -729,39 +731,44 @@ export function openMeFirstWindow(
 // ============================================================================
 
 /**
- * 构建随从目标选择的交互选项（带自动保护过滤）
+ * 构建随从目标选择的交互选项（自动保护过滤）
+ * 
+ * 自动过滤受保护的对手随从：对每个对手随从检查所有保护类型，
+ * 己方随从不做保护检查。调用方无需手动指定 effectType。
  * 
  * @param candidates 候选随从列表（含基地索引）
- * @param context 可选上下文，用于自动过滤受保护的随从
+ * @param context state + sourcePlayerId（必传）；effectType 可选覆盖
  * @returns 引擎层 PromptOption 数组
  */
 export function buildMinionTargetOptions(
     candidates: { uid: string; defId: string; baseIndex: number; label: string }[],
-    context?: {
+    context: {
         /** 当前游戏状态（用于保护检查） */
         state: SmashUpCore;
-        /** 发起效果的玩家（攻击者） */
+        /** 发起效果的玩家 */
         sourcePlayerId: PlayerId;
-        /** 效果类型（用于保护检查） */
-        effectType: ProtectionType;
+        /** 效果类型覆盖（可选，不传则自动检查 destroy + affect） */
+        effectType?: ProtectionType;
     }
 ): EnginePromptOption<{ minionUid: string; baseIndex: number; defId: string }>[] {
-    let filteredCandidates = candidates;
-
-    // 自动过滤受保护的随从
-    if (context) {
-        filteredCandidates = candidates.filter(c => {
-            const minion = context.state.bases[c.baseIndex]?.minions.find(m => m.uid === c.uid);
-            if (!minion) return false;
-            return !isMinionProtected(
-                context.state,
-                minion,
-                c.baseIndex,
-                context.sourcePlayerId,
-                context.effectType
-            );
-        });
-    }
+    const { state, sourcePlayerId, effectType } = context;
+    const filteredCandidates = candidates.filter(c => {
+        const minion = state.bases[c.baseIndex]?.minions.find(m => m.uid === c.uid);
+        if (!minion) return false;
+        // 己方随从不做保护检查（保护只针对对手效果）
+        if (minion.controller === sourcePlayerId) return true;
+        // 对手随从：检查保护
+        if (effectType) {
+            // 指定了 effectType → 只检查该类型（非消耗型）+ affect（非消耗型广义保护）
+            if (isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, effectType)) return false;
+            if (effectType !== 'affect' && isMinionProtectedNonConsumable(state, minion, c.baseIndex, sourcePlayerId, 'affect')) return false;
+            return true;
+        }
+        // 未指定 effectType → 检查 destroy（全部）+ affect（仅非消耗型）
+        if (isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, 'destroy')) return false;
+        if (isMinionProtectedNonConsumable(state, minion, c.baseIndex, sourcePlayerId, 'affect')) return false;
+        return true;
+    });
 
     return filteredCandidates.map((c, i) => ({
         id: `minion-${i}`,

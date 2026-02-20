@@ -91,7 +91,6 @@ describe('Prompt 响应链集成测试', () => {
                 'dino_rampage',
                 'robot_microbot_guard',
                 'robot_tech_center',
-                'robot_zapbot',
             ];
             for (const id of interactionAbilities) {
                 const handler = getInteractionHandler(id);

@@ -85,7 +85,7 @@ function miskatonicMandatoryReading(ctx: AbilityContext): AbilityResult {
         const power = getMinionPower(ctx.state, m, baseIndex);
         return { uid: m.uid, defId: m.defId, baseIndex, label: `${name} (力量 ${power})` };
     });
-    return resolveOrPrompt(ctx, buildMinionTargetOptions(options), {
+    return resolveOrPrompt(ctx, buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'affect' }), {
         id: 'miskatonic_mandatory_reading',
         title: '最好不知道的事：选择一个随从',
         sourceId: 'miskatonic_mandatory_reading',
@@ -381,7 +381,7 @@ function miskatonicThingOnTheDoorstep(ctx: AbilityContext): AbilityResult {
         const power = getMinionPower(ctx.state, m, baseIndex);
         return { uid: m.uid, defId: m.defId, baseIndex, label: `${name} (力量 ${power})` };
     });
-    return resolveOrPrompt(ctx, buildMinionTargetOptions(options), {
+    return resolveOrPrompt(ctx, buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }), {
         id: 'miskatonic_thing_on_the_doorstep',
         title: '老詹金斯!?：选择要消灭的最高力量随从',
         sourceId: 'miskatonic_thing_on_the_doorstep',

@@ -28,6 +28,7 @@
 | **传输层/Board Props** (socket/dispatch/Provider) | `docs/ai-rules/engine-systems.md` § 传输层架构 | `GameBoardProps` 契约，无 `ctx` prop，`dispatch` 命令分发，`GameProvider`/`LocalGameProvider` |
 | **乐观更新/延迟优化** (optimistic/latency/预测) | `docs/ai-rules/engine-systems.md` § 乐观更新引擎 | Random Probe 自动检测、AnimationMode、EventStream 水位线、pending replay、`latencyConfig.ts` |
 | **挑选/查找音效** (音效定位) | `docs/audio/audio-catalog.md` | 语义目录，按关键词搜索定位 registry key |
+| **从外部导入新音效素材** (新增音频资源) | `docs/audio/add-audio.md` | 素材整理→目录结构→压缩（wav→ogg）→生成 registry→中文友好名→清单→验证→代码接入全链路 |
 | **音频不播放 / AudioContext** (浏览器兼容) | `docs/ai-rules/golden-rules.md` § AudioContext | `ctx.resume()` 异步竞态、HTML5 Audio vs WebAudio 区别 |
 | **状态同步/存储调优** (16MB 限制) | `docs/mongodb-16mb-fix.md` | 状态裁剪策略、Log 限制、Undo 快照优化 |
 | **复杂任务规划** (多文件/长流程) | `.agent/skills/planning-with-files/SKILL.md` | 必须维护 `task_plan.md`，定期转存 `findings.md` |

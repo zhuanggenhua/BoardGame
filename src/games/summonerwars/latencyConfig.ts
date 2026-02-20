@@ -97,6 +97,8 @@ export const summonerWarsLatencyConfig: LatencyOptimizationConfig = {
             [SW_COMMANDS.DISCARD_FOR_MAGIC]: 'optimistic',
             // 技能激活 → 确定性，立即反馈（心灵捕获/幻化/念力等）
             [SW_COMMANDS.ACTIVATE_ABILITY]: 'optimistic',
+            // 种子同步后，随机命令也可以乐观预测并立即播放动画
+            [SW_COMMANDS.CONFIRM_ATTACK]: 'optimistic',
         },
     },
     batching: {

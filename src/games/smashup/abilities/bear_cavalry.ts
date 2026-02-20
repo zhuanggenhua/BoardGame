@@ -126,7 +126,7 @@ function bearHugProcessNext(
         const interaction = createSimpleChoice(
             `bear_cavalry_bear_hug_${opId}_${ctx.now}`, opId,
             '黑熊擒抱：选择要消灭的最弱随从',
-            buildMinionTargetOptions(options),
+            buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
             { sourceId: 'bear_cavalry_bear_hug', targetType: 'minion', autoCancelOption: true },
         );
         (interaction.data as any).continuationContext = { opponents, opponentIdx: idx };
@@ -334,7 +334,7 @@ function bearCavalryBearRidesYou(ctx: AbilityContext): AbilityResult {
     if (myMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const options = myMinions.map(m => ({ uid: m.uid, defId: m.defId, baseIndex: m.baseIndex, label: m.label }));
     const interaction = createSimpleChoice(
-        `bear_cavalry_bear_rides_you_choose_minion_${ctx.now}`, ctx.playerId, '选择要移动的己方随从', buildMinionTargetOptions(options), { sourceId: 'bear_cavalry_bear_rides_you_choose_minion', targetType: 'minion' }
+        `bear_cavalry_bear_rides_you_choose_minion_${ctx.now}`, ctx.playerId, '选择要移动的己方随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'bear_cavalry_bear_rides_you_choose_minion', targetType: 'minion' }
         );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -474,7 +474,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             });
             const interaction = createSimpleChoice(
                 `bear_cavalry_bear_hug_${opId}_${timestamp}`, opId,
-                '黑熊擒抱：选择要消灭的最弱随从', buildMinionTargetOptions(options),
+                '黑熊擒抱：选择要消灭的最弱随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: opId }),
                 { sourceId: 'bear_cavalry_bear_hug', targetType: 'minion', autoCancelOption: true }
             );
             (interaction.data as any).continuationContext = { opponents: ctx.opponents, opponentIdx: i };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { Check } from 'lucide-react';
@@ -290,6 +290,32 @@ export const DiceActions = ({
     const dtMeta = getDtMeta(interaction);
     const isInteractionMode = Boolean(dtMeta);
 
+    // 等待服务器结果：监听 rollCount 变化来停止动画，而非固定 setTimeout
+    // 这样骰子动画会一直转到服务器返回真实结果，再平滑过渡到最终面
+    const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const prevRollCountRef = useRef(rollCount);
+
+    useEffect(() => {
+        if (rollCount !== prevRollCountRef.current) {
+            prevRollCountRef.current = rollCount;
+            // 服务器结果到了，停止动画（Dice3D 的 CSS transition 会平滑过渡到最终值）
+            if (isRolling) {
+                if (rollTimeoutRef.current) {
+                    clearTimeout(rollTimeoutRef.current);
+                    rollTimeoutRef.current = null;
+                }
+                setIsRolling(false);
+            }
+        }
+    }, [rollCount, isRolling, setIsRolling]);
+
+    // 清理安全超时
+    useEffect(() => {
+        return () => {
+            if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current);
+        };
+    }, []);
+
     const handleRollClick = () => {
         if (isInteractionMode) {
             multistepInteraction?.cancel();
@@ -298,7 +324,12 @@ export const DiceActions = ({
         if (!isRollPhase || !canInteract || rollConfirmed || rollCount >= rollLimit) return;
         setIsRolling(true);
         onRoll();
-        setTimeout(() => setIsRolling(false), 600);
+        // 安全超时：防止服务器长时间无响应时骰子一直转
+        if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current);
+        rollTimeoutRef.current = setTimeout(() => {
+            rollTimeoutRef.current = null;
+            setIsRolling(false);
+        }, 5000);
     };
 
     const handleConfirmClick = () => {

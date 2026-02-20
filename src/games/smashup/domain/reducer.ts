@@ -493,9 +493,13 @@ export function filterProtectedDestroyEvents(
         if (!minion) { result.push(e); continue; }
         // 检查 destroy 保护和 action 保护
         if (isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'destroy')) continue;
-        if (isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'action')) {
+        // 检查 'action' 和 'affect' 两种广义保护类型（tooth_and_claw 注册为 'affect'）
+        const actionProtected = isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'action');
+        const affectProtected = isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'affect');
+        if (actionProtected || affectProtected) {
             // 消耗型保护：发射自毁事件
-            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, sourcePlayerId, 'action');
+            const protType = actionProtected ? 'action' : 'affect';
+            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, sourcePlayerId, protType);
             if (source) {
                 result.push({
                     type: SU_EVENTS.ONGOING_DETACHED,

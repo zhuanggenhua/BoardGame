@@ -47,8 +47,8 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
             if (type === 'CARD_PLAYED') {
                 const p = payload as { cardId: string };
                 const card = findHeroCard(p.cardId);
-                // 追踪投掷阶段打出的行动卡（timing: 'roll' 的 action 卡 = 攻击修正卡）
-                if (card && card.type === 'action' && card.timing === 'roll') {
+                // 只追踪显式标记为攻击修正的卡（isAttackModifier: true）
+                if (card && card.isAttackModifier) {
                     newModifiers.push({
                         cardId: p.cardId,
                         nameKey: typeof card.name === 'string' ? card.name : p.cardId,

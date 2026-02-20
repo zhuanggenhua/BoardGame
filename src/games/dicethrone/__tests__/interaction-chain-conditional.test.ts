@@ -192,8 +192,9 @@ describe('不可防御攻击链', () => {
 });
 
 describe('终极技能链', () => {
-    it('reckless-strike  15 伤害 + 4 自伤', () => {
-        const runner = createRunner(createQueuedRandom([6, 6, 6, 6, 6]));
+    it('reckless-strike 大顺子 15 伤害 + 4 自伤', () => {
+        // 大顺子: [2,3,4,5,6]
+        const runner = createRunner(createQueuedRandom([2, 3, 4, 5, 6]));
         const result = runner.run({
             name: 'reckless-strike',
             setup: createHeroMatchup('barbarian', 'monk'),

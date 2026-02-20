@@ -330,7 +330,7 @@ function unfathomableGoalsProcessNext(
         const interaction = createSimpleChoice(
             `elder_thing_unfathomable_goals_${pid}_${ctx.now}`, pid,
             '你手中有疯狂卡，必须消灭一个自己的随从',
-            buildMinionTargetOptions(options),
+            buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
             { sourceId: 'elder_thing_unfathomable_goals', targetType: 'minion' },
         );
         (interaction.data as any).continuationContext = {
@@ -566,7 +566,7 @@ export function registerElderThingInteractionHandlers(): void {
         });
         const interaction = createSimpleChoice(
             `elder_thing_elder_thing_destroy_first_${timestamp}`, playerId,
-            '远古之物：点击第一个要消灭的随从', buildMinionTargetOptions(options),
+            '远古之物：点击第一个要消灭的随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId }),
             { sourceId: 'elder_thing_elder_thing_destroy_first', targetType: 'minion' }
         );
         return { state: queueInteraction(state, interaction), events: [] };
@@ -613,7 +613,7 @@ export function registerElderThingInteractionHandlers(): void {
         
         const interaction = createSimpleChoice(
             `elder_thing_elder_thing_destroy_second_${timestamp}`, playerId,
-            '远古之物：点击第二个要消灭的随从', buildMinionTargetOptions(options),
+            '远古之物：点击第二个要消灭的随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId }),
             { sourceId: 'elder_thing_elder_thing_destroy_second', targetType: 'minion' }
         );
         return { state: queueInteraction(state, interaction), events };
@@ -732,7 +732,7 @@ export function registerElderThingInteractionHandlers(): void {
                 return { uid: m.uid, defId: m.defId, baseIndex: m.baseIndex, label: `${name} @ ${baseName}` };
             });
             const interaction = createSimpleChoice(
-                `elder_thing_unfathomable_goals_${pid}_${timestamp}`, pid, '你手中有疯狂卡，必须消灭一个自己的随从', buildMinionTargetOptions(options), { sourceId: 'elder_thing_unfathomable_goals', targetType: 'minion' }
+                `elder_thing_unfathomable_goals_${pid}_${timestamp}`, pid, '你手中有疯狂卡，必须消灭一个自己的随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: pid }), { sourceId: 'elder_thing_unfathomable_goals', targetType: 'minion' }
                 );
             (interaction.data as any).continuationContext = {
                 opponents: ctx.opponents,

@@ -417,7 +417,7 @@ describe('恐龙派系能力', () => {
 // ============================================================================
 
 describe('机器人派系能力', () => {
-    it('robot_zapbot: 手牌有力量≤2随从时创建交互', () => {
+    it('robot_zapbot: 打出后直接获得额外随从额度（力量≤2限制）', () => {
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -431,14 +431,14 @@ describe('机器人派系能力', () => {
             bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
         });
 
-        const { matchState } = execPlayMinion(state, '0', 'm1', 0);
-        // 不再直接发 LIMIT_MODIFIED，而是创建交互
-        const current = (matchState.sys as any).interaction?.current;
-        expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('robot_zapbot');
+        const { events } = execPlayMinion(state, '0', 'm1', 0);
+        // 直接发 LIMIT_MODIFIED 事件，带 powerMax: 2
+        const limitEvents = events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
+        expect(limitEvents.length).toBe(1);
+        expect((limitEvents[0] as any).payload.powerMax).toBe(2);
     });
 
-    it('robot_zapbot: 手牌无力量≤2随从时无交互', () => {
+    it('robot_zapbot: 无论手牌是否有力量≤2随从都给额度', () => {
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -449,9 +449,10 @@ describe('机器人派系能力', () => {
             bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
         });
 
-        const { events, matchState } = execPlayMinion(state, '0', 'm1', 0);
+        const { events } = execPlayMinion(state, '0', 'm1', 0);
         const limitEvents = events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
-        expect(limitEvents.length).toBe(0);
+        // 即使手牌没有力量≤2随从，也给额度（玩家可以选择不用）
+        expect(limitEvents.length).toBe(1);
     });
 
     it('robot_tech_center: 单个基地时创建 Prompt', () => {

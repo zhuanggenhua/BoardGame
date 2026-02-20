@@ -144,6 +144,9 @@ export const MatchRoom = () => {
     // → WrappedBoard 重建 → Board 卸载重挂载 → CriticalImageGate 重新预加载 → 循环
     const tRef = useRef(t);
     tRef.current = t;
+    // 教程模式下，CriticalImageGate 加载完成后才允许弹出教程提示
+    const [isBoardReady, setIsBoardReady] = useState(false);
+    const onBoardReadyRef = useRef<() => void>(() => setIsBoardReady(true));
     const WrappedBoard = useMemo<ComponentType<GameBoardProps> | null>(() => {
         if (!gameId || !GAME_IMPLEMENTATIONS[gameId]) return null;
         const Board = GAME_IMPLEMENTATIONS[gameId].board as unknown as ComponentType<GameBoardProps>;
@@ -155,6 +158,7 @@ export const MatchRoom = () => {
                 playerID={props?.playerID}
                 enabled={!isUgcGame}
                 loadingDescription={tRef.current('matchRoom.loadingResources')}
+                onReady={() => onBoardReadyRef.current()}
             >
                 <Board {...props} />
             </CriticalImageGate>
@@ -645,7 +649,7 @@ export const MatchRoom = () => {
             return;
         }
 
-        if (isActive && !tutorialModalIdRef.current) {
+        if (isActive && !tutorialModalIdRef.current && isBoardReady) {
             tutorialModalIdRef.current = openModal({
                 closeOnBackdrop: false,
                 closeOnEsc: false,
@@ -662,7 +666,7 @@ export const MatchRoom = () => {
             closeModal(tutorialModalIdRef.current);
             tutorialModalIdRef.current = null;
         }
-    }, [closeModal, closeTutorial, isActive, isTutorialRoute, openModal]);
+    }, [closeModal, closeTutorial, isActive, isBoardReady, isTutorialRoute, openModal]);
 
     const clearMatchLocalState = () => {
         if (!matchId) return;

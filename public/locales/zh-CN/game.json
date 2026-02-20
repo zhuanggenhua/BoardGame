@@ -89,8 +89,14 @@
       "supportTitle": "如果喜欢这个项目，可以支持一点维护服务器的钱。",
       "supportSubtitle": "我会在下面展示您的昵称信息（不需要也可以备注）",
       "qrPlaceholder": "二维码",
-      "wechatLabel": "微信/WeChat",
-      "alipayLabel": "支付宝/Alipay"
+      "wechatLabel": "微信",
+      "alipayLabel": "支付宝",
+      "sponsorLoading": "赞助名单加载中...",
+      "sponsorError": "赞助名单加载失败",
+      "sponsorEmpty": "暂无赞助记录",
+      "qqCopied": "QQ群号已复制",
+      "copyFailed": "复制失败，请手动复制",
+      "loadMore": "加载更多..."
     },
     "feedback": {
       "title": "反馈",

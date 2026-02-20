@@ -72,10 +72,10 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 | D2 | 边界完整 | 所有限定条件是否全程约束？ |
 | D3 | 数据流闭环 | 定义→注册→执行→状态→验证→UI→i18n→测试 是否闭环？**写入→读取 ID 一致性**、**引擎 API 调用契约** |
 | D4 | 查询一致性 | 可被 buff/光环动态修改的属性是否走统一入口？ |
-| D5 | 交互完整 | 玩家决策点都有对应 UI？**交互模式与描述语义匹配？** **UI 组件是否复用唯一来源？** |
+| D5 | 交互完整 | 玩家决策点都有对应 UI？**交互模式与描述语义匹配？** **实现模式（额度 vs 交互）与描述语义匹配？** **UI 组件是否复用唯一来源？** |
 | D6 | 副作用传播 | 新增效果是否触发已有机制的连锁？ |
 | D7 | 资源守恒 | 代价/消耗/限制正确扣除和恢复？**有代价操作的验证层是否拒绝必然无效果的激活？** |
-| D8 | 时序正确 | 触发顺序和生命周期正确？**引擎批处理时序与 UI 异步交互是否对齐？阶段结束副作用与阶段推进的执行顺序是否导致验证层状态不一致？事件产生门控是否对所有同类技能普适生效（禁止硬编码特定 abilityId）？状态写入时机是否在消费窗口内（写入后是否有机会被消费，还是会被清理逻辑先抹掉）？多系统协作时，同批事件的处理顺序（按 priority）是否导致低优先级系统的状态驱动检查在高优先级系统执行前误触发？** |
+| D8 | 时序正确 | 触发顺序和生命周期正确？**引擎批处理时序与 UI 异步交互是否对齐？阶段结束副作用与阶段推进的执行顺序是否导致验证层状态不一致？事件产生门控是否对所有同类技能普适生效（禁止硬编码特定 abilityId）？状态写入时机是否在消费窗口内（写入后是否有机会被消费，还是会被清理逻辑先抹掉）？多系统协作时，同批事件的处理顺序（按 priority）是否导致低优先级系统的状态驱动检查在高优先级系统执行前误触发？回调函数（onPlay/onMinionPlayed 等）中的计数器检查是否使用了正确的 post-reduce 阈值（首次=1 而非 0）？是否使用权威计数器而非派生状态判定"首次"？** |
 | D9 | 幂等与重入 | 重复触发/撤销重做安全？ |
 | D10 | 元数据一致 | categories/tags/meta 与实际行为匹配？ |
 | D11 | **Reducer 消耗路径** | 事件写入的资源/额度/状态，在 reducer 消耗时走的分支是否正确？**多种额度来源并存时消耗优先级是否正确？** |
@@ -159,6 +159,28 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 2. **grep 审查**：搜索所有 `createSimpleChoice` 调用，对照能力描述确认 `multi` 配置与语义一致
 3. **UI 模式验证**：`multi` 存在 → UI 应显示多选复选框 + 全选 + 确认按钮；`multi` 不存在 → UI 应显示单选按钮/卡牌点击即确认
 4. **典型缺陷**：描述说"任意数量"但未传 `multi` → 变成单选，选一个就结束；描述说"选择一个"但传了 `multi` → 多选模式不符合预期
+
+**D5 子项：实现模式与描述语义匹配——额度授予 vs 交互选择（强制）**（新增能力实现、或修"弹窗不该出现"/"基地全灰"/"操作被交互阻断"时触发）：描述语义是"授予资源/额度/权限"时，实现必须用额度模式（修改状态，让玩家在正常流程中自行消费），禁止用交互模式（弹窗让玩家立即选择并消费）。**核心原则：额度授予 ≠ 立即消费。"你可以打出一张额外随从"的正确语义是"+1 额度"，不是"现在选一张打出"。交互弹窗会劫持正常操作流程，导致 UI 状态冲突（如 `selectedCardUid` 被清除、基地选择从 `deployableBaseIndices` 切换到 `selectableBaseIndices`）。** 审查方法：
+1. **语义→实现模式映射表**：
+   - "你可以打出 N 张额外随从/行动卡" → 额度模式：`grantExtraMinion`/`grantExtraAction` 修改 `minionLimit`/`actionLimit`，玩家在正常出牌流程中使用
+   - "你可以打出一张力量≤N 的额外随从" → 额度模式 + 约束：`grantExtraMinion(playerId, reason, now, undefined, { powerMax: N })`
+   - "选择一个随从消灭/移动/返回手牌" → 交互模式：`createSimpleChoice` 让玩家选择目标
+   - "从牌库/弃牌堆中检索一张卡" → 交互模式：需要玩家从非手牌来源选择
+   - "弃掉 N 张手牌" → 交互模式：需要玩家选择弃哪些
+2. **判定标准**：
+   - 描述的效果是"增加可用次数/权限" + 消费发生在正常操作流程中 → 必须用额度模式 ❌ 禁止用交互弹窗
+   - 描述的效果需要"从特定来源选择目标"（牌库/弃牌堆/场上单位）→ 必须用交互模式
+   - 描述的效果是"额外打出"但来源是弃牌堆/牌库（非手牌）→ 交互模式正确（需要先选卡再选基地）
+3. **副作用检查**：交互弹窗（`createSimpleChoice`）会触发 `currentPrompt` 变化 → `useEffect` 清除 `selectedCardUid`/`selectedCardMode` → 基地渲染从 `deployableBaseIndices`（正常流程）切换到 `selectableBaseIndices`（交互驱动）→ 如果交互选项中没有基地选项，所有基地变灰
+4. **grep 审查**：搜索所有 `grantExtraMinion`/`grantExtraAction` 调用点和 `createSimpleChoice` 调用点，交叉对比能力描述，确认模式选择正确
+
+**典型缺陷模式**：
+- ❌ 描述"你可以打出一张力量≤2的额外随从"，实现用 `createSimpleChoice` 弹窗让玩家选手牌中的随从 → 弹窗劫持正常流程，`selectedCardUid` 被清除，基地全灰
+- ❌ 描述"额外打出至多3个同名随从"，实现用 `createSimpleChoice` 逐个弹窗选择 → 应该用 `grantExtraMinion({ sameNameOnly: true })` 授予3次额度
+- ✅ 描述"从弃牌堆中选择一个随从放到场上"，实现用 `createSimpleChoice` → 正确（需要从非手牌来源选择）
+- ✅ 描述"你可以打出一张额外随从"，实现用 `grantExtraMinion` → 正确
+
+> **示例（SmashUp Zapbot 高速机器人）**：描述"你可以打出一张力量为2或更低的额外随从"，实现用 `createSimpleChoice` 弹窗让玩家选手牌随从再选基地（两步交互）。弹窗触发 `currentPrompt` → `useEffect` 清除 `selectedCardUid` → 基地渲染切换到 `selectableBaseIndices`（空集）→ 所有基地变灰。修复：改为 `grantExtraMinion(playerId, 'robot_zapbot', now, undefined, { powerMax: 2 })` 授予额度，玩家在正常出牌流程中使用
 
 **D10 元数据一致 — 深入审计**（新增/修改 handler 时触发）：mock 调用每个 handler，检查输出事件类型与 categories 声明一致。**核心原则：handler 的元数据声明必须与实际运行时行为一致，否则下游依赖元数据做分支决策的逻辑会被跳过。** 典型：handler 产生伤害事件 → categories 必须含 'damage'，否则依赖此标记的下游阶段（如防御阶段）被跳过。
 
@@ -287,6 +309,39 @@ expect(state.sys.interaction?.current).toBeDefined();
 expect(state.sys.responseWindow?.current).toBeDefined();
 expect(state.sys.responseWindow?.current?.pendingInteractionId).toBeDefined();
 ```
+
+**D8 子项：回调函数 post-reduce 计数器时序（强制）**（新增/修改 onPlay/onMinionPlayed/onCardPlayed 等回调中的"首次"判定，或修"首次触发能力从不生效/每次都触发"时触发）：回调函数（如 `fireMinionPlayedTriggers`）接收的 `core` 状态是 reduce 之后的，计数器已递增。用 pre-reduce 假设（如 `minionsPlayed === 0` 表示首次）会导致条件永远不满足，能力静默失效。**核心原则：onPlay/onMinionPlayed 等回调在 pipeline 中位于 reduce 之后执行（`pipeline.ts` 先 reduce 事件再调用 triggers），因此回调中读到的计数器值已包含本次操作的递增。判定"首次"必须用 `=== 1`（post-reduce 值），而非 `=== 0`（pre-reduce 假设）。** 审查方法：
+
+1. **确认回调时序**：追踪 pipeline 中回调的调用位置——是在 `reduce(core, event)` 之前还是之后？大多数 trigger 回调（`fireMinionPlayedTriggers`、`fireCardPlayedTriggers` 等）在 reduce 之后执行
+2. **列出回调中的计数器检查**：grep 回调函数中所有读取 `minionsPlayed`、`minionsPlayedPerBase`、`cardsPlayed` 等计数器的条件表达式
+3. **验证阈值正确性**：
+   - post-reduce 回调中：首次 = `counter === 1`（reduce 已将 0→1）
+   - post-reduce 回调中：非首次 = `counter > 1`
+   - ❌ `counter === 0` 在 post-reduce 回调中永远不可能（至少本次操作已递增为 1）
+   - ❌ `counter > 0` 在 post-reduce 回调中永远为 true（至少为 1），无法区分首次/非首次
+4. **检查派生状态 vs 权威计数器**：
+   - ❌ 用派生状态（如"基地上的随从数量"）判定"首次打出"——随从可能被消灭/移走后重新打出，数量=1 不等于首次
+   - ✅ 用权威计数器（如 `minionsPlayedPerBase[baseIndex]`）判定——每回合重置，只递增不递减，语义精确
+
+**典型缺陷模式**：
+- ❌ `player.minionsPlayed === 0`（post-reduce 回调中）→ 首次打出时值为 1，条件永远不满足，能力从不触发
+- ❌ `player.minionsPlayed > 0`（post-reduce 回调中）→ 永远为 true，能力每次都触发（无法限定首次）
+- ❌ `base.minions.filter(m => m.owner === playerId).length === 1`（派生状态）→ 随从被消灭后重新打出仍为 1，误判为首次
+- ✅ `player.minionsPlayedPerBase[baseIndex] === 1`（权威计数器 + post-reduce 阈值）→ 精确判定首次
+
+**修复策略**：
+- 将 `=== 0` 改为 `=== 1`，将 `> 0` 改为 `> 1`（适用于 post-reduce 回调）
+- 将派生状态判定替换为权威计数器（如 `minionsPlayedPerBase`、`minionsMovedToBaseThisTurn`）
+- 如果权威计数器不存在，在 reducer 中新增（每回合重置，事件触发时递增）
+
+> **示例 1（SmashUp robot_microbot_reclaimer）**：描述"本回合第一个随从打出时获得额外出牌"。回调中检查 `player.minionsPlayed === 0`，但回调在 reduce 之后执行，首次打出时 `minionsPlayed` 已从 0 递增为 1。`1 === 0` = false → 额外出牌从不触发。修复：改为 `player.minionsPlayed === 1`
+
+> **示例 2（SmashUp base_fairy_ring）**：描述"每回合首次打出随从到此基地时抽一张牌"。回调中检查 `base.minions.filter(m => m.owner === playerId).length === 1`（基地上该玩家随从数=1）。如果之前有随从被消灭，重新打出一个后数量仍为 1，误判为首次。修复：改用 `player.minionsPlayedPerBase[baseIndex] === 1`（权威计数器）
+
+**关联维度**：
+- D1（语义保真）："首次"语义是否被正确实现？
+- D3（数据流闭环）：计数器的写入（reduce）和读取（回调）是否在同一数据流中？
+- D14（回合清理）：计数器是否在回合结束时正确重置？
 
 **D11 Reducer 消耗路径（强制）**（新增/修改额度授予、资源写入、或修"额度/资源消耗不对"时触发）：能力/事件写入的资源/额度/状态，在 reducer 消耗时走的分支是否正确。**核心原则：写入正确 ≠ 消耗正确。审计必须追踪到 reducer 中消耗该资源的具体分支逻辑，验证条件判断和优先级。** 审查方法：
 1. **追踪写入点**：能力/事件将资源写入哪个字段（如 `baseLimitedMinionQuota`、`minionLimit`、`charges`）
@@ -595,6 +650,9 @@ expect(state.sys.responseWindow?.current?.pendingInteractionId).toBeDefined();
 | 修"激活了但没效果" | D7,D2,D3 | D1,D10,D11,D23 |
 | 修"确认后验证失败" | D8,D7,D3 | D2,D5,D23 |
 | 修"技能可以无限重复使用" | D21,D7,D8 | D1,D2 |
+| 修"首次触发能力从不生效" | D8,D1,D3 | D14,D21 |
+| 修"首次触发能力每次都触发" | D8,D1,D21 | D3,D14 |
+| 新增"每回合首次"类能力 | D8,D1,D14 | D3,D21 |
 | 修"伤害加成/减免不生效" | D22,D1,D3 | D4,D10 |
 | 修"锁定/护甲没效果" | D22,D4,D3 | D1,D10 |
 | 修"特殊语义无法实现" | D23,D1,D2 | D5,D8 |
@@ -622,6 +680,8 @@ expect(state.sys.responseWindow?.current?.pendingInteractionId).toBeDefined();
 | 修"功能在测试中正常但实际无效" | D8,D3,D10 | D5,D17 |
 | 修"操作影响了不该影响的数据" | D12,D11,D3 | D16,D18 |
 | 新增/修改 handler 共返 events+interaction | D24,D8,D12 | D3,D17 |
+| 修"弹窗不该出现"/"基地全灰"/"操作被交互阻断" | D5,D1,D3 | D8,D15 |
+| 新增额外出牌/额度授予能力 | D5,D7,D11,D12 | D2,D13,D18 |
 
 ### 输出格式
 
@@ -779,3 +839,4 @@ ID 只出现在定义+注册 = 消费层缺失。
 | 实地考察（Field Trip）选择部分手牌放入牌库底，结果全部手牌被清空。`HAND_SHUFFLED_INTO_DECK` reducer 无条件 `hand: []`，但 Field Trip 只移动选中的手牌，未选中的手牌被误清空 | Reducer 操作范围超出 payload 语义：同一事件类型被全量操作（Winds of Change 移动全部手牌）和部分操作（Field Trip 移动选中手牌）复用，reducer 只兼容全量场景，部分操作时误清空未选中数据 | D12 | smashup |
 | 弹一手/惊不惊喜等骰子修改卡在响应窗口打出后无效果：ResponseWindowSystem（priority=15）处理 `INTERACTION_REQUESTED` 后设置 `pendingInteractionId`，紧接着状态驱动解锁检查发现 `sys.interaction.current` 为空 → 误判交互已完成 → 关闭窗口。DiceThroneEventSystem（priority=22）尚未执行 `queueInteraction`。测试只断言 `sys.interaction.current` 存在但不断言 `sys.responseWindow.current` → 测试通过但功能实际无效 | 多系统 afterEvents 优先级竞争：低优先级系统的状态驱动检查在高优先级系统执行前误触发。测试遗漏：只断言单个系统状态不断言协作系统状态 | D8 | dicethrone |
 | `targetOpponentDice` 在所有骰子修改 handler 中硬编码为 `false`，导致响应窗口中打出的骰子修改卡（target=select/opponent）无法作用于对手骰子 | 元数据硬编码：handler 未根据 `action.target` 动态解析目标，所有骰子修改交互都默认操作自己的骰子 | D10+D1 | dicethrone |
+| Zapbot（高速机器人）描述"你可以打出一张力量为2或更低的额外随从"，实现用 `createSimpleChoice` 弹窗让玩家选手牌随从再选基地。弹窗触发 `currentPrompt` → `useEffect` 清除 `selectedCardUid` → 基地渲染切换到 `selectableBaseIndices`（空集）→ 所有基地变灰，无法操作 | 实现模式与描述语义不匹配：描述语义是"授予额度"（被动增益），实现用了"交互弹窗"（主动选择）。交互弹窗劫持正常操作流程，导致 UI 状态冲突 | D5 | smashup |

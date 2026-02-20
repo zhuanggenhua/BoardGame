@@ -38,7 +38,7 @@ function buildCursorCSS(containerId: string, theme: CursorTheme): string {
     const rules: string[] = [];
 
     rules.push(`${scope} { cursor: ${theme.default}; }`);
-    rules.push(`${scope} [style*="cursor: pointer"], ${scope} [style*="cursor:pointer"], ${scope} .cursor-pointer { cursor: ${theme.pointer}; }`);
+    rules.push(`${scope} button, ${scope} a, ${scope} [role="button"], ${scope} [style*="cursor: pointer"], ${scope} [style*="cursor:pointer"], ${scope} .cursor-pointer { cursor: ${theme.pointer}; }`);
 
     if (theme.grab) {
         rules.push(`${scope} [style*="cursor: grab"], ${scope} [style*="cursor:grab"], ${scope} .cursor-grab { cursor: ${theme.grab}; }`);
@@ -47,7 +47,7 @@ function buildCursorCSS(containerId: string, theme: CursorTheme): string {
         rules.push(`${scope} [style*="cursor: grabbing"], ${scope} [style*="cursor:grabbing"], ${scope} .cursor-grabbing { cursor: ${theme.grabbing}; }`);
     }
     if (theme.notAllowed) {
-        rules.push(`${scope} [style*="cursor: not-allowed"], ${scope} [style*="cursor:not-allowed"], ${scope} .cursor-not-allowed { cursor: ${theme.notAllowed}; }`);
+        rules.push(`${scope} [disabled], ${scope} [style*="cursor: not-allowed"], ${scope} [style*="cursor:not-allowed"], ${scope} .cursor-not-allowed { cursor: ${theme.notAllowed}; }`);
     }
     if (theme.zoomIn) {
         rules.push(`${scope} [style*="cursor: zoom-in"], ${scope} [style*="cursor:zoom-in"], ${scope} .cursor-zoom-in { cursor: ${theme.zoomIn}; }`);

@@ -240,15 +240,7 @@ export function GameProvider({
             matchID: matchId,
             playerID: playerId,
             credentials,
-            onStateUpdate: (newState, players, meta) => {
-                // 开发环境诊断：确认 state:update 到达客户端
-                if (process.env.NODE_ENV === 'development') {
-                    const coreBases = (newState as { core?: { bases?: unknown[] } })?.core?.bases;
-                    console.debug(
-                        '[GameProvider] state:update 收到',
-                        { stateID: meta?.stateID, lastCommandPlayer: meta?.lastCommandPlayerId, basesCount: Array.isArray(coreBases) ? coreBases.length : 'N/A' },
-                    );
-                }
+            onStateUpdate: (newState, players, meta, randomMeta) => {
                 // 乐观更新引擎：调和服务端确认状态
                 const engine = optimisticEngineRef.current;
                 let finalState: MatchState<unknown>;
@@ -256,6 +248,10 @@ export function GameProvider({
                     // 首次收到状态时，从 matchPlayers 更新 playerIds（初始化时为空数组）
                     if (players.length > 0) {
                         engine.setPlayerIds(players.map((p) => String(p.id)));
+                    }
+                    // 随机数种子同步（state:sync 时携带 randomMeta）
+                    if (randomMeta) {
+                        engine.syncRandom(randomMeta.seed, randomMeta.cursor);
                     }
                     const result = engine.reconcile(newState as MatchState<unknown>, meta);
                     if (result.didRollback && result.optimisticEventWatermark !== null) {

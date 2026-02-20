@@ -112,8 +112,9 @@ describe('BASE_SCORED 乐观引擎传递验证', () => {
         console.log('预测状态是否为 null:', processResult.stateToRender === null);
         console.log('animationMode:', processResult.animationMode);
 
-        // 无论是否预测，animationMode 都应该是 wait-confirm
-        expect(processResult.animationMode).toBe('wait-confirm');
+        // RESPONSE_PASS 由引擎层内置 'optimistic' 默认值（见 optimisticEngine.ts getAnimationMode）
+        // 游戏层未在 animationMode 中显式声明 RESPONSE_PASS，所以走引擎内置值
+        expect(processResult.animationMode).toBe('optimistic');
 
         // 如果被预测了，检查预测状态的 EventStream（wait-confirm 模式会剥离新事件）
         if (processResult.stateToRender) {

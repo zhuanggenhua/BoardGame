@@ -80,6 +80,7 @@ export function useGameEvents({ G, fxBus, baseRefs }: UseGameEventsParams) {
   // 消费事件流 → 推入 FX 系统
   useEffect(() => {
     const { entries: newEntries } = consumeNew();
+
     if (newEntries.length === 0) return;
 
     // 去重：同一批事件中同一个 triggerDefId 只触发一次动画

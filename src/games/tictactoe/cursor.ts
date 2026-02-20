@@ -7,11 +7,12 @@
  */
 
 import { registerCursorThemes } from '../../core/cursor/themes';
-import { createThemeFromStyle, STYLE_NEON_CYAN, STYLE_NEON_PINK } from '../../core/cursor/cursorStyles';
+import { createThemeFromStyle, STYLE_NEON_CYAN, STYLE_NEON_PINK, STYLE_FUTURISTIC_TECH } from '../../core/cursor/cursorStyles';
 
 const meta = { gameId: 'tictactoe', label: '井字棋' };
 
 registerCursorThemes([
     createThemeFromStyle(STYLE_NEON_CYAN, { ...meta, id: 'tictactoe' }),
     createThemeFromStyle(STYLE_NEON_PINK, { ...meta }),
+    createThemeFromStyle(STYLE_FUTURISTIC_TECH, { ...meta }),
 ]);

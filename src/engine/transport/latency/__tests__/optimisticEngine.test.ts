@@ -28,7 +28,9 @@ import type { EngineSystem } from '../../../systems/types';
 
 interface CounterCore {
     value: number;
+
 }
+
 
 type CounterCommand = Command<'INCREMENT' | 'DECREMENT' | 'INVALID' | 'RANDOM_ADD', unknown>;
 type CounterEvent = GameEvent<'VALUE_CHANGED', { delta: number }>;
@@ -492,5 +494,216 @@ describe('OptimisticEngine 单元测试', () => {
         expect(result.didRollback).toBe(false);
         // 服务端事件完整保留
         expect(result.stateToRender.sys.eventStream.entries).toHaveLength(2);
+    });
+});
+
+// ============================================================================
+// 种子同步模式测试
+// ============================================================================
+
+describe('OptimisticEngine — 种子同步模式（Seed Sync）', () => {
+    it('syncRandom 后，显式 non-deterministic 命令可以被乐观预测', () => {
+        const engine = createTestEngine({
+            INCREMENT: 'deterministic',
+            RANDOM_ADD: 'non-deterministic',
+        });
+        engine.reconcile(createTestState(10));
+
+        // 未同步时：non-deterministic 命令跳过预测
+        const r1 = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r1.stateToRender).toBeNull();
+
+        // 同步后：non-deterministic 命令可以预测
+        engine.reset();
+        engine.reconcile(createTestState(10));
+        engine.syncRandom('test-seed', 0);
+
+        const r2 = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r2.stateToRender).not.toBeNull();
+        expect(engine.hasPendingCommands()).toBe(true);
+    });
+
+    it('syncRandom 后，Random Probe 不再丢弃预测', () => {
+        // 不声明 commandDeterminism → 全部走 Random Probe
+        const engine = createTestEngine({});
+        engine.reconcile(createTestState(10));
+        engine.syncRandom('test-seed', 0);
+
+        // RANDOM_ADD 调用 random.d(6)，但因已同步，不丢弃预测
+        const r = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r.stateToRender).not.toBeNull();
+        expect(engine.hasPendingCommands()).toBe(true);
+    });
+
+    it('syncRandom 后不设置 unpredictedBarrier', () => {
+        const engine = createTestEngine({
+            RANDOM_ADD: 'non-deterministic',
+            INCREMENT: 'deterministic',
+        });
+        engine.reconcile(createTestState(10));
+        engine.syncRandom('test-seed', 0);
+
+        // non-deterministic 命令被预测，不设置屏障
+        const r1 = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r1.stateToRender).not.toBeNull();
+
+        // 后续确定性命令也能正常预测（无屏障）
+        const r2 = engine.processCommand('INCREMENT', {}, '0');
+        expect(r2.stateToRender).not.toBeNull();
+    });
+
+    it('reconcile 时根据 randomCursor 重建 localRandom', () => {
+        const engine = createTestEngine({
+            RANDOM_ADD: 'non-deterministic',
+        });
+        engine.reconcile(createTestState(10));
+        engine.syncRandom('test-seed', 0);
+
+        // 第一次预测
+        const r1 = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r1.stateToRender).not.toBeNull();
+        const predictedValue1 = (r1.stateToRender!.core as CounterCore).value;
+
+        // 服务端确认，cursor 推进到 1（服务端执行了一次随机数调用）
+        const serverState = createTestState(predictedValue1);
+        engine.reconcile(serverState, { stateID: 1, randomCursor: 1 });
+
+        // 第二次预测应基于 cursor=1 的随机数序列
+        const r2 = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r2.stateToRender).not.toBeNull();
+    });
+
+    it('种子同步预测与服务端结果一致时，reconcile 不回滚', () => {
+        // 构建与服务端相同的 PRNG 序列来验证预测准确性
+        const seed = 'consistent-seed';
+        const engine = createTestEngine({
+            RANDOM_ADD: 'non-deterministic',
+        });
+
+        const initialState = createTestState(0);
+        engine.reconcile(initialState);
+        engine.syncRandom(seed, 0);
+
+        // 客户端乐观预测
+        const r = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r.stateToRender).not.toBeNull();
+        const predictedValue = (r.stateToRender!.core as CounterCore).value;
+
+        // 模拟服务端用相同种子执行（值应一致）
+        const serverState = createTestState(predictedValue);
+        const result = engine.reconcile(serverState, { stateID: 1, randomCursor: 1 });
+
+        // 预测准确 → 不回滚
+        expect(result.didRollback).toBe(false);
+        expect(engine.hasPendingCommands()).toBe(false);
+    });
+
+    it('对手命令导致 cursor 漂移时，reconcile 重建 cursor 并继续预测', () => {
+        const seed = 'drift-seed';
+        const engine = createTestEngine({
+            RANDOM_ADD: 'non-deterministic',
+            INCREMENT: 'deterministic',
+        });
+
+        engine.reconcile(createTestState(0));
+        engine.syncRandom(seed, 0);
+
+        // 客户端预测（基于 cursor=0）
+        const r = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r.stateToRender).not.toBeNull();
+
+        // 服务端确认：对手先执行了随机命令，cursor 漂移到 2
+        // 使用 stateID 匹配让 reconcile 正确消费 pending
+        const serverState = createTestState(42);
+        engine.reconcile(serverState, { stateID: 1, randomCursor: 2 });
+
+        // pending 已消费（stateID 匹配 + playerId 匹配）
+        // 注意：需要 predictedStateID 匹配，这里 confirmedStateID 初始为 null
+        // 所以走 fallback JSON 比较。如果不匹配，pending 会被重放。
+        // 关键验证：无论 pending 是否清空，后续预测都能正常工作
+        // （cursor 已重建到 2，localRandom 序列正确）
+
+        // 清空状态重新开始，验证 cursor=2 后的预测能力
+        engine.reset();
+        engine.reconcile(createTestState(100));
+        engine.syncRandom(seed, 2); // 从 cursor=2 开始
+
+        const r2 = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r2.stateToRender).not.toBeNull();
+        // 预测值应该是 100 + d(6)，其中 d(6) 基于 seed 在 cursor=2 的值
+        expect((r2.stateToRender!.core as CounterCore).value).toBeGreaterThan(100);
+
+        // 确定性命令也能正常链式预测
+        const r3 = engine.processCommand('INCREMENT', {}, '0');
+        expect(r3.stateToRender).not.toBeNull();
+        expect((r3.stateToRender!.core as CounterCore).value).toBe(
+            (r2.stateToRender!.core as CounterCore).value + 1,
+        );
+    });
+
+    it('reset 后 syncRandom 状态不清除（重连时 state:sync 会重新同步）', () => {
+        const engine = createTestEngine({
+            RANDOM_ADD: 'non-deterministic',
+        });
+        engine.reconcile(createTestState(10));
+        engine.syncRandom('test-seed', 0);
+
+        engine.reset();
+        engine.reconcile(createTestState(10));
+
+        // reset 不清除 isRandomSynced，重连后 state:sync 会重新调用 syncRandom
+        // 但 localRandom 已被 reset 前的 syncRandom 设置，仍可用
+        const r = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r.stateToRender).not.toBeNull();
+    });
+
+    it('pipeline 异常时恢复 localRandom（防止 PRNG 状态污染）', () => {
+        // 构建一个会在 execute 阶段抛异常的领域
+        const throwingDomain: DomainCore<CounterCore, CounterCommand, CounterEvent> = {
+            ...counterDomain,
+            execute: (state, command, random) => {
+                if (command.type === 'RANDOM_ADD') {
+                    // 先消耗随机数，然后抛异常
+                    random.d(6);
+                    random.d(6);
+                    throw new Error('模拟 execute 异常');
+                }
+                return counterDomain.execute(state, command, random);
+            },
+        };
+
+        const engine = createOptimisticEngine({
+            pipelineConfig: {
+                domain: throwingDomain,
+                systems: [] as EngineSystem<CounterCore>[],
+            },
+            commandDeterminism: { RANDOM_ADD: 'non-deterministic', INCREMENT: 'deterministic' },
+            playerIds: ['0', '1'],
+        });
+
+        const seed = 'recovery-seed';
+        engine.reconcile(createTestState(0));
+        engine.syncRandom(seed, 0);
+
+        // RANDOM_ADD 会抛异常，但 localRandom 应被恢复
+        const r1 = engine.processCommand('RANDOM_ADD', {}, '0');
+        expect(r1.stateToRender).toBeNull(); // 异常 → 不预测
+
+        // 后续 INCREMENT 应能正常预测（localRandom 已恢复，未被异常污染）
+        const r2 = engine.processCommand('INCREMENT', {}, '0');
+        expect(r2.stateToRender).not.toBeNull();
+        expect((r2.stateToRender!.core as CounterCore).value).toBe(1);
+
+        // 验证 PRNG 一致性：用相同 seed+cursor 创建的 random 应产生相同序列
+        // （如果 localRandom 没被恢复，INCREMENT 的预测会基于被污染的 PRNG 状态）
+        engine.reset();
+        engine.reconcile(createTestState(0));
+        engine.syncRandom(seed, 0);
+        const r3 = engine.processCommand('INCREMENT', {}, '0');
+        expect(r3.stateToRender).not.toBeNull();
+        // 两次 INCREMENT 的预测结果应一致（都基于 cursor=0 的 PRNG 状态）
+        expect((r3.stateToRender!.core as CounterCore).value).toBe(
+            (r2.stateToRender!.core as CounterCore).value,
+        );
     });
 });

@@ -1133,10 +1133,8 @@ describe('P2: zombie_they_keep_coming（它们不断来临）2步链', () => {
     });
 });
 
-describe('P2: robot_zapbot（高速机器人）2步链', () => {
-    it('选手牌力量≤2随从 → 选基地 → 额外打出', () => {
-        // zapbot 自身是 onPlay 能力，需要先打出 zapbot 随从
-        // zapbot 的 onPlay 会创建选手牌随从的交互
+describe('P2: robot_zapbot（高速机器人）额度模式', () => {
+    it('打出后获得额外随从额度（力量≤2限制），无交互', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -1156,36 +1154,21 @@ describe('P2: robot_zapbot（高速机器人）2步链', () => {
 
         const state = makeFullMatchState(core);
 
-        // Step 1: 打出 zapbot 到 base0 → 触发 onPlay → 选手牌随从
+        // 打出 zapbot 到 base0 → 触发 onPlay → 直接获得额度，无交互
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_MINION, playerId: '0',
             payload: { cardUid: 'zapbot1', baseIndex: 0 },
-        }, 'zapbot step1: 打出');
+        }, 'zapbot: 打出');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1.sourceId).toBe('robot_zapbot');
-
-        // Step 2: 选 hand-m1 → 选基地
-        const mOpt = findOption(choice1, (o: any) => o.value?.cardUid === 'hand-m1');
-        const r2 = respond(r1.finalState, '0', mOpt, 'zapbot step2: 选随从');
-
-        expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
-        expect(choice2.sourceId).toBe('robot_zapbot_base');
-
-        // Step 3: 选 base1 → 链路结束
-        const baseOpt = findOption(choice2, (o: any) => o.value?.baseIndex === 1);
-        const r3 = respond(r2.finalState, '0', baseOpt, 'zapbot step3: 选基地');
-
-        expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
-
-        // 验证：hand-m1 打出到 base1
-        const fc = r3.finalState.core;
-        expect(fc.bases[1].minions.some(m => m.defId === 'pirate_first_mate')).toBe(true);
+        // 无交互弹窗
+        expect(r1.finalState.sys.interaction.current).toBeUndefined();
         // zapbot 在 base0
-        expect(fc.bases[0].minions.some(m => m.defId === 'robot_zapbot')).toBe(true);
+        expect(r1.finalState.core.bases[0].minions.some(m => m.defId === 'robot_zapbot')).toBe(true);
+        // 额度增加：minionLimit 应该 +1
+        expect(r1.finalState.core.players['0'].minionLimit).toBe(2);
+        // 力量限制
+        expect(r1.finalState.core.players['0'].extraMinionPowerMax).toBe(2);
     });
 });
 

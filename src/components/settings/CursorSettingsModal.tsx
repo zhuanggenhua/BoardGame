@@ -1,9 +1,11 @@
 /**
  * 光标设置弹窗
  *
- * 主网格：每个游戏一张卡片 + 系统默认光标，选中即保存。
- * 选中游戏光标后，右上角"更换"按钮 → 打开变体选择子弹窗（无毛玻璃）。
- * 右下角：覆盖范围单选。
+ * 交互逻辑：
+ * - 点卡片 / 变体 → 本地选中（高亮预览），不立即保存
+ * - 右下角"设为当前" → 保存选中的主题到 DB
+ * - 高对比 / 覆盖范围 → 即时保存（独立偏好）
+ * - 标题栏"更换"按钮 → 打开变体选择子弹窗
  */
 
 import { useState, useMemo } from 'react';
@@ -72,13 +74,13 @@ function SvgPreviewIcon({ svg, size = 24, label }: { svg: string; size?: number;
 
 function VariantPickerModal({
     gameId,
-    currentThemeId,
+    pendingThemeId,
     onSelect,
     onClose,
 }: {
     gameId: string;
-    currentThemeId: string;
-    onSelect: (themeId: string) => Promise<void>;
+    pendingThemeId: string;
+    onSelect: (themeId: string) => void;
     onClose: () => void;
 }) {
     const { t } = useTranslation('auth');
@@ -89,11 +91,6 @@ function VariantPickerModal({
         const i18nKey = CURSOR_STATE_I18N[key];
         return { key, label: i18nKey ? t(i18nKey) : '' };
     });
-
-    const handlePick = async (themeId: string) => {
-        await onSelect(themeId);
-        onClose();
-    };
 
     return (
         <ModalBase onClose={onClose} closeOnBackdrop overlayClassName="!backdrop-blur-none !bg-black/20">
@@ -123,11 +120,11 @@ function VariantPickerModal({
                 {/* 变体列表 */}
                 <div className="px-4 py-2 overflow-y-auto flex-1 space-y-1">
                     {variants.map((variant) => {
-                        const isActive = variant.id === currentThemeId;
+                        const isActive = variant.id === pendingThemeId;
                         return (
                             <button
                                 key={variant.id}
-                                onClick={() => handlePick(variant.id)}
+                                onClick={() => { onSelect(variant.id); onClose(); }}
                                 className={`
                                     w-full flex items-center py-2 px-3 rounded-md transition-all cursor-pointer
                                     ${isActive
@@ -171,25 +168,37 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
     const { preference, updatePreference } = useCursorPreference();
     const defaultPerGame = useMemo(() => getDefaultThemePerGame(), []);
 
-    // 直接跟随 preference，选中即保存
-    const selected = preference.cursorTheme;
-    const scope = preference.overrideScope;
+    // pending：本地选中状态，不影响实际生效的 preference
+    const [pendingThemeId, setPendingThemeId] = useState<string>(preference.cursorTheme);
     const [variantGameId, setVariantGameId] = useState<string | null>(null);
 
-    const selectedTheme = useMemo(() => {
-        if (selected === 'default') return null;
-        return getCursorTheme(selected) ?? null;
-    }, [selected]);
+    // 弹窗打开时同步 pending 到当前 preference
+    // （用 key 重置组件更简单，但这里用 state 更精细）
+    const savedThemeId = preference.cursorTheme;
+    const isDirty = pendingThemeId !== savedThemeId;
 
-    const handleSelect = async (themeId: string) => {
-        await updatePreference({ ...preference, cursorTheme: themeId });
+    const pendingTheme = useMemo(() => {
+        if (pendingThemeId === 'default') return null;
+        return getCursorTheme(pendingThemeId) ?? null;
+    }, [pendingThemeId]);
+
+    // 点卡片：只更新本地 pending
+    const handleSelectGame = (gameId: string, defaultThemeId: string) => {
+        if (pendingTheme?.gameId === gameId) return; // 已选中该游戏，不重置变体
+        setPendingThemeId(defaultThemeId);
     };
 
-    const handleSelectGame = async (gameId: string, defaultThemeId: string) => {
-        if (selectedTheme?.gameId === gameId) return;
-        await handleSelect(defaultThemeId);
+    // 变体弹窗选中：更新 pending
+    const handleSelectVariant = (themeId: string) => {
+        setPendingThemeId(themeId);
     };
 
+    // 设为当前：保存到 DB
+    const handleApply = async () => {
+        await updatePreference({ ...preference, cursorTheme: pendingThemeId });
+    };
+
+    // 即时保存的偏好（不影响主题选择流程）
     const handleScopeChange = async (newScope: 'home' | 'all') => {
         await updatePreference({ ...preference, overrideScope: newScope });
     };
@@ -204,19 +213,20 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
         <>
             <ModalBase onClose={onClose} closeOnBackdrop={closeOnBackdrop}>
                 <div className="pointer-events-auto bg-parchment-card-bg border border-parchment-card-border rounded-lg shadow-xl w-[520px] max-w-[90vw] max-h-[80vh] flex flex-col">
-                    {/* 标题栏：更换按钮始终占位，避免布局跳动 */}
+                    {/* 标题栏 */}
                     <div className="px-5 pt-5 pb-3 border-b border-parchment-card-border/30 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-parchment-base-text">
                             <MousePointer2 size={18} />
                             <span className="font-bold text-sm">{t('cursor.title')}</span>
                         </div>
+                        {/* 更换变体按钮：选中游戏光标时可用，始终占位避免布局跳动 */}
                         <button
-                            onClick={() => selectedTheme && setVariantGameId(selectedTheme.gameId)}
-                            disabled={!selectedTheme}
+                            onClick={() => pendingTheme && setVariantGameId(pendingTheme.gameId)}
+                            disabled={!pendingTheme}
                             className={`
-                                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer
-                                ${selectedTheme
-                                    ? 'text-parchment-light-text hover:text-parchment-base-text hover:bg-parchment-base-bg/60'
+                                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors
+                                ${pendingTheme
+                                    ? 'text-parchment-light-text hover:text-parchment-base-text hover:bg-parchment-base-bg/60 cursor-pointer'
                                     : 'text-transparent pointer-events-none'
                                 }
                             `}
@@ -229,21 +239,31 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
                     {/* 光标网格：5列 */}
                     <div className="px-5 py-4 overflow-y-auto flex-1">
                         <div className="grid grid-cols-5 gap-3">
+                            {/* 系统默认 */}
                             <CursorCard
                                 label={t('cursor.default')}
                                 previewSvg={defaultPreviewSvgs.default}
-                                isSelected={selected === 'default'}
-                                onSelect={() => handleSelect('default')}
+                                isPending={pendingThemeId === 'default'}
+                                isSaved={savedThemeId === 'default'}
+                                onSelect={() => setPendingThemeId('default')}
                             />
+                            {/* 各游戏 */}
                             {defaultPerGame.map((theme) => {
-                                const displayTheme = (selectedTheme?.gameId === theme.gameId) ? selectedTheme : theme;
+                                // 显示 pending 选中的变体预览
+                                const displayTheme = (pendingTheme?.gameId === theme.gameId) ? pendingTheme : theme;
+                                const isPending = pendingTheme?.gameId === theme.gameId;
+                                const isSaved = (() => {
+                                    const saved = getCursorTheme(savedThemeId);
+                                    return saved?.gameId === theme.gameId;
+                                })();
                                 return (
                                     <CursorCard
                                         key={theme.gameId}
                                         label={theme.label}
                                         subtitle={displayTheme.variantLabel}
                                         previewSvg={displayTheme.previewSvgs.default}
-                                        isSelected={selectedTheme?.gameId === theme.gameId}
+                                        isPending={isPending}
+                                        isSaved={isSaved}
                                         onSelect={() => handleSelectGame(theme.gameId, theme.id)}
                                     />
                                 );
@@ -251,25 +271,42 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
                         </div>
                     </div>
 
-                    {/* 底部：高对比 + 覆盖范围，同一排 */}
-                    <div className="px-5 pb-5 pt-2 border-t border-parchment-card-border/30 flex items-center justify-end gap-3 text-xs">
-                        {/* 高对比模式开关 */}
+                    {/* 底部：高对比 + 覆盖范围 + 设为当前 */}
+                    <div className="px-5 pb-5 pt-2 border-t border-parchment-card-border/30 flex items-center justify-between gap-3 text-xs">
+                        {/* 左侧：高对比 + 覆盖范围 */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleHighContrastToggle}
+                                className={`
+                                    px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer
+                                    ${preference.highContrast
+                                        ? 'bg-parchment-brown text-white'
+                                        : 'bg-parchment-base-bg text-parchment-light-text hover:bg-parchment-card-border/30'
+                                    }
+                                `}
+                            >
+                                {t('cursor.highContrast')}
+                            </button>
+                            <span className="w-px h-3 bg-parchment-card-border/40" />
+                            <span className="text-parchment-light-text">{t('cursor.scope')}:</span>
+                            <ScopeRadio value="home" current={preference.overrideScope} label={t('cursor.scopeHome')} onChange={handleScopeChange} />
+                            <ScopeRadio value="all" current={preference.overrideScope} label={t('cursor.scopeAll')} onChange={handleScopeChange} />
+                        </div>
+
+                        {/* 右侧：设为当前 */}
                         <button
-                            onClick={handleHighContrastToggle}
+                            onClick={handleApply}
+                            disabled={!isDirty}
                             className={`
-                                flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer
-                                ${preference.highContrast
-                                    ? 'bg-parchment-brown text-white'
-                                    : 'bg-parchment-base-bg text-parchment-light-text hover:bg-parchment-card-border/30'
+                                px-3 py-1.5 rounded-md text-xs font-bold transition-all
+                                ${isDirty
+                                    ? 'bg-parchment-brown text-white hover:bg-parchment-brown/90 cursor-pointer'
+                                    : 'bg-parchment-base-bg text-parchment-light-text/40 cursor-default'
                                 }
                             `}
                         >
-                            {t('cursor.highContrast')}
+                            {t('cursor.apply')}
                         </button>
-                        <span className="w-px h-3 bg-parchment-card-border/40" />
-                        <span className="text-parchment-light-text">{t('cursor.scope')}:</span>
-                        <ScopeRadio value="home" current={scope} label={t('cursor.scopeHome')} onChange={handleScopeChange} />
-                        <ScopeRadio value="all" current={scope} label={t('cursor.scopeAll')} onChange={handleScopeChange} />
                     </div>
                 </div>
             </ModalBase>
@@ -277,8 +314,8 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
             {variantGameId && (
                 <VariantPickerModal
                     gameId={variantGameId}
-                    currentThemeId={selected}
-                    onSelect={handleSelect}
+                    pendingThemeId={pendingThemeId}
+                    onSelect={handleSelectVariant}
                     onClose={() => setVariantGameId(null)}
                 />
             )}
@@ -290,17 +327,24 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
 // 子组件
 // ---------------------------------------------------------------------------
 
+/**
+ * isPending: 当前本地选中（高亮边框，但未保存）
+ * isSaved:   已保存到 DB（显示勾选角标）
+ * 两者可同时为 true（选中且已保存）
+ */
 function CursorCard({
     label,
     subtitle,
     previewSvg,
-    isSelected,
+    isPending,
+    isSaved,
     onSelect,
 }: {
     label: string;
     subtitle?: string;
     previewSvg: string;
-    isSelected: boolean;
+    isPending: boolean;
+    isSaved: boolean;
     onSelect: () => void;
 }) {
     return (
@@ -308,13 +352,14 @@ function CursorCard({
             onClick={onSelect}
             className={`
                 relative flex flex-col items-center gap-1.5 p-2.5 rounded-lg border-2 transition-all cursor-pointer
-                ${isSelected
+                ${isPending
                     ? 'border-parchment-brown bg-parchment-brown/10 shadow-sm'
                     : 'border-parchment-card-border/40 hover:border-parchment-card-border hover:bg-parchment-base-bg/50'
                 }
             `}
         >
-            {isSelected && (
+            {/* 已保存角标 */}
+            {isSaved && (
                 <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-parchment-brown rounded-full flex items-center justify-center">
                     <Check size={12} className="text-white" />
                 </div>

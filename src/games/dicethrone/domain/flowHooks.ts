@@ -98,10 +98,11 @@ function checkAfterAttackResponseWindow(
         Extract<DiceThroneEvent, { type: 'ATTACK_RESOLVED' }> | undefined;
     if (!attackResolved) return null;
 
-    const { attackerId } = attackResolved.payload;
+    const { attackerId, defenderId } = attackResolved.payload;
 
-    // 检查进攻方是否有满足条件的卡牌（getResponderQueue 内部会调用 hasRespondableContent → isCardPlayableInResponseWindow）
-    const responderQueue = getResponderQueue(stateAfterAttack, 'afterAttackResolved', attackerId, undefined, undefined, phase);
+    // 只允许进攻方响应（card-dizzy："如果你对对手造成至少8伤害"，只有进攻方才能触发）
+    // excludeId = defenderId，防止防御方也进入响应队列
+    const responderQueue = getResponderQueue(stateAfterAttack, 'afterAttackResolved', attackerId, undefined, defenderId, phase);
     if (responderQueue.length === 0) return null;
 
     return {

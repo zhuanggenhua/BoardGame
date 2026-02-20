@@ -130,7 +130,7 @@ export const AudioControlSection = ({ isDark = true }: AudioControlSectionProps)
     );
     const displayLabel = currentTrack ? currentTrackLabel : t('audio.nonePlaying');
 
-    const labelClass = isDark ? 'text-white/40' : 'text-[#8c7b64]';
+    const labelClass = isDark ? 'text-white/60' : 'text-[#8c7b64]';
     const textClass = isDark ? 'text-white/90' : 'text-[#433422]';
     const borderClass = isDark ? 'border-white/10' : 'border-[#e5e0d0]';
     const cardBgClass = isDark ? 'bg-white/5 border-white/5' : 'bg-black/5 border-black/5';
@@ -235,7 +235,7 @@ export const AudioControlSection = ({ isDark = true }: AudioControlSectionProps)
                         onClick={() => setListExpanded(prev => !prev)}
                         className={clsx(
                             'w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-colors',
-                            isDark ? 'hover:bg-white/5 text-white/50' : 'hover:bg-black/5 text-[#8c7b64]',
+                            isDark ? 'hover:bg-white/5 text-white/80' : 'hover:bg-black/5 text-[#8c7b64]',
                         )}
                     >
                         <span>{t('audio.trackList', { count: playlist.length })}</span>

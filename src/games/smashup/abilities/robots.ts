@@ -52,26 +52,29 @@ function robotMicrobotGuard(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `robot_microbot_guard_${ctx.now}`, ctx.playerId,
         '选择要消灭的随从（力量低于己方随从数量）',
-        buildMinionTargetOptions(options),
+        buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }),
         { sourceId: 'robot_microbot_guard', targetType: 'minion' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 微型机修理者?onPlay：如果是本回合第一个随从，额外出牌 */
+/** 微型机修理者 onPlay：如果是本回合第一个随从，额外出牌 */
 function robotMicrobotFixer(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
-    if (player.minionsPlayed > 0) return { events: [] };
+    // onPlay 在 reduce 之后执行，第一个随从打出后 minionsPlayed 已从 0 变为 1
+    // 所以 minionsPlayed > 1 表示"之前已经打过随从"，此时不触发
+    if (player.minionsPlayed > 1) return { events: [] };
     return { events: [grantExtraMinion(ctx.playerId, 'robot_microbot_fixer', ctx.now)] };
 }
 
-/** 微型机回收者?onPlay：如果是本回合第一个随从，额外出牌；将弃牌堆中的微型机洗回牌库 */
+/** 微型机回收者 onPlay：如果是本回合第一个随从，额外出牌；将弃牌堆中的微型机洗回牌库 */
 function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const events: SmashUpEvent[] = [];
 
-    // 第一个随从时给额外出牌
-    if (player.minionsPlayed === 0) {
+    // onPlay 在 reduce 之后执行，第一个随从打出后 minionsPlayed 已从 0 变为 1
+    // 所以 minionsPlayed === 1 表示"这是本回合第一个随从"
+    if (player.minionsPlayed === 1) {
         events.push(grantExtraMinion(ctx.playerId, 'robot_microbot_reclaimer', ctx.now));
     }
 
@@ -140,28 +143,9 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 高速机器人 onPlay：你可以打出一张力量≤2的额外随从 */
+/** 高速机器人 onPlay：你可以打出一张力量≤2的额外随从（+1额度，力量限制由验证层自动检查） */
 function robotZapbot(ctx: AbilityContext): AbilityResult {
-    // 筛选手牌中力量≤2的随从
-    const eligible = ctx.state.players[ctx.playerId].hand.filter(c => {
-        if (c.uid === ctx.cardUid) return false;
-        const def = getCardDef(c.defId) as MinionCardDef | undefined;
-        return def?.type === 'minion' && def.power <= 2;
-    });
-    if (eligible.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.hand_empty', ctx.now)] };
-    // "你可以" → 带跳过选项
-    const options = eligible.map((c, i) => {
-        const def = getCardDef(c.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? c.defId;
-        const power = def?.power ?? 0;
-        return { id: `minion-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'hand' as const };
-    });
-    options.push({ id: 'skip', label: '跳过', value: { skip: true } as any });
-    const interaction = createSimpleChoice(
-        `robot_zapbot_${ctx.now}`, ctx.playerId,
-        '选择一张力量≤2的随从作为额外随从打出（或跳过）', options as any[], 'robot_zapbot',
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: [grantExtraMinion(ctx.playerId, 'robot_zapbot', ctx.now, undefined, { powerMax: 2 })] };
 }
 
 /** 技术中心?onPlay：选择一个基地，该基地上你每有一个随从就抽一张牌 */
@@ -256,61 +240,6 @@ export function registerRobotInteractionHandlers(): void {
             payload: { playerId, count: actualDraw, cardUids: drawnUids },
             timestamp,
         }] };
-    });
-
-    // 高速机器人：选择随从后→链式选基地打出
-    registerInteractionHandler('robot_zapbot', (state, playerId, value, _iData, _random, timestamp) => {
-        if (value && (value as any).skip) return { state, events: [] };
-        const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
-        if (!cardUid) return undefined;
-        const player = state.core.players[playerId];
-        const card = player.hand.find(c => c.uid === cardUid);
-        if (!card) return undefined;
-        const def = getCardDef(card.defId) as MinionCardDef | undefined;
-        if (!def || def.type !== 'minion' || def.power > 2) return undefined;
-        // 单基地直接打出
-        if (state.core.bases.length === 1) {
-            const playedEvt: MinionPlayedEvent = {
-                type: SU_EVENTS.MINION_PLAYED,
-                payload: { playerId, cardUid, defId, baseIndex: 0, power: def.power },
-                timestamp,
-            };
-            return { state, events: [
-                grantExtraMinion(playerId, 'robot_zapbot', timestamp),
-                playedEvt,
-            ] };
-        }
-        // 多基地→链式选基地
-        const baseCandidates = state.core.bases.map((b, i) => {
-            const baseDef = getBaseDef(b.defId);
-            return { baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` };
-        });
-        const next = createSimpleChoice(
-            `robot_zapbot_base_${timestamp}`, playerId, '选择打出随从的基地', buildBaseTargetOptions(baseCandidates, state.core), { sourceId: 'robot_zapbot_base', targetType: 'base' }
-        );
-        return {
-            state: queueInteraction(state, {
-                ...next,
-                data: { ...next.data, continuationContext: { cardUid, defId, power: def.power } },
-            }),
-            events: [],
-        };
-    });
-
-    // 高速机器人：选基地后打出
-    registerInteractionHandler('robot_zapbot_base', (state, playerId, value, iData, _random, timestamp) => {
-        const { baseIndex } = value as { baseIndex: number };
-        const ctx = iData?.continuationContext as { cardUid: string; defId: string; power: number } | undefined;
-        if (!ctx) return undefined;
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid: ctx.cardUid, defId: ctx.defId, baseIndex, power: ctx.power },
-            timestamp,
-        };
-        return { state, events: [
-            grantExtraMinion(playerId, 'robot_zapbot', timestamp),
-            playedEvt,
-        ] };
     });
 
     // 盘旋机器人：选择是否打出牌库顶随从

@@ -48,7 +48,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
         try {
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(qqGroup);
-                success('QQ群号已复制');
+                success(t('hud.about.qqCopied'));
                 return;
             }
             const textarea = document.createElement('textarea');
@@ -60,9 +60,9 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            success('QQ群号已复制');
+            success(t('hud.about.qqCopied'));
         } catch {
-            error('复制失败，请手动复制');
+            error(t('hud.about.copyFailed'));
         }
     };
 
@@ -407,8 +407,8 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                     <div className="pt-4 border-t border-parchment-brown/10 space-y-4">
                         <div className="text-center space-y-1">
                             <div className="flex items-center justify-center gap-2">
-                                <Heart size={14} className="text-rose-500 fill-rose-500 animate-pulse" />
-                                <p className="text-sm font-bold text-parchment-brown">{t('hud.about.supportTitle')}</p>
+                                <Heart size={14} className="text-rose-500 fill-rose-500 animate-pulse shrink-0" />
+                                <p className="text-sm font-bold text-parchment-brown leading-snug">{t('hud.about.supportTitle')}</p>
                             </div>
                             <p className="text-[11px] text-parchment-light-text opacity-70">{t('hud.about.supportSubtitle')}</p>
                         </div>
@@ -434,7 +434,6 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                                             src={qr.src}
                                             alt={qr.alt}
                                             className="w-full h-full object-cover"
-                                            loading="lazy"
                                         />
                                     </div>
                                     <span className={`text-[10px] font-bold ${qr.color} opacity-80`}>{qr.label}</span>
@@ -452,13 +451,13 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
 
                             <div ref={scrollRef} className="absolute inset-0 overflow-y-auto scrollbar-thin scrollbar-thumb-parchment-gold/20">
                                 {sponsorLoading && sponsors.length === 0 && (
-                                    <div className="py-4 text-xs text-parchment-light-text text-center">赞助名单加载中...</div>
+                                    <div className="py-4 text-xs text-parchment-light-text text-center">{t('hud.about.sponsorLoading')}</div>
                                 )}
                                 {sponsorError && !sponsorLoading && sponsors.length === 0 && (
-                                    <div className="py-4 text-xs text-parchment-light-text text-center">赞助名单加载失败</div>
+                                    <div className="py-4 text-xs text-parchment-light-text text-center">{t('hud.about.sponsorError')}</div>
                                 )}
                                 {!sponsorLoading && !sponsorError && sponsors.length === 0 && (
-                                    <div className="py-4 text-xs text-parchment-light-text text-center">暂无赞助记录</div>
+                                    <div className="py-4 text-xs text-parchment-light-text text-center">{t('hud.about.sponsorEmpty')}</div>
                                 )}
                                 {!sponsorError && baseCount > 0 && (
                                     <div className="relative w-full" style={{ height: totalHeight }}>
@@ -489,7 +488,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                                 )}
                                 {sponsorLoading && sponsors.length > 0 && (
                                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-parchment-light-text/80 bg-parchment-base-bg/80 px-2 py-0.5 rounded-full">
-                                        加载更多...
+                                        {t('hud.about.loadMore')}
                                     </div>
                                 )}
                             </div>

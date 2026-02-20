@@ -25,7 +25,7 @@ export interface GameTransportClientConfig {
     /** 认证凭证 */
     credentials?: string;
     /** 状态更新回调 */
-    onStateUpdate?: (state: unknown, matchPlayers: MatchPlayerInfo[], meta?: { stateID?: number; lastCommandPlayerId?: string }) => void;
+    onStateUpdate?: (state: unknown, matchPlayers: MatchPlayerInfo[], meta?: { stateID?: number; lastCommandPlayerId?: string; randomCursor?: number }, randomMeta?: { seed: string; cursor: number }) => void;
     /** 连接状态变更回调 */
     onConnectionChange?: (connected: boolean) => void;
     /** 玩家连接/断开回调 */
@@ -108,7 +108,7 @@ export class GameTransportClient {
             this.sendSync();
         });
 
-        socket.on('state:sync', (matchID, state, matchPlayers) => {
+        socket.on('state:sync', (matchID, state, matchPlayers, randomMeta) => {
             if (this._destroyed || matchID !== this.config.matchID) return;
             this.clearSyncTimer();
             this._syncRetries = 0;
@@ -116,7 +116,7 @@ export class GameTransportClient {
             this._latestState = state;
             this._matchPlayers = matchPlayers;
             this.config.onConnectionChange?.(true);
-            this.config.onStateUpdate?.(state, matchPlayers);
+            this.config.onStateUpdate?.(state, matchPlayers, undefined, randomMeta);
         });
 
         socket.on('state:update', (matchID, state, matchPlayers, meta) => {

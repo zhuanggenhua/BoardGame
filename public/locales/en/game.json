@@ -90,7 +90,13 @@
       "supportSubtitle": "Your nickname will be listed below (optional)",
       "qrPlaceholder": "QR",
       "wechatLabel": "WeChat",
-      "alipayLabel": "Alipay"
+      "alipayLabel": "Alipay",
+      "sponsorLoading": "Loading sponsors...",
+      "sponsorError": "Failed to load sponsors",
+      "sponsorEmpty": "No sponsors yet",
+      "qqCopied": "QQ group number copied",
+      "copyFailed": "Copy failed, please copy manually",
+      "loadMore": "Loading more..."
     },
     "feedback": {
       "title": "Feedback",

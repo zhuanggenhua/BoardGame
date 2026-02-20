@@ -232,7 +232,7 @@ function ghostSpirit(ctx: AbilityContext): AbilityResult {
     const options = targets.map(t => ({ uid: t.uid, defId: t.defId, baseIndex: t.baseIndex, label: t.label }));
     const interaction = createSimpleChoice(
         `ghost_spirit_${ctx.now}`, ctx.playerId,
-        '选择要消灭的随从（需弃等量力量的手牌）', buildMinionTargetOptions(options),
+        '选择要消灭的随从（需弃等量力量的手牌）', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }),
         { sourceId: 'ghost_spirit', targetType: 'minion', autoCancelOption: true }
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };

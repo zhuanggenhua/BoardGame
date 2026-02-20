@@ -23,7 +23,7 @@ import type {
     ProcessCommandResult,
     ReconcileResult,
 } from './types';
-import { executePipeline } from '../../pipeline';
+import { executePipeline, createSeededRandom } from '../../pipeline';
 
 // ============================================================================
 // 公共接口
@@ -35,7 +35,7 @@ export interface OptimisticEngine {
     processCommand(type: string, payload: unknown, playerId: string): ProcessCommandResult;
 
     /** 服务端确认状态到达时调用 */
-    reconcile(confirmedState: MatchState<unknown>, meta?: { stateID?: number; lastCommandPlayerId?: string }): ReconcileResult;
+    reconcile(confirmedState: MatchState<unknown>, meta?: { stateID?: number; lastCommandPlayerId?: string; randomCursor?: number }): ReconcileResult;
 
     /** 获取当前应渲染的状态（乐观状态或确认状态） */
     getCurrentState(): MatchState<unknown> | null;
@@ -48,6 +48,14 @@ export interface OptimisticEngine {
 
     /** 更新玩家 ID 列表（首次收到服务端状态时调用） */
     setPlayerIds(ids: string[]): void;
+
+    /**
+     * 同步随机数生成器（种子+游标）
+     *
+     * 首次连接时从 state:sync 获取 seed + cursor，构建与服务端相同的 PRNG。
+     * 之后每次 reconcile 时根据服务端 cursor 重新同步，确保预测准确。
+     */
+    syncRandom(seed: string, cursor: number): void;
 }
 
 // ============================================================================
@@ -229,10 +237,44 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
     const { pipelineConfig } = config;
     const commandDeterminism: CommandDeterminismMap = config.commandDeterminism ?? {};
     const commandAnimationMode: CommandAnimationMap = config.commandAnimationMode ?? {};
-    const localRandom: RandomFn = config.localRandom ?? createDefaultRandom();
+    let localRandom: RandomFn = config.localRandom ?? createDefaultRandom();
 
     /** 基于 localRandom 创建 probe（复用同一个，每次 processCommand 前 reset） */
-    const randomProbe = createRandomProbe(localRandom);
+    let randomProbe = createRandomProbe(localRandom);
+
+    /**
+     * 随机数是否已与服务端同步（seed-based）
+     *
+     * true 时 localRandom 是 createSeededRandom(seed) 构建的，与服务端 PRNG 序列一致。
+     * Random Probe 检测到随机数调用时不再丢弃预测结果，因为预测是准确的。
+     * 仅当 cursor 漂移（对手命令插入）时预测才不准，reconcile 会自动纠正。
+     */
+    let isRandomSynced = false;
+
+    /** 同步随机数的种子（用于 reconcile/恢复时重建） */
+    let syncedSeed: string | null = null;
+
+    /**
+     * 当前 localRandom 对应的 cursor 位置（仅 isRandomSynced 时有效）
+     *
+     * 每次 processCommand 前快照此值，pipeline 失败时用 seed + snapshot 重建 localRandom。
+     * pipeline 成功后不需要手动更新——localRandom 的 PRNG 状态已自然推进，
+     * 但 syncedCursor 需要同步推进以便后续失败时能恢复到正确位置。
+     *
+     * 更新时机：
+     * - syncRandom(): 设置为传入的 cursor
+     * - reconcile(): 设置为服务端 randomCursor
+     * - processCommand() 成功后: 无法精确知道消耗了多少随机数，
+     *   所以用 snapshotCursor 机制：失败时恢复到 processCommand 开始前的 cursor
+     *
+     * 注意：连续多次成功的 processCommand 之间，syncedCursor 不会更新。
+     * 如果中间某次失败，rebuildLocalRandom 会恢复到最后一次 reconcile/syncRandom 的 cursor，
+     * 这会导致之前成功预测消耗的随机数被"回退"。但这是安全的：
+     * - 之前成功的预测已在 pending 队列中
+     * - 下次 reconcile 时服务端 cursor 会纠正一切
+     * - 回退后的 localRandom 用于新的预测，可能不准确，但 reconcile 会纠正
+     */
+    let syncedCursor = 0;
 
     /** 玩家 ID 列表（首次收到服务端状态后填充） */
     let playerIds: string[] = config.playerIds ?? [];
@@ -314,10 +356,35 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
     /**
      * 获取命令的动画模式
      *
-     * 未声明的命令默认使用 'wait-confirm'（保守策略）。
+     * 优先级：游戏层显式声明 > 引擎系统命令内置默认 > 'wait-confirm'（保守策略）
+     *
+     * 引擎系统命令（ADVANCE_PHASE / RESPONSE_PASS）内置 'optimistic'：
+     * - 这两个命令由引擎层触发，执行结果确定性高（isRandomSynced=true 时完全准确）
+     * - 若使用 wait-confirm，EventStream 会被剥离并设置 waitConfirmWatermark，
+     *   回滚时 filterPlayedEvents 可能过滤掉 onPhaseExit 产生的业务事件（如 BASE_SCORED）
+     * - 游戏层可通过显式声明 'wait-confirm' 覆盖此默认值（优先级最高）
      */
     function getAnimationMode(type: string): AnimationMode {
-        return commandAnimationMode[type] ?? 'wait-confirm';
+        if (type in commandAnimationMode) return commandAnimationMode[type];
+        // 引擎系统命令内置 optimistic 默认值
+        if (type === 'ADVANCE_PHASE' || type === 'RESPONSE_PASS') return 'optimistic';
+        return 'wait-confirm';
+    }
+
+    /**
+     * 从 seed + cursor 重建 localRandom
+     *
+     * 用于 pipeline 执行失败后恢复 PRNG 状态，
+     * 避免失败的 pipeline 消耗随机数导致后续预测 cursor 漂移。
+     */
+    function rebuildLocalRandom(): void {
+        if (!syncedSeed) return;
+        const synced = createSeededRandom(syncedSeed);
+        for (let i = 0; i < syncedCursor; i++) {
+            synced.random();
+        }
+        localRandom = synced;
+        randomProbe = createRandomProbe(localRandom);
     }
 
     /**
@@ -411,20 +478,22 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
             }
 
-            // 显式声明为非确定性：跳过预测，直接发送
+            // 显式声明为非确定性：
+            // - 随机数已同步时：仍然可以预测（localRandom 与服务端一致）
+            // - 未同步时：跳过预测，直接发送
             const explicitDecl = getExplicitDeterminism(type, currentState, payload);
-            if (explicitDecl === 'non-deterministic') {
+            if (explicitDecl === 'non-deterministic' && !isRandomSynced) {
                 unpredictedBarrier = true;
                 return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
             }
 
-            // 尝试本地执行 Pipeline（使用 probe 检测随机数调用）
+            // 尝试本地执行 Pipeline
             try {
                 const command: Command = { type, playerId, payload };
 
-                // 显式声明为确定性 → 用 localRandom 直接执行（跳过 probe 开销）
-                // 无声明 → 用 probe 执行，事后检查是否调用了随机数
-                const useProbe = explicitDecl === null;
+                // 随机数已同步时：直接用 localRandom 执行（结果与服务端一致，无需 probe）
+                // 未同步时：用 probe 检测是否调用了随机数
+                const useProbe = !isRandomSynced && explicitDecl === null;
                 if (useProbe) randomProbe.reset();
                 const randomToUse = useProbe ? randomProbe.probe : localRandom;
 
@@ -438,10 +507,12 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
 
                 if (!result.success) {
                     // 本地验证失败，不更新乐观状态，仍发送到服务端
+                    // 注意：pipeline 在 validate 阶段失败时不会消耗 random，无需恢复
                     return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
                 }
 
-                // Random Probe 自动检测：若 pipeline 执行期间调用了随机数 → 丢弃乐观结果
+                // Random Probe 自动检测（仅未同步时生效）：
+                // 若 pipeline 执行期间调用了随机数 → 丢弃乐观结果
                 if (useProbe && randomProbe.wasUsed()) {
                     unpredictedBarrier = true;
                     return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
@@ -494,17 +565,31 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 return { stateToRender: predictedState, shouldSend: true, animationMode: mode };
             } catch {
                 // Pipeline 执行异常，不更新乐观状态
+                // 恢复 localRandom：pipeline 可能已消耗随机数
+                if (isRandomSynced) rebuildLocalRandom();
                 return { stateToRender: null, shouldSend: true, animationMode: 'wait-confirm' };
             }
         },
 
-        reconcile(serverState: MatchState<unknown>, meta?: { stateID?: number; lastCommandPlayerId?: string }): ReconcileResult {
+        reconcile(serverState: MatchState<unknown>, meta?: { stateID?: number; lastCommandPlayerId?: string; randomCursor?: number }): ReconcileResult {
             // 更新确认状态
             confirmedState = serverState;
 
             // 更新 confirmedStateID（用于后续 processCommand 推算 predictedStateID）
             if (meta?.stateID !== undefined) {
                 confirmedStateID = meta.stateID;
+            }
+
+            // 同步随机数游标：根据服务端 cursor 重建 localRandom，确保后续预测准确
+            if (isRandomSynced && syncedSeed !== null && typeof meta?.randomCursor === 'number') {
+                syncedCursor = meta.randomCursor;
+                const synced = createSeededRandom(syncedSeed);
+                // 快进到服务端 cursor 位置
+                for (let i = 0; i < meta.randomCursor; i++) {
+                    synced.random();
+                }
+                localRandom = synced;
+                randomProbe = createRandomProbe(localRandom);
             }
 
             if (pendingCommands.length === 0) {
@@ -621,10 +706,23 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
             waitConfirmWatermark = null;
             confirmedStateID = null;
             unpredictedBarrier = false;
+            // 重置时不清除 isRandomSynced/syncedSeed，重连后 state:sync 会重新同步
         },
 
         setPlayerIds(ids: string[]): void {
             playerIds = ids;
+        },
+
+        syncRandom(seed: string, cursor: number): void {
+            syncedSeed = seed;
+            syncedCursor = cursor;
+            isRandomSynced = true;
+            const synced = createSeededRandom(seed);
+            for (let i = 0; i < cursor; i++) {
+                synced.random();
+            }
+            localRandom = synced;
+            randomProbe = createRandomProbe(localRandom);
         },
     };
 }

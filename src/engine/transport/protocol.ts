@@ -47,6 +47,8 @@ export interface ServerToClientEvents {
         matchID: string,
         state: unknown,
         matchPlayers: MatchPlayerInfo[],
+        /** 随机数同步元数据（种子+游标），供客户端乐观引擎构建同步随机数生成器 */
+        randomMeta?: { seed: string; cursor: number },
     ) => void;
 
     /** 增量状态更新（命令执行后） */
@@ -55,7 +57,7 @@ export interface ServerToClientEvents {
         state: unknown,
         matchPlayers: MatchPlayerInfo[],
         /** 元数据，用于乐观更新校验 */
-        meta?: { stateID?: number; lastCommandPlayerId?: string },
+        meta?: { stateID?: number; lastCommandPlayerId?: string; randomCursor?: number },
     ) => void;
 
     /** 命令执行错误 */

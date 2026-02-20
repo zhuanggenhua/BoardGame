@@ -543,7 +543,10 @@ export class GameTransportServer {
             { stripEventStream: true },
         );
         const matchPlayers = this.buildMatchPlayers(match);
-        socket.emit('state:sync', matchID, viewState, matchPlayers);
+        socket.emit('state:sync', matchID, viewState, matchPlayers, {
+            seed: match.randomSeed,
+            cursor: match.getRandomCursor(),
+        });
 
         // 通知其他玩家（旁观者不触发玩家连接事件）
         if (playerID !== null) {
@@ -1010,8 +1013,11 @@ export class GameTransportServer {
         const nsp = this.io.of('/game');
         const matchPlayers = this.buildMatchPlayers(match);
 
-        // 附带 stateID + lastCommandPlayerId 元数据，供乐观引擎精确匹配
-        const meta: { stateID: number; lastCommandPlayerId?: string } = { stateID: match.stateID };
+        // 附带 stateID + lastCommandPlayerId + randomCursor 元数据，供乐观引擎精确匹配和随机数同步
+        const meta: { stateID: number; lastCommandPlayerId?: string; randomCursor: number } = {
+            stateID: match.stateID,
+            randomCursor: match.getRandomCursor(),
+        };
         if (match.lastCommandPlayerId) {
             meta.lastCommandPlayerId = match.lastCommandPlayerId;
         }

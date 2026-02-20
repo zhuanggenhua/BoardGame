@@ -490,7 +490,7 @@ export const GameHUD = ({
                     <div className="space-y-4 mt-3">
                         {matchId && (
                             <div className="space-y-1">
-                                <span className="text-[10px] text-white/40 uppercase font-bold">{t('hud.labels.roomId')}</span>
+                                <span className="text-[10px] text-white/60 uppercase font-bold">{t('hud.labels.roomId')}</span>
                                 <button
                                     onClick={copyRoomId}
                                     className="w-full flex items-center justify-between px-3 py-2 rounded bg-white/5 hover:bg-white/10 transition-colors group border border-white/5"
@@ -502,7 +502,7 @@ export const GameHUD = ({
                         )}
                         {players && (
                             <div className="space-y-2 relative">
-                                <span className="text-[10px] text-white/40 uppercase font-bold">{t('hud.labels.players')}</span>
+                                <span className="text-[10px] text-white/60 uppercase font-bold">{t('hud.labels.players')}</span>
                                 <div className="space-y-2">
                                     {players.map(p => (
                                         <div key={p.id} className="flex items-center justify-between bg-black/40 px-3 py-2 rounded border border-white/5">

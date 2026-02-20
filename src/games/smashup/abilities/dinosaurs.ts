@@ -30,7 +30,7 @@ export function registerDinosaurAbilities(): void {
     // === ongoing 效果注册 ===
     // 全副武装：拦截影响事件时自毁以保护附着随从
     registerInterceptor('dino_tooth_and_claw', dinoToothAndClawInterceptor);
-    registerProtection('dino_tooth_and_claw', 'affect', dinoToothAndClawChecker);
+    registerProtection('dino_tooth_and_claw', 'affect', dinoToothAndClawChecker, { consumable: true });
     // 升级：+2力量（ongoingModifiers 中注册），无消灭保护
     // 野生保护区：保护你在此基地的随从不受其他玩家战术影响
     registerProtection('dino_wildlife_preserve', 'action', dinoWildlifePreserveChecker);
@@ -93,7 +93,7 @@ function dinoAugmentation(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `dino_augmentation_${ctx.now}`, ctx.playerId,
         '选择一个随从获得+4力量（直到回合结束）',
-        buildMinionTargetOptions(options),
+        buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
         { sourceId: 'dino_augmentation', targetType: 'minion' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -141,7 +141,7 @@ function dinoNaturalSelection(ctx: AbilityContext): AbilityResult {
     });
     const interaction = createSimpleChoice(
         `dino_natural_selection_${ctx.now}`, ctx.playerId,
-        '选择你的一个随从作为参照', buildMinionTargetOptions(options),
+        '选择你的一个随从作为参照', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
         { sourceId: 'dino_natural_selection_choose_mine', targetType: 'minion', autoCancelOption: true }
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -191,7 +191,7 @@ function dinoSurvivalOfTheFittest(ctx: AbilityContext): AbilityResult {
             return { uid: m.uid, defId: m.defId, baseIndex: first.baseIndex, label: `${name} (力量 ${first.minPower}) @ ${baseName}` };
         });
         const interaction = createSimpleChoice(
-            `dino_sotf_tiebreak_${ctx.now}`, ctx.playerId, '选择要消灭的最低力量随从', buildMinionTargetOptions(options), { sourceId: 'dino_survival_tiebreak', targetType: 'minion' }
+            `dino_sotf_tiebreak_${ctx.now}`, ctx.playerId, '选择要消灭的最低力量随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }), { sourceId: 'dino_survival_tiebreak', targetType: 'minion' }
         );
         const remainingData = remaining.map(tb => ({
             baseIndex: tb.baseIndex,
@@ -316,7 +316,7 @@ export function registerDinosaurInteractionHandlers(): void {
                 return { uid: c.uid, defId: c.defId, baseIndex: next.baseIndex, label: `${name} (力量 ${next.minPower}) @ ${baseName}` };
             });
             const interaction = createSimpleChoice(
-                `dino_sotf_tiebreak_${timestamp}`, playerId, '选择要消灭的最低力量随从', buildMinionTargetOptions(options), { sourceId: 'dino_survival_tiebreak', targetType: 'minion' }
+                `dino_sotf_tiebreak_${timestamp}`, playerId, '选择要消灭的最低力量随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' }), { sourceId: 'dino_survival_tiebreak', targetType: 'minion' }
                 );
             return { state: queueInteraction(state, { ...interaction, data: { ...interaction.data, continuationContext: { remainingBases: rest } } }), events };
         }

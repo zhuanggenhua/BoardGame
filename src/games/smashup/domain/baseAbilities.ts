@@ -419,7 +419,7 @@ export function registerBaseAbilities(): void {
             });
             const interaction = createSimpleChoice(
                 `base_temple_of_goju_tiebreak_${ctx.now}`, first.playerId,
-                '刚柔流寺庙：选择放入牌库底的最高力量随从', buildMinionTargetOptions(options), 'base_temple_of_goju_tiebreak',
+                '刚柔流寺庙：选择放入牌库底的最高力量随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), 'base_temple_of_goju_tiebreak',
             );
             const remainingData = remaining.map(tb => ({
                 playerId: tb.playerId,
@@ -1054,7 +1054,7 @@ export function registerBaseInteractionHandlers(): void {
     });
 
     // 刚柔流寺庙：平局时拥有者选择放入牌库底的随从（链式处理多个玩家）
-    registerInteractionHandler('base_temple_of_goju_tiebreak', (state, _playerId, value, iData, _random, timestamp) => {
+    registerInteractionHandler('base_temple_of_goju_tiebreak', (state, playerId, value, iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number; defId: string };
         const base = state.core.bases[baseIndex];
         if (!base) return { state, events: [] };
@@ -1084,7 +1084,7 @@ export function registerBaseInteractionHandlers(): void {
             });
             const interaction = createSimpleChoice(
                 `base_temple_of_goju_tiebreak_${timestamp}`, next.playerId,
-                '刚柔流寺庙：选择放入牌库底的最高力量随从', buildMinionTargetOptions(options), 'base_temple_of_goju_tiebreak',
+                '刚柔流寺庙：选择放入牌库底的最高力量随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId }), 'base_temple_of_goju_tiebreak',
             );
             return { state: queueInteraction(state, { ...interaction, data: { ...interaction.data, continuationContext: { baseIndex: ctx!.baseIndex, remainingPlayers: rest } } }), events };
         }

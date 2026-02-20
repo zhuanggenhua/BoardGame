@@ -193,11 +193,16 @@ export function registerExpansionBaseAbilities(): void {
     });
 
     // ── 冷原高地（Plateau of Leng）──────────────────────────────
-    // "在一个玩家首次打出一个随从到这后，如果手牌中有同名随从，可以额外打出牌
+    // "每回合玩家第一次打出一个随从到这里后，可以额外打出一张与其同名的随从到这里"
     registerBaseAbility('base_plateau_of_leng', 'onMinionPlayed', (ctx) => {
         if (!ctx.minionDefId) return { events: [] };
         const player = ctx.state.players[ctx.playerId];
         if (!player) return { events: [] };
+
+        // 每回合只有第一次打出随从到此基地才触发
+        // reduce 已执行，minionsPlayedPerBase 包含刚打出的随从，首次打出时值为 1
+        const playedAtBase = player.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0;
+        if (playedAtBase !== 1) return { events: [] };
 
         // 检查手牌中是否有同名随从（相同 defId?
         const sameNameMinions = player.hand.filter(
@@ -371,16 +376,16 @@ export function registerExpansionBaseAbilities(): void {
     });
 
     // ── 仙灵之环（Fairy Ring）──────────────────────────────────
-    // "在一个玩家首次打出一个随从到这后，该玩家可以额外打出一个随从和一张行动卡牌?
-    // 通过检查基地上该玩家的随从数量判断是否为首次（刚打出的随从已在基地上，数量为?即首次）
+    // "在一个玩家首次打出一个随从到这后，该玩家可以额外打出一个随从和一张行动卡牌"
+    // 通过 minionsPlayedPerBase 追踪每回合每基地打出次数，reduce 已执行，首次打出时值为 1
     registerBaseAbility('base_fairy_ring', 'onMinionPlayed', (ctx) => {
-        const base = ctx.state.bases[ctx.baseIndex];
-        if (!base) return { events: [] };
+        const player = ctx.state.players[ctx.playerId];
+        if (!player) return { events: [] };
 
-        // 计算该玩家在此基地的随从数量（包含刚打出的）
-        const playerMinionCount = base.minions.filter(m => m.controller === ctx.playerId).length;
-        // 只有首次打出（基地上该玩家只有?个随从= 刚打出的那个）才触发
-        if (playerMinionCount !== 1) return { events: [] };
+        // 每回合只有第一次打出随从到此基地才触发
+        // reduce 已执行，minionsPlayedPerBase 包含刚打出的随从，首次打出时值为 1
+        const playedAtBase = player.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0;
+        if (playedAtBase !== 1) return { events: [] };
 
         return {
             events: [

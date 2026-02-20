@@ -201,7 +201,7 @@ function alienDisintegrator(ctx: AbilityContext): AbilityResult {
     }
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return { events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-        `alien_disintegrator_${ctx.now}`, ctx.playerId, '选择要放到牌库底的力量≤3的随从', buildMinionTargetOptions(targets), { sourceId: 'alien_disintegrator', targetType: 'minion' }
+        `alien_disintegrator_${ctx.now}`, ctx.playerId, '选择要放到牌库底的力量≤3的随从', buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'alien_disintegrator', targetType: 'minion' }
     )) };
 }
 
@@ -216,7 +216,7 @@ function alienBeamUp(ctx: AbilityContext): AbilityResult {
     }
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return { events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-        `alien_beam_up_${ctx.now}`, ctx.playerId, '选择要返回手牌的随从', buildMinionTargetOptions(targets), { sourceId: 'alien_beam_up', targetType: 'minion' }
+        `alien_beam_up_${ctx.now}`, ctx.playerId, '选择要返回手牌的随从', buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'alien_beam_up', targetType: 'minion' }
     )) };
 }
 
@@ -299,7 +299,7 @@ function alienAbduction(ctx: AbilityContext): AbilityResult {
     }
     if (targets.length === 0) return { events: [grantExtraMinion(ctx.playerId, 'alien_abduction', ctx.now)] };
     return { events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-        `alien_abduction_${ctx.now}`, ctx.playerId, '选择要返回手牌的随从', buildMinionTargetOptions(targets), { sourceId: 'alien_abduction', targetType: 'minion' }
+        `alien_abduction_${ctx.now}`, ctx.playerId, '选择要返回手牌的随从', buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'alien_abduction', targetType: 'minion' }
     )) };
 }
 

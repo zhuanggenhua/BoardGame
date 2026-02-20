@@ -267,13 +267,14 @@ describe('base_miskatonic_university_base: 密大基地 - 计分后返回疯狂�
 });
 
 describe('base_plateau_of_leng: 冷原高地 - 打同名随从', () => {
-    it('手牌有同名随从时生成 Prompt', () => {
+    it('首次打出且手牌有同名随从时生成 Prompt', () => {
         const result = triggerBaseAbilityWithMS('base_plateau_of_leng', 'onMinionPlayed', makeCtx({
             state: makeState({
                 bases: [makeBase('base_plateau_of_leng')],
                 players: {
                     '0': makePlayer('0', {
                         hand: [makeCard('h1', 'alien_collector', 'minion')], // 同名随从
+                        minionsPlayedPerBase: { 0: 1 }, // 刚打出第一个随从（reduce 已执行）
                     }),
                     '1': makePlayer('1'),
                 },
@@ -289,6 +290,26 @@ describe('base_plateau_of_leng: 冷原高地 - 打同名随从', () => {
         expect(interactions[0].data.sourceId).toBe('base_plateau_of_leng');
     });
 
+    it('非首次打出时不触发（即使手牌有同名随从）', () => {
+        const { events } = triggerBaseAbility('base_plateau_of_leng', 'onMinionPlayed', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_plateau_of_leng')],
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('h1', 'alien_collector', 'minion')], // 同名随从
+                        minionsPlayedPerBase: { 0: 2 }, // 已打出第二个随从
+                    }),
+                    '1': makePlayer('1'),
+                },
+            }),
+            baseDefId: 'base_plateau_of_leng',
+            minionUid: 'm2',
+            minionDefId: 'alien_collector',
+        }));
+
+        expect(events).toHaveLength(0);
+    });
+
     it('手牌无同名随从时不触发', () => {
         const { events } = triggerBaseAbility('base_plateau_of_leng', 'onMinionPlayed', makeCtx({
             state: makeState({
@@ -296,6 +317,7 @@ describe('base_plateau_of_leng: 冷原高地 - 打同名随从', () => {
                 players: {
                     '0': makePlayer('0', {
                         hand: [makeCard('h1', 'alien_invader', 'minion')], // 不同名
+                        minionsPlayedPerBase: { 0: 1 }, // 首次打出
                     }),
                     '1': makePlayer('1'),
                 },
@@ -504,12 +526,18 @@ describe('base_enchanted_glade: 魔法林地 - 附着行动卡抽牌', () => {
 });
 
 describe('base_fairy_ring: 仙灵圈 - 首次打随从额外额度', () => {
-    it('首次打出随从（基地上该玩家仅 1 个随从）时获得额外额度', () => {
+    it('首次打出随从时获得额外额度', () => {
         const { events } = triggerBaseAbility('base_fairy_ring', 'onMinionPlayed', makeCtx({
             state: makeState({
                 bases: [makeBase('base_fairy_ring', {
-                    minions: [makeMinion('m1', '0', 3)], // 刚打出的这一个
+                    minions: [makeMinion('m1', '0', 3)],
                 })],
+                players: {
+                    '0': makePlayer('0', {
+                        minionsPlayedPerBase: { 0: 1 }, // 首次打出（reduce 已执行）
+                    }),
+                    '1': makePlayer('1'),
+                },
             }),
             baseDefId: 'base_fairy_ring',
             baseIndex: 0,
@@ -528,15 +556,43 @@ describe('base_fairy_ring: 仙灵圈 - 首次打随从额外额度', () => {
         expect(actionLimit).toBeDefined();
     });
 
-    it('非首次打出（基地上该玩家已有 2 个随从）不触发', () => {
+    it('非首次打出时不触发', () => {
         const { events } = triggerBaseAbility('base_fairy_ring', 'onMinionPlayed', makeCtx({
             state: makeState({
                 bases: [makeBase('base_fairy_ring', {
                     minions: [
                         makeMinion('m1', '0', 3),
-                        makeMinion('m2', '0', 2), // 已有 2 个
+                        makeMinion('m2', '0', 2),
                     ],
                 })],
+                players: {
+                    '0': makePlayer('0', {
+                        minionsPlayedPerBase: { 0: 2 }, // 第二次打出
+                    }),
+                    '1': makePlayer('1'),
+                },
+            }),
+            baseDefId: 'base_fairy_ring',
+            baseIndex: 0,
+            minionUid: 'm2',
+        }));
+
+        expect(events).toHaveLength(0);
+    });
+
+    it('之前有随从被消灭后再打出仍不触发（非首次打出）', () => {
+        // 回归测试：旧实现用基地上随从数量判断，消灭后再打出会误触发
+        const { events } = triggerBaseAbility('base_fairy_ring', 'onMinionPlayed', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_fairy_ring', {
+                    minions: [makeMinion('m2', '0', 2)], // 基地上只有1个（之前的被消灭了）
+                })],
+                players: {
+                    '0': makePlayer('0', {
+                        minionsPlayedPerBase: { 0: 2 }, // 但这是第二次打出
+                    }),
+                    '1': makePlayer('1'),
+                },
             }),
             baseDefId: 'base_fairy_ring',
             baseIndex: 0,

@@ -76,6 +76,7 @@ export const ELDER_THINGS_ACTIONS: ActionCardDef[] = [
         name: '敦威治恐怖',
         nameEn: 'Dunwich Horror',
         faction: 'elder_things',
+        abilityTags: ['ongoing'],
         ongoingTarget: 'minion',
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 40 },

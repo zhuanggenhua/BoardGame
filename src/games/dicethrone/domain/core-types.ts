@@ -154,6 +154,8 @@ export interface AbilityCard {
     playCondition?: CardPlayCondition;
     /** 多语言文案（单一数据源，支持任意语言 key） */
     i18n?: Record<string, CardI18n>;
+    /** 是否为攻击修正卡（投掷阶段打出，修改攻击伤害的卡）。UI 用此标记显示"已激活修正"指示器 */
+    isAttackModifier?: boolean;
 }
 
 export interface PendingAttack {
