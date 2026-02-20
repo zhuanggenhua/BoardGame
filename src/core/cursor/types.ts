@@ -39,6 +39,13 @@ export interface CursorTheme {
     zoomIn?: string;
     /** 禁用状态 */
     notAllowed?: string;
+    /**
+     * 按玩家阵营切换的子主题映射。
+     * key 为 playerID 字符串（如 '0'、'1'），value 为该阵营专属的光标 CSS 值集合。
+     * GameCursorProvider 收到 playerID 后自动选择对应子主题；未匹配时回退到主题本身。
+     * 其他游戏可通过同样机制实现阵营差异化光标。
+     */
+    playerThemes?: Record<string, Pick<CursorTheme, 'default' | 'pointer' | 'grabbing' | 'grab' | 'zoomIn' | 'notAllowed' | 'previewSvgs'>>;
 }
 
 /** 用户光标偏好（持久化数据） */

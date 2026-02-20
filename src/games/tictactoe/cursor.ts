@@ -1,18 +1,25 @@
 /**
  * 井字棋 (Tic Tac Toe) 光标主题
  *
- * 使用共享样式模板，无需重复定义 SVG。
- * 变体 1: 霓虹青（共享样式）
- * 变体 2: 霓虹粉（共享样式）
+ * 未来科技风格，按阵营切换颜色：
+ * - P0（X，粉色阵营）→ #e879f9 粉紫
+ * - P1（O，青色阵营）→ #22d3ee 青色
+ * 未匹配时（旁观者/未知）回退到默认青色。
  */
 
 import { registerCursorThemes } from '../../core/cursor/themes';
-import { createThemeFromStyle, STYLE_NEON_CYAN, STYLE_NEON_PINK, STYLE_FUTURISTIC_TECH } from '../../core/cursor/cursorStyles';
+import { createThemeFromStyle, createFuturisticPlayerTheme, STYLE_FUTURISTIC_TECH } from '../../core/cursor/cursorStyles';
 
-const meta = { gameId: 'tictactoe', label: '井字棋' };
+const base = createThemeFromStyle(STYLE_FUTURISTIC_TECH, {
+    id: 'tictactoe',
+    gameId: 'tictactoe',
+    label: '井字棋',
+});
 
-registerCursorThemes([
-    createThemeFromStyle(STYLE_NEON_CYAN, { ...meta, id: 'tictactoe' }),
-    createThemeFromStyle(STYLE_NEON_PINK, { ...meta }),
-    createThemeFromStyle(STYLE_FUTURISTIC_TECH, { ...meta }),
-]);
+// 按阵营注入专属颜色，与棋子风格一致：X=粉色，O=青色
+base.playerThemes = {
+    '0': createFuturisticPlayerTheme('#e879f9', 'tt-p0'), // X 粉色
+    '1': createFuturisticPlayerTheme('#22d3ee', 'tt-p1'), // O 青色
+};
+
+registerCursorThemes([base]);

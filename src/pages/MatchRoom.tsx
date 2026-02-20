@@ -945,7 +945,7 @@ export const MatchRoom = () => {
 
             {/* 游戏棋盘 - 全屏 */}
             <div className={`w-full h-full ${isUgcGame ? 'ugc-preview-container' : ''}`}>
-                <GameCursorProvider themeId={gameConfig?.cursorTheme}>
+                <GameCursorProvider themeId={gameConfig?.cursorTheme} playerID={effectivePlayerID}>
                 {isTutorialRoute ? (
                     <GameModeProvider mode="tutorial">
                         {hasTutorialBoard && engineConfig && WrappedBoard ? (

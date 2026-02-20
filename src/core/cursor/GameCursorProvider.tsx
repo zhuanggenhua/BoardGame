@@ -15,6 +15,11 @@ import type { CursorTheme } from './types';
 interface GameCursorProviderProps {
     /** 游戏 manifest 中声明的光标主题 ID */
     themeId?: string;
+    /**
+     * 当前玩家 ID（如 '0'、'1'）。
+     * 若主题声明了 playerThemes，则按此 ID 选择阵营专属光标；未匹配时回退到主题默认值。
+     */
+    playerID?: string;
     children: React.ReactNode;
 }
 
@@ -56,21 +61,18 @@ function buildCursorCSS(containerId: string, theme: CursorTheme): string {
     return rules.join('\n');
 }
 
-export function GameCursorProvider({ themeId, children }: GameCursorProviderProps) {
+export function GameCursorProvider({ themeId, playerID, children }: GameCursorProviderProps) {
     const containerId = 'game-cursor-scope';
     const { preference } = useCursorPreference();
 
     // 决定实际使用的光标主题
     const effectiveThemeId = useMemo(() => {
         if (preference.overrideScope === 'all' && preference.cursorTheme !== 'default') {
-            // 用户选了"全部"且不是默认 → 覆盖游戏自带光标
             return preference.cursorTheme;
         }
         if (preference.overrideScope === 'all' && preference.cursorTheme === 'default') {
-            // 用户选了"全部" + 默认 → 强制使用系统光标（不注入任何主题）
             return undefined;
         }
-        // 'home' 模式 → 游戏内用游戏自带光标
         return themeId;
     }, [preference, themeId]);
 
@@ -78,11 +80,18 @@ export function GameCursorProvider({ themeId, children }: GameCursorProviderProp
         if (!effectiveThemeId) return null;
         const theme = getCursorTheme(effectiveThemeId);
         if (!theme) return null;
-        const effectiveTheme = preference.highContrast
-            ? applyHighContrast(theme, theme.previewSvgs)
+
+        // 阵营子主题：若主题声明了 playerThemes 且当前 playerID 有匹配，则合并覆盖
+        const playerOverride = playerID != null ? theme.playerThemes?.[playerID] : undefined;
+        const mergedTheme: CursorTheme = playerOverride
+            ? { ...theme, ...playerOverride }
             : theme;
+
+        const effectiveTheme = preference.highContrast
+            ? applyHighContrast(mergedTheme, mergedTheme.previewSvgs)
+            : mergedTheme;
         return buildCursorCSS(containerId, effectiveTheme);
-    }, [effectiveThemeId, preference.highContrast]);
+    }, [effectiveThemeId, playerID, preference.highContrast]);
 
     if (!cssText) {
         return <>{children}</>;
