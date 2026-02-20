@@ -55,11 +55,23 @@
         </footer>
       </div>
     </noscript>
-    <!-- 极简加载占位：黑底 + 中心呼吸光点，React 挂载后无缝切入完整法阵动画 -->
-    <div id="initial-loader" style="position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center">
-      <div style="width:16px;height:16px;background:#d97706;border-radius:50%;filter:blur(2px);box-shadow:0 0 20px #f59e0b,0 0 60px rgba(245,158,11,0.3);animation:il-breath 2s ease-in-out infinite"></div>
-      <style>@keyframes il-breath{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}</style>
-    </div>
+    <!-- 路由感知的加载占位：首页用羊皮纸风格，游戏页用黑底光点 -->
+    <div id="initial-loader"></div>
+    <script>
+      (function(){
+        var el = document.getElementById('initial-loader');
+        var p = location.pathname;
+        var isGame = p.indexOf('/play/') === 0 || p.indexOf('/dev/') === 0;
+        if (isGame) {
+          el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center';
+          el.innerHTML = '<div style="width:16px;height:16px;background:#d97706;border-radius:50%;filter:blur(2px);box-shadow:0 0 20px #f59e0b,0 0 60px rgba(245,158,11,0.3);animation:il-breath 2s ease-in-out infinite"></div>';
+        } else {
+          el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#f5f0e8;display:flex;align-items:center;justify-content:center;font-family:serif';
+          el.innerHTML = '<div style="text-align:center"><img src="/logos/logo_1_grid.svg" alt="" width="48" height="48" style="opacity:0.7;margin:0 auto 16px;display:block"/><div style="font-size:1.5rem;color:#2c2216;letter-spacing:0.1em;font-weight:bold">易桌游</div><div style="font-size:0.75rem;color:#8b7355;letter-spacing:0.2em;margin-top:8px">加载中…</div></div>';
+        }
+      })();
+    </script>
+    <style>@keyframes il-breath{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}</style>
   </div>
   <div id="modal-root"></div>
   <script type="module" src="/src/main.tsx"></script>
