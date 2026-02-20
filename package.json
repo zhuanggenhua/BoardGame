@@ -1,7 +1,7 @@
 {
   "name": "boardgame-platform",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "predev": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && docker compose up -d mongodb",
