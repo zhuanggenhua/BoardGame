@@ -2,7 +2,8 @@
  * 召唤师战争（SummonerWars）延迟优化配置
  *
  * 召唤师战争大部分命令为确定性操作（召唤、移动、建造等），
- * 仅攻击确认（掷骰子）和开始游戏（洗牌）依赖随机数。
+ * 攻击宣告（掷骰子）和开始游戏（洗牌）依赖随机数。
+ * 注意：DECLARE_ATTACK 是实际执行攻击结算（含掷骰）的命令，CONFIRM_ATTACK 是死代码（execute 未实现）。
  * 技能激活由 Random Probe 自动检测确定性（当前所有执行器均不调用 random）。
  */
 
@@ -29,8 +30,6 @@ const DETERMINISTIC_COMMANDS = [
     SW_COMMANDS.MOVE_UNIT,
     // 建造阶段（放置建筑）
     SW_COMMANDS.BUILD_STRUCTURE,
-    // 攻击阶段（宣告攻击，不含掷骰）
-    SW_COMMANDS.DECLARE_ATTACK,
     // 魔力阶段（弃牌换魔力）
     SW_COMMANDS.DISCARD_FOR_MAGIC,
     // 结束阶段
@@ -49,7 +48,10 @@ const DETERMINISTIC_COMMANDS = [
 const NON_DETERMINISTIC_COMMANDS = [
     // 开始游戏 → 洗牌（random.shuffle）
     SW_COMMANDS.HOST_START_GAME,
-    // 确认攻击 → 掷骰子（random.random）
+    // 宣告攻击 → 掷骰子（random.random）
+    // 注意：DECLARE_ATTACK 是实际执行攻击结算的命令（含掷骰），CONFIRM_ATTACK 是死代码
+    SW_COMMANDS.DECLARE_ATTACK,
+    // 确认攻击（死代码，execute 未实现，保留声明避免 Random Probe 误判）
     SW_COMMANDS.CONFIRM_ATTACK,
 ] as const;
 
@@ -86,7 +88,8 @@ export const summonerWarsLatencyConfig: LatencyOptimizationConfig = {
             [SW_COMMANDS.MOVE_UNIT]: 'optimistic',
             [SW_COMMANDS.SUMMON_UNIT]: 'optimistic',
             [SW_COMMANDS.BUILD_STRUCTURE]: 'optimistic',
-            // 攻击宣告（不含掷骰）→ 立即反馈
+            // 攻击宣告（含掷骰，非确定性）→ 种子同步后可乐观预测，立即反馈
+            // isRandomSynced=false 时不会进入此路径（non-deterministic 命令会跳过预测）
             [SW_COMMANDS.DECLARE_ATTACK]: 'optimistic',
             // 阶段推进 → 立即反馈
             [SW_COMMANDS.END_PHASE]: 'optimistic',
@@ -97,8 +100,7 @@ export const summonerWarsLatencyConfig: LatencyOptimizationConfig = {
             [SW_COMMANDS.DISCARD_FOR_MAGIC]: 'optimistic',
             // 技能激活 → 确定性，立即反馈（心灵捕获/幻化/念力等）
             [SW_COMMANDS.ACTIVATE_ABILITY]: 'optimistic',
-            // 种子同步后，随机命令也可以乐观预测并立即播放动画
-            [SW_COMMANDS.CONFIRM_ATTACK]: 'optimistic',
+            // CONFIRM_ATTACK 是死代码（execute 未实现），无需声明动画模式
         },
     },
     batching: {
@@ -106,8 +108,8 @@ export const summonerWarsLatencyConfig: LatencyOptimizationConfig = {
         windowMs: 50,
         maxBatchSize: 8,
         immediateCommands: [
-            // 攻击确认需要即时反馈（掷骰子）
-            SW_COMMANDS.CONFIRM_ATTACK,
+            // 攻击宣告需要即时反馈（掷骰子）
+            SW_COMMANDS.DECLARE_ATTACK,
             // 开始游戏（低频但重要）
             SW_COMMANDS.HOST_START_GAME,
             // 技能激活需要即时反馈

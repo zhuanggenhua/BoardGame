@@ -15,66 +15,66 @@ const CARD_ATLAS_PATHS = [
     'smashup/cards/cards4',
 ];
 
+/** 构造最小 MatchState 结构 */
+function makeState(phase: string, extra?: Record<string, unknown>) {
+    return { sys: { phase }, core: {}, ...extra };
+}
+
 describe('smashUpCriticalImageResolver', () => {
-    it('无 core 时返回所有卡牌图集为关键、所有基地图集为暖', () => {
+    it('无 state 时（playing 路径）：卡牌+基地都是关键图片', () => {
         const result = smashUpCriticalImageResolver(undefined);
-        expect(result.critical).toEqual(CARD_ATLAS_PATHS);
-        expect(result.warm).toEqual(BASE_ATLAS_PATHS);
+        expect(result.critical).toEqual([...CARD_ATLAS_PATHS, ...BASE_ATLAS_PATHS]);
+        expect(result.warm).toEqual([]);
+        expect(result.phaseKey).toBe('playing');
     });
 
-    it('有 core 时仍返回所有卡牌图集为关键（派系选择界面需要全部展示）', () => {
-        const state = {
-            core: {
-                players: {
-                    '0': { id: '0', factions: ['pirates', 'ninjas'] },
-                    '1': { id: '1', factions: ['aliens', 'dinosaurs'] },
-                },
-            },
-        };
+    it('派系选择阶段：卡牌关键、基地暖加载', () => {
+        const state = makeState('factionSelect');
         const result = smashUpCriticalImageResolver(state);
         expect(result.critical).toEqual(CARD_ATLAS_PATHS);
         expect(result.warm).toEqual(BASE_ATLAS_PATHS);
+        expect(result.phaseKey).toBe('factionSelect');
     });
 
-    it('关键列表包含全部 4 个卡牌图集', () => {
-        const result = smashUpCriticalImageResolver(undefined);
-        for (const atlas of CARD_ATLAS_PATHS) {
-            expect(result.critical).toContain(atlas);
-        }
-        expect(result.critical).toHaveLength(4);
+    it('playCards 阶段：卡牌+基地都是关键图片', () => {
+        const state = makeState('playCards');
+        const result = smashUpCriticalImageResolver(state);
+        expect(result.critical).toEqual([...CARD_ATLAS_PATHS, ...BASE_ATLAS_PATHS]);
+        expect(result.warm).toEqual([]);
+        expect(result.phaseKey).toBe('playing');
     });
 
-    it('暖列表包含全部 4 个基地图集', () => {
-        const result = smashUpCriticalImageResolver(undefined);
-        for (const base of BASE_ATLAS_PATHS) {
-            expect(result.warm).toContain(base);
-        }
-        expect(result.warm).toHaveLength(4);
+    it('教程模式（playing 阶段）：卡牌+基地都是关键图片', () => {
+        const state = {
+            sys: { phase: 'playCards', tutorial: { active: true } },
+            core: {},
+        };
+        const result = smashUpCriticalImageResolver(state);
+        expect(result.critical).toEqual([...CARD_ATLAS_PATHS, ...BASE_ATLAS_PATHS]);
+        expect(result.warm).toEqual([]);
     });
 
     it('关键列表和暖列表无重叠', () => {
-        const result = smashUpCriticalImageResolver(undefined);
+        const result = smashUpCriticalImageResolver(makeState('factionSelect'));
         const criticalSet = new Set(result.critical);
         for (const warm of result.warm) {
             expect(criticalSet.has(warm)).toBe(false);
         }
     });
 
-    it('派系选择阶段也返回全部卡牌图集（需要展示所有派系供选择）', () => {
-        const state = {
-            core: {
-                players: {
-                    '0': { id: '0', factions: [] },
-                },
-                factionSelection: {
-                    takenFactions: ['pirates', 'ghosts'],
-                    playerSelections: { '0': ['pirates', 'ghosts'] },
-                    completedPlayers: [],
-                },
-            },
-        };
-        const result = smashUpCriticalImageResolver(state);
-        expect(result.critical).toEqual(CARD_ATLAS_PATHS);
-        expect(result.warm).toEqual(BASE_ATLAS_PATHS);
+    it('派系选择阶段关键列表包含全部 4 个卡牌图集', () => {
+        const result = smashUpCriticalImageResolver(makeState('factionSelect'));
+        for (const atlas of CARD_ATLAS_PATHS) {
+            expect(result.critical).toContain(atlas);
+        }
+        expect(result.critical).toHaveLength(4);
+    });
+
+    it('playing 阶段关键列表包含全部 8 个图集（4 卡牌 + 4 基地）', () => {
+        const result = smashUpCriticalImageResolver(makeState('playCards'));
+        expect(result.critical).toHaveLength(8);
+        for (const atlas of [...CARD_ATLAS_PATHS, ...BASE_ATLAS_PATHS]) {
+            expect(result.critical).toContain(atlas);
+        }
     });
 });

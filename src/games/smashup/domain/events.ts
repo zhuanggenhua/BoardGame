@@ -86,7 +86,7 @@ export const SU_EVENTS = defineEvents({
   // ========== 动画驱动（FX 系统）==========
   'su:base_scored': 'fx',             // 基地得分（飞行动画 onImpact）
   'su:vp_awarded': 'fx',              // VP 授予（飞行动画 onImpact）
-  'su:minion_destroyed': 'fx',        // 随从摧毁（飞行动画 onImpact）
+  'su:minion_destroyed': { audio: 'immediate', sound: 'dark_fantasy_studio.smashed.smashed_1' },  // 随从摧毁
 
   // ========== 静默事件 ==========
   'su:all_factions_selected': 'silent', // 所有阵营选择完成（内部状态）

@@ -35,6 +35,8 @@ interface TutorialContextType {
     /** AI 命令正在自动执行中（ref，同步可读，此期间命令失败不应提示用户） */
     isAiExecuting: boolean;
     isAiExecutingRef: React.MutableRefObject<boolean>;
+    /** Board 组件已挂载并完成 useTutorialBridge 注册（区别于 TutorialDispatchBridge 的提前注册） */
+    isBoardMounted: boolean;
     startTutorial: (manifest: TutorialManifest) => void;
     nextStep: (reason?: TutorialNextReason) => void;
     closeTutorial: () => void;
@@ -45,6 +47,10 @@ interface TutorialContextType {
     /** Board 卸载时清理 controller，防止残留的 dispatch 指向已销毁的 Provider */
     unbindDispatch: (generation?: number) => void;
     syncTutorialState: (tutorial: TutorialState) => void;
+    /** 由 useTutorialBridge 调用，标记 Board 已挂载 */
+    notifyBoardMounted: () => void;
+    /** 由 useTutorialBridge 调用，标记 Board 已卸载 */
+    notifyBoardUnmounted: () => void;
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
@@ -97,6 +103,7 @@ function getTutorialStepCount(tutorial: TutorialState): number {
 
 export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [tutorial, setTutorial] = useState<TutorialState>({ ...DEFAULT_TUTORIAL_STATE });
+    const [isBoardMounted, setIsBoardMounted] = useState(false);
     const [isControllerReady, setIsControllerReady] = useState(false);
     const isAiExecutingRef = useRef(false);
     const [isAiExecuting, setIsAiExecuting] = useState(false);
@@ -198,6 +205,8 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // 重置教程状态，防止 tutorial.active 残留影响后续在线对局
         setTutorial({ ...DEFAULT_TUTORIAL_STATE });
         setIsControllerReady(false);
+        // 重置 Board 挂载标记，防止下次进入教程时残留 true 导致弹窗提前出现
+        setIsBoardMounted(false);
     }, []);
 
     const consumeAi = useCallback((stepId?: string) => {
@@ -281,6 +290,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             isPendingAnimation: tutorial.active && !!tutorial.pendingAnimationAdvance,
             isAiExecuting,
             isAiExecutingRef,
+            isBoardMounted,
             startTutorial,
             nextStep,
             closeTutorial,
@@ -289,8 +299,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             bindDispatch,
             unbindDispatch,
             syncTutorialState,
+            notifyBoardMounted: () => setIsBoardMounted(true),
+            notifyBoardUnmounted: () => setIsBoardMounted(false),
         };
-    }, [tutorial, isAiExecuting, bindDispatch, unbindDispatch, closeTutorial, consumeAi, animationComplete, nextStep, startTutorial, syncTutorialState]);
+    }, [tutorial, isAiExecuting, isBoardMounted, bindDispatch, unbindDispatch, closeTutorial, consumeAi, animationComplete, nextStep, startTutorial, syncTutorialState]);
 
     return (
         <TutorialContext.Provider value={value}>
@@ -333,8 +345,11 @@ export const useTutorialBridge = (tutorial: TutorialState, dispatch: (type: stri
         if (!isTutorialMode) return;
         // bindDispatch 返回代际号，cleanup 时传入以防止旧 Board 误清新 Board 的 controller
         const gen = contextRef.current?.bindDispatch((...args) => dispatchRef.current(...args));
+        // 通知 TutorialContext Board 已挂载
+        contextRef.current?.notifyBoardMounted();
         return () => {
             contextRef.current?.unbindDispatch(gen);
+            contextRef.current?.notifyBoardUnmounted();
         };
     }, [isTutorialMode]);  
 };

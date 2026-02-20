@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LoadingScreen } from '../../system/LoadingScreen';
-import { preloadCriticalImages, preloadWarmImages, areAllCriticalImagesCached } from '../../../core';
+import { preloadCriticalImages, preloadWarmImages, areAllCriticalImagesCached, signalCriticalImagesReady, resetCriticalImagesSignal } from '../../../core';
 import { resolveCriticalImages } from '../../../core/CriticalImageResolverRegistry';
 
 export interface CriticalImageGateProps {
@@ -43,6 +43,11 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     const [ready, setReady] = useState(!effectiveEnabled);
     const inFlightRef = useRef(false);
     const lastReadyKeyRef = useRef<string | null>(null);
+
+    // 组件卸载时重置信号，为下次游戏加载做准备
+    useEffect(() => {
+        return () => { resetCriticalImagesSignal(); };
+    }, []);
     const gameStateRef = useRef(gameState);
     const stateKey = gameState ? 'ready' : 'empty';
 
@@ -65,6 +70,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     if (needsPreload && gameId && gameState
         && areAllCriticalImagesCached(gameId, gameState, locale, playerID)) {
         lastReadyKeyRef.current = runKey;
+        signalCriticalImagesReady();
     }
 
     // 重新计算：快速路径可能已更新 lastReadyKeyRef
@@ -86,6 +92,8 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
             inFlightRef.current = false;
             lastReadyKeyRef.current = null;
             pendingRunKeyRef.current = null;
+            // 不需要预加载，立即释放音频预加载
+            signalCriticalImagesReady();
             return;
         }
         if (stateKey !== 'ready') {
@@ -103,6 +111,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
             // 同步快速路径已标记完成，确保 ready 状态同步
             if (!ready) setReady(true);
             onReady?.();
+            signalCriticalImagesReady();
             return;
         }
 
@@ -119,6 +128,15 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
                 lastReadyKeyRef.current = runKey;
                 setReady(true);
                 onReady?.();
+                // 延迟 signal：等 Board 首帧渲染完成后再释放音频预加载。
+                // setReady(true) 触发 re-render → Board 渲染 → CardSprite 发出图片请求。
+                // 必须等这些图片请求先进入浏览器队列，再释放音频，否则音频 XHR 会抢占连接。
+                // requestAnimationFrame 确保在下一帧绘制后执行，此时 Board 的图片请求已发出。
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        signalCriticalImagesReady();
+                    });
+                });
                 preloadWarmImages(warmPaths, locale);
             })
             .catch((err) => {
@@ -126,6 +144,11 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
                 lastReadyKeyRef.current = runKey;
                 setReady(true);
                 onReady?.();
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        signalCriticalImagesReady();
+                    });
+                });
             })
             .finally(() => {
                 inFlightRef.current = false;

@@ -34,7 +34,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/ai-rules/engine-systems.md` — **开发/修改引擎系统、框架层代码、游戏 move/command 时必读**。含系统清单、传输层架构（`GameBoardProps`/`GameTransportServer`）、游戏结束检测（`sys.gameover`）、框架解耦/复用、EventStream、动画表现与逻辑分离规范（`useVisualStateBuffer`/`useVisualSequenceGate`）、`createSimpleChoice` API 使用规范（两种调用约定、multi 参数位置、`PromptOption.displayMode` 渲染模式声明、选项 defId 要求）、领域建模前置审查。
 - `docs/ai-rules/testing-audit.md` — **审查实现完整性/新增功能补测试/修"没效果"类 bug 时必读**。含**通用实现缺陷检查维度（D1-D24 穷举框架）**、描述→实现全链路审查规范（唯一权威来源）、数据查询一致性审查、元数据语义一致性审计、引擎 API 调用契约审计（D3 子项）、交互模式语义匹配（D5 子项）、验证层有效性门控（D7 子项）、验证-执行前置条件对齐（D2 子项）、引擎批处理时序与 UI 交互对齐（D8 子项）、事件产生门控普适性检查（D8 子项）、多系统 afterEvents 优先级竞争（D8 子项）、Reducer 消耗路径审计（D11）、写入-消耗对称（D12）、多来源竞争（D13）、回合清理完整（D14）、UI 状态同步（D15）、条件优先级（D16）、隐式依赖（D17）、否定路径（D18）、组合场景（D19）、状态可观测性（D20）、触发频率门控（D21）、伤害计算管线配置（D22）、架构假设一致性（D23）、Handler 共返状态一致性（D24）、效果语义一致性审查、审计反模式清单、测试策略与工具选型。**当用户说"审计"、"审查"、"审核"、"核对"、"对一下描述和代码"等词时，必须先阅读本文档。"检查"不算触发词，不自动启动审计流程。**
 - `docs/ai-rules/ui-ux.md` — **开发/修改 UI 组件、布局、样式、游戏界面时必读**。含审美准则、多端布局、游戏 UI 特化、设计系统引用。
-- `docs/ai-rules/global-systems.md` — **使用/修改全局 Context（Toast/Modal/音频/教学/认证）时必读**。含 Context 系统、实时服务层。
+- `docs/ai-rules/global-systems.md` — **使用/修改全局 Context（Toast/Modal/音频/教学/认证/光标）时必读**。含 Context 系统、实时服务层、**光标主题系统**（自注册流程、形态规范、偏好持久化、设置弹窗交互逻辑）。
 - `docs/ai-rules/doc-index.md` — **不确定该读哪个文档时必读**。按场景查找需要阅读的文档。
 - `docs/deploy.md` — **涉及部署、构建产物、环境变量注入、线上与本地行为差异、CDN/R2 资源加载问题时必读**。含镜像部署、Cloudflare Pages 分离部署、Nginx 反代、资源映射、环境变量配置。
 
@@ -295,6 +295,8 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 | 领域 ID 常量表 | `src/games/<游戏名>/domain/ids.ts` |
 | **游戏规则文档** | **`src/games/<游戏名>/rule/*.md`**（改规则/机制前必读） |
 | 应用入口 | `src/App.tsx` |
+| **光标主题系统** | **`src/core/cursor/`**（类型/注册表/偏好 Context/注入组件） |
+| **游戏光标自注册** | **`src/games/<游戏名>/cursor.ts`** + `src/games/cursorRegistry.ts` |
 
 ---
 

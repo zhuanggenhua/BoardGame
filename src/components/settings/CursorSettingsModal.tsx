@@ -2,10 +2,10 @@
  * 光标设置弹窗
  *
  * 交互逻辑：
- * - 点卡片 / 变体 → 本地选中（高亮预览），不立即保存
- * - 右下角"设为当前" → 保存选中的主题到 DB
- * - 高对比 / 覆盖范围 → 即时保存（独立偏好）
- * - 标题栏"更换"按钮 → 打开变体选择子弹窗
+ * - 点卡片 → 本地选中（pending），需"设为当前"确认保存
+ * - 右上角"更换" → 打开变体弹窗，选变体后直接保存到 gameVariants（改变该游戏的默认变体）
+ * - 右下角"设为当前" → 保存 cursorTheme 到 DB
+ * - 高对比 / 覆盖范围 → 即时保存
  */
 
 import { useState, useMemo } from 'react';
@@ -74,13 +74,13 @@ function SvgPreviewIcon({ svg, size = 24, label }: { svg: string; size?: number;
 
 function VariantPickerModal({
     gameId,
-    pendingThemeId,
+    activeThemeId,
     onSelect,
     onClose,
 }: {
     gameId: string;
-    pendingThemeId: string;
-    onSelect: (themeId: string) => void;
+    activeThemeId: string;
+    onSelect: (themeId: string) => void | Promise<void>;
     onClose: () => void;
 }) {
     const { t } = useTranslation('auth');
@@ -120,7 +120,7 @@ function VariantPickerModal({
                 {/* 变体列表 */}
                 <div className="px-4 py-2 overflow-y-auto flex-1 space-y-1">
                     {variants.map((variant) => {
-                        const isActive = variant.id === pendingThemeId;
+                        const isActive = variant.id === activeThemeId;
                         return (
                             <button
                                 key={variant.id}
@@ -172,8 +172,6 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
     const [pendingThemeId, setPendingThemeId] = useState<string>(preference.cursorTheme);
     const [variantGameId, setVariantGameId] = useState<string | null>(null);
 
-    // 弹窗打开时同步 pending 到当前 preference
-    // （用 key 重置组件更简单，但这里用 state 更精细）
     const savedThemeId = preference.cursorTheme;
     const isDirty = pendingThemeId !== savedThemeId;
 
@@ -182,15 +180,31 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
         return getCursorTheme(pendingThemeId) ?? null;
     }, [pendingThemeId]);
 
-    // 点卡片：只更新本地 pending
-    const handleSelectGame = (gameId: string, defaultThemeId: string) => {
-        if (pendingTheme?.gameId === gameId) return; // 已选中该游戏，不重置变体
-        setPendingThemeId(defaultThemeId);
+    /** 获取某游戏记住的变体 ID（优先 gameVariants，回退到注册表第一个） */
+    const getRememberedVariant = (gameId: string, fallbackThemeId: string): string => {
+        return preference.gameVariants[gameId] ?? fallbackThemeId;
     };
 
-    // 变体弹窗选中：更新 pending
-    const handleSelectVariant = (themeId: string) => {
+    // 点卡片：只更新本地 pending，使用该游戏记住的变体
+    const handleSelectGame = (gameId: string, defaultThemeId: string) => {
+        if (pendingTheme?.gameId === gameId) return; // 已选中该游戏，不重置变体
+        setPendingThemeId(getRememberedVariant(gameId, defaultThemeId));
+    };
+
+    // 变体弹窗选中：立即保存 gameVariants[gameId]，同时更新 pending
+    const handleSelectVariant = async (themeId: string) => {
+        const newTheme = getCursorTheme(themeId);
+        if (!newTheme) return;
         setPendingThemeId(themeId);
+        // 保存该游戏的默认变体到 DB
+        const newGameVariants = { ...preference.gameVariants, [newTheme.gameId]: themeId };
+        const newPref = { ...preference, gameVariants: newGameVariants };
+        // 如果该游戏已是当前生效的，同步更新 cursorTheme
+        const savedTheme = getCursorTheme(savedThemeId);
+        if (savedTheme && savedTheme.gameId === newTheme.gameId) {
+            newPref.cursorTheme = themeId;
+        }
+        await updatePreference(newPref);
     };
 
     // 设为当前：保存到 DB
@@ -249,8 +263,13 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
                             />
                             {/* 各游戏 */}
                             {defaultPerGame.map((theme) => {
-                                // 显示 pending 选中的变体预览
-                                const displayTheme = (pendingTheme?.gameId === theme.gameId) ? pendingTheme : theme;
+                                // 显示该游戏记住的变体（gameVariants），回退到注册表第一个
+                                const rememberedId = preference.gameVariants[theme.gameId];
+                                const rememberedTheme = rememberedId ? getCursorTheme(rememberedId) : null;
+                                // pending 选中时优先显示 pending 变体
+                                const displayTheme = (pendingTheme?.gameId === theme.gameId)
+                                    ? pendingTheme
+                                    : (rememberedTheme ?? theme);
                                 const isPending = pendingTheme?.gameId === theme.gameId;
                                 const isSaved = (() => {
                                     const saved = getCursorTheme(savedThemeId);
@@ -314,7 +333,7 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
             {variantGameId && (
                 <VariantPickerModal
                     gameId={variantGameId}
-                    pendingThemeId={pendingThemeId}
+                    activeThemeId={preference.gameVariants[variantGameId] ?? getThemesByGameId(variantGameId)[0]?.id ?? ''}
                     onSelect={handleSelectVariant}
                     onClose={() => setVariantGameId(null)}
                 />

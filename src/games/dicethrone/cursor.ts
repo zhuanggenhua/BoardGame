@@ -49,4 +49,49 @@ const dice: CursorTheme = {
     previewSvgs: diceSvgs, ...buildCursors(diceSvgs, { zoomIn: [13, 13], notAllowed: [16, 16] }),
 };
 
-registerCursorThemes([gold, flame, dice]);
+// --- 暴击时刻（Critical Hit） ---
+const criticalSvgs = {
+    // 破空剑锋
+    default: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <filter id="fire" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="2" result="turb"/>
+            <feDisplacementMap in="SourceGraphic" in2="turb" scale="2"/>
+        </filter>
+        <path d="M6 6 L12 24 L16 20 L24 18 L6 6 Z" fill="#f97316" stroke="#7c2d12" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8 8 L11 18 L14 16 L18 15 L8 8 Z" fill="#facc15"/>
+        <path d="M4 2 L8 4 M2 6 L6 8" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+
+    // 战术指引
+    pointer: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <path d="M12 2 L8 8 L6 8 L8 16 L6 22 L10 20 L12 28 L14 20 L18 18 L14 14 L20 12 L16 6 L14 6 L12 2 Z" fill="#334155" stroke="#f97316" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="12" cy="2" r="1.5" fill="#facc15"/>
+    </svg>`,
+
+    // 燃烧铁拳
+    grabbing: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <path d="M8 14 C8 12 10 11 11 12 L11 15 M11 12 C11 10 13 9 14 10 L14 15 M14 10 C14 8 16 8 17 9 L17 15 M17 9 C17 8 19 7.5 20 9 L20 15 L20 21 C20 24 17 27 13 27 C9 27 7 24 7 21 L7 17 C7 15 8 14 8 14 Z" fill="#334155" stroke="#f97316" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M6 18 L4 16 M22 18 L24 16 M8 24 L6 26" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+
+    // 弱点洞察
+    zoomIn: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <circle cx="13" cy="13" r="8" fill="none" stroke="#f97316" stroke-width="2.5"/>
+        <path d="M13 8 L13 18 M8 13 L18 13" stroke="#facc15" stroke-width="1.5"/>
+        <line x1="19" y1="19" x2="26" y2="26" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+        <line x1="19" y1="19" x2="26" y2="26" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+
+    // 绝对防御
+    notAllowed: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <path d="M16 4 L6 9 L6 18 C6 24 10 28 16 30 C22 28 26 24 26 18 L26 9 L16 4 Z" fill="#334155" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M11 11 L21 21 M21 11 L11 21" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+    </svg>`,
+};
+
+const critical: CursorTheme = {
+    id: 'dicethrone-critical', gameId: 'dicethrone', label: '王权骰铸', variantLabel: '暴击时刻',
+    previewSvgs: criticalSvgs, ...buildCursors(criticalSvgs, { zoomIn: [13, 13] }),
+};
+
+registerCursorThemes([gold, flame, dice, critical]);

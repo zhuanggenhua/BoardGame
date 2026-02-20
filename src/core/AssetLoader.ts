@@ -56,6 +56,12 @@ const _win = typeof window !== 'undefined' ? window as Window & {
         preloadedImages: Map<string, HTMLImageElement>;
         preloadedAudio: Map<string, HTMLAudioElement>;
     };
+    /** 关键图片就绪信号（HMR 存活） */
+    __BG_CRITICAL_IMAGES_SIGNAL__?: {
+        resolver: (() => void) | null;
+        promise: Promise<void> | null;
+        signaled: boolean;
+    };
 } : undefined;
 
 if (_win && !_win.__BG_ASSET_CACHE__) {
@@ -270,7 +276,10 @@ export function areAllCriticalImagesCached(
         if (!p) continue;
         const localizedPath = getLocalizedAssetPath(p, effectiveLocale);
         const { webp } = getOptimizedImageUrls(localizedPath);
-        if (!webp || !preloadedImages.has(webp)) return false;
+        if (!webp) return false;
+        const el = preloadedImages.get(webp);
+        // 必须真正加载成功（naturalWidth > 0），超时占位的空 Image 不算
+        if (!el || el.naturalWidth === 0) return false;
     }
     return true;
 }
@@ -324,13 +333,25 @@ export function clearGameAssetsCache(gameId: string): void {
 
 /**
  * 将已加载的图片 URL 注册到缓存（供 OptimizedImage 在 onLoad 时调用）
- * 这样同一张图片的其他实例可以跳过 shimmer
+ * 这样同一张图片的其他实例可以跳过 shimmer。
+ *
+ * @param imgElement 可选，传入已加载成功的 HTMLImageElement（naturalWidth > 0），
+ *   确保 isImagePreloaded 能正确判断。未传时创建占位 Image 并设置 src，
+ *   浏览器通常会从磁盘缓存命中使 naturalWidth 立即可用。
  */
-export function markImageLoaded(src: string, locale?: string): void {
+export function markImageLoaded(src: string, locale?: string, imgElement?: HTMLImageElement): void {
     const effectiveLocale = locale || 'zh-CN';
     const localizedPath = getLocalizedAssetPath(src, effectiveLocale);
     const { webp } = getOptimizedImageUrls(localizedPath);
-    if (webp) preloadedImages.set(webp, new Image());
+    if (!webp) return;
+    if (imgElement && imgElement.naturalWidth > 0) {
+        preloadedImages.set(webp, imgElement);
+    } else {
+        // 回退：创建 Image 并设置 src，浏览器磁盘缓存命中时 naturalWidth 立即可用
+        const img = new Image();
+        img.src = webp;
+        preloadedImages.set(webp, img);
+    }
 }
 
 /**
@@ -348,9 +369,16 @@ export function getPreloadedImageElement(src: string, locale?: string): HTMLImag
 /**
  * 查询图片是否已被预加载（供渲染组件跳过 shimmer）
  * 接受原始资源路径（自动转换）或已转换的 optimized URL
+ * 
+ * 只有真正加载成功的图片（naturalWidth > 0）才返回 true。
  */
 export function isImagePreloaded(src: string, locale?: string): boolean {
-    if (preloadedImages.has(src)) return true;
+    const check = (url: string) => {
+        const el = preloadedImages.get(url);
+        return el != null && el.naturalWidth > 0;
+    };
+
+    if (check(src)) return true;
     
     const effectiveLocale = locale || 'zh-CN';
     const localizedPath = getLocalizedAssetPath(src, effectiveLocale);
@@ -358,12 +386,12 @@ export function isImagePreloaded(src: string, locale?: string): boolean {
     // 如果 src 已经是 compressed/ 下的 URL，直接检查 webp 变体
     if (localizedPath.includes(`/${COMPRESSED_SUBDIR}/`)) {
         const base = stripExtension(localizedPath);
-        return preloadedImages.has(`${base}.webp`);
+        return check(`${base}.webp`);
     }
 
     // 转换为 optimized URL 后检查
     const { webp } = getOptimizedImageUrls(localizedPath);
-    return preloadedImages.has(webp);
+    return check(webp);
 }
 
 // ============================================================================
@@ -385,13 +413,55 @@ async function preloadImage(src: string): Promise<void> {
     });
 }
 
+/**
+ * 通过 <link rel="preload"> 预加载图片（浏览器标准方案）
+ *
+ * 与 new Image() 不同，<link rel="preload" as="image"> 有两个关键优势：
+ * 1. 浏览器给予高优先级（High），高于 XHR 的默认优先级
+ * 2. 预加载的资源会进入 HTTP 缓存，后续 CSS background-image 请求直接命中，
+ *    不会重新发起网络请求（new Image() 在某些 CDN 缓存策略下不保证复用）
+ *
+ * 注意：不设置 crossorigin 属性，因为 CSS background-image 以 no-cors 模式请求。
+ * 如果 preload 用 crossorigin="anonymous"（CORS 模式），浏览器会认为是不同的缓存键，
+ * 导致 background-image 无法复用预加载缓存。preload 的请求模式必须与消费方一致。
+ *
+ * 这是 W3C 标准的资源优先级方案，所有现代浏览器均支持。
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload
+ */
+function injectPreloadLink(src: string): HTMLLinkElement | null {
+    if (typeof document === 'undefined') return null;
+    // 避免重复注入
+    const existing = document.querySelector(`link[rel="preload"][href="${CSS.escape(src)}"]`);
+    if (existing) return existing as HTMLLinkElement;
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = src;
+    // 不设置 crossOrigin — 与 CSS background-image 的 no-cors 模式保持一致，
+    // 确保浏览器复用同一个缓存条目
+    document.head.appendChild(link);
+    return link;
+}
+
+/** 清理已完成的 preload link（避免 <head> 堆积） */
+function removePreloadLink(src: string): void {
+    if (typeof document === 'undefined') return;
+    const link = document.querySelector(`link[rel="preload"][href="${CSS.escape(src)}"]`);
+    if (link) link.remove();
+}
+
 async function preloadImageWithResult(src: string, timeoutMs?: number): Promise<boolean> {
     return new Promise((resolve) => {
         let done = false;
+        // 同时注入 <link rel="preload"> 确保浏览器高优先级加载 + HTTP 缓存复用
+        injectPreloadLink(src);
         const img = new Image();
+        // 不设置 crossOrigin — 与 CSS background-image 的 no-cors 模式保持一致
         const finish = (ok: boolean) => {
             if (done) return;
             done = true;
+            // 加载完成后清理 preload link
+            removePreloadLink(src);
             resolve(ok);
         };
         const timer = timeoutMs != null
@@ -414,16 +484,25 @@ async function preloadImageWithResult(src: string, timeoutMs?: number): Promise<
     });
 }
 
+/** 图片加载失败计数（超过阈值后标记为已处理，避免每次阶段切换都重新等待 10s 超时） */
+const preloadFailCount = new Map<string, number>();
+const MAX_PRELOAD_RETRIES = 2;
+
 async function preloadOptimizedImage(src: string): Promise<void> {
     const { webp } = getOptimizedImageUrls(src);
     if (!webp) return;
-    if (preloadedImages.has(webp)) return;
+    // 已成功加载过的跳过（naturalWidth > 0 表示真正加载成功）
+    const cached = preloadedImages.get(webp);
+    if (cached && cached.naturalWidth > 0) return;
     const ok = await preloadImageWithResult(webp, SINGLE_IMAGE_TIMEOUT_MS);
     if (!ok) {
-        // 即使加载失败/超时，也标记为已处理。
-        // 避免 CriticalImageGate 放行后 AtlasCard 仍显示 shimmer 闪烁。
-        // 背景图片会由浏览器自行重试加载。
-        preloadedImages.set(webp, new Image());
+        // 超时/失败：记录失败次数，超过阈值后标记为已处理（空 Image 占位）。
+        // 避免持续 404 的图片导致每次阶段切换都重新等待 10s 超时。
+        const count = (preloadFailCount.get(webp) ?? 0) + 1;
+        preloadFailCount.set(webp, count);
+        if (count >= MAX_PRELOAD_RETRIES) {
+            preloadedImages.set(webp, new Image());
+        }
     }
 }
 
@@ -440,6 +519,110 @@ async function preloadAudioFile(src: string): Promise<void> {
         };
         audio.src = src;
     });
+}
+
+// ============================================================================
+// 关键图片就绪信号（音频预加载延迟机制）
+// ============================================================================
+
+/**
+ * 关键图片就绪信号
+ *
+ * 浏览器对同域名有 6 个并发连接限制，音频预加载（Howler XHR）和图片预加载
+ * 共享连接池。如果音频请求先占满连接，关键图片（卡牌图集等）会排队变成 pending，
+ * 导致 CriticalImageGate 超时放行后卡牌区域仍显示空白。
+ *
+ * 此信号让音频预加载等待关键图片就绪后再开始，确保视觉资源优先。
+ * 信号状态挂在 window 上，HMR 时不会丢失。
+ *
+ * 两阶段延迟：
+ * 1. 等待 CriticalImageGate 预加载完成（signalCriticalImagesReady）
+ * 2. 额外延迟一个空闲窗口（requestIdleCallback / 2s），让 Board 渲染后的
+ *    CSS background-image 请求先占满连接（浏览器可能不复用 new Image() 缓存）
+ */
+/** 超时保底：即使 CriticalImageGate 未调用 signal，也不会永远阻塞音频 */
+const AUDIO_DEFER_TIMEOUT_MS = 12_000;
+
+/** 获取/初始化 HMR 安全的信号容器 */
+function getSignalStore() {
+    if (!_win) return { resolver: null as (() => void) | null, promise: null as Promise<void> | null, signaled: false };
+    if (!_win.__BG_CRITICAL_IMAGES_SIGNAL__) {
+        _win.__BG_CRITICAL_IMAGES_SIGNAL__ = { resolver: null, promise: null, signaled: false };
+    }
+    return _win.__BG_CRITICAL_IMAGES_SIGNAL__;
+}
+
+function ensureCriticalImagesPromise(): Promise<void> {
+    const store = getSignalStore();
+    // 已经 signaled → 直接返回已 resolved 的 promise
+    if (store.signaled) {
+        if (!store.promise) store.promise = Promise.resolve();
+        return store.promise;
+    }
+    if (!store.promise) {
+        store.promise = new Promise<void>((resolve) => {
+            store.resolver = resolve;
+        });
+        // 超时保底
+        setTimeout(() => {
+            if (store.resolver) {
+                store.resolver();
+                store.resolver = null;
+                store.signaled = true;
+            }
+        }, AUDIO_DEFER_TIMEOUT_MS);
+    }
+    return store.promise;
+}
+
+/**
+ * 标记关键图片已就绪，延迟一个空闲窗口后释放音频预加载。
+ * 由 CriticalImageGate 在预加载完成后调用。
+ *
+ * 延迟原因：CriticalImageGate 用 <link rel="preload"> + new Image() 预加载，
+ * Board 渲染后 CSS background-image 会从 HTTP 缓存命中（preload 保证）。
+ * 额外等待让 Board 首帧渲染完成，再释放音频预加载。
+ */
+export function signalCriticalImagesReady(): void {
+    const store = getSignalStore();
+    // 已经 signaled，不重复处理
+    if (store.signaled) return;
+    store.signaled = true;
+    if (!store.resolver) {
+        // 没有等待者，确保 promise 是 resolved 状态
+        store.promise = Promise.resolve();
+        return;
+    }
+    // 延迟释放：让 Board 渲染后的图片请求先从 preload 缓存命中
+    const resolver = store.resolver;
+    store.resolver = null;
+    if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(() => resolver(), { timeout: POST_SIGNAL_DELAY_MS });
+    } else {
+        setTimeout(resolver, POST_SIGNAL_DELAY_MS);
+    }
+}
+
+/**
+ * 等待关键图片就绪。
+ * 音频预加载应在此 Promise resolve 后再开始，避免与图片竞争连接。
+ * 如果 CriticalImageGate 未启用或不存在，12s 超时后自动放行。
+ */
+export function waitForCriticalImages(): Promise<void> {
+    return ensureCriticalImagesPromise();
+}
+
+/**
+ * 重置关键图片信号（用于游戏切换/卸载时清理）。
+ */
+export function resetCriticalImagesSignal(): void {
+    const store = getSignalStore();
+    if (store.resolver) {
+        store.resolver();
+        store.resolver = null;
+    }
+    store.promise = null;
+    store.signaled = false;
 }
 
 // ============================================================================

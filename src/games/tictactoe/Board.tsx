@@ -14,7 +14,9 @@ import { motion } from 'framer-motion';
 import { useGameAudio, playSound, playDeniedSound } from '../../lib/audio/useGameAudio';
 import { TIC_TAC_TOE_AUDIO_CONFIG } from './audio.config';
 import { TIC_TAC_TOE_MANIFEST } from './manifest';
+import './cursor'; // Register cursor themes
 import { UI_Z_INDEX } from '../../core';
+import { useCursorPlayerID } from '../../core/cursor';
 
 type Props = GameBoardProps<TicTacToeCore>;
 
@@ -178,6 +180,9 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
         },
         eventEntries: G.sys.eventStream.entries,
     });
+
+    // 本地同屏模式：跟随当前回合玩家动态切换光标阵营颜色
+    useCursorPlayerID(isLocalMatch ? currentPlayer : null);
 
 
     // 追踪先前的激活状态（必须在顶层）

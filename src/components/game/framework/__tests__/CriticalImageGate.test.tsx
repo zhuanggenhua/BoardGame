@@ -2,12 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CriticalImageGate } from '../CriticalImageGate';
 
-const preloadCriticalImages = vi.fn().mockResolvedValue([]);
-const preloadWarmImages = vi.fn();
+const { preloadCriticalImages, preloadWarmImages } = vi.hoisted(() => ({
+    preloadCriticalImages: vi.fn().mockResolvedValue([]),
+    preloadWarmImages: vi.fn(),
+}));
 
-vi.mock('../../../core', () => ({
+vi.mock('../../../../core', () => ({
     preloadCriticalImages,
     preloadWarmImages,
+    areAllCriticalImagesCached: vi.fn().mockReturnValue(false),
+    signalCriticalImagesReady: vi.fn(),
+    resetCriticalImagesSignal: vi.fn(),
 }));
 
 vi.mock('../../../../core/CriticalImageResolverRegistry', () => ({

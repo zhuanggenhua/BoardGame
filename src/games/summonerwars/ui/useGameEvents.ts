@@ -375,7 +375,8 @@ export function useGameEvents({
       // 召唤事件 - 光柱特效（震动由 FeedbackPack on-impact 自动触发）
       if (event.type === SW_EVENTS.UNIT_SUMMONED) {
         const p = event.payload as { position: CellCoord; card: { unitClass?: string } };
-        const intensity = p.card?.unitClass === 'champion' ? 'strong' : 'normal';
+        // 英雄（summoner）和冠军（champion）都使用金色强特效
+        const intensity = (p.card?.unitClass === 'champion' || p.card?.unitClass === 'summoner') ? 'strong' : 'normal';
         fxBusRef.current.push(SW_FX.SUMMON, { cell: p.position, intensity });
       }
 

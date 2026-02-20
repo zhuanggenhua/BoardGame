@@ -48,11 +48,11 @@ const MOVE_KEY = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx
 const POWER_GAIN_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a';
 const MADNESS_KEY = 'magic.dark.32.dark_spell_01';
 
+// 僵尸随从：DFS zombie_voices（语义高度匹配）
 const ZOMBIE_MINION_KEYS = [
-    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_001',
-    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_002',
-    'magic.general.spells_variations_vol_2.undead_wail_impact.magevil_undead_wail_impact_01_krst_none',
+    'dark_fantasy_studio.zombie_voices.zombies_1',
 ];
+// 僵尸行动：保留原有暗影哀嚎/墓穴低语
 const ZOMBIE_ACTION_KEYS = [
     'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_shadow_wail_001',
     'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_shadow_wail_002',
@@ -118,10 +118,11 @@ const ROBOT_ACTION_KEYS = [
     'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_a2',
     'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_b1',
 ];
+// 幽灵随从：DFS ghostly 系列（语义匹配，最短音效）
 const GHOST_MINION_KEYS = [
-    'magic.general.spells_variations_vol_2.haunted_wrath.magevil_haunted_wrath_01_krst_none',
-    'magic.general.spells_variations_vol_2.haunted_wrath.magevil_haunted_wrath_02_krst_none',
-    'magic.general.spells_variations_vol_2.haunted_wrath.magevil_haunted_wrath_03_krst_none',
+    'dark_fantasy_studio.ghostly.ghostly_33',
+    'dark_fantasy_studio.ghostly.ghostly_34',
+    'dark_fantasy_studio.ghostly.ghostly_35',
 ];
 const GHOST_ACTION_KEYS = [
     'magic.general.spells_variations_vol_3.wailing_rite.magevil_wailing_rite_04_krst_none',
@@ -138,15 +139,12 @@ const TRICKSTER_ACTION_KEYS = [
     'magic.general.spells_variations_vol_2.twinkle_tweak.magspel_twinkle_tweak_02_krst_none',
     'magic.general.spells_variations_vol_2.twinkle_tweak.magspel_twinkle_tweak_03_krst_none',
 ];
+// 蒸汽朋克：DFS steam 系列（最短音效，随从/行动各一个）
 const STEAMPUNK_MINION_KEYS = [
-    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_click_a',
-    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_click_b',
-    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_click_c',
+    'dark_fantasy_studio.steam.steam_26',
 ];
 const STEAMPUNK_ACTION_KEYS = [
-    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_release_a',
-    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_release_i',
-    'steampunk.steampunk_sound_fx_pack_vol.gas_steam.gas_pressure_a',
+    'dark_fantasy_studio.steam.steam_28',
 ];
 const KILLER_PLANT_MINION_KEYS = [
     'ambient.khron_studio_sound_of_survival_vol_1_assets.items.item_or_weapon_hit_plants.weapmisc_item_or_weapon_hit_plants_01_krst',
@@ -316,6 +314,8 @@ export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
     // 自动收集 SU_EVENTS 中所有 immediate/ui 策略的音效 key（零维护）
     criticalSounds: [
         ...collectPreloadKeys(SU_EVENTS),
+        // 基地得分（FX on-impact，需手动预加载）
+        'ui.general.mini_games_sound_effects_and_music_pack.success.sfx_success_point_medium',
     ],
     bgm: [
         {

@@ -318,7 +318,6 @@ export const AbilityTriggeredRenderer: React.FC<FxRendererProps> = ({ event, onC
 
 const POWER_GAIN_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a';
 const ACTION_PLAY_KEY = 'card.fx.decks_and_cards_sound_fx_pack.fx_magic_deck_001';
-const UPDATE_CHIME_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
 const TALENT_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_001';
 
 // ============================================================================
@@ -335,9 +334,9 @@ const ACTION_SHOW_FEEDBACK: FeedbackPack = {
   sound: { key: ACTION_PLAY_KEY, timing: 'immediate' },
 };
 
-/** 基地记分：impact 时播放音效 */
+/** 基地记分：impact 时播放得分音效 */
 const BASE_SCORED_FEEDBACK: FeedbackPack = {
-  sound: { key: UPDATE_CHIME_KEY, timing: 'on-impact' },
+  sound: { key: 'ui.general.mini_games_sound_effects_and_music_pack.success.sfx_success_point_medium', timing: 'on-impact' },
 };
 
 /** 触发器激活：即时播放音效 */

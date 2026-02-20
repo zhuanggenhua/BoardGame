@@ -15,7 +15,7 @@ const entry: GameManifestEntry = {
     bestPlayers: [3],
     tags: ['card_driven', 'casual'],
     allowLocalMode: false,
-    cursorTheme: 'smashup',
+    cursorTheme: 'smashup-popart',
 };
 
 export const SMASH_UP_MANIFEST: GameManifestEntry = entry;

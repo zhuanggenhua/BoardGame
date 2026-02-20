@@ -56,4 +56,6 @@ export interface CursorPreference {
     overrideScope: 'home' | 'all';
     /** 高对比模式：开启后光标加白色外描边，提升任意背景下的可见性 */
     highContrast: boolean;
+    /** 每个游戏记住的变体 ID（gameId → themeId），通过"更换"弹窗保存 */
+    gameVariants: Record<string, string>;
 }

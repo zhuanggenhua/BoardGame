@@ -491,6 +491,20 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
             try {
                 const command: Command = { type, playerId, payload };
 
+                // 开发环境断言：显式声明 'deterministic' 的命令，用独立 probe 验证是否真的不调用 random
+                // 若检测到 random 调用，说明 commandDeterminism 配置错误（比不声明更危险，因为跳过了 probe 安全网）
+                if (process.env.NODE_ENV === 'development' && explicitDecl === 'deterministic') {
+                    const verifyProbe = createRandomProbe(createDefaultRandom());
+                    executePipeline(pipelineConfig, currentState, command, verifyProbe.probe, playerIds);
+                    if (verifyProbe.wasUsed()) {
+                        console.error(
+                            `[OptimisticEngine] ⚠️ 命令 "${type}" 被声明为 'deterministic'，但 pipeline 执行期间调用了 random。` +
+                            `这会导致乐观预测结果与服务端不一致（如 sys.gameover 不同步）。` +
+                            `请将该命令改为 'non-deterministic' 或移除显式声明（改用 Random Probe 自动检测）。`,
+                        );
+                    }
+                }
+
                 // 随机数已同步时：直接用 localRandom 执行（结果与服务端一致，无需 probe）
                 // 未同步时：用 probe 检测是否调用了随机数
                 const useProbe = !isRandomSynced && explicitDecl === null;

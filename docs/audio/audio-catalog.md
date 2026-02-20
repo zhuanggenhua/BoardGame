@@ -20,7 +20,7 @@
 | coins | 8 | 33 | 金币（掉落/奖励/收集） |
 | combat | 52 | 1104 | 战斗（剑/斧/拳/弓/盾/爆炸） |
 | cyberpunk | 19 | 357 | 赛博朋克（科幻UI/武器） |
-| dark_fantasy_studio | 64 | 2961 |  |
+| dark_fantasy_studio | 64 | 2961 | ⚠️ **低质量系列**：整体音质偏低，除非语义高度匹配（zombie_voices/ghostly/smashed/riser_impact/steam）否则不考虑使用 |
 | dice | 6 | 29 | 骰子（投掷/碰撞/滚动） |
 | fantasy | 80 | 530 | 奇幻（弓箭/盾/治疗/火焰） |
 | magic | 159 | 1737 | 魔法（施法/元素/光暗/召唤） |

@@ -32,6 +32,10 @@ export {
     getDirectAssetPath,
     getLocalAssetPath,
     getLocalizedLocalAssetPath,
+    // 关键图片就绪信号（音频预加载延迟）
+    signalCriticalImagesReady,
+    waitForCriticalImages,
+    resetCriticalImagesSignal,
 } from './AssetLoader';
 export {
     registerCriticalImageResolver,

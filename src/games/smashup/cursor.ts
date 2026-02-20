@@ -3,6 +3,7 @@
  *
  * 变体 1: 漫画手绘 — 粗描边圆润，黄色调
  * 变体 2: 爆裂涂鸦 — 不规则锯齿边缘，荧光绿喷漆风
+ * 变体 3: 美漫波普 — 硬朗线条，高对比撞色，阴影偏移
  */
 
 import type { CursorTheme } from '../../core/cursor/types';
@@ -34,4 +35,65 @@ const graffiti: CursorTheme = {
     previewSvgs: graffitiSvgs, ...buildCursors(graffitiSvgs, { zoomIn: [13, 13] }),
 };
 
-registerCursorThemes([comic, graffiti]);
+// --- 美漫波普风（Pop Art Vigilante） ---
+// 关键词：硬朗线条，高对比，偏移阴影，速度感
+const popArtSvgs = {
+    // 闪电箭头
+    default: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <!-- Shadow (Offset) -->
+        <path d="M6 6 L15 28 L19 21 L27 21 L6 6 Z" fill="#000000" />
+        <!-- Main Body -->
+        <path d="M4 4 L13 26 L17 19 L25 19 L4 4 Z" fill="#FFE600" stroke="#000000" stroke-width="2" stroke-linejoin="round"/>
+        <!-- Highlight -->
+        <path d="M7 6 L14 20" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+
+    // 漫画英雄指
+    pointer: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <!-- Shadow -->
+        <path d="M14 6 C14 6 15 15 15 15 L12 14 C12 14 10 14 10 15 L14 22 L14 29 L24 29 L26 22 L24 16 L23 15 L20 15 L20 13 L17 12 L17 6 Z" fill="#000000" transform="translate(2, 2)"/>
+        <!-- Glove Body -->
+        <path d="M14 4 C14 4 15 13 15 13 L12 12 C12 12 10 12 10 13 L14 20 L14 27 L24 27 L26 20 L24 14 L23 13 L20 13 L20 11 L17 10 L17 4 Z" fill="#FFE600" stroke="#000000" stroke-width="2" stroke-linejoin="round"/>
+        <!-- Detail Lines -->
+        <line x1="17" y1="13" x2="17" y2="20" stroke="#000000" stroke-width="1.5"/>
+        <line x1="20" y1="13" x2="20" y2="20" stroke="#000000" stroke-width="1.5"/>
+        <!-- Action Lines -->
+        <path d="M8 2 L10 6 M14 1 L15 4 M5 7 L8 9" stroke="#FF2A2A" stroke-width="2" stroke-linecap="round"/>
+    </svg>`,
+
+    // 强力抓取（拳头）
+    grabbing: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+         <!-- Shadow -->
+         <path d="M10 12 C10 10 12 9 13 10 L13 13 M13 10 C13 8 15 7 16 8 L16 13 M16 8 C16 6 18 6 19 7 L19 13 M19 7 C19 6 21 5 22 7 L22 13 L22 19 C22 22 19 25 15 25 C11 25 9 22 9 19 L9 15 C9 13 10 12 10 12 Z" fill="#000000" stroke="#000000" stroke-width="4" transform="translate(2, 2)"/>
+         <!-- Fist -->
+         <path d="M10 12 C10 10 12 9 13 10 L13 13 M13 10 C13 8 15 7 16 8 L16 13 M16 8 C16 6 18 6 19 7 L19 13 M19 7 C19 6 21 5 22 7 L22 13 L22 19 C22 22 19 25 15 25 C11 25 9 22 9 19 L9 15 C9 13 10 12 10 12 Z" fill="#FFE600" stroke="#000000" stroke-width="2" stroke-linejoin="round"/>
+         <!-- Impact -->
+         <path d="M6 14 L4 12 M6 18 L3 19 M24 22 L27 24" stroke="#FF2A2A" stroke-width="2" stroke-linecap="round"/>
+    </svg>`,
+
+    // 发现（放大镜）
+    zoomIn: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+         <circle cx="15" cy="15" r="9" fill="#000000" transform="translate(2, 2)"/>
+         <line x1="22" y1="22" x2="30" y2="30" stroke="#000000" stroke-width="5" stroke-linecap="round" transform="translate(2, 2)"/>
+         
+         <circle cx="13" cy="13" r="9" fill="#AEEEEE" stroke="#000000" stroke-width="2.5"/>
+         <path d="M10 10 L12 9" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+         <line x1="20" y1="20" x2="28" y2="28" stroke="#000000" stroke-width="4" stroke-linecap="round"/>
+         <path d="M13 10 L13 16 M10 13 L16 13" stroke="#000000" stroke-width="2"/>
+    </svg>`,
+
+    // 禁止（停止符号）
+    notAllowed: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="12" fill="#000000" transform="translate(2, 2)"/>
+        <circle cx="16" cy="16" r="12" fill="#FF2A2A" stroke="#000000" stroke-width="2.5"/>
+        <line x1="10" y1="10" x2="22" y2="22" stroke="#000000" stroke-width="3" stroke-linecap="round"/>
+        <line x1="22" y1="10" x2="10" y2="22" stroke="#000000" stroke-width="3" stroke-linecap="round"/>
+    </svg>`
+};
+
+const popArt: CursorTheme = {
+    id: 'smashup-popart', gameId: 'smashup', label: '大杀四方', variantLabel: '美漫波普',
+    previewSvgs: popArtSvgs, ...buildCursors(popArtSvgs, { zoomIn: [13, 13] }),
+};
+
+registerCursorThemes([comic, graffiti, popArt]);

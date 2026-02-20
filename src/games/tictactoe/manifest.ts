@@ -9,7 +9,7 @@ const entry: GameManifestEntry = {
     category: 'abstract',
     playersKey: 'games.tictactoe.players',
     icon: '#',
-    cursorTheme: 'tictactoe',
+    cursorTheme: 'tictactoe-neon',
 };
 
 export const TIC_TAC_TOE_MANIFEST: GameManifestEntry = entry;

@@ -14,6 +14,7 @@ import type { ComponentType } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { playDeniedSound } from '../lib/audio/useGameAudio';
 import { resolveCommandError } from '../engine/transport/errorI18n';
+import { GameCursorProvider } from '../core/cursor';
 
 // 教程系统正常拦截，不弹 toast
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
@@ -86,6 +87,7 @@ export const LocalMatchRoom = () => {
             <GameHUD mode="local" />
             <div className="w-full h-full">
                 <GameModeProvider mode="local">
+                    <GameCursorProvider themeId={gameConfig?.cursorTheme}>
                     {engineConfig && WrappedBoard ? (
                         <LocalGameProvider config={engineConfig} numPlayers={2} seed={gameSeed} onCommandRejected={handleCommandRejected}>
                             <BoardBridge
@@ -98,6 +100,7 @@ export const LocalMatchRoom = () => {
                             {t('matchRoom.noClient')}
                         </div>
                     )}
+                    </GameCursorProvider>
                 </GameModeProvider>
             </div>
         </div>

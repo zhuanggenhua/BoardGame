@@ -80,7 +80,7 @@ export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, on
 
     const handleLoad: React.ReactEventHandler<HTMLImageElement> = (event) => {
         setLoaded(true);
-        markImageLoaded(src, effectiveLocale);
+        markImageLoaded(src, effectiveLocale, event.currentTarget);
         onLoadProp?.(event);
     };
 

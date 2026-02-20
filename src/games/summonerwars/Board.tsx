@@ -16,6 +16,7 @@ import type { GameBoardProps } from '../../engine/transport/protocol';
 import type { MatchState } from '../../engine/types';
 import type { SummonerWarsCore } from './domain';
 import { SW_COMMANDS } from './domain';
+import './cursor'; // Register cursor themes
 import { FLOW_COMMANDS } from '../../engine';
 import { isUndeadCard, isPlagueZombieCard, isFortressUnit } from './domain/ids';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
@@ -899,10 +900,10 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                     <GameButton onClick={interaction.handleEndPhase} disabled={!isMyTurn || interaction.isMandatoryAbilityActive} variant={interaction.endPhaseConfirmPending ? 'danger' : 'primary'} size="md" data-testid="sw-end-phase" data-tutorial-id="sw-end-phase-btn">
                       {interaction.endPhaseConfirmPending
                         ? t(currentPhase === 'move' ? 'action.confirmEndMove' : 'action.confirmEndAttack', {
-                            count: currentPhase === 'move'
-                              ? MAX_MOVES_PER_TURN - (core.players[myPlayerId]?.moveCount ?? 0)
-                              : MAX_ATTACKS_PER_TURN - (core.players[myPlayerId]?.attackCount ?? 0),
-                          })
+                          count: currentPhase === 'move'
+                            ? MAX_MOVES_PER_TURN - (core.players[myPlayerId]?.moveCount ?? 0)
+                            : MAX_ATTACKS_PER_TURN - (core.players[myPlayerId]?.attackCount ?? 0),
+                        })
                         : t('action.endPhase')}
                     </GameButton>
                   </div>
@@ -1021,7 +1022,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   title={
                     abilityMode.abilityId === 'revive_undead' ? t('cardSelector.reviveUndead') :
                       abilityMode.abilityId === 'infection' ? t('cardSelector.infection') :
-                      abilityMode.abilityId === 'fortress_power' ? t('cardSelector.fortressPower') : t('cardSelector.default')
+                        abilityMode.abilityId === 'fortress_power' ? t('cardSelector.fortressPower') : t('cardSelector.default')
                   }
                   cards={core.players[myPlayerId]?.discard.filter(c => {
                     if (abilityMode.abilityId === 'revive_undead') {

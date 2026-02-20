@@ -5,12 +5,53 @@
  * 支持用户偏好覆盖：
  * - overrideScope='home' → 游戏内用游戏自带光标
  * - overrideScope='all' → 用户选择的光标覆盖所有游戏
+ *
+ * 阵营动态切换：
+ * - 传入静态 playerID prop（联机模式，身份固定）
+ * - 或在 Board 内部调用 useCursorPlayerID(currentPlayer) 动态更新（本地同屏模式）
  */
 
-import { useMemo } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getCursorTheme, injectOutlineFilter, svgCursor } from './themes';
 import { useCursorPreference } from './CursorPreferenceContext';
 import type { CursorTheme } from './types';
+
+// ---------------------------------------------------------------------------
+// 阵营动态更新 Context
+// ---------------------------------------------------------------------------
+
+interface CursorPlayerIDContextValue {
+    /** 当前生效的 playerID（静态 prop 优先，动态更新次之） */
+    playerID: string | null;
+    /** Board 内部调用，动态设置当前回合玩家（仅在 prop playerID 为空时生效） */
+    setDynamicPlayerID: (id: string | null) => void;
+}
+
+const CursorPlayerIDContext = createContext<CursorPlayerIDContextValue>({
+    playerID: null,
+    setDynamicPlayerID: () => {},
+});
+
+/**
+ * 在 Board 内部调用，动态更新光标阵营。
+ * 本地同屏模式下跟随 currentPlayer 变化，联机模式下 prop playerID 已固定，此 hook 无效。
+ *
+ * 用法：
+ * ```tsx
+ * useCursorPlayerID(G.core.currentPlayer);
+ * ```
+ */
+export function useCursorPlayerID(currentPlayer: string | null | undefined) {
+    const { setDynamicPlayerID } = useContext(CursorPlayerIDContext);
+    // 必须在 useEffect 中更新，渲染期间跨组件 setState 会触发 React 警告
+    const prev = useRef<string | null | undefined>(undefined);
+    useEffect(() => {
+        if (prev.current !== currentPlayer) {
+            prev.current = currentPlayer;
+            setDynamicPlayerID(currentPlayer ?? null);
+        }
+    }, [currentPlayer, setDynamicPlayerID]);
+}
 
 interface GameCursorProviderProps {
     /** 游戏 manifest 中声明的光标主题 ID */
@@ -61,9 +102,20 @@ function buildCursorCSS(containerId: string, theme: CursorTheme): string {
     return rules.join('\n');
 }
 
-export function GameCursorProvider({ themeId, playerID, children }: GameCursorProviderProps) {
+export function GameCursorProvider({ themeId, playerID: propPlayerID, children }: GameCursorProviderProps) {
     const containerId = 'game-cursor-scope';
     const { preference } = useCursorPreference();
+    const [dynamicPlayerID, setDynamicPlayerIDState] = useState<string | null>(null);
+
+    const setDynamicPlayerID = useCallback((id: string | null) => {
+        // 只有 prop playerID 为空时，动态更新才生效
+        if (propPlayerID == null) {
+            setDynamicPlayerIDState(id);
+        }
+    }, [propPlayerID]);
+
+    // prop 优先，否则用动态值
+    const playerID = propPlayerID ?? dynamicPlayerID;
 
     // 决定实际使用的光标主题
     const effectiveThemeId = useMemo(() => {
@@ -93,14 +145,25 @@ export function GameCursorProvider({ themeId, playerID, children }: GameCursorPr
         return buildCursorCSS(containerId, effectiveTheme);
     }, [effectiveThemeId, playerID, preference.highContrast]);
 
+    const contextValue = useMemo(
+        () => ({ playerID, setDynamicPlayerID }),
+        [playerID, setDynamicPlayerID],
+    );
+
     if (!cssText) {
-        return <>{children}</>;
+        return (
+            <CursorPlayerIDContext.Provider value={contextValue}>
+                {children}
+            </CursorPlayerIDContext.Provider>
+        );
     }
 
     return (
-        <div id={containerId} className="w-full h-full">
-            <style>{cssText}</style>
-            {children}
-        </div>
+        <CursorPlayerIDContext.Provider value={contextValue}>
+            <div id={containerId} className="w-full h-full">
+                <style>{cssText}</style>
+                {children}
+            </div>
+        </CursorPlayerIDContext.Provider>
     );
 }

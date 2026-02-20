@@ -34,4 +34,76 @@ const rune: CursorTheme = {
     previewSvgs: runeSvgs, ...buildCursors(runeSvgs, { zoomIn: [13, 13] }),
 };
 
-registerCursorThemes([steel, rune]);
+// --- 召唤之灵 (Ethereal Summoner) ---
+const etherealSvgs = {
+    // 召唤法阵：浮动的魔法圆环与琥珀核心
+    default: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <defs>
+            <filter id="ethereal-glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="2" result="blur"/>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+            <style>
+                @keyframes sw-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                .sw-ring { transform-origin: center; animation: sw-rotate 4s linear infinite; }
+                .sw-ring-reverse { transform-origin: center; animation: sw-rotate 6s linear infinite reverse; }
+            </style>
+        </defs>
+        <g transform="translate(4,4)">
+            {/* 核心光点 */}
+            <path d="M12 2 L15 10 L22 12 L15 14 L12 22 L9 14 L2 12 L9 10 Z" fill="#fbbf24" filter="url(#ethereal-glow)"/>
+            {/* 魔法外环 */}
+            <circle cx="12" cy="12" r="9" fill="none" stroke="#d97706" stroke-width="0.8" stroke-dasharray="2 4" className="sw-ring"/>
+            <circle cx="12" cy="12" r="11" fill="none" stroke="#78350f" stroke-width="0.5" stroke-dasharray="6 2" className="sw-ring-reverse"/>
+        </g>
+    </svg>`,
+
+    // 焦聚之芒：指向性魔力迸发
+    pointer: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <g transform="translate(4,4)">
+            {/* 指向光芒 */}
+            <path d="M4 2 L20 12 L4 22 L8 12 Z" fill="#fbbf24" filter="url(#ethereal-glow)"/>
+            {/* 拖尾粒子 */}
+            <circle cx="2" cy="6" r="1.5" fill="#fcd34d">
+                <animate attributeName="opacity" values="1;0;1" duration="0.8s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="0" cy="12" r="1" fill="#d97706">
+                <animate attributeName="opacity" values="0;1;0" duration="1.2s" repeatCount="indefinite"/>
+            </circle>
+        </g>
+    </svg>`,
+
+    // 灵魂羁绊：扩张的魔力力场
+    grabbing: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <g transform="translate(4,4)">
+            <circle cx="12" cy="12" r="10" fill="none" stroke="#fbbf24" stroke-width="2">
+                <animate attributeName="r" values="8;11;8" duration="1s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.8;0.3;0.8" duration="1s" repeatCount="indefinite"/>
+            </circle>
+            <path d="M6 12 L18 12 M12 6 L12 18" stroke="#fcd34d" stroke-width="1" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="4" fill="#d97706" opacity="0.6"/>
+        </g>
+    </svg>`,
+
+    // 真实之眼：魔法门户预览
+    zoomIn: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <circle cx="13" cy="13" r="10" fill="rgba(69, 26, 3, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <circle cx="13" cy="13" r="4" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+        <path d="M11 11 L15 15 M15 11 L11 15" stroke="#fff" stroke-width="0.5" opacity="0.8"/>
+        <path d="M21 21 L28 28" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+    </svg>`,
+
+    // 破碎封禁：虚空裂纹
+    notAllowed: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="11" fill="#451a03" stroke="#7f1d1d" stroke-width="2"/>
+        <path d="M10 10 L22 22 M22 10 L10 22" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M12 16 L20 16" stroke="#ef4444" stroke-width="1" opacity="0.5"/>
+    </svg>`
+};
+
+const ethereal: CursorTheme = {
+    id: 'summonerwars-ethereal', gameId: 'summonerwars', label: '召唤师战争', variantLabel: '召唤之灵',
+    previewSvgs: etherealSvgs, ...buildCursors(etherealSvgs, { zoomIn: [13, 13] }),
+};
+
+registerCursorThemes([steel, rune, ethereal]);

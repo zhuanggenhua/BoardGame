@@ -40,6 +40,11 @@
 
 关键机制：
 - **Random Probe 自动检测**：包装 `RandomFn` 追踪 pipeline 执行期间是否调用了随机数。调用了 → 丢弃乐观结果（等服务端确认）；未调用 → 保留乐观结果。游戏层无需手动声明 `commandDeterminism`（可选覆盖）。
+- **`commandDeterminism` 显式声明陷阱（强制理解）**：显式声明 `'deterministic'` 会**跳过 Random Probe**，比不声明更危险。若命令实际调用了 `random`（如掷骰子），乐观预测结果与服务端不一致，导致 `sys.gameover` 等关键状态不同步。**开发环境会自动检测此错误**（`console.error` 报警）。规则：
+  - ✅ 不声明 → Random Probe 自动检测（推荐，最安全）
+  - ✅ 声明 `'non-deterministic'` → 跳过预测，等服务端确认（随机命令的正确做法）
+  - ⚠️ 声明 `'deterministic'` → 跳过 probe，**必须确保命令真的不调用 `random`**，否则产生静默 bug
+  - **教训**：SummonerWars `DECLARE_ATTACK` 被错误声明为 `'deterministic'`（注释写"不含掷骰"），实际 execute 里就是掷骰子的地方，导致打死召唤师后胜利画面延迟到下一回合才出现。
 - **AnimationMode**：按命令粒度控制 `'optimistic'`（保留 EventStream 立即触发动画）或 `'wait-confirm'`（剥离 EventStream 等确认后触发）。默认 `'wait-confirm'`。
 - **EventStream 水位线**（`optimisticEventWatermark`）：记录已通过乐观动画播放的最大事件 ID，回滚时过滤已播放事件防止动画重复。
 - **Pending 命令队列 + Replay**：服务端确认后基于新状态重放剩余 pending 命令，而非直接覆盖。`snapshotPhase` 校验防止已执行命令被重复 replay。

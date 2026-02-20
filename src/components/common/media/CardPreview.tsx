@@ -166,7 +166,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             const img = new Image();
             img.onload = () => {
                 // 注册到统一缓存，供其他组件复用
-                if (source) markImageLoaded(source.image, effectiveLocale);
+                if (source) markImageLoaded(source.image, effectiveLocale, img);
                 if (!cancelled) setLoaded(true);
             };
             img.onerror = () => tryLoad(idx + 1);

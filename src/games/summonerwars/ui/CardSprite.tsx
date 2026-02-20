@@ -46,7 +46,7 @@ export const CardSprite: React.FC<CardSpriteProps> = ({
     }
 
     const imageUrl = source.image;
-    
+
     // 如果图片 URL 没变，不重新加载
     if (imageUrlRef.current === imageUrl && loaded) {
       return;
@@ -54,7 +54,7 @@ export const CardSprite: React.FC<CardSpriteProps> = ({
 
     imageUrlRef.current = imageUrl;
 
-    // 门禁已预加载，直接标记完成
+    // 已预加载，直接标记完成
     if (isImagePreloaded(imageUrl)) {
       setLoaded(true);
       return;

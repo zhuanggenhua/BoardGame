@@ -29,6 +29,7 @@ import { findPlayerAbility } from './domain/abilityLookup';
 import { HandArea } from './ui/HandArea';
 // cardAtlas 模块加载时已同步注册所有英雄图集，无需异步加载
 import './ui/cardAtlas';
+import './cursor'; // Register cursor themes
 
 import { DiceThroneCharacterSelection } from './ui/CharacterSelectionAdapter';
 import { TutorialSelectionGate } from '../../components/game/framework';
@@ -43,7 +44,7 @@ import { useGameMode } from '../../contexts/GameModeContext';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { useCurrentChoice, useDiceThroneState } from './hooks/useDiceThroneState';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
-import { diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands } from './domain/systems';
+import { diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands, type DiceModifyStep, type DiceSelectStep } from './domain/systems';
 // 引擎层 Hooks
 import { useSpectatorMoves } from '../../engine';
 // 游戏特定 Hooks

@@ -172,8 +172,9 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
         return new Promise<void>((resolve) => {
           const atlasId = getSummonerAtlasIdByFaction(deck.summonerFaction);
           const source = getSpriteAtlasSource(atlasId);
+          const imageUrl = source?.image;
           
-          if (!source) {
+          if (!imageUrl) {
             resolve(); // 没有图片源，直接完成
             return;
           }
@@ -184,7 +185,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
             console.warn(`[FactionSelection] 预加载精灵图失败: ${atlasId}`);
             resolve(); // 失败也继续，不阻塞其他图片
           };
-          img.src = source.image;
+          img.src = imageUrl;
         });
       });
       
@@ -242,17 +243,19 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
       // 预加载 hero 精灵图
       const heroAtlasId = getSummonerAtlasIdByFaction(factionId);
       const heroSource = getSpriteAtlasSource(heroAtlasId);
-      if (heroSource) {
+      const heroUrl = heroSource?.image;
+      if (heroUrl) {
         const img = new Image();
-        img.src = heroSource.image;
+        img.src = heroUrl;
       }
 
       // 预加载 cards 精灵图
       const cardsAtlasId = getFactionAtlasId(factionId, 'cards');
       const cardsSource = getSpriteAtlasSource(cardsAtlasId);
-      if (cardsSource) {
+      const cardsUrl = cardsSource?.image;
+      if (cardsUrl) {
         const img = new Image();
-        img.src = cardsSource.image;
+        img.src = cardsUrl;
       }
 
       // 预加载 tip 图

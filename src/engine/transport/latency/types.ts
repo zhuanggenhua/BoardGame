@@ -28,7 +28,11 @@ export type CommandDeterminismFn = (
 /**
  * 命令确定性声明值
  *
- * - 'deterministic'：确定性命令，客户端可安全预测
+ * - 'deterministic'：确定性命令，客户端可安全预测。
+ *   ⚠️ 显式声明此值会**跳过 Random Probe**，比不声明更危险。
+ *   若命令实际调用了 random（如掷骰子），乐观预测结果与服务端不一致。
+ *   开发环境会自动检测并 console.error 报警。
+ *   **推荐做法**：不声明（让 Random Probe 自动检测），或声明 'non-deterministic'。
  * - 'non-deterministic'：非确定性命令（如掷骰子、洗牌），跳过预测
  * - CommandDeterminismFn：运行时动态判断
  */
@@ -88,6 +92,11 @@ export interface OptimisticConfig {
      * 未声明的命令由 Random Probe 自动检测：
      * - pipeline 执行期间调用了 RandomFn → 非确定性，丢弃乐观结果
      * - 未调用 RandomFn → 确定性，保留乐观结果
+     *
+     * ⚠️ 显式声明 'deterministic' 会跳过 probe，比不声明更危险。
+     * 若命令实际调用了 random，会导致乐观预测与服务端不一致（静默 bug）。
+     * 开发环境会自动检测并 console.error 报警。
+     * 推荐：不声明（probe 自动检测），或声明 'non-deterministic'（随机命令）。
      */
     commandDeterminism?: CommandDeterminismMap;
     /** 命令动画模式声明（可选，未声明则全部使用 'wait-confirm'） */

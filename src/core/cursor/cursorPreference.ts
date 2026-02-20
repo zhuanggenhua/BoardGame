@@ -9,6 +9,7 @@ const DEFAULT_PREFERENCE: CursorPreference = {
     cursorTheme: 'default',
     overrideScope: 'home',
     highContrast: false,
+    gameVariants: {},
 };
 
 /** 从数据库获取光标偏好 */
@@ -24,6 +25,9 @@ export async function fetchCursorPreference(token: string): Promise<CursorPrefer
             cursorTheme: data.settings.cursorTheme || 'default',
             overrideScope: data.settings.overrideScope === 'all' ? 'all' : 'home',
             highContrast: data.settings.highContrast === true,
+            gameVariants: (data.settings.gameVariants && typeof data.settings.gameVariants === 'object')
+                ? data.settings.gameVariants as Record<string, string>
+                : {},
         };
     } catch {
         return { ...DEFAULT_PREFERENCE };

@@ -14,7 +14,7 @@ const entry: GameManifestEntry = {
     playerOptions: [2],
     tags: ['dice_driven', 'combat'],
     bestPlayers: [2],
-    cursorTheme: 'dicethrone',
+    cursorTheme: 'dicethrone-critical',
 };
 
 export const DICETHRONE_MANIFEST: GameManifestEntry = entry;
