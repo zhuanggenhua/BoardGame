@@ -365,6 +365,9 @@ class AudioManagerClass {
         return soundId;
     }
 
+    private _bgmReadyResolve: (() => void) | null = null;
+    private _bgmReadyPromise: Promise<void> | null = null;
+
     /**
      * 播放 BGM
      */
@@ -381,20 +384,34 @@ class AudioManagerClass {
                 return;
             }
             this.bgmDefinitions.set(key, mergedDef);
+            // 创建 BGM 就绪 Promise，供 preloadKeys 等待
+            this._bgmReadyPromise = new Promise<void>(resolve => {
+                this._bgmReadyResolve = resolve;
+            });
             howl = new Howl({
                 src: Array.isArray(mergedDef.src) ? mergedDef.src : [mergedDef.src],
                 volume: (mergedDef.volume ?? 1.0) * this._bgmVolume,
                 loop: true,
-                html5: true, // BGM 通常比较大，使用 HTML5 Audio 以节省内存并支持流式播放
-                preload: false, // BGM 按需加载
+                html5: true,
+                preload: false,
                 onload: () => {},
+                onplay: () => {
+                    // BGM 开始播放（流式，不需要完全下载），通知音效预加载可以开始
+                    this._bgmReadyResolve?.();
+                    this._bgmReadyResolve = null;
+                },
                 onloaderror: (_id, error) => {
                     console.error(`[Audio] load_bgm_failed key=${key} src=${formatSrcForLog(mergedDef.src)} error=${String(error)}`);
+                    // 加载失败也要 resolve，不阻塞音效预加载
+                    this._bgmReadyResolve?.();
+                    this._bgmReadyResolve = null;
                 },
                 onplayerror: () => {
-                    // 浏览器自动播放策略阻止了播放，存为 pending 等待用户交互后重试
                     this._pendingBgmKey = key;
                     this.registerUnlockHandler();
+                    // 播放失败（自动播放策略）也要 resolve
+                    this._bgmReadyResolve?.();
+                    this._bgmReadyResolve = null;
                 },
             });
             this.bgms.set(key, howl);
@@ -513,15 +530,12 @@ class AudioManagerClass {
     }
 
     /**
-     * 预加载音效（空闲时分批，不与图片竞争连接）
+     * 预加载音效（空闲时分批，不与图片/BGM 竞争连接）
      *
-     * 音频预加载是"锦上添花"——晚几百毫秒用户感知不到，
-     * 但如果抢占了图片的 HTTP 连接，卡牌图集会 pending 导致白屏。
-     *
-     * 策略：
-     * 1. 每批加载前等待关键图片就绪信号（waitForCriticalImages），确保图片彻底完成
-     * 2. 每批最多 PRELOAD_BATCH_SIZE 个，通过 requestIdleCallback 空闲调度
-     * 已加载或已失败的 key 会被跳过。
+     * 优先级：关键图片 > BGM > 音效预加载
+     * 1. 等待关键图片就绪
+     * 2. 等待 BGM 开始播放（流式，只需缓冲一小段）或 3s 超时
+     * 3. 每批最多 PRELOAD_BATCH_SIZE 个，通过 requestIdleCallback 空闲调度
      */
     preloadKeys(keys: SoundKey[]): void {
         // 过滤出需要加载的 key
@@ -532,11 +546,9 @@ class AudioManagerClass {
 
         const PRELOAD_BATCH_SIZE = 2;
         let index = 0;
+        let bgmWaited = false;
 
         const loadBatch = () => {
-            // 同步重检：requestIdleCallback 回调执行时，状态可能已被新一轮
-            // preloadCriticalImages 重置为 blocked（round 2 开始）。
-            // 此时必须重新等待，不能继续加载音频抢占连接池。
             if (!isCriticalImagesReady()) {
                 scheduleAfterImages(() => loadBatch());
                 return;
@@ -544,7 +556,6 @@ class AudioManagerClass {
             const end = Math.min(index + PRELOAD_BATCH_SIZE, pending.length);
             for (; index < end; index++) {
                 const key = pending[index];
-                // 二次检查（前一批可能已触发按需加载）
                 if (this.sounds.has(key) || this.failedKeys.has(key)) continue;
                 const definition = this.soundDefinitions.get(key) ?? this.resolveRegistrySoundDefinition(key);
                 if (!definition) continue;
@@ -562,25 +573,39 @@ class AudioManagerClass {
                 });
                 this.sounds.set(key, howl);
             }
-            // 还有剩余 → 等图片就绪后空闲时继续
             if (index < pending.length) {
                 scheduleAfterImages(() => loadBatch());
             }
         };
 
-        /** 等关键图片就绪后在空闲时执行回调 */
+        /** 等关键图片 + BGM 就绪后在空闲时执行回调 */
         const scheduleAfterImages = (fn: () => void) => {
             waitForCriticalImages().then(() => {
-                if (typeof requestIdleCallback === 'function') {
-                    requestIdleCallback(() => fn(), { timeout: 3000 });
-                } else {
-                    setTimeout(fn, 200);
-                }
+                // 首次：等 BGM 开始播放后再加载音效（最多等 3s）
+                const afterBgm = bgmWaited
+                    ? Promise.resolve()
+                    : this.waitForBgmReady();
+                bgmWaited = true;
+                afterBgm.then(() => {
+                    if (typeof requestIdleCallback === 'function') {
+                        requestIdleCallback(() => fn(), { timeout: 3000 });
+                    } else {
+                        setTimeout(fn, 200);
+                    }
+                });
             });
         };
 
-        // 首批也等图片就绪
         scheduleAfterImages(() => loadBatch());
+    }
+
+    /** 等待 BGM 开始播放或超时（3s），不阻塞无 BGM 的场景 */
+    private waitForBgmReady(): Promise<void> {
+        if (!this._bgmReadyPromise) return Promise.resolve();
+        return Promise.race([
+            this._bgmReadyPromise,
+            new Promise<void>(resolve => setTimeout(resolve, 3000)),
+        ]);
     }
 
 
