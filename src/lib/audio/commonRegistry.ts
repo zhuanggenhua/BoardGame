@@ -13,11 +13,11 @@ export interface AudioRegistryEntry {
     key: string;
     src: string;
     type: 'sfx' | 'bgm';
+    category: { group: string; sub: string };
 }
 
 export interface AudioRegistryPayload {
     version: number;
-    generatedAt: string;
     source: string;
     total: number;
     entries: AudioRegistryEntry[];

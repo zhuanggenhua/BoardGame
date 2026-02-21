@@ -87,6 +87,11 @@ const FACTION_BASE_ATLAS: Record<string, string> = {
     bear_cavalry: BASE_ATLAS_PATHS.BASE2,
     steampunks: BASE_ATLAS_PATHS.BASE2,
     killer_plants: BASE_ATLAS_PATHS.BASE2,
+    // BASE3: 第三扩展包
+    kitty_cats: BASE_ATLAS_PATHS.BASE3,
+    fairies: BASE_ATLAS_PATHS.BASE3,
+    princesses: BASE_ATLAS_PATHS.BASE3,
+    mythic_horses: BASE_ATLAS_PATHS.BASE3,
     // BASE4: 克苏鲁扩展
     elder_things: BASE_ATLAS_PATHS.BASE4,
     minions_of_cthulhu: BASE_ATLAS_PATHS.BASE4,

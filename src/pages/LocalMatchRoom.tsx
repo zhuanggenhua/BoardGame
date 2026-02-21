@@ -105,7 +105,6 @@ export const LocalMatchRoom = () => {
                 className="w-full h-full"
                 style={{
                     '--font-game-display': gameConfig?.fontFamily?.display ? `'${gameConfig.fontFamily.display}', serif` : undefined,
-                    '--font-game-body': gameConfig?.fontFamily?.body ? `'${gameConfig.fontFamily.body}', serif` : undefined,
                 } as React.CSSProperties}
             >
                 <GameModeProvider mode="local">

@@ -989,7 +989,6 @@ export const MatchRoom = () => {
                 className={`w-full h-full ${isUgcGame ? 'ugc-preview-container' : ''}`}
                 style={{
                     '--font-game-display': gameConfig?.fontFamily?.display ? `'${gameConfig.fontFamily.display}', serif` : undefined,
-                    '--font-game-body': gameConfig?.fontFamily?.body ? `'${gameConfig.fontFamily.body}', serif` : undefined,
                 } as React.CSSProperties}
             >
                 <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId} playerID={effectivePlayerID}>

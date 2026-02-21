@@ -576,8 +576,11 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
 
     const SPOTLIGHT_TRIGGER_EVENTS = useMemo(() => ['su:action_played'], []);
 
+    // 事件流条目（统一获取，避免重复调用）
+    const eventStreamEntries = getEventStreamEntries(G);
+
     const { queue: spotlightQueue, dismiss: dismissSpotlight } = useCardSpotlightQueue<{ defId: string }>({
-        entries: getEventStreamEntries(G),
+        entries: eventStreamEntries,
         currentPlayerId: myPid,
         triggerEventTypes: SPOTLIGHT_TRIGGER_EVENTS,
         extractCard: extractActionCard,
@@ -1549,7 +1552,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
 
                 {/* 卡牌展示浮层（非阻塞，点击关闭） */}
                 <RevealOverlay
-                    entries={getEventStreamEntries(G)}
+                    entries={eventStreamEntries}
                     currentPlayerId={myPid}
                 />
 

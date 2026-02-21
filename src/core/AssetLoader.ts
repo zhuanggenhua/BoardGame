@@ -326,7 +326,7 @@ export async function preloadCriticalImages(
 
     const elapsed = performance.now() - startTime;
     if (elapsed > 500) {
-        console.warn(`[AssetLoader] ${gameId} 关键图片预加载耗时 ${elapsed.toFixed(0)}ms（${criticalPaths.length} 张）`);
+        console.warn(`[AssetLoader] ${gameId} 关键图片预加载耗时 ${elapsed.toFixed(0)}ms（${filtered.length} 张）`);
     }
 
     // 关键图片就绪，解除音频预加载阻塞

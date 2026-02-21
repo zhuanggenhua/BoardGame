@@ -2,11 +2,12 @@
  * 下载 Google Fonts 到本地（仅 latin 子集），生成精简 @font-face CSS
  * 用法: node scripts/download-fonts.mjs
  * 
- * 只下载项目实际使用的字体+字重+子集：
- * - Crimson Text: 400/600/700 normal + 400 italic（body 默认字体）
- * - Inter: 400/500/600/700/900（UI/标题字体）
- * 
- * 不下载：Press Start 2P（未使用）、Cinzel（未使用）、cyrillic/greek/vietnamese 子集
+ * 只下载项目实际使用的字体+字重+子集（仅 latin）：
+ * - Crimson Text: 400/600/700 normal + 400 italic（body 默认衬线体）
+ * - Inter: 400/500/600/700/900（UI/标题无衬线体）
+ * - Cinzel: 400/700（王权骰铸 display 字体）
+ * - Bebas Neue: 400（召唤师战争 display 字体）
+ * - Bangers: 400（大杀四方 display 字体）
  */
 import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';

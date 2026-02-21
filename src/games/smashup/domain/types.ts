@@ -806,7 +806,6 @@ export interface RevealDeckTopEvent extends GameEvent<typeof SU_EVENTS.REVEAL_DE
     };
 }
 
-/** 关闭卡牌展示事件（单人模式直接关闭，all 模式记录确认者） */
 /** 临时力量修正事件（回合结束自动清零） */
 export interface TempPowerAddedEvent extends GameEvent<typeof SU_EVENTS.TEMP_POWER_ADDED> {
     payload: {

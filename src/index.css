@@ -81,7 +81,7 @@
 
 /* 游戏专属字体：manifest.fontFamily 通过 MatchRoom/LocalMatchRoom 注入为 CSS 变量，
    自动应用到游戏容器内的标题元素，首页等非游戏页面不受影响 */
-[style*="--font-game-display"] :is(h1, h2, h3, h4, h5, h6) {
+[style*="--font-game-display:"] :is(h1, h2, h3, h4, h5, h6) {
     font-family: var(--font-game-display);
 }
 

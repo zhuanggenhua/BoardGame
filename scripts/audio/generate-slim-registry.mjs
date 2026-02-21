@@ -35,10 +35,9 @@ const allCode = srcFiles.map(f => readFileSync(f, 'utf-8')).join('\n');
 // 找出代码中引用的 key
 const usedEntries = registry.entries.filter(entry => allCode.includes(entry.key));
 
-// 生成精简版
+// 生成精简版（不含时间戳，避免内容未变时产生无意义 diff）
 const slim = {
   version: registry.version,
-  generatedAt: new Date().toISOString(),
   source: 'generate-slim-registry.mjs',
   total: usedEntries.length,
   entries: usedEntries,
