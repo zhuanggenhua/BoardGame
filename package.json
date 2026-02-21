@@ -43,6 +43,7 @@
     "test:server": "vitest run src/server src/api",
     "test:ugc": "vitest run src/ugc",
     "test:games": "vitest run src/games",
+    "test:changed": "npx vitest run --changed origin/main -- src/games",
     "test:api": "vitest run apps/api",
     "test:api:docker": "cross-env MONGO_URI=mongodb://localhost:27017/boardgame npm run test:api",
     "test:e2e": "node scripts/infra/check-e2e-safety.js && npx playwright test",
