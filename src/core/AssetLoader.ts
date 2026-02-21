@@ -345,10 +345,9 @@ export async function preloadCriticalImages(
     const warmPaths = [...new Set([...staticWarm, ...resolved.warm])];
 
     if (criticalPaths.length === 0) {
-        // 无关键图片：临时放行音频预加载。
-        // 下一阶段的 preloadCriticalImages 开头会 resetCriticalImagesSignal() 重新 block，
-        // 音频 loadBatch 每批次前 isCriticalImagesReady() 重检会自动暂停，不会抢连接。
-        signalCriticalImagesReady();
+        // 无关键图片（如教程 factionSelect 阶段）：不 signal，保持 blocked。
+        // 后续阶段（playing）会再次调用 preloadCriticalImages 并在完成后 signal。
+        // 不能在这里 signal——音频会立即抢连接，比下一阶段的图片请求更快。
         return warmPaths;
     }
 

@@ -69,9 +69,12 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         && areAllCriticalImagesCached(gameId, gameState, locale, playerID)) {
         lastReadyKeyRef.current = runKey;
         // 快速路径跳过了 preloadCriticalImages，手动 signal。
-        // 空 criticalPaths 时 areAllCriticalImagesCached 返回 true，signal 是安全的——
-        // 下一阶段 preloadCriticalImages 开头会 reset 回 blocked。
-        signalCriticalImagesReady();
+        // 仅当确实有关键图片时才 signal——空 criticalPaths 不代表"图片加载完了"，
+        // 后续阶段可能紧接着需要加载大量图片，此时不应放行音频。
+        const resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
+        if ((resolved.critical?.length ?? 0) > 0) {
+            signalCriticalImagesReady();
+        }
     }
 
     // 重新计算：快速路径可能已更新 lastReadyKeyRef
@@ -124,6 +127,10 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         inFlightRef.current = true;
         setReady(false);
 
+        // 预先检查本轮是否有关键图片，决定完成后是否 signal 音频
+        const resolved = resolveCriticalImages(gameId, currentState, locale, playerID);
+        const hasCriticalImages = (resolved.critical?.length ?? 0) > 0;
+
         // 记录本轮 epoch，signal 时传入防止旧轮次的延迟回调覆盖新轮次的 blocked 状态
         // preloadCriticalImages 内部会 resetCriticalImagesSignal() 自增 epoch，
         // 所以必须在调用之后读取
@@ -138,9 +145,11 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
                 setReady(true);
                 onReady?.();
                 preloadWarmImages(warmPaths, locale, gameId);
-                // 无条件 signal：空 criticalPaths 时 preloadCriticalImages 已 signal 过（幂等），
-                // 有图片时这里是真正的 signal 点
-                signalCriticalImagesReady(epoch);
+                // 仅当本轮确实有关键图片时才 signal——空 criticalPaths 阶段
+                // 不应放行音频，后续阶段会紧接着加载图片
+                if (hasCriticalImages) {
+                    signalCriticalImagesReady(epoch);
+                }
             })
             .catch((err) => {
                 console.error('[CriticalImageGate] 预加载失败:', err);
