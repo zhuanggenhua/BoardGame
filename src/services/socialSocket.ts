@@ -2,6 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import msgpackParser from 'socket.io-msgpack-parser';
 import { AUTH_API_URL } from '../config/server';
 import { onPageVisible } from './visibilityResync';
+import { socketHealthChecker } from './socketHealthCheck';
 
 export const SOCIAL_EVENTS = {
     // 服务端 -> 客户端
@@ -95,6 +96,7 @@ class SocialSocketService {
 
             this.setupEventHandlers();
             this.setupVisibilityHandler();
+            this.setupHealthCheck();
             return;
         }
 
@@ -139,6 +141,10 @@ class SocialSocketService {
         if (this._cleanupVisibility) {
             this._cleanupVisibility();
             this._cleanupVisibility = null;
+        }
+        if (this._cleanupHealthCheck) {
+            this._cleanupHealthCheck();
+            this._cleanupHealthCheck = null;
         }
         if (this.socket) {
             this.socket.disconnect();
@@ -212,7 +218,21 @@ class SocialSocketService {
         this._cleanupVisibility = onPageVisible(() => this.resync());
     }
 
+    /**
+     * 启动健康检查（定期检查连接状态并主动重连）
+     */
+    private setupHealthCheck(): void {
+        if (this._cleanupHealthCheck) return;
+        this._cleanupHealthCheck = socketHealthChecker.start({
+            name: 'SocialSocket',
+            getSocket: () => this.socket,
+            isConnected: () => this.isConnected,
+            interval: 30000, // 30秒检查一次
+        });
+    }
+
     private _cleanupVisibility: (() => void) | null = null;
+    private _cleanupHealthCheck: (() => void) | null = null;
 }
 
 export const socialSocket = new SocialSocketService();

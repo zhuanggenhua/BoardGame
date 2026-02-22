@@ -53,8 +53,10 @@ export class GameTransportClient {
     private _destroyed = false;
     private _syncTimer: ReturnType<typeof setTimeout> | null = null;
     private _syncRetries = 0;
+    private _healthCheckTimer: ReturnType<typeof setInterval> | null = null;
     private static readonly SYNC_TIMEOUT_MS = 5000;
     private static readonly SYNC_MAX_RETRIES = 5;
+    private static readonly HEALTH_CHECK_INTERVAL_MS = 30000; // 30秒检查一次
 
     constructor(config: GameTransportClientConfig) {
         this.config = config;
@@ -154,6 +156,9 @@ export class GameTransportClient {
             this._syncRetries = 0;
             this.sendSync();
         });
+
+        // 启动健康检查
+        this.setupHealthCheck();
     }
 
     /** 发送命令 */
@@ -226,6 +231,7 @@ export class GameTransportClient {
     disconnect(): void {
         this._destroyed = true;
         this.clearSyncTimer();
+        this.clearHealthCheck();
         if (this.socket) {
             this.socket.removeAllListeners();
             this.socket.disconnect();
@@ -294,6 +300,40 @@ export class GameTransportClient {
                 playerID,
                 this.config.credentials,
             );
+        }
+    }
+
+    /**
+     * 启动健康检查（定期检查连接状态并主动重连）
+     */
+    private setupHealthCheck(): void {
+        if (this._healthCheckTimer) return;
+        
+        this._healthCheckTimer = setInterval(() => {
+            if (this._destroyed || !this.socket) return;
+            
+            // 检查连接状态
+            if (!this.socket.connected) {
+                console.log('[GameTransport] 健康检查发现断开，尝试重连');
+                try {
+                    this.socket.connect();
+                } catch (error) {
+                    console.error('[GameTransport] 重连失败:', error);
+                }
+            }
+        }, GameTransportClient.HEALTH_CHECK_INTERVAL_MS);
+        
+        console.log(`[GameTransport] 健康检查已启动 (间隔: ${GameTransportClient.HEALTH_CHECK_INTERVAL_MS}ms)`);
+    }
+
+    /**
+     * 清理健康检查定时器
+     */
+    private clearHealthCheck(): void {
+        if (this._healthCheckTimer) {
+            clearInterval(this._healthCheckTimer);
+            this._healthCheckTimer = null;
+            console.log('[GameTransport] 健康检查已停止');
         }
     }
 }

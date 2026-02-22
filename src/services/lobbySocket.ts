@@ -8,6 +8,7 @@ import { io, Socket } from 'socket.io-client';
 import msgpackParser from 'socket.io-msgpack-parser';
 import { GAME_SERVER_URL } from '../config/server';
 import { onPageVisible } from './visibilityResync';
+import { socketHealthChecker } from './socketHealthCheck';
 import i18n from '../lib/i18n';
 
 const normalizeGameName = (name?: unknown) => {
@@ -101,6 +102,7 @@ class LobbySocketService {
     private reconnectAttempts = 0;
     private lobbyStateByGame: Map<LobbyGameId, LobbyState> = new Map();
     private _cleanupVisibility: (() => void) | null = null;
+    private _cleanupHealthCheck: (() => void) | null = null;
 
     private ensureState(gameId: LobbyGameId): LobbyState {
         const existing = this.lobbyStateByGame.get(gameId);
@@ -176,6 +178,7 @@ class LobbySocketService {
 
         this.setupEventHandlers();
         this.setupVisibilityHandler();
+        this.setupHealthCheck();
     }
 
     /**
@@ -420,6 +423,10 @@ class LobbySocketService {
             this._cleanupVisibility();
             this._cleanupVisibility = null;
         }
+        if (this._cleanupHealthCheck) {
+            this._cleanupHealthCheck();
+            this._cleanupHealthCheck = null;
+        }
         if (this.socket) {
             this.socket.emit(LOBBY_EVENTS.UNSUBSCRIBE_LOBBY);
             this.socket.disconnect();
@@ -457,6 +464,19 @@ class LobbySocketService {
     private setupVisibilityHandler(): void {
         if (this._cleanupVisibility) return;
         this._cleanupVisibility = onPageVisible(() => this.resync());
+    }
+
+    /**
+     * 启动健康检查（定期检查连接状态并主动重连）
+     */
+    private setupHealthCheck(): void {
+        if (this._cleanupHealthCheck) return;
+        this._cleanupHealthCheck = socketHealthChecker.start({
+            name: 'LobbySocket',
+            getSocket: () => this.socket,
+            isConnected: () => this.isConnected,
+            interval: 30000, // 30秒检查一次
+        });
     }
 
     /**
