@@ -12,6 +12,7 @@ import type {
     PowerCounterAddedEvent,
     PowerCounterRemovedEvent,
     OngoingDetachedEvent,
+    OngoingCardCounterChangedEvent,
     TalentUsedEvent,
     CardToDeckTopEvent,
     CardToDeckBottomEvent,
@@ -26,6 +27,8 @@ import type {
     BreakpointModifiedEvent,
     BaseDeckShuffledEvent,
     SpecialLimitUsedEvent,
+    SpecialAfterScoringArmedEvent,
+    SpecialAfterScoringConsumedEvent,
     MinionOnBase,
     CardInstance,
     BaseInPlay,
@@ -256,7 +259,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.BASE_SCORED: {
-            const { baseIndex, rankings } = event.payload;
+            // 仅发放 VP，不清除基地（清除由后续 BASE_CLEARED 执行）
+            // 这确保 afterScoring 触发器能访问基地上的随从和 ongoing 卡
+            const { rankings } = event.payload;
             let newPlayers = { ...state.players };
             for (const r of rankings) {
                 if (r.vp > 0) {
@@ -267,7 +272,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     };
                 }
             }
+            return { ...state, players: newPlayers };
+        }
+
+        case SU_EVENTS.BASE_CLEARED: {
+            const { baseIndex } = event.payload;
             const scoredBase = state.bases[baseIndex];
+            if (!scoredBase) return state;
+            let newPlayers = { ...state.players };
 
             // Property 11: 持续行动卡回各自所有者弃牌堆
             for (const ongoing of scoredBase.ongoingActions) {
@@ -388,8 +400,13 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 ...base,
                 minions: base.minions.map(m => ({
                     ...m,
+                    powerModifier: m.powerModifier,  // 显式保留 +1力量指示物
                     talentUsed: m.controller === playerId ? false : m.talentUsed,
                     tempPowerModifier: 0,
+                    attachedActions: m.attachedActions.map(a => ({
+                        ...a,
+                        talentUsed: a.ownerId === playerId ? false : a.talentUsed,
+                    })),
                 })),
                 ongoingActions: base.ongoingActions.map(o => ({
                     ...o,
@@ -415,6 +432,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 tempBreakpointModifiers: undefined,
                 // 清空 special 能力限制组使用记录
                 specialLimitUsed: undefined,
+                // 清空巨石阵双才能追踪
+                standingStonesDoubleTalentMinionUid: undefined,
+                // 清空计分后延迟 special 记录
+                pendingAfterScoringSpecials: undefined,
                 sleepMarkedPlayers: newSleepMarked?.length ? newSleepMarked : undefined,
                 players: {
                     ...state.players,
@@ -431,6 +452,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         extraMinionPowerMax: undefined,
                         sameNameMinionRemaining: undefined,
                         sameNameMinionDefId: null,
+                        pendingMinionPlayEffects: undefined,
                     },
                 },
             };
@@ -721,59 +743,107 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.POWER_COUNTER_ADDED: {
-            const { minionUid, baseIndex, amount } = (event as PowerCounterAddedEvent).payload;
-            const newBases = state.bases.map((base, i) => {
-                if (i !== baseIndex) return base;
-                return {
-                    ...base,
-                    minions: base.minions.map(m => {
-                        if (m.uid !== minionUid) return m;
-                        return { ...m, powerModifier: m.powerModifier + amount };
-                    }),
-                };
-            });
+            const { minionUid, amount } = (event as PowerCounterAddedEvent).payload;
+            // 使用 minionUid 查找，不依赖 baseIndex（避免基地删除后索引错位）
+            const newBases = state.bases.map(base => ({
+                ...base,
+                minions: base.minions.map(m => 
+                    m.uid === minionUid 
+                        ? { ...m, powerModifier: m.powerModifier + amount }
+                        : m
+                ),
+            }));
             return { ...state, bases: newBases };
         }
 
         case SU_EVENTS.POWER_COUNTER_REMOVED: {
-            const { minionUid, baseIndex, amount } = (event as PowerCounterRemovedEvent).payload;
-            const newBases = state.bases.map((base, i) => {
-                if (i !== baseIndex) return base;
-                return {
-                    ...base,
-                    minions: base.minions.map(m => {
-                        if (m.uid !== minionUid) return m;
-                        return { ...m, powerModifier: Math.max(0, m.powerModifier - amount) };
-                    }),
-                };
-            });
+            const { minionUid, amount } = (event as PowerCounterRemovedEvent).payload;
+            // 使用 minionUid 查找，不依赖 baseIndex（避免基地删除后索引错位）
+            const newBases = state.bases.map(base => ({
+                ...base,
+                minions: base.minions.map(m => 
+                    m.uid === minionUid 
+                        ? { ...m, powerModifier: Math.max(0, m.powerModifier - amount) }
+                        : m
+                ),
+            }));
+            return { ...state, bases: newBases };
+        }
+
+        case SU_EVENTS.MINION_PLAY_EFFECT_QUEUED: {
+            const qPayload = (event as unknown as { payload: { playerId: string; effect: 'addPowerCounter'; amount: number } }).payload;
+            const qPlayer = state.players[qPayload.playerId];
+            if (!qPlayer) return state;
+            const prev = qPlayer.pendingMinionPlayEffects ?? [];
+            return {
+                ...state,
+                players: { ...state.players, [qPayload.playerId]: { ...qPlayer, pendingMinionPlayEffects: [...prev, { effect: qPayload.effect, amount: qPayload.amount }] } },
+            };
+        }
+
+        case SU_EVENTS.MINION_PLAY_EFFECT_CONSUMED: {
+            const cPayload = (event as unknown as { payload: { playerId: string } }).payload;
+            const cPlayer = state.players[cPayload.playerId];
+            if (!cPlayer) return state;
+            const queue = cPlayer.pendingMinionPlayEffects ?? [];
+            return {
+                ...state,
+                players: { ...state.players, [cPayload.playerId]: { ...cPlayer, pendingMinionPlayEffects: queue.slice(1) } },
+            };
+        }
+
+        case SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED: {
+            const { cardUid, delta } = (event as OngoingCardCounterChangedEvent).payload;
+            // 使用 cardUid 查找，不依赖 baseIndex（避免基地删除后索引错位）
+            const newBases = state.bases.map(base => ({
+                ...base,
+                ongoingActions: base.ongoingActions.map(oa => {
+                    if (oa.uid !== cardUid) return oa;
+                    const prev = ((oa.metadata?.powerCounters as number) ?? 0);
+                    return { ...oa, metadata: { ...oa.metadata, powerCounters: Math.max(0, prev + delta) } };
+                }),
+            }));
             return { ...state, bases: newBases };
         }
 
         case SU_EVENTS.TALENT_USED: {
             const { minionUid, ongoingCardUid, baseIndex } = (event as TalentUsedEvent).payload;
-            const newBases = state.bases.map((base, i) => {
-                if (i !== baseIndex) return base;
-                // ongoing 行动卡天赋
+            // 使用 uid 查找，不依赖 baseIndex（避免基地删除后索引错位）
+            const newBases = state.bases.map(base => {
+                // ongoing 行动卡天赋（基地上或随从附着）
                 if (ongoingCardUid) {
                     return {
                         ...base,
-                        ongoingActions: base.ongoingActions.map(o => {
-                            if (o.uid !== ongoingCardUid) return o;
-                            return { ...o, talentUsed: true };
-                        }),
+                        ongoingActions: base.ongoingActions.map(o => 
+                            o.uid === ongoingCardUid ? { ...o, talentUsed: true } : o
+                        ),
+                        minions: base.minions.map(m => ({
+                            ...m,
+                            attachedActions: m.attachedActions.map(a => 
+                                a.uid === ongoingCardUid ? { ...a, talentUsed: true } : a
+                            ),
+                        })),
                     };
                 }
                 // 随从天赋
                 return {
                     ...base,
-                    minions: base.minions.map(m => {
-                        if (m.uid !== minionUid) return m;
-                        return { ...m, talentUsed: true };
-                    }),
+                    minions: base.minions.map(m => 
+                        m.uid === minionUid ? { ...m, talentUsed: true } : m
+                    ),
                 };
             });
-            return { ...state, bases: newBases };
+            // 巨石阵双才能追踪：如果随从在使用前 talentUsed 已为 true，说明这是第二次使用
+            let newStandingStonesUid = state.standingStonesDoubleTalentMinionUid;
+            if (minionUid && !ongoingCardUid) {
+                // 使用 baseIndex 查找旧状态（这里 baseIndex 仍然有效，因为是在 TALENT_USED 命令执行时）
+                const oldBase = baseIndex < state.bases.length ? state.bases[baseIndex] : undefined;
+                const oldMinion = oldBase?.minions.find(m => m.uid === minionUid);
+                if (oldMinion?.talentUsed && oldBase?.defId === 'base_standing_stones') {
+                    newStandingStonesUid = minionUid;
+                }
+            }
+            return { ...state, bases: newBases, standingStonesDoubleTalentMinionUid: newStandingStonesUid };
         }
 
         case SU_EVENTS.ONGOING_DETACHED: {
@@ -1062,17 +1132,16 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
         // 临时力量修正（回合结束自动清零）
         case SU_EVENTS.TEMP_POWER_ADDED: {
-            const { minionUid, baseIndex, amount } = (event as TempPowerAddedEvent).payload;
-            const newBases = state.bases.map((base, i) => {
-                if (i !== baseIndex) return base;
-                return {
-                    ...base,
-                    minions: base.minions.map(m => {
-                        if (m.uid !== minionUid) return m;
-                        return { ...m, tempPowerModifier: (m.tempPowerModifier ?? 0) + amount };
-                    }),
-                };
-            });
+            const { minionUid, amount } = (event as TempPowerAddedEvent).payload;
+            // 使用 minionUid 查找，不依赖 baseIndex（避免基地删除后索引错位）
+            const newBases = state.bases.map(base => ({
+                ...base,
+                minions: base.minions.map(m => 
+                    m.uid === minionUid 
+                        ? { ...m, tempPowerModifier: (m.tempPowerModifier ?? 0) + amount }
+                        : m
+                ),
+            }));
             return { ...state, bases: newBases };
         }
 
@@ -1107,6 +1176,45 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     ...prev,
                     [limitGroup]: [...prevGroup, baseIndex],
                 },
+            };
+        }
+
+        case SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED: {
+            const payload = (event as SpecialAfterScoringArmedEvent).payload;
+            const prev = state.pendingAfterScoringSpecials ?? [];
+            const exists = prev.some(
+                p => p.sourceDefId === payload.sourceDefId
+                    && p.playerId === payload.playerId
+                    && p.baseIndex === payload.baseIndex,
+            );
+            if (exists) return state;
+
+            const newEntry = {
+                sourceDefId: payload.sourceDefId,
+                playerId: payload.playerId,
+                baseIndex: payload.baseIndex,
+            };
+            const newState = {
+                ...state,
+                pendingAfterScoringSpecials: [
+                    ...prev,
+                    newEntry,
+                ],
+            };
+            return newState;
+        }
+
+        case SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED: {
+            const payload = (event as SpecialAfterScoringConsumedEvent).payload;
+            const prev = state.pendingAfterScoringSpecials ?? [];
+            const next = prev.filter(
+                p => !(p.sourceDefId === payload.sourceDefId
+                    && p.playerId === payload.playerId
+                    && p.baseIndex === payload.baseIndex),
+            );
+            return {
+                ...state,
+                pendingAfterScoringSpecials: next.length > 0 ? next : undefined,
             };
         }
 

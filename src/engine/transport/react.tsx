@@ -182,6 +182,9 @@ export function GameProvider({
     // 破坏所有基于 EventStream 的动画（伤害飞行、治疗、状态效果等）。
     // 骰子动画最短播放时间改为在 UI 层（DiceActions）用 useMinDuration 保护。
 
+    // 状态版本号追踪：防止旧状态覆盖新状态（WebSocket 消息乱序/重复广播）
+    const lastConfirmedStateIDRef = useRef<number | null>(null);
+
     // 用 ref 存储回调，避免回调引用变化导致 effect 重新执行（断开重连）
     const onErrorRef = useRef(onError);
     onErrorRef.current = onError;
@@ -243,6 +246,23 @@ export function GameProvider({
             playerID: playerId,
             credentials,
             onStateUpdate: (newState, players, meta, randomMeta) => {
+                // 状态版本号检查：防止旧状态覆盖新状态（WebSocket 消息乱序/重复广播）
+                if (meta?.stateID !== undefined && lastConfirmedStateIDRef.current !== null) {
+                    if (meta.stateID < lastConfirmedStateIDRef.current) {
+                        console.warn('[GameProvider] 忽略旧状态更新', {
+                            receivedStateID: meta.stateID,
+                            currentStateID: lastConfirmedStateIDRef.current,
+                            receivedTurnNumber: (newState as MatchState<unknown>).core ? ((newState as MatchState<unknown>).core as { turnNumber?: number }).turnNumber : undefined,
+                        });
+                        return; // 忽略旧状态
+                    }
+                }
+
+                // 更新最后确认的 stateID
+                if (meta?.stateID !== undefined) {
+                    lastConfirmedStateIDRef.current = meta.stateID;
+                }
+
                 // 乐观更新引擎：调和服务端确认状态
                 const engine = optimisticEngineRef.current;
                 let finalState: MatchState<unknown>;
@@ -268,6 +288,18 @@ export function GameProvider({
 
                 // 实时刷新交互选项（如果策略是 realtime）
                 const refreshedState = refreshInteractionOptions(finalState);
+
+                // ── 增量诊断日志：交互状态变更 ──
+                const interactionCurrent = (refreshedState as MatchState<unknown>).sys?.interaction?.current;
+                if (interactionCurrent || meta?.stateID !== undefined) {
+                    console.log('[GameProvider:onStateUpdate]', {
+                        stateID: meta?.stateID ?? '-',
+                        interactionId: interactionCurrent?.id ?? 'none',
+                        interactionPlayer: interactionCurrent?.playerId ?? '-',
+                        sourceId: interactionCurrent?.sourceId ?? '-',
+                        ts: Date.now(),
+                    });
+                }
                 
                 setState(refreshedState);
                 setMatchPlayers(players);
@@ -275,9 +307,13 @@ export function GameProvider({
             onConnectionChange: (connected) => {
                 setIsConnected(connected);
                 onConnectionChangeRef.current?.(connected);
-                // 断线重连时重置乐观引擎
+                // 断线重连时重置乐观引擎和状态版本号追踪
                 if (connected && optimisticEngineRef.current) {
                     optimisticEngineRef.current.reset();
+                }
+                if (!connected) {
+                    // 断线时重置状态版本号追踪，重连后从服务端同步最新状态
+                    lastConfirmedStateIDRef.current = null;
                 }
             },
             onError: (error) => {
@@ -317,6 +353,19 @@ export function GameProvider({
     }, []);
 
     const dispatch = useCallback((type: string, payload: unknown) => {
+        // ── 增量诊断日志：交互/响应窗口命令 ──
+        const isInteractionCmd = type.startsWith('SYS_INTERACTION_') || type === 'RESPONSE_PASS';
+        if (isInteractionCmd) {
+            const pl = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
+            console.log('[GameProvider:dispatch]', {
+                type,
+                optionId: pl.optionId ?? pl.optionIds ?? '-',
+                playerId,
+                stateID: lastConfirmedStateIDRef.current,
+                ts: Date.now(),
+            });
+        }
+
         // 内部：走 optimistic engine + batcher/sendCommand 路径
         const dispatchToNetwork = (cmdType: string, cmdPayload: unknown) => {
             // 1. 乐观更新
@@ -450,16 +499,37 @@ export function LocalGameProvider({
                 : (Array.isArray(coreAny.turnOrder) && typeof coreAny.currentPlayerIndex === 'number'
                     ? (coreAny.turnOrder as string[])[coreAny.currentPlayerIndex as number]
                     : undefined);
-            const resolvedPlayerId = tutorialOverrideId ?? coreCurrentPlayer ?? '0';
+            // ── 系统命令 playerId 解析 ──
+            // 对方回合中可能触发属于"我"的效果（雄蜂防止消灭、Me First 响应窗口出牌等），
+            // 这些命令的 playerId 不能用当前回合玩家，必须从对应系统状态推导。
+            // 优先级：
+            // 1. SYS_INTERACTION_*  → interaction 所有者（交互可能在对方回合属于我）
+            // 2. 响应窗口活跃时     → 当前响应者（Me First 出牌、RESPONSE_PASS 等）
+            // 3. 其他              → 当前回合玩家（默认）
+            const systemPlayerId = (() => {
+                // 交互命令：始终使用交互所有者
+                if (type.startsWith('SYS_INTERACTION_')) {
+                    return prev.sys.interaction?.current?.playerId;
+                }
+                // 响应窗口活跃时：所有命令（RESPONSE_PASS、PLAY_ACTION 等）使用当前响应者
+                const rw = prev.sys.responseWindow?.current;
+                if (rw) {
+                    const idx = rw.currentResponderIndex ?? 0;
+                    return rw.responderQueue?.[idx];
+                }
+                return undefined;
+            })();
+            const resolvedPlayerId = tutorialOverrideId ?? systemPlayerId ?? coreCurrentPlayer ?? '0';
 
             const command: Command = {
                 type,
-                // 本地同屏默认使用当前回合玩家；教程 AI 可通过 __tutorialPlayerId 强制指定执行者。
+                // 系统命令从对应系统状态推导 playerId；普通命令使用当前回合玩家；教程 AI 可通过 __tutorialPlayerId 强制指定。
                 playerId: resolvedPlayerId,
                 payload: normalizedPayload,
                 timestamp: Date.now(),
                 skipValidation: true,
             };
+
 
             const pipelineConfig: PipelineConfig<unknown, Command, GameEvent> = {
                 domain: config.domain,
@@ -474,6 +544,7 @@ export function LocalGameProvider({
                 randomRef.current,
                 playerIds,
             );
+
 
             if (!result.success) {
                 console.warn('[LocalGame] 命令执行失败:', type, result.error);

@@ -42,7 +42,17 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       // 排除测试产物目录，避免 Playwright 写入截图/报告时触发 HMR full-reload
       watch: {
-        ignored: ['**/test-results/**', '**/playwright-report/**', '**/.tmp/**', '**/evidence/**'],
+        ignored: [
+          '**/test-results/**',
+          '**/playwright-report/**',
+          '**/.tmp/**',
+          '**/evidence/**',
+          '**/logs/**',
+          '**/node_modules/**',
+          '**/*.test.*',
+          '**/*.spec.*',
+          '**/e2e/**',
+        ],
       },
       proxy: {
         '/games': {

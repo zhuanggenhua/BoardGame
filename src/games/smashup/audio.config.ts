@@ -8,6 +8,7 @@ import { pickRandomSoundKey } from '../../lib/audio/audioUtils';
 import type { GamePhase, SmashUpCore } from './domain/types';
 import { SU_EVENTS, SU_EVENT_TYPES } from './domain/events';
 import { SMASHUP_FACTION_IDS } from './domain/ids';
+import { getCardDef } from './data/cards';
 
 type SmashUpAudioCtx = {
     currentPhase: GamePhase;
@@ -207,6 +208,52 @@ const MISKATONIC_ACTION_KEYS = [
     'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_aetherial_pulse_003',
 ];
 
+// 狼人：统一用攻击音效（风格一致）
+const WEREWOLF_MINION_KEYS = [
+    'fantasy.gothic_fantasy_sound_fx_pack_vol.creatures.werewolf_attack_001',
+    'fantasy.gothic_fantasy_sound_fx_pack_vol.creatures.werewolf_attack_002',
+    'fantasy.gothic_fantasy_sound_fx_pack_vol.creatures.werewolf_attack_003',
+];
+const WEREWOLF_ACTION_KEYS = [
+    'fantasy.gothic_fantasy_sound_fx_pack_vol.creatures.werewolf_attack_001',
+    'fantasy.gothic_fantasy_sound_fx_pack_vol.creatures.werewolf_attack_002',
+    'fantasy.gothic_fantasy_sound_fx_pack_vol.creatures.werewolf_attack_003',
+];
+
+// 科学怪人：统一用电流音效（风格一致）
+const FRANKENSTEIN_MINION_KEYS = [
+    'magic.general.spells_variations_vol_1.electrified_whoosh.magspel_electrified_whoosh_01_krst',
+    'magic.general.spells_variations_vol_1.electrified_whoosh.magspel_electrified_whoosh_02_krst',
+];
+const FRANKENSTEIN_ACTION_KEYS = [
+    'magic.general.spells_variations_vol_1.electrified_whoosh.magspel_electrified_whoosh_01_krst',
+    'magic.general.spells_variations_vol_1.electrified_whoosh.magspel_electrified_whoosh_02_krst',
+];
+
+// 吸血鬼：统一用暗影魔法音效（风格一致）
+const VAMPIRE_MINION_KEYS = [
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_shadow_wail_001',
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_shadow_wail_002',
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_dread_whisper_001',
+];
+const VAMPIRE_ACTION_KEYS = [
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_shadow_wail_001',
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_shadow_wail_002',
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_dread_whisper_001',
+];
+
+// 巨蚁：统一用嗡鸣音效（风格一致）
+const GIANT_ANT_MINION_KEYS = [
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzzing',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_a',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_b',
+];
+const GIANT_ANT_ACTION_KEYS = [
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzzing',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_a',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_b',
+];
+
 const FACTION_SFX_KEYS: Record<string, string[]> = {
     [SMASHUP_FACTION_IDS.ZOMBIES]: [...ZOMBIE_MINION_KEYS, ...ZOMBIE_ACTION_KEYS],
     [SMASHUP_FACTION_IDS.WIZARDS]: [...WIZARD_MINION_KEYS, ...WIZARD_ACTION_KEYS],
@@ -224,6 +271,10 @@ const FACTION_SFX_KEYS: Record<string, string[]> = {
     [SMASHUP_FACTION_IDS.ELDER_THINGS]: [...ELDER_THING_MINION_KEYS, ...ELDER_THING_ACTION_KEYS, MADNESS_KEY],
     [SMASHUP_FACTION_IDS.INNSMOUTH]: [...INNSMOUTH_MINION_KEYS, ...INNSMOUTH_ACTION_KEYS, MADNESS_KEY],
     [SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY]: [...MISKATONIC_MINION_KEYS, ...MISKATONIC_ACTION_KEYS, MADNESS_KEY],
+    [SMASHUP_FACTION_IDS.WEREWOLVES]: [...WEREWOLF_MINION_KEYS, ...WEREWOLF_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.FRANKENSTEIN]: [...FRANKENSTEIN_MINION_KEYS, ...FRANKENSTEIN_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.VAMPIRES]: [...VAMPIRE_MINION_KEYS, ...VAMPIRE_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.GIANT_ANTS]: [...GIANT_ANT_MINION_KEYS, ...GIANT_ANT_ACTION_KEYS],
 };
 
 const collectFactionPreloadKeys = (factionIds: string[]): string[] => {
@@ -235,11 +286,25 @@ const collectFactionPreloadKeys = (factionIds: string[]): string[] => {
     return Array.from(keys);
 };
 
+/**
+ * 解析卡牌音效 key
+ * 优先级：卡牌配置的 soundKey > 派系默认音效池
+ */
 const resolveFactionSound = (defId: string | undefined, cardType: 'minion' | 'action' | 'talent'): string | null => {
     if (!defId) return null;
+    
+    // 特殊卡牌：疯狂卡
     if (defId === 'special_madness') {
         return MADNESS_KEY;
     }
+    
+    // 优先使用卡牌配置的 soundKey
+    const cardDef = getCardDef(defId);
+    if (cardDef && 'soundKey' in cardDef && cardDef.soundKey) {
+        return cardDef.soundKey;
+    }
+    
+    // Fallback 到派系默认音效池
     if (defId.startsWith('zombie_')) {
         const keys = cardType === 'action' ? ZOMBIE_ACTION_KEYS : ZOMBIE_MINION_KEYS;
         return pickRandomSoundKey(`smashup.zombie.${cardType}`, keys, { minGap: 1 });
@@ -304,6 +369,24 @@ const resolveFactionSound = (defId: string | undefined, cardType: 'minion' | 'ac
         const keys = cardType === 'action' ? MISKATONIC_ACTION_KEYS : MISKATONIC_MINION_KEYS;
         return pickRandomSoundKey(`smashup.miskatonic.${cardType}`, keys, { minGap: 1 });
     }
+    if (defId.startsWith('werewolf_')) {
+        const keys = cardType === 'action' ? WEREWOLF_ACTION_KEYS : WEREWOLF_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.werewolf.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('frankenstein_')) {
+        const keys = cardType === 'action' ? FRANKENSTEIN_ACTION_KEYS : FRANKENSTEIN_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.frankenstein.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('vampire_')) {
+        const keys = cardType === 'action' ? VAMPIRE_ACTION_KEYS : VAMPIRE_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.vampire.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('giant_ant_')) {
+        const keys = cardType === 'action' ? GIANT_ANT_ACTION_KEYS : GIANT_ANT_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.giant_ant.${cardType}`, keys, { minGap: 1 });
+    }
+    
+    // 未配置音效池的派系，返回 null（静默）
     return null;
 };
 

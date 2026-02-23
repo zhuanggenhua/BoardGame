@@ -5,13 +5,13 @@
  *
  * 实现方式：
  * - HEAL_APPLIED 在 pendingAttack 期间跳过 HP 上限（允许临时超上限）
- * - ATTACK_RESOLVED 时将 HP 钳制回上限
+ * - ATTACK_RESOLVED 时将 HP 钳制回上限（60 = 初始值 50 + 10）
  * - 事件保持原始数值，动画正常播放
  *
  * 覆盖：
  * 1. 满血时防御治疗 + 攻击伤害 → 净伤害 = 伤害 - 治疗
  * 2. 非满血时防御治疗 + 攻击伤害 → 同时结算
- * 3. 治疗量 >= 伤害量 → 净治疗（HP 不超上限）
+ * 3. 治疗量 >= 伤害量 → 净治疗（HP 不超上限 60）
  * 4. 无心骰面时 HEAL_APPLIED(amount=0) 仍正常处理
  * 5. 非攻击结算期间的治疗仍受 HP 上限限制
  */
@@ -20,7 +20,7 @@ import { describe, it, expect } from 'vitest';
 import { reduce } from '../domain/reducer';
 import { applyEvents } from '../domain/utils';
 import { RESOURCE_IDS } from '../domain/resources';
-import { INITIAL_HEALTH } from '../domain/types';
+import { INITIAL_HEALTH, MAX_HEALTH } from '../domain/types';
 import type { DiceThroneCore, DiceThroneEvent, HealAppliedEvent, DamageDealtEvent, AttackResolvedEvent } from '../domain/types';
 import { createInitializedState, fixedRandom } from './test-utils';
 
@@ -129,7 +129,7 @@ describe('攻击结算同时结算（reducer 层）', () => {
 
     it('满血时治疗量 > 伤害量：HP 不超上限', () => {
         // 防御者满血(50)，厚皮治疗3，攻击伤害2
-        // 治疗后临时 53，扣血 53-2=51，结算钳制 min(51,50)=50
+        // 治疗后临时 53，扣血 53-2=51，结算钳制 min(51,60)=51
         const state = createAttackState(INITIAL_HEALTH);
         const events: DiceThroneEvent[] = [
             healEvent('1', 3),
@@ -138,7 +138,7 @@ describe('攻击结算同时结算（reducer 层）', () => {
         ];
 
         const finalState = applyEvents(state, events, reduce);
-        expect(finalState.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH); // 钳制回50
+        expect(finalState.players['1'].resources[RESOURCE_IDS.HP]).toBe(51); // 钳制到上限 60，实际 51
     });
 
     it('无心骰面时 HEAL_APPLIED(amount=0) 正常处理', () => {
@@ -155,7 +155,7 @@ describe('攻击结算同时结算（reducer 层）', () => {
     });
 
     it('非攻击结算期间的治疗仍受 HP 上限限制', () => {
-        // 没有 pendingAttack 时，满血治疗不应超上限
+        // 没有 pendingAttack 时，满血治疗不应超上限 60
         const matchState = createInitializedState(['0', '1'], fixedRandom);
         const state = matchState.core;
         state.players['1'].resources[RESOURCE_IDS.HP] = INITIAL_HEALTH;
@@ -166,7 +166,7 @@ describe('攻击结算同时结算（reducer 层）', () => {
         ];
 
         const finalState = applyEvents(state, events, reduce);
-        expect(finalState.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH); // 仍为50，不超上限
+        expect(finalState.players['1'].resources[RESOURCE_IDS.HP]).toBe(55); // 50 + 5 = 55，未超上限 60
     });
 
     it('事件保持原始数值（动画可正常播放）', () => {

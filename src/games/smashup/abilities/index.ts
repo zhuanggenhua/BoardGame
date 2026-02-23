@@ -33,6 +33,10 @@ import { registerCthulhuAbilities } from './cthulhu';
 import { registerCthulhuInteractionHandlers } from './cthulhu';
 import { registerElderThingAbilities } from './elder_things';
 import { registerElderThingInteractionHandlers } from './elder_things';
+import { registerFrankensteinAbilities, registerFrankensteinInteractionHandlers } from './frankenstein';
+import { registerWerewolfAbilities, registerWerewolfInteractionHandlers } from './werewolves';
+import { registerVampireAbilities, registerVampireInteractionHandlers } from './vampires';
+import { registerGiantAntAbilities, registerGiantAntInteractionHandlers } from './giant_ants';
 import { registerBaseAbilities, registerBaseInteractionHandlers, clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { registerMultiBaseScoringInteractionHandler } from '../domain/index';
 import { registerAllOngoingModifiers } from './ongoing_modifiers';
@@ -101,6 +105,16 @@ export function initAllAbilities(): void {
     registerCthulhuInteractionHandlers();
     registerElderThingAbilities();
     registerElderThingInteractionHandlers();
+
+    // Monster Smash 扩展
+    registerFrankensteinAbilities();
+    registerFrankensteinInteractionHandlers();
+    registerWerewolfAbilities();
+    registerWerewolfInteractionHandlers();
+    registerVampireAbilities();
+    registerVampireInteractionHandlers();
+    registerGiantAntAbilities();
+    registerGiantAntInteractionHandlers();
 
     // 持续力量修正
     registerAllOngoingModifiers();

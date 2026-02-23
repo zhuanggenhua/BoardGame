@@ -3,7 +3,7 @@
  *
  * 覆盖：
  * - base_rhodes_plaza: beforeScoring 每位玩家每个随从 1VP
- * - base_locker_room: onTurnStart 有随从则抽牌
+ * - base_castle_blood: onTurnStart 有随从则抽牌
  * - base_central_brain: onMinionPlayed +1 力量指示物
  * - base_the_factory: beforeScoring 冠军每5力量1VP
  * - base_cave_of_shinies: onMinionDestroyed 拥有者获得1VP（扩展时机）
@@ -263,33 +263,24 @@ describe('base_the_factory: 冠军每5力量1VP', () => {
 
 
 // ============================================================================
-// base_locker_room: 更衣室 - onTurnStart 有随从则抽牌
+// base_castle_blood: 血堡 - onMinionPlayed 对手力量更大时放 +1 指示物
 // ============================================================================
 
-describe('base_locker_room: 回合开始抽牌', () => {
-    it('有随从在更衣室时回合开始抽 1 张牌', () => {
-        const topCardUid = 'c_top';
+describe('base_castle_blood: 打出随从放指示物', () => {
+    it('对手力量比自己大时，在打出的随从上放 +1 指示物', () => {
         const ctx: BaseAbilityContext = {
             state: {
                 bases: [{
-                    defId: 'base_locker_room',
+                    defId: 'base_castle_blood',
                     minions: [
-                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 3, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_me', defId: 'd1', controller: '0', owner: '0', basePower: 2, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_op', defId: 'd2', controller: '1', owner: '1', basePower: 5, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
                 players: {
-                    '0': {
-                        id: '0', vp: 0,
-                        hand: [], discard: [],
-                        deck: [
-                            { uid: topCardUid, defId: 'test_card', type: 'minion', owner: '0' },
-                            { uid: 'c2', defId: 'test_card2', type: 'action', owner: '0' },
-                        ],
-                        minionsPlayed: 0, minionLimit: 1,
-                        actionsPlayed: 0, actionLimit: 1,
-                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
-                    },
+                    '0': { id: '0', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
+                    '1': { id: '1', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
                 },
                 turnOrder: ['0', '1'],
                 currentPlayerIndex: 0,
@@ -298,38 +289,32 @@ describe('base_locker_room: 回合开始抽牌', () => {
                 nextUid: 100,
             } as unknown as SmashUpCore,
             baseIndex: 0,
-            baseDefId: 'base_locker_room',
+            baseDefId: 'base_castle_blood',
             playerId: '0',
+            minionUid: 'm_me',
             now: 1000,
         };
 
-        const { events } = triggerBaseAbility('base_locker_room', 'onTurnStart', ctx);
+        const { events } = triggerBaseAbility('base_castle_blood', 'onMinionPlayed', ctx);
         expect(events.length).toBe(1);
-        expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
-        expect((events[0] as any).payload.playerId).toBe('0');
-        expect((events[0] as any).payload.cardUids).toEqual([topCardUid]);
+        expect(events[0].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
+        expect((events[0] as any).payload.minionUid).toBe('m_me');
     });
 
-    it('没有随从在更衣室时不抽牌', () => {
+    it('对手力量不比自己大时，不放指示物', () => {
         const ctx: BaseAbilityContext = {
             state: {
                 bases: [{
-                    defId: 'base_locker_room',
+                    defId: 'base_castle_blood',
                     minions: [
-                        // 只有对手的随从
-                        { uid: 'm1', defId: 'd1', controller: '1', owner: '1', basePower: 3, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_me', defId: 'd1', controller: '0', owner: '0', basePower: 5, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_op', defId: 'd2', controller: '1', owner: '1', basePower: 3, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
                 players: {
-                    '0': {
-                        id: '0', vp: 0,
-                        hand: [], discard: [],
-                        deck: [{ uid: 'c1', defId: 'test', type: 'minion', owner: '0' }],
-                        minionsPlayed: 0, minionLimit: 1,
-                        actionsPlayed: 0, actionLimit: 1,
-                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
-                    },
+                    '0': { id: '0', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
+                    '1': { id: '1', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
                 },
                 turnOrder: ['0', '1'],
                 currentPlayerIndex: 0,
@@ -338,48 +323,13 @@ describe('base_locker_room: 回合开始抽牌', () => {
                 nextUid: 100,
             } as unknown as SmashUpCore,
             baseIndex: 0,
-            baseDefId: 'base_locker_room',
+            baseDefId: 'base_castle_blood',
             playerId: '0',
+            minionUid: 'm_me',
             now: 1000,
         };
 
-        const { events } = triggerBaseAbility('base_locker_room', 'onTurnStart', ctx);
-        expect(events.length).toBe(0);
-    });
-
-    it('牌库为空时不抽牌', () => {
-        const ctx: BaseAbilityContext = {
-            state: {
-                bases: [{
-                    defId: 'base_locker_room',
-                    minions: [
-                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 3, powerModifier: 0, talentUsed: false, attachedActions: [] },
-                    ],
-                    ongoingActions: [],
-                }],
-                players: {
-                    '0': {
-                        id: '0', vp: 0,
-                        hand: [], discard: [],
-                        deck: [], // 空牌库
-                        minionsPlayed: 0, minionLimit: 1,
-                        actionsPlayed: 0, actionLimit: 1,
-                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
-                    },
-                },
-                turnOrder: ['0', '1'],
-                currentPlayerIndex: 0,
-                baseDeck: [],
-                turnNumber: 1,
-                nextUid: 100,
-            } as unknown as SmashUpCore,
-            baseIndex: 0,
-            baseDefId: 'base_locker_room',
-            playerId: '0',
-            now: 1000,
-        };
-
-        const { events } = triggerBaseAbility('base_locker_room', 'onTurnStart', ctx);
+        const { events } = triggerBaseAbility('base_castle_blood', 'onMinionPlayed', ctx);
         expect(events.length).toBe(0);
     });
 });
@@ -448,34 +398,21 @@ describe('base_cave_of_shinies: 随从被消灭获得1VP', () => {
 // ============================================================================
 
 describe('Property 17: 基地能力事件顺序', () => {
-    it('onTurnStart 事件在 TURN_STARTED 之后', () => {
-        // 通过 FlowHooks 集成测试验证
-        // onPhaseEnter('startTurn') 先产生 TURN_STARTED，再触发基地 onTurnStart
-        // 这已在 FlowHooks 代码中保证（先 push turnStarted，再 push baseEvents）
-        // 此处用单元测试验证注册表触发顺序
+    it('beforeScoring 事件在 BASE_SCORED 之前（单元验证）', () => {
+        // 模拟：先触发 beforeScoring 基地能力，再记录 BASE_SCORED
         const triggered: string[] = [];
-
-        // 模拟：先记录 TURN_STARTED，再触发基地能力
-        triggered.push(SU_EVENTS.TURN_STARTED);
 
         const ctx: BaseAbilityContext = {
             state: {
                 bases: [{
-                    defId: 'base_locker_room',
+                    defId: 'base_rhodes_plaza',
                     minions: [
-                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 3, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 3, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
                 players: {
-                    '0': {
-                        id: '0', vp: 0,
-                        hand: [], discard: [],
-                        deck: [{ uid: 'c1', defId: 'test', type: 'minion', owner: '0' }],
-                        minionsPlayed: 0, minionLimit: 1,
-                        actionsPlayed: 0, actionLimit: 1,
-                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
-                    },
+                    '0': { id: '0', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
                 },
                 turnOrder: ['0', '1'],
                 currentPlayerIndex: 0,
@@ -484,18 +421,19 @@ describe('Property 17: 基地能力事件顺序', () => {
                 nextUid: 100,
             } as unknown as SmashUpCore,
             baseIndex: 0,
-            baseDefId: 'base_locker_room',
+            baseDefId: 'base_rhodes_plaza',
             playerId: '0',
             now: 1000,
         };
 
-        const { events: baseEvents } = triggerBaseAbility('base_locker_room', 'onTurnStart', ctx);
+        const { events: baseEvents } = triggerBaseAbility('base_rhodes_plaza', 'beforeScoring', ctx);
         for (const e of baseEvents) triggered.push(e.type);
+        triggered.push(SU_EVENTS.BASE_SCORED);
 
-        // TURN_STARTED 在基地能力事件之前
-        const turnStartIdx = triggered.indexOf(SU_EVENTS.TURN_STARTED);
-        const drawIdx = triggered.indexOf(SU_EVENTS.CARDS_DRAWN);
-        expect(turnStartIdx).toBeLessThan(drawIdx);
+        // beforeScoring VP 事件在 BASE_SCORED 之前
+        const vpIdx = triggered.indexOf(SU_EVENTS.VP_AWARDED);
+        const scoredIdx = triggered.indexOf(SU_EVENTS.BASE_SCORED);
+        expect(vpIdx).toBeLessThan(scoredIdx);
     });
 
     it('beforeScoring 事件在 BASE_SCORED 之前（通过 FlowHooks 保证）', () => {

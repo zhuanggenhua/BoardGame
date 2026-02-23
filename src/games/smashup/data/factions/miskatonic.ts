@@ -132,7 +132,7 @@ export const MISKATONIC_ACTIONS: ActionCardDef[] = [
         name: '实地考察',
         nameEn: 'Field Trip',
         faction: 'miskatonic_university',
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 11 },
     },
 ];

@@ -446,6 +446,7 @@ export interface DiceThroneCore {
 // ============================================================================
 
 export const INITIAL_HEALTH = 50;
+export const MAX_HEALTH = 60; // 规则：玩家可以治疗到超过初始生命值最多 10 点
 export const INITIAL_CP = 2; // 规则：起始 CP 为 2（1v1）
 export const CP_MAX = 15;
 export const HAND_LIMIT = 6;

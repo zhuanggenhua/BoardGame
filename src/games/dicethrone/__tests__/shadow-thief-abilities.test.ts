@@ -144,7 +144,7 @@ describe('暗影刺客 - 定义完整性', () => {
         expect(cpDef?.initialValue).toBe(2);
         expect(cpDef?.max).toBe(15);
         expect(hpDef?.initialValue).toBe(50);
-        expect(hpDef?.max).toBe(50);
+        expect(hpDef?.max).toBe(60); // 规则：玩家可以治疗到超过初始生命值最多 10 点
     });
 
     it('Token 定义包含 Sneak、Sneak Attack 和 Poison', () => {

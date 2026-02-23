@@ -116,7 +116,7 @@ describe('拉莱耶 onTurnStart Interaction 导致回合切换卡死', () => {
                     { defId: 'base_tar_pits', minions: [], ongoingActions: [] },
                     { defId: 'base_central_brain', minions: [], ongoingActions: [] },
                 ],
-                baseDeck: ['base_locker_room'],
+                baseDeck: ['base_castle_blood'],
                 turnNumber: 1,
                 nextUid: 200,
             };
@@ -215,7 +215,7 @@ describe('托尔图加 afterScoring Interaction 导致计分后流程异常', ()
                     { defId: 'base_tar_pits', minions: [], ongoingActions: [] },
                     { defId: 'base_central_brain', minions: [], ongoingActions: [] },
                 ],
-                baseDeck: ['base_locker_room', 'base_the_homeworld'],
+                baseDeck: ['base_castle_blood', 'base_the_homeworld'],
                 turnNumber: 1,
                 nextUid: 200,
             };

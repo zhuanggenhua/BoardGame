@@ -158,6 +158,8 @@ export interface SliderChoiceData {
 export interface InteractionState {
     current?: InteractionDescriptor;
     queue: InteractionDescriptor[];
+    /** 当其他玩家有未完成的交互时为 true，此时当前玩家不应发送任何命令（如结束回合） */
+    isBlocked?: boolean;
 }
 
 // ============================================================================
@@ -625,9 +627,11 @@ export function createInteractionSystem<TCore>(
             const filteredCurrent =
                 current?.playerId === playerId ? current : undefined;
             const filteredQueue = queue.filter((i) => i?.playerId === playerId);
+            // 当其他玩家有未完成交互时，通知当前玩家被阻塞（不暴露交互详情）
+            const isBlocked = !!current && current.playerId !== playerId;
 
             return {
-                interaction: { current: filteredCurrent, queue: filteredQueue },
+                interaction: { current: filteredCurrent, queue: filteredQueue, isBlocked },
             };
         },
     };

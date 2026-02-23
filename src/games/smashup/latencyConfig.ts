@@ -69,7 +69,18 @@ export const smashUpLatencyConfig: LatencyOptimizationConfig = {
             [SU_COMMANDS.PLAY_ACTION]: 'optimistic',
             [SU_COMMANDS.SELECT_FACTION]: 'optimistic',
             [SU_COMMANDS.USE_TALENT]: 'optimistic',
-            // 注：RESPONSE_PASS / ADVANCE_PHASE 由引擎层内置 optimistic 默认值，无需重复声明
+            // ADVANCE_PHASE 也使用 optimistic：立即应用状态，不等待服务器确认
+            // 这样可以确保 afterScoring 效果（如自助餐）立即生效
+            'ADVANCE_PHASE': 'optimistic',
+        },
+        // 事件级别乐观模式：基地计分相关事件立即应用，不等待服务器确认
+        // 这样可以确保 afterScoring 触发器产生的效果（如自助餐加指示物）立即显示
+        eventOptimistic: {
+            'su:power_counter_added': true,
+            'su:base_scored': true,
+            'su:base_cleared': true,
+            'su:base_replaced': true,
+            'su:special_after_scoring_consumed': true,
         },
     },
     batching: {
@@ -84,6 +95,11 @@ export const smashUpLatencyConfig: LatencyOptimizationConfig = {
             SU_COMMANDS.USE_TALENT,
             // 选择派系（低频但重要）
             SU_COMMANDS.SELECT_FACTION,
+            // 交互响应和响应窗口跳过必须即时发送，绕过批处理窗口
+            // 防止快速连点时多个交互命令被聚合，导致重复消费/状态异常
+            'SYS_INTERACTION_RESPOND',
+            'SYS_INTERACTION_CANCEL',
+            'RESPONSE_PASS',
         ],
     },
 };

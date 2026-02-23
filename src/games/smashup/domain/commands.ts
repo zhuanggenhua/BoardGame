@@ -287,9 +287,17 @@ export function validate(
             const targetBase = core.bases[baseIndex];
             if (!targetBase) return { valid: false, error: '无效的基地索引' };
 
-            // ongoing 行动卡天赋
+            // ongoing 行动卡天赋（基地上或随从附着）
             if (ongoingCardUid) {
-                const ongoing = targetBase.ongoingActions.find(o => o.uid === ongoingCardUid);
+                // 先查基地 ongoingActions
+                let ongoing = targetBase.ongoingActions.find(o => o.uid === ongoingCardUid);
+                // 再查随从 attachedActions
+                if (!ongoing) {
+                    for (const m of targetBase.minions) {
+                        const aa = m.attachedActions.find(a => a.uid === ongoingCardUid);
+                        if (aa) { ongoing = aa; break; }
+                    }
+                }
                 if (!ongoing) return { valid: false, error: '基地上没有该持续行动卡' };
                 if (ongoing.ownerId !== command.playerId) {
                     return { valid: false, error: '只能使用自己的持续行动卡天赋' };
@@ -312,7 +320,12 @@ export function validate(
                 return { valid: false, error: '只能使用自己控制的随从的天赋' };
             }
             if (targetMinion.talentUsed) {
-                return { valid: false, error: '本回合天赋已使用' };
+                // 巨石阵例外：允许一个随从每回合使用才能两次
+                const isStandingStones = targetBase.defId === 'base_standing_stones';
+                const doubleTalentAvailable = !core.standingStonesDoubleTalentMinionUid;
+                if (!(isStandingStones && doubleTalentAvailable)) {
+                    return { valid: false, error: '本回合天赋已使用' };
+                }
             }
             // 检查是否有天赋能力
             const mDef = getCardDef(targetMinion.defId);

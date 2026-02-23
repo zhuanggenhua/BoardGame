@@ -9,7 +9,7 @@
  * 风格遵循 smashup 设计系统：深色物理感，禁止毛玻璃，使用 GameButton
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
@@ -77,6 +77,51 @@ function resolveI18nKeys(text: string, t: (key: string, opts?: any) => string): 
     });
 }
 
+interface PromptSliderConfig {
+    min: number;
+    max: number;
+    step: number;
+    defaultValue: number;
+    confirmOptionId?: string;
+    confirmLabel?: string;
+    valueLabel?: string;
+    skipOptionId?: string;
+    skipLabel?: string;
+}
+
+function parseSliderConfig(prompt: unknown): PromptSliderConfig | undefined {
+    if (!prompt || typeof prompt !== 'object') return undefined;
+    const raw = (prompt as { slider?: unknown }).slider;
+    if (!raw || typeof raw !== 'object') return undefined;
+
+    const slider = raw as Record<string, unknown>;
+    const min = Number(slider.min ?? 1);
+    const max = Number(slider.max ?? min);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || max < min) return undefined;
+
+    const step = Number(slider.step ?? 1);
+    const defaultValue = Number(slider.defaultValue ?? max);
+
+    return {
+        min,
+        max,
+        step: Number.isFinite(step) && step > 0 ? step : 1,
+        defaultValue: Number.isFinite(defaultValue) ? defaultValue : max,
+        confirmOptionId: typeof slider.confirmOptionId === 'string' ? slider.confirmOptionId : undefined,
+        confirmLabel: typeof slider.confirmLabel === 'string' ? slider.confirmLabel : undefined,
+        valueLabel: typeof slider.valueLabel === 'string' ? slider.valueLabel : undefined,
+        skipOptionId: typeof slider.skipOptionId === 'string' ? slider.skipOptionId : undefined,
+        skipLabel: typeof slider.skipLabel === 'string' ? slider.skipLabel : undefined,
+    };
+}
+
+function formatSliderText(template: string | undefined, value: number, max: number, fallback: string): string {
+    if (!template) return fallback;
+    return template
+        .replace(/\{\{\s*value\s*\}\}/g, String(value))
+        .replace(/\{\{\s*max\s*\}\}/g, String(max));
+}
+
 /** 鼠标滚轮转水平滚动 */
 
 export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, displayCards }) => {
@@ -94,7 +139,16 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     const hasOptions = (prompt?.options?.length ?? 0) > 0;
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-    useEffect(() => { setSelectedIds([]); }, [prompt?.id]);
+    // ── 交互提交锁：防止同一交互重复提交命令 ──
+    // 点击后锁定，直到 interaction.id 变化（服务端确认/交互切换）才解锁
+    const [submittingInteractionId, setSubmittingInteractionId] = useState<string | null>(null);
+    const isSubmitLocked = !!prompt && submittingInteractionId === prompt.id;
+
+    // interaction.id 变化时自动解锁（含消失场景）
+    useEffect(() => {
+        setSubmittingInteractionId(null);
+        setSelectedIds([]);
+    }, [prompt?.id]);
 
     const canSubmitMulti = useMemo(
         () => isMyPrompt && selectedIds.length >= minSelections,
@@ -129,9 +183,49 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     // 通用跳过选项检测：自动分离 id === 'skip' 的选项，渲染为独立按钮
     const skipOption = useMemo(() => resolvedOptions.find(opt => opt.id === 'skip'), [resolvedOptions]);
     const nonSkipOptions = useMemo(() => resolvedOptions.filter(opt => opt.id !== 'skip'), [resolvedOptions]);
+    const rawSlider = (prompt as { slider?: unknown } | undefined)?.slider;
+    const sliderConfig = useMemo(() => parseSliderConfig({ slider: rawSlider }), [prompt?.id, rawSlider]);
+    const [sliderValue, setSliderValue] = useState(1);
+
+    useEffect(() => {
+        if (!sliderConfig) {
+            setSliderValue(1);
+            return;
+        }
+        const normalized = Math.min(
+            sliderConfig.max,
+            Math.max(sliderConfig.min, Math.floor(sliderConfig.defaultValue)),
+        );
+        setSliderValue(normalized);
+    }, [prompt?.id, sliderConfig?.min, sliderConfig?.max, sliderConfig?.defaultValue]);
+
+    const sliderConfirmOption = useMemo(() => {
+        if (!sliderConfig) return undefined;
+        if (sliderConfig.confirmOptionId) {
+            const matched = nonSkipOptions.find(opt => opt.id === sliderConfig.confirmOptionId);
+            if (matched) return matched;
+        }
+        return nonSkipOptions[0];
+    }, [sliderConfig, nonSkipOptions]);
+
+    const sliderSkipOption = useMemo(() => {
+        if (!sliderConfig) return undefined;
+        if (sliderConfig.skipOptionId) {
+            return resolvedOptions.find(opt => opt.id === sliderConfig.skipOptionId);
+        }
+        return skipOption;
+    }, [sliderConfig, resolvedOptions, skipOption]);
 
     // ====== 通用卡牌展示模式（弃牌堆查看等，优先级最高） ======
     // 统一渲染：永远显示所有卡牌，可打出的高亮，不分"选择模式"和"查看模式"
+
+    /** 带提交锁的 dispatch 包装：锁定后阻止重复提交 */
+    const lockedDispatch = useCallback((type: string, payload?: unknown) => {
+        if (isSubmitLocked) return;
+        if (prompt) setSubmittingInteractionId(prompt.id);
+        dispatch(type, payload);
+    }, [isSubmitLocked, prompt, dispatch]);
+
     if (displayCards) {
         const { selectedUid: selUid, onSelect: onSel, playableDefIds } = displayCards;
 
@@ -234,13 +328,134 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
     if (!prompt) return null;
 
+    if (sliderConfig) {
+        const confirmLabel = formatSliderText(
+            sliderConfig.confirmLabel,
+            sliderValue,
+            sliderConfig.max,
+            `确认转移 ${sliderValue}`,
+        );
+        const valueLabel = formatSliderText(
+            sliderConfig.valueLabel,
+            sliderValue,
+            sliderConfig.max,
+            `当前数量：${sliderValue} / ${sliderConfig.max}`,
+        );
+        const skipLabel = sliderConfig.skipLabel ?? sliderSkipOption?.label ?? t('ui.skip', { defaultValue: '跳过' });
+
+        return (
+            <AnimatePresence>
+                <motion.div
+                    key="prompt-slider"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 pointer-events-auto"
+                    style={{ zIndex: UI_Z_INDEX.overlay }}
+                >
+                    <motion.div
+                        initial={{ scale: 0.95, y: 16 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        className="bg-slate-900 border-2 border-slate-600 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.6)] max-w-lg w-full overflow-hidden"
+                    >
+                        <div className="px-5 py-4 border-b border-slate-700">
+                            <h2 className="text-lg font-black text-amber-100 uppercase tracking-tight text-center">
+                                {title}
+                            </h2>
+                            {!isMyPrompt && (
+                                <div className="mt-2 text-center text-xs text-yellow-400/80 font-bold animate-pulse">
+                                    {t('ui.waiting_for_player', { id: prompt.playerId })}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-5 flex flex-col gap-5">
+                            <div className="flex items-center justify-center gap-3">
+                                <span className="text-4xl font-black text-amber-300 tabular-nums min-w-[2ch] text-center">
+                                    {sliderValue}
+                                </span>
+                                <span className="text-slate-400 text-sm">/ {sliderConfig.max}</span>
+                            </div>
+
+                            <div className="w-full px-2">
+                                <input
+                                    type="range"
+                                    min={sliderConfig.min}
+                                    max={sliderConfig.max}
+                                    step={sliderConfig.step}
+                                    value={sliderValue}
+                                    onChange={(e) => setSliderValue(Number(e.target.value))}
+                                    disabled={!isMyPrompt}
+                                    className="w-full h-2 rounded-full appearance-none cursor-pointer bg-slate-700
+                                        [&::-webkit-slider-thumb]:appearance-none
+                                        [&::-webkit-slider-thumb]:w-5
+                                        [&::-webkit-slider-thumb]:h-5
+                                        [&::-webkit-slider-thumb]:rounded-full
+                                        [&::-webkit-slider-thumb]:bg-amber-400
+                                        [&::-webkit-slider-thumb]:border-2
+                                        [&::-webkit-slider-thumb]:border-amber-600
+                                        [&::-webkit-slider-thumb]:cursor-pointer
+                                        [&::-moz-range-thumb]:w-5
+                                        [&::-moz-range-thumb]:h-5
+                                        [&::-moz-range-thumb]:rounded-full
+                                        [&::-moz-range-thumb]:bg-amber-400
+                                        [&::-moz-range-thumb]:border-2
+                                        [&::-moz-range-thumb]:border-amber-600
+                                        disabled:opacity-50 disabled:cursor-not-allowed"
+                                    aria-label="slider-choice"
+                                />
+                                <div className="flex justify-between mt-1 text-xs text-slate-500">
+                                    <span>{sliderConfig.min}</span>
+                                    <span>{sliderConfig.max}</span>
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-slate-300 text-center">{valueLabel}</p>
+
+                            {isMyPrompt && sliderConfirmOption && (
+                                <div className="flex items-center justify-center gap-3">
+                                    <GameButton
+                                        variant="primary"
+                                        size="md"
+                                        disabled={isSubmitLocked}
+                                        onClick={() => lockedDispatch(INTERACTION_COMMANDS.RESPOND, {
+                                            optionId: sliderConfirmOption.id,
+                                            mergedValue: { value: sliderValue, amount: sliderValue },
+                                        })}
+                                    >
+                                        {confirmLabel}
+                                    </GameButton>
+                                    {sliderSkipOption && (
+                                        <GameButton
+                                            variant="secondary"
+                                            size="md"
+                                            disabled={isSubmitLocked}
+                                            onClick={() => lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionId: sliderSkipOption.id })}
+                                            className="opacity-80 hover:opacity-100"
+                                        >
+                                            {skipLabel}
+                                        </GameButton>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                </motion.div>
+            </AnimatePresence>
+        );
+    }
+
     const handleSelect = (optionId: string) => {
-        if (!isMyPrompt) return;
+        if (!isMyPrompt || isSubmitLocked) return;
+        // 锁定当前交互，防止重复提交
+        if (prompt) setSubmittingInteractionId(prompt.id);
         dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
     };
 
     const handleToggle = (optionId: string, disabled?: boolean) => {
-        if (!isMyPrompt || disabled) return;
+        if (!isMyPrompt || disabled || isSubmitLocked) return;
         setSelectedIds(prev => {
             if (prev.includes(optionId)) return prev.filter(id => id !== optionId);
             if (maxSelections !== undefined && prev.length >= maxSelections) return prev;
@@ -453,9 +668,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 variant="primary"
                                                 size="sm"
                                                 onClick={() => {
-                                                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: selectedIds });
+                                                    lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: selectedIds });
                                                 }}
-                                                disabled={!canSubmitMulti}
+                                                disabled={!canSubmitMulti || isSubmitLocked}
                                             >
                                                 {t('ui.confirm', { defaultValue: '确认' })}
                                                 {selectedIds.length > 0 && ` (${selectedIds.length})`}
@@ -472,7 +687,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     onClick={() => {
                                         if (isMulti) {
                                             // 多选模式下跳过直接提交，不走 toggle 流程
-                                            dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: [skipOption.id] });
+                                            lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: [skipOption.id] });
                                         } else {
                                             handleAction(skipOption.id, skipOption.disabled);
                                         }
@@ -586,9 +801,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 variant="primary"
                                 size="sm"
                                 onClick={() => {
-                                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: selectedIds });
+                                    lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: selectedIds });
                                 }}
-                                disabled={!canSubmitMulti}
+                                disabled={!canSubmitMulti || isSubmitLocked}
                             >
                                 {t('ui.confirm', { defaultValue: '确认' })}
                                 {selectedIds.length > 0 && ` (${selectedIds.length})`}

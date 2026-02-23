@@ -84,6 +84,7 @@ export type TriggerTiming =
     | 'onMinionDestroyed'  // 随从被消灭时
     | 'onMinionMoved'      // 随从被移动时
     | 'onMinionAffected'   // 随从被对手效果影响时（聚合时机：消灭/移动/力量修改/附着/控制权变更）
+    | 'onMinionDiscardedFromBase' // 基地结算时随从被弃置（非消灭）
     | 'onTurnEnd'          // 回合结束时
     | 'onTurnStart'        // 回合开始时
     | 'beforeScoring'      // 基地计分前
@@ -108,8 +109,12 @@ export interface TriggerContext {
     triggerMinionUid?: string;
     /** 触发相关的随从 defId */
     triggerMinionDefId?: string;
+    /** 触发事件原因（用于二次分流，如拦截后恢复消灭） */
+    reason?: string;
     /** 影响类型（仅 onMinionAffected 时有值） */
     affectType?: AffectType;
+    /** 基地计分排名（仅 afterScoring 时有值） */
+    rankings?: { playerId: PlayerId; power: number; vp: number }[];
     random: RandomFn;
     now: number;
 }
@@ -530,6 +535,9 @@ export function fireTriggers(
  * 4. 随从上附着的 ongoing 行动卡（attachedActions 中的 defId）
  */
 function isSourceActive(state: SmashUpCore, sourceDefId: string): boolean {
+    if (state.pendingAfterScoringSpecials?.some(s => s.sourceDefId === sourceDefId)) {
+        return true;
+    }
     for (const base of state.bases) {
         // 检查基地本身
         if (base.defId === sourceDefId) return true;

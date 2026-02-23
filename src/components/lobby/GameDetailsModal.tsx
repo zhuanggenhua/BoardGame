@@ -806,7 +806,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     className="
                         bg-parchment-card-bg pointer-events-auto 
                         w-[90vw] md:w-full max-w-sm md:max-w-2xl
-                        h-[60vh] md:h-[27.5rem] max-h-[80vh]
+                        h-[75vh] md:h-[27.5rem] max-h-[85vh]
                         rounded-sm shadow-parchment-card-hover 
                         flex flex-col md:flex-row 
                         border border-parchment-card-border/30 relative 
@@ -820,7 +820,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-parchment-card-border/60" />
 
                     {/* 左侧面板 - 游戏信息 */}
-                    <div className="w-full md:w-2/5 bg-parchment-base-bg/50 border-b md:border-b-0 md:border-r border-parchment-card-border/30 p-3 md:p-8 flex flex-col md:items-center text-left md:text-center font-serif shrink-0 transition-all">
+                    <div className="w-full md:w-2/5 bg-parchment-base-bg/50 border-b md:border-b-0 md:border-r border-parchment-card-border/30 p-3 md:p-8 flex flex-col md:items-center text-left md:text-center font-serif shrink-0 transition-all overflow-y-auto">
                         {/* 缩略图 - 移动端隐藏，桌面端显示 */}
                         <div className="hidden md:flex w-20 h-20 bg-parchment-card-bg border border-parchment-card-border/30 rounded-[4px] shadow-sm items-center justify-center text-4xl text-parchment-base-text font-bold mb-6 overflow-hidden shrink-0">
                             {thumbnail}
@@ -835,7 +835,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         </div>
 
                         {/* 描述区域 - 可滚动 */}
-                        <div className="flex-1 overflow-y-auto scrollbar-thin pr-1 mb-3 md:mb-6">
+                        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-parchment-card-border/30 scrollbar-track-transparent pr-1 mb-3 md:mb-6 min-h-0">
                             <p className="text-[11px] md:text-sm text-parchment-light-text leading-relaxed italic">
                                 {t(descriptionKey)}
                             </p>

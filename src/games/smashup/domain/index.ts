@@ -18,6 +18,7 @@ import type {
     TurnEndedEvent,
     CardsDrawnEvent,
     BaseScoredEvent,
+    BaseClearedEvent,
     BaseReplacedEvent,
     DeckReshuffledEvent,
     MinionPlayedEvent,
@@ -31,7 +32,7 @@ import {
     VP_TO_WIN,
     getCurrentPlayerId,
 } from './types';
-import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown } from './ongoingModifiers';
+import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getOngoingCardPowerContribution } from './ongoingModifiers';
 import { fireTriggers, interceptEvent as ongoingInterceptEvent } from './ongoingEffects';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
@@ -73,7 +74,6 @@ function scoreOneBase(
     let ms = matchState;
     const base = core.bases[baseIndex];
     const baseDef = getBaseDef(base.defId)!;
-
     // 触发 ongoing beforeScoring（如 pirate_king 移动到该基地、cthulhu_chosen +2力量）
     // 先于基地能力执行，确保基地能力能看到 ongoing 效果的结果
     const beforeScoringEvents = fireTriggers(core, 'beforeScoring', {
@@ -118,13 +118,19 @@ function scoreOneBase(
         updatedCore = reduce(updatedCore, evt as SmashUpEvent);
     }
 
-    // 计算排名（使用 reduce 后的 core，包含 beforeScoring 的临时力量修正）
+    // 计算排名（使用 reduce 后的 core，包含 beforeScoring 的临时力量修正 + ongoing 卡力量贡献）
     const updatedBase = updatedCore.bases[baseIndex];
     const playerPowers = new Map<PlayerId, number>();
     for (const m of updatedBase.minions) {
         const prev = playerPowers.get(m.controller) ?? 0;
         playerPowers.set(m.controller, prev + getEffectivePower(updatedCore, m, baseIndex));
     }
+    // 加上 ongoing 卡力量贡献（如 vampire_summon_wolves 的力量指示物）
+    for (const [pid, power] of playerPowers) {
+        const bonus = getOngoingCardPowerContribution(updatedBase, pid);
+        if (bonus > 0) playerPowers.set(pid, power + bonus);
+    }
+
     const sorted = Array.from(playerPowers.entries())
         .filter(([, p]) => p > 0)
         .sort((a, b) => b[1] - a[1]);
@@ -168,6 +174,23 @@ function scoreOneBase(
     };
     events.push(scoreEvt);
 
+    // 触发 onMinionDiscardedFromBase（基地结算弃置，非消灭）
+    // 在 BASE_SCORED 后、afterScoring 前触发，此时随从仍在 core 中（reducer 尚未执行）
+    for (const m of base.minions) {
+        const discardResult = fireTriggers(core, 'onMinionDiscardedFromBase', {
+            state: core,
+            matchState: ms,
+            playerId: m.controller,
+            baseIndex,
+            triggerMinionUid: m.uid,
+            triggerMinionDefId: m.defId,
+            random: rng,
+            now,
+        });
+        events.push(...discardResult.events);
+        if (discardResult.matchState) ms = discardResult.matchState;
+    }
+
     // 触发 afterScoring 基地能力
     const afterCtx = {
         state: core,
@@ -183,16 +206,26 @@ function scoreOneBase(
     if (afterResult.matchState) ms = afterResult.matchState;
 
     // 触发 ongoing afterScoring（如 pirate_first_mate 移动到其他基地）
-    const afterScoringEvents = fireTriggers(core, 'afterScoring', {
-        state: core,
+    const afterScoringEvents = fireTriggers(updatedCore, 'afterScoring', {
+        state: updatedCore,
         playerId: pid,
         baseIndex,
+        rankings,
         matchState: ms,
         random: rng,
         now,
     });
     events.push(...afterScoringEvents.events);
     if (afterScoringEvents.matchState) ms = afterScoringEvents.matchState;
+
+    // 清除基地：afterScoring 全部完成后，将随从和 ongoing 弃到各自所有者弃牌堆并移除基地
+    // 规则顺序：VP 发放 → afterScoring 效果（随从仍在）→ 清除基地 → 替换基地
+    const clearEvt: BaseClearedEvent = {
+        type: SU_EVENTS.BASE_CLEARED,
+        payload: { baseIndex, baseDefId: base.defId },
+        timestamp: now,
+    };
+    events.push(clearEvt);
 
     // 替换基地
     let newBaseDeck = baseDeck;
@@ -356,7 +389,8 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 const baseDef = getBaseDef(base.defId);
                 if (!baseDef) continue;
                 const totalPower = getTotalEffectivePowerOnBase(core, base, i);
-                if (totalPower >= getEffectiveBreakpoint(core, i)) {
+                const bp = getEffectiveBreakpoint(core, i);
+                if (totalPower >= bp) {
                     eligibleBases.push({ baseIndex: i, defId: base.defId, totalPower });
                 }
             }
@@ -698,14 +732,16 @@ function postProcessSystemEvents(
     const now = events.length > 0 && typeof events[0].timestamp === 'number' ? events[0].timestamp : 0;
     // 当前玩家作为 trigger 的 sourcePlayerId
     const pid = getCurrentPlayerId(state);
-
     // 使用 pipeline 传入的 matchState（包含真实 sys），或构造最小包装
     let ms = matchState ?? { core: state, sys: { interaction: { current: undefined, queue: [] } } } as unknown as MatchState<SmashUpCore>;
 
-    // 依次执行保护过滤 + trigger 后处理
+    // 依次执行保护过滤 + trigger 后处理（链式传递 matchState）
     const afterDestroy = processDestroyTriggers(events, ms, pid, random, now);
+    if (afterDestroy.matchState) ms = afterDestroy.matchState;
     const afterMove = processMoveTriggers(afterDestroy.events, ms, pid, random, now);
+    if (afterMove.matchState) ms = afterMove.matchState;
     const afterAffect = processAffectTriggers(afterMove.events, ms, pid, random, now);
+    if (afterAffect.matchState) ms = afterAffect.matchState;
 
     // 检测 MINION_PLAYED 事件，自动追加触发链（onPlay + 基地能力 + ongoing）
     const derivedEvents: SmashUpEvent[] = [];
@@ -733,8 +769,11 @@ function postProcessSystemEvents(
     let finalDerived = derivedEvents;
     if (derivedEvents.length > 0) {
         const afterDerivedDestroy = processDestroyTriggers(derivedEvents, ms, pid, random, now);
+        if (afterDerivedDestroy.matchState) ms = afterDerivedDestroy.matchState;
         const afterDerivedMove = processMoveTriggers(afterDerivedDestroy.events, ms, pid, random, now);
+        if (afterDerivedMove.matchState) ms = afterDerivedMove.matchState;
         const afterDerivedAffect = processAffectTriggers(afterDerivedMove.events, ms, pid, random, now);
+        if (afterDerivedAffect.matchState) ms = afterDerivedAffect.matchState;
         finalDerived = afterDerivedAffect.events;
     }
 

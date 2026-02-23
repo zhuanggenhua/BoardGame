@@ -89,7 +89,7 @@ export const WIZARD_ACTIONS: ActionCardDef[] = [
         nameEn: 'Time Loop',
         faction: 'wizards',
         abilityTags: ['extra'],
-        count: 2,  // Wiki 写的是 1，但实体卡牌确认是 2 张
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 19 },
     },
     {

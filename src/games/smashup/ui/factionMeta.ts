@@ -5,10 +5,13 @@ import {
     Bot,
     Cog,
     Crosshair,
+    Droplet,
     Eye,
     Fish,
+    FlaskConical,
     Ghost,
     GraduationCap,
+    Moon,
     Orbit,
     PawPrint,
     Skull,
@@ -19,7 +22,7 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { ShurikenIcon, OctopusHeadIcon } from './icons/CustomIcons';
+import { ShurikenIcon, OctopusHeadIcon, AntIcon } from './icons/CustomIcons';
 
 export interface FactionMeta {
     id: string;
@@ -46,6 +49,10 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.ELDER_THINGS, nameKey: 'factions.elder_things.name', icon: OctopusHeadIcon, color: '#0e7490', descriptionKey: 'factions.elder_things.description' },
     { id: SMASHUP_FACTION_IDS.INNSMOUTH, nameKey: 'factions.innsmouth.name', icon: Fish, color: '#06b6d4', descriptionKey: 'factions.innsmouth.description' },
     { id: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY, nameKey: 'factions.miskatonic_university.name', icon: GraduationCap, color: '#fcd34d', descriptionKey: 'factions.miskatonic_university.description' },
+    { id: SMASHUP_FACTION_IDS.FRANKENSTEIN, nameKey: 'factions.frankenstein.name', icon: FlaskConical, color: '#65a30d', descriptionKey: 'factions.frankenstein.description' },
+    { id: SMASHUP_FACTION_IDS.WEREWOLVES, nameKey: 'factions.werewolves.name', icon: Moon, color: '#78716c', descriptionKey: 'factions.werewolves.description' },
+    { id: SMASHUP_FACTION_IDS.VAMPIRES, nameKey: 'factions.vampires.name', icon: Droplet, color: '#991b1b', descriptionKey: 'factions.vampires.description' },
+    { id: SMASHUP_FACTION_IDS.GIANT_ANTS, nameKey: 'factions.giant_ants.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants.description' },
 ];
 
 export function getFactionMeta(id: string): FactionMeta | undefined {

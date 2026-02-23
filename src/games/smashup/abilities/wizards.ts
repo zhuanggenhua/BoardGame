@@ -685,7 +685,7 @@ export function registerWizardInteractionHandlers(): void {
         }
         
         // 2. 再消灭随从（即使随从有"无法被消灭"效果，抽牌已经完成）
-        events.push(destroyMinion(minion.uid, minion.defId, baseIndex, minion.owner, 'wizard_sacrifice', timestamp));
+        events.push(destroyMinion(minion.uid, minion.defId, baseIndex, minion.owner, playerId, 'wizard_sacrifice', timestamp));
         
         return { state, events };
     });

@@ -18,6 +18,10 @@ import { ZOMBIE_CARDS } from './factions/zombies';
 import { WIZARD_CARDS } from './factions/wizards';
 import { TRICKSTER_CARDS } from './factions/tricksters';
 import { ROBOT_CARDS } from './factions/robots';
+import { FRANKENSTEIN_CARDS } from './factions/frankenstein';
+import { WEREWOLF_CARDS } from './factions/werewolves';
+import { VAMPIRE_CARDS } from './factions/vampires';
+import { GIANT_ANT_CARDS } from './factions/giant-ants';
 
 // ============================================================================
 // 注册表
@@ -65,6 +69,10 @@ registerCards(ZOMBIE_CARDS);
 registerCards(WIZARD_CARDS);
 registerCards(TRICKSTER_CARDS);
 registerCards(ROBOT_CARDS);
+registerCards(FRANKENSTEIN_CARDS);
+registerCards(WEREWOLF_CARDS);
+registerCards(VAMPIRE_CARDS);
+registerCards(GIANT_ANT_CARDS);
 
 // ============================================================================
 // 基础基地卡（基础版）
@@ -486,25 +494,81 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         replaceOnSetup: true,
     },
     {
-        id: 'base_locker_room',
-        name: '更衣室',
-        nameEn: 'Locker Room',
-        breakpoint: 23,
-        vpAwards: [3, 2, 2],
+        id: 'base_castle_blood',
+        name: '血堡',
+        nameEn: 'Castle Blood',
+        breakpoint: 18,
+        vpAwards: [3, 1, 1],
         faction: 'vampires',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 10 },
     },
     {
-        id: 'base_stadium',
-        name: '体育场',
-        nameEn: 'The Stadium',
-        breakpoint: 17,
-        vpAwards: [3, 2, 1],
+        id: 'base_crypt',
+        name: '地窖',
+        nameEn: 'Crypt',
+        breakpoint: 20,
+        vpAwards: [4, 2, 2],
         faction: 'vampires',
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 11 },
     },
 ];
 registerBases(BASE_CARDS_SET4);
+
+// ============================================================================
+// 扩展基地 (Monster Smash - cards5)
+// ============================================================================
+export const BASE_CARDS_MONSTER_SMASH: BaseCardDef[] = [
+    // Mad Scientists (Frankenstein)
+    {
+        id: 'base_laboratorium',
+        name: '实验工坊',
+        nameEn: 'Laboratorium',
+        breakpoint: 25,
+        vpAwards: [5, 3, 3],
+        faction: SMASHUP_FACTION_IDS.FRANKENSTEIN,
+    },
+    {
+        id: 'base_golem_schloss',
+        name: '魔像城堡',
+        nameEn: 'Golem Schloß',
+        breakpoint: 22,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.FRANKENSTEIN,
+    },
+    // Werewolves
+    {
+        id: 'base_moot_site',
+        name: '集会场',
+        nameEn: 'Moot Site',
+        breakpoint: 15,
+        vpAwards: [2, 1, 0],
+        faction: SMASHUP_FACTION_IDS.WEREWOLVES,
+    },
+    {
+        id: 'base_standing_stones',
+        name: '巨石阵',
+        nameEn: 'Standing Stones',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.WEREWOLVES,
+    },
+    // Giant Ants
+    {
+        id: 'base_egg_chamber',
+        name: '卵室',
+        nameEn: 'Egg Chamber',
+        breakpoint: 17,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.GIANT_ANTS,
+    },
+    {
+        id: 'base_the_hill',
+        name: '蚁丘',
+        nameEn: 'The Hill',
+        breakpoint: 23,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.GIANT_ANTS,
+    },
+];
+registerBases(BASE_CARDS_MONSTER_SMASH);
 
 // ============================================================================
 // 基地选择：按所选派系过滤

@@ -177,8 +177,8 @@ export function SmashUpEndgameContent({ core, myPlayerId, result }: SmashUpEndga
                                             if (!meta) return null;
                                             const Icon = meta.icon;
                                             return (
-                                                <span key={meta.id} title={t(meta.nameKey)} className="text-slate-500">
-                                                    <Icon className="w-3.5 h-3.5" />
+                                                <span key={meta.id} title={t(meta.nameKey)}>
+                                                    <Icon className="w-3.5 h-3.5" style={{ color: meta.color }} />
                                                 </span>
                                             );
                                         })}

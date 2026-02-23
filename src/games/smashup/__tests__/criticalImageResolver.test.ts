@@ -1,19 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { smashUpCriticalImageResolver } from '../criticalImageResolver';
+import { getSmashUpAtlasImagesByKind } from '../domain/atlasCatalog';
 
-const ALL_BASE_ATLAS = [
-    'smashup/base/base1',
-    'smashup/base/base2',
-    'smashup/base/base3',
-    'smashup/base/base4',
-];
-
-const ALL_CARD_ATLAS = [
-    'smashup/cards/cards1',
-    'smashup/cards/cards2',
-    'smashup/cards/cards3',
-    'smashup/cards/cards4',
-];
+const ALL_BASE_ATLAS = getSmashUpAtlasImagesByKind('base');
+const ALL_CARD_ATLAS = getSmashUpAtlasImagesByKind('card');
 
 /** 构造最小 MatchState 结构 */
 function makeState(phase: string, extra?: Record<string, unknown>) {
@@ -70,17 +60,17 @@ describe('smashUpCriticalImageResolver', () => {
         }
     });
 
-    it('派系选择阶段关键列表包含全部 4 个卡牌图集', () => {
+    it('派系选择阶段关键列表包含全部卡牌图集', () => {
         const result = smashUpCriticalImageResolver(makeState('factionSelect'));
         for (const atlas of ALL_CARD_ATLAS) {
             expect(result.critical).toContain(atlas);
         }
-        expect(result.critical).toHaveLength(4);
+        expect(result.critical).toHaveLength(ALL_CARD_ATLAS.length);
     });
 
-    it('playing 阶段（非教程）关键列表包含全部 8 个图集', () => {
+    it('playing 阶段（非教程）关键列表包含全部卡牌+基地图集', () => {
         const result = smashUpCriticalImageResolver(makeState('playCards'));
-        expect(result.critical).toHaveLength(8);
+        expect(result.critical).toHaveLength(ALL_CARD_ATLAS.length + ALL_BASE_ATLAS.length);
         for (const atlas of [...ALL_CARD_ATLAS, ...ALL_BASE_ATLAS]) {
             expect(result.critical).toContain(atlas);
         }
@@ -153,6 +143,23 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical).toContain('smashup/base/base2');
         expect(result.critical).not.toContain('smashup/base/base3');
         expect(result.critical).not.toContain('smashup/base/base4');
+    });
+
+    it('教程模式 playing 阶段：Monster Smash 派系会加载 cards5', () => {
+        const state = makePlayingState(
+            {
+                '0': ['frankenstein', 'werewolves'],
+                '1': ['vampires', 'giant_ants'],
+            },
+            { tutorial: true },
+        );
+        const result = smashUpCriticalImageResolver(state);
+
+        expect(result.critical).toContain('smashup/cards/cards5');
+        expect(result.critical).not.toContain('smashup/cards/cards1');
+        expect(result.critical).not.toContain('smashup/cards/cards2');
+        expect(result.critical).not.toContain('smashup/cards/cards3');
+        expect(result.critical).not.toContain('smashup/cards/cards4');
     });
 
     it('非教程 playing 阶段（有派系数据）：仍然全量加载', () => {

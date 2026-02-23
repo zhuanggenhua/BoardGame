@@ -856,8 +856,8 @@ describe('cthulhu_complete_the_ritual onTurnStart', () => {
         const toDeckBottom = events.filter(e => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM) as CardToDeckBottomEvent[];
         // 2 个随从 + 2 个 ongoing 行动卡 = 4 个 CARD_TO_DECK_BOTTOM 事件
         expect(toDeckBottom.length).toBe(4);
-        // 基地记分（空排名，用于删除基地）
-        expect(events.some(e => e.type === SU_EVENTS.BASE_SCORED)).toBe(true);
+        // 基地清除（BASE_CLEARED 用于删除基地）
+        expect(events.some(e => e.type === SU_EVENTS.BASE_CLEARED)).toBe(true);
         // 新基地插入
         const replaced = events.filter(e => e.type === SU_EVENTS.BASE_REPLACED) as BaseReplacedEvent[];
         expect(replaced.length).toBe(1);
@@ -872,7 +872,7 @@ describe('cthulhu_complete_the_ritual onTurnStart', () => {
         const { events } = fireTriggers(state, 'onTurnStart', {
             state, playerId: '1', random: dummyRandom, now: 0,
         });
-        expect(events.filter(e => e.type === SU_EVENTS.BASE_SCORED).length).toBe(0);
+        expect(events.filter(e => e.type === SU_EVENTS.BASE_CLEARED).length).toBe(0);
     });
 });
 
@@ -1784,5 +1784,193 @@ describe('base_ninja_dojo 忍者道场 afterScoring', () => {
         expect(result.events.length).toBe(1);
         expect(result.events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
         expect((result.events[0] as MinionDestroyedEvent).payload.minionUid).toBe('m1');
+    });
+});
+
+// ============================================================================
+// 科学小怪蛋 (Igor) - onMinionDiscardedFromBase 弃置触发
+// ============================================================================
+
+describe('frankenstein_igor: 基地结算弃置触发', () => {
+    it('非 Igor 随从被弃时不触发（仅本随从被弃才触发）', () => {
+        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2);
+        const target = makeMinion('t1', 'test_minion', '0', 3);
+        const scoredBase = makeBase({ defId: 'base_a', minions: [igor, makeMinion('enemy1', 'enemy', '1', 5)] });
+        const otherBase = makeBase({ defId: 'base_b', minions: [target] });
+        const state = makeState({ bases: [scoredBase, otherBase] });
+
+        const result = fireTriggers(state, 'onMinionDiscardedFromBase', {
+            state,
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'enemy1',
+            triggerMinionDefId: 'enemy',
+            random: dummyRandom,
+            now: 100,
+        });
+        expect(result.events.length).toBe(0);
+    });
+
+    it('Igor 自身被弃时触发，自动在其他基地己方唯一随从上放指示物', () => {
+        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2);
+        const ally = makeMinion('ally1', 'test_minion', '0', 3);
+        const target = makeMinion('t1', 'test_minion', '0', 4);
+        const scoredBase = makeBase({ defId: 'base_a', minions: [igor, ally] });
+        const otherBase = makeBase({ defId: 'base_b', minions: [target] });
+        const state = makeState({ bases: [scoredBase, otherBase] });
+
+        // 被弃的随从是 igor1 自身 → 触发
+        const result = fireTriggers(state, 'onMinionDiscardedFromBase', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'igor1',
+            triggerMinionDefId: 'frankenstein_igor',
+            random: dummyRandom,
+            now: 100,
+        });
+        expect(result.events.length).toBe(1);
+        expect(result.events[0].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
+        expect((result.events[0] as any).payload.minionUid).toBe('t1');
+        expect((result.events[0] as any).payload.baseIndex).toBe(1);
+    });
+
+    it('其他基地有多个己方随从时创建交互', () => {
+        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2);
+        const t1 = makeMinion('t1', 'test_a', '0', 3);
+        const t2 = makeMinion('t2', 'test_b', '0', 4);
+        const scoredBase = makeBase({ defId: 'base_a', minions: [igor] });
+        const otherBase = makeBase({ defId: 'base_b', minions: [t1, t2] });
+        const state = makeState({ bases: [scoredBase, otherBase] });
+        const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+
+        const result = fireTriggers(state, 'onMinionDiscardedFromBase', {
+            state,
+            matchState: ms,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'igor1',
+            triggerMinionDefId: 'frankenstein_igor',
+            random: dummyRandom,
+            now: 100,
+        });
+        expect(result.events.length).toBe(0);
+        expect(result.matchState).toBeDefined();
+        const current = (result.matchState?.sys as any)?.interaction?.current;
+        expect(current).toBeDefined();
+        expect(current?.data?.sourceId).toBe('frankenstein_igor');
+        expect(current?.data?.options.length).toBe(2);
+    });
+
+    it('被弃基地上的己方随从不作为候选目标', () => {
+        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2);
+        const allyOnSameBase = makeMinion('ally1', 'test_minion', '0', 3);
+        const scoredBase = makeBase({ defId: 'base_a', minions: [igor, allyOnSameBase] });
+        const state = makeState({ bases: [scoredBase] });
+
+        // 只有被弃基地上有己方随从，其他基地无候选 → 不触发
+        const result = fireTriggers(state, 'onMinionDiscardedFromBase', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'ally1',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 100,
+        });
+        expect(result.events.length).toBe(0);
+    });
+
+    it('雄蜂 giant_ant_drone 不会被 onMinionDiscardedFromBase 触发', () => {
+        const drone = makeMinion('drone1', 'giant_ant_drone', '0', 1);
+        const ally = makeMinion('ally1', 'test_minion', '0', 3);
+        const scoredBase = makeBase({ defId: 'base_a', minions: [drone, ally] });
+        const otherBase = makeBase({ defId: 'base_b', minions: [makeMinion('t1', 'test_b', '0', 4)] });
+        const state = makeState({ bases: [scoredBase, otherBase] });
+        const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+
+        const result = fireTriggers(state, 'onMinionDiscardedFromBase', {
+            state,
+            matchState: ms,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'ally1',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 100,
+        });
+        // 雄蜂仅注册 onMinionDestroyed，不应在弃置时触发防消灭交互
+        const current = (result.matchState?.sys as any)?.interaction?.current;
+        const hasDroneInteraction = current?.data?.sourceId === 'giant_ant_drone_prevent_destroy';
+        expect(hasDroneInteraction).toBeFalsy();
+    });
+});
+
+// ============================================================================
+// 吸血鬼 - 自助餐 afterScoring
+// ============================================================================
+
+describe('vampire_buffet afterScoring', () => {
+    it('赢家拥有 buffet 时，所有己方随从获得+1指示物', () => {
+        const m1 = makeMinion('m1', 'test_minion', '0', 3);
+        const m2 = makeMinion('m2', 'test_minion', '0', 2);
+        const m3 = makeMinion('m3', 'test_minion', '1', 1);
+        const scoringBase = makeBase({
+            defId: 'test_base',
+            minions: [m1, m3],
+        });
+        const otherBase = makeBase({
+            defId: 'test_base2',
+            minions: [m2],
+        });
+        const state = makeState({
+            bases: [scoringBase, otherBase],
+            pendingAfterScoringSpecials: [
+                { sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0 },
+            ],
+        });
+
+        const rankings = [
+            { playerId: '0', power: 3, vp: 4 },
+            { playerId: '1', power: 1, vp: 2 },
+        ];
+
+        const { events } = fireTriggers(state, 'afterScoring', {
+            state, playerId: '0', baseIndex: 0, rankings, random: dummyRandom, now: 100,
+        });
+
+        const pcEvents = events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
+        // 应该给 m1 和 m2 各+1（m1 在计分基地，m2 在其他基地）
+        expect(pcEvents.length).toBe(2);
+        const uids = pcEvents.map(e => (e as any).payload.minionUid);
+        expect(uids).toContain('m1');
+        expect(uids).toContain('m2');
+    });
+
+    it('非赢家拥有 buffet 时不触发效果（仅 CONSUMED）', () => {
+        const m1 = makeMinion('m1', 'test_minion', '0', 1);
+        const m2 = makeMinion('m2', 'test_minion', '1', 5);
+        const scoringBase = makeBase({
+            defId: 'test_base',
+            minions: [m1, m2],
+        });
+        const state = makeState({
+            bases: [scoringBase],
+            pendingAfterScoringSpecials: [
+                { sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0 },
+            ],
+        });
+
+        const rankings = [
+            { playerId: '1', power: 5, vp: 4 },
+            { playerId: '0', power: 1, vp: 2 },
+        ];
+
+        const { events } = fireTriggers(state, 'afterScoring', {
+            state, playerId: '0', baseIndex: 0, rankings, random: dummyRandom, now: 100,
+        });
+
+        const pcEvents = events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
+        expect(pcEvents.length).toBe(0);
     });
 });

@@ -6,7 +6,7 @@
  */
 
 import type { ResourceDefinition } from '../../domain/resourceSystem';
-import { INITIAL_HEALTH, INITIAL_CP, CP_MAX } from '../../domain/types';
+import { INITIAL_HEALTH, MAX_HEALTH, INITIAL_CP, CP_MAX } from '../../domain/types';
 import { RESOURCE_IDS } from '../../domain/resources';
 
 // 重新导出以保持向后兼容
@@ -34,7 +34,7 @@ export const hpDefinition: ResourceDefinition = {
     icon: '❤️',
     color: '#ef4444',
     min: 0,
-    max: INITIAL_HEALTH,
+    max: MAX_HEALTH,
     initialValue: INITIAL_HEALTH,
 };
 

@@ -533,7 +533,7 @@ export function registerPirateInteractionHandlers(): void {
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'pirate_saucy_wench', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'pirate_saucy_wench', timestamp)] };
     });
 
     // 侧翼开炮：选择基地+对手后执行
@@ -544,7 +544,7 @@ export function registerPirateInteractionHandlers(): void {
         const events: SmashUpEvent[] = [];
         for (const m of base.minions) {
             if (m.controller === opponentId && getMinionPower(state.core, m, baseIndex) <= 2) {
-                events.push(destroyMinion(m.uid, m.defId, baseIndex, m.owner, 'pirate_broadside', timestamp));
+                events.push(destroyMinion(m.uid, m.defId, baseIndex, m.owner, playerId, 'pirate_broadside', timestamp));
             }
         }
         return { state, events };
@@ -559,7 +559,7 @@ export function registerPirateInteractionHandlers(): void {
         if (!target) return undefined;
         
         // 消灭第一个随从
-        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'pirate_cannon', timestamp)];
+        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'pirate_cannon', timestamp)];
         
         // 收集剩余的力量≤2的随从（排除刚消灭的）
         const remaining: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
@@ -594,7 +594,7 @@ export function registerPirateInteractionHandlers(): void {
     });
 
     // 加农炮第二步：消灭第二个随从（支持跳过）
-    registerInteractionHandler('pirate_cannon_choose_second', (state, _playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('pirate_cannon_choose_second', (state, playerId, value, _iData, _random, timestamp) => {
         const selected = value as { skip?: boolean; minionUid?: string; baseIndex?: number };
         if (selected.skip) return { state, events: [] };
         const { minionUid, baseIndex } = selected;
@@ -603,7 +603,7 @@ export function registerPirateInteractionHandlers(): void {
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'pirate_cannon', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'pirate_cannon', timestamp)] };
     });
 
     // 上海：选择随从后，链式选择目标基地
@@ -825,11 +825,11 @@ export function registerPirateInteractionHandlers(): void {
         if (!minion) return undefined;
         const power = getMinionPower(state.core, minion, baseIndex);
         const events: SmashUpEvent[] = [];
-        events.push(destroyMinion(minion.uid, minion.defId, baseIndex, minion.owner, 'pirate_powderkeg', timestamp));
+        events.push(destroyMinion(minion.uid, minion.defId, baseIndex, minion.owner, playerId, 'pirate_powderkeg', timestamp));
         for (const m of base.minions) {
             if (m.uid === minionUid) continue;
             if (getMinionPower(state.core, m, baseIndex) <= power) {
-                events.push(destroyMinion(m.uid, m.defId, baseIndex, m.owner, 'pirate_powderkeg', timestamp));
+                events.push(destroyMinion(m.uid, m.defId, baseIndex, m.owner, playerId, 'pirate_powderkeg', timestamp));
             }
         }
         return { state, events };

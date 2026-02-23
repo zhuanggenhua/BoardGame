@@ -492,7 +492,7 @@ export function registerNinjaInteractionHandlers(): void {
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'ninja_master', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ninja_master', timestamp)] };
     });
 
     // 猛虎刺客：选择目标后消灭（可跳过）
@@ -503,7 +503,7 @@ export function registerNinjaInteractionHandlers(): void {
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'ninja_tiger_assassin', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ninja_tiger_assassin', timestamp)] };
     });
 
     // 手里剑：选择目标后消灭
@@ -513,7 +513,7 @@ export function registerNinjaInteractionHandlers(): void {
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'ninja_seeing_stars', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ninja_seeing_stars', timestamp)] };
     });
 
     // 欺骗之道：选择随从后，链式选择目标基地

@@ -437,7 +437,7 @@ describe('集成: base_wizard_academy 巫师学院 (afterScoring)', () => {
     it('基地达标且基地牌库有牌 → Interaction 冠军排列基地牌库', () => {
         // 巫师学院 breakpoint=20
         const core = makeScoringCore('base_wizard_academy', 20, {
-            baseDeck: ['base_central_brain', 'base_locker_room', 'base_tar_pits'],
+            baseDeck: ['base_central_brain', 'base_castle_blood', 'base_tar_pits'],
         });
         const ms = makeScoreBasesMS(core);
         callOnPhaseExitScoreBases(ms);

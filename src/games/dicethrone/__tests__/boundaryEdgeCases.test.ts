@@ -50,15 +50,15 @@ describe('HP 边界', () => {
         const damaged = reduce(core, ev('DAMAGE_DEALT', { targetId: '0', actualDamage: 5 }));
         expect(damaged.players['0'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 5);
 
-        // 治疗 100 点（远超上限）
+        // 治疗 100 点（远超上限 60）
         const healed = reduce(damaged, ev('HEAL_APPLIED', { targetId: '0', amount: 100 }));
-        expect(healed.players['0'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH);
+        expect(healed.players['0'].resources[RESOURCE_IDS.HP]).toBe(60); // 钳制到上限 60
     });
 
     it('满血时治疗不超过上限', () => {
         const core = getInitCore();
         const healed = reduce(core, ev('HEAL_APPLIED', { targetId: '0', amount: 10 }));
-        expect(healed.players['0'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH);
+        expect(healed.players['0'].resources[RESOURCE_IDS.HP]).toBe(60); // 50 + 10 = 60（上限）
     });
 
     it('伤害超过当前 HP 时钳制到 0', () => {

@@ -279,11 +279,11 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
                     : processResult.events as unknown as GameEvent[];
                 const newMatchState = !Array.isArray(processResult) ? processResult.matchState : undefined;
 
-                if (processed.length > domainEvents.length) {
-                    const extraEvents = processed.slice(domainEvents.length);
-                    roundEvents.push(...extraEvents);
-                    systemEventsToReduce.push(...extraEvents);
-                }
+                // PPSE 可能过滤事件（如压制 MINION_DESTROYED）并追加派生事件（如 trigger 产生的 POWER_COUNTER_ADDED）
+                // 必须用 PPSE 返回的完整事件列表替换 roundEvents 中的领域事件
+                const sysOnlyEvents = roundEvents.filter((e) => e.type.startsWith('SYS_'));
+                roundEvents.length = 0;
+                roundEvents.push(...sysOnlyEvents, ...processed);
                 if (newMatchState) {
                     currentState = { ...currentState, sys: newMatchState.sys };
                     ctx.state = currentState;
@@ -305,6 +305,10 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
             } else {
                 ctx.events = [];
             }
+        } else {
+            // 本轮无事件需要 reduce（如 PPSE 压制了所有领域事件），
+            // 必须清空 ctx.events 防止下一轮系统重复处理上一轮的事件
+            ctx.events = [];
         }
 
         if (!hasNewEvents) break;
@@ -592,6 +596,7 @@ export function executePipeline<
         domain, systems, ctx, allEvents, systemEventsToReduce, random: effectiveRandom,
         maxRounds: MAX_AFTER_EVENTS_ROUNDS,
     });
+
 
     // 6. 检测游戏结束
     currentState = applyGameoverCheck(currentState);

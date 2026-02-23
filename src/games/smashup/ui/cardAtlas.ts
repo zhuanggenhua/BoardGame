@@ -5,7 +5,7 @@ import {
     computeSpriteStyle,
     generateUniformAtlasConfig as engineGenerateUniform,
 } from '../../../engine/primitives/spriteAtlas';
-import { SMASHUP_ATLAS_IDS } from '../domain/ids';
+import { SMASHUP_ATLAS_DEFINITIONS } from '../domain/atlasCatalog';
 
 // 向后兼容类型别名
 export type CardAtlasConfig = SpriteAtlasConfig;
@@ -83,33 +83,12 @@ import { registerLazyCardAtlasSource } from '../../../components/common/media/ca
  * CriticalImageGate 保证图片在 Board 渲染前已预加载到缓存中。
  */
 export function initSmashUpAtlases() {
-    // --- 卡牌图集（6列8行 / 7列8行） ---
-    registerLazyCardAtlasSource(SMASHUP_ATLAS_IDS.CARDS1, {
-        image: 'smashup/cards/cards1', grid: { rows: 6, cols: 8 },
-    });
-    registerLazyCardAtlasSource(SMASHUP_ATLAS_IDS.CARDS2, {
-        image: 'smashup/cards/cards2', grid: { rows: 7, cols: 8 },
-    });
-    registerLazyCardAtlasSource(SMASHUP_ATLAS_IDS.CARDS3, {
-        image: 'smashup/cards/cards3', grid: { rows: 6, cols: 8 },
-    });
-    registerLazyCardAtlasSource(SMASHUP_ATLAS_IDS.CARDS4, {
-        image: 'smashup/cards/cards4', grid: { rows: 6, cols: 8 },
-    });
-
-    // --- 基地图集（不同行列数） ---
-    registerLazyCardAtlasSource(SMASHUP_ATLAS_IDS.BASE1, {
-        image: 'smashup/base/base1', grid: { rows: 4, cols: 4 },
-    });
-    registerLazyCardAtlasSource(SMASHUP_ATLAS_IDS.BASE2, {
-        image: 'smashup/base/base2', grid: { rows: 2, cols: 4 },
-    });
-    registerLazyCardAtlasSource(SMASHUP_ATLAS_IDS.BASE3, {
-        image: 'smashup/base/base3', grid: { rows: 2, cols: 4 },
-    });
-    registerLazyCardAtlasSource(SMASHUP_ATLAS_IDS.BASE4, {
-        image: 'smashup/base/base4', grid: { rows: 3, cols: 4 },
-    });
+    for (const atlas of SMASHUP_ATLAS_DEFINITIONS) {
+        registerLazyCardAtlasSource(atlas.id, {
+            image: atlas.image,
+            grid: atlas.grid,
+        });
+    }
 }
 
 /** @deprecated 使用 initSmashUpAtlases 代替 */

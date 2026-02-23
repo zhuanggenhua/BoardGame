@@ -85,3 +85,43 @@ export const StarHeadIcon = ({ size = 24, strokeWidth = 2, ...props }: LucidePro
         <circle cx="12" cy="12" r="1.5" />
     </svg>
 );
+
+// 4. 蚂蚁图标 (Ant) - 用于巨蚁派系
+export const AntIcon = ({ size = 24, strokeWidth = 2, ...props }: LucideProps) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+    >
+        {/* 头部 */}
+        <circle cx="12" cy="6" r="2.5" />
+        
+        {/* 触角 */}
+        <path d="M10.5 4.5 L8 2" />
+        <path d="M13.5 4.5 L16 2" />
+        
+        {/* 胸部（中间节） */}
+        <ellipse cx="12" cy="11" rx="2" ry="2.5" />
+        
+        {/* 腹部（后节，较大） */}
+        <ellipse cx="12" cy="17" rx="3" ry="4" />
+        
+        {/* 6条腿（3对） */}
+        {/* 前腿 */}
+        <path d="M10.5 9.5 L7 8" />
+        <path d="M13.5 9.5 L17 8" />
+        {/* 中腿 */}
+        <path d="M10 11.5 L6 12" />
+        <path d="M14 11.5 L18 12" />
+        {/* 后腿 */}
+        <path d="M10.5 13 L7 16" />
+        <path d="M13.5 13 L17 16" />
+    </svg>
+);

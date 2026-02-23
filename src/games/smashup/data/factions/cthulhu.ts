@@ -46,7 +46,7 @@ export const CTHULHU_ACTIONS: ActionCardDef[] = [
         nameEn: 'Altar to Cthulhu',
         faction: 'minions_of_cthulhu',
         abilityTags: ['ongoing', 'extra'],
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 15 },
     },
     {
@@ -121,7 +121,7 @@ export const CTHULHU_ACTIONS: ActionCardDef[] = [
         nameEn: 'Madness Unleashed',
         faction: 'minions_of_cthulhu',
         abilityTags: ['extra'],
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 23 },
     },
     {

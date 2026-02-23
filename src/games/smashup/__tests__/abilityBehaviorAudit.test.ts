@@ -131,6 +131,21 @@ describe('SmashUp 能力行为审计', () => {
             expect(violations).toEqual([]);
         });
 
+        it('描述含"基地计分后/计分后"的卡牌必须声明 special 或注册 afterScoring 触发器', () => {
+            const entities = buildEntities();
+            const { triggerIds } = getRegisteredOngoingEffectIds();
+            const violations: string[] = [];
+            for (const e of entities) {
+                if (!/基地计分后|在这个基地计分后|在一个基地计分后|计分后/.test(e.descriptionText)) continue;
+                const hasSpecialTag = Array.isArray(e.abilityTags) && e.abilityTags.includes('special');
+                const hasAfterScoringTrigger = triggerIds.get(e.id)?.includes('afterScoring') ?? false;
+                if (!hasSpecialTag && !hasAfterScoringTrigger) {
+                    violations.push(`[${e.id}]（${e.name}）描述含"计分后"但既无 special 标签也无 afterScoring 触发器`);
+                }
+            }
+            expect(violations).toEqual([]);
+        });
+
         it('描述含"不能被消灭"的持续卡必须有 destroy 保护注册', () => {
             const entities = buildEntities();
             const { protectionIds } = getRegisteredOngoingEffectIds();
@@ -174,6 +189,14 @@ describe('SmashUp 能力行为审计', () => {
         });
 
         it('描述含力量修正的 ongoing 行动卡必须有 powerModifier 注册', () => {
+            // 以下卡通过 trigger + addPowerCounter 实现力量指示物，非静态 powerModifier
+            const counterBasedWhitelist = new Set([
+                'frankenstein_german_engineering', // onMinionPlayed 触发放指示物
+                'frankenstein_uberserum',          // onTurnStart 触发放指示物
+                'vampire_opportunist',             // onMinionDestroyed 触发放指示物
+                'vampire_summon_wolves',            // onTurnStart 触发放指示物（在卡上）
+                'giant_ant_the_show_must_go_on',    // 巨蚁：持续保护语义，非静态 powerModifier
+            ]);
             const entities = buildEntities();
             const { powerModifierIds } = getRegisteredModifierIds();
             const violations: string[] = [];
@@ -181,6 +204,7 @@ describe('SmashUp 能力行为审计', () => {
                 if (!e.descriptionText.includes('持续')) continue;
                 if (e.subtype !== 'ongoing') continue;
                 if (!/[+＋]\d+力量|力量[+＋]\d+|-\d+力量|力量-\d+/.test(e.descriptionText)) continue;
+                if (counterBasedWhitelist.has(e.id)) continue;
                 if (!powerModifierIds.has(e.id)) {
                     violations.push(`[${e.id}]（${e.name}）缺少 powerModifier 注册`);
                 }
@@ -219,6 +243,10 @@ describe('SmashUp 能力行为审计', () => {
         });
 
         it('描述含"随从被消灭后"触发效果的持续随从必须有 onDestroy 能力注册', () => {
+            // 以下随从的"随从被消灭后"指的是其他随从被消灭（通过 onMinionDestroyed trigger），而非自身 onDestroy
+            const triggerBasedWhitelist = new Set([
+                'vampire_the_count', // onMinionDestroyed 触发放指示物（对手随从被消灭）
+            ]);
             const entities = buildEntities();
             const abilityKeys = getRegisteredAbilityKeys();
             const violations: string[] = [];
@@ -226,10 +254,25 @@ describe('SmashUp 能力行为审计', () => {
                 if (!e.descriptionText.includes('持续')) continue;
                 if (e.entityType !== 'minion') continue;
                 if (!/随从被消灭后|在.*随从被消灭后|在本随从被消灭后/.test(e.descriptionText)) continue;
+                if (triggerBasedWhitelist.has(e.id)) continue;
                 // onDestroy 能力注册在 abilityRegistry 中，不在 ongoingEffects 触发器中
                 const key = `${e.id}::onDestroy`;
                 if (!abilityKeys.has(key)) {
                     violations.push(`[${e.id}]（${e.name}）缺少 onDestroy 能力注册`);
+                }
+            }
+            expect(violations).toEqual([]);
+        });
+
+        it('描述含"防止...被消灭"的实体必须注册 onMinionDestroyed 触发器', () => {
+            const entities = buildEntities();
+            const { triggerIds } = getRegisteredOngoingEffectIds();
+            const violations: string[] = [];
+            for (const e of entities) {
+                if (!/防止.*被消灭/.test(e.descriptionText)) continue;
+                if (!/随从/.test(e.descriptionText)) continue;
+                if (!triggerIds.get(e.id)?.includes('onMinionDestroyed')) {
+                    violations.push(`[${e.id}]（${e.name}）描述含"防止被消灭"但缺少 onMinionDestroyed 触发器`);
                 }
             }
             expect(violations).toEqual([]);
@@ -249,6 +292,8 @@ describe('SmashUp 能力行为审计', () => {
             'ghost_make_contact',         // 交朋友：控制权转移由特殊逻辑处理
             'zombie_theyre_coming_to_get_you', // 它们为你而来：通过 DiscardPlayProvider 实现弃牌堆出牌
             'miskatonic_lost_knowledge',  // 通往超凡的门：天赋效果由 abilityRegistry 处理（talent）
+            'werewolf_leader_of_the_pack', // 狼群领袖：ongoing(minion)+talent 由 abilityRegistry 处理
+            'werewolf_moontouched',       // 月之触：ongoing(minion)+talent 由 abilityRegistry 处理
         ]);
 
         it('所有 ongoing 行动卡都有对应的效果注册', () => {
@@ -269,6 +314,8 @@ describe('SmashUp 能力行为审计', () => {
     describe('能力标签执行器覆盖', () => {
         // 以下标签由其他系统处理，不需要 abilityRegistry 执行器
         const exemptTags = new Set(['ongoing', 'extra', 'special']);
+        // 以下卡牌的能力尚未实现，暂时豁免
+        const unimplementedCards = new Set<string>();
 
         it('所有非豁免能力标签都有对应的执行器注册', () => {
             const entities = buildEntities();
@@ -276,6 +323,7 @@ describe('SmashUp 能力行为审计', () => {
             const missing: string[] = [];
             for (const e of entities) {
                 if (!e.abilityTags) continue;
+                if (unimplementedCards.has(e.id)) continue;
                 for (const tag of e.abilityTags) {
                     if (exemptTags.has(tag)) continue;
                     const key = `${e.id}::${tag}`;

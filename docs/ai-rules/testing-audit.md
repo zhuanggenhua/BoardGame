@@ -6,14 +6,24 @@
 
 ## 核心原则
 
+- **全面审计为主，测试工具为辅（强制）**：审计是思维框架（告诉你"该检查什么"），测试工具是执行手段（帮你"自动化检查"）。审计必须先做（人工思考），测试工具是补充（自动化覆盖）。
 - **数据驱动优先，禁止硬编码（强制）**：实现任何游戏机制时，优先将规则/配置/效果做成可枚举数据，由引擎解析执行。禁止用 switch-case/if-else 逐个硬编码技能/效果/卡牌逻辑。新增同类机制时应提取抽象（通用 handler/executor/模板），而非复制粘贴再改参数。
 - **测试用固定值代替随机（强制）**：测试中涉及随机数（骰子、抽牌、洗牌等）时，必须使用固定值或可控的伪随机序列，禁止依赖真随机。做法：① GameTestRunner 的 `random` 参数传入返回固定值的函数 ② 使用 `applyDiceValues` 等调试面板 API 注入预设值 ③ 测试 setup 中直接构造确定性初始状态。目的：确保测试结果可重复、可调试、不因随机波动导致偶发失败。
-- **GameTestRunner 行为测试最优先**，审计工具是补充。
 - **同类测试去重**：多个实体共享同一 handler/executor/reducer 分支时，只需一个代表性行为测试，其余用契约测试覆盖数据定义。≥5 个同类用 `test.each`。仅当条件分支/交互路径/边界行为/交叉影响不同时才需独立测试。
 - **事件发射 ≠ 状态生效**：必须断言 reduce 后的最终状态，禁止只测注册/写入就判定"已实现"。
 - **多系统协作必须断言所有相关系统状态（强制）**：涉及多个引擎系统协作的功能（如响应窗口+交互系统、流程系统+交互系统），测试必须同时断言所有相关系统的状态字段，不能只断言其中一个。典型：测试只断言 `sys.interaction.current` 存在但不断言 `sys.responseWindow.current` 仍打开 → 测试通过但功能实际无效。
 
-## 测试工具选型
+---
+
+## 一、全面审计规范（主要方法）
+
+### 1. 通用实现缺陷检查维度（D1-D24）
+
+---
+
+## 二、测试工具选型（辅助手段）
+
+> **核心原则**：GameTestRunner 行为测试最优先，审计工具是补充。
 
 | 工具 | 适用场景 |
 |------|---------|
@@ -23,7 +33,7 @@
 | interactionChainAudit | UI 状态机 payload 覆盖（多步 UI 交互时必选） |
 | interactionCompletenessAudit | Interaction handler 注册覆盖（有 InteractionSystem 时必选） |
 
-## 效果数据契约测试（强制）
+### 效果数据契约测试（强制）
 
 新增游戏/英雄/卡牌/Token 定义时必须同步编写。职责：结构完整性 + 语义正确性。数据定义必须包含所有执行所需字段，禁止执行层"猜测"。
 
@@ -31,30 +41,30 @@
 - `createI18nContractSuite`：验证 i18n key 格式和存在性
 - 新增游戏 → 创建 `entity-chain-integrity.test.ts`；所有有 action 的效果必须声明 timing
 
-## 交互链完整性审计
+### 交互链完整性审计
 
 **模式 A（UI 状态机）**：多步交互必须声明 `interactionChain`。检查：声明完整性、steps ⊇ required、定义层与执行器 payloadContract 双向一致。
 
 **模式 B（Interaction 链）**：检查 handler 注册覆盖、链式完整性、孤儿 handler。审计输入从源码自动抽取，禁止维护手工列表。
 
-## CI 质量门禁
+### CI 质量门禁
 
 PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical`。
 
 ---
 
-## E2E 测试选择器一致性检查（强制）
+## 三、E2E 测试选择器一致性检查（强制）
 
 > **重构 UI 交互模式后必须执行**。UI 组件的渲染方式变更（如从弹窗改为内联横幅）时，所有引用旧选择器的 E2E 测试必须同步更新。
 
-### 检查清单
+**检查清单**：
 
 1. **选择器来源验证**：E2E 测试中的 `data-testid`/CSS 选择器/文本匹配，必须对应实际渲染的组件。重构后用 `grep` 搜索旧选择器，确认所有 E2E 文件已更新。
 2. **交互路径验证**：测试中的点击/输入序列必须与实际 UI 交互路径一致。例如：手牌选择在 HandArea 中直接点击 vs 在弹窗 overlay 中选择，两者选择器完全不同。
 3. **按钮文本验证**：按钮文本来自 i18n，测试中的正则匹配必须覆盖中英文两种 locale（`/Confirm Discard|确认弃牌/i`）。
 4. **状态验证**：测试必须验证 UI 状态变更（如 `data-selected="true"`），不能只验证"点击了按钮"。
 
-### 典型反模式
+**典型反模式**：
 
 - ❌ 重构了交互模式（弹窗→横幅），E2E 测试仍查找旧弹窗选择器 → 测试超时/skip，从未真正执行
 - ❌ 测试中硬编码了组件内部 CSS 类名（如 `.card-selector-overlay`）→ 样式重构后测试失效
@@ -62,9 +72,9 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 
 ---
 
-## 通用实现缺陷检查维度（D1-D24）
+## 四、教训附录
 
-> 所有审查/审计/新增功能验证时按维度检查。D1-D10 为原有维度（已扩展），D11-D24 为新增维度。
+> 所有审查/审计/新增功能验证时按维度检查。D1-D10 为原有维度（已扩展），D11-D27 为新增维度。
 
 | # | 维度 | 核心问题 |
 |---|------|---------|
@@ -92,10 +102,35 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 | D22 | **伤害计算管线配置** | 使用 `createDamageCalculation` 时配置项是否正确？`autoCollectStatus`/`autoCollectTokens`/`autoCollectShields` 是否根据业务需求启用？伤害来源和目标是否正确？ |
 | D23 | **架构假设一致性** | 底层架构的隐含假设是否与描述语义冲突？通用验证函数（如 `canAttackEnhanced`）的硬编码规则是否阻止特殊语义实现？阶段/目标/资源的底层约束是否需要为特殊机制开放？ |
 | D24 | **Handler 共返状态一致性** | 交互 handler 同时返回 events 和新 interaction 时，新 interaction 的选项是否基于 events 已生效后的状态计算？（events 尚未 reduce，选项基于旧状态会导致候选列表缺失/过时） |
+| D25 | **MatchState 传播完整性** | 能力需要创建交互时，调用点是否传递了 `matchState` 参数？返回后是否更新了 `matchState` 变量？测试是否覆盖了完整调用链路（而非只测能力函数本身）？ |
+| D26 | **事件设计完整性** | 事件是否包含所有消费者需要的上下文信息？事件设计前是否列出了所有已知消费场景？事件字段是否支持所有消费场景的需求？ |
+| D27 | **可选参数语义** | 可选参数在哪些场景下是必需的？调用点是否在必需场景下传递了可选参数？类型系统是否能捕获遗漏？函数是否应该拆分为 `fooBase(required)` 和 `fooWithContext(required, optional)`？ |
+| D28 | **白名单/黑名单完整性** | 白名单/黑名单是否覆盖所有已知场景？新增功能时是否更新了白名单？白名单逻辑是否有文档说明加入条件？白名单是否是"显式声明"而非"隐式推断"？ |
+| D29 | **PPSE 事件替换完整性** | `postProcessSystemEvents` 可能过滤/替换/追加事件（如压制 `MINION_DESTROYED`），调用方（`runAfterEventsRounds`）是否用 PPSE 返回的完整事件列表替换原 `roundEvents` 中的领域事件？仅追加新增部分 = ❌ 被压制的事件仍会被 reduce |
+| D30 | **消灭流程时序与防止消灭白名单** | `processDestroyTriggers` 中：① onDestroy 必须在防止消灭触发器（基地能力/ongoing）之后执行，仅在确认消灭时触发；② pendingSave 判定使用 `PREVENT_DESTROY_SOURCE_IDS` 白名单，新增防止消灭能力时必须将其 sourceId 加入白名单，否则消灭不会被暂缓；③ 交互选项值必须快照所有 handler 需要的字段（如 `counterAmount`），因为来源实体可能在交互解决前离场 |
 
 ### 需要展开的关键维度
 
 **D2 边界完整 — 概念载体覆盖（强制）**：游戏描述中的一个名词在数据层可能有多种承载形式。筛选该概念时必须覆盖所有载体。**核心原则：一个游戏术语 ≠ 一种数据结构。审查时必须穷举该术语在数据层的所有承载形式。** 审查方法：① 锁定描述中的目标名词 ② 列出该名词在数据层的所有承载形式 ③ 追踪每个筛选点是否覆盖所有载体。只查了一种 = ❌。
+
+**D1 子项：替代/防止语义合同审计（强制）**（新增/修改描述包含“防止”“改为”“而不是”“instead/prevent”语义的能力时触发）：
+1. **语义类型先判定**：描述是“防止事件发生”还是“改为另一结果”。
+   - “防止被消灭”= 原事件不应最终生效（如不应有 `MINION_DESTROYED` 的最终落地）。
+   - “改为回手/移动”= 原事件应被替代为新事件（如 `MINION_RETURNED`/`MINION_MOVED`）。
+2. **状态级断言必须覆盖**：不能只断言“发了某个事件”，必须断言最终实体状态。
+   - 防止消灭：目标随从仍在场（除非描述明确另说）。
+   - 替代回手：目标应离场并进入拥有者手牌。
+3. **负路径必须显式恢复**：有“跳过/不发动”分支时，必须恢复原始结算路径，不能静默吞事件。
+4. **防递归门禁（强制）**：恢复原始事件时必须带原因标记，并在同一拦截器中识别该标记避免再次拦截，防止交互循环。
+5. **测试最低门槛（必须同时满足）**：
+   - 正路径：选择“发动/防止”时的最终状态断言。
+   - 负路径：选择“跳过”时恢复原结算。
+   - 重入路径：验证不会重复弹出同一拦截交互。
+
+> 典型反模式：
+> - ❌ 文案写“防止被消灭”，实现却发 `MINION_RETURNED`（语义从 prevent 变成 replace）
+> - ❌ 跳过分支只关闭弹窗，不恢复 `MINION_DESTROYED`
+> - ❌ 恢复 `MINION_DESTROYED` 后未做 reason 门禁，导致同拦截器再次触发并循环
 
 > **示例（SummonerWars）**："建筑"有 `cell.structure`（地图格子上的固定建筑）和拥有 `mobile_structure` 能力的 `cell.unit`（可移动建筑单位）两种载体
 
@@ -160,12 +195,25 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 3. **UI 模式验证**：`multi` 存在 → UI 应显示多选复选框 + 全选 + 确认按钮；`multi` 不存在 → UI 应显示单选按钮/卡牌点击即确认
 4. **典型缺陷**：描述说"任意数量"但未传 `multi` → 变成单选，选一个就结束；描述说"选择一个"但传了 `multi` → 多选模式不符合预期
 
+**D5 子项：单候选自动执行掩蔽审计（强制）**（使用 `resolveOrPrompt` 或同类“单候选自动执行” helper 时触发）：
+`resolveOrPrompt` 默认 `autoResolveIfSingle = true`，会在候选数为 1 时跳过交互直接执行。若测试场景只构造 1 个候选，容易误判“交互链完整”。
+
+审查方法：
+1. **识别受影响能力**：grep `resolveOrPrompt(` 调用点，确认该能力是否“语义上需要玩家先选择”。
+2. **双用例强制**：
+   - **多候选用例（必需）**：至少构造 2 个合法候选，断言第一步交互 `sourceId` 出现；
+   - **单候选用例（可选）**：若设计上允许自动执行，再补一个单候选直执用例。
+3. **禁止以“链路有后续 sourceId”代替第一步验证**：必须显式断言首步是否出现（或按设计自动跳过）。
+
+> **示例（SmashUp 剔除弱者）**：若场上仅 1 个己方随从，首步“选择随从”会被自动执行，看起来像“直接进弃牌选择”。正确审计应使用 ≥2 个己方随从验证首步交互仍存在。
+
 **D5 子项：实现模式与描述语义匹配——额度授予 vs 交互选择（强制）**（新增能力实现、或修"弹窗不该出现"/"基地全灰"/"操作被交互阻断"时触发）：描述语义是"授予资源/额度/权限"时，实现必须用额度模式（修改状态，让玩家在正常流程中自行消费），禁止用交互模式（弹窗让玩家立即选择并消费）。**核心原则：额度授予 ≠ 立即消费。"你可以打出一张额外随从"的正确语义是"+1 额度"，不是"现在选一张打出"。交互弹窗会劫持正常操作流程，导致 UI 状态冲突（如 `selectedCardUid` 被清除、基地选择从 `deployableBaseIndices` 切换到 `selectableBaseIndices`）。** 审查方法：
 1. **语义→实现模式映射表**：
    - "你可以打出 N 张额外随从/行动卡" → 额度模式：`grantExtraMinion`/`grantExtraAction` 修改 `minionLimit`/`actionLimit`，玩家在正常出牌流程中使用
    - "你可以打出一张力量≤N 的额外随从" → 额度模式 + 约束：`grantExtraMinion(playerId, reason, now, undefined, { powerMax: N })`
    - "选择一个随从消灭/移动/返回手牌" → 交互模式：`createSimpleChoice` 让玩家选择目标
-   - "从牌库/弃牌堆中检索一张卡" → 交互模式：需要玩家从非手牌来源选择
+   - "从牌库/弃牌堆中检索一张卡到手牌" → 交互模式：需要玩家从非手牌来源选择
+   - "从弃牌堆打出一个随从" → **两步交互模式**：步骤1选随从 + 步骤2选基地 → 生成 `MINION_PLAYED(fromDiscard: true)` 事件。参照 `zombie_lord`、`vampire_crack_of_dusk` 的实现。❌ 禁止用「回收到手牌 + 给额度」模式（`CARD_RECOVERED_FROM_DISCARD` + `grantExtraMinion`），这会导致选完随从后没有基地选择引导，UX 断裂
    - "弃掉 N 张手牌" → 交互模式：需要玩家选择弃哪些
 2. **判定标准**：
    - 描述的效果是"增加可用次数/权限" + 消费发生在正常操作流程中 → 必须用额度模式 ❌ 禁止用交互弹窗
@@ -177,10 +225,48 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 **典型缺陷模式**：
 - ❌ 描述"你可以打出一张力量≤2的额外随从"，实现用 `createSimpleChoice` 弹窗让玩家选手牌中的随从 → 弹窗劫持正常流程，`selectedCardUid` 被清除，基地全灰
 - ❌ 描述"额外打出至多3个同名随从"，实现用 `createSimpleChoice` 逐个弹窗选择 → 应该用 `grantExtraMinion({ sameNameOnly: true })` 授予3次额度
+- ❌ 描述"从弃牌堆打出一个力量≤2的随从"，实现用 `CARD_RECOVERED_FROM_DISCARD`（回收到手牌）+ `grantExtraMinion`（给额度）→ 选完随从后没有基地选择引导，UX 断裂。应该用两步交互（选随从→选基地）+ `MINION_PLAYED(fromDiscard: true)`，参照 `zombie_lord` 模式
 - ✅ 描述"从弃牌堆中选择一个随从放到场上"，实现用 `createSimpleChoice` → 正确（需要从非手牌来源选择）
 - ✅ 描述"你可以打出一张额外随从"，实现用 `grantExtraMinion` → 正确
 
 > **示例（SmashUp Zapbot 高速机器人）**：描述"你可以打出一张力量为2或更低的额外随从"，实现用 `createSimpleChoice` 弹窗让玩家选手牌随从再选基地（两步交互）。弹窗触发 `currentPrompt` → `useEffect` 清除 `selectedCardUid` → 基地渲染切换到 `selectableBaseIndices`（空集）→ 所有基地变灰。修复：改为 `grantExtraMinion(playerId, 'robot_zapbot', now, undefined, { powerMax: 2 })` 授予额度，玩家在正常出牌流程中使用
+
+**D5 子项：棋盘直选模式下非目标选项可达性（强制·通用）**（新增 `targetType` 声明、或修"操作按钮不显示"/"卡住"时触发）：适用于**所有游戏**中将交互路由到棋盘/场地直选模式的场景。当 Board 层根据交互元数据（如 `targetType`/选项结构）判定走直选模式时，通用弹窗（PromptOverlay 等）被隐藏，选项集中的**非目标选项**（done/skip/cancel/__cancel__/confirm 等）必须有替代 UI 可达路径（浮动按钮/操作栏）。
+
+**核心原则**：直选模式下，"目标选项"通过棋盘实体点击可达，"操作选项"必须通过浮动按钮可达。过滤逻辑必须使用**排除法**（排除目标选项的特征字段），不硬编码操作选项的字段名，确保新增操作选项类型自动可达。
+
+**审查方法**：
+1. **选项分类**：grep 交互的 `options` 构建代码，将选项分为"目标选项"（含目标实体标识字段，如单位ID/格子坐标/卡牌ID）和"操作选项"（done/skip/cancel 等无目标实体标识的选项）
+2. **UI 路由验证**：确认直选模式激活时通用弹窗被隐藏 → 操作选项必须被 `xxxExtraOptions` 类逻辑捕获并渲染为替代 UI
+3. **过滤逻辑审查**：`xxxExtraOptions` 必须用排除法（"无目标字段 → 操作选项"），禁止用白名单法（"skip === true → 操作选项"），后者会遗漏新增的操作选项类型
+4. **跨选择类型一致性**：同一 Board 中所有直选模式（单位选择/基地选择/卡牌选择/格子选择等）的 `xxxExtraOptions` 过滤逻辑必须统一采用排除法
+
+**典型缺陷**：交互声明走直选模式，选项含 `{ done: true }` 的"完成选择"按钮，但浮动按钮过滤逻辑只匹配 `skip === true`，导致 `done` 按钮在直选模式下不可见，玩家无法结束操作 → 游戏卡死
+
+> **示例（SmashUp 关门放狗）**：选项集 = [随从A, 随从B, { id: 'done', value: { done: true } }]，`targetType: 'minion'`。Board 隐藏 PromptOverlay，随从通过棋盘点选可达，但"完成选择"按钮被 `minionSelectExtraOptions`（只匹配 `skip`）遗漏 → 玩家无法结束选择 → 游戏卡死。修复：所有 `xxxExtraOptions` 统一改为排除法
+
+**D5 子项：同类型卡牌交互一致性（强制）**（新增交互能力、或修"同类型卡表现不一致"时触发）：功能描述模式相同的卡牌（如"选随从 → 逐张选手牌 → 每张获得效果"），必须使用相同的 `targetType`、选项结构、停止按钮命名和 handler 模式。**跨派系也必须对齐。**
+
+审查方法：
+1. **识别同类卡**：新增交互能力时，grep 已有卡牌的描述文本，找到模式相同的卡牌（如"任意数量的手牌/随从卡 → 每张+1指示物"）。
+2. **参照实现**：以已有正确实现为基准，新卡的 `targetType`、选项构建函数结构（过滤条件、停止按钮 value key）、handler 判断逻辑必须与基准一致。
+3. **一致性清单**：
+   - `targetType` 相同（如手牌选择统一用 `'hand'`，不能一个用 `'hand'` 另一个用 `'generic'`）
+   - 停止/完成按钮的 `value` key 统一（如统一用 `{ stop: true }` 或 `{ done: true }`，不能混用）
+   - `displayMode` 声明方式统一（`'button' as const`，不能用 `as any` 强转）
+   - `autoResolveIfSingle` 配置统一
+
+> **示例（SmashUp 愤怒的民众 vs 剔除弱者）**：两张卡都是"选随从 → 逐张选手牌 → 每张+1指示物"模式。剔除弱者用 `targetType: 'hand'`（手牌区直接点选），愤怒的民众用 `targetType: 'generic'`（PromptOverlay 弹窗）→ 交互体验不一致，且 `'generic'` 不会触发手牌高亮模式。修复：统一为 `targetType: 'hand'`
+
+**D15 子项：状态→UI 可见性链路审计（强制）**（修“逻辑生效但界面没显示”时触发）：
+对于力量指示物/标记类效果，必须验证“事件产生 → reducer 写入 → UI 渲染条件命中”三段链路完整。
+
+审查方法：
+1. **事件层**：断言产生了目标事件（如 `POWER_COUNTER_ADDED`）。
+2. **状态层**：断言 reducer 写入了目标字段（如 `minion.powerModifier` 递增）。
+3. **UI 层**：检查渲染条件是否直接读取该字段（如 `powerModifier > 0` 显示徽章/标记），避免读错字段或漏读。
+
+> **示例（SmashUp 德国工程学）**：`onMinionPlayed` 触发 `POWER_COUNTER_ADDED` 后，reducer 累加 `powerModifier`，`BaseZone` 的随从卡在 `powerModifier > 0` 时显示 `+N` 指示物徽章。
 
 **D10 元数据一致 — 深入审计**（新增/修改 handler 时触发）：mock 调用每个 handler，检查输出事件类型与 categories 声明一致。**核心原则：handler 的元数据声明必须与实际运行时行为一致，否则下游依赖元数据做分支决策的逻辑会被跳过。** 典型：handler 产生伤害事件 → categories 必须含 'damage'，否则依赖此标记的下游阶段（如防御阶段）被跳过。
 
@@ -309,6 +395,18 @@ expect(state.sys.interaction?.current).toBeDefined();
 expect(state.sys.responseWindow?.current).toBeDefined();
 expect(state.sys.responseWindow?.current?.pendingInteractionId).toBeDefined();
 ```
+
+**D8 子项：Trigger ctx.playerId 语义审计（强制）**（新增/修改 `afterScoring`/`beforeScoring` 等 ongoing trigger，或修"ongoing 卡效果不触发"时触发）：`fireTriggers` 对每个注册的 trigger **只调用一次**，`ctx.playerId` 固定为当前回合玩家。如果 trigger 用 `ctx.playerId` 来判断效果受益者（如卡牌 owner），则非当前回合玩家拥有的卡永远不触发。**核心原则：ongoing trigger 的受益者是卡牌的 `ownerId`/`controller`，不是 `ctx.playerId`。trigger 内部必须自行遍历所有来源实例的 owner，禁止直接使用 `ctx.playerId` 作为效果受益者。** 审查方法：
+1. **识别受影响 trigger**：grep 所有 `registerTrigger` 调用，筛选 `afterScoring`/`beforeScoring`/`onMinionDestroyed` 等全局时机的 trigger
+2. **检查 playerId 使用**：trigger 回调中是否用 `ctx.playerId` 来判断"谁拥有这张卡"或"谁是受益者"？如果是 = ❌ 误用
+3. **正确模式**：遍历 `state.bases` 上所有同名 ongoing 实例，用每个实例的 `ownerId` 独立判断（如海盗副官遍历所有 first_mate 的 controller）
+4. **例外**：`onTurnStart`/`onTurnEnd` 的 `playerId` 确实是当前回合玩家，且卡牌描述含"你的回合开始时"时可以合法使用
+
+**典型缺陷模式**：
+- ❌ `if (rankings[0].playerId !== ctx.playerId) return []`（afterScoring 中 ctx.playerId 是当前回合玩家，不是卡牌 owner → 非当前回合玩家的卡永远不触发）
+- ✅ 遍历所有同名 ongoing 实例 → 对每个 `ownerId` 独立检查 `rankings[0].playerId !== ownerId`
+
+> **示例（SmashUp 自助餐 vampire_buffet）**：afterScoring trigger 用 `ctx.playerId` 判断"赢家是否是自己"和"是否拥有 buffet"。`ctx.playerId` 是当前回合玩家（A），但 buffet 的 owner 是玩家 B。A 不是赢家也不拥有 buffet → return `[]`。即使 B 是赢家且拥有 buffet，trigger 也从不触发。修复：不依赖 `ctx.playerId`，遍历所有 buffet 实例的 `ownerId`，对每个 owner 独立检查是否为赢家
 
 **D8 子项：回调函数 post-reduce 计数器时序（强制）**（新增/修改 onPlay/onMinionPlayed/onCardPlayed 等回调中的"首次"判定，或修"首次触发能力从不生效/每次都触发"时触发）：回调函数（如 `fireMinionPlayedTriggers`）接收的 `core` 状态是 reduce 之后的，计数器已递增。用 pre-reduce 假设（如 `minionsPlayed === 0` 表示首次）会导致条件永远不满足，能力静默失效。**核心原则：onPlay/onMinionPlayed 等回调在 pipeline 中位于 reduce 之后执行（`pipeline.ts` 先 reduce 事件再调用 triggers），因此回调中读到的计数器值已包含本次操作的递增。判定"首次"必须用 `=== 1`（post-reduce 值），而非 `=== 0`（pre-reduce 假设）。** 审查方法：
 
@@ -830,6 +928,7 @@ ID 只出现在定义+注册 = 消费层缺失。
 | 神秘花园 `grantExtraMinion(restrictToBase)` 正确写入 `baseLimitedMinionQuota`，但 reducer `MINION_PLAYED` 中 `useBaseQuota = globalFull && baseQuota > 0` 要求全局额度先用完才消耗基地限定额度。玩家还有正常额度时打到花园的随从错误消耗 `minionsPlayed` | Reducer 消耗路径条件优先级错误：写入正确但消耗分支的 if 条件多了 `globalFull` 前置，导致基地限定额度在全局额度未满时被跳过 | D11+D16 | smashup |
 | 神秘花园审计只验证了"能力授予额度 ✅"和"验证层允许打出 ✅"，判定通过。未追踪到 reducer 中消耗该额度的具体分支逻辑 | 审计遗漏：只验证写入链不验证消耗链。写入正确 ≠ 消耗正确，必须追踪到 reducer 消耗分支 | D11+D12 | smashup |
 | 母星（全局 minionLimit+1）和花园（baseLimitedMinionQuota+1）同时生效时，打到花园的随从应优先消耗花园额度，但 reducer 优先消耗全局额度 | 多来源竞争：两种额度来源共存时消耗优先级未正确处理 | D13 | smashup |
+| vampire_buffet afterScoring trigger 用 `ctx.playerId`（当前回合玩家）判断卡牌 owner 和赢家，非当前回合玩家拥有的 buffet 永远不触发 | Trigger ctx.playerId 误用：ongoing trigger 受益者应遍历卡牌实例的 ownerId，禁止依赖 ctx.playerId | D8 | smashup |
 | 完成仪式描述"打出到一个你至少拥有一个随从的基地上"，但 `ActionCardDef` 无 `playConstraint` 字段，验证层和 UI 层均无打出前置条件检查，玩家可打出到空基地 | 打出约束缺失：审计 section 5 只检查 `ongoingTarget` 字段映射，未覆盖打出前置条件。描述中的条件性打出目标必须在数据定义（`playConstraint`）→ 验证层 → UI 层三层体现 | D2 | smashup |
 | 牧师治疗技能无法对友军使用：`canAttackEnhanced` 硬编码 `if (targetOwner === attackerUnit.owner) return false` 拒绝友军目标，治疗模式的绕过逻辑只在 `execute.ts` 中，UI 层调用 `canAttackEnhanced` 时仍被拒绝 | 架构假设冲突：底层验证函数假设"攻击=敌对行为"，无法处理"攻击友军=治疗"的特殊语义。绕过逻辑分散在 execute/validate/UI 层，不一致 | D23 | summonerwars |
 | 群情激愤无法让友军在魔力阶段攻击：`validate.ts` 硬编码 `if (core.phase !== 'attack') return false` 拒绝非攻击阶段的攻击命令，即使事件卡授予了跨阶段攻击权限 | 架构假设冲突：底层验证函数假设"攻击只能在攻击阶段"，无法处理事件卡授予的跨阶段攻击特权 | D23 | summonerwars |
@@ -840,3 +939,281 @@ ID 只出现在定义+注册 = 消费层缺失。
 | 弹一手/惊不惊喜等骰子修改卡在响应窗口打出后无效果：ResponseWindowSystem（priority=15）处理 `INTERACTION_REQUESTED` 后设置 `pendingInteractionId`，紧接着状态驱动解锁检查发现 `sys.interaction.current` 为空 → 误判交互已完成 → 关闭窗口。DiceThroneEventSystem（priority=22）尚未执行 `queueInteraction`。测试只断言 `sys.interaction.current` 存在但不断言 `sys.responseWindow.current` → 测试通过但功能实际无效 | 多系统 afterEvents 优先级竞争：低优先级系统的状态驱动检查在高优先级系统执行前误触发。测试遗漏：只断言单个系统状态不断言协作系统状态 | D8 | dicethrone |
 | `targetOpponentDice` 在所有骰子修改 handler 中硬编码为 `false`，导致响应窗口中打出的骰子修改卡（target=select/opponent）无法作用于对手骰子 | 元数据硬编码：handler 未根据 `action.target` 动态解析目标，所有骰子修改交互都默认操作自己的骰子 | D10+D1 | dicethrone |
 | Zapbot（高速机器人）描述"你可以打出一张力量为2或更低的额外随从"，实现用 `createSimpleChoice` 弹窗让玩家选手牌随从再选基地。弹窗触发 `currentPrompt` → `useEffect` 清除 `selectedCardUid` → 基地渲染切换到 `selectableBaseIndices`（空集）→ 所有基地变灰，无法操作 | 实现模式与描述语义不匹配：描述语义是"授予额度"（被动增益），实现用了"交互弹窗"（主动选择）。交互弹窗劫持正常操作流程，导致 UI 状态冲突 | D5 | smashup |
+| 愤怒的民众（frankenstein）手牌选择用 `targetType: 'generic'`，剔除弱者（vampire）同模式交互用 `targetType: 'hand'`。`'generic'` 走 PromptOverlay 弹窗而非手牌区直选，两张同类型卡（选随从→逐张选手牌→每张+1指示物）交互体验不一致 | 同类型卡牌交互不一致：跨派系实现同一交互模式时 `targetType`/停止按钮 value key/`displayMode` 声明方式不统一 | D5 | smashup |
+
+
+---
+
+**D25 MatchState 传播完整性（强制）**（新增/修改需要创建交互的能力时触发）：能力需要创建交互（Interaction）时，调用点是否传递了 `matchState` 参数？返回后是否更新了 `matchState` 变量？测试是否覆盖了完整调用链路（而非只测能力函数本身）？**核心问题：测试直接调用能力函数并手动传 `matchState`，绕过了生产代码的调用链，导致生产代码的参数遗漏无法被测试发现。**
+
+**典型案例：地窖（base_crypt）bug**
+
+- **能力代码**（baseAbilities.ts）：检查 `!ctx.matchState` 就返回空，无法创建交互
+- **生产调用**（reducer.ts）：调用 `triggerExtendedBaseAbility` 时没有传 `matchState` → 能力返回空
+- **测试调用**（newBaseAbilities.test.ts）：测试手动传了 `matchState` → 测试通过
+- **结果**：测试通过 ✅ 但生产失败 ❌
+
+**审查方法**：
+
+1. **找到所有需要交互的能力**
+   ```bash
+   rg "createSimpleChoice|createInteraction|queueInteraction" src/games/*/domain/
+   ```
+
+2. **检查每个能力的调用点**
+   ```bash
+   rg "triggerExtendedBaseAbility|triggerBaseAbility|executeAbility" src/games/*/domain/reducer.ts
+   ```
+
+3. **验证 matchState 传递**
+   - ✅ 正确：`matchState: ms ?? state` + `if (result.matchState) ms = result.matchState`
+   - ❌ 错误：调用时没有传 `matchState` 或返回后没有更新 `ms`
+
+4. **检查测试覆盖**
+   - ❌ 只测能力函数本身（单元测试）
+   - ✅ 测试完整链路（集成测试，通过 reducer 触发）
+
+**常见遗漏点**：
+- `reducer.ts` 中的 `processDestroyTriggers` / `postProcessMinionMoved`
+- `execute.ts` 中的能力执行
+- `index.ts` 中的 `FlowHooks.onPhaseEnter` / `onPhaseExit`
+
+**类型安全改进建议**：拆分为 `BaseAbilityContextBase`（不支持交互）和 `BaseAbilityContextFull`（强制 `matchState`），让编译器强制检查。
+
+**测试改进建议**：
+- 添加集成测试，通过 reducer 触发能力并验证交互创建
+- 添加反向测试，验证"没有 matchState 时的降级行为"
+- 测试必须同时断言 `result.matchState` 存在且包含交互
+
+**预防措施**：
+- 新增能力时，必须同时检查所有调用点
+- 优先写集成测试，而非单元测试
+- Code Review 时重点检查 `matchState` 传递
+
+
+
+---
+
+**D26 事件设计完整性（强制）**（新增事件类型或修"事件消费者拿不到必要信息"时触发）：事件是否包含所有消费者需要的上下文信息？事件设计前是否列出了所有已知消费场景？事件字段是否支持所有消费场景的需求？**核心问题：事件设计时只考虑了当前消费者，未来新增消费者需要的字段缺失，导致大规模重构。**
+
+**典型案例：地窖（base_crypt）bug**
+
+- **事件定义**（types.ts）：`MinionDestroyedEvent` 只有 `{ minionUid, minionDefId, fromBaseIndex, ownerId }`
+- **消费者 1**（reducer.ts）：消灭随从，只需要知道"谁被消灭了"
+- **消费者 2**（baseAbilities.ts 地窖）：需要知道"谁消灭的"才能给消灭者的随从加指示物
+- **问题**：事件缺少 `destroyerId` 字段，地窖无法找到消灭者的随从
+- **修复规模**：30+ 文件（types → helpers → reducer → baseAbilities → 所有 destroyMinion 调用点）
+
+**审查方法**：
+
+1. **列出事件的所有消费者**
+   ```bash
+   rg "MINION_DESTROYED" src/games/*/domain/
+   ```
+
+2. **检查每个消费者需要哪些字段**
+   - reducer.ts：需要 `minionUid`、`fromBaseIndex`、`ownerId`
+   - baseAbilities.ts：需要 `destroyerId`（消灭者 ID）
+   - UI 层：需要 `minionDefId`（显示名称）
+
+3. **确认事件定义包含所有必需字段**
+   - ✅ 正确：`{ minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId }`
+   - ❌ 错误：缺少 `destroyerId`
+
+4. **新增事件类型时的前置审查**
+   - 列出所有已知消费场景（当前 + 未来可能）
+   - 每个场景需要哪些字段？
+   - 事件设计必须支持所有场景
+
+**常见遗漏点**：
+- 只考虑当前消费者，未考虑未来扩展
+- 事件字段只包含"被操作的实体"，缺少"操作者"信息
+- 事件字段只包含 ID，缺少 UI 层需要的显示信息（名称、图标等）
+
+**类型安全改进建议**：
+- 事件字段必须有文档注释说明"哪些消费者需要这个字段"
+- 新增消费者时，必须检查事件是否包含所需字段
+- 使用 TypeScript 条件类型强制检查字段完整性
+
+**预防措施**：
+- 新增事件类型时，必须在 PR 描述中列出所有已知消费场景
+- Code Review 时重点检查事件设计是否支持所有场景
+- 定期审计事件定义，检查是否有遗漏字段
+
+---
+
+**D27 可选参数语义（强制）**（新增/修改带可选参数的函数时触发）：可选参数在哪些场景下是必需的？调用点是否在必需场景下传递了可选参数？类型系统是否能捕获遗漏？函数是否应该拆分为 `fooBase(required)` 和 `fooWithContext(required, optional)`？**核心问题：可选参数（`param?: Type`）让 TypeScript 不报错，但运行时会失败。测试手动传递了可选参数，掩盖了生产代码的遗漏。**
+
+**典型案例：地窖 matchState 遗漏**
+
+- **函数签名**：`triggerExtendedBaseAbility(baseDefId, timing, ctx)` 其中 `ctx.matchState?: MatchState`
+- **函数实现**：如果基地能力需要创建交互，`matchState` 是必需的（否则无法排队交互）
+- **生产调用**：`reducer.ts` 调用时未传递 `matchState` → 基地能力返回空
+- **测试调用**：测试手动传递了 `matchState` → 测试通过
+- **结果**：测试通过 ✅ 但生产失败 ❌
+
+**审查方法**：
+
+1. **列出所有可选参数**
+   ```bash
+   rg "\\w+\\?:" src/games/*/domain/ --type ts
+   ```
+
+2. **检查函数实现：哪些分支依赖该参数？**
+   ```typescript
+   function triggerExtendedBaseAbility(baseDefId, timing, ctx) {
+       // 分支 1：不需要交互 → matchState 可选
+       if (!needsInteraction) {
+           return { events: [...] };
+       }
+       // 分支 2：需要交互 → matchState 必需
+       if (!ctx.matchState) {
+           return { events: [] }; // ❌ 静默失败
+       }
+       return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+   }
+   ```
+
+3. **检查所有调用点：是否在依赖分支的场景下传递了参数？**
+   ```typescript
+   // ❌ 错误：可能需要交互但未传递 matchState
+   const result = triggerExtendedBaseAbility(baseDefId, 'onMinionDestroyed', baseCtx);
+   
+   // ✅ 正确：传递了 matchState
+   const result = triggerExtendedBaseAbility(baseDefId, 'onMinionDestroyed', {
+       ...baseCtx,
+       matchState: ms ?? state,
+   });
+   ```
+
+4. **检查测试：是否覆盖了"不传递可选参数"的场景？**
+   - ❌ 只测试"传递了可选参数"的场景
+   - ✅ 同时测试"传递"和"不传递"两种场景
+
+**常见遗漏点**：
+- 可选参数在文档中没有说明"何时必需"
+- 调用点假设"可选参数总是可选的"
+- 测试总是传递可选参数，掩盖了生产代码的遗漏
+
+**类型安全改进建议**：
+
+方案 1：拆分函数
+```typescript
+// 不支持交互的版本
+function triggerBaseAbilityBase(baseDefId, timing, ctx: BaseAbilityContextBase) {
+    // ...
+}
+
+// 支持交互的版本（matchState 必需）
+function triggerBaseAbilityFull(baseDefId, timing, ctx: BaseAbilityContextFull) {
+    // ctx.matchState 是必需的，TypeScript 会强制检查
+}
+```
+
+方案 2：条件类型
+```typescript
+type BaseAbilityContext<NeedsInteraction extends boolean = false> = {
+    // ... 其他字段
+    matchState: NeedsInteraction extends true ? MatchState : MatchState | undefined;
+};
+
+function triggerBaseAbility<NeedsInteraction extends boolean>(
+    baseDefId: string,
+    timing: string,
+    ctx: BaseAbilityContext<NeedsInteraction>
+) {
+    // ...
+}
+```
+
+**预防措施**：
+- 可选参数必须在文档中说明"何时必需"
+- 优先拆分函数，而非使用可选参数
+- 测试必须覆盖"不传递可选参数"的场景
+- Code Review 时重点检查可选参数的调用点
+
+---
+
+**D28 白名单/黑名单完整性（强制）**（新增/修改白名单逻辑或新增功能时触发）：白名单/黑名单是否覆盖所有已知场景？新增功能时是否更新了白名单？白名单逻辑是否有文档说明加入条件？白名单是否是"显式声明"而非"隐式推断"？**核心问题：白名单需要随功能增长而更新，缺少文档说明"加入条件"，容易遗漏新功能。**
+
+**典型案例：地窖 pendingSave 白名单**
+
+- **白名单定义**（reducer.ts）：
+  ```typescript
+  const PREVENT_DESTROY_SOURCE_IDS = [
+      'base_nine_lives_intercept',        // 九命之屋
+      'giant_ant_drone_prevent_destroy',   // 雄蜂防止消灭
+  ];
+  ```
+- **白名单用途**：判断 `onMinionDestroyed` 创建的交互是否是"防止消灭"交互
+- **问题**：地窖的 `sourceId` 是 `'base_crypt'`，不在白名单中，但被错误地标记为 pendingSave
+- **根因**：白名单逻辑没有文档说明"哪些交互应该加入白名单"
+
+**审查方法**：
+
+1. **列出所有白名单/黑名单**
+   ```bash
+   rg "WHITELIST|BLACKLIST|ALLOWED|PREVENT" src/games/*/domain/ --type ts
+   ```
+
+2. **检查每个白名单的用途和覆盖范围**
+   - 白名单用于什么场景？
+   - 哪些功能应该加入白名单？
+   - 白名单是否有文档说明加入条件？
+
+3. **搜索可能需要加入白名单的新功能**
+   ```bash
+   # 搜索所有创建交互的地方
+   rg "createSimpleChoice|createInteraction" src/games/*/domain/
+   
+   # 检查每个交互的 sourceId 是否应该加入白名单
+   ```
+
+4. **检查白名单逻辑是否正确**
+   ```typescript
+   // ❌ 错误：隐式推断（所有创建交互的都标记为 pendingSave）
+   if (interactionCountAfter > interactionCountBefore) {
+       isPendingSave = true;
+   }
+   
+   // ✅ 正确：显式声明（只有白名单中的才标记为 pendingSave）
+   const PREVENT_DESTROY_SOURCE_IDS = ['base_nine_lives_intercept', ...];
+   const sourceId = (newInteraction?.data as any)?.sourceId;
+   const isPreventDestroy = sourceId ? PREVENT_DESTROY_SOURCE_IDS.includes(sourceId) : false;
+   if (isPreventDestroy) {
+       isPendingSave = true;
+   }
+   ```
+
+**常见遗漏点**：
+- 白名单没有文档说明"加入条件"
+- 新增功能时忘记更新白名单
+- 白名单逻辑是"隐式推断"而非"显式声明"
+
+**文档改进建议**：
+
+在白名单定义处添加注释：
+```typescript
+/**
+ * 防止消灭交互白名单
+ * 
+ * 加入条件：
+ * 1. 交互的目的是"防止随从被消灭"（如九命之屋、雄蜂）
+ * 2. 交互解决后可能产生 MINION_RETURNED 事件
+ * 3. 交互期间随从不应该被真正消灭
+ * 
+ * 不应加入：
+ * 1. 消灭后的"奖励"交互（如地窖给消灭者加指示物）
+ * 2. 消灭后的"触发"交互（如荣誉之地给消灭者加 VP）
+ */
+const PREVENT_DESTROY_SOURCE_IDS = [
+    'base_nine_lives_intercept',        // 九命之屋：选择是否拯救随从
+    'giant_ant_drone_prevent_destroy',   // 雄蜂：防止己方随从被消灭
+];
+```
+
+**预防措施**：
+- 白名单必须有文档说明"加入条件"
+- 新增功能时必须检查是否需要更新白名单
+- 白名单应该是"显式声明"而非"隐式推断"
+- Code Review 时重点检查白名单逻辑

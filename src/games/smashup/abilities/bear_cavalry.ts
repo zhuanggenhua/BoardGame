@@ -72,9 +72,7 @@ function bearCavalryBearHug(ctx: AbilityContext): AbilityResult {
         if (weakest.length === 1) {
             // 唯一最弱，直接消灭
             events.push(destroyMinion(
-                weakest[0].minion.uid, weakest[0].minion.defId,
-                weakest[0].baseIndex, weakest[0].minion.owner,
-                'bear_cavalry_bear_hug', ctx.now
+                weakest[0].minion.uid, weakest[0].minion.defId, weakest[0].baseIndex, weakest[0].minion.owner, undefined, 'bear_cavalry_bear_hug', ctx.now
             ));
         } else {
             // 平局：由拥有者选择
@@ -110,7 +108,7 @@ function bearHugProcessNext(
         const weakest = minions.filter(m => m.power === minPower);
         if (weakest.length <= 1) {
             if (weakest.length === 1) {
-                events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, 'bear_cavalry_bear_hug', ctx.now));
+                events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, undefined, 'bear_cavalry_bear_hug', ctx.now));
             }
             idx++;
             continue;
@@ -217,9 +215,7 @@ function bearCavalryCubScoutTrigger(ctx: TriggerContext): SmashUpEvent[] {
         const movedPower = getMinionPower(ctx.state, movedMinion, movedBaseIndex);
         if (movedPower < scoutPower) {
             events.push(destroyMinion(
-                movedMinion.uid, movedMinion.defId,
-                destBaseIndex, movedMinion.owner,
-                'bear_cavalry_cub_scout', ctx.now
+                movedMinion.uid, movedMinion.defId, destBaseIndex, movedMinion.owner, undefined, 'bear_cavalry_cub_scout', ctx.now
             ));
             break;
         }
@@ -248,9 +244,7 @@ function bearCavalryHighGroundTrigger(ctx: TriggerContext): SmashUpEvent[] {
         const ownerHasMinion = destBase.minions.some(m => m.controller === ongoing.ownerId);
         if (!ownerHasMinion) continue;
         events.push(destroyMinion(
-            movedMinion.uid, movedMinion.defId,
-            destBaseIndex, movedMinion.owner,
-            'bear_cavalry_high_ground', ctx.now
+            movedMinion.uid, movedMinion.defId, destBaseIndex, movedMinion.owner, undefined, 'bear_cavalry_high_ground', ctx.now
         ));
         break;
     }
@@ -414,7 +408,7 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
         targetType: 'generic',
     }, (value) => {
         if (value.type === 'minion') {
-            return { events: [destroyMinion(value.uid, value.defId, value.baseIndex, value.owner, 'bear_cavalry_bear_necessities', ctx.now)] };
+            return { events: [destroyMinion(value.uid, value.defId, value.baseIndex, value.owner, undefined, 'bear_cavalry_bear_necessities', ctx.now)] };
         }
         return { events: [{ type: SU_EVENTS.ONGOING_DETACHED, payload: { cardUid: value.uid, defId: value.defId, ownerId: value.ownerId, reason: 'bear_cavalry_bear_necessities' }, timestamp: ctx.now } as OngoingDetachedEvent] };
     });
@@ -437,7 +431,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         if (!base) return { state, events: [] };
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return { state, events: [] };
-        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'bear_cavalry_bear_hug', timestamp)];
+        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'bear_cavalry_bear_hug', timestamp)];
 
         // 链式处理下一个对手
         const ctx = (iData as any)?.continuationContext as { opponents: string[]; opponentIdx: number } | undefined;
@@ -460,7 +454,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             const weakest = minions.filter(m => m.power === minPower);
             if (weakest.length <= 1) {
                 if (weakest.length === 1) {
-                    events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, 'bear_cavalry_bear_hug', timestamp));
+                    events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, playerId, 'bear_cavalry_bear_hug', timestamp));
                 }
                 continue;
             }
@@ -632,7 +626,7 @@ export function registerBearCavalryInteractionHandlers(): void {
     registerInteractionHandler('bear_cavalry_bear_necessities', (state, _playerId, value, _iData, _random, timestamp) => {
         const selected = value as { type: string; uid: string; defId: string; baseIndex?: number; owner?: string; ownerId?: string };
         if (selected.type === 'minion') {
-            return { state, events: [destroyMinion(selected.uid, selected.defId, selected.baseIndex!, selected.owner!, 'bear_cavalry_bear_necessities', timestamp)] };
+            return { state, events: [destroyMinion(selected.uid, selected.defId, selected.baseIndex!, selected.owner!, playerId, 'bear_cavalry_bear_necessities', timestamp)] };
         }
         return { state, events: [{ type: SU_EVENTS.ONGOING_DETACHED, payload: { cardUid: selected.uid, defId: selected.defId, ownerId: selected.ownerId!, reason: 'bear_cavalry_bear_necessities' }, timestamp }] };
     });

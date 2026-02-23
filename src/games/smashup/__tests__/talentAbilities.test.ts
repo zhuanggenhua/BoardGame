@@ -10,6 +10,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { execute, reduce } from '../domain/reducer';
 import { SU_COMMANDS, SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
+import { validate } from '../domain/commands';
 import type {
     SmashUpCore,
     PlayerState,
@@ -555,5 +556,58 @@ describe('天赋基础设施', () => {
         }, defaultRandom);
 
         expect(events.length).toBe(0);
+    });
+
+    it('巨石阵：同一随从本回合可使用第2次才能（若双才能名额未占用）', () => {
+        const core = makeState({
+            standingStonesDoubleTalentMinionUid: undefined,
+            bases: [
+                {
+                    defId: 'base_standing_stones',
+                    minions: [makeMinion('m1', 'miskatonic_professor', '0', 5, { talentUsed: true })],
+                    ongoingActions: [],
+                },
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('mad1', MADNESS_CARD_DEF_ID, 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'm1', baseIndex: 0 },
+        });
+        expect(result.valid).toBe(true);
+    });
+
+    it('巨石阵：双才能名额已占用时，不允许其他随从第2次才能', () => {
+        const core = makeState({
+            standingStonesDoubleTalentMinionUid: 'used-minion',
+            bases: [
+                {
+                    defId: 'base_standing_stones',
+                    minions: [makeMinion('m1', 'miskatonic_professor', '0', 5, { talentUsed: true })],
+                    ongoingActions: [],
+                },
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('mad1', MADNESS_CARD_DEF_ID, 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'm1', baseIndex: 0 },
+        });
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('本回合天赋已使用');
     });
 });

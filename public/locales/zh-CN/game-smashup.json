@@ -96,7 +96,10 @@
     "reveal_queue_hint": "{{count}} 条展示待查看 · 点击继续",
     "reveal_dismiss_hint": "点击任意位置关闭",
     "deselect_all": "取消全选",
-    "select_all": "全选"
+    "select_all": "全选",
+    "waiting_opponent": "等待对方操作",
+    "power_counter": "力量指示物",
+    "skip": "跳过"
   },
   "feedback": {
     "deck_search_no_match": "牌库中未找到符合条件的卡牌，已重洗牌库",
@@ -106,7 +109,12 @@
     "deck_empty": "牌库为空",
     "hand_empty": "手牌中没有符合条件的卡牌",
     "condition_not_met": "条件不满足，能力未生效",
-    "target_protected": "目标受到保护，能力未生效"
+    "target_protected": "目标受到保护，能力未生效",
+    "not_highest_power": "本随从不是这里力量最高的，能力未生效",
+    "no_power_counters": "没有可移除的+1力量指示物",
+    "all_protected": "所有目标都受到保护",
+    "base_deck_empty": "基地牌库为空",
+    "no_minion_cards_in_hand": "手牌中没有随从卡"
   },
   "actionLog": {
     "playerLabel": "P{{playerId}}",
@@ -227,6 +235,22 @@
     "miskatonic_university": {
       "name": "米斯卡塔尼克",
       "description": "利用疯狂牌获得优势，研究知识。注意：每2张疯狂牌终局扣1VP。"
+    },
+    "frankenstein": {
+      "name": "科学怪人",
+      "description": "利用+1力量指示物增强随从，通过牺牲和转移指示物获得优势。"
+    },
+    "werewolves": {
+      "name": "狼人",
+      "description": "高力量随从，在回合结束时爆发，控制基地爆破点。"
+    },
+    "vampires": {
+      "name": "吸血鬼",
+      "description": "通过消灭随从获得力量指示物，积累优势。"
+    },
+    "giant_ants": {
+      "name": "巨蚁",
+      "description": "灵活分配和转移力量指示物，团队协作。"
     }
   },
   "tutorial": {
@@ -1182,13 +1206,229 @@
       "name": "绵羊神社",
       "abilityText": "这张基地入场后，每位玩家可以移动一个他们的随从到这。"
     },
-    "base_locker_room": {
-      "name": "更衣室",
-      "abilityText": "你的回合开始时，如果你有随从在这，抽一张卡牌。"
+    "base_castle_blood": {
+      "name": "血堡",
+      "abilityText": "在你打出一个随从到这后，如果对手在这里的力量比你大，你可以在该随从上放置一个+1力量指示物。"
     },
-    "base_stadium": {
-      "name": "体育场",
-      "abilityText": "这里的一个随从被消灭后，它的控制者抽一张卡牌。"
+    "base_crypt": {
+      "name": "地窖",
+      "abilityText": "当一个或多个随从在这被消灭时，消灭它们的玩家可以在自己在这的一个随从上放置一个+1力量指示物。"
+    },
+    "base_laboratorium": {
+      "name": "实验工坊",
+      "abilityText": "每回合第一个被打出到这里的随从，其控制者在上面放置一个+1力量指示物。"
+    },
+    "base_golem_schloss": {
+      "name": "魔像城堡",
+      "abilityText": "基地计分后，冠军在其每个随从上放置一个+1力量指示物。"
+    },
+    "base_moot_site": {
+      "name": "集会场",
+      "abilityText": "每回合第一个打出到这的随从获得+2力量直到回合结束。"
+    },
+    "base_standing_stones": {
+      "name": "巨石阵",
+      "abilityText": "你的回合中，你在这的一个随从可以使用其才能两次。"
+    },
+    "base_egg_chamber": {
+      "name": "卵室",
+      "abilityText": "这里有+1力量指示物的随从不能被消灭。"
+    },
+    "base_the_hill": {
+      "name": "蚁丘",
+      "abilityText": "每位玩家回合开始时，可以将一个自己的随从从任意基地移到这里。"
+    },
+    "frankenstein_german_engineering": {
+      "name": "德国工程学",
+      "effectText": "打出到基地上。持续：在你打出一个随从到这后，在它上面放置一个+1力量指示物。"
+    },
+    "frankenstein_jolt": {
+      "name": "震撼",
+      "effectText": "在你的每个随从上放置一个+1力量指示物。"
+    },
+    "frankenstein_grave_situation": {
+      "name": "死亡境地",
+      "effectText": "打出到基地上。持续：当你的一个随从在这里被消灭后，把它放到手牌而不是弃牌堆。"
+    },
+    "frankenstein_its_alive": {
+      "name": "它活过来了！",
+      "effectText": "打出一个额外的随从并在它的身上放置一个+1力量指示物。"
+    },
+    "frankenstein_angry_mob": {
+      "name": "愤怒的民众",
+      "effectText": "选择你的一个随从。从你的手上放置任意数量的卡牌到你的牌库底。你每放一张牌，你就在该随从身上放置一个+1力量指示物。"
+    },
+    "frankenstein_igor": {
+      "name": "科学小怪蛋",
+      "abilityText": "持续：在本随从被消灭或者被弃掉之后，在你的一个随从上放置一个+1力量指示物。"
+    },
+    "frankenstein_body_shop": {
+      "name": "尸体商店",
+      "effectText": "消灭你的一个随从。放置等同于该随从力量的+1力量指示物到你的随从上，你可以任意分配它们。"
+    },
+    "frankenstein_lab_assistant": {
+      "name": "实验室助手",
+      "abilityText": "在你的另一个随从上放置一个+1力量指示物。"
+    },
+    "frankenstein_uberserum": {
+      "name": "身体改造",
+      "effectText": "打出到一个随从上。持续：在你的回合开始时，在该随从上放置一个+1力量指示物。该随从不能被消灭。"
+    },
+    "frankenstein_the_monster": {
+      "name": "怪物",
+      "abilityText": "天赋：从本随从身上移除一个+1力量指示物来额外打出一个随从。"
+    },
+    "frankenstein_blitzed": {
+      "name": "闪电攻击",
+      "effectText": "从你的随从身上移除任意数量的+1力量指示物。消灭一个力量少于或等于你移除的数量的随从。"
+    },
+    "frankenstein_herr_doktor": {
+      "name": "黑尔博士",
+      "abilityText": "天赋：在你的另一个随从身上放置一个+1力量指示物。"
+    },
+    "werewolf_full_moon": {
+      "name": "满月",
+      "effectText": "打出到基地上。持续：每个你在这里的随从获得+1力量。"
+    },
+    "werewolf_frenzy": {
+      "name": "狂怒",
+      "effectText": "每个你的力量为4或更高的随从获得+1力量直到回合结束。"
+    },
+    "werewolf_marking_territory": {
+      "name": "制造恐慌",
+      "effectText": "打出到一个基地上。持续：在你的回合开始的时候，如果你在这里比其他玩家有更高的总力量，将本基地的爆破点降低到0。"
+    },
+    "werewolf_chew_toy": {
+      "name": "咀嚼玩具",
+      "effectText": "选择你的一个随从。消灭一个在你的随从所在基地中比它力量低的随从。"
+    },
+    "werewolf_leader_of_the_pack": {
+      "name": "狼群领袖",
+      "effectText": "打出到一个随从上。天赋：如果本随从在这里拥有最高的力量，你就可以额外打出一个行动。"
+    },
+    "werewolf_howler": {
+      "name": "咆哮者",
+      "abilityText": "本随从获得+2力量直到回合结束。"
+    },
+    "werewolf_unstoppable": {
+      "name": "势不可挡",
+      "effectText": "打出到一个随从上。持续：本随从不能够被消灭。"
+    },
+    "werewolf_teenage_wolf": {
+      "name": "青年狼人",
+      "abilityText": "天赋：本随从获得+1力量直到回合结束。"
+    },
+    "werewolf_let_the_dog_out": {
+      "name": "关门放狗",
+      "effectText": "选择一个你的随从。消灭任意数量力量加起来小于或等于你随从的力量的随从。"
+    },
+    "werewolf_loup_garou": {
+      "name": "狼人",
+      "abilityText": "异能：在本基地计分前，本随从获得+2力量直到回合结束。"
+    },
+    "werewolf_moontouched": {
+      "name": "月之触",
+      "effectText": "打出到一个随从上。天赋：如果本随从在这里拥有最高的力量，抽一张牌。"
+    },
+    "werewolf_pack_alpha": {
+      "name": "阿尔法狼群",
+      "abilityText": "异能：在本基地计分前，每个你在这里的随从获得+1力量直到回合结束。"
+    },
+    "vampire_dinner_date": {
+      "name": "晚餐约会",
+      "effectText": "在你的一个随从身上放置一个+1力量指示物。消灭一个与该随从在同一个基地力量为2或以下的随从。"
+    },
+    "vampire_big_gulp": {
+      "name": "一大口",
+      "effectText": "消灭一个力量为4或者以下的随从。"
+    },
+    "vampire_opportunist": {
+      "name": "投机主义",
+      "effectText": "打出到一个随从上。持续：在另一个玩家的随从被消灭后，在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_mad_monster_party": {
+      "name": "疯狂怪物派对",
+      "effectText": "在每个你没有+1力量指示物的随从身上放置一个+1力量指示物。"
+    },
+    "vampire_cull_the_weak": {
+      "name": "剔除弱者",
+      "effectText": "选择你的一个随从。从你的手中弃置任意数量的随从卡。你每弃一张牌，你就在该随从身上放置一个+1力量指示物。"
+    },
+    "vampire_fledgling_vampire": {
+      "name": "新生吸血鬼",
+      "abilityText": "在你打出本随从后，如果另一个玩家在这里比你有更高的力量，在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_buffet": {
+      "name": "自助餐",
+      "effectText": "异能：在一个基地计分后，如果你是赢家，在你的每个随从身上放置+1力量标记。"
+    },
+    "vampire_heavy_drinker": {
+      "name": "渴血鬼",
+      "abilityText": "你可以消灭你的一个随从来在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_crack_of_dusk": {
+      "name": "破晓",
+      "effectText": "从你的弃牌堆额外打出一个力量为2或以下的随从。放置一个+1力量指示物在它的上面。"
+    },
+    "vampire_nightstalker": {
+      "name": "夜行者",
+      "abilityText": "消灭一个这里的力量为2或以下的随从来在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_summon_wolves": {
+      "name": "召唤狼群",
+      "effectText": "打出到基地上。持续：在你的回合开始时，在本卡上放置一个+1力量指示物。如果你有随从在这，指示物会被加进你的总力量中。"
+    },
+    "vampire_the_count": {
+      "name": "吸血鬼伯爵",
+      "abilityText": "持续：在另一个玩家的随从被消灭后，在本随从身上放置一个+1力量指示物。"
+    },
+    "giant_ant_who_wants_to_live_forever": {
+      "name": "无人想要永生",
+      "effectText": "从你的随从身上移除任意数量的+1力量指示物。之后你每移除一个指示物，就抽一张卡。"
+    },
+    "giant_ant_a_kind_of_magic": {
+      "name": "如同魔法",
+      "effectText": "在你的随从之中随意分配它们身上的+1力量指示物。"
+    },
+    "giant_ant_we_will_rock_you": {
+      "name": "我们会摇文你",
+      "effectText": "每个你的随从为它自身上的每个+1力量指示物获得+1力量直到回合结束。"
+    },
+    "giant_ant_claim_the_prize": {
+      "name": "夺图奖励",
+      "effectText": "在至多3个你的随从的身上放置一个+1力量指示物。"
+    },
+    "giant_ant_under_pressure": {
+      "name": "承受压力",
+      "effectText": "异能：在一个基地即将计分前，你可以从你的一个随从身上转移任意数量的+1力量指示物到另一个随从身上。"
+    },
+    "giant_ant_worker": {
+      "name": "工蚁",
+      "abilityText": "在本随从身上放置两个+1力量指示物。"
+    },
+    "giant_ant_headlong": {
+      "name": "奔撞",
+      "effectText": "移动你的一个随从到另一个基地。在本随从上放置两个+1力量指示物。"
+    },
+    "giant_ant_soldier": {
+      "name": "兵蚁",
+      "abilityText": "在本随从上放置两个+1力量指示物。天赋：从本随从身上移除两个+1力量指示物来移动另一个随从到另一个基地上。"
+    },
+    "giant_ant_the_show_must_go_on": {
+      "name": "好戏还将继续",
+      "effectText": "打出到基地上。持续：你在这里的拥有+1力量指示物的随从不受其他玩家卡牌的影响。"
+    },
+    "giant_ant_drone": {
+      "name": "雄蜂",
+      "abilityText": "在本随从上放置一个+1力量指示物。持续：在你的一个随从被消灭前，你可以从本随从身上移除一个+1力量指示物来防止你的随从被消灭。"
+    },
+    "giant_ant_we_are_the_champions": {
+      "name": "我们乃最强",
+      "effectText": "异能：在一个基地计分后，从你在这里的一个随从身上转移任意数量的+1力量指示物到另一个随从身上。"
+    },
+    "giant_ant_killer_queen": {
+      "name": "杀手女皇",
+      "abilityText": "天赋：如果你在本回合中打出了一个随从到此基地，在该随从以及本随从身上放置一个+1力量指示物。"
     }
   },
   "endgame": {

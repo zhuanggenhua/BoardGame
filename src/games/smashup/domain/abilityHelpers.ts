@@ -32,6 +32,7 @@ import type {
     CardsDrawnEvent,
     DeckReorderedEvent,
     AbilityFeedbackEvent,
+    OngoingCardCounterChangedEvent,
 } from './types';
 import { SU_EVENTS } from './types';
 import { getEffectivePower } from './ongoingModifiers';
@@ -96,12 +97,14 @@ export function destroyMinion(
     minionDefId: string,
     fromBaseIndex: number,
     ownerId: PlayerId,
+    destroyerId: PlayerId | undefined,
     reason: string,
     now: number
 ): MinionDestroyedEvent {
+    console.log(`[destroyMinion] uid=${minionUid}, defId=${minionDefId}, ownerId=${ownerId}, destroyerId=${destroyerId}, reason=${reason}`);
     return {
         type: SU_EVENTS.MINION_DESTROYED,
-        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, reason },
+        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason },
         timestamp: now,
     };
 }
@@ -143,6 +146,35 @@ export function addPowerCounter(
         payload: { minionUid, baseIndex, amount, reason },
         timestamp: now,
     };
+}
+
+/** 生成 ongoing 卡力量指示物变化事件（如 vampire_summon_wolves） */
+export function addOngoingCardCounter(
+    cardUid: string,
+    baseIndex: number,
+    delta: number,
+    reason: string,
+    now: number
+): OngoingCardCounterChangedEvent {
+    return {
+        type: SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED,
+        payload: { cardUid, baseIndex, delta, reason },
+        timestamp: now,
+    };
+}
+
+/** 队列化随从打出后效果（如打出后自动+1指示物），在 fireMinionPlayedTriggers 中消费 */
+export function queueMinionPlayEffect(
+    playerId: PlayerId,
+    effect: 'addPowerCounter',
+    amount: number,
+    now: number
+): SmashUpEvent {
+    return {
+        type: SU_EVENTS.MINION_PLAY_EFFECT_QUEUED,
+        payload: { playerId, effect, amount },
+        timestamp: now,
+    } as unknown as SmashUpEvent;
 }
 
 /** 生成移除力量指示物事件 */
@@ -440,6 +472,21 @@ export function fireMinionPlayedTriggers(params: {
     events.push(...ongoingResult.events);
     if (ongoingResult.matchState) matchState = ongoingResult.matchState;
 
+    // 4. 消费 pendingMinionPlayEffects 队列（如 crack_of_dusk / its_alive 的打出后+1指示物）
+    const player = core.players[playerId];
+    if (player?.pendingMinionPlayEffects && player.pendingMinionPlayEffects.length > 0) {
+        const effect = player.pendingMinionPlayEffects[0];
+        if (effect.effect === 'addPowerCounter') {
+            events.push(addPowerCounter(cardUid, baseIndex, effect.amount, 'pendingMinionPlayEffect', now));
+        }
+        // 生成消费事件（reducer 负责 shift 队列）
+        events.push({
+            type: SU_EVENTS.MINION_PLAY_EFFECT_CONSUMED,
+            payload: { playerId },
+            timestamp: now,
+        } as SmashUpEvent);
+    }
+
     return matchState !== params.matchState ? { events, matchState } : { events };
 }
 
@@ -500,6 +547,21 @@ export function findMinionOnBases(
     return undefined;
 }
 
+/** 通过附着行动卡 uid 反查随从（用于 ongoing+talent 附着在随从上的场景） */
+export function findMinionByAttachedCard(
+    core: SmashUpCore,
+    attachedCardUid: string
+): { minion: MinionOnBase; baseIndex: number } | undefined {
+    for (let i = 0; i < core.bases.length; i++) {
+        for (const m of core.bases[i].minions) {
+            if (m.attachedActions.some(a => a.uid === attachedCardUid)) {
+                return { minion: m, baseIndex: i };
+            }
+        }
+    }
+    return undefined;
+}
+
 /** 获取基地上指定玩家的随从 */
 export function getPlayerMinionsOnBase(
     core: SmashUpCore,
@@ -538,6 +600,28 @@ export function recoverCardsFromDiscard(
         payload: { playerId, cardUids, reason },
         timestamp: now,
     };
+}
+
+/**
+ * 交互取消回滚（行动卡）通用事件构建。
+ *
+ * 语义：当行动卡在交互中被取消时，统一执行
+ * 1) 回收该行动卡到手牌
+ * 2) 返还本回合 1 点行动额度
+ * 3) 允许在前置参数中附加自定义回滚事件（如恢复/撤销指示物）
+ */
+export function buildActionCancelRollbackEvents(
+    playerId: PlayerId,
+    actionCardUid: string,
+    reasonPrefix: string,
+    now: number,
+    rollbackEvents: SmashUpEvent[] = [],
+): SmashUpEvent[] {
+    return [
+        ...rollbackEvents,
+        recoverCardsFromDiscard(playerId, [actionCardUid], `${reasonPrefix}_cancel`, now),
+        grantExtraAction(playerId, `${reasonPrefix}_cancel`, now),
+    ];
 }
 
 // ============================================================================

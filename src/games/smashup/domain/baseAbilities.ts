@@ -22,7 +22,7 @@ import type {
 } from './types';
 import { SU_EVENTS } from './types';
 import { getEffectivePower } from './ongoingModifiers';
-import { drawMadnessCards, destroyMinion, moveMinion, buildBaseTargetOptions, buildMinionTargetOptions } from './abilityHelpers';
+import { drawMadnessCards, destroyMinion, moveMinion, buildBaseTargetOptions, buildMinionTargetOptions, addPowerCounter } from './abilityHelpers';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
@@ -48,6 +48,17 @@ export interface BaseAbilityContext {
     matchState?: MatchState<SmashUpCore>;
     baseIndex: number;
     baseDefId: string;
+    /**
+     * 被操作实体的拥有者（语义依上下文而定）
+     * - onMinionPlayed: 打出随从的玩家
+     * - onMinionDestroyed: 被消灭随从的拥有者
+     * - beforeScoring/afterScoring: 当前回合玩家
+     * 
+     * ⚠️ 注意：此字段不代表"操作发起者"（如消灭者、攻击者）
+     * 需要操作发起者时，使用专用字段（如 destroyerId）
+     * 
+     * TODO: 未来版本将添加 actorId 字段表示操作发起者，与引擎层 ActionLogEntry.actorId 对齐
+     */
     playerId: PlayerId;
     /** onMinionPlayed 时：刚打出的随从 */
     minionUid?: string;
@@ -81,6 +92,14 @@ function getContinuationContext<T>(
 ): T | undefined {
     if (!interactionData) return undefined;
     return interactionData.continuationContext as T | undefined;
+}
+
+function getTotalMinionsPlayedAtBaseThisTurn(state: SmashUpCore, baseIndex: number): number {
+    let total = 0;
+    for (const player of Object.values(state.players)) {
+        total += player.minionsPlayedPerBase?.[baseIndex] ?? 0;
+    }
+    return total;
 }
 
 // ============================================================================
@@ -239,22 +258,48 @@ export function registerBaseAbilities(): void {
         return { events };
     });
 
-    // base_locker_room: 更衣室
-    // "你的回合开始时，如果你有随从在这，抽一张卡牌"
-    registerBaseAbility('base_locker_room', 'onTurnStart', (ctx) => {
+    // base_castle_blood: 血堡 (Castle Blood)
+    // "打出随从到这后，如果对手在这里力量比你大，你可以在该随从上放 +1 指示物"
+    registerBaseAbility('base_castle_blood', 'onMinionPlayed', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
-        if (!base) return { events: [] };
-        const hasMinion = base.minions.some(m => m.controller === ctx.playerId);
-        if (!hasMinion) return { events: [] };
-        const player = ctx.state.players[ctx.playerId];
-        if (!player || player.deck.length === 0) return { events: [] };
-        const topCard = player.deck[0];
+        if (!base || !ctx.minionUid) return { events: [] };
+        // 计算当前玩家和最强对手的力量
+        let myPower = 0;
+        let maxOpponentPower = 0;
+        for (const m of base.minions) {
+            const power = getEffectivePower(ctx.state, m, ctx.baseIndex);
+            if (m.controller === ctx.playerId) myPower += power;
+            else {
+                const opPower = base.minions
+                    .filter(mm => mm.controller === m.controller)
+                    .reduce((sum, mm) => sum + getEffectivePower(ctx.state, mm, ctx.baseIndex), 0);
+                if (opPower > maxOpponentPower) maxOpponentPower = opPower;
+            }
+        }
+        if (maxOpponentPower <= myPower) return { events: [] };
+        // 可选效果：让玩家选择是否放指示物
+        const minion = base.minions.find(m => m.uid === ctx.minionUid);
+        if (!minion) return { events: [] };
+        if (!ctx.matchState) {
+            // 无交互上下文时保持兼容：默认执行放置
+            return {
+                events: [addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'base_castle_blood', ctx.now)],
+            };
+        }
+        const options: PromptOption<{ skip?: boolean; apply?: boolean; minionUid?: string; baseIndex?: number }>[] = [
+            { id: 'apply', label: '放置 +1 力量指示物', value: { apply: true, minionUid: ctx.minionUid, baseIndex: ctx.baseIndex } },
+            { id: 'skip', label: '跳过', value: { skip: true } },
+        ];
+        const interaction = createSimpleChoice(
+            `base_castle_blood_${ctx.now}`,
+            ctx.playerId,
+            '血堡：是否在该随从上放置 +1 力量指示物？',
+            options,
+            { sourceId: 'base_castle_blood', targetType: 'generic' },
+        );
         return {
-            events: [{
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: ctx.playerId, count: 1, cardUids: [topCard.uid] },
-                timestamp: ctx.now,
-            } as CardsDrawnEvent],
+            events: [],
+            matchState: queueInteraction(ctx.matchState, interaction),
         };
     });
 
@@ -546,24 +591,173 @@ export function registerBaseAbilities(): void {
         };
     });
 
-    // base_stadium: 体育场
-    // "这里的一个随从被消灭后，它的控制者抽一张卡牌"
-    registerExtended('base_stadium', 'onMinionDestroyed', (ctx) => {
-        // ctx.controllerId 是被消灭随从的控制者
-        const controllerId = ctx.controllerId ?? ctx.playerId;
-        const controller = ctx.state.players[controllerId];
-        if (!controller || controller.deck.length === 0) return { events: [] };
+    // base_crypt: 地窖 (Crypt)
+    // "当一个或多个随从在这被消灭，消灭者可在自己在这的随从上放 +1 指示物"
+    registerExtended('base_crypt', 'onMinionDestroyed', (ctx) => {
+        console.log('[base_crypt] onMinionDestroyed triggered:', {
+            baseDefId: ctx.baseDefId,
+            minionUid: ctx.minionUid,
+            destroyerId: ctx.destroyerId,
+            playerId: ctx.playerId,
+            hasMatchState: !!ctx.matchState,
+        });
+        // ✅ 只使用 destroyerId，不 fallback 到 playerId
+        // playerId 在此上下文中是被消灭随从的拥有者，不是消灭者
+        if (!ctx.destroyerId) {
+            console.log('[base_crypt] no destroyerId, returning empty');
+            return { events: [] };
+        }
+        const destroyerId = ctx.destroyerId;
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base) {
+            console.log('[base_crypt] base not found, returning empty');
+            return { events: [] };
+        }
+        // 消灭者在这里有随从才能放指示物
+        const destroyerMinions = base.minions.filter(m => m.controller === destroyerId && m.uid !== ctx.minionUid);
+        console.log('[base_crypt] destroyerMinions:', destroyerMinions.length, destroyerMinions.map(m => m.defId));
+        if (destroyerMinions.length === 0) {
+            console.log('[base_crypt] no destroyer minions, returning empty');
+            return { events: [] };
+        }
+        if (!ctx.matchState && destroyerMinions.length === 1) {
+            // 无交互上下文时保持兼容：默认执行放置
+            console.log('[base_crypt] no matchState but single target, auto-placing counter');
+            return {
+                events: [addPowerCounter(destroyerMinions[0].uid, ctx.baseIndex, 1, 'base_crypt', ctx.now)],
+            };
+        }
+        // 可选效果：单目标/多目标都允许跳过
+        if (!ctx.matchState) {
+            console.log('[base_crypt] no matchState, cannot create interaction, returning empty');
+            return { events: [] };
+        }
+        console.log('[base_crypt] creating interaction with', destroyerMinions.length, 'options');
+        const minionOptions = destroyerMinions.map((m, i) => {
+            const def = getCardDef(m.defId);
+            return {
+                id: `minion-${i}`,
+                label: def?.name ?? m.defId,
+                value: { minionUid: m.uid, baseIndex: ctx.baseIndex, defId: m.defId },
+                displayMode: 'card' as const,
+            };
+        });
+        const options: PromptOption<{ skip?: boolean; minionUid?: string; baseIndex?: number; defId?: string }>[] = [
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            ...minionOptions,
+        ];
+        const interaction = createSimpleChoice(
+            `base_crypt_${ctx.now}`, destroyerId,
+            '地窖：选择一个你的随从放置 +1 指示物', options as any[],
+            { sourceId: 'base_crypt', targetType: 'minion' },
+        );
+        console.log('[base_crypt] interaction created, queueing');
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    });
+
+    // === Monster Smash 基地能力 ===
+
+    // base_laboratorium: 实验工坊 (Laboratorium)
+    // "每回合第一个被打出到这里的随从，其控制者在上面放 +1 力量指示物"
+    registerBaseAbility('base_laboratorium', 'onMinionPlayed', (ctx) => {
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base || !ctx.minionUid) return { events: [] };
+        // 检查是否为本回合该基地“全局第一个”被打出的随从（跨玩家）
+        const totalPlayedCount = getTotalMinionsPlayedAtBaseThisTurn(ctx.state, ctx.baseIndex);
+        // reduce 已执行，首个随从打出后总数应为 1
+        if (totalPlayedCount !== 1) return { events: [] };
+        return {
+            events: [addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'base_laboratorium', ctx.now)],
+        };
+    });
+
+    // base_golem_schloss: 魔像城堡 (Golem Schloß)
+    // "基地计分后，冠军在其每个随从上放置 +1 力量指示物"
+    registerBaseAbility('base_golem_schloss', 'afterScoring', (ctx) => {
+        if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
+        const winnerId = ctx.rankings[0].playerId;
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base) return { events: [] };
+        const events: SmashUpEvent[] = [];
+        for (const m of base.minions) {
+            if (m.controller === winnerId) {
+                events.push(addPowerCounter(m.uid, ctx.baseIndex, 1, 'base_golem_schloss', ctx.now));
+            }
+        }
+        return { events };
+    });
+
+    // base_moot_site: 集会场 (Moot Site)
+    // "每回合第一个打出到这的随从获得 +2 力量直到回合结束"
+    registerBaseAbility('base_moot_site', 'onMinionPlayed', (ctx) => {
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base || !ctx.minionUid) return { events: [] };
+        const totalPlayedCount = getTotalMinionsPlayedAtBaseThisTurn(ctx.state, ctx.baseIndex);
+        if (totalPlayedCount !== 1) return { events: [] };
+        const minion = base.minions.find(m => m.uid === ctx.minionUid);
+        if (!minion) return { events: [] };
         return {
             events: [{
-                type: SU_EVENTS.CARDS_DRAWN,
+                type: SU_EVENTS.TEMP_POWER_ADDED,
                 payload: {
-                    playerId: controllerId,
-                    count: 1,
-                    cardUids: [controller.deck[0].uid],
+                    minionUid: ctx.minionUid,
+                    baseIndex: ctx.baseIndex,
+                    amount: 2,
+                    reason: '集会场：首个随从 +2 临时力量',
                 },
                 timestamp: ctx.now,
-            } as CardsDrawnEvent],
+            } as SmashUpEvent],
         };
+    });
+
+    // base_standing_stones: 巨石阵 (Standing Stones)
+    // "你的回合中，你在这的一个随从可以使用才能两次"
+    // 实现位于 commands.ts (USE_TALENT 验证) 和 reduce.ts (TALENT_USED / TURN_STARTED)
+    // 通过 SmashUpCore.standingStonesDoubleTalentMinionUid 追踪每回合双才能名额
+
+    // base_egg_chamber: 卵室 (Egg Chamber)
+    // "这里有 +1 力量指示物的随从不能被消灭"
+    // 实现：通过 protection 系统注册消灭保护
+
+    // base_the_hill: 蚁丘 (The Hill)
+    // "每位玩家回合开始时，可以将一个自己的随从从任意基地移到这里"
+    registerBaseAbility('base_the_hill', 'onTurnStart', (ctx) => {
+        // 收集该玩家在其他基地的随从
+        const candidates: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
+        for (let bi = 0; bi < ctx.state.bases.length; bi++) {
+            if (bi === ctx.baseIndex) continue;
+            const base = ctx.state.bases[bi];
+            if (!base) continue;
+            for (const m of base.minions) {
+                if (m.controller !== ctx.playerId) continue;
+                const def = getCardDef(m.defId);
+                const baseDef = getBaseDef(base.defId);
+                candidates.push({
+                    uid: m.uid,
+                    defId: m.defId,
+                    baseIndex: bi,
+                    label: `${def?.name ?? m.defId} @ ${baseDef?.name ?? base.defId}`,
+                });
+            }
+        }
+        if (candidates.length === 0) return { events: [] };
+        if (!ctx.matchState) return { events: [] };
+        const options = [
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            ...candidates.map((c, i) => ({
+                id: `minion-${i}`,
+                label: c.label,
+                value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, defId: c.defId },
+                displayMode: 'card' as const,
+            })),
+        ];
+        const interaction = createSimpleChoice(
+            `base_the_hill_${ctx.now}`, ctx.playerId,
+            '蚁丘：选择一个你的随从移动到这里', options as any[],
+            { sourceId: 'base_the_hill', targetType: 'minion' },
+        );
+        (interaction.data as any).continuationContext = { targetBaseIndex: ctx.baseIndex };
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     });
 
     // base_ritual_site: 仪式场所
@@ -914,13 +1108,24 @@ export function registerBaseInteractionHandlers(): void {
         const target = base.minions.find(m => m.uid === selected.minionUid);
         if (!target) return { state, events: [] };
         return { state, events: [
-            destroyMinion(target.uid, target.defId, selected.baseIndex!, target.owner, 'base_rlyeh', timestamp),
+            destroyMinion(target.uid, target.defId, selected.baseIndex!, target.owner, undefined, 'base_rlyeh', timestamp),
             {
                 type: SU_EVENTS.VP_AWARDED,
                 payload: { playerId, amount: 1, reason: '拉莱耶：消灭随从获得1VP' },
                 timestamp,
             } as VpAwardedEvent,
         ] };
+    });
+
+    // 血堡：可选在刚打出的随从上放 +1 指示物
+    registerInteractionHandler('base_castle_blood', (state, _playerId, value, _iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; apply?: boolean; minionUid?: string; baseIndex?: number };
+        if (selected.skip || !selected.apply) return { state, events: [] };
+        if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
+        return {
+            state,
+            events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'base_castle_blood', timestamp)],
+        };
     });
 
     // 母舰：收回随从到手牌
@@ -946,7 +1151,7 @@ export function registerBaseInteractionHandlers(): void {
     registerInteractionHandler('base_ninja_dojo', (state, _playerId, value, _iData, _random, timestamp) => {
         const selected = value as { skip?: boolean; minionUid?: string; baseIndex?: number; minionDefId?: string; ownerId?: string };
         if (selected.skip) return { state, events: [] };
-        return { state, events: [destroyMinion(selected.minionUid!, selected.minionDefId!, selected.baseIndex!, selected.ownerId!, 'base_ninja_dojo', timestamp)] };
+        return { state, events: [destroyMinion(selected.minionUid!, selected.minionDefId!, selected.baseIndex!, selected.ownerId!, undefined, 'base_ninja_dojo', timestamp)] };
     });
 
     // 海盗湾：选择随从后，链式选择目标基地
@@ -1090,6 +1295,24 @@ export function registerBaseInteractionHandlers(): void {
         }
 
         return { state, events };
+    });
+
+    // 地窖：选择随从放 +1 指示物
+    registerInteractionHandler('base_crypt', (state, _playerId, value, _iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; minionUid?: string; baseIndex?: number };
+        if (selected.skip) return { state, events: [] };
+        if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
+        return { state, events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'base_crypt', timestamp)] };
+    });
+
+    // 蚁丘（The Hill）：选择随从移动到这里
+    registerInteractionHandler('base_the_hill', (state, _playerId, value, iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; minionUid?: string; minionDefId?: string; baseIndex?: number };
+        if (selected.skip) return { state, events: [] };
+        if (!selected.minionUid || !selected.minionDefId || selected.baseIndex === undefined) return { state, events: [] };
+        const ctx = iData?.continuationContext as { targetBaseIndex: number } | undefined;
+        if (!ctx) return { state, events: [] };
+        return { state, events: [moveMinion(selected.minionUid, selected.minionDefId, selected.baseIndex, ctx.targetBaseIndex, 'base_the_hill', timestamp)] };
     });
 
     // === 扩展包基地交互处理函数 ===

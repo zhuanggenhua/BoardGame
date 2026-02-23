@@ -164,7 +164,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 - **关键图片（critical）**：阻塞渲染，加载完成前显示 LoadingScreen，10 秒超时后放行
 - **暖图片（warm）**：后台异步加载，不阻塞对局渲染
 
-门禁落在 `MatchRoom`/`LocalMatchRoom` 入口层，各游戏通过 `criticalImageResolver.ts` 提供动态解析。
+门禁落在 `MatchRoom` 入口层，各游戏通过 `criticalImageResolver.ts` 提供动态解析。
 
 **locale 处理**：
 - `CriticalImageGate` 从 `GameBoardProps` 提取 `locale` 参数（默认 `zh-CN`）

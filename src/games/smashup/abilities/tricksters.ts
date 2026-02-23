@@ -50,7 +50,7 @@ function tricksterGnome(ctx: AbilityContext): AbilityResult {
         
         const target = targets.find(t => t.uid === minionUid);
         if (!target) return { events: [] };
-        return { events: [destroyMinion(target.uid, target.defId, ctx.baseIndex, target.owner, 'trickster_gnome', ctx.now)] };
+        return { events: [destroyMinion(target.uid, target.defId, ctx.baseIndex, target.owner, undefined, 'trickster_gnome', ctx.now)] };
     });
 }
 
@@ -165,7 +165,7 @@ export function registerTricksterInteractionHandlers(): void {
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'trickster_gnome', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'trickster_gnome', timestamp)] };
     });
 
     // 幻想破碎：选择行动卡后消灭

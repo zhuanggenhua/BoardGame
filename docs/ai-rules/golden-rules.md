@@ -108,10 +108,27 @@
       items.push(settingsAction);
   }
   ```
+- **Debug 日志陷阱（高频教训）**：
+  ```tsx
+  // ❌ 错误：debug 日志引用了后面才声明的 useMemo 变量
+  if (prompt?.id?.includes('debug_target')) {
+      console.log({ sliderConfig: !!sliderConfig }); // ReferenceError!
+  }
+  // ... 20 行后 ...
+  const sliderConfig = useMemo(() => parseConfig(prompt), [prompt]);
+
+  // ✅ 正确：debug 日志放在所有变量声明之后
+  const sliderConfig = useMemo(() => parseConfig(prompt), [prompt]);
+  if (prompt?.id?.includes('debug_target')) {
+      console.log({ sliderConfig: !!sliderConfig }); // OK
+  }
+  ```
+  **教训**：即使 debug 日志在条件分支内（看似只在特定场景触发），`const` 的 TDZ 是词法作用域级别的——只要执行到引用行就会报错。且 debug 日志导致的白屏往往难以定位，因为"只是加了个 log"。
 - **自检规则**：
   1. 新增/移动代码块时，检查块内引用的所有 `const`/`let` 变量是否已在上方声明
   2. 大型组件中插入条件分支时，特别注意分支内引用的变量声明位置
-  3. 重构代码顺序后，用 `getDiagnostics` 验证无 TDZ 错误
+  3. **添加 debug 日志时，禁止引用当前行之后才声明的任何变量**
+  4. 重构代码顺序后，用 `getDiagnostics` 验证无 TDZ 错误
 
 ---
 

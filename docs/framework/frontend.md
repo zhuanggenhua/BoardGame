@@ -87,7 +87,6 @@ src/
 ├── pages/                   # 页面路由
 │   ├── devtools/             # 开发工具页
 │   ├── Home.tsx              # 首页
-│   ├── LocalMatchRoom.tsx    # 本地对局页
 │   └── MatchRoom.tsx         # 在线对局页
 ├── services/                # 运行时服务（lobbySocket / matchSocket）
 │   ├── lobbySocket.ts        # 大厅 socket
@@ -179,7 +178,6 @@ src/
 
 - `src/App.tsx`：路由入口
 - `src/pages/MatchRoom.tsx`：在线对局
-- `src/pages/LocalMatchRoom.tsx`：本地对局
 - `src/services/lobbySocket.ts`：大厅订阅
 
 ## 6. 游客身份持久化与刷新行为

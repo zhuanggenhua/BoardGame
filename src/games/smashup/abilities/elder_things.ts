@@ -315,7 +315,7 @@ function unfathomableGoalsProcessNext(
         }
         if (opMinions.length === 1) {
             // 只有一个随从，直接消灭，继续下一个对手
-            events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, opMinions[0].baseIndex, opMinions[0].owner, 'elder_thing_unfathomable_goals', ctx.now));
+            events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, opMinions[0].baseIndex, opMinions[0].owner, undefined, 'elder_thing_unfathomable_goals', ctx.now));
             idx++;
             continue;
         }
@@ -550,7 +550,7 @@ export function registerElderThingInteractionHandlers(): void {
         if (myMinions.length <= 2) {
             const events: SmashUpEvent[] = [];
             for (const t of myMinions) {
-                events.push(destroyMinion(t.minion.uid, t.minion.defId, t.baseIndex, t.minion.owner, 'elder_thing_elder_thing', timestamp));
+                events.push(destroyMinion(t.minion.uid, t.minion.defId, t.baseIndex, t.minion.owner, playerId, 'elder_thing_elder_thing', timestamp));
             }
             return { state, events };
         }
@@ -581,7 +581,7 @@ export function registerElderThingInteractionHandlers(): void {
         
         // 消灭第一个随从
         const events: SmashUpEvent[] = [
-            destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'elder_thing_elder_thing', timestamp)
+            destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'elder_thing_elder_thing', timestamp)
         ];
         
         // 收集剩余的己方随从（排除刚消灭的和远古之物自己）
@@ -620,7 +620,7 @@ export function registerElderThingInteractionHandlers(): void {
     });
     
     // 远古之物：玩家点击第二个要消灭的随从
-    registerInteractionHandler('elder_thing_elder_thing_destroy_second', (state, _playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('elder_thing_elder_thing_destroy_second', (state, playerId, value, _iData, _random, timestamp) => {
         const { minionUid, baseIndex, defId } = value as { minionUid: string; baseIndex: number; defId: string };
         const base = state.core.bases[baseIndex];
         const target = base?.minions.find(m => m.uid === minionUid);
@@ -628,7 +628,7 @@ export function registerElderThingInteractionHandlers(): void {
         
         // 消灭第二个随从
         const events: SmashUpEvent[] = [
-            destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'elder_thing_elder_thing', timestamp)
+            destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'elder_thing_elder_thing', timestamp)
         ];
         
         return { state, events };
@@ -650,7 +650,7 @@ export function registerElderThingInteractionHandlers(): void {
                 const opMinions = base.minions.filter((m: any) => m.controller === ctx.targetPlayerId);
                 if (opMinions.length === 1) {
                     // 只有一个随从，直接消灭
-                    events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, ctx.baseIndex, opMinions[0].owner, 'elder_thing_shoggoth', timestamp));
+                    events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, ctx.baseIndex, opMinions[0].owner, ctx.casterPlayerId, 'elder_thing_shoggoth', timestamp));
                 } else if (opMinions.length > 1) {
                     // 多个随从，由修格斯控制者选择
                     const options = opMinions.map(m => {
@@ -677,7 +677,7 @@ export function registerElderThingInteractionHandlers(): void {
     });
 
     // 修格斯：控制者选择消灭对手随从后的处理
-    registerInteractionHandler('elder_thing_shoggoth_destroy', (state, _playerId, value, iData, _random, timestamp) => {
+    registerInteractionHandler('elder_thing_shoggoth_destroy', (state, playerId, value, iData, _random, timestamp) => {
         const { minionUid, baseIndex, defId } = value as { minionUid: string; baseIndex: number; defId: string };
         const ctx = (iData as any)?.continuationContext as { casterPlayerId: string; baseIndex: number; opponents: string[]; opponentIdx: number };
         if (!ctx) return { state, events: [] };
@@ -686,7 +686,7 @@ export function registerElderThingInteractionHandlers(): void {
         const target = base?.minions.find(m => m.uid === minionUid);
         const events: SmashUpEvent[] = [];
         if (target) {
-            events.push(destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'elder_thing_shoggoth', timestamp));
+            events.push(destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'elder_thing_shoggoth', timestamp));
         }
 
         // 继续链式处理下一个对手
@@ -694,13 +694,13 @@ export function registerElderThingInteractionHandlers(): void {
     });
 
     // 深不可测的目的：对手选择消灭自己的随从（链式处理多个对手）
-    registerInteractionHandler('elder_thing_unfathomable_goals', (state, _playerId, value, iData, _random, timestamp) => {
+    registerInteractionHandler('elder_thing_unfathomable_goals', (state, playerId, value, iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return { state, events: [] };
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return { state, events: [] };
-        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'elder_thing_unfathomable_goals', timestamp)];
+        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'elder_thing_unfathomable_goals', timestamp)];
 
         // 链式处理下一个对手
         const ctx = (iData as any)?.continuationContext as { opponents: string[]; opponentIdx: number } | undefined;
@@ -720,7 +720,7 @@ export function registerElderThingInteractionHandlers(): void {
             }
             if (opMinions.length === 0) continue;
             if (opMinions.length === 1) {
-                events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, opMinions[0].baseIndex, opMinions[0].owner, 'elder_thing_unfathomable_goals', timestamp));
+                events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, opMinions[0].baseIndex, opMinions[0].owner, pid, 'elder_thing_unfathomable_goals', timestamp));
                 continue;
             }
             // 多个随从：创建交互
@@ -803,7 +803,7 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (!m.attachedActions.some(a => a.defId === 'elder_thing_dunwich_horror')) continue;
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, 'elder_thing_dunwich_horror', ctx.now));
+            events.push(destroyMinion(m.uid, m.defId, i, m.owner, undefined, 'elder_thing_dunwich_horror', ctx.now));
         }
     }
     return events;

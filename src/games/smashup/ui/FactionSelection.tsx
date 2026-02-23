@@ -184,8 +184,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                         </div>
 
                                         {/* Faction Icon Badge - "Token" style */}
-                                        <div className="absolute -top-2 -right-2 z-40 w-10 h-10 bg-slate-900 border-2 border-white rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                                            <faction.icon size={20} strokeWidth={2.5} />
+                                        <div className="absolute -top-2 -right-2 z-40 w-10 h-10 bg-slate-900 border-2 border-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                            <faction.icon size={20} strokeWidth={2.5} style={{ color: faction.color }} />
                                         </div>
                                     </div>
                                 </div>

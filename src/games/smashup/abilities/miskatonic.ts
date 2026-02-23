@@ -371,7 +371,7 @@ function miskatonicThingOnTheDoorstep(ctx: AbilityContext): AbilityResult {
     if (topMinions.length === 1) {
         // 唯一最高力量随从，直接消灭
         const target = topMinions[0];
-        return { events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'miskatonic_thing_on_the_doorstep', ctx.now)] };
+        return { events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, undefined, 'miskatonic_thing_on_the_doorstep', ctx.now)] };
     }
 
     // 多个并列最高力量，让玩家选择
@@ -389,7 +389,7 @@ function miskatonicThingOnTheDoorstep(ctx: AbilityContext): AbilityResult {
     }, (value) => {
         const target = base.minions.find(m => m.uid === value.minionUid);
         if (!target) return { events: [] };
-        return { events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'miskatonic_thing_on_the_doorstep', ctx.now)] };
+        return { events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, undefined, 'miskatonic_thing_on_the_doorstep', ctx.now)] };
     });
 }
 

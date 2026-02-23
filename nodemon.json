@@ -3,11 +3,16 @@
   "watch": [
     "server.ts",
     "src/server/",
-    "src/games/manifest.server.ts"
+    "src/engine/transport/server.ts",
+    "src/engine/transport/protocol.ts"
   ],
   "ignore": [
     "**/*.test.*",
-    "**/*.spec.*"
+    "**/*.spec.*",
+    "src/games/**",
+    "src/engine/systems/**",
+    "src/engine/primitives/**",
+    "src/engine/fx/**"
   ],
   "ext": "ts",
   "exec": "npx tsx server.ts",

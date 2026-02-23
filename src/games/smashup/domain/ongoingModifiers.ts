@@ -317,7 +317,26 @@ export function getEffectivePower(
 }
 
 /**
- * 获取玩家在基地上的总有效力量（含持续修正）
+ * 获取 ongoing 卡上的力量指示物贡献（如 vampire_summon_wolves）
+ * 仅当该玩家在基地上有随从时才计入
+ */
+export function getOngoingCardPowerContribution(
+    base: BaseInPlay,
+    playerId: PlayerId
+): number {
+    const hasMinion = base.minions.some(m => m.controller === playerId);
+    if (!hasMinion) return 0;
+    let total = 0;
+    for (const oa of base.ongoingActions) {
+        if (oa.ownerId !== playerId) continue;
+        const counters = (oa.metadata?.powerCounters as number) ?? 0;
+        if (counters > 0) total += counters;
+    }
+    return total;
+}
+
+/**
+ * 获取玩家在基地上的总有效力量（含持续修正 + ongoing 卡力量贡献）
  */
 export function getPlayerEffectivePowerOnBase(
     state: SmashUpCore,
@@ -325,21 +344,29 @@ export function getPlayerEffectivePowerOnBase(
     baseIndex: number,
     playerId: PlayerId
 ): number {
-    return base.minions
+    const minionPower = base.minions
         .filter(m => m.controller === playerId)
         .reduce((sum, m) => sum + getEffectivePower(state, m, baseIndex), 0);
+    return minionPower + getOngoingCardPowerContribution(base, playerId);
 }
 
 /**
- * 获取基地上的总有效力量（含持续修正）
+ * 获取基地上的总有效力量（含持续修正 + ongoing 卡力量贡献）
  */
 export function getTotalEffectivePowerOnBase(
     state: SmashUpCore,
     base: BaseInPlay,
     baseIndex: number
 ): number {
-    return base.minions
+    const minionPower = base.minions
         .reduce((sum, m) => sum + getEffectivePower(state, m, baseIndex), 0);
+    // 累加所有玩家的 ongoing 卡力量贡献
+    const playerIds = new Set(base.minions.map(m => m.controller));
+    let ongoingBonus = 0;
+    for (const pid of playerIds) {
+        ongoingBonus += getOngoingCardPowerContribution(base, pid);
+    }
+    return minionPower + ongoingBonus;
 }
 
 /**

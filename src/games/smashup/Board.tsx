@@ -47,7 +47,6 @@ import { DeckDiscardZone } from './ui/DeckDiscardZone';
 import { getDiscardPlayOptions } from './domain/discardPlayability';
 import { SMASHUP_AUDIO_CONFIG } from './audio.config';
 import { useTutorialBridge, useTutorial } from '../../contexts/TutorialContext';
-import { useGameMode } from '../../contexts/GameModeContext';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { TutorialSelectionGate } from '../../components/game/framework';
 import { LoadingScreen } from '../../components/system/LoadingScreen';
@@ -88,12 +87,9 @@ const getPhaseNameKey = (phase: string) => `phases.${phase}`;
 const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, matchData, isMultiplayer }) => {
     const { t } = useTranslation('game-smashup');
     const core = G.core;
-    const gameMode = useGameMode();
-    const isLocalMatch = gameMode ? !gameMode.isMultiplayer : false;
     const phase = G.sys.phase;
     const currentPid = getCurrentPlayerId(core);
-    // 本地模式下 playerID 为 null，使用当前回合玩家作为有效身份
-    const playerID = isLocalMatch ? currentPid : rawPlayerID;
+    const playerID = rawPlayerID;
     const isMyTurn = playerID === currentPid;
     const myPlayer = playerID ? core.players[playerID] : undefined;
     const isGameOver = G.sys.gameover;
@@ -216,11 +212,23 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     // 基地选择交互检测：当前 interaction 的选项包含有效 baseIndex 时，用基地区直接点击选择
     const isBaseSelectPrompt = useMemo(() => {
         if (!currentPrompt || currentPrompt.playerId !== playerID) return false;
+        // 多选交互不走棋盘点击模式，交给 PromptOverlay 卡牌多选面板处理
+        if (currentPrompt.multi) return false;
         const data = currentInteraction?.data as Record<string, unknown> | undefined;
-        // 优先使用 targetType 字段（数据驱动）
-        if (data?.targetType === 'base') return true;
+        // 优先使用 targetType 字段（数据驱动）：显式声明时不做任何兜底推断
+        // 避免 minion 选项（通常同时包含 minionUid + baseIndex）被误判为 base 选择
+        if (typeof data?.targetType === 'string') return data.targetType === 'base';
         // 兼容旧模式：至少有一个有效 baseIndex≥0 的选项，且所有选项要么是有效基地要么是特殊选项（如"完成"baseIndex=-1）
         if (currentPrompt.options.length === 0) return false;
+
+        // 只要出现 minion/card 维度字段，就不是基地选择交互
+        const hasEntityField = currentPrompt.options.some(opt => {
+            const val = opt.value as Record<string, unknown> | undefined;
+            if (!val) return false;
+            return typeof val.minionUid === 'string' || typeof val.cardUid === 'string';
+        });
+        if (hasEntityField) return false;
+
         const hasBaseOption = currentPrompt.options.some(opt => {
             const val = opt.value as { baseIndex?: number } | undefined;
             return val != null && typeof val.baseIndex === 'number' && val.baseIndex >= 0;
@@ -252,11 +260,11 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
         if (!isBaseSelectPrompt || !currentPrompt) return [];
         return currentPrompt.options.filter(opt => {
             const val = opt.value as Record<string, unknown> | undefined;
-            if (!val) return false;
-            // 跳过选项：包含 skip 字段
-            if (val.skip === true) return true;
-            // 完成选项：baseIndex < 0
-            return typeof val.baseIndex === 'number' && val.baseIndex < 0;
+            if (!val) return true;
+            // 有效基地选项：baseIndex >= 0
+            if (typeof val.baseIndex === 'number' && val.baseIndex >= 0) return false;
+            // 其余都是非基地操作选项（skip / done / cancel 等）
+            return true;
         });
     }, [isBaseSelectPrompt, currentPrompt]);
 
@@ -264,7 +272,11 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     const isMinionSelectPrompt = useMemo(() => {
         if (!currentPrompt || currentPrompt.playerId !== playerID) return false;
         const data = currentInteraction?.data as Record<string, unknown> | undefined;
+        // 多选交互：仅当 targetType === 'minion' 时走棋盘点选（场上随从多选），其余多选交给 PromptOverlay
+        if (currentPrompt.multi) return data?.targetType === 'minion';
         if (data?.targetType === 'minion') return true;
+        // 显式声明了非 minion 的 targetType（如 'generic'/'base'）→ 不走棋盘随从点选
+        if (typeof data?.targetType === 'string') return false;
         // 兼容旧模式：所有选项都包含 minionUid，且不包含确认类字段（accept/confirm/returnIt/skip/done）
         // 确认类字段说明这是"是/否"交互而非随从选择
         return currentPrompt.options.length > 0 &&
@@ -290,16 +302,45 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
         return uids;
     }, [isMinionSelectPrompt, currentPrompt]);
 
-    // 随从选择中的非随从选项（如"跳过"），需要作为浮动按钮显示
+    // 随从选择中的非随从选项（如"跳过"/"完成"），需要作为浮动按钮显示
     const minionSelectExtraOptions = useMemo(() => {
         if (!isMinionSelectPrompt || !currentPrompt) return [];
         return currentPrompt.options.filter(opt => {
             const val = opt.value as Record<string, unknown> | undefined;
-            if (!val) return false;
-            // 跳过选项：包含 skip 字段
-            return val.skip === true;
+            if (!val) return true;
+            // 包含 minionUid 的是随从选项，不在此显示
+            if (typeof val.minionUid === 'string') return false;
+            // 其余都是非随从操作选项（skip / done / cancel 等）
+            return true;
         });
     }, [isMinionSelectPrompt, currentPrompt]);
+
+    // 多选随从模式检测
+    const isMultiMinionSelect = useMemo(() => {
+        return isMinionSelectPrompt && !!currentPrompt?.multi;
+    }, [isMinionSelectPrompt, currentPrompt]);
+
+    // 多选随从模式：已选中的 optionId 集合
+    const [multiSelectedOptionIds, setMultiSelectedOptionIds] = useState<Set<string>>(new Set());
+
+    // 多选随从模式：约束
+    const multiMinionConstraints = useMemo(() => {
+        if (!isMultiMinionSelect || !currentPrompt?.multi) return { min: 0, max: Infinity };
+        const multi = currentPrompt.multi as { min?: number; max?: number };
+        return { min: multi.min ?? 0, max: multi.max ?? Infinity };
+    }, [isMultiMinionSelect, currentPrompt]);
+
+    // 多选随从已选中的 UID 集合（用于 BaseZone 高亮已选随从）
+    const multiSelectedMinionUids = useMemo<Set<string>>(() => {
+        if (!isMultiMinionSelect) return new Set();
+        const uids = new Set<string>();
+        for (const optId of multiSelectedOptionIds) {
+            const opt = currentPrompt?.options.find(o => o.id === optId);
+            const val = opt?.value as { minionUid?: string } | undefined;
+            if (val?.minionUid) uids.add(val.minionUid);
+        }
+        return uids;
+    }, [isMultiMinionSelect, multiSelectedOptionIds, currentPrompt]);
 
     // 持续行动卡选择交互检测：targetType === 'ongoing'
     const isOngoingSelectPrompt = useMemo(() => {
@@ -325,8 +366,11 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
         if (!isOngoingSelectPrompt || !currentPrompt) return [];
         return currentPrompt.options.filter(opt => {
             const val = opt.value as Record<string, unknown> | undefined;
-            if (!val) return false;
-            return val.skip === true;
+            if (!val) return true;
+            // 包含 cardUid 的是行动卡目标选项，不在此显示
+            if (typeof val.cardUid === 'string') return false;
+            // 其余都是非行动卡操作选项（skip / done / cancel 等）
+            return true;
         });
     }, [isOngoingSelectPrompt, currentPrompt]);
 
@@ -366,6 +410,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
             setSelectedCardMode(null);
         }
         setDiscardStripSelectedUid(null);
+        setMultiSelectedOptionIds(new Set());
     }, [currentPrompt?.id]);
 
     // 统一弃牌堆出牌：合并正常弃牌堆出牌 + interaction 驱动的弃牌堆随从选择
@@ -643,7 +688,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     // 教学系统集成
     useTutorialBridge(G.sys.tutorial, dispatch);
     const { isActive: isTutorialActive, currentStep: tutorialStep } = useTutorial();
-    const isTutorialMode = gameMode?.mode === 'tutorial';
+    const isTutorialMode = isTutorialActive;
 
     // 教学模式下的命令权限检查
     const isTutorialCommandAllowed = useCallback((commandType: string): boolean => {
@@ -929,9 +974,25 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
             const option = currentPrompt.options.find(
                 opt => (opt.value as { minionUid?: string })?.minionUid === minionUid
             );
-            if (option) {
-                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+            if (!option) return;
+
+            // 多选模式：toggle 选中状态
+            if (isMultiMinionSelect) {
+                setMultiSelectedOptionIds(prev => {
+                    const next = new Set(prev);
+                    if (next.has(option.id)) {
+                        next.delete(option.id);
+                    } else {
+                        if (next.size >= multiMinionConstraints.max) return prev;
+                        next.add(option.id);
+                    }
+                    return next;
+                });
+                return;
             }
+
+            // 单选模式：立即提交
+            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
             return;
         }
         // ongoing-minion 模式下附着行动卡到随从
@@ -939,7 +1000,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
             if (!ongoingMinionTargetUids.has(minionUid)) return;
             handlePlayOngoingToMinion(selectedCardUid, baseIndex, minionUid);
         }
-    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, selectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids]);
+    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isMultiMinionSelect, multiMinionConstraints, selectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids]);
 
     /** 持续行动卡点击回调：交互驱动的行动卡选择 */
     const handleOngoingSelect = useCallback((ongoingUid: string) => {
@@ -964,7 +1025,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     // 防御性检查：HMR 或 client 重建时 core 可能不完整
     if (!core.turnOrder || !core.bases) {
         return (
-            <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: isLocalMatch }}>
+            <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: false }}>
                 <LoadingScreen
                     description={t('ui.loading', { defaultValue: '加载中...' })}
                     className="bg-[#3e2723]"
@@ -976,7 +1037,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     // EARLY RETURN: Faction Selection
     if (phase === 'factionSelect') {
         return (
-            <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: isLocalMatch }}>
+            <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: false }}>
                 <TutorialSelectionGate
                     isTutorialMode={isTutorialMode}
                     isTutorialActive={isTutorialActive}
@@ -995,7 +1056,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     }
 
     return (
-        <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: isLocalMatch }}>
+        <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: false }}>
             {/* BACKGROUND: A warm, dark wooden table texture. */}
             <div className="relative w-full h-screen bg-[#3e2723] overflow-hidden font-sans select-none"
             >
@@ -1075,7 +1136,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                                 const Icon = meta.icon;
                                                 return (
                                                     <span key={meta.id} title={t(meta.nameKey)}>
-                                                        <Icon className="w-4 h-4" />
+                                                        <Icon className="w-4 h-4" style={{ color: meta.color }} />
                                                     </span>
                                                 );
                                             })}
@@ -1101,7 +1162,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                             >
                                 <button
                                     onClick={() => {
-                                        if (!isTutorialCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE) || isSubmitting) {
+                                        if (G.sys.interaction?.isBlocked || !isTutorialCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE) || isSubmitting) {
                                             playDeniedSound();
                                             return;
                                         }
@@ -1110,15 +1171,19 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                         // 超时兜底：3秒后强制重置（防止命令失败导致按钮永久禁用）
                                         setTimeout(() => setIsSubmitting(false), 3000);
                                     }}
-                                    disabled={!isTutorialCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE) || isSubmitting}
-                                    className={`group w-24 h-24 rounded-full border-4 border-white shadow-[0_10px_20px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center transition-all text-white relative overflow-hidden ${!isTutorialCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE) || isSubmitting
+                                    disabled={!!G.sys.interaction?.isBlocked || !isTutorialCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE) || isSubmitting}
+                                    className={`group w-24 h-24 rounded-full border-4 border-white shadow-[0_10px_20px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center transition-all text-white relative overflow-hidden ${G.sys.interaction?.isBlocked || !isTutorialCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE) || isSubmitting
                                             ? 'bg-slate-600 opacity-50 cursor-not-allowed'
                                             : 'bg-slate-900 hover:scale-110 hover:rotate-3 active:scale-95'
                                         }`}
                                 >
                                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]" />
 
-                                    {t('ui.finish_turn').includes(' ') ? (
+                                    {G.sys.interaction?.isBlocked ? (
+                                        <span className="text-xs font-bold text-amber-300 text-center leading-tight">
+                                            {t('ui.waiting_opponent', { defaultValue: '等待对方操作' })}
+                                        </span>
+                                    ) : t('ui.finish_turn').includes(' ') ? (
                                         <>
                                             <span className="text-[10px] font-bold opacity-70 uppercase tracking-tighter leading-tight">
                                                 {t('ui.finish_turn').split(' ')[0]}
@@ -1320,9 +1385,9 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                     )}
                 </AnimatePresence>
 
-                {/* --- 随从选择浮动操作栏（跳过按钮） --- */}
+                {/* --- 随从选择浮动操作栏（多选确认 + 跳过按钮） --- */}
                 <AnimatePresence>
-                    {isMinionSelectPrompt && minionSelectExtraOptions.length > 0 && (
+                    {isMinionSelectPrompt && (isMultiMinionSelect || minionSelectExtraOptions.length > 0) && (
                         <motion.div
                             initial={{ y: 40, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -1330,13 +1395,37 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                             className="fixed bottom-[280px] inset-x-0 flex justify-center pointer-events-none"
                             style={{ zIndex: UI_Z_INDEX.hint }}
                         >
-                            <div className="flex gap-3 pointer-events-auto">
+                            <div className="flex gap-3 items-center pointer-events-auto">
+                                {isMultiMinionSelect && (
+                                    <>
+                                        <div className="bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2 rounded border border-slate-600 shadow-lg">
+                                            <span className="font-bold text-sm">
+                                                已选 {multiSelectedOptionIds.size}
+                                                {multiMinionConstraints.max !== Infinity && ` / ${multiMinionConstraints.max}`}
+                                            </span>
+                                        </div>
+                                        <SmashUpGameButton
+                                            variant="primary"
+                                            size="md"
+                                            disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
+                                            onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: Array.from(multiSelectedOptionIds) })}
+                                        >
+                                            确认选择
+                                        </SmashUpGameButton>
+                                    </>
+                                )}
                                 {minionSelectExtraOptions.map(opt => (
                                     <SmashUpGameButton
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                        onClick={() => {
+                                            if (isMultiMinionSelect) {
+                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: [opt.id] });
+                                            } else {
+                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id });
+                                            }
+                                        }}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -1414,6 +1503,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                 }
                                 isMinionSelectMode={(selectedCardMode === 'ongoing-minion' && ongoingMinionTargetUids.size > 0) || (isMinionSelectPrompt && selectableMinionUids.size > 0)}
                                 selectableMinionUids={isMinionSelectPrompt ? selectableMinionUids : selectedCardMode === 'ongoing-minion' ? ongoingMinionTargetUids : undefined}
+                                multiSelectedMinionUids={isMultiMinionSelect ? multiSelectedMinionUids : undefined}
                                 isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedBases.has(idx))}
                                 isDimmed={
                                     (isBaseSelectPrompt && !selectableBaseIndices.has(idx))
@@ -1539,7 +1629,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                 </AnimatePresence>
 
                 {/* DEBUG PANEL */}
-                <GameDebugPanel G={G} dispatch={dispatch} playerID={playerID} autoSwitch={isLocalMatch}>
+                <GameDebugPanel G={G} dispatch={dispatch} playerID={playerID} autoSwitch={false}>
                     <SmashUpDebugConfig G={G} dispatch={dispatch} />
                 </GameDebugPanel>
 

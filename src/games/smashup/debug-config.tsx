@@ -82,7 +82,7 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                         {core?.baseDeck && core.baseDeck.length > 0 ? (
                             <>💡 点击场上基地可刷新单个，或点击下方按钮刷新全部</>
                         ) : (
-                            <span className="text-red-500">基地牌库为空</span>
+                            <span className="text-orange-500">基地牌库为空，刷新将清空所有基地</span>
                         )}
                     </div>
                     <button
@@ -90,16 +90,16 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                             console.log('[刷新所有基地] 点击刷新按钮:', {
                                 basesCount: core?.bases?.length,
                                 currentBases: core?.bases?.map(b => b.defId),
-                                nextBases: core?.baseDeck?.slice(0, core?.bases?.length),
+                                nextBases: core?.baseDeck?.slice(0, Math.min(core?.bases?.length ?? 0, core?.baseDeck?.length ?? 0)),
                                 baseDeckLength: core?.baseDeck?.length,
                             });
                             dispatch('SYS_CHEAT_REFRESH_ALL_BASES');
                         }}
-                        disabled={!core?.baseDeck || !core?.bases || core.baseDeck.length < core.bases.length}
+                        disabled={!core?.bases || core.bases.length === 0}
                         className="w-full px-3 py-1.5 bg-purple-500 text-white rounded text-xs font-bold hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                         data-testid="su-debug-refresh-all-bases-apply"
                     >
-                        🔄 刷新所有基地
+                        🔄 刷新所有基地 {core?.baseDeck?.length === 0 ? '(清空)' : ''}
                     </button>
                 </div>
             </div>

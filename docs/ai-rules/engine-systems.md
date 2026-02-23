@@ -22,7 +22,7 @@
 |------|------|------|
 | `GameTransportServer` | `src/engine/transport/server.ts` | 服务端：管理对局生命周期、执行管线、playerView 过滤 + 传输裁剪（`stripStateForTransport`）、广播状态、持久化 |
 | `GameTransportClient` | `src/engine/transport/client.ts` | 客户端：socket.io 连接（MsgPack 序列化）、命令发送、状态同步 |
-| `GameProvider` / `LocalGameProvider` | `src/engine/transport/react.tsx` | React 集成：在线/本地模式的 Provider + BoardBridge |
+| `GameProvider` / `LocalGameProvider` | `src/engine/transport/react.tsx` | React 集成：在线 Provider + 教程用 LocalProvider + BoardBridge |
 | `GameBoardProps` | `src/engine/transport/protocol.ts` | Board 组件 Props 契约 |
 | `createGameEngine` | `src/engine/adapter.ts` | 适配器工厂：Domain + Systems → GameEngineConfig |
 | `OptimisticEngine` | `src/engine/transport/latency/optimisticEngine.ts` | 客户端乐观更新引擎：本地预测 + 服务端调和 |
@@ -1487,5 +1487,52 @@ else if (modifiers && modifiers.length > 0) {
 - 单元测试：`src/engine/primitives/__tests__/damageCalculation.test.ts`
 - 集成测试：`src/games/dicethrone/domain/__tests__/damage-pipeline-migration.test.ts`
 - 迁移示例：`src/games/dicethrone/domain/customActions/pyromancer.ts`
+
+---
+
+## SmashUp 消灭触发链与 pendingSave 机制（强制）
+
+> **修改 `processDestroyTriggers`、`postProcessSystemEvents` 或相关 trigger 逻辑时必读。**
+
+### 架构概述
+
+消灭触发处理分为两层，**必须理解它们的关系**：
+
+| 层 | 位置 | 职责 | 运行时机 |
+|---|---|---|---|
+| `execute()` 内部 | `reducer.ts` | 处理命令产生的 `MINION_DESTROYED` 事件的 trigger 链（onDestroy → baseTrigger → ongoing） | 事件被 reduce 到 core 之前 |
+| `postProcessSystemEvents` | `index.ts` | 处理系统事件（afterEvents 产生的）的 trigger 链 | 事件被 reduce 到 core 之后 |
+
+**关键**：`execute()` 中的处理发生在 `reduceEventsToCore` **之前**，此时被消灭的随从仍在 `core.bases[].minions` 中，trigger 能正确找到它。如果移到 `postProcessSystemEvents`（reduce 之后），随从已被移除，trigger 会找不到目标。
+
+### pendingSave 机制设计约束
+
+`pendingSave` 用于暂缓 `MINION_DESTROYED` 事件——当 baseTrigger/ongoing 创建了"拯救交互"（如雄蜂防消灭、九命之屋），等待玩家决定。
+
+**核心不变量**：
+1. **`interactionCountBefore` 必须在 `onDestroy` 之后取值** — onDestroy 产生的交互是死亡效果（如 Igor 选目标放指示物），不是拯救交互，不应触发 pendingSave
+2. **不得按 sourceId 过滤"拯救交互"** — 任何 baseTrigger/ongoing 创建的新交互都可能是拯救交互（雄蜂、九命之屋等），硬编码白名单会遗漏新增的拯救能力
+3. **pendingSave 检测公式**：`interactionCountAfter > interactionCountBefore` 即为拯救交互，无需额外过滤
+
+**历史教训**：
+- ❌ 在 onDestroy 之前取 `interactionCountBefore` → Igor 的效果交互被误判为拯救交互 → Igor 的 `MINION_DESTROYED` 被错误抑制
+- ❌ 添加 `isSaveInteraction = sourceId === 'base_nine_lives_intercept'` 过滤 → 雄蜂的 `giant_ant_drone_prevent_destroy` 被跳过 → 雄蜂防消灭失效
+- ✅ 正确：`interactionCountBefore` 在 onDestroy 之后取值 + 不按 sourceId 过滤
+
+### matchState 链式传递（强制）
+
+`postProcessSystemEvents` 中 `processDestroyTriggers` → `processMoveTriggers` → `processAffectTriggers` 必须链式传递 `matchState`：
+
+```typescript
+// ✅ 正确：每步产生的 matchState 传给下一步
+const afterDestroy = processDestroyTriggers(events, ms, pid, random, now);
+if (afterDestroy.matchState) ms = afterDestroy.matchState;
+const afterMove = processMoveTriggers(afterDestroy.events, ms, pid, random, now);
+if (afterMove.matchState) ms = afterMove.matchState;
+
+// ❌ 错误：每步都传原始 ms → trigger 创建的交互被后续步骤覆盖/丢弃
+const afterDestroy = processDestroyTriggers(events, ms, pid, random, now);
+const afterMove = processMoveTriggers(afterDestroy.events, ms, pid, random, now);
+```
 
 ---

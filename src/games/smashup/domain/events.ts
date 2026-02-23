@@ -66,8 +66,11 @@ export const SU_EVENTS = defineEvents({
   
   'su:ongoing_attached': { audio: 'immediate', sound: ACTION_PLAY_KEY },
   'su:ongoing_detached': { audio: 'immediate', sound: CARD_DISCARD_KEY },
+  'su:ongoing_card_counter_changed': { audio: 'immediate', sound: POWER_GAIN_KEY },
   
   'su:talent_used': { audio: 'immediate', sound: TALENT_KEY },
+  'su:minion_play_effect_queued': 'silent',
+  'su:minion_play_effect_consumed': 'silent',
   
   'su:madness_drawn': { audio: 'immediate', sound: MADNESS_KEY },
   'su:madness_returned': { audio: 'immediate', sound: MADNESS_KEY },
@@ -78,12 +81,15 @@ export const SU_EVENTS = defineEvents({
   'su:breakpoint_modified': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:limit_modified': { audio: 'immediate', sound: POSITIVE_SIGNAL_KEY },
   'su:special_limit_used': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
+  'su:special_after_scoring_armed': 'silent',
+  'su:special_after_scoring_consumed': 'silent',
   
   'su:ability_feedback': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:ability_triggered': 'fx',        // 持续效果/触发器激活（FX 动画）
 
   // ========== 动画驱动（FX 系统）==========
   'su:base_scored': 'fx',             // 基地得分（飞行动画 onImpact）
+  'su:base_cleared': 'silent',         // 基地清除（计分后弃置随从/ongoing，紧跟 afterScoring）
   'su:vp_awarded': 'fx',              // VP 授予（飞行动画 onImpact）
   'su:minion_destroyed': { audio: 'immediate', sound: 'dark_fantasy_studio.smashed.smashed_1' },  // 随从摧毁
 
@@ -114,6 +120,7 @@ export const SU_EVENT_TYPES = {
   POWER_COUNTER_REMOVED: SU_EVENTS['su:power_counter_removed'].type,
   ONGOING_ATTACHED: SU_EVENTS['su:ongoing_attached'].type,
   ONGOING_DETACHED: SU_EVENTS['su:ongoing_detached'].type,
+  ONGOING_CARD_COUNTER_CHANGED: SU_EVENTS['su:ongoing_card_counter_changed'].type,
   TALENT_USED: SU_EVENTS['su:talent_used'].type,
   CARD_TO_DECK_TOP: SU_EVENTS['su:card_to_deck_top'].type,
   CARD_TO_DECK_BOTTOM: SU_EVENTS['su:card_to_deck_bottom'].type,
@@ -129,6 +136,11 @@ export const SU_EVENT_TYPES = {
   BREAKPOINT_MODIFIED: SU_EVENTS['su:breakpoint_modified'].type,
   BASE_DECK_SHUFFLED: SU_EVENTS['su:base_deck_shuffled'].type,
   SPECIAL_LIMIT_USED: SU_EVENTS['su:special_limit_used'].type,
+  SPECIAL_AFTER_SCORING_ARMED: SU_EVENTS['su:special_after_scoring_armed'].type,
+  SPECIAL_AFTER_SCORING_CONSUMED: SU_EVENTS['su:special_after_scoring_consumed'].type,
   ABILITY_FEEDBACK: SU_EVENTS['su:ability_feedback'].type,
   ABILITY_TRIGGERED: SU_EVENTS['su:ability_triggered'].type,
+  MINION_PLAY_EFFECT_QUEUED: SU_EVENTS['su:minion_play_effect_queued'].type,
+  MINION_PLAY_EFFECT_CONSUMED: SU_EVENTS['su:minion_play_effect_consumed'].type,
+  BASE_CLEARED: SU_EVENTS['su:base_cleared'].type,
 } as const;

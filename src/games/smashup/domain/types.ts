@@ -11,6 +11,7 @@
 import type { Command, GameEvent, GameOverResult, PlayerId } from '../../../engine/types';
 import type { CardPreviewRef } from '../../../core';
 import { SMASHUP_FACTION_IDS } from './ids';
+import { SU_EVENT_TYPES as SU_EVENTS } from './events';
 
 // ============================================================================
 // 游戏阶段
@@ -76,6 +77,11 @@ export interface MinionCardDef {
      * 例如忍者派系所有 special 随从共享 'ninja_special' 组。
      */
     specialLimitGroup?: string;
+    /**
+     * 打出时的音效 key（可选）。
+     * 如果指定，优先使用此音效；否则 fallback 到派系默认音效池。
+     */
+    soundKey?: string;
 }
 
 /** 行动卡定义 */
@@ -104,6 +110,11 @@ export interface ActionCardDef {
      * 仅对 subtype='special' 的行动卡有效。
      */
     specialLimitGroup?: string;
+    /**
+     * 打出时的音效 key（可选）。
+     * 如果指定，优先使用此音效；否则 fallback 到派系默认音效池。
+     */
+    soundKey?: string;
 }
 
 /** 卡牌定义联合类型 */
@@ -186,6 +197,8 @@ export interface AttachedActionOnMinion {
     uid: string;
     defId: string;
     ownerId: PlayerId;
+    /** 本回合是否已使用天赋（ongoing+talent 行动卡，每回合一次） */
+    talentUsed?: boolean;
 }
 
 /** 基地上附着的持续行动卡 */
@@ -240,6 +253,8 @@ export interface PlayerState {
     sameNameMinionRemaining?: number;
     /** 同名额外随从约束：已锁定的 defId（null = 尚未锁定，string = 已锁定） */
     sameNameMinionDefId?: string | null;
+    /** 待消费的随从打出后效果队列（如 crack_of_dusk/its_alive 的打出后+1指示物） */
+    pendingMinionPlayEffects?: Array<{ effect: 'addPowerCounter'; amount: number }>;
     /** 选择的派系 */
     factions: [FactionId, FactionId];
 }
@@ -266,6 +281,13 @@ export const CTHULHU_EXPANSION_FACTIONS = [
     SMASHUP_FACTION_IDS.INNSMOUTH,
     SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY,
 ] as const;
+
+/** 计分后触发的 special 延迟记录（Me First! 窗口打出，afterScoring 时兑现） */
+export interface PendingAfterScoringSpecial {
+    sourceDefId: string;
+    playerId: PlayerId;
+    baseIndex: number;
+}
 
 export interface SmashUpCore {
     players: Record<PlayerId, PlayerState>;
@@ -303,6 +325,10 @@ export interface SmashUpCore {
      * 用于"每个基地每回合只能使用一次 X 能力"类规则
      */
     specialLimitUsed?: Record<string, number[]>;
+    /** 巨石阵：本回合已使用双才能的随从 UID（每回合只有一个随从可用才能两次） */
+    standingStonesDoubleTalentMinionUid?: string;
+    /** 计分后触发的 special 延迟记录（回合开始自动清空） */
+    pendingAfterScoringSpecials?: PendingAfterScoringSpecial[];
 }
 
 export interface FactionSelectionState {
@@ -403,7 +429,7 @@ export type SmashUpCommand =
 
 // 事件定义已迁移到 domain/events.ts，使用 defineEvents() 框架
 // 导入 SU_EVENT_TYPES 以获取事件类型常量
-export { SU_EVENT_TYPES as SU_EVENTS } from './events';
+export { SU_EVENTS };
 
 export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
     payload: {
@@ -449,6 +475,13 @@ export interface BaseScoredEvent extends GameEvent<'su:base_scored'> {
         rankings: { playerId: PlayerId; power: number; vp: number }[];
         /** 每位玩家的随从力量 breakdown（可选，用于 ActionLog 展示） */
         minionBreakdowns?: Record<PlayerId, MinionPowerBreakdown[]>;
+    };
+}
+
+export interface BaseClearedEvent extends GameEvent<'su:base_cleared'> {
+    payload: {
+        baseIndex: number;
+        baseDefId: string;
     };
 }
 
@@ -583,8 +616,11 @@ export type SmashUpEvent =
     | BreakpointModifiedEvent
     | BaseDeckShuffledEvent
     | SpecialLimitUsedEvent
+    | SpecialAfterScoringArmedEvent
+    | SpecialAfterScoringConsumedEvent
     | AbilityFeedbackEvent
-    | AbilityTriggeredEvent;
+    | AbilityTriggeredEvent
+    | BaseClearedEvent;
 
 // ============================================================================
 // 新增事件接口
@@ -626,6 +662,7 @@ export interface MinionDestroyedEvent extends GameEvent<typeof SU_EVENTS.MINION_
         minionDefId: string;
         fromBaseIndex: number;
         ownerId: PlayerId;
+        destroyerId?: PlayerId;  // 消灭者（可选，如果没有则默认为 ownerId）
         reason: string;
     };
 }
@@ -676,6 +713,16 @@ export interface OngoingDetachedEvent extends GameEvent<typeof SU_EVENTS.ONGOING
         cardUid: string;
         defId: string;
         ownerId: PlayerId;
+        reason: string;
+    };
+}
+
+/** ongoing 卡上的力量指示物变化（如 vampire_summon_wolves） */
+export interface OngoingCardCounterChangedEvent extends GameEvent<typeof SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED> {
+    payload: {
+        cardUid: string;
+        baseIndex: number;
+        delta: number;
         reason: string;
     };
 }
@@ -843,6 +890,24 @@ export interface SpecialLimitUsedEvent extends GameEvent<typeof SU_EVENTS.SPECIA
         limitGroup: string;
         /** 触发的能力 defId */
         abilityDefId: string;
+    };
+}
+
+/** 标记：某张 special 需要在本回合该基地计分后触发 */
+export interface SpecialAfterScoringArmedEvent extends GameEvent<typeof SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED> {
+    payload: {
+        sourceDefId: string;
+        playerId: PlayerId;
+        baseIndex: number;
+    };
+}
+
+/** 清理：某条计分后 special 标记已消费 */
+export interface SpecialAfterScoringConsumedEvent extends GameEvent<typeof SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED> {
+    payload: {
+        sourceDefId: string;
+        playerId: PlayerId;
+        baseIndex: number;
     };
 }
 

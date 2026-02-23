@@ -94,6 +94,14 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **字段准入（Schema Gate）（强制）**：布局/契约结构只允许进入有架构意义的数据（稳定、可复用、跨模块共享）；严禁把历史回放数据、UI 状态、调试缓存回灌进布局结构。
 - **命名冲突裁决（强制）**：出现多种命名时，必须给出唯一裁决并做全链路统一（类型/文件名/导出名/调用点/文档），禁止保留多头命名。
 - **临时实现债务登记（强制）**：允许临时实现，但必须标注 TODO 并写清回填逻辑 + 清理触发条件。禁止硬写"糊过去"。
+- **测试运行范围（强制）**：以下场景**不需要运行测试**：
+  - ✅ 纯 UI 样式调整（CSS/Tailwind 类名、布局、颜色、字体、间距、动画参数）
+  - ✅ 文案/i18n 修改（JSON 文件、翻译文本）
+  - ✅ 文档更新（`docs/`、`README.md`、注释）
+  - ✅ 资源文件操作（图片压缩、音频转换、资源路径调整）
+  - ✅ 配置文件调整（`.env`、`vite.config.ts`、`tsconfig.json`，不涉及构建逻辑变更）
+  - ✅ 代码格式化、import 排序、变量重命名（不改变逻辑）
+  - ❌ **需要运行测试**：业务逻辑、引擎代码、领域层代码、数据结构、API 接口、状态管理、事件处理、命令执行、验证规则
 - **样式开发约束（核心规定）**：**当任务目标为优化样式/视觉效果时，严禁修改任何业务逻辑代码**。如需修改逻辑，必须单独申请。
 - **目录/游戏边界严格区分（强制）**：修改/引用前必须以完整路径与所属 gameId 核对，禁止把不同游戏/模块的目录当成同一个。
 - **规则文档指代（强制）**：当我说"规则"时，默认指该游戏目录下 `rule/` 文件夹中的规则 Markdown。
@@ -541,6 +549,14 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 - 详细规范见 `docs/automated-testing.md`。
 - **工具**：Playwright E2E / Vitest / GameTestRunner / 引擎层审计工厂（`src/engine/testing/`）。
 - **GameTestRunner 优先（强制）**：GameTestRunner 行为测试是最优先、最可靠的测试手段。审计工厂（entityIntegritySuite / interactionChainAudit / interactionCompletenessAudit）是补充，用于批量覆盖注册表引用完整性和交互链完整性。
+- **测试触发条件（强制）**：只有以下场景需要运行测试：
+  - ✅ 新增/修改业务逻辑（技能、卡牌、回合流程、游戏规则）
+  - ✅ 修改引擎层代码（`src/engine/`、`src/core/`）
+  - ✅ 修改领域层代码（`src/games/*/domain/`、`execute.ts`、`validate.ts`、`reduce.ts`）
+  - ✅ 修改数据结构（类型定义、状态字段、事件/命令格式）
+  - ✅ 修改 API 接口或服务端逻辑
+  - ✅ 修复"功能不生效"/"逻辑错误"类 bug
+  - ❌ **不需要测试**：纯样式、文案、文档、资源文件、格式化、重命名（见上文"测试运行范围"）
 - **命令**：
   - 开发模式（推荐）：先运行 `npm run dev` 启动所有服务，再在另一终端运行 `npm run test:e2e`
   - CI 模式：`npm run test:e2e:ci`（自动启动服务器，适用于 CI/CD 环境）

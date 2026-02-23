@@ -396,9 +396,10 @@ export function createResponseWindowSystem<TCore>(
                 }
 
                 // 移动到下一个响应者
+                const _advResult = advanceToNextResponder(currentWindow, targetPlayerId, loopUntilAllPass);
                 const nextWindow = skipToNextRespondableResponder(
                     state,
-                    advanceToNextResponder(currentWindow, targetPlayerId, loopUntilAllPass),
+                    _advResult,
                     hasRespondableContent,
                     loopUntilAllPass
                 );
@@ -679,9 +680,10 @@ export function createResponseWindowSystem<TCore>(
                         ? { ...currentWindow, actionTakenThisRound: true }
                         : currentWindow;
                     
+                    const _advAdvance = advanceToNextResponder(markedWindow, currentResponderId, loopUntilAllPass);
                     const nextWindow = skipToNextRespondableResponder(
                         newState,
-                        advanceToNextResponder(markedWindow, currentResponderId, loopUntilAllPass),
+                        _advAdvance,
                         hasRespondableContent,
                         loopUntilAllPass
                     );

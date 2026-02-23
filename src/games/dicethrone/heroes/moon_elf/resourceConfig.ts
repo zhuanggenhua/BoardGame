@@ -2,7 +2,7 @@
  * DiceThrone Moon Elf 资源配置
  */
 import type { ResourceDefinition } from '../../domain/resourceSystem';
-import { INITIAL_HEALTH, INITIAL_CP, CP_MAX } from '../../domain/types';
+import { INITIAL_HEALTH, MAX_HEALTH, INITIAL_CP, CP_MAX } from '../../domain/types';
 import { RESOURCE_IDS } from '../../domain/resources';
 
 export { RESOURCE_IDS } from '../../domain/resources';
@@ -23,7 +23,7 @@ export const hpDefinition: ResourceDefinition = {
     icon: '❤️',
     color: '#8b5cf6', // Indigo for Moon Elf
     min: 0,
-    max: INITIAL_HEALTH,
+    max: MAX_HEALTH,
     initialValue: INITIAL_HEALTH,
 };
 

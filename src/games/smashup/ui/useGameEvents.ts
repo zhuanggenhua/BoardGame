@@ -75,6 +75,7 @@ export function useGameEvents({ G, fxBus, baseRefs }: UseGameEventsParams) {
     SU_EVENTS.POWER_COUNTER_REMOVED,
     SU_EVENTS.BREAKPOINT_MODIFIED,
     SU_EVENTS.VP_AWARDED,
+    SU_EVENTS.TEMP_POWER_ADDED,  // 临时力量增益（如狼人 beforeScoring）
   ]), []);
 
   // 消费事件流 → 推入 FX 系统
@@ -140,6 +141,7 @@ export function useGameEvents({ G, fxBus, baseRefs }: UseGameEventsParams) {
             rankings: Array<{ playerId: string; power: number; vp: number }>;
           };
           // VP 飞行 → FX
+          // 正常播放（阶段切换检测会在独立 effect 中处理）
           fxBus.push(SU_FX.BASE_SCORED, { space: 'screen' }, {
             rankings: p.rankings,
           });

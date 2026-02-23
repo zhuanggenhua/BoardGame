@@ -10,95 +10,67 @@
 
 import type { CriticalImageResolver, CriticalImageResolverResult } from '../../core/types';
 import type { MatchState } from '../../engine/types';
+import { getAllBaseDefs, getAllCardDefs } from './data/cards';
+import { getSmashUpAtlasImageById, getSmashUpAtlasImagesByKind } from './domain/atlasCatalog';
 
 // ============================================================================
-// 图集路径定义
+// 图集路径与派系映射（自动派生）
 // ============================================================================
 
-/** 卡牌图集图片路径（相对于 /assets/） */
-const CARD_ATLAS_PATHS = {
-    CARDS1: 'smashup/cards/cards1',
-    CARDS2: 'smashup/cards/cards2',
-    CARDS3: 'smashup/cards/cards3',
-    CARDS4: 'smashup/cards/cards4',
-} as const;
-
-/** 基地图集图片路径 */
-const BASE_ATLAS_PATHS = {
-    BASE1: 'smashup/base/base1',
-    BASE2: 'smashup/base/base2',
-    BASE3: 'smashup/base/base3',
-    BASE4: 'smashup/base/base4',
-} as const;
-
-/** 所有卡牌图集路径集合 */
-const ALL_CARD_ATLAS = Object.values(CARD_ATLAS_PATHS);
-/** 所有基地图集路径集合 */
-const ALL_BASE_ATLAS = Object.values(BASE_ATLAS_PATHS);
-
-// ============================================================================
-// 派系 → 图集映射（数据驱动，面向百游戏）
-// ============================================================================
-
-/**
- * 派系 → 卡牌图集路径映射
- * 每个派系的卡牌只存在于一个图集中，不会跨图集混合
- */
-const FACTION_CARD_ATLAS: Record<string, string> = {
-    // CARDS1: 海盗、忍者、外星人、恐龙
-    pirates: CARD_ATLAS_PATHS.CARDS1,
-    ninjas: CARD_ATLAS_PATHS.CARDS1,
-    aliens: CARD_ATLAS_PATHS.CARDS1,
-    dinosaurs: CARD_ATLAS_PATHS.CARDS1,
-    // CARDS2: 米斯卡塔尼克、克苏鲁仆从、印斯茅斯、远古物种、疯狂
-    miskatonic_university: CARD_ATLAS_PATHS.CARDS2,
-    minions_of_cthulhu: CARD_ATLAS_PATHS.CARDS2,
-    innsmouth: CARD_ATLAS_PATHS.CARDS2,
-    elder_things: CARD_ATLAS_PATHS.CARDS2,
-    madness: CARD_ATLAS_PATHS.CARDS2,
-    // CARDS3: 幽灵、熊骑兵、蒸汽朋克、食人花
-    ghosts: CARD_ATLAS_PATHS.CARDS3,
-    bear_cavalry: CARD_ATLAS_PATHS.CARDS3,
-    steampunks: CARD_ATLAS_PATHS.CARDS3,
-    killer_plants: CARD_ATLAS_PATHS.CARDS3,
-    // CARDS4: 丧尸、巫师、捣蛋鬼、机器人
-    zombies: CARD_ATLAS_PATHS.CARDS4,
-    wizards: CARD_ATLAS_PATHS.CARDS4,
-    tricksters: CARD_ATLAS_PATHS.CARDS4,
-    robots: CARD_ATLAS_PATHS.CARDS4,
+type PreviewRefLike = {
+    type?: string;
+    atlasId?: string;
 };
 
-/**
- * 派系 → 基地图集路径映射
- * 基地按扩展包分组，每个派系的基地在对应的基地图集中
- */
-const FACTION_BASE_ATLAS: Record<string, string> = {
-    // BASE1: 核心包派系
-    pirates: BASE_ATLAS_PATHS.BASE1,
-    ninjas: BASE_ATLAS_PATHS.BASE1,
-    aliens: BASE_ATLAS_PATHS.BASE1,
-    dinosaurs: BASE_ATLAS_PATHS.BASE1,
-    robots: BASE_ATLAS_PATHS.BASE1,
-    zombies: BASE_ATLAS_PATHS.BASE1,
-    wizards: BASE_ATLAS_PATHS.BASE1,
-    tricksters: BASE_ATLAS_PATHS.BASE1,
-    // BASE2: 第二扩展包
-    ghosts: BASE_ATLAS_PATHS.BASE2,
-    bear_cavalry: BASE_ATLAS_PATHS.BASE2,
-    steampunks: BASE_ATLAS_PATHS.BASE2,
-    killer_plants: BASE_ATLAS_PATHS.BASE2,
-    // BASE3: 第三扩展包
-    kitty_cats: BASE_ATLAS_PATHS.BASE3,
-    fairies: BASE_ATLAS_PATHS.BASE3,
-    princesses: BASE_ATLAS_PATHS.BASE3,
-    mythic_horses: BASE_ATLAS_PATHS.BASE3,
-    // BASE4: 克苏鲁扩展
-    elder_things: BASE_ATLAS_PATHS.BASE4,
-    minions_of_cthulhu: BASE_ATLAS_PATHS.BASE4,
-    innsmouth: BASE_ATLAS_PATHS.BASE4,
-    miskatonic_university: BASE_ATLAS_PATHS.BASE4,
-    // 注意：madness 没有专属基地，不在映射中
+type DefWithFactionPreview = {
+    faction?: string;
+    previewRef?: PreviewRefLike;
 };
+
+/** 所有卡牌图集路径集合（来自统一图集目录） */
+const ALL_CARD_ATLAS = getSmashUpAtlasImagesByKind('card');
+/** 所有基地图集路径集合（来自统一图集目录） */
+const ALL_BASE_ATLAS = getSmashUpAtlasImagesByKind('base');
+
+function resolveAtlasImagePath(previewRef?: PreviewRefLike): string | undefined {
+    if (!previewRef || previewRef.type !== 'atlas' || typeof previewRef.atlasId !== 'string') {
+        return undefined;
+    }
+    return getSmashUpAtlasImageById(previewRef.atlasId);
+}
+
+/**
+ * 根据牌库定义自动构建「派系 -> 图集路径列表」映射。
+ *
+ * 注意：某些基地（如 vampires）没有 previewRef，属于规则层“无专属基地”的设计，
+ * 此处会自动跳过，避免手写白名单。
+ */
+function buildFactionAtlasMap(defs: DefWithFactionPreview[]): Record<string, string[]> {
+    const map = new Map<string, Set<string>>();
+    for (const def of defs) {
+        const faction = def.faction;
+        if (!faction) continue;
+        const atlasPath = resolveAtlasImagePath(def.previewRef);
+        if (!atlasPath) continue;
+        let set = map.get(faction);
+        if (!set) {
+            set = new Set<string>();
+            map.set(faction, set);
+        }
+        set.add(atlasPath);
+    }
+    return Object.fromEntries(
+        [...map.entries()].map(([faction, atlases]) => [faction, [...atlases]]),
+    );
+}
+
+function getFactionCardAtlasMap(): Record<string, string[]> {
+    return buildFactionAtlasMap(getAllCardDefs());
+}
+
+function getFactionBaseAtlasMap(): Record<string, string[]> {
+    return buildFactionAtlasMap(getAllBaseDefs());
+}
 
 // ============================================================================
 // 辅助函数
@@ -107,9 +79,13 @@ const FACTION_BASE_ATLAS: Record<string, string> = {
 /** 根据派系列表收集需要的卡牌图集（去重） */
 function getCardAtlasesForFactions(factionIds: string[]): string[] {
     const set = new Set<string>();
+    const factionCardAtlasMap = getFactionCardAtlasMap();
     for (const fid of factionIds) {
-        const atlas = FACTION_CARD_ATLAS[fid];
-        if (atlas) set.add(atlas);
+        const atlases = factionCardAtlasMap[fid];
+        if (!atlases) continue;
+        for (const atlas of atlases) {
+            set.add(atlas);
+        }
     }
     return [...set];
 }
@@ -117,9 +93,13 @@ function getCardAtlasesForFactions(factionIds: string[]): string[] {
 /** 根据派系列表收集需要的基地图集（去重） */
 function getBaseAtlasesForFactions(factionIds: string[]): string[] {
     const set = new Set<string>();
+    const factionBaseAtlasMap = getFactionBaseAtlasMap();
     for (const fid of factionIds) {
-        const atlas = FACTION_BASE_ATLAS[fid];
-        if (atlas) set.add(atlas);
+        const atlases = factionBaseAtlasMap[fid];
+        if (!atlases) continue;
+        for (const atlas of atlases) {
+            set.add(atlas);
+        }
     }
     return [...set];
 }

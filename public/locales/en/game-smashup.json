@@ -96,7 +96,10 @@
     "reveal_queue_hint": "{{count}} reveals pending · click to continue",
     "reveal_dismiss_hint": "Click anywhere to close",
     "deselect_all": "Deselect All",
-    "select_all": "Select All"
+    "select_all": "Select All",
+    "waiting_opponent": "Waiting for opponent",
+    "power_counter": "Power Counter",
+    "skip": "Skip"
   },
   "feedback": {
     "deck_search_no_match": "No matching card found in deck. Deck reshuffled.",
@@ -106,7 +109,12 @@
     "deck_empty": "Deck is empty",
     "hand_empty": "No matching cards in hand",
     "condition_not_met": "Condition not met, ability had no effect",
-    "target_protected": "Target is protected, ability had no effect"
+    "target_protected": "Target is protected, ability had no effect",
+    "not_highest_power": "This minion doesn't have the highest power here, ability had no effect",
+    "no_power_counters": "No +1 power counters to remove",
+    "all_protected": "All targets are protected",
+    "base_deck_empty": "Base deck is empty",
+    "no_minion_cards_in_hand": "No minion cards in hand"
   },
   "actionLog": {
     "playerLabel": "P{{playerId}}",
@@ -227,6 +235,22 @@
     "miskatonic_university": {
       "name": "Miskatonic University",
       "description": "Leverage madness for advantage and research. Note: every 2 madness cards cost 1 VP at game end."
+    },
+    "frankenstein": {
+      "name": "Frankenstein",
+      "description": "Use +1 power counters to enhance minions, gain advantage through sacrifice and transfer."
+    },
+    "werewolves": {
+      "name": "Werewolves",
+      "description": "High-power minions that burst at turn end, control base breakpoints."
+    },
+    "vampires": {
+      "name": "Vampires",
+      "description": "Gain power counters by destroying minions, accumulate advantage."
+    },
+    "giant_ants": {
+      "name": "Giant Ants",
+      "description": "Flexibly distribute and transfer power counters, teamwork."
     }
   },
   "tutorial": {
@@ -1182,13 +1206,229 @@
       "name": "Sheep Shrine",
       "abilityText": "After this base enters play, each player may move one of their minions to here."
     },
-    "base_locker_room": {
-      "name": "Locker Room",
-      "abilityText": "At the start of your turn, if you have a minion here, draw a card."
+    "base_castle_blood": {
+      "name": "Castle Blood",
+      "abilityText": "After you play a minion here, if another player has more power here than you do, you may place a +1 power counter on that minion."
     },
-    "base_stadium": {
-      "name": "The Stadium",
-      "abilityText": "After a minion here is destroyed, its controller draws a card."
+    "base_crypt": {
+      "name": "Crypt",
+      "abilityText": "When one or more minions here are destroyed, the player who destroyed them may place a +1 power counter on one of his or her minions here."
+    },
+    "base_laboratorium": {
+      "name": "Laboratorium",
+      "abilityText": "After the first time each turn a minion is played here, its controller places a +1 power counter on it."
+    },
+    "base_golem_schloss": {
+      "name": "Golem Schlo\u00df",
+      "abilityText": "After this base scores, the winner places a +1 power counter on each of their minions."
+    },
+    "base_moot_site": {
+      "name": "Moot Site",
+      "abilityText": "After the first time each turn a minion is played here, it gains +2 power until the end of the turn."
+    },
+    "base_standing_stones": {
+      "name": "Standing Stones",
+      "abilityText": "During your turn, one of your minions here can use its Talent twice."
+    },
+    "base_egg_chamber": {
+      "name": "Egg Chamber",
+      "abilityText": "Minions here with +1 power counters cannot be destroyed."
+    },
+    "base_the_hill": {
+      "name": "The Hill",
+      "abilityText": "At the start of each player's turn, that player may move one of his or her minions from any base to here."
+    },
+    "frankenstein_german_engineering": {
+      "name": "German Engineering",
+      "effectText": "打出到基地上。持续：在你打出一个随从到这后，在它上面放置一个+1力量指示物。"
+    },
+    "frankenstein_jolt": {
+      "name": "Jolt",
+      "effectText": "在你的每个随从上放置一个+1力量指示物。"
+    },
+    "frankenstein_grave_situation": {
+      "name": "Grave Situation",
+      "effectText": "打出到基地上。持续：当你的一个随从在这里被消灭后，把它放到手牌而不是弃牌堆。"
+    },
+    "frankenstein_its_alive": {
+      "name": "Its Alive",
+      "effectText": "打出一个额外的随从并在它的身上放置一个+1力量指示物。"
+    },
+    "frankenstein_angry_mob": {
+      "name": "Angry Mob",
+      "effectText": "选择你的一个随从。从你的手上放置任意数量的卡牌到你的牌库底。你每放一张牌，你就在该随从身上放置一个+1力量指示物。"
+    },
+    "frankenstein_igor": {
+      "name": "Igor",
+      "abilityText": "Ongoing: After this minion is destroyed or discarded, place a +1 power counter on one of your minions."
+    },
+    "frankenstein_body_shop": {
+      "name": "Body Shop",
+      "effectText": "消灭你的一个随从。放置等同于该随从力量的+1力量指示物到你的随从上，你可以任意分配它们。"
+    },
+    "frankenstein_lab_assistant": {
+      "name": "Lab Assistant",
+      "abilityText": "在你的另一个随从上放置一个+1力量指示物。"
+    },
+    "frankenstein_uberserum": {
+      "name": "Uberserum",
+      "effectText": "打出到一个随从上。持续：在你的回合开始时，在该随从上放置一个+1力量指示物。该随从不能被消灭。"
+    },
+    "frankenstein_the_monster": {
+      "name": "The Monster",
+      "abilityText": "Talent: Remove a +1 power counter from this minion to play an extra minion."
+    },
+    "frankenstein_blitzed": {
+      "name": "Blitzed",
+      "effectText": "从你的随从身上移除任意数量的+1力量指示物。消灭一个力量少于或等于你移除的数量的随从。"
+    },
+    "frankenstein_herr_doktor": {
+      "name": "Herr Doktor",
+      "abilityText": "天赋：在你的另一个随从身上放置一个+1力量指示物。"
+    },
+    "werewolf_full_moon": {
+      "name": "Full Moon",
+      "effectText": "打出到基地上。持续：每个你在这里的随从获得+1力量。"
+    },
+    "werewolf_frenzy": {
+      "name": "Frenzy",
+      "effectText": "每个你的力量为4或更高的随从获得+1力量直到回合结束。"
+    },
+    "werewolf_marking_territory": {
+      "name": "Marking Territory",
+      "effectText": "打出到一个基地上。持续：在你的回合开始的时候，如果你在这里比其他玩家有更高的总力量，将本基地的爆破点降低到0。"
+    },
+    "werewolf_chew_toy": {
+      "name": "Chew Toy",
+      "effectText": "选择你的一个随从。消灭一个在你的随从所在基地中比它力量低的随从。"
+    },
+    "werewolf_leader_of_the_pack": {
+      "name": "Leader Of The Pack",
+      "effectText": "打出到一个随从上。天赋：如果本随从在这里拥有最高的力量，你就可以额外打出一个行动。"
+    },
+    "werewolf_howler": {
+      "name": "Howler",
+      "abilityText": "本随从获得+2力量直到回合结束。"
+    },
+    "werewolf_unstoppable": {
+      "name": "Unstoppable",
+      "effectText": "打出到一个随从上。持续：本随从不能够被消灭。"
+    },
+    "werewolf_teenage_wolf": {
+      "name": "Teenage Wolf",
+      "abilityText": "天赋：本随从获得+1力量直到回合结束。"
+    },
+    "werewolf_let_the_dog_out": {
+      "name": "Let The Dog Out",
+      "effectText": "选择一个你的随从。消灭任意数量力量加起来小于或等于你随从的力量的随从。"
+    },
+    "werewolf_loup_garou": {
+      "name": "Loup Garou",
+      "abilityText": "异能：在本基地计分前，本随从获得+2力量直到回合结束。"
+    },
+    "werewolf_moontouched": {
+      "name": "Moontouched",
+      "effectText": "打出到一个随从上。天赋：如果本随从在这里拥有最高的力量，抽一张牌。"
+    },
+    "werewolf_pack_alpha": {
+      "name": "Pack Alpha",
+      "abilityText": "异能：在本基地计分前，每个你在这里的随从获得+1力量直到回合结束。"
+    },
+    "vampire_dinner_date": {
+      "name": "Dinner Date",
+      "effectText": "在你的一个随从身上放置一个+1力量指示物。消灭一个与该随从在同一个基地力量为2或以下的随从。"
+    },
+    "vampire_big_gulp": {
+      "name": "Big Gulp",
+      "effectText": "消灭一个力量为4或者以下的随从。"
+    },
+    "vampire_opportunist": {
+      "name": "Opportunist",
+      "effectText": "打出到一个随从上。持续：在另一个玩家的随从被消灭后，在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_mad_monster_party": {
+      "name": "Mad Monster Party",
+      "effectText": "在每个你没有+1力量指示物的随从身上放置一个+1力量指示物。"
+    },
+    "vampire_cull_the_weak": {
+      "name": "Cull The Weak",
+      "effectText": "选择你的一个随从。从你的手中弃置任意数量的随从卡。你每弃一张牌，你就在该随从身上放置一个+1力量指示物。"
+    },
+    "vampire_fledgling_vampire": {
+      "name": "Fledgling Vampire",
+      "abilityText": "在你打出本随从后，如果另一个玩家在这里比你有更高的力量，在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_buffet": {
+      "name": "Buffet",
+      "effectText": "异能：在一个基地计分后，如果你是赢家，在你的每个随从身上放置+1力量标记。"
+    },
+    "vampire_heavy_drinker": {
+      "name": "Heavy Drinker",
+      "abilityText": "你可以消灭你的一个随从来在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_crack_of_dusk": {
+      "name": "Crack Of Dusk",
+      "effectText": "从你的弃牌堆额外打出一个力量为2或以下的随从。放置一个+1力量指示物在它的上面。"
+    },
+    "vampire_nightstalker": {
+      "name": "Nightstalker",
+      "abilityText": "消灭一个这里的力量为2或以下的随从来在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_summon_wolves": {
+      "name": "Summon Wolves",
+      "effectText": "打出到基地上。持续：在你的回合开始时，在本卡上放置一个+1力量指示物。如果你有随从在这，指示物会被加进你的总力量中。"
+    },
+    "vampire_the_count": {
+      "name": "The Count",
+      "abilityText": "持续：在另一个玩家的随从被消灭后，在本随从身上放置一个+1力量指示物。"
+    },
+    "giant_ant_who_wants_to_live_forever": {
+      "name": "Ant Who Wants To Live Forever",
+      "effectText": "从你的随从身上移除任意数量的+1力量指示物。之后你每移除一个指示物，就抽一张卡。"
+    },
+    "giant_ant_a_kind_of_magic": {
+      "name": "Ant A Kind Of Magic",
+      "effectText": "在你的随从之中随意分配它们身上的+1力量指示物。"
+    },
+    "giant_ant_we_will_rock_you": {
+      "name": "Ant We Will Rock You",
+      "effectText": "每个你的随从为它自身上的每个+1力量指示物获得+1力量直到回合结束。"
+    },
+    "giant_ant_claim_the_prize": {
+      "name": "Ant Claim The Prize",
+      "effectText": "在至多3个你的随从的身上放置一个+1力量指示物。"
+    },
+    "giant_ant_under_pressure": {
+      "name": "Ant Under Pressure",
+      "effectText": "异能：在一个基地即将计分前，你可以从你的一个随从身上转移任意数量的+1力量指示物到另一个随从身上。"
+    },
+    "giant_ant_worker": {
+      "name": "Ant Worker",
+      "abilityText": "在本随从身上放置两个+1力量指示物。"
+    },
+    "giant_ant_headlong": {
+      "name": "Ant Headlong",
+      "effectText": "移动你的一个随从到另一个基地。在本随从上放置两个+1力量指示物。"
+    },
+    "giant_ant_soldier": {
+      "name": "Ant Soldier",
+      "abilityText": "在本随从上放置两个+1力量指示物。天赋：从本随从身上移除两个+1力量指示物来移动另一个随从到另一个基地上。"
+    },
+    "giant_ant_the_show_must_go_on": {
+      "name": "Ant The Show Must Go On",
+      "effectText": "打出到基地上。持续：你在这里的拥有+1力量指示物的随从不受其他玩家卡牌的影响。"
+    },
+    "giant_ant_drone": {
+      "name": "Ant Drone",
+      "abilityText": "在本随从上放置一个+1力量指示物。持续：在你的一个随从被消灭前，你可以从本随从身上移除一个+1力量指示物来防止你的随从被消灭。"
+    },
+    "giant_ant_we_are_the_champions": {
+      "name": "Ant We Are The Champions",
+      "effectText": "异能：在一个基地计分后，从你在这里的一个随从身上转移任意数量的+1力量指示物到另一个随从身上。"
+    },
+    "giant_ant_killer_queen": {
+      "name": "Ant Killer Queen",
+      "abilityText": "天赋：如果你在本回合中打出了一个随从到此基地，在该随从以及本随从身上放置一个+1力量指示物。"
     }
   },
   "endgame": {

@@ -56,31 +56,65 @@ export function getPlayerAbilityEffects(
  *
  * 检查范围：
  * - 显式 damage action（value > 0）
- * - rollDie action（conditionalEffects 中可能包含 bonusDamage）
- * - custom action targeting opponent（自定义动作可能造成伤害，如 thunder-strike-roll-damage）
+ * - rollDie action 的 conditionalEffects 中包含 bonusDamage
+ * - custom action 的 categories 包含 'damage'
  *
  * 只有纯 buff/token/heal/cp 技能才返回 false
+ * 
+ * 修复历史：
+ * - 之前只要有 rollDie 就返回 true，导致纯 buff/heal 技能（如圣骑士圣光）也触发防御阶段
+ * - 现在精确检查 rollDie 的 conditionalEffects 是否包含 bonusDamage
+ * - 支持 variants：如果技能有 variants，检查所有 variants 是否有伤害
  */
 export function playerAbilityHasDamage(
     state: DiceThroneCore,
     playerId: PlayerId,
     abilityId: string
 ): boolean {
-    const effects = getPlayerAbilityEffects(state, playerId, abilityId);
+    const match = findPlayerAbility(state, playerId, abilityId);
+    if (!match) return false;
+
+    // 如果是 variant ID，检查该 variant 的 effects
+    if (match.variant) {
+        return hasEffectDamage(match.variant.effects ?? []);
+    }
+
+    // 如果是父 ability ID 且有 variants，检查所有 variants
+    if (match.ability.variants?.length) {
+        return match.ability.variants.some(v => hasEffectDamage(v.effects ?? []));
+    }
+
+    // 否则检查 ability 的 effects
+    return hasEffectDamage(match.ability.effects ?? []);
+}
+
+/**
+ * 检查 effects 数组是否包含伤害效果
+ */
+function hasEffectDamage(effects: AbilityEffect[]): boolean {
     return effects.some(e => {
         if (!e.action) return false;
-        // 显式伤害
-        if (e.action.type === 'damage' && (e.action.value ?? 0) > 0) return true;
-        // rollDie 可能包含 bonusDamage
-        if (e.action.type === 'rollDie') return true;
-        // custom action：通过注册的 categories 判断是否包含伤害
+        
+        // 1. 显式伤害
+        if (e.action.type === 'damage' && (e.action.value ?? 0) > 0) {
+            return true;
+        }
+        
+        // 2. rollDie：只有 conditionalEffects 包含 bonusDamage 才算有伤害
+        if (e.action.type === 'rollDie') {
+            const conditionalEffects = e.action.conditionalEffects ?? [];
+            return conditionalEffects.some(ce => (ce.bonusDamage ?? 0) > 0);
+        }
+        
+        // 3. custom action：通过注册的 categories 判断是否包含伤害
         // 严格依赖 categories 声明，不再使用 target=opponent 的保守判定
         // 根据官方规则：只有"造成至少 1 点伤害"的能力才算"攻击"，才会触发防御阶段
         // 偷窃 CP 等资源转移效果不造成伤害，不应触发防御阶段
         if (e.action.type === 'custom' && e.action.customActionId) {
             const meta = getCustomActionMeta(e.action.customActionId);
-            if (meta?.categories.includes('damage')) return true;
+            return meta?.categories.includes('damage') ?? false;
         }
+        
         return false;
     });
 }

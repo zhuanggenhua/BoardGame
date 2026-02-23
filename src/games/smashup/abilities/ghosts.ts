@@ -397,20 +397,20 @@ export function registerGhostInteractionHandlers(): void {
         if (!target) return { state, events: [] };
         const events: SmashUpEvent[] = [
             { type: SU_EVENTS.CARDS_DISCARDED, payload: { playerId, cardUids }, timestamp },
-            destroyMinion(target.uid, target.defId, ctx.baseIndex, target.owner, 'ghost_spirit', timestamp),
+            destroyMinion(target.uid, target.defId, ctx.baseIndex, target.owner, playerId, 'ghost_spirit', timestamp),
         ];
         return { state, events };
     });
 
     // 灵魂力量0确认：是否消灭（无需弃牌）
-    registerInteractionHandler('ghost_spirit_confirm', (state, _playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('ghost_spirit_confirm', (state, playerId, value, _iData, _random, timestamp) => {
         const { confirm, minionUid, baseIndex } = value as { confirm: boolean; minionUid?: string; baseIndex?: number };
         if (!confirm || minionUid === undefined || baseIndex === undefined) return { state, events: [] };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return { state, events: [] };
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'ghost_spirit', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ghost_spirit', timestamp)] };
     });
 
     // 亡者崛起：多选弃牌后→链式选择弃牌堆中力量<弃牌数的随从（可跳过）

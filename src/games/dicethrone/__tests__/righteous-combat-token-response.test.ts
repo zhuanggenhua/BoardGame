@@ -73,8 +73,8 @@ describe('正义冲击 Token 响应后 rollDie 执行', () => {
                 turnPhase: 'main2',
                 players: {
                     '0': {
-                        // rollDie: sword(+2伤害) + heart(治疗2)，但已满血 → 仍为 50
-                        hp: INITIAL_HEALTH,
+                        // rollDie: sword(+2伤害) + heart(治疗2)，50 + 2 = 52（未超上限 60）
+                        hp: 52,
                     },
                     '1': {
                         // 基础伤害 5 + sword 额外伤害 2 = 7

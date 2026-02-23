@@ -218,7 +218,7 @@ describe('狂战士 GTR 技能覆盖', () => {
                     // 纯治疗技能无伤害效果，跳过防御直接到 main2
                     cmd('ADVANCE_PHASE', '0'),
                 ],
-                expect: { turnPhase: 'main2', players: { '0': { hp: 50 } } },
+                expect: { turnPhase: 'main2', players: { '0': { hp: 54 } } }, // 50 + 4 = 54（未超上限 60）
             });
             expect(result.assertionErrors).toEqual([]);
         });

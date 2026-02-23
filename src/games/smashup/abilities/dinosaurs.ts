@@ -64,9 +64,7 @@ function dinoLaserTriceratops(ctx: AbilityContext): AbilityResult {
         sourceId: 'dino_laser_triceratops',
         targetType: 'minion',
     }, (value) => ({
-        events: [destroyMinion(value.minionUid, value.defId, value.baseIndex, 
-            targets.find(t => t.uid === value.minionUid)?.owner ?? ctx.playerId,
-            'dino_laser_triceratops', ctx.now)],
+        events: [destroyMinion(value.minionUid, value.defId, value.baseIndex, targets.find(t => t.uid === value.minionUid)?.owner ?? ctx.playerId, undefined, 'dino_laser_triceratops', ctx.now)],
     }));
 }
 
@@ -172,7 +170,7 @@ function dinoSurvivalOfTheFittest(ctx: AbilityContext): AbilityResult {
         const lowest = base.minions.filter(m => getMinionPower(ctx.state, m, i) === minPower);
         if (lowest.length === 1) {
             // 唯一最低，直接消灭
-            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, i, lowest[0].owner, 'dino_survival_of_the_fittest', ctx.now));
+            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, i, lowest[0].owner, undefined, 'dino_survival_of_the_fittest', ctx.now));
         } else {
             // 平局，需要玩家选择
             tieBreakBases.push({ baseIndex: i, candidates: lowest, minPower });
@@ -246,7 +244,7 @@ export function registerDinosaurInteractionHandlers(): void {
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'dino_laser_triceratops', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'dino_laser_triceratops', timestamp)] };
     });
 
     // 增强：选择目标后加临时力量（回合结束清零）
@@ -284,13 +282,13 @@ export function registerDinosaurInteractionHandlers(): void {
     });
 
     // 物竞天择第二步：选择目标后消灭
-    registerInteractionHandler('dino_natural_selection_choose_target', (state, _playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('dino_natural_selection_choose_target', (state, playerId, value, _iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'dino_natural_selection', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'dino_natural_selection', timestamp)] };
     });
 
     // 适者生存平局选择（支持多基地链式交互）
@@ -300,7 +298,7 @@ export function registerDinosaurInteractionHandlers(): void {
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'dino_survival_of_the_fittest', timestamp)];
+        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'dino_survival_of_the_fittest', timestamp)];
 
         // 检查是否有剩余基地需要平局选择
         const ctx = iData?.continuationContext as { remainingBases?: { baseIndex: number; candidateUids: { uid: string; defId: string; owner: string }[]; minPower: number }[] } | undefined;

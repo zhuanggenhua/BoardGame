@@ -503,7 +503,13 @@ describe('Property 11: 基地记分时持续行动清理', () => {
                         },
                         timestamp: Date.now(),
                     };
-                    const s = reduce(state, event as any);
+                    let s = reduce(state, event as any);
+                    // BASE_CLEARED 清除基地
+                    s = reduce(s, {
+                        type: SU_EVENTS.BASE_CLEARED,
+                        payload: { baseIndex: 0, baseDefId: 'scored_base' },
+                        timestamp: Date.now(),
+                    } as any);
                     // 基地被移除
                     expect(s.bases.length).toBe(0);
                     // ongoing 卡回各自所有者弃牌堆
@@ -578,7 +584,13 @@ describe('Property 12: 随从离场时附着行动清理', () => {
             },
             timestamp: Date.now(),
         };
-        const s = reduce(state, event as any);
+        let s = reduce(state, event as any);
+        // BASE_CLEARED 清除基地
+        s = reduce(s, {
+            type: SU_EVENTS.BASE_CLEARED,
+            payload: { baseIndex: 0, baseDefId: 'b' },
+            timestamp: Date.now(),
+        } as any);
         // 附着行动卡回所有者弃牌堆
         expect(s.players['1'].discard.some(c => c.uid === 'att-x')).toBe(true);
     });
@@ -1327,11 +1339,17 @@ describe('Property 15: 记分循环完整性', () => {
                         },
                         timestamp: Date.now(),
                     };
-                    const s = reduce(state, event as any);
+                    let s = reduce(state, event as any);
+                    // VP 正确分配（BASE_SCORED 仅发放 VP）
+                    expect(s.players['0'].vp).toBe(vpFirst);
+                    // BASE_CLEARED 清除基地
+                    s = reduce(s, {
+                        type: SU_EVENTS.BASE_CLEARED,
+                        payload: { baseIndex: 0, baseDefId: 'base_0' },
+                        timestamp: Date.now(),
+                    } as any);
                     // 基地被移除
                     expect(s.bases.length).toBe(baseCount - 1);
-                    // VP 正确分配
-                    expect(s.players['0'].vp).toBe(vpFirst);
                     // 剩余基地仍可继续记分（循环完整性）
                     if (baseCount > 1) {
                         expect(s.bases.length).toBeGreaterThan(0);
@@ -1364,6 +1382,12 @@ describe('Property 15: 记分循环完整性', () => {
             },
             timestamp: Date.now(),
         } as any);
+        // BASE_SCORED 仅发放 VP，BASE_CLEARED 清除基地
+        state = reduce(state, {
+            type: SU_EVENTS.BASE_CLEARED,
+            payload: { baseIndex: 0, baseDefId: 'b0' },
+            timestamp: Date.now(),
+        } as any);
         expect(state.bases.length).toBe(1);
         // 记分第二个基地（现在是 index 0）
         state = reduce(state, {
@@ -1372,6 +1396,11 @@ describe('Property 15: 记分循环完整性', () => {
                 baseIndex: 0, baseDefId: 'b1',
                 rankings: [{ playerId: '1', power: 3, vp: 2 }],
             },
+            timestamp: Date.now(),
+        } as any);
+        state = reduce(state, {
+            type: SU_EVENTS.BASE_CLEARED,
+            payload: { baseIndex: 0, baseDefId: 'b1' },
             timestamp: Date.now(),
         } as any);
         expect(state.bases.length).toBe(0);

@@ -184,6 +184,15 @@ function registerBaseModifiers(): void {
     });
 }
 
+// ============================================================================
+// 狼人派系
+// ============================================================================
+
+function registerWerewolfModifiers(): void {
+    // 满月（ongoing 行动卡打出到基地上）：拥有者在此基地的随从 +1 力量
+    registerOngoingPowerModifier('werewolf_full_moon', 'base', 'ownerMinions', 1);
+}
+
 /** 注册所有持续力量修正*/
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
@@ -195,4 +204,5 @@ export function registerAllOngoingModifiers(): void {
     registerSteampunkModifiers();
     registerBearCavalryModifiers();
     registerElderThingModifiers();
+    registerWerewolfModifiers();
 }

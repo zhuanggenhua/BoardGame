@@ -11,6 +11,7 @@ export const SMASHUP_ATLAS_IDS = {
     CARDS2: 'smashup:cards2',
     CARDS3: 'smashup:cards3',
     CARDS4: 'smashup:cards4',
+    CARDS5: 'smashup:cards5',
 } as const;
 
 export const SMASHUP_CARD_BACK = {
@@ -37,6 +38,10 @@ export const SMASHUP_FACTION_IDS = {
     INNSMOUTH: 'innsmouth',
     MISKATONIC_UNIVERSITY: 'miskatonic_university',
     MADNESS: 'madness',
+    FRANKENSTEIN: 'frankenstein',
+    WEREWOLVES: 'werewolves',
+    VAMPIRES: 'vampires',
+    GIANT_ANTS: 'giant_ants',
 } as const;
 
 /** 派系中文显示名（domain 层使用，避免依赖 i18n） */
@@ -58,4 +63,8 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.INNSMOUTH]: '印斯茅斯',
     [SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY]: '米斯卡塔尼克',
     [SMASHUP_FACTION_IDS.MADNESS]: '疯狂',
+    [SMASHUP_FACTION_IDS.FRANKENSTEIN]: '科学怪人',
+    [SMASHUP_FACTION_IDS.WEREWOLVES]: '狼人',
+    [SMASHUP_FACTION_IDS.VAMPIRES]: '吸血鬼',
+    [SMASHUP_FACTION_IDS.GIANT_ANTS]: '巨蚁',
 };

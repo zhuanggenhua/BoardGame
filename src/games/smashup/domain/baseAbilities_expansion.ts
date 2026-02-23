@@ -502,6 +502,14 @@ export function registerExpansionBaseAbilities(): void {
     registerProtection('base_beautiful_castle', 'move', beautifulCastleChecker);
     registerProtection('base_beautiful_castle', 'affect', beautifulCastleChecker);
 
+    // 卵室（Egg Chamber）：这里有 +1 力量指示物的随从不能被消灭
+    registerProtection('base_egg_chamber', 'destroy', (ctx: ProtectionCheckContext): boolean => {
+        const eggIndex = ctx.state.bases.findIndex(b => b.defId === 'base_egg_chamber');
+        if (eggIndex === -1) return false;
+        if (ctx.targetBaseIndex !== eggIndex) return false;
+        return ctx.targetMinion.powerModifier > 0;
+    });
+
     // 小马乐园（Pony Paradise）：拥有 2+ 随从的玩家，其随从免疫消灭
     // 保护检查时动态查找小马乐园的基地索引，并统计该玩家在此基地的随从数量
     registerProtection('base_pony_paradise', 'destroy', (ctx: ProtectionCheckContext): boolean => {
@@ -723,7 +731,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         const ctx = (iData as any)?.continuationContext as { baseIndex: number };
         if (!ctx) return { state, events: [] };
         const events: SmashUpEvent[] = [];
-        events.push(destroyMinion(selected.minionUid!, selected.minionDefId!, ctx.baseIndex, selected.owner!, '诡猫巷：消灭己方随从', timestamp));
+        events.push(destroyMinion(selected.minionUid!, selected.minionDefId!, ctx.baseIndex, selected.owner!, undefined, '诡猫巷：消灭己方随从', timestamp));
         const player = state.core.players[playerId];
         if (player && player.deck.length > 0) {
             events.push({ type: SU_EVENTS.CARDS_DRAWN, payload: { playerId, count: 1, cardUids: [player.deck[0].uid] }, timestamp } as CardsDrawnEvent);

@@ -105,9 +105,12 @@ describe('基地记分与力量计算', () => {
                 timestamp: 1000,
             } as any;
 
-            const newState = reduce(state, event);
+            let newState = reduce(state, event);
             expect(newState.players['0'].vp).toBe(4);
             expect(newState.players['1'].vp).toBe(2);
+            // BASE_SCORED 仅发放 VP，基地仍在；BASE_CLEARED 才清除基地
+            const clearEvt: SmashUpEvent = { type: SU_EVENTS.BASE_CLEARED, payload: { baseIndex: 0, baseDefId: 'test_base' }, timestamp: 1001 } as any;
+            newState = reduce(newState, clearEvt);
             expect(newState.bases.length).toBe(0);
         });
 
@@ -135,7 +138,10 @@ describe('基地记分与力量计算', () => {
                 timestamp: 1000,
             } as any;
 
-            const newState = reduce(state, event);
+            let newState = reduce(state, event);
+            // BASE_SCORED 仅发放 VP，弃置由 BASE_CLEARED 执行
+            const clearEvt: SmashUpEvent = { type: SU_EVENTS.BASE_CLEARED, payload: { baseIndex: 0, baseDefId: 'test_base' }, timestamp: 1001 } as any;
+            newState = reduce(newState, clearEvt);
             expect(newState.players['0'].discard.length).toBe(1);
             expect(newState.players['0'].discard[0].uid).toBe('a');
         });
@@ -173,7 +179,10 @@ describe('基地记分与力量计算', () => {
                 timestamp: 1000,
             } as any;
 
-            const newState = reduce(state, event);
+            let newState = reduce(state, event);
+            // BASE_CLEARED 执行弃置
+            const clearEvt: SmashUpEvent = { type: SU_EVENTS.BASE_CLEARED, payload: { baseIndex: 0, baseDefId: 'test_base' }, timestamp: 1001 } as any;
+            newState = reduce(newState, clearEvt);
 
             // P0 弃牌堆：持续行动卡 oa1 + 随从 a
             const p0Discard = newState.players['0'].discard;
@@ -210,8 +219,11 @@ describe('基地记分与力量计算', () => {
                 timestamp: 1000,
             } as any;
 
-            const newState = reduce(state, event);
+            let newState = reduce(state, event);
             expect(newState.players['0'].vp).toBe(4);
+            // BASE_CLEARED 执行弃置
+            const clearEvt: SmashUpEvent = { type: SU_EVENTS.BASE_CLEARED, payload: { baseIndex: 0, baseDefId: 'test_base' }, timestamp: 1001 } as any;
+            newState = reduce(newState, clearEvt);
             expect(newState.players['0'].discard.length).toBe(1);
         });
     });
@@ -250,7 +262,10 @@ describe('基地记分与力量计算', () => {
                 timestamp: 1000,
             } as any;
 
-            const newState = reduce(state, event);
+            let newState = reduce(state, event);
+            // BASE_CLEARED 执行弃置
+            const clearEvt: SmashUpEvent = { type: SU_EVENTS.BASE_CLEARED, payload: { baseIndex: 0, baseDefId: 'test_base' }, timestamp: 1001 } as any;
+            newState = reduce(newState, clearEvt);
 
             // P0 弃牌堆：附着卡 att2 + 随从 m1
             const p0Discard = newState.players['0'].discard;

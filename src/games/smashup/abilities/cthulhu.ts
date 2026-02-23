@@ -14,7 +14,7 @@ import type {
     VpAwardedEvent,
     MinionCardDef,
     CardToDeckBottomEvent,
-    BaseScoredEvent,
+    BaseClearedEvent,
     BaseReplacedEvent,
 } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
@@ -296,12 +296,12 @@ function cthulhuCompleteTheRitualTrigger(ctx: TriggerContext): SmashUpEvent[] {
             } as CardToDeckBottomEvent);
         }
 
-        // 3. 移除旧基地（用空排名?BASE_SCORED 触发 reducer 删除基地?
+        // 3. 移除旧基地（BASE_CLEARED 清除基地上的随从/ongoing 并移除基地）
         events.push({
-            type: SU_EVENTS.BASE_SCORED,
-            payload: { baseIndex: i, baseDefId: base.defId, rankings: [] },
+            type: SU_EVENTS.BASE_CLEARED,
+            payload: { baseIndex: i, baseDefId: base.defId },
             timestamp: ctx.now,
-        } as BaseScoredEvent);
+        } as BaseClearedEvent);
 
         // 4. 插入新基地（从基地牌库顶?
         if (ctx.state.baseDeck.length > 0) {
@@ -474,8 +474,7 @@ function cthulhuServitor(ctx: AbilityContext): AbilityResult {
 
     // 消灭自身
     events.push(destroyMinion(
-        ctx.cardUid, ctx.defId, ctx.baseIndex, ctx.playerId,
-        'cthulhu_servitor', ctx.now
+        ctx.cardUid, ctx.defId, ctx.baseIndex, ctx.playerId, undefined, 'cthulhu_servitor', ctx.now
     ));
 
     // 从弃牌堆找行动卡
@@ -524,7 +523,7 @@ export function registerCthulhuInteractionHandlers(): void {
         if (!base) return { state, events: [] };
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return { state, events: [] };
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'cthulhu_corruption', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'cthulhu_corruption', timestamp)] };
     });
 
     registerInteractionHandler('cthulhu_servitor', (state, playerId, value, _iData, _random, timestamp) => {

@@ -113,22 +113,19 @@ export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
 
     /**
      * 刷新所有基地（从基地牌库抽取新基地替换所有场上基地）
+     * 如果基地牌库不足，则只刷新部分基地，剩余基地清空
      */
     refreshAllBases: (core: SmashUpCore): { core: SmashUpCore; events: Array<{ type: string; payload: unknown; timestamp: number }> } => {
         const basesCount = core.bases.length;
+        const availableBasesCount = Math.min(basesCount, core.baseDeck.length);
         
-        // 验证基地牌库是否有足够的牌
-        if (core.baseDeck.length < basesCount) {
-            return { core, events: [] };
-        }
-
-        // 直接替换所有基地
-        const newBases = core.baseDeck.slice(0, basesCount).map(defId => ({
+        // 从基地牌库抽取可用的基地
+        const newBases = core.baseDeck.slice(0, availableBasesCount).map(defId => ({
             defId,
             minions: [],
             ongoingActions: [],
         }));
-        const newBaseDeck = core.baseDeck.slice(basesCount);
+        const newBaseDeck = core.baseDeck.slice(availableBasesCount);
 
         const newCore = {
             ...core,

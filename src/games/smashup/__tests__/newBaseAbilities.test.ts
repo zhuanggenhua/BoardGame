@@ -5,7 +5,7 @@
  * - base_haunted_house_al9000: onMinionPlayed 弃一张牌
  * - base_the_field_of_honor: onMinionDestroyed 消灭者获1VP
  * - base_the_workshop: onActionPlayed 额外行动额度
- * - base_stadium: onMinionDestroyed 控制者抽牌
+ * - base_crypt: onMinionDestroyed 控制者抽牌
  * - base_tar_pits: onMinionDestroyed 放入牌库底
  * - base_haunted_house: afterScoring 冠军弃手牌抽5
  * - base_temple_of_goju: afterScoring 最高力量随从放牌库底
@@ -23,7 +23,7 @@ import type { BaseAbilityContext } from '../domain/baseAbilities';
 import type { SmashUpCore, MinionOnBase, CardInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { triggerBaseAbilityWithMS, getInteractionsFromResult } from './helpers';
+import { triggerBaseAbilityWithMS, getInteractionsFromResult, makeMatchState } from './helpers';
 
 beforeAll(() => {
     initAllAbilities();
@@ -207,70 +207,61 @@ describe('base_the_workshop: 额外行动额度', () => {
 });
 
 // ============================================================================
-// base_stadium: 体育场 - 随从被消灭后控制者抽牌
+// base_crypt: 地窖 - 随从被消灭后消灭者在自己这里的随从上放 +1 指示物
 // ============================================================================
 
-describe('base_stadium: 控制者抽牌', () => {
-    it('随从被消灭后控制者抽一张牌', () => {
+describe('base_crypt: 消灭者放指示物', () => {
+    it('消灭者在这里只有一个随从时自动放指示物', () => {
         const ctx: BaseAbilityContext = {
             state: makeState({
                 bases: [{
-                    defId: 'base_stadium',
-                    minions: [],
+                    defId: 'base_crypt',
+                    minions: [
+                        { uid: 'm_destroyer', defId: 'd1', controller: '1', owner: '1', basePower: 4, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
                     ongoingActions: [],
                 }],
                 players: {
-                    '0': {
-                        id: '0', vp: 0,
-                        hand: [], discard: [],
-                        deck: [makeCard('c1', '0'), makeCard('c2', '0')],
-                        minionsPlayed: 0, minionLimit: 1,
-                        actionsPlayed: 0, actionLimit: 1,
-                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
-                    },
+                    '0': { id: '0', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
+                    '1': { id: '1', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
                 } as any,
             }),
             baseIndex: 0,
-            baseDefId: 'base_stadium',
-            playerId: '0', // 被消灭随从的拥有者
-            controllerId: '0', // 控制者
+            baseDefId: 'base_crypt',
+            playerId: '0',
+            minionUid: 'm_victim',
+            destroyerId: '1',
             now: 1000,
         };
 
-        const { events } = triggerExtendedBaseAbility('base_stadium', 'onMinionDestroyed', ctx);
+        const { events } = triggerExtendedBaseAbility('base_crypt', 'onMinionDestroyed', ctx);
         expect(events.length).toBe(1);
-        expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
-        expect((events[0] as any).payload.playerId).toBe('0');
-        expect((events[0] as any).payload.cardUids).toEqual(['c1']);
+        expect(events[0].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
+        expect((events[0] as any).payload.minionUid).toBe('m_destroyer');
     });
 
-    it('控制者牌库为空时不抽牌', () => {
+    it('消灭者在这里没有随从时不放指示物', () => {
         const ctx: BaseAbilityContext = {
             state: makeState({
                 bases: [{
-                    defId: 'base_stadium',
+                    defId: 'base_crypt',
                     minions: [],
                     ongoingActions: [],
                 }],
                 players: {
-                    '0': {
-                        id: '0', vp: 0,
-                        hand: [], discard: [],
-                        deck: [],
-                        minionsPlayed: 0, minionLimit: 1,
-                        actionsPlayed: 0, actionLimit: 1,
-                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
-                    },
+                    '0': { id: '0', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
+                    '1': { id: '1', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
                 } as any,
             }),
             baseIndex: 0,
-            baseDefId: 'base_stadium',
+            baseDefId: 'base_crypt',
             playerId: '0',
-            controllerId: '0',
+            minionUid: 'm_victim',
+            destroyerId: '1',
             now: 1000,
         };
 
-        const { events } = triggerExtendedBaseAbility('base_stadium', 'onMinionDestroyed', ctx);
+        const { events } = triggerExtendedBaseAbility('base_crypt', 'onMinionDestroyed', ctx);
         expect(events.length).toBe(0);
     });
 });
@@ -667,5 +658,218 @@ describe('base_ritual_site: 随从洗回牌库', () => {
 
         const { events } = triggerBaseAbility('base_ritual_site', 'afterScoring', ctx);
         expect(events.length).toBe(0);
+    });
+});
+
+// ============================================================================
+// Monster Smash 新派系基地回归
+// ============================================================================
+
+describe('base_laboratorium: 实验工坊 - 基地全局首次随从', () => {
+    it('本回合该基地全局第一个随从时触发 +1 指示物', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{ defId: 'base_laboratorium', minions: [makeMinion('m1', '0', 3)], ongoingActions: [] }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.WEREWOLVES],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 0 },
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_laboratorium',
+            playerId: '0',
+            minionUid: 'm1',
+            now: 1000,
+        };
+
+        const { events } = triggerBaseAbility('base_laboratorium', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(1);
+        expect(events[0].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
+    });
+
+    it('本回合该基地已被其他玩家打过随从时不应再次触发', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{ defId: 'base_laboratorium', minions: [makeMinion('m2', '1', 3)], ongoingActions: [] }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.WEREWOLVES],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_laboratorium',
+            playerId: '1',
+            minionUid: 'm2',
+            now: 1000,
+        };
+
+        const { events } = triggerBaseAbility('base_laboratorium', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(0);
+    });
+});
+
+describe('base_moot_site: 集会场 - 基地全局首次随从', () => {
+    it('本回合该基地全局第一个随从时触发 +2 临时力量', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{ defId: 'base_moot_site', minions: [makeMinion('m1', '0', 3)], ongoingActions: [] }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.FRANKENSTEIN],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 0 },
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_moot_site',
+            playerId: '0',
+            minionUid: 'm1',
+            now: 1000,
+        };
+
+        const { events } = triggerBaseAbility('base_moot_site', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(1);
+        expect(events[0].type).toBe(SU_EVENTS.TEMP_POWER_ADDED);
+    });
+
+    it('本回合该基地已被其他玩家打过随从时不应再次触发', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{ defId: 'base_moot_site', minions: [makeMinion('m2', '1', 3)], ongoingActions: [] }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.FRANKENSTEIN],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_moot_site',
+            playerId: '1',
+            minionUid: 'm2',
+            now: 1000,
+        };
+
+        const { events } = triggerBaseAbility('base_moot_site', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(0);
+    });
+});
+
+describe('base_castle_blood: 血堡 - 可选触发', () => {
+    it('满足条件时应创建可选交互（可跳过）', () => {
+        const result = triggerBaseAbilityWithMS('base_castle_blood', 'onMinionPlayed', {
+            state: makeState({
+                bases: [{
+                    defId: 'base_castle_blood',
+                    minions: [
+                        makeMinion('m_me', '0', 2),
+                        makeMinion('m_op', '1', 5),
+                    ],
+                    ongoingActions: [],
+                }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        factions: [SMASHUP_FACTION_IDS.VAMPIRES, SMASHUP_FACTION_IDS.ALIENS],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        factions: [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.PIRATES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_castle_blood',
+            playerId: '0',
+            minionUid: 'm_me',
+            now: 1000,
+        });
+
+        expect(result.events.length).toBe(0);
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions.length).toBe(1);
+        expect(interactions[0].data.sourceId).toBe('base_castle_blood');
+        expect(interactions[0].data.options.some((o: any) => o.id === 'skip')).toBe(true);
+    });
+});
+
+describe('base_crypt: 地窖 - 可选触发', () => {
+    it('单个可放置目标时也应创建可选交互（包含跳过）', () => {
+        const state = makeState({
+            bases: [{
+                defId: 'base_crypt',
+                minions: [
+                    makeMinion('m_destroyer', '1', 4),
+                ],
+                ongoingActions: [],
+            }],
+            players: {
+                '0': {
+                    id: '0', vp: 0, hand: [], deck: [], discard: [],
+                    minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
+                },
+                '1': {
+                    id: '1', vp: 0, hand: [], deck: [], discard: [],
+                    minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.VAMPIRES, SMASHUP_FACTION_IDS.WEREWOLVES],
+                },
+            } as any,
+        });
+
+        const result = triggerExtendedBaseAbility('base_crypt', 'onMinionDestroyed', {
+            state,
+            matchState: makeMatchState(state),
+            baseIndex: 0,
+            baseDefId: 'base_crypt',
+            playerId: '0',
+            minionUid: 'm_victim',
+            destroyerId: '1',
+            now: 1000,
+        });
+
+        expect(result.events.length).toBe(0);
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions.length).toBe(1);
+        expect(interactions[0].data.sourceId).toBe('base_crypt');
+        expect(interactions[0].data.options.some((o: any) => o.id === 'skip')).toBe(true);
     });
 });

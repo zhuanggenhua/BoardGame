@@ -127,6 +127,15 @@ export const MatchRoom = () => {
     const [gameImplReady, setGameImplReady] = useState(false);
     useEffect(() => {
         if (!gameId || isUgcGame) return;
+        
+        // HMR 优化：如果游戏实现已经加载（通过检查 getGameImplementation），跳过重新加载
+        // 这避免了 HMR 时短暂的 gameImplReady=false 导致显示"未找到游戏客户端"
+        const impl = getGameImplementation(gameId);
+        if (impl) {
+            setGameImplReady(true);
+            return;
+        }
+        
         let cancelled = false;
         setGameImplReady(false);
         loadGameImplementation(gameId).then(() => {

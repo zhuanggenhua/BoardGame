@@ -147,7 +147,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                 expect: {
                     turnPhase: 'main2',
                     players: {
-                        '0': { hp: 50 }, // 治疗 1 但已满血
+                        '0': { hp: 51 }, // 50 + 1 = 51（未超上限 60）
                         '1': { hp: 45 }, // 50 - 5 = 45
                     },
                 },
@@ -220,7 +220,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     turnPhase: 'main2',
                     players: {
                         '0': {
-                            hp: 50,
+                            hp: 55, // 50 + 5 = 55（未超上限 60）
                             tokens: { [TOKEN_IDS.BLESSING_OF_DIVINITY]: 1 },
                         },
                         '1': { hp: 40 },

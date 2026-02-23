@@ -322,7 +322,12 @@ describe('刷新基地作弊功能', () => {
             };
 
             const result = smashUpCheatModifier.refreshAllBases!(core);
-            expect(result.core).toBe(core);
+            // 牌库不足时仍会部分刷新（只刷新可用数量的基地）
+            expect(result.core).not.toBe(core);
+            expect(result.core.bases).toHaveLength(2); // 只有2张可用
+            expect(result.core.bases[0].defId).toBe('base_new_1');
+            expect(result.core.bases[1].defId).toBe('base_new_2');
+            expect(result.core.baseDeck).toEqual([]);
             expect(result.events).toEqual([]);
         });
     });

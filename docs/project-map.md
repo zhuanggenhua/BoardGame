@@ -183,7 +183,7 @@ src/pages/
 │       ├── AdminLayout.tsx
 │       ├── DataTable.tsx
 │       └── StatsCard.tsx
-└── ...（Home.tsx / MatchRoom.tsx / LocalMatchRoom.tsx 等见 src/ 顶层文件列表）
+└── ...（Home.tsx / MatchRoom.tsx 等见 src/ 顶层文件列表）
 ```
 
 ### src/contexts/

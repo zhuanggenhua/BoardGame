@@ -181,7 +181,7 @@ function robotNukebotOnDestroy(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) return { events: [] };
     return {
         events: targets.map(t =>
-            destroyMinion(t.uid, t.defId, ctx.baseIndex, t.owner, 'robot_nukebot', ctx.now)
+            destroyMinion(t.uid, t.defId, ctx.baseIndex, t.owner, undefined, 'robot_nukebot', ctx.now)
         ),
     };
 }
@@ -218,7 +218,7 @@ export function registerRobotInteractionHandlers(): void {
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, 'robot_microbot_guard', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'robot_microbot_guard', timestamp)] };
     });
 
     // 技术中心：选择基地后按随从数抽牌

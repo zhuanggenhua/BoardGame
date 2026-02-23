@@ -370,6 +370,36 @@ describe('Me First! 响应窗口', () => {
         expect(result.finalState.core.currentPlayerIndex).toBe(0);
     });
 
+    it('P1 为当前玩家时，Me First! 响应队列从 P1 开始', () => {
+        // 场景：P1 的回合，基地达标，Me First! 打开
+        // 预期：responderQueue 应为 ['1', '0']，从当前玩家 P1 开始
+        const setupP1Turn = (ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> => {
+            const state = setupWithBreakpoint(ids, random);
+            // 将当前玩家切换到 P1
+            state.core.currentPlayerIndex = 1;
+            return state;
+        };
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: setupP1Turn,
+        });
+        const result = runner.run({
+            name: 'P1回合达标打开响应窗口',
+            commands: [
+                { type: 'ADVANCE_PHASE', playerId: '1', payload: undefined },
+            ] as any[],
+        });
+
+        expect(result.finalState.sys.phase).toBe('scoreBases');
+        const window = result.finalState.sys.responseWindow.current;
+        expect(window).toBeTruthy();
+        expect(window?.windowType).toBe('meFirst');
+        // 关键断言：队列从 P1 开始
+        expect(window?.responderQueue).toEqual(['1', '0']);
+    });
+
     it('Me First! 窗口内打出带 interaction 的 special 卡，交互完成后响应窗口正确推进', () => {
         // 场景：P0 在 Me First! 窗口内打出 miskatonic_mandatory_reading（需要选随从+选抽牌数）
         // 预期：打出后响应窗口被 pendingInteractionId 锁定，交互完成后自动推进到 P1

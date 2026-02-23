@@ -376,9 +376,15 @@ function executeCommand(
             const base = core.bases[baseIndex];
             const events: SmashUpEvent[] = [];
 
-            // ongoing 行动卡天赋
+            // ongoing 行动卡天赋（基地上或随从附着）
             if (ongoingCardUid) {
-                const ongoing = base?.ongoingActions.find(o => o.uid === ongoingCardUid);
+                let ongoing = base?.ongoingActions.find(o => o.uid === ongoingCardUid);
+                if (!ongoing) {
+                    for (const m of (base?.minions ?? [])) {
+                        const aa = m.attachedActions.find(a => a.uid === ongoingCardUid);
+                        if (aa) { ongoing = aa; break; }
+                    }
+                }
                 if (!ongoing) return { events: [] };
 
                 const talentEvt: TalentUsedEvent = {
@@ -532,39 +538,26 @@ export function processDestroyTriggers(
     const pendingSaveMinionUids = new Set<string>();
 
     for (const de of destroyEvents) {
-        const { minionUid, minionDefId, fromBaseIndex, ownerId } = de.payload;
+        const { minionUid, minionDefId, fromBaseIndex, ownerId: eventOwnerId, destroyerId: eventDestroyerId } = de.payload;
         const base = core.bases[fromBaseIndex];
         const minion = base?.minions.find(m => m.uid === minionUid);
-        const destroyerId = minion?.controller ?? ownerId;
-        const localEvents: SmashUpEvent[] = [];
-        // 记录本次 trigger 前的交互队列长度，用于检测是否创建了新交互
-        const currentMS = ms ?? state;
+        // ✅ 优先从 state 读取 owner（兜底修复：即使事件中的 ownerId 错了也能修复）
+        const ownerId = minion?.owner ?? eventOwnerId;
+        const destroyerId = eventDestroyerId ?? minion?.controller ?? ownerId;
+
+        // === Phase 1: 先检查防止消灭触发器（基地能力 + ongoing） ===
+        // 在触发 onDestroy 之前，先确认消灭是否会被防止
+        const currentMS_save = ms ?? state;
         const interactionCountBefore =
-            (currentMS.sys.interaction.current ? 1 : 0) + currentMS.sys.interaction.queue.length;
+            (currentMS_save.sys.interaction.current ? 1 : 0) + currentMS_save.sys.interaction.queue.length;
 
-        // 1. 触发随从自身的 onDestroy 能力
-        const executor = resolveOnDestroy(minionDefId);
-        if (executor) {
-            // 查找被消灭随从在基地上的信息（消灭前的状态）
-            const ctx: AbilityContext = {
-                state: core,
-                matchState: ms ?? state,
-                playerId: destroyerId,
-                cardUid: minionUid,
-                defId: minionDefId,
-                baseIndex: fromBaseIndex,
-                random,
-                now,
-            };
-            const result = executor(ctx);
-            localEvents.push(...result.events);
-            if (result.matchState) ms = result.matchState;
-        }
+        const saveEvents: SmashUpEvent[] = [];
 
-        // 2. 触发基地扩展时机 onMinionDestroyed
+        // 2. 触发基地扩展时机 onMinionDestroyed（如 nine_lives 防止消灭）
         if (base) {
             const baseCtx = {
                 state: core,
+                matchState: ms ?? state,
                 baseIndex: fromBaseIndex,
                 baseDefId: base.defId,
                 playerId: ownerId,
@@ -575,10 +568,11 @@ export function processDestroyTriggers(
                 now,
             };
             const baseResult = triggerExtendedBaseAbility(base.defId, 'onMinionDestroyed', baseCtx);
-            localEvents.push(...baseResult.events);
+            saveEvents.push(...baseResult.events);
+            if (baseResult.matchState) ms = baseResult.matchState;
         }
 
-        // 3. 触发 ongoing 拦截器 onMinionDestroyed（如逃生舱回手牌）
+        // 3. 触发 ongoing 拦截器 onMinionDestroyed（如雄蜂防止消灭、逃生舱回手牌）
         const ongoingDestroyEvents = fireTriggers(core, 'onMinionDestroyed', {
             state: core,
             matchState: ms ?? state,
@@ -586,25 +580,73 @@ export function processDestroyTriggers(
             baseIndex: fromBaseIndex,
             triggerMinionUid: minionUid,
             triggerMinionDefId: minionDefId,
+            reason: de.payload.reason,
             random,
             now,
         });
-        localEvents.push(...ongoingDestroyEvents.events);
+        saveEvents.push(...ongoingDestroyEvents.events);
         if (ongoingDestroyEvents.matchState) ms = ongoingDestroyEvents.matchState;
 
-        const filteredLocal = filterProtectedDestroyEvents(localEvents, core, destroyerId);
-        extraEvents.push(...filteredLocal);
-
-        // 检测"待拯救"模式：trigger 创建了新交互但未产生 MINION_RETURNED
+        // 检测"待拯救"模式：baseTrigger/ongoing 创建了新交互但未产生 MINION_RETURNED
         // 典型场景：九命之屋创建玩家选择交互，暂缓消灭等待玩家决定
-        const hasReturn = filteredLocal.some(e => e.type === SU_EVENTS.MINION_RETURNED);
+        // 排除：地窖等"给其他随从加指示物"的交互（sourceId 不是 base_nine_lives_intercept）
+        const hasReturn = saveEvents.some(e => e.type === SU_EVENTS.MINION_RETURNED);
+        let isPendingSave = false;
         if (!hasReturn && ms) {
             const interactionCountAfter =
                 (ms.sys.interaction.current ? 1 : 0) + ms.sys.interaction.queue.length;
             if (interactionCountAfter > interactionCountBefore) {
-                pendingSaveMinionUids.add(minionUid);
+                // 检查新交互是否为"防止消灭"类交互（白名单）
+                // 排除：地窖等"给其他随从加指示物"的交互
+                const PREVENT_DESTROY_SOURCE_IDS = [
+                    'base_nine_lives_intercept',        // 九命之屋
+                    'giant_ant_drone_prevent_destroy',   // 雄蜂防止消灭
+                ];
+                const newInteraction = ms.sys.interaction.current ?? ms.sys.interaction.queue[ms.sys.interaction.queue.length - 1];
+                const sourceId = (newInteraction?.data as any)?.sourceId as string | undefined;
+                const isPreventDestroy = sourceId ? PREVENT_DESTROY_SOURCE_IDS.includes(sourceId) : false;
+                if (isPreventDestroy) {
+                    isPendingSave = true;
+                    pendingSaveMinionUids.add(minionUid);
+                }
             }
         }
+
+        // === Phase 2: 只有确认消灭（无防止/无返回）时才触发 onDestroy ===
+        // 当 isPendingSave 时，Phase 1 的 saveEvents 中包含了所有 onMinionDestroyed 触发器的事件
+        // （包括吸血鬼伯爵/投机主义等加指示物事件），这些必须被抑制——
+        // 因为消灭尚未确认，等交互解决后再决定是否触发。
+        // 只保留 matchState 变更（交互创建），丢弃所有副作用事件。
+        //
+        // 当 hasReturn 时，随从被拯救（如逃生舱回手牌），消灭未发生，
+        // 同样需要抑制其他触发器的副作用事件，但保留 MINION_RETURNED 事件本身。
+        const localEvents: SmashUpEvent[] = isPendingSave
+            ? []
+            : hasReturn
+                ? saveEvents.filter(e => e.type === SU_EVENTS.MINION_RETURNED)
+                : [...saveEvents];
+        if (!isPendingSave && !hasReturn) {
+            // 1. 触发随从自身的 onDestroy 能力
+            const executor = resolveOnDestroy(minionDefId);
+            if (executor) {
+                const ctx: AbilityContext = {
+                    state: core,
+                    matchState: ms ?? state,
+                    playerId: ownerId,  // ✅ onDestroy 能力属于随从拥有者，不是消灭者
+                    cardUid: minionUid,
+                    defId: minionDefId,
+                    baseIndex: fromBaseIndex,
+                    random,
+                    now,
+                };
+                const result = executor(ctx);
+                localEvents.push(...result.events);
+                if (result.matchState) ms = result.matchState;
+            }
+        }
+
+        const filteredLocal = filterProtectedDestroyEvents(localEvents, core, destroyerId);
+        extraEvents.push(...filteredLocal);
     }
 
     // 需要抑制的随从 uid：已被 MINION_RETURNED 拯救 + 待交互拯救

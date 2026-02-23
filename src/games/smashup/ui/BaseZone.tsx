@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Paperclip } from 'lucide-react';
 import type { SmashUpCore, BaseInPlay, MinionOnBase } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
-import { getTotalEffectivePowerOnBase, getEffectivePower } from '../domain/ongoingModifiers';
+import { getTotalEffectivePowerOnBase, getEffectivePower, getEffectivePowerBreakdown, getEffectiveBreakpoint, getOngoingCardPowerContribution } from '../domain/ongoingModifiers';
 import { getBaseDef, getMinionDef, getCardDef, resolveCardName, resolveCardText } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PLAYER_CONFIG } from './playerConfig';
@@ -27,6 +27,8 @@ export const BaseZone: React.FC<{
     isMinionSelectMode?: boolean;
     /** 交互驱动的随从选择：只有这些 UID 的随从可被选中 */
     selectableMinionUids?: Set<string>;
+    /** 多选随从模式：已选中的随从 UID 集合 */
+    multiSelectedMinionUids?: Set<string>;
     /** 基地选择交互模式：该基地可被直接点击选中 */
     isSelectable?: boolean;
     /** 选择模式下该基地不可选（置灰） */
@@ -44,13 +46,14 @@ export const BaseZone: React.FC<{
     onViewBase: (defId: string) => void;
     tokenRef?: (el: HTMLDivElement | null) => void;
     isTutorialTargetAllowed?: (targetId: string) => boolean;
-}> = ({ base, baseIndex, core, turnOrder, isDeployMode, isMinionSelectMode, selectableMinionUids, isSelectable, isDimmed, selectableOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onViewMinion, onViewAction, onViewBase, tokenRef, isTutorialTargetAllowed }) => {
+}> = ({ base, baseIndex, core, turnOrder, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, isSelectable, isDimmed, selectableOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onViewMinion, onViewAction, onViewBase, tokenRef, isTutorialTargetAllowed }) => {
     const { t } = useTranslation('game-smashup');
+    
     const baseDef = getBaseDef(base.defId);
     const baseName = resolveCardName(baseDef, t) || base.defId;
     const baseText = resolveCardText(baseDef, t);
     const totalPower = getTotalEffectivePowerOnBase(core, base, baseIndex);
-    const breakpoint = baseDef?.breakpoint || 20;
+    const breakpoint = getEffectiveBreakpoint(core, baseIndex);
     const ratio = totalPower / breakpoint;
     const isNearBreak = ratio >= 0.8 && ratio < 1;
     const isAtBreak = ratio >= 1;
@@ -138,6 +141,15 @@ export const BaseZone: React.FC<{
                                         {t('ui.talent_used')}
                                     </div>
                                 )}
+                                {/* ongoing 卡上的力量指示物（如召唤狼群） */}
+                                {((oa.metadata?.powerCounters as number) ?? 0) > 0 && (
+                                    <div
+                                        className="absolute -top-[0.3vw] -right-[0.3vw] min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.5vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white z-40 px-[0.08vw]"
+                                        title={`+1${t('ui.power_counter', '力量指示物')} ×${oa.metadata?.powerCounters}`}
+                                    >
+                                        +{oa.metadata?.powerCounters as number}
+                                    </div>
+                                )}
                             </motion.div>
                         );
                     })}
@@ -178,20 +190,29 @@ export const BaseZone: React.FC<{
                         title={baseName}
                     />
 
-                    {/* Fallback Text */}
+                    {/* Fallback Text (no card art) */}
                     {!baseDef?.previewRef && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-[0.5vw]">
-                            <h3 className="font-black text-[1.2vw] text-slate-800 uppercase tracking-tighter rotate-[-2deg] leading-tight mb-[0.5vw]">
+                        <div className="absolute inset-0 flex flex-col items-center justify-between p-[0.6vw] bg-gradient-to-br from-slate-100 via-slate-50 to-amber-50">
+                            {/* 基地名称 */}
+                            <h3 className="font-black text-[1vw] text-slate-800 uppercase tracking-tight leading-tight text-center border-b border-slate-300 pb-[0.2vw] w-full">
                                 {baseName}
                             </h3>
-                            <div className="bg-white/90 p-[0.3vw] shadow-sm transform rotate-1 border border-slate-200">
-                                <p className="font-mono text-[0.6vw] text-slate-700 leading-tight">
+                            {/* 能力文本 */}
+                            <div className="flex-1 flex items-center px-[0.2vw]">
+                                <p className="text-[0.55vw] text-slate-600 leading-snug text-center">
                                     {baseText}
                                 </p>
                             </div>
-                            <div className="absolute bottom-[0.5vw] right-[0.5vw] font-black text-[1.5vw] text-slate-900/20">
-                                {breakpoint}
-                            </div>
+                            {/* VP 奖励 */}
+                            {baseDef?.vpAwards && (
+                                <div className="flex items-center gap-[0.3vw] border-t border-slate-300 pt-[0.2vw] w-full justify-center">
+                                    {baseDef.vpAwards.map((vp, i) => (
+                                        <span key={i} className={`font-black text-[0.7vw] ${i === 0 ? 'text-amber-600' : i === 1 ? 'text-slate-500' : 'text-amber-800/50'}`}>
+                                            {vp}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                     </motion.div>
@@ -257,8 +278,10 @@ export const BaseZone: React.FC<{
                 {turnOrder.map(pid => {
                     const minions = minionsByController[pid] || [];
 
-                    // Calc Power（使用 getEffectivePower 包含 ongoing 修正和临时修正）
-                    const total = minions.reduce((sum, m) => sum + getEffectivePower(core, m, baseIndex), 0);
+                    // Calc Power（使用 getEffectivePower 包含 ongoing 修正和临时修正 + ongoing 卡力量贡献）
+                    const minionTotal = minions.reduce((sum, m) => sum + getEffectivePower(core, m, baseIndex), 0);
+                    const ongoingBonus = getOngoingCardPowerContribution(base, pid);
+                    const total = minionTotal + ongoingBonus;
                     const basePowerTotal = minions.reduce((sum, m) => sum + m.basePower, 0);
                     const modifierDelta = total - basePowerTotal;
 
@@ -275,6 +298,7 @@ export const BaseZone: React.FC<{
                                             key={m.uid}
                                             minion={m}
                                             effectivePower={getEffectivePower(core, m, baseIndex)}
+                                            core={core}
                                             index={i}
                                             pid={pid}
                                             baseIndex={baseIndex}
@@ -282,6 +306,7 @@ export const BaseZone: React.FC<{
                                             myPlayerId={myPlayerId}
                                             dispatch={dispatch}
                                             isMinionSelectMode={isMinionSelectMode && (!selectableMinionUids || selectableMinionUids.has(m.uid))}
+                                            isMultiSelected={!!multiSelectedMinionUids?.has(m.uid)}
                                             isDimmed={!!isMinionSelectMode && !!selectableMinionUids && !selectableMinionUids.has(m.uid)}
                                             onMinionSelect={onMinionSelect}
                                             onView={() => onViewMinion(m.defId)}
@@ -351,6 +376,7 @@ const AttachedBadge: React.FC<{ count: number }> = ({ count }) => (
 const MinionCard: React.FC<{
     minion: MinionOnBase;
     effectivePower: number;
+    core: SmashUpCore;
     index: number;
     pid: string;
     baseIndex: number;
@@ -358,6 +384,8 @@ const MinionCard: React.FC<{
     myPlayerId: string | null;
     dispatch: (type: string, payload?: unknown) => void;
     isMinionSelectMode?: boolean;
+    /** 多选随从模式下已选中 */
+    isMultiSelected?: boolean;
     /** 随从选择模式下该随从不可选（置灰） */
     isDimmed?: boolean;
     onMinionSelect?: (minionUid: string, baseIndex: number) => void;
@@ -367,7 +395,7 @@ const MinionCard: React.FC<{
     selectableOngoingUids?: Set<string>;
     onOngoingSelect?: (ongoingUid: string) => void;
     isTutorialTargetAllowed?: (targetId: string) => boolean;
-}> = ({ minion, effectivePower, index, pid, baseIndex, isMyTurn, myPlayerId, dispatch, isMinionSelectMode, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, onOngoingSelect, isTutorialTargetAllowed }) => {
+}> = ({ minion, effectivePower, core, index, pid, baseIndex, isMyTurn, myPlayerId, dispatch, isMinionSelectMode, isMultiSelected, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, onOngoingSelect, isTutorialTargetAllowed }) => {
     const { t } = useTranslation('game-smashup');
     const def = getMinionDef(minion.defId);
     const resolvedName = resolveCardName(def, t) || minion.defId;
@@ -375,10 +403,18 @@ const MinionCard: React.FC<{
     const minionTitle = resolvedText ? `${resolvedName}\n${resolvedText}` : resolvedName;
     const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
 
-    // 天赋判定：有 talent 标签 + 本回合未使用 + 是我的随从 + 轮到我 + 教程允许
+    // 天赋判定：有 talent 标签 + 我方随从 + 轮到我 + 教程允许
+    // 巨石阵例外：允许一个随从每回合第 2 次使用天赋（名额未占用时）
     const hasTalent = def?.abilityTags?.includes('talent') ?? false;
     const tutorialAllowed = isTutorialTargetAllowed ? isTutorialTargetAllowed(minion.uid) : true;
-    const canUseTalent = hasTalent && !minion.talentUsed && isMyTurn && minion.controller === myPlayerId && tutorialAllowed;
+    const canUseSecondTalentOnStandingStones =
+        core.bases[baseIndex]?.defId === 'base_standing_stones' &&
+        !core.standingStonesDoubleTalentMinionUid;
+    const canUseTalent = hasTalent
+        && isMyTurn
+        && minion.controller === myPlayerId
+        && tutorialAllowed
+        && (!minion.talentUsed || canUseSecondTalentOnStandingStones);
 
     const seed = minion.uid.charCodeAt(0) + index;
     const rotation = (seed % 6) - 3;
@@ -415,6 +451,8 @@ const MinionCard: React.FC<{
                 border-[0.15vw] shadow-md
                 ${isDimmed
                     ? 'opacity-40 grayscale cursor-not-allowed'
+                    : isMultiSelected
+                    ? 'cursor-pointer border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.6),0_0_30px_rgba(74,222,128,0.3)]'
                     : isSelectableMinion
                     ? 'cursor-pointer border-purple-400 ring-2 ring-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.6),0_0_30px_rgba(168,85,247,0.3)]'
                     : canUseTalent
@@ -444,6 +482,15 @@ const MinionCard: React.FC<{
                     </div>
                 )}
 
+                {/* 多选已选中勾选标记 */}
+                {isMultiSelected && (
+                    <div className="absolute top-[0.15vw] left-[0.15vw] w-[1.4vw] h-[1.4vw] bg-green-500 rounded-full flex items-center justify-center shadow-lg border-[0.1vw] border-white z-30">
+                        <svg className="w-[0.8vw] h-[0.8vw] text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                )}
+
                 {/* 天赋可用时的发光叠层 */}
                 {canUseTalent && (
                     <motion.div
@@ -465,17 +512,49 @@ const MinionCard: React.FC<{
                 </svg>
             </button>
 
-            {/* 力量徽章 - 增益绿色/减益红色（左上角，避免与放大镜重叠） */}
+            {/* 力量增幅徽章 - 增益绿色/减益红色（左上角），仅有变化时显示 */}
             {((effectivePower !== minion.basePower) || !def?.previewRef) && (
-                <div className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] ${effectivePower > minion.basePower ? 'bg-green-600' : (effectivePower < minion.basePower ? 'bg-red-600' : 'bg-slate-700')} z-30`}>
+                <div
+                    className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] z-30 ${
+                        effectivePower > minion.basePower ? 'bg-green-600' :
+                        effectivePower < minion.basePower ? 'bg-red-600' :
+                        'bg-slate-700'
+                    }`}
+                    title={(() => {
+                        const bd = getEffectivePowerBreakdown(core, minion, baseIndex);
+                        const parts = [`基础: ${bd.basePower}`];
+                        if (bd.permanentModifier !== 0) parts.push(`指示物: ${bd.permanentModifier > 0 ? '+' : ''}${bd.permanentModifier}`);
+                        if (bd.tempModifier !== 0) parts.push(`临时: ${bd.tempModifier > 0 ? '+' : ''}${bd.tempModifier}`);
+                        if (bd.ongoingDetails.length > 0) {
+                            for (const d of bd.ongoingDetails) parts.push(`${d.sourceName}: ${d.value > 0 ? '+' : ''}${d.value}`);
+                        }
+                        parts.push(`= ${bd.finalPower}`);
+                        return parts.join('\n');
+                    })()}
+                >
                     {effectivePower === minion.basePower
                         ? effectivePower
                         : `${effectivePower > minion.basePower ? '+' : ''}${effectivePower - minion.basePower}`}
                 </div>
             )}
 
+            {/* +1力量指示物徽章（左侧，力量增幅下方） */}
+            {minion.powerModifier > 0 && (
+                <motion.div
+                    className={`absolute -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white px-[0.1vw] z-30 ${
+                        (effectivePower !== minion.basePower) || !def?.previewRef ? 'top-[1vw]' : '-top-[0.4vw]'
+                    }`}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                    title={`+1力量指示物 ×${minion.powerModifier}`}
+                >
+                    +{minion.powerModifier}
+                </motion.div>
+            )}
+
             {/* 天赋已使用标记 */}
-            {hasTalent && minion.talentUsed && (
+            {hasTalent && minion.talentUsed && !canUseTalent && (
                 <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-slate-600 text-white text-[0.45vw] font-bold px-[0.3vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-10 whitespace-nowrap">
                     {t('ui.talent_used')}
                 </div>
@@ -503,6 +582,8 @@ const MinionCard: React.FC<{
                             const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
                             const isSelectableAA = !!selectableOngoingUids?.has(aa.uid);
                             const isDimmedAA = !!selectableOngoingUids && !selectableOngoingUids.has(aa.uid);
+                            const hasAATalent = actionDef?.abilityTags?.includes('talent') ?? false;
+                            const canUseAATalent = hasAATalent && !aa.talentUsed && isMyTurn && aa.ownerId === myPlayerId;
                             return (
                                 <motion.div
                                     key={aa.uid}
@@ -510,6 +591,8 @@ const MinionCard: React.FC<{
                                         e.stopPropagation();
                                         if (isSelectableAA && onOngoingSelect) {
                                             onOngoingSelect(aa.uid);
+                                        } else if (canUseAATalent) {
+                                            dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: aa.uid, baseIndex });
                                         } else {
                                             onViewAction(aa.defId);
                                         }
@@ -520,6 +603,8 @@ const MinionCard: React.FC<{
                                             ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'
                                             : isSelectableAA
                                             ? 'border-purple-400 ring-2 ring-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.6)]'
+                                            : canUseAATalent
+                                            ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]'
                                             : 'border-purple-400 ring-1 ring-purple-300/50'
                                         }`}
                                     title={actionTitle}

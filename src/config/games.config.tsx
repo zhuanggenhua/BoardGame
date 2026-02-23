@@ -41,11 +41,19 @@ const buildGameRegistry = () => {
     return registry;
 };
 
-export const GAMES_REGISTRY: Record<string, GameConfig> = buildGameRegistry();
+export let GAMES_REGISTRY: Record<string, GameConfig> = buildGameRegistry();
 
 const notifyRegistryUpdate = () => {
     registrySubscribers.forEach((listener) => listener());
 };
+
+// HMR: 当 manifest.client 更新时，重新构建注册表
+if (import.meta.hot) {
+    import.meta.hot.accept('../games/manifest.client', () => {
+        GAMES_REGISTRY = buildGameRegistry();
+        notifyRegistryUpdate();
+    });
+}
 
 export const subscribeGameRegistry = (listener: () => void) => {
     registrySubscribers.add(listener);
