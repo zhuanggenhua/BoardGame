@@ -16,10 +16,7 @@ services:
     # 限制 WiredTiger 缓存为 128MB（默认会吃 50% 系统内存 ≈ 423MB，对小机器太贪）
     # 限制容器内存为 384MB，防止 MongoDB 挤占其他服务
     command: mongod --wiredTigerCacheSizeGB 0.125
-    deploy:
-      resources:
-        limits:
-          memory: 384M
+    mem_limit: 384m
     volumes:
       - mongodb_data:/data/db
     healthcheck:

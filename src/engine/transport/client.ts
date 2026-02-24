@@ -10,6 +10,7 @@
 import { io, type Socket } from 'socket.io-client';
 import msgpackParser from 'socket.io-msgpack-parser';
 import type { MatchPlayerInfo, ServerToClientEvents, ClientToServerEvents } from './protocol';
+import { applyPatches } from './patch';
 
 // ============================================================================
 // 客户端配置
@@ -51,6 +52,8 @@ export class GameTransportClient {
     private _latestState: unknown = null;
     private _matchPlayers: MatchPlayerInfo[] = [];
     private _destroyed = false;
+    /** 最近一次成功处理的 stateID，用于增量同步连续性校验 */
+    private _lastReceivedStateID: number | null = null;
     private _syncTimer: ReturnType<typeof setTimeout> | null = null;
     private _syncRetries = 0;
     private _healthCheckTimer: ReturnType<typeof setInterval> | null = null;
@@ -80,6 +83,16 @@ export class GameTransportClient {
     /** 对局玩家信息 */
     get matchPlayers(): MatchPlayerInfo[] {
         return this._matchPlayers;
+    }
+
+    /**
+     * 更新本地缓存的最新状态
+     *
+     * 供 GameProvider 在乐观引擎回滚时回写权威状态，
+     * 确保后续 patch 应用基准正确。
+     */
+    updateLatestState(state: unknown): void {
+        this._latestState = state;
     }
 
     /** 连接到服务端 */
@@ -120,6 +133,8 @@ export class GameTransportClient {
             this._connectionState = 'connected';
             this._latestState = state;
             this._matchPlayers = matchPlayers;
+            // sync 是全量同步，不携带 stateID，重置为 null
+            this._lastReceivedStateID = null;
             this.config.onConnectionChange?.(true);
             this.config.onStateUpdate?.(state, matchPlayers, undefined, randomMeta);
         });
@@ -128,7 +143,53 @@ export class GameTransportClient {
             if (this._destroyed || matchID !== this.config.matchID) return;
             this._latestState = state;
             this._matchPlayers = matchPlayers;
+            // 全量事件更新时同步 stateID，为后续增量 patch 建立基线
+            if (meta?.stateID !== undefined) {
+                this._lastReceivedStateID = meta.stateID;
+            }
             this.config.onStateUpdate?.(state, matchPlayers, meta);
+        });
+
+        socket.on('state:patch', (matchID, patches, matchPlayers, meta) => {
+            if (this._destroyed || matchID !== this.config.matchID) return;
+
+            // stateID 连续性校验
+            if (this._lastReceivedStateID !== null && meta.stateID !== this._lastReceivedStateID + 1) {
+                console.warn('[GameTransportClient] stateID 不连续，请求 resync', {
+                    matchID,
+                    expected: this._lastReceivedStateID + 1,
+                    received: meta.stateID,
+                });
+                this.sendSync();
+                return;
+            }
+
+            // 无基础状态，请求全量同步
+            if (this._latestState === null) {
+                console.warn('[GameTransportClient] 收到 patch 但无基础状态，请求 resync', { matchID });
+                this.sendSync();
+                return;
+            }
+
+            // 应用 patch
+            const result = applyPatches(this._latestState, patches);
+
+            if (!result.success) {
+                console.warn('[GameTransportClient] patch 应用失败，请求 resync', {
+                    matchID,
+                    error: result.error,
+                });
+                this.sendSync();
+                return;
+            }
+
+            // 更新本地状态和 stateID
+            this._latestState = result.state;
+            this._lastReceivedStateID = meta.stateID;
+            this._matchPlayers = matchPlayers;
+
+            // 传递给上层，与 state:update 行为一致
+            this.config.onStateUpdate?.(result.state!, matchPlayers, meta);
         });
 
         socket.on('error', (matchID, error) => {

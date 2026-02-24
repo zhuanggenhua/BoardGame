@@ -81,7 +81,8 @@
   "game_names": {
     "tictactoe": "井字棋",
     "dicethrone": "王权骰铸",
-    "summonerwars": "召唤师战争"
+    "summonerwars": "召唤师战争",
+    "smashup": "大杀四方"
   },
   "matchRoom": {
     "tutorialTitle": "{{game}} - 教学模式",

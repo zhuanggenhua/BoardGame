@@ -816,10 +816,29 @@ export const GameHUD = ({
             {showFeedback && (
                 <FeedbackModal
                     onClose={() => setShowFeedback(false)}
-                    actionLogText={actionLogRows.length > 0
-                        ? actionLogRows.map(r => `[${r.timeLabel}] ${r.playerLabel}: ${r.text}`).join('\n')
-                        : undefined
-                    }
+                    actionLogText={(() => {
+                        const G = undoState?.G;
+                        if (!G) return undefined;
+                        // 操作日志（人类可读）
+                        const logLines = actionLogRows.length > 0
+                            ? actionLogRows.map(r => `[${r.timeLabel}] ${r.playerLabel}: ${r.text}`).join('\n')
+                            : '';
+                        // 撤回栈快照（可注入调试面板逐步复现）
+                        const snapshots = (G.sys.undo.snapshots ?? []) as Array<{ sys: { turnNumber: number; phase: string }; core: unknown }>;
+                        const snapshotEntries = snapshots.map((snap, i) => {
+                            return `[${i}] turn=${snap.sys.turnNumber} phase=${snap.sys.phase}\n${JSON.stringify(snap.core)}`;
+                        });
+                        // 当前状态
+                        const current = `[current] turn=${G.sys.turnNumber} phase=${G.sys.phase}\n${JSON.stringify(G.core)}`;
+                        return [
+                            `--- Action Log ---`,
+                            logLines,
+                            ``,
+                            `--- State Snapshots (${snapshotEntries.length} undo + current) ---`,
+                            ...snapshotEntries,
+                            current,
+                        ].join('\n');
+                    })()}
                 />
             )}
         </>

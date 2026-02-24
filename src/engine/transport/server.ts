@@ -26,6 +26,7 @@ import {
     type PipelineConfig,
 } from '../pipeline';
 import { INTERACTION_COMMANDS } from '../systems/InteractionSystem';
+import { computeDiff } from './patch';
 
 // 离线裁决：按交互 kind 选择最小语义正确的兜底命令
 // - simple-choice: 走通用系统取消
@@ -114,6 +115,8 @@ interface ActiveMatch {
         execute: () => Promise<void>;
         resolve: (success: boolean) => void;
     }>;
+    /** 每个玩家/旁观者上次广播的 ViewState 缓存，用于 diff 计算 */
+    lastBroadcastedViews: Map<string, unknown>;
 }
 
 /** socket 关联信息 */
@@ -392,6 +395,9 @@ export class GameTransportServer {
         };
         await this.storage.setState(matchID, storedState);
 
+        // 清空增量同步缓存，确保注入后首次广播为全量
+        match.lastBroadcastedViews.clear();
+
         // 广播到所有客户端
         this.broadcastState(match);
 
@@ -547,6 +553,9 @@ export class GameTransportServer {
             seed: match.randomSeed,
             cursor: match.getRandomCursor(),
         });
+
+        // 写入缓存，确保后续增量 diff 基准正确
+        match.lastBroadcastedViews.set(playerID ?? 'spectator', viewState);
 
         // 通知其他玩家（旁观者不触发玩家连接事件）
         if (playerID !== null) {
@@ -930,6 +939,10 @@ export class GameTransportServer {
 
         if (info.playerID === null) {
             match.spectatorSockets.delete(socketId);
+            // 最后一个旁观者断开时清理缓存
+            if (match.spectatorSockets.size === 0) {
+                match.lastBroadcastedViews.delete('spectator');
+            }
             return;
         }
 
@@ -947,6 +960,9 @@ export class GameTransportServer {
         match: ActiveMatch,
         playerID: string,
     ): void {
+        // 清理增量同步缓存
+        match.lastBroadcastedViews.delete(playerID);
+
         // 更新 metadata
         if (match.metadata.players[playerID]) {
             match.metadata.players[playerID].isConnected = false;
@@ -1025,18 +1041,59 @@ export class GameTransportServer {
         // 对每个已连接的玩家发送经 playerView 过滤 + 传输裁剪的状态
         for (const [playerID, sockets] of match.connections) {
             const viewState = this.stripStateForTransport(this.applyPlayerView(match, playerID));
+            this.emitStateToSockets(nsp, sockets, match, playerID, viewState, matchPlayers, meta);
+        }
+
+        // 旁观者使用 spectator 视图
+        if (match.spectatorSockets.size > 0) {
+            const spectatorView = this.stripStateForTransport(this.applyPlayerView(match, null));
+            this.emitStateToSockets(nsp, match.spectatorSockets, match, 'spectator', spectatorView, matchPlayers, meta);
+        }
+    }
+
+    /**
+     * 对单个玩家/旁观者执行 diff 并推送（增量或全量）
+     */
+    private emitStateToSockets(
+        nsp: ReturnType<typeof this.io.of>,
+        sockets: Set<string>,
+        match: ActiveMatch,
+        cacheKey: string,
+        viewState: unknown,
+        matchPlayers: MatchPlayerInfo[],
+        meta: { stateID: number; lastCommandPlayerId?: string; randomCursor: number },
+    ): void {
+        const cached = match.lastBroadcastedViews.get(cacheKey);
+
+        if (cached === undefined) {
+            // 无缓存 → 全量推送
             for (const sid of sockets) {
                 nsp.to(sid).emit('state:update', match.matchID, viewState, matchPlayers, meta);
             }
+        } else {
+            const diff = computeDiff(cached, viewState);
+
+            if (diff.type === 'patch' && diff.patches && diff.patches.length > 0) {
+                // 增量推送
+                for (const sid of sockets) {
+                    nsp.to(sid).emit('state:patch', match.matchID, diff.patches, matchPlayers, meta);
+                }
+            } else if (diff.type === 'full') {
+                // 回退全量
+                logger.warn('[IncrementalSync] fallback to full sync', {
+                    matchID: match.matchID,
+                    cacheKey,
+                    reason: diff.fallbackReason,
+                });
+                for (const sid of sockets) {
+                    nsp.to(sid).emit('state:update', match.matchID, viewState, matchPlayers, meta);
+                }
+            }
+            // diff.patches.length === 0 → 状态未变化，跳过推送
         }
 
-        // 旁观者使用 spectator 视图（当前默认完整视图）
-        if (match.spectatorSockets.size > 0) {
-            const spectatorView = this.stripStateForTransport(this.applyPlayerView(match, null));
-            for (const sid of match.spectatorSockets) {
-                nsp.to(sid).emit('state:update', match.matchID, spectatorView, matchPlayers, meta);
-            }
-        }
+        // 始终更新缓存
+        match.lastBroadcastedViews.set(cacheKey, viewState);
     }
 
     private applyPlayerView(match: ActiveMatch, playerID: string | null): unknown {
@@ -1104,6 +1161,7 @@ export class GameTransportServer {
             offlineTimers: new Map(),
             executing: false,
             commandQueue: [],
+            lastBroadcastedViews: new Map(),
         };
 
         this.activeMatches.set(matchID, match);

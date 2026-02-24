@@ -8,6 +8,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { cn } from '../../lib/utils';
 import { FEEDBACK_API_URL as API_URL } from '../../config/server';
 import { UI_Z_INDEX } from '../../core';
+import { GAME_MANIFEST } from '../../games/manifest.generated';
 
 interface FeedbackModalProps {
     onClose: () => void;
@@ -55,21 +56,15 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
     const [content, setContent] = useState('');
     const [type, setType] = useState<FeedbackType>(FeedbackType.BUG);
     const [severity, setSeverity] = useState<FeedbackSeverity>(FeedbackSeverity.LOW);
-    const [gameName, setGameName] = useState('');
     const [contactInfo, setContactInfo] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [pastedImage, setPastedImage] = useState<string | null>(null);
     const [attachLog, setAttachLog] = useState(!!actionLogText);
 
-    useEffect(() => {
-        const path = location.pathname;
-        if (path.startsWith('/play/')) {
-            const parts = path.split('/');
-            if (parts[2]) {
-                setGameName(parts[2]);
-            }
-        }
-    }, [location]);
+    // 游戏内自动注入 gameId，非游戏页面允许手动选择
+    const isInGame = location.pathname.startsWith('/play/');
+    const autoGameId = isInGame ? (location.pathname.split('/')[2] || '') : '';
+    const [gameName, setGameName] = useState(autoGameId);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (backdropRef.current === e.target) {
@@ -179,7 +174,8 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 scrollbar-thin">
+                <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+                    <div className="p-6 overflow-y-auto space-y-4 scrollbar-thin flex-1 min-h-0">
                     {/* Game Selection */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">{t('hud.feedback.gameLabel')}</label>
@@ -189,8 +185,12 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                             className="w-full bg-parchment-card-bg border border-parchment-brown/20 text-parchment-base-text text-sm rounded-lg focus:ring-parchment-gold focus:border-parchment-gold block p-2.5 transition-colors outline-none"
                         >
                             <option value="">{t('hud.feedback.gameAll')}</option>
-                            <option value="dicethrone">{t('common:game_names.dicethrone')}</option>
-                            <option value="tictactoe">{t('common:game_names.tictactoe')}</option>
+                            {GAME_MANIFEST
+                                .filter(g => g.type === 'game' && g.enabled)
+                                .map(g => (
+                                    <option key={g.id} value={g.id}>{t(`common:game_names.${g.id}`, g.id)}</option>
+                                ))
+                            }
                         </select>
                     </div>
 
@@ -241,7 +241,7 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 onPaste={handlePaste}
-                                rows={6}
+                                rows={4}
                                 className="block p-3 w-full text-sm text-parchment-base-text bg-parchment-card-bg rounded-lg border border-parchment-brown/20 focus:ring-parchment-gold focus:border-parchment-gold resize-none outline-none placeholder:text-parchment-light-text/50"
                                 placeholder={t('hud.feedback.contentPlaceholder')}
                                 required={!pastedImage}
@@ -283,24 +283,17 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
 
                     {/* 附带操作日志 */}
                     {actionLogText && (
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={attachLog}
-                                    onChange={(e) => setAttachLog(e.target.checked)}
-                                    className="rounded border-parchment-brown/30 text-parchment-brown focus:ring-parchment-gold"
-                                />
-                                <span className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">
-                                    {t('hud.feedback.attachLog')}
-                                </span>
-                            </label>
-                            {attachLog && (
-                                <div className="max-h-32 overflow-y-auto rounded-lg border border-parchment-brown/20 bg-parchment-card-bg p-2 text-[11px] text-parchment-light-text font-mono whitespace-pre-wrap scrollbar-thin">
-                                    {actionLogText}
-                                </div>
-                            )}
-                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={attachLog}
+                                onChange={(e) => setAttachLog(e.target.checked)}
+                                className="rounded border-parchment-brown/30 text-parchment-brown focus:ring-parchment-gold"
+                            />
+                            <span className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">
+                                {t('hud.feedback.attachLog')}
+                            </span>
+                        </label>
                     )}
 
                     {/* Contact Info */}
@@ -315,7 +308,10 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                         />
                     </div>
 
-                    <div className="pt-4 border-t border-parchment-brown/10 flex justify-end">
+                    </div>
+
+                    {/* 提交按钮固定在底部，不随内容滚动 */}
+                    <div className="px-6 py-4 border-t border-parchment-brown/10 flex justify-end shrink-0 bg-parchment-base-bg">
                         <button
                             type="submit"
                             disabled={submitting || (!content.trim() && !pastedImage)}

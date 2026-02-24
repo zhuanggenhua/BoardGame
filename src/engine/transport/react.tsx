@@ -282,6 +282,10 @@ export function GameProvider({
                     } else {
                         finalState = result.stateToRender;
                     }
+                    // 回滚后回写权威状态到 client，确保后续 patch 应用基准正确
+                    if (result.didRollback) {
+                        clientRef.current?.updateLatestState(newState);
+                    }
                 } else {
                     finalState = newState as MatchState<unknown>;
                 }

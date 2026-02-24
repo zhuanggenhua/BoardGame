@@ -112,8 +112,25 @@ apply_docker_mirror() {
 
 ensure_compose_file() {
   if [ ! -f "$COMPOSE_FILE" ]; then
-    log "下载 $COMPOSE_FILE"
+    log "首次下载 $COMPOSE_FILE"
     curl -fsSL "$COMPOSE_URL" -o "$COMPOSE_FILE"
+  else
+    # 每次部署/更新都拉最新 compose 文件，确保配置变更能到达服务器
+    log "更新 $COMPOSE_FILE"
+    local tmp_file="${COMPOSE_FILE}.tmp"
+    if curl -fsSL "$COMPOSE_URL" -o "$tmp_file" 2>/dev/null; then
+      if ! diff -q "$COMPOSE_FILE" "$tmp_file" &>/dev/null; then
+        cp "$COMPOSE_FILE" "${COMPOSE_FILE}.bak.$(date +%s)"
+        mv "$tmp_file" "$COMPOSE_FILE"
+        log "✅ compose 文件已更新（旧版本已备份）"
+      else
+        rm -f "$tmp_file"
+        log "compose 文件无变化"
+      fi
+    else
+      log "⚠️  无法下载最新 compose 文件，使用本地版本"
+      rm -f "$tmp_file"
+    fi
   fi
 }
 

@@ -4,6 +4,8 @@
  * 定义客户端与服务端之间的 socket.io 事件协议和共享类型。
  */
 
+import type { Operation } from 'fast-json-patch';
+
 // ============================================================================
 // 玩家信息
 // ============================================================================
@@ -58,6 +60,14 @@ export interface ServerToClientEvents {
         matchPlayers: MatchPlayerInfo[],
         /** 元数据，用于乐观更新校验 */
         meta?: { stateID?: number; lastCommandPlayerId?: string; randomCursor?: number },
+    ) => void;
+
+    /** 增量状态更新（JSON Patch） */
+    'state:patch': (
+        matchID: string,
+        patches: Operation[],
+        matchPlayers: MatchPlayerInfo[],
+        meta: { stateID: number; lastCommandPlayerId?: string; randomCursor: number },
     ) => void;
 
     /** 命令执行错误 */
