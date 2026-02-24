@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import mongoose from 'mongoose';
 import type { HydratedDocument } from 'mongoose';
 
 export type MatchRecordDocument = HydratedDocument<MatchRecord>;
@@ -31,6 +32,10 @@ export class MatchRecord {
 
     @Prop({ type: String })
     winnerID?: string;
+
+    /** 游戏结束时的操作日志快照（ActionLogEntry[]） */
+    @Prop({ type: mongoose.Schema.Types.Mixed })
+    actionLog?: unknown[];
 
     @Prop({ type: Date, default: Date.now })
     endedAt!: Date;

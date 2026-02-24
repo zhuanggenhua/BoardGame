@@ -95,7 +95,7 @@
     "burn": {
       "name": "燃烧",
       "description": [
-        "维持阶段受到等同层数的不可防御伤害，然后移除1层"
+        "持续效果，不可叠加。有此标记的玩家在每个维持阶段受到2点伤害"
       ]
     },
     "stun": {
@@ -1582,8 +1582,7 @@
       "effects": {
         "damage8": "造成8点伤害",
         "gainCrit": "获得1个暴击标记",
-        "gain2CP": "获得2CP",
-        "gain20CP": "获得20CP"
+        "gain2CP": "获得2CP"
       }
     },
     "righteous-prayer-2": {

@@ -95,7 +95,7 @@
     "burn": {
       "name": "Burn",
       "description": [
-        "During Upkeep, take undefendable damage equal to the number of stacks, then remove 1 stack"
+        "Persistent. Does not stack. During Upkeep, take 2 undefendable damage"
       ]
     },
     "stun": {
@@ -1085,8 +1085,7 @@
       "effects": {
         "damage8": "Deal 8 damage",
         "gainCrit": "Gain 1 Crit token",
-        "gain2CP": "Gain 2 CP",
-        "gain20CP": "Gain 20 CP"
+        "gain2CP": "Gain 2 CP"
       }
     },
     "righteous-prayer-2": {

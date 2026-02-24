@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import DataTable, { type Column } from './components/DataTable';
 import { ADMIN_API_URL } from '../../config/server';
 import { useToast } from '../../contexts/ToastContext';
-import { Filter, Calendar, Gamepad2 } from 'lucide-react';
+import { Filter, Calendar, Gamepad2, X, ScrollText } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import CustomSelect, { type Option } from './components/ui/CustomSelect';
 import SearchInput from './components/ui/SearchInput';
@@ -25,6 +25,37 @@ interface Match {
     updatedAt: string;
 }
 
+/** ActionLog segment（与引擎 ActionLogSegment 对齐） */
+interface ActionLogSegment {
+    type: 'text' | 'i18n' | 'breakdown';
+    text?: string;
+    key?: string;
+    ns?: string;
+    params?: Record<string, unknown>;
+    label?: string;
+    value?: number;
+    unit?: string;
+}
+
+interface ActionLogEntry {
+    id: string;
+    timestamp: number;
+    actorId: string;
+    kind: string;
+    segments: ActionLogSegment[];
+}
+
+interface MatchDetail {
+    matchID: string;
+    gameName: string;
+    players: Array<MatchPlayer & { result?: string; userId?: string | null }>;
+    winnerID?: string;
+    actionLog?: ActionLogEntry[];
+    createdAt: string;
+    endedAt: string;
+    duration: number;
+}
+
 const GAME_OPTIONS: Option[] = [
     { label: 'Dice Throne', value: 'dicethrone', icon: <Gamepad2 size={14} /> },
     { label: 'Tic Tac Toe', value: 'tictactoe', icon: <Gamepad2 size={14} /> },
@@ -43,6 +74,26 @@ export default function MatchesPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [detailMatch, setDetailMatch] = useState<MatchDetail | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+
+    const fetchMatchDetail = useCallback(async (matchID: string) => {
+        if (!token) return;
+        setDetailLoading(true);
+        try {
+            const res = await fetch(`${ADMIN_API_URL}/matches/${matchID}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('获取详情失败');
+            const data = await res.json();
+            setDetailMatch(data);
+        } catch (err) {
+            console.error(err);
+            toastError('获取对局详情失败');
+        } finally {
+            setDetailLoading(false);
+        }
+    }, [token, toastError]);
 
     const fetchMatches = async () => {
         if (!token) {
@@ -274,7 +325,10 @@ export default function MatchesPage() {
                     >
                         删除
                     </button>
-                    <button disabled className="text-xs font-medium text-zinc-400 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button
+                        onClick={() => fetchMatchDetail(m.matchID)}
+                        className="text-xs font-medium text-zinc-500 hover:text-indigo-600 transition-colors"
+                    >
                         详情
                     </button>
                 </div>
@@ -328,6 +382,171 @@ export default function MatchesPage() {
                         totalItems
                     }}
                 />
+            </div>
+
+            {/* 对局详情弹窗 */}
+            {detailMatch && (
+                <MatchDetailModal
+                    detail={detailMatch}
+                    loading={detailLoading}
+                    onClose={() => setDetailMatch(null)}
+                />
+            )}
+        </div>
+    );
+}
+
+
+// ── 操作日志 segment 渲染 ──
+
+function renderSegment(seg: ActionLogSegment, idx: number): React.ReactNode {
+    switch (seg.type) {
+        case 'text':
+            return <span key={idx}>{seg.text}</span>;
+        case 'i18n':
+            // 后台不加载游戏 i18n namespace，直接显示 key + params
+            return (
+                <span key={idx} className="text-indigo-600" title={`${seg.ns}:${seg.key}`}>
+                    {seg.key}{seg.params ? `(${JSON.stringify(seg.params)})` : ''}
+                </span>
+            );
+        case 'breakdown':
+            return (
+                <span key={idx} className="font-semibold text-amber-700">
+                    {seg.label}: {seg.value}{seg.unit ?? ''}
+                </span>
+            );
+        default:
+            return <span key={idx}>{JSON.stringify(seg)}</span>;
+    }
+}
+
+function formatDurationText(seconds: number): string {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}小时${m}分`;
+    if (m > 0) return `${m}分${s}秒`;
+    return `${s}秒`;
+}
+
+// ── 对局详情弹窗 ──
+
+function MatchDetailModal({
+    detail,
+    loading,
+    onClose,
+}: {
+    detail: MatchDetail;
+    loading: boolean;
+    onClose: () => void;
+}) {
+    const resolveResult = (playerId: string) => {
+        if (!detail.winnerID) return '平局';
+        return playerId === detail.winnerID ? '胜利' : '失败';
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-zinc-200">
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between shrink-0">
+                    <div>
+                        <h3 className="text-lg font-bold text-zinc-900">对局详情</h3>
+                        <p className="text-xs text-zinc-400 font-mono mt-0.5">{detail.matchID}</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div className="flex-1 flex items-center justify-center py-12 text-zinc-400">加载中...</div>
+                ) : (
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {/* 基础信息 */}
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span className="text-zinc-400 text-xs">游戏</span>
+                                <p className="font-medium text-zinc-700 capitalize mt-0.5">{detail.gameName}</p>
+                            </div>
+                            <div>
+                                <span className="text-zinc-400 text-xs">耗时</span>
+                                <p className="font-medium text-zinc-700 mt-0.5">{formatDurationText(detail.duration)}</p>
+                            </div>
+                            <div>
+                                <span className="text-zinc-400 text-xs">结束时间</span>
+                                <p className="font-medium text-zinc-700 mt-0.5">
+                                    {new Date(detail.endedAt).toLocaleString(undefined, {
+                                        year: 'numeric', month: '2-digit', day: '2-digit',
+                                        hour: '2-digit', minute: '2-digit'
+                                    })}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 玩家 */}
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">玩家</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                {detail.players.map((p, i) => (
+                                    <div key={i} className={cn(
+                                        "flex items-center gap-3 p-3 rounded-xl border",
+                                        p.id === detail.winnerID
+                                            ? "bg-emerald-50 border-emerald-200"
+                                            : "bg-zinc-50 border-zinc-200"
+                                    )}>
+                                        <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-xs font-bold text-zinc-500">
+                                            {(p.name || '?')[0]?.toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-zinc-700 truncate">{p.name || `玩家${p.id}`}</p>
+                                            <p className={cn(
+                                                "text-xs font-semibold",
+                                                p.id === detail.winnerID ? "text-emerald-600" : "text-zinc-400"
+                                            )}>
+                                                {resolveResult(p.id)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 操作日志 */}
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <ScrollText size={12} />
+                                操作日志
+                                {detail.actionLog && (
+                                    <span className="text-zinc-300 font-normal">({detail.actionLog.length})</span>
+                                )}
+                            </h4>
+                            {detail.actionLog && detail.actionLog.length > 0 ? (
+                                <div className="bg-zinc-50 rounded-xl border border-zinc-200 divide-y divide-zinc-100 max-h-80 overflow-y-auto">
+                                    {detail.actionLog.map((entry, i) => (
+                                        <div key={entry.id || i} className="px-4 py-2.5 flex items-start gap-3 text-sm">
+                                            <span className="text-[10px] text-zinc-300 font-mono shrink-0 mt-0.5 w-6 text-right">{i + 1}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    {entry.segments.map((seg, si) => renderSegment(seg, si))}
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-300 font-mono shrink-0 mt-0.5">
+                                                P{entry.actorId}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-zinc-400 italic">暂无操作日志</p>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

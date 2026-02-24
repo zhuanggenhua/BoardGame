@@ -9,6 +9,8 @@ export interface IMatchRecord extends Document {
         result?: string; // 'win', 'loss', 'draw'
     }[];
     winnerID?: string; // ID of the winner, or null if draw
+    /** 游戏结束时的操作日志快照 */
+    actionLog?: unknown[];
     createdAt: Date;
     endedAt: Date;
 }
@@ -25,6 +27,8 @@ const MatchRecordSchema = new Schema<IMatchRecord>(
             }
         ],
         winnerID: { type: String },
+        /** 游戏结束时的操作日志快照（ActionLogEntry[]） */
+        actionLog: { type: Schema.Types.Mixed },
         endedAt: { type: Date, default: Date.now }
     },
     {

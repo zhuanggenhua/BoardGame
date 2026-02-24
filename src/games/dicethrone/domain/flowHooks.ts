@@ -382,7 +382,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         },
                     };
                     const postDamageEventsSneak = resolvePostDamageEffects(coreForPostDamage, random, timestamp);
-                    events.push(...postDamageEventsSneak);
+                    // 潜行免伤：过滤掉所有 DAMAGE_DEALT 事件（包括 rollDie 的 bonusDamage 独立伤害）
+                    // 规则：Shadows 免除进攻阶段的所有伤害，但非伤害效果（grantToken/heal 等）仍生效
+                    events.push(...postDamageEventsSneak.filter(e => e.type !== 'DAMAGE_DEALT'));
 
                     return { events, overrideNextPhase: 'main2' };
                 }
@@ -739,26 +741,20 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     } as DiceThroneEvent);
                 }
 
-                // 1. 燃烧 (burn) — 每层造成 1 点伤害，然后移除 1 层
+                // 1. 燃烧 (burn) — 持续效果，不可叠加，每回合固定造成 2 点不可防御伤害，不自动移除
                 // 【已迁移到新伤害计算管线】
                 const burnStacks = player.statusEffects[STATUS_IDS.BURN] ?? 0;
                 if (burnStacks > 0) {
                     const damageCalc = createDamageCalculation({
                         source: { playerId: 'system', abilityId: 'upkeep-burn' },
                         target: { playerId: activeId },
-                        baseDamage: burnStacks,
+                        baseDamage: 2,
                         state: core,
                         timestamp,
                     });
                     const damageEvents = damageCalc.toEvents();
                     events.push(...damageEvents);
-                    // 移除 1 层燃烧
-                    events.push({
-                        type: 'STATUS_REMOVED',
-                        payload: { targetId: activeId, statusId: STATUS_IDS.BURN, stacks: 1 },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    } as DiceThroneEvent);
+                    // 持续效果：燃烧不自动移除，需要通过净化等手段移除
                 }
 
                 // 2. 中毒 (poison) — 每层造成 1 点伤害，持续效果（不自动移除层数）

@@ -440,7 +440,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         effects: [
             damage(8, abilityEffectText('righteous-prayer', 'damage8')),
             grantToken(TOKEN_IDS.CRIT, 1, abilityEffectText('righteous-prayer', 'gainCrit')),
-            cpGain(20, abilityEffectText('righteous-prayer', 'gain20CP')),
+            cpGain(2, abilityEffectText('righteous-prayer', 'gain2CP')),
         ]
     },
 

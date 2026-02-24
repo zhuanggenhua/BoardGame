@@ -164,7 +164,7 @@ const archiveMatchResult = async ({
         const existing = await MatchRecord.findOne({ matchID });
         if (existing) return;
 
-        const { metadata } = await storage.fetch(matchID, { metadata: true });
+        const { metadata, state: storedState } = await storage.fetch(matchID, { metadata: true, state: true });
         const winnerID = gameover?.winner !== undefined ? String(gameover.winner) : undefined;
         const resultType = winnerID ? 'win' : 'draw';
 
@@ -180,11 +180,16 @@ const archiveMatchResult = async ({
             }
         }
 
+        // 从最终状态中提取操作日志
+        const matchState = storedState?.G as { sys?: { actionLog?: { entries?: unknown[] } } } | undefined;
+        const actionLog = matchState?.sys?.actionLog?.entries ?? undefined;
+
         await MatchRecord.create({
             matchID,
             gameName,
             players,
             winnerID,
+            actionLog,
             createdAt: new Date(metadata?.createdAt || Date.now()),
             endedAt: new Date(),
         });

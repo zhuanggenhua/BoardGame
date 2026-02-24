@@ -92,6 +92,7 @@ type LeanMatchRecord = {
     gameName: string;
     players: MatchRecordPlayer[];
     winnerID?: string;
+    actionLog?: unknown[];
     createdAt: Date;
     endedAt: Date;
 };
@@ -192,6 +193,7 @@ type MatchDetail = {
     gameName: string;
     players: Array<MatchRecordPlayer & { userId?: string | null }>;
     winnerID?: string;
+    actionLog?: unknown[];
     createdAt: Date;
     endedAt: Date;
     duration: number;
@@ -805,6 +807,7 @@ export class AdminService implements OnModuleInit {
         const [records, total] = await Promise.all([
             this.matchRecordModel
                 .find(filter)
+                .select('-actionLog')
                 .sort({ endedAt: -1 })
                 .skip((page - 1) * limit)
                 .limit(limit)
@@ -857,6 +860,7 @@ export class AdminService implements OnModuleInit {
                 userId: player.name ? userMap.get(player.name) ?? null : null,
             })),
             winnerID: match.winnerID,
+            actionLog: match.actionLog,
             createdAt: match.createdAt,
             endedAt: match.endedAt,
             duration: Math.round(durationMs / 1000),

@@ -255,9 +255,9 @@ describe('Fire Mastery 维持阶段冷却', () => {
         const core = result.finalState.core;
         // 火焰精通冷却：3 → 2 → 1
         expect(core.players['1'].tokens[TOKEN_IDS.FIRE_MASTERY]).toBe(1);
-        // 燃烧伤害：1 层 = 1 点伤害，然后移除
-        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 1);
-        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(0);
+        // 燃烧伤害：固定 2 点伤害，持续不移除
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2);
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1);
     });
 });
 

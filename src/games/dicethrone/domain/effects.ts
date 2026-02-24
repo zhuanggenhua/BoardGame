@@ -1119,6 +1119,11 @@ export function resolveEffectsToEvents(
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
     let bonusApplied = false;
+    // skipDamage 模式下追踪是否已经跳过了 damage 效果。
+    // damage 之前的 rollDie 在第一次调用中已执行过，其 bonusDamage 已被 damage 消费，
+    // 重新执行产生的 bonusDamage 是重复的，必须忽略。
+    // damage 之后的 rollDie 在第一次调用中被 break 截断未执行，其 bonusDamage 是新的，应正常处理。
+    let damageSkipped = false;
 
     // 构建 EffectResolutionContext 用于条件检查
     const activeDice = getActiveDice(ctx.state);
@@ -1144,10 +1149,18 @@ export function resolveEffectsToEvents(
         // 避免 custom action 被重复执行导致骰子二次投掷和 random 队列偏移
         if (config?.skipDamage) {
             if (effect.action.type === 'damage') {
+                damageSkipped = true;
                 continue;
             }
             if (effect.action.type === 'custom' && effect.action.customActionId
                 && isCustomActionCategory(effect.action.customActionId, 'damage')) {
+                damageSkipped = true;
+                continue;
+            }
+            // damage 之前的 rollDie 在第一次调用中已执行过（bonusDamage 已被 damage 消费），
+            // 重新执行会产生重复的 bonusDamage 和消耗 random 值。
+            // 只有 damage 之后的 rollDie 才是被 break 截断未执行的，需要正常执行。
+            if (effect.action.type === 'rollDie' && !damageSkipped) {
                 continue;
             }
         }
@@ -1171,6 +1184,11 @@ export function resolveEffectsToEvents(
         // 后续效果（如 rollDie）应在 Token 响应完成后由 resolvePostDamageEffects 执行。
         // 此处必须中断，否则 rollDie 会消耗 random 值，导致后续重新执行时 random 队列偏移。
         if (effectEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED')) {
+            // accumulatedBonusDamage 已被包含在主伤害的 baseDamage 中（通过 totalBonus 传入），
+            // 必须清零，否则函数末尾的 fallback 会生成重复的 DAMAGE_DEALT 事件。
+            // 这会导致：① 伤害被双重计算 ② 额外的 DAMAGE_DEALT 消耗防御方的护盾（如暗影刺客的 999 护盾），
+            // 使后续主伤害失去护盾保护。
+            ctx.accumulatedBonusDamage = 0;
             break;
         }
 
