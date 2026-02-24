@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { generateId } from '@/lib/utils';
+import { generateId } from '../lib/utils';
 
 export type ToastTone = 'success' | 'info' | 'warning' | 'error';
 
