@@ -78,14 +78,12 @@ const TUTORIAL_TARGET_COMMAND_MAP: Record<string, string[]> = {
 
 /**
  * 判断同 slot 的多个满足变体是否为"分歧型"（需要玩家选择）
- * - 增量型（如火球 3火/4火/5火）：所有 trigger 都是 diceSet 且骰面 key 集合相同，只是数量递增 → 自动选最高优先级
- * - 分歧型（如燃烧之灵 2火魂 vs 炙热之魂 2岩浆+2火魂）：trigger 类型不同或骰面 key 集合不同 → 弹窗选择
+ * - 增量型（如火球 3火/4火/5火）：所有 trigger 都是 diceSet 且骰面 key 集合相同，且 effect 类型集合相同，只是数量递增 → 自动选最高优先级
+ * - 分歧型（如燃烧之灵 2火魂 vs 炙热之魂 2岩浆+2火魂；赐死射击 vs 专注）：trigger 类型不同、骰面 key 集合不同、或 effect 类型集合不同 → 弹窗选择
  */
 function hasDivergentVariants(state: DiceThroneCore, playerId: string, variantIds: string[]): boolean {
-    const triggers = variantIds.map(vid => {
-        const match = findPlayerAbility(state, playerId, vid);
-        return match?.variant?.trigger ?? match?.ability.trigger ?? null;
-    });
+    const matches = variantIds.map(vid => findPlayerAbility(state, playerId, vid));
+    const triggers = matches.map(m => m?.variant?.trigger ?? m?.ability.trigger ?? null);
 
     // 任何 trigger 查不到，保守弹窗
     if (triggers.some(t => !t)) return true;
@@ -99,7 +97,16 @@ function hasDivergentVariants(state: DiceThroneCore, playerId: string, variantId
         return Object.keys(faces).sort().join(',');
     });
     const firstKeySet = faceKeySets[0];
-    return !faceKeySets.every(ks => ks === firstKeySet);
+    if (!faceKeySets.every(ks => ks === firstKeySet)) return true;
+
+    // 骰面 key 集合相同时，还需比较 effect 类型集合是否一致
+    // 若 effect 类型不同（如一个造伤害、一个施加状态），则为分歧型，需要玩家选择
+    const effectTypeSets = matches.map(m => {
+        const effects = m?.variant?.effects ?? m?.ability.effects ?? [];
+        return effects.map(e => e.action.type).sort().join(',');
+    });
+    const firstEffectTypeSet = effectTypeSets[0];
+    return !effectTypeSets.every(es => es === firstEffectTypeSet);
 }
 
 // --- Main Layout ---
