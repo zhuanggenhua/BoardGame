@@ -95,7 +95,7 @@ describe('响应窗口视角自动切换', () => {
         passedPlayers: [],
     });
 
-    it('响应窗口打开且当前响应者是对手时 isResponseAutoSwitch 为 true', () => {
+    it('响应窗口打开且本地玩家是响应者时 isResponseAutoSwitch 为 true', () => {
         const result = computeViewModeState({
             currentPhase: 'offensiveRoll',
             pendingAttack: null,
@@ -103,6 +103,7 @@ describe('响应窗口视角自动切换', () => {
             rootPlayerId: '0',
             manualViewMode: 'self',
             responseWindow: makeResponseWindow(['1']),
+            isLocalPlayerResponder: true,
         });
 
         expect(result.isResponseAutoSwitch).toBe(true);
@@ -150,7 +151,7 @@ describe('响应窗口视角自动切换', () => {
         expect(result.isResponseAutoSwitch).toBe(false);
     });
 
-    it('多响应者队列中第二个响应者是对手时正确识别', () => {
+    it('多响应者队列中本地玩家是当前响应者时正确识别', () => {
         const result = computeViewModeState({
             currentPhase: 'offensiveRoll',
             pendingAttack: null,
@@ -158,6 +159,7 @@ describe('响应窗口视角自动切换', () => {
             rootPlayerId: '0',
             manualViewMode: 'self',
             responseWindow: makeResponseWindow(['0', '1'], 1),
+            isLocalPlayerResponder: true,
         });
 
         expect(result.isResponseAutoSwitch).toBe(true);

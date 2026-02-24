@@ -1,6 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+
+// 部署新版本后，浏览器缓存的旧 HTML 引用已不存在的 chunk（hash 变了），
+// 服务器返回 HTML fallback 导致 MIME type 错误。检测到后自动刷新一次加载新版本。
+window.addEventListener('vite:preloadError', () => {
+  window.location.reload();
+});
 // 触发所有游戏光标主题的自注册（副作用 import，必须在组件渲染前）
 import './games/cursorRegistry';
 // 初始化 i18n（语言检测 + 本地缓存）
