@@ -477,8 +477,6 @@ class MatchSocketService {
             interval: 30000, // 30秒检查一次
         });
     }
-
-    private _cleanupHealthCheck: (() => void) | null = null;
 }
 
 // 导出单例实例
