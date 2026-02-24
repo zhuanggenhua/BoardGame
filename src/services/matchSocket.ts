@@ -72,6 +72,7 @@ class MatchSocketService {
     private lastAcceptedRevision = 0;
     private currentChatMatchId: string | null = null;
     private _cleanupVisibility: (() => void) | null = null;
+    private _cleanupHealthCheck: (() => void) | null = null;
 
     /**
      * 连接到对局 Socket 服务
@@ -477,7 +478,6 @@ class MatchSocketService {
         });
     }
 
-    private _cleanupVisibility: (() => void) | null = null;
     private _cleanupHealthCheck: (() => void) | null = null;
 }
 
