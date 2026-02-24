@@ -61,7 +61,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'roll',
         description: cardText('card-just-this', 'description'),
-        playCondition: { requireDiceExists: true, requireHasRolled: true },
+        playCondition: { phase: 'defensiveRoll', requireDiceExists: true, requireHasRolled: true },
         effects: [{ description: '重投至5颗骰子', action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
     },
     {
@@ -86,7 +86,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-i-can-again', 'description'),
-        playCondition: { requireDiceExists: true, requireHasRolled: true },
+        playCondition: { phase: 'offensiveRoll', requireDiceExists: true, requireHasRolled: true },
         effects: [{ description: '重掷至多5颗骰子', action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
     },
     {

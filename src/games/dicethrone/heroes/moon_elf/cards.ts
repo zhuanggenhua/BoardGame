@@ -73,6 +73,7 @@ export const MOON_ELF_CARDS: AbilityCard[] = [
         description: cardText('volley', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.MOON_ELF, index: 2 },
         isAttackModifier: true,
+        playCondition: { phase: 'offensiveRoll' },
         effects: [{ description: 'Effect', action: { type: 'custom', target: 'self', customActionId: 'moon_elf-action-volley' }, timing: 'immediate' }]
     },
     {
@@ -84,6 +85,7 @@ export const MOON_ELF_CARDS: AbilityCard[] = [
         description: cardText('watch-out', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.MOON_ELF, index: 3 },
         isAttackModifier: true,
+        playCondition: { phase: 'offensiveRoll' },
         effects: [{ description: 'Effect', action: { type: 'custom', target: 'self', customActionId: 'moon_elf-action-watch-out' }, timing: 'immediate' }]
     },
     {

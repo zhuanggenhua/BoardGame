@@ -682,7 +682,15 @@
     "selectPlayerToRemoveAllStatus": "选择要移除所有状态的玩家",
     "selectPlayerForRetribution": "选择获得神罚的玩家",
     "selectPlayerForConsecrate": "选择获得祝圣的玩家",
-    "selectStatusToTransfer": "选择要转移的状态效果"
+    "selectStatusToTransfer": "选择要转移的状态效果",
+    "hint_copy_step1": "第1步：点击选择源骰子（要复制的值）",
+    "hint_copy_step2": "第2步：点击选择目标骰子（将被改为 {{value}}）",
+    "hint_set": "点击选择要设为 {{value}} 的骰子",
+    "hint_adjust": "使用 +/- 按钮调整骰子数值",
+    "hint_any": "使用 +/- 按钮将骰子改为任意值",
+    "hint_select": "点击选择要重掷的骰子（{{current}}/{{max}}）",
+    "hint_select_opponent": "点击选择对手要重掷的骰子（{{current}}/{{max}}）",
+    "hint_done": "选择完毕，点击确认"
   },
   "abilitySlots": {
     "fist": "拳术",

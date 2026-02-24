@@ -668,7 +668,15 @@
     "selectPlayerToRemoveAllStatus": "Select a player to remove all status",
     "selectPlayerForRetribution": "Select a player to gain Retribution",
     "selectPlayerForConsecrate": "Select a player to consecrate",
-    "selectStatusToTransfer": "Select a status effect to transfer"
+    "selectStatusToTransfer": "Select a status effect to transfer",
+    "hint_copy_step1": "Step 1: Click the source die (value to copy)",
+    "hint_copy_step2": "Step 2: Click the target die (will become {{value}})",
+    "hint_set": "Click a die to set it to {{value}}",
+    "hint_adjust": "Use +/- buttons to adjust die value",
+    "hint_any": "Use +/- buttons to change die to any value",
+    "hint_select": "Click to select dice to reroll ({{current}}/{{max}})",
+    "hint_select_opponent": "Click opponent's dice to reroll ({{current}}/{{max}})",
+    "hint_done": "Selection complete, click Confirm"
   },
   "abilitySlots": {
     "fist": "Fist Technique",

@@ -6,6 +6,7 @@
 import type { DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
+import { TOKEN_IDS } from './ids';
 import { getFaceCounts, getActiveDice } from './rules';
 
 type EventHandler<E extends DiceThroneEvent> = (
@@ -116,11 +117,25 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         newResources = result.pool;
     }
 
-    const hpAfter = newResources[RESOURCE_IDS.HP] ?? 0;
+    let newTokens = target.tokens;
+    let hpAfter = newResources[RESOURCE_IDS.HP] ?? 0;
+
+    // 神圣祝福致死保护（reducer 层兜底）
+    // 规则：HP 降到 0 以下时，消耗 1 层神圣祝福，HP 设为 1
+    // 在 reducer 层统一处理，确保所有伤害路径（直接攻击、Token 响应窗口结算、弹反等）都能触发
+    const blessingCount = target.tokens?.[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0;
+    if (hpAfter <= 0 && blessingCount > 0) {
+        newTokens = { ...target.tokens, [TOKEN_IDS.BLESSING_OF_DIVINITY]: blessingCount - 1 };
+        // HP 从当前值（<=0）回到 1
+        const hpResetResult = resourceSystem.modify(newResources, RESOURCE_IDS.HP, 1 - hpAfter);
+        newResources = hpResetResult.pool;
+        hpAfter = 1;
+    }
+
     const netHpLoss = Math.max(0, hpBefore - hpAfter);
 
     let pendingAttack = state.pendingAttack;
-    // 统一累计“本次攻击对防御方造成的净掉血”，作为 lastResolvedAttackDamage 的单一来源。
+    // 统一累计"本次攻击对防御方造成的净掉血"，作为 lastResolvedAttackDamage 的单一来源。
     if (pendingAttack && targetId === pendingAttack.defenderId) {
         pendingAttack = {
             ...pendingAttack,
@@ -132,7 +147,7 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         ...state,
         players: {
             ...state.players,
-            [targetId]: { ...target, damageShields: newDamageShields, resources: newResources },
+            [targetId]: { ...target, damageShields: newDamageShields, resources: newResources, tokens: newTokens },
         },
         pendingAttack,
         lastEffectSourceByPlayerId: sourceAbilityId

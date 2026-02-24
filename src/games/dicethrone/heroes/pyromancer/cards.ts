@@ -120,6 +120,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
         description: cardText('card-red-hot', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PYROMANCER, index: 7 },
         isAttackModifier: true,
+        playCondition: { phase: 'offensiveRoll' },
         effects: [
             {
                 description: abilityEffectText('card-red-hot', 'dmgPerFM'),
@@ -137,6 +138,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
         description: cardText('card-get-fired-up', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PYROMANCER, index: 13 },
         isAttackModifier: true,
+        playCondition: { phase: 'offensiveRoll' },
         effects: [
             {
                 description: abilityEffectText('card-get-fired-up', 'roll'),

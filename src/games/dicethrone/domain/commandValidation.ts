@@ -88,6 +88,11 @@ const validateRollDice = (
         return fail('roll_limit_reached');
     }
 
+    // 已确认掷骰后不允许再掷（防止绕过 UI 直接 dispatch）
+    if (state.rollConfirmed) {
+        return fail('roll_already_confirmed');
+    }
+
     // 防御阶段必须先选择防御技能才能掷骰（规则 §3.6 步骤 2→3）
     if (phase === 'defensiveRoll' && state.pendingAttack && !state.pendingAttack.defenseAbilityId) {
         return fail('defense_ability_not_selected');
@@ -277,6 +282,11 @@ const validateSelectAbility = (
     
     if (!state.rollConfirmed) {
         return fail('roll_not_confirmed');
+    }
+
+    // 已发起攻击（pendingAttack 存在），禁止重复选择技能
+    if (state.pendingAttack) {
+        return fail('attack_already_initiated');
     }
     
     // 实时计算可用技能（派生状态）
