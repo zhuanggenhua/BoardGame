@@ -445,7 +445,7 @@ export function BuilderModals(props: BuilderModalsProps) {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-slate-400">提示词 ({promptOutput.length} 字符)</span>
               <button
-                onClick={() => navigator.clipboard.writeText(promptOutput)}
+                onClick={() => navigator.clipboard?.writeText(promptOutput)}
                 className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
               >
                 <Copy className="w-3 h-3 inline mr-1" /> 复制
@@ -460,7 +460,7 @@ export function BuilderModals(props: BuilderModalsProps) {
                 <div className="flex items-center gap-2">
                   {state.rulesCode && (
                     <button
-                      onClick={() => navigator.clipboard.writeText(String(state.rulesCode))}
+                      onClick={() => navigator.clipboard?.writeText(String(state.rulesCode))}
                       className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
                     >
                       <Copy className="w-3 h-3 inline mr-1" /> 复制代码
@@ -664,7 +664,7 @@ export function BuilderModals(props: BuilderModalsProps) {
                 <button
                   onClick={() => {
                     const prompt = generateAIPrompt(aiGenType, currentSchema, state);
-                    navigator.clipboard.writeText(prompt);
+                    navigator.clipboard?.writeText(prompt);
                   }}
                   className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs"
                 >

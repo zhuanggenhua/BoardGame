@@ -34,7 +34,7 @@ import { useSocial } from '../../../../contexts/SocialContext';
 import { buildActionLogRows } from '../../utils/actionLogFormat';
 import { ActionLogSegments } from './ActionLogSegments';
 import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../registry/cardPreviewRegistry';
-import { generateId } from '../../../../lib/utils';
+import { generateId, copyToClipboard } from '../../../../lib/utils';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial';
@@ -332,7 +332,7 @@ export const GameHUD = ({
 
     const copyRoomId = () => {
         if (matchId) {
-            navigator.clipboard.writeText(matchId);
+            void copyToClipboard(matchId);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
