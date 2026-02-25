@@ -152,6 +152,8 @@ export interface GameProviderProps {
     onError?: (error: string) => void;
     /** 连接状态变更回调 */
     onConnectionChange?: (connected: boolean) => void;
+    /** 玩家连接状态变更回调（WebSocket 实时推送） */
+    onPlayerConnectionChange?: (playerID: string, connected: boolean) => void;
     /** 游戏引擎配置（乐观更新需要在客户端执行 Pipeline） */
     engineConfig?: GameEngineConfig;
     /** 延迟优化配置（可选，不传则不启用任何优化） */
@@ -166,6 +168,7 @@ export function GameProvider({
     children,
     onError,
     onConnectionChange,
+    onPlayerConnectionChange: onPlayerConnectionChangeProp,
     engineConfig,
     latencyConfig,
 }: GameProviderProps) {
@@ -195,6 +198,8 @@ export function GameProvider({
     onErrorRef.current = onError;
     const onConnectionChangeRef = useRef(onConnectionChange);
     onConnectionChangeRef.current = onConnectionChange;
+    const onPlayerConnectionChangeRef = useRef(onPlayerConnectionChangeProp);
+    onPlayerConnectionChangeRef.current = onPlayerConnectionChangeProp;
 
     // 初始化乐观更新引擎
     useEffect(() => {
@@ -335,6 +340,8 @@ export function GameProvider({
                 setMatchPlayers(prev => prev.map(p =>
                     String(p.id) === playerID ? { ...p, isConnected: connected } : p
                 ));
+                // 通知外部（MatchRoom 层）实时更新对手在线状态
+                onPlayerConnectionChangeRef.current?.(playerID, connected);
             },
             onError: (error) => {
                 onErrorRef.current?.(error);

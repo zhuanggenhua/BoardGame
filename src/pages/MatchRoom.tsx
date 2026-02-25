@@ -552,6 +552,20 @@ export const MatchRoom = () => {
         isTutorialRoute ? undefined : matchId,
         isTutorialRoute ? null : statusPlayerID
     );
+
+    // WebSocket 实时推送的对手连接状态（覆盖 HTTP 轮询的延迟数据）
+    // useMatchStatus 依赖 30 秒 HTTP 轮询，首次加载时对手可能还没建立 WebSocket 连接，
+    // 导致 isConnected=false → 离线横幅误触发。这里用 GameProvider 的实时回调修正。
+    const [realtimeOpponentConnected, setRealtimeOpponentConnected] = useState<boolean | null>(null);
+    const handlePlayerConnectionChange = useCallback((playerID: string, connected: boolean) => {
+        const myIndex = statusPlayerID ? parseInt(statusPlayerID) : -1;
+        const opponentIndex = myIndex === 0 ? '1' : '0';
+        if (playerID === opponentIndex) {
+            setRealtimeOpponentConnected(connected);
+        }
+    }, [statusPlayerID]);
+    // 实时数据优先，无实时数据时降级到 HTTP 轮询
+    const effectiveOpponentConnected = realtimeOpponentConnected ?? matchStatus.opponentConnected;
     useEffect(() => {
         if (isTutorialRoute) return;
         if (!matchId || !statusPlayerID) return;
@@ -977,7 +991,7 @@ export const MatchRoom = () => {
                 credentials={credentials}
                 myPlayerId={effectivePlayerID}
                 opponentName={matchStatus.opponentName}
-                opponentConnected={matchStatus.opponentConnected}
+                opponentConnected={effectiveOpponentConnected}
                 players={matchStatus.players}
                 onLeave={handleLeaveRoom}
                 onDestroy={handleDestroyRoom}
@@ -1040,6 +1054,7 @@ export const MatchRoom = () => {
                                     playerId={isSpectatorRoute ? null : (effectivePlayerID ?? null)}
                                     credentials={credentials}
                                     onError={handleGameError}
+                                    onPlayerConnectionChange={handlePlayerConnectionChange}
                                 >
                                     <BoardBridge
                                         board={ugcBoard}
@@ -1063,6 +1078,7 @@ export const MatchRoom = () => {
                                     engineConfig={engineConfig ?? undefined}
                                     latencyConfig={latencyConfig}
                                     onError={handleGameError}
+                                    onPlayerConnectionChange={handlePlayerConnectionChange}
                                 >
                                     <BoardBridge
                                         board={WrappedBoard}

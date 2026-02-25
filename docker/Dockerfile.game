@@ -1,13 +1,27 @@
+# ---- 阶段 1：仅安装生产依赖 ----
+FROM node:20-slim AS deps
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+
+# ---- 阶段 2：最终生产镜像 ----
 FROM node:20-slim
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# 生产依赖（不含 devDependencies，体积大幅缩小）
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json ./
 
-COPY . .
+# 源码（game.ts import 链涉及 ui/components，需要完整 src/）
+COPY server.ts ./
+COPY server/ ./server/
+COPY src/ ./src/
+COPY tsconfig.json ./
 
 ENV GAME_SERVER_PORT=18000
+ENV NODE_ENV=production
 EXPOSE 18000
 
 CMD ["npx", "tsx", "server.ts"]

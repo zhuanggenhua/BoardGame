@@ -104,7 +104,7 @@ export interface ListMatchesOpts {
 /**
  * 对局存储接口
  *
- * 所有存储实现（MongoStorage、HybridStorage、InMemoryStorage）必须实现此接口。
+ * 所有存储实现（MongoStorage、HybridStorage）必须实现此接口。
  */
 export interface MatchStorage {
     /** 连接存储后端 */
