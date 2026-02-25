@@ -174,10 +174,14 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
   /** 触发 on-impact 反馈（音效 + 震动） */
   const fireImpact = useCallback((id: string) => {
     const meta = eventEntryMapRef.current.get(id);
-    if (!meta) return;
+    if (!meta) {
+      return;
+    }
     meta.impactFired = true;
     const entry = registry.resolve(meta.cue);
-    if (!entry?.feedback) return;
+    if (!entry?.feedback) {
+      return;
+    }
 
     // 查找对应事件以获取动态上下文（如 intensity 覆盖）
     const event = effectsRef.current.find(e => e.id === id);

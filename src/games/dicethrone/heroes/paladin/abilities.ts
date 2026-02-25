@@ -8,8 +8,20 @@ import type { PassiveAbilityDef } from '../../domain/passiveAbility';
 import { TOKEN_IDS, PALADIN_DICE_FACE_IDS as FACES } from '../../domain/ids';
 import { abilityText, abilityEffectText } from '../../../../engine/primitives/ability';
 
-export const PALADIN_SFX_LIGHT = 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_grace_whisper_001';
-export const PALADIN_SFX_HEAVY = 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001';
+// 圣骑士音效常量 — 每类技能使用不同的 divine_magic 变体，确保听感差异化
+/** 治疗类（圣光） */
+export const PALADIN_SFX_HEAL = 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_grace_whisper_001';
+/** 近战惩击类（正义冲击、力量祝福） */
+export const PALADIN_SFX_SMITE = 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_smite_001';
+/** 力量祝福（不可格挡攻击 + Token） */
+export const PALADIN_SFX_MIGHT = 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_smite_002';
+/** 光束类（神圣冲击） */
+export const PALADIN_SFX_BEAM = 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001';
+/** 复仇/反击 */
+export const PALADIN_SFX_VENGEANCE = 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_002';
+/** 祈祷类（正义祈祷） */
+export const PALADIN_SFX_PRAYER = 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_mass_heal_001';
+/** 大招（坚毅信念） */
 export const PALADIN_SFX_ULTIMATE = 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_celestial_choir_001';
 
 // 辅助函数
@@ -44,7 +56,7 @@ export const RIGHTEOUS_COMBAT_2: AbilityDef = {
     name: abilityText('righteous-combat-2', 'name'),
     type: 'offensive',
     description: abilityText('righteous-combat-2', 'description'),
-    sfxKey: PALADIN_SFX_HEAVY,
+    sfxKey: PALADIN_SFX_SMITE,
     variants: [
         // 执着 (Tenacity) - 2 Sword + 1 Helm
         {
@@ -91,7 +103,7 @@ export const RIGHTEOUS_COMBAT_3: AbilityDef = {
     name: abilityText('righteous-combat-3', 'name'),
     type: 'offensive',
     description: abilityText('righteous-combat-3', 'description'),
-    sfxKey: PALADIN_SFX_HEAVY,
+    sfxKey: PALADIN_SFX_SMITE,
     variants: [
         // 执着
         {
@@ -138,7 +150,7 @@ export const BLESSING_OF_MIGHT_2: AbilityDef = {
     name: abilityText('blessing-of-might-2', 'name'),
     type: 'offensive',
     description: abilityText('blessing-of-might-2', 'description'),
-    sfxKey: PALADIN_SFX_HEAVY,
+    sfxKey: PALADIN_SFX_MIGHT,
     variants: [
         // 进攻姿态 (Offensive Stance): 2 Sword + 1 Pray
         {
@@ -185,7 +197,7 @@ export const HOLY_LIGHT_2: AbilityDef = {
     name: abilityText('holy-light-2', 'name'),
     type: 'offensive',
     description: abilityText('holy-light-2', 'description'),
-    sfxKey: PALADIN_SFX_LIGHT,
+    sfxKey: PALADIN_SFX_HEAL,
     trigger: { type: 'diceSet', faces: { [FACES.HEART]: 2 } },
     effects: [
         {
@@ -213,7 +225,7 @@ export const VENGEANCE_2: AbilityDef = {
     name: abilityText('vengeance-2', 'name'), // Retribution II
     type: 'offensive',
     description: abilityText('vengeance-2', 'description'),
-    sfxKey: PALADIN_SFX_HEAVY,
+    sfxKey: PALADIN_SFX_VENGEANCE,
     variants: [
         // 复仇 (Vengeance) - Variant 1 (Sword Helm Heart Pray - 4 different symbols)
         // Wait, "Sword Helm Heart Pray" = Small Straight?
@@ -256,7 +268,7 @@ export const RIGHTEOUS_PRAYER_2: AbilityDef = {
     name: abilityText('righteous-prayer-2', 'name'),
     type: 'offensive',
     description: abilityText('righteous-prayer-2', 'description'),
-    sfxKey: PALADIN_SFX_HEAVY,
+    sfxKey: PALADIN_SFX_PRAYER,
     variants: [
         // 繁盛 (Prosperity): 3 Pray
         {
@@ -287,7 +299,7 @@ export const HOLY_STRIKE_2: AbilityDef = {
     name: abilityText('holy-strike-2', 'name'), // Holy Strike II
     type: 'offensive',
     description: abilityText('holy-strike-2', 'description'),
-    sfxKey: PALADIN_SFX_HEAVY,
+    sfxKey: PALADIN_SFX_BEAM,
     variants: [
         {
             id: 'holy-strike-2-small',
@@ -347,7 +359,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         name: abilityText('righteous-combat', 'name'),
         type: 'offensive',
         description: abilityText('righteous-combat', 'description'),
-        sfxKey: PALADIN_SFX_HEAVY,
+        sfxKey: PALADIN_SFX_SMITE,
         trigger: { type: 'diceSet', faces: { [FACES.SWORD]: 3, [FACES.HELM]: 2 } },
         effects: [
             damage(5, abilityEffectText('righteous-combat', 'damage5')),
@@ -375,7 +387,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         name: abilityText('blessing-of-might', 'name'),
         type: 'offensive',
         description: abilityText('blessing-of-might', 'description'),
-        sfxKey: PALADIN_SFX_HEAVY,
+        sfxKey: PALADIN_SFX_MIGHT,
         tags: ['unblockable'],
         trigger: { type: 'diceSet', faces: { [FACES.SWORD]: 3, [FACES.PRAY]: 1 } },
         effects: [
@@ -391,7 +403,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         name: abilityText('holy-strike', 'name'),
         type: 'offensive',
         description: abilityText('holy-strike', 'description'),
-        sfxKey: PALADIN_SFX_HEAVY,
+        sfxKey: PALADIN_SFX_BEAM,
         variants: [
             { id: 'holy-strike-small', name: abilityText('holy-strike-small', 'name'), trigger: { type: 'smallStraight' }, effects: [heal(1, abilityEffectText('holy-strike', 'heal1')), damage(5, abilityEffectText('holy-strike', 'damage5'))], priority: 0 },
             { id: 'holy-strike-large', name: abilityText('holy-strike-large', 'name'), trigger: { type: 'largeStraight' }, effects: [heal(2, abilityEffectText('holy-strike-large', 'heal2')), damage(8, abilityEffectText('holy-strike-large', 'damage8'))], priority: 1 }
@@ -404,7 +416,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         name: abilityText('holy-light', 'name'),
         type: 'offensive',
         description: abilityText('holy-light', 'description'),
-        sfxKey: PALADIN_SFX_LIGHT,
+        sfxKey: PALADIN_SFX_HEAL,
         trigger: { type: 'diceSet', faces: { [FACES.HEART]: 2 } },
         effects: [
             {
@@ -433,7 +445,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         name: abilityText('vengeance', 'name'),
         type: 'offensive',
         description: abilityText('vengeance', 'description'),
-        sfxKey: PALADIN_SFX_HEAVY,
+        sfxKey: PALADIN_SFX_VENGEANCE,
         trigger: { type: 'diceSet', faces: { [FACES.HELM]: 3, [FACES.PRAY]: 1 } },
         effects: [
             grantToken(TOKEN_IDS.RETRIBUTION, 1, abilityEffectText('vengeance', 'gainRetribution')),
@@ -447,7 +459,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         name: abilityText('righteous-prayer', 'name'),
         type: 'offensive',
         description: abilityText('righteous-prayer', 'description'),
-        sfxKey: PALADIN_SFX_HEAVY,
+        sfxKey: PALADIN_SFX_PRAYER,
         trigger: { type: 'diceSet', faces: { [FACES.PRAY]: 4 } },
         effects: [
             damage(8, abilityEffectText('righteous-prayer', 'damage8')),

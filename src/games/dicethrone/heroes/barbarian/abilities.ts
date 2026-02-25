@@ -7,9 +7,9 @@ import { BARBARIAN_DICE_FACE_IDS, STATUS_IDS } from '../../domain/ids';
 import type { AbilityDef, AbilityEffect, EffectTiming, EffectCondition } from '../../domain/combat';
 import { abilityText, abilityEffectText } from '../../../../engine/primitives/ability';
 
-const BARBARIAN_SFX_LIGHT = 'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_01_krst';
-const BARBARIAN_SFX_HEAVY = 'combat.general.fight_fury_vol_2.versatile_punch_hit_with_blood.fghtimpt_versatile_punch_hit_with_blood_06_krst';
-const BARBARIAN_SFX_ULTIMATE = 'combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_02_krst';
+const BARBARIAN_SFX_LIGHT = 'combat.general.khron_studio_fight_fury_vol_1_assets.sword_hit_with_blood.weapswrd_sword_hit_with_blood_01';
+const BARBARIAN_SFX_HEAVY = 'magic.general.modern_magic_sound_fx_pack_vol.offensive_spells.offensive_spells_shockwave_slam_001';
+const BARBARIAN_SFX_ULTIMATE = 'magic.general.simple_magic_sound_fx_pack_vol.shock.thunderous_boom';
 
 // 辅助函数
 const damage = (value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
