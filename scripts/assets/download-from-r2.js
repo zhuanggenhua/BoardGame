@@ -17,14 +17,13 @@
  */
 
 import dotenv from 'dotenv';
-import { existsSync } from 'fs';
-
-// 下载脚本直接读 .env.example（R2 凭证已内置，合作者无需额外配置）
-dotenv.config({ path: '.env.example' });
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, readdirSync, statSync } from 'fs';
 import { join, dirname, relative, sep } from 'path';
 import { createHash } from 'crypto';
+
+// 下载脚本直接读 .env.example（R2 凭证已内置，合作者无需额外配置）
+dotenv.config({ path: '.env.example' });
 
 // R2 配置
 const R2_ENDPOINT = `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
