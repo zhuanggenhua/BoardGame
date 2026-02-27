@@ -584,7 +584,8 @@
     "no_pending_bonus_dice": "No pending bonus dice settlement",
     "bonus_reroll_limit_reached": "Bonus die reroll limit reached",
     "not_enough_token": "Not enough tokens to pay the cost",
-    "invalid_die_index": "Invalid die index"
+    "invalid_die_index": "Invalid die index",
+    "attack_already_initiated": "Attack already initiated, cannot select ability again"
   },
   "actions": {
     "resolveAttack": "Resolve Attack",
@@ -991,17 +992,13 @@
         "roll3": "Roll 3 dice: Sword +2 dmg, Helm +1 dmg, Heart heal 2, Pray +1 CP"
       }
     },
-    "righteous-combat-2-tenacity": {
-      "name": "Tenacity II",
-      "description": "2 Sword + 1 Helm: heal 2, deal 2 undefendable damage"
-    },
-    "righteous-combat-2-main": {
-      "name": "Righteous Combat II",
-      "description": "3 Sword + 2 Helm: deal 5 damage, roll 3 dice for bonus effects"
-    },
     "righteous-combat-3-tenacity": {
       "name": "Tenacity III",
-      "description": "2 Sword + 1 Helm: heal 2, deal 2 undefendable damage"
+      "description": "2 Sword + 1 Helm: heal 2, deal 2 undefendable damage",
+      "effects": {
+        "heal2": "Heal 2 HP",
+        "damage2Unblockable": "Deal 2 undefendable damage"
+      }
     },
     "righteous-combat-3-main": {
       "name": "Righteous Combat III",

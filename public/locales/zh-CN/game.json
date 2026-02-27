@@ -125,7 +125,7 @@
       "submit": "提交反馈",
       "success": "反馈已提交，感谢支持！",
       "errors": {
-        "loginRequired": "请先登录再提交反馈",
+        "loginRequired": "登录后可获得更好的反馈跟进体验",
         "submitFailed": "提交失败，请稍后再试"
       },
       "type": {

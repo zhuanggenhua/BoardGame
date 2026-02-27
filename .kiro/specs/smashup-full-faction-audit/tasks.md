@@ -101,7 +101,7 @@
 
 - [x] 10.1 列出所有在回合中被写入的临时字段（`minionsPlayed`/`actionsPlayed`/`baseLimitedMinionQuota`/`extraMinionPowerMax`/`sameNameMinionRemaining` 等）
 - [x] 10.2 验证每个临时字段在 `TURN_STARTED` 或 `TURN_ENDED` 中有对应的清理/重置
-- [~] 10.3 编写 GameTestRunner 行为测试 `audit-turn-cleanup.test.ts`：回合 1 授予额外额度 → 回合 2 验证额度已清零
+- [ ] 10.3 编写 GameTestRunner 行为测试 `audit-turn-cleanup.test.ts`：回合 1 授予额外额度 → 回合 2 验证额度已清零
 - _Requirements: 8_
 
 ### 任务组 11：D15 — UI 状态同步审计
@@ -128,7 +128,7 @@
 - [x] 13.1 列出所有调用 `filterProtectedMinionDestroyEvents`/`filterProtectedMinionMoveEvents` 的位置
 - [x] 13.2 列出所有产生 `MINION_DESTROYED`/`MINION_MOVED` 事件的路径（直接命令/交互解决/trigger 回调/基地能力/计分清场）
 - [x] 13.3 比对两个清单，标记未调用过滤函数的事件产生路径
-- [~] 13.4 编写 GameTestRunner 行为测试 `audit-protection-paths.test.ts`：受保护随从在所有消灭路径下均不被消灭
+- [ ] 13.4 编写 GameTestRunner 行为测试 `audit-protection-paths.test.ts`：受保护随从在所有消灭路径下均不被消灭
 - [x] 13.5 输出拦截路径审计报告到 `docs/audit/smashup/phase2-protection-paths.md`
 - _Requirements: 11_
 

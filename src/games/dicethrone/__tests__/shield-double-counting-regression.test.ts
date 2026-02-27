@@ -130,6 +130,56 @@ describe('护盾双重扣减回归测试', () => {
         expect(afterDamage.pendingAttack?.resolvedDamage).toBe(5);
     });
 
+    it('下次一定（6护盾）应先按 amount 减伤，避免溢出伤害被提前截断', () => {
+        const core = createMinimalCore();
+        // 低血量场景：若先用 actualDamage(=HP上限)再减护盾，会错误变成 0 伤害
+        core.players['1'].resources.hp = 5;
+
+        const damageEvent: DamageDealtEvent = {
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: '1',
+                amount: 11,
+                // 模拟上游旧事件：actualDamage 已按 HP 预钳制
+                actualDamage: 5,
+                sourceAbilityId: 'fiery-combo',
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: 1000,
+        };
+
+        const afterDamage = reduce(core, damageEvent);
+
+        // 正确顺序：11 先减护盾 6 = 5，再扣 HP（5 -> 0）
+        expect(afterDamage.players['1'].resources.hp).toBe(0);
+        expect(afterDamage.players['1'].damageShields).toEqual([]);
+        expect(afterDamage.pendingAttack?.resolvedDamage).toBe(5);
+    });
+
+    it('下次一定（6护盾）在高血量高伤害下应结算剩余伤害', () => {
+        const core = createMinimalCore();
+        core.players['1'].resources.hp = 50;
+
+        const damageEvent: DamageDealtEvent = {
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: '1',
+                amount: 36,
+                actualDamage: 36,
+                sourceAbilityId: 'fiery-combo',
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: 1001,
+        };
+
+        const afterDamage = reduce(core, damageEvent);
+
+        // 36 先减护盾 6 = 30，HP: 50 -> 20
+        expect(afterDamage.players['1'].resources.hp).toBe(20);
+        expect(afterDamage.players['1'].damageShields).toEqual([]);
+        expect(afterDamage.pendingAttack?.resolvedDamage).toBe(30);
+    });
+
     it('ATTACK_RESOLVED 后 lastResolvedAttackDamage 为净掉血值', () => {
         const core = createMinimalCore();
 

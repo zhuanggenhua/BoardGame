@@ -356,8 +356,10 @@ describe('终极技能（Ultimate）护盾免疫', () => {
         
         // 护盾抵消 3 点，不扣血
         expect(newCore.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
-        // 护盾已消耗
-        expect(newCore.players['1'].damageShields).toEqual([]);
+        // 护盾剩余 3 点（6 - 3 = 3）
+        expect(newCore.players['1'].damageShields).toEqual([
+            { value: 3, sourceId: 'card-next-time', preventStatus: false },
+        ]);
     });
 });
 

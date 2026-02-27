@@ -125,7 +125,7 @@
       "submit": "Submit Feedback",
       "success": "Feedback submitted. Thanks for the support!",
       "errors": {
-        "loginRequired": "Please log in before submitting feedback.",
+        "loginRequired": "Login for better feedback tracking experience",
         "submitFailed": "Submission failed. Please try again later."
       },
       "type": {

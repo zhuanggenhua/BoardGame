@@ -107,6 +107,7 @@ const DICETHRONE_ERROR_CODES = [
     'bonus_reroll_limit_reached',
     'not_enough_token',
     'invalid_die_index',
+    'attack_already_initiated',
     // flowHooks.ts
     // 'cannot_advance_phase' 已在上方
 ] as const;

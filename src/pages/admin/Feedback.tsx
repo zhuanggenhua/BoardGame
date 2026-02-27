@@ -17,7 +17,7 @@ import ImageLightbox from '../../components/common/ImageLightbox';
 
 interface FeedbackItem {
     _id: string;
-    userId: {
+    userId?: {
         _id: string;
         username: string;
         avatar?: string;
@@ -524,13 +524,19 @@ function FeedbackRow({
                 {/* 提交者 */}
                 <td className="py-2 px-2">
                     <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full bg-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-500 overflow-hidden flex-shrink-0">
-                            {item.userId.avatar
-                                ? <img src={item.userId.avatar} alt="" className="w-full h-full object-cover" />
-                                : item.userId.username?.[0]?.toUpperCase()
-                            }
-                        </div>
-                        <span className="text-xs text-zinc-600 truncate max-w-[80px]">{item.userId.username}</span>
+                        {item.userId ? (
+                            <>
+                                <div className="w-5 h-5 rounded-full bg-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-500 overflow-hidden flex-shrink-0">
+                                    {item.userId.avatar
+                                        ? <img src={item.userId.avatar} alt="" className="w-full h-full object-cover" />
+                                        : item.userId.username?.[0]?.toUpperCase()
+                                    }
+                                </div>
+                                <span className="text-xs text-zinc-600 truncate max-w-[80px]">{item.userId.username}</span>
+                            </>
+                        ) : (
+                            <span className="text-xs text-zinc-400 italic">{t('feedback.anonymous')}</span>
+                        )}
                     </div>
                 </td>
 
@@ -621,10 +627,11 @@ function CopyFeedbackButton({ item, t }: { item: FeedbackItem; t: TFunction<'adm
     const handleCopy = (e: React.MouseEvent) => {
         e.stopPropagation();
         const textContent = extractText(item.content, t);
+        const submitter = item.userId?.username || t('feedback.anonymous');
         const parts = [
             `【${t(`feedback.type.${item.type}`)}】${t(`feedback.severity.${item.severity}`)}`,
             item.gameName ? `游戏: ${item.gameName}` : '',
-            `提交者: ${item.userId.username}`,
+            `提交者: ${submitter}`,
             `时间: ${new Date(item.createdAt).toLocaleString('zh-CN')}`,
             '',
             '--- 反馈内容 ---',

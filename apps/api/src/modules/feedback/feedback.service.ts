@@ -10,10 +10,10 @@ export class FeedbackService {
         @InjectModel(Feedback.name) private feedbackModel: Model<FeedbackDocument>,
     ) { }
 
-    async create(userId: string, dto: CreateFeedbackDto): Promise<Feedback> {
+    async create(userId: string | null, dto: CreateFeedbackDto): Promise<Feedback> {
         return this.feedbackModel.create({
             ...dto,
-            userId,
+            ...(userId && { userId }), // 只有在 userId 存在时才添加该字段
         });
     }
 

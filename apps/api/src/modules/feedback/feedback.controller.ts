@@ -9,10 +9,21 @@ import { AdminGuard } from '../admin/guards/admin.guard';
 export class FeedbackController {
     constructor(@Inject(FeedbackService) private readonly feedbackService: FeedbackService) { }
 
-    @UseGuards(JwtAuthGuard)
+    /**
+     * 创建反馈
+     * 
+     * 速率限制：
+     * - 匿名用户：每 IP 每分钟最多 3 次请求
+     * - 已登录用户：每用户每分钟最多 10 次请求
+     * 
+     * TODO: 添加 @nestjs/throttler 依赖后启用速率限制
+     * @Throttle({ default: { limit: 3, ttl: 60000 } }) // 匿名用户限制
+     */
     @Post()
     async create(@Request() req: any, @Body() dto: CreateFeedbackDto) {
-        return this.feedbackService.create(req.user.userId, dto);
+        // 如果用户已登录，使用用户 ID；否则使用 null（匿名反馈）
+        const userId = req.user?.userId || null;
+        return this.feedbackService.create(userId, dto);
     }
 }
 

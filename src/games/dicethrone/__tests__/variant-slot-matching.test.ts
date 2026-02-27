@@ -188,10 +188,11 @@ describe('getAbilitySlotId', () => {
             expect(getAbilitySlotId('piercing-attack', map)).toBe('lightning');
         });
 
-        // 圣骑士升级技能：RIGHTEOUS_COMBAT_2 含 righteous-combat-2-tenacity
-        it('圣骑士：righteous-combat-2-tenacity → combo 槽', () => {
-            const map = buildVariantToBaseIdMap([RIGHTEOUS_COMBAT_2]);
-            expect(getAbilitySlotId('righteous-combat-2-tenacity', map)).toBe('combo');
+        // 圣骑士升级技能：RIGHTEOUS_COMBAT_2 无变体（已修正数据录入错误）
+        // RIGHTEOUS_COMBAT_3 含 righteous-combat-3-tenacity
+        it('圣骑士：righteous-combat-3-tenacity → combo 槽', () => {
+            const map = buildVariantToBaseIdMap([RIGHTEOUS_COMBAT_3]);
+            expect(getAbilitySlotId('righteous-combat-3-tenacity', map)).toBe('combo');
         });
 
         // BLESSING_OF_MIGHT_2 含 blessing-of-might-2-stance

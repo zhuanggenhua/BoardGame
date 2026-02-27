@@ -67,6 +67,138 @@
 | `useDeferredRender` | 延迟渲染 | 避免首帧闪烁 |
 | `useDelayedBackdropBlur` | 延迟毛玻璃 | 毛玻璃效果延迟启用，避免动画期间性能问题 |
 
+### 1.3 UI 动画设计原则（强制）
+
+> **核心原则：动画应由数据/状态变化驱动，而非由 UI 事件直接触发**。尤其是涉及命令验证的操作，必须等待验证成功后再启动动画。
+
+#### 两种动画触发模式
+
+**数据驱动动画（Data-Driven Animation）**：
+- **定义**：通过 `useEffect` 监听状态字段变化，状态变化时启动动画
+- **适用场景**：所有需要命令验证的操作（投掷骰子、打出卡牌、激活技能等）
+- **优势**：动画只在操作真正成功后播放，验证失败时不会出现"动画已播放但操作未生效"的不一致
+
+**事件驱动动画（Event-Driven Animation）**：
+- **定义**：在 `onClick` 等事件处理器中直接设置动画状态
+- **适用场景**：纯 UI 交互，不涉及命令验证（如展开/折叠面板、切换标签页、hover 效果）
+- **风险**：若用于需要验证的操作，验证失败时动画已播放，造成视觉欺骗
+
+#### 正确模式（数据驱动）
+
+```typescript
+// ✅ 正确：监听 rollCount 变化启动动画
+const [isRolling, setIsRolling] = React.useState(false);
+const prevRollCountRef = React.useRef(rollCount);
+
+React.useEffect(() => {
+    if (rollCount !== prevRollCountRef.current) {
+        const prevCount = prevRollCountRef.current;
+        prevRollCountRef.current = rollCount;
+        
+        // rollCount 增加 → 投掷成功，开始动画
+        if (rollCount > prevCount) {
+            setIsRolling(true);
+            // 安全超时：防止服务器长时间无响应
+            const timer = setTimeout(() => setIsRolling(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }
+}, [rollCount, isRolling]);
+
+const handleRollClick = () => {
+    if (!canInteract) return;
+    // 不在这里设置 isRolling，而是在 rollCount 变化时设置
+    // 这样可以避免命令验证失败时动画已经开始播放
+    dispatch(COMMANDS.ROLL_DICE, {});
+};
+```
+
+#### 反模式（事件驱动）
+
+```typescript
+// ❌ 错误：onClick 中直接设置动画状态
+const handleRollClick = () => {
+    if (!canInteract) return;
+    setIsRolling(true);  // ← 动画立即开始
+    dispatch(COMMANDS.ROLL_DICE, {});  // ← 命令可能验证失败
+    // 问题：验证失败时动画已播放，但骰子值未变化
+};
+```
+
+#### 与乐观更新引擎的关系
+
+项目使用乐观更新引擎（`OptimisticEngine`），客户端会立即预测状态变化。但预测可能失败（如命令验证失败、随机数不一致），此时会回滚到服务端确认的状态。
+
+- **乐观更新成功**：`rollCount` 立即增加 → `useEffect` 检测到变化 → 启动动画
+- **乐观更新失败**：`rollCount` 不变或回滚 → `useEffect` 不触发动画 → 视觉与状态一致
+- **关键**：动画依赖最终状态（`rollCount`），而非用户操作（`onClick`），确保动画只在操作真正生效时播放
+
+#### 阶段转换清理（强制）
+
+当游戏阶段转换时（如从进攻阶段进入防御阶段），必须立即清理上一阶段的动画状态，防止动画残留。
+
+```typescript
+// ✅ 正确：阶段转换时清理动画状态
+React.useEffect(() => {
+    if (currentPhase === 'defensiveRoll' || currentPhase === 'offensiveRoll') {
+        // 进入新阶段时立即清除投掷动画状态
+        if (isRolling) {
+            setIsRolling(false);
+        }
+    }
+}, [currentPhase, isRolling, setIsRolling]);
+```
+
+#### 最短播放时间保护（可选）
+
+乐观更新会瞬间产生新状态，但动画需要一定时间才能完整播放。可以记录动画开始时刻，在状态变化时检查是否已过最短时间，未过则延迟停止。
+
+```typescript
+const MIN_ROLL_ANIMATION_MS = 800;
+const rollStartTimeRef = React.useRef<number>(0);
+
+React.useEffect(() => {
+    if (rollCount > prevCount) {
+        setIsRolling(true);
+        rollStartTimeRef.current = Date.now();
+    } else if (isRolling) {
+        const elapsed = Date.now() - rollStartTimeRef.current;
+        const remaining = MIN_ROLL_ANIMATION_MS - elapsed;
+        if (remaining <= 0) {
+            setIsRolling(false);
+        } else {
+            const timer = setTimeout(() => setIsRolling(false), remaining);
+            return () => clearTimeout(timer);
+        }
+    }
+}, [rollCount, isRolling]);
+```
+
+#### 新增 UI 交互检查清单
+
+开发新的 UI 交互时，必须回答以下问题：
+
+1. **这个操作需要命令验证吗？**
+   - 是 → 使用数据驱动动画（监听状态变化）
+   - 否 → 可以使用事件驱动动画（onClick 直接设置）
+
+2. **动画状态的唯一真实来源是什么？**
+   - 必须是引擎层状态字段（如 `rollCount`、`G.core.xxx`）
+   - 禁止依赖 UI 层临时状态（如 `isButtonClicked`）
+
+3. **阶段转换时需要清理动画状态吗？**
+   - 是 → 在 `useEffect` 中监听 `currentPhase` 并清理
+   - 否 → 确认动画不会跨阶段残留
+
+4. **动画是否需要最短播放时间保护？**
+   - 是 → 记录开始时刻，延迟停止
+   - 否 → 状态变化时立即停止
+
+#### 参考实现
+
+- **DiceThrone 骰子投掷动画**：`src/games/dicethrone/ui/DiceTray.tsx`（`DiceActions` 组件）
+- **阶段转换清理**：`src/games/dicethrone/Board.tsx`（`useEffect` 监听 `currentPhase`）
+
 ---
 
 ## 2. 多端布局策略 (Multi-Device Layout Strategy)

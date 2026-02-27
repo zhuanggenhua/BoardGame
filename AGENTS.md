@@ -32,6 +32,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/ai-rules/asset-pipeline.md` — **新增/修改图片或音频资源引用时必读**。含压缩流程、路径规范、✅/❌ 示例。
 - `docs/audio/add-audio.md` — **从外部导入新音效素材到项目时必读**。含素材整理→目录结构→压缩（wav→ogg）→生成 registry→中文友好名→清单→浏览器验证→代码接入的全链路流程。配套工具文档见 `docs/tools.md`、音频使用规范见 `docs/audio/audio-usage.md`、语义目录见 `docs/audio/audio-catalog.md`。
 - `docs/ai-rules/engine-systems.md` — **开发/修改引擎系统、框架层代码、游戏 move/command 时必读**。含系统清单、传输层架构（`GameBoardProps`/`GameTransportServer`）、游戏结束检测（`sys.gameover`）、框架解耦/复用、EventStream、动画表现与逻辑分离规范（`useVisualStateBuffer`/`useVisualSequenceGate`）、`createSimpleChoice` API 使用规范（两种调用约定、multi 参数位置、`PromptOption.displayMode` 渲染模式声明、选项 defId 要求）、领域建模前置审查。
+- `docs/ai-rules/undo-auto-advance.md` — **了解撤回后自动推进问题时必读**。含问题根源、引擎层通用解决方案（FlowSystem.afterEvents 统一检查 restoredRandomCursor）、测试要求。**引擎层已统一处理，游戏层无需额外代码。**
 - `docs/ai-rules/testing-audit.md` — **审查实现完整性/新增功能补测试/修"没效果"类 bug/规划审计 spec 时必读**。含**通用实现缺陷检查维度（D1-D33 穷举框架）**、描述→实现全链路审查规范（唯一权威来源）、数据查询一致性审查、元数据语义一致性审计、引擎 API 调用契约审计（D3 子项）、交互模式语义匹配（D5 子项）、验证层有效性门控（D7 子项）、验证-执行前置条件对齐（D2 子项）、引擎批处理时序与 UI 交互对齐（D8 子项）、事件产生门控普适性检查（D8 子项）、多系统 afterEvents 优先级竞争（D8 子项）、Reducer 消耗路径审计（D11）、写入-消耗对称（D12）、多来源竞争（D13）、回合清理完整（D14）、UI 状态同步（D15）、条件优先级（D16）、隐式依赖（D17）、否定路径（D18）、组合场景（D19）、状态可观测性（D20）、触发频率门控（D21）、伤害计算管线配置（D22）、架构假设一致性（D23）、Handler 共返状态一致性（D24）、替代路径后处理对齐（D32）、效果语义一致性审查、审计反模式清单、测试策略与工具选型。**当用户说"审计"、"审查"、"审核"、"核对"、"对一下描述和代码"等词时，必须先阅读本文档。"检查"不算触发词，不自动启动审计流程。规划/设计审计类 spec（requirements/design/tasks）时也必须先阅读本文档，逐条对照 D1-D33 维度确认覆盖范围。**
 - `docs/ai-rules/ui-ux.md` — **开发/修改 UI 组件、布局、样式、游戏界面时必读**。含审美准则、多端布局、游戏 UI 特化、设计系统引用。
 - `docs/ai-rules/global-systems.md` — **使用/修改全局 Context（Toast/Modal/音频/教学/认证/光标）时必读**。含 Context 系统、实时服务层、**光标主题系统**（自注册流程、形态规范、偏好持久化、设置弹窗交互逻辑）。
@@ -109,7 +110,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **规则文档指代（强制）**：当我说"规则"时，默认指该游戏目录下 `rule/` 文件夹中的规则 Markdown。
 - **改游戏规则/机制前先读规则文档（强制）**：修改会影响玩法/回合/结算/效果等"规则或机制"时，必须先读 `src/games/<gameId>/rule/` 下的规则文档。
 - **Git 分支创建规范（强制）**：所有新分支必须从主分支（main/master）创建，禁止从其他功能分支分出。用户说"新建分支"时，默认指从主分支创建。添加新游戏必须开新分支（`feat/game-<gameId>`）。
-- **Git 变更回退与暂存规范（强制）**：涉及 `git restore`/`reset --hard`/`stash` 等操作时，**必须先说明原因并获得许可**。PowerShell 恢复文件禁止用管道/Out-File，必须用 `cmd /c "git show <ref>:<file> > <file>"`。
+- **Git 变更回退与暂存规范（强制）**：**所有 Git 回滚命令（`git restore`/`git checkout`/`git reset`/`git stash`/`git revert` 等）都必须先说明原因并获得用户明确许可后才能执行**。禁止在未获得许可的情况下执行任何会丢弃或恢复代码变更的 Git 命令。PowerShell 恢复文件禁止用管道/Out-File，必须用 `cmd /c "git show <ref>:<file> > <file>"`。
 - **--no-verify 使用规范（强制）**：`git commit --no-verify` 和 `git push --no-verify` 会跳过 lint-staged 和 pre-push 钩子。**仅允许在不涉及业务逻辑变更时使用**（如纯配置/部署/文档/样式修改）。涉及业务逻辑、引擎代码、领域层代码的提交禁止使用。
 - **文件移动/复制规范（强制）**：
   - **禁止使用 `robocopy /MOVE`**：移动操作会删除源文件，中途失败会导致数据丢失。

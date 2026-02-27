@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { X, MessageSquareWarning, Send, Loader2, AlertTriangle, Lightbulb, HelpCircle, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -93,10 +93,6 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!content.trim() && !pastedImage) return;
-        if (!token) {
-            error(t('hud.feedback.errors.loginRequired'));
-            return;
-        }
 
         setSubmitting(true);
         try {
@@ -106,12 +102,18 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                 finalContent += `\n\n![Screenshot](${pastedImage})`;
             }
 
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+            };
+            
+            // 如果用户已登录，添加 Authorization header
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             const res = await fetch(`${API_URL}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers,
                 body: JSON.stringify({
                     content: finalContent,
                     type,
@@ -354,7 +356,10 @@ function compressImage(file: File): Promise<string> {
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
-            if (!ctx) { reject(new Error('Canvas 不可用')); return; }
+            if (!ctx) {
+                reject(new Error('Canvas 不可用'));
+                return;
+            }
             ctx.drawImage(img, 0, 0, width, height);
 
             // 输出为 JPEG（体积远小于 PNG base64）

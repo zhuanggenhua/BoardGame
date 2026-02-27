@@ -25,8 +25,8 @@ export enum FeedbackStatus {
 
 @Schema({ timestamps: true })
 export class Feedback {
-    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-    userId!: Types.ObjectId;
+    @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+    userId?: Types.ObjectId;
 
     @Prop({ type: String, required: true })
     content!: string;

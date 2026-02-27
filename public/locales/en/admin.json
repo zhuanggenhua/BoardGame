@@ -39,6 +39,7 @@
       "selectItem": "Select feedback {{id}}",
       "id": "ID: {{id}}"
     },
+    "anonymous": "Anonymous",
     "messages": {
       "fetchFailed": "Failed to fetch feedback",
       "updateSuccess": "Status updated",

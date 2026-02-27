@@ -142,28 +142,41 @@ describe('圣骑士技能定义', () => {
     });
 
     describe('升级技能', () => {
-        it('正义冲击 II - 新增执着变体', () => {
+        it('正义冲击 II - 单一触发条件，无变体', () => {
             expect(RIGHTEOUS_COMBAT_2.id).toBe('righteous-combat');
-            expect(RIGHTEOUS_COMBAT_2.variants).toHaveLength(2);
-            // 执着变体: 2 Sword + 1 Helm
-            const tenacity = RIGHTEOUS_COMBAT_2.variants![0];
-            expect(tenacity.trigger).toEqual({
-                type: 'diceSet',
-                faces: { [FACES.SWORD]: 2, [FACES.HELM]: 1 },
-            });
+            expect(RIGHTEOUS_COMBAT_2.variants).toBeUndefined();
             // 主技能: 3 Sword + 2 Helm
-            const main = RIGHTEOUS_COMBAT_2.variants![1];
+            expect(RIGHTEOUS_COMBAT_2.trigger).toEqual({
+                type: 'diceSet',
+                faces: { [FACES.SWORD]: 3, [FACES.HELM]: 2 },
+            });
+            // 效果：5 伤害 + roll 3 dice
+            expect(RIGHTEOUS_COMBAT_2.effects).toHaveLength(2);
+            expect(RIGHTEOUS_COMBAT_2.effects[0].action.value).toBe(5);
+            expect(RIGHTEOUS_COMBAT_2.effects[1].action.type).toBe('rollDie');
+            expect(RIGHTEOUS_COMBAT_2.effects[1].action.diceCount).toBe(3);
+        });
+
+        it('正义冲击 III - 新增执着变体 + 主技能伤害提升', () => {
+            expect(RIGHTEOUS_COMBAT_3.id).toBe('righteous-combat');
+            expect(RIGHTEOUS_COMBAT_3.variants).toHaveLength(2);
+            // 主技能: 3 Sword + 2 Helm（索引 0，与卡牌图片顺序一致）
+            const main = RIGHTEOUS_COMBAT_3.variants![0];
             expect(main.trigger).toEqual({
                 type: 'diceSet',
                 faces: { [FACES.SWORD]: 3, [FACES.HELM]: 2 },
             });
-        });
-
-        it('正义冲击 III - 主技能伤害提升', () => {
-            expect(RIGHTEOUS_COMBAT_3.id).toBe('righteous-combat');
-            const main = RIGHTEOUS_COMBAT_3.variants![1];
             // III 级主技能伤害 6 > II 级 5
             expect(main.effects[0].action.value).toBe(6);
+            expect(main.effects[1].action.type).toBe('rollDie');
+            expect(main.effects[1].action.diceCount).toBe(3);
+            // 执着变体: 2 Sword + 1 Helm（索引 1）
+            const tenacity = RIGHTEOUS_COMBAT_3.variants![1];
+            expect(tenacity.trigger).toEqual({
+                type: 'diceSet',
+                faces: { [FACES.SWORD]: 2, [FACES.HELM]: 1 },
+            });
+            expect(tenacity.tags).toContain('unblockable');
         });
 
         it('力量祝福 II - 新增进攻姿态变体', () => {

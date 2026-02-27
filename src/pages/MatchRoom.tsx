@@ -564,8 +564,6 @@ export const MatchRoom = () => {
     const { notifyPlayerJoined, resetNotification } = useWaitingRoomNotification({
         enabled: !isTutorialRoute && !isSpectatorRoute,
     });
-    const opponentNameRef = useRef(matchStatus.opponentName);
-    opponentNameRef.current = matchStatus.opponentName;
 
     const handlePlayerConnectionChange = useCallback((playerID: string, connected: boolean) => {
         const myIndex = statusPlayerID ? parseInt(statusPlayerID) : -1;
@@ -575,14 +573,28 @@ export const MatchRoom = () => {
             if (connected) {
                 // 对手连接时立即刷新房间状态，获取对手名字（避免等 30 秒轮询）
                 matchStatus.refetch();
-                // 通知玩家：提示音 + 标题变更 + 浏览器推送
-                notifyPlayerJoined(opponentNameRef.current ?? undefined);
-            } else {
-                // 对手断开时重置通知状态，下次加入可再次触发
-                resetNotification();
+                // 注意：不在这里调用 notifyPlayerJoined，因为 socket 重连也会触发 connected=true
+                // 通知逻辑移到监听 opponentName 变化的 effect 中，只在对手真正加入时触发
             }
         }
-    }, [statusPlayerID, matchStatus.refetch, notifyPlayerJoined, resetNotification]);
+    }, [statusPlayerID, matchStatus.refetch]);
+
+    // 监听对手加入/离开（name 变化）时触发通知
+    const prevOpponentNameRef = useRef(matchStatus.opponentName);
+    useEffect(() => {
+        const prev = prevOpponentNameRef.current;
+        const current = matchStatus.opponentName;
+        prevOpponentNameRef.current = current;
+
+        // 对手从"无名字"变为"有名字"（真正加入），触发通知
+        if (!prev && current) {
+            notifyPlayerJoined(current);
+        }
+        // 对手从"有名字"变为"无名字"（真正离开），重置通知状态
+        else if (prev && !current) {
+            resetNotification();
+        }
+    }, [matchStatus.opponentName, notifyPlayerJoined, resetNotification]);
     // 实时数据优先，无实时数据时降级到 HTTP 轮询
     const effectiveOpponentConnected = realtimeOpponentConnected ?? matchStatus.opponentConnected;
     useEffect(() => {

@@ -1,0 +1,50 @@
+fix(dicethrone): 修复多个护盾叠加消耗逻辑 bug
+
+## 问题描述
+
+用户反馈：圣骑士使用"下次一定"(6点护盾) + "神圣防御"(3点护盾)防御影子盗贼的"匕首打击"(8点伤害)时，应该完全抵消伤害，但实际受到了2点伤害。
+
+## 根本原因
+
+护盾消耗逻辑只消耗第一个护盾，其余护盾被直接丢弃。这是为了修复"护盾双重扣减 bug"而引入的简化设计，但简化过度了。
+
+旧逻辑：
+```typescript
+const shield = damageShields[0];  // 只取第一个
+const preventedAmount = Math.min(shield.value, remainingDamage);
+remainingDamage -= preventedAmount;
+newDamageShields = statusShields;  // 丢弃所有 damageShields
+```
+
+## 修复方案
+
+新逻辑：按顺序消耗所有护盾，直到伤害完全抵消或护盾耗尽
+
+- 按顺序消耗所有护盾（先进先出）
+- 固定值护盾未完全消耗时保留剩余值
+- 百分比护盾每次完全消耗（不保留）
+- preventStatus 护盾不参与伤害抵消，单独保留
+
+## 测试验证
+
+- 新增 shield-multiple-consumption.test.ts（8 个测试用例）
+- 修正 shield-cleanup.test.ts 中的错误期望
+- 所有护盾相关测试通过（26 个测试）
+- 无回归问题
+
+## 影响范围
+
+- 所有使用多个护盾的场景
+- 用户案例：6 + 3 vs 8 → 修复前受到 2 点伤害，修复后完全抵消
+
+## 相关文件
+
+- src/games/dicethrone/domain/reduceCombat.ts
+- src/games/dicethrone/__tests__/shield-multiple-consumption.test.ts
+- src/games/dicethrone/__tests__/shield-cleanup.test.ts
+- docs/bugs/dicethrone-shield-consumption-bug.md
+- docs/bugs/dicethrone-shield-fix-summary.md
+
+## 后续工作
+
+护盾减伤日志缺失问题需要架构层面的重构，暂时保留，后续单独处理。

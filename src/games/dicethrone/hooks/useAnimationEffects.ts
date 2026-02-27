@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { EventStreamEntry } from '../../../engine/types';
 import type { DamageDealtEvent, HealAppliedEvent, HeroState } from '../domain/types';
-import type { CpChangedEvent } from '../domain/events';
+import type { AttackResolvedEvent, CpChangedEvent } from '../domain/events';
 import type { PlayerId } from '../../../engine/types';
 import type { StatusAtlases } from '../ui/statusEffects';
 import { getStatusEffectIconNode } from '../ui/statusEffects';
@@ -54,6 +54,88 @@ interface AnimStep {
     frozenHp: number;
     /** 伤害值（用于受击反馈强度计算），治疗步骤为 0 */
     damage: number;
+}
+
+const FULL_IMMUNITY_SHIELD_THRESHOLD = 100;
+
+export interface DamageAnimationContext {
+    shieldedTargets: Set<string>;
+    percentShields: Map<string, number>;
+    resolvedDamageByTarget: Map<string, number>;
+}
+
+/**
+ * 解析本批次事件中的护盾与攻击结算上下文，供动画层计算净伤害。
+ */
+export function collectDamageAnimationContext(newEntries: EventStreamEntry[]): DamageAnimationContext {
+    const shieldedTargets = new Set<string>();
+    const percentShields = new Map<string, number>();
+    const resolvedDamageByTarget = new Map<string, number>();
+
+    for (const entry of newEntries) {
+        const event = entry.event as { type: string; payload?: Record<string, unknown> };
+        if (event.type !== 'DAMAGE_SHIELD_GRANTED') continue;
+
+        const targetId = typeof event.payload?.targetId === 'string' ? event.payload.targetId : undefined;
+        if (!targetId) continue;
+
+        const shieldValue = typeof event.payload?.value === 'number' ? event.payload.value : 0;
+        const reductionPercent = typeof event.payload?.reductionPercent === 'number'
+            ? event.payload.reductionPercent
+            : undefined;
+
+        if (shieldValue >= FULL_IMMUNITY_SHIELD_THRESHOLD) {
+            shieldedTargets.add(targetId);
+        }
+        if (reductionPercent != null && reductionPercent > 0) {
+            percentShields.set(targetId, reductionPercent);
+        }
+    }
+
+    // ATTACK_RESOLVED.totalDamage 是该次攻击对防御方的权威净伤害。
+    // 当批次内只有 1 条对防御方的 DAMAGE_DEALT 时，可用其覆盖动画数值，
+    // 兼容跨命令护盾（shield 在上一命令授予）导致 DAMAGE_DEALT 仍携带原始伤害的场景。
+
+    const resolvedEvents = newEntries
+        .map(entry => entry.event)
+        .filter((event): event is AttackResolvedEvent => event.type === 'ATTACK_RESOLVED');
+
+    if (resolvedEvents.length === 1) {
+        const resolved = resolvedEvents[0];
+        const defenderId = resolved.payload.defenderId;
+        const defenderDamageEventCount = newEntries.filter(entry => {
+            if (entry.event.type !== 'DAMAGE_DEALT') return false;
+            const damageEvent = entry.event as DamageDealtEvent;
+            return damageEvent.payload.targetId === defenderId;
+        }).length;
+
+        if (defenderDamageEventCount === 1 && Number.isFinite(resolved.payload.totalDamage)) {
+            resolvedDamageByTarget.set(defenderId, Math.max(0, resolved.payload.totalDamage));
+        }
+    }
+
+    return { shieldedTargets, percentShields, resolvedDamageByTarget };
+}
+
+/**
+ * 计算伤害动画应展示的净伤害。
+ */
+export function resolveAnimationDamage(
+    rawDamage: number,
+    targetId: string,
+    percentShields?: Map<string, number>,
+    resolvedDamageByTarget?: Map<string, number>,
+): number {
+    const reductionPercent = percentShields?.get(targetId);
+    const shieldAbsorbed = reductionPercent != null
+        ? Math.ceil(rawDamage * reductionPercent / 100)
+        : 0;
+    const dealtFromSameBatchShield = rawDamage - shieldAbsorbed;
+    const resolvedDamage = resolvedDamageByTarget?.get(targetId);
+
+    return resolvedDamage != null
+        ? Math.max(0, resolvedDamage)
+        : dealtFromSameBatchShield;
 }
 
 /**
@@ -167,7 +249,12 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
      * @param shieldedTargets 本批次中被大额护盾完全保护的目标集合（护盾值 >= FULL_IMMUNITY_SHIELD_THRESHOLD）
      * @param percentShields 本批次中百分比护盾信息（targetId → reductionPercent）
      */
-    const buildDamageStep = useCallback((dmgEvent: DamageDealtEvent, shieldedTargets?: Set<string>, percentShields?: Map<string, number>): AnimStep | null => {
+    const buildDamageStep = useCallback((
+        dmgEvent: DamageDealtEvent,
+        shieldedTargets?: Set<string>,
+        percentShields?: Map<string, number>,
+        resolvedDamageByTarget?: Map<string, number>,
+    ): AnimStep | null => {
         const rawDamage = dmgEvent.payload.actualDamage ?? 0;
         if (rawDamage <= 0) return null;
 
@@ -177,13 +264,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         // 这避免了"先播放伤害动画，HP 数字跳变，然后又恢复"的视觉问题。
         if (shieldedTargets?.has(targetId)) return null;
 
-        // 百分比护盾减免：事件中的 actualDamage 不含护盾减免（事件创建时计算），
-        // 但 reducer 已消耗护盾扣血。需要在动画层同步计算减免后的实际伤害。
-        const reductionPercent = percentShields?.get(targetId);
-        const shieldAbsorbed = reductionPercent != null
-            ? Math.ceil(rawDamage * reductionPercent / 100)
-            : 0;
-        const damage = rawDamage - shieldAbsorbed;
+        const damage = resolveAnimationDamage(rawDamage, targetId, percentShields, resolvedDamageByTarget);
         if (damage <= 0) return null;
 
         const sourceId = dmgEvent.payload.sourceAbilityId ?? '';
@@ -373,38 +454,21 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         const healSteps: AnimStep[] = [];
         const cpSteps: AnimStep[] = [];
 
-        // 先扫描本批次中的大额护盾事件（如暗影守护 999 护盾），
-        // 标记被完全保护的目标，后续 DAMAGE_DEALT 对这些目标不播放伤害动画
-        // 
-        // 注意：这是一个启发式方法，使用阈值 >= 100 来判断"完全免除伤害"的护盾。
-        // 适用于暗影守护（999 护盾）等"完全免疫"类技能。
-        // 
-        // TODO: 如果未来需要支持部分护盾吸收的精确动画（如护盾 3 吸收 8 伤害中的 3，
-        // 仍需播放剩余 5 伤害的动画），需要改为在 reducer 中计算 netDamage 并写回事件或侧信道。
-        const shieldedTargets = new Set<string>();
-        const FULL_IMMUNITY_SHIELD_THRESHOLD = 100; // 护盾值 >= 此阈值视为完全免疫
-        // 百分比护盾：targetId → reductionPercent（如迷影步 50% 减免）
-        const percentShields = new Map<string, number>();
-        
-        for (const entry of newEntries) {
-            const event = entry.event as { type: string; payload: Record<string, unknown> };
-            if (event.type === 'DAMAGE_SHIELD_GRANTED') {
-                const shieldValue = (event.payload.value as number) ?? 0;
-                const targetId = event.payload.targetId as string;
-                const reductionPercent = event.payload.reductionPercent as number | undefined;
-                if (targetId && shieldValue >= FULL_IMMUNITY_SHIELD_THRESHOLD) {
-                    shieldedTargets.add(targetId);
-                }
-                if (targetId && reductionPercent != null && reductionPercent > 0) {
-                    percentShields.set(targetId, reductionPercent);
-                }
-            }
-        }
+        const {
+            shieldedTargets,
+            percentShields,
+            resolvedDamageByTarget,
+        } = collectDamageAnimationContext(newEntries);
 
         for (const entry of newEntries) {
             const event = entry.event as { type: string; payload: Record<string, unknown> };
             if (event.type === 'DAMAGE_DEALT') {
-                const step = buildDamageStep(event as unknown as DamageDealtEvent, shieldedTargets, percentShields);
+                const step = buildDamageStep(
+                    event as unknown as DamageDealtEvent,
+                    shieldedTargets,
+                    percentShields,
+                    resolvedDamageByTarget,
+                );
                 if (step) damageSteps.push(step);
             } else if (event.type === 'HEAL_APPLIED') {
                 const step = buildHealStep(event as unknown as HealAppliedEvent);

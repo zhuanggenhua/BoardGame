@@ -438,6 +438,12 @@ function formatDiceThroneActionEntry({
     const attackResolved = [...events].reverse().find(
         (event): event is AttackResolvedEvent => event.type === 'ATTACK_RESOLVED'
     );
+    const defenderDamageEventCount = attackResolved
+        ? events.filter((event): event is DamageDealtEvent =>
+            event.type === 'DAMAGE_DEALT'
+            && (event as DamageDealtEvent).payload.targetId === attackResolved.payload.defenderId
+        ).length
+        : 0;
 
     events.forEach((event, index) => {
         // 效果事件的 timestamp 必须严格大于命令 entry 的 timestamp，
@@ -447,7 +453,7 @@ function formatDiceThroneActionEntry({
 
         if (event.type === 'DAMAGE_DEALT') {
             const damageEvent = event as DamageDealtEvent;
-            const { targetId, amount, actualDamage, sourceAbilityId, modifiers, breakdown, sourcePlayerId } = damageEvent.payload;
+            const { targetId, amount, actualDamage, sourceAbilityId, modifiers, breakdown, sourcePlayerId, shieldsConsumed } = damageEvent.payload;
             let actorId = targetId;
             if (attackResolved) {
                 if (targetId === attackResolved.payload.defenderId) {
@@ -471,7 +477,22 @@ function formatDiceThroneActionEntry({
             );
             const shieldPercent = shieldEvent?.payload.reductionPercent ?? 0;
             const shieldAbsorbed = shieldPercent > 0 ? Math.ceil(rawDealt * shieldPercent / 100) : 0;
-            const dealt = rawDealt - shieldAbsorbed;
+            const dealtFromSameBatchShield = rawDealt - shieldAbsorbed;
+            
+            // 计算固定值护盾的总消耗量
+            const fixedShieldAbsorbed = shieldsConsumed?.reduce((sum, shield) => sum + shield.absorbed, 0) ?? 0;
+            
+            const canUseResolvedTotalDamage = !!attackResolved
+                && targetId === attackResolved.payload.defenderId
+                && defenderDamageEventCount === 1
+                && Number.isFinite(attackResolved.payload.totalDamage);
+            const dealt = canUseResolvedTotalDamage
+                ? Math.max(0, attackResolved!.payload.totalDamage)
+                : Math.max(0, dealtFromSameBatchShield - fixedShieldAbsorbed);
+            const normalizedModifiers = modifiers?.map(mod => ({
+                ...mod,
+                sourceId: mod.sourceId ?? mod.type,
+            }));
 
             // 解析来源技能名
             const effectiveSourceId = sourceAbilityId ?? attackResolved?.payload.sourceAbilityId;
@@ -483,7 +504,7 @@ function formatDiceThroneActionEntry({
                 {
                     sourceAbilityId: effectiveSourceId,
                     breakdown,
-                    modifiers,
+                    modifiers: normalizedModifiers,
                 },
                 {
                     resolve: (sid) => resolveAbilitySourceLabel(sid, core, actorId),
@@ -504,6 +525,24 @@ function formatDiceThroneActionEntry({
                     color: 'negative',
                 });
                 // 更新显示数值为实际伤害
+                breakdownSeg.displayText = String(dealt);
+            }
+
+            // 如果有护盾消耗记录（固定值护盾），在 breakdown tooltip 中追加护盾行
+            if (shieldsConsumed && shieldsConsumed.length > 0 && breakdownSeg.type === 'breakdown') {
+                for (const shield of shieldsConsumed) {
+                    const shieldSource = shield.sourceId
+                        ? resolveAbilitySourceLabel(shield.sourceId, core, targetId)
+                        : null;
+                    breakdownSeg.lines.push({
+                        label: shieldSource?.label ?? 'actionLog.damageSource.shield',
+                        labelIsI18n: shieldSource?.isI18n ?? true,
+                        labelNs: shieldSource?.isI18n ? shieldSource.ns : DT_NS,
+                        value: -shield.absorbed,
+                        color: 'negative',
+                    });
+                }
+                // 更新显示数值为实际伤害（扣除护盾后）
                 breakdownSeg.displayText = String(dealt);
             }
 

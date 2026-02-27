@@ -278,6 +278,13 @@ export interface DamageDealtEvent extends GameEvent<'DAMAGE_DEALT'> {
         breakdown?: DamageBreakdown;
         /** 跳过护盾消耗（用于 HP 重置类效果，如神圣祝福将 HP 设为 1） */
         bypassShields?: boolean;
+        /** 护盾消耗记录（由 reducer 层回填，用于 ActionLog 展示护盾减伤明细） */
+        shieldsConsumed?: Array<{
+            sourceId?: string;
+            value?: number;
+            reductionPercent?: number;
+            absorbed: number;
+        }>;
     };
 }
 

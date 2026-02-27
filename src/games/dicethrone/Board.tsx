@@ -82,22 +82,33 @@ const TUTORIAL_TARGET_COMMAND_MAP: Record<string, string[]> = {
  * - 分歧型（如燃烧之灵 2火魂 vs 炙热之魂 2岩浆+2火魂；赐死射击 vs 专注）：trigger 类型不同、骰面 key 集合不同、或 effect 类型集合不同 → 弹窗选择
  */
 function hasDivergentVariants(state: DiceThroneCore, playerId: string, variantIds: string[]): boolean {
+    console.log('[hasDivergentVariants] Checking variants:', variantIds);
     const matches = variantIds.map(vid => findPlayerAbility(state, playerId, vid));
     const triggers = matches.map(m => m?.variant?.trigger ?? m?.ability.trigger ?? null);
 
     // 任何 trigger 查不到，保守弹窗
-    if (triggers.some(t => !t)) return true;
+    if (triggers.some(t => !t)) {
+        console.log('[hasDivergentVariants] Some triggers not found, returning true');
+        return true;
+    }
 
     // 如果不全是 diceSet 类型 → 分歧型
-    if (!triggers.every(t => t!.type === 'diceSet')) return true;
+    if (!triggers.every(t => t!.type === 'diceSet')) {
+        console.log('[hasDivergentVariants] Not all diceSet type, returning true');
+        return true;
+    }
 
     // 全是 diceSet，比较骰面 key 集合是否一致
     const faceKeySets = triggers.map(t => {
         const faces = (t as { faces: Record<string, number> }).faces;
         return Object.keys(faces).sort().join(',');
     });
+    console.log('[hasDivergentVariants] Face key sets:', faceKeySets);
     const firstKeySet = faceKeySets[0];
-    if (!faceKeySets.every(ks => ks === firstKeySet)) return true;
+    if (!faceKeySets.every(ks => ks === firstKeySet)) {
+        console.log('[hasDivergentVariants] Face key sets differ, returning true');
+        return true;
+    }
 
     // 骰面 key 集合相同时，还需比较 effect 类型集合是否一致
     // 若 effect 类型不同（如一个造伤害、一个施加状态），则为分歧型，需要玩家选择
@@ -105,8 +116,11 @@ function hasDivergentVariants(state: DiceThroneCore, playerId: string, variantId
         const effects = m?.variant?.effects ?? m?.ability.effects ?? [];
         return effects.map(e => e.action.type).sort().join(',');
     });
+    console.log('[hasDivergentVariants] Effect type sets:', effectTypeSets);
     const firstEffectTypeSet = effectTypeSets[0];
-    return !effectTypeSets.every(es => es === firstEffectTypeSet);
+    const result = !effectTypeSets.every(es => es === firstEffectTypeSet);
+    console.log('[hasDivergentVariants] Returning:', result);
+    return result;
 }
 
 // --- Main Layout ---
@@ -1043,12 +1057,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                                 });
                                             }
                                             if (options.length >= 2) {
-                                                // 按变体在 AbilityDef.variants 数组中的定义顺序排列
-                                                // 定义顺序与卡牌上的视觉布局一致（第一个变体在上方）
+                                                // 按变体在 AbilityDef.variants 数组中的定义顺序排列（与卡牌图片顺序一致）
                                                 options.sort((a, b) => {
                                                     const ma = findPlayerAbility(G, rollerId, a.abilityId);
                                                     const mb = findPlayerAbility(G, rollerId, b.abilityId);
                                                     if (!ma?.variant || !mb?.variant) return 0;
+                                                    
                                                     const variants = ma.ability.variants ?? [];
                                                     const ia = variants.indexOf(ma.variant);
                                                     const ib = variants.indexOf(mb.variant);

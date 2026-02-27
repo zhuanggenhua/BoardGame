@@ -39,6 +39,7 @@
       "selectItem": "选择反馈 {{id}}",
       "id": "ID: {{id}}"
     },
+    "anonymous": "匿名用户",
     "messages": {
       "fetchFailed": "获取反馈列表失败",
       "updateSuccess": "状态已更新",

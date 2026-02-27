@@ -599,7 +599,8 @@
     "no_pending_bonus_dice": "当前没有待结算的奖励骰",
     "bonus_reroll_limit_reached": "已达到奖励骰重掷次数上限",
     "not_enough_token": "Token 数量不足以支付费用",
-    "invalid_die_index": "无效的骰子索引"
+    "invalid_die_index": "无效的骰子索引",
+    "attack_already_initiated": "已发起攻击，无法重复选择技能"
   },
   "actions": {
     "resolveAttack": "结算攻击",
@@ -1506,17 +1507,13 @@
         "roll3": "投掷3骰：剑+2伤害，盔+1伤害，心治疗2，祈祷+1CP"
       }
     },
-    "righteous-combat-2-tenacity": {
-      "name": "执着 II",
-      "description": "2剑+1盔触发：恢复2血，造成2不可防御伤害"
-    },
-    "righteous-combat-2-main": {
-      "name": "正义战法 II",
-      "description": "3剑+2盔触发：造成5伤害，投掷3骰获得额外效果"
-    },
     "righteous-combat-3-tenacity": {
       "name": "执着 III",
-      "description": "2剑+1盔触发：恢复2血，造成2不可防御伤害"
+      "description": "2剑+1盔触发：恢复2血，造成2不可防御伤害",
+      "effects": {
+        "heal2": "恢复2点生命",
+        "damage2Unblockable": "造成2点不可防御伤害"
+      }
     },
     "righteous-combat-3-main": {
       "name": "正义战法 III",

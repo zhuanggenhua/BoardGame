@@ -87,15 +87,25 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     state,
     event
 ) => {
-    const { targetId, actualDamage, sourceAbilityId, bypassShields } = event.payload;
+    const { targetId, amount, actualDamage, sourceAbilityId, bypassShields } = event.payload;
     const target = state.players[targetId];
 
     if (!target) {
         return state;
     }
 
-    let remainingDamage = actualDamage;
+    // 伤害结算必须先用护盾前伤害（amount）做减免，再按 HP 下限钳制。
+    // 否则在「高伤害 + 低血量 + 固定值护盾」场景会先被 HP 截断，导致护盾把本应结算的溢出伤害吞掉。
+    // 兼容历史测试/事件：当 amount 缺失时回退到 actualDamage。
+    const incomingDamage = typeof amount === 'number' ? amount : (actualDamage ?? 0);
+    let remainingDamage = incomingDamage;
     let newDamageShields = target.damageShields;
+    const shieldsConsumed: Array<{
+        sourceId?: string;
+        value?: number;
+        reductionPercent?: number;
+        absorbed: number;
+    }> = [];
 
     // 终极技能（Ultimate）伤害不可被护盾抵消（规则 FAQ：Not This Time 不能防御 Ultimate）
     const isUltimateDamage = state.pendingAttack?.isUltimate ?? false;
@@ -106,16 +116,47 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     if (!bypassShields && !isUltimateDamage && target.damageShields && target.damageShields.length > 0 && remainingDamage > 0) {
         const statusShields = target.damageShields.filter(shield => shield.preventStatus);
         const damageShields = target.damageShields.filter(shield => !shield.preventStatus);
-        if (damageShields.length > 0) {
-            const shield = damageShields[0];
-            // 百分比减免护盾：按实际伤害的百分比计算减免量（向上取整）
+        
+        const newDamageShieldsArray: typeof damageShields = [];
+        let currentDamage = remainingDamage;
+        
+        // 按顺序消耗护盾（先进先出）
+        for (const shield of damageShields) {
+            if (currentDamage <= 0) {
+                // 伤害已完全抵消，保留剩余护盾
+                newDamageShieldsArray.push(shield);
+                continue;
+            }
+            
+            // 计算本次护盾抵消的伤害
             const preventedAmount = shield.reductionPercent != null
-                ? Math.ceil(remainingDamage * shield.reductionPercent / 100)
-                : Math.min(shield.value, remainingDamage);
-
-            remainingDamage -= preventedAmount;
-            newDamageShields = statusShields;
+                ? Math.ceil(currentDamage * shield.reductionPercent / 100)
+                : Math.min(shield.value, currentDamage);
+            
+            currentDamage -= preventedAmount;
+            
+            // 记录护盾消耗信息（用于日志展示）
+            if (preventedAmount > 0) {
+                shieldsConsumed.push({
+                    sourceId: shield.sourceId,
+                    value: shield.value,
+                    reductionPercent: shield.reductionPercent,
+                    absorbed: preventedAmount,
+                });
+            }
+            
+            // 如果是固定值护盾且未完全消耗，保留剩余值
+            if (shield.reductionPercent == null) {
+                const remainingShieldValue = shield.value - preventedAmount;
+                if (remainingShieldValue > 0) {
+                    newDamageShieldsArray.push({ ...shield, value: remainingShieldValue });
+                }
+            }
+            // 百分比护盾每次都完全消耗（不保留）
         }
+        
+        remainingDamage = Math.max(0, currentDamage); // 防御性检查：确保不为负数
+        newDamageShields = [...statusShields, ...newDamageShieldsArray];
     }
 
     const hpBefore = target.resources[RESOURCE_IDS.HP] ?? 0;
@@ -149,6 +190,12 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
             ...pendingAttack,
             resolvedDamage: (pendingAttack.resolvedDamage ?? 0) + netHpLoss,
         };
+    }
+
+    // 将护盾消耗信息回填到事件中（用于 ActionLog 展示）
+    // 注意：这里修改的是事件的 payload，不会影响事件的类型和时间戳
+    if (shieldsConsumed.length > 0) {
+        event.payload.shieldsConsumed = shieldsConsumed;
     }
 
     return {

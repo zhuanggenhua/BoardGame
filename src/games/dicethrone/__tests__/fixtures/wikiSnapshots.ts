@@ -276,7 +276,7 @@ export const SHADOW_THIEF_ABILITY_SNAPSHOTS: WikiAbilitySnapshot[] = [
 export const PALADIN_ABILITY_SNAPSHOTS: WikiAbilitySnapshot[] = [
   // --- Righteous Combat ---
   { heroId: 'paladin', abilityId: 'righteous-combat', level: 1, wikiName: 'Righteous Combat', wikiDescription: 'Deal 5 damage. Roll 2 dice: Helm +1 damage, Sword +2 damage, Heart heal 2, Pray +1 CP.', wikiDamage: 5, wikiTrigger: '3 Swords + 2 Helms' },
-  { heroId: 'paladin', abilityId: 'righteous-combat', level: 2, wikiName: 'Righteous Combat II', wikiDescription: 'Tenacity (2 Swords + 1 Helm): Heal 2, deal 2 unblockable damage. Main (3 Swords + 2 Helms): Deal 5 damage, roll 3 dice with bonuses.', wikiDamage: 5, wikiTrigger: '2 Swords + 1 Helm / 3 Swords + 2 Helms', wikiTags: ['unblockable'] },
+  { heroId: 'paladin', abilityId: 'righteous-combat', level: 2, wikiName: 'Righteous Combat II', wikiDescription: 'Deal 5 damage, roll 3 dice with bonuses (Helm +1 damage, Sword +2 damage, Heart heal 2, Pray +1 CP).', wikiDamage: 5, wikiTrigger: '3 Swords + 2 Helms' },
   { heroId: 'paladin', abilityId: 'righteous-combat', level: 3, wikiName: 'Righteous Combat III', wikiDescription: 'Tenacity (2 Swords + 1 Helm): Heal 2, deal 2 unblockable damage. Main (3 Swords + 2 Helms): Deal 6 damage, roll 3 dice with bonuses.', wikiDamage: 6, wikiTrigger: '2 Swords + 1 Helm / 3 Swords + 2 Helms', wikiTags: ['unblockable'] },
 
   // --- Blessing of Might ---
