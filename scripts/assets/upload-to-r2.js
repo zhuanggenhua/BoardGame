@@ -5,7 +5,9 @@
  *   npm run assets:upload             — 增量上传（仅上传新增或变更的文件）
  *   npm run assets:upload:force       — 强制上传所有文件（跳过变更检测，用于更新 Cache-Control 等元数据）
  *   npm run assets:check              — 只检查差异，不上传
- *   npm run assets:sync               — 同步（上传新增/变更 + 删除远程多余文件）
+ *   npm run assets:sync               — 同步（上传新增/变更 + 列出远程多余文件，不删除）
+ *   npm run assets:sync -- --confirm  — 同步 + 删除远程多余文件（≤50 个时）
+ *   npm run assets:sync -- --confirm --force-delete — 同步 + 强制删除（超过 50 个时）
  * 
  * 环境变量（在 .env 中配置）：
  * - R2_ACCOUNT_ID: Cloudflare 账户 ID
@@ -43,6 +45,9 @@ const s3Client = new S3Client({
 const forceUpload = process.env.FORCE_UPLOAD === '1' || process.argv.includes('--force-upload');
 const checkOnly = process.env.CHECK_ONLY === '1' || process.argv.includes('--check');
 const syncMode = process.env.SYNC_MODE === '1' || process.argv.includes('--sync');
+const confirmDelete = process.argv.includes('--confirm');
+const forceDelete = process.argv.includes('--force-delete');
+const DELETE_THRESHOLD = 50; // 超过此数量需要 --force-delete
 
 // 递归获取所有文件
 function getAllFiles(dir, fileList = []) {
@@ -226,18 +231,41 @@ async function main() {
     }
     
     if (toDelete.length > 0) {
-      console.log(`\n🗑️  删除远程多余文件 ${toDelete.length} 个...`);
-      // 批量删除（每次最多 1000 个）
-      for (let i = 0; i < toDelete.length; i += 1000) {
-        const batch = toDelete.slice(i, i + 1000);
-        const command = new DeleteObjectsCommand({
-          Bucket: BUCKET_NAME,
-          Delete: { Objects: batch.map(Key => ({ Key })) },
-        });
-        await s3Client.send(command);
-        deleted += batch.length;
-        for (const key of batch) {
-          console.log(`🗑️  ${key}`);
+      console.log(`\n⚠️  发现 ${toDelete.length} 个远程多余文件：`);
+      for (const key of toDelete.slice(0, 20)) {
+        console.log(`   ${key}`);
+      }
+      if (toDelete.length > 20) {
+        console.log(`   ... 还有 ${toDelete.length - 20} 个`);
+      }
+
+      // 保护层 1：必须 --confirm 才真删
+      if (!confirmDelete) {
+        console.log(`\n🛡️  安全保护：这些文件可能是其他合作者上传的。`);
+        console.log(`   如确认要删除，请加 --confirm 参数：npm run assets:sync -- --confirm`);
+        console.log(`   跳过删除，仅上传已完成。`);
+      }
+      // 保护层 2：超过阈值需要 --force-delete
+      else if (toDelete.length > DELETE_THRESHOLD && !forceDelete) {
+        console.log(`\n🚨  删除数量 ${toDelete.length} 超过安全阈值 ${DELETE_THRESHOLD}，可能存在本地资源缺失。`);
+        console.log(`   请先运行 npm run assets:download 补齐本地资源，或确认后加 --force-delete：`);
+        console.log(`   npm run assets:sync -- --confirm --force-delete`);
+        console.log(`   跳过删除，仅上传已完成。`);
+      }
+      else {
+        console.log(`\n🗑️  正在删除...`);
+        // 批量删除（每次最多 1000 个）
+        for (let i = 0; i < toDelete.length; i += 1000) {
+          const batch = toDelete.slice(i, i + 1000);
+          const command = new DeleteObjectsCommand({
+            Bucket: BUCKET_NAME,
+            Delete: { Objects: batch.map(Key => ({ Key })) },
+          });
+          await s3Client.send(command);
+          deleted += batch.length;
+          for (const key of batch) {
+            console.log(`🗑️  ${key}`);
+          }
         }
       }
     }

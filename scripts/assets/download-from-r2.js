@@ -7,16 +7,20 @@
  *   npm run assets:download -- --check  — 只检查差异，不下载
  *   npm run assets:download -- --clean  — 下载前清理本地多余文件（R2 上不存在的）
  * 
- * 环境变量（在 .env 中配置）：
+ * 环境变量（优先读 .env，fallback 到 .env.example）：
  * - R2_ACCOUNT_ID: Cloudflare 账户 ID
  * - R2_ACCESS_KEY_ID: R2 访问密钥 ID
  * - R2_SECRET_ACCESS_KEY: R2 访问密钥
  * - R2_BUCKET_NAME: R2 存储桶名称
  * 
- * 场景：合作者 clone 仓库后，运行此脚本拉取所有 CDN 资源到本地开发环境。
+ * 合作者 clone 后只需 npm install → npm run assets:download 即可拉取资源。
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { existsSync } from 'fs';
+
+// 下载脚本直接读 .env.example（R2 凭证已内置，合作者无需额外配置）
+dotenv.config({ path: '.env.example' });
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, readdirSync, statSync } from 'fs';
 import { join, dirname, relative, sep } from 'path';
