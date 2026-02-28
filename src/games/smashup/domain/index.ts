@@ -80,29 +80,44 @@ function scoreOneBase(
         baseIndex,
         hasInteraction: !!ms?.sys?.interaction?.current,
         interactionId: ms?.sys?.interaction?.current?.id,
+        alreadyTriggered: core.beforeScoringTriggeredBases?.includes(baseIndex),
     });
-    const beforeScoringEvents = fireTriggers(core, 'beforeScoring', {
-        state: core,
-        matchState: ms,
-        playerId: pid,
-        baseIndex,
-        random: rng,
-        now,
-    });
-    events.push(...beforeScoringEvents.events);
-    if (beforeScoringEvents.matchState) ms = beforeScoringEvents.matchState;
+    
+    // 检查是否已经触发过 beforeScoring（防止交互解决后重复触发）
+    const alreadyTriggeredBeforeScoring = core.beforeScoringTriggeredBases?.includes(baseIndex) ?? false;
+    
+    if (!alreadyTriggeredBeforeScoring) {
+        const beforeScoringEvents = fireTriggers(core, 'beforeScoring', {
+            state: core,
+            matchState: ms,
+            playerId: pid,
+            baseIndex,
+            random: rng,
+            now,
+        });
+        events.push(...beforeScoringEvents.events);
+        if (beforeScoringEvents.matchState) ms = beforeScoringEvents.matchState;
+        
+        // 标记此基地已触发过 beforeScoring
+        core = {
+            ...core,
+            beforeScoringTriggeredBases: [...(core.beforeScoringTriggeredBases ?? []), baseIndex],
+        };
 
-    console.log('[scoreBase] After fireTriggers beforeScoring:', {
-        hasInteraction: !!ms?.sys?.interaction?.current,
-        interactionId: ms?.sys?.interaction?.current?.id,
-        eventsCount: beforeScoringEvents.events.length,
-    });
+        console.log('[scoreBase] After fireTriggers beforeScoring:', {
+            hasInteraction: !!ms?.sys?.interaction?.current,
+            interactionId: ms?.sys?.interaction?.current?.id,
+            eventsCount: beforeScoringEvents.events.length,
+        });
 
-    // beforeScoring 可能创建了交互（如海盗王移动确认）
-    // 必须先 halt 等交互解决、事件 reduce 到 core 后，再继续
-    if (ms?.sys?.interaction?.current) {
-        console.log('[scoreBase] Has interaction, returning early');
-        return { events, newBaseDeck: baseDeck, matchState: ms };
+        // beforeScoring 可能创建了交互（如海盗王移动确认）
+        // 必须先 halt 等交互解决、事件 reduce 到 core 后，再继续
+        if (ms?.sys?.interaction?.current) {
+            console.log('[scoreBase] Has interaction, returning early');
+            return { events, newBaseDeck: baseDeck, matchState: ms };
+        }
+    } else {
+        console.log('[scoreBase] beforeScoring already triggered for this base, skipping');
     }
 
     console.log('[scoreBase] No interaction, continuing to base ability beforeScoring');
@@ -625,6 +640,13 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             if (currentMatchState.sys.interaction?.current) {
                 return { events, halt: true, updatedState: currentMatchState } as PhaseExitResult;
             }
+
+            // 清空 beforeScoring 触发标记（计分阶段结束）
+            events.push({
+                type: SU_EVENTS.BEFORE_SCORING_CLEARED,
+                payload: {},
+                timestamp: now,
+            } as SmashUpEvent);
 
             return events;
         }

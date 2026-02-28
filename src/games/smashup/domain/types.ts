@@ -345,6 +345,12 @@ export interface SmashUpCore {
      * @see https://smashup.fandom.com/wiki/Rules — Phase 3 Step 4
      */
     scoringEligibleBaseIndices?: number[];
+    /**
+     * 本次计分阶段中已触发过 beforeScoring 的基地索引列表。
+     * 用于防止交互解决后重新进入 scoreBase 时重复触发 beforeScoring。
+     * 在 scoreBases 阶段结束时清空。
+     */
+    beforeScoringTriggeredBases?: number[];
 }
 
 export interface FactionSelectionState {

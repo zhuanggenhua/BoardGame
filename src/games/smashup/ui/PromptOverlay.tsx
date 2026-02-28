@@ -54,10 +54,28 @@ function extractDefId(value: unknown): string | undefined {
 
 /** 判断选项是否为卡牌类型：根据 value 中是否包含 defId/minionDefId 自动推断 */
 function isCardOption(option: { value: unknown; displayMode?: 'card' | 'button' }): boolean {
+    console.log('[isCardOption] Checking:', { 
+        optionId: (option as any).id,
+        displayMode: option.displayMode,
+        valueType: typeof option.value,
+        value: option.value 
+    });
+    
+    // 显式声明 card 时强制卡牌模式
+    if (option.displayMode === 'card') {
+        console.log('[isCardOption] → true (explicit card mode)');
+        return true;
+    }
+    
     // 显式声明 button 时强制按钮模式（用于 skip/confirm 等非卡牌选项）
-    if (option.displayMode === 'button') return false;
+    if (option.displayMode === 'button') {
+        console.log('[isCardOption] → false (explicit button mode)');
+        return false;
+    }
+    
     // 自动推断：value 中包含 defId/minionDefId 即为卡牌选项
     const defId = extractDefId(option.value);
+    console.log('[isCardOption] → defId:', defId, 'result:', !!defId);
     return !!defId;
 }
 
@@ -141,6 +159,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             promptId: prompt?.id,
             promptTitle: prompt?.title,
             hasDisplayCards: !!displayCards,
+            optionsCount: prompt?.options?.length,
+            options: prompt?.options,
         });
     }, [interaction, prompt, displayCards]);
 
@@ -185,11 +205,16 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                 label: opt.label, 
                 displayMode: (opt as any).displayMode,
                 hasDefId: !!(opt.value && typeof opt.value === 'object' && 'defId' in opt.value),
+                value: opt.value,
                 isCard 
             });
             return isCard;
         }).length;
-        console.log('[PromptOverlay] Card mode:', { cardOptionCount: count, useCardMode: count > 0 });
+        console.log('[PromptOverlay] Card mode decision:', { 
+            cardOptionCount: count, 
+            useCardMode: count > 0,
+            allOptions: prompt.options,
+        });
         return count;
     }, [prompt, hasOptions]);
     const useCardMode = cardOptionCount > 0;
@@ -199,6 +224,15 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
     // 少量选项 + 非卡牌模式 → 内联面板
     const useInlineMode = !useCardMode && hasOptions && (prompt?.options?.length ?? 0) <= 3;
+    
+    console.log('[PromptOverlay] Render mode decision:', {
+        hasOptions,
+        optionsCount: prompt?.options?.length,
+        cardOptionCount,
+        useCardMode,
+        useInlineMode,
+        hasContextPreview: !!contextPreviewRef,
+    });
 
     // 解析标题中的 i18n key（使用 useMemo 确保响应式更新）
     const title = useMemo(() => {

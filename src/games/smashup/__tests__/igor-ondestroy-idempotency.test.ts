@@ -120,9 +120,9 @@ describe('Igor onDestroy 幂等性与重入测试', () => {
         const igorInteractions2 = interactions2.filter(i => i.data.sourceId === 'frankenstein_igor');
         
         expect(igorInteractions1.length).toBe(1);
-        // 第二次调用传入的是相同的事件，去重逻辑会跳过，所以 interactions2 应该与 interactions1 相同
-        // （因为没有新事件被处理，matchState 不变）
-        expect(igorInteractions2.length).toBe(1); // 修正期望：去重后不处理新事件，但已有交互仍在队列中
+        // 第二次调用传入的是相同的事件，去重逻辑会跳过，所以不会创建新交互
+        // 但第一次创建的交互仍在队列中，所以 interactions2 包含第一次的交互
+        expect(igorInteractions2.length).toBe(igorInteractions1.length); // 应该相同，因为没有新交互被创建
     });
 
     it('D17: 多个 MINION_DESTROYED 事件（不同随从）不会导致 Igor 重复触发', () => {

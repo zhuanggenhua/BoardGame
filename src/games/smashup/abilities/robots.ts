@@ -110,10 +110,26 @@ export function resetRobotHoverbotCounter(): void {
 
 /** 盘旋机器人 onPlay：展示牌库顶，如果是随从"你可以"将其作为额外随从打出 */
 function robotHoverbot(ctx: AbilityContext): AbilityResult {
+    console.log('[robotHoverbot] START:', {
+        playerId: ctx.playerId,
+        deckLength: ctx.state.players[ctx.playerId]?.deck?.length,
+        deckTopUid: ctx.state.players[ctx.playerId]?.deck?.[0]?.uid,
+        deckTopDefId: ctx.state.players[ctx.playerId]?.deck?.[0]?.defId,
+    });
+    
     const peek = peekDeckTop(
         ctx.state.players[ctx.playerId], ctx.playerId,
         'all', 'robot_hoverbot', ctx.now,
     );
+    
+    console.log('[robotHoverbot] After peekDeckTop:', {
+        hasPeek: !!peek,
+        peekCardUid: peek?.card.uid,
+        peekCardDefId: peek?.card.defId,
+        peekCardType: peek?.card.type,
+        deckLength: ctx.state.players[ctx.playerId]?.deck?.length,
+        deckTopUid: ctx.state.players[ctx.playerId]?.deck?.[0]?.uid,
+    });
     
     if (!peek) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
     const events: SmashUpEvent[] = [peek.revealEvent];
@@ -121,6 +137,13 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
     if (peek.card.type === 'minion') {
         const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
         const power = def?.power ?? 0;
+        
+        console.log('[robotHoverbot] Creating interaction:', {
+            cardUid: peek.card.uid,
+            defId: peek.card.defId,
+            power,
+            counter: robotHoverbotCounter,
+        });
         
         // "你可以" → 创建交互让玩家选择是否打出该特定随从
         // 使用静态计数器而非时间戳，确保交互 ID 稳定（防止重复处理时 ID 变化）
@@ -140,18 +163,40 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
             'robot_hoverbot',
         );
         
+        console.log('[robotHoverbot] Interaction created:', {
+            interactionId: interaction.id,
+            optionsCount: (interaction.data as any).options?.length,
+            options: (interaction.data as any).options,
+        });
+        
         // 手动提供 optionsGenerator：选项固定，不需要从状态中查找
         // 注意：optionsGenerator 的第二个参数是 interaction.data，包含 playerId
         (interaction.data as any).optionsGenerator = (state: any, iData: any) => {
             // 从 interaction.data 获取 playerId，避免闭包引用失效
             const playerId = iData?.playerId ?? ctx.playerId;
             const p = state.core.players[playerId];
-            if (!p) return [{ id: 'skip', label: '跳过', value: { skip: true } }];
+            
+            console.log('[robotHoverbot optionsGenerator] CALLED:', {
+                playerId,
+                hasPlayer: !!p,
+                deckLength: p?.deck?.length,
+                deckTopUid: p?.deck?.[0]?.uid,
+                deckTopDefId: p?.deck?.[0]?.defId,
+                expectedUid: peek.card.uid,
+                expectedDefId: peek.card.defId,
+                match: p?.deck?.[0]?.uid === peek.card.uid,
+            });
+            
+            if (!p) {
+                console.warn('[robotHoverbot optionsGenerator] No player found!');
+                return [{ id: 'skip', label: '跳过', value: { skip: true } }];
+            }
             
             // 检查牌库顶是否仍然是同一张卡
             if (p.deck.length > 0 && p.deck[0].uid === peek.card.uid) {
                 const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
                 const power = def?.power ?? 0;
+                console.log('[robotHoverbot optionsGenerator] Deck top matches, returning both options');
                 return [
                     { 
                         id: 'play', 
@@ -163,6 +208,7 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
                 ];
             }
             // 如果牌库顶已变化，只提供跳过选项
+            console.warn('[robotHoverbot optionsGenerator] Deck top changed! Only skip option available.');
             return [{ id: 'skip', label: '跳过', value: { skip: true } }];
         };
         
@@ -170,6 +216,7 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
     }
     
     // 非随从→放回牌库顶（peek 不移除卡，无需操作）
+    console.log('[robotHoverbot] Not a minion, skipping');
     return { events };
 }
 

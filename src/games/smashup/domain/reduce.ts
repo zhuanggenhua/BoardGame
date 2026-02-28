@@ -1270,6 +1270,13 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             };
         }
 
+        case SU_EVENTS.BEFORE_SCORING_CLEARED: {
+            return {
+                ...state,
+                beforeScoringTriggeredBases: undefined,
+            };
+        }
+
         default:
             return state;
     }

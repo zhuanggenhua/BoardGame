@@ -85,6 +85,7 @@ export const SU_EVENTS = defineEvents({
   'su:special_after_scoring_armed': 'silent',
   'su:special_after_scoring_consumed': 'silent',
   'su:scoring_eligible_bases_locked': 'silent',  // 进入 scoreBases 阶段时锁定 eligible 基地列表
+  'su:before_scoring_cleared': 'silent',  // 清空 beforeScoring 触发标记（计分阶段结束）
   
   'su:ability_feedback': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:ability_triggered': 'fx',        // 持续效果/触发器激活（FX 动画）
