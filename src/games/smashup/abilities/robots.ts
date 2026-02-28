@@ -44,10 +44,8 @@ function robotMicrobotGuard(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     // Prompt 选择
     const options = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
         const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
+        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `cards.${t.defId}.name (力量 ${power})` };
     });
     const interaction = createSimpleChoice(
         `robot_microbot_guard_${ctx.now}`, ctx.playerId,
@@ -86,9 +84,12 @@ function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
     if (microbotsInDiscard.length === 0) return { events };
 
     const options = microbotsInDiscard.map((c, i) => {
-        const def = getCardDef(c.defId);
-        const name = def?.name ?? c.defId;
-        return { id: `microbot-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } };
+        return { 
+            id: `microbot-${i}`, 
+            label: `cards.${c.defId}.name`, 
+            value: { cardUid: c.uid, defId: c.defId },
+            displayMode: 'card' as const,
+        };
     });
     const skipOption = { id: 'skip', label: '跳过（不洗回）', value: { skip: true } };
     const interaction = createSimpleChoice(
@@ -119,18 +120,18 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
     
     if (peek.card.type === 'minion') {
         const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? peek.card.defId;
         const power = def?.power ?? 0;
         
         // "你可以" → 创建交互让玩家选择是否打出该特定随从
         // 使用静态计数器而非时间戳，确保交互 ID 稳定（防止重复处理时 ID 变化）
+        // 标题和选项 label 使用 i18n key，由 UI 层的 resolveI18nKeys 翻译
         const interaction = createSimpleChoice(
             `robot_hoverbot_${robotHoverbotCounter++}`, ctx.playerId,
-            `牌库顶是 ${name}（力量 ${power}），是否作为额外随从打出？`,
+            `牌库顶是 cards.${peek.card.defId}.name（力量 ${power}），是否作为额外随从打出？`,
             [
                 { 
                     id: 'play', 
-                    label: `打出 ${name}`, 
+                    label: `打出 cards.${peek.card.defId}.name`, 
                     value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
                     displayMode: 'card' as const,
                 },
@@ -184,9 +185,8 @@ function robotTechCenter(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const count = ctx.state.bases[i].minions.filter(m => m.controller === ctx.playerId).length;
         if (count > 0) {
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-            candidates.push({ baseIndex: i, count, label: `${baseName} (${count} 个随从)` });
+            const baseDefId = ctx.state.bases[i].defId;
+            candidates.push({ baseIndex: i, count, label: `cards.${baseDefId}.name (${count} 个随从)` });
         }
     }
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };

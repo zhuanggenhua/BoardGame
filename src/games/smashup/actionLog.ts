@@ -346,6 +346,13 @@ export function formatSmashUpActionEntry({
                         }));
                     }
                 });
+                
+                // 添加 VP 快照（用于审计和 bug 追溯）
+                const vpSnapshot = Object.entries(core.players)
+                    .map(([pid, p]) => `${pid}:${p?.vp ?? 0}`)
+                    .join(' ');
+                segments.push(textSegment(` [总VP: ${vpSnapshot}]`));
+                
                 pushEntry(event.type, segments, actorId, entryTimestamp, index);
                 break;
             }
@@ -358,6 +365,13 @@ export function formatSmashUpActionEntry({
                 if (payload.reason) {
                     segments.push(...buildReasonSegments(payload.reason, buildCardSegment));
                 }
+                
+                // 添加 VP 快照（用于审计和 bug 追溯）
+                const vpSnapshot = Object.entries(core.players)
+                    .map(([pid, p]) => `${pid}:${p?.vp ?? 0}`)
+                    .join(' ');
+                segments.push(textSegment(` [总VP: ${vpSnapshot}]`));
+                
                 pushEntry(event.type, segments, payload.playerId, entryTimestamp, index);
                 break;
             }

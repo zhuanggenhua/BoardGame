@@ -106,7 +106,8 @@ describe('Igor onDestroy 幂等性与重入测试', () => {
         }
         interactions1.push(...(result1.matchState?.sys.interaction.queue ?? []));
         
-        // 第二次调用（模拟重复触发）
+        // 第二次调用（模拟重复触发）- 使用相同的事件
+        // 去重逻辑会跳过已处理的 minionUid，所以不会产生新交互
         const result2 = processDestroyTriggers([destroyEvent], result1.matchState ?? ms, '0', defaultTestRandom, 1001);
         const interactions2 = [];
         if (result2.matchState?.sys.interaction.current) {
@@ -114,12 +115,14 @@ describe('Igor onDestroy 幂等性与重入测试', () => {
         }
         interactions2.push(...(result2.matchState?.sys.interaction.queue ?? []));
         
-        // 第二次调用应该不产生新交互（因为 Igor 已经不在场上了）
+        // 第二次调用应该不产生新交互（去重逻辑会跳过相同的 minionUid）
         const igorInteractions1 = interactions1.filter(i => i.data.sourceId === 'frankenstein_igor');
         const igorInteractions2 = interactions2.filter(i => i.data.sourceId === 'frankenstein_igor');
         
         expect(igorInteractions1.length).toBe(1);
-        expect(igorInteractions2.length).toBe(0); // 第二次不应该产生新交互
+        // 第二次调用传入的是相同的事件，去重逻辑会跳过，所以 interactions2 应该与 interactions1 相同
+        // （因为没有新事件被处理，matchState 不变）
+        expect(igorInteractions2.length).toBe(1); // 修正期望：去重后不处理新事件，但已有交互仍在队列中
     });
 
     it('D17: 多个 MINION_DESTROYED 事件（不同随从）不会导致 Igor 重复触发', () => {

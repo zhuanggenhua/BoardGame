@@ -76,6 +76,11 @@ function scoreOneBase(
     const baseDef = getBaseDef(base.defId)!;
     // 触发 ongoing beforeScoring（如 pirate_king 移动到该基地、cthulhu_chosen +2力量）
     // 先于基地能力执行，确保基地能力能看到 ongoing 效果的结果
+    console.log('[scoreBase] Before fireTriggers beforeScoring:', {
+        baseIndex,
+        hasInteraction: !!ms?.sys?.interaction?.current,
+        interactionId: ms?.sys?.interaction?.current?.id,
+    });
     const beforeScoringEvents = fireTriggers(core, 'beforeScoring', {
         state: core,
         matchState: ms,
@@ -87,11 +92,20 @@ function scoreOneBase(
     events.push(...beforeScoringEvents.events);
     if (beforeScoringEvents.matchState) ms = beforeScoringEvents.matchState;
 
+    console.log('[scoreBase] After fireTriggers beforeScoring:', {
+        hasInteraction: !!ms?.sys?.interaction?.current,
+        interactionId: ms?.sys?.interaction?.current?.id,
+        eventsCount: beforeScoringEvents.events.length,
+    });
+
     // beforeScoring 可能创建了交互（如海盗王移动确认）
     // 必须先 halt 等交互解决、事件 reduce 到 core 后，再继续
     if (ms?.sys?.interaction?.current) {
+        console.log('[scoreBase] Has interaction, returning early');
         return { events, newBaseDeck: baseDeck, matchState: ms };
     }
+
+    console.log('[scoreBase] No interaction, continuing to base ability beforeScoring');
 
     // 将 ongoing beforeScoring 产生的事件（如 TEMP_POWER_ADDED、MINION_MOVED）reduce 到 core，
     // 确保后续基地能力和排名计算使用最新状态

@@ -72,7 +72,8 @@ function extractContextPreview(prompt: any): CardPreviewRef | undefined {
 /** 解析文本中嵌入的 i18n key（如 cards.xxx.name / cards.xxx.abilityText） */
 export function resolveI18nKeys(text: string, t: (key: string, opts?: any) => string): string {
     return text.replace(/cards\.[\w-]+\.\w+/gi, key => {
-        const resolved = t(key.toLowerCase(), { defaultValue: '' });
+        const lowerKey = key.toLowerCase();
+        const resolved = t(lowerKey, { defaultValue: '' });
         return resolved || key;
     });
 }
@@ -177,7 +178,19 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     // 检测卡牌展示模式：只要有卡牌选项就使用卡牌模式
     const cardOptionCount = useMemo(() => {
         if (!prompt || !hasOptions) return 0;
-        return prompt.options.filter(opt => isCardOption(opt)).length;
+        const count = prompt.options.filter(opt => {
+            const isCard = isCardOption(opt);
+            console.log('[PromptOverlay] Option card check:', { 
+                optionId: opt.id, 
+                label: opt.label, 
+                displayMode: (opt as any).displayMode,
+                hasDefId: !!(opt.value && typeof opt.value === 'object' && 'defId' in opt.value),
+                isCard 
+            });
+            return isCard;
+        }).length;
+        console.log('[PromptOverlay] Card mode:', { cardOptionCount: count, useCardMode: count > 0 });
+        return count;
     }, [prompt, hasOptions]);
     const useCardMode = cardOptionCount > 0;
 
@@ -187,8 +200,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     // 少量选项 + 非卡牌模式 → 内联面板
     const useInlineMode = !useCardMode && hasOptions && (prompt?.options?.length ?? 0) <= 3;
 
-    // 解析标题中的 i18n key
-    const title = prompt ? resolveI18nKeys(prompt.title, t) : '';
+    // 解析标题中的 i18n key（使用 useMemo 确保响应式更新）
+    const title = useMemo(() => {
+        if (!prompt) return '';
+        return resolveI18nKeys(prompt.title, t);
+    }, [prompt?.title, t]);
 
     // 解析所有选项 label 中的 i18n key
     const resolvedOptions = useMemo(() => {
