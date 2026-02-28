@@ -155,14 +155,20 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         console.log('[PromptOverlay] Props changed:', {
             hasInteraction: !!interaction,
             interactionId: interaction?.id,
+            interactionKind: interaction?.kind,
+            interactionData: interaction?.data,
             hasPrompt: !!prompt,
             promptId: prompt?.id,
+            promptPlayerId: prompt?.playerId,
+            myPlayerId: playerID,
+            isMyPrompt: !!prompt && prompt.playerId === playerID,
             promptTitle: prompt?.title,
             hasDisplayCards: !!displayCards,
             optionsCount: prompt?.options?.length,
             options: prompt?.options,
+            rawInteraction: interaction, // 完整的原始对象
         });
-    }, [interaction, prompt, displayCards]);
+    }, [interaction, prompt, displayCards, playerID]);
 
     // 所有 hooks 必须在条件返回之前调用（React hooks 规则）
     const isMyPrompt = !!prompt && prompt.playerId === playerID;
@@ -553,6 +559,15 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     };
 
     const handleAction = (optionId: string, disabled?: boolean) => {
+        console.log('[PromptOverlay] handleAction called:', {
+            optionId,
+            disabled,
+            isMulti,
+            isMyPrompt,
+            isSubmitLocked,
+            promptId: prompt?.id,
+        });
+        
         if (isMulti) handleToggle(optionId, disabled);
         else handleSelect(optionId);
     };
@@ -667,7 +682,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                     )}
 
                     {isMyPrompt && (
-                        <div ref={cardScrollRef} className="flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-4 smashup-h-scrollbar">
+                        <div 
+                            ref={cardScrollRef} 
+                            className="flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-4 smashup-h-scrollbar relative z-50"
+                            style={{ pointerEvents: 'auto' }}
+                        >
                             {cardOptions.map((option, idx) => {
                                 const defId = extractDefId(option.value);
                                 const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
@@ -692,7 +711,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             ${option.disabled ? 'opacity-40 cursor-not-allowed' : ''}
                                             ${isSelected ? 'scale-110 z-10' : 'hover:scale-105 hover:z-10'}
                                         `}
-                                        style={{ transition: 'transform 200ms, box-shadow 200ms' }}
+                                        style={{ 
+                                            transition: 'transform 200ms, box-shadow 200ms',
+                                            pointerEvents: option.disabled ? 'none' : 'auto',
+                                        }}
                                     >
                                         <div className={`
                                             rounded shadow-xl overflow-hidden

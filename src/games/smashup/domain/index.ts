@@ -992,13 +992,13 @@ function postProcessSystemEvents(
             const eventKey = `${playedEvt.payload.cardUid}@${playedEvt.payload.baseIndex}`;
             
             // 如果已处理过，跳过（防止步骤 4.5 和步骤 5 重复处理）
-            if (processedSet.has(eventKey)) {
+            if (processedSet[eventKey]) {
                 prePlayEvents.push(event);
                 continue;
             }
             
             // 标记为已处理
-            processedSet.add(eventKey);
+            processedSet[eventKey] = true;
             
             // 将之前积累的事件 reduce 到临时 core，获取最新牌库/手牌状态
             let tempCore = state;

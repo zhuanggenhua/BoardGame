@@ -740,8 +740,23 @@ export function createInteractionSystem<TCore>(
         playerView: (state, playerId): Partial<{ interaction: InteractionState }> => {
             const { current, queue } = state.sys.interaction;
 
+            console.error('[InteractionSystem playerView] START:', {
+                playerId,
+                hasCurrent: !!current,
+                currentId: current?.id,
+                currentOptionsCount: (current?.data as any)?.options?.length,
+                currentOptions: (current?.data as any)?.options,
+            });
+
             const filteredCurrent =
                 current?.playerId === playerId ? stripNonSerializable(current) : undefined;
+            
+            console.error('[InteractionSystem playerView] After stripNonSerializable:', {
+                hasFilteredCurrent: !!filteredCurrent,
+                filteredOptionsCount: (filteredCurrent?.data as any)?.options?.length,
+                filteredOptions: (filteredCurrent?.data as any)?.options,
+            });
+            
             const filteredQueue = queue.filter((i) => i?.playerId === playerId).map(i => stripNonSerializable(i)!);
             // 当其他玩家有未完成交互时，通知当前玩家被阻塞（不暴露交互详情）
             const isBlocked = !!current && current.playerId !== playerId;

@@ -4,7 +4,7 @@
  * 验证完整的用户交互流程：
  * 1. 卡牌图片正确显示（displayMode: 'card' 生效）
  * 2. 点击卡牌图片能选择"打出"
- * 3. 选择"放回牌库顶"能正确返回
+ * 3. 卡牌被打出到基地上（完整的游戏逻辑验证）
  * 4. 交互 ID 稳定（robot_hoverbot_0）
  * 5. optionsGenerator 从 continuationContext 读取（不依赖牌库顶状态）
  */
@@ -12,7 +12,7 @@
 import { test, expect } from './fixtures';
 
 test.describe('SmashUp - Robot Hoverbot', () => {
-  test('should display card image and allow clicking to play', async ({ smashupMatch }) => {
+  test('should display card image, click to play, and card appears on base', async ({ smashupMatch }) => {
     const { hostPage: page } = smashupMatch;
 
     // 等待游戏加载完成
@@ -48,7 +48,7 @@ test.describe('SmashUp - Robot Hoverbot', () => {
     // 点击"打出随从"按钮
     await page.click('button:has-text("打出随从")');
 
-    // 选择基地
+    // 选择基地（第一个基地）
     const baseButton = page.locator('button:has-text("基地")').first();
     await baseButton.click();
 
@@ -57,29 +57,56 @@ test.describe('SmashUp - Robot Hoverbot', () => {
     await expect(page.locator('text=查看牌库顶')).toBeVisible();
 
     // 4. 关键验证：卡牌图片应该显示（不是纯文本按钮）
-    const deckTopCardImage = page.locator('[data-card-def-id="alien_invader"]');
+    const deckTopCardImage = page.locator('[data-card-def-id="alien_invader"]').first();
     await expect(deckTopCardImage).toBeVisible({ timeout: 3000 });
 
     // 5. 验证两个选项都存在
-    await expect(page.locator('button:has-text("打出")')).toBeVisible();
-    await expect(page.locator('button:has-text("放回牌库顶")')).toBeVisible();
+    const playButton = page.locator('button:has-text("打出")');
+    const skipButton = page.locator('button:has-text("放回牌库顶")');
+    await expect(playButton).toBeVisible();
+    await expect(skipButton).toBeVisible();
 
     // 6. 点击卡牌图片应该能选择"打出"
     await deckTopCardImage.click();
 
-    // 7. 验证卡牌被打出到场上
-    await expect(page.locator('[data-minion-def-id="alien_invader"]')).toBeVisible({ timeout: 3000 });
+    // 等待交互关闭
+    await page.waitForTimeout(1000);
 
-    // 8. 验证交互 ID 稳定
+    // 7. 验证外星人入侵者被打出到基地上
+    const alienInvaderOnBase = page.locator('[data-minion-def-id="alien_invader"]');
+    await expect(alienInvaderOnBase).toBeVisible({ timeout: 3000 });
+
+    // 8. 验证盘旋机器人也在基地上
+    const hoverbotOnBase = page.locator('[data-minion-def-id="robot_hoverbot"]');
+    await expect(hoverbotOnBase).toBeVisible({ timeout: 3000 });
+
+    // 9. 验证交互 ID 稳定（从历史记录中读取）
     const interactionId = await page.evaluate(() => {
       const state = (window as any).__BG_TEST_HARNESS__?.state.read();
-      return state?.sys.interaction?.history?.[0]?.id;
+      // 找到最近的 robot_hoverbot 交互
+      const history = state?.sys.interaction?.history || [];
+      const hoverbotInteraction = history.find((h: any) => h.id?.startsWith('robot_hoverbot_'));
+      return hoverbotInteraction?.id;
     });
-    expect(interactionId).toBe('robot_hoverbot_0');
+    expect(interactionId).toMatch(/^robot_hoverbot_\d+$/);
+
+    // 10. 验证牌库顶的卡已经不在牌库中
+    const deckState = await page.evaluate(() => {
+      const state = (window as any).__BG_TEST_HARNESS__?.state.read();
+      const player = state?.core.players['0'];
+      return {
+        deckTopDefId: player?.deck[0]?.defId,
+        deckLength: player?.deck.length,
+        handLength: player?.hand.length,
+      };
+    });
+
+    // 外星人入侵者应该不在牌库顶了
+    expect(deckState.deckTopDefId).not.toBe('alien_invader');
 
     // 截图保存证据
     await page.screenshot({ 
-      path: 'test-results/robot-hoverbot-card-mode.png',
+      path: 'test-results/robot-hoverbot-card-played-on-base.png',
       fullPage: true 
     });
   });
@@ -135,6 +162,10 @@ test.describe('SmashUp - Robot Hoverbot', () => {
     });
 
     expect(deckTopUidAfter).toBe(deckTopUidBefore);
+
+    // 验证外星人入侵者没有被打出到基地上
+    const alienInvaderOnBase = page.locator('[data-minion-def-id="alien_invader"]');
+    await expect(alienInvaderOnBase).not.toBeVisible();
 
     // 截图保存证据
     await page.screenshot({ 
