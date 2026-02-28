@@ -158,37 +158,18 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
         // "你可以" → 创建交互让玩家选择是否打出该特定随从
         // 使用静态计数器而非时间戳，确保交互 ID 稳定（防止重复处理时 ID 变化）
         // 标题和选项 label 使用 i18n key，由 UI 层的 resolveI18nKeys 翻译
-        const interaction = createSimpleChoice(
-            `robot_hoverbot_${robotHoverbotCounter++}`, ctx.playerId,
-            `牌库顶是 cards.${peek.card.defId}.name（力量 ${power}），是否作为额外随从打出？`,
-            [
-                { 
-                    id: 'play', 
-                    label: `打出 cards.${peek.card.defId}.name`, 
-                    value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
-                    displayMode: 'card' as const,
-                    _source: 'static' as const,  // ✅ 关键修复：显式声明为静态选项，防止框架层自动刷新时误判为手牌选项
-                },
-                { id: 'skip', label: '放回牌库顶', value: { skip: true } },
-            ],
-            'robot_hoverbot',
-        );
-        
-        /* ========== optionsGenerator 方案（已注释，待调试） ==========
-         * 问题：displayMode 在传输过程中丢失，导致客户端无法识别为卡牌选项
-         * 
         const initialOptions = [
             { 
                 id: 'play', 
                 label: `打出 cards.${peek.card.defId}.name`, 
                 value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
                 displayMode: 'card' as const,
-                _source: 'static' as const,
+                _source: 'static' as const,  // ✅ 关键修复：显式声明为静态选项，防止框架层自动刷新时误判为手牌选项
             },
             { id: 'skip', label: '放回牌库顶', value: { skip: true } },
         ];
         
-        console.error('[robotHoverbot] Creating interaction with initial options:', initialOptions);
+        console.error('[robotHoverbot] Creating interaction with initial options:', JSON.stringify(initialOptions, null, 2));
         
         const interaction = createSimpleChoice(
             `robot_hoverbot_${robotHoverbotCounter++}`, ctx.playerId,
@@ -200,9 +181,7 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
         console.error('[robotHoverbot] Interaction created:', {
             interactionId: interaction.id,
             optionsCount: (interaction.data as any).options?.length,
-            options: (interaction.data as any).options,
-            cardUid: peek.card.uid,
-            defId: peek.card.defId,
+            options: JSON.stringify((interaction.data as any).options, null, 2),
         });
         
         // ⚠️ 关键：必须先设置 continuationContext，再设置 optionsGenerator
@@ -242,14 +221,14 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
                     label: `打出 cards.${ctx.defId}.name`, 
                     value: { cardUid: ctx.cardUid, defId: ctx.defId, power: ctx.power },
                     displayMode: 'card' as const,
+                    _source: 'static' as const,
                 },
                 { id: 'skip', label: '放回牌库顶', value: { skip: true } },
             ];
             
-            console.error('[robotHoverbot optionsGenerator] Returning options:', result);
+            console.error('[robotHoverbot optionsGenerator] Returning options:', JSON.stringify(result, null, 2));
             return result;
         };
-        ========== optionsGenerator 方案结束 ========== */
         
         console.error('[robotHoverbot] Returning with interaction');
         return { events, matchState: queueInteraction(ctx.matchState, interaction) };

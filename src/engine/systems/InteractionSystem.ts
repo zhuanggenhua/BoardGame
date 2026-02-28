@@ -745,7 +745,7 @@ export function createInteractionSystem<TCore>(
                 hasCurrent: !!current,
                 currentId: current?.id,
                 currentOptionsCount: (current?.data as any)?.options?.length,
-                currentOptions: (current?.data as any)?.options,
+                currentOptions: JSON.stringify((current?.data as any)?.options, null, 2),
             });
 
             const filteredCurrent =
@@ -754,7 +754,7 @@ export function createInteractionSystem<TCore>(
             console.error('[InteractionSystem playerView] After stripNonSerializable:', {
                 hasFilteredCurrent: !!filteredCurrent,
                 filteredOptionsCount: (filteredCurrent?.data as any)?.options?.length,
-                filteredOptions: (filteredCurrent?.data as any)?.options,
+                filteredOptions: JSON.stringify((filteredCurrent?.data as any)?.options, null, 2),
             });
             
             const filteredQueue = queue.filter((i) => i?.playerId === playerId).map(i => stripNonSerializable(i)!);
