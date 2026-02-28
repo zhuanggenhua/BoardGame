@@ -126,3 +126,4 @@ uploads/
 # 临时文件和开发中间产物
 temp/
 *.tmp
+.worktrees/
