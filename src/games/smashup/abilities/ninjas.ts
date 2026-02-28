@@ -275,41 +275,82 @@ function ninjaDisguiseSelectMinions(ctx: AbilityContext, baseIndex: number): Abi
 
 /**
  * 影舞者 special：基地计分前，可以从手牌打出到该基地
- * 限制：每个基地只能使用一次忍者的能力（通过 specialLimitGroup 数据驱动）
+ * 限制：每个基地只能使用一次影舞者（通过 specialLimitGroup: 'ninja_shinobi' 数据驱动）
  */
 /**
- * 隐忍 special action：基地计分前，选择手牌中一个随从打出到该基地
- * 限制：每个基地只能使用一次忍者的能力（通过 specialLimitGroup 数据驱动）
+ * 便衣忍者 special action：基地计分前，选择手牌中一个随从打出到该基地
+ * 限制：每个基地只能使用一次便衣忍者（通过 specialLimitGroup: 'ninja_hidden_ninja' 数据驱动）
  */
 function ninjaHiddenNinja(ctx: AbilityContext): AbilityResult {
+    console.log('[DEBUG] ninjaHiddenNinja called:', {
+        playerId: ctx.playerId,
+        baseIndex: ctx.baseIndex,
+        cardUid: ctx.cardUid,
+        handSize: ctx.state.players[ctx.playerId].hand.length,
+        handCards: ctx.state.players[ctx.playerId].hand.map(c => ({ uid: c.uid, defId: c.defId, type: c.type })),
+    });
+
     // 限制组检查
-    if (isSpecialLimitBlocked(ctx.state, 'ninja_hidden_ninja', ctx.baseIndex)) return { events: [] };
+    if (isSpecialLimitBlocked(ctx.state, 'ninja_hidden_ninja', ctx.baseIndex)) {
+        console.log('[DEBUG] ninjaHiddenNinja: blocked by specialLimit');
+        return { events: [] };
+    }
 
     const player = ctx.state.players[ctx.playerId];
     const minionCards = player.hand.filter(c => c.type === 'minion');
-    if (minionCards.length === 0) return { events: [] };
+    console.log('[DEBUG] ninjaHiddenNinja: minionCards in hand:', minionCards.length, minionCards.map(c => c.defId));
+    
+    if (minionCards.length === 0) {
+        console.log('[DEBUG] ninjaHiddenNinja: no minions in hand, returning early');
+        return { events: [] };
+    }
 
     // 记录限制组使用
     const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_hidden_ninja', ctx.baseIndex, ctx.now);
     const events: SmashUpEvent[] = limitEvt ? [limitEvt] : [];
+    console.log('[DEBUG] ninjaHiddenNinja: emitted specialLimitUsed event');
 
     const options = minionCards.map((c, i) => {
         const def = getCardDef(c.defId) as MinionCardDef | undefined;
         const name = def?.name ?? c.defId;
         const power = def?.power ?? 0;
-        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'hand' as const };
+        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } };
     });
+    
+    // 添加"跳过"选项（允许玩家选择不打出随从）
+    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } };
+    
     const interaction = createSimpleChoice(
         `ninja_hidden_ninja_${ctx.now}`, ctx.playerId,
-        '选择要打出到该基地的随从', options as any[], { sourceId: 'ninja_hidden_ninja', targetType: 'hand' },
+        '选择要打出到该基地的随从（可跳过）', // 更新标题
+        [...options, skipOption] as any[], // 添加跳过选项
+        { sourceId: 'ninja_hidden_ninja', targetType: 'hand' },
     );
-    return { events, matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } }) };
+    
+    console.log('[DEBUG] ninjaHiddenNinja: interaction details:', {
+        interactionId: interaction.id,
+        interactionPlayerId: interaction.playerId,
+        ctxPlayerId: ctx.playerId,
+        optionsCount: options.length + 1, // +1 for skip option
+    });
+    
+    const resultMatchState = queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } });
+    console.log('[DEBUG] ninjaHiddenNinja: created interaction:', {
+        interactionId: interaction.id,
+        optionsCount: options.length + 1,
+        hasCurrentInteraction: !!resultMatchState.sys.interaction?.current,
+        queueLength: resultMatchState.sys.interaction?.queue?.length ?? 0,
+        hasResponseWindow: !!resultMatchState.sys.responseWindow?.current,
+        responseWindowId: resultMatchState.sys.responseWindow?.current?.id,
+    });
+    
+    return { events, matchState: resultMatchState };
 }
 
 /**
  * 忍者侍从 special：返回手牌并额外打出一个随从到该基地
  * 前置条件：本回合还未打出随从（minionsPlayed === 0）
- * 限制：每个基地只能使用一次忍者的能力（通过 specialLimitGroup 数据驱动）
+ * 限制：每个基地只能使用一次忍者侍从（通过 specialLimitGroup: 'ninja_acolyte' 数据驱动）
  */
 function ninjaAcolyteSpecial(ctx: AbilityContext): AbilityResult {
     // 限制组检查
@@ -340,17 +381,22 @@ function ninjaAcolyteSpecial(ctx: AbilityContext): AbilityResult {
             const def = getCardDef(c.defId) as MinionCardDef | undefined;
             const name = def?.name ?? c.defId;
             const power = def?.power ?? 0;
-            return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'hand' as const };
+            return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } };
         }),
         // 忍者侍从自身（刚返回手牌）
-        { id: `hand-self`, label: `${acolyteDef?.name ?? '忍者侍从'} (力量 ${acolyteDef?.power ?? 2})`, value: { cardUid: ctx.cardUid, defId: 'ninja_acolyte', power: acolyteDef?.power ?? 2 }, _source: 'hand' as const },
+        { id: `hand-self`, label: `${acolyteDef?.name ?? '忍者侍从'} (力量 ${acolyteDef?.power ?? 2})`, value: { cardUid: ctx.cardUid, defId: 'ninja_acolyte', power: acolyteDef?.power ?? 2 } },
     ];
 
     if (allOptions.length === 0) return { events };
 
+    // 添加"跳过"选项（允许玩家选择不打出随从）
+    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } };
+
     const interaction = createSimpleChoice(
         `ninja_acolyte_play_${ctx.now}`, ctx.playerId,
-        '选择要打出到该基地的随从', allOptions as any[], { sourceId: 'ninja_acolyte_play', targetType: 'hand' },
+        '选择要打出到该基地的随从（可跳过）', // 更新标题
+        [...allOptions, skipOption] as any[], // 添加跳过选项
+        { sourceId: 'ninja_acolyte_play', targetType: 'hand' },
     );
     return { events, matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } }) };
 }
@@ -467,8 +513,11 @@ function registerNinjaOngoingEffects(): void {
 
 /** 注册忍者派系的交互解决处理函数 */
 export function registerNinjaInteractionHandlers(): void {
-    // 忍者侍从：选择手牌随从打出到基地
+    // 忍者侍从：选择手牌随从打出到基地（可跳过）
     registerInteractionHandler('ninja_acolyte_play', (state, playerId, value, iData, _random, timestamp) => {
+        // 跳过时不打出随从
+        if ((value as any).skip) return { state, events: [] };
+        
         const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
         const baseIndex = ((iData as any)?.continuationContext as { baseIndex: number })?.baseIndex;
         if (baseIndex === undefined) return undefined;
@@ -599,9 +648,11 @@ export function registerNinjaInteractionHandlers(): void {
         const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
         const ctx = (iData as any)?.continuationContext as { baseIndex: number; returnUids: string[]; totalToPlay: number; playedUids: string[] };
         if (!ctx) return undefined;
+        const base = state.core.bases[ctx.baseIndex];
+        if (!base) return undefined;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, power },
+            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, baseDefId: base.defId, power },
             timestamp,
         };
         const events: SmashUpEvent[] = [playedEvt];
@@ -646,7 +697,7 @@ export function registerNinjaInteractionHandlers(): void {
         if (!ctx) return undefined;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, power },
+            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, baseDefId: ctx.state.bases[ctx.baseIndex].defId, power },
             timestamp,
         };
         const events: SmashUpEvent[] = [playedEvt];
@@ -665,8 +716,11 @@ export function registerNinjaInteractionHandlers(): void {
         return { state, events };
     });
 
-    // 隐忍：选择手牌随从打出到基地
+    // 隐忍：选择手牌随从打出到基地（可跳过）
     registerInteractionHandler('ninja_hidden_ninja', (state, playerId, value, iData, _random, timestamp) => {
+        // 跳过时不打出随从
+        if ((value as any).skip) return { state, events: [] };
+        
         const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
         const baseIndex = ((iData as any)?.continuationContext as { baseIndex: number })?.baseIndex;
         if (baseIndex === undefined) return undefined;

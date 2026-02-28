@@ -219,7 +219,7 @@ function vampireDinnerDate(ctx: AbilityContext): AbilityResult {
     });
 }
 
-/** 一大口 onPlay：消灭一个力量≤4的随从 */
+/** 一大口 onPlay：消灭一个力量≤4的随从（可跳过） */
 function vampireBigGulp(ctx: AbilityContext): AbilityResult {
     const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
@@ -234,10 +234,17 @@ function vampireBigGulp(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const options = buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
     if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.all_protected', ctx.now)] };
-    return resolveOrPrompt(ctx, options, {
-        id: 'vampire_big_gulp', title: '选择要消灭的力量≤4随从',
+    
+    // 添加"跳过"选项
+    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } };
+    
+    return resolveOrPrompt(ctx, [...options, skipOption], {
+        id: 'vampire_big_gulp', title: '选择要消灭的力量≤4随从（可跳过）',
         sourceId: 'vampire_big_gulp', targetType: 'minion' as const,
     }, (val) => {
+        // 跳过时不消灭随从
+        if ((val as any).skip) return { events: [] };
+        
         const minion = ctx.state.bases[val.baseIndex]?.minions.find(m => m.uid === val.minionUid);
         if (!minion) {
             console.error(`[vampire_big_gulp] minion ${val.minionUid} not found at base ${val.baseIndex}`);
@@ -663,7 +670,7 @@ function registerVampireOngoingEffects(): void {
 
         const events: SmashUpEvent[] = armed.map(s => ({
             type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED,
-            payload: { sourceDefId: s.sourceDefId, playerId: s.playerId, baseIndex: s.baseIndex },
+            payload: { sourceDefId: s.sourceDefId, playerId: s.playerId, baseIndex: s.baseIndex, baseDefId: ctx.state.bases[s.baseIndex].defId  },
             timestamp: now,
         } as SmashUpEvent));
 

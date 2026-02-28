@@ -278,14 +278,16 @@ function tricksterBlockThePath(ctx: AbilityContext): AbilityResult {
 
 /** 沉睡印记 onPlay：选择一个对手，其下回合不能打行动卡 */
 function tricksterMarkOfSleep(ctx: AbilityContext): AbilityResult {
-    const opponents = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
-    if (opponents.length === 0) return { events: [] };
-    const options = opponents.map((pid, i) => ({
-        id: `opp-${i}`, label: getOpponentLabel(pid), value: { pid },
+    // 可以选择任何玩家（包括自己）
+    const allPlayers = ctx.state.turnOrder;
+    const options = allPlayers.map((pid, i) => ({
+        id: `player-${i}`, 
+        label: pid === ctx.playerId ? '你自己' : getOpponentLabel(pid), 
+        value: { pid },
     }));
     const interaction = createSimpleChoice(
         `trickster_mark_of_sleep_${ctx.now}`, ctx.playerId,
-        '选择一个对手（其下回合不能打行动卡）', options as any[],
+        '选择一个玩家（其下回合不能打行动卡）', options as any[],
         { sourceId: 'trickster_mark_of_sleep', autoCancelOption: true },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -382,14 +384,18 @@ function registerTricksterOngoingEffects(): void {
 
     // 藏身处：保护同基地己方随从不受对手行动卡影响（消耗型：触发后自毁）
     registerProtection('trickster_hideout', 'action', (ctx) => {
-        // 检查目标随从是否附着了?hideout，或同基地有 hideout ongoing
-        if (ctx.targetMinion.attachedActions.some(a => a.defId === 'trickster_hideout')) {
-            return ctx.targetMinion.controller !== ctx.sourcePlayerId;
+        // 检查目标随从是否附着了 hideout（附着在随从上的情况）
+        const attachedHideout = ctx.targetMinion.attachedActions.find(a => a.defId === 'trickster_hideout');
+        if (attachedHideout) {
+            // 只保护 Hideout 拥有者的随从，且行动卡来自对手
+            return ctx.targetMinion.controller === attachedHideout.ownerId && ctx.sourcePlayerId !== attachedHideout.ownerId;
         }
-        // 也检查基地上）?ongoing
+        // 也检查基地上的 ongoing（打在基地上的情况）
         const base = ctx.state.bases[ctx.targetBaseIndex];
-        if (base?.ongoingActions.some(o => o.defId === 'trickster_hideout')) {
-            return ctx.targetMinion.controller !== ctx.sourcePlayerId;
+        const baseHideout = base?.ongoingActions.find(o => o.defId === 'trickster_hideout');
+        if (baseHideout) {
+            // 只保护 Hideout 拥有者的随从，且行动卡来自对手
+            return ctx.targetMinion.controller === baseHideout.ownerId && ctx.sourcePlayerId !== baseHideout.ownerId;
         }
         return false;
     }, { consumable: true });

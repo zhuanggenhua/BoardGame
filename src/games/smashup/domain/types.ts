@@ -11,6 +11,10 @@
 import type { Command, GameEvent, GameOverResult, PlayerId } from '../../../engine/types';
 import type { CardPreviewRef } from '../../../core';
 import { SMASHUP_FACTION_IDS } from './ids';
+// ✅ 重要：这里将 SU_EVENT_TYPES 重命名为 SU_EVENTS 导入
+// 原因：历史代码中所有地方都使用 SU_EVENTS.XXX 访问事件类型常量
+// 实际上访问的是 SU_EVENT_TYPES.XXX（字符串常量，如 'su:faction_selected'）
+// 而不是 SU_EVENTS['su:faction_selected']（对象，包含 type/audio/sound）
 import { SU_EVENT_TYPES as SU_EVENTS } from './events';
 
 // ============================================================================
@@ -345,6 +349,12 @@ export interface SmashUpCore {
      * @see https://smashup.fandom.com/wiki/Rules — Phase 3 Step 4
      */
     scoringEligibleBaseIndices?: number[];
+    /**
+     * 本次计分阶段中已触发过 beforeScoring 的基地索引列表。
+     * 用于防止交互解决后重新进入 scoreBase 时重复触发 beforeScoring。
+     * 在 scoreBases 阶段结束时清空。
+     */
+    beforeScoringTriggeredBases?: number[];
 }
 
 export interface FactionSelectionState {
@@ -455,8 +465,21 @@ export type SmashUpCommand =
 // ============================================================================
 
 // 事件定义已迁移到 domain/events.ts，使用 defineEvents() 框架
-// 导入 SU_EVENT_TYPES 以获取事件类型常量
-export { SU_EVENTS };
+// 
+// ⚠️ 命名说明：
+// - SU_EVENTS：在本文件顶部通过 `import { SU_EVENT_TYPES as SU_EVENTS }` 导入
+//   实际上是 SU_EVENT_TYPES 的别名，用于访问事件类型字符串常量
+//   例如：SU_EVENTS.FACTION_SELECTED = 'su:faction_selected'
+// 
+// - SU_EVENT_TYPES：从 events.ts 导出的原始常量对象
+//   包含所有事件类型的字符串常量（FACTION_SELECTED, MINION_PLAYED 等）
+// 
+// ❌ 不要导出原始的 SU_EVENTS 对象（defineEvents 返回值）
+//   那是包含 { type, audio, sound } 的对象，不是字符串常量
+//   会导致 SU_EVENTS.FACTION_SELECTED 变成 undefined
+// 
+// ✅ 为了向后兼容，重新导出 SU_EVENTS 作为 SU_EVENT_TYPES 的别名
+export { SU_EVENT_TYPES, SU_EVENT_TYPES as SU_EVENTS } from './events';
 
 export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
     payload: {
@@ -464,6 +487,8 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         cardUid: string;
         defId: string;
         baseIndex: number;
+        /** 基地 defId（事件发生时的基地，用于日志显示）。可选，用于向后兼容测试代码。 */
+        baseDefId?: string;
         power: number;
         /** 从弃牌堆打出（而非手牌） */
         fromDiscard?: boolean;
@@ -472,6 +497,8 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         /** 是否消耗正常随从额度 */
         consumesNormalLimit?: boolean;
     };
+    /** 来源命令类型（用于去重：只有来自 PLAY_MINION 命令的事件才在 pipeline 步骤 4.5 触发 onPlay） */
+    sourceCommandType?: string;
 }
 
 export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {

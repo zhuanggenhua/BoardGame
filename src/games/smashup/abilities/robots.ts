@@ -44,10 +44,8 @@ function robotMicrobotGuard(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     // Prompt 选择
     const options = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
         const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
+        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `cards.${t.defId}.name (力量 ${power})` };
     });
     const interaction = createSimpleChoice(
         `robot_microbot_guard_${ctx.now}`, ctx.playerId,
@@ -86,9 +84,12 @@ function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
     if (microbotsInDiscard.length === 0) return { events };
 
     const options = microbotsInDiscard.map((c, i) => {
-        const def = getCardDef(c.defId);
-        const name = def?.name ?? c.defId;
-        return { id: `microbot-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } };
+        return { 
+            id: `microbot-${i}`, 
+            label: `cards.${c.defId}.name`, 
+            value: { cardUid: c.uid, defId: c.defId },
+            displayMode: 'card' as const,
+        };
     });
     const skipOption = { id: 'skip', label: '跳过（不洗回）', value: { skip: true } };
     const interaction = createSimpleChoice(
@@ -99,47 +100,142 @@ function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+// 盘旋机器人交互计数器（用于生成稳定的交互 ID）
+let robotHoverbotCounter = 0;
+
+/** 重置盘旋机器人计数器（仅用于测试） */
+export function resetRobotHoverbotCounter(): void {
+    robotHoverbotCounter = 0;
+}
+
 /** 盘旋机器人 onPlay：展示牌库顶，如果是随从"你可以"将其作为额外随从打出 */
 function robotHoverbot(ctx: AbilityContext): AbilityResult {
+    console.error('╔═══════════════════════════════════════════════════════════════╗');
+    console.error('║ [robotHoverbot] FUNCTION ENTRY - SERVER SIDE CODE             ║');
+    console.error('╚═══════════════════════════════════════════════════════════════╝');
+    console.error('[robotHoverbot] Context:', {
+        playerId: ctx.playerId,
+        cardUid: ctx.cardUid,
+        defId: ctx.defId,
+        baseIndex: ctx.baseIndex,
+        deckLength: ctx.state.players[ctx.playerId]?.deck?.length,
+        deckTopUid: ctx.state.players[ctx.playerId]?.deck?.[0]?.uid,
+        deckTopDefId: ctx.state.players[ctx.playerId]?.deck?.[0]?.defId,
+    });
+    
     const peek = peekDeckTop(
         ctx.state.players[ctx.playerId], ctx.playerId,
         'all', 'robot_hoverbot', ctx.now,
     );
-    if (!peek) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+    
+    console.error('[robotHoverbot] After peekDeckTop:', {
+        hasPeek: !!peek,
+        peekCardUid: peek?.card.uid,
+        peekCardDefId: peek?.card.defId,
+        peekCardType: peek?.card.type,
+        deckLength: ctx.state.players[ctx.playerId]?.deck?.length,
+        deckTopUid: ctx.state.players[ctx.playerId]?.deck?.[0]?.uid,
+    });
+    
+    if (!peek) {
+        console.error('[robotHoverbot] No peek, deck empty');
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+    }
     const events: SmashUpEvent[] = [peek.revealEvent];
+    
     if (peek.card.type === 'minion') {
+        console.error('[robotHoverbot] Peek card is minion, creating interaction');
         const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? peek.card.defId;
         const power = def?.power ?? 0;
+        
+        console.error('[robotHoverbot] Creating interaction:', {
+            cardUid: peek.card.uid,
+            defId: peek.card.defId,
+            power,
+            counter: robotHoverbotCounter,
+        });
+        
         // "你可以" → 创建交互让玩家选择是否打出该特定随从
+        // 使用静态计数器而非时间戳，确保交互 ID 稳定（防止重复处理时 ID 变化）
+        // 标题和选项 label 使用 i18n key，由 UI 层的 resolveI18nKeys 翻译
+        const initialOptions = [
+            { 
+                id: 'play', 
+                label: `打出 cards.${peek.card.defId}.name`, 
+                value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
+                displayMode: 'card' as const,
+                _source: 'static' as const,  // ✅ 关键修复：显式声明为静态选项，防止框架层自动刷新时误判为手牌选项
+            },
+            { id: 'skip', label: '放回牌库顶', value: { skip: true } },
+        ];
+        
+        console.error('[robotHoverbot] Creating interaction with initial options:', JSON.stringify(initialOptions, null, 2));
+        
         const interaction = createSimpleChoice(
-            `robot_hoverbot_${ctx.now}`, ctx.playerId,
-            `牌库顶是 ${name}（力量 ${power}），是否作为额外随从打出？`,
-            [
-                { id: 'play', label: `打出 ${name}`, value: { cardUid: peek.card.uid, defId: peek.card.defId, power } },
-                { id: 'skip', label: '放回牌库顶', value: { skip: true } },
-            ],
+            `robot_hoverbot_${robotHoverbotCounter++}`, ctx.playerId,
+            `牌库顶是 cards.${peek.card.defId}.name（力量 ${power}），是否作为额外随从打出？`,
+            initialOptions,
             'robot_hoverbot',
         );
-        // 手动提供 optionsGenerator：选项固定，不需要从状态中查找
-        (interaction.data as any).optionsGenerator = (state: any) => {
-            const p = state.core.players[ctx.playerId];
-            // 检查牌库顶是否仍然是同一张卡
-            if (p.deck.length > 0 && p.deck[0].uid === peek.card.uid) {
-                const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? peek.card.defId;
-                const power = def?.power ?? 0;
-                return [
-                    { id: 'play', label: `打出 ${name}`, value: { cardUid: peek.card.uid, defId: peek.card.defId, power } },
-                    { id: 'skip', label: '放回牌库顶', value: { skip: true } },
-                ];
-            }
-            // 如果牌库顶已变化，只提供跳过选项
-            return [{ id: 'skip', label: '跳过', value: { skip: true } }];
+        
+        console.error('[robotHoverbot] Interaction created:', {
+            interactionId: interaction.id,
+            optionsCount: (interaction.data as any).options?.length,
+            options: JSON.stringify((interaction.data as any).options, null, 2),
+        });
+        
+        // ⚠️ 关键：必须先设置 continuationContext，再设置 optionsGenerator
+        // 因为 optionsGenerator 可能在交互创建时立即被调用（如果没有 current 交互）
+        const interactionData = interaction.data as any;
+        interactionData.continuationContext = {
+            cardUid: peek.card.uid,
+            defId: peek.card.defId,
+            power,
         };
+        
+        console.error('[robotHoverbot] Set continuationContext:', interactionData.continuationContext);
+        
+        // 手动提供 optionsGenerator：从 continuationContext 读取卡牌信息，而不是从牌库顶读取
+        // 这样即使牌库顶变化了，交互选项仍然显示原来看到的那张卡
+        interactionData.optionsGenerator = (state: any, iData: any) => {
+            const ctx = iData?.continuationContext as { cardUid: string; defId: string; power: number } | undefined;
+            
+            console.error('[robotHoverbot optionsGenerator] CALLED:', {
+                hasContext: !!ctx,
+                hasiData: !!iData,
+                iDataKeys: iData ? Object.keys(iData) : [],
+                contextCardUid: ctx?.cardUid,
+                contextDefId: ctx?.defId,
+                contextPower: ctx?.power,
+            });
+            
+            if (!ctx) {
+                console.error('[robotHoverbot optionsGenerator] No continuationContext found! iData:', iData);
+                return [{ id: 'skip', label: '跳过', value: { skip: true } }];
+            }
+            
+            // 从 continuationContext 读取卡牌信息（不依赖牌库顶状态）
+            const result = [
+                { 
+                    id: 'play', 
+                    label: `打出 cards.${ctx.defId}.name`, 
+                    value: { cardUid: ctx.cardUid, defId: ctx.defId, power: ctx.power },
+                    displayMode: 'card' as const,
+                    _source: 'static' as const,
+                },
+                { id: 'skip', label: '放回牌库顶', value: { skip: true } },
+            ];
+            
+            console.error('[robotHoverbot optionsGenerator] Returning options:', JSON.stringify(result, null, 2));
+            return result;
+        };
+        
+        console.error('[robotHoverbot] Returning with interaction');
         return { events, matchState: queueInteraction(ctx.matchState, interaction) };
     }
+    
     // 非随从→放回牌库顶（peek 不移除卡，无需操作）
+    console.error('[robotHoverbot] Not a minion, skipping');
     return { events };
 }
 
@@ -155,9 +251,8 @@ function robotTechCenter(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const count = ctx.state.bases[i].minions.filter(m => m.controller === ctx.playerId).length;
         if (count > 0) {
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-            candidates.push({ baseIndex: i, count, label: `${baseName} (${count} 个随从)` });
+            const baseDefId = ctx.state.bases[i].defId;
+            candidates.push({ baseIndex: i, count, label: `cards.${baseDefId}.name (${count} 个随从)` });
         }
     }
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
@@ -254,7 +349,14 @@ export function registerRobotInteractionHandlers(): void {
         if (state.core.bases.length === 1) {
             const playedEvt: MinionPlayedEvent = {
                 type: SU_EVENTS.MINION_PLAYED,
-                payload: { playerId, cardUid, defId, baseIndex: 0, power },
+                payload: { 
+                    playerId, 
+                    cardUid, 
+                    defId, 
+                    baseIndex: 0, 
+                    baseDefId: state.core.bases[0].defId,
+                    power 
+                },
                 timestamp,
             };
             return { state, events: [

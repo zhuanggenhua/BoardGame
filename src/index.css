@@ -210,10 +210,10 @@
     50%       { transform: translateY(-3px); }
 }
 
-/* 移动端响应式缩放 */
+/* 移动端响应式缩放（仅游戏页面） */
 @media (max-width: 1023px) and (orientation: landscape) {
-    /* 移动设备横屏时，基于设计宽度 1280px 进行缩放 */
-    #root {
+    /* 移动设备横屏时，游戏页面基于设计宽度 1280px 进行缩放 */
+    body:has([data-game-page]) #root {
         transform-origin: top left;
         transform: scale(calc(100vw / 1280));
         width: 1280px;

@@ -155,49 +155,104 @@ export function validate(
         }
 
         case SU_COMMANDS.PLAY_ACTION: {
+            console.log('[DEBUG] PLAY_ACTION validation: start', {
+                playerId: command.playerId,
+                cardUid: command.payload.cardUid,
+                targetBaseIndex: command.payload.targetBaseIndex,
+                hasResponseWindow: !!state.sys.responseWindow?.current,
+                windowType: state.sys.responseWindow?.current?.windowType,
+            });
+            
             // Me First! 响应窗口期间：允许当前响应者打出特殊行动卡
             const responseWindow = state.sys.responseWindow?.current;
             if (responseWindow && responseWindow.windowType === 'meFirst') {
                 const responderQueue = responseWindow.responderQueue;
                 const currentResponderId = responderQueue[responseWindow.currentResponderIndex];
+                
+                console.log('[DEBUG] PLAY_ACTION validation: in Me First! window', {
+                    currentResponderId,
+                    commandPlayerId: command.playerId,
+                    isCurrentResponder: command.playerId === currentResponderId,
+                });
+                
                 if (command.playerId !== currentResponderId) {
+                    console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - not current responder');
                     return { valid: false, error: '等待对方响应' };
                 }
                 const rPlayer = core.players[command.playerId];
-                if (!rPlayer) return { valid: false, error: '玩家不存在' };
+                if (!rPlayer) {
+                    console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - player not found');
+                    return { valid: false, error: '玩家不存在' };
+                }
                 const rCard = rPlayer.hand.find(c => c.uid === command.payload.cardUid);
-                if (!rCard) return { valid: false, error: '手牌中没有该卡牌' };
-                if (rCard.type !== 'action') return { valid: false, error: '该卡牌不是行动卡' };
+                if (!rCard) {
+                    console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - card not in hand');
+                    return { valid: false, error: '手牌中没有该卡牌' };
+                }
+                if (rCard.type !== 'action') {
+                    console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - not action card');
+                    return { valid: false, error: '该卡牌不是行动卡' };
+                }
                 const rDef = getCardDef(rCard.defId) as ActionCardDef | undefined;
-                if (!rDef) return { valid: false, error: '卡牌定义不存在' };
+                if (!rDef) {
+                    console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - card def not found');
+                    return { valid: false, error: '卡牌定义不存在' };
+                }
                 if (rDef.subtype !== 'special') {
+                    console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - not special card', {
+                        subtype: rDef.subtype,
+                    });
                     return { valid: false, error: 'Me First! 响应只能打出特殊行动卡' };
                 }
 
                 const targetBase = command.payload.targetBaseIndex;
+                console.log('[DEBUG] PLAY_ACTION validation: checking base requirement', {
+                    specialNeedsBase: rDef.specialNeedsBase,
+                    targetBase,
+                });
+                
                 if (rDef.specialNeedsBase) {
                     if (typeof targetBase !== 'number' || !Number.isInteger(targetBase)) {
+                        console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - needs base but no valid base provided');
                         return { valid: false, error: '该特殊行动卡需要选择一个达标基地' };
                     }
                     const targetBaseIndex = targetBase;
                     if (targetBaseIndex < 0 || targetBaseIndex >= core.bases.length) {
+                        console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - invalid base index');
                         return { valid: false, error: '无效的基地索引' };
                     }
 
                     // 使用统一查询函数（优先锁定列表，回退实时计算）
                     const eligibleIndices = getScoringEligibleBaseIndices(core);
+                    console.log('[DEBUG] PLAY_ACTION validation: eligible bases', {
+                        eligibleIndices,
+                        targetBaseIndex,
+                        isEligible: eligibleIndices.includes(targetBaseIndex),
+                    });
+                    
                     if (!eligibleIndices.includes(targetBaseIndex)) {
+                        console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - base not eligible');
                         return { valid: false, error: '只能选择达到临界点的基地' };
                     }
 
                     // specialLimitGroup 检查：该基地本回合是否已使用过同组 special 能力
-                    if (isSpecialLimitBlocked(core, rCard.defId, targetBaseIndex)) {
+                    const isBlocked = isSpecialLimitBlocked(core, rCard.defId, targetBaseIndex);
+                    console.log('[DEBUG] PLAY_ACTION validation: special limit check', {
+                        cardDefId: rCard.defId,
+                        targetBaseIndex,
+                        isBlocked,
+                    });
+                    
+                    if (isBlocked) {
+                        console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - special limit');
                         return { valid: false, error: '该基地本回合已使用过同组特殊能力' };
                     }
                 } else if (targetBase !== undefined) {
+                    console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - base provided but not needed');
                     return { valid: false, error: '该特殊行动卡不需要基地目标' };
                 }
 
+                console.log('[DEBUG] PLAY_ACTION validation: PASSED (Me First! mode)');
                 return { valid: true };
             }
 
@@ -254,8 +309,12 @@ export function validate(
             }
 
             // ongoing 限制检查：是否禁止打出行动卡到目标基地
-            if (typeof targetBase === 'number' && isOperationRestricted(core, targetBase, command.playerId, 'play_action')) {
-                return { valid: false, error: '该基地禁止打出行动卡' };
+            // 注意：ongoingTarget='minion' 的行动卡附着到随从上，不受基地 play_action 限制
+            if (typeof targetBase === 'number') {
+                const ongoingTarget = def.ongoingTarget ?? 'base';
+                if (ongoingTarget === 'base' && isOperationRestricted(core, targetBase, command.playerId, 'play_action')) {
+                    return { valid: false, error: '该基地禁止打出行动卡' };
+                }
             }
             return { valid: true };
         }

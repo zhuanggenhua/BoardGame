@@ -374,9 +374,22 @@ export function createMultistepChoice<TStep, TResult>(
  * - 如果交互选项包含 cardUid 字段，自动生成 optionsGenerator
  * - 确保后续交互看到最新的手牌/场上单位状态
  */
+/**
+ * 将交互加入队列
+ * 
+ * 如果当前没有交互，新交互立即成为 current。
+ * 否则加入队列末尾（或头部，如果标记为 urgent）。
+ * 
+ * urgent 用于链式交互的后续步骤，确保不被其他交互插队。
+ * 
+ * 注意：
+ * - 如果交互有 optionsGenerator，会在成为 current 时立即生成选项
+ * - 确保后续交互看到最新的手牌/场上单位状态
+ */
 export function queueInteraction<TCore>(
     state: MatchState<TCore>,
     interaction: InteractionDescriptor,
+    options?: { urgent?: boolean }, // 新增：urgent 标志
 ): MatchState<TCore> {
     if (!interaction) return state;
 
@@ -385,11 +398,28 @@ export function queueInteraction<TCore>(
     if (!current) {
         // 如果当前没有交互，新交互立即成为 current
         // 如果有选项生成器，立即基于当前状态生成选项
+        console.log('[InteractionSystem] popInteraction: No current, making new interaction current:', {
+            interactionId: interaction.id,
+            kind: interaction.kind,
+        });
+        
         if (interaction.kind === 'simple-choice') {
             const data = interaction.data as SimpleChoiceData;
+            console.log('[InteractionSystem] popInteraction: Checking optionsGenerator:', {
+                hasOptionsGenerator: !!data.optionsGenerator,
+                hasContinuationContext: !!(data as any).continuationContext,
+                continuationContext: (data as any).continuationContext,
+                originalOptionsCount: data.options?.length,
+            });
+            
             if (data.optionsGenerator) {
                 // 传递 state 和 data（包含 continuationContext）给 optionsGenerator
+                console.log('[InteractionSystem] popInteraction: Calling optionsGenerator...');
                 const freshOptions = data.optionsGenerator(state, data);
+                console.log('[InteractionSystem] popInteraction: optionsGenerator returned:', {
+                    freshOptionsCount: freshOptions.length,
+                    freshOptions,
+                });
                 interaction = {
                     ...interaction,
                     data: { ...data, options: freshOptions },
@@ -407,13 +437,16 @@ export function queueInteraction<TCore>(
     }
 
     // 否则加入队列（选项生成延迟到 resolveInteraction 时）
+    // urgent 交互插入队列头部，确保链式交互不被打断
+    const newQueue = options?.urgent ? [interaction, ...queue] : [...queue, interaction];
+    
     return {
         ...state,
         sys: {
             ...state.sys,
             interaction: {
                 ...state.sys.interaction,
-                queue: [...queue, interaction],
+                queue: newQueue,
             },
         },
     };
@@ -433,16 +466,38 @@ export function resolveInteraction<TCore>(
     let next = queue[0];
     const newQueue = queue.slice(1);
 
+    console.log('[InteractionSystem] resolveInteraction START:', {
+        hasNext: !!next,
+        nextId: next?.id,
+        nextKind: next?.kind,
+        queueLength: queue.length,
+    });
+
     // 如果下一个交互是 simple-choice，刷新选项
     if (next && next.kind === 'simple-choice') {
         const data = next.data as SimpleChoiceData;
         
+        console.log('[InteractionSystem] Processing simple-choice:', {
+            interactionId: next.id,
+            hasOptionsGenerator: !!data.optionsGenerator,
+            hasContinuationContext: !!(data as any).continuationContext,
+            continuationContext: (data as any).continuationContext,
+            originalOptionsCount: data.options?.length,
+            originalOptions: data.options,
+        });
+        
         // 优先使用手动提供的 optionsGenerator
         let freshOptions: PromptOption[];
         if (data.optionsGenerator) {
+            console.log('[InteractionSystem] Calling optionsGenerator...');
             freshOptions = data.optionsGenerator(state, data);
+            console.log('[InteractionSystem] optionsGenerator returned:', {
+                freshOptionsCount: freshOptions.length,
+                freshOptions,
+            });
         } else {
             // 使用通用刷新逻辑
+            console.log('[InteractionSystem] Using generic refresh...');
             freshOptions = refreshOptionsGeneric(state, next, data.options);
         }
         
@@ -452,6 +507,12 @@ export function resolveInteraction<TCore>(
                 ...next,
                 data: { ...data, options: freshOptions },
             };
+            console.log('[InteractionSystem] Updated next interaction with fresh options:', {
+                interactionId: next.id,
+                newOptionsCount: freshOptions.length,
+            });
+        } else {
+            console.warn('[InteractionSystem] Fresh options do not meet multi.min requirement, keeping original options');
         }
     }
 
@@ -501,8 +562,15 @@ export function asMultistepChoice<TStep = unknown, TResult = unknown>(
 /**
  * 通用选项刷新逻辑（框架层）
  *
- * 根据选项的 _source 字段显式校验选项是否仍然有效。
- * 未声明 _source 的选项视为 'static'，一律保留（向后兼容）。
+ * 自动推断选项类型并校验是否仍然有效：
+ * 1. 优先使用显式声明的 _source 字段
+ * 2. 未声明时根据 value 的字段自动推断：
+ *    - 有 cardUid → 检查手牌/弃牌堆/ongoing
+ *    - 有 minionUid → 检查场上随从
+ *    - 有 baseIndex → 检查基地是否存在
+ *    - 其他 → 视为静态选项，保留
+ * 
+ * 这样游戏层无需手动添加 _source 字段，框架层自动处理。
  */
 function refreshOptionsGeneric<T>(
     state: any,
@@ -510,13 +578,37 @@ function refreshOptionsGeneric<T>(
     originalOptions: PromptOption<T>[],
 ): PromptOption<T>[] {
     return originalOptions.filter((opt) => {
-        const source = opt._source;
         const val = opt.value as any;
+        
+        // 优先使用显式声明的 _source
+        const explicitSource = opt._source;
+        
+        // 自动推断类型（当未显式声明时）
+        const inferredSource = explicitSource || (() => {
+            if (!val || typeof val !== 'object') return 'static';
+            
+            // 跳过/完成/取消等操作选项
+            if (val.skip || val.done || val.cancel || val.__cancel__) return 'static';
+            
+            // 根据字段推断类型
+            if (val.minionUid !== undefined) return 'field';
+            if (val.baseIndex !== undefined) return 'base';
+            if (val.cardUid !== undefined) {
+                // cardUid 可能是手牌、弃牌堆或 ongoing，需要进一步检查
+                // 默认先检查手牌，如果不在手牌则检查弃牌堆和 ongoing
+                return 'hand'; // 默认假设是手牌，后续会尝试其他来源
+            }
+            
+            return 'static';
+        })();
 
-        switch (source) {
+        switch (inferredSource) {
             case 'hand': {
                 const player = state.core?.players?.[interaction.playerId];
-                return player?.hand?.some((c: any) => c.uid === val?.cardUid) ?? false;
+                if (player?.hand?.some((c: any) => c.uid === val?.cardUid)) return true;
+                // 如果不在手牌，尝试弃牌堆（向后兼容）
+                if (player?.discard?.some((c: any) => c.uid === val?.cardUid)) return true;
+                return false;
             }
             case 'discard': {
                 const player = state.core?.players?.[interaction.playerId];
@@ -545,7 +637,7 @@ function refreshOptionsGeneric<T>(
             }
             case 'static':
             default:
-                // 未声明来源或 static：一律保留
+                // 静态选项或无法推断的选项：一律保留
                 return true;
         }
     });
@@ -648,8 +740,23 @@ export function createInteractionSystem<TCore>(
         playerView: (state, playerId): Partial<{ interaction: InteractionState }> => {
             const { current, queue } = state.sys.interaction;
 
+            console.error('[InteractionSystem playerView] START:', {
+                playerId,
+                hasCurrent: !!current,
+                currentId: current?.id,
+                currentOptionsCount: (current?.data as any)?.options?.length,
+                currentOptions: JSON.stringify((current?.data as any)?.options, null, 2),
+            });
+
             const filteredCurrent =
                 current?.playerId === playerId ? stripNonSerializable(current) : undefined;
+            
+            console.error('[InteractionSystem playerView] After stripNonSerializable:', {
+                hasFilteredCurrent: !!filteredCurrent,
+                filteredOptionsCount: (filteredCurrent?.data as any)?.options?.length,
+                filteredOptions: JSON.stringify((filteredCurrent?.data as any)?.options, null, 2),
+            });
+            
             const filteredQueue = queue.filter((i) => i?.playerId === playerId).map(i => stripNonSerializable(i)!);
             // 当其他玩家有未完成交互时，通知当前玩家被阻塞（不暴露交互详情）
             const isBlocked = !!current && current.playerId !== playerId;

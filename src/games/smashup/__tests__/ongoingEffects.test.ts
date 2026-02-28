@@ -14,6 +14,7 @@ import {
     isMinionProtected,
     isOperationRestricted,
     fireTriggers,
+    getBaseRestrictions,
 } from '../domain/ongoingEffects';
 import type { SmashUpCore, MinionOnBase, BaseInPlay, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
@@ -433,5 +434,52 @@ describe('持续效果拦截框架', () => {
             // isSourceActive 检查全局，所以 warbot 算活跃
             expect(isMinionProtected(state, targetMinion, 1, '1', 'destroy')).toBe(true);
         });
+    });
+});
+
+
+// ============================================================================
+// 基地限制信息查询测试
+// ============================================================================
+
+describe('getBaseRestrictions', () => {
+    test('返回 Block the Path 限制信息', () => {
+        const base = makeBase({
+            ongoingActions: [
+                { uid: 'bp-1', defId: 'trickster_block_the_path', ownerId: '0', metadata: { blockedFaction: SMASHUP_FACTION_IDS.PIRATES } },
+            ],
+        });
+        const state = makeState([base]);
+
+        const restrictions = getBaseRestrictions(state, 0);
+
+        expect(restrictions).toHaveLength(1);
+        expect(restrictions[0]).toEqual({
+            type: 'blocked_faction',
+            displayText: SMASHUP_FACTION_IDS.PIRATES,
+            sourceDefId: 'trickster_block_the_path',
+        });
+    });
+
+    test('无限制时返回空数组', () => {
+        const base = makeBase();
+        const state = makeState([base]);
+
+        const restrictions = getBaseRestrictions(state, 0);
+
+        expect(restrictions).toEqual([]);
+    });
+
+    test('Block the Path 无 metadata 时不返回限制', () => {
+        const base = makeBase({
+            ongoingActions: [
+                { uid: 'bp-1', defId: 'trickster_block_the_path', ownerId: '0' },
+            ],
+        });
+        const state = makeState([base]);
+
+        const restrictions = getBaseRestrictions(state, 0);
+
+        expect(restrictions).toEqual([]);
     });
 });

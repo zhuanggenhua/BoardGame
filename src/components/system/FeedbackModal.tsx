@@ -14,6 +14,8 @@ interface FeedbackModalProps {
     onClose: () => void;
     /** 游戏内操作日志（纯文本，由 GameHUD 传入） */
     actionLogText?: string;
+    /** 完整游戏状态 JSON（用于精确复现问题） */
+    stateSnapshot?: string;
 }
 
 const FeedbackType = {
@@ -46,7 +48,7 @@ const FEEDBACK_SEVERITY_LABEL_KEYS: Record<FeedbackSeverity, string> = {
     [FeedbackSeverity.CRITICAL]: 'hud.feedback.severity.critical',
 };
 
-export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) => {
+export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot }: FeedbackModalProps) => {
     const { t } = useTranslation(['game', 'common']);
     const { token } = useAuth();
     const { success, error } = useToast();
@@ -60,6 +62,7 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
     const [submitting, setSubmitting] = useState(false);
     const [pastedImage, setPastedImage] = useState<string | null>(null);
     const [attachLog, setAttachLog] = useState(!!actionLogText);
+    const [attachState, setAttachState] = useState(!!stateSnapshot);
 
     // 游戏内自动注入 gameId，非游戏页面允许手动选择
     const isInGame = location.pathname.startsWith('/play/');
@@ -121,6 +124,7 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                     gameName: gameName || undefined,
                     contactInfo: contactInfo || undefined,
                     actionLog: (attachLog && actionLogText) ? actionLogText : undefined,
+                    stateSnapshot: (attachState && stateSnapshot) ? stateSnapshot : undefined,
                 })
             });
 
@@ -294,6 +298,21 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                             />
                             <span className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">
                                 {t('hud.feedback.attachLog')}
+                            </span>
+                        </label>
+                    )}
+
+                    {/* 附带状态快照 */}
+                    {stateSnapshot && (
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={attachState}
+                                onChange={(e) => setAttachState(e.target.checked)}
+                                className="rounded border-parchment-brown/30 text-parchment-brown focus:ring-parchment-gold"
+                            />
+                            <span className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">
+                                {t('hud.feedback.attachState')}
                             </span>
                         </label>
                     )}

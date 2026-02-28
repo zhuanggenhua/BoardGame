@@ -85,10 +85,14 @@ export const MeFirstOverlay: React.FC<{
 
                 {isMyResponse && (
                     <div className="flex flex-col gap-2">
-                        {/* 提示：从手牌中选择特殊行动卡 */}
-                        {specialCards.length > 0 && (
+                        {/* 提示：从手牌中选择特殊行动卡或让过 */}
+                        {specialCards.length > 0 ? (
                             <p className="text-xs text-center text-amber-700/80 font-medium">
                                 {t('ui.me_first_select_from_hand', { defaultValue: '从手牌中选择特殊行动卡打出' })}
+                            </p>
+                        ) : (
+                            <p className="text-xs text-center text-slate-600 font-medium">
+                                {t('ui.me_first_no_special', { defaultValue: '你没有可打出的特殊行动卡' })}
                             </p>
                         )}
 

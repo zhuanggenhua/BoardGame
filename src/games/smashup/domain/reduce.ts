@@ -37,7 +37,7 @@ import type {
     PlayerState,
 } from './types';
 import type { PlayerId } from '../../../engine/types';
-import { SU_EVENTS, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
+import { SU_EVENTS, SU_EVENT_TYPES, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
 import { getMinionDef, getCardDef } from '../data/cards';
 import { hasCthulhuExpansionFaction } from './abilityHelpers';
 
@@ -1267,6 +1267,26 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             return {
                 ...state,
                 scoringEligibleBaseIndices: baseIndices,
+            };
+        }
+
+        case SU_EVENT_TYPES.BEFORE_SCORING_TRIGGERED: {
+            const { baseIndex } = event.payload as { baseIndex: number };
+            const existing = state.beforeScoringTriggeredBases ?? [];
+            // 防御性检查：防止重复添加同一个 baseIndex
+            // 正常情况下不应该发生（scoreOneBase 中已有检查），但作为额外保护
+            if (existing.includes(baseIndex)) return state;
+            return {
+                ...state,
+                beforeScoringTriggeredBases: [...existing, baseIndex],
+            };
+        }
+
+        case SU_EVENT_TYPES.BEFORE_SCORING_CLEARED: {
+            // 计分阶段结束时清空标记，准备下一轮计分
+            return {
+                ...state,
+                beforeScoringTriggeredBases: undefined,
             };
         }
 

@@ -35,7 +35,7 @@ import type {
     AbilityFeedbackEvent,
     OngoingCardCounterChangedEvent,
 } from './types';
-import { SU_EVENTS } from './types';
+import { SU_EVENT_TYPES as SU_EVENTS } from './events';
 import { getEffectivePower } from './ongoingModifiers';
 import { triggerAllBaseAbilities } from './baseAbilities';
 import { fireTriggers } from './ongoingEffects';

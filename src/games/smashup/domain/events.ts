@@ -85,6 +85,8 @@ export const SU_EVENTS = defineEvents({
   'su:special_after_scoring_armed': 'silent',
   'su:special_after_scoring_consumed': 'silent',
   'su:scoring_eligible_bases_locked': 'silent',  // 进入 scoreBases 阶段时锁定 eligible 基地列表
+  'su:before_scoring_triggered': 'silent',  // 标记基地已触发 beforeScoring（防止重复触发）
+  'su:before_scoring_cleared': 'silent',  // 清空 beforeScoring 触发标记（计分阶段结束）
   
   'su:ability_feedback': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:ability_triggered': 'fx',        // 持续效果/触发器激活（FX 动画）
@@ -142,6 +144,8 @@ export const SU_EVENT_TYPES = {
   SPECIAL_AFTER_SCORING_ARMED: SU_EVENTS['su:special_after_scoring_armed'].type,
   SPECIAL_AFTER_SCORING_CONSUMED: SU_EVENTS['su:special_after_scoring_consumed'].type,
   SCORING_ELIGIBLE_BASES_LOCKED: SU_EVENTS['su:scoring_eligible_bases_locked'].type,
+  BEFORE_SCORING_TRIGGERED: SU_EVENTS['su:before_scoring_triggered'].type,
+  BEFORE_SCORING_CLEARED: SU_EVENTS['su:before_scoring_cleared'].type,
   ABILITY_FEEDBACK: SU_EVENTS['su:ability_feedback'].type,
   ABILITY_TRIGGERED: SU_EVENTS['su:ability_triggered'].type,
   MINION_PLAY_EFFECT_QUEUED: SU_EVENTS['su:minion_play_effect_queued'].type,

@@ -13,6 +13,7 @@ import type {
     PlayerId,
 } from '../../engine/types';
 import { FLOW_COMMANDS } from '../../engine';
+import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { SU_COMMANDS, SU_EVENTS } from './domain';
 import type { SmashUpCore, MinionPowerBreakdown } from './domain/types';
 import { getSmashUpCardPreviewMeta } from './ui/cardPreviewHelper';
@@ -24,6 +25,9 @@ import { buildDamageBreakdownSegment, type DamageSourceResolver } from '../../en
 
 /**
  * 操作日志白名单：记录所有有意义的玩家操作。
+ * 
+ * 包含 INTERACTION_COMMANDS.RESPOND：交互解决后产生的事件（如 Igor onDestroy 产生的 POWER_COUNTER_ADDED）
+ * 需要被记录到 ActionLog。
  */
 export const ACTION_ALLOWLIST = [
     SU_COMMANDS.PLAY_MINION,
@@ -31,6 +35,7 @@ export const ACTION_ALLOWLIST = [
     SU_COMMANDS.USE_TALENT,
     SU_COMMANDS.DISCARD_TO_LIMIT,
     FLOW_COMMANDS.ADVANCE_PHASE,
+    INTERACTION_COMMANDS.RESPOND,  // ✅ 新增：记录交互解决后产生的事件
 ] as const;
 
 /**
@@ -183,8 +188,9 @@ export function formatSmashUpActionEntry({
         const entryTimestamp = typeof event.timestamp === 'number' ? event.timestamp : timestamp;
         switch (event.type) {
             case SU_EVENTS.MINION_PLAYED: {
-                const payload = event.payload as { defId: string; baseIndex: number };
-                const baseLabel = formatBaseLabel(getBaseDefId(payload.baseIndex), payload.baseIndex);
+                const payload = event.payload as { defId: string; baseIndex: number; baseDefId?: string };
+                // 优先使用 payload 中的 baseDefId（事件发生时的基地），fallback 到当前状态查找
+                const baseLabel = formatBaseLabel(payload.baseDefId ?? getBaseDefId(payload.baseIndex), payload.baseIndex);
                 const segments = withCardSegments('actionLog.minionPlayed', payload.defId);
                 if (baseLabel) {
                     segments.push(i18nSeg('actionLog.onBase', { base: baseLabel }, ['base']));
@@ -199,21 +205,29 @@ export function formatSmashUpActionEntry({
                 break;
             }
             case SU_EVENTS.MINION_DESTROYED: {
-                const payload = event.payload as { minionDefId: string; fromBaseIndex: number };
+                const payload = event.payload as { minionDefId: string; fromBaseIndex: number; reason?: string };
                 const baseLabel = formatBaseLabel(getBaseDefId(payload.fromBaseIndex), payload.fromBaseIndex);
                 const segments = withCardSegments('actionLog.minionDestroyed', payload.minionDefId);
                 if (baseLabel) {
                     segments.push(i18nSeg('actionLog.onBase', { base: baseLabel }, ['base']));
                 }
+                // 添加原因说明（如果有）
+                if (payload.reason) {
+                    segments.push({ type: 'text', text: ` （原因： ${payload.reason}）` });
+                }
                 pushEntry(event.type, segments, actorId, entryTimestamp, index);
                 break;
             }
             case SU_EVENTS.MINION_MOVED: {
-                const payload = event.payload as { minionDefId: string; fromBaseIndex: number; toBaseIndex: number };
+                const payload = event.payload as { minionDefId: string; fromBaseIndex: number; toBaseIndex: number; reason?: string };
                 const fromLabel = formatBaseLabel(getBaseDefId(payload.fromBaseIndex), payload.fromBaseIndex);
                 const toLabel = formatBaseLabel(getBaseDefId(payload.toBaseIndex), payload.toBaseIndex);
                 const segments = withCardSegments('actionLog.minionMoved', payload.minionDefId);
                 segments.push(i18nSeg('actionLog.fromTo', { from: fromLabel, to: toLabel }, ['from', 'to']));
+                // 添加原因说明（如果有）
+                if (payload.reason) {
+                    segments.push({ type: 'text', text: ` （原因： ${payload.reason}）` });
+                }
                 pushEntry(event.type, segments, actorId, entryTimestamp, index);
                 break;
             }
@@ -228,9 +242,12 @@ export function formatSmashUpActionEntry({
                 break;
             }
             case SU_EVENTS.POWER_COUNTER_ADDED: {
-                const payload = event.payload as { minionUid: string; amount: number; baseIndex: number };
+                const payload = event.payload as { minionUid: string; amount: number; baseIndex: number; reason?: string };
                 const baseLabel = formatBaseLabel(getBaseDefId(payload.baseIndex), payload.baseIndex);
-                const segments = withCardSegments('actionLog.powerCounterAdded', payload.minionUid, { amount: payload.amount });
+                // 从 minionUid 查找随从的 defId（优先从场上查找，fallback 到 reason 字段）
+                const minion = core.bases?.[payload.baseIndex]?.minions.find(m => m.uid === payload.minionUid);
+                const minionDefId = minion?.defId ?? payload.reason ?? payload.minionUid;
+                const segments = withCardSegments('actionLog.powerCounterAdded', minionDefId, { amount: payload.amount });
                 if (baseLabel) {
                     segments.push(i18nSeg('actionLog.onBase', { base: baseLabel }, ['base']));
                 }
@@ -238,9 +255,12 @@ export function formatSmashUpActionEntry({
                 break;
             }
             case SU_EVENTS.POWER_COUNTER_REMOVED: {
-                const payload = event.payload as { minionUid: string; amount: number; baseIndex: number };
+                const payload = event.payload as { minionUid: string; amount: number; baseIndex: number; reason?: string };
                 const baseLabel = formatBaseLabel(getBaseDefId(payload.baseIndex), payload.baseIndex);
-                const segments = withCardSegments('actionLog.powerCounterRemoved', payload.minionUid, { amount: payload.amount });
+                // 从 minionUid 查找随从的 defId（优先从场上查找，fallback 到 reason 字段）
+                const minion = core.bases?.[payload.baseIndex]?.minions.find(m => m.uid === payload.minionUid);
+                const minionDefId = minion?.defId ?? payload.reason ?? payload.minionUid;
+                const segments = withCardSegments('actionLog.powerCounterRemoved', minionDefId, { amount: payload.amount });
                 if (baseLabel) {
                     segments.push(i18nSeg('actionLog.onBase', { base: baseLabel }, ['base']));
                 }
@@ -326,6 +346,13 @@ export function formatSmashUpActionEntry({
                         }));
                     }
                 });
+                
+                // 添加 VP 快照（用于审计和 bug 追溯）
+                const vpSnapshot = Object.entries(core.players)
+                    .map(([pid, p]) => `${pid}:${p?.vp ?? 0}`)
+                    .join(' ');
+                segments.push(textSegment(` [总VP: ${vpSnapshot}]`));
+                
                 pushEntry(event.type, segments, actorId, entryTimestamp, index);
                 break;
             }
@@ -338,6 +365,13 @@ export function formatSmashUpActionEntry({
                 if (payload.reason) {
                     segments.push(...buildReasonSegments(payload.reason, buildCardSegment));
                 }
+                
+                // 添加 VP 快照（用于审计和 bug 追溯）
+                const vpSnapshot = Object.entries(core.players)
+                    .map(([pid, p]) => `${pid}:${p?.vp ?? 0}`)
+                    .join(' ');
+                segments.push(textSegment(` [总VP: ${vpSnapshot}]`));
+                
                 pushEntry(event.type, segments, payload.playerId, entryTimestamp, index);
                 break;
             }

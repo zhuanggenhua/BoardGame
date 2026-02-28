@@ -70,7 +70,15 @@ const systems: EngineSystem<SmashUpCore>[] = [
             const hasSpecialAction = player.hand.some(c => {
                 if (c.type !== 'action') return false;
                 const def = getCardDef(c.defId) as ActionCardDef | undefined;
-                return def?.subtype === 'special';
+                if (def?.subtype !== 'special') return false;
+                
+                // 特殊检查：便衣忍者需要手牌中有随从才能使用
+                if (c.defId === 'ninja_hidden_ninja') {
+                    return player.hand.some(card => card.type === 'minion');
+                }
+                
+                // 其他 special 卡默认可用
+                return true;
             });
             if (hasSpecialAction) return true;
             // 检查手牌中是否有 beforeScoringPlayable 随从（如影舞者）

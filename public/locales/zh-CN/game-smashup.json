@@ -38,6 +38,7 @@
     "me_first_your_turn": "轮到你响应 — 打出特殊牌或让过",
     "me_first_waiting": "等待 P{{player}} 响应...",
     "me_first_pass": "让过",
+    "me_first_no_special": "你没有可打出的特殊行动卡",
     "me_first_select_base": "点击一个达标基地来打出特殊牌",
     "me_first_click_base": "点击达标基地",
     "me_first_select_from_hand": "从手牌中选择特殊行动卡打出",
@@ -314,7 +315,7 @@
     },
     "alien_probe": {
       "name": "探究",
-      "effectText": "查看一个玩家的手牌。查看该玩家牌库顶的一张牌，将其放回牌库顶或放到牌库底。"
+      "effectText": "查看一个玩家的手牌并选择其中一张随从。该玩家弃掉那张随从。"
     },
     "alien_crop_circles": {
       "name": "麦田怪圈",

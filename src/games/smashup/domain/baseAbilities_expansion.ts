@@ -703,7 +703,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         const power = mDef?.power ?? 0;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid: selected.cardUid!, defId: selected.defId!, baseIndex: ctx.baseIndex, power },
+            payload: { playerId, cardUid: selected.cardUid!, defId: selected.defId!, baseIndex: ctx.baseIndex, baseDefId: state.core.bases[ctx.baseIndex].defId, power },
             timestamp,
         };
         return { state, events: [playedEvt] };
@@ -717,7 +717,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         const power = selected.power ?? (getMinionDef(selected.defId!)?.power ?? 0);
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid: selected.cardUid!, defId: selected.defId!, baseIndex: ctx.baseIndex, power },
+            payload: { playerId, cardUid: selected.cardUid!, defId: selected.defId!, baseIndex: ctx.baseIndex, baseDefId: state.core.bases[ctx.baseIndex].defId, power },
             timestamp,
         };
         return { state, events: [playedEvt] };

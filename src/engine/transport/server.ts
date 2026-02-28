@@ -923,6 +923,38 @@ export class GameTransportServer {
         // 记录成功日志
         gameLogger.commandExecuted(match.matchID, commandType, playerID, duration);
 
+        // 记录关键游戏事件（用于 bug 追溯）
+        for (const event of result.events) {
+            const eventType = (event as GameEvent).type;
+            
+            // SmashUp: 基地计分
+            if (eventType === 'su:base_scored') {
+                const payload = (event as any).payload;
+                logger.info('game_event', {
+                    matchID: match.matchID,
+                    gameId: engineConfig.gameId,
+                    eventType: 'base_scored',
+                    baseDefId: payload.baseDefId,
+                    rankings: payload.rankings,
+                    timestamp: (event as GameEvent).timestamp,
+                });
+            }
+            
+            // SmashUp: VP 授予
+            if (eventType === 'su:vp_awarded') {
+                const payload = (event as any).payload;
+                logger.info('game_event', {
+                    matchID: match.matchID,
+                    gameId: engineConfig.gameId,
+                    eventType: 'vp_awarded',
+                    playerId: payload.playerId,
+                    amount: payload.amount,
+                    reason: payload.reason,
+                    timestamp: (event as GameEvent).timestamp,
+                });
+            }
+        }
+
         // 更新状态
         match.state = result.state;
         match.stateID += 1;

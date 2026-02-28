@@ -65,17 +65,11 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                             
                             if (result) {
                                 newState = result.state;
-                                // 对交互解决产生的事件应用保护过滤和触发链
-                                // 与 execute() 后处理对齐：destroy ↔ move 循环 → return → deckBottom → affect
+                                // 交互处理函数返回的事件会由 pipeline 的 postProcessSystemEvents 统一处理
+                                // （包括 processDestroyMoveCycle、保护过滤、触发链等）
+                                // 这里只需要直接返回事件，避免重复处理导致 onDestroy 等触发器被调用两次
                                 const rawEvents = result.events as SmashUpEvent[];
-                                const sourcePlayerId = payload.playerId;
-                                const afterDestroyMove = processDestroyMoveCycle(rawEvents, newState, sourcePlayerId, random as RandomFn, eventTimestamp);
-                                if (afterDestroyMove.matchState) newState = afterDestroyMove.matchState;
-                                const afterReturn = filterProtectedReturnEvents(afterDestroyMove.events, newState.core, sourcePlayerId);
-                                const afterDeckBottom = filterProtectedDeckBottomEvents(afterReturn, newState.core, sourcePlayerId);
-                                const afterAffect = processAffectTriggers(afterDeckBottom, newState, sourcePlayerId, random as RandomFn, eventTimestamp);
-                                if (afterAffect.matchState) newState = afterAffect.matchState;
-                                nextEvents.push(...afterAffect.events);
+                                nextEvents.push(...rawEvents);
 
                                 // 补发延迟的 BASE_CLEARED/BASE_REPLACED 事件
                                 // afterScoring 基地能力创建交互时，清除事件被延迟到交互解决后发出，

@@ -82,7 +82,7 @@ function cthulhuRecruitByForce(ctx: AbilityContext): AbilityResult {
         const def = getCardDef(c.defId) as MinionCardDef | undefined;
         const name = def?.name ?? c.defId;
         const power = def?.power ?? 0;
-        return { id: `minion-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId }, _source: 'discard' as const };
+        return { id: `minion-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, minionDefId: c.defId }, _source: 'discard' as const };
     });
     const interaction = createSimpleChoice(
         `cthulhu_recruit_by_force_${ctx.now}`, ctx.playerId,
@@ -356,14 +356,13 @@ function cthulhuChosenBeforeScoring(ctx: TriggerContext): TriggerResult {
     // 链式处理：为第一个天选之人创建确认交互
     const first = chosenList[0];
     const remaining = chosenList.slice(1);
-    const firstBase = ctx.state.bases[first.baseIndex];
-    const firstBaseDefId = firstBase?.defId ?? '';
+    
     const interaction = createSimpleChoice(
         `cthulhu_chosen_confirm_${ctx.now}`, first.controller,
         '神选者：是否抽一张疯狂卡来获得+2力量？',
         [
-            { id: 'yes', label: '是（抽疯狂卡，+2力量）', value: { activate: true, uid: first.uid, baseIndex: first.baseIndex, baseDefId: firstBaseDefId, controller: first.controller } },
-            { id: 'no', label: '否（不触发）', value: { activate: false } },
+            { id: 'yes', label: '是（抽疯狂卡，+2力量）', value: { activate: true, uid: first.uid, baseIndex: first.baseIndex, controller: first.controller }, displayMode: 'button' as const, baseDefId: ctx.state.bases[first.baseIndex]?.defId },
+            { id: 'no', label: '否（不触发）', value: { activate: false }, displayMode: 'button' as const, baseDefId: ctx.state.bases[first.baseIndex]?.defId },
         ],
         'cthulhu_chosen_confirm'
         );
@@ -635,14 +634,13 @@ export function registerCthulhuInteractionHandlers(): void {
         if (remaining.length > 0) {
             const next = remaining[0];
             const rest = remaining.slice(1);
-            const nextBase = state.core.bases[next.baseIndex];
-            const nextBaseDefId = nextBase?.defId ?? '';
+            
             const interaction = createSimpleChoice(
                 `cthulhu_chosen_confirm_${timestamp}`, next.controller,
                 '神选者：是否抽一张疯狂卡来获得+2力量？',
                 [
-                    { id: 'yes', label: '是（抽疯狂卡，+2力量）', value: { activate: true, uid: next.uid, baseIndex: next.baseIndex, baseDefId: nextBaseDefId, controller: next.controller } },
-                    { id: 'no', label: '否（不触发）', value: { activate: false } },
+                    { id: 'yes', label: '是（抽疯狂卡，+2力量）', value: { activate: true, uid: next.uid, baseIndex: next.baseIndex, controller: next.controller }, displayMode: 'button' as const, baseDefId: state.core.bases[next.baseIndex]?.defId },
+                    { id: 'no', label: '否（不触发）', value: { activate: false }, displayMode: 'button' as const, baseDefId: state.core.bases[next.baseIndex]?.defId },
                 ],
                 'cthulhu_chosen_confirm'
                 );

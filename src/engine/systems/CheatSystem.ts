@@ -44,6 +44,8 @@ export const CHEAT_COMMANDS = {
     MERGE_STATE: 'SYS_CHEAT_MERGE_STATE',
     /** 删除手牌（按 uid 从手牌移入弃牌堆） */
     REMOVE_HAND_CARD: 'SYS_CHEAT_REMOVE_HAND_CARD',
+    /** 强制有随从的基地立即结算（SmashUp 专用） */
+    FORCE_SCORE_BASES_WITH_MINIONS: 'SYS_CHEAT_FORCE_SCORE_BASES_WITH_MINIONS',
 } as const;
 
 // ============================================================================
@@ -149,6 +151,8 @@ export interface CheatResourceModifier<TCore> {
     refreshAllBases?: (core: TCore) => { core: TCore; events: Array<{ type: string; payload: unknown; timestamp: number }> };
     /** 删除手牌（按 uid 从手牌移入弃牌堆，可选） */
     removeHandCard?: (core: TCore, playerId: PlayerId, cardUid: string) => TCore;
+    /** 强制有随从的基地立即结算（可选，SmashUp 专用） */
+    forceScoreBasesWithMinions?: (core: TCore) => TCore;
 }
 
 // ============================================================================
@@ -353,6 +357,15 @@ export function createCheatSystem<TCore>(
                     payload.playerId,
                     payload.cardUid
                 );
+                return {
+                    halt: true,
+                    state: { ...state, core: newCore },
+                };
+            }
+
+            // 处理强制有随从的基地立即结算命令（SmashUp 专用）
+            if (command.type === CHEAT_COMMANDS.FORCE_SCORE_BASES_WITH_MINIONS && modifier.forceScoreBasesWithMinions) {
+                const newCore = modifier.forceScoreBasesWithMinions(state.core);
                 return {
                     halt: true,
                     state: { ...state, core: newCore },

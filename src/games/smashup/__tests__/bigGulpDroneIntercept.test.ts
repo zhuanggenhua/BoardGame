@@ -128,7 +128,7 @@ describe('一大口 + 雄蜂防止消灭', () => {
     });
 
     /**
-     * 场景：一大口只有一个候选（自动解决），消灭科学小怪
+     * 场景：一大口只有一个候选（但有跳过选项，所以会创建交互），消灭科学小怪
      * 雄蜂防止消灭交互应正确创建
      */
     it('一大口自动解决消灭科学小怪时，雄蜂防止消灭交互正确创建', () => {
@@ -146,7 +146,7 @@ describe('一大口 + 雄蜂防止消灭', () => {
             bases: [{
                 defId: 'test_base',
                 minions: [
-                    // 只有科学小怪力量≤4（唯一候选，自动解决）
+                    // 只有科学小怪力量≤4（唯一候选，但有跳过选项）
                     makeMinion('igor1', 'frankenstein_igor', '0', 2),
                     // 雄蜂力量5（basePower=2 + powerModifier=3），不是一大口候选
                     makeMinion('drone1', 'giant_ant_drone', '0', 2, { powerCounters: 3 }),
@@ -160,25 +160,48 @@ describe('一大口 + 雄蜂防止消灭', () => {
         const ms = makeMatchState(core);
         ms.sys.phase = 'playCards';
 
-        // 打出一大口（只有一个候选，自动解决）
-        const result = runCommand(ms, {
+        // 步骤1：打出一大口（创建选择交互：Igor 或跳过）
+        const result1 = runCommand(ms, {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: '1',
             payload: { cardUid: 'bg1' },
             timestamp: 100,
         });
 
-        expect(result.success).toBe(true);
+        expect(result1.success).toBe(true);
+
+        // 应创建一大口的选择交互（Igor 或跳过）
+        const interaction1 = result1.finalState.sys.interaction?.current;
+        expect(interaction1).toBeDefined();
+        expect(interaction1!.playerId).toBe('1'); // 一大口交互属于玩家1
+        expect((interaction1!.data as any).sourceId).toBe('vampire_big_gulp');
+
+        // 步骤2：选择消灭 Igor
+        const options = (interaction1!.data as any).options;
+        const igorOption = options.find((o: any) => {
+            const val = o.value;
+            return val?.minionUid === 'igor1' || val?.defId === 'frankenstein_igor';
+        });
+        expect(igorOption).toBeDefined();
+
+        const result2 = runCommand(result1.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '1',
+            payload: { optionId: igorOption.id },
+            timestamp: 200,
+        } as any);
+
+        expect(result2.success).toBe(true);
 
         // 关键验证：雄蜂防止消灭交互应被创建
-        const interaction = result.finalState.sys.interaction?.current;
+        const interaction2 = result2.finalState.sys.interaction?.current;
+
+        expect(interaction2).toBeDefined();
+        expect(interaction2!.playerId).toBe('0'); // 雄蜂交互属于玩家0（随从拥有者）
+        expect((interaction2!.data as any).sourceId).toBe('giant_ant_drone_prevent_destroy');
 
         // 科学小怪应还在基地上（等待雄蜂决定）
-        const igorOnBase = result.finalState.core.bases[0].minions.some(m => m.uid === 'igor1');
-
-        expect(interaction).toBeDefined();
-        expect(interaction!.playerId).toBe('0');
-        expect((interaction!.data as any).sourceId).toBe('giant_ant_drone_prevent_destroy');
+        const igorOnBase = result2.finalState.core.bases[0].minions.some(m => m.uid === 'igor1');
         expect(igorOnBase).toBe(true);
     });
 });

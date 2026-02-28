@@ -1047,7 +1047,7 @@ export const MatchRoom = () => {
         );
     }
     return (
-        <div className="relative w-full h-screen bg-black overflow-hidden font-sans">
+        <div className="relative w-full h-screen bg-black overflow-hidden font-sans" data-game-page>
             <SEO
                 title={isTutorialRoute
                     ? t('matchRoom.tutorialTitle', { game: gameId ? t(`common:game_names.${gameId}`, { ns: 'common' }) : '' })

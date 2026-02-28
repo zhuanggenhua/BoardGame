@@ -12,6 +12,8 @@ import { getTotalEffectivePowerOnBase, getEffectivePower, getEffectivePowerBreak
 import { getBaseDef, getMinionDef, getCardDef, resolveCardName, resolveCardText } from '../data/cards';
 import { isSpecialLimitBlocked } from '../domain/abilityHelpers';
 import { getScoringEligibleBaseIndices } from '../domain/ongoingModifiers';
+import { getBaseRestrictions } from '../domain/ongoingEffects';
+import { getFactionMeta } from './factionMeta';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PLAYER_CONFIG } from './playerConfig';
 import { UI_Z_INDEX } from '../../../core';
@@ -61,6 +63,9 @@ export const BaseZone: React.FC<{
     const ratio = totalPower / breakpoint;
     const isNearBreak = ratio >= 0.8 && ratio < 1;
     const isAtBreak = ratio >= 1;
+
+    // 获取基地限制信息
+    const restrictions = getBaseRestrictions(core, baseIndex);
 
     // 分组
     const minionsByController: Record<string, MinionOnBase[]> = {};
@@ -275,6 +280,37 @@ export const BaseZone: React.FC<{
                         </div>
                     </motion.div>
                 </div>
+
+                {/* 基地限制标识（右侧，从下往上排列） */}
+                {restrictions.length > 0 && (
+                    <div className="absolute bottom-[0.5vw] -right-[3vw] flex flex-col-reverse gap-[0.4vw] z-30">
+                        {restrictions.map((restriction, idx) => {
+                            if (restriction.type === 'blocked_faction') {
+                                const factionMeta = getFactionMeta(restriction.displayText);
+                                if (!factionMeta) return null;
+                                const FactionIcon = factionMeta.icon;
+                                return (
+                                    <motion.div
+                                        key={`${restriction.sourceDefId}-${idx}`}
+                                        className="relative w-[2.8vw] h-[2.8vw] rounded-full bg-red-600/95 backdrop-blur-sm flex items-center justify-center shadow-lg border-[0.2vw] border-red-400"
+                                        initial={{ scale: 0, rotate: -180, x: 20 }}
+                                        animate={{ scale: 1, rotate: 0, x: 0 }}
+                                        transition={{ type: 'spring', stiffness: 300, damping: 15, delay: idx * 0.1 }}
+                                        title={`${factionMeta.nameKey} 派系随从不能打出到此基地`}
+                                    >
+                                        {/* 派系图标 */}
+                                        <FactionIcon className="w-[1.5vw] h-[1.5vw] text-white" strokeWidth={2.5} />
+                                        {/* 斜杠 */}
+                                        <svg className="absolute inset-0 w-full h-full text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                    </motion.div>
+                                );
+                            }
+                            return null;
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* --- PLAYER COLUMNS CONTAINER --- */}

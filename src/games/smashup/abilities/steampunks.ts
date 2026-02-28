@@ -293,7 +293,7 @@ function steampunkCaptainAhab(ctx: AbilityContext): AbilityResult {
 
     // 单候选自动执行，多候选让玩家选择
     return resolveOrPrompt<{ baseIndex: number }>(ctx,
-        candidates.map(c => ({ id: `base-${c.baseIndex}`, label: c.label, value: { baseIndex: c.baseIndex } })),
+        candidates.map(c => ({ id: `base-${c.baseIndex}`, label: c.label, value: { baseIndex: c.baseIndex }, _source: 'base' as const })),
         { id: 'steampunk_captain_ahab', title: '选择要移动到的基地', sourceId: 'steampunk_captain_ahab', targetType: 'base' },
         (value) => ({
             events: [moveMinion(ctx.cardUid, ctx.defId, currentBaseIndex, value.baseIndex, 'steampunk_captain_ahab', ctx.now)],
@@ -401,7 +401,7 @@ export function registerSteampunkInteractionHandlers(): void {
             const baseOptions = state.core.bases.map((base, i) => {
                 const baseDef = getBaseDef(base.defId);
                 const name = baseDef?.name ?? base.defId;
-                return { id: `base-${i}`, label: name, value: { baseIndex: i } };
+                return { id: `base-${i}`, label: name, value: { baseIndex: i }, _source: 'base' as const };
             });
             const interaction = createSimpleChoice(
                 `steampunk_mechanic_target_${timestamp}`, playerId,
@@ -476,7 +476,7 @@ export function registerSteampunkInteractionHandlers(): void {
             // 附着到基地的 ongoing 卡
             const baseOptions = state.core.bases.map((base, i) => {
                 const baseDef = getBaseDef(base.defId);
-                return { id: `base-${i}`, label: baseDef?.name ?? base.defId, value: { baseIndex: i } };
+                return { id: `base-${i}`, label: baseDef?.name ?? base.defId, value: { baseIndex: i }, _source: 'base' as const };
             });
             const interaction = createSimpleChoice(
                 `steampunk_cov_target_${timestamp}`, playerId,
