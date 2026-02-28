@@ -6,8 +6,7 @@
     "invalid_character": "无效的角色",
     "character_not_selected": "尚未选择角色",
     "character_selection_not_initialized": "角色选择未初始化",
-    "command_failed": "命令执行失败",
-    "internal_error": "服务器内部错误，操作已自动恢复"
+    "command_failed": "命令执行失败"
   },
   "controls": {
     "undo": {
@@ -44,18 +43,11 @@
       "playerUnknown": "玩家",
       "opponent": "对手",
       "offline": "离线",
-      "empty": "空位",
       "searching": "搜索中",
       "localTitle": "同屏对战",
       "localDescription": "在本机轮流操作或同屏竞技。",
       "tutorialTitle": "学习模式",
       "tutorialDescription": "按照指示学习游戏规则。"
-    },
-    "offlineBanner": {
-      "message": "{{name}} 已离线 {{time}}",
-      "waitingOpponent": "等待对手加入...",
-      "seconds": "{{count}}秒",
-      "minutes": "{{count}}分钟"
     },
     "labels": {
       "turn": "回合：",
@@ -94,8 +86,8 @@
       "githubSubtitle": "查看源码并参与贡献",
       "qqTitle": "QQ群",
       "qqSubtitle": "加入社区：",
-      "supportTitle": "如果喜欢这个项目，可以请作者喝杯咖啡。",
-      "supportSubtitle": "如需要，可以备注加入到赞助列表。",
+      "supportTitle": "如果喜欢这个项目，可以支持一点维护服务器的钱。",
+      "supportSubtitle": "我会在下面展示您的昵称信息（不需要也可以备注）",
       "qrPlaceholder": "二维码",
       "wechatLabel": "微信",
       "alipayLabel": "支付宝",
@@ -121,11 +113,10 @@
       "imageAdded": "已添加截图",
       "contactLabel": "联系方式（可选）",
       "contactPlaceholder": "邮箱或 QQ（便于跟进）",
-      "attachLog": "附带操作日志",
       "submit": "提交反馈",
       "success": "反馈已提交，感谢支持！",
       "errors": {
-        "loginRequired": "登录后可获得更好的反馈跟进体验",
+        "loginRequired": "请先登录再提交反馈",
         "submitFailed": "提交失败，请稍后再试"
       },
       "type": {

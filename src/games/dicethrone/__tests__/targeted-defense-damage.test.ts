@@ -9,17 +9,17 @@ import { testSystems, createQueuedRandom, cmd, assertState, createHeroMatchup } 
 import { STATUS_IDS } from '../domain/ids';
 import { INITIAL_HEALTH } from '../domain/types';
 
-describe('锁定 buff 在防御投掷造成伤害时不生效', () => {
-  it('迷影步造成的伤害不应被锁定 buff 加成（锁定只在攻击掷骰阶段生效）', () => {
+describe('锁定 buff 在防御投掷造成伤害时生效', () => {
+  it('迷影步造成的伤害应该被锁定 buff 加成 +2', () => {
     // 测试场景：
     // 1. 玩家0有锁定 buff
     // 2. 玩家1使用防御技能（迷影步）造成伤害给玩家0
-    // 3. 验证玩家0受到的伤害不被锁定 buff 加成（防御伤害不是攻击掷骰阶段伤害）
+    // 3. 验证玩家0受到的伤害是否被锁定 buff 加成了 +2
 
     // 骰子值序列：
     // [1,1,1,1,1] 玩家0攻击骰（5弓）→ 触发 longbow-5-1 (7伤害)
-    // [1,1,4,4,4] 玩家1防御骰（2弓3足）→ 迷影步造成1点伤害（2弓÷2=1）
-    const random = createQueuedRandom([1, 1, 1, 1, 1, 1, 1, 4, 4, 4]);
+    // [4,4,4,4,4] 玩家1防御骰（5足）→ 迷影步造成5点伤害
+    const random = createQueuedRandom([1, 1, 1, 1, 1, 4, 4, 4, 4, 4]);
 
     const runner = new GameTestRunner({
       domain: DiceThroneDomain,
@@ -35,7 +35,7 @@ describe('锁定 buff 在防御投掷造成伤害时不生效', () => {
     });
 
     const result = runner.run({
-      name: '锁定buff在防御投掷造成伤害时不生效',
+      name: '锁定buff在防御投掷造成伤害时生效',
       commands: [
         cmd('ADVANCE_PHASE', '0'), // main1 → offensiveRoll
         cmd('ROLL_DICE', '0'),
@@ -50,17 +50,15 @@ describe('锁定 buff 在防御投掷造成伤害时不生效', () => {
         turnPhase: 'main2',
         players: {
           '0': {
-            // 迷影步：2弓÷2 = 1点伤害
-            // 锁定 buff 不生效（防御伤害不是攻击掷骰阶段伤害）
-            // 期望：50 - 1 = 49
-            hp: INITIAL_HEALTH - 1,
+            // 迷影步：5个足面 = 5点伤害
+            // 锁定 buff：+2 伤害
+            // 期望：50 - (5 + 2) = 43
+            hp: INITIAL_HEALTH - 7,
             statusEffects: { [STATUS_IDS.TARGETED]: 1 }, // 锁定是持续效果，不会自动移除
           },
           '1': {
             // 玩家1受到 longbow-5-1 的7点伤害
-            // 迷影步3足≥2触发50%百分比护盾：减免 = ceil(7 * 50/100) = 4
-            // 实际伤害 = 7 - 4 = 3
-            hp: INITIAL_HEALTH - 3,
+            hp: INITIAL_HEALTH - 7,
           },
         },
       },

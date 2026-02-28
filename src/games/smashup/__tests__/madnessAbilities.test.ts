@@ -40,7 +40,7 @@ beforeAll(() => {
 function makeMinion(uid: string, defId: string, controller: string, power: number, owner?: string): MinionOnBase {
     return {
         uid, defId, controller, owner: owner ?? controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
     };
 }
 
@@ -516,8 +516,8 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             const madnessEvents = result.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
             expect((madnessEvents[0] as any).payload.count).toBe(2);
-            // 随从获得+4永久力量（2张×2力量）
-            const powerEvents = result.events.filter(e => e.type === SU_EVENTS.PERMANENT_POWER_ADDED);
+            // 随从获得+4力量（2张×2力量）
+            const powerEvents = result.events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
             expect(powerEvents.length).toBe(1);
             expect((powerEvents[0] as any).payload.minionUid).toBe('m1');
             expect((powerEvents[0] as any).payload.amount).toBe(4);

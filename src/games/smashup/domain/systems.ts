@@ -3,20 +3,13 @@
  * 
  * 处理领域事件到系统状态的映射：
  * - 监听 SYS_INTERACTION_RESOLVED 事件 → 从 sourceId 查找处理函数 → 生成后续领域事件
- * - 对交互解决产生的事件应用保护过滤和触发链（与 execute() 后处理对齐）
  */
 
-import type { GameEvent, RandomFn } from '../../../engine/types';
+import type { GameEvent } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import { INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
-import type { SmashUpCore, SmashUpEvent } from './types';
+import type { SmashUpCore } from './types';
 import { getInteractionHandler } from './abilityInteractionHandlers';
-import {
-    processDestroyMoveCycle,
-    processAffectTriggers,
-    filterProtectedReturnEvents,
-    filterProtectedDeckBottomEvents,
-} from './reducer';
 
 // ============================================================================
 // SmashUp 事件处理系统
@@ -65,40 +58,7 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                             
                             if (result) {
                                 newState = result.state;
-                                // 对交互解决产生的事件应用保护过滤和触发链
-                                // 与 execute() 后处理对齐：destroy ↔ move 循环 → return → deckBottom → affect
-                                const rawEvents = result.events as SmashUpEvent[];
-                                const sourcePlayerId = payload.playerId;
-                                const afterDestroyMove = processDestroyMoveCycle(rawEvents, newState, sourcePlayerId, random as RandomFn, eventTimestamp);
-                                if (afterDestroyMove.matchState) newState = afterDestroyMove.matchState;
-                                const afterReturn = filterProtectedReturnEvents(afterDestroyMove.events, newState.core, sourcePlayerId);
-                                const afterDeckBottom = filterProtectedDeckBottomEvents(afterReturn, newState.core, sourcePlayerId);
-                                const afterAffect = processAffectTriggers(afterDeckBottom, newState, sourcePlayerId, random as RandomFn, eventTimestamp);
-                                if (afterAffect.matchState) newState = afterAffect.matchState;
-                                nextEvents.push(...afterAffect.events);
-
-                                // 补发延迟的 BASE_CLEARED/BASE_REPLACED 事件
-                                // afterScoring 基地能力创建交互时，清除事件被延迟到交互解决后发出，
-                                // 确保 targetType: 'minion' 的场上点选交互能看到随从
-                                const ctx = payload.interactionData?.continuationContext as Record<string, unknown> | undefined;
-                                const deferred = ctx?._deferredPostScoringEvents as { type: string; payload: unknown; timestamp: number }[] | undefined;
-                                if (deferred && deferred.length > 0) {
-                                    // 仅在没有后续交互时补发（链式交互需要等最后一个解决后再清除）
-                                    if (!newState.sys.interaction?.current && (!newState.sys.interaction?.queue || newState.sys.interaction.queue.length === 0)) {
-                                        for (const d of deferred) {
-                                            nextEvents.push({ type: d.type, payload: d.payload, timestamp: d.timestamp } as GameEvent);
-                                        }
-                                    } else {
-                                        // 还有后续交互：把 deferred events 传递到下一个交互的 continuationContext
-                                        const nextInteraction = newState.sys.interaction.current ?? newState.sys.interaction.queue?.[0];
-                                        if (nextInteraction?.data) {
-                                            const nextData = nextInteraction.data as Record<string, unknown>;
-                                            const nextCtx = (nextData.continuationContext ?? {}) as Record<string, unknown>;
-                                            nextCtx._deferredPostScoringEvents = deferred;
-                                            nextData.continuationContext = nextCtx;
-                                        }
-                                    }
-                                }
+                                nextEvents.push(...result.events);
                             }
                         }
                     }

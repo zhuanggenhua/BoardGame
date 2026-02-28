@@ -50,8 +50,7 @@
     "notification": {
         "title": "System Notifications",
         "subtitle": "Announcements from admin",
-        "empty": "No notifications",
-        "pinned": "Pinned"
+        "empty": "No notifications"
     },
     "matchHistory": {
         "title": "Match History",

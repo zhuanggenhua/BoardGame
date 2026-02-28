@@ -209,37 +209,3 @@
     0%, 100% { transform: translateY(0); }
     50%       { transform: translateY(-3px); }
 }
-
-/* 移动端响应式缩放 */
-@media (max-width: 1023px) and (orientation: landscape) {
-    /* 移动设备横屏时，基于设计宽度 1280px 进行缩放 */
-    #root {
-        transform-origin: top left;
-        transform: scale(calc(100vw / 1280));
-        width: 1280px;
-        height: calc(100vh / (100vw / 1280));
-        overflow: hidden;
-    }
-}
-
-/* 移动端触摸优化 */
-@media (max-width: 1023px) {
-    /* 禁用长按选择文本 */
-    body {
-        -webkit-user-select: none;
-        user-select: none;
-        -webkit-touch-callout: none;
-    }
-    
-    /* 允许输入框选择文本 */
-    input, textarea {
-        -webkit-user-select: text;
-        user-select: text;
-    }
-    
-    /* 增大按钮点击区域 */
-    button {
-        min-height: 44px;
-        min-width: 44px;
-    }
-}

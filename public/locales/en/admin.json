@@ -39,7 +39,6 @@
       "selectItem": "Select feedback {{id}}",
       "id": "ID: {{id}}"
     },
-    "anonymous": "Anonymous",
     "messages": {
       "fetchFailed": "Failed to fetch feedback",
       "updateSuccess": "Status updated",
@@ -56,17 +55,12 @@
     "actions": {
       "reopen": "Reopen",
       "resolve": "Mark resolved",
-      "delete": "Delete",
-      "copyAll": "Copy all",
-      "copied": "Copied"
+      "delete": "Delete"
     },
     "content": {
       "onlyImage": "(Image only)",
       "empty": "(No content)",
       "screenshotAlt": "Screenshot"
-    },
-    "actionLog": {
-      "title": "📋 Action Log"
     },
     "time": {
       "justNow": "Just now",

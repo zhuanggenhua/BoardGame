@@ -6,7 +6,6 @@
 import type { DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
-import { TOKEN_IDS } from './ids';
 import { getFaceCounts, getActiveDice } from './rules';
 
 type EventHandler<E extends DiceThroneEvent> = (
@@ -87,103 +86,27 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     state,
     event
 ) => {
-    const { targetId, amount, actualDamage, sourceAbilityId, bypassShields } = event.payload;
+    const { targetId, actualDamage, sourceAbilityId, bypassShields } = event.payload;
     const target = state.players[targetId];
 
     if (!target) {
         return state;
     }
 
-    // 伤害结算必须先用护盾前伤害（amount）做减免，再按 HP 下限钳制。
-    // 否则在「高伤害 + 低血量 + 固定值护盾」场景会先被 HP 截断，导致护盾把本应结算的溢出伤害吞掉。
-    // 兼容历史测试/事件：当 amount 缺失时回退到 actualDamage。
-    const incomingDamage = typeof amount === 'number' ? amount : (actualDamage ?? 0);
-    let remainingDamage = incomingDamage;
+    let remainingDamage = actualDamage;
     let newDamageShields = target.damageShields;
-    const shieldsConsumed: Array<{
-        sourceId?: string;
-        value?: number;
-        reductionPercent?: number;
-        absorbed: number;
-    }> = [];
-
-    // 终极技能（Ultimate）伤害不可被护盾抵消（规则 FAQ：Not This Time 不能防御 Ultimate）
-    const isUltimateDamage = state.pendingAttack?.isUltimate ?? false;
 
     // 消耗护盾抵消伤害（忽略 preventStatus 护盾）
     // bypassShields: HP 重置类效果（如神圣祝福）跳过护盾消耗
-    // isUltimateDamage: 终极技能伤害跳过护盾
-    if (!bypassShields && !isUltimateDamage && target.damageShields && target.damageShields.length > 0 && remainingDamage > 0) {
+    if (!bypassShields && target.damageShields && target.damageShields.length > 0 && remainingDamage > 0) {
         const statusShields = target.damageShields.filter(shield => shield.preventStatus);
         const damageShields = target.damageShields.filter(shield => !shield.preventStatus);
-        
-        // 分离百分比护盾和固定值护盾
-        const percentShields = damageShields.filter(shield => shield.reductionPercent != null);
-        const valueShields = damageShields.filter(shield => shield.reductionPercent == null);
-        
-        const newDamageShieldsArray: typeof damageShields = [];
-        let currentDamage = remainingDamage;
-        
-        /**
-         * 护盾处理顺序设计（百分比护盾 → 固定值护盾）
-         * 
-         * 原因：
-         * 1. 百分比护盾基于当前伤害计算（如 50% 减伤），应该先处理以确定剩余伤害
-         * 2. 固定值护盾处理剩余伤害，逻辑更清晰
-         * 
-         * 示例：10 点伤害 vs [50% 护盾, 6 点护盾]
-         * - 百分比护盾先处理：10 * 50% = 5，剩余 5
-         * - 固定值护盾后处理：5 - 5 = 0，消耗 5 点（剩余 1 点护盾）
-         * - 最终伤害：0
-         * 
-         * 注意：同类型护盾之间按添加顺序（FIFO）处理
-         */
-        
-        // 先处理百分比护盾（按顺序）
-        for (const shield of percentShields) {
-            if (currentDamage <= 0) break;
-            
-            const preventedAmount = Math.ceil(currentDamage * shield.reductionPercent! / 100);
-            currentDamage -= preventedAmount;
-            
-            if (preventedAmount > 0) {
-                shieldsConsumed.push({
-                    sourceId: shield.sourceId,
-                    reductionPercent: shield.reductionPercent,
-                    absorbed: preventedAmount,
-                });
-            }
-            // 百分比护盾每次都完全消耗（不保留）
+        if (damageShields.length > 0) {
+            const shield = damageShields[0];
+            const preventedAmount = Math.min(shield.value, remainingDamage);
+            remainingDamage -= preventedAmount;
+            newDamageShields = statusShields;
         }
-        
-        // 再处理固定值护盾（按顺序）
-        for (const shield of valueShields) {
-            if (currentDamage <= 0) {
-                // 伤害已完全抵消，保留剩余护盾
-                newDamageShieldsArray.push(shield);
-                continue;
-            }
-            
-            const preventedAmount = Math.min(shield.value, currentDamage);
-            currentDamage -= preventedAmount;
-            
-            if (preventedAmount > 0) {
-                shieldsConsumed.push({
-                    sourceId: shield.sourceId,
-                    value: shield.value,
-                    absorbed: preventedAmount,
-                });
-            }
-            
-            // 如果固定值护盾未完全消耗，保留剩余值
-            const remainingShieldValue = shield.value - preventedAmount;
-            if (remainingShieldValue > 0) {
-                newDamageShieldsArray.push({ ...shield, value: remainingShieldValue });
-            }
-        }
-        
-        remainingDamage = Math.max(0, currentDamage); // 防御性检查：确保不为负数
-        newDamageShields = [...statusShields, ...newDamageShieldsArray];
     }
 
     const hpBefore = target.resources[RESOURCE_IDS.HP] ?? 0;
@@ -193,25 +116,11 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         newResources = result.pool;
     }
 
-    let newTokens = target.tokens;
-    let hpAfter = newResources[RESOURCE_IDS.HP] ?? 0;
-
-    // 神圣祝福致死保护（reducer 层兜底）
-    // 规则：HP 降到 0 以下时，消耗 1 层神圣祝福，HP 设为 1
-    // 在 reducer 层统一处理，确保所有伤害路径（直接攻击、Token 响应窗口结算、弹反等）都能触发
-    const blessingCount = target.tokens?.[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0;
-    if (hpAfter <= 0 && blessingCount > 0) {
-        newTokens = { ...target.tokens, [TOKEN_IDS.BLESSING_OF_DIVINITY]: blessingCount - 1 };
-        // HP 从当前值（<=0）回到 1
-        const hpResetResult = resourceSystem.modify(newResources, RESOURCE_IDS.HP, 1 - hpAfter);
-        newResources = hpResetResult.pool;
-        hpAfter = 1;
-    }
-
+    const hpAfter = newResources[RESOURCE_IDS.HP] ?? 0;
     const netHpLoss = Math.max(0, hpBefore - hpAfter);
 
     let pendingAttack = state.pendingAttack;
-    // 统一累计"本次攻击对防御方造成的净掉血"，作为 lastResolvedAttackDamage 的单一来源。
+    // 统一累计“本次攻击对防御方造成的净掉血”，作为 lastResolvedAttackDamage 的单一来源。
     if (pendingAttack && targetId === pendingAttack.defenderId) {
         pendingAttack = {
             ...pendingAttack,
@@ -219,17 +128,11 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         };
     }
 
-    // 将护盾消耗信息回填到事件中（用于 ActionLog 展示）
-    // 注意：这里修改的是事件的 payload，不会影响事件的类型和时间戳
-    if (shieldsConsumed.length > 0) {
-        event.payload.shieldsConsumed = shieldsConsumed;
-    }
-
     return {
         ...state,
         players: {
             ...state.players,
-            [targetId]: { ...target, damageShields: newDamageShields, resources: newResources, tokens: newTokens },
+            [targetId]: { ...target, damageShields: newDamageShields, resources: newResources },
         },
         pendingAttack,
         lastEffectSourceByPlayerId: sourceAbilityId
@@ -386,11 +289,9 @@ export const handleDamageShieldGranted: EventHandler<Extract<DiceThroneEvent, { 
     state,
     event
 ) => {
-    const { targetId, value, sourceId, preventStatus, reductionPercent } = event.payload;
+    const { targetId, value, sourceId, preventStatus } = event.payload;
     const target = state.players[targetId];
     if (!target) return state;
-
-
 
     return {
         ...state,
@@ -398,7 +299,7 @@ export const handleDamageShieldGranted: EventHandler<Extract<DiceThroneEvent, { 
             ...state.players,
             [targetId]: {
                 ...target,
-                damageShields: [...(target.damageShields || []), { value, sourceId, preventStatus, reductionPercent }],
+                damageShields: [...(target.damageShields || []), { value, sourceId, preventStatus }],
             },
         },
     };

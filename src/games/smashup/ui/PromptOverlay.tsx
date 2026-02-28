@@ -70,7 +70,7 @@ function extractContextPreview(prompt: any): CardPreviewRef | undefined {
 }
 
 /** 解析文本中嵌入的 i18n key（如 cards.xxx.name / cards.xxx.abilityText） */
-export function resolveI18nKeys(text: string, t: (key: string, opts?: any) => string): string {
+function resolveI18nKeys(text: string, t: (key: string, opts?: any) => string): string {
     return text.replace(/cards\.[\w-]+\.\w+/gi, key => {
         const resolved = t(key.toLowerCase(), { defaultValue: '' });
         return resolved || key;
@@ -240,7 +240,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                     className="fixed bottom-0 inset-x-0"
                     style={{ zIndex: UI_Z_INDEX.overlay }}
                 >
-                    <div 
+                    <div
                         data-discard-view-panel
                         className="bg-gradient-to-t from-black/90 via-black/75 to-transparent pt-8 pb-4 px-4"
                         onClick={(e) => e.stopPropagation()}
@@ -250,20 +250,19 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             {displayCards.title}
                         </h2>
                         {/* py-3 给 ring 描边留出空间，避免被 overflow-x-auto 裁切 */}
-                        {/* 注意：不能用 justify-center，flex + justify-center + overflow 会导致左侧内容不可达 */}
-                        <div ref={revealScrollRef} className="flex gap-3 overflow-x-auto max-w-[90vw] mx-auto px-4 py-3 smashup-h-scrollbar [&>*:first-child]:ml-auto [&>*:last-child]:mr-auto">
+                        <div ref={revealScrollRef} className="flex gap-3 overflow-x-auto max-w-[90vw] mx-auto px-4 py-3 smashup-h-scrollbar justify-center">
                             {displayCards.cards.map((card, idx) => {
                                 const def = getCardDef(card.defId);
                                 const name = def ? resolveCardName(def, t) : card.defId;
                                 const isSel = card.uid === selUid;
                                 const isPlayable = playableDefIds?.has(card.defId) ?? false;
-                                
+
                                 const handleCardClick = () => {
                                     if (isPlayable && onSel) {
                                         onSel(isSel ? null : card.uid);
                                     }
                                 };
-                                
+
                                 return (
                                     <motion.div
                                         key={card.uid}
@@ -275,17 +274,16 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         onClick={isPlayable ? handleCardClick : undefined}
                                     >
                                         {/* ring 描边放在外层，避免被内层 overflow-hidden 裁切 */}
-                                        <div className={`rounded ${
-                                            isSel 
-                                                ? 'ring-3 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]' 
-                                                : isPlayable 
-                                                    ? 'ring-2 ring-amber-300/80 group-hover:ring-amber-300 group-hover:shadow-2xl' 
+                                        <div className={`rounded ${isSel
+                                                ? 'ring-3 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]'
+                                                : isPlayable
+                                                    ? 'ring-2 ring-amber-300/80 group-hover:ring-amber-300 group-hover:shadow-2xl'
                                                     : 'ring-1 ring-white/20 group-hover:ring-white/50 group-hover:shadow-2xl'
-                                        }`}>
+                                            }`}>
                                             <div className="rounded shadow-xl overflow-hidden">
                                                 {def?.previewRef ? (
                                                     <CardPreview
-                                                        previewRef={def.previewRef}
+                                                        previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId } }}
                                                         className="w-[8.5vw] aspect-[0.714] bg-slate-900 rounded"
                                                         alt={name}
                                                     />
@@ -300,7 +298,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-1 rounded-full border border-white shadow-md hover:bg-blue-600 hover:scale-110 cursor-zoom-in z-10"
                                             onClick={(e) => { e.stopPropagation(); setMagnifyTarget({ defId: card.defId, type: def?.type ?? 'action' }); }}
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                                         </button>
                                         <span className={`text-[10px] font-bold max-w-[8.5vw] truncate text-center ${isSel ? 'text-amber-300' : 'text-white/70'}`}>
                                             {name}
@@ -596,7 +594,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         `}>
                                             {previewRef ? (
                                                 <CardPreview
-                                                    previewRef={previewRef}
+                                                    previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: defId! } }}
                                                     className={`${cardWidth} ${cardAspect} bg-slate-900 rounded`}
                                                 />
                                             ) : (
@@ -623,7 +621,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                     setMagnifyTarget({ defId, type: cardType });
                                                 }}
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                                             </button>
                                         )}
                                     </motion.div>

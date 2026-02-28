@@ -50,7 +50,6 @@ function setupWithBreakpoint(ids: PlayerId[], random: RandomFn): MatchState<Smas
             owner: '0',
             controller: '0',
             basePower: 5,
-            powerCounters: 0,
             powerModifier: 0,
             tempPowerModifier: 0,
             attachedActions: [],
@@ -422,7 +421,7 @@ describe('Me First! 响应窗口', () => {
                     ...state.core.bases[0].minions,
                     {
                         uid: 'target-minion', defId: 'test_minion', owner: '0', controller: '0',
-                        basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, attachedActions: [], talentUsed: false,
+                        basePower: 3, powerModifier: 0, tempPowerModifier: 0, attachedActions: [], talentUsed: false,
                     },
                 ],
             };
@@ -517,7 +516,7 @@ describe('Me First! 响应窗口', () => {
                 ...state.core.bases[0],
                 minions: [...state.core.bases[0].minions, {
                     uid: 'skip-minion', defId: 'test_minion', owner: '0', controller: '0',
-                    basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, attachedActions: [], talentUsed: false,
+                    basePower: 3, powerModifier: 0, tempPowerModifier: 0, attachedActions: [], talentUsed: false,
                 }],
             };
             (state.core as any).madnessDeck = MADNESS_DECK_SKIP;

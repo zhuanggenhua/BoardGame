@@ -402,21 +402,21 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
-    // burn-down-2-resolve: 获得1FM，消耗至多4个FM，每个造成4点伤害
+    // burn-down-2-resolve: 获得1FM，消耗全部FM，每个造成4点伤害
     // ========================================================================
     describe('burn-down-2-resolve (焚尽 II)', () => {
-        it('获得1FM后消耗至多4个，每个4点伤害', () => {
+        it('获得1FM后消耗全部，每个4点伤害', () => {
             const state = createState({ attackerFM: 5, fmLimit: 5 });
             const handler = getCustomActionHandler('burn-down-2-resolve')!;
             const events = handler(buildCtx(state, 'burn-down-2-resolve'));
 
-            // FM: min(5+1, 5)=5, 消耗至多4个（limit=4）
+            // FM: min(5+1, 5)=5, 消耗全部5个（limit=99）
             const consumeEvents = eventsOfType(events, 'TOKEN_CONSUMED');
-            expect((consumeEvents[0] as any).payload.amount).toBe(4);
+            expect((consumeEvents[0] as any).payload.amount).toBe(5);
 
-            // 伤害: 4 × 4 = 16
+            // 伤害: 5 × 4 = 20
             const dmgEvents = eventsOfType(events, 'DAMAGE_DEALT');
-            expect((dmgEvents[0] as any).payload.amount).toBe(16);
+            expect((dmgEvents[0] as any).payload.amount).toBe(20);
         });
 
         it('FM=0时获得1FM后消耗1个，造成4点伤害', () => {
@@ -533,75 +533,6 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
             const events = handler(buildDefenseCtx(state, 'magma-armor-resolve'));
 
             expect(events).toHaveLength(0);
-        });
-    });
-
-    // ========================================================================
-    // magma-armor-2-resolve: 熔火铠甲 II
-    // 与 I 级相同的 fire→伤害、fiery_soul→FM
-    // 额外：同时有 fire + magma 时施加灼烧
-    // ========================================================================
-    describe('magma-armor-2-resolve (熔火铠甲 II)', () => {
-        function buildDefenseCtx(state: DiceThroneCore, actionId: string): CustomActionContext {
-            const effectCtx = {
-                attackerId: '0' as any,
-                defenderId: '1' as any,
-                sourceAbilityId: actionId,
-                state,
-                damageDealt: 0,
-                timestamp: 1000,
-            };
-            return {
-                ctx: effectCtx,
-                targetId: '0' as any,
-                attackerId: '0' as any,
-                sourceAbilityId: actionId,
-                state,
-                timestamp: 1000,
-                action: { type: 'custom', customActionId: actionId },
-            };
-        }
-
-        it('同时有fire和magma面时施加灼烧', () => {
-            // 骰子: [magma, fire, fire, magma, fiery_soul] — 复现 bug 报告的骰子
-            const dice = [4, 1, 1, 4, 5].map(v => createPyroDie(v));
-            const state = createState({ attackerFM: 0, dice });
-            const handler = getCustomActionHandler('magma-armor-2-resolve')!;
-            const events = handler(buildDefenseCtx(state, 'magma-armor-2-resolve'));
-
-            const burnEvents = eventsOfType(events, 'STATUS_APPLIED');
-            expect(burnEvents).toHaveLength(1);
-            expect((burnEvents[0] as any).payload.statusId).toBe('burn');
-            expect((burnEvents[0] as any).payload.targetId).toBe('1'); // 灼烧施加给原攻击者
-        });
-
-        it('只有fire没有magma时不施加灼烧', () => {
-            // 骰子: [fire, fire, fire, fiery_soul, fiery_soul]
-            const dice = [1, 2, 3, 5, 5].map(v => createPyroDie(v));
-            const state = createState({ attackerFM: 0, dice });
-            const handler = getCustomActionHandler('magma-armor-2-resolve')!;
-            const events = handler(buildDefenseCtx(state, 'magma-armor-2-resolve'));
-
-            const burnEvents = eventsOfType(events, 'STATUS_APPLIED');
-            expect(burnEvents).toHaveLength(0);
-            // 但仍有伤害和FM
-            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(1);
-            expect(eventsOfType(events, 'TOKEN_GRANTED')).toHaveLength(1);
-        });
-
-        it('只有magma没有fire时不施加灼烧也不造成伤害', () => {
-            // 骰子: [magma, magma, magma, fiery_soul, meteor]
-            const dice = [4, 4, 4, 5, 6].map(v => createPyroDie(v));
-            const state = createState({ attackerFM: 0, dice });
-            const handler = getCustomActionHandler('magma-armor-2-resolve')!;
-            const events = handler(buildDefenseCtx(state, 'magma-armor-2-resolve'));
-
-            const burnEvents = eventsOfType(events, 'STATUS_APPLIED');
-            expect(burnEvents).toHaveLength(0);
-            // 无fire面，无伤害
-            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
-            // 有fiery_soul面，有FM
-            expect(eventsOfType(events, 'TOKEN_GRANTED')).toHaveLength(1);
         });
     });
 

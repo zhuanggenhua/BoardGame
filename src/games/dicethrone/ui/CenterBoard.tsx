@@ -4,7 +4,6 @@ import { OptimizedImage } from '../../../components/common/media/OptimizedImage'
 import { UI_Z_INDEX } from '../../../core';
 import { AbilityOverlays } from './AbilityOverlays';
 import type { AbilityOverlaysHandle } from './AbilityOverlays';
-import type { AbilityDef } from '../domain/combat';
 import { ASSETS } from './assets';
 
 export interface CenterBoardProps {
@@ -28,8 +27,6 @@ export interface CenterBoardProps {
     abilityOverlaysRef?: React.Ref<AbilityOverlaysHandle>;
     /** 玩家的 token 状态（用于显示被动能力激活状态） */
     playerTokens?: Record<string, number>;
-    /** 当前视角玩家的技能列表，用于精确匹配变体 ID 到技能槽 */
-    playerAbilities?: AbilityDef[];
 }
 
 export const CenterBoard = ({
@@ -51,7 +48,6 @@ export const CenterBoard = ({
     onMagnifyImage,
     abilityOverlaysRef,
     playerTokens,
-    playerAbilities,
 }: CenterBoardProps) => {
     const { t } = useTranslation('game-dicethrone');
 
@@ -85,7 +81,6 @@ export const CenterBoard = ({
                         characterId={characterId}
                         locale={locale}
                         playerTokens={playerTokens}
-                        playerAbilities={playerAbilities}
                     />
                     <button
                         onClick={(e) => { e.stopPropagation(); onMagnifyImage(playerBoardPath); }}

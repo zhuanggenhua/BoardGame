@@ -72,9 +72,14 @@ export interface UndoState {
     };
     /**
      * 每个快照对应的随机数游标，与 snapshots 一一对应。
-     * 保留用于未来可能的随机序列调试/审计需求。
+     * 撤回恢复时用于重建随机序列，确保撤回后重新操作得到相同的随机结果。
      */
     snapshotCursors?: number[];
+    /**
+     * 撤回恢复后需要重置的随机数游标。
+     * 由 UndoSystem 在恢复快照时写入，服务端读取后重建 trackedRandom 并清除此字段。
+     */
+    restoredRandomCursor?: number;
 }
 
 /**
@@ -416,7 +421,7 @@ export interface DomainCore<
     gameId: string;
 
     /** 初始化游戏状态（仅返回 core，sys 由系统层 setup） */
-    setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): TState;
+    setup(playerIds: PlayerId[], random: RandomFn): TState;
 
     /** 验证命令合法性（允许读取 sys 状态，例如 sys.phase） */
     validate(state: MatchState<TState>, command: TCommand): ValidationResult;

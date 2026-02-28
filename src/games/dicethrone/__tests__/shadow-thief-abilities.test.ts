@@ -1025,7 +1025,7 @@ describe('暗影守护 II - 完整防御结算流程', () => {
 // ============================================================================
 
 describe('潜行 Token - 完整流程测试', () => {
-    it('防御方有潜行时：跳过防御掷骰、免除伤害、潜行不被消耗', () => {
+    it('防御方有潜行时：跳过防御掷骰、免除伤害、消耗潜行', () => {
         // 进攻掷骰 5 次 → 全 1（dagger）→ dagger-strike-5（8伤害）
         const queuedRandom = createQueuedRandom([1, 1, 1, 1, 1]);
 
@@ -1038,7 +1038,7 @@ describe('潜行 Token - 完整流程测试', () => {
                 mutate: (core) => {
                     // 给防御者（玩家1）1层潜行
                     core.players['1'].tokens[TOKEN_IDS.SNEAK] = 1;
-                    // 记录潜行获得回合（上一回合获得）
+                    // 记录潜行获得回合（上一回合获得，本回合可消耗）
                     core.sneakGainedTurn = { '1': 0 };
                 },
             }),
@@ -1047,7 +1047,7 @@ describe('潜行 Token - 完整流程测试', () => {
         });
 
         const result = runner.run({
-            name: '潜行免除伤害但不消耗',
+            name: '潜行免除伤害',
             commands: [
                 cmd('ADVANCE_PHASE', '0'), // main1 → offensiveRoll
                 cmd('ROLL_DICE', '0'),     // 5 × d(6) → [1,1,1,1,1] 全 dagger
@@ -1060,7 +1060,7 @@ describe('潜行 Token - 完整流程测试', () => {
                 players: {
                     '1': {
                         tokens: {
-                            [TOKEN_IDS.SNEAK]: 1, // 潜行不被消耗，保留到回合末自动弃除
+                            [TOKEN_IDS.SNEAK]: 0, // 潜行被消耗
                         },
                         resources: {
                             [RESOURCE_IDS.HP]: 50, // HP 不变（伤害被免除）

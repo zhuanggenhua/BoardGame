@@ -417,18 +417,13 @@ describe('集成: base_pirate_cove 海盗湾 (afterScoring)', () => {
 });
 
 describe('集成: base_tortuga 托尔图加 (afterScoring)', () => {
-    it('基地达标且亚军在其他基地有随从 → Interaction 亚军移动随从', () => {
-        // 托尔图加 breakpoint=21，亚军可移动其他基地上的随从到替换基地
+    it('基地达标且有亚军随从 → Interaction 亚军移动随从', () => {
+        // 托尔图加 breakpoint=21，亚军可移动随从到替换基地
         const core = makeState({
-            bases: [
-                makeBase('base_tortuga', [
-                    makeMinion('m1', 'test_minion', '0', 21),
-                    makeMinion('m2', 'test_minion', '1', 10),
-                ]),
-                makeBase('base_tar_pits', [
-                    makeMinion('m3', 'test_minion', '1', 3),
-                ]),
-            ],
+            bases: [makeBase('base_tortuga', [
+                makeMinion('m1', 'test_minion', '0', 21),
+                makeMinion('m2', 'test_minion', '1', 10),
+            ])],
             baseDeck: ['base_central_brain'],
             players: { '0': makePlayer('0'), '1': makePlayer('1') },
         });
@@ -490,85 +485,5 @@ describe('集成: base_inventors_salon 发明家沙龙 (afterScoring)', () => {
         const ms = makeScoreBasesMS(core);
         callOnPhaseExitScoreBases(ms);
         expect(hasInteraction(ms, 'base_inventors_salon')).toBe(true);
-    });
-});
-
-// ============================================================================
-// Bug 修复: 寺庙 afterScoring 与大副 afterScoring 时序冲突
-// 寺庙把 first_mate 放牌库底后，大副的 afterScoring 不应再触发移动交互
-// ============================================================================
-
-describe('集成: base_temple_of_goju + pirate_first_mate 时序', () => {
-    it('寺庙 afterScoring 把 first_mate 放牌库底后，大副不再触发移动交互', () => {
-        // 寺庙 breakpoint=18
-        // 玩家0：pirate_first_mate（力量2，唯一最强）→ 寺庙直接放牌库底
-        // 玩家1：test_minion（力量18，唯一最强）→ 寺庙直接放牌库底
-        // 修复前：寺庙 afterScoring 产生 CARD_TO_DECK_BOTTOM，但 ongoing afterScoring
-        //         仍看到 first_mate 在场上，创建了移动交互（冲突）
-        // 修复后：寺庙 afterScoring 事件 reduce 后，ongoing afterScoring 看到 first_mate
-        //         已不在场上，不再触发移动交互
-        const core = makeState({
-            bases: [
-                makeBase('base_temple_of_goju', [
-                    makeMinion('mate', 'pirate_first_mate', '0', 2),
-                    makeMinion('m2', 'test_minion', '1', 18),
-                ]),
-                makeBase('test_base_2'),
-            ],
-            baseDeck: ['base_central_brain'],
-            players: {
-                '0': makePlayer('0'),
-                '1': makePlayer('1'),
-            },
-        });
-        const ms = makeScoreBasesMS(core);
-        const { events } = callOnPhaseExitScoreBases(ms);
-
-        // 应有 BASE_SCORED 事件
-        expect(events.some(e => e.type === SU_EVENTS.BASE_SCORED)).toBe(true);
-
-        // 应有 CARD_TO_DECK_BOTTOM 事件（寺庙把 first_mate 放牌库底）
-        const deckBottomEvents = events.filter(e => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
-        const mateBottomEvt = deckBottomEvents.find(e => (e as any).payload.cardUid === 'mate');
-        expect(mateBottomEvt).toBeDefined();
-
-        // 关键断言：不应有 pirate_first_mate_choose_base 交互
-        // 因为寺庙已经把 first_mate 放牌库底了，大副不应再触发移动
-        expect(hasInteraction(ms, 'pirate_first_mate_choose_base')).toBe(false);
-
-        // 不应有 MINION_MOVED 事件（大副不应自动移动）
-        const moveEvents = events.filter(e =>
-            e.type === SU_EVENTS.MINION_MOVED &&
-            (e as any).payload.minionUid === 'mate'
-        );
-        expect(moveEvents.length).toBe(0);
-    });
-
-    it('寺庙上有多个 first_mate 且未被放牌库底的仍可触发移动', () => {
-        // 玩家0：两个 first_mate（力量2）+ 一个 test_minion（力量5，最强）
-        // 寺庙 afterScoring 把 test_minion 放牌库底（最强），first_mate 不受影响
-        // first_mate 的 afterScoring 仍应触发（因为它们还在场上）
-        const core = makeState({
-            bases: [
-                makeBase('base_temple_of_goju', [
-                    makeMinion('mate1', 'pirate_first_mate', '0', 2),
-                    makeMinion('mate2', 'pirate_first_mate', '0', 2),
-                    makeMinion('strong', 'test_minion', '0', 5),
-                    makeMinion('m-opp', 'test_minion', '1', 18),
-                ]),
-                makeBase('test_base_2'),
-            ],
-            baseDeck: ['base_central_brain'],
-            players: {
-                '0': makePlayer('0'),
-                '1': makePlayer('1'),
-            },
-        });
-        const ms = makeScoreBasesMS(core);
-        callOnPhaseExitScoreBases(ms);
-
-        // 寺庙把 strong（力量5，最强）放牌库底，first_mate 不受影响
-        // first_mate 的 afterScoring 应触发移动交互
-        expect(hasInteraction(ms, 'pirate_first_mate_choose_base')).toBe(true);
     });
 });

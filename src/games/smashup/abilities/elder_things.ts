@@ -64,10 +64,9 @@ export function registerElderThingAbilities(): void {
     registerTrigger('elder_thing_dunwich_horror', 'onTurnEnd', elderThingDunwichHorrorTrigger);
     // 力量的代价：基地计分前按对手疑狂卡数给己方随从力量
     registerAbility('elder_thing_the_price_of_power', 'special', elderThingPriceOfPowerSpecial);
-    // 远古之物：不受对手卡牌影响（保护 destroy + move + affect）
+    // 远古之物：不收回受对手卡牌影响（保护 destroy + move?
     registerProtection('elder_thing_elder_thing', 'destroy', elderThingProtectionChecker);
     registerProtection('elder_thing_elder_thing', 'move', elderThingProtectionChecker);
-    registerProtection('elder_thing_elder_thing', 'affect', elderThingProtectionChecker);
 }
 
 /** 拜亚基?onPlay：如果其他玩家有随从在本基地，抽一张疯狂卡 */
@@ -467,7 +466,7 @@ function shoggothContinueChain(
 /** 注册远古之物派系的交互解决处理函数 */
 export function registerElderThingInteractionHandlers(): void {
     // 米-格：对手选择是否抽疯狂卡（链式处理）
-    registerInteractionHandler('elder_thing_mi_go', (state, playerId, value, iData, _random, timestamp) => {
+    registerInteractionHandler('elder_thing_mi_go', (state, _playerId, value, iData, _random, timestamp) => {
         const { choice } = value as { choice: string };
         const ctx = (iData as any)?.continuationContext as { casterPlayerId: string; opponents: string[]; opponentIdx: number };
         if (!ctx) return { state, events: [] };

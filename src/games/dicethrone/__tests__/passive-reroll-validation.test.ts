@@ -99,10 +99,10 @@ describe('教皇税被动重掷校验', () => {
             expect(isPassiveActionUsable(state, '0', 'tithes', REROLL_INDEX, 'offensiveRoll')).toBe(false);
         });
 
-        it('所有骰子都锁定 → 锁定不影响重掷，仍可用', () => {
+        it('所有骰子都锁定 → 不可用', () => {
             const dice = [1, 2, 3, 4, 5].map((v, i) => createDie(i, v, true));
             const state = createState({ cp: 5, rollCount: 1, dice });
-            expect(isPassiveActionUsable(state, '0', 'tithes', REROLL_INDEX, 'offensiveRoll')).toBe(true);
+            expect(isPassiveActionUsable(state, '0', 'tithes', REROLL_INDEX, 'offensiveRoll')).toBe(false);
         });
 
         it('部分骰子锁定但有未锁定的 → 可用', () => {

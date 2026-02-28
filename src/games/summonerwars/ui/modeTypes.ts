@@ -100,7 +100,4 @@ export interface TelekinesisTargetModeState {
 export interface RapidFireModeState {
   sourceUnitId: string;
   sourcePosition: CellCoord;
-  /** 已确认（dispatch 已发送），等待 core 状态更新后自动清除。
-   *  confirmed=true 期间仍计入 hasActiveInteraction，防止 useAutoSkipPhase 误触发。 */
-  confirmed?: boolean;
 }

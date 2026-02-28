@@ -42,7 +42,7 @@ beforeAll(() => {
 function makeMinion(uid: string, defId: string, controller: string, power: number, owner?: string): MinionOnBase {
     return {
         uid, defId, controller, owner: owner ?? controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerModifier: 0, talentUsed: false, attachedActions: [],
     };
 }
 
@@ -129,7 +129,7 @@ describe('印斯茅斯派系能力', () => {
             });
 
             const { events } = execPlayAction(state, '0', 'a1');
-            const powerEvents = events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED);
+            const powerEvents = events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
             // m1, m2, m4 应获得 +1
             expect(powerEvents.length).toBe(3);
             const uids = powerEvents.map(e => (e as any).payload.minionUid);
@@ -158,7 +158,7 @@ describe('印斯茅斯派系能力', () => {
             });
 
             const { events } = execPlayAction(state, '0', 'a1');
-            const powerEvents = events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED);
+            const powerEvents = events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
             expect(powerEvents.length).toBe(0);
         });
 
@@ -180,7 +180,7 @@ describe('印斯茅斯派系能力', () => {
             const { events } = execPlayAction(state, '0', 'a1');
             const newState = applyEvents(state, events);
             const minion = newState.bases[0].minions.find(m => m.uid === 'm1');
-            expect(minion!.tempPowerModifier).toBe(1);
+            expect(minion!.powerModifier).toBe(1);
             // 有效力量 = 2 + 1 = 3
         });
     });

@@ -13,8 +13,6 @@ import { PYROMANCER_ABILITIES, PYROMANCER_TOKENS, PYROMANCER_INITIAL_TOKENS, get
 import { MOON_ELF_ABILITIES, MOON_ELF_TOKENS, MOON_ELF_INITIAL_TOKENS, getMoonElfStartingDeck } from '../heroes/moon_elf';
 import { SHADOW_THIEF_ABILITIES, SHADOW_THIEF_TOKENS, SHADOW_THIEF_INITIAL_TOKENS, getShadowThiefStartingDeck } from '../heroes/shadow_thief';
 import { PALADIN_ABILITIES, PALADIN_TOKENS, PALADIN_INITIAL_TOKENS, getPaladinStartingDeck } from '../heroes/paladin';
-import { GUNSLINGER_ABILITIES, GUNSLINGER_TOKENS, GUNSLINGER_INITIAL_TOKENS, getGunslingerStartingDeck } from '../heroes/gunslinger';
-import { SAMURAI_ABILITIES, SAMURAI_TOKENS, SAMURAI_INITIAL_TOKENS, getSamuraiStartingDeck } from '../heroes/samurai';
 import { PALADIN_TITHES_BASE } from '../heroes/paladin/abilities';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
@@ -54,7 +52,6 @@ const BARBARIAN_DATA: CharacterData = {
         'steadfast': 1,
         'suppress': 1,
         'reckless-strike': 1,
-        'rage': 1,
         'thick-skin': 1,
     },
     statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.BARBARIAN,
@@ -166,32 +163,6 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.PALADIN,
         statusAtlasPath: 'dicethrone/images/paladin/status-icons-atlas.json',
         passiveAbilities: [PALADIN_TITHES_BASE],
-    },
-    gunslinger: {
-        id: 'gunslinger',
-        abilities: GUNSLINGER_ABILITIES,
-        tokens: GUNSLINGER_TOKENS,
-        initialTokens: GUNSLINGER_INITIAL_TOKENS,
-        diceDefinitionId: 'gunslinger-dice',
-        getStartingDeck: getGunslingerStartingDeck,
-        initialAbilityLevels: {
-            // TODO: 等待清晰图片后补充技能等级
-        },
-        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER,
-        statusAtlasPath: 'dicethrone/images/gunslinger/status-icons-atlas.json',
-    },
-    samurai: {
-        id: 'samurai',
-        abilities: SAMURAI_ABILITIES,
-        tokens: SAMURAI_TOKENS,
-        initialTokens: SAMURAI_INITIAL_TOKENS,
-        diceDefinitionId: 'samurai-dice',
-        getStartingDeck: getSamuraiStartingDeck,
-        initialAbilityLevels: {
-            // TODO: 等待清晰图片后补充技能等级
-        },
-        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.SAMURAI,
-        statusAtlasPath: 'dicethrone/images/samurai/status-icons-atlas.json',
     },
 };
 

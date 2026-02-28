@@ -193,8 +193,8 @@ describe('不可防御攻击链', () => {
 
 describe('终极技能链', () => {
     it('reckless-strike 大顺子 15 伤害 + 4 自伤', () => {
-        // 大顺子: [2,3,4,5,6]，防御骰: [6,6,6,6] → monk meditation 无心面
-        const runner = createRunner(createQueuedRandom([2, 3, 4, 5, 6, 6, 6, 6, 6]));
+        // 大顺子: [2,3,4,5,6]
+        const runner = createRunner(createQueuedRandom([2, 3, 4, 5, 6]));
         const result = runner.run({
             name: 'reckless-strike',
             setup: createHeroMatchup('barbarian', 'monk'),
@@ -202,10 +202,7 @@ describe('终极技能链', () => {
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '0'), cmd('CONFIRM_ROLL', '0'),
                 cmd('SELECT_ABILITY', '0', { abilityId: 'reckless-strike' }),
-                cmd('ADVANCE_PHASE', '0'),       // → defensiveRoll（可防御）
-                cmd('ROLL_DICE', '1'),
-                cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),       // → main2
+                cmd('ADVANCE_PHASE', '0'),
             ],
             expect: {
                 turnPhase: 'main2',

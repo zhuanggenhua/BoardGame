@@ -50,7 +50,7 @@ describe('同一交互重复 respond 防护', () => {
             bases: [
                 makeBase('test_base', [
                     makeMinion('target-1', 'test_minion', '0', 3),
-                    makeMinion('drone-1', 'giant_ant_drone', '0', 2, { powerCounters: 1 }),
+                    makeMinion('drone-1', 'giant_ant_drone', '0', 2, { powerModifier: 1 }),
                 ]),
             ],
         });
@@ -105,7 +105,7 @@ describe('同一交互重复 respond 防护', () => {
             (m: any) => m.uid === 'drone-1',
         );
         expect(droneAfter1).toBeDefined();
-        expect(droneAfter1!.powerCounters).toBe(0); // 指示物从 1 → 0
+        expect(droneAfter1!.powerModifier).toBe(0); // 指示物从 1 → 0
 
         // 验证交互已被消费（current 应为 null/undefined）
         expect(result1.finalState.sys.interaction?.current).toBeFalsy();
@@ -134,7 +134,7 @@ describe('同一交互重复 respond 防护', () => {
             (m: any) => m.uid === 'drone-1',
         );
         expect(droneAfter2).toBeDefined();
-        expect(droneAfter2!.powerCounters).toBe(0); // 仍然是 0，没有变成 -1
+        expect(droneAfter2!.powerModifier).toBe(0); // 仍然是 0，没有变成 -1
     });
 
     it('交互消费后再次 respond 不会产生 MINION_DESTROYED 事件', () => {
@@ -150,7 +150,7 @@ describe('同一交互重复 respond 防护', () => {
             bases: [
                 makeBase('test_base', [
                     makeMinion('target-1', 'test_minion', '0', 3),
-                    makeMinion('drone-1', 'giant_ant_drone', '0', 2, { powerCounters: 1 }),
+                    makeMinion('drone-1', 'giant_ant_drone', '0', 2, { powerModifier: 1 }),
                 ]),
             ],
         });

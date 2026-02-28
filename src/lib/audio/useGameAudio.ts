@@ -27,6 +27,20 @@ const failedSounds = new Set<string>();
 const lastPlayedTime = new Map<string, number>();
 const SFX_THROTTLE_MS = 80;
 
+const DT_TRACE_SOUND_KEYS = new Set<string>([
+    'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a',
+    'ui.fantasy_ui_sound_fx_pack_vol.signals.signal_update_b_003',
+    'fantasy.gothic_fantasy_sound_fx_pack_vol.musical.drums_of_fate_002',
+]);
+
+const DT_TRACE_EVENT_TYPES = new Set<string>([
+    'CHARACTER_SELECTED',
+    'PLAYER_READY',
+    'HOST_STARTED',
+    'SYS_PHASE_CHANGED',
+]);
+
 function getLogEntrySignature(entry: unknown): string | null {
     if (!entry || typeof entry !== 'object') return null;
     const maybeEventStreamEntry = entry as { id?: number; event?: { type?: string; timestamp?: number } };
@@ -78,7 +92,6 @@ export function playSound(key: SoundKey): void {
     const synthKeys = getSynthSoundKeys();
     const isSynthKey = synthKeys.includes(key);
     if (failedSounds.has(key)) {
-        console.log(`[playSound] 已知失败: ${key}`);
         if (isSynthKey) {
             playSynthSound(key);
         }
@@ -334,34 +347,36 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
             lastLogSignatureRef.current = getLogEntrySignature(safeEntries[safeEntries.length - 1]);
         }
 
-        // 批量事件过多时限制同时播放的音效数量，避免同时触发大量音频加载
-        // 策略：先解析所有事件的音效 key，过滤出有音效的，再取最后 N 个播放
-        // 旧策略（取最后 N 个事件再解析）会丢掉前面的关键音效（如大招、响应窗口）
-        // 注：大杀四方计分阶段可能同时产生 6-8 个有音效事件（基地替换+随从摧毁+抽牌+回合切换等）
-        const MAX_BATCH_SOUNDS = 8;
+        // 批量事件过多时只对最近的几条播放音效，避免同时触发大量音频加载
+        const MAX_BATCH_SOUNDS = 5;
+        const audioEntries = newEntries.length > MAX_BATCH_SOUNDS
+            ? newEntries.slice(-MAX_BATCH_SOUNDS)
+            : newEntries;
 
-        // 解析所有新事件，收集有音效的 (entry, event, key) 三元组
-        const resolvedAudio: Array<{ entry: unknown; event: { type: string; [k: string]: unknown }; key: SoundKey }> = [];
-        for (const entry of newEntries) {
+        const playedKeys = new Set<SoundKey>();
+        for (const entry of audioEntries) {
             const event = resolveAudioEvent(entry, config.eventSelector);
-            if (!event) continue;
+            if (!event) {
+                continue;
+            }
+            
+            // 框架层自动过滤 UI 本地交互事件（音效已由 UI 组件本地播放）
+            // 音频追踪日志已移除
+            
             if (event.audioMetadata?.isLocalUIEvent) {
                 continue;
             }
-            const key = resolveFeedback(event, runtimeContextRef.current, config);
-
-            if (key) {
-                resolvedAudio.push({ entry, event, key });
+            
+            const key = resolveFeedback(
+                event,
+                runtimeContextRef.current,
+                config,
+            );
+            if (!key) continue;
+            if (gameId === 'dicethrone' && DT_TRACE_EVENT_TYPES.has(event.type)) {
+                const eventId = (entry as { id?: number }).id;
             }
-        }
-
-        // 有音效的事件过多时，取最后 N 个（保留最新的音效）
-        const audioToPlay = resolvedAudio.length > MAX_BATCH_SOUNDS
-            ? resolvedAudio.slice(-MAX_BATCH_SOUNDS)
-            : resolvedAudio;
-
-        const playedKeys = new Set<SoundKey>();
-        for (const { key } of audioToPlay) {
+            // 立即播放（去重）
             if (!playedKeys.has(key)) {
                 playedKeys.add(key);
                 playSound(key);

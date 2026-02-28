@@ -16,19 +16,23 @@ import { useTranslation } from 'react-i18next';
 import type { MatchState } from '../../engine/types';
 import type { SmashUpCore, CardInstance, ActionCardDef, MinionCardDef } from './domain/types';
 import { SU_COMMANDS, HAND_LIMIT, getCurrentPlayerId } from './domain/types';
+import { getScores } from './domain/index';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { asSimpleChoice, INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { getCardDef, getBaseDef, getMinionDef, resolveCardName, resolveCardText } from './data/cards';
-import { getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from './domain/ongoingModifiers';
+import { getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getPlayerEffectivePowerOnBase } from './domain/ongoingModifiers';
 import { isOperationRestricted } from './domain/ongoingEffects';
-import { isSpecialLimitBlocked } from './domain/abilityHelpers';
 import { useGameAudio, playDeniedSound, playSound } from '../../lib/audio/useGameAudio';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { AnimatePresence, motion } from 'framer-motion';
 import { initSmashUpAtlases } from './ui/cardAtlas';
+import { registerCardPreviewRenderer } from '../../components/common/media/CardPreview';
+import { smashUpCardRenderer } from './ui/SmashUpCardRenderer';
+import { SmashUpOverlayProvider, useSmashUpOverlay } from './ui/SmashUpOverlayContext';
 
 // 同步注册所有图集（cards1-4 + base1-4，懒解析模式），确保首次渲染时 atlas 注册已就绪
 initSmashUpAtlases();
+registerCardPreviewRenderer('smashup-card-renderer', smashUpCardRenderer);
 import { SMASH_UP_MANIFEST } from './manifest';
 import './cursor';
 import { HandArea } from './ui/HandArea';
@@ -36,7 +40,7 @@ import { useGameEvents } from './ui/useGameEvents';
 import { useFxBus, FxLayer } from '../../engine/fx';
 import { smashUpFxRegistry } from './ui/fxSetup';
 import { FactionSelection } from './ui/FactionSelection';
-import { PromptOverlay, resolveI18nKeys } from './ui/PromptOverlay';
+import { PromptOverlay } from './ui/PromptOverlay';
 import { getFactionMeta } from './ui/factionMeta';
 import { PLAYER_CONFIG } from './ui/playerConfig';
 import { BaseZone } from './ui/BaseZone';
@@ -89,7 +93,8 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     const core = G.core;
     const phase = G.sys.phase;
     const currentPid = getCurrentPlayerId(core);
-    const playerID = rawPlayerID;
+    // 在本地热座模式下（非多人游戏且无指定玩家 ID），自动挂载到当前活动玩家视角
+    const playerID = (!isMultiplayer && !rawPlayerID) ? currentPid : rawPlayerID;
     const isMyTurn = playerID === currentPid;
     const myPlayer = playerID ? core.players[playerID] : undefined;
     const isGameOver = G.sys.gameover;
@@ -118,6 +123,9 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     }, [phase, isMyTurn, myPlayer]);
 
     const discardCount = needDiscard && myPlayer ? myPlayer.hand.length - HAND_LIMIT : 0;
+
+    // 含疯狂卡惩罚的最终分数（统一查询入口）
+    const finalScores = useMemo(() => getScores(core), [core]);
 
     // 弃牌堆可打出卡牌选项（仅在出牌阶段且是自己回合时计算）
     // 随从额度已满时，过滤掉消耗正常额度的选项（不消耗额度的额外打出仍然可用）
@@ -373,13 +381,12 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
 
     // 交互驱动的选择提示标题（基地/随从/手牌/行动卡选择统一）
     const interactionSelectTitle = useMemo(() => {
-        let raw = '';
-        if (isBaseSelectPrompt && currentPrompt) raw = currentPrompt.title;
-        else if (isMinionSelectPrompt && currentPrompt) raw = currentPrompt.title;
-        else if (isHandDiscardPrompt && currentPrompt) raw = currentPrompt.title;
-        else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.title;
-        return raw ? resolveI18nKeys(raw, t) : '';
-    }, [isBaseSelectPrompt, isMinionSelectPrompt, isHandDiscardPrompt, isOngoingSelectPrompt, currentPrompt, t]);
+        if (isBaseSelectPrompt && currentPrompt) return currentPrompt.title;
+        if (isMinionSelectPrompt && currentPrompt) return currentPrompt.title;
+        if (isHandDiscardPrompt && currentPrompt) return currentPrompt.title;
+        if (isOngoingSelectPrompt && currentPrompt) return currentPrompt.title;
+        return '';
+    }, [isBaseSelectPrompt, isMinionSelectPrompt, isHandDiscardPrompt, isOngoingSelectPrompt, currentPrompt]);
 
     // 弃牌堆随从选择交互检测（僵尸领主等）：targetType === 'discard_minion'
     const isDiscardMinionPrompt = useMemo(() => {
@@ -465,19 +472,11 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
         return playerID === currentResponderId;
     }, [responseWindow, playerID]);
 
-    // Me First! 期间非 special 卡和非 beforeScoringPlayable 随从的禁用集合（置灰）
+    // Me First! 期间非 special 卡的禁用集合（置灰）
     const meFirstDisabledUids = useMemo<Set<string> | undefined>(() => {
         if (!isMeFirstResponse || !myPlayer) return undefined;
         const disabled = new Set<string>();
         for (const card of myPlayer.hand) {
-            if (card.type === 'minion') {
-                // beforeScoringPlayable 随从不禁用（影舞者等）
-                const mDef = getMinionDef(card.defId);
-                if (!mDef?.beforeScoringPlayable) {
-                    disabled.add(card.uid);
-                }
-                continue;
-            }
             if (card.type !== 'action') {
                 disabled.add(card.uid);
                 continue;
@@ -491,10 +490,19 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     }, [isMeFirstResponse, myPlayer]);
 
     // Me First! 可选基地集合（达到临界点的基地索引）
-    // 使用统一查询函数：优先使用进入 scoreBases 阶段时锁定的列表（Wiki Phase 3 Step 4）
     const meFirstEligibleBaseIndices = useMemo<Set<number>>(() => {
         if (!meFirstPendingCard) return new Set();
-        return new Set(getScoringEligibleBaseIndices(core));
+        const indices = new Set<number>();
+        for (let i = 0; i < core.bases.length; i++) {
+            const base = core.bases[i];
+            const baseDef = getBaseDef(base.defId);
+            if (!baseDef) continue;
+            const totalPower = getTotalEffectivePowerOnBase(core, base, i);
+            if (totalPower >= getEffectiveBreakpoint(core, i)) {
+                indices.add(i);
+            }
+        }
+        return indices;
     }, [meFirstPendingCard, core]);
 
     // 手牌选中卡牌的有效部署基地集合（排除被 ongoing 限制的基地）
@@ -504,20 +512,6 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
         const indices = new Set<number>();
         const card = myPlayer?.hand.find(c => c.uid === selectedCardUid);
         if (!card) return { deployableBaseIndices: indices, deployBlockReason: null };
-
-        // Me First! 窗口中 beforeScoringPlayable 随从：只允许即将计分的基地
-        if (isMeFirstResponse && card.type === 'minion') {
-            const mDef = getMinionDef(card.defId);
-            if (mDef?.beforeScoringPlayable) {
-                const eligible = getScoringEligibleBaseIndices(core);
-                for (const idx of eligible) {
-                    if (!isSpecialLimitBlocked(core, card.defId, idx)) {
-                        indices.add(idx);
-                    }
-                }
-                return { deployableBaseIndices: indices, deployBlockReason: null };
-            }
-        }
 
         // 全局力量限制检查（如家园额外出牌：力量≤2）
         const player = core.players[playerID];
@@ -598,7 +592,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
             }
         }
         return { deployableBaseIndices: indices, deployBlockReason: null };
-    }, [selectedCardUid, selectedCardMode, playerID, myPlayer?.hand, core, t, isMeFirstResponse]);
+    }, [selectedCardUid, selectedCardMode, playerID, myPlayer?.hand, core, t]);
 
     // ongoing-minion 模式下的有效随从 UID 集合（只包含未被限制基地上的随从）
     const ongoingMinionTargetUids = useMemo<Set<string>>(() => {
@@ -737,7 +731,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
             prevCurrentPidRef.current = currentPid;
             if (currentPid === playerID) {
                 setShowTurnNotice(true);
-                const timer = setTimeout(() => setShowTurnNotice(false), 3000);
+                const timer = setTimeout(() => setShowTurnNotice(false), 1500);
                 return () => clearTimeout(timer);
             }
         }
@@ -903,25 +897,8 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
         }
 
         // Validation for play phase / turn
-        // Me First! 响应期间：允许点击手牌中的 special 卡或 beforeScoringPlayable 随从
+        // Me First! 响应期间：允许点击手牌中的 special 卡直接打出
         if (isMeFirstResponse) {
-            // beforeScoringPlayable 随从（影舞者等）：进入基地选择模式
-            if (card.type === 'minion') {
-                const mDef = getMinionDef(card.defId);
-                if (!mDef?.beforeScoringPlayable) {
-                    playDeniedSound();
-                    return;
-                }
-                // toggle 选中状态，进入基地选择模式
-                if (selectedCardUid === card.uid) {
-                    setSelectedCardUid(null);
-                    setSelectedCardMode(null);
-                } else {
-                    setSelectedCardUid(card.uid);
-                    setSelectedCardMode('minion');
-                }
-                return;
-            }
             if (card.type !== 'action') {
                 playDeniedSound();
                 return;
@@ -1149,13 +1126,13 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                             {isMe ? t('ui.you_short') : t('ui.player_short', { id: pid })}
                                         </span>
                                         <motion.div
-                                            key={`vp-${pid}-${core.players[pid]?.vp ?? 0}`}
+                                            key={`vp-${pid}-${finalScores[pid]}`}
                                             className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg}`}
                                             initial={{ scale: 1 }}
                                             animate={{ scale: [1, 1.3, 1] }}
                                             transition={{ duration: 0.4, ease: 'easeOut' }}
                                         >
-                                            {core.players[pid]?.vp ?? 0}
+                                            {finalScores[pid]}
                                         </motion.div>
                                         {/* 派系图标 */}
                                         <div className="flex gap-0.5 mt-1">
@@ -1180,7 +1157,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                 {/* --- FINISH TURN BUTTON: Fixed Position (Right Edge) --- */}
                 <div className="fixed right-[8vw] bottom-[28vh] z-50 flex pointer-events-none w-24 h-24" data-tutorial-id="su-end-turn-btn">
                     <AnimatePresence>
-                        {isMyTurn && (phase === 'playCards' || (phase === 'scoreBases' && !G.sys.responseWindow?.current && !G.sys.interaction?.current)) && (
+                        {isMyTurn && phase === 'playCards' && (
                             <motion.div
                                 initial={{ y: 100, opacity: 0, scale: 0.5 }}
                                 animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -1201,8 +1178,8 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                     }}
                                     disabled={!!G.sys.interaction?.isBlocked || !isTutorialCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE) || isSubmitting}
                                     className={`group w-24 h-24 rounded-full border-4 border-white shadow-[0_10px_20px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center transition-all text-white relative overflow-hidden ${G.sys.interaction?.isBlocked || !isTutorialCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE) || isSubmitting
-                                            ? 'bg-slate-600 opacity-50 cursor-not-allowed'
-                                            : 'bg-slate-900 hover:scale-110 hover:rotate-3 active:scale-95'
+                                        ? 'bg-slate-600 opacity-50 cursor-not-allowed'
+                                        : 'bg-slate-900 hover:scale-110 hover:rotate-3 active:scale-95'
                                         }`}
                                 >
                                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]" />
@@ -1243,8 +1220,8 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                             return (
                                                 <div className="relative group/minion">
                                                     <div className={`flex items-center gap-1.5 px-2 py-1 rounded border-2 shadow-md text-xs font-black whitespace-nowrap cursor-default ${totalRemaining > 0
-                                                            ? 'bg-emerald-600 border-emerald-400 text-white'
-                                                            : 'bg-slate-700 border-slate-500 text-slate-300'
+                                                        ? 'bg-emerald-600 border-emerald-400 text-white'
+                                                        : 'bg-slate-700 border-slate-500 text-slate-300'
                                                         }`}>
                                                         <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 20 20">
                                                             <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
@@ -1298,8 +1275,8 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                             return (
                                                 <div className="relative group/action">
                                                     <div className={`flex items-center gap-1.5 px-2 py-1 rounded border-2 shadow-md text-xs font-black whitespace-nowrap cursor-default ${actionRemaining > 0
-                                                            ? 'bg-blue-600 border-blue-400 text-white'
-                                                            : 'bg-slate-700 border-slate-500 text-slate-300'
+                                                        ? 'bg-blue-600 border-blue-400 text-white'
+                                                        : 'bg-slate-700 border-slate-500 text-slate-300'
                                                         }`}>
                                                         <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
@@ -1353,8 +1330,8 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                     }}
                                     disabled={discardSelection.size !== discardCount}
                                     className={`group w-24 h-24 rounded-full border-4 border-white shadow-[0_10px_20px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center transition-all text-white relative overflow-hidden ${discardSelection.size !== discardCount
-                                            ? 'bg-slate-600 opacity-50 cursor-not-allowed'
-                                            : 'bg-slate-900 hover:scale-110 hover:rotate-3 active:scale-95'
+                                        ? 'bg-slate-600 opacity-50 cursor-not-allowed'
+                                        : 'bg-slate-900 hover:scale-110 hover:rotate-3 active:scale-95'
                                         }`}
                                 >
                                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]" />
@@ -1550,7 +1527,6 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                 onViewAction={handleViewAction}
                                 onViewBase={(defId) => setViewingCard({ defId, type: 'base' })}
                                 isTutorialTargetAllowed={isTutorialTargetAllowed}
-                                phase={phase as string}
                                 tokenRef={(el) => {
                                     if (el) baseRefsMap.current.set(idx, el);
                                     else baseRefsMap.current.delete(idx);
@@ -1672,6 +1648,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                 {/* 卡牌展示浮层（非阻塞，点击关闭） */}
                 <RevealOverlay
                     entries={eventStreamEntries}
+                    currentPlayerId={currentPid}
                 />
 
                 {/* PREVIEW OVERLAY */}
@@ -1714,4 +1691,35 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     );
 };
 
-export default SmashUpBoard;
+/** 英文模式下的中文覆盖层开关按钮（仅在 SmashUpOverlayProvider 内部可用） */
+function OverlayToggleButton() {
+    const { i18n } = useTranslation('game-smashup');
+    const { overlayEnabled, toggleOverlay } = useSmashUpOverlay();
+    const isEn = i18n.language === 'en' || i18n.language === 'en-US';
+    // 只在英文模式下显示此按钮（中文模式下中文就是卡图本身，不需要开关）
+    if (!isEn) return null;
+    return (
+        <button
+            onClick={toggleOverlay}
+            title={overlayEnabled ? '点击关闭中文悬浮翻译' : '点击开启（鼠标悬浮卡牌可见中文）'}
+            className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg border transition-all select-none
+                ${overlayEnabled
+                    ? 'bg-amber-400/90 text-slate-900 border-amber-500/80 hover:bg-amber-300'
+                    : 'bg-slate-700/80 text-white/60 border-white/20 hover:bg-slate-600'
+                }`}
+        >
+            <span>{overlayEnabled ? '🈶' : '🈚'}</span>
+            <span>{overlayEnabled ? '中文注释 悬浮' : '中文注释 关'}</span>
+        </button>
+    );
+}
+
+/** 带 Provider 的外层包装（注入开关 Context + 渲染内层 Board） */
+const SmashUpBoardWithProvider = (props: Props) => (
+    <SmashUpOverlayProvider>
+        <OverlayToggleButton />
+        <SmashUpBoard {...props} />
+    </SmashUpOverlayProvider>
+);
+
+export default SmashUpBoardWithProvider;

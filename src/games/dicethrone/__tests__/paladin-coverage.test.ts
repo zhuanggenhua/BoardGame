@@ -30,7 +30,7 @@ import {
 import type { DiceThroneCore } from '../domain/types';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
-import { BLESSING_OF_MIGHT_2, PALADIN_TITHES_UPGRADED } from '../heroes/paladin/abilities';
+import { BLESSING_OF_MIGHT_2 } from '../heroes/paladin/abilities';
 
 // ============================================================================
 // 自定义 Setup：双方圣骑士，移除响应卡避免干扰
@@ -304,91 +304,6 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     players: {
                         '0': { tokens: { [TOKEN_IDS.CRIT]: 1 } },
                         '1': { hp: 48 },  // 50 - 2 = 48
-                    },
-                },
-            });
-            expect(result.assertionErrors).toEqual([]);
-        });
-    });
-
-    // ========================================================================
-    // 重复选择技能防护 — 验证 pendingAttack 存在时拒绝 SELECT_ABILITY
-    // ========================================================================
-    describe('重复选择技能防护', () => {
-        it('已发起攻击后重复 SELECT_ABILITY 被拒绝 (attack_already_initiated)', () => {
-            // 进攻骰: [3,3,3,6,1] → 3 helm + 1 pray + 1 sword → vengeance
-            const random = createQueuedRandom([3, 3, 3, 6, 1]);
-            const runner = new GameTestRunner({
-                domain: DiceThroneDomain, systems: testSystems,
-                playerIds: ['0', '1'], random,
-                setup: createPaladinSetup(), assertFn: assertState, silent: true,
-            });
-            const result = runner.run({
-                name: '重复SELECT_ABILITY被拒绝',
-                commands: [
-                    cmd('ADVANCE_PHASE', '0'),
-                    cmd('ROLL_DICE', '0'),
-                    cmd('CONFIRM_ROLL', '0'),
-                    cmd('SELECT_ABILITY', '0', { abilityId: 'vengeance' }),
-                    // 第二次选择应被拒绝
-                    cmd('SELECT_ABILITY', '0', { abilityId: 'vengeance' }),
-                ],
-                expect: {
-                    expectError: { command: 'SELECT_ABILITY', error: 'attack_already_initiated' },
-                },
-            });
-            expect(result.assertionErrors).toEqual([]);
-        });
-    });
-
-    // ========================================================================
-    // 十一奉献 II 被动触发 — 含祈祷面的技能激活时获得 1 CP
-    // ========================================================================
-    describe('十一奉献 II 被动触发 (tithes-upgraded)', () => {
-        /** 升级 setup：将 tithes 替换为 PALADIN_TITHES_UPGRADED */
-        function createTithesUpgradedSetup() {
-            return (playerIds: PlayerId[], random: RandomFn): MatchState<DiceThroneCore> => {
-                const base = createPaladinSetup()(playerIds, random);
-                const player = base.core.players['0'];
-                if (player.passiveAbilities) {
-                    const idx = player.passiveAbilities.findIndex(p => p.id === 'tithes');
-                    if (idx >= 0) player.passiveAbilities[idx] = PALADIN_TITHES_UPGRADED;
-                } else {
-                    player.passiveAbilities = [PALADIN_TITHES_UPGRADED];
-                }
-                return base;
-            };
-        }
-
-        it('选择含祈祷面的技能时获得 1 CP（复仇 3helm+1pray）', () => {
-            // 进攻骰: [3,3,3,6,1] → 3 helm + 1 pray + 1 sword → vengeance
-            // vengeance trigger: { type: 'diceSet', faces: { helm: 3, pray: 1 } }
-            // 包含 pray 面 → 十一奉献 II 触发 +1 CP
-            // 复仇效果：+1 神罚 + 2 CP（无伤害，跳过防御）
-            const random = createQueuedRandom([3, 3, 3, 6, 1]);
-            const runner = new GameTestRunner({
-                domain: DiceThroneDomain, systems: testSystems,
-                playerIds: ['0', '1'], random,
-                setup: createTithesUpgradedSetup(), assertFn: assertState, silent: true,
-            });
-            const result = runner.run({
-                name: '十一奉献II 复仇含pray面+1CP',
-                commands: [
-                    cmd('ADVANCE_PHASE', '0'),
-                    cmd('ROLL_DICE', '0'),
-                    cmd('CONFIRM_ROLL', '0'),
-                    cmd('SELECT_ABILITY', '0', { abilityId: 'vengeance' }),
-                    cmd('ADVANCE_PHASE', '0'),       // offensiveRoll exit → main2
-                ],
-                expect: {
-                    turnPhase: 'main2',
-                    players: {
-                        '0': {
-                            // INITIAL_CP + 2(复仇效果) + 1(十一奉献II被动) = INITIAL_CP + 3
-                            cp: INITIAL_CP + 3,
-                            tokens: { [TOKEN_IDS.RETRIBUTION]: 1 },
-                        },
-                        '1': { hp: 50 }, // 无伤害
                     },
                 },
             });

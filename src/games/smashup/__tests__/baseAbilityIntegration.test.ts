@@ -61,7 +61,7 @@ describe('base_central_brain: 持续被动 +1 力量', () => {
     it('中央大脑基地上的随从 getEffectivePower 包含 +1 修正', () => {
         const minion = {
             uid: 'm1', defId: 'd1', controller: '0', owner: '0',
-            basePower: 3, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+            basePower: 3, powerModifier: 0, talentUsed: false, attachedActions: [],
         };
         const state = {
             bases: [{
@@ -82,7 +82,7 @@ describe('base_central_brain: 持续被动 +1 力量', () => {
     it('非中央大脑基地上的随从不获得 +1 修正', () => {
         const minion = {
             uid: 'm1', defId: 'd1', controller: '0', owner: '0',
-            basePower: 3, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+            basePower: 3, powerModifier: 0, talentUsed: false, attachedActions: [],
         };
         const state = {
             bases: [{
@@ -102,11 +102,11 @@ describe('base_central_brain: 持续被动 +1 力量', () => {
     it('移动到中央大脑的随从也获得 +1（非仅入场时）', () => {
         const m1 = {
             uid: 'm1', defId: 'd1', controller: '0', owner: '0',
-            basePower: 5, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+            basePower: 5, powerModifier: 0, talentUsed: false, attachedActions: [],
         };
         const m2 = {
             uid: 'm2', defId: 'd2', controller: '1', owner: '1',
-            basePower: 2, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+            basePower: 2, powerModifier: 0, talentUsed: false, attachedActions: [],
         };
         const state = {
             bases: [{
@@ -139,9 +139,9 @@ describe('base_rhodes_plaza: 计分时每个随从 1VP', () => {
                 bases: [{
                     defId: 'base_rhodes_plaza',
                     minions: [
-                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 3, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'm2', defId: 'd2', controller: '0', owner: '0', basePower: 2, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'm3', defId: 'd3', controller: '1', owner: '1', basePower: 5, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 3, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm2', defId: 'd2', controller: '0', owner: '0', basePower: 2, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm3', defId: 'd3', controller: '1', owner: '1', basePower: 5, powerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
@@ -181,9 +181,9 @@ describe('base_the_factory: 冠军每5力量1VP', () => {
                 bases: [{
                     defId: 'base_the_factory',
                     minions: [
-                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 5, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'm2', defId: 'd2', controller: '0', owner: '0', basePower: 5, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'm3', defId: 'd3', controller: '1', owner: '1', basePower: 3, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 5, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm2', defId: 'd2', controller: '0', owner: '0', basePower: 5, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm3', defId: 'd3', controller: '1', owner: '1', basePower: 3, powerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
@@ -212,8 +212,8 @@ describe('base_the_factory: 冠军每5力量1VP', () => {
                 bases: [{
                     defId: 'base_the_factory',
                     minions: [
-                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 4, powerCounters: 0, powerModifier: 3, talentUsed: false, attachedActions: [] },
-                        { uid: 'm2', defId: 'd2', controller: '1', owner: '1', basePower: 2, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 4, powerModifier: 3, talentUsed: false, attachedActions: [] },
+                        { uid: 'm2', defId: 'd2', controller: '1', owner: '1', basePower: 2, powerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
@@ -273,8 +273,8 @@ describe('base_castle_blood: 打出随从放指示物', () => {
                 bases: [{
                     defId: 'base_castle_blood',
                     minions: [
-                        { uid: 'm_me', defId: 'd1', controller: '0', owner: '0', basePower: 2, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'm_op', defId: 'd2', controller: '1', owner: '1', basePower: 5, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_me', defId: 'd1', controller: '0', owner: '0', basePower: 2, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_op', defId: 'd2', controller: '1', owner: '1', basePower: 5, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
@@ -307,8 +307,8 @@ describe('base_castle_blood: 打出随从放指示物', () => {
                 bases: [{
                     defId: 'base_castle_blood',
                     minions: [
-                        { uid: 'm_me', defId: 'd1', controller: '0', owner: '0', basePower: 5, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'm_op', defId: 'd2', controller: '1', owner: '1', basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_me', defId: 'd1', controller: '0', owner: '0', basePower: 5, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_op', defId: 'd2', controller: '1', owner: '1', basePower: 3, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
@@ -407,7 +407,7 @@ describe('Property 17: 基地能力事件顺序', () => {
                 bases: [{
                     defId: 'base_rhodes_plaza',
                     minions: [
-                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 3, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
@@ -446,7 +446,7 @@ describe('Property 17: 基地能力事件顺序', () => {
                 bases: [{
                     defId: 'base_rhodes_plaza',
                     minions: [
-                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 5, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'd1', controller: '0', owner: '0', basePower: 5, powerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],

@@ -5,7 +5,7 @@
  */
 
 import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import { processDestroyMoveCycle, processAffectTriggers, filterProtectedReturnEvents, filterProtectedDeckBottomEvents } from './reducer';
+import { processDestroyTriggers, processMoveTriggers, processAffectTriggers } from './reducer';
 import type { FlowHooks, PhaseEnterResult } from '../../../engine/systems/FlowSystem';
 import type {
     SmashUpCommand,
@@ -32,15 +32,15 @@ import {
     VP_TO_WIN,
     getCurrentPlayerId,
 } from './types';
-import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getOngoingCardPowerContribution, getScoringEligibleBaseIndices } from './ongoingModifiers';
+import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getOngoingCardPowerContribution } from './ongoingModifiers';
 import { fireTriggers, interceptEvent as ongoingInterceptEvent } from './ongoingEffects';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
-import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
+import { getAllBaseDefIds, getBaseDef } from '../data/cards';
 import { drawCards } from './utils';
 import { countMadnessCards, madnessVpPenalty, fireMinionPlayedTriggers } from './abilityHelpers';
 import { triggerAllBaseAbilities, triggerBaseAbility, triggerExtendedBaseAbility } from './baseAbilities';
-import { openMeFirstWindow, buildBaseTargetOptions, isSpecialLimitBlocked } from './abilityHelpers';
+import { openMeFirstWindow, buildBaseTargetOptions } from './abilityHelpers';
 import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
@@ -191,10 +191,6 @@ function scoreOneBase(
         if (discardResult.matchState) ms = discardResult.matchState;
     }
 
-    // 记录 afterScoring 前的交互状态，用于判断 afterScoring 是否新增了交互
-    const interactionBeforeAfterScoring = ms?.sys?.interaction?.current?.id ?? null;
-    const queueLenBeforeAfterScoring = ms?.sys?.interaction?.queue?.length ?? 0;
-
     // 触发 afterScoring 基地能力
     const afterCtx = {
         state: core,
@@ -209,19 +205,9 @@ function scoreOneBase(
     events.push(...afterResult.events);
     if (afterResult.matchState) ms = afterResult.matchState;
 
-    // 将 afterScoring 基地能力产生的事件 reduce 到 core，
-    // 确保 ongoing afterScoring 触发器使用最新状态。
-    // 修复时序问题：寺庙 afterScoring 把随从放牌库底后，
-    // 大副 afterScoring 不应再看到该随从在场上。
-    let afterScoringCore = updatedCore;
-    for (const evt of afterResult.events) {
-        afterScoringCore = reduce(afterScoringCore, evt as SmashUpEvent);
-    }
-
     // 触发 ongoing afterScoring（如 pirate_first_mate 移动到其他基地）
-    // 使用 reduce 后的 core，包含基地能力的效果（如随从已被放入牌库底）
-    const afterScoringEvents = fireTriggers(afterScoringCore, 'afterScoring', {
-        state: afterScoringCore,
+    const afterScoringEvents = fireTriggers(updatedCore, 'afterScoring', {
+        state: updatedCore,
         playerId: pid,
         baseIndex,
         rankings,
@@ -232,21 +218,14 @@ function scoreOneBase(
     events.push(...afterScoringEvents.events);
     if (afterScoringEvents.matchState) ms = afterScoringEvents.matchState;
 
-    // 判断 afterScoring 是否新增了交互
-    const interactionAfter = ms?.sys?.interaction?.current?.id ?? null;
-    const queueLenAfter = ms?.sys?.interaction?.queue?.length ?? 0;
-    const afterScoringCreatedInteraction =
-        (interactionAfter !== null && interactionAfter !== interactionBeforeAfterScoring) ||
-        (queueLenAfter > queueLenBeforeAfterScoring);
-
-    // 构建清除+替换事件
-    const postScoringEvents: SmashUpEvent[] = [];
+    // 清除基地：afterScoring 全部完成后，将随从和 ongoing 弃到各自所有者弃牌堆并移除基地
+    // 规则顺序：VP 发放 → afterScoring 效果（随从仍在）→ 清除基地 → 替换基地
     const clearEvt: BaseClearedEvent = {
         type: SU_EVENTS.BASE_CLEARED,
         payload: { baseIndex, baseDefId: base.defId },
         timestamp: now,
     };
-    postScoringEvents.push(clearEvt);
+    events.push(clearEvt);
 
     // 替换基地
     let newBaseDeck = baseDeck;
@@ -261,7 +240,7 @@ function scoreOneBase(
             },
             timestamp: now,
         };
-        postScoringEvents.push(replaceEvt);
+        events.push(replaceEvt);
         newBaseDeck = newBaseDeck.slice(1);
 
         // 触发新基地的 onBaseRevealed 扩展时机（如绵羊神社：每位玩家可移动一个随从到此）
@@ -274,31 +253,10 @@ function scoreOneBase(
             now,
         };
         const revealResult = triggerExtendedBaseAbility(newBaseDefId, 'onBaseRevealed', revealCtx);
-        postScoringEvents.push(...revealResult.events);
+        events.push(...revealResult.events);
         if (revealResult.matchState) ms = revealResult.matchState;
     }
 
-    // 关键：仅当 afterScoring 新增了交互时（如刚柔流寺庙平局选择、忍者道场消灭随从等），
-    // 才延迟发出 BASE_CLEARED/BASE_REPLACED，确保 targetType: 'minion' 的场上点选交互能看到随从。
-    // 不影响 beforeScoring/onBaseRevealed 等其他来源的交互。
-    if (afterScoringCreatedInteraction) {
-        // 把 postScoringEvents 序列化存到交互的 continuationContext 中
-        const interaction = ms!.sys.interaction!.current ?? ms!.sys.interaction!.queue[ms!.sys.interaction!.queue.length - 1];
-        if (interaction?.data) {
-            const data = interaction.data as Record<string, unknown>;
-            const ctx = (data.continuationContext ?? {}) as Record<string, unknown>;
-            ctx._deferredPostScoringEvents = postScoringEvents.map(e => ({
-                type: e.type,
-                payload: (e as GameEvent).payload,
-                timestamp: (e as GameEvent).timestamp,
-            }));
-            data.continuationContext = ctx;
-        }
-        return { events, newBaseDeck, matchState: ms };
-    }
-
-    // 无 afterScoring 交互：正常发出清除+替换事件
-    events.push(...postScoringEvents);
     return { events, newBaseDeck, matchState: ms };
 }
 
@@ -306,72 +264,9 @@ function scoreOneBase(
 export function registerMultiBaseScoringInteractionHandler(): void {
     registerInteractionHandler('multi_base_scoring', (state, playerId, value, _iData, random, timestamp) => {
         const { baseIndex } = value as { baseIndex: number };
-        const events: SmashUpEvent[] = [];
-        let currentState = state;
-        let currentBaseDeck = state.core.baseDeck;
-
-        // 1. 计分玩家选择的基地
-        const result = scoreOneBase(currentState.core, baseIndex, currentBaseDeck, playerId, timestamp, random, currentState);
-        events.push(...result.events);
-        currentBaseDeck = result.newBaseDeck;
-        if (result.matchState) currentState = result.matchState;
-
-        // 如果 beforeScoring/afterScoring 创建了交互 → 先处理交互，剩余基地后续再计分
-        if (currentState.sys.interaction?.current) {
-            return { state: currentState, events: result.events };
-        }
-
-        // 2. 将已产生的事件 reduce 到本地 core 副本，获取最新状态
-        let updatedCore = currentState.core;
-        for (const evt of events) {
-            updatedCore = reduce(updatedCore, evt as SmashUpEvent);
-        }
-
-        // 3. 检查剩余 eligible 基地并逐个计分
-        const remainingIndices = getScoringEligibleBaseIndices(updatedCore);
-        if (remainingIndices.length >= 2) {
-            // 2+ 剩余 → 创建新的多基地选择交互
-            const candidates = remainingIndices.map(i => {
-                const base = updatedCore.bases[i];
-                if (!base) return null;
-                const baseDef = getBaseDef(base.defId);
-                const totalPower = getTotalEffectivePowerOnBase(updatedCore, base, i);
-                return {
-                    baseIndex: i,
-                    label: `${baseDef?.name ?? `基地 ${i + 1}`} (力量 ${totalPower}/${baseDef?.breakpoint ?? '?'})`,
-                };
-            }).filter(Boolean) as { baseIndex: number; label: string }[];
-
-            if (candidates.length >= 2) {
-                const interaction = createSimpleChoice(
-                    `multi_base_scoring_${timestamp}`, playerId,
-                    '选择先记分的基地', buildBaseTargetOptions(candidates, updatedCore) as any[],
-                    { sourceId: 'multi_base_scoring', targetType: 'base' },
-                );
-                currentState = queueInteraction(currentState, interaction);
-                return { state: currentState, events };
-            }
-        }
-
-        // 1 个或 0 个剩余 → 逐个直接计分
-        for (const idx of remainingIndices) {
-            const base = updatedCore.bases[idx];
-            if (!base) continue;
-            const r = scoreOneBase(updatedCore, idx, currentBaseDeck, playerId, timestamp, random, currentState);
-            events.push(...r.events);
-            currentBaseDeck = r.newBaseDeck;
-            if (r.matchState) currentState = r.matchState;
-            // 基地能力创建了交互 → halt，剩余基地后续处理
-            if (currentState.sys.interaction?.current) {
-                return { state: currentState, events };
-            }
-            // 更新本地 core 副本
-            for (const evt of r.events) {
-                updatedCore = reduce(updatedCore, evt as SmashUpEvent);
-            }
-        }
-
-        return { state: currentState, events };
+        const result = scoreOneBase(state.core, baseIndex, state.core.baseDeck, playerId, timestamp, random, state);
+        const updatedState = result.matchState ?? state;
+        return { state: updatedState, events: result.events };
     });
 }
 
@@ -379,7 +274,7 @@ export function registerMultiBaseScoringInteractionHandler(): void {
 // Setup
 // ============================================================================
 
-function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {
+function setup(playerIds: PlayerId[], random: RandomFn): SmashUpCore {
     const nextUid = 1;
 
     const players: Record<PlayerId, PlayerState> = {};
@@ -418,21 +313,9 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
     }
     const baseDeck = shuffledBaseIds;
 
-    // 重赛先手轮换：双人用 firstPlayerId 轮换，多人用 turnOrder 随机
-    let initialTurnOrder = [...playerIds];
-    if (Array.isArray(setupData?.turnOrder) && setupData.turnOrder.length === playerIds.length
-        && setupData.turnOrder.every((id: unknown) => typeof id === 'string' && playerIds.includes(id as PlayerId))) {
-        // 多人：使用服务端随机打乱的顺序
-        initialTurnOrder = setupData.turnOrder as PlayerId[];
-    } else if (typeof setupData?.firstPlayerId === 'string' && playerIds.includes(setupData.firstPlayerId)) {
-        // 双人：先手玩家排第一
-        const first = setupData.firstPlayerId;
-        initialTurnOrder = [first, ...playerIds.filter(id => id !== first)];
-    }
-
     return {
         players,
-        turnOrder: initialTurnOrder,
+        turnOrder: [...playerIds],
         currentPlayerIndex: 0,
         bases: activeBases,
         baseDeck,
@@ -475,21 +358,14 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         if (from === 'endTurn') {
             const events: SmashUpEvent[] = [];
 
-            // 触发 ongoing 效果 onTurnEnd（如 dunwich_horror 回合结束消灭自身、ninja_assassination 消灭目标）
+            // 触发 ongoing 效果 onTurnEnd（如 dunwich_horror 回合结束消灭自身）
             const onTurnEndEvents = fireTriggers(core, 'onTurnEnd', {
                 state: core,
                 playerId: pid,
                 random,
                 now,
             });
-
-            // 关键修复：onTurnEnd 触发器产生的 MINION_DESTROYED 事件必须经过保护过滤
-            // （如伊万将军保护己方随从不被对手消灭），以及 onDestroy 触发链处理
-            if (onTurnEndEvents.events.length > 0) {
-                const ms = onTurnEndEvents.matchState ?? state;
-                const afterDestroyMove = processDestroyMoveCycle(onTurnEndEvents.events, ms, pid, random, now);
-                events.push(...afterDestroyMove.events);
-            }
+            events.push(...onTurnEndEvents.events);
 
             // 切换到下一个玩家
             const nextIndex = (core.currentPlayerIndex + 1) % core.turnOrder.length;
@@ -506,16 +382,17 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             // Me First! 响应完成后，执行实际基地记分
             const events: GameEvent[] = [];
 
-            // 使用统一查询函数（优先锁定列表，回退实时计算）
-            // Wiki Phase 3 Step 4：一旦基地在进入计分阶段时达到 breakpoint，必定计分
-            const lockedIndices = getScoringEligibleBaseIndices(core);
-            // 构建 eligible 基地信息（用于多基地选择 UI）
+            // 找出所有达到临界点的基地
             const eligibleBases: { baseIndex: number; defId: string; totalPower: number }[] = [];
-            for (const i of lockedIndices) {
+            for (let i = 0; i < core.bases.length; i++) {
                 const base = core.bases[i];
-                if (!base) continue;
+                const baseDef = getBaseDef(base.defId);
+                if (!baseDef) continue;
                 const totalPower = getTotalEffectivePowerOnBase(core, base, i);
-                eligibleBases.push({ baseIndex: i, defId: base.defId, totalPower });
+                const bp = getEffectiveBreakpoint(core, i);
+                if (totalPower >= bp) {
+                    eligibleBases.push({ baseIndex: i, defId: base.defId, totalPower });
+                }
             }
 
             // 无基地达标 → 正常推进
@@ -523,17 +400,11 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 return events;
             }
 
-            // 【关键守卫】flowHalted=true 表示上一轮 onPhaseExit 返回了 halt，
-            // 此时 FlowSystem(priority=25) 在 SmashUpEventSystem(priority=50) 之前执行，
-            // core 尚未被交互处理器的计分事件更新，eligible 列表是过时的。
-            // 必须 halt 等待 SmashUpEventSystem 处理完交互解决事件、core 更新后，
-            // 下一轮 afterEvents 再重新进入 onPhaseExit 使用最新 core。
-            if (state.sys.flowHalted) {
-                return { events: [], halt: true } as PhaseExitResult;
-            }
-
             // Property 14: 2+ 基地达标 → 通过 InteractionSystem(simple-choice) 让当前玩家选择计分顺序
-            if (eligibleBases.length >= 2 && !state.sys.interaction.current) {
+            // flowHalted 守卫：Interaction 解决后同一 afterEvents 轮次中 FlowSystem 会再次调用 onPhaseExit，
+            // 此时 SmashUpEventSystem 尚未处理计分事件（core 未更新），跳过 Interaction 创建，
+            // 直接走下方的单基地循环计分逻辑，避免重复创建 Interaction 导致流程卡死
+            if (eligibleBases.length >= 2 && !state.sys.interaction.current && !state.sys.flowHalted) {
                 const candidates = eligibleBases.map(eb => {
                     const baseDef = getBaseDef(eb.defId);
                     return {
@@ -544,8 +415,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
                 const interaction = createSimpleChoice(
                     `multi_base_scoring_${now}`, pid,
-                    '选择先记分的基地', buildBaseTargetOptions(candidates, core) as any[],
-                    { sourceId: 'multi_base_scoring', targetType: 'base' },
+                    '选择先记分的基地', buildBaseTargetOptions(candidates, state) as any[], 'multi_base_scoring',
                 );
                 const updatedState = queueInteraction(state, interaction);
 
@@ -553,16 +423,26 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 return { events: [], halt: true, updatedState } as PhaseExitResult;
             }
 
-            // 1 个基地达标 → 直接记分
-            // 使用统一查询函数获取的 eligible 列表，按顺序逐个计分
-            let remainingBaseIndices = [...lockedIndices];
+            // 1 个基地达标（或 Prompt 已解决后的后续循环）→ 直接记分
+            // Property 15: 循环检查所有达到临界点的基地
+            let remainingBaseIndices = core.bases.map((_, index) => index);
             let currentBaseDeck = core.baseDeck;
             let currentMatchState: MatchState<SmashUpCore> = state;
 
             const maxIterations = remainingBaseIndices.length;
             for (let iter = 0; iter < maxIterations; iter++) {
-                if (remainingBaseIndices.length === 0) break;
-                const foundIndex = remainingBaseIndices[0];
+                let foundIndex: number | null = null;
+                for (const baseIndex of remainingBaseIndices) {
+                    const base = core.bases[baseIndex];
+                    const baseDef = getBaseDef(base.defId);
+                    if (!baseDef) continue;
+                    const totalPower = getTotalEffectivePowerOnBase(core, base, baseIndex);
+                    if (totalPower >= getEffectiveBreakpoint(core, baseIndex)) {
+                        foundIndex = baseIndex;
+                        break;
+                    }
+                }
+                if (foundIndex === null) break;
 
                 const result = scoreOneBase(core, foundIndex, currentBaseDeck, pid, now, random, currentMatchState);
                 events.push(...result.events);
@@ -650,18 +530,21 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (to === 'scoreBases') {
-            // 检查是否有基地达到临界点，没有则跳过 Me First! 响应窗口
-            const eligibleIndices = getScoringEligibleBaseIndices(core);
+            // 先检查是否有基地达到临界点，没有则跳过 Me First! 响应窗口
+            // 规则：Me First! 只在有基地需要记分时触发
+            let hasEligibleBase = false;
+            for (let i = 0; i < core.bases.length; i++) {
+                const base = core.bases[i];
+                const baseDef = getBaseDef(base.defId);
+                if (!baseDef) continue;
+                const totalPower = getTotalEffectivePowerOnBase(core, base, i);
+                if (totalPower >= getEffectiveBreakpoint(core, i)) {
+                    hasEligibleBase = true;
+                    break;
+                }
+            }
 
-            if (eligibleIndices.length > 0) {
-                // 锁定 eligible 基地列表到 core 状态
-                // 规则：一旦基地在进入计分阶段时达到 breakpoint，即使 Me First! 响应窗口中
-                // 力量被降低到 breakpoint 以下，该基地仍然必定计分（Wiki Phase 3 Step 4）
-                events.push({
-                    type: SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
-                    payload: { baseIndices: eligibleIndices },
-                    timestamp: now,
-                } as GameEvent);
+            if (hasEligibleBase) {
                 // 打开 Me First! 响应窗口，等待所有玩家响应
                 // 实际记分在 onPhaseExit('scoreBases') 中执行
                 const meFirstEvt = openMeFirstWindow('scoreBases', pid, core.turnOrder, now);
@@ -723,8 +606,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
         // scoreBases 自动推进：
         // Me First! 响应窗口打开时不推进（由 ResponseWindowSystem 阻塞命令）
-        // 响应窗口关闭后，检查是否有可激活的 beforeScoring 特殊能力（如忍者侍从）
-        // 有则不推进，等待玩家点击激活或点击"结束回合"
+        // 响应窗口关闭后，自动推进到 draw（记分在 onPhaseExit 中执行）
         if (phase === 'scoreBases') {
             // 检查响应窗口是否仍然打开
             const responseWindow = state.sys.responseWindow?.current;
@@ -732,33 +614,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 // 响应窗口仍然打开，不自动推进
                 return undefined;
             }
-            // 检查是否有待处理的交互（如忍者侍从选择随从）
-            if (state.sys.interaction?.current) {
-                return undefined;
-            }
-            // 检查达标基地上是否有可激活的 beforeScoring 特殊能力
-            const eligibleIndices = getScoringEligibleBaseIndices(core);
-            const hasActivatableSpecial = eligibleIndices.some(baseIdx => {
-                const base = core.bases[baseIdx];
-                if (!base) return false;
-                return base.minions.some(m => {
-                    if (m.controller !== pid) return false;
-                    const def = getCardDef(m.defId);
-                    if (!def || !('abilityTags' in def) || !def.abilityTags?.includes('special')) return false;
-                    if (isSpecialLimitBlocked(core, m.defId, baseIdx)) return false;
-                    // 忍者侍从额外条件：本回合未打出随从
-                    if (m.defId === 'ninja_acolyte') {
-                        const player = core.players[m.controller];
-                        if (player.minionsPlayed > 0) return false;
-                    }
-                    return true;
-                });
-            });
-            if (hasActivatableSpecial) {
-                // 有可激活的特殊能力，不自动推进
-                return undefined;
-            }
-            // 响应窗口已关闭且无可激活特殊能力，自动推进
+            // 响应窗口已关闭，自动推进
             return { autoContinue: true, playerId: pid };
         }
 
@@ -778,11 +634,24 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 };
 
 // ============================================================================
-// playerView：不再隐藏手牌/牌库，直接发送完整数据（不需要防作弊）
+// playerView：隐藏其他玩家手牌与牌库
 // ============================================================================
 
-function playerView(_state: SmashUpCore, _playerId: PlayerId): Partial<SmashUpCore> {
-    return {};
+function playerView(state: SmashUpCore, playerId: PlayerId): Partial<SmashUpCore> {
+    const filtered: Record<PlayerId, PlayerState> = {};
+    for (const [pid, player] of Object.entries(state.players)) {
+        if (pid === playerId) {
+            filtered[pid] = player;
+        } else {
+            // 隐藏手牌内容和牌库内容，只保留数量
+            filtered[pid] = {
+                ...player,
+                hand: player.hand.map(c => ({ ...c, defId: 'hidden', type: c.type })),
+                deck: player.deck.map(c => ({ ...c, defId: 'hidden', type: c.type })),
+            };
+        }
+    }
+    return { players: filtered };
 }
 
 
@@ -867,37 +736,20 @@ function postProcessSystemEvents(
     let ms = matchState ?? { core: state, sys: { interaction: { current: undefined, queue: [] } } } as unknown as MatchState<SmashUpCore>;
 
     // 依次执行保护过滤 + trigger 后处理（链式传递 matchState）
-    // destroy ↔ move 循环直到稳定（move 触发器可能产生新的 MINION_DESTROYED）
-    const afterDestroyMove = processDestroyMoveCycle(events, ms, pid, random, now);
-    if (afterDestroyMove.matchState) ms = afterDestroyMove.matchState;
-    // 返回手牌/放牌库底保护过滤（与 execute() 后处理对齐）
-    const afterReturn = filterProtectedReturnEvents(afterDestroyMove.events, ms.core, pid);
-    const afterDeckBottom = filterProtectedDeckBottomEvents(afterReturn, ms.core, pid);
-    const afterAffect = processAffectTriggers(afterDeckBottom, ms, pid, random, now);
+    const afterDestroy = processDestroyTriggers(events, ms, pid, random, now);
+    if (afterDestroy.matchState) ms = afterDestroy.matchState;
+    const afterMove = processMoveTriggers(afterDestroy.events, ms, pid, random, now);
+    if (afterMove.matchState) ms = afterMove.matchState;
+    const afterAffect = processAffectTriggers(afterMove.events, ms, pid, random, now);
     if (afterAffect.matchState) ms = afterAffect.matchState;
 
     // 检测 MINION_PLAYED 事件，自动追加触发链（onPlay + 基地能力 + ongoing）
-    // 关键：必须先把 MINION_PLAYED 之前的事件 reduce 到 core 中，
-    // 否则 onPlay 天赋读取的牌库/手牌等状态是旧的（如维纳斯捕食者从牌库搜索打出行尸，
-    // 行尸 onPlay 读取 deck[0] 时 CARDS_DRAWN 还没 reduce，牌库未更新）。
-    //
-    // 修复策略：在遇到 MINION_PLAYED 时，先把它之前的非 MINION_PLAYED 事件
-    // reduce 到临时 core 中，让 fireMinionPlayedTriggers 拿到最新的牌库/手牌状态。
-    // 不 reduce MINION_PLAYED 本身，因为在 execute 路径（步骤 4.5）中 state 已经
-    // 包含了所有事件的 reduce 结果，再 reduce 会导致 minionsPlayed 等字段重复计算。
     const derivedEvents: SmashUpEvent[] = [];
-    // 收集 MINION_PLAYED 之前的非 MINION_PLAYED 事件，用于临时 reduce
-    const prePlayEvents: SmashUpEvent[] = [];
     for (const event of afterAffect.events) {
         if (event.type === SU_EVENTS.MINION_PLAYED) {
-            // 将之前积累的事件 reduce 到临时 core，获取最新牌库/手牌状态
-            let tempCore = state;
-            for (const preEvt of prePlayEvents) {
-                tempCore = reduce(tempCore, preEvt);
-            }
             const payload = event.payload;
             const triggers = fireMinionPlayedTriggers({
-                core: tempCore,
+                core: state,
                 matchState: ms,
                 playerId: payload.playerId,
                 cardUid: payload.cardUid,
@@ -910,20 +762,17 @@ function postProcessSystemEvents(
             });
             derivedEvents.push(...triggers.events);
             if (triggers.matchState) ms = triggers.matchState;
-        } else {
-            prePlayEvents.push(event);
         }
     }
 
     // 对 derived events 递归执行 trigger 后处理（onPlay 产生的 MINION_DESTROYED 等需要触发 onDestroy 链）
     let finalDerived = derivedEvents;
     if (derivedEvents.length > 0) {
-        const afterDerivedDestroyMove = processDestroyMoveCycle(derivedEvents, ms, pid, random, now);
-        if (afterDerivedDestroyMove.matchState) ms = afterDerivedDestroyMove.matchState;
-        // 返回手牌/放牌库底保护过滤（与 execute() 后处理对齐）
-        const afterDerivedReturn = filterProtectedReturnEvents(afterDerivedDestroyMove.events, ms.core, pid);
-        const afterDerivedDeckBottom = filterProtectedDeckBottomEvents(afterDerivedReturn, ms.core, pid);
-        const afterDerivedAffect = processAffectTriggers(afterDerivedDeckBottom, ms, pid, random, now);
+        const afterDerivedDestroy = processDestroyTriggers(derivedEvents, ms, pid, random, now);
+        if (afterDerivedDestroy.matchState) ms = afterDerivedDestroy.matchState;
+        const afterDerivedMove = processMoveTriggers(afterDerivedDestroy.events, ms, pid, random, now);
+        if (afterDerivedMove.matchState) ms = afterDerivedMove.matchState;
+        const afterDerivedAffect = processAffectTriggers(afterDerivedMove.events, ms, pid, random, now);
         if (afterDerivedAffect.matchState) ms = afterDerivedAffect.matchState;
         finalDerived = afterDerivedAffect.events;
     }

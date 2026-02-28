@@ -260,7 +260,6 @@ export function getEffectivePowerBreakdown(
     baseIndex: number
 ): {
     basePower: number;
-    powerCounters: number;
     permanentModifier: number;
     tempModifier: number;
     ongoingDetails: PowerModifierDetail[];
@@ -268,14 +267,12 @@ export function getEffectivePowerBreakdown(
 } {
     const ongoingDetails = getOngoingPowerModifierDetails(state, minion, baseIndex);
     const ongoingTotal = ongoingDetails.reduce((sum, d) => sum + d.value, 0);
-    const counters = minion.powerCounters ?? 0;
     return {
         basePower: minion.basePower,
-        powerCounters: counters,
         permanentModifier: minion.powerModifier,
         tempModifier: minion.tempPowerModifier ?? 0,
         ongoingDetails,
-        finalPower: Math.max(0, minion.basePower + counters + minion.powerModifier + (minion.tempPowerModifier ?? 0) + ongoingTotal),
+        finalPower: Math.max(0, minion.basePower + minion.powerModifier + (minion.tempPowerModifier ?? 0) + ongoingTotal),
     };
 }
 
@@ -308,7 +305,7 @@ export function getOngoingPowerModifier(
 /**
  * 获取随从的有效力量（含持续修正）
  * 
- * = basePower + powerCounters（力量指示物） + powerModifier（永久修正） + tempPowerModifier（临时，回合结束清零） + ongoingModifier（持续能力）
+ * = basePower + powerModifier（永久指示物） + tempPowerModifier（临时，回合结束清零） + ongoingModifier（持续能力）
  */
 export function getEffectivePower(
     state: SmashUpCore,
@@ -316,7 +313,7 @@ export function getEffectivePower(
     baseIndex: number
 ): number {
     // 力量最低为 0（规则：睡眠孢子等负面修正不能使力量低于 0）
-    return Math.max(0, minion.basePower + (minion.powerCounters ?? 0) + minion.powerModifier + (minion.tempPowerModifier ?? 0) + getOngoingPowerModifier(state, minion, baseIndex));
+    return Math.max(0, minion.basePower + minion.powerModifier + (minion.tempPowerModifier ?? 0) + getOngoingPowerModifier(state, minion, baseIndex));
 }
 
 /**
@@ -402,31 +399,4 @@ export function getEffectiveBreakpoint(
     // 加上临时临界点修正（如 dino_rampage）
     const tempDelta = state.tempBreakpointModifiers?.[baseIndex] ?? 0;
     return Math.max(0, baseDef.breakpoint + total + tempDelta);
-}
-
-/**
- * 获取当前计分阶段中 eligible 的基地索引列表（单一查询入口）。
- *
- * 规则（Wiki Phase 3 Step 4）：一旦基地在进入 scoreBases 阶段时达到 breakpoint，
- * 即使 Me First! 响应窗口中力量被降低到 breakpoint 以下，该基地仍然必定计分。
- *
- * - 如果 `core.scoringEligibleBaseIndices` 存在（进入阶段时锁定），直接返回。
- * - 否则实时计算（正常流程不应走到这里，仅作为安全回退）。
- */
-export function getScoringEligibleBaseIndices(state: SmashUpCore): number[] {
-    if (state.scoringEligibleBaseIndices && state.scoringEligibleBaseIndices.length > 0) {
-        return state.scoringEligibleBaseIndices;
-    }
-    // 回退：实时计算
-    const indices: number[] = [];
-    for (let i = 0; i < state.bases.length; i++) {
-        const base = state.bases[i];
-        const baseDef = getBaseDef(base.defId);
-        if (!baseDef) continue;
-        const totalPower = getTotalEffectivePowerOnBase(state, base, i);
-        if (totalPower >= getEffectiveBreakpoint(state, i)) {
-            indices.push(i);
-        }
-    }
-    return indices;
 }

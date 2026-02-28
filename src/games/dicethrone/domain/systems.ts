@@ -50,7 +50,7 @@ export interface DiceSelectResult {
 }
 
 /** 骰子选择步骤 */
-export type DiceSelectStep = { action: 'toggle' | 'add' | 'remove'; dieId: number };
+export type DiceSelectStep = { action: 'toggle'; dieId: number };
 
 /**
  * 骰子修改 localReducer
@@ -144,20 +144,7 @@ export function diceModifyToCommands(result: DiceModifyResult): Array<{ type: st
  * 导出供客户端在序列化边界后重新注入
  */
 export function diceSelectReducer(current: DiceSelectResult, step: DiceSelectStep): DiceSelectResult {
-    if (step.action === 'add') {
-        // 直接添加（允许同一颗骰子多次选择，如"不愧是我"：同一颗骰子重掷2次）
-        return { selectedDiceIds: [...current.selectedDiceIds, step.dieId] };
-    }
-    if (step.action === 'remove') {
-        // 移除最后一次选择该骰子
-        const idx = current.selectedDiceIds.lastIndexOf(step.dieId);
-        if (idx >= 0) {
-            return { selectedDiceIds: [...current.selectedDiceIds.slice(0, idx), ...current.selectedDiceIds.slice(idx + 1)] };
-        }
-        return current;
-    }
     if (step.action === 'toggle') {
-        // 向后兼容：未选中 → 添加，已选中 → 移除
         const idx = current.selectedDiceIds.indexOf(step.dieId);
         if (idx >= 0) {
             return { selectedDiceIds: current.selectedDiceIds.filter(id => id !== step.dieId) };

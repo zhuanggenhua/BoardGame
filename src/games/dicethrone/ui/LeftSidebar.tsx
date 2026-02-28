@@ -1,4 +1,3 @@
-import React from 'react';
 import type { RefObject } from 'react';
 import type { HeroState, TurnPhase } from '../types';
 import type { TokenDef } from '../domain/tokenTypes';
@@ -9,7 +8,6 @@ import { DrawDeck } from './DrawDeck';
 import { STATUS_IDS } from '../domain/ids';
 import type { HitStopConfig } from '../../../components/common/animations';
 import { UI_Z_INDEX } from '../../../core';
-import { AutoResponseToggle } from './AutoResponseToggle';
 
 
 export const LeftSidebar = ({
@@ -32,7 +30,6 @@ export const LeftSidebar = ({
     selfDamageFlashActive,
     selfDamageFlashDamage,
     overrideHp,
-    onAutoResponseToggle,
 }: {
     currentPhase: TurnPhase;
     viewPlayer: HeroState;
@@ -62,16 +59,13 @@ export const LeftSidebar = ({
     selfDamageFlashDamage?: number;
     /** 视觉状态缓冲覆盖的 HP 值（飞行动画到达前冻结） */
     overrideHp?: number;
-    /** 自动响应开关回调 */
-    onAutoResponseToggle?: (enabled: boolean) => void;
 }) => {
     return (
         <div
             className="absolute left-[1.5vw] top-0 bottom-[1.5vw] w-[15vw] flex flex-col items-center pointer-events-auto"
             style={{ zIndex: UI_Z_INDEX.hud }}
         >
-            {/* 回合顺序 - 上移 */}
-            <div className="w-full pt-[0.5rem] px-[1vw]"><PhaseIndicator currentPhase={currentPhase} /></div>
+            <div className="w-full pt-[1.125rem] px-[1vw]"><PhaseIndicator currentPhase={currentPhase} /></div>
             <div className="flex-grow" />
             <div className="w-full flex flex-col items-center gap-[0.5vw]">
                 {/*
@@ -119,27 +113,20 @@ export const LeftSidebar = ({
                         clickableEffects={canRemoveKnockdown ? [STATUS_IDS.KNOCKDOWN] : []}
                     />
                 </div>
-                {/* 血条和自动响应开关容器 */}
                 <div className="w-full px-[1vw]" data-tutorial-id="player-stats">
-                    <div className="w-full flex flex-col gap-[0.4vw]">
-                        <PlayerStats
-                            player={viewPlayer}
-                            hpRef={selfHpRef}
-                            cpRef={selfCpRef}
-                            hitStopActive={hitStopActive}
-                            hitStopConfig={hitStopConfig}
-                            isShaking={isSelfShaking}
-                            damageFlashActive={selfDamageFlashActive}
-                            damageFlashDamage={selfDamageFlashDamage}
-                            overrideHp={overrideHp}
-                        />
-                        {/* 自动响应开关 - 相对血条居中 */}
-                        <div className="flex justify-center">
-                            <AutoResponseToggle onToggle={onAutoResponseToggle} />
-                        </div>
-                    </div>
+                    <PlayerStats
+                        player={viewPlayer}
+                        hpRef={selfHpRef}
+                        cpRef={selfCpRef}
+                        hitStopActive={hitStopActive}
+                        hitStopConfig={hitStopConfig}
+                        isShaking={isSelfShaking}
+                        damageFlashActive={selfDamageFlashActive}
+                        damageFlashDamage={selfDamageFlashDamage}
+                        overrideHp={overrideHp}
+                    />
                 </div>
-                <div className="w-full px-[1vw] pt-[0.3vw]" data-tutorial-id="draw-deck">
+                <div className="w-full px-[1vw] pt-[0.5vw]" data-tutorial-id="draw-deck">
                     <DrawDeck ref={drawDeckRef} count={viewPlayer.deck.length} locale={locale} />
                 </div>
             </div>

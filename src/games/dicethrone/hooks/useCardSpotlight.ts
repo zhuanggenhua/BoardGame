@@ -122,9 +122,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                 const cardPlayerId = normalizePlayerId(p.playerId);
 
                 // 自己打的卡不显示特写（观战模式除外）
-                if (!isSpectator && cardPlayerId === selfId) {
-                    continue;
-                }
+                if (!isSpectator && cardPlayerId === selfId) continue;
 
                 // 通过静态表解析 previewRef（替代原 reducer 中的 findHeroCard 调用）
                 const heroCard = findHeroCard(p.cardId);

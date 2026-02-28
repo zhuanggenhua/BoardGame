@@ -48,8 +48,6 @@ import { UI_Z_INDEX } from '../core';
 import { playDeniedSound } from '../lib/audio/useGameAudio';
 import { resolveCommandError } from '../engine/transport/errorI18n';
 import { GameCursorProvider } from '../core/cursor';
-import { useWaitingRoomNotification, requestNotificationPermission } from '../hooks/match/useWaitingRoomNotification';
-import { MatchRoomExitProvider } from '../contexts/MatchRoomExitContext';
 
 // 系统级错误（连接/认证），不需要 toast 提示给玩家
 const SYSTEM_ERRORS = new Set(['unauthorized', 'match_not_found', 'sync_timeout', 'command_failed']);
@@ -554,49 +552,6 @@ export const MatchRoom = () => {
         isTutorialRoute ? undefined : matchId,
         isTutorialRoute ? null : statusPlayerID
     );
-
-    // WebSocket 实时推送的对手连接状态（覆盖 HTTP 轮询的延迟数据）
-    // useMatchStatus 依赖 30 秒 HTTP 轮询，首次加载时对手可能还没建立 WebSocket 连接，
-    // 导致 isConnected=false → 离线横幅误触发。这里用 GameProvider 的实时回调修正。
-    const [realtimeOpponentConnected, setRealtimeOpponentConnected] = useState<boolean | null>(null);
-
-    // 玩家加入通知（对标 BGA：提示音 + 标题变更 + 浏览器推送）
-    const { notifyPlayerJoined, resetNotification } = useWaitingRoomNotification({
-        enabled: !isTutorialRoute && !isSpectatorRoute,
-    });
-
-    const handlePlayerConnectionChange = useCallback((playerID: string, connected: boolean) => {
-        const myIndex = statusPlayerID ? parseInt(statusPlayerID) : -1;
-        const opponentIndex = myIndex === 0 ? '1' : '0';
-        if (playerID === opponentIndex) {
-            setRealtimeOpponentConnected(connected);
-            if (connected) {
-                // 对手连接时立即刷新房间状态，获取对手名字（避免等 30 秒轮询）
-                matchStatus.refetch();
-                // 注意：不在这里调用 notifyPlayerJoined，因为 socket 重连也会触发 connected=true
-                // 通知逻辑移到监听 opponentName 变化的 effect 中，只在对手真正加入时触发
-            }
-        }
-    }, [statusPlayerID, matchStatus.refetch]);
-
-    // 监听对手加入/离开（name 变化）时触发通知
-    const prevOpponentNameRef = useRef(matchStatus.opponentName);
-    useEffect(() => {
-        const prev = prevOpponentNameRef.current;
-        const current = matchStatus.opponentName;
-        prevOpponentNameRef.current = current;
-
-        // 对手从"无名字"变为"有名字"（真正加入），触发通知
-        if (!prev && current) {
-            notifyPlayerJoined(current);
-        }
-        // 对手从"有名字"变为"无名字"（真正离开），重置通知状态
-        else if (prev && !current) {
-            resetNotification();
-        }
-    }, [matchStatus.opponentName, notifyPlayerJoined, resetNotification]);
-    // 实时数据优先，无实时数据时降级到 HTTP 轮询
-    const effectiveOpponentConnected = realtimeOpponentConnected ?? matchStatus.opponentConnected;
     useEffect(() => {
         if (isTutorialRoute) return;
         if (!matchId || !statusPlayerID) return;
@@ -780,13 +735,6 @@ export const MatchRoom = () => {
         requireSeen: false,
     });
 
-    // 等待对手阶段请求浏览器通知权限（仅在用户未做过选择时弹出）
-    useEffect(() => {
-        if (isTutorialRoute || isSpectatorRoute) return;
-        if (!matchId || !effectivePlayerID) return;
-        requestNotificationPermission();
-    }, [isTutorialRoute, isSpectatorRoute, matchId, effectivePlayerID]);
-
     useEffect(() => {
         if (isTutorialRoute || !matchId || !lobbyPresence.isMissing) return;
         // 自动加入过程中不检查房间是否缺失（lobby 快照可能尚未包含该房间）
@@ -890,40 +838,6 @@ export const MatchRoom = () => {
         clearMatchLocalState();
         navigateBackToLobby();
     };
-
-    // 对局结束后返回大厅：房主销毁房间，非房主离开房间
-    // 仅由 EndgameOverlay → RematchActions 的"返回大厅"按钮触发
-    const exitToLobby = useCallback(async () => {
-        if (!matchId) {
-            navigateBackToLobby();
-            return;
-        }
-
-        // 观战 / 未绑定身份：直接返回
-        if (!statusPlayerID || !credentials) {
-            clearMatchLocalState();
-            navigateBackToLobby();
-            return;
-        }
-
-        setIsLeaving(true);
-
-        if (matchStatus.isHost) {
-            // 房主：销毁房间
-            const result = await destroyMatch(gameId || 'tictactoe', matchId, statusPlayerID, credentials);
-            if (!result.success) {
-                toast.error({ kind: 'i18n', key: 'matchRoom.destroy.failed', ns: 'lobby' });
-                setIsLeaving(false);
-                return;
-            }
-            clearMatchLocalState();
-        }
-
-        // 非房主：不调用 leaveMatch，保留座位以便重新加入
-        setIsLeaving(false);
-        navigateBackToLobby();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [matchId, statusPlayerID, credentials, matchStatus.isHost, gameId]);
 
     // 真正销毁房间（仅房主可用）
     const handleDestroyRoom = async () => {
@@ -1063,7 +977,7 @@ export const MatchRoom = () => {
                 credentials={credentials}
                 myPlayerId={effectivePlayerID}
                 opponentName={matchStatus.opponentName}
-                opponentConnected={effectiveOpponentConnected}
+                opponentConnected={matchStatus.opponentConnected}
                 players={matchStatus.players}
                 onLeave={handleLeaveRoom}
                 onDestroy={handleDestroyRoom}
@@ -1087,7 +1001,6 @@ export const MatchRoom = () => {
                 } as React.CSSProperties}
             >
                 <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId} playerID={effectivePlayerID}>
-                <MatchRoomExitProvider value={{ exitToLobby }}>
                 {isTutorialRoute ? (
                     <GameModeProvider mode="tutorial">
                         {!gameImplReady ? (
@@ -1127,7 +1040,6 @@ export const MatchRoom = () => {
                                     playerId={isSpectatorRoute ? null : (effectivePlayerID ?? null)}
                                     credentials={credentials}
                                     onError={handleGameError}
-                                    onPlayerConnectionChange={handlePlayerConnectionChange}
                                 >
                                     <BoardBridge
                                         board={ugcBoard}
@@ -1151,7 +1063,6 @@ export const MatchRoom = () => {
                                     engineConfig={engineConfig ?? undefined}
                                     latencyConfig={latencyConfig}
                                     onError={handleGameError}
-                                    onPlayerConnectionChange={handlePlayerConnectionChange}
                                 >
                                     <BoardBridge
                                         board={WrappedBoard}
@@ -1166,7 +1077,6 @@ export const MatchRoom = () => {
                         </div>
                     )
                 )}
-                </MatchRoomExitProvider>
                 </GameCursorProvider>
             </div>
 

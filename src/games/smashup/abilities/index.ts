@@ -43,8 +43,8 @@ import { registerAllOngoingModifiers } from './ongoing_modifiers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import { clearDiscardPlayProviders } from '../domain/discardPlayability';
-import { clearRegistry } from '../domain/abilityRegistry';
-import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { clearRegistry, registerPodAbilityAliases } from '../domain/abilityRegistry';
+import { clearInteractionHandlers, registerPodInteractionAliases } from '../domain/abilityInteractionHandlers';
 
 let initialized = false;
 
@@ -118,6 +118,12 @@ export function initAllAbilities(): void {
 
     // 持续力量修正
     registerAllOngoingModifiers();
+
+    // === POD 版本能力别名注册 ===
+    // 将所有基础版卡牌能力和交互处理回调自动复制给对应的 _pod 版本
+    // 不需为每张 POD 卡单独写一行能力代码就能让其自动接继基础版的全套逻辑
+    registerPodAbilityAliases();
+    registerPodInteractionAliases();
 }
 
 /** 重置初始化状态（测试用） */

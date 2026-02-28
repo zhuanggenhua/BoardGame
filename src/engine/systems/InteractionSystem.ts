@@ -163,30 +163,6 @@ export interface InteractionState {
 }
 
 // ============================================================================
-// 序列化安全工具
-// ============================================================================
-
-/**
- * 从交互数据中移除不可序列化的字段（如 optionsGenerator 函数），
- * 防止 JSON patch / JSON.stringify 序列化失败。
- * 用于事件 payload 和 playerView 输出。
- */
-export function stripNonSerializableFromData(data: unknown): unknown {
-    if (!data || typeof data !== 'object') return data;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { optionsGenerator, ...rest } = data as Record<string, unknown>;
-    return rest;
-}
-
-/**
- * 从 InteractionDescriptor 中移除不可序列化的字段。
- */
-export function stripNonSerializable(interaction: InteractionDescriptor | undefined): InteractionDescriptor | undefined {
-    if (!interaction) return undefined;
-    return { ...interaction, data: stripNonSerializableFromData(interaction.data) };
-}
-
-// ============================================================================
 // 命令 & 事件常量
 // ============================================================================
 
@@ -649,8 +625,8 @@ export function createInteractionSystem<TCore>(
             const { current, queue } = state.sys.interaction;
 
             const filteredCurrent =
-                current?.playerId === playerId ? stripNonSerializable(current) : undefined;
-            const filteredQueue = queue.filter((i) => i?.playerId === playerId).map(i => stripNonSerializable(i)!);
+                current?.playerId === playerId ? current : undefined;
+            const filteredQueue = queue.filter((i) => i?.playerId === playerId);
             // 当其他玩家有未完成交互时，通知当前玩家被阻塞（不暴露交互详情）
             const isBlocked = !!current && current.playerId !== playerId;
 
@@ -691,7 +667,7 @@ function handleInteractionCancel<TCore>(
             interactionId: current.id,
             playerId,
             sourceId,
-            interactionData: stripNonSerializableFromData(current.data),
+            interactionData: current.data,
         },
         timestamp,
     };

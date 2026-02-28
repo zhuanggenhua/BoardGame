@@ -347,8 +347,7 @@ export function registerExpansionBaseAbilities(): void {
         if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `base_cat_fanciers_alley_${ctx.now}`, ctx.playerId,
-            '诡猫巷：消灭一个己方随从来抽一张卡牌', options as any[],
-            { sourceId: 'base_cat_fanciers_alley', targetType: 'minion' },
+            '诡猫巷：消灭一个己方随从来抽一张卡牌', options as any[], 'base_cat_fanciers_alley',
         );
         (interaction.data as any).continuationContext = { baseIndex: ctx.baseIndex };
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -435,8 +434,7 @@ export function registerExpansionBaseAbilities(): void {
         if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `base_land_of_balance_${ctx.now}`, ctx.playerId,
-            '平衡之地：选择一个己方随从移动到这里', options as any[],
-            { sourceId: 'base_land_of_balance', targetType: 'minion' },
+            '平衡之地：选择一个己方随从移动到这里', options as any[], 'base_land_of_balance',
         );
         (interaction.data as any).continuationContext = { balanceBaseIndex };
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -509,7 +507,7 @@ export function registerExpansionBaseAbilities(): void {
         const eggIndex = ctx.state.bases.findIndex(b => b.defId === 'base_egg_chamber');
         if (eggIndex === -1) return false;
         if (ctx.targetBaseIndex !== eggIndex) return false;
-        return (ctx.targetMinion.powerCounters ?? 0) > 0;
+        return ctx.targetMinion.powerModifier > 0;
     });
 
     // 小马乐园（Pony Paradise）：拥有 2+ 随从的玩家，其随从免疫消灭
@@ -571,8 +569,7 @@ export function registerExpansionBaseAbilities(): void {
 
             const interaction = createSimpleChoice(
                 `base_sheep_shrine_${pid}_${ctx.now}`, pid,
-                '绵羊神社：选择移动一个己方随从到此基地', options as any[],
-                { sourceId: 'base_sheep_shrine', targetType: 'minion' },
+                '绵羊神社：选择移动一个己方随从到此基地', options as any[], 'base_sheep_shrine',
             );
             (interaction.data as any).continuationContext = { targetBaseIndex: ctx.baseIndex };
             ms = queueInteraction(ms, interaction);
@@ -622,8 +619,7 @@ export function registerExpansionBaseAbilities(): void {
 
         const interaction = createSimpleChoice(
             `base_the_pasture_${ctx.now}`, ctx.playerId,
-            '牧场：选择另一基地的一个随从移动到这里', minionOptions as any[],
-            { sourceId: 'base_the_pasture', targetType: 'minion' },
+            '牧场：选择另一基地的一个随从移动到这里', minionOptions as any[], 'base_the_pasture',
         );
         (interaction.data as any).continuationContext = { targetBaseIndex: ctx.baseIndex };
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };

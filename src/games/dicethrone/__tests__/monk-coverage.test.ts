@@ -406,8 +406,6 @@ describe('Monk 技能完整覆盖测试', () => {
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
                     cmd('ADVANCE_PHASE', '1'),
-                    // 冥想获得3太极后，防御方可用太极减伤 → Token 响应窗口弹出
-                    cmd('SKIP_TOKEN_RESPONSE', '1'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -448,8 +446,6 @@ describe('Monk 技能完整覆盖测试', () => {
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
                     cmd('ADVANCE_PHASE', '1'),
-                    // 冥想获得4太极后，防御方可用太极减伤 → Token 响应窗口弹出
-                    cmd('SKIP_TOKEN_RESPONSE', '1'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -1162,129 +1158,6 @@ describe('Monk 技能完整覆盖测试', () => {
             expect(gameOver).toBeDefined();
             expect(gameOver?.draw).toBe(true);
             
-            expect(result.assertionErrors).toEqual([]);
-        });
-    });
-
-    // ============================================
-    // 闪避后非伤害效果仍执行
-    // ============================================
-
-    describe('闪避后 onHit 效果仍触发', () => {
-        it('和谐被闪避后仍获得太极（攻击命中但伤害被免除）', () => {
-            // 进攻骰: [1,3,4,6,2] → fist,palm,taiji,lotus,fist → 小顺 → 和谐(5伤害+onHit获得2太极)
-            // 防御骰: [1,1,1,1] → 4拳（清修反伤4）
-            // 闪避掷骰: [1] → 成功（1-2成功）
-            const diceValues = [1, 3, 4, 6, 2, 1, 1, 1, 1, 1];
-            const random = createQueuedRandom(diceValues);
-
-            const setupWithEvasive = (playerIds: PlayerId[], rng: RandomFn): MatchState<DiceThroneCore> => {
-                const state = createNoResponseSetup()(playerIds, rng);
-                // 给防御方（玩家1）1个闪避 Token
-                state.core.players['1'].tokens[TOKEN_IDS.EVASIVE] = 1;
-                return state;
-            };
-
-            const runner = new GameTestRunner({
-                domain: DiceThroneDomain,
-                systems: testSystems,
-                playerIds: ['0', '1'],
-                random,
-                setup: setupWithEvasive,
-                assertFn: assertState,
-                silent: true,
-            });
-
-            const result = runner.run({
-                name: '和谐被闪避后仍获得太极',
-                commands: [
-                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
-                    cmd('ROLL_DICE', '0'),
-                    cmd('CONFIRM_ROLL', '0'),
-                    cmd('SELECT_ABILITY', '0', { abilityId: 'harmony' }),
-                    cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll
-                    cmd('ROLL_DICE', '1'),
-                    cmd('CONFIRM_ROLL', '1'),
-                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
-                    cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> 攻击结算 → Token 响应窗口（beforeDamageReceived）
-                    // 防御方使用闪避 Token → 闪避成功 → 自动关闭响应窗口（TOKEN_RESPONSE_CLOSED）
-                    // → damageResolved=true → autoContinue → postDamage 效果 → main2
-                    cmd('USE_TOKEN', '1', { tokenId: TOKEN_IDS.EVASIVE, amount: 1 }),
-                ],
-                expect: {
-                    turnPhase: 'main2',
-                    players: {
-                        '0': {
-                            // 关键断言：闪避后 onHit 效果仍触发，攻击方获得2太极
-                            tokens: { [TOKEN_IDS.TAIJI]: 2 },
-                        },
-                        '1': {
-                            hp: 50, // 闪避成功，未受伤
-                            tokens: { [TOKEN_IDS.EVASIVE]: 0 }, // 闪避 Token 已消耗
-                        },
-                    },
-                },
-            });
-
-            expect(result.assertionErrors).toEqual([]);
-        });
-
-        it('定水神拳被闪避后仍获得太极+闪避（postDamage onHit 效果）', () => {
-            // 进攻骰: [1,2,3,4,5] → 大顺 → 定水神拳(7伤害+onHit获得2太极+1闪避)
-            // 防御骰: [1,1,1,1]
-            // 闪避掷骰: [2] → 成功
-            const diceValues = [1, 2, 3, 4, 5, 1, 1, 1, 1, 2];
-            const random = createQueuedRandom(diceValues);
-
-            const setupWithEvasive = (playerIds: PlayerId[], rng: RandomFn): MatchState<DiceThroneCore> => {
-                const state = createNoResponseSetup()(playerIds, rng);
-                state.core.players['1'].tokens[TOKEN_IDS.EVASIVE] = 1;
-                return state;
-            };
-
-            const runner = new GameTestRunner({
-                domain: DiceThroneDomain,
-                systems: testSystems,
-                playerIds: ['0', '1'],
-                random,
-                setup: setupWithEvasive,
-                assertFn: assertState,
-                silent: true,
-            });
-
-            const result = runner.run({
-                name: '定水神拳被闪避后仍获得太极+闪避',
-                commands: [
-                    cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
-                    cmd('ROLL_DICE', '0'),
-                    cmd('CONFIRM_ROLL', '0'),
-                    cmd('SELECT_ABILITY', '0', { abilityId: 'calm-water' }),
-                    cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll
-                    cmd('ROLL_DICE', '1'),
-                    cmd('CONFIRM_ROLL', '1'),
-                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
-                    cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> 攻击结算 → Token 响应窗口（beforeDamageReceived）
-                    // 防御方使用闪避 Token → 闪避成功 → 自动关闭响应窗口
-                    // → damageResolved=true → autoContinue → postDamage 效果 → main2
-                    cmd('USE_TOKEN', '1', { tokenId: TOKEN_IDS.EVASIVE, amount: 1 }),
-                ],
-                expect: {
-                    turnPhase: 'main2',
-                    players: {
-                        '0': {
-                            tokens: {
-                                [TOKEN_IDS.TAIJI]: 2,
-                                [TOKEN_IDS.EVASIVE]: 1, // 定水神拳 onHit 获得闪避
-                            },
-                        },
-                        '1': {
-                            hp: 50, // 闪避成功
-                            tokens: { [TOKEN_IDS.EVASIVE]: 0 },
-                        },
-                    },
-                },
-            });
-
             expect(result.assertionErrors).toEqual([]);
         });
     });

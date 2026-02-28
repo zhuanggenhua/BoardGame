@@ -405,7 +405,7 @@ export function registerSteampunkInteractionHandlers(): void {
             });
             const interaction = createSimpleChoice(
                 `steampunk_mechanic_target_${timestamp}`, playerId,
-                '选择要将行动卡打出到的基地', baseOptions, { sourceId: 'steampunk_mechanic_target', targetType: 'base' },
+                '选择要将行动卡打出到的基地', baseOptions, 'steampunk_mechanic_target',
             );
             const extended = {
                 ...interaction,
@@ -468,7 +468,7 @@ export function registerSteampunkInteractionHandlers(): void {
                 }
                 const interaction = createSimpleChoice(
                     `steampunk_cov_target_${timestamp}`, playerId,
-                    '选择要将行动卡附着到的随从', minionOptions, { sourceId: 'steampunk_change_of_venue_target', targetType: 'minion' },
+                    '选择要将行动卡附着到的随从', minionOptions, 'steampunk_change_of_venue_target',
                 );
                 const extended = { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ongoingUid, defId } } };
                 return { state: queueInteraction(state, extended), events: [detachEvt as SmashUpEvent, recoverEvt] };
@@ -480,7 +480,7 @@ export function registerSteampunkInteractionHandlers(): void {
             });
             const interaction = createSimpleChoice(
                 `steampunk_cov_target_${timestamp}`, playerId,
-                '选择要将行动卡打出到的基地', baseOptions, { sourceId: 'steampunk_change_of_venue_target', targetType: 'base' },
+                '选择要将行动卡打出到的基地', baseOptions, 'steampunk_change_of_venue_target',
             );
             const extended = { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ongoingUid, defId } } };
             return { state: queueInteraction(state, extended), events: [detachEvt as SmashUpEvent, recoverEvt] };

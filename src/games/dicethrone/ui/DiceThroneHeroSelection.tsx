@@ -25,7 +25,6 @@ export interface DiceThroneHeroSelectionProps {
     playerNames: Record<PlayerId, string>;
     onSelect: (characterId: SelectableCharacterId) => void;
     onReady: () => void;
-    onUnready: () => void;
     onStart: () => void;
     locale: string;
 }
@@ -55,7 +54,6 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
     playerNames,
     onSelect,
     onReady,
-    onUnready,
     onStart,
     locale,
 }) => {
@@ -94,11 +92,6 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
     const handleReady = () => {
         playSound(HERO_SELECTION_CLICK_SOUND_KEY);
         onReady();
-    };
-
-    const handleUnready = () => {
-        playSound(HERO_SELECTION_CLICK_SOUND_KEY);
-        onUnready();
     };
 
     const handleStart = () => {
@@ -157,7 +150,7 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                         {t('selection.title')}
                     </h2>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-[1vw] grid grid-cols-2 gap-[0.8vw] content-start pt-[1vw]">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-[1vw] grid grid-cols-2 gap-[0.8vw] content-start pt-[1vw]">
                     {availableCharacters.map((char, index) => {
                         const isSelectedByMe = selectedCharacters[currentPlayerId] === char.id;
 
@@ -318,14 +311,12 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                         )}
 
                         {!isHost && readyPlayers[currentPlayerId] && (
-                            <motion.button
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                onClick={handleUnready}
-                                className="px-[3vw] py-[1vw] rounded-full text-[1.2vw] font-black uppercase tracking-[0.2em] transition-all duration-300 border-2 bg-white/5 text-emerald-400 border-emerald-400/50 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/50 cursor-pointer"
-                            >
-                                {t('selection.cancelReady')}
-                            </motion.button>
+                            <div className="px-[3vw] py-[1vw] rounded-full text-[1.2vw] font-black uppercase tracking-[0.2em] border-2 bg-white/5 text-emerald-400 border-emerald-400/50">
+                                <span className="inline-flex items-center gap-[0.8vw]">
+                                    <span>{t('selection.readyWaiting')}</span>
+                                    <span className="flex items-center gap-[0.35vw]">{readyProgressDots}</span>
+                                </span>
+                            </div>
                         )}
 
                         {isHost && hasSelectedChar && (

@@ -700,7 +700,7 @@ export const HandArea = ({
                                     setHoveredCardKey(prev => prev === cardKey ? null : prev);
                                 }}
                                 className={`
-                                    absolute bottom-0 w-[12vw] aspect-[0.611] rounded-[0.8vw]
+                                    absolute bottom-0 w-[12vw] aspect-[0.61] rounded-[0.8vw]
                                     ${canClickDiscard ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}
                                     pointer-events-auto origin-bottom-center bg-transparent overflow-visible
                                 `}
@@ -814,7 +814,7 @@ export const HandArea = ({
                         return (
                             <motion.div
                                 key={`flying-${cardKey}`}
-                                className="absolute bottom-0 w-[12vw] aspect-[0.611] rounded-[0.8vw] pointer-events-none"
+                                className="absolute bottom-0 w-[12vw] aspect-[0.61] rounded-[0.8vw] pointer-events-none"
                                 style={{
                                     bottom: '-2vw',
                                     left: `calc(50% + ${startIndexOffset * 7}vw - 6vw)`,

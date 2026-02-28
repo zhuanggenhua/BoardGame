@@ -92,7 +92,6 @@ class SocialSocketService {
                 reconnection: true,
                 reconnectionAttempts: Infinity, // 后台标签页冻结后需要无限重连
                 reconnectionDelay: 1000,
-                reconnectionDelayMax: 5000, // 限制最大重连间隔，避免指数退避过大
             });
 
             this.setupEventHandlers();

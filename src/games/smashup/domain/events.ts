@@ -62,7 +62,6 @@ export const SU_EVENTS = defineEvents({
   
   'su:power_counter_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:power_counter_removed': { audio: 'immediate', sound: POWER_LOSE_KEY },
-  'su:permanent_power_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:temp_power_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   
   'su:ongoing_attached': { audio: 'immediate', sound: ACTION_PLAY_KEY },
@@ -84,7 +83,6 @@ export const SU_EVENTS = defineEvents({
   'su:special_limit_used': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:special_after_scoring_armed': 'silent',
   'su:special_after_scoring_consumed': 'silent',
-  'su:scoring_eligible_bases_locked': 'silent',  // 进入 scoreBases 阶段时锁定 eligible 基地列表
   
   'su:ability_feedback': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:ability_triggered': 'fx',        // 持续效果/触发器激活（FX 动画）
@@ -120,7 +118,6 @@ export const SU_EVENT_TYPES = {
   MINION_MOVED: SU_EVENTS['su:minion_moved'].type,
   POWER_COUNTER_ADDED: SU_EVENTS['su:power_counter_added'].type,
   POWER_COUNTER_REMOVED: SU_EVENTS['su:power_counter_removed'].type,
-  PERMANENT_POWER_ADDED: SU_EVENTS['su:permanent_power_added'].type,
   ONGOING_ATTACHED: SU_EVENTS['su:ongoing_attached'].type,
   ONGOING_DETACHED: SU_EVENTS['su:ongoing_detached'].type,
   ONGOING_CARD_COUNTER_CHANGED: SU_EVENTS['su:ongoing_card_counter_changed'].type,
@@ -141,7 +138,6 @@ export const SU_EVENT_TYPES = {
   SPECIAL_LIMIT_USED: SU_EVENTS['su:special_limit_used'].type,
   SPECIAL_AFTER_SCORING_ARMED: SU_EVENTS['su:special_after_scoring_armed'].type,
   SPECIAL_AFTER_SCORING_CONSUMED: SU_EVENTS['su:special_after_scoring_consumed'].type,
-  SCORING_ELIGIBLE_BASES_LOCKED: SU_EVENTS['su:scoring_eligible_bases_locked'].type,
   ABILITY_FEEDBACK: SU_EVENTS['su:ability_feedback'].type,
   ABILITY_TRIGGERED: SU_EVENTS['su:ability_triggered'].type,
   MINION_PLAY_EFFECT_QUEUED: SU_EVENTS['su:minion_play_effect_queued'].type,

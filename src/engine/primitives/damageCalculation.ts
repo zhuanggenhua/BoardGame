@@ -33,8 +33,6 @@ export interface DamageSource {
   playerId: PlayerId;
   /** 来源技能/能力 ID */
   abilityId?: string;
-  /** 伤害发生的阶段（用于 passiveTrigger 条件过滤，如锁定只在攻击掷骰阶段生效） */
-  phase?: string;
 }
 
 /**
@@ -97,9 +95,7 @@ export interface DamageCalculationConfig extends DamageContext {
   /** 是否自动收集状态修正（默认 true） */
   autoCollectStatus?: boolean;
   
-  /** 是否自动收集护盾减免（默认 false）。
-   * 护盾消耗通常由 reducer 统一处理，开启此选项会导致伤害被双重扣减。
-   * 仅在需要预览/展示护盾减免效果且不经过 reducer 时设为 true。 */
+  /** 是否自动收集护盾减免（默认 true） */
   autoCollectShields?: boolean;
   
   /** PassiveTrigger handler（游戏层注入） */
@@ -217,7 +213,7 @@ export class DamageCalculation {
     if (this.config.autoCollectStatus !== false) {
       this.collectStatusModifiers();
     }
-    if (this.config.autoCollectShields === true) {
+    if (this.config.autoCollectShields !== false) {
       this.collectShieldModifiers();
     }
     
@@ -294,7 +290,7 @@ export class DamageCalculation {
           value: -statusDef.damageReduction * stacks,
           priority: 20,
           source: statusId,
-          description: statusDef.name || statusId,
+          description: `Status: ${statusDef.name || statusId}`,
         });
       });
     }
@@ -303,11 +299,6 @@ export class DamageCalculation {
     //    遍历所有 tokenDefinitions，根据 category 从 statusEffects 或 tokens 取层数
     for (const def of tokenDefs) {
       if (def.passiveTrigger?.timing !== 'onDamageReceived') continue;
-      
-      // 条件过滤：如果 token 声明了 sourceCondition，检查当前伤害来源是否匹配
-      // 例：锁定声明 sourceCondition.phase = 'offensiveRoll'，只在攻击掷骰阶段伤害时触发
-      const condition = def.passiveTrigger.sourceCondition;
-      if (condition?.phase && condition.phase !== source.phase) continue;
       
       // 根据 category 决定从 statusEffects 还是 tokens 取层数
       const stacks = def.category === 'debuff'
@@ -329,7 +320,7 @@ export class DamageCalculation {
                 value,
                 priority: 20,
                 source: def.id,
-                description: def.name || def.id,
+                description: `Status: ${def.name || def.id}`,
               });
             }
             break;
@@ -381,7 +372,7 @@ export class DamageCalculation {
                   value: -handlerResult.preventAmount,
                   priority: 25,
                   source: def.id,
-                  description: def.name || def.id,
+                  description: `Status: ${def.name || def.id}`,
                 });
               }
               

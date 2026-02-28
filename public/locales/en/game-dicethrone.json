@@ -60,7 +60,6 @@
       "tipBoard": "This tip board shows your hero reference and ability requirements; you can expand or collapse it anytime.",
       "dice": "Your dice tray. You may roll up to 3 times each turn and lock dice you want to keep.",
       "rollButton": "Use “Roll” to start rolling. When you’re satisfied or out of rolls, move to confirm.",
-      "diceLock": "After rolling, **click a die** to lock it. Locked dice won't be re-rolled, letting you keep the results you want. Try clicking a die to lock it!",
       "confirmButton": "Confirm locks the result so you can pick a skill. If you want another roll, don’t confirm yet.",
       "abilities": "Highlighted abilities are available to use. Pick one to begin attack resolution.",
       "hand": "Your hand lives here. In Main phases you can play action cards or upgrades, or sell cards for CP.",
@@ -96,7 +95,7 @@
     "burn": {
       "name": "Burn",
       "description": [
-        "Persistent. Does not stack. During Upkeep, take 2 undefendable damage"
+        "During Upkeep, take undefendable damage equal to the number of stacks, then remove 1 stack"
       ]
     },
     "stun": {
@@ -139,7 +138,7 @@
     "targeted": {
       "name": "Targeted",
       "description": [
-        "Incoming damage +2. Removed after triggering."
+        "Incoming damage +2. Persistent."
       ]
     }
   },
@@ -297,9 +296,6 @@
     "cpSpentPlain": "Spent {{amount}} CP",
     "cardDrawn": "Drew {{count}} card(s) ({{source}})",
     "cardDrawnPlain": "Drew {{count}} card(s)",
-    "sellCard": "Sold card",
-    "sellCardCp": "(+1 CP)",
-    "cardDiscarded": "Discarded",
     "usePurify": "Purified {{statusLabel}}",
     "payToRemoveKnockdown": "Paid 2CP to remove Knockdown",
     "usePassiveAbility": "Used passive: {{abilityName}}",
@@ -307,11 +303,7 @@
     "confirmRollWithAbility": "Confirmed roll ({{abilityName}}):",
     "confirmRollDefense": "Confirmed defense roll:",
     "confirmRollDefenseWithAbility": "Confirmed defense roll ({{abilityName}}):",
-    "cardRollResult": "Roll result:",
-    "damagePrevented": "Prevented {{amount}} damage with [{{source}}]",
-    "damagePreventedPlain": "Prevented {{amount}} damage",
-    "damageShieldPercent": "Gained {{percent}}% damage reduction shield with [{{source}}]",
-    "damageShieldPercentPlain": "Gained {{percent}}% damage reduction shield"
+    "cardRollResult": "Roll result:"
   },
   "purify": {
     "title": "Use Purify",
@@ -331,11 +323,7 @@
     "opponent": "Opponent",
     "healthLabel": "Health: {{value}}",
     "energyLabel": "Energy: {{value}}",
-    "shieldLabel": "Shield: {{value}}",
-    "autoResponse": "Show Response",
-    "manualResponse": "Auto Skip",
-    "autoResponseEnabled": "Show response enabled - Response windows require manual confirmation",
-    "autoResponseDisabled": "Auto skip - Response windows will be skipped automatically"
+    "shieldLabel": "Shield: {{value}}"
   },
   "hero": {
     "monk": "Monk",
@@ -537,6 +525,7 @@
     "wrongPhaseForMain": "Can only use this card in main phase",
     "wrongPhaseForRoll": "Can only use this card in roll phase",
     "upgradeCardCannotPlay": "Upgrade cards must be dragged to an ability slot",
+    "upgradeCardSkipLevel": "Cannot skip ability levels with upgrade cards",
     "upgradeCardMaxLevel": "This ability is already at max level",
     "upgradeCardTargetMismatch": "Upgrade card does not match target ability",
     "unknownCardTiming": "This card cannot be used at current timing",
@@ -588,8 +577,7 @@
     "no_pending_bonus_dice": "No pending bonus dice settlement",
     "bonus_reroll_limit_reached": "Bonus die reroll limit reached",
     "not_enough_token": "Not enough tokens to pay the cost",
-    "invalid_die_index": "Invalid die index",
-    "attack_already_initiated": "Attack already initiated, cannot select ability again"
+    "invalid_die_index": "Invalid die index"
   },
   "actions": {
     "resolveAttack": "Resolve Attack",
@@ -680,15 +668,7 @@
     "selectPlayerToRemoveAllStatus": "Select a player to remove all status",
     "selectPlayerForRetribution": "Select a player to gain Retribution",
     "selectPlayerForConsecrate": "Select a player to consecrate",
-    "selectStatusToTransfer": "Select a status effect to transfer",
-    "hint_copy_step1": "Step 1: Click the source die (value to copy)",
-    "hint_copy_step2": "Step 2: Click the target die (will become {{value}})",
-    "hint_set": "Click a die to set it to {{value}}",
-    "hint_adjust": "Use +/- buttons to adjust die value",
-    "hint_any": "Use +/- buttons to change die to any value",
-    "hint_select": "Click to select dice to reroll ({{current}}/{{max}})",
-    "hint_select_opponent": "Click opponent's dice to reroll ({{current}}/{{max}})",
-    "hint_done": "Selection complete, click Confirm"
+    "selectStatusToTransfer": "Select a status effect to transfer"
   },
   "abilitySlots": {
     "fist": "Fist Technique",
@@ -792,8 +772,7 @@
     "lotus-palm-2-4": {
       "effects": {
         "damage6": "Deal 6 undefendable damage",
-        "taijiCapMax": "Gain 6 Taiji tokens",
-        "taijiCapUp": "Increase Chi cap by 1 and gain 6 Taiji tokens"
+        "taijiCapMax": "Gain 6 Taiji tokens"
       }
     },
     "lotus-palm-2-5": {
@@ -811,8 +790,7 @@
         "bonusFist": "If this roll contains Fist: +2 damage",
         "bonusPalm": "If this roll contains Palm: +3 damage",
         "gainTaiji2": "If this roll contains Taiji: gain 2 Taiji tokens",
-        "gainChoice": "If this roll contains Lotus: gain Evasive or Purify (your choice)",
-        "rollDie": "Roll dice"
+        "gainChoice": "If this roll contains Lotus: gain Evasive or Purify (your choice)"
       }
     },
     "thunder-strike": {
@@ -837,22 +815,6 @@
       "description": "A meditative stance while defending",
       "effects": {
         "taijiByResult": "Gain Taiji tokens equal to Taiji faces rolled",
-        "damageByFist": "Deal damage equal to Fist faces rolled"
-      }
-    },
-    "meditation-2": {
-      "name": "Meditation II",
-      "description": "Defensive roll 5 dice. Gain Chi equal to Taiji faces; deal damage equal to Fist faces.",
-      "effects": {
-        "taijiByResult": "Gain Chi equal to Taiji faces rolled",
-        "damageByFist": "Deal damage equal to Fist faces rolled"
-      }
-    },
-    "meditation-3": {
-      "name": "Meditation III",
-      "description": "Defensive roll 5 dice. Gain Chi equal to Taiji faces; deal damage equal to Fist faces. If Taiji + Lotus present, gain Evasive -or- Purify.",
-      "effects": {
-        "taijiByResult": "Gain Chi equal to Taiji faces rolled (Taiji + Lotus: gain Evasive or Purify)",
         "damageByFist": "Deal damage equal to Fist faces rolled"
       }
     },
@@ -970,7 +932,7 @@
     },
     "righteous-combat": {
       "name": "Righteous Combat",
-      "description": "3 Sword + 2 Helm: deal 5 damage, roll 2 dice for bonus effects",
+      "description": "3 Sword + 1 Helm: deal 5 damage, roll 2 dice for bonus effects",
       "effects": {
         "damage5": "Deal 5 damage",
         "roll2": "Roll 2 dice: Sword +2 dmg, Helm +1 dmg, Heart heal 2, Pray +1 CP"
@@ -996,18 +958,6 @@
         "roll3": "Roll 3 dice: Sword +2 dmg, Helm +1 dmg, Heart heal 2, Pray +1 CP"
       }
     },
-    "righteous-combat-3-tenacity": {
-      "name": "Tenacity III",
-      "description": "2 Sword + 1 Helm: heal 2, deal 2 undefendable damage",
-      "effects": {
-        "heal2": "Heal 2 HP",
-        "damage2Unblockable": "Deal 2 undefendable damage"
-      }
-    },
-    "righteous-combat-3-main": {
-      "name": "Righteous Combat III",
-      "description": "3 Sword + 2 Helm: deal 6 damage, roll 3 dice for bonus effects"
-    },
     "blessing-of-might": {
       "name": "Blessing of Might",
       "description": "3 Sword + 1 Pray: deal 3 undefendable damage, gain 1 Crit and 1 Accuracy",
@@ -1027,14 +977,6 @@
         "gainCrit": "Gain 1 Crit token",
         "gainAccuracy": "Gain 1 Accuracy token"
       }
-    },
-    "blessing-of-might-2-stance": {
-      "name": "Offensive Stance",
-      "description": "2 Sword + 1 Pray: deal 2 undefendable damage, choose Crit or Accuracy"
-    },
-    "blessing-of-might-2-main": {
-      "name": "Might Disciple II",
-      "description": "3 Sword + 1 Pray: deal 4 undefendable damage, gain 1 Crit and 1 Accuracy"
     },
     "holy-strike": {
       "name": "Holy Strike",
@@ -1138,14 +1080,6 @@
         "gain2CP": "Gain 2 CP"
       }
     },
-    "righteous-prayer-2-prosperity": {
-      "name": "Prosperity",
-      "description": "3 Pray: gain 4 CP"
-    },
-    "righteous-prayer-2-main": {
-      "name": "Righteous Prayer II",
-      "description": "4 Pray: deal 8 undefendable damage, gain Crit, gain 2 CP"
-    },
     "holy-defense": {
       "name": "Holy Defense",
       "description": "Defense (3 dice): Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP",
@@ -1229,10 +1163,6 @@
         "damage6": "Deal 6 damage"
       }
     },
-    "deadeye-shot-2": {
-      "name": "Deadeye Shot II",
-      "description": "3 Bow + 2 Moon: inflict Targeted, deal 6 damage"
-    },
     "focus": {
       "name": "Focus",
       "description": "2 Bow + 1 Moon: inflict Targeted and Entangle",
@@ -1251,7 +1181,7 @@
     },
     "covering-fire-2": {
       "name": "Covering Fire II",
-      "description": "2 Bow + 3 Foot: gain Evasive, deal 9 damage",
+      "description": "Two variants: Covering Fire and Silencing Trace",
       "effects": {
         "gainEvasive": "Gain 1 Evasive token",
         "damage9": "Deal 9 damage"
@@ -1307,7 +1237,7 @@
     },
     "eclipse-2": {
       "name": "Eclipse II",
-      "description": "4 Moon: inflict Blinded, Entangle, Targeted, deal 9 damage",
+      "description": "Two variants: Eclipse and Dark Moon",
       "effects": {
         "inflictBlinded": "Inflict 1 Blinded token",
         "inflictEntangle": "Inflict 1 Entangle token",
@@ -1336,7 +1266,7 @@
     },
     "blinding-shot-2": {
       "name": "Blinding Shot II",
-      "description": "Large Straight: inflict Blinded, gain Evasive, deal 10 damage",
+      "description": "Two variants: Blinding Shot and Moon's Blessing",
       "effects": {
         "inflictBlinded": "Inflict 1 Blinded token",
         "gainEvasive": "Gain 1 Evasive token",
@@ -1364,7 +1294,7 @@
     },
     "elusive-step": {
       "name": "Elusive Step",
-      "description": "Defensive phase (5 dice): if ≥2 Foot, block half damage (round up); for each pair of Bows, deal 1 damage",
+      "description": "Defensive phase (5 dice): if ≥2 Foot, block half damage (round up); for each Foot, deal 1 damage",
       "effects": {
         "resolveDefense": "Resolve defense"
       }
@@ -1542,11 +1472,7 @@
     },
     "calm-water-2-way-of-monk": {
       "name": "Way of the Monk",
-      "description": "All 4 symbols present: gain 2 Evasive, deal 3 unblockable damage",
-      "effects": {
-        "gainEvasive2": "Gain 2 Evasive tokens",
-        "damage3": "Deal 3 unblockable damage"
-      }
+      "description": "All 4 symbols present: gain 2 Evasive, deal 3 unblockable damage"
     },
     "slap": {
       "name": "Slap",
@@ -1603,14 +1529,6 @@
       "effects": {
         "damage15": "Deal 15 damage",
         "selfDamage4": "Take 4 self-damage (only if damage was dealt)"
-      }
-    },
-    "rage": {
-      "name": "Rage!",
-      "description": "Ultimate Ability! 5 Strength faces: inflict Daze and deal 15 Ultimate damage.",
-      "effects": {
-        "inflictDaze": "Inflict Daze on opponent",
-        "damage15": "Deal 15 Ultimate damage"
       }
     },
     "thick-skin": {
@@ -1756,24 +1674,14 @@
     },
     "soul-burn-2": {
       "name": "Soul Burn II",
-      "description": "2 Fire Soul: gain 2×[souls] Fire Mastery, deal [souls] damage",
+      "description": "2 Fire Soul: Gain 2×[souls] FM, deal [souls] damage. 3 Fire Soul: also inflict Burn. Blazing Soul (2 Magma + 2 Fire Soul): FM cap +1, gain 5 FM, inflict Knockdown.",
       "effects": {
         "fm": "Gain Fire Mastery equal to 2× Fire Soul faces",
         "damage": "Deal damage equal to Fire Soul face count to all opponents"
       }
     },
     "soul-burn-3": {
-      "name": "Soul Burn (3 Fire Soul)",
       "effects": {
-        "fm": "Gain Fire Mastery equal to 2× Fire Soul faces",
-        "inflictBurn": "Inflict 1 Burn token",
-        "damage": "Deal damage equal to Fire Soul face count to all opponents"
-      }
-    },
-    "soul-burn-5": {
-      "name": "Soul Burn (5 Fire Soul)",
-      "effects": {
-        "increaseLimit": "Increase Fire Mastery stack cap by 1",
         "fm": "Gain Fire Mastery equal to 2× Fire Soul faces",
         "inflictBurn": "Inflict 1 Burn token",
         "damage": "Deal damage equal to Fire Soul face count to all opponents"
@@ -1790,7 +1698,7 @@
     },
     "fiery-combo-2": {
       "name": "Fiery Combo II",
-      "description": "Small Straight: gain 2 Fire Mastery, deal 6+X damage (X = Fire Mastery count)",
+      "description": "Small Straight: gain 2 Fire Mastery and deal 6+X damage. 2 Fire + 2 Fiery Soul: gain 2 Fire Mastery, inflict Burn, deal 6 damage.",
       "effects": {
         "gainFM2": "Gain 2 Fire Mastery",
         "main": "Deal 6 base damage. If you have Fire Mastery, deal +1 damage per Fire Mastery."
@@ -1807,7 +1715,7 @@
     },
     "meteor-2": {
       "name": "Meteor II",
-      "description": "4 Meteor: gain 2 Fire Mastery, inflict Stun, deal X undefendable damage, 3 collateral damage",
+      "description": "3x Meteor: Knockdown, Burn, Stun. 4x Meteor: gain 2 Fire Mastery, Stun, X undefendable damage, 3 collateral damage.",
       "effects": {
         "gainFM2": "Gain 2 Fire Mastery",
         "inflictStun": "Inflict 1 Stun token",
@@ -1842,9 +1750,9 @@
     },
     "burn-down-2": {
       "name": "Burn Down II",
-      "description": "Gain 1 Fire Mastery. Activate Burn Down: remove up to 4 Fire Mastery; each removed deals 4 undefendable damage.",
+      "description": "Gain 1 Fire Mastery. Activate Burn Down: each removed Fire Mastery deals 4 undefendable damage.",
       "effects": {
-        "main": "Activate Burn Down: remove up to 4 Fire Mastery. Each removed deals 4 undefendable damage"
+        "main": "Activate Burn Down: remove any number of Fire Mastery. Each removed deals 4 undefendable damage"
       }
     },
     "ignite-2": {
@@ -1860,7 +1768,7 @@
       "name": "Magma Armor II",
       "description": "Defense: 1x Fire deals 1 undefendable damage, 1x Fire Soul gains 1 Fire Mastery.",
       "effects": {
-        "main": "Defensive ability (5 dice): for each Fire Soul rolled, gain 1 Fire Mastery. If Fire + Magma present, inflict Burn. For each Fire rolled, deal 1 damage."
+        "main": "Defensive ability (5 dice): for each Fire rolled, gain 1 Fire Mastery and deal 1 damage. If you have Fire + Fire Soul, inflict Burn."
       }
     },
     "magma-armor-3": {
@@ -1868,33 +1776,6 @@
       "description": "Defense: 1x Fire deals 2 undefendable damage, 1x Fire Soul gains 1 Fire Mastery.",
       "effects": {
         "main": "Defensive ability (5 dice): each Fire rolled gains 1 Fire Mastery and deals 1 damage. Each Fire Soul rolled gains 1 Fire Mastery and deals 1 damage. If you have Fire + Fire Soul, inflict Burn."
-      }
-    },
-    "card-turning-up-the-heat": {
-      "effects": {
-        "gainFM1": "Gain 1 Fire Mastery",
-        "spendCP": "Spend any amount of CP; gain 1 Fire Mastery per CP spent"
-      }
-    },
-    "card-infernal-embrace": {
-      "effects": {
-        "roll": "Roll 1 die: Fire = gain 2 Fire Mastery, otherwise = draw 1 card"
-      }
-    },
-    "card-fan-the-flames": {
-      "effects": {
-        "increaseLimit": "Fire Mastery stack limit +1",
-        "gainFM2": "Gain 2 Fire Mastery"
-      }
-    },
-    "card-red-hot": {
-      "effects": {
-        "dmgPerFM": "This turn, +1 damage per Fire Mastery"
-      }
-    },
-    "card-get-fired-up": {
-      "effects": {
-        "roll": "Roll 1 die: Fire = +3 damage, Lava = inflict Burn, Fire Soul = gain 2 Fire Mastery, Meteor = inflict Knockdown"
       }
     }
   },
@@ -1913,11 +1794,11 @@
     },
     "card-buddha-light": {
       "name": "Buddha Light!",
-      "description": "Gain 1 Chi, Evasive and Purify; inflict Knockdown on 1 opponent."
+      "description": "Gain 1 Chi, Evasive and Purify; inflict Stun on 1 opponent."
     },
     "card-palm-strike": {
       "name": "Palm Strike!",
-      "description": "Inflict Knockdown on 1 opponent."
+      "description": "Inflict Stun on 1 opponent."
     },
     "card-meditation-3": {
       "name": "Meditation III",
@@ -2101,7 +1982,7 @@
     },
     "card-infernal-embrace": {
       "name": "Infernal Embrace!",
-      "description": "Roll 1 die:\nFire: gain 2 Fire Mastery\nOtherwise: draw 1 card"
+      "description": "Roll 1 die:\nMeteor: gain Fire Mastery to the cap\nOtherwise: draw 1 card"
     },
     "card-fan-the-flames": {
       "name": "Fan the Flames!",
@@ -2187,7 +2068,7 @@
     },
     "action-into-the-shadows": {
       "name": "Into the Shadows!",
-      "description": "Gain 1 Sneak token."
+      "description": "Gain 1 Shadow token."
     },
     "action-one-with-shadows": {
       "name": "One with Shadows!",
@@ -2303,7 +2184,7 @@
     },
     "card-consecrate": {
       "name": "Consecrate!",
-      "description": "Choose a player to gain Protect, Retribution, Crit, and Accuracy (1 each)."
+      "description": "Gain Protect, Retribution, Crit, and Accuracy (1 each)."
     },
     "card-divine-favor": {
       "name": "Divine Favor!",
@@ -2311,7 +2192,7 @@
     },
     "card-absolution": {
       "name": "Absolution!",
-      "description": "Roll 1 die: Sword → Deal 3 undefendable damage; Helm → Prevent 3 damage; Heart → Prevent 5 damage; Pray → Prevent 2 damage + Gain 2 CP."
+      "description": "Roll 1 die: Sword → Deal 1 undefendable damage; Helm → Prevent 1 damage; Heart → Prevent 2 damage; Pray → Gain 1 CP."
     },
     "card-gods-grace": {
       "name": "God's Grace!",
@@ -2396,12 +2277,7 @@
     "pressStart": "Start Game",
     "ready": "Ready",
     "readyWaiting": "Waiting for other players...",
-    "cancelReady": "Cancel Ready",
     "readyProgress": "Ready Progress",
     "you": "You"
-  },
-  "endgame": {
-    "ariaPanel": "Game Over - {{result}}",
-    "ariaHero": "Player {{heroName}} - HP {{hp}} CP {{cp}}"
   }
 }

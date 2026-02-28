@@ -133,7 +133,9 @@ const HandCard: React.FC<HandCardProps> = ({
                 {/* 1. Real Asset Preview */}
                 <div className="w-full h-full rounded-md overflow-hidden bg-[#f3f0e8] border border-slate-400/50 shadow-inner relative">
                     <CardPreview
-                        previewRef={def?.previewRef}
+                        previewRef={def?.previewRef
+                            ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId } }
+                            : undefined}
                         className="w-full h-full object-cover"
                         title={previewTitle}
                     />

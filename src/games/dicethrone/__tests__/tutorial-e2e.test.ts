@@ -175,10 +175,6 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         expect(s.sys.tutorial.step?.id).toBe('dice-roll');
 
         s = exec(s, 'ROLL_DICE', '0', {}, 'B: roll');
-        expect(s.sys.tutorial.step?.id).toBe('dice-lock');
-
-        // dice-lock 教学：锁定一个骰子
-        s = exec(s, 'TOGGLE_DIE_LOCK', '0', { dieId: 0 }, 'B: toggle-die-lock');
         expect(s.sys.tutorial.step?.id).toBe('play-six');
 
         // play-six 花费 1 CP（CP: 2→1）

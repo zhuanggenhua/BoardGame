@@ -55,8 +55,6 @@ export interface EffectContext {
     timestamp?: number;
     /** 是否为防御技能上下文（防御反击伤害不触发 Token 响应窗口） */
     isDefensiveContext?: boolean;
-    /** 伤害发生的阶段（传递给 DamageSource.phase，用于 passiveTrigger 条件过滤） */
-    damagePhase?: string;
 }
 
 // ============================================================================
@@ -76,8 +74,6 @@ export interface CustomActionContext {
     random?: RandomFn;
     /** 触发此 Custom Action 的原始 EffectAction 配置（包含 params 等额外参数） */
     action: EffectAction;
-    /** 伤害发生的阶段（透传自 EffectContext.damagePhase，用于 DamageSource.phase） */
-    damagePhase?: string;
 }
 
 /**
@@ -121,16 +117,6 @@ export interface CustomActionMeta {
     requiresInteraction?: boolean;
     /** 可用阶段（不指定则不限制） */
     phases?: string[];
-    /**
-     * 预估伤害回调（可选）
-     * 
-     * 用于 Token 门控等需要在 custom action 执行前估算伤害的场景。
-     * 返回该 custom action 在当前状态下的预期伤害值。
-     * 
-     * 未提供时，getPlayerAbilityBaseDamage 对该 custom action 返回 0。
-     * 即使 categories 包含 'damage'，也不会自动假设伤害值。
-     */
-    estimateDamage?: (state: Record<string, unknown>, playerId: string) => number;
 }
 
 /**
@@ -406,7 +392,6 @@ export function createDTPassiveTriggerHandler(
                 timestamp: context.timestamp,
                 random: context.random ?? random,
                 action: actionWithParams,
-                damagePhase: ctx.damagePhase,
             };
 
             const handledEvents = handler(handlerCtx);
@@ -460,15 +445,14 @@ function resolveEffectAction(
                 if (baseDamage <= 0) continue;
 
                 // 统一使用 createDamageCalculation 引擎原语计算伤害
-                // 护盾由 reducer handleDamageDealt 统一消耗（含 Ultimate 免疫护盾逻辑）
                 const calc = createDamageCalculation({
                     baseDamage,
-                    source: { playerId: attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+                    source: { playerId: attackerId, abilityId: sourceAbilityId },
                     target: { playerId: dmgTargetId },
                     state,
                     autoCollectTokens: true,
                     autoCollectStatus: true,
-                    // autoCollectShields 默认 false：护盾由 reducer handleDamageDealt 统一消耗
+                    autoCollectShields: true,
                     passiveTriggerHandler: createDTPassiveTriggerHandler(ctx, random),
                     timestamp,
                 });
@@ -721,7 +705,6 @@ function resolveEffectAction(
                     timestamp,
                     random,
                     action,
-                    damagePhase: ctx.damagePhase,
                 };
                 const handledEvents = handler(handlerCtx);
                 if (sfxKey) {
@@ -1136,11 +1119,6 @@ export function resolveEffectsToEvents(
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
     let bonusApplied = false;
-    // skipDamage 模式下追踪是否已经跳过了 damage 效果。
-    // damage 之前的 rollDie 在第一次调用中已执行过，其 bonusDamage 已被 damage 消费，
-    // 重新执行产生的 bonusDamage 是重复的，必须忽略。
-    // damage 之后的 rollDie 在第一次调用中被 break 截断未执行，其 bonusDamage 是新的，应正常处理。
-    let damageSkipped = false;
 
     // 构建 EffectResolutionContext 用于条件检查
     const activeDice = getActiveDice(ctx.state);
@@ -1166,18 +1144,10 @@ export function resolveEffectsToEvents(
         // 避免 custom action 被重复执行导致骰子二次投掷和 random 队列偏移
         if (config?.skipDamage) {
             if (effect.action.type === 'damage') {
-                damageSkipped = true;
                 continue;
             }
             if (effect.action.type === 'custom' && effect.action.customActionId
                 && isCustomActionCategory(effect.action.customActionId, 'damage')) {
-                damageSkipped = true;
-                continue;
-            }
-            // damage 之前的 rollDie 在第一次调用中已执行过（bonusDamage 已被 damage 消费），
-            // 重新执行会产生重复的 bonusDamage 和消耗 random 值。
-            // 只有 damage 之后的 rollDie 才是被 break 截断未执行的，需要正常执行。
-            if (effect.action.type === 'rollDie' && !damageSkipped) {
                 continue;
             }
         }
@@ -1201,11 +1171,6 @@ export function resolveEffectsToEvents(
         // 后续效果（如 rollDie）应在 Token 响应完成后由 resolvePostDamageEffects 执行。
         // 此处必须中断，否则 rollDie 会消耗 random 值，导致后续重新执行时 random 队列偏移。
         if (effectEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED')) {
-            // accumulatedBonusDamage 已被包含在主伤害的 baseDamage 中（通过 totalBonus 传入），
-            // 必须清零，否则函数末尾的 fallback 会生成重复的 DAMAGE_DEALT 事件。
-            // 这会导致：① 伤害被双重计算 ② 额外的 DAMAGE_DEALT 消耗防御方的护盾（如暗影刺客的 999 护盾），
-            // 使后续主伤害失去护盾保护。
-            ctx.accumulatedBonusDamage = 0;
             break;
         }
 

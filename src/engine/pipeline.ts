@@ -129,81 +129,20 @@ export function createInitialSystemState(
 // ============================================================================
 
 export function createSeededRandom(seed: string): RandomFn {
-    // PCG-XSH-RR (Permuted Congruential Generator)
-    // 128-bit 状态（用两个 32-bit 数模拟 64-bit），统计质量通过 TestU01 BigCrush
-    // 参考：https://www.pcg-random.org/
-
-    // 用 MurmurHash3 从种子字符串生成 4 个独立的 32-bit 初始值
-    const h0 = murmurHash3(seed, 0x9E3779B9);
-    const h1 = murmurHash3(seed, 0x6C62272E);
-    const h2 = murmurHash3(seed, 0x85EBCA6B);
-    const h3 = murmurHash3(seed, 0xC2B2AE35);
-
-    // 64-bit state = (stateHi << 32) | stateLo
-    let stateHi = h0;
-    let stateLo = h1;
-    // 64-bit increment（必须为奇数）
-    const incHi = h2;
-    const incLo = (h3 | 1) >>> 0; // 确保最低位为 1（奇数）
-
-    // 64-bit 加法：(aHi:aLo) + (bHi:bLo) → (rHi:rLo)
-    const add64 = (aHi: number, aLo: number, bHi: number, bLo: number): [number, number] => {
-        const lo = (aLo + bLo) >>> 0;
-        const carry = (lo < aLo) ? 1 : 0;
-        const hi = (aHi + bHi + carry) >>> 0;
-        return [hi, lo];
-    };
-
-    // 64-bit 乘法（低 64 位）：使用 16-bit 分块避免精度丢失
-    const mul64 = (aHi: number, aLo: number, bHi: number, bLo: number): [number, number] => {
-        const a0 = aLo & 0xFFFF, a1 = aLo >>> 16;
-        const a2 = aHi & 0xFFFF, a3 = aHi >>> 16;
-        const b0 = bLo & 0xFFFF, b1 = bLo >>> 16;
-        const b2 = bHi & 0xFFFF, b3 = bHi >>> 16;
-
-        let c0 = a0 * b0;
-        let c1 = (c0 >>> 16) + a1 * b0;
-        let c2 = (c1 >>> 16) + a2 * b0;
-        let c3 = (c2 >>> 16) + a3 * b0;
-
-        c1 = (c1 & 0xFFFF) + a0 * b1;
-        c2 = (c2 & 0xFFFF) + a1 * b1 + (c1 >>> 16);
-        c3 = (c3 & 0xFFFF) + a2 * b1 + (c2 >>> 16);
-
-        c2 = (c2 & 0xFFFF) + a0 * b2;
-        c3 = (c3 & 0xFFFF) + a1 * b2 + (c2 >>> 16);
-
-        c3 = (c3 & 0xFFFF) + a0 * b3;
-
-        const lo = ((c1 & 0xFFFF) << 16 | (c0 & 0xFFFF)) >>> 0;
-        const hi = ((c3 & 0xFFFF) << 16 | (c2 & 0xFFFF)) >>> 0;
-        return [hi, lo];
-    };
-
-    // PCG 乘法常数 6364136223846793005 = 0x5851F42D_4C957F2D
-    const MULT_HI = 0x5851F42D;
-    const MULT_LO = 0x4C957F2D;
-
-    // 32-bit 右旋转
-    const rotr32 = (v: number, r: number): number => (v >>> r) | (v << (32 - r));
+    // 简单的确定性随机数生成器（xorshift128+）
+    let s0 = hashString(seed);
+    let s1 = hashString(seed + '_1');
 
     const next = (): number => {
-        // 保存旧状态用于输出
-        const oldHi = stateHi;
-        const oldLo = stateLo;
-
-        // 推进状态：state = state * MULT + inc
-        const [mHi, mLo] = mul64(stateHi, stateLo, MULT_HI, MULT_LO);
-        [stateHi, stateLo] = add64(mHi, mLo, incHi, incLo);
-
-        // PCG-XSH-RR 输出函数：从 64-bit 旧状态提取 32-bit 输出
-        const xorshifted = (((oldHi >>> 18) ^ oldHi) >>> 27 ^ ((oldLo << 5) | (oldLo >>> 27))) >>> 0;
-        const rot = oldHi >>> 27;
-        return (rotr32(xorshifted, rot) >>> 0) / 0x100000000;
+        let x = s0;
+        const y = s1;
+        s0 = y;
+        x ^= x << 23;
+        x ^= x >> 17;
+        x ^= y ^ (y >> 26);
+        s1 = x;
+        return ((x + y) >>> 0) / 0x100000000;
     };
-
-    // warmup：跳过前 20 次输出，确保初始状态充分混合
-    for (let i = 0; i < 20; i++) next();
 
     return {
         random: next,
@@ -220,30 +159,14 @@ export function createSeededRandom(seed: string): RandomFn {
     };
 }
 
-/**
- * MurmurHash3 32-bit finalizer
- * 雪崩效应优秀：输入 1 bit 变化 → 输出约 50% bit 翻转
- * 不同的 hashSeed 产生独立的哈希序列，用于初始化 PRNG 的多个状态变量
- */
-function murmurHash3(str: string, hashSeed: number): number {
-    let h = hashSeed >>> 0;
+function hashString(str: string): number {
+    let hash = 0;
     for (let i = 0; i < str.length; i++) {
-        let k = str.charCodeAt(i);
-        k = Math.imul(k, 0xCC9E2D51);
-        k = (k << 15) | (k >>> 17);
-        k = Math.imul(k, 0x1B873593);
-        h ^= k;
-        h = (h << 13) | (h >>> 19);
-        h = Math.imul(h, 5) + 0xE6546B64;
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
     }
-    // finalizer
-    h ^= str.length;
-    h ^= h >>> 16;
-    h = Math.imul(h, 0x85EBCA6B);
-    h ^= h >>> 13;
-    h = Math.imul(h, 0xC2B2AE35);
-    h ^= h >>> 16;
-    return (h >>> 0) || 1; // 确保非零
+    return Math.abs(hash) || 1;
 }
 
 // ============================================================================

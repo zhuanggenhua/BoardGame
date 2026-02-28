@@ -63,7 +63,6 @@ export const DT_EVENTS = defineEvents({
   // ========== UI 交互（本地播放）==========
   CHARACTER_SELECTED: 'ui',      // 选择角色（UI 层播放）
   PLAYER_READY: 'ui',            // 玩家准备（UI 层播放）
-  PLAYER_UNREADY: 'ui',          // 取消准备（UI 层播放）
   HOST_STARTED: 'ui',            // 房主开始（UI 层播放）
 
   // ========== 即时反馈（EventStream）==========
@@ -124,7 +123,7 @@ export const DT_EVENTS = defineEvents({
 
   // ========== 静默事件 ==========
   HERO_INITIALIZED: 'silent',    // 英雄初始化（内部状态）
-  RESPONSE_WINDOW_RESPONDER_CHANGED: { audio: 'immediate', sound: RESPONSE_WINDOW_OPEN_KEY }, // 响应者切换提示音
+  RESPONSE_WINDOW_RESPONDER_CHANGED: 'silent', // 响应者变更（内部状态）
 });
 
 // ============================================================================
@@ -203,13 +202,6 @@ export interface PlayerReadyEvent extends GameEvent<'PLAYER_READY'> {
     };
 }
 
-/** 取消准备事件 */
-export interface PlayerUnreadyEvent extends GameEvent<'PLAYER_UNREADY'> {
-    payload: {
-        playerId: PlayerId;
-    };
-}
-
 // PhaseChangedEvent 已废弃，阶段切换现在由 FlowSystem 的 SYS_PHASE_CHANGED 统一处理
 // 参见 src/engine/systems/FlowSystem.ts
 
@@ -278,13 +270,6 @@ export interface DamageDealtEvent extends GameEvent<'DAMAGE_DEALT'> {
         breakdown?: DamageBreakdown;
         /** 跳过护盾消耗（用于 HP 重置类效果，如神圣祝福将 HP 设为 1） */
         bypassShields?: boolean;
-        /** 护盾消耗记录（由 reducer 层回填，用于 ActionLog 展示护盾减伤明细） */
-        shieldsConsumed?: Array<{
-            sourceId?: string;
-            value?: number;
-            reductionPercent?: number;
-            absorbed: number;
-        }>;
     };
 }
 
@@ -357,8 +342,6 @@ export interface DamageShieldGrantedEvent extends GameEvent<'DAMAGE_SHIELD_GRANT
         sourceId?: string;
         /** 是否用于防止本次攻击的状态效果 */
         preventStatus?: boolean;
-        /** 百分比减免（0-100）。设置后 value 字段被忽略，按实际伤害的百分比计算减免量 */
-        reductionPercent?: number;
     };
 }
 
@@ -791,7 +774,6 @@ export type DiceThroneEvent =
     | HeroInitializedEvent
     | HostStartedEvent
     | PlayerReadyEvent
-    | PlayerUnreadyEvent
     | AbilityActivatedEvent
     | DamageDealtEvent
     | HealAppliedEvent

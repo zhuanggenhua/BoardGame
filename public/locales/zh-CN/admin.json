@@ -39,7 +39,6 @@
       "selectItem": "选择反馈 {{id}}",
       "id": "ID: {{id}}"
     },
-    "anonymous": "匿名用户",
     "messages": {
       "fetchFailed": "获取反馈列表失败",
       "updateSuccess": "状态已更新",
@@ -56,17 +55,12 @@
     "actions": {
       "reopen": "重新打开",
       "resolve": "标记已解决",
-      "delete": "删除",
-      "copyAll": "一键复制",
-      "copied": "已复制"
+      "delete": "删除"
     },
     "content": {
       "onlyImage": "（仅图片）",
       "empty": "（无内容）",
       "screenshotAlt": "截图"
-    },
-    "actionLog": {
-      "title": "📋 操作日志"
     },
     "time": {
       "justNow": "刚刚",

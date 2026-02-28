@@ -12,9 +12,10 @@ export const SHADOW_THIEF_TOKENS: TokenDef[] = [
         colorTheme: 'bg-gradient-to-br from-indigo-500 to-purple-800',
         description: tokenText(TOKEN_IDS.SNEAK, 'description') as unknown as string[],
         stackLimit: 1,
-        // 潜行触发时只免伤+跳过防御掷骰，不消耗标记
-        // 标记的移除只在"经过一个完整的自己回合后，回合末弃除"
-        // 详见 flowHooks.ts 的 discard 阶段退出逻辑
+        // 潜行不再通过 onDamageReceived 被动触发
+        // 而是在攻击流程中（offensiveRoll 阶段退出时）主动检查：
+        // 若防御方有潜行，跳过防御掷骰、免除伤害、消耗潜行
+        // 详见 flowHooks.ts 的 offensiveRoll 退出逻辑
         frameId: 'shadow-soul',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.SHADOW_THIEF,
     },

@@ -92,10 +92,6 @@ interface UseCellInteractionParams {
   rapidFireMode: import('./modeTypes').RapidFireModeState | null;
   grabFollowMode: import('./useGameEvents').GrabFollowModeState | null;
   setGrabFollowMode: (mode: import('./useGameEvents').GrabFollowModeState | null) => void;
-  /** 视觉序列是否进行中（攻击动画等），进行中时禁止推进阶段 */
-  isVisualBusy: boolean;
-  /** 乐观引擎是否有未确认的命令，有时禁止自动跳过 */
-  hasPendingOptimisticCommands: boolean;
 }
 
 // ============================================================================
@@ -111,8 +107,6 @@ export function useCellInteraction({
   afterAttackAbilityMode, setAfterAttackAbilityMode,
   rapidFireMode,
   grabFollowMode, setGrabFollowMode,
-  isVisualBusy,
-  hasPendingOptimisticCommands,
 }: UseCellInteractionParams) {
   const { t } = useTranslation('game-summonerwars');
   const showToast = useToast();
@@ -985,20 +979,9 @@ export function useCellInteraction({
   // 强制技能模式：这些技能没有"跳过"选项，必须完成后才能推进阶段
   const isMandatoryAbilityActive = !!abilityMode && ['blood_rune', 'feed_beast'].includes(abilityMode.abilityId);
 
-  // 是否有活跃的攻击后/延迟交互模式，阻止阶段推进
-  // 包括所有通过 scheduleInteraction 调度的独立模式（不含走 abilityMode 的，那些由 isMandatoryAbilityActive 覆盖）
-  const hasActiveAfterAttackMode = !!(
-    rapidFireMode || afterAttackAbilityMode || grabFollowMode
-    || soulTransferMode || mindCaptureMode
-  );
-
   const handleEndPhase = useCallback(() => {
     // 强制技能激活时禁止推进阶段（如鲜血符文必须二选一）
     if (isMandatoryAbilityActive) return;
-    // 攻击后交互模式激活时禁止推进阶段（连续射击/念力/撤退等）
-    if (hasActiveAfterAttackMode) return;
-    // 视觉序列进行中（攻击动画等）禁止推进阶段，防止 scheduleInteraction 队列中的交互被跳过
-    if (isVisualBusy) return;
     // 非自己回合时禁止操作（防止快速点击越过回合边界）
     if (!isMyTurn) return;
     if (eventCardModes.hasActiveEventMode) {
@@ -1019,7 +1002,7 @@ export function useCellInteraction({
     dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
   }, [dispatch, currentPhase, actionableUnitPositions.length, endPhaseConfirmPending,
     eventCardModes.hasActiveEventMode, eventCardModes.clearAllEventModes, magicEventChoiceMode,
-    isMandatoryAbilityActive, isMyTurn, hasActiveAfterAttackMode, isVisualBusy]);
+    isMandatoryAbilityActive, isMyTurn]);
 
   // ---------- 外部技能确认 ----------
 
@@ -1143,8 +1126,6 @@ export function useCellInteraction({
     advancePhase,
     enabled: !!core.hostStarted && !debugDisabled,
     undoSnapshotCount,
-    isVisualBusy,
-    hasPendingOptimisticCommands,
   });
 
   // 魔力阶段事件卡选择回调
@@ -1229,7 +1210,5 @@ export function useCellInteraction({
     clearAllEventModes: eventCardModes.clearAllEventModes,
     hasActiveEventMode: eventCardModes.hasActiveEventMode,
     isMandatoryAbilityActive,
-    // 重置结束阶段确认状态（攻击后交互模式确认/取消时调用）
-    resetEndPhaseConfirm: useCallback(() => setEndPhaseConfirmPending(false), []),
   };
 }

@@ -186,8 +186,8 @@ export const COVERT_FIRE_2: AbilityDef = {
     description: abilityText('covert-fire-2', 'description'),
     sfxKey: MOON_ELF_SFX_SHOT,
     variants: [
-        { id: 'deadeye-shot-2', name: abilityText('deadeye-shot', 'name'), trigger: { type: 'diceSet', faces: { [FACE.BOW]: 3, [FACE.MOON]: 2 } }, effects: [inflictStatus(STATUS_IDS.TARGETED, 1, abilityEffectText('deadeye-shot', 'inflictTargeted')), damage(6, abilityEffectText('deadeye-shot', 'damage6'))], priority: 1 },
-        { id: 'focus', name: abilityText('focus', 'name'), trigger: { type: 'diceSet', faces: { [FACE.BOW]: 2, [FACE.MOON]: 1 } }, effects: [inflictStatus(STATUS_IDS.TARGETED, 1, abilityEffectText('focus', 'inflictTargeted')), inflictStatus(STATUS_IDS.ENTANGLE, 1, abilityEffectText('focus', 'inflictEntangle'))], priority: 0 },
+        { id: 'deadeye-shot-2', trigger: { type: 'diceSet', faces: { [FACE.BOW]: 3, [FACE.MOON]: 2 } }, effects: [inflictStatus(STATUS_IDS.TARGETED, 1, abilityEffectText('deadeye-shot', 'inflictTargeted')), damage(6, abilityEffectText('deadeye-shot', 'damage6'))], priority: 1 },
+        { id: 'focus', trigger: { type: 'diceSet', faces: { [FACE.BOW]: 2, [FACE.MOON]: 1 } }, effects: [inflictStatus(STATUS_IDS.TARGETED, 1, abilityEffectText('focus', 'inflictTargeted')), inflictStatus(STATUS_IDS.ENTANGLE, 1, abilityEffectText('focus', 'inflictEntangle'))], priority: 0 },
     ],
 };
 
@@ -198,8 +198,8 @@ export const COVERING_FIRE_2: AbilityDef = {
     description: abilityText('covering-fire-2', 'description'),
     sfxKey: MOON_ELF_SFX_SHOT,
     variants: [
-        { id: 'covering-fire-2', name: abilityText('covering-fire-2', 'name'), trigger: { type: 'diceSet', faces: { [FACE.BOW]: 2, [FACE.FOOT]: 3 } }, effects: [grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('covering-fire-2', 'gainEvasive'), { timing: 'preDefense' }), damage(9, abilityEffectText('covering-fire-2', 'damage9'))], priority: 1 },
-        { id: 'silencing-trace', name: abilityText('silencing-trace', 'name'), tags: ['unblockable'], trigger: { type: 'diceSet', faces: { [FACE.FOOT]: 3 } }, effects: [grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('silencing-trace', 'gainEvasive'), { timing: 'preDefense' }), { description: '造成 2 不可防御伤害', action: { type: 'damage', target: 'opponent', value: 2, isUndefendable: true } }], priority: 0 },
+        { id: 'covering-fire-2', trigger: { type: 'diceSet', faces: { [FACE.BOW]: 2, [FACE.FOOT]: 3 } }, effects: [grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('covering-fire-2', 'gainEvasive'), { timing: 'preDefense' }), damage(9, abilityEffectText('covering-fire-2', 'damage9'))], priority: 1 },
+        { id: 'silencing-trace', trigger: { type: 'diceSet', faces: { [FACE.FOOT]: 3 } }, effects: [grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('silencing-trace', 'gainEvasive'), { timing: 'preDefense' }), { description: '造成 2 不可防御伤害', action: { type: 'damage', target: 'opponent', value: 2, isUndefendable: true } }], priority: 0 },
     ],
 };
 
@@ -240,8 +240,8 @@ export const BLINDING_SHOT_2: AbilityDef = {
     description: abilityText('blinding-shot-2', 'description'),
     sfxKey: MOON_ELF_SFX_HIT,
     variants: [
-        { id: 'blinding-shot-2', name: abilityText('blinding-shot-2', 'name'), trigger: { type: 'largeStraight' }, effects: [inflictStatus(STATUS_IDS.BLINDED, 1, abilityEffectText('blinding-shot-2', 'inflictBlinded')), grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('blinding-shot-2', 'gainEvasive'), { timing: 'preDefense' }), damage(10, abilityEffectText('blinding-shot-2', 'damage10'))], priority: 1 },
-        { id: 'moons-blessing', name: abilityText('moons-blessing', 'name'), trigger: { type: 'diceSet', faces: { [FACE.BOW]: 1, [FACE.FOOT]: 2, [FACE.MOON]: 1 } }, effects: [grantToken(TOKEN_IDS.EVASIVE, 3, abilityEffectText('moons-blessing', 'gainEvasive3'), { timing: 'preDefense' }), inflictStatus(STATUS_IDS.ENTANGLE, 1, abilityEffectText('moons-blessing', 'inflictEntangle'))], priority: 0 },
+        { id: 'blinding-shot-2', trigger: { type: 'largeStraight' }, effects: [inflictStatus(STATUS_IDS.BLINDED, 1, abilityEffectText('blinding-shot-2', 'inflictBlinded')), grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('blinding-shot-2', 'gainEvasive'), { timing: 'preDefense' }), damage(10, abilityEffectText('blinding-shot-2', 'damage10'))], priority: 1 },
+        { id: 'moons-blessing', trigger: { type: 'diceSet', faces: { [FACE.BOW]: 1, [FACE.FOOT]: 2, [FACE.MOON]: 1 } }, effects: [grantToken(TOKEN_IDS.EVASIVE, 3, abilityEffectText('moons-blessing', 'gainEvasive3'), { timing: 'preDefense' }), inflictStatus(STATUS_IDS.ENTANGLE, 1, abilityEffectText('moons-blessing', 'inflictEntangle'))], priority: 0 },
     ],
 };
 
@@ -252,8 +252,8 @@ export const ECLIPSE_2: AbilityDef = {
     description: abilityText('eclipse-2', 'description'),
     sfxKey: MOON_ELF_SFX_HIT,
     variants: [
-        { id: 'eclipse-2', name: abilityText('eclipse-2', 'name'), trigger: { type: 'diceSet', faces: { [FACE.MOON]: 4 } }, effects: [inflictStatus(STATUS_IDS.BLINDED, 1, abilityEffectText('eclipse-2', 'inflictBlinded')), inflictStatus(STATUS_IDS.ENTANGLE, 1, abilityEffectText('eclipse-2', 'inflictEntangle')), inflictStatus(STATUS_IDS.TARGETED, 1, abilityEffectText('eclipse-2', 'inflictTargeted')), damage(9, abilityEffectText('eclipse-2', 'damage9'))], priority: 1 },
-        { id: 'dark-moon', name: abilityText('dark-moon', 'name'), trigger: { type: 'diceSet', faces: { [FACE.MOON]: 3 } }, effects: [grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('dark-moon', 'gainEvasive'), { timing: 'preDefense' }), inflictStatus(STATUS_IDS.BLINDED, 1, abilityEffectText('dark-moon', 'inflictBlinded')), inflictStatus(STATUS_IDS.ENTANGLE, 1, abilityEffectText('dark-moon', 'inflictEntangle')), inflictStatus(STATUS_IDS.TARGETED, 1, abilityEffectText('dark-moon', 'inflictTargeted'))], priority: 0 },
+        { id: 'eclipse-2', trigger: { type: 'diceSet', faces: { [FACE.MOON]: 4 } }, effects: [inflictStatus(STATUS_IDS.BLINDED, 1, abilityEffectText('eclipse-2', 'inflictBlinded')), inflictStatus(STATUS_IDS.ENTANGLE, 1, abilityEffectText('eclipse-2', 'inflictEntangle')), inflictStatus(STATUS_IDS.TARGETED, 1, abilityEffectText('eclipse-2', 'inflictTargeted')), damage(9, abilityEffectText('eclipse-2', 'damage9'))], priority: 1 },
+        { id: 'dark-moon', trigger: { type: 'diceSet', faces: { [FACE.MOON]: 3 } }, effects: [grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('dark-moon', 'gainEvasive'), { timing: 'preDefense' }), inflictStatus(STATUS_IDS.BLINDED, 1, abilityEffectText('dark-moon', 'inflictBlinded')), inflictStatus(STATUS_IDS.ENTANGLE, 1, abilityEffectText('dark-moon', 'inflictEntangle')), inflictStatus(STATUS_IDS.TARGETED, 1, abilityEffectText('dark-moon', 'inflictTargeted'))], priority: 0 },
     ],
 };
 

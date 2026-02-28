@@ -38,7 +38,7 @@ function makeCard(uid: string, defId: string, owner: string, type: 'minion' | 'a
 function makeMinion(uid: string, defId: string, controller: string, power: number): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
     };
 }
 

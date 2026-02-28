@@ -242,16 +242,16 @@ const VAMPIRE_ACTION_KEYS = [
     'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_dread_whisper_001',
 ];
 
-// 巨蚁：昆虫攻击/脚步音效（语义匹配）
+// 巨蚁：统一用嗡鸣音效（风格一致）
 const GIANT_ANT_MINION_KEYS = [
-    'monster.general.khron_studio_monster_library_vol_4_assets.insect.insect_attack.creainsc_insect_attack_01',
-    'monster.general.khron_studio_monster_library_vol_4_assets.insect.insect_attack.creainsc_insect_attack_02',
-    'monster.general.khron_studio_monster_library_vol_4_assets.insect.insect_attack.creainsc_insect_attack_03',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzzing',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_a',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_b',
 ];
 const GIANT_ANT_ACTION_KEYS = [
-    'monster.general.khron_studio_monster_library_vol_4_assets.insect.insect_attack.creainsc_insect_attack_04',
-    'monster.general.khron_studio_monster_library_vol_4_assets.insect.insect_attack.creainsc_insect_attack_05',
-    'monster.general.khron_studio_monster_library_vol_4_assets.insect.insect_attack.creainsc_insect_attack_06',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzzing',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_a',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_b',
 ];
 
 const FACTION_SFX_KEYS: Record<string, string[]> = {

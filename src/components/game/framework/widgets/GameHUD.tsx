@@ -34,8 +34,6 @@ import { useSocial } from '../../../../contexts/SocialContext';
 import { buildActionLogRows } from '../../utils/actionLogFormat';
 import { ActionLogSegments } from './ActionLogSegments';
 import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../registry/cardPreviewRegistry';
-import { generateId, copyToClipboard } from '../../../../lib/utils';
-import { OpponentOfflineBanner } from './OpponentOfflineBanner';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial';
@@ -96,8 +94,6 @@ export const GameHUD = ({
     isHost,
     credentials,
     myPlayerId,
-    opponentName,
-    opponentConnected,
     players,
     onLeave,
     onDestroy,
@@ -198,22 +194,6 @@ export const GameHUD = ({
         if (!isOnline || !matchId) return;
 
         matchSocket.joinChat(matchId);
-
-        // 订阅历史消息（加入房间时服务端回推）
-        const unsubHistory = matchSocket.subscribeChatHistory((history) => {
-            setChatMessages((prev) => {
-                // 用 id 去重，合并历史和已有消息
-                const existingIds = new Set(prev.map((m) => m.id));
-                const newMessages = history.filter((m) => !existingIds.has(m.id));
-                if (newMessages.length === 0) return prev;
-                const merged = [...newMessages, ...prev];
-                // 按时间排序
-                merged.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-                return trimChatMessages(merged);
-            });
-            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
-        });
-
         const unsubscribe = matchSocket.subscribeChat((message) => {
             if (message.matchId !== matchId) return;
             setChatMessages((prev) => {
@@ -234,7 +214,6 @@ export const GameHUD = ({
 
         return () => {
             unsubscribe();
-            unsubHistory();
             matchSocket.leaveChat();
         };
     }, [isOnline, matchId, isSelfMessage]);
@@ -265,7 +244,7 @@ export const GameHUD = ({
             }
         } else {
             const localMessage: MatchChatMessage = {
-                id: generateId(),
+                id: crypto.randomUUID(),
                 matchId: matchId ?? 'local',
                 senderId: myPlayerId ?? undefined,
                 senderName: myDisplayName,
@@ -335,7 +314,7 @@ export const GameHUD = ({
 
     const copyRoomId = () => {
         if (matchId) {
-            void copyToClipboard(matchId);
+            navigator.clipboard.writeText(matchId);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
@@ -430,33 +409,13 @@ export const GameHUD = ({
                                 <span className="uppercase font-bold text-white/40">{t('hud.actions.room')}</span>
                                 <span className="font-mono tracking-widest">{matchId ?? '-'}</span>
                             </div>
-                            {/* 成员列表：显示所有座位的玩家名和在线状态 */}
-                            {players && players.length > 0 && (
-                                <div className="flex flex-col gap-0.5">
-                                    {players.map((p) => {
-                                        const isSelf = String(p.id) === String(myPlayerId);
-                                        const isEmpty = !p.name;
-                                        return (
-                                            <div key={p.id} className="flex items-center gap-1.5">
-                                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                                    isEmpty ? 'bg-white/20' : p.isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'
-                                                }`} />
-                                                <span className={`truncate ${isSelf ? 'text-white/80' : 'text-white/60'}`}>
-                                                    {isEmpty
-                                                        ? t('hud.status.empty')
-                                                        : p.name}
-                                                </span>
-                                                {isSelf && (
-                                                    <span className="text-white/30">({t('hud.status.self')})</span>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                            <div className="flex items-center gap-2">
+                                <span className="uppercase font-bold text-white/40">{t('hud.status.self')}</span>
+                                <span className="text-white/80">{myDisplayName}</span>
+                            </div>
                         </div>
                     )}
-                    <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 custom-scrollbar text-xs">
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar text-xs">
                         {chatMessages.length === 0 && (
                             <div className="text-white/20 text-center mt-10 italic">{t('hud.chat.empty')}</div>
                         )}
@@ -479,7 +438,7 @@ export const GameHUD = ({
                                 placeholder={isChatReadonly ? t('hud.chat.readonlyPlaceholder') : t('hud.chat.placeholder')}
                                 maxLength={MAX_CHAT_LENGTH}
                                 disabled={isChatReadonly}
-                                className="w-full bg-white/15 border border-white/35 rounded px-2 py-1.5 text-xs text-white placeholder-white/60 focus:outline-none focus:border-neon-blue/70 focus:bg-white/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="w-full bg-white/15 border border-white/35 rounded px-2 py-1.5 pr-16 text-xs text-white placeholder-white/60 focus:outline-none focus:border-neon-blue/70 focus:bg-white/20 disabled:opacity-60 disabled:cursor-not-allowed"
                             />
                             {chatInput.length >= MAX_CHAT_LENGTH && (
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-amber-300">
@@ -809,13 +768,6 @@ export const GameHUD = ({
 
     return (
         <>
-            {/* 对手状态提示（仅联机模式，加载完成后） */}
-            {isOnline && !isSpectator && opponentConnected !== undefined && (
-                <OpponentOfflineBanner
-                    connected={opponentConnected}
-                    name={opponentName}
-                />
-            )}
             <FabMenu
                 isDark={true}
                 items={items}
@@ -824,59 +776,7 @@ export const GameHUD = ({
             />
 
             {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
-            {showFeedback && (
-                <FeedbackModal
-                    onClose={() => setShowFeedback(false)}
-                    actionLogText={(() => {
-                        const G = undoState?.G;
-                        if (!G) return undefined;
-                        // 操作日志（人类可读）
-                        const logLines = actionLogRows.length > 0
-                            ? actionLogRows.map(r => `[${r.timeLabel}] ${r.playerLabel}: ${r.text}`).join('\n')
-                            : '';
-                        // 精简 core 状态：去掉静态定义，只保留动态数据
-                        const summarizeCore = (core: unknown): unknown => {
-                            if (!core || typeof core !== 'object') return core;
-                            const obj = core as Record<string, unknown>;
-                            const result: Record<string, unknown> = {};
-                            for (const [key, val] of Object.entries(obj)) {
-                                // 跳过大型静态定义数组（token 定义、技能定义、被动定义）
-                                // 只保留 id 列表作为摘要
-                                if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && val[0] !== null) {
-                                    const first = val[0] as Record<string, unknown>;
-                                    const isStaticDef = 'description' in first || 'effects' in first || 'i18n' in first || 'colorTheme' in first;
-                                    if (isStaticDef) {
-                                        result[key] = val.map((item: Record<string, unknown>) => item.id ?? item.name ?? '?');
-                                        continue;
-                                    }
-                                }
-                                // 递归处理 players 等嵌套对象
-                                if (val && typeof val === 'object' && !Array.isArray(val)) {
-                                    result[key] = summarizeCore(val);
-                                } else {
-                                    result[key] = val;
-                                }
-                            }
-                            return result;
-                        };
-                        // 撤回栈快照（精简版）
-                        const snapshots = (G.sys.undo.snapshots ?? []) as Array<{ sys: { turnNumber: number; phase: string }; core: unknown }>;
-                        const snapshotEntries = snapshots.map((snap, i) => {
-                            return `[${i}] turn=${snap.sys.turnNumber} phase=${snap.sys.phase}\n${JSON.stringify(summarizeCore(snap.core))}`;
-                        });
-                        // 当前状态（精简版）
-                        const current = `[current] turn=${G.sys.turnNumber} phase=${G.sys.phase}\n${JSON.stringify(summarizeCore(G.core))}`;
-                        return [
-                            `--- Action Log ---`,
-                            logLines,
-                            ``,
-                            `--- State Snapshots (${snapshotEntries.length} undo + current) ---`,
-                            ...snapshotEntries,
-                            current,
-                        ].join('\n');
-                    })()}
-                />
-            )}
+            {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
         </>
     );
 };

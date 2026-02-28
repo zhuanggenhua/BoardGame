@@ -58,7 +58,7 @@ function makePlayer(id: string, overrides?: Partial<PlayerState>): PlayerState {
 function makeMinion(uid: string, controller: string, power: number, defId = 'd1'): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0,
+        basePower: power, powerModifier: 0,
         talentUsed: false, attachedActions: [],
     };
 }
@@ -285,21 +285,16 @@ describe('base_pirate_cove: 计分后非冠军移动随从', () => {
 // base_tortuga: 托尔图加 - afterScoring → Prompt（亚军移动随从）
 // ============================================================================
 
-describe('base_tortuga: 计分后亚军移动其他基地随从到替换基地', () => {
-    it('亚军在其他基地有随从时生成 Prompt', () => {
+describe('base_tortuga: 计分后亚军移动随从', () => {
+    it('亚军有随从时生成 Prompt', () => {
         const result = triggerBaseAbilityWithMS('base_tortuga', 'afterScoring', makeCtx({
             state: makeState({
-                bases: [
-                    makeBase('base_tortuga', {
-                        minions: [
-                            makeMinion('m1', '0', 5),
-                            makeMinion('m2', '1', 3),
-                        ],
-                    }),
-                    makeBase('base_tar_pits', {
-                        minions: [makeMinion('m3', '1', 4)],
-                    }),
-                ],
+                bases: [makeBase('base_tortuga', {
+                    minions: [
+                        makeMinion('m1', '0', 5),
+                        makeMinion('m2', '1', 3),
+                    ],
+                })],
             }),
             baseDefId: 'base_tortuga',
             rankings: [
@@ -313,12 +308,6 @@ describe('base_tortuga: 计分后亚军移动其他基地随从到替换基地',
             expect(interactions).toHaveLength(1);
         expect(interactions[0].data.sourceId).toBe('base_tortuga');
         expect(interactions[0].playerId).toBe('1'); // 亚军
-        // 选项应包含其他基地上的随从，不包含托尔图加上的随从
-        const options = interactions[0].data.options as any[];
-        const minionOptions = options.filter((o: any) => o.id !== 'skip');
-        expect(minionOptions).toHaveLength(1);
-        expect(minionOptions[0].value.minionUid).toBe('m3');
-        expect(minionOptions[0].value.fromBaseIndex).toBe(1);
     });
 
     it('排名不足2人时不触发', () => {
@@ -331,18 +320,12 @@ describe('base_tortuga: 计分后亚军移动其他基地随从到替换基地',
         expect(events).toHaveLength(0);
     });
 
-    it('亚军在其他基地无随从时不触发', () => {
+    it('亚军在此无随从时不触发', () => {
         const { events } = triggerBaseAbility('base_tortuga', 'afterScoring', makeCtx({
             state: makeState({
-                bases: [
-                    makeBase('base_tortuga', {
-                        minions: [
-                            makeMinion('m1', '0', 5),
-                            makeMinion('m2', '1', 3),
-                        ],
-                    }),
-                    makeBase('base_tar_pits'),
-                ],
+                bases: [makeBase('base_tortuga', {
+                    minions: [makeMinion('m1', '0', 5)],
+                })],
             }),
             baseDefId: 'base_tortuga',
             rankings: [
@@ -352,37 +335,6 @@ describe('base_tortuga: 计分后亚军移动其他基地随从到替换基地',
         }));
 
         expect(events).toHaveLength(0);
-    });
-
-    it('托尔图加上的亚军随从不出现在选项中', () => {
-        const result = triggerBaseAbilityWithMS('base_tortuga', 'afterScoring', makeCtx({
-            state: makeState({
-                bases: [
-                    makeBase('base_tortuga', {
-                        minions: [
-                            makeMinion('m1', '0', 5),
-                            makeMinion('m2', '1', 3),
-                        ],
-                    }),
-                    makeBase('base_tar_pits', {
-                        minions: [makeMinion('m3', '1', 2)],
-                    }),
-                ],
-            }),
-            baseDefId: 'base_tortuga',
-            rankings: [
-                { playerId: '0', power: 5, vp: 4 },
-                { playerId: '1', power: 3, vp: 2 },
-            ],
-        }));
-
-        const interactions = getInteractionsFromResult(result);
-        expect(interactions).toHaveLength(1);
-        const options = interactions[0].data.options as any[];
-        const minionOptions = options.filter((o: any) => o.id !== 'skip');
-        // 只有 m3（其他基地上的），不包含 m2（托尔图加上的）
-        expect(minionOptions).toHaveLength(1);
-        expect(minionOptions[0].value.minionUid).toBe('m3');
     });
 });
 

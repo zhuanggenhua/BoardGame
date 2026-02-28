@@ -6,8 +6,7 @@ import { ADMIN_API_URL } from '../../config/server';
 import { useToast } from '../../contexts/ToastContext';
 import GlobalTrendChart from './components/GlobalTrendChart';
 import GamePopularityChart from './components/GamePopularityChart';
-import RetentionChart from './components/RetentionChart';
-import ActivityTierChart from './components/ActivityTierChart';
+import UserCompositionChart from './components/UserCompositionChart';
 
 interface DashboardStats {
     totalUsers: number;
@@ -48,20 +47,6 @@ interface StatItem {
     };
 }
 
-interface RetentionItem {
-    label: string;
-    rate: number;
-    total: number;
-    retained: number;
-}
-
-interface ActivityTier {
-    label: string;
-    count: number;
-    color: string;
-    description: string;
-}
-
 export default function AdminDashboard() {
     const { token } = useAuth();
     const { error } = useToast();
@@ -69,11 +54,6 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [trend, setTrend] = useState<AdminStatsTrend | null>(null);
     const [trendLoading, setTrendLoading] = useState(true);
-    const [retention, setRetention] = useState<RetentionItem[]>([]);
-    const [retentionLoading, setRetentionLoading] = useState(true);
-    const [activityTiers, setActivityTiers] = useState<ActivityTier[]>([]);
-    const [activityTiersTotal, setActivityTiersTotal] = useState(0);
-    const [activityTiersLoading, setActivityTiersLoading] = useState(true);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -115,47 +95,6 @@ export default function AdminDashboard() {
         };
 
         if (token) fetchTrend();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token]);
-
-    useEffect(() => {
-        const fetchRetention = async () => {
-            setRetentionLoading(true);
-            try {
-                const res = await fetch(`${ADMIN_API_URL}/stats/retention`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error('Failed to fetch retention');
-                const data = await res.json();
-                setRetention(data.items ?? []);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setRetentionLoading(false);
-            }
-        };
-
-        const fetchActivityTiers = async () => {
-            setActivityTiersLoading(true);
-            try {
-                const res = await fetch(`${ADMIN_API_URL}/stats/activity-tiers`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error('Failed to fetch activity tiers');
-                const data = await res.json();
-                setActivityTiers(data.tiers ?? []);
-                setActivityTiersTotal(data.totalUsers ?? 0);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setActivityTiersLoading(false);
-            }
-        };
-
-        if (token) {
-            fetchRetention();
-            fetchActivityTiers();
-        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
@@ -224,16 +163,19 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* 用户活跃度分层 */}
-                    <ActivityTierChart
-                        tiers={activityTiers}
-                        totalUsers={activityTiersTotal}
-                        loading={activityTiersLoading}
+                    {/* 用户构成 */}
+                    <UserCompositionChart
+                        totalUsers={stats?.totalUsers || 0}
+                        activeUsers={stats?.activeUsers24h || 0}
+                        bannedUsers={stats?.bannedUsers || 0}
                     />
 
-                    {/* 用户留存 */}
-                    <div className="lg:col-span-2">
-                        <RetentionChart data={retention} loading={retentionLoading} />
+                    {/* Placeholder for future charts */}
+                    <div className="lg:col-span-2 bg-gradient-to-br from-indigo-500/5 to-violet-500/5 p-6 rounded-2xl border border-dashed border-indigo-200 flex items-center justify-center text-indigo-300">
+                        <div className="text-center">
+                            <Activity className="mx-auto mb-2 opacity-50" size={32} />
+                            <p className="text-sm font-medium">更多数据源接入中...</p>
+                        </div>
                     </div>
                 </div>
             </div>

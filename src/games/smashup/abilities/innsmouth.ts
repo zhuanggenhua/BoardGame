@@ -6,7 +6,7 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { addTempPower, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback } from '../domain/abilityHelpers';
+import { addPowerCounter, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, DeckReorderedEvent, CardsDrawnEvent, MinionReturnedEvent } from '../domain/types';
 import { registerProtection } from '../domain/ongoingEffects';
@@ -46,7 +46,7 @@ function innsmouthTheDeepOnes(ctx: AbilityContext): AbilityResult {
         const base = ctx.state.bases[i];
         for (const m of base.minions) {
             if (m.controller === ctx.playerId && getMinionPower(ctx.state, m, i) <= 2) {
-                events.push(addTempPower(m.uid, i, 1, 'innsmouth_the_deep_ones', ctx.now));
+                events.push(addPowerCounter(m.uid, i, 1, 'innsmouth_the_deep_ones', ctx.now));
             }
         }
     }
@@ -146,7 +146,7 @@ function innsmouthReturnToTheSea(ctx: AbilityContext): AbilityResult {
     });
     const interaction = createSimpleChoice(
         `innsmouth_return_to_the_sea_${ctx.now}`, ctx.playerId,
-        '选择要返回手牌的同名随从', options as any[], { sourceId: 'innsmouth_return_to_the_sea', targetType: 'minion' },
+        '选择要返回手牌的同名随从', options as any[], 'innsmouth_return_to_the_sea',
         undefined, { min: 0, max: sameDefMinions.length },
     );
     return { events: [], matchState: ctx.matchState ? queueInteraction(ctx.matchState, interaction) : undefined };

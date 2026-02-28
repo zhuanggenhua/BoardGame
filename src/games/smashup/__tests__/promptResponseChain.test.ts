@@ -89,7 +89,6 @@ describe('Prompt 响应链集成测试', () => {
                 'dino_natural_selection_choose_mine',
                 'dino_survival_tiebreak',
                 'dino_rampage',
-                'dino_rampage_choose_minion',
                 'robot_microbot_guard',
                 'robot_tech_center',
             ];

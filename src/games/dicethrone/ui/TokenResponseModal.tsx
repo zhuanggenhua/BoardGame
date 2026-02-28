@@ -27,8 +27,6 @@ interface TokenResponseModalProps {
     lastEvasionRoll?: { value: number; success: boolean };
     /** 状态图标图集 */
     statusIconAtlas?: StatusAtlases | null;
-    /** Token 可用数量覆盖（用于太极本回合限制等场景，key: tokenId, value: 实际可用数量） */
-    tokenUsableOverrides?: Record<string, number>;
 }
 
 /**
@@ -167,7 +165,6 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
     locale,
     lastEvasionRoll,
     statusIconAtlas,
-    tokenUsableOverrides,
 }) => {
     const { t } = useTranslation('game-dicethrone');
 
@@ -217,7 +214,7 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
 
     // 渲染单个 Token 卡片（传入 responsePhase 以正确计算效果预览和分类）
     const renderTokenCard = (tokenDef: TokenDef, borderColor: string) => {
-        const tokenCount = tokenUsableOverrides?.[tokenDef.id] ?? (responderState.tokens[tokenDef.id] ?? 0);
+        const tokenCount = responderState.tokens[tokenDef.id] ?? 0;
         if (tokenCount <= 0) return null;
 
         const preview = getTokenEffectPreview(tokenDef, pendingDamage.currentDamage, 1, responsePhase);

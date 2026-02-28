@@ -6,8 +6,7 @@
     "invalid_character": "Invalid character",
     "character_not_selected": "No character selected",
     "character_selection_not_initialized": "Character selection not initialized",
-    "command_failed": "Command failed",
-    "internal_error": "Server error, action auto-recovered"
+    "command_failed": "Command failed"
   },
   "controls": {
     "undo": {
@@ -44,18 +43,11 @@
       "playerUnknown": "Player",
       "opponent": "Opponent",
       "offline": "Offline",
-      "empty": "Empty",
       "searching": "Searching",
       "localTitle": "Local Match",
       "localDescription": "Take turns on this device.",
       "tutorialTitle": "Tutorial Mode",
       "tutorialDescription": "Follow the guidance to learn the rules."
-    },
-    "offlineBanner": {
-      "message": "{{name}} has been offline for {{time}}",
-      "waitingOpponent": "Waiting for opponent...",
-      "seconds": "{{count}}s",
-      "minutes": "{{count}}min"
     },
     "labels": {
       "turn": "Turn:",
@@ -94,8 +86,8 @@
       "githubSubtitle": "View the source code and contribute",
       "qqTitle": "QQ Group",
       "qqSubtitle": "Join the community: ",
-      "supportTitle": "If you like this project, you can buy the author a coffee.",
-      "supportSubtitle": "You can leave a note to be added to the sponsor list if needed.",
+      "supportTitle": "If you like this project, consider helping with server costs.",
+      "supportSubtitle": "Your nickname will be listed below (optional)",
       "qrPlaceholder": "QR",
       "wechatLabel": "WeChat",
       "alipayLabel": "Alipay",
@@ -121,11 +113,10 @@
       "imageAdded": "Screenshot added",
       "contactLabel": "Contact (optional)",
       "contactPlaceholder": "Email or QQ (for follow-up)",
-      "attachLog": "Attach action log",
       "submit": "Submit Feedback",
       "success": "Feedback submitted. Thanks for the support!",
       "errors": {
-        "loginRequired": "Login for better feedback tracking experience",
+        "loginRequired": "Please log in before submitting feedback.",
         "submitFailed": "Submission failed. Please try again later."
       },
       "type": {

@@ -78,7 +78,7 @@ function alienSupremeOverlord(ctx: AbilityContext): AbilityResult {
     ] as any[];
     return { events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
         `alien_supreme_overlord_${ctx.now}`, ctx.playerId,
-        '你可以将一个随从返回到其拥有者的手上', options, { sourceId: 'alien_supreme_overlord', targetType: 'minion' },
+        '你可以将一个随从返回到其拥有者的手上', options, 'alien_supreme_overlord',
     )) };
 }
 
@@ -110,7 +110,7 @@ function alienCollector(ctx: AbilityContext): AbilityResult {
     ] as any[];
     return { events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
         `alien_collector_${ctx.now}`, ctx.playerId,
-        '你可以将这个基地的一个力量≤3的随从返回其拥有者的手上', options, { sourceId: 'alien_collector', targetType: 'minion' },
+        '你可以将这个基地的一个力量≤3的随从返回其拥有者的手上', options, 'alien_collector',
     )) };
 }
 
@@ -148,7 +148,7 @@ function alienScoutAfterScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerRe
             { id: 'yes', label: '返回手牌', value: { returnIt: true, minionUid: first.uid, minionDefId: first.defId, owner: first.owner, baseIndex: first.baseIndex, baseDefId: base.defId } },
             { id: 'no', label: '留在基地', value: { returnIt: false } },
         ],
-        { sourceId: 'alien_scout_return', targetType: 'generic' },
+        { sourceId: 'alien_scout_return', targetType: 'minion' },
     );
     const ms = queueInteraction(ctx.matchState, {
         ...interaction,
@@ -184,7 +184,7 @@ function alienInvasion(ctx: AbilityContext): AbilityResult {
     );
     if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return { events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-        `alien_invasion_${ctx.now}`, ctx.playerId, '选择要移动的随从', options, { sourceId: 'alien_invasion_choose_minion', targetType: 'minion' },
+        `alien_invasion_${ctx.now}`, ctx.playerId, '选择要移动的随从', options, 'alien_invasion_choose_minion',
     )) };
 }
 
@@ -677,7 +677,7 @@ export function registerAlienInteractionHandlers(): void {
                     { id: 'yes', label: '返回手牌', value: { returnIt: true, minionUid: next.uid, minionDefId: next.defId, owner: next.owner, baseIndex: next.baseIndex, baseDefId: base.defId } },
                     { id: 'no', label: '留在基地', value: { returnIt: false } },
                 ],
-                { sourceId: 'alien_scout_return', targetType: 'generic' }
+                { sourceId: 'alien_scout_return', targetType: 'minion' }
             );
             return { state: queueInteraction(state, { ...interaction, data: { ...interaction.data, continuationContext: { remaining: rest } } }), events };
         }

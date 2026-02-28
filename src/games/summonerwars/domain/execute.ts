@@ -867,15 +867,6 @@ export function executeCommand(
       break;
     }
 
-    case SW_COMMANDS.PLAYER_UNREADY: {
-      events.push({
-        type: SW_SELECTION_EVENTS.PLAYER_UNREADY,
-        payload: { playerId: command.playerId },
-        timestamp,
-      });
-      break;
-    }
-
     case SW_COMMANDS.HOST_START_GAME: {
       events.push({
         type: SW_SELECTION_EVENTS.HOST_STARTED,

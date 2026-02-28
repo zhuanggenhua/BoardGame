@@ -12,12 +12,11 @@
  * - 离开 defensiveRoll → 自动重置
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { PlayerId } from '../../../engine/types';
 import type { TurnPhase, CharacterId, PendingAttack } from '../domain/types';
 import type { CardPreviewRef } from '../../../core';
-import { getUpgradeCardPreviewRef, getAbilitySlotId, buildVariantToBaseIdMap } from '../ui/AbilityOverlays';
-import type { AbilityDef } from '../domain/combat';
+import { getUpgradeCardPreviewRef, getAbilitySlotId } from '../ui/AbilityOverlays';
 
 export interface AttackShowcaseData {
     /** 攻击方角色 ID */
@@ -54,8 +53,6 @@ interface AttackShowcaseConfig {
     abilityLevels: Record<string, Record<string, number>>;
     /** 当前 pendingAttack 状态（直接从 core 读取） */
     pendingAttack: PendingAttack | null;
-    /** 攻击方的技能列表（用于精确匹配变体 ID） */
-    attackerAbilities?: AbilityDef[];
 }
 
 /**
@@ -72,7 +69,6 @@ function buildShowcaseData(
     pendingAttack: PendingAttack,
     selectedCharacters: Record<PlayerId, CharacterId>,
     abilityLevels: Record<string, Record<string, number>>,
-    variantToBaseMap?: Map<string, string>,
 ): AttackShowcaseData | null {
     const sourceAbilityId = pendingAttack.sourceAbilityId;
     if (!sourceAbilityId) return null;
@@ -80,10 +76,10 @@ function buildShowcaseData(
     const attackerCharId = selectedCharacters[pendingAttack.attackerId];
     if (!attackerCharId || attackerCharId === 'unselected') return null;
 
-    const slotId = getAbilitySlotId(sourceAbilityId, variantToBaseMap);
+    const slotId = getAbilitySlotId(sourceAbilityId);
 
-    // 优先通过反向查找表获取 base ID，降级用正则去尾部数字
-    const baseAbilityId = variantToBaseMap?.get(sourceAbilityId) ?? sourceAbilityId.replace(/-\d+$/, '');
+    // 技能 ID 可能带变体后缀（如 fist-technique-5），提取基础 ID
+    const baseAbilityId = sourceAbilityId.replace(/-\d+$/, '');
     const attackerLevels = abilityLevels[pendingAttack.attackerId] ?? {};
     const level = attackerLevels[baseAbilityId] ?? attackerLevels[sourceAbilityId] ?? 1;
 
@@ -108,17 +104,10 @@ export function useAttackShowcase(config: AttackShowcaseConfig): AttackShowcaseS
         selectedCharacters,
         abilityLevels,
         pendingAttack,
-        attackerAbilities,
     } = config;
 
     // 已关闭的攻击 key（用户点击"继续"后设置，触发重渲染隐藏遮罩）
     const [dismissedKey, setDismissedKey] = useState<string | null>(null);
-
-    // 构建攻击方的 variantId → baseAbilityId 反向查找表
-    const variantToBaseMap = useMemo(
-        () => attackerAbilities ? buildVariantToBaseIdMap(attackerAbilities) : undefined,
-        [attackerAbilities]
-    );
 
     // 离开 defensiveRoll 时重置
     useEffect(() => {
@@ -138,7 +127,7 @@ export function useAttackShowcase(config: AttackShowcaseConfig): AttackShowcaseS
         && getAttackKey(pendingAttack) !== dismissedKey;
 
     const showcaseData = shouldShow && pendingAttack
-        ? buildShowcaseData(pendingAttack, selectedCharacters, abilityLevels, variantToBaseMap)
+        ? buildShowcaseData(pendingAttack, selectedCharacters, abilityLevels)
         : null;
 
     const isShowcaseVisible = shouldShow && showcaseData !== null;

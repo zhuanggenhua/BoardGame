@@ -289,31 +289,16 @@ export const Home = () => {
 
     useEffect(() => {
         if (!activeMatch || !lobbyPresence.isMissing) return;
-        let cancelled = false;
-
-        // 大厅列表中看不到房间，但可能只是 gameover（rematch 投票中）而非真正销毁
-        // 通过 HTTP 确认房间是否真的不存在，避免误清凭证
-        const gameName = activeMatch.gameName || 'tictactoe';
-        matchApi.getMatch(gameName, activeMatch.matchID).then(() => {
-            if (cancelled) return;
-            // 房间还在（可能是 gameover 状态），不清理凭证
-            console.log('[Home] 房间仍存在（可能 gameover），跳过清理', activeMatch.matchID);
-        }).catch(() => {
-            if (cancelled) return;
-            // 房间真的不存在了（404），执行清理
-            console.log('[Home] 房间已确认不存在，执行清理', activeMatch.matchID);
-            const notice = publishMatchCleanupNotice(activeMatch.matchID);
-            if (notice && !hasSeenMatchCleanupNotice(notice)) {
-                markMatchCleanupNoticeSeen(notice);
-                toast.warning({ kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' });
-            }
-            clearMatchCredentials(activeMatch.matchID);
-            clearOwnerActiveMatch(activeMatch.matchID);
-            setActiveMatch(null);
-            setMyMatchRole(null);
-            setLocalStorageTick((t) => t + 1);
-        });
-        return () => { cancelled = true; };
+        const notice = publishMatchCleanupNotice(activeMatch.matchID);
+        if (notice && !hasSeenMatchCleanupNotice(notice)) {
+            markMatchCleanupNoticeSeen(notice);
+            toast.warning({ kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' });
+        }
+        clearMatchCredentials(activeMatch.matchID);
+        clearOwnerActiveMatch(activeMatch.matchID);
+        setActiveMatch(null);
+        setMyMatchRole(null);
+        setLocalStorageTick((t) => t + 1);
     }, [activeMatch, lobbyPresence.isMissing, toast]);
 
     const handleReconnect = () => {

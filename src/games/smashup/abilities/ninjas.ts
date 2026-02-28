@@ -6,7 +6,7 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, moveMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback } from '../domain/abilityHelpers';
+import { destroyMinion, moveMinion, getMinionPower, grantExtraMinion, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionReturnedEvent, OngoingDetachedEvent, MinionPlayedEvent } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
@@ -29,12 +29,16 @@ export function registerNinjaAbilities(): void {
     registerAbility('ninja_disguise', 'onPlay', ninjaDisguise);
     // 渗透（ongoing 行动卡）：onPlay 消灭基地上一个已有的战术
     registerAbility('ninja_infiltrate', 'onPlay', ninjaInfiltrateOnPlay);
+    // 忍（special）：基地计分前打出到该基地
+    registerAbility('ninja_shinobi', 'special', ninjaShinobi);
+    // 侍僧（special）：回手并额外打出随从
+    registerAbility('ninja_acolyte', 'special', ninjaAcolyte);
+    // 侍僧 POD版（talent）：POD 版改为天赋能力，效果相同但触发方式不同
+    registerAbility('ninja_acolyte_pod', 'talent', ninjaAcolytePodTalent);
     // 隐忍（special action）：基地计分前打出手牌中的随从到该基地
     registerAbility('ninja_hidden_ninja', 'special', ninjaHiddenNinja);
-    // 忍者侍从（special）：基地计分前返回手牌并额外打出一个随从到该基地
-    registerAbility('ninja_acolyte', 'special', ninjaAcolyteSpecial);
 
-    // 注册 ongoing 拦截器（含 beforeScoring 触发器：影舞者、忍者侍从）
+    // 注册 ongoing 拦截器
     registerNinjaOngoingEffects();
 }
 
@@ -100,7 +104,7 @@ function ninjaSeeingStars(ctx: AbilityContext): AbilityResult {
     const options = targets.map(t => ({ uid: t.uid, defId: t.defId, baseIndex: t.baseIndex, label: t.label }));
     const interaction = createSimpleChoice(
         `ninja_seeing_stars_${ctx.now}`, ctx.playerId, '选择要消灭的力量≤3的随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }), { sourceId: 'ninja_seeing_stars', targetType: 'minion' }
-        );
+    );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -211,7 +215,7 @@ function ninjaWayOfDeception(ctx: AbilityContext): AbilityResult {
     const options = myMinions.map(m => ({ uid: m.uid, defId: m.defId, baseIndex: m.baseIndex, label: m.label }));
     const interaction = createSimpleChoice(
         `ninja_way_of_deception_${ctx.now}`, ctx.playerId, '选择要移动的己方随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'ninja_way_of_deception_choose_minion', targetType: 'minion' }
-        );
+    );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -265,7 +269,7 @@ function ninjaDisguiseSelectMinions(ctx: AbilityContext, baseIndex: number): Abi
     const interaction = createSimpleChoice(
         `ninja_disguise_select_${ctx.now}`, ctx.playerId,
         `伪装：选择 1-${maxSelect} 个己方随从`, buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'ninja_disguise_choose_minions', targetType: 'minion' }, undefined, { min: 1, max: maxSelect }
-        );
+    );
     return { events: [], matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ctx.cardUid, baseIndex } } }) };
 }
 
@@ -277,6 +281,147 @@ function ninjaDisguiseSelectMinions(ctx: AbilityContext, baseIndex: number): Abi
  * 影舞者 special：基地计分前，可以从手牌打出到该基地
  * 限制：每个基地只能使用一次忍者的能力（通过 specialLimitGroup 数据驱动）
  */
+function ninjaShinobi(ctx: AbilityContext): AbilityResult {
+    // 限制组检查：该基地本回合是否已使用过同组 special 能力
+    if (isSpecialLimitBlocked(ctx.state, 'ninja_shinobi', ctx.baseIndex)) return { events: [] };
+
+    // 检查该随从是否在手牌中
+    const player = ctx.state.players[ctx.playerId];
+    const inHand = player.hand.find(c => c.defId === 'ninja_shinobi');
+    if (!inHand) return { events: [] };
+
+    const def = getCardDef('ninja_shinobi');
+    if (!def || def.type !== 'minion') return { events: [] };
+
+    const events: SmashUpEvent[] = [];
+
+    // 记录限制组使用
+    const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_shinobi', ctx.baseIndex, ctx.now);
+    if (limitEvt) events.push(limitEvt);
+
+    const playedEvt: MinionPlayedEvent = {
+        type: SU_EVENTS.MINION_PLAYED,
+        payload: {
+            playerId: ctx.playerId,
+            cardUid: inHand.uid,
+            defId: 'ninja_shinobi',
+            baseIndex: ctx.baseIndex,
+            power: (def as MinionCardDef).power,
+        },
+        timestamp: ctx.now,
+    };
+    events.push(playedEvt);
+    return { events };
+}
+
+/**
+ * 侍僧 special：将此随从从基地返回手牌，然后额外打出一个随从
+ * 前置条件：如果你还未打出随从卡
+ * 限制：每个基地只能使用一次忍者的能力（通过 specialLimitGroup 数据驱动）
+ */
+function ninjaAcolyte(ctx: AbilityContext): AbilityResult {
+    // 限制组检查
+    if (isSpecialLimitBlocked(ctx.state, 'ninja_acolyte', ctx.baseIndex)) return { events: [] };
+
+    // 前置条件：本回合还未打出随从
+    const player = ctx.state.players[ctx.playerId];
+    if (player.minionsPlayed > 0) return { events: [] };
+
+    const events: SmashUpEvent[] = [];
+
+    // 记录限制组使用
+    const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_acolyte', ctx.baseIndex, ctx.now);
+    if (limitEvt) events.push(limitEvt);
+
+    // 返回手牌
+    const returnEvt: MinionReturnedEvent = {
+        type: SU_EVENTS.MINION_RETURNED,
+        payload: {
+            minionUid: ctx.cardUid,
+            minionDefId: ctx.defId,
+            fromBaseIndex: ctx.baseIndex,
+            toPlayerId: ctx.playerId,
+            reason: 'ninja_acolyte',
+        },
+        timestamp: ctx.now,
+    };
+    events.push(returnEvt);
+
+    // 额外打出一个随从到这个基地
+    events.push(grantExtraMinion(ctx.playerId, 'ninja_acolyte', ctx.now, ctx.baseIndex));
+
+    return { events };
+}
+
+/**
+ * 侍僧 POD版 talent：将此随从从基地返回手牌，然后额外打出一个随从到这里
+ * 前置条件：如果你在本回合尚未打出过随从
+ * 
+ * POD 版改为 talent（主动激活型），没有 specialLimitGroup 限制，
+ * 但受 talentUsed 每回合一次限制（引擎层自动管理）。
+ * 
+ * 实现方式：返回手牌后，立即弹出选择框让玩家从手牌中选一个随从打到该基地。
+ */
+function ninjaAcolytePodTalent(ctx: AbilityContext): AbilityResult {
+    // 前置条件：本回合还未打出随从
+    const player = ctx.state.players[ctx.playerId];
+    if (player.minionsPlayed > 0) return { events: [buildAbilityFeedback(ctx.playerId, '本回合已打出过随从，无法使用此天赋', ctx.now)] };
+
+    // 检查手牌中是否有可打出的随从（排除侍从自身，因为它会被返回手牌）
+    const otherMinions = player.hand.filter(c => c.type === 'minion' && c.uid !== ctx.cardUid);
+    // 注意：侍从返回手牌后，手牌会多一张（含侍从本身），所以实际可选的随从 = 其他手牌随从 + 侍从自身
+    // 但此时 state 还没处理 return 事件，所以侍从还在基地上而非手牌。
+    // 我们将侍从自身也加入可选列表（因为规则允许把刚收回的侍从再打出去）
+
+    const events: SmashUpEvent[] = [];
+
+    // 1. 返回手牌
+    const returnEvt: MinionReturnedEvent = {
+        type: SU_EVENTS.MINION_RETURNED,
+        payload: {
+            minionUid: ctx.cardUid,
+            minionDefId: ctx.defId,
+            fromBaseIndex: ctx.baseIndex,
+            toPlayerId: ctx.playerId,
+            reason: 'ninja_acolyte_pod',
+        },
+        timestamp: ctx.now,
+    };
+    events.push(returnEvt);
+
+    // 2. 构建可选随从列表（其他手牌随从 + 侍从自身）
+    const allMinionCards = [
+        ...otherMinions,
+        { uid: ctx.cardUid, defId: ctx.defId, type: 'minion' as const, owner: ctx.playerId },
+    ];
+
+    if (allMinionCards.length === 0) {
+        return { events };
+    }
+
+    const options = allMinionCards.map((c, i) => {
+        const def = getCardDef(c.defId) as MinionCardDef | undefined;
+        const name = def?.name ?? c.defId;
+        const power = def?.power ?? 0;
+        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'hand' as const };
+    });
+
+    const interaction = createSimpleChoice(
+        `ninja_acolyte_pod_${ctx.now}`, ctx.playerId,
+        '选择要打出到该基地的随从',
+        options as any[],
+        { sourceId: 'ninja_acolyte_pod_play', targetType: 'minion' },
+    );
+
+    return {
+        events,
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
+        }),
+    };
+}
+
 /**
  * 隐忍 special action：基地计分前，选择手牌中一个随从打出到该基地
  * 限制：每个基地只能使用一次忍者的能力（通过 specialLimitGroup 数据驱动）
@@ -301,118 +446,62 @@ function ninjaHiddenNinja(ctx: AbilityContext): AbilityResult {
     });
     const interaction = createSimpleChoice(
         `ninja_hidden_ninja_${ctx.now}`, ctx.playerId,
-        '选择要打出到该基地的随从', options as any[], { sourceId: 'ninja_hidden_ninja', targetType: 'hand' },
-    );
-    return { events, matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } }) };
-}
-
-/**
- * 忍者侍从 special：返回手牌并额外打出一个随从到该基地
- * 前置条件：本回合还未打出随从（minionsPlayed === 0）
- * 限制：每个基地只能使用一次忍者的能力（通过 specialLimitGroup 数据驱动）
- */
-function ninjaAcolyteSpecial(ctx: AbilityContext): AbilityResult {
-    // 限制组检查
-    if (isSpecialLimitBlocked(ctx.state, 'ninja_acolyte', ctx.baseIndex)) return { events: [] };
-
-    // 前置条件：本回合还未打出随从
-    const player = ctx.state.players[ctx.playerId];
-    if (player.minionsPlayed > 0) return { events: [] };
-
-    // 记录限制组使用
-    const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_acolyte', ctx.baseIndex, ctx.now);
-    const events: SmashUpEvent[] = limitEvt ? [limitEvt] : [];
-
-    // 返回手牌
-    events.push({
-        type: SU_EVENTS.MINION_RETURNED,
-        payload: { minionUid: ctx.cardUid, minionDefId: 'ninja_acolyte', fromBaseIndex: ctx.baseIndex, toPlayerId: ctx.playerId, reason: 'ninja_acolyte' },
-        timestamp: ctx.now,
-    } as MinionReturnedEvent);
-
-    // 创建交互：选择手牌中的随从打出到该基地
-    // 注意：忍者侍从刚返回手牌，也可以被选择打出
-    const minionCards = player.hand.filter(c => c.type === 'minion');
-    // 加上刚返回的忍者侍从自身（因为 reduce 还没执行，手牌中还没有它）
-    const acolyteDef = getCardDef('ninja_acolyte') as MinionCardDef | undefined;
-    const allOptions = [
-        ...minionCards.map((c, i) => {
-            const def = getCardDef(c.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? c.defId;
-            const power = def?.power ?? 0;
-            return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'hand' as const };
-        }),
-        // 忍者侍从自身（刚返回手牌）
-        { id: `hand-self`, label: `${acolyteDef?.name ?? '忍者侍从'} (力量 ${acolyteDef?.power ?? 2})`, value: { cardUid: ctx.cardUid, defId: 'ninja_acolyte', power: acolyteDef?.power ?? 2 }, _source: 'hand' as const },
-    ];
-
-    if (allOptions.length === 0) return { events };
-
-    const interaction = createSimpleChoice(
-        `ninja_acolyte_play_${ctx.now}`, ctx.playerId,
-        '选择要打出到该基地的随从', allOptions as any[], { sourceId: 'ninja_acolyte_play', targetType: 'hand' },
+        '选择要打出到该基地的随从', options as any[], 'ninja_hidden_ninja',
     );
     return { events, matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } }) };
 }
 
 // ============================================================================
-// Ongoing 拦截器注册
+// Ongoing 拦截器注册?
 // ============================================================================
 
 /** 注册忍者派系的 ongoing 拦截?*/
 function registerNinjaOngoingEffects(): void {
-    // === beforeScoring 触发器 ===
-    // 影舞者（ninja_shinobi）已迁移到 Me First! 响应窗口机制：
-    // 通过 MinionCardDef.beforeScoringPlayable=true 标记，在 Me First! 窗口中
-    // 允许使用 PLAY_MINION 命令从手牌打出到即将计分的基地。
-    // 不再需要 beforeScoring 触发器和 ninja_shinobi_scoring 交互处理器。
-
-    // === 保护/拦截器 ===
-
     // 烟雾弹：保护同基地己方随从不受对手行动卡影响
-    // 烟幕弹是 ongoingTarget: 'minion'，附着在随从的 attachedActions 上
-    // 卡牌描述："该随从不会受到其他玩家战术的影响" → 保护被附着的随从
     registerProtection('ninja_smoke_bomb', 'action', (ctx) => {
-        // 检查目标随从是否附着了烟幕弹，且来源是对手
-        const bomb = ctx.targetMinion.attachedActions.find(a => a.defId === 'ninja_smoke_bomb');
-        if (!bomb) return false;
-        return ctx.sourcePlayerId !== bomb.ownerId;
+        // 只保护烟雾弹所在基地的、烟雾弹拥有者的随从
+        for (const base of ctx.state.bases) {
+            const bomb = base.ongoingActions.find(o => o.defId === 'ninja_smoke_bomb');
+            if (!bomb) continue;
+            const baseIdx = ctx.state.bases.indexOf(base);
+            if (baseIdx !== ctx.targetBaseIndex) continue;
+            // 只保护烟雾弹拥有者的随从，且来源是对手?
+            return ctx.targetMinion.controller === bomb.ownerId && ctx.sourcePlayerId !== bomb.ownerId;
+        }
+        return false;
     });
 
     // 烟雾弹：拥有者回合开始时自毁
-    // 烟幕弹附着在随从的 attachedActions 上，不在 base.ongoingActions 上
     registerTrigger('ninja_smoke_bomb', 'onTurnStart', (trigCtx) => {
         const events: SmashUpEvent[] = [];
         for (const base of trigCtx.state.bases) {
-            for (const m of base.minions) {
-                for (const attached of m.attachedActions) {
-                    if (attached.defId !== 'ninja_smoke_bomb') continue;
-                    if (attached.ownerId !== trigCtx.playerId) continue;
-                    events.push({
-                        type: SU_EVENTS.ONGOING_DETACHED,
-                        payload: {
-                            cardUid: attached.uid,
-                            defId: attached.defId,
-                            ownerId: attached.ownerId,
-                            reason: 'ninja_smoke_bomb_self_destruct',
-                        },
-                        timestamp: trigCtx.now,
-                    });
-                }
+            for (const ongoing of base.ongoingActions) {
+                if (ongoing.defId !== 'ninja_smoke_bomb') continue;
+                if (ongoing.ownerId !== trigCtx.playerId) continue;
+                events.push({
+                    type: SU_EVENTS.ONGOING_DETACHED,
+                    payload: {
+                        cardUid: ongoing.uid,
+                        defId: ongoing.defId,
+                        ownerId: ongoing.ownerId,
+                        reason: 'ninja_smoke_bomb_self_destruct',
+                    },
+                    timestamp: trigCtx.now,
+                });
             }
         }
         return events;
     });
 
-    // 暗杀：回合结束时消灭目标随从（附着在随从上）
+    // 暗杀：回合结束时消灭目标随从（附着在随从上）?ongoing?
     registerTrigger('ninja_assassination', 'onTurnEnd', (trigCtx) => {
         const events: SmashUpEvent[] = [];
-        // 查找所有附着了 assassination 的随从
+        // 查找所有附着了?assassination 的随从
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             const base = trigCtx.state.bases[i];
             for (const m of base.minions) {
-                const assassinationCard = m.attachedActions.find(a => a.defId === 'ninja_assassination');
-                if (assassinationCard) {
+                const hasAssassination = m.attachedActions.some(a => a.defId === 'ninja_assassination');
+                if (hasAssassination) {
                     events.push({
                         type: SU_EVENTS.MINION_DESTROYED,
                         payload: {
@@ -420,7 +509,6 @@ function registerNinjaOngoingEffects(): void {
                             minionDefId: m.defId,
                             fromBaseIndex: i,
                             ownerId: m.owner,
-                            destroyerId: assassinationCard.ownerId, // 暗杀卡的拥有者是消灭者
                             reason: 'ninja_assassination',
                         },
                         timestamp: trigCtx.now,
@@ -467,51 +555,36 @@ function registerNinjaOngoingEffects(): void {
 
 /** 注册忍者派系的交互解决处理函数 */
 export function registerNinjaInteractionHandlers(): void {
-    // 忍者侍从：选择手牌随从打出到基地
-    registerInteractionHandler('ninja_acolyte_play', (state, playerId, value, iData, _random, timestamp) => {
-        const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
-        const baseIndex = ((iData as any)?.continuationContext as { baseIndex: number })?.baseIndex;
-        if (baseIndex === undefined) return undefined;
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex, power, consumesNormalLimit: false },
-            timestamp,
-        };
-        return { state, events: [playedEvt] };
-    });
-
-    // === 出牌阶段交互处理 ===
-
     // 忍者大师：选择目标后消灭（可跳过）
-    registerInteractionHandler('ninja_master', (state, playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('ninja_master', (state, _playerId, value, _iData, _random, timestamp) => {
         if (value && (value as any).skip) return { state, events: [] };
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ninja_master', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, _playerId, 'ninja_master', timestamp)] };
     });
 
     // 猛虎刺客：选择目标后消灭（可跳过）
-    registerInteractionHandler('ninja_tiger_assassin', (state, playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('ninja_tiger_assassin', (state, _playerId, value, _iData, _random, timestamp) => {
         if (value && (value as any).skip) return { state, events: [] };
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ninja_tiger_assassin', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, _playerId, 'ninja_tiger_assassin', timestamp)] };
     });
 
     // 手里剑：选择目标后消灭
-    registerInteractionHandler('ninja_seeing_stars', (state, playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('ninja_seeing_stars', (state, _playerId, value, _iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ninja_seeing_stars', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, _playerId, 'ninja_seeing_stars', timestamp)] };
     });
 
     // 欺骗之道：选择随从后，链式选择目标基地
@@ -530,7 +603,7 @@ export function registerNinjaInteractionHandlers(): void {
         if (candidates.length === 0) return undefined;
         const next = createSimpleChoice(
             `ninja_way_of_deception_base_${timestamp}`, playerId, '选择目标基地', buildBaseTargetOptions(candidates, state.core), { sourceId: 'ninja_way_of_deception_choose_base', targetType: 'base' }
-            );
+        );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: minion.defId, fromBaseIndex: baseIndex } } }), events: [] };
     });
 
@@ -546,7 +619,7 @@ export function registerNinjaInteractionHandlers(): void {
     registerInteractionHandler('ninja_disguise_choose_base', (state, playerId, value, iData, _random, timestamp) => {
         // 检查取消标记
         if ((value as any).__cancel__) return { state, events: [] };
-        
+
         const { baseIndex } = value as { baseIndex: number };
         const ctx = (iData as any)?.continuationContext as { cardUid: string };
         const base = state.core.bases[baseIndex];
@@ -566,7 +639,7 @@ export function registerNinjaInteractionHandlers(): void {
         const next = createSimpleChoice(
             `ninja_disguise_select_${timestamp}`, playerId,
             `伪装：选择 1-${maxSelect} 个己方随从`, buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId }), { sourceId: 'ninja_disguise_choose_minions', targetType: 'minion' }, undefined, { min: 1, max: maxSelect }
-            );
+        );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { cardUid: ctx?.cardUid, baseIndex } } }), events: [] };
     });
 
@@ -589,7 +662,7 @@ export function registerNinjaInteractionHandlers(): void {
         });
         const next = createSimpleChoice(
             `ninja_disguise_play1_${timestamp}`, playerId,
-            '伪装：选择要打出的手牌随从', handOptions as any[], { sourceId: 'ninja_disguise_choose_play1', targetType: 'hand' },
+            '伪装：选择要打出的手牌随从', handOptions as any[], 'ninja_disguise_choose_play1',
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { baseIndex: ctx.baseIndex, returnUids, totalToPlay: returnUids.length, playedUids: [] } } }), events: [] };
     });
@@ -619,7 +692,7 @@ export function registerNinjaInteractionHandlers(): void {
                 });
                 const next = createSimpleChoice(
                     `ninja_disguise_play2_${timestamp}`, playerId,
-                    '伪装：选择第二个要打出的手牌随从', handOptions as any[], { sourceId: 'ninja_disguise_choose_play2', targetType: 'hand' },
+                    '伪装：选择第二个要打出的手牌随从', handOptions as any[], 'ninja_disguise_choose_play2',
                 );
                 return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { baseIndex: ctx.baseIndex, returnUids: ctx.returnUids } } }), events };
             }
@@ -672,7 +745,7 @@ export function registerNinjaInteractionHandlers(): void {
         if (baseIndex === undefined) return undefined;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex, power, consumesNormalLimit: false },
+            payload: { playerId, cardUid, defId, baseIndex, power },
             timestamp,
         };
         return { state, events: [playedEvt] };
@@ -689,5 +762,18 @@ export function registerNinjaInteractionHandlers(): void {
                 timestamp,
             } as OngoingDetachedEvent],
         };
+    });
+
+    // 侍僧 POD版：选择手牌随从后直接打出到该基地
+    registerInteractionHandler('ninja_acolyte_pod_play', (state, playerId, value, iData, _random, timestamp) => {
+        const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
+        const baseIndex = ((iData as any)?.continuationContext as { baseIndex: number })?.baseIndex;
+        if (baseIndex === undefined) return undefined;
+        const playedEvt: MinionPlayedEvent = {
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: { playerId, cardUid, defId, baseIndex, power, consumesNormalLimit: false },
+            timestamp,
+        };
+        return { state, events: [playedEvt] };
     });
 }

@@ -156,19 +156,17 @@ describe('卡牌系统', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
-        it('允许跳级升级（直接 I -> III），支付全额 CP', () => {
+        it('不可跳级升级（直接 I -> III）', () => {
             const runner = createRunner(fixedRandom);
             const result = runner.run({
-                name: '跳级升级成功',
+                name: '跳级升级被拒绝',
                 setup: createSetupWithHand(['card-meditation-3'], { cp: 10 }),
                 commands: [
                     cmd('PLAY_UPGRADE_CARD', '0', { cardId: 'card-meditation-3', targetAbilityId: 'meditation' }),
                 ],
                 expect: {
+                    expectError: { command: 'PLAY_UPGRADE_CARD', error: 'upgradeCardSkipLevel' },
                     turnPhase: 'main1',
-                    players: {
-                        '0': { abilityLevels: { meditation: 3 } },
-                    },
                 },
             });
             expect(result.assertionErrors).toEqual([]);

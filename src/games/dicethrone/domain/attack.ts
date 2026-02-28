@@ -9,7 +9,6 @@ import type {
     DiceThroneEvent,
     AttackResolvedEvent,
     AttackPreDefenseResolvedEvent,
-    TokenGrantedEvent,
 } from './types';
 import { resolveEffectsToEvents, type EffectContext } from './effects';
 import { getPlayerAbilityEffects } from './abilityLookup';
@@ -64,7 +63,7 @@ export const resolveAttack = (
     state: DiceThroneCore,
     random: RandomFn,
     options?: { includePreDefense?: boolean; skipTokenResponse?: boolean },
-    timestamp: number = 0,
+    timestamp: number = 0
 ): DiceThroneEvent[] => {
     const pending = state.pendingAttack;
     if (!pending) {
@@ -101,33 +100,8 @@ export const resolveAttack = (
 
         defenseEvents.push(...resolveEffectsToEvents(defenseEffects, 'withDamage', defenseCtx, { random }));
         defenseEvents.push(...resolveEffectsToEvents(defenseEffects, 'postDamage', defenseCtx, { random }));
-
     }
     events.push(...defenseEvents);
-
-    // 防御技能效果可能产生 TOKEN_GRANTED 事件（如冥想获得太极），
-    // 攻击方伤害结算时需要检查防御方是否有可用 Token（shouldOpenTokenResponse），
-    // 因此只提取 TOKEN_GRANTED 事件更新 token 数量，避免 apply 全部防御事件的副作用
-    // （如 PREVENT_DAMAGE 创建 damageShield 导致 createDamageCalculation 双重扣减）。
-    let stateAfterDefense = state;
-    const tokenGrantedEvents = defenseEvents.filter((e): e is TokenGrantedEvent => e.type === 'TOKEN_GRANTED');
-    if (tokenGrantedEvents.length > 0) {
-        let players = { ...state.players };
-        for (const evt of tokenGrantedEvents) {
-            const { targetId, tokenId, newTotal } = evt.payload;
-            const player = players[targetId];
-            if (player) {
-                players = {
-                    ...players,
-                    [targetId]: {
-                        ...player,
-                        tokens: { ...player.tokens, [tokenId]: newTotal },
-                    },
-                };
-            }
-        }
-        stateAfterDefense = { ...state, players };
-    }
 
     // 收集攻击方事件
     const attackEvents: DiceThroneEvent[] = [];
@@ -138,10 +112,9 @@ export const resolveAttack = (
             attackerId,
             defenderId,
             sourceAbilityId,
-            state: stateAfterDefense,
+            state,
             damageDealt: 0,
             timestamp,
-            damagePhase: 'offensiveRoll', // 攻击掷骰阶段伤害，用于 passiveTrigger 条件过滤（如锁定）
         };
 
         // withDamage 时机的效果（包括 rollDie 和 damage）统一通过效果系统处理
@@ -172,9 +145,6 @@ export const resolveAttack = (
         attackEvents.push(...withDamageEvents);
         attackEvents.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
         totalDamage = attackCtx.damageDealt;
-
-        // 技能专属音效由 FX 系统在伤害动画 onImpact 时播放（useAnimationEffects.findAbilitySfxKey），
-        // 不再注入到 event.sfxKey（会被 useGameAudio 的 resolveFeedback 优先级链捕获导致双重播放）
     }
     events.push(...attackEvents);
 
@@ -228,7 +198,6 @@ export const resolvePostDamageEffects = (
             state,
             damageDealt, // 使用实际造成的伤害值
             timestamp,
-            damagePhase: 'offensiveRoll', // 攻击掷骰阶段伤害
         };
 
         // 重新执行 withDamage 效果，但跳过 damage 类型（伤害已通过 Token 响应结算）

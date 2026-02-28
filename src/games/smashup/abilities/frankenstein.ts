@@ -139,7 +139,7 @@ function frankensteinHerrDoktor(ctx: AbilityContext): AbilityResult {
 /** 怪物 talent：从自身移除一个+1力量指示物来额外打出一个随从 */
 function frankensteinTheMonster(ctx: AbilityContext): AbilityResult {
     const found = findMinionOnBases(ctx.state, ctx.cardUid);
-    if (!found || (found.minion.powerCounters ?? 0) < 1) {
+    if (!found || found.minion.powerModifier < 1) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_power_counters', ctx.now)] };
     }
     return {
@@ -152,6 +152,7 @@ function frankensteinTheMonster(ctx: AbilityContext): AbilityResult {
 
 /** 科学小怪蛋 onDestroy：本随从被消灭后，在你的一个随从上放+1指示物 */
 function frankensteinIgorOnDestroy(ctx: AbilityContext): AbilityResult {
+    console.log(`[IGOR] onDestroy entry: cardUid=${ctx.cardUid}, playerId=${ctx.playerId}, baseIndex=${ctx.baseIndex}`);
     const candidates: { uid: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
@@ -161,10 +162,13 @@ function frankensteinIgorOnDestroy(ctx: AbilityContext): AbilityResult {
             }
         }
     }
+    console.log(`[IGOR] candidates=${candidates.length}, allMinions=[${ctx.state.bases.flatMap((b, i) => b.minions.map(m => `${m.defId}(uid=${m.uid},ctrl=${m.controller})@base${i}`)).join(', ')}]`);
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     if (candidates.length === 1) {
+        console.log(`[IGOR] single candidate: uid=${candidates[0].uid}, producing POWER_COUNTER_ADDED`);
         return { events: [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, 1, 'frankenstein_igor', ctx.now)] };
     }
+    console.log(`[IGOR] multi candidates (${candidates.length}), creating interaction via resolveOrPrompt`);
     const options = candidates.map((c, idx) => ({
         id: `minion-${idx}`, label: c.label,
         value: { minionUid: c.uid, baseIndex: c.baseIndex },
@@ -177,6 +181,7 @@ function frankensteinIgorOnDestroy(ctx: AbilityContext): AbilityResult {
     }, (val) => ({
         events: [addPowerCounter(val.minionUid, val.baseIndex, 1, 'frankenstein_igor', ctx.now)],
     }));
+    console.log(`[IGOR] result: events=${result.events.length}, hasMatchState=${!!result.matchState}, eventTypes=[${result.events.map(e => e.type).join(',')}]`);
     return result;
 }
 
@@ -368,7 +373,7 @@ function createBodyShopDistributeInteraction(ctx: AbilityContext, totalCounters:
 
 /** 闪电攻击 onPlay：逐个点击己方随从移除指示物，然后消灭力量≤移除数的随从 */
 function frankensteinBlitzed(ctx: AbilityContext): AbilityResult {
-    const withCounters = buildOwnMinionOptions(ctx, undefined, (m) => (m.powerCounters ?? 0) > 0);
+    const withCounters = buildOwnMinionOptions(ctx, undefined, (m) => m.powerModifier > 0);
     if (withCounters.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_power_counters', ctx.now)] };
 
     const blitzedCtx: BlitzedRemoveContext = { removedTotal: 0 };
@@ -382,9 +387,9 @@ function buildBlitzedRemoveOptions(core: SmashUpCore, playerId: string, removedT
     const candidates: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < core.bases.length; i++) {
         for (const m of core.bases[i].minions) {
-            if (m.controller === playerId && (m.powerCounters ?? 0) > 0) {
+            if (m.controller === playerId && m.powerModifier > 0) {
                 const def = getCardDef(m.defId);
-                candidates.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId}（移除1个，剩余 ${m.powerCounters ?? 0}）` });
+                candidates.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId}（移除1个，剩余 ${m.powerModifier}）` });
             }
         }
     }
@@ -574,7 +579,7 @@ const handleBlitzedRemove: IH = (state, playerId, value, interactionData, _rando
     // 点击随从移除 1 个指示物
     if (!selected.minionUid || selected.baseIndex === undefined) return undefined;
     const minion = state.core.bases[selected.baseIndex]?.minions.find(m => m.uid === selected.minionUid);
-    if (!minion || minion.controller !== playerId || (minion.powerCounters ?? 0) <= 0) return undefined;
+    if (!minion || minion.controller !== playerId || minion.powerModifier <= 0) return undefined;
 
     const nextContext: BlitzedRemoveContext = { removedTotal: context.removedTotal + 1 };
     const nextInteraction = createBlitzedRemoveInteraction(state, playerId, nextContext, now);

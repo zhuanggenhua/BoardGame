@@ -1,7 +1,5 @@
 import React, { useMemo } from 'react';
 import type { RefObject } from 'react';
-import { useTranslation } from 'react-i18next';
-import { MousePointerClick } from 'lucide-react';
 import type { AbilityCard, Die, TurnPhase } from '../types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
@@ -11,7 +9,7 @@ import {
     diceModifyReducer, diceModifyToCommands,
     diceSelectReducer, diceSelectToCommands,
 } from '../domain/systems';
-import { DiceActions, DiceTray, getDtMeta } from './DiceTray';
+import { DiceActions, DiceTray } from './DiceTray';
 import { DiscardPile } from './DiscardPile';
 import { GameButton } from './components/GameButton';
 import { UI_Z_INDEX } from '../../../core';
@@ -130,54 +128,6 @@ export const RightSidebar = ({
 
     const multistepInteraction = useMultistepInteraction(diceInteraction, dispatch);
 
-    // 骰子交互操作提示
-    const { t } = useTranslation('game-dicethrone');
-    const interactionHint = useMemo(() => {
-        if (!isDiceMultistep || !interaction) return null;
-        const dtMeta = getDtMeta(interaction);
-        if (!dtMeta) return null;
-
-        const isModifyMode = dtMeta.dtType === 'modifyDie';
-        const isSelectMode = dtMeta.dtType === 'selectDie';
-        const config = isModifyMode ? (dtMeta as any).dieModifyConfig : undefined;
-        const mode = config?.mode as string | undefined;
-
-        const result = multistepInteraction?.result as any;
-        const modCount = result?.modCount ?? 0;
-        const selectCount = result?.selectedDiceIds?.length ?? 0;
-        const currentCount = isSelectMode ? selectCount : modCount;
-        const maxCount = dtMeta.selectCount ?? 1;
-
-        // copy 模式：分步提示
-        if (isModifyMode && mode === 'copy') {
-            if (currentCount === 0) return t('interaction.hint_copy_step1');
-            if (currentCount === 1) {
-                const sourceValue = Object.values(result?.modifications ?? {})[0];
-                return t('interaction.hint_copy_step2', { value: sourceValue });
-            }
-            return t('interaction.hint_done');
-        }
-        // set 模式
-        if (isModifyMode && mode === 'set') {
-            if (currentCount >= maxCount) return t('interaction.hint_done');
-            return t('interaction.hint_set', { value: config?.targetValue ?? '?' });
-        }
-        // adjust 模式
-        if (isModifyMode && mode === 'adjust') return t('interaction.hint_adjust');
-        // any 模式
-        if (isModifyMode && mode === 'any') {
-            if (currentCount >= maxCount) return t('interaction.hint_done');
-            return t('interaction.hint_any');
-        }
-        // selectDie 模式（重掷）
-        if (isSelectMode) {
-            if (currentCount >= maxCount) return t('interaction.hint_done');
-            const key = dtMeta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';
-            return t(key, { current: currentCount, max: maxCount });
-        }
-        return null;
-    }, [isDiceMultistep, interaction, multistepInteraction?.result, t]);
-
     return (
         <div
             className="absolute right-[1.5vw] top-0 bottom-[1.5vw] w-[15vw] flex flex-col items-center pointer-events-auto"
@@ -191,19 +141,7 @@ export const RightSidebar = ({
                         <ActiveModifierBadge modifiers={activeModifiers} />
                     </div>
                 )}
-                <div className="relative">
-                    {/* 骰子交互操作提示：骰子盘左侧居中 */}
-                    {isDiceMultistep && interactionHint && (
-                        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-[0.6vw] z-10 pointer-events-none">
-                            <div className="flex items-center gap-[0.4vw] bg-amber-950/95 border border-amber-500/50 rounded-[0.5vw] px-[0.6vw] py-[0.4vw] shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-nowrap">
-                                <MousePointerClick className="w-[1vw] h-[1vw] text-amber-400 shrink-0" />
-                                <span className="text-[0.75vw] text-amber-200 font-medium leading-snug">
-                                    {interactionHint}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                    <DiceTray
+                <DiceTray
                     dice={dice}
                     onToggleLock={(id) => {
                         if (!canInteractDice) return;
@@ -217,8 +155,7 @@ export const RightSidebar = ({
                     interaction={isDiceMultistep ? interaction : undefined}
                     multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
                     isPassiveRerollMode={!!passiveAbilityProps?.rerollSelectingAction}
-                    />
-                </div>
+                />
                 <DiceActions
                     rollCount={rollCount}
                     rollLimit={rollLimit}

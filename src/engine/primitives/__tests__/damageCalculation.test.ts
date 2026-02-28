@@ -374,7 +374,6 @@ describe('DamageCalculation', () => {
         target: { playerId: '1' },
         baseDamage: 5,
         state,
-        autoCollectShields: true, // 显式启用护盾收集以测试完整链路
       });
       
       const result = calc.resolve();

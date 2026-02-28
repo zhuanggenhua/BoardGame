@@ -19,7 +19,7 @@ import {
 import { createGameEngine } from '../../engine/adapter';
 import { SmashUpDomain, SU_COMMANDS, type SmashUpCommand, type SmashUpCore, type SmashUpEvent } from './domain';
 import type { ActionCardDef } from './domain/types';
-import { getCardDef, getMinionDef } from './data/cards';
+import { getCardDef } from './data/cards';
 import { smashUpFlowHooks } from './domain/index';
 import { initAllAbilities } from './abilities';
 import { createSmashUpEventSystem } from './domain/systems';
@@ -44,21 +44,19 @@ const systems: EngineSystem<SmashUpCore>[] = [
         commandAllowlist: ACTION_ALLOWLIST,
         formatEntry: formatSmashUpActionEntry,
     }),
-    createUndoSystem({ snapshotCommandAllowlist: UNDO_ALLOWLIST }),
+    createUndoSystem({ maxSnapshots: 3, snapshotCommandAllowlist: UNDO_ALLOWLIST }),
     createInteractionSystem(),
     createSimpleChoiceSystem(),
     createMultistepChoiceSystem(),
     createRematchSystem(),
     createResponseWindowSystem({
-        allowedCommands: ['su:play_action', 'su:play_minion'],
+        allowedCommands: ['su:play_action'],
         responderExemptCommands: [],
         commandWindowTypeConstraints: {
             'su:play_action': ['meFirst'],
-            'su:play_minion': ['meFirst'],
         },
         responseAdvanceEvents: [
             { eventType: 'su:action_played', windowTypes: ['meFirst'] },
-            { eventType: 'su:minion_played', windowTypes: ['meFirst'] },
         ],
         loopUntilAllPass: true,
         hasRespondableContent: (state, playerId, windowType) => {
@@ -66,20 +64,11 @@ const systems: EngineSystem<SmashUpCore>[] = [
             const core = state as SmashUpCore;
             const player = core.players[playerId];
             if (!player) return false;
-            // 检查手牌中是否有特殊行动卡
-            const hasSpecialAction = player.hand.some(c => {
+            return player.hand.some(c => {
                 if (c.type !== 'action') return false;
                 const def = getCardDef(c.defId) as ActionCardDef | undefined;
                 return def?.subtype === 'special';
             });
-            if (hasSpecialAction) return true;
-            // 检查手牌中是否有 beforeScoringPlayable 随从（如影舞者）
-            const hasBeforeScoringMinion = player.hand.some(c => {
-                if (c.type !== 'minion') return false;
-                const def = getMinionDef(c.defId);
-                return def?.beforeScoringPlayable === true;
-            });
-            return hasBeforeScoringMinion;
         },
     }),
     createTutorialSystem(),

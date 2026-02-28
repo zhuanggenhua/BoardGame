@@ -105,9 +105,10 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor 
 const OpponentThinkingHint: React.FC<{ opponentName: string }> = ({ opponentName }) => {
     const { t } = useTranslation('game-dicethrone');
 
+    // 用不可见字符占位，保证宽度稳定，避免点数变化导致布局抖动。
     const Dot: React.FC<{ delayMs: number }> = ({ delayMs }) => (
         <span
-            className="inline-block w-[0.6em]"
+            className="inline-block w-[0.6em] text-amber-300/80"
             style={{
                 animation: `dicethrone-thinking-dot 1.1s ${delayMs}ms infinite ease-in-out`,
             }}
@@ -119,31 +120,15 @@ const OpponentThinkingHint: React.FC<{ opponentName: string }> = ({ opponentName
 
     return (
         <div
-            className="fixed top-[28%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
             style={{ zIndex: UI_Z_INDEX.overlayRaised }}
         >
-            {/* 纯文字 + 文字描边发光，无背景遮罩 */}
-            <div
-                className="text-center px-[1vw] py-[0.5vw]"
-                style={{
-                    animation: 'dicethrone-thinking-glow-text 2.5s infinite ease-in-out',
-                }}
-            >
-                <div
-                    className="text-amber-400 text-[2.4vw] font-black tracking-wider"
-                    style={{
-                        textShadow: '0 0 12px rgba(251,191,36,0.8), 0 0 24px rgba(251,191,36,0.4), 0 2px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1)',
-                    }}
-                >
+            <div className="text-center">
+                <div className="text-amber-400 text-[2vw] font-bold tracking-wider drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]">
                     {opponentName}
                 </div>
 
-                <div
-                    className="text-amber-300 text-[1.4vw] font-bold mt-[0.3vw]"
-                    style={{
-                        textShadow: '0 0 10px rgba(251,191,36,0.6), 0 0 20px rgba(251,191,36,0.3), 0 2px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1)',
-                    }}
-                >
+                <div className="text-amber-300/80 text-[1.2vw] font-medium mt-[0.3vw] drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
                     <span>{t('waiting.thinkingMessage')}</span>
                     <span className="inline-flex items-baseline">
                         <Dot delayMs={0} />
@@ -151,26 +136,21 @@ const OpponentThinkingHint: React.FC<{ opponentName: string }> = ({ opponentName
                         <Dot delayMs={320} />
                     </span>
                 </div>
-            </div>
 
-            <style>
-                {`
-                @keyframes dicethrone-thinking-dot {
-                    0%, 20% { opacity: 0.15; transform: translateY(0); }
-                    50% { opacity: 1; transform: translateY(-0.04em); }
-                    80%, 100% { opacity: 0.15; transform: translateY(0); }
-                }
-                @keyframes dicethrone-thinking-glow-text {
-                    0%, 100% { filter: brightness(1); }
-                    50% { filter: brightness(1.15); }
-                }
-                `}
-            </style>
+                {/* 局部 keyframes：避免引入全局 CSS，且不依赖 Tailwind 配置 */}
+                <style>
+                    {`
+                    @keyframes dicethrone-thinking-dot {
+                        0%, 20% { opacity: 0.15; transform: translateY(0); }
+                        50% { opacity: 1; transform: translateY(-0.04em); }
+                        80%, 100% { opacity: 0.15; transform: translateY(0); }
+                    }
+                    `}
+                </style>
+            </div>
         </div>
     );
 };
-
-
 
 /**
  * 响应窗口：当前玩家可响应
@@ -178,7 +158,7 @@ const OpponentThinkingHint: React.FC<{ opponentName: string }> = ({ opponentName
 const ResponseWindowHint: React.FC<{
     onResponsePass: () => void;
     offsetClass?: string;
-}> = ({ onResponsePass, offsetClass = 'bottom-[16vw]' }) => {
+}> = ({ onResponsePass, offsetClass = 'bottom-[12vw]' }) => {
     const { t } = useTranslation('game-dicethrone');
 
     return (
@@ -186,33 +166,19 @@ const ResponseWindowHint: React.FC<{
             className={`absolute ${offsetClass} left-1/2 -translate-x-1/2`}
             style={{ zIndex: UI_Z_INDEX.hint }}
         >
-            <div
-                className="flex items-center gap-[1.2vw] px-[2vw] py-[0.8vw] rounded-full bg-black/80 border-2 border-purple-400/70 shadow-[0_0_16px_rgba(168,85,247,0.35)] backdrop-blur-sm"
-                style={{
-                    animation: 'dicethrone-response-pulse 2s infinite ease-in-out',
-                }}
-            >
-                <span className="text-purple-200 text-[1vw] font-bold tracking-wider">
+            <div className="flex items-center gap-[1vw] px-[1.4vw] py-[0.6vw] rounded-full bg-black/80 border border-purple-500/60 shadow-lg backdrop-blur-sm">
+                <span className="text-purple-300 text-[0.8vw] font-bold tracking-wider">
                     {t('response.yourTurn')}
                 </span>
                 <GameButton
                     onClick={onResponsePass}
                     variant="glass"
                     size="sm"
-                    className="border-purple-400/60 hover:bg-purple-500/30 text-purple-100 text-[0.8vw] py-[0.4vw] px-[1.2vw] min-h-0"
+                    className="border-purple-500/50 hover:bg-purple-500/20 text-purple-100 text-[0.7vw] py-[0.3vw] px-[1vw] min-h-0"
                 >
                     {t('response.pass')}
                 </GameButton>
             </div>
-
-            <style>
-                {`
-                @keyframes dicethrone-response-pulse {
-                    0%, 100% { box-shadow: 0 0 16px rgba(168,85,247,0.35); }
-                    50% { box-shadow: 0 0 24px rgba(168,85,247,0.55), 0 0 48px rgba(168,85,247,0.15); }
-                }
-                `}
-            </style>
         </div>
     );
 };

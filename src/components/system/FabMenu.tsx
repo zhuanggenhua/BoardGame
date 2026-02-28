@@ -409,7 +409,7 @@ const Panel = ({ item, isActive, alignment, isDark }: any) => {
                     exit={{ opacity: 0, scale: 0.95, x: alignment.h === 'right' ? -10 : 10 }}
                     className={`
                         absolute w-[300px] max-w-[calc(90vw-60px)] p-4 rounded-xl shadow-2xl backdrop-blur-xl border-l-[3px]
-                        z-30
+                        z-10
                         ${isDark ? "bg-black/95 border-white/20 border-l-neon-blue text-white" : "bg-[#fcfbf9]/95 border-[#d3ccba] border-l-[#8c7b64] text-[#433422]"}
 
                         ${verticalClass}

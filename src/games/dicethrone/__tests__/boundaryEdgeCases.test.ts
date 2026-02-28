@@ -190,7 +190,7 @@ describe('Token 消耗下溢', () => {
 // ============================================================================
 
 describe('伤害护盾边界', () => {
-    it('护盾值 > 伤害时完全吸收，HP 不变且保留剩余护盾', () => {
+    it('护盾值 > 伤害时完全吸收，HP 不变', () => {
         const core = getInitCore();
         const hpBefore = core.players['0'].resources[RESOURCE_IDS.HP];
 
@@ -205,10 +205,8 @@ describe('伤害护盾边界', () => {
             targetId: '0', actualDamage: 3,
         }));
         expect(hit.players['0'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
-        // 无 pendingAttack（非攻击结算）时，固定值护盾保留剩余值
-        expect(hit.players['0'].damageShields).toEqual([
-            { value: 7, sourceId: 'test', preventStatus: false },
-        ]);
+        // 护盾消耗后被清除
+        expect(hit.players['0'].damageShields.length).toBe(0);
     });
 
     it('护盾值 < 伤害时部分吸收，剩余扣血', () => {

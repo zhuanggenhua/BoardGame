@@ -6,7 +6,7 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, addPowerCounter, addTempPower, modifyBreakpoint, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, resolveOrPrompt, buildAbilityFeedback } from '../domain/abilityHelpers';
+import { destroyMinion, addPowerCounter, addTempPower, modifyBreakpoint, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, resolveOrPrompt, buildAbilityFeedback, createSkipOption } from '../domain/abilityHelpers';
 import type { SmashUpEvent, SmashUpCore, MinionOnBase, OngoingDetachedEvent, MinionDestroyedEvent, MinionReturnedEvent, CardToDeckBottomEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
@@ -20,20 +20,35 @@ import type { MatchState } from '../../../engine/types';
 /** 注册恐龙派系所有能力 */
 export function registerDinosaurAbilities(): void {
     registerAbility('dino_laser_triceratops', 'onPlay', dinoLaserTriceratops);
+    registerAbility('dino_laser_triceratops_pod', 'onPlay', dinoLaserTriceratopsPod); // POD版: 看印制力量
+
     registerAbility('dino_augmentation', 'onPlay', dinoAugmentation);
+    registerAbility('dino_augmentation_pod', 'onPlay', dinoAugmentation);
     registerAbility('dino_howl', 'onPlay', dinoHowl);
+    registerAbility('dino_howl_pod', 'onPlay', dinoHowl);
     registerAbility('dino_natural_selection', 'onPlay', dinoNaturalSelection);
+    registerAbility('dino_natural_selection_pod', 'onPlay', dinoNaturalSelection);
     registerAbility('dino_survival_of_the_fittest', 'onPlay', dinoSurvivalOfTheFittest);
+    registerAbility('dino_survival_of_the_fittest_pod', 'onPlay', dinoSurvivalOfTheFittest);
     // 狂暴：降低基地爆破点
     registerAbility('dino_rampage', 'onPlay', dinoRampage);
+    registerAbility('dino_rampage_pod', 'onPlay', dinoRampage);
+
+    // POD独占的 Talent
+    registerAbility('dino_armor_stego_pod', 'talent', dinoArmorStegoPodTalent);
 
     // === ongoing 效果注册 ===
-    // 全副武装：拦截影响事件时自毁以保护附着随从
+    // 全副武装原版：拦截影响事件时自毁以保护附着随从
     registerInterceptor('dino_tooth_and_claw', dinoToothAndClawInterceptor);
     registerProtection('dino_tooth_and_claw', 'affect', dinoToothAndClawChecker, { consumable: true });
+
+    // 全副武装 POD版：简单的 ongoing 保护效果，不受其他玩家卡牌影响，且不自毁
+    registerProtection('dino_tooth_and_claw_pod', 'affect', dinoToothAndClawPodChecker);
+
     // 升级：+2力量（ongoingModifiers 中注册），无消灭保护
     // 野生保护区：保护你在此基地的随从不受其他玩家战术影响
     registerProtection('dino_wildlife_preserve', 'action', dinoWildlifePreserveChecker);
+    registerProtection('dino_wildlife_preserve_pod', 'action', dinoWildlifePreserveChecker);
 }
 
 // ============================================================================
@@ -66,6 +81,57 @@ function dinoLaserTriceratops(ctx: AbilityContext): AbilityResult {
     }, (value) => ({
         events: [destroyMinion(value.minionUid, value.defId, value.baseIndex, targets.find(t => t.uid === value.minionUid)?.owner ?? ctx.playerId, undefined, 'dino_laser_triceratops', ctx.now)],
     }));
+}
+
+/** 激光三角龙 POD版 onPlay：你可以消灭本基地一个 [印制力量/Printed Power] ≤2 的随从 */
+function dinoLaserTriceratopsPod(ctx: AbilityContext): AbilityResult {
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return { events: [] };
+    const targets = base.minions.filter(m => {
+        if (m.uid === ctx.cardUid) return false;
+        const def = getCardDef(m.defId) as MinionCardDef | undefined;
+        return (def?.power ?? 0) <= 2;
+    });
+
+    // 没有合法目标时直接跳过
+    if (targets.length === 0) return { events: [] };
+
+    const options = targets.map(t => {
+        const def = getCardDef(t.defId) as MinionCardDef | undefined;
+        const name = def?.name ?? t.defId;
+        const printedPower = def?.power ?? 0;
+        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (印制力量 ${printedPower})` };
+    });
+
+    // "你可以（may）"效果：加入跳过选项
+    const minionOptions = buildMinionTargetOptions(options, {
+        state: ctx.state,
+        sourcePlayerId: ctx.playerId,
+        effectType: 'destroy',
+    });
+    // 联合类型：skipOption 的 value 是 { skip: true }，minionOption 的 value 是 { minionUid, baseIndex, defId }
+    const allOptions = [createSkipOption('跳过（不消灭随从）'), ...minionOptions] as any[];
+
+    const interaction = createSimpleChoice(
+        `dino_laser_triceratops_pod_${ctx.now}`, ctx.playerId,
+        '你可以消灭这里一个印制力量≤2的随从',
+        allOptions,
+        { sourceId: 'dino_laser_triceratops_pod', targetType: 'minion' },
+    );
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+/**
+ * 装甲剑龙 POD版 Talent：直到下个你的回合开始前，此随从在其他玩家的回合拥有+2力量
+ * 
+ * 实现方式：天赋执行体为空操作（引擎层在处理 USE_TALENT 时已自动设置 talentUsed=true）。
+ * +2 力量的实际判断在 ongoingModifiers 中，检查 talentUsed 标记 + 当前回合玩家。
+ * talentUsed 标记在"自己的回合开始时"被重置为 false，正好匹配"直到你下个回合开始"的持续时间。
+ */
+function dinoArmorStegoPodTalent(_ctx: AbilityContext): AbilityResult {
+    // 不需要发射任何事件。talentUsed 标记已由引擎 USE_TALENT 处理流程自动设置。
+    // +2 力量加成由 ongoingModifiers 系统中的 dino_armor_stego modifier 根据 talentUsed 判断。
+    return { events: [] };
 }
 
 // ============================================================================
@@ -196,85 +262,42 @@ function dinoSurvivalOfTheFittest(ctx: AbilityContext): AbilityResult {
             candidateUids: tb.candidates.map(c => ({ uid: c.uid, defId: c.defId, owner: c.owner })),
             minPower: tb.minPower,
         }));
-        return { events, matchState: queueInteraction(ctx.matchState, {
-            ...interaction,
-            data: { ...interaction.data, continuationContext: { remainingBases: remainingData } },
-        }) };
+        return {
+            events, matchState: queueInteraction(ctx.matchState, {
+                ...interaction,
+                data: { ...interaction.data, continuationContext: { remainingBases: remainingData } },
+            })
+        };
     }
 
     return { events };
 }
 
-/**
- * 狂暴 onPlay：将一个基地的爆破点降低等同于你在该基地的一个随从的力量数（直到回合结束）
- * 两步交互：选基地 → 选该基地上的一个己方随从
- */
+/** 狂暴 onPlay：将一个基地的爆破点降低等同于你在该基地的随从总力量（直到回合结束） */
 function dinoRampage(ctx: AbilityContext): AbilityResult {
-    // 收集有己方随从的基地
-    const baseCandidates: { baseIndex: number; label: string }[] = [];
+    // 选择一个有己方随从的基地
+    const baseCandidates: { baseIndex: number; myPower: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
-        const hasMyMinion = ctx.state.bases[i].minions.some(m => m.controller === ctx.playerId);
-        if (hasMyMinion) {
+        const myPower = ctx.state.bases[i].minions
+            .filter(m => m.controller === ctx.playerId)
+            .reduce((sum, m) => sum + getMinionPower(ctx.state, m, i), 0);
+        if (myPower > 0) {
             const baseDef = getBaseDef(ctx.state.bases[i].defId);
             const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-            baseCandidates.push({ baseIndex: i, label: baseName });
+            baseCandidates.push({ baseIndex: i, myPower, label: `${baseName} (降低 ${myPower} 爆破点)` });
         }
     }
-    if (baseCandidates.length === 0) return { events: [] };
-
-    // 单基地单随从 → 自动执行
-    if (baseCandidates.length === 1) {
-        const baseIndex = baseCandidates[0].baseIndex;
-        const myMinions = ctx.state.bases[baseIndex].minions.filter(m => m.controller === ctx.playerId);
-        if (myMinions.length === 1) {
-            const power = getMinionPower(ctx.state, myMinions[0], baseIndex);
-            return { events: [modifyBreakpoint(baseIndex, -power, 'dino_rampage', ctx.now)] };
-        }
-        // 单基地多随从 → 直接进入选随从
-        const options = myMinions.map(m => {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const power = getMinionPower(ctx.state, m, baseIndex);
-            return { uid: m.uid, defId: m.defId, baseIndex, label: `${name} (力量 ${power}，降低 ${power} 爆破点)` };
-        });
-        const interaction = createSimpleChoice(
-            `dino_rampage_minion_${ctx.now}`, ctx.playerId, '选择一个随从来降低爆破点',
-            buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
-            { sourceId: 'dino_rampage_choose_minion', targetType: 'minion' }
-        );
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-    }
-
-    // 多基地 → 先选基地
+    // 数据驱动：强制效果，单候选自动执行
     return resolveOrPrompt(ctx, buildBaseTargetOptions(baseCandidates, ctx.state), {
         id: 'dino_rampage',
         title: '选择要降低爆破点的基地',
         sourceId: 'dino_rampage',
         targetType: 'base',
     }, (value) => {
-        const baseIndex = value.baseIndex as number;
-        const myMinions = ctx.state.bases[baseIndex].minions.filter(m => m.controller === ctx.playerId);
-        // 单随从 → 自动执行
-        if (myMinions.length === 1) {
-            const power = getMinionPower(ctx.state, myMinions[0], baseIndex);
-            return { events: [modifyBreakpoint(baseIndex, -power, 'dino_rampage', ctx.now)] };
-        }
-        // 多随从 → 链式交互选随从
-        const options = myMinions.map(m => {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const power = getMinionPower(ctx.state, m, baseIndex);
-            return { uid: m.uid, defId: m.defId, baseIndex, label: `${name} (力量 ${power}，降低 ${power} 爆破点)` };
-        });
-        const interaction = createSimpleChoice(
-            `dino_rampage_minion_${ctx.now}`, ctx.playerId, '选择一个随从来降低爆破点',
-            buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
-            { sourceId: 'dino_rampage_choose_minion', targetType: 'minion' }
-        );
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        const target = baseCandidates.find(c => c.baseIndex === value.baseIndex)!;
+        return { events: [modifyBreakpoint(target.baseIndex, -target.myPower, 'dino_rampage', ctx.now)] };
     });
 }
-
 
 // ============================================================================
 // 交互处理函数注册
@@ -282,14 +305,26 @@ function dinoRampage(ctx: AbilityContext): AbilityResult {
 
 /** 注册恐龙派系的交互解决处理函数 */
 export function registerDinosaurInteractionHandlers(): void {
-    // 激光三角龙：选择目标后消灭
-    registerInteractionHandler('dino_laser_triceratops', (state, playerId, value, _iData, _random, timestamp) => {
+    // 激光三角龙 (原版)：选择目标后消灭
+    registerInteractionHandler('dino_laser_triceratops', (state, _playerId, value, _iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'dino_laser_triceratops', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, _playerId, 'dino_laser_triceratops', timestamp)] };
+    });
+
+    // 激光三角龙 (POD版)：选择目标后消灭（支持跳过）
+    registerInteractionHandler('dino_laser_triceratops_pod', (state, _playerId, value, _iData, _random, timestamp) => {
+        // 处理跳过选项
+        if ((value as any).skip) return { state, events: [] };
+        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
+        const base = state.core.bases[baseIndex];
+        if (!base) return undefined;
+        const target = base.minions.find(m => m.uid === minionUid);
+        if (!target) return undefined;
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, _playerId, 'dino_laser_triceratops_pod', timestamp)] };
     });
 
     // 增强：选择目标后加临时力量（回合结束清零）
@@ -302,7 +337,7 @@ export function registerDinosaurInteractionHandlers(): void {
     registerInteractionHandler('dino_natural_selection_choose_mine', (state, playerId, value, _iData, _random, timestamp) => {
         // 检查取消标记
         if ((value as any).__cancel__) return { state, events: [] };
-        
+
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
@@ -322,7 +357,7 @@ export function registerDinosaurInteractionHandlers(): void {
         if (targets.length === 0) return undefined;
         const next = createSimpleChoice(
             `dino_natural_selection_target_${timestamp}`, playerId, '选择要消灭的随从', buildMinionTargetOptions(targets, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' }), { sourceId: 'dino_natural_selection_choose_target', targetType: 'minion' }
-            );
+        );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { baseIndex } } }), events: [] };
     });
 
@@ -360,49 +395,23 @@ export function registerDinosaurInteractionHandlers(): void {
             });
             const interaction = createSimpleChoice(
                 `dino_sotf_tiebreak_${timestamp}`, playerId, '选择要消灭的最低力量随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' }), { sourceId: 'dino_survival_tiebreak', targetType: 'minion' }
-                );
+            );
             return { state: queueInteraction(state, { ...interaction, data: { ...interaction.data, continuationContext: { remainingBases: rest } } }), events };
         }
 
         return { state, events };
     });
 
-    // 狂暴第一步：选择基地后，进入第二步选随从
+    // 狂暴：选择基地后降低爆破点
     registerInteractionHandler('dino_rampage', (state, playerId, value, _iData, _random, timestamp) => {
         const { baseIndex } = value as { baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
-        const myMinions = base.minions.filter(m => m.controller === playerId);
-        if (myMinions.length === 0) return { state, events: [] };
-        // 单随从 → 自动执行
-        if (myMinions.length === 1) {
-            const power = getMinionPower(state.core, myMinions[0], baseIndex);
-            return { state, events: [modifyBreakpoint(baseIndex, -power, 'dino_rampage', timestamp)] };
-        }
-        // 多随从 → 链式交互选随从
-        const options = myMinions.map(m => {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const power = getMinionPower(state.core, m, baseIndex);
-            return { uid: m.uid, defId: m.defId, baseIndex, label: `${name} (力量 ${power}，降低 ${power} 爆破点)` };
-        });
-        const interaction = createSimpleChoice(
-            `dino_rampage_minion_${timestamp}`, playerId, '选择一个随从来降低爆破点',
-            buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId }),
-            { sourceId: 'dino_rampage_choose_minion', targetType: 'minion' }
-        );
-        return { state: queueInteraction(state, interaction), events: [] };
-    });
-
-    // 狂暴第二步：选择随从后降低爆破点
-    registerInteractionHandler('dino_rampage_choose_minion', (state, _playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const minion = base.minions.find(m => m.uid === minionUid);
-        if (!minion) return undefined;
-        const power = getMinionPower(state.core, minion, baseIndex);
-        return { state, events: [modifyBreakpoint(baseIndex, -power, 'dino_rampage', timestamp)] };
+        const myPower = base.minions
+            .filter(m => m.controller === playerId)
+            .reduce((sum, m) => sum + getMinionPower(state.core, m, baseIndex), 0);
+        if (myPower <= 0) return { state, events: [] };
+        return { state, events: [modifyBreakpoint(baseIndex, -myPower, 'dino_rampage', timestamp)] };
     });
 }
 
@@ -478,10 +487,16 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
     return [detachEvt]; // 替换原事件为自毁事件，随从存活
 }
 
-/** 全副武装保护检查：附着了此卡的随从不受其他玩家影响（affect 类型） */
+/** 全副武装(原版) 保护检查：附着了此卡的随从不受其他玩家影响（affect 类型，触发拦截自毁） */
 function dinoToothAndClawChecker(ctx: ProtectionCheckContext): boolean {
     if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
     return ctx.targetMinion.attachedActions.some(a => a.defId === 'dino_tooth_and_claw');
+}
+
+/** 全副武装(POD版) 保护检查：This minion is not affected by other players' cards. (只有结界免影响，不发生自毁) */
+function dinoToothAndClawPodChecker(ctx: ProtectionCheckContext): boolean {
+    if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
+    return ctx.targetMinion.attachedActions.some(a => a.defId === 'dino_tooth_and_claw_pod');
 }
 
 /** 野生保护区保护检查：该基地上你的随从不受其他玩家战术影响 */

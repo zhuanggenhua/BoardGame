@@ -7,9 +7,9 @@ import { BARBARIAN_DICE_FACE_IDS, STATUS_IDS } from '../../domain/ids';
 import type { AbilityDef, AbilityEffect, EffectTiming, EffectCondition } from '../../domain/combat';
 import { abilityText, abilityEffectText } from '../../../../engine/primitives/ability';
 
-const BARBARIAN_SFX_LIGHT = 'combat.general.khron_studio_fight_fury_vol_1_assets.sword_hit_with_blood.weapswrd_sword_hit_with_blood_01';
-const BARBARIAN_SFX_HEAVY = 'magic.general.modern_magic_sound_fx_pack_vol.offensive_spells.offensive_spells_shockwave_slam_001';
-const BARBARIAN_SFX_ULTIMATE = 'magic.general.simple_magic_sound_fx_pack_vol.shock.thunderous_boom';
+const BARBARIAN_SFX_LIGHT = 'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_01_krst';
+const BARBARIAN_SFX_HEAVY = 'combat.general.fight_fury_vol_2.versatile_punch_hit_with_blood.fghtimpt_versatile_punch_hit_with_blood_06_krst';
+const BARBARIAN_SFX_ULTIMATE = 'combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_02_krst';
 
 // 辅助函数
 const damage = (value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
@@ -118,23 +118,10 @@ export const BARBARIAN_ABILITIES: AbilityDef[] = [
         name: abilityText('reckless-strike', 'name'),
         type: 'offensive',
         description: abilityText('reckless-strike', 'description'),
-        tags: [],
-        sfxKey: BARBARIAN_SFX_HEAVY,
-        trigger: { type: 'largeStraight' },
-        effects: [damage(15, abilityEffectText('reckless-strike', 'damage15')), { description: abilityEffectText('reckless-strike', 'selfDamage4'), action: { type: 'damage', target: 'self', value: 4 }, timing: 'postDamage', condition: { type: 'onHit' } }],
-    },
-    {
-        id: 'rage',
-        name: abilityText('rage', 'name'),
-        type: 'offensive',
-        description: abilityText('rage', 'description'),
         tags: ['ultimate'],
         sfxKey: BARBARIAN_SFX_ULTIMATE,
-        trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.STRENGTH]: 5 } },
-        effects: [
-            inflictStatus(STATUS_IDS.DAZE, 1, abilityEffectText('rage', 'inflictDaze')),
-            damage(15, abilityEffectText('rage', 'damage15')),
-        ],
+        trigger: { type: 'largeStraight' },
+        effects: [damage(15, abilityEffectText('reckless-strike', 'damage15')), { description: abilityEffectText('reckless-strike', 'selfDamage4'), action: { type: 'damage', target: 'self', value: 4 }, timing: 'postDamage', condition: { type: 'onHit' } }],
     },
     {
         id: 'thick-skin',
@@ -243,7 +230,6 @@ export const SUPPRESS_2: AbilityDef = {
     variants: [
         {
             id: 'suppress-2-battle-cry',
-            name: abilityText('suppress-2-battle-cry', 'name'),
             trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.SWORD]: 2, [BARBARIAN_DICE_FACE_IDS.HEART]: 2 } },
             effects: [heal(2, abilityEffectText('suppress-2-battle-cry', 'heal2')), damage(2, abilityEffectText('suppress-2-battle-cry', 'damage2Unblockable'))],
             tags: ['unblockable'],
@@ -251,7 +237,6 @@ export const SUPPRESS_2: AbilityDef = {
         },
         {
             id: 'suppress-2-mighty',
-            name: abilityText('suppress-2-mighty', 'name'),
             trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.SWORD]: 3, [BARBARIAN_DICE_FACE_IDS.STRENGTH]: 2 } },
             effects: [
                 {
@@ -270,8 +255,8 @@ export const RECKLESS_STRIKE_2: AbilityDef = {
     name: abilityText('reckless-strike-2', 'name'),
     type: 'offensive',
     description: abilityText('reckless-strike-2', 'description'),
-    tags: [],
-    sfxKey: BARBARIAN_SFX_HEAVY,
+    tags: ['ultimate'],
+    sfxKey: BARBARIAN_SFX_ULTIMATE,
     trigger: { type: 'largeStraight' },
     effects: [damage(20, abilityEffectText('reckless-strike-2', 'damage20')), { description: abilityEffectText('reckless-strike-2', 'selfDamage5'), action: { type: 'damage', target: 'self', value: 5 }, timing: 'postDamage', condition: { type: 'onHit' } }],
 };

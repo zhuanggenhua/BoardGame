@@ -196,7 +196,7 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                                     <div className="rounded shadow-xl overflow-hidden ring-1 ring-white/20 hover:ring-amber-400/60 transition-all">
                                         {def?.previewRef ? (
                                             <CardPreview
-                                                previewRef={def.previewRef}
+                                                previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId } }}
                                                 className="w-[130px] aspect-[0.714] bg-slate-900 rounded"
                                                 alt={name}
                                             />
@@ -236,9 +236,8 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                         {queue.map((item, idx) => (
                             <div
                                 key={item.id}
-                                className={`w-2 h-2 rounded-full transition-all ${
-                                    idx === 0 ? 'bg-white scale-125' : 'bg-white/40'
-                                }`}
+                                className={`w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-white scale-125' : 'bg-white/40'
+                                    }`}
                             />
                         ))}
                     </div>

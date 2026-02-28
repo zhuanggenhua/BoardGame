@@ -75,7 +75,7 @@ export function HookField({
         <label className="text-slate-400">{label}</label>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigator.clipboard?.writeText(generatePrompt())}
+            onClick={() => navigator.clipboard.writeText(generatePrompt())}
             className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
           >
             复制提示词

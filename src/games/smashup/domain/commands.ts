@@ -8,8 +8,9 @@ import { SU_COMMANDS, getCurrentPlayerId, HAND_LIMIT } from './types';
 import { getCardDef, getMinionDef } from '../data/cards';
 import { isOperationRestricted } from './ongoingEffects';
 import {
-    getScoringEligibleBaseIndices,
+    getEffectiveBreakpoint,
     getPlayerEffectivePowerOnBase,
+    getTotalEffectivePowerOnBase,
 } from './ongoingModifiers';
 import { canPlayFromDiscard } from './discardPlayability';
 import { isSpecialLimitBlocked } from './abilityHelpers';
@@ -29,38 +30,6 @@ export function validate(
 
     switch (command.type) {
         case SU_COMMANDS.PLAY_MINION: {
-            // Me First! 响应窗口期间：允许从手牌打出 beforeScoringPlayable 随从到即将计分的基地
-            const minionResponseWindow = state.sys.responseWindow?.current;
-            if (minionResponseWindow && minionResponseWindow.windowType === 'meFirst') {
-                const responderQueue = minionResponseWindow.responderQueue;
-                const currentResponderId = responderQueue[minionResponseWindow.currentResponderIndex];
-                if (command.playerId !== currentResponderId) {
-                    return { valid: false, error: '等待对方响应' };
-                }
-                const mfPlayer = core.players[command.playerId];
-                if (!mfPlayer) return { valid: false, error: '玩家不存在' };
-                const mfCard = mfPlayer.hand.find(c => c.uid === command.payload.cardUid);
-                if (!mfCard) return { valid: false, error: '手牌中没有该卡牌' };
-                if (mfCard.type !== 'minion') return { valid: false, error: '该卡牌不是随从' };
-                const mfDef = getMinionDef(mfCard.defId);
-                if (!mfDef) return { valid: false, error: '卡牌定义不存在' };
-                if (!mfDef.beforeScoringPlayable) {
-                    return { valid: false, error: '该随从不能在基地计分前打出' };
-                }
-                const mfBaseIndex = command.payload.baseIndex;
-                if (mfBaseIndex < 0 || mfBaseIndex >= core.bases.length) {
-                    return { valid: false, error: '无效的基地索引' };
-                }
-                const mfEligible = getScoringEligibleBaseIndices(core);
-                if (!mfEligible.includes(mfBaseIndex)) {
-                    return { valid: false, error: '只能打出到即将计分的基地' };
-                }
-                if (isSpecialLimitBlocked(core, mfCard.defId, mfBaseIndex)) {
-                    return { valid: false, error: '该基地本回合已使用过同组特殊能力' };
-                }
-                return { valid: true };
-            }
-
             if (phase !== 'playCards') {
                 return { valid: false, error: '只能在出牌阶段打出随从' };
             }
@@ -184,9 +153,10 @@ export function validate(
                         return { valid: false, error: '无效的基地索引' };
                     }
 
-                    // 使用统一查询函数（优先锁定列表，回退实时计算）
-                    const eligibleIndices = getScoringEligibleBaseIndices(core);
-                    if (!eligibleIndices.includes(targetBaseIndex)) {
+                    const base = core.bases[targetBaseIndex];
+                    const totalPower = getTotalEffectivePowerOnBase(core, base, targetBaseIndex);
+                    const breakpoint = getEffectiveBreakpoint(core, targetBaseIndex);
+                    if (totalPower < breakpoint) {
                         return { valid: false, error: '只能选择达到临界点的基地' };
                     }
 
@@ -361,45 +331,6 @@ export function validate(
             const mDef = getCardDef(targetMinion.defId);
             if (!mDef || !('abilityTags' in mDef) || !mDef.abilityTags?.includes('talent')) {
                 return { valid: false, error: '该随从没有天赋能力' };
-            }
-            return { valid: true };
-        }
-
-        case SU_COMMANDS.ACTIVATE_SPECIAL: {
-            // 允许在 playCards 和 scoreBases 阶段激活特殊能力
-            // scoreBases 阶段：基地计分前的 beforeScoring 特殊能力（如忍者侍从）
-            if (phase !== 'playCards' && phase !== 'scoreBases') {
-                return { valid: false, error: '只能在出牌阶段或计分阶段激活特殊能力' };
-            }
-            if (command.playerId !== currentPlayerId) {
-                return { valid: false, error: 'player_mismatch' };
-            }
-            const { minionUid: spMinionUid, baseIndex: spBaseIndex } = command.payload;
-            const spBase = core.bases[spBaseIndex];
-            if (!spBase) return { valid: false, error: '无效的基地索引' };
-            const spMinion = spBase.minions.find(m => m.uid === spMinionUid);
-            if (!spMinion) return { valid: false, error: '基地上没有该随从' };
-            if (spMinion.controller !== command.playerId) {
-                return { valid: false, error: '只能激活自己控制的随从的特殊能力' };
-            }
-            const spDef = getCardDef(spMinion.defId);
-            if (!spDef || !('abilityTags' in spDef) || !spDef.abilityTags?.includes('special')) {
-                return { valid: false, error: '该随从没有特殊能力' };
-            }
-            // specialLimitGroup 检查
-            if (isSpecialLimitBlocked(core, spMinion.defId, spBaseIndex)) {
-                return { valid: false, error: '该基地本回合已使用过同组特殊能力' };
-            }
-            // scoreBases 阶段额外验证：只能在达标基地上激活
-            if (phase === 'scoreBases') {
-                const eligibleIndices = getScoringEligibleBaseIndices(core);
-                if (!eligibleIndices.includes(spBaseIndex)) {
-                    return { valid: false, error: '只能在达到临界点的基地上激活计分前特殊能力' };
-                }
-                // 响应窗口仍打开时不允许激活（Me First! 优先）
-                if (state.sys.responseWindow?.current) {
-                    return { valid: false, error: 'Me First! 响应窗口仍在进行中' };
-                }
             }
             return { valid: true };
         }

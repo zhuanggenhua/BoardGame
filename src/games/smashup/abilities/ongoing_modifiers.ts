@@ -16,22 +16,27 @@ import { isMicrobot } from '../domain/utils';
 
 function registerDinosaurModifiers(): void {
     // 重装剑龙：其他玩家回合时 +2 力量
-    // MVP：计分时视为非当前玩家回??始终 +2（保守策略，计分时对手视角）
-    // 实际实现：检查当前回合玩家是否为随从控制者?
+    // 原版：永久被动 ongoing，不需要使用天赋
+    // POD 版：需要先使用天赋（talentUsed=true），然后在别人回合时 +2
     registerPowerModifier('dino_armor_stego', (ctx: PowerModifierContext) => {
-        // 只对自身生效
-        if (ctx.minion.defId !== 'dino_armor_stego') return 0;
-        // 当前回合不是自己的回合时 +2
+        const baseId = ctx.minion.defId.replace(/_pod$/, '');
+        if (baseId !== 'dino_armor_stego') return 0;
+        // 当前回合不是自己的回合时才 +2
         const currentPlayer = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
-        if (currentPlayer !== ctx.minion.controller) return 2;
-        return 0;
+        if (currentPlayer === ctx.minion.controller) return 0;
+        // POD 版需要 talentUsed 标记为 true 才生效
+        const isPod = ctx.minion.defId.endsWith('_pod');
+        if (isPod && !ctx.minion.talentUsed) return 0;
+        return 2;
     });
 
-    // 战争猛禽：同基地每个己方战争猛禽（含自身）?1 力量
+    // 战争猛禄龙：同基地每个己方战争猛禔龙（含自身）+1 力量
     registerPowerModifier('dino_war_raptor', (ctx: PowerModifierContext) => {
-        if (ctx.minion.defId !== 'dino_war_raptor') return 0;
+        const baseId = ctx.minion.defId.replace(/_pod$/, '');
+        if (baseId !== 'dino_war_raptor') return 0;
+        // 将 war_raptor 和 war_raptor_pod 都算入同派系
         const raptorCount = ctx.base.minions.filter(
-            m => m.defId === 'dino_war_raptor' && m.controller === ctx.minion.controller
+            m => ['dino_war_raptor', 'dino_war_raptor_pod'].includes(m.defId) && m.controller === ctx.minion.controller
         ).length;
         return raptorCount;
     });

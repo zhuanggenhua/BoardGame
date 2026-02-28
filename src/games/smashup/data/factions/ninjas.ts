@@ -33,7 +33,6 @@ export const NINJA_MINIONS: MinionCardDef[] = [
         power: 3,
         abilityTags: ['special'],
         specialLimitGroup: 'ninja_special',
-        beforeScoringPlayable: true,
         count: 3,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 14 },
     },

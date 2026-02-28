@@ -11,7 +11,7 @@ import type { SmashUpEvent, OngoingDetachedEvent, CardsDrawnEvent, MinionCardDef
 import type { MatchState } from '../../../engine/types';
 import {
     drawMadnessCards, grantExtraAction, grantExtraMinion,
-    returnMadnessCard, destroyMinion, addTempPower, addPermanentPower,
+    returnMadnessCard, destroyMinion, addTempPower, addPowerCounter,
     getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions,
     resolveOrPrompt, buildAbilityFeedback,
 } from '../domain/abilityHelpers';
@@ -549,7 +549,7 @@ export function registerMiskatonicInteractionHandlers(): void {
         const madnessEvt = drawMadnessCards(playerId, count, state.core, 'miskatonic_mandatory_reading', timestamp);
         if (madnessEvt) events.push(madnessEvt);
         // 每抽1张，该随从+2力量（永久）
-        events.push(addPermanentPower(minionUid, baseIndex, count * 2, 'miskatonic_mandatory_reading', timestamp));
+        events.push(addPowerCounter(minionUid, baseIndex, count * 2, 'miskatonic_mandatory_reading', timestamp));
         return { state, events };
     });
 

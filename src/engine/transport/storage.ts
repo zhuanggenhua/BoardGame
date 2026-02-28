@@ -16,45 +16,6 @@ export interface PlayerMetadata {
     name?: string;
     credentials?: string;
     isConnected?: boolean;
-    /** 真实用户标识（user:<userId> 或 guest:<guestId>） */
-    ownerKey?: string;
-}
-
-/**
- * 房间状态枚举
- *
- * 生命周期：waiting → playing → finished
- *                 ↘ abandoned（全员离开且超时）
- *
- * - waiting:   房间已创建，等待玩家加入（至少有一个空座位）
- * - playing:   所有座位已满，游戏进行中
- * - finished:  游戏正常结束（gameover 已设置）
- * - abandoned: 全员断线超时或房主销毁
- */
-export type MatchStatus = 'waiting' | 'playing' | 'finished' | 'abandoned';
-
-/**
- * 从 metadata 推断房间状态（兼容旧数据）
- *
- * 旧数据没有 status 字段，需要从 gameover + players 隐式推断。
- * 新数据直接读 status 字段。
- */
-export function resolveMatchStatus(metadata: MatchMetadata): MatchStatus {
-    // 新数据：直接返回显式状态
-    if (metadata.status) return metadata.status;
-
-    // 旧数据兼容推断
-    if (metadata.gameover) return 'finished';
-
-    // 检查是否所有座位都已占满
-    const players = metadata.players;
-    if (players) {
-        const seats = Object.values(players);
-        const allSeated = seats.length > 0 && seats.every(p => p.name || p.credentials);
-        if (allSeated) return 'playing';
-    }
-
-    return 'waiting';
 }
 
 /**
@@ -67,8 +28,6 @@ export interface MatchMetadata {
     updatedAt: number;
     gameover?: unknown;
     setupData?: unknown;
-    /** 房间状态（缺省时按 gameover/players 隐式推断，兼容旧数据） */
-    status?: MatchStatus;
     /** 内存房间断线时间戳（HybridStorage 使用） */
     disconnectedSince?: number | null;
 }
@@ -145,7 +104,7 @@ export interface ListMatchesOpts {
 /**
  * 对局存储接口
  *
- * 所有存储实现（MongoStorage、HybridStorage）必须实现此接口。
+ * 所有存储实现（MongoStorage、HybridStorage、InMemoryStorage）必须实现此接口。
  */
 export interface MatchStorage {
     /** 连接存储后端 */

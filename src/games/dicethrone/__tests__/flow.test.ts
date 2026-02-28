@@ -1218,8 +1218,6 @@ describe('王权骰铸流程测试', () => {
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('ADVANCE_PHASE', '1'), // 防御方结束防御阶段
-                    // 冥想获得2太极后，防御方可用太极减伤 → Token 响应窗口弹出
-                    cmd('SKIP_TOKEN_RESPONSE', '1'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -1368,37 +1366,19 @@ describe('王权骰铸流程测试', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
-        it('升级卡跳级使用（L1→L3）- CP 不足时被拒绝', () => {
+        it('升级卡跳级使用 - upgradeCardSkipLevel', () => {
             const runner = createRunner(fixedRandom);
             const result = runner.run({
-                name: '升级卡跳级 CP 不足',
+                name: '升级卡跳级使用',
                 setup: createSetupWithHand(['card-meditation-3']),
                 commands: [
                     cmd('PLAY_UPGRADE_CARD', '0', { cardId: 'card-meditation-3', targetAbilityId: 'meditation' }),
                 ],
                 expect: {
-                    expectError: { command: 'PLAY_UPGRADE_CARD', error: 'notEnoughCp' },
+                    expectError: { command: 'PLAY_UPGRADE_CARD', error: 'upgradeCardSkipLevel' },
                     turnPhase: 'main1',
                     players: {
                         '0': { abilityLevels: { meditation: 1 } },
-                    },
-                },
-            });
-            expect(result.assertionErrors).toEqual([]);
-        });
-
-        it('升级卡跳级使用（L1→L3）- CP 足够时成功', () => {
-            const runner = createRunner(fixedRandom);
-            const result = runner.run({
-                name: '升级卡跳级成功',
-                setup: createSetupWithHand(['card-meditation-3'], { cp: 10 }),
-                commands: [
-                    cmd('PLAY_UPGRADE_CARD', '0', { cardId: 'card-meditation-3', targetAbilityId: 'meditation' }),
-                ],
-                expect: {
-                    turnPhase: 'main1',
-                    players: {
-                        '0': { abilityLevels: { meditation: 3 } },
                     },
                 },
             });
@@ -2050,28 +2030,6 @@ describe('王权骰铸流程测试', () => {
                 ],
                 expect: {
                     diceValues: [6, 6, 3, 4, 5],
-                    pendingInteraction: null,
-                    players: { '0': { discardSize: 1 } },
-                },
-            });
-            expect(result.assertionErrors).toEqual([]);
-        });
-
-        it('不愧是我：同一颗骰子重掷 2 次', () => {
-            // 骰子初始 [1,2,3,4,5]，第一次重掷 dieId=0 → 6，第二次重掷 dieId=0 → 6（第7个随机数）
-            const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5, 6, 6]));
-            const result = runner.run({
-                name: '不愧是我 同一颗骰子重掷2次',
-                setup: createSetupWithHand(['card-worthy-of-me'], { cp: 10 }),
-                commands: [
-                    ...advanceTo('offensiveRoll'),
-                    cmd('ROLL_DICE', '0'),
-                    cmd('PLAY_CARD', '0', { cardId: 'card-worthy-of-me' }),
-                    cmd('REROLL_DIE', '0', { dieId: 0 }),
-                    cmd('REROLL_DIE', '0', { dieId: 0 }),
-                ],
-                expect: {
-                    diceValues: [6, 2, 3, 4, 5],
                     pendingInteraction: null,
                     players: { '0': { discardSize: 1 } },
                 },

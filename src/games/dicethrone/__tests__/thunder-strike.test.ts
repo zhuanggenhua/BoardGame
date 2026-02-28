@@ -137,8 +137,7 @@ describe('雷霆万钧技能', () => {
                 { type: 'CONFIRM_ROLL', playerId: '1', payload: {} },
                 { type: 'RESPONSE_PASS', playerId: '1', payload: {} }, // 跳过防御技能
                 { type: 'ADVANCE_PHASE', playerId: '1', payload: {} }, // defensiveRoll exit → 攻击结算 + displayOnly 结算暂停
-                { type: 'SKIP_BONUS_DICE_REROLL', playerId: '0', payload: {} }, // 确认骰子结果
-                { type: 'SKIP_TOKEN_RESPONSE', playerId: '1', payload: {} }, // 防御方跳过太极减伤（冥想获得的太极）→ 推进到 main2
+                { type: 'SKIP_BONUS_DICE_REROLL', playerId: '0', payload: {} }, // 确认骰子结果 → 推进到 main2
             ],
         });
 

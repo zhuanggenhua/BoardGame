@@ -212,7 +212,7 @@ export function registerRobotInteractionHandlers(): void {
     });
 
     // 微型机守护者：选择目标后消灭
-    registerInteractionHandler('robot_microbot_guard', (state, playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('robot_microbot_guard', (state, _playerId, value, _iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
@@ -308,11 +308,16 @@ function registerRobotOngoingEffects(): void {
     });
 
     // 微型机档案馆：微型机被消灭后控制者抽1张牌
-    // alpha 联动：当 alpha 在场时，同控制者的所有随从均视为微型机
     registerTrigger('robot_microbot_archive', 'onMinionDestroyed', (trigCtx) => {
         if (!trigCtx.triggerMinionDefId) return [];
+        // 检查被消灭的是否是微型机
+        // 需要找到被消灭随从的控制者来判断 alpha 是否在场
+        // trigCtx 中没有被消灭随从的完整信息，用 defId 判断原始微型机
+        // alpha 联动需要知道控制者，但 onMinionDestroyed 触发时随从已移除
+        // 保守实现：原始微型机 defId 始终触发
+        if (!MICROBOT_DEF_IDS.has(trigCtx.triggerMinionDefId)) return [];
 
-        // 找到 microbot_archive 的拥有者
+        // 找到 microbot_archive 的拥有者?
         let archiveOwner: string | undefined;
         for (const base of trigCtx.state.bases) {
             const archive = base.minions.find(m => m.defId === 'robot_microbot_archive');
@@ -322,20 +327,6 @@ function registerRobotOngoingEffects(): void {
             }
         }
         if (!archiveOwner) return [];
-
-        // "你的"微型机 — 被消灭随从必须属于 archive 控制者
-        if (trigCtx.playerId !== archiveOwner) return [];
-
-        // 判断被消灭的随从是否算微型机
-        const isOriginalMicrobot = MICROBOT_DEF_IDS.has(trigCtx.triggerMinionDefId);
-        if (!isOriginalMicrobot) {
-            // 非原始微型机 defId → 检查 alpha 联动
-            // alpha 在场 = 同控制者所有随从视为微型机
-            const alphaOnField = trigCtx.state.bases.some(base =>
-                base.minions.some(m => m.defId === 'robot_microbot_alpha' && m.controller === archiveOwner)
-            );
-            if (!alphaOnField) return [];
-        }
 
         // ?张牌
         const player = trigCtx.state.players[archiveOwner];

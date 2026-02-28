@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { X, MessageSquareWarning, Send, Loader2, AlertTriangle, Lightbulb, HelpCircle, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -8,12 +8,9 @@ import { useToast } from '../../contexts/ToastContext';
 import { cn } from '../../lib/utils';
 import { FEEDBACK_API_URL as API_URL } from '../../config/server';
 import { UI_Z_INDEX } from '../../core';
-import { GAME_MANIFEST } from '../../games/manifest.generated';
 
 interface FeedbackModalProps {
     onClose: () => void;
-    /** 游戏内操作日志（纯文本，由 GameHUD 传入） */
-    actionLogText?: string;
 }
 
 const FeedbackType = {
@@ -46,7 +43,7 @@ const FEEDBACK_SEVERITY_LABEL_KEYS: Record<FeedbackSeverity, string> = {
     [FeedbackSeverity.CRITICAL]: 'hud.feedback.severity.critical',
 };
 
-export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) => {
+export const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
     const { t } = useTranslation(['game', 'common']);
     const { token } = useAuth();
     const { success, error } = useToast();
@@ -56,15 +53,20 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
     const [content, setContent] = useState('');
     const [type, setType] = useState<FeedbackType>(FeedbackType.BUG);
     const [severity, setSeverity] = useState<FeedbackSeverity>(FeedbackSeverity.LOW);
+    const [gameName, setGameName] = useState('');
     const [contactInfo, setContactInfo] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [pastedImage, setPastedImage] = useState<string | null>(null);
-    const [attachLog, setAttachLog] = useState(!!actionLogText);
 
-    // 游戏内自动注入 gameId，非游戏页面允许手动选择
-    const isInGame = location.pathname.startsWith('/play/');
-    const autoGameId = isInGame ? (location.pathname.split('/')[2] || '') : '';
-    const [gameName, setGameName] = useState(autoGameId);
+    useEffect(() => {
+        const path = location.pathname;
+        if (path.startsWith('/play/')) {
+            const parts = path.split('/');
+            if (parts[2]) {
+                setGameName(parts[2]);
+            }
+        }
+    }, [location]);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (backdropRef.current === e.target) {
@@ -93,6 +95,10 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!content.trim() && !pastedImage) return;
+        if (!token) {
+            error(t('hud.feedback.errors.loginRequired'));
+            return;
+        }
 
         setSubmitting(true);
         try {
@@ -102,25 +108,18 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                 finalContent += `\n\n![Screenshot](${pastedImage})`;
             }
 
-            const headers: Record<string, string> = {
-                'Content-Type': 'application/json',
-            };
-            
-            // 如果用户已登录，添加 Authorization header
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
             const res = await fetch(`${API_URL}`, {
                 method: 'POST',
-                headers,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     content: finalContent,
                     type,
                     severity,
                     gameName: gameName || undefined,
-                    contactInfo: contactInfo || undefined,
-                    actionLog: (attachLog && actionLogText) ? actionLogText : undefined,
+                    contactInfo: contactInfo || undefined
                 })
             });
 
@@ -176,8 +175,7 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
-                    <div className="p-6 overflow-y-auto space-y-4 scrollbar-thin flex-1 min-h-0">
+                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 scrollbar-thin">
                     {/* Game Selection */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">{t('hud.feedback.gameLabel')}</label>
@@ -187,12 +185,8 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                             className="w-full bg-parchment-card-bg border border-parchment-brown/20 text-parchment-base-text text-sm rounded-lg focus:ring-parchment-gold focus:border-parchment-gold block p-2.5 transition-colors outline-none"
                         >
                             <option value="">{t('hud.feedback.gameAll')}</option>
-                            {GAME_MANIFEST
-                                .filter(g => g.type === 'game' && g.enabled)
-                                .map(g => (
-                                    <option key={g.id} value={g.id}>{t(`common:game_names.${g.id}`, g.id)}</option>
-                                ))
-                            }
+                            <option value="dicethrone">{t('common:game_names.dicethrone')}</option>
+                            <option value="tictactoe">{t('common:game_names.tictactoe')}</option>
                         </select>
                     </div>
 
@@ -243,7 +237,7 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 onPaste={handlePaste}
-                                rows={4}
+                                rows={6}
                                 className="block p-3 w-full text-sm text-parchment-base-text bg-parchment-card-bg rounded-lg border border-parchment-brown/20 focus:ring-parchment-gold focus:border-parchment-gold resize-none outline-none placeholder:text-parchment-light-text/50"
                                 placeholder={t('hud.feedback.contentPlaceholder')}
                                 required={!pastedImage}
@@ -283,21 +277,6 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                         )}
                     </AnimatePresence>
 
-                    {/* 附带操作日志 */}
-                    {actionLogText && (
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={attachLog}
-                                onChange={(e) => setAttachLog(e.target.checked)}
-                                className="rounded border-parchment-brown/30 text-parchment-brown focus:ring-parchment-gold"
-                            />
-                            <span className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">
-                                {t('hud.feedback.attachLog')}
-                            </span>
-                        </label>
-                    )}
-
                     {/* Contact Info */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-parchment-light-text uppercase tracking-wider">{t('hud.feedback.contactLabel')}</label>
@@ -310,10 +289,7 @@ export const FeedbackModal = ({ onClose, actionLogText }: FeedbackModalProps) =>
                         />
                     </div>
 
-                    </div>
-
-                    {/* 提交按钮固定在底部，不随内容滚动 */}
-                    <div className="px-6 py-4 border-t border-parchment-brown/10 flex justify-end shrink-0 bg-parchment-base-bg">
+                    <div className="pt-4 border-t border-parchment-brown/10 flex justify-end">
                         <button
                             type="submit"
                             disabled={submitting || (!content.trim() && !pastedImage)}
@@ -356,10 +332,7 @@ function compressImage(file: File): Promise<string> {
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                reject(new Error('Canvas 不可用'));
-                return;
-            }
+            if (!ctx) { reject(new Error('Canvas 不可用')); return; }
             ctx.drawImage(img, 0, 0, width, height);
 
             // 输出为 JPEG（体积远小于 PNG base64）

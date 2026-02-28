@@ -7,7 +7,7 @@ import { useToast } from '../../contexts/ToastContext';
 import {
     CheckCircle, Circle, AlertTriangle, Lightbulb, HelpCircle,
     Gamepad2, Trash2, ChevronDown, ChevronRight, RefreshCw, Contact,
-    Image as ImageIcon, ScrollText, Copy, Check
+    Image as ImageIcon
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,7 +17,7 @@ import ImageLightbox from '../../components/common/ImageLightbox';
 
 interface FeedbackItem {
     _id: string;
-    userId?: {
+    userId: {
         _id: string;
         username: string;
         avatar?: string;
@@ -28,7 +28,6 @@ interface FeedbackItem {
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
     gameName?: string;
     contactInfo?: string;
-    actionLog?: string;
     createdAt: string;
 }
 
@@ -524,19 +523,13 @@ function FeedbackRow({
                 {/* 提交者 */}
                 <td className="py-2 px-2">
                     <div className="flex items-center gap-1.5">
-                        {item.userId ? (
-                            <>
-                                <div className="w-5 h-5 rounded-full bg-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-500 overflow-hidden flex-shrink-0">
-                                    {item.userId.avatar
-                                        ? <img src={item.userId.avatar} alt="" className="w-full h-full object-cover" />
-                                        : item.userId.username?.[0]?.toUpperCase()
-                                    }
-                                </div>
-                                <span className="text-xs text-zinc-600 truncate max-w-[80px]">{item.userId.username}</span>
-                            </>
-                        ) : (
-                            <span className="text-xs text-zinc-400 italic">{t('feedback.anonymous')}</span>
-                        )}
+                        <div className="w-5 h-5 rounded-full bg-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-500 overflow-hidden flex-shrink-0">
+                            {item.userId.avatar
+                                ? <img src={item.userId.avatar} alt="" className="w-full h-full object-cover" />
+                                : item.userId.username?.[0]?.toUpperCase()
+                            }
+                        </div>
+                        <span className="text-xs text-zinc-600 truncate max-w-[80px]">{item.userId.username}</span>
                     </div>
                 </td>
 
@@ -583,16 +576,6 @@ function FeedbackRow({
                             >
                                 <div className="px-10 py-4 bg-zinc-50/50 border-b border-zinc-100">
                                     <FeedbackContent content={item.content} onImageClick={onImageClick} t={t} />
-                                    {item.actionLog && (
-                                        <details className="mt-3">
-                                            <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-700 font-medium">
-                                                {t('feedback.actionLog.title')}
-                                            </summary>
-                                            <pre className="mt-2 max-h-48 overflow-auto rounded bg-zinc-100 border border-zinc-200 p-3 text-[11px] text-zinc-600 font-mono whitespace-pre-wrap leading-relaxed">
-                                                {item.actionLog}
-                                            </pre>
-                                        </details>
-                                    )}
                                     <div className="flex items-center gap-4 text-xs text-zinc-400 mt-3">
                                         {item.gameName && (
                                             <span className="inline-flex items-center gap-1">
@@ -607,7 +590,6 @@ function FeedbackRow({
                                             </span>
                                         )}
                                         <span>{t('feedback.table.id', { id: item._id })}</span>
-                                        <CopyFeedbackButton item={item} t={t} />
                                     </div>
                                 </div>
                             </motion.div>
@@ -616,49 +598,6 @@ function FeedbackRow({
                 )}
             </AnimatePresence>
         </>
-    );
-}
-
-// ── 一键复制按钮 ──
-
-function CopyFeedbackButton({ item, t }: { item: FeedbackItem; t: TFunction<'admin'> }) {
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        const textContent = extractText(item.content, t);
-        const submitter = item.userId?.username || t('feedback.anonymous');
-        const parts = [
-            `【${t(`feedback.type.${item.type}`)}】${t(`feedback.severity.${item.severity}`)}`,
-            item.gameName ? `游戏: ${item.gameName}` : '',
-            `提交者: ${submitter}`,
-            `时间: ${new Date(item.createdAt).toLocaleString('zh-CN')}`,
-            '',
-            '--- 反馈内容 ---',
-            textContent,
-            item.actionLog ? `\n--- 操作日志 ---\n${item.actionLog}` : '',
-        ].filter(Boolean).join('\n');
-
-        navigator.clipboard.writeText(parts).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        });
-    };
-
-    return (
-        <button
-            onClick={handleCopy}
-            className={cn(
-                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors',
-                copied
-                    ? 'text-emerald-600 bg-emerald-50'
-                    : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100'
-            )}
-            title={t('feedback.actions.copyAll')}
-        >
-            {copied ? <Check size={12} /> : <Copy size={12} />}
-            {copied ? t('feedback.actions.copied') : t('feedback.actions.copyAll')}
-        </button>
     );
 }
 

@@ -792,10 +792,10 @@ describe('灵魂羁绊 E2E 流程', () => {
     core.phase = 'move';
     core.currentPlayer = '0' as PlayerId;
 
-    // 放置祖灵法师（真实：STR 3, HP 2, ranged(3)，有 spirit_bond + gather_power）
+    // 放置祖灵法师（真实：STR 1, HP 2, ranged(3)，有 spirit_bond + gather_power）
     const shamanCard = mkUnit('barbaric-spirit-mage', {
       faction: 'barbaric', unitClass: 'common', abilities: ['gather_power', 'spirit_bond'],
-      strength: 3, life: 2, attackType: 'ranged', attackRange: 3,
+      strength: 1, life: 2, attackType: 'ranged', attackRange: 3,
     });
     const shaman = putUnit(core, { row: 4, col: 3 }, shamanCard, '0', { boosts: 3 });
 

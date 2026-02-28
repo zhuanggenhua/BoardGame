@@ -10,8 +10,6 @@ import type { SmashUpCore, BaseInPlay, MinionOnBase } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
 import { getTotalEffectivePowerOnBase, getEffectivePower, getEffectivePowerBreakdown, getEffectiveBreakpoint, getOngoingCardPowerContribution } from '../domain/ongoingModifiers';
 import { getBaseDef, getMinionDef, getCardDef, resolveCardName, resolveCardText } from '../data/cards';
-import { isSpecialLimitBlocked } from '../domain/abilityHelpers';
-import { getScoringEligibleBaseIndices } from '../domain/ongoingModifiers';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PLAYER_CONFIG } from './playerConfig';
 import { UI_Z_INDEX } from '../../../core';
@@ -48,11 +46,9 @@ export const BaseZone: React.FC<{
     onViewBase: (defId: string) => void;
     tokenRef?: (el: HTMLDivElement | null) => void;
     isTutorialTargetAllowed?: (targetId: string) => boolean;
-    /** 当前游戏阶段（用于限制 scoreBases 阶段的 special 高亮范围） */
-    phase?: string;
-}> = ({ base, baseIndex, core, turnOrder, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, isSelectable, isDimmed, selectableOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onViewMinion, onViewAction, onViewBase, tokenRef, isTutorialTargetAllowed, phase }) => {
+}> = ({ base, baseIndex, core, turnOrder, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, isSelectable, isDimmed, selectableOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onViewMinion, onViewAction, onViewBase, tokenRef, isTutorialTargetAllowed }) => {
     const { t } = useTranslation('game-smashup');
-    
+
     const baseDef = getBaseDef(base.defId);
     const baseName = resolveCardName(baseDef, t) || base.defId;
     const baseText = resolveCardText(baseDef, t);
@@ -106,19 +102,21 @@ export const BaseZone: React.FC<{
                                     border-[0.12vw] ${isDimmedOngoing
                                         ? 'opacity-40 grayscale cursor-not-allowed'
                                         : isSelectableOngoing
-                                        ? 'border-purple-400 ring-2 ring-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.6)]'
-                                        : canUseOngoingTalent ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]' : `${pConf.border} ${pConf.shadow}`}`}
+                                            ? 'border-purple-400 ring-2 ring-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.6)]'
+                                            : canUseOngoingTalent ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]' : `${pConf.border} ${pConf.shadow}`}`}
                                 initial={{ y: 20, opacity: 0, scale: 0.6 }}
                                 animate={isSelectableOngoing
                                     ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' } } }
                                     : canUseOngoingTalent
-                                    ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } } }
-                                    : { y: 0, opacity: 1, scale: 1 }}
+                                        ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } } }
+                                        : { y: 0, opacity: 1, scale: 1 }}
                                 transition={{ type: 'spring', stiffness: 350, damping: 20, delay: idx * 0.06 }}
                             >
                                 <div className="w-full h-full overflow-hidden rounded-[0.1vw]">
                                     <CardPreview
-                                        previewRef={actionDef?.previewRef}
+                                        previewRef={actionDef?.previewRef
+                                            ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: oa.defId } }
+                                            : undefined}
                                         className="w-full h-full object-cover"
                                         title={actionTitle}
                                     />
@@ -169,10 +167,10 @@ export const BaseZone: React.FC<{
                     ${isDimmed
                         ? 'opacity-40 grayscale cursor-not-allowed rotate-1'
                         : isSelectable
-                        ? 'cursor-pointer rotate-0 scale-105 shadow-[0_0_2.5vw_rgba(251,191,36,0.6)] ring-4 ring-amber-400'
-                        : isDeployMode && !isMinionSelectMode
-                        ? 'cursor-pointer rotate-0 scale-105 shadow-[0_0_2vw_rgba(255,255,255,0.4)] ring-4 ring-green-400'
-                        : 'rotate-1 hover:rotate-0 hover:shadow-xl cursor-zoom-in'}
+                            ? 'cursor-pointer rotate-0 scale-105 shadow-[0_0_2.5vw_rgba(251,191,36,0.6)] ring-4 ring-amber-400'
+                            : isDeployMode && !isMinionSelectMode
+                                ? 'cursor-pointer rotate-0 scale-105 shadow-[0_0_2vw_rgba(255,255,255,0.4)] ring-4 ring-green-400'
+                                : 'rotate-1 hover:rotate-0 hover:shadow-xl cursor-zoom-in'}
                 `}
                 style={{
                     backgroundImage: 'repeating-linear-gradient(45deg, #fff 0px, #fff 2px, #fdfdfd 2px, #fdfdfd 4px)',
@@ -188,37 +186,39 @@ export const BaseZone: React.FC<{
                         exit={{ opacity: 0, scale: 0.85 }}
                         transition={{ duration: 0.4, ease: 'easeInOut' }}
                     >
-                    <CardPreview
-                        previewRef={baseDef?.previewRef}
-                        className="w-full h-full object-cover"
-                        title={baseName}
-                    />
+                        <CardPreview
+                            previewRef={baseDef?.previewRef
+                                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: base.defId } }
+                                : undefined}
+                            className="w-full h-full object-cover"
+                            title={baseName}
+                        />
 
-                    {/* Fallback Text (no card art) */}
-                    {!baseDef?.previewRef && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-between p-[0.6vw] bg-gradient-to-br from-slate-100 via-slate-50 to-amber-50">
-                            {/* 基地名称 */}
-                            <h3 className="font-black text-[1vw] text-slate-800 uppercase tracking-tight leading-tight text-center border-b border-slate-300 pb-[0.2vw] w-full">
-                                {baseName}
-                            </h3>
-                            {/* 能力文本 */}
-                            <div className="flex-1 flex items-center px-[0.2vw]">
-                                <p className="text-[0.55vw] text-slate-600 leading-snug text-center">
-                                    {baseText}
-                                </p>
-                            </div>
-                            {/* VP 奖励 */}
-                            {baseDef?.vpAwards && (
-                                <div className="flex items-center gap-[0.3vw] border-t border-slate-300 pt-[0.2vw] w-full justify-center">
-                                    {baseDef.vpAwards.map((vp, i) => (
-                                        <span key={i} className={`font-black text-[0.7vw] ${i === 0 ? 'text-amber-600' : i === 1 ? 'text-slate-500' : 'text-amber-800/50'}`}>
-                                            {vp}
-                                        </span>
-                                    ))}
+                        {/* Fallback Text (no card art) */}
+                        {!baseDef?.previewRef && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-between p-[0.6vw] bg-gradient-to-br from-slate-100 via-slate-50 to-amber-50">
+                                {/* 基地名称 */}
+                                <h3 className="font-black text-[1vw] text-slate-800 uppercase tracking-tight leading-tight text-center border-b border-slate-300 pb-[0.2vw] w-full">
+                                    {baseName}
+                                </h3>
+                                {/* 能力文本 */}
+                                <div className="flex-1 flex items-center px-[0.2vw]">
+                                    <p className="text-[0.55vw] text-slate-600 leading-snug text-center">
+                                        {baseText}
+                                    </p>
                                 </div>
-                            )}
-                        </div>
-                    )}
+                                {/* VP 奖励 */}
+                                {baseDef?.vpAwards && (
+                                    <div className="flex items-center gap-[0.3vw] border-t border-slate-300 pt-[0.2vw] w-full justify-center">
+                                        {baseDef.vpAwards.map((vp, i) => (
+                                            <span key={i} className={`font-black text-[0.7vw] ${i === 0 ? 'text-amber-600' : i === 1 ? 'text-slate-500' : 'text-amber-800/50'}`}>
+                                                {vp}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </motion.div>
                 </AnimatePresence>
 
@@ -318,7 +318,6 @@ export const BaseZone: React.FC<{
                                             selectableOngoingUids={selectableOngoingUids}
                                             onOngoingSelect={onOngoingSelect}
                                             isTutorialTargetAllowed={isTutorialTargetAllowed}
-                                            phase={phase}
                                         />
                                     ))}
                                 </div>
@@ -400,9 +399,7 @@ const MinionCard: React.FC<{
     selectableOngoingUids?: Set<string>;
     onOngoingSelect?: (ongoingUid: string) => void;
     isTutorialTargetAllowed?: (targetId: string) => boolean;
-    /** 当前游戏阶段 */
-    phase?: string;
-}> = ({ minion, effectivePower, core, index, pid, baseIndex, isMyTurn, myPlayerId, dispatch, isMinionSelectMode, isMultiSelected, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, onOngoingSelect, isTutorialTargetAllowed, phase }) => {
+}> = ({ minion, effectivePower, core, index, pid, baseIndex, isMyTurn, myPlayerId, dispatch, isMinionSelectMode, isMultiSelected, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, onOngoingSelect, isTutorialTargetAllowed }) => {
     const { t } = useTranslation('game-smashup');
     const def = getMinionDef(minion.defId);
     const resolvedName = resolveCardName(def, t) || minion.defId;
@@ -423,21 +420,6 @@ const MinionCard: React.FC<{
         && tutorialAllowed
         && (!minion.talentUsed || canUseSecondTalentOnStandingStones);
 
-    // 场上随从 special 能力判定（如忍者侍从）
-    const hasSpecial = def?.abilityTags?.includes('special') ?? false;
-    const canActivateSpecial = hasSpecial
-        && isMyTurn
-        && minion.controller === myPlayerId
-        && tutorialAllowed
-        && !isSpecialLimitBlocked(core, minion.defId, baseIndex)
-        // scoreBases 阶段：仅在达标基地上高亮
-        && (phase !== 'scoreBases' || getScoringEligibleBaseIndices(core).includes(baseIndex))
-        // 忍者侍从额外条件：本回合未打出随从
-        && (minion.defId !== 'ninja_acolyte' || (myPlayerId != null && core.players[myPlayerId]?.minionsPlayed === 0));
-
-    // 合并：天赋或 special 都可以激活
-    const canActivate = canUseTalent || canActivateSpecial;
-
     const seed = minion.uid.charCodeAt(0) + index;
     const rotation = (seed % 6) - 3;
 
@@ -456,12 +438,10 @@ const MinionCard: React.FC<{
         }
         if (canUseTalent) {
             dispatch(SU_COMMANDS.USE_TALENT, { minionUid: minion.uid, baseIndex });
-        } else if (canActivateSpecial) {
-            dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { minionUid: minion.uid, baseIndex });
         } else {
             onView();
         }
-    }, [isMinionSelectMode, onMinionSelect, canUseTalent, canActivateSpecial, dispatch, minion.uid, baseIndex, onView]);
+    }, [isMinionSelectMode, onMinionSelect, canUseTalent, dispatch, minion.uid, baseIndex, onView]);
 
     // 随从选择模式下的高亮
     const isSelectableMinion = !!isMinionSelectMode;
@@ -476,26 +456,28 @@ const MinionCard: React.FC<{
                 ${isDimmed
                     ? 'opacity-40 grayscale cursor-not-allowed'
                     : isMultiSelected
-                    ? 'cursor-pointer border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.6),0_0_30px_rgba(74,222,128,0.3)]'
-                    : isSelectableMinion
-                    ? 'cursor-pointer border-purple-400 ring-2 ring-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.6),0_0_30px_rgba(168,85,247,0.3)]'
-                    : canActivate
-                    ? 'cursor-pointer border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6),0_0_30px_rgba(251,191,36,0.3)]'
-                    : `cursor-zoom-in ${conf.border} ${conf.shadow}`}
+                        ? 'cursor-pointer border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.6),0_0_30px_rgba(74,222,128,0.3)]'
+                        : isSelectableMinion
+                            ? 'cursor-pointer border-purple-400 ring-2 ring-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.6),0_0_30px_rgba(168,85,247,0.3)]'
+                            : canUseTalent
+                                ? 'cursor-pointer border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6),0_0_30px_rgba(251,191,36,0.3)]'
+                                : `cursor-zoom-in ${conf.border} ${conf.shadow}`}
             `}
             style={style}
             initial={{ scale: 0.3, y: -60, opacity: 0, rotate: -15 }}
             animate={isSelectableMinion
                 ? { scale: 1, y: 0, opacity: 1, rotate: [rotation - 1, rotation + 1, rotation - 1], transition: { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' } } }
-                : canActivate
-                ? { scale: 1, y: 0, opacity: 1, rotate: [rotation - 2, rotation + 2, rotation - 2], transition: { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } } }
-                : { scale: 1, y: 0, opacity: 1, rotate: rotation }
+                : canUseTalent
+                    ? { scale: 1, y: 0, opacity: 1, rotate: [rotation - 2, rotation + 2, rotation - 2], transition: { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } } }
+                    : { scale: 1, y: 0, opacity: 1, rotate: rotation }
             }
             transition={{ type: 'spring', stiffness: 350, damping: 20, delay: index * 0.05 }}
         >
             <div className="w-full h-full bg-slate-100 relative overflow-hidden">
                 <CardPreview
-                    previewRef={def?.previewRef}
+                    previewRef={def?.previewRef
+                        ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: minion.defId } }
+                        : undefined}
                     className="w-full h-full object-cover"
                     title={minionTitle}
                 />
@@ -515,8 +497,8 @@ const MinionCard: React.FC<{
                     </div>
                 )}
 
-                {/* 天赋/特殊能力可用时的发光叠层 */}
-                {canActivate && (
+                {/* 天赋可用时的发光叠层 */}
+                {canUseTalent && (
                     <motion.div
                         className="absolute inset-0 pointer-events-none z-20 rounded-[0.1vw]"
                         animate={{ opacity: [0.15, 0.35, 0.15] }}
@@ -539,16 +521,14 @@ const MinionCard: React.FC<{
             {/* 力量增幅徽章 - 增益绿色/减益红色（左上角），仅有变化时显示 */}
             {((effectivePower !== minion.basePower) || !def?.previewRef) && (
                 <div
-                    className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] z-30 ${
-                        effectivePower > minion.basePower ? 'bg-green-600' :
-                        effectivePower < minion.basePower ? 'bg-red-600' :
-                        'bg-slate-700'
-                    }`}
+                    className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] z-30 ${effectivePower > minion.basePower ? 'bg-green-600' :
+                            effectivePower < minion.basePower ? 'bg-red-600' :
+                                'bg-slate-700'
+                        }`}
                     title={(() => {
                         const bd = getEffectivePowerBreakdown(core, minion, baseIndex);
                         const parts = [`基础: ${bd.basePower}`];
-                        if (bd.powerCounters !== 0) parts.push(`力量指示物: ${bd.powerCounters > 0 ? '+' : ''}${bd.powerCounters}`);
-                        if (bd.permanentModifier !== 0) parts.push(`永久修正: ${bd.permanentModifier > 0 ? '+' : ''}${bd.permanentModifier}`);
+                        if (bd.permanentModifier !== 0) parts.push(`指示物: ${bd.permanentModifier > 0 ? '+' : ''}${bd.permanentModifier}`);
                         if (bd.tempModifier !== 0) parts.push(`临时: ${bd.tempModifier > 0 ? '+' : ''}${bd.tempModifier}`);
                         if (bd.ongoingDetails.length > 0) {
                             for (const d of bd.ongoingDetails) parts.push(`${d.sourceName}: ${d.value > 0 ? '+' : ''}${d.value}`);
@@ -564,17 +544,16 @@ const MinionCard: React.FC<{
             )}
 
             {/* +1力量指示物徽章（左侧，力量增幅下方） */}
-            {(minion.powerCounters ?? 0) > 0 && (
+            {minion.powerModifier > 0 && (
                 <motion.div
-                    className={`absolute -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white px-[0.1vw] z-30 ${
-                        (effectivePower !== minion.basePower) || !def?.previewRef ? 'top-[1vw]' : '-top-[0.4vw]'
-                    }`}
+                    className={`absolute -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white px-[0.1vw] z-30 ${(effectivePower !== minion.basePower) || !def?.previewRef ? 'top-[1vw]' : '-top-[0.4vw]'
+                        }`}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                    title={`+1力量指示物 ×${minion.powerCounters}`}
+                    title={`+1力量指示物 ×${minion.powerModifier}`}
                 >
-                    +{minion.powerCounters}
+                    +{minion.powerModifier}
                 </motion.div>
             )}
 
@@ -627,16 +606,18 @@ const MinionCard: React.FC<{
                                         border-[0.08vw] ${isDimmedAA
                                             ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'
                                             : isSelectableAA
-                                            ? 'border-purple-400 ring-2 ring-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.6)]'
-                                            : canUseAATalent
-                                            ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]'
-                                            : 'border-purple-400 ring-1 ring-purple-300/50'
+                                                ? 'border-purple-400 ring-2 ring-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.6)]'
+                                                : canUseAATalent
+                                                    ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]'
+                                                    : 'border-purple-400 ring-1 ring-purple-300/50'
                                         }`}
                                     title={actionTitle}
                                 >
                                     <div className="w-full h-full overflow-hidden rounded-[0.06vw]">
                                         <CardPreview
-                                            previewRef={actionDef?.previewRef}
+                                            previewRef={actionDef?.previewRef
+                                                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: aa.defId } }
+                                                : undefined}
                                             className="w-full h-full object-cover"
                                             title={actionName}
                                         />

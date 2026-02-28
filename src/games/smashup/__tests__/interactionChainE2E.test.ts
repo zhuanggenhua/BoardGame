@@ -48,7 +48,7 @@ function makeMinion(
 ): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
         ...overrides,
     };
 }
@@ -1947,7 +1947,7 @@ describe('P3: alien_scout_return（侦察兵回手）触发链', () => {
 });
 
 describe('P3: pirate_first_mate（大副）触发链', () => {
-    it('通过直接设置交互测试：选基地 → 大副移动', () => {
+    it('通过直接设置交互测试：选随从 → 选基地 → 移动', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', { factions: ['pirates', 'aliens'] as [string, string] }),
@@ -1970,31 +1970,37 @@ describe('P3: pirate_first_mate（大副）触发链', () => {
                 kind: 'simple-choice',
                 playerId: '0',
                 data: {
-                    title: '大副：你可以移动本随从到其他基地（而不是弃牌堆）',
-                    sourceId: 'pirate_first_mate_choose_base',
+                    title: '大副：你可以移动至多两个随从到其他基地（选择第1个）',
+                    sourceId: 'pirate_first_mate_choose_first',
                     options: [
-                        { id: 'skip', label: '跳过（不移动大副）', value: { skip: true } },
-                        { id: 'base-1', label: '基地 2', value: { baseIndex: 1 } },
-                        { id: 'base-2', label: '基地 3', value: { baseIndex: 2 } },
+                        { id: 'skip', label: '跳过（不移动随从）', value: { skip: true } },
+                        { id: 'minion-fm1', label: 'pirate_first_mate (力量 2)', value: { minionUid: 'fm1', defId: 'pirate_first_mate', baseIndex: 0 } },
+                        { id: 'minion-m1', label: 'pirate_saucy_wench (力量 3)', value: { minionUid: 'm1', defId: 'pirate_saucy_wench', baseIndex: 0 } },
                     ],
-                    continuationContext: { mateUid: 'fm1', mateDefId: 'pirate_first_mate', scoringBaseIndex: 0 },
+                    continuationContext: { scoringBaseIndex: 0, movedCount: 0 },
                 },
             },
             queue: [],
         };
 
-        // 选 base1 → fm1 移动到 base1
-        const r1 = respond(state, '0', 'base-1', 'first_mate: 选基地');
+        // Step 1: 选 fm1 → 选目标基地
+        const r1 = respond(state, '0', 'minion-fm1', 'first_mate step1: 选随从');
 
         expect(r1.steps[0]?.success).toBe(true);
+        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        expect(choice1.sourceId).toBe('pirate_first_mate_choose_base');
+
+        // Step 2: 选 base1 → fm1 移动
+        const baseOpt = findOption(choice1, (o: any) => o.value?.baseIndex === 1);
+        const r2 = respond(r1.finalState, '0', baseOpt, 'first_mate step2: 选基地');
+
+        expect(r2.steps[0]?.success).toBe(true);
         // 验证 fm1 移到 base1
-        const fc = r1.finalState.core;
+        const fc = r2.finalState.core;
         expect(fc.bases[1].minions.some(m => m.uid === 'fm1')).toBe(true);
-        // m1 留在 base0（大副只移动自己）
-        expect(fc.bases[0].minions.some(m => m.uid === 'm1')).toBe(true);
     });
 
-    it('跳过 → 不移动大副', () => {
+    it('跳过 → 不移动任何随从', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', { factions: ['pirates', 'aliens'] as [string, string] }),
@@ -2015,13 +2021,13 @@ describe('P3: pirate_first_mate（大副）触发链', () => {
                 kind: 'simple-choice',
                 playerId: '0',
                 data: {
-                    title: '大副：你可以移动本随从到其他基地（而不是弃牌堆）',
-                    sourceId: 'pirate_first_mate_choose_base',
+                    title: '大副：你可以移动至多两个随从到其他基地（选择第1个）',
+                    sourceId: 'pirate_first_mate_choose_first',
                     options: [
-                        { id: 'skip', label: '跳过（不移动大副）', value: { skip: true } },
-                        { id: 'base-1', label: '基地 2', value: { baseIndex: 1 } },
+                        { id: 'skip', label: '跳过（不移动随从）', value: { skip: true } },
+                        { id: 'minion-fm1', label: 'pirate_first_mate (力量 2)', value: { minionUid: 'fm1', defId: 'pirate_first_mate', baseIndex: 0 } },
                     ],
-                    continuationContext: { mateUid: 'fm1', mateDefId: 'pirate_first_mate', scoringBaseIndex: 0 },
+                    continuationContext: { scoringBaseIndex: 0, movedCount: 0 },
                 },
             },
             queue: [],
