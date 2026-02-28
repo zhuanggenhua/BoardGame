@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>移动端适配测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .info-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .info-label {
+            font-size: 0.875rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .status {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.125rem;
+            margin-bottom: 20px;
+        }
+
+        .status.success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 2px solid rgba(16, 185, 129, 0.5);
+        }
+
+        .status.warning {
+            background: rgba(245, 158, 11, 0.2);
+            border: 2px solid rgba(245, 158, 11, 0.5);
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid rgba(239, 68, 68, 0.5);
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.875rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 移动端适配测试</h1>
+        
+        <div id="status" class="status"></div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">屏幕尺寸</div>
+                <div class="info-value" id="screen-size">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">视口尺寸</div>
+                <div class="info-value" id="viewport-size">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">设备方向</div>
+                <div class="info-value" id="orientation">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">设备类型</div>
+                <div class="info-value" id="device-type">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">像素比</div>
+                <div class="info-value" id="pixel-ratio">-</div>
+            </div>
+        </div>
+
+        <button onclick="testTouch()">测试触摸响应</button>
+        <button onclick="window.location.href='http://localhost:3000'">打开主应用</button>
+
+        <div class="footer">
+            易桌游 - 移动端适配测试工具<br>
+            使用 Chrome DevTools 设备模式测试
+        </div>
+    </div>
+
+    <script>
+        function updateInfo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const isMobile = width < 1024;
+            const isPortrait = height > width;
+            
+            document.getElementById('screen-size').textContent = 
+                `${screen.width} × ${screen.height}`;
+            document.getElementById('viewport-size').textContent = 
+                `${width} × ${height}`;
+            document.getElementById('orientation').textContent = 
+                isPortrait ? '竖屏 (Portrait)' : '横屏 (Landscape)';
+            document.getElementById('device-type').textContent = 
+                isMobile ? '移动设备' : 'PC/平板';
+            document.getElementById('pixel-ratio').textContent = 
+                window.devicePixelRatio.toFixed(2);
+
+            const statusEl = document.getElementById('status');
+            
+            if (!isMobile) {
+                statusEl.className = 'status success';
+                statusEl.innerHTML = '<div class="icon">✅</div>PC 端 - 无需适配';
+            } else if (isPortrait) {
+                statusEl.className = 'status error';
+                statusEl.innerHTML = '<div class="icon">⚠️</div>请旋转设备至横屏模式';
+            } else {
+                statusEl.className = 'status success';
+                statusEl.innerHTML = '<div class="icon">✅</div>移动端横屏 - 适配正常';
+            }
+        }
+
+        function testTouch() {
+            alert('触摸响应正常！\n\n如果能看到这个弹窗，说明触摸事件工作正常。');
+        }
+
+        // 初始化
+        updateInfo();
+
+        // 监听方向变化
+        window.addEventListener('resize', updateInfo);
+        window.addEventListener('orientationchange', updateInfo);
+
+        // 显示用户代理
+        console.log('User Agent:', navigator.userAgent);
+    </script>
+</body>
+</html>

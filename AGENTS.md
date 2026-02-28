@@ -617,6 +617,11 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 > **开发/修改 UI 组件或布局时必须先阅读 `docs/ai-rules/ui-ux.md`**
 
 - **PC-First**，移动端 Best-effort。
+- **移动端适配（已实现）**：
+  - **横屏强制**：移动设备（< 1024px）竖屏时显示旋转提示（`MobileOrientationGuard`）
+  - **响应式缩放**：横屏时基于 1280px 设计宽度自动缩放（`src/index.css`）
+  - **触摸优化**：按钮最小尺寸 44px，禁用长按选择文本
+  - **详细文档**：`docs/mobile-adaptation.md`
 - **深度感分级**：重点区域毛玻璃+软阴影，高频更新区域禁止毛玻璃。
 - **动态提示 UI 必须 `absolute/fixed`**，禁止占用布局空间。层级：提示 z-[100-150]，交互 z-[150-200]，Modal z-[200+]。
 - **临时/瞬态 UI 不得挤压已有布局（强制）**：攻击修正徽章、buff 提示、倒计时标签等"出现/消失"的临时 UI 元素，必须使用 `absolute`/`fixed` 定位，禁止插入 flex/grid 正常流导致其他元素位移。

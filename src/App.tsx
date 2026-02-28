@@ -22,6 +22,7 @@ import { GlobalHUD } from './components/system/GlobalHUD';
 import { GlobalErrorBoundary } from './components/system/GlobalErrorBoundary';
 import { InteractionGuardProvider } from './components/game/framework';
 import AdminGuard from './components/auth/AdminGuard';
+import { MobileOrientationGuard } from './components/common/MobileOrientationGuard';
 
 import { NotFound } from './pages/NotFound';
 import { MaintenancePage } from './pages/Maintenance';
@@ -81,13 +82,14 @@ const AppContent = () => {
   }, []);
 
   return (
-    <CursorPreferenceProvider>
-      <SocialProvider>
-        <AudioProvider>
-          <InteractionGuardProvider>
-            <DebugProvider>
-              <TutorialProvider>
-                <BrowserRouter>
+    <MobileOrientationGuard>
+      <CursorPreferenceProvider>
+        <SocialProvider>
+          <AudioProvider>
+            <InteractionGuardProvider>
+              <DebugProvider>
+                <TutorialProvider>
+                  <BrowserRouter>
                   <Routes>
                     <Route path="/" element={<React.Suspense fallback={null}><Home /></React.Suspense>} />
                     <Route path="/play/:gameId/match/:matchId" element={<React.Suspense fallback={<LoadingScreen />}><MatchRoom /></React.Suspense>} />
@@ -138,6 +140,7 @@ const AppContent = () => {
         </AudioProvider>
       </SocialProvider>
     </CursorPreferenceProvider>
+    </MobileOrientationGuard>
   );
 };
 
