@@ -12,6 +12,8 @@ import { getTotalEffectivePowerOnBase, getEffectivePower, getEffectivePowerBreak
 import { getBaseDef, getMinionDef, getCardDef, resolveCardName, resolveCardText } from '../data/cards';
 import { isSpecialLimitBlocked } from '../domain/abilityHelpers';
 import { getScoringEligibleBaseIndices } from '../domain/ongoingModifiers';
+import { getBaseRestrictions } from '../domain/ongoingEffects';
+import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PLAYER_CONFIG } from './playerConfig';
 import { UI_Z_INDEX } from '../../../core';
@@ -62,6 +64,9 @@ export const BaseZone: React.FC<{
     const isNearBreak = ratio >= 0.8 && ratio < 1;
     const isAtBreak = ratio >= 1;
 
+    // 获取基地限制信息
+    const restrictions = getBaseRestrictions(core, baseIndex);
+
     // 分组
     const minionsByController: Record<string, MinionOnBase[]> = {};
     base.minions.forEach(m => {
@@ -72,6 +77,40 @@ export const BaseZone: React.FC<{
 
     return (
         <div className="relative flex flex-col items-center group/base mx-[1vw]">
+
+            {/* --- BASE RESTRICTIONS (above ongoing actions) --- */}
+            {restrictions.length > 0 && (
+                <div className="absolute -top-[8vw] left-1/2 -translate-x-1/2 flex flex-col items-center gap-[0.3vw] z-40">
+                    {restrictions.map((restriction, idx) => {
+                        if (restriction.type === 'blocked_faction') {
+                            const factionDisplayName = FACTION_DISPLAY_NAMES[restriction.displayText] || restriction.displayText;
+                            return (
+                                <motion.div
+                                    key={`${restriction.sourceDefId}-${idx}`}
+                                    className="relative flex items-center gap-[0.3vw] bg-red-600/90 backdrop-blur-sm px-[0.6vw] py-[0.3vw] rounded-md shadow-lg border-[0.15vw] border-red-400"
+                                    initial={{ y: -20, opacity: 0, scale: 0.8 }}
+                                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                                    transition={{ type: 'spring', stiffness: 350, damping: 20, delay: idx * 0.1 }}
+                                    title={`${factionDisplayName} 派系随从不能打出到此基地`}
+                                >
+                                    {/* 斜杠图标 */}
+                                    <div className="relative w-[1.2vw] h-[1.2vw] flex items-center justify-center">
+                                        <svg className="w-full h-full text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                            <line x1="4" y1="4" x2="20" y2="20" />
+                                        </svg>
+                                    </div>
+                                    {/* 派系名称 */}
+                                    <span className="text-[0.8vw] font-black text-white leading-none whitespace-nowrap">
+                                        {factionDisplayName}
+                                    </span>
+                                </motion.div>
+                            );
+                        }
+                        // 未来可以添加其他限制类型的渲染
+                        return null;
+                    })}
+                </div>
+            )}
 
             {/* --- ONGOING EFFECTS (above base card, absolute positioned) --- */}
             {base.ongoingActions && base.ongoingActions.length > 0 && (

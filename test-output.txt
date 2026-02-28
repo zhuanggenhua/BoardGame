@@ -1,0 +1,17 @@
+﻿node.exe : npm error Missing script: "test:unit"
+所在位置 C:\Program Files\nodejs\npm.ps1:29 字符: 3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm error Missing script: "test:unit":String 
+   ) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm error
+npm error Did you mean one of these?
+npm error   npm run test:ugc # run the "test:ugc" package script
+npm error   npm run test:api # run the "test:api" package script
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: C:\Users\zhuagenbao\AppData\Local\np
+m-cache\_logs\2026-02-28T10_17_58_598Z-debug-0.log

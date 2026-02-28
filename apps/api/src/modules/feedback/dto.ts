@@ -26,6 +26,11 @@ export class CreateFeedbackDto {
     @IsOptional()
     @MaxLength(50000)
     actionLog?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(500000) // 状态 JSON 可能较大
+    stateSnapshot?: string;
 }
 
 export class UpdateFeedbackStatusDto {

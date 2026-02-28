@@ -48,6 +48,9 @@ export class Feedback {
 
     @Prop({ type: String })
     actionLog?: string; // 游戏内操作日志快照（提交反馈时自动附带）
+
+    @Prop({ type: String })
+    stateSnapshot?: string; // 完整游戏状态 JSON（用于精确复现问题）
 }
 
 export const FeedbackSchema = SchemaFactory.createForClass(Feedback);

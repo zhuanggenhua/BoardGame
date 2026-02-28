@@ -131,6 +131,18 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     const { ref: revealScrollRef } = useHorizontalDragScroll();
     const { ref: cardScrollRef } = useHorizontalDragScroll();
 
+    // 🔍 调试日志：追踪 props 变化
+    useEffect(() => {
+        console.log('[PromptOverlay] Props changed:', {
+            hasInteraction: !!interaction,
+            interactionId: interaction?.id,
+            hasPrompt: !!prompt,
+            promptId: prompt?.id,
+            promptTitle: prompt?.title,
+            hasDisplayCards: !!displayCards,
+        });
+    }, [interaction, prompt, displayCards]);
+
     // 所有 hooks 必须在条件返回之前调用（React hooks 规则）
     const isMyPrompt = !!prompt && prompt.playerId === playerID;
     const isMulti = !!prompt?.multi; // 多选功能不应该依赖 isMyPrompt
@@ -144,11 +156,18 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     const [submittingInteractionId, setSubmittingInteractionId] = useState<string | null>(null);
     const isSubmitLocked = !!prompt && submittingInteractionId === prompt.id;
 
-    // interaction.id 变化时自动解锁（含消失场景）
+    // interaction 变化时自动解锁（含消失场景和 ID 相同但内容不同的场景）
+    // 使用 interaction 对象引用而不是 interaction.id，因为可能出现 ID 相同但内容不同的情况
+    // （如海盗王移动后，基地能力创建新交互时使用了相同的 timestamp）
     useEffect(() => {
+        console.log('[PromptOverlay] Unlocking due to interaction change:', {
+            oldSubmittingId: submittingInteractionId,
+            newInteractionId: interaction?.id,
+            hasInteraction: !!interaction,
+        });
         setSubmittingInteractionId(null);
         setSelectedIds([]);
-    }, [prompt?.id]);
+    }, [interaction]);  // ← 监听 interaction 对象引用，而不是 interaction?.id
 
     const canSubmitMulti = useMemo(
         () => isMyPrompt && selectedIds.length >= minSelections,
@@ -230,7 +249,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         const { selectedUid: selUid, onSelect: onSel, playableDefIds } = displayCards;
 
         return (
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
                 <motion.div
                     key="prompt-display"
                     initial={{ y: 80, opacity: 0 }}
@@ -297,10 +316,12 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             </div>
                                         </div>
                                         <button
-                                            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-1 rounded-full border border-white shadow-md hover:bg-blue-600 hover:scale-110 cursor-zoom-in z-10"
+                                            className="absolute -top-[0.4vw] -right-[0.4vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 z-40 cursor-zoom-in"
                                             onClick={(e) => { e.stopPropagation(); setMagnifyTarget({ defId: card.defId, type: def?.type ?? 'action' }); }}
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                            <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M8 4a4 4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                            </svg>
                                         </button>
                                         <span className={`text-[10px] font-bold max-w-[8.5vw] truncate text-center ${isSel ? 'text-amber-300' : 'text-white/70'}`}>
                                             {name}
@@ -345,7 +366,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         const skipLabel = sliderConfig.skipLabel ?? sliderSkipOption?.label ?? t('ui.skip', { defaultValue: '跳过' });
 
         return (
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
                 <motion.div
                     key="prompt-slider"
                     initial={{ opacity: 0 }}
@@ -449,9 +470,26 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     }
 
     const handleSelect = (optionId: string) => {
-        if (!isMyPrompt || isSubmitLocked) return;
+        console.log('[PromptOverlay] handleSelect called:', {
+            optionId,
+            isMyPrompt,
+            isSubmitLocked,
+            promptId: prompt?.id,
+            submittingInteractionId,
+        });
+        
+        if (!isMyPrompt || isSubmitLocked) {
+            console.log('[PromptOverlay] handleSelect: blocked', { isMyPrompt, isSubmitLocked });
+            return;
+        }
+        
         // 锁定当前交互，防止重复提交
-        if (prompt) setSubmittingInteractionId(prompt.id);
+        if (prompt) {
+            console.log('[PromptOverlay] handleSelect: locking interaction', { promptId: prompt.id });
+            setSubmittingInteractionId(prompt.id);
+        }
+        
+        console.log('[PromptOverlay] handleSelect: dispatching RESPOND', { optionId });
         dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
     };
 
@@ -472,7 +510,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     // ====== 内联面板模式（≤3 选项，居中浮动） ======
     if (useInlineMode) {
         return (
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
                 <motion.div
                     key="prompt-inline"
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -539,9 +577,14 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     if (useCardMode) {
         const cardOptions = nonSkipOptions.filter(opt => isCardOption(opt));
         const textOptions = nonSkipOptions.filter(opt => !isCardOption(opt));
+        
+        // 提取基地上下文信息（用于高亮和标题显示）
+        const contextBaseIndex = (prompt as any)?.continuationContext?.baseIndex;
+        const contextBaseDef = contextBaseIndex !== undefined ? getBaseDef(prompt.state?.bases?.[contextBaseIndex]?.defId) : undefined;
+        const contextBaseName = contextBaseDef ? resolveCardName(contextBaseDef, t) : undefined;
 
         return (
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
                 <motion.div
                     key="prompt-cards"
                     initial={{ opacity: 0 }}
@@ -552,6 +595,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                 >
                     <h2 className="text-xl font-black text-amber-100 uppercase tracking-tight mb-5 drop-shadow-lg">
                         {title}
+                        {contextBaseName && (
+                            <span className="block text-sm text-amber-300/80 font-normal mt-1">
+                                @ {contextBaseName}
+                            </span>
+                        )}
                     </h2>
 
                     {!isMyPrompt && (
@@ -613,17 +661,19 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 <Check size={12} strokeWidth={3} className="text-black" />
                                             </div>
                                         )}
-                                        {/* 放大镜按钮（多选模式下右上角被勾选占用，放左上角） */}
+                                        {/* 放大镜按钮 - 右上角突出显示，多选模式下勾选在左上角 */}
                                         {defId && (
                                             <button
-                                                className={`absolute ${isMulti ? '-top-2 -left-2' : '-top-2 -right-2'} opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-1 rounded-full border border-white shadow-md hover:bg-blue-600 hover:scale-110 cursor-zoom-in z-20`}
+                                                className="absolute -top-[0.4vw] -right-[0.4vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 z-40 cursor-zoom-in"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     const cardType = getBaseDef(defId) ? 'base' as const : (def && 'type' in def ? def.type : 'action' as const);
                                                     setMagnifyTarget({ defId, type: cardType });
                                                 }}
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                                <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                                </svg>
                                             </button>
                                         )}
                                     </motion.div>
@@ -709,7 +759,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
     // ====== 列表模式（>3 文本选项，全屏深色面板） ======
     return (
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
             <motion.div
                 key="prompt-list"
                 initial={{ opacity: 0 }}

@@ -319,32 +319,44 @@ function miskatonicBookOfIterTheUnseen(ctx: AbilityContext): AbilityResult {
 
     if (totalMadness === 0) return { events: [] };
 
-    // 构建选项：按来源+数量组合
-    const options: any[] = [];
-    if (handMadness.length >= 1) {
-        options.push({ id: 'hand-1', label: `从手牌返回1张疯狂卡`, value: { source: 'hand', count: 1 } });
-    }
-    if (handMadness.length >= 2) {
-        options.push({ id: 'hand-2', label: `从手牌返回2张疯狂卡`, value: { source: 'hand', count: 2 } });
-    }
-    if (discardMadness.length >= 1) {
-        options.push({ id: 'discard-1', label: `从弃牌堆返回1张疯狂卡`, value: { source: 'discard', count: 1 } });
-    }
-    if (discardMadness.length >= 2) {
-        options.push({ id: 'discard-2', label: `从弃牌堆返回2张疯狂卡`, value: { source: 'discard', count: 2 } });
-    }
-    // 混合来源（手牌1+弃牌堆1）
-    if (handMadness.length >= 1 && discardMadness.length >= 1) {
-        options.push({ id: 'mixed', label: `手牌1张+弃牌堆1张`, value: { source: 'mixed', handCount: 1, discardCount: 1 } });
-    }
-    // 跳过选项（"至多"意味着可以不返回）
-    options.push({ id: 'skip', label: '不返回', value: { skip: true }, displayMode: 'button' as const });
+    // 构建初始选项（基于当前状态）
+    const buildOptions = (hCount: number, dCount: number) => {
+        const options: any[] = [];
+        if (hCount >= 1) {
+            options.push({ id: 'hand-1', label: `从手牌返回1张疯狂卡`, value: { source: 'hand', count: 1 } });
+        }
+        if (hCount >= 2) {
+            options.push({ id: 'hand-2', label: `从手牌返回2张疯狂卡`, value: { source: 'hand', count: 2 } });
+        }
+        if (dCount >= 1) {
+            options.push({ id: 'discard-1', label: `从弃牌堆返回1张疯狂卡`, value: { source: 'discard', count: 1 } });
+        }
+        if (dCount >= 2) {
+            options.push({ id: 'discard-2', label: `从弃牌堆返回2张疯狂卡`, value: { source: 'discard', count: 2 } });
+        }
+        // 混合来源（手牌1+弃牌堆1）
+        if (hCount >= 1 && dCount >= 1) {
+            options.push({ id: 'mixed', label: `手牌1张+弃牌堆1张`, value: { source: 'mixed', handCount: 1, discardCount: 1 } });
+        }
+        // 跳过选项（"至多"意味着可以不返回）
+        options.push({ id: 'skip', label: '不返回', value: { skip: true }, displayMode: 'button' as const });
+        return options;
+    };
 
     const interaction = createSimpleChoice(
         `miskatonic_book_of_iter_${ctx.now}`, ctx.playerId,
-        '金克丝!：选择要返回疯狂卡牌堆的疯狂卡', options,
+        '金克丝!：选择要返回疯狂卡牌堆的疯狂卡', buildOptions(handMadness.length, discardMadness.length),
         'miskatonic_book_of_iter_the_unseen',
     );
+
+    // 添加 optionsGenerator：根据最新状态动态刷新选项
+    (interaction.data as any).optionsGenerator = (state: any) => {
+        const p = state.core.players[ctx.playerId];
+        const hMadness = p.hand.filter((c: any) => c.defId === MADNESS_CARD_DEF_ID && c.uid !== ctx.cardUid);
+        const dMadness = p.discard.filter((c: any) => c.defId === MADNESS_CARD_DEF_ID);
+        return buildOptions(hMadness.length, dMadness.length);
+    };
+
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 

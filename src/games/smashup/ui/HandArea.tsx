@@ -117,18 +117,18 @@ const HandCard: React.FC<HandCardProps> = ({
                 ${!isSelected && !isDiscardSelected && !isDisabled ? (isDiscardMode ? 'ring-2 ring-red-500/30' : 'hover:ring-2 hover:ring-white hover:shadow-xl') : ''}
             `}>
 
-                {/* Detail View Button (Magnifying Glass) - Appears on hover */}
-                <div
-                    className={`absolute -top-3 -right-3 z-50 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                {/* Detail View Button (Magnifying Glass) - Appears on hover, inside card top-right */}
+                <button
+                    className={`absolute top-[0.3vw] right-[0.3vw] w-[2vw] h-[2vw] flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full shadow-xl border-2 border-white/30 z-50 cursor-zoom-in transition-[opacity,background-color] duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
                     onClick={(e) => {
                         e.stopPropagation();
                         onViewDetail?.();
                     }}
                 >
-                    <div className="bg-slate-800 text-white p-1 rounded-full border border-white shadow-md hover:bg-blue-600 hover:scale-110 transition-all cursor-zoom-in">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    </div>
-                </div>
+                    <svg className="w-[1.1vw] h-[1.1vw] fill-current" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                    </svg>
+                </button>
 
                 {/* 1. Real Asset Preview */}
                 <div className="w-full h-full rounded-md overflow-hidden bg-[#f3f0e8] border border-slate-400/50 shadow-inner relative">

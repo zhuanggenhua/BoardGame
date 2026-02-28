@@ -38,6 +38,7 @@
     "me_first_your_turn": "Your response — play a Special or pass",
     "me_first_waiting": "Waiting for P{{player}} to respond...",
     "me_first_pass": "Pass",
+    "me_first_no_special": "You have no Special action cards to play",
     "me_first_select_base": "Click an eligible base to play your Special card",
     "me_first_click_base": "Click eligible base",
     "me_first_select_from_hand": "Select a Special action card from your hand to play",
@@ -314,7 +315,7 @@
     },
     "alien_probe": {
       "name": "Probe",
-      "effectText": "Look at a player's hand. Look at the top card of that player's deck and place it either back on top or on the bottom."
+      "effectText": "Look at another player's hand and choose a minion in it. That player discards that minion."
     },
     "alien_crop_circles": {
       "name": "Crop Circles",

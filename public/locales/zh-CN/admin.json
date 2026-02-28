@@ -68,6 +68,11 @@
     "actionLog": {
       "title": "📋 操作日志"
     },
+    "stateSnapshot": {
+      "title": "状态快照（JSON）",
+      "copy": "复制 JSON",
+      "copied": "已复制"
+    },
     "time": {
       "justNow": "刚刚",
       "minutesAgo": "{{count}} 分钟前",

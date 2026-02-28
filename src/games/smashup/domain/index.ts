@@ -316,19 +316,45 @@ export function registerMultiBaseScoringInteractionHandler(): void {
         currentBaseDeck = result.newBaseDeck;
         if (result.matchState) currentState = result.matchState;
 
-        // 如果 beforeScoring/afterScoring 创建了交互 → 先处理交互，剩余基地后续再计分
-        if (currentState.sys.interaction?.current) {
-            return { state: currentState, events: result.events };
-        }
-
         // 2. 将已产生的事件 reduce 到本地 core 副本，获取最新状态
         let updatedCore = currentState.core;
         for (const evt of events) {
             updatedCore = reduce(updatedCore, evt as SmashUpEvent);
         }
 
-        // 3. 检查剩余 eligible 基地并逐个计分
-        const remainingIndices = getScoringEligibleBaseIndices(updatedCore);
+        // 3. 检查剩余 eligible 基地
+        const remainingIndices = getScoringEligibleBaseIndices(updatedCore).filter(i => i !== baseIndex);
+
+        // 如果 beforeScoring/afterScoring 创建了交互 → 先处理交互，剩余基地后续再计分
+        if (currentState.sys.interaction?.current) {
+            // 【修复】如果还有剩余基地需要计分，创建新的 multi_base_scoring 交互并加入队列
+            // 这样 afterScoring 交互解决后，队列中的 multi_base_scoring 会自动弹出，继续计分流程
+            if (remainingIndices.length >= 1) {
+                const candidates = remainingIndices.map(i => {
+                    const base = updatedCore.bases[i];
+                    if (!base) return null;
+                    const baseDef = getBaseDef(base.defId);
+                    const totalPower = getTotalEffectivePowerOnBase(updatedCore, base, i);
+                    return {
+                        baseIndex: i,
+                        label: `${baseDef?.name ?? `基地 ${i + 1}`} (力量 ${totalPower}/${baseDef?.breakpoint ?? '?'})`,
+                    };
+                }).filter(Boolean) as { baseIndex: number; label: string }[];
+
+                if (candidates.length >= 1) {
+                    const interaction = createSimpleChoice(
+                        `multi_base_scoring_${timestamp}_remaining`, playerId,
+                        remainingIndices.length === 1 ? '计分最后一个基地' : '选择先记分的基地',
+                        buildBaseTargetOptions(candidates, updatedCore) as any[],
+                        { sourceId: 'multi_base_scoring', targetType: 'base' },
+                    );
+                    currentState = queueInteraction(currentState, interaction);
+                }
+            }
+            return { state: currentState, events };
+        }
+
+        // 4. 没有 afterScoring 交互，继续处理剩余基地
         if (remainingIndices.length >= 2) {
             // 2+ 剩余 → 创建新的多基地选择交互
             const candidates = remainingIndices.map(i => {
@@ -528,7 +554,9 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             // core 尚未被交互处理器的计分事件更新，eligible 列表是过时的。
             // 必须 halt 等待 SmashUpEventSystem 处理完交互解决事件、core 更新后，
             // 下一轮 afterEvents 再重新进入 onPhaseExit 使用最新 core。
-            if (state.sys.flowHalted) {
+            // 
+            // 修复：如果交互已解决（sys.interaction.current === null），清除 flowHalted 继续执行
+            if (state.sys.flowHalted && state.sys.interaction.current) {
                 return { events: [], halt: true } as PhaseExitResult;
             }
 
@@ -885,11 +913,38 @@ function postProcessSystemEvents(
     // reduce 到临时 core 中，让 fireMinionPlayedTriggers 拿到最新的牌库/手牌状态。
     // 不 reduce MINION_PLAYED 本身，因为在 execute 路径（步骤 4.5）中 state 已经
     // 包含了所有事件的 reduce 结果，再 reduce 会导致 minionsPlayed 等字段重复计算。
+    //
+    // 去重逻辑（D45 维度）：postProcessSystemEvents 在 pipeline 中被调用两次（步骤 4.5 和步骤 5），
+    // 必须防止同一个 MINION_PLAYED 事件被重复处理。去重策略：
+    // 1. 优先检查 sourceCommandType：来自命令的事件（有 sourceCommandType）只在步骤 4.5 处理
+    // 2. 对于派生事件（无 sourceCommandType），通过 cardUid+baseIndex 去重，避免重复处理
+    // 3. 使用 matchState.sys._processedMinionPlayed 集合记录已处理的事件（格式：`${cardUid}@${baseIndex}`）
     const derivedEvents: SmashUpEvent[] = [];
     // 收集 MINION_PLAYED 之前的非 MINION_PLAYED 事件，用于临时 reduce
     const prePlayEvents: SmashUpEvent[] = [];
+    
+    // 初始化已处理事件集合（如果不存在）
+    if (!ms.sys._processedMinionPlayed) {
+        (ms.sys as any)._processedMinionPlayed = new Set<string>();
+    }
+    const processedSet = (ms.sys as any)._processedMinionPlayed as Set<string>;
+    
     for (const event of afterAffect.events) {
         if (event.type === SU_EVENTS.MINION_PLAYED) {
+            const playedEvt = event as MinionPlayedEvent;
+            
+            // 去重检查：构造事件唯一标识（cardUid + baseIndex）
+            const eventKey = `${playedEvt.payload.cardUid}@${playedEvt.payload.baseIndex}`;
+            
+            // 如果已处理过，跳过（防止步骤 4.5 和步骤 5 重复处理）
+            if (processedSet.has(eventKey)) {
+                prePlayEvents.push(event);
+                continue;
+            }
+            
+            // 标记为已处理
+            processedSet.add(eventKey);
+            
             // 将之前积累的事件 reduce 到临时 core，获取最新牌库/手牌状态
             let tempCore = state;
             for (const preEvt of prePlayEvents) {

@@ -464,6 +464,8 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         cardUid: string;
         defId: string;
         baseIndex: number;
+        /** 基地 defId（事件发生时的基地，用于日志显示）。可选，用于向后兼容测试代码。 */
+        baseDefId?: string;
         power: number;
         /** 从弃牌堆打出（而非手牌） */
         fromDiscard?: boolean;
@@ -472,6 +474,8 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         /** 是否消耗正常随从额度 */
         consumesNormalLimit?: boolean;
     };
+    /** 来源命令类型（用于去重：只有来自 PLAY_MINION 命令的事件才在 pipeline 步骤 4.5 触发 onPlay） */
+    sourceCommandType?: string;
 }
 
 export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {

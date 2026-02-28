@@ -88,6 +88,7 @@ export function execute(
     
     // 后处理：onDestroy 触发 → onMove 触发（循环直到稳定）→ onAffected 触发
     const afterDestroyMove = processDestroyMoveCycle(events, state, command.playerId, random, now);
+    
     if (afterDestroyMove.matchState) {
         state.sys = afterDestroyMove.matchState.sys;
     }
@@ -135,6 +136,7 @@ function executeCommand(
                     cardUid: card.uid,
                     defId: card.defId,
                     baseIndex,
+                    baseDefId: core.bases[baseIndex].defId,
                     power: minionDef?.power ?? 0,
                     fromDiscard: fromDiscard || undefined,
                     ...(fromDiscard ? (() => {
@@ -578,7 +580,18 @@ export function processDestroyTriggers(
     // 保护检查：过滤掉受保护的随从的消灭事件
     const filteredEvents = filterProtectedDestroyEvents(events, core, playerId);
 
-    const destroyEvents = filteredEvents.filter(e => e.type === SU_EVENTS.MINION_DESTROYED) as MinionDestroyedEvent[];
+    // ✅ 去重：同一个 minionUid 只处理一次（防止重复触发 onDestroy）
+    const destroyEventsRaw = filteredEvents.filter(e => e.type === SU_EVENTS.MINION_DESTROYED) as MinionDestroyedEvent[];
+    const seenUids = new Set<string>();
+    const destroyEvents = destroyEventsRaw.filter(e => {
+        const uid = e.payload.minionUid;
+        if (seenUids.has(uid)) {
+            console.log('[processDestroyTriggers] Skipping duplicate destroy event for:', uid);
+            return false;
+        }
+        seenUids.add(uid);
+        return true;
+    });
     if (destroyEvents.length === 0) return { events: filteredEvents };
 
     const extraEvents: SmashUpEvent[] = [];
@@ -931,7 +944,9 @@ export function processMoveTriggers(
             now,
         });
         extraEvents.push(...ongoingMoveEvents.events);
-        if (ongoingMoveEvents.matchState) ms = ongoingMoveEvents.matchState;
+        if (ongoingMoveEvents.matchState) {
+            ms = ongoingMoveEvents.matchState;
+        }
 
         // 触发基地扩展时机 onMinionMoved（如牧场：首次移动触发额外移动）
         const targetBase = core.bases[toBaseIndex];
@@ -948,7 +963,9 @@ export function processMoveTriggers(
             };
             const baseResult = triggerExtendedBaseAbility(targetBase.defId, 'onMinionMoved', baseCtx);
             extraEvents.push(...baseResult.events);
-            if (baseResult.matchState) ms = baseResult.matchState;
+            if (baseResult.matchState) {
+                ms = baseResult.matchState;
+            }
         }
     }
 
@@ -975,28 +992,41 @@ export function processDestroyMoveCycle(
 ): PostProcessResult {
     let currentEvents = events;
     let ms: MatchState<SmashUpCore> | undefined;
+    
+    // 跟踪已处理的 MINION_DESTROYED 事件（防止重复处理）
+    const processedDestroyUids = new Set<string>();
 
     // 第一轮：正常的 destroy → move
+    // 记录第一轮处理的所有 MINION_DESTROYED 事件
+    for (const e of currentEvents) {
+        if (e.type === SU_EVENTS.MINION_DESTROYED) {
+            const uid = (e as MinionDestroyedEvent).payload.minionUid;
+            processedDestroyUids.add(uid);
+        }
+    }
+    
     const afterDestroy = processDestroyTriggers(currentEvents, ms ?? state, playerId, random, now);
     if (afterDestroy.matchState) ms = afterDestroy.matchState;
     const afterMove = processMoveTriggers(afterDestroy.events, ms ?? state, playerId, random, now);
     if (afterMove.matchState) ms = afterMove.matchState;
     currentEvents = afterMove.events;
 
-    // 检查 move 是否产生了新的 MINION_DESTROYED 事件（不在 afterDestroy.events 中的）
-    const destroyUidsBefore = new Set(
-        afterDestroy.events
-            .filter(e => e.type === SU_EVENTS.MINION_DESTROYED)
-            .map(e => (e as MinionDestroyedEvent).payload.minionUid)
-    );
+    // 检查 move 是否产生了新的 MINION_DESTROYED 事件（不在已处理集合中的）
     let newDestroyEvents = currentEvents.filter(
-        e => e.type === SU_EVENTS.MINION_DESTROYED && !destroyUidsBefore.has((e as MinionDestroyedEvent).payload.minionUid)
+        e => e.type === SU_EVENTS.MINION_DESTROYED && !processedDestroyUids.has((e as MinionDestroyedEvent).payload.minionUid)
     ) as SmashUpEvent[];
 
     // 循环处理新产生的 MINION_DESTROYED（最多 5 轮防止无限循环）
     let iteration = 0;
     while (newDestroyEvents.length > 0 && iteration < 5) {
         iteration++;
+        
+        // 将新事件加入已处理集合
+        for (const e of newDestroyEvents) {
+            const uid = (e as MinionDestroyedEvent).payload.minionUid;
+            processedDestroyUids.add(uid);
+        }
+        
         // 只对新的 MINION_DESTROYED 事件运行 destroy 触发器
         const extraDestroy = processDestroyTriggers(newDestroyEvents, ms ?? state, playerId, random, now);
         if (extraDestroy.matchState) ms = extraDestroy.matchState;
@@ -1020,20 +1050,15 @@ export function processDestroyMoveCycle(
             );
             currentEvents = [...eventsWithoutExtra, ...extraMove.events];
 
-            // 检查是否又产生了新的 MINION_DESTROYED
-            const allDestroyUids = new Set(
-                eventsWithoutExtra
-                    .filter(e => e.type === SU_EVENTS.MINION_DESTROYED)
-                    .map(e => (e as MinionDestroyedEvent).payload.minionUid)
-            );
+            // 检查是否又产生了新的 MINION_DESTROYED（不在已处理集合中的）
             newDestroyEvents = extraMove.events.filter(
-                e => e.type === SU_EVENTS.MINION_DESTROYED && !allDestroyUids.has((e as MinionDestroyedEvent).payload.minionUid)
+                e => e.type === SU_EVENTS.MINION_DESTROYED && !processedDestroyUids.has((e as MinionDestroyedEvent).payload.minionUid)
             );
         } else {
             break;
         }
     }
-
+    
     return { events: currentEvents, matchState: ms };
 }
 

@@ -573,3 +573,58 @@ export function isSourceActiveOnBase(state: SmashUpCore, sourceDefId: string, ba
     if (base.minions.some(m => m.defId === sourceDefId)) return true;
     return false;
 }
+
+// ============================================================================
+// 基地限制信息查询（UI 层使用）
+// ============================================================================
+
+/** 基地限制信息（用于 UI 显示） */
+export interface BaseRestrictionInfo {
+    /** 限制类型 */
+    type: 'blocked_faction' | 'blocked_action';
+    /** 显示文本（如派系名称） */
+    displayText: string;
+    /** 来源卡牌 defId */
+    sourceDefId: string;
+}
+
+/**
+ * 获取基地上的所有限制信息（用于 UI 显示）
+ *
+ * @param state 当前游戏状态
+ * @param baseIndex 基地索引
+ * @returns 限制信息数组
+ */
+export function getBaseRestrictions(state: SmashUpCore, baseIndex: number): BaseRestrictionInfo[] {
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+
+    const restrictions: BaseRestrictionInfo[] = [];
+
+    // 检查 Block the Path（封路）
+    const blockAction = base.ongoingActions.find(o => o.defId === 'trickster_block_the_path');
+    if (blockAction) {
+        const blockedFaction = blockAction.metadata?.blockedFaction as string | undefined;
+        if (blockedFaction) {
+            // 导入 FACTION_DISPLAY_NAMES 会造成循环依赖，所以这里直接使用 factionId
+            // UI 层会通过 i18n 或 FACTION_DISPLAY_NAMES 转换显示名称
+            restrictions.push({
+                type: 'blocked_faction',
+                displayText: blockedFaction,
+                sourceDefId: 'trickster_block_the_path',
+            });
+        }
+    }
+
+    // 未来可以在这里添加其他限制类型（如 Ornate Dome 禁止打行动卡）
+    // const domeAction = base.ongoingActions.find(o => o.defId === 'steampunk_ornate_dome');
+    // if (domeAction) {
+    //     restrictions.push({
+    //         type: 'blocked_action',
+    //         displayText: 'action',
+    //         sourceDefId: 'steampunk_ornate_dome',
+    //     });
+    // }
+
+    return restrictions;
+}

@@ -13,13 +13,14 @@ import type {
     CardToDeckBottomEvent,
     SmashUpCore,
     MinionPlayedEvent,
+    CardsDiscardedEvent,
 } from '../domain/types';
 import {
     buildBaseTargetOptions, buildMinionTargetOptions, getMinionPower,
-    grantExtraMinion, moveMinion, revealHand, shuffleBaseDeck,
+    grantExtraMinion, moveMinion, shuffleBaseDeck,
     resolveOrPrompt, buildAbilityFeedback,
 } from '../domain/abilityHelpers';
-import { getBaseDef, getCardDef } from '../data/cards';
+import { getBaseDef, getCardDef, getMinionDef } from '../data/cards';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerTrigger, registerBaseAbilitySuppression, isMinionProtected } from '../domain/ongoingEffects';
@@ -237,10 +238,12 @@ function alienCropCircles(ctx: AbilityContext): AbilityResult {
 function alienProbe(ctx: AbilityContext): AbilityResult {
     const opponents = Object.keys(ctx.state.players).filter(pid => pid !== ctx.playerId);
     if (opponents.length === 0) return { events: [] };
+    
     // 数据驱动：强制效果，单对手自动执行
     const opOptions = opponents.map((pid, i) => ({
         id: `player-${i}`, label: getPlayerLabel(pid), value: { targetPlayerId: pid },
     }));
+    
     return resolveOrPrompt(ctx, opOptions, {
         id: 'alien_probe_choose_target',
         title: '选择要查看手牌的玩家',
@@ -249,26 +252,51 @@ function alienProbe(ctx: AbilityContext): AbilityResult {
     }, (value) => {
         const targetPid = value.targetPlayerId;
         const targetPlayer = ctx.state.players[targetPid];
-        const handCards = targetPlayer.hand.map(c => ({ uid: c.uid, defId: c.defId }));
-        const deckTopCard = targetPlayer.deck.length > 0 ? [{ uid: targetPlayer.deck[0].uid, defId: targetPlayer.deck[0].defId }] : [];
-        // 展示手牌（纯展示，无后续交互冲突）
-        const events: SmashUpEvent[] = [];
-        if (handCards.length > 0) {
-            events.push(revealHand(targetPid, ctx.playerId, handCards, 'alien_probe', ctx.now));
+        
+        // 从手牌中筛选随从卡
+        const minionCards = targetPlayer.hand.filter(c => c.type === 'minion');
+        
+        if (minionCards.length === 0) {
+            // 没有随从卡，效果结束
+            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_minions_in_hand', ctx.now)] };
         }
-        // 牌库顶不发 REVEAL_DECK_TOP（会和后续放置位置交互冲突卡死），
-        // 在 Prompt 标题中包含卡牌名称让玩家知道在放什么
-        const deckTopCardName = deckTopCard.length > 0
-            ? (getCardDef(deckTopCard[0].defId)?.name ?? deckTopCard[0].defId)
-            : '无';
+        
+        // 创建交互：直接展示随从选项，不发送 REVEAL_HAND 事件
+        // UX 优化：参考 zombieWalker 模式，在 PromptOverlay 中直接展示卡牌预览并允许选择
+        // 避免两步操作（先关闭 RevealOverlay → 再在 PromptOverlay 中选择）
+        const minionOptions = minionCards.map(card => {
+            const def = getMinionDef(card.defId);
+            return {
+                id: card.uid,
+                label: def?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId, targetPlayerId: targetPid },
+                _source: 'hand' as const,
+            };
+        });
+        
         const interaction = createSimpleChoice(
             `alien_probe_${ctx.now}`, ctx.playerId,
-            `牌库顶的牌是「${deckTopCardName}」，选择放回顶部还是底部`,
-            [{ id: 'top', label: '放回牌库顶', value: { targetPlayerId: targetPid, placement: 'top' } },
-             { id: 'bottom', label: '放到牌库底', value: { targetPlayerId: targetPid, placement: 'bottom' } }],
+            '选择对手手牌中的一张随从，让其弃掉',
+            minionOptions,
             'alien_probe',
         );
-        return { events, matchState: queueInteraction(ctx.matchState, interaction) };
+        
+        // 添加自定义 optionsGenerator，确保刷新时检查对手的手牌而不是当前玩家的手牌
+        (interaction.data as any).optionsGenerator = (state: any) => {
+            const targetPlayer = state.core.players[targetPid];
+            const currentMinionCards = targetPlayer.hand.filter((c: any) => c.type === 'minion');
+            return currentMinionCards.map((card: any) => {
+                const def = getMinionDef(card.defId);
+                return {
+                    id: card.uid,
+                    label: def?.name ?? card.defId,
+                    value: { cardUid: card.uid, defId: card.defId, targetPlayerId: targetPid },
+                    _source: 'hand' as const,
+                };
+            });
+        };
+        
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     });
 }
 
@@ -447,45 +475,76 @@ export function registerAlienInteractionHandlers(): void {
         return { state, events };
     });
 
-    // 探测第一步（多对手时）：选择目标玩家后，展示手牌，链式选择放置位置
+    // 探测第一步（多对手时）：选择目标玩家后，直接创建选择随从的交互
     registerInteractionHandler('alien_probe_choose_target', (state, playerId, value, _iData, _random, timestamp) => {
         const { targetPlayerId } = value as { targetPlayerId: string };
         const targetPlayer = state.core.players[targetPlayerId];
-        const events: SmashUpEvent[] = [];
-        // 展示手牌（纯展示，后续放置交互是独立的文本选择不会冲突）
-        if (targetPlayer) {
-            const handCards = targetPlayer.hand.map(c => ({ uid: c.uid, defId: c.defId }));
-            if (handCards.length > 0) {
-                events.push(revealHand(targetPlayerId, playerId, handCards, 'alien_probe', timestamp));
-            }
-            // 牌库顶不发 REVEAL_DECK_TOP（会和后续放置位置交互冲突卡死）
+        
+        // 从手牌中筛选随从卡
+        const minionCards = targetPlayer.hand.filter(c => c.type === 'minion');
+        
+        if (minionCards.length === 0) {
+            // 没有随从卡，效果结束
+            return { state, events: [buildAbilityFeedback(playerId, 'feedback.no_minions_in_hand', timestamp)] };
         }
+        
+        // 创建交互：直接展示随从选项，不发送 REVEAL_HAND 事件
+        const minionOptions = minionCards.map(card => {
+            const def = getMinionDef(card.defId);
+            return {
+                id: card.uid,
+                label: def?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId, targetPlayerId },
+                _source: 'hand' as const,
+            };
+        });
+        
         const next = createSimpleChoice(
             `alien_probe_${timestamp}`, playerId,
-            '查看对手手牌后，选择将牌库顶的牌放回顶部还是底部',
-            [{ id: 'top', label: '放回牌库顶', value: { targetPlayerId, placement: 'top' } },
-             { id: 'bottom', label: '放到牌库底', value: { targetPlayerId, placement: 'bottom' } }],
+            '选择对手手牌中的一张随从，让其弃掉',
+            minionOptions,
             'alien_probe',
         );
-        return { state: queueInteraction(state, next), events };
+        
+        // 添加自定义 optionsGenerator，确保刷新时检查对手的手牌而不是当前玩家的手牌
+        (next.data as any).optionsGenerator = (state: any) => {
+            const targetPlayer = state.core.players[targetPlayerId];
+            const currentMinionCards = targetPlayer.hand.filter((c: any) => c.type === 'minion');
+            return currentMinionCards.map((card: any) => {
+                const def = getMinionDef(card.defId);
+                return {
+                    id: card.uid,
+                    label: def?.name ?? card.defId,
+                    value: { cardUid: card.uid, defId: card.defId, targetPlayerId },
+                    _source: 'hand' as const,
+                };
+            });
+        };
+        
+        return { state: queueInteraction(state, next), events: [] };
     });
 
-    // 探测最终步：执行放置
+    // 探测最终步：执行弃牌
     registerInteractionHandler('alien_probe', (state, _playerId, value, _iData, _random, timestamp) => {
-        const { targetPlayerId, placement } = value as { targetPlayerId: string; placement: 'top' | 'bottom' };
-        if (placement === 'top') {
-            // 放回顶部 = 无操作（牌本来就在顶部）
-            return { state, events: [] };
-        }
-        // 放到底部
+        const { cardUid, targetPlayerId } = value as { cardUid: string; targetPlayerId: string };
         const targetPlayer = state.core.players[targetPlayerId];
-        if (!targetPlayer || targetPlayer.deck.length === 0) return { state, events: [] };
-        const topCard = targetPlayer.deck[0];
-        return { state, events: [{
-            type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-            payload: { cardUid: topCard.uid, defId: topCard.defId, ownerId: targetPlayerId, reason: 'alien_probe' },
+        
+        if (!targetPlayer) return { state, events: [] };
+        
+        const card = targetPlayer.hand.find(c => c.uid === cardUid);
+        if (!card) return { state, events: [] };
+        
+        // 生成弃牌事件
+        const event: CardsDiscardedEvent = {
+            type: SU_EVENTS.CARDS_DISCARDED,
+            payload: {
+                playerId: targetPlayerId,
+                cardUids: [card.uid],
+            },
             timestamp,
-        } as CardToDeckBottomEvent] };
+        };
+        
+        return { state, events: [event] };
     });
 
     // 地形改造：第一步选被替换基地，第二步从基地牌库选择替换目标
@@ -640,7 +699,7 @@ export function registerAlienInteractionHandlers(): void {
 
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid: selectedCard.uid, defId: selectedCard.defId, baseIndex: ctx.newBaseIndex, power },
+            payload: { playerId, cardUid: selectedCard.uid, defId: selectedCard.defId, baseIndex: ctx.newBaseIndex, baseDefId: targetBase.defId, power },
             timestamp,
         };
         return {

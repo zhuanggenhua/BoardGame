@@ -82,15 +82,15 @@ const AppContent = () => {
   }, []);
 
   return (
-    <MobileOrientationGuard>
-      <CursorPreferenceProvider>
-        <SocialProvider>
-          <AudioProvider>
-            <InteractionGuardProvider>
-              <DebugProvider>
-                <TutorialProvider>
-                  <BrowserRouter>
-                  <Routes>
+    <CursorPreferenceProvider>
+      <SocialProvider>
+        <AudioProvider>
+          <InteractionGuardProvider>
+            <DebugProvider>
+              <TutorialProvider>
+                <BrowserRouter>
+                  <MobileOrientationGuard>
+                    <Routes>
                     <Route path="/" element={<React.Suspense fallback={null}><Home /></React.Suspense>} />
                     <Route path="/play/:gameId/match/:matchId" element={<React.Suspense fallback={<LoadingScreen />}><MatchRoom /></React.Suspense>} />
                     <Route path="/play/:gameId/local" element={<React.Suspense fallback={<LoadingScreen />}><LocalMatchRoom /></React.Suspense>} />
@@ -127,12 +127,13 @@ const AppContent = () => {
                     </Route>
 
                     <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  <GlobalHUD />
-                  <ModalStackRoot />
-                  <ToastViewport />
-                  <Toaster />
-                  <EngineNotificationListener />
+                    </Routes>
+                    <GlobalHUD />
+                    <ModalStackRoot />
+                    <ToastViewport />
+                    <Toaster />
+                    <EngineNotificationListener />
+                  </MobileOrientationGuard>
                 </BrowserRouter>
               </TutorialProvider>
             </DebugProvider>
@@ -140,7 +141,6 @@ const AppContent = () => {
         </AudioProvider>
       </SocialProvider>
     </CursorPreferenceProvider>
-    </MobileOrientationGuard>
   );
 };
 

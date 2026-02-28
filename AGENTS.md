@@ -33,7 +33,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/audio/add-audio.md` — **从外部导入新音效素材到项目时必读**。含素材整理→目录结构→压缩（wav→ogg）→生成 registry→中文友好名→清单→浏览器验证→代码接入的全链路流程。配套工具文档见 `docs/tools.md`、音频使用规范见 `docs/audio/audio-usage.md`、语义目录见 `docs/audio/audio-catalog.md`。
 - `docs/ai-rules/engine-systems.md` — **开发/修改引擎系统、框架层代码、游戏 move/command 时必读**。含系统清单、传输层架构（`GameBoardProps`/`GameTransportServer`）、游戏结束检测（`sys.gameover`）、框架解耦/复用、EventStream、动画表现与逻辑分离规范（`useVisualStateBuffer`/`useVisualSequenceGate`）、`createSimpleChoice` API 使用规范（两种调用约定、multi 参数位置、`PromptOption.displayMode` 渲染模式声明、选项 defId 要求）、领域建模前置审查。
 - `docs/ai-rules/undo-auto-advance.md` — **了解撤回后自动推进问题时必读**。含问题根源、引擎层通用解决方案（FlowSystem.afterEvents 统一检查 restoredRandomCursor）、测试要求。**引擎层已统一处理，游戏层无需额外代码。**
-- `docs/ai-rules/testing-audit.md` — **审查实现完整性/新增功能补测试/修"没效果"类 bug/规划审计 spec 时必读**。含**通用实现缺陷检查维度（D1-D33 穷举框架）**、描述→实现全链路审查规范（唯一权威来源）、数据查询一致性审查、元数据语义一致性审计、引擎 API 调用契约审计（D3 子项）、交互模式语义匹配（D5 子项）、验证层有效性门控（D7 子项）、验证-执行前置条件对齐（D2 子项）、引擎批处理时序与 UI 交互对齐（D8 子项）、事件产生门控普适性检查（D8 子项）、多系统 afterEvents 优先级竞争（D8 子项）、Reducer 消耗路径审计（D11）、写入-消耗对称（D12）、多来源竞争（D13）、回合清理完整（D14）、UI 状态同步（D15）、条件优先级（D16）、隐式依赖（D17）、否定路径（D18）、组合场景（D19）、状态可观测性（D20）、触发频率门控（D21）、伤害计算管线配置（D22）、架构假设一致性（D23）、Handler 共返状态一致性（D24）、替代路径后处理对齐（D32）、效果语义一致性审查、审计反模式清单、测试策略与工具选型。**当用户说"审计"、"审查"、"审核"、"核对"、"对一下描述和代码"等词时，必须先阅读本文档。"检查"不算触发词，不自动启动审计流程。规划/设计审计类 spec（requirements/design/tasks）时也必须先阅读本文档，逐条对照 D1-D33 维度确认覆盖范围。**
+- `docs/ai-rules/testing-audit.md` — **审查实现完整性/新增功能补测试/修"没效果"类 bug/规划审计 spec 时必读**。含**通用实现缺陷检查维度（D1-D36 穷举框架）**、描述→实现全链路审查规范（唯一权威来源）、数据查询一致性审查、元数据语义一致性审计、引擎 API 调用契约审计（D3 子项）、交互模式语义匹配（D5 子项）、验证层有效性门控（D7 子项）、验证-执行前置条件对齐（D2 子项）、引擎批处理时序与 UI 交互对齐（D8 子项）、事件产生门控普适性检查（D8 子项）、多系统 afterEvents 优先级竞争（D8 子项）、Reducer 消耗路径审计（D11）、写入-消耗对称（D12）、多来源竞争（D13）、回合清理完整（D14）、UI 状态同步（D15）、条件优先级（D16）、隐式依赖（D17）、否定路径（D18）、组合场景（D19）、状态可观测性（D20）、触发频率门控（D21）、伤害计算管线配置（D22）、架构假设一致性（D23）、Handler 共返状态一致性（D24）、替代路径后处理对齐（D32）、交互选项 UI 渲染模式正确性（D34）、效果语义一致性审查、审计反模式清单、测试策略与工具选型。**当用户说"审计"、"审查"、"审核"、"核对"、"对一下描述和代码"等词时，必须先阅读本文档。"检查"不算触发词，不自动启动审计流程。规划/设计审计类 spec（requirements/design/tasks）时也必须先阅读本文档，逐条对照 D1-D34 维度确认覆盖范围。**
 - `docs/ai-rules/ui-ux.md` — **开发/修改 UI 组件、布局、样式、游戏界面时必读**。含审美准则、多端布局、游戏 UI 特化、设计系统引用。
 - `docs/ai-rules/global-systems.md` — **使用/修改全局 Context（Toast/Modal/音频/教学/认证/光标）时必读**。含 Context 系统、实时服务层、**光标主题系统**（自注册流程、形态规范、偏好持久化、设置弹窗交互逻辑）。
 - `docs/ai-rules/doc-index.md` — **不确定该读哪个文档时必读**。按场景查找需要阅读的文档。
@@ -486,13 +486,12 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 - ❌ `Array.filter().map()` 链式调用处理大数组 — 合并为单次 `reduce()` 遍历
 - ❌ 在 `execute()` 中调用 `reduce()` 模拟状态推演超过 3 次 — 重构为事件后处理或 `postProcess`
 
-### 模式差异（local/online/tutorial）（强制）
+### 模式差异（online/tutorial）（强制）
 - **模式来源**：统一使用 `GameModeProvider` 注入 `mode`，写入 `window.__BG_GAME_MODE__`。
-- **本地模式（local）**：不做领域校验（`skipValidation=true`），视角单一，入口 `/play/:gameId/local`。
 - **联机模式（online）**：严格校验，按玩家身份限制交互。
 - **教学模式（tutorial）**：走 `MatchRoom`，默认与联机一致。
 - **唯一判断来源**：`src/games/*/manifest.ts` 的 `allowLocalMode`。
-- **联机优先（强制）**：当前除井字棋（tictactoe）外，所有游戏均 `allowLocalMode=false`，开发和测试以联机模式为准。E2E 测试必须使用 `setupOnlineMatch` 创建在线对局，禁止使用 `page.goto('/play/<gameId>/local')`。
+- **联机模式强制（强制）**：所有游戏均 `allowLocalMode=false`，开发和测试以联机模式为准。E2E 测试必须使用 `setupOnlineMatch` 创建在线对局，禁止使用 `page.goto('/play/<gameId>/local')`。
 
 ### i18n（强制）
 - 通用文案 → `public/locales/{lang}/common.json`；游戏文案 → `game-<id>.json`。
@@ -610,7 +609,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 - **测试必须验证状态变更（强制）**：事件发射 ≠ 状态生效，必须断言 reduce 后的最终状态。详见 `docs/ai-rules/testing-audit.md`「审计反模式清单」。
 - **多系统协作测试必须断言所有相关系统状态（强制）**：涉及多个引擎系统协作的功能（如响应窗口+交互系统），测试必须同时断言所有相关系统的状态字段。只断言 `sys.interaction.current` 存在但不断言 `sys.responseWindow.current` 仍打开 = 测试通过但功能实际无效。详见 `docs/ai-rules/testing-audit.md`「D8 子项：多系统 afterEvents 优先级竞争」。
 - **E2E 测试禁止使用本地模式（强制）**：除井字棋外所有游戏 `allowLocalMode=false`，E2E 测试必须使用 `setupOnlineMatch` 创建在线对局，通过调试面板（`readCoreState`/`applyCoreStateDirect`/`applyDiceValues`）注入状态。禁止使用 `page.goto('/play/<gameId>/local')`（井字棋除外）、禁止假设 `window.__BG_DISPATCH__`/`window.__BG_STATE__` 等全局变量存在。
-
+- **E2E 测试必须使用联机模式（强制）**：所有游戏 `allowLocalMode=false`，E2E 测试必须使用 `setupOnlineMatch` 创建在线对局，通过调试面板（`readCoreState`/`applyCoreStateDirect`/`applyDiceValues`）注入状态。禁止使用 `page.goto('/play/<gameId>/local')`、禁止假设 `window.__BG_DISPATCH__`/`window.__BG_STATE__` 等全局变量存在。
 ---
 
 ## 🎨 UI/UX 规范（核心规则）

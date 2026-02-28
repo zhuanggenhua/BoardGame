@@ -68,6 +68,11 @@
     "actionLog": {
       "title": "📋 Action Log"
     },
+    "stateSnapshot": {
+      "title": "State Snapshot (JSON)",
+      "copy": "Copy JSON",
+      "copied": "Copied"
+    },
     "time": {
       "justNow": "Just now",
       "minutesAgo": "{{count}} minutes ago",

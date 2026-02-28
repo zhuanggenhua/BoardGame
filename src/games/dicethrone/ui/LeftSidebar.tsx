@@ -71,7 +71,7 @@ export const LeftSidebar = ({
             style={{ zIndex: UI_Z_INDEX.hud }}
         >
             {/* 回合顺序 - 上移 */}
-            <div className="w-full pt-[0.5rem] px-[1vw]"><PhaseIndicator currentPhase={currentPhase} /></div>
+            <div className="w-full pt-[0.2rem] px-[1vw]"><PhaseIndicator currentPhase={currentPhase} /></div>
             <div className="flex-grow" />
             <div className="w-full flex flex-col items-center gap-[0.5vw]">
                 {/*

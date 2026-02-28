@@ -161,6 +161,7 @@ function frankensteinIgorOnDestroy(ctx: AbilityContext): AbilityResult {
             }
         }
     }
+    
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     if (candidates.length === 1) {
         return { events: [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, 1, 'frankenstein_igor', ctx.now)] };
@@ -169,14 +170,18 @@ function frankensteinIgorOnDestroy(ctx: AbilityContext): AbilityResult {
         id: `minion-${idx}`, label: c.label,
         value: { minionUid: c.uid, baseIndex: c.baseIndex },
     }));
+    
+    const interactionId = `frankenstein_igor_${ctx.playerId}_${ctx.now}`;
+    
     const result = resolveOrPrompt(ctx, options, {
-        id: 'frankenstein_igor',
+        id: interactionId,
         title: '选择一个你的随从放置+1力量指示物（科学小怪蛋）',
         sourceId: 'frankenstein_igor',
         targetType: 'minion' as const,
     }, (val) => ({
         events: [addPowerCounter(val.minionUid, val.baseIndex, 1, 'frankenstein_igor', ctx.now)],
     }));
+    
     return result;
 }
 

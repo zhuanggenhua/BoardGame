@@ -43,8 +43,16 @@ function setupWithBreakpoint(ids: PlayerId[], random: RandomFn): MatchState<Smas
     core.factionSelection = undefined;
     sys.phase = 'playCards';
     // 给第一个基地注入足够力量的随从使其达到临界点
+    // 使用已知的低临界点基地（如 base_the_mothership，临界点 20）
     if (core.bases.length > 0) {
-        const fakeMinions: MinionOnBase[] = Array.from({ length: 10 }, (_, i) => ({
+        // 替换第一个基地为已知的低临界点基地
+        core.bases[0] = {
+            defId: 'base_the_mothership', // 临界点 20
+            minions: [],
+            ongoingActions: [],
+        };
+        // 添加足够的随从达到临界点（25 > 20）
+        const fakeMinions: MinionOnBase[] = Array.from({ length: 5 }, (_, i) => ({
             uid: `fake-${i}`,
             defId: 'test_minion',
             owner: '0',
@@ -56,15 +64,17 @@ function setupWithBreakpoint(ids: PlayerId[], random: RandomFn): MatchState<Smas
             attachedActions: [],
             talentUsed: false,
         }));
-        core.bases[0] = { ...core.bases[0], minions: [...core.bases[0].minions, ...fakeMinions] };
+        core.bases[0].minions = fakeMinions;
     }
-    // 给每个玩家一张 special 行动卡，使 Me First! 响应窗口不会因无可响应内容而自动关闭
+    // 给每个玩家一张 special 行动卡和一张随从卡，使 Me First! 响应窗口不会因无可响应内容而自动关闭
+    // 注意：ninja_hidden_ninja 需要手牌中有随从才能使用
     for (const pid of ids) {
         const player = core.players[pid];
         if (player) {
             player.hand = [
                 ...player.hand,
                 { uid: `special-${pid}`, defId: 'ninja_hidden_ninja', type: 'action', owner: pid },
+                { uid: `minion-${pid}`, defId: 'ninja_shinobi', type: 'minion', owner: pid },
             ];
         }
     }
@@ -91,6 +101,7 @@ function setupWithBreakpointOnlyP0TwoSpecial(ids: PlayerId[], random: RandomFn):
         p0.hand = [
             { uid: 'special-0-a', defId: 'ninja_hidden_ninja', type: 'action', owner: '0' },
             { uid: 'special-0-b', defId: 'ninja_hidden_ninja', type: 'action', owner: '0' },
+            { uid: 'minion-0', defId: 'ninja_shinobi', type: 'minion', owner: '0' },
         ];
     }
     const p1 = state.core.players['1'];
@@ -111,6 +122,7 @@ function setupWithBreakpointOnlyP1Special(ids: PlayerId[], random: RandomFn): Ma
     if (p1) {
         p1.hand = [
             { uid: 'special-1', defId: 'ninja_hidden_ninja', type: 'action', owner: '1' },
+            { uid: 'minion-1', defId: 'ninja_shinobi', type: 'minion', owner: '1' },
         ];
     }
     return state;
@@ -263,15 +275,16 @@ describe('Me First! 响应窗口', () => {
     });
 
     it('loopUntilAllPass：玩家打出 special 后循环重启，全部 pass 才关闭', () => {
-        // 自定义 setup：P0 只有 special 卡（无随从），P1 有 special 卡
-        // ninja_hidden_ninja 在无手牌随从时不产生 Interaction，直接完成
+        // 自定义 setup：P0 有 special 卡和随从，P1 有 special 卡和随从
+        // ninja_hidden_ninja 会创建交互选择返回哪个随从
         const setupSpecialOnly = (ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> => {
             const state = setupWithBreakpoint(ids, random);
-            // P0 只保留 special 卡，清除其他手牌（确保无随从可选，hidden_ninja 直接完成）
+            // P0 只保留 special 卡和一个随从
             const p0 = state.core.players['0'];
             if (p0) {
                 p0.hand = [
                     { uid: 'special-0', defId: 'ninja_hidden_ninja', type: 'action', owner: '0' },
+                    { uid: 'minion-0', defId: 'ninja_shinobi', type: 'minion', owner: '0' },
                 ];
             }
             return state;
@@ -287,11 +300,15 @@ describe('Me First! 响应窗口', () => {
             commands: [
                 // 进入 scoreBases，打开 Me First! 窗口
                 ...BREAKPOINT_COMMANDS,
-                // P0 打出 special 卡（无随从可选，效果为空，但 ACTION_PLAYED 事件触发推进）
+                // P0 打出 special 卡（会创建交互选择返回哪个随从）
                 { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'special-0', targetBaseIndex: 0 } },
+                // P0 选择跳过（不返回随从）
+                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'skip' } },
                 // P1 让过 → 到达队列末尾，但本轮有人出牌 → 循环重启
                 { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
-                // 新一轮：P0 无 special 牌被 skipToNextRespondable 跳过 → P1 让过 → 窗口关闭
+                // 新一轮：P0 让过（已无 special 牌）
+                { type: 'RESPONSE_PASS', playerId: '0', payload: {} },
+                // P1 让过 → 窗口关闭
                 { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
             ] as any[],
         });

@@ -99,46 +99,75 @@ function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+// 盘旋机器人交互计数器（用于生成稳定的交互 ID）
+let robotHoverbotCounter = 0;
+
+/** 重置盘旋机器人计数器（仅用于测试） */
+export function resetRobotHoverbotCounter(): void {
+    robotHoverbotCounter = 0;
+}
+
 /** 盘旋机器人 onPlay：展示牌库顶，如果是随从"你可以"将其作为额外随从打出 */
 function robotHoverbot(ctx: AbilityContext): AbilityResult {
     const peek = peekDeckTop(
         ctx.state.players[ctx.playerId], ctx.playerId,
         'all', 'robot_hoverbot', ctx.now,
     );
+    
     if (!peek) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
     const events: SmashUpEvent[] = [peek.revealEvent];
+    
     if (peek.card.type === 'minion') {
         const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
         const name = def?.name ?? peek.card.defId;
         const power = def?.power ?? 0;
+        
         // "你可以" → 创建交互让玩家选择是否打出该特定随从
+        // 使用静态计数器而非时间戳，确保交互 ID 稳定（防止重复处理时 ID 变化）
         const interaction = createSimpleChoice(
-            `robot_hoverbot_${ctx.now}`, ctx.playerId,
+            `robot_hoverbot_${robotHoverbotCounter++}`, ctx.playerId,
             `牌库顶是 ${name}（力量 ${power}），是否作为额外随从打出？`,
             [
-                { id: 'play', label: `打出 ${name}`, value: { cardUid: peek.card.uid, defId: peek.card.defId, power } },
+                { 
+                    id: 'play', 
+                    label: `打出 ${name}`, 
+                    value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
+                    displayMode: 'card' as const,
+                },
                 { id: 'skip', label: '放回牌库顶', value: { skip: true } },
             ],
             'robot_hoverbot',
         );
+        
         // 手动提供 optionsGenerator：选项固定，不需要从状态中查找
-        (interaction.data as any).optionsGenerator = (state: any) => {
-            const p = state.core.players[ctx.playerId];
+        // 注意：optionsGenerator 的第二个参数是 interaction.data，包含 playerId
+        (interaction.data as any).optionsGenerator = (state: any, iData: any) => {
+            // 从 interaction.data 获取 playerId，避免闭包引用失效
+            const playerId = iData?.playerId ?? ctx.playerId;
+            const p = state.core.players[playerId];
+            if (!p) return [{ id: 'skip', label: '跳过', value: { skip: true } }];
+            
             // 检查牌库顶是否仍然是同一张卡
             if (p.deck.length > 0 && p.deck[0].uid === peek.card.uid) {
                 const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? peek.card.defId;
                 const power = def?.power ?? 0;
                 return [
-                    { id: 'play', label: `打出 ${name}`, value: { cardUid: peek.card.uid, defId: peek.card.defId, power } },
+                    { 
+                        id: 'play', 
+                        label: `打出 cards.${peek.card.defId}.name`, 
+                        value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
+                        displayMode: 'card' as const,
+                    },
                     { id: 'skip', label: '放回牌库顶', value: { skip: true } },
                 ];
             }
             // 如果牌库顶已变化，只提供跳过选项
             return [{ id: 'skip', label: '跳过', value: { skip: true } }];
         };
+        
         return { events, matchState: queueInteraction(ctx.matchState, interaction) };
     }
+    
     // 非随从→放回牌库顶（peek 不移除卡，无需操作）
     return { events };
 }
@@ -254,7 +283,14 @@ export function registerRobotInteractionHandlers(): void {
         if (state.core.bases.length === 1) {
             const playedEvt: MinionPlayedEvent = {
                 type: SU_EVENTS.MINION_PLAYED,
-                payload: { playerId, cardUid, defId, baseIndex: 0, power },
+                payload: { 
+                    playerId, 
+                    cardUid, 
+                    defId, 
+                    baseIndex: 0, 
+                    baseDefId: state.core.bases[0].defId,
+                    power 
+                },
                 timestamp,
             };
             return { state, events: [

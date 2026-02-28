@@ -1234,6 +1234,7 @@ function giantAntWeAreTheChampionsAfterScoring(
 
 function giantAntDronePreventTrigger(ctx: TriggerContext): SmashUpEvent[] | { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
     const { state, playerId, triggerMinionUid, triggerMinionDefId, baseIndex, now } = ctx;
+    
     if (ctx.reason === 'giant_ant_drone_skip') return [];
     if (!triggerMinionUid || !triggerMinionDefId || baseIndex === undefined) return [];
 
@@ -1281,15 +1282,17 @@ function giantAntDronePreventTrigger(ctx: TriggerContext): SmashUpEvent[] | { ev
         toPlayerId: target.owner,
     };
 
+    const finalInteraction = {
+        ...interaction,
+        data: {
+            ...interaction.data,
+            continuationContext: cc,
+        },
+    };
+
     return {
         events: [],
-        matchState: queueInteraction(ctx.matchState, {
-            ...interaction,
-            data: {
-                ...interaction.data,
-                continuationContext: cc,
-            },
-        }),
+        matchState: queueInteraction(ctx.matchState, finalInteraction),
     };
 }
 

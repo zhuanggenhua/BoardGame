@@ -460,7 +460,7 @@ export function registerGhostInteractionHandlers(): void {
         if (state.core.bases.length === 1) {
             const playedEvt: MinionPlayedEvent = {
                 type: SU_EVENTS.MINION_PLAYED,
-                payload: { playerId, cardUid, defId, baseIndex: 0, power, fromDiscard: true },
+                payload: { playerId, cardUid, defId, baseIndex: 0, baseDefId: ctx.state.bases[0].defId, baseDefId: ctx.state.bases[0].defId, power, fromDiscard: true },
                 timestamp,
             };
             return { state, events: [

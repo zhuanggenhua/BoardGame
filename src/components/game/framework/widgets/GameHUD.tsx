@@ -875,6 +875,12 @@ export const GameHUD = ({
                             current,
                         ].join('\n');
                     })()}
+                    stateSnapshot={(() => {
+                        const G = undoState?.G;
+                        if (!G) return undefined;
+                        // 完整状态 JSON（用于精确复现）
+                        return JSON.stringify({ core: G.core, sys: G.sys }, null, 2);
+                    })()}
                 />
             )}
         </>
