@@ -148,18 +148,22 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
         // "你可以" → 创建交互让玩家选择是否打出该特定随从
         // 使用静态计数器而非时间戳，确保交互 ID 稳定（防止重复处理时 ID 变化）
         // 标题和选项 label 使用 i18n key，由 UI 层的 resolveI18nKeys 翻译
+        const initialOptions = [
+            { 
+                id: 'play', 
+                label: `打出 cards.${peek.card.defId}.name`, 
+                value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
+                displayMode: 'card' as const,
+            },
+            { id: 'skip', label: '放回牌库顶', value: { skip: true } },
+        ];
+        
+        console.log('[robotHoverbot] Creating interaction with initial options:', initialOptions);
+        
         const interaction = createSimpleChoice(
             `robot_hoverbot_${robotHoverbotCounter++}`, ctx.playerId,
             `牌库顶是 cards.${peek.card.defId}.name（力量 ${power}），是否作为额外随从打出？`,
-            [
-                { 
-                    id: 'play', 
-                    label: `打出 cards.${peek.card.defId}.name`, 
-                    value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
-                    displayMode: 'card' as const,
-                },
-                { id: 'skip', label: '放回牌库顶', value: { skip: true } },
-            ],
+            initialOptions,
             'robot_hoverbot',
         );
         
@@ -167,49 +171,53 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
             interactionId: interaction.id,
             optionsCount: (interaction.data as any).options?.length,
             options: (interaction.data as any).options,
+            cardUid: peek.card.uid,
+            defId: peek.card.defId,
         });
         
-        // 手动提供 optionsGenerator：选项固定，不需要从状态中查找
-        // 注意：optionsGenerator 的第二个参数是 interaction.data，包含 playerId
-        (interaction.data as any).optionsGenerator = (state: any, iData: any) => {
-            // 从 interaction.data 获取 playerId，避免闭包引用失效
-            const playerId = iData?.playerId ?? ctx.playerId;
-            const p = state.core.players[playerId];
+        // ⚠️ 关键：必须先设置 continuationContext，再设置 optionsGenerator
+        // 因为 optionsGenerator 可能在交互创建时立即被调用（如果没有 current 交互）
+        const interactionData = interaction.data as any;
+        interactionData.continuationContext = {
+            cardUid: peek.card.uid,
+            defId: peek.card.defId,
+            power,
+        };
+        
+        console.log('[robotHoverbot] Set continuationContext:', interactionData.continuationContext);
+        
+        // 手动提供 optionsGenerator：从 continuationContext 读取卡牌信息，而不是从牌库顶读取
+        // 这样即使牌库顶变化了，交互选项仍然显示原来看到的那张卡
+        interactionData.optionsGenerator = (state: any, iData: any) => {
+            const ctx = iData?.continuationContext as { cardUid: string; defId: string; power: number } | undefined;
             
             console.log('[robotHoverbot optionsGenerator] CALLED:', {
-                playerId,
-                hasPlayer: !!p,
-                deckLength: p?.deck?.length,
-                deckTopUid: p?.deck?.[0]?.uid,
-                deckTopDefId: p?.deck?.[0]?.defId,
-                expectedUid: peek.card.uid,
-                expectedDefId: peek.card.defId,
-                match: p?.deck?.[0]?.uid === peek.card.uid,
+                hasContext: !!ctx,
+                hasiData: !!iData,
+                iDataKeys: iData ? Object.keys(iData) : [],
+                contextCardUid: ctx?.cardUid,
+                contextDefId: ctx?.defId,
+                contextPower: ctx?.power,
             });
             
-            if (!p) {
-                console.warn('[robotHoverbot optionsGenerator] No player found!');
+            if (!ctx) {
+                console.warn('[robotHoverbot optionsGenerator] No continuationContext found! iData:', iData);
                 return [{ id: 'skip', label: '跳过', value: { skip: true } }];
             }
             
-            // 检查牌库顶是否仍然是同一张卡
-            if (p.deck.length > 0 && p.deck[0].uid === peek.card.uid) {
-                const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
-                const power = def?.power ?? 0;
-                console.log('[robotHoverbot optionsGenerator] Deck top matches, returning both options');
-                return [
-                    { 
-                        id: 'play', 
-                        label: `打出 cards.${peek.card.defId}.name`, 
-                        value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
-                        displayMode: 'card' as const,
-                    },
-                    { id: 'skip', label: '放回牌库顶', value: { skip: true } },
-                ];
-            }
-            // 如果牌库顶已变化，只提供跳过选项
-            console.warn('[robotHoverbot optionsGenerator] Deck top changed! Only skip option available.');
-            return [{ id: 'skip', label: '跳过', value: { skip: true } }];
+            // 从 continuationContext 读取卡牌信息（不依赖牌库顶状态）
+            const result = [
+                { 
+                    id: 'play', 
+                    label: `打出 cards.${ctx.defId}.name`, 
+                    value: { cardUid: ctx.cardUid, defId: ctx.defId, power: ctx.power },
+                    displayMode: 'card' as const,
+                },
+                { id: 'skip', label: '放回牌库顶', value: { skip: true } },
+            ];
+            
+            console.log('[robotHoverbot optionsGenerator] Returning options:', result);
+            return result;
         };
         
         return { events, matchState: queueInteraction(ctx.matchState, interaction) };

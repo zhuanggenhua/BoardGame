@@ -398,11 +398,28 @@ export function queueInteraction<TCore>(
     if (!current) {
         // 如果当前没有交互，新交互立即成为 current
         // 如果有选项生成器，立即基于当前状态生成选项
+        console.log('[InteractionSystem] popInteraction: No current, making new interaction current:', {
+            interactionId: interaction.id,
+            kind: interaction.kind,
+        });
+        
         if (interaction.kind === 'simple-choice') {
             const data = interaction.data as SimpleChoiceData;
+            console.log('[InteractionSystem] popInteraction: Checking optionsGenerator:', {
+                hasOptionsGenerator: !!data.optionsGenerator,
+                hasContinuationContext: !!(data as any).continuationContext,
+                continuationContext: (data as any).continuationContext,
+                originalOptionsCount: data.options?.length,
+            });
+            
             if (data.optionsGenerator) {
                 // 传递 state 和 data（包含 continuationContext）给 optionsGenerator
+                console.log('[InteractionSystem] popInteraction: Calling optionsGenerator...');
                 const freshOptions = data.optionsGenerator(state, data);
+                console.log('[InteractionSystem] popInteraction: optionsGenerator returned:', {
+                    freshOptionsCount: freshOptions.length,
+                    freshOptions,
+                });
                 interaction = {
                     ...interaction,
                     data: { ...data, options: freshOptions },
@@ -449,16 +466,38 @@ export function resolveInteraction<TCore>(
     let next = queue[0];
     const newQueue = queue.slice(1);
 
+    console.log('[InteractionSystem] resolveInteraction START:', {
+        hasNext: !!next,
+        nextId: next?.id,
+        nextKind: next?.kind,
+        queueLength: queue.length,
+    });
+
     // 如果下一个交互是 simple-choice，刷新选项
     if (next && next.kind === 'simple-choice') {
         const data = next.data as SimpleChoiceData;
         
+        console.log('[InteractionSystem] Processing simple-choice:', {
+            interactionId: next.id,
+            hasOptionsGenerator: !!data.optionsGenerator,
+            hasContinuationContext: !!(data as any).continuationContext,
+            continuationContext: (data as any).continuationContext,
+            originalOptionsCount: data.options?.length,
+            originalOptions: data.options,
+        });
+        
         // 优先使用手动提供的 optionsGenerator
         let freshOptions: PromptOption[];
         if (data.optionsGenerator) {
+            console.log('[InteractionSystem] Calling optionsGenerator...');
             freshOptions = data.optionsGenerator(state, data);
+            console.log('[InteractionSystem] optionsGenerator returned:', {
+                freshOptionsCount: freshOptions.length,
+                freshOptions,
+            });
         } else {
             // 使用通用刷新逻辑
+            console.log('[InteractionSystem] Using generic refresh...');
             freshOptions = refreshOptionsGeneric(state, next, data.options);
         }
         
@@ -468,6 +507,12 @@ export function resolveInteraction<TCore>(
                 ...next,
                 data: { ...data, options: freshOptions },
             };
+            console.log('[InteractionSystem] Updated next interaction with fresh options:', {
+                interactionId: next.id,
+                newOptionsCount: freshOptions.length,
+            });
+        } else {
+            console.warn('[InteractionSystem] Fresh options do not meet multi.min requirement, keeping original options');
         }
     }
 

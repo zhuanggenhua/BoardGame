@@ -108,7 +108,7 @@ describe('盘旋机器人 - 按钮可点击性', () => {
         expect(result.events.length).toBeGreaterThan(0);
     });
 
-    it('牌库顶卡牌变化后，optionsGenerator 应该只返回跳过选项', () => {
+    it('牌库顶卡牌变化后，optionsGenerator 仍然保留原始卡牌选项（continuationContext 模式）', () => {
         // 设置：玩家牌库顶是入侵者
         const state = makeState({
             players: {
@@ -157,10 +157,10 @@ describe('盘旋机器人 - 按钮可点击性', () => {
         // 调用 optionsGenerator 获取刷新后的选项
         const refreshedOptions = optionsGenerator(modifiedState, interaction?.data);
 
-        // 验证：应该只有一个跳过选项
+        // 验证：continuationContext 模式会保留原始卡牌信息，所以仍然返回两个选项
         expect(refreshedOptions).toBeDefined();
-        expect(refreshedOptions.length).toBe(1);
-        expect(refreshedOptions[0].id).toBe('skip');
-        expect(refreshedOptions[0].label).toBe('跳过');
+        expect(refreshedOptions.length).toBe(2);
+        expect(refreshedOptions[0].id).toBe('play');
+        expect(refreshedOptions[1].id).toBe('skip');
     });
 });

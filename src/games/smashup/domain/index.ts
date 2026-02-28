@@ -27,6 +27,7 @@ import type {
 import {
     PHASE_ORDER,
     SU_EVENTS,
+    SU_EVENT_TYPES,
     DRAW_PER_TURN,
     HAND_LIMIT,
     VP_TO_WIN,
@@ -98,16 +99,34 @@ function scoreOneBase(
         events.push(...beforeScoringEvents.events);
         if (beforeScoringEvents.matchState) ms = beforeScoringEvents.matchState;
         
-        // 标记此基地已触发过 beforeScoring
-        core = {
-            ...core,
-            beforeScoringTriggeredBases: [...(core.beforeScoringTriggeredBases ?? []), baseIndex],
-        };
+        // 发射事件标记此基地已触发过 beforeScoring
+        const markEvent: SmashUpEvent = {
+            type: SU_EVENT_TYPES.BEFORE_SCORING_TRIGGERED,
+            payload: { baseIndex },
+            timestamp: now,
+        } as SmashUpEvent;
+        events.push(markEvent);
+        
+        // ✅ 关键修复：立即将标记事件 reduce 到本地 core 副本
+        // 
+        // 问题：事件驱动架构中，事件的发射（emit）和归约（reduce）是分离的：
+        // 1. scoreOneBase 发射事件后立即返回
+        // 2. 这些事件要等到整个 onPhaseExit 返回后，才会被 pipeline 逐个 reduce
+        // 3. 但 FlowSystem 在交互解决后会重新进入 onPhaseExit，此时使用的 core 还没有包含第一次发射的标记事件
+        // 
+        // 解决方案：发射标记事件后立即 reduce 到本地 core 副本，确保后续调用 scoreOneBase 时能看到"已触发"标记
+        // 
+        // 示例场景（海盗王移动 bug）：
+        // - 第一次调用：检查 beforeScoringTriggeredBases → undefined → 触发 beforeScoring → 创建海盗王交互 → halt
+        // - 用户点击"移动到该基地" → 交互解决
+        // - 第二次调用：如果没有立即 reduce，beforeScoringTriggeredBases 仍是 undefined → 又创建相同 ID 的交互 → UI 卡住
+        core = reduce(core, markEvent);
 
         console.log('[scoreBase] After fireTriggers beforeScoring:', {
             hasInteraction: !!ms?.sys?.interaction?.current,
             interactionId: ms?.sys?.interaction?.current?.id,
             eventsCount: beforeScoringEvents.events.length,
+            markedBases: core.beforeScoringTriggeredBases,
         });
 
         // beforeScoring 可能创建了交互（如海盗王移动确认）
@@ -643,7 +662,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
             // 清空 beforeScoring 触发标记（计分阶段结束）
             events.push({
-                type: SU_EVENTS.BEFORE_SCORING_CLEARED,
+                type: SU_EVENT_TYPES.BEFORE_SCORING_CLEARED,
                 payload: {},
                 timestamp: now,
             } as SmashUpEvent);

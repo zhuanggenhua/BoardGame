@@ -361,8 +361,8 @@ function cthulhuChosenBeforeScoring(ctx: TriggerContext): TriggerResult {
         `cthulhu_chosen_confirm_${ctx.now}`, first.controller,
         '神选者：是否抽一张疯狂卡来获得+2力量？',
         [
-            { id: 'yes', label: '是（抽疯狂卡，+2力量）', value: { activate: true, uid: first.uid, baseIndex: first.baseIndex, controller: first.controller }, displayMode: 'button' as const },
-            { id: 'no', label: '否（不触发）', value: { activate: false }, displayMode: 'button' as const },
+            { id: 'yes', label: '是（抽疯狂卡，+2力量）', value: { activate: true, uid: first.uid, baseIndex: first.baseIndex, controller: first.controller }, displayMode: 'button' as const, baseDefId: ctx.state.bases[first.baseIndex]?.defId },
+            { id: 'no', label: '否（不触发）', value: { activate: false }, displayMode: 'button' as const, baseDefId: ctx.state.bases[first.baseIndex]?.defId },
         ],
         'cthulhu_chosen_confirm'
         );
@@ -639,8 +639,8 @@ export function registerCthulhuInteractionHandlers(): void {
                 `cthulhu_chosen_confirm_${timestamp}`, next.controller,
                 '神选者：是否抽一张疯狂卡来获得+2力量？',
                 [
-                    { id: 'yes', label: '是（抽疯狂卡，+2力量）', value: { activate: true, uid: next.uid, baseIndex: next.baseIndex, controller: next.controller }, displayMode: 'button' as const },
-                    { id: 'no', label: '否（不触发）', value: { activate: false }, displayMode: 'button' as const },
+                    { id: 'yes', label: '是（抽疯狂卡，+2力量）', value: { activate: true, uid: next.uid, baseIndex: next.baseIndex, controller: next.controller }, displayMode: 'button' as const, baseDefId: state.core.bases[next.baseIndex]?.defId },
+                    { id: 'no', label: '否（不触发）', value: { activate: false }, displayMode: 'button' as const, baseDefId: state.core.bases[next.baseIndex]?.defId },
                 ],
                 'cthulhu_chosen_confirm'
                 );

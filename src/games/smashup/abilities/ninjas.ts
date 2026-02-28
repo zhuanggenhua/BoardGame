@@ -697,7 +697,7 @@ export function registerNinjaInteractionHandlers(): void {
         if (!ctx) return undefined;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, baseDefId: ctx.state.bases[ctx.baseIndex].defId, baseDefId: ctx.state.bases[ctx.baseIndex].defId, baseDefId: ctx.state.bases[ctx.baseIndex].defId, power },
+            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, baseDefId: ctx.state.bases[ctx.baseIndex].defId, power },
             timestamp,
         };
         const events: SmashUpEvent[] = [playedEvt];
