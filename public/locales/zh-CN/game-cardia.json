@@ -1,0 +1,374 @@
+{
+  "title": "卡迪亚",
+  "description": "从前，有一位年轻的冒险者，他在沼泽深处拯救了一位被困的强大精灵。两人一起建造了魔法之城卡迪亚。今天，这座城市生活繁荣昌盛。然而，四大派系正为权力而斗争：来自沼泽的反叛军、来自学院的学者、拥有机械装置的行会、以及冒险者的后裔王朝。谁能赢得强大的印戒，并因此获得派系的青睐，谁就会成为卡迪亚的下一任统治者。打好你的牌，智胜你的对手！",
+  "players": "2 人",
+  
+  "setup": {
+    "deckVariant": {
+      "label": "选择牌组",
+      "deck1": "I 牌组（初学者）",
+      "deck2": "II 牌组（进阶）"
+    }
+  },
+  
+  "factions": {
+    "swamp": "沼泽反叛军",
+    "academy": "学院学者",
+    "guild": "行会机械",
+    "dynasty": "王朝后裔"
+  },
+  
+  "phases": {
+    "play": "打出卡牌",
+    "ability": "激活能力",
+    "end": "回合结束"
+  },
+  
+  "opponent": "对手",
+  "you": "你",
+  "waiting": "等待中...",
+  "phase": "阶段",
+  "signets": "印戒",
+  "hand": "手牌",
+  "deck": "牌库",
+  "discard": "弃牌堆",
+  "played": "场上",
+  "encounterSequence": "遭遇序列",
+  "activateAbility": "激活能力",
+  "abilityActivation": "能力激活",
+  "activate": "激活",
+  "skip": "跳过",
+  "endTurn": "结束回合",
+  "turn": "回合",
+  "selectOneCard": "请选择一张卡牌",
+  "selectCards": "请选择 {{min}}-{{max}} 张卡牌",
+  "noCardsAvailable": "没有可选的卡牌",
+  "confirm": "确认",
+  "cancel": "取消",
+  "selectFaction": "请选择一个派系",
+  
+  "ability": {
+    "noValidTarget": {
+      "noMarkers": "场上没有带有修正标记或持续标记的卡牌"
+    }
+  },
+  
+  "abilities": {
+    "mercenary_swordsman": {
+      "name": "雇佣剑士",
+      "description": "弃掉本牌和相对的牌"
+    },
+    "void_mage": {
+      "name": "虚空法师",
+      "description": "从任一张牌上弃掉所有修正标记和持续标记"
+    },
+    "surgeon": {
+      "name": "外科医生",
+      "description": "为你一张打出的牌添加+5影响力"
+    },
+    "mediator": {
+      "name": "调停者",
+      "description": "🔄 这次遭遇为平局"
+    },
+    "saboteur": {
+      "name": "破坏者",
+      "description": "你的对手弃掉他牌库的2张顶牌"
+    },
+    "diviner": {
+      "name": "占卜师",
+      "description": "下一次遭遇中，你的对手必须在你之前朝上打出牌"
+    },
+    "court_guard": {
+      "name": "宫廷卫士",
+      "description": "你选择一个派系，你的对手可以选择弃掉一张该派系的手牌，否则本牌添加+7影响力"
+    },
+    "judge": {
+      "name": "审判官",
+      "description": "🔄 你赢得所有平局，包括之后的遭遇。平局不会触发能力"
+    },
+    "ambusher": {
+      "name": "伏击者",
+      "description": "选择一个派系，你的对手弃掉所有该派系的手牌"
+    },
+    "puppeteer": {
+      "name": "傀儡师",
+      "description": "弃掉相对的牌，替换为你从对手手牌随机抽取的一张牌。对方的能力不会被触发"
+    },
+    "clockmaker": {
+      "name": "钟表匠",
+      "description": "添加+3影响力到你上一个遭遇的牌和你下一次打出的牌"
+    },
+    "treasurer": {
+      "name": "财务官",
+      "description": "🔄 在一个上遭遇获胜的那张牌额外获得1枚印戒"
+    },
+    "swamp_guard": {
+      "name": "沼泽守卫",
+      "description": "拿取一张你之前打出的牌回到手上，并弃掉其相对的牌"
+    },
+    "governess": {
+      "name": "女导师",
+      "description": "复制并发动你的一张影响力不小于本牌的已打出牌的即时能力"
+    },
+    "inventor": {
+      "name": "发明家",
+      "description": "添加+3影响力到任一张牌，并添加-3影响力到另外任一张牌"
+    },
+    "elf": {
+      "name": "精灵",
+      "description": "你赢得游戏"
+    },
+    "poisoner": {
+      "name": "毒师",
+      "description": "降低相对的牌的影响力直到当前遭遇为平局"
+    },
+    "telekinetic_mage": {
+      "name": "念动力法师",
+      "description": "从你的一张牌移动所有修正标记和持续标记到你的另一张牌"
+    },
+    "messenger": {
+      "name": "使者",
+      "description": "添加-3影响力到任一张牌或你下一张打出的牌"
+    },
+    "tax_collector": {
+      "name": "税务官",
+      "description": "添加+4影响力到本牌"
+    },
+    "revolutionary": {
+      "name": "革命者",
+      "description": "你的对手弃掉2张手牌，然后抽取2张牌"
+    },
+    "librarian": {
+      "name": "图书管理员",
+      "description": "在你下一次打出牌并揭示后，添加+2或-2影响力到那张牌上"
+    },
+    "genius": {
+      "name": "天才",
+      "description": "添加+3影响力到你的一张不大于8影响力的牌上"
+    },
+    "noble": {
+      "name": "贵族",
+      "description": "如果本牌赢得遭遇，获得额外1枚印戒"
+    },
+    "extortionist": {
+      "name": "勒索者",
+      "description": "选择一个派系，如果你的对手下一张牌没有打出该派系，则在揭示那张牌后弃掉2张手牌"
+    },
+    "illusionist": {
+      "name": "幻术师",
+      "description": "发动你一张输掉的牌的能力"
+    },
+    "engineer": {
+      "name": "工程师",
+      "description": "下一次遭遇发动能力阶段后，添加+5影响力到你打出的牌上"
+    },
+    "advisor": {
+      "name": "顾问",
+      "description": "🔄 上一个遭遇中，你的牌获胜且你对手的牌失败"
+    },
+    "witch_king": {
+      "name": "巫王",
+      "description": "选择一个派系，你的对手从手牌和牌库弃掉所有该派系的牌，然后混洗他的牌库"
+    },
+    "elementalist": {
+      "name": "元素师",
+      "description": "弃掉你一张具有即时能力的手牌，复制并发动该能力，然后抽一张牌"
+    },
+    "mechanical_spirit": {
+      "name": "机械精灵",
+      "description": "🔄 如果你赢得下一个遭遇，你赢得游戏"
+    },
+    "heir": {
+      "name": "继承者",
+      "description": "你的对手保留2张手牌，弃掉其他所有手牌和他的整个牌库"
+    }
+  },
+  
+  "cards": {
+    "deck_i_card_01": {
+      "name": "雇佣剑士",
+      "description": "影响力 1 | 沼泽 | ⚡ 弃掉本牌和相对的牌"
+    },
+    "deck_i_card_02": {
+      "name": "虚空法师",
+      "description": "影响力 2 | 学院 | ⚡ 从任一张牌上弃掉所有修正标记和持续标记"
+    },
+    "deck_i_card_03": {
+      "name": "外科医生",
+      "description": "影响力 3 | 行会 | ⚡ 为你一张打出的牌添加+5影响力"
+    },
+    "deck_i_card_04": {
+      "name": "调停者",
+      "description": "影响力 4 | 王朝 | 🔄 这次遭遇为平局"
+    },
+    "deck_i_card_05": {
+      "name": "破坏者",
+      "description": "影响力 5 | 沼泽 | ⚡ 你的对手弃掉他牌库的2张顶牌"
+    },
+    "deck_i_card_06": {
+      "name": "占卜师",
+      "description": "影响力 6 | 学院 | ⚡ 下一次遭遇中，你的对手必须在你之前朝上打出牌"
+    },
+    "deck_i_card_07": {
+      "name": "宫廷卫士",
+      "description": "影响力 7 | 行会 | ⚡ 你选择一个派系，你的对手可以选择弃掉一张该派系的手牌，否则本牌添加+7影响力"
+    },
+    "deck_i_card_08": {
+      "name": "审判官",
+      "description": "影响力 8 | 王朝 | 🔄 你赢得所有平局，包括之后的遭遇。平局不会触发能力"
+    },
+    "deck_i_card_09": {
+      "name": "伏击者",
+      "description": "影响力 9 | 沼泽 | ⚡ 选择一个派系，你的对手弃掉所有该派系的手牌"
+    },
+    "deck_i_card_10": {
+      "name": "傀儡师",
+      "description": "影响力 10 | 学院 | ⚡ 弃掉相对的牌，替换为你从对手手牌随机抽取的一张牌。对方的能力不会被触发"
+    },
+    "deck_i_card_11": {
+      "name": "钟表匠",
+      "description": "影响力 11 | 行会 | ⚡ 添加+3影响力到你上一个遭遇的牌和你下一次打出的牌"
+    },
+    "deck_i_card_12": {
+      "name": "财务官",
+      "description": "影响力 12 | 王朝 | 🔄 在一个上遭遇获胜的那张牌额外获得1枚印戒"
+    },
+    "deck_i_card_13": {
+      "name": "沼泽守卫",
+      "description": "影响力 13 | 沼泽 | ⚡ 拿取一张你之前打出的牌回到手上，并弃掉其相对的牌"
+    },
+    "deck_i_card_14": {
+      "name": "女导师",
+      "description": "影响力 14 | 学院 | ⚡ 复制并发动你的一张影响力不小于本牌的已打出牌的即时能力"
+    },
+    "deck_i_card_15": {
+      "name": "发明家",
+      "description": "影响力 15 | 行会 | ⚡ 添加+3影响力到任一张牌，并添加-3影响力到另外任一张牌"
+    },
+    "deck_i_card_16": {
+      "name": "精灵",
+      "description": "影响力 16 | 王朝 | ⚡ 你赢得游戏"
+    },
+    "deck_ii_card_01": {
+      "name": "毒师",
+      "description": "影响力 1 | 沼泽 | ⚡ 降低相对的牌的影响力直到当前遭遇为平局"
+    },
+    "deck_ii_card_02": {
+      "name": "念动力法师",
+      "description": "影响力 2 | 学院 | ⚡ 从你的一张牌移动所有修正标记和持续标记到你的另一张牌"
+    },
+    "deck_ii_card_03": {
+      "name": "使者",
+      "description": "影响力 3 | 行会 | ⚡ 添加-3影响力到任一张牌或你下一张打出的牌"
+    },
+    "deck_ii_card_04": {
+      "name": "税务官",
+      "description": "影响力 4 | 王朝 | ⚡ 添加+4影响力到本牌"
+    },
+    "deck_ii_card_05": {
+      "name": "革命者",
+      "description": "影响力 5 | 沼泽 | ⚡ 你的对手弃掉2张手牌，然后抽取2张牌"
+    },
+    "deck_ii_card_06": {
+      "name": "图书管理员",
+      "description": "影响力 6 | 学院 | ⚡ 在你下一次打出牌并揭示后，添加+2或-2影响力到那张牌上"
+    },
+    "deck_ii_card_07": {
+      "name": "天才",
+      "description": "影响力 7 | 行会 | ⚡ 添加+3影响力到你的一张不大于8影响力的牌上"
+    },
+    "deck_ii_card_08": {
+      "name": "贵族",
+      "description": "影响力 8 | 王朝 | ⚡ 如果本牌赢得遭遇，获得额外1枚印戒"
+    },
+    "deck_ii_card_09": {
+      "name": "勒索者",
+      "description": "影响力 9 | 沼泽 | ⚡ 选择一个派系，如果你的对手下一张牌没有打出该派系，则在揭示那张牌后弃掉2张手牌"
+    },
+    "deck_ii_card_10": {
+      "name": "幻术师",
+      "description": "影响力 10 | 学院 | ⚡ 发动你一张输掉的牌的能力"
+    },
+    "deck_ii_card_11": {
+      "name": "工程师",
+      "description": "影响力 11 | 行会 | ⚡ 下一次遭遇发动能力阶段后，添加+5影响力到你打出的牌上"
+    },
+    "deck_ii_card_12": {
+      "name": "顾问",
+      "description": "影响力 12 | 王朝 | 🔄 上一个遭遇中，你的牌获胜且你对手的牌失败"
+    },
+    "deck_ii_card_13": {
+      "name": "巫王",
+      "description": "影响力 13 | 沼泽 | ⚡ 选择一个派系，你的对手从手牌和牌库弃掉所有该派系的牌，然后混洗他的牌库"
+    },
+    "deck_ii_card_14": {
+      "name": "元素师",
+      "description": "影响力 14 | 学院 | ⚡ 弃掉你一张具有即时能力的手牌，复制并发动该能力，然后抽一张牌"
+    },
+    "deck_ii_card_15": {
+      "name": "机械精灵",
+      "description": "影响力 15 | 行会 | 🔄 如果你赢得下一个遭遇，你赢得游戏"
+    },
+    "deck_ii_card_16": {
+      "name": "继承者",
+      "description": "影响力 16 | 王朝 | ⚡ 你的对手保留2张手牌，弃掉其他所有手牌和他的整个牌库"
+    }
+  },
+  
+  "locations": {
+    "misty_swamp": {
+      "name": "迷雾沼泽",
+      "description": "在游戏的第一回合中，不要揭示牌。你可以随时偷看自己已朝下的那张牌。凡是提到你打出的下一张牌的能力，指的是你从手牌中选择要打出的下一张牌。"
+    },
+    "great_library": {
+      "name": "大图书馆",
+      "description": "如果你的牌库中只剩1张牌，照常抽取。如果牌库为空，则不抽牌。"
+    },
+    "haunted_catacombs": {
+      "name": "闹鬼地下墓穴",
+      "description": "此效果仅在你在阶段1揭示牌时触发。该牌是否能后弃掉并不影响。若由于能力效果导致相同派系的牌相邻放置，你不会因此输掉游戏。"
+    },
+    "giant_serpent": {
+      "name": "巨蛇神殿",
+      "description": "即使在之后的游戏中你再次输掉那次遭遇，这也无关紧要。"
+    },
+    "auction_house": {
+      "name": "拍卖行",
+      "description": "此效果在你阶段1揭示牌后触发。该牌上的所有标记都计入影响力。如果你当前牌的影响力与前一张牌相同，则不弃牌。此效果仅对你自己打出的牌生效。如果你的牌库为空，则忽略此效果。"
+    },
+    "sword_starter_camp": {
+      "name": "剑始者营",
+      "description": "你需要在3个连续的遭遇中获胜。该胜利条件可在任意阶段触发。如果一张牌上有多枚印戒，它仍然只算作赢得1次遭遇。"
+    },
+    "garbage_dump": {
+      "name": "垃圾场",
+      "description": "如果你的牌库剩余0或1张牌，则忽略此效果。如果你的牌库中有2张牌，则抽两张并放回其中1张。"
+    },
+    "market": {
+      "name": "集市",
+      "description": "仅在回合结束阶段你不会抽牌。如果有能力让你抽牌，照常抽取。如果你在第0或第1阶段，则立即抽牌。"
+    }
+  },
+  
+  "tutorial": {
+    "steps": {
+      "setup": "正在准备教学环境...",
+      "welcome": "欢迎来到卡迪亚！\n\n这是一个策略卡牌游戏。你的目标是通过赢得遭遇战来获得5个印戒，率先达成目标的玩家获胜。",
+      "handIntro": "这是你的手牌区。\n\n每回合开始时，你会抽取新的卡牌。每张卡牌都有独特的能力。",
+      "battlefieldIntro": "这是战场区。\n\n双方打出的卡牌会在这里对决。每张卡牌都有影响力值，影响力高的一方将赢得遭遇战。",
+      "signetIntro": "这是印戒计数器。\n\n每次赢得遭遇战，你会获得1个印戒。率先获得5个印戒的玩家获胜！",
+      "phaseIntro": "这是阶段指示器。\n\n每回合分为三个阶段：\n1. 打牌阶段 - 打出一张牌\n2. 能力阶段 - 激活卡牌能力\n3. 结束阶段 - 结束回合",
+      "playPhaseExplain": "现在是打牌阶段。\n\n每回合你必须打出一张牌到战场上。让我们打出学徒卡。",
+      "playFirstCard": "点击学徒卡，将它打出到战场上。",
+      "abilityPhaseExplain": "现在是能力阶段。\n\n如果你是本回合的失败者（或平局），你可以激活战场上卡牌的能力。学徒的能力是抽1张牌。",
+      "activateAbility": "点击战场上的学徒卡，激活它的能力。",
+      "endTurnExplain": "现在是结束阶段。\n\n点击结束回合按钮来结束你的回合。",
+      "endTurn": "点击结束回合按钮。",
+      "opponentTurn": "现在是对手的回合。\n\n对手会打出一张牌，然后结束回合。",
+      "encounterExplain": "双方都打出了卡牌！\n\n现在会进行遭遇战解析。影响力高的一方将获得1个印戒。",
+      "influenceExplain": "影响力计算规则：\n\n• 基础影响力 = 卡牌的影响力值\n• 修正标记可以增加或减少影响力\n• 持续效果也会影响影响力\n\n影响力高的一方赢得遭遇战！",
+      "summary": "教学总结：\n\n• 每回合打出一张牌\n• 失败者可以激活能力\n• 赢得遭遇战获得印戒\n• 率先获得5个印戒获胜\n\n现在你已经掌握了基本规则，开始你的冒险吧！",
+      "finish": "教学完成！\n\n祝你在卡迪亚的世界中玩得愉快！"
+    }
+  }
+}

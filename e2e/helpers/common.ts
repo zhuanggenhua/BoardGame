@@ -372,4 +372,5 @@ export const initContext = async (
     await resetMatchStorage(context, opts?.storageKey);
     if (opts?.skipTutorial !== false) await disableTutorial(context);
     await disableAudio(context);
+    return context; // ✅ 返回 context
 };

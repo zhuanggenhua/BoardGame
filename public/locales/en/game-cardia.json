@@ -1,0 +1,374 @@
+{
+  "title": "Cardia",
+  "description": "Once upon a time, a young adventurer saved a powerful elf trapped in the swamp. Together they built the magical city of Cardia. Today, the city thrives. However, four factions struggle for power: the Swamp Rebels, the Academy Scholars, the Guild Mechanics, and the Dynasty Heirs. Whoever wins the powerful signets and gains the favor of the factions will become the next ruler of Cardia. Play your cards well and outsmart your opponent!",
+  "players": "2 players",
+  
+  "setup": {
+    "deckVariant": {
+      "label": "Choose Deck",
+      "deck1": "Deck I (Beginner)",
+      "deck2": "Deck II (Advanced)"
+    }
+  },
+  
+  "factions": {
+    "swamp": "Swamp Rebels",
+    "academy": "Academy Scholars",
+    "guild": "Guild Mechanics",
+    "dynasty": "Dynasty Heirs"
+  },
+  
+  "phases": {
+    "play": "Play Card",
+    "ability": "Activate Ability",
+    "end": "End Turn"
+  },
+  
+  "opponent": "Opponent",
+  "you": "You",
+  "waiting": "Waiting...",
+  "phase": "Phase",
+  "signets": "Signets",
+  "hand": "Hand",
+  "deck": "Deck",
+  "discard": "Discard",
+  "played": "Played",
+  "encounterSequence": "Encounter Sequence",
+  "activateAbility": "Activate Ability",
+  "abilityActivation": "Ability Activation",
+  "activate": "Activate",
+  "skip": "Skip",
+  "endTurn": "End Turn",
+  "turn": "Turn",
+  "selectOneCard": "Please select one card",
+  "selectCards": "Please select {{min}}-{{max}} cards",
+  "noCardsAvailable": "No cards available",
+  "confirm": "Confirm",
+  "cancel": "Cancel",
+  "selectFaction": "Please select a faction",
+  
+  "ability": {
+    "noValidTarget": {
+      "noMarkers": "No cards on the field have modifier tokens or ongoing markers"
+    }
+  },
+  
+  "abilities": {
+    "mercenary_swordsman": {
+      "name": "Mercenary Swordsman",
+      "description": "Discard this card and the opposing card"
+    },
+    "void_mage": {
+      "name": "Void Mage",
+      "description": "Remove all modifier tokens and ongoing markers from any card"
+    },
+    "surgeon": {
+      "name": "Surgeon",
+      "description": "Add +5 influence to one of your played cards"
+    },
+    "mediator": {
+      "name": "Mediator",
+      "description": "🔄 This encounter is a tie"
+    },
+    "saboteur": {
+      "name": "Saboteur",
+      "description": "Your opponent discards the top 2 cards of their deck"
+    },
+    "diviner": {
+      "name": "Diviner",
+      "description": "In the next encounter, your opponent must reveal their card face-up before you"
+    },
+    "court_guard": {
+      "name": "Court Guard",
+      "description": "Choose a faction. Your opponent may discard a card of that faction from their hand, otherwise this card gains +7 influence"
+    },
+    "judge": {
+      "name": "Judge",
+      "description": "🔄 You win all ties, including future encounters. Ties do not trigger abilities"
+    },
+    "ambusher": {
+      "name": "Ambusher",
+      "description": "Choose a faction. Your opponent discards all cards of that faction from their hand"
+    },
+    "puppeteer": {
+      "name": "Puppeteer",
+      "description": "Discard the opposing card and replace it with a random card from your opponent's hand. The opponent's ability is not triggered"
+    },
+    "clockmaker": {
+      "name": "Clockmaker",
+      "description": "Add +3 influence to your previous encounter card and your next played card"
+    },
+    "treasurer": {
+      "name": "Treasurer",
+      "description": "🔄 A card that won a previous encounter gains an additional signet"
+    },
+    "swamp_guard": {
+      "name": "Swamp Guard",
+      "description": "Return one of your previously played cards to your hand and discard its opposing card"
+    },
+    "governess": {
+      "name": "Governess",
+      "description": "Copy and activate the instant ability of one of your played cards with influence not less than this card"
+    },
+    "inventor": {
+      "name": "Inventor",
+      "description": "Add +3 influence to any card and add -3 influence to another card"
+    },
+    "elf": {
+      "name": "Elf",
+      "description": "You win the game"
+    },
+    "poisoner": {
+      "name": "Poisoner",
+      "description": "Reduce the opposing card's influence until the current encounter is a tie"
+    },
+    "telekinetic_mage": {
+      "name": "Telekinetic Mage",
+      "description": "Move all modifier tokens and ongoing markers from one of your cards to another of your cards"
+    },
+    "messenger": {
+      "name": "Messenger",
+      "description": "Add -3 influence to any card or your next played card"
+    },
+    "tax_collector": {
+      "name": "Tax Collector",
+      "description": "Add +4 influence to this card"
+    },
+    "revolutionary": {
+      "name": "Revolutionary",
+      "description": "Your opponent discards 2 cards from their hand, then draws 2 cards"
+    },
+    "librarian": {
+      "name": "Librarian",
+      "description": "After you play and reveal your next card, add +2 or -2 influence to that card"
+    },
+    "genius": {
+      "name": "Genius",
+      "description": "Add +3 influence to one of your cards with influence no greater than 8"
+    },
+    "noble": {
+      "name": "Noble",
+      "description": "If this card wins the encounter, gain an additional signet"
+    },
+    "extortionist": {
+      "name": "Extortionist",
+      "description": "Choose a faction. If your opponent's next card is not of that faction, they discard 2 cards after revealing it"
+    },
+    "illusionist": {
+      "name": "Illusionist",
+      "description": "Activate the ability of one of your cards that lost"
+    },
+    "engineer": {
+      "name": "Engineer",
+      "description": "After the ability phase of the next encounter, add +5 influence to your played card"
+    },
+    "advisor": {
+      "name": "Advisor",
+      "description": "🔄 In the previous encounter, your card won and your opponent's card lost"
+    },
+    "witch_king": {
+      "name": "Witch King",
+      "description": "Choose a faction. Your opponent discards all cards of that faction from their hand and deck, then shuffles their deck"
+    },
+    "elementalist": {
+      "name": "Elementalist",
+      "description": "Discard a card with an instant ability from your hand, copy and activate that ability, then draw a card"
+    },
+    "mechanical_spirit": {
+      "name": "Mechanical Spirit",
+      "description": "🔄 If you win the next encounter, you win the game"
+    },
+    "heir": {
+      "name": "Heir",
+      "description": "Your opponent keeps 2 cards and discards all other cards from their hand and deck"
+    }
+  },
+  
+  "cards": {
+    "deck_i_card_01": {
+      "name": "Mercenary Swordsman",
+      "description": "Influence 1 | Swamp | ⚡ Discard this card and the opposing card"
+    },
+    "deck_i_card_02": {
+      "name": "Void Mage",
+      "description": "Influence 2 | Academy | ⚡ Remove all tokens from any card"
+    },
+    "deck_i_card_03": {
+      "name": "Surgeon",
+      "description": "Influence 3 | Guild | ⚡ Add +5 influence to one of your played cards"
+    },
+    "deck_i_card_04": {
+      "name": "Mediator",
+      "description": "Influence 4 | Dynasty | 🔄 This encounter is a tie"
+    },
+    "deck_i_card_05": {
+      "name": "Saboteur",
+      "description": "Influence 5 | Swamp | ⚡ Opponent discards top 2 cards of deck"
+    },
+    "deck_i_card_06": {
+      "name": "Diviner",
+      "description": "Influence 6 | Academy | ⚡ Opponent reveals next card first"
+    },
+    "deck_i_card_07": {
+      "name": "Court Guard",
+      "description": "Influence 7 | Guild | ⚡ Choose faction: opponent discards or this gains +7"
+    },
+    "deck_i_card_08": {
+      "name": "Judge",
+      "description": "Influence 8 | Dynasty | 🔄 You win all ties"
+    },
+    "deck_i_card_09": {
+      "name": "Ambusher",
+      "description": "Influence 9 | Swamp | ⚡ Choose faction: opponent discards all"
+    },
+    "deck_i_card_10": {
+      "name": "Puppeteer",
+      "description": "Influence 10 | Academy | ⚡ Replace opposing card with random from opponent's hand"
+    },
+    "deck_i_card_11": {
+      "name": "Clockmaker",
+      "description": "Influence 11 | Guild | ⚡ +3 to previous and next card"
+    },
+    "deck_i_card_12": {
+      "name": "Treasurer",
+      "description": "Influence 12 | Dynasty | 🔄 Previous winner gains extra signet"
+    },
+    "deck_i_card_13": {
+      "name": "Swamp Guard",
+      "description": "Influence 13 | Swamp | ⚡ Return your card to hand, discard opposing"
+    },
+    "deck_i_card_14": {
+      "name": "Governess",
+      "description": "Influence 14 | Academy | ⚡ Copy instant ability from your card ≥14"
+    },
+    "deck_i_card_15": {
+      "name": "Inventor",
+      "description": "Influence 15 | Guild | ⚡ +3 to any card, -3 to another"
+    },
+    "deck_i_card_16": {
+      "name": "Elf",
+      "description": "Influence 16 | Dynasty | ⚡ You win the game"
+    },
+    "deck_ii_card_01": {
+      "name": "Poisoner",
+      "description": "Influence 1 | Swamp | ⚡ Reduce opposing card to force tie"
+    },
+    "deck_ii_card_02": {
+      "name": "Telekinetic Mage",
+      "description": "Influence 2 | Academy | ⚡ Move all tokens from one card to another"
+    },
+    "deck_ii_card_03": {
+      "name": "Messenger",
+      "description": "Influence 3 | Guild | ⚡ -3 to any card or next card"
+    },
+    "deck_ii_card_04": {
+      "name": "Tax Collector",
+      "description": "Influence 4 | Dynasty | ⚡ +4 to this card"
+    },
+    "deck_ii_card_05": {
+      "name": "Revolutionary",
+      "description": "Influence 5 | Swamp | ⚡ Opponent discards 2, then draws 2"
+    },
+    "deck_ii_card_06": {
+      "name": "Librarian",
+      "description": "Influence 6 | Academy | ⚡ +2 or -2 to next card after reveal"
+    },
+    "deck_ii_card_07": {
+      "name": "Genius",
+      "description": "Influence 7 | Guild | ⚡ +3 to your card with influence ≤8"
+    },
+    "deck_ii_card_08": {
+      "name": "Noble",
+      "description": "Influence 8 | Dynasty | ⚡ If wins, gain extra signet"
+    },
+    "deck_ii_card_09": {
+      "name": "Extortionist",
+      "description": "Influence 9 | Swamp | ⚡ Choose faction: if next not that, discard 2"
+    },
+    "deck_ii_card_10": {
+      "name": "Illusionist",
+      "description": "Influence 10 | Academy | ⚡ Activate ability of your lost card"
+    },
+    "deck_ii_card_11": {
+      "name": "Engineer",
+      "description": "Influence 11 | Guild | ⚡ +5 to next card after ability phase"
+    },
+    "deck_ii_card_12": {
+      "name": "Advisor",
+      "description": "Influence 12 | Dynasty | 🔄 Previous: you won, opponent lost"
+    },
+    "deck_ii_card_13": {
+      "name": "Witch King",
+      "description": "Influence 13 | Swamp | ⚡ Choose faction: discard all from hand/deck, shuffle"
+    },
+    "deck_ii_card_14": {
+      "name": "Elementalist",
+      "description": "Influence 14 | Academy | ⚡ Discard instant, copy ability, draw 1"
+    },
+    "deck_ii_card_15": {
+      "name": "Mechanical Spirit",
+      "description": "Influence 15 | Guild | 🔄 Win next = win game"
+    },
+    "deck_ii_card_16": {
+      "name": "Heir",
+      "description": "Influence 16 | Dynasty | ⚡ Opponent keeps 2, discards rest"
+    }
+  },
+  
+  "locations": {
+    "misty_swamp": {
+      "name": "Misty Swamp",
+      "description": "In the first turn, don't reveal cards. You may peek at your face-down card anytime. 'Next card you play' refers to the next card you choose from hand."
+    },
+    "great_library": {
+      "name": "Great Library",
+      "description": "If your deck has only 1 card left, draw it normally. If deck is empty, don't draw."
+    },
+    "haunted_catacombs": {
+      "name": "Haunted Catacombs",
+      "description": "This effect only triggers when you reveal a card in phase 1. Whether the card can be discarded doesn't matter. If abilities cause same-faction cards to be adjacent, you don't lose."
+    },
+    "giant_serpent": {
+      "name": "Giant Serpent",
+      "description": "Even if you lose that encounter again later in the game, it doesn't matter."
+    },
+    "auction_house": {
+      "name": "Auction House",
+      "description": "This effect triggers after you reveal a card in phase 1. All markers on the card count toward influence. If your current card's influence equals the previous card, don't discard. This effect only applies to your own played cards. If your deck is empty, ignore this effect."
+    },
+    "sword_starter_camp": {
+      "name": "Sword Starter Camp",
+      "description": "You need to win 3 consecutive encounters. This victory condition can trigger at any phase. If a card has multiple signets, it still only counts as winning 1 encounter."
+    },
+    "garbage_dump": {
+      "name": "Garbage Dump",
+      "description": "If your deck has 0 or 1 cards left, ignore this effect. If your deck has 2 cards, draw both and put 1 back."
+    },
+    "market": {
+      "name": "Market",
+      "description": "Only in the end phase you don't draw cards. If an ability lets you draw, draw normally. If you're in phase 0 or 1, draw immediately."
+    }
+  },
+  
+  "tutorial": {
+    "steps": {
+      "setup": "Setting up tutorial environment...",
+      "welcome": "Welcome to Cardia!\n\nThis is a strategic card game. Your goal is to win encounters and earn 5 signets. The first player to reach this goal wins.",
+      "handIntro": "This is your hand area.\n\nAt the start of each turn, you'll draw new cards. Each card has unique abilities.",
+      "battlefieldIntro": "This is the battlefield.\n\nCards played by both players will face off here. Each card has an influence value, and the side with higher influence wins the encounter.",
+      "signetIntro": "This is the signet counter.\n\nEach time you win an encounter, you earn 1 signet. The first player to earn 5 signets wins!",
+      "phaseIntro": "This is the phase indicator.\n\nEach turn has three phases:\n1. Play Phase - Play one card\n2. Ability Phase - Activate card abilities\n3. End Phase - End your turn",
+      "playPhaseExplain": "It's now the Play Phase.\n\nYou must play one card to the battlefield each turn. Let's play the Apprentice card.",
+      "playFirstCard": "Click the Apprentice card to play it to the battlefield.",
+      "abilityPhaseExplain": "It's now the Ability Phase.\n\nIf you're the loser of this turn (or tied), you can activate abilities of cards on the battlefield. The Apprentice's ability is to draw 1 card.",
+      "activateAbility": "Click the Apprentice card on the battlefield to activate its ability.",
+      "endTurnExplain": "It's now the End Phase.\n\nClick the End Turn button to end your turn.",
+      "endTurn": "Click the End Turn button.",
+      "opponentTurn": "It's now your opponent's turn.\n\nYour opponent will play a card and then end their turn.",
+      "encounterExplain": "Both players have played cards!\n\nNow the encounter will be resolved. The side with higher influence will earn 1 signet.",
+      "influenceExplain": "Influence calculation rules:\n\n• Base influence = card's influence value\n• Modifier tokens can increase or decrease influence\n• Ongoing effects also affect influence\n\nThe side with higher influence wins the encounter!",
+      "summary": "Tutorial Summary:\n\n• Play one card each turn\n• The loser can activate abilities\n• Win encounters to earn signets\n• First to 5 signets wins\n\nYou've now mastered the basic rules. Begin your adventure!",
+      "finish": "Tutorial Complete!\n\nEnjoy your time in the world of Cardia!"
+    }
+  }
+}

@@ -5,12 +5,13 @@ import type { GameManifestEntry } from './manifest.types';
 import entry0 from './archview/manifest';
 import entry1 from './assetslicer/manifest';
 import entry2 from './audiobrowser/manifest';
-import entry3 from './dicethrone/manifest';
-import entry4 from './fxpreview/manifest';
-import entry5 from './smashup/manifest';
-import entry6 from './summonerwars/manifest';
-import entry7 from './tictactoe/manifest';
-import entry8 from './ugcbuilder/manifest';
+import entry3 from './cardia/manifest';
+import entry4 from './dicethrone/manifest';
+import entry5 from './fxpreview/manifest';
+import entry6 from './smashup/manifest';
+import entry7 from './summonerwars/manifest';
+import entry8 from './tictactoe/manifest';
+import entry9 from './ugcbuilder/manifest';
 
 export const GAME_MANIFEST: GameManifestEntry[] = [
     entry0,
@@ -22,6 +23,7 @@ export const GAME_MANIFEST: GameManifestEntry[] = [
     entry6,
     entry7,
     entry8,
+    entry9,
 ];
 
 export const GAME_MANIFEST_BY_ID: Record<string, GameManifestEntry> = Object.fromEntries(
