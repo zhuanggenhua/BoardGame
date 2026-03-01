@@ -30,6 +30,27 @@ export interface MatchMetadata {
     setupData?: unknown;
     /** 内存房间断线时间戳（HybridStorage 使用） */
     disconnectedSince?: number | null;
+    /** 对局状态（动态计算字段，不持久化） */
+    status?: 'waiting' | 'playing' | 'finished';
+}
+
+/**
+ * 根据元数据计算对局状态
+ */
+export function resolveMatchStatus(metadata: MatchMetadata): 'waiting' | 'playing' | 'finished' {
+    // 游戏已结束
+    if (metadata.gameover) {
+        return 'finished';
+    }
+
+    // 已有 status 字段则直接返回
+    if (metadata.status) {
+        return metadata.status;
+    }
+
+    // 检查是否所有座位都有玩家
+    const allSeated = Object.values(metadata.players).every(p => p.name || p.credentials);
+    return allSeated ? 'playing' : 'waiting';
 }
 
 // ============================================================================

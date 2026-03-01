@@ -1,0 +1,2 @@
+﻿MM src/games/smashup/ui/cardAtlas.ts
+?? public/assets/atlas-configs/smashup/atlas-config.json

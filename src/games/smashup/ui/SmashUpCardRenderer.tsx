@@ -19,6 +19,10 @@ interface SmashUpRendererArgs {
 }
 
 export function SmashUpCardRenderer({ previewRef, locale, className, style }: SmashUpRendererArgs): ReactNode {
+    // Hooks 必须在所有 early return 之前调用
+    const { t, i18n } = useTranslation('game-smashup');
+    const { overlayEnabled } = useSmashUpOverlay();
+    
     // 渲染器必须拿到具体的 defId 才能读取中文字典和做图集覆写
     // 由于只有 renderer 类型的 previewRef 能任意传参，我们假设这里的 payload 透传了 defId
     if (previewRef.type !== 'renderer') return null;
@@ -26,11 +30,9 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
     const defId = previewRef.payload?.defId as string | undefined;
     if (!defId) return null;
 
-    const { t, i18n } = useTranslation('game-smashup');
     const effectiveLocale = locale || i18n.language || 'zh-CN';
 
     // 默认回退为原始数据的图集坐标，如果没有配置过的话
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { originalAtlasId, originalIndex } = useMemo(() => {
         const cardDef = getCardDef(defId);
         if (cardDef?.previewRef?.type === 'atlas') {
@@ -62,13 +64,12 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
         }
     }
 
-    // 强制获取中文翻译用于覆盖层显示
+    // 获取当前语言的翻译用于覆盖层显示
     const { name, text } = useMemo(() => {
-        const zhT = (key: string) => t(key, { lng: 'zh-CN' });
         const cDef = getCardDef(defId);
-        if (cDef) return { name: resolveCardName(cDef, zhT), text: resolveCardText(cDef, zhT) };
+        if (cDef) return { name: resolveCardName(cDef, t), text: resolveCardText(cDef, t) };
         const bDef = getBaseDef(defId);
-        if (bDef) return { name: resolveCardName(bDef, zhT), text: resolveCardText(bDef, zhT) };
+        if (bDef) return { name: resolveCardName(bDef, t), text: resolveCardText(bDef, t) };
         return { name: '', text: '' };
     }, [defId, t]);
 
@@ -84,20 +85,38 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
         );
     }
 
-    // 英文环境下：如果玩家关闭了中文覆盖层，或者中文环境下：图像已经自带中文（非POD卡），则不需要叠加文字
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { overlayEnabled } = useSmashUpOverlay();
-
-    // 中文模式下，原版卡片图集（特指随从和行动）自带中文字型，所以跳过覆盖层。
-    // 但 POD 版是纯英文图集，所以需要覆盖层。对于基地（Base）来说，由于我们使用了 TTS 的高清英版图集（即使是中文模式下），所以基地也强制需要覆盖层。
-    const imageHasChineseText = !isEnglishVariant && !isPodVersion && !isBase;
+    // 判断是否需要悬浮覆盖层
+    // 原则：只有在"图片语言与界面语言不一致"时才显示覆盖层（不得已）
+    // 
+    // 素材可用性：
+    // - POD 卡片：只有英文素材
+    // - 基地卡：只有英文素材
+    // - 原版卡片：中文和英文素材都有
+    //
+    // 判断逻辑：
+    // 1. POD/基地 + 英文环境 → 有对应素材，不显示覆盖层
+    // 2. POD/基地 + 非英文环境 → 无对应素材，显示覆盖层
+    // 3. 原版卡片 + 任何环境 → 有对应素材，不显示覆盖层
+    // 4. 用户在英文环境下关闭覆盖层 → 不显示覆盖层
+    
     const userWantsToSkipOverlay = isEnglishVariant && !overlayEnabled;
+    
+    let hasCurrentLanguageAsset: boolean;
+    if (isPodVersion || isBase) {
+        // POD 和基地：只有英文素材
+        hasCurrentLanguageAsset = isEnglishVariant;
+    } else {
+        // 原版卡片：中文和英文素材都有
+        hasCurrentLanguageAsset = true;
+    }
 
-    if (imageHasChineseText || userWantsToSkipOverlay) {
+    const needsOverlay = !hasCurrentLanguageAsset && !userWantsToSkipOverlay;
+
+    if (!needsOverlay) {
         return (
             <CardPreview
                 previewRef={{ type: 'atlas', atlasId: finalAtlasId, index: finalIndex }}
-                locale="en"
+                locale={effectiveLocale}
                 className={className}
                 style={style}
                 title={name}
@@ -105,20 +124,23 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
         );
     }
 
-    // 英文环境下或无内嵌中文的卡片（如所有基地、POD 卡）：画上卡图 + Overlay 中文文本
+    // 图片语言与界面语言不一致，不得已显示覆盖层
+    // 适用场景：
+    // - 中文环境 + POD 卡片 → 英文图片 + 中文悬浮（不得已）
+    // - 中文环境 + 基地卡 → 英文图片 + 中文悬浮（不得已）
+    const imageLocale = (isPodVersion || isBase) ? 'en' : effectiveLocale;
 
     // 由于图集是通过 background-image 渲染在 div 上的
     // 我们在此用绝对定位画一个标题和技能文字区域的 Overlay
-    // 在真正完善前可以通过粗糙一些的底色方块，确保能看清楚中文
     return (
         <div className={`relative group ${className || ''}`} style={style} title={name}>
-            {/* 底层原版图集 —— 明确传 locale='en' 使 AssetLoader 去找本地压缩图 */}
+            {/* 底层图集 —— 使用 effectiveLocale，让 AssetLoader 自动处理回退 */}
             <CardPreview
                 previewRef={{ type: 'atlas', atlasId: finalAtlasId, index: finalIndex }}
-                locale="en"
+                locale={imageLocale}
                 className="w-full h-full absolute inset-0 rounded overflow-hidden pointer-events-none"
             />
-            {/* 顶层中文叠加 —— 默认隐藏，悬浮时淡入 */}
+            {/* 顶层当前语言叠加 —— 默认隐藏，悬浮时淡入 */}
             <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-[4%] opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20">
                 {/* 标题 */}
                 <div className={`w-fit max-w-full bg-black/80 backdrop-blur-sm text-white font-bold rounded px-2 shadow 

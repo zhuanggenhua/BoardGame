@@ -1,0 +1,15 @@
+﻿## main...origin/main [ahead 3]
+M  AGENTS.md
+ M docs/ai-rules/asset-pipeline.md
+M  docs/mobile-adaptation.md
+M  e2e/mobile-orientation.e2e.ts
+AD public/assets/i18n/en/smashup/atlas-config.json
+M  src/components/common/MobileOrientationGuard.tsx
+MM src/games/smashup/ui/cardAtlas.ts
+M  src/lib/utils.ts
+?? public/assets/atlas-configs/smashup/
+?? scripts/extract-tts-atlas-config.mjs
+?? src/games/smashup/__tests__/scoreBases-auto-continue.test.ts
+?? temp_branch.txt
+?? temp_git_status.txt
+?? temp_git_status_after.txt

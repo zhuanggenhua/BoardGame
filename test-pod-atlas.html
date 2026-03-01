@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>POD Atlas Test</title>
+</head>
+<body>
+    <h1>POD Atlas Test</h1>
+    <div id="results"></div>
+    <script type="module">
+        // Test if POD atlas images are accessible
+        const testImages = [
+            'https://assets.easyboardgame.top/official/i18n/en/smashup/pod-assets/compressed/tts_atlas_4.webp',
+            'https://assets.easyboardgame.top/official/i18n/en/smashup/pod-assets/compressed/tts_atlas_3.webp',
+            'https://assets.easyboardgame.top/official/i18n/en/smashup/pod-assets/compressed/tts_atlas_2.webp',
+        ];
+
+        const results = document.getElementById('results');
+        
+        for (const url of testImages) {
+            const img = new Image();
+            const div = document.createElement('div');
+            div.textContent = `Testing: ${url}...`;
+            results.appendChild(div);
+            
+            img.onload = () => {
+                div.textContent = `✅ SUCCESS: ${url} (${img.naturalWidth}x${img.naturalHeight})`;
+                div.appendChild(img);
+                img.style.maxWidth = '200px';
+            };
+            
+            img.onerror = () => {
+                div.textContent = `❌ FAILED: ${url}`;
+                div.style.color = 'red';
+            };
+            
+            img.src = url;
+        }
+    </script>
+</body>
+</html>

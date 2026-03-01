@@ -16,8 +16,8 @@ import { Server as IOServer, Socket as IOSocket } from 'socket.io';
 import msgpackParser from 'socket.io-msgpack-parser';
 import { nanoid } from 'nanoid';
 import { connectDB } from './src/server/db';
-import { MAX_CHAT_LENGTH, sanitizeChatText } from './src/server/chatUtils';
-import { MAX_CHAT_HISTORY } from './src/shared/chat';
+import { sanitizeChatText } from './src/server/chatUtils';
+import { MAX_CHAT_MESSAGES } from './src/shared/chat';
 import { MatchRecord } from './src/server/models/MatchRecord';
 import { GAME_SERVER_MANIFEST } from './src/games/manifest.server';
 import { mongoStorage } from './src/server/storage/MongoStorage';
@@ -1557,8 +1557,8 @@ lobbySocketIO.on('connection', (socket) => {
         }
         history.push(message);
         // 超过上限时裁剪旧消息
-        if (history.length > MAX_CHAT_HISTORY) {
-            chatHistoryByMatch.set(matchId, history.slice(-MAX_CHAT_HISTORY));
+        if (history.length > MAX_CHAT_MESSAGES) {
+            chatHistoryByMatch.set(matchId, history.slice(-MAX_CHAT_MESSAGES));
         }
 
         lobbySocketIO.to(`matchchat:${matchId}`).emit(MATCH_CHAT_EVENTS.MESSAGE, message);

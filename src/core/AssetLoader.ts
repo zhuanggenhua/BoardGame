@@ -902,16 +902,49 @@ export function getLocalizedAssetPath(path: string, locale?: string): string {
 
 /**
  * 获取语言化图片 URL（包含回退）
+ * 
+ * 回退策略：
+ * - 中文 (zh-CN) → 英文 (en)
+ * - 英文 (en) → 中文 (zh-CN)
+ * - 其他语言 → 英文 (en) → 中文 (zh-CN)
+ * 
+ * 这样确保中文和英文素材必有一个可用，未来添加新语言素材时自动生效。
  */
 export function getLocalizedImageUrls(src: string, locale?: string): LocalizedImageUrls {
     if (!locale || isPassthroughSource(src)) {
         const urls = getOptimizedImageUrls(src);
+        console.log('[AssetLoader] getLocalizedImageUrls (no locale):', { src, urls });
         return { primary: urls, fallback: urls };
     }
+    
     const localizedPath = getLocalizedAssetPath(src, locale);
     const primary = getOptimizedImageUrls(localizedPath);
-    // 原始路径已删除，fallback 也指向国际化路径
-    return { primary, fallback: primary };
+    
+    // 回退逻辑：中文 ↔ 英文互为回退
+    let fallbackLocale: string;
+    if (locale === 'zh-CN') {
+        fallbackLocale = 'en';
+    } else if (locale === 'en') {
+        fallbackLocale = 'zh-CN';
+    } else {
+        // 其他语言先回退到英文
+        fallbackLocale = 'en';
+    }
+    
+    const fallbackPath = getLocalizedAssetPath(src, fallbackLocale);
+    const fallback = getOptimizedImageUrls(fallbackPath);
+    
+    console.log('[AssetLoader] getLocalizedImageUrls:', {
+        src,
+        locale,
+        fallbackLocale,
+        localizedPath,
+        fallbackPath,
+        primaryUrl: primary.webp,
+        fallbackUrl: fallback.webp
+    });
+    
+    return { primary, fallback };
 }
 
 /**

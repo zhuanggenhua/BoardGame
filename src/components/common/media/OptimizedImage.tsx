@@ -31,7 +31,8 @@ export const SHIMMER_BG: React.CSSProperties = {
  * 3 = 最终失败，显示错误状态
  */
 const CDN_RETRY_LEVEL = 1;
-const LOCAL_FALLBACK_LEVEL = 2;
+const LANGUAGE_FALLBACK_LEVEL = 2; // 语言回退级别
+const LOCAL_FALLBACK_LEVEL = 3; // 本地降级级别
 
 /** 指数退避自动重试配置 */
 const AUTO_RETRY_MAX = 5;           // 最多自动重试 5 轮
@@ -74,9 +75,18 @@ export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, on
         setLoaded(false);
     }, []);
 
-    // CDN 国际化路径
+    // CDN 国际化路径（包含语言回退）
     const localizedUrls = getLocalizedImageUrls(src, effectiveLocale);
     const cdnUrl = localizedUrls.primary.webp;
+    const cdnFallbackUrl = localizedUrls.fallback.webp; // 语言回退 URL
+    
+    console.log('[OptimizedImage] URLs:', {
+        src,
+        effectiveLocale,
+        cdnUrl,
+        cdnFallbackUrl,
+        isCdn: isCdnUrl(cdnUrl)
+    });
 
     // 本地降级路径（/assets/i18n/{locale}/...compressed/xxx.webp）
     const localUrl = React.useMemo(() => {
@@ -95,15 +105,36 @@ export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, on
     }, [cdnUrl, src, effectiveLocale]);
 
     // 根据 fallbackLevel 计算当前实际 src
+    // 降级顺序：CDN primary → CDN primary retry → CDN fallback (语言回退) → 本地 primary
     const currentSrc = React.useMemo(() => {
-        if (!isCdnUrl(cdnUrl)) return cdnUrl; // 本地路径不走降级
-        switch (fallbackLevel) {
-            case 0: return cdnUrl;
-            case CDN_RETRY_LEVEL: return appendRetryParam(cdnUrl, 1);
-            case LOCAL_FALLBACK_LEVEL: return localUrl;
-            default: return cdnUrl;
+        if (!isCdnUrl(cdnUrl)) {
+            console.log('[OptimizedImage] Using local path (no CDN):', cdnUrl);
+            return cdnUrl; // 本地路径不走降级
         }
-    }, [cdnUrl, localUrl, fallbackLevel]);
+        let result: string;
+        switch (fallbackLevel) {
+            case 0: 
+                result = cdnUrl;
+                break;
+            case CDN_RETRY_LEVEL: 
+                result = appendRetryParam(cdnUrl, 1);
+                break;
+            case LANGUAGE_FALLBACK_LEVEL: 
+                result = cdnFallbackUrl; // 语言回退
+                break;
+            case LOCAL_FALLBACK_LEVEL: 
+                result = localUrl;
+                break;
+            default: 
+                result = cdnUrl;
+        }
+        console.log('[OptimizedImage] currentSrc:', {
+            fallbackLevel,
+            levelName: ['primary', 'retry', 'language-fallback', 'local'][fallbackLevel] || 'unknown',
+            result
+        });
+        return result;
+    }, [cdnUrl, cdnFallbackUrl, localUrl, fallbackLevel]);
 
     const isSvg = isSvgSource(currentSrc);
 
@@ -152,6 +183,14 @@ export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, on
     };
 
     const handleError: React.ReactEventHandler<HTMLImageElement> = (event) => {
+        console.error('[OptimizedImage] Image load error:', {
+            src,
+            currentSrc,
+            fallbackLevel,
+            isCdn: isCdnUrl(cdnUrl),
+            autoRetryCount: autoRetryRef.current
+        });
+        
         // 非 CDN 路径或已到最终失败层级 → 进入自动重试
         if (!isCdnUrl(cdnUrl) || fallbackLevel >= LOCAL_FALLBACK_LEVEL) {
             const attempt = autoRetryRef.current;
@@ -172,7 +211,7 @@ export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, on
         }
         // 还有回退层级，推进到下一级
         const nextLevel = fallbackLevel + 1;
-        console.warn(`[OptimizedImage] 加载失败，尝试回退 level ${nextLevel}:`, src);
+        console.warn(`[OptimizedImage] 加载失败，尝试回退 level ${nextLevel} (${['primary', 'retry', 'language-fallback', 'local'][nextLevel]}):`, src);
         setFallbackLevel(nextLevel);
     };
 

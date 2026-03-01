@@ -255,6 +255,15 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
 
     const atlasStyle = computeSpriteStyle(index, source.config);
     const backgroundImage = buildLocalizedImageSet(source.image, effectiveLocale);
+    
+    console.log('[CardPreview] Rendering atlas:', {
+        atlasId: previewRef.type === 'atlas' ? previewRef.atlasId : 'unknown',
+        index,
+        image: source.image,
+        effectiveLocale,
+        backgroundImage,
+        loaded: effectiveLoaded
+    });
 
     return (
         <div

@@ -1,146 +1,146 @@
 {
   "pirate_king": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 19
   },
   "pirate_buccaneer": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 17
   },
   "pirate_saucy_wench": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 15
   },
   "pirate_first_mate": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 11
   },
   "pirate_dinghy": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 0
   },
   "pirate_powderkeg": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 6
   },
   "pirate_broadside": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 3
   },
   "pirate_full_sail": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 5
   },
   "pirate_cannon": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 4
   },
   "pirate_shanghai": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 8
   },
   "pirate_sea_dogs": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 7
   },
   "pirate_swashbuckling": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 9
   },
   "pirate_king_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 19
   },
   "pirate_buccaneer_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 17
   },
   "pirate_saucy_wench_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 15
   },
   "pirate_first_mate_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 11
   },
   "pirate_dinghy_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 0
   },
   "pirate_powderkeg_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 6
   },
   "pirate_broadside_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 3
   },
   "pirate_full_sail_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 5
   },
   "pirate_cannon_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 4
   },
   "pirate_shanghai_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 8
   },
   "pirate_sea_dogs_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 7
   },
   "pirate_swashbuckling_pod": {
-    "atlasId": "tts_atlas_fa522a4b3d",
+    "atlasId": "tts_atlas_4",
     "index": 9
   },
   "ninja_master": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 19
   },
   "ninja_tiger_assassin": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 18
   },
   "ninja_shinobi": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 14
   },
   "ninja_acolyte": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 11
   },
   "ninja_way_of_deception": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 3
   },
   "ninja_smoke_bomb": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 2
   },
   "ninja_assassination": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 9
   },
   "ninja_hidden_ninja": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 4
   },
   "ninja_seeing_stars": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 0
   },
   "ninja_disguise": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 7
   },
   "ninja_infiltrate": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 5
   },
   "ninja_poison": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 8
   },
   "alien_supreme_overlord": {
@@ -240,943 +240,943 @@
     "index": 8
   },
   "dino_king_rex": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 19
   },
   "dino_laser_triceratops": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 17
   },
   "dino_armor_stego": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 16
   },
   "dino_war_raptor": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 11
   },
   "dino_wildlife_preserve": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 7
   },
   "dino_natural_selection": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 3
   },
   "dino_survival_of_the_fittest": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 8
   },
   "dino_upgrade": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 2
   },
   "dino_howl": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 4
   },
   "dino_rampage": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 6
   },
   "dino_augmentation": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 0
   },
   "dino_tooth_and_claw": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 9
   },
   "dino_king_rex_pod": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 19
   },
   "dino_laser_triceratops_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 17
   },
   "dino_armor_stego_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 16
   },
   "dino_war_raptor_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 11
   },
   "dino_wildlife_preserve_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 7
   },
   "dino_natural_selection_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 3
   },
   "dino_survival_of_the_fittest_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 8
   },
   "dino_upgrade_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 2
   },
   "dino_howl_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 4
   },
   "dino_rampage_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 6
   },
   "dino_augmentation_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 0
   },
   "dino_tooth_and_claw_pod": {
-    "atlasId": "tts_atlas_d5a8749d27",
+    "atlasId": "tts_atlas_2",
     "index": 9
   },
   "miskatonic_professor": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 19
   },
   "miskatonic_librarian": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 18
   },
   "miskatonic_psychologist": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 15
   },
   "miskatonic_researcher": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 11
   },
   "miskatonic_book_of_iter_the_unseen": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 3
   },
   "miskatonic_it_might_just_work": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 7
   },
   "miskatonic_thing_on_the_doorstep": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 0
   },
   "miskatonic_lost_knowledge": {
-    "atlasId": "tts_atlas_4c71f8845b",
+    "atlasId": "tts_atlas_207",
     "index": 4
   },
   "miskatonic_mandatory_reading": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 9
   },
   "miskatonic_psychological_profiling": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 6
   },
   "miskatonic_those_meddling_kids": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 1
   },
   "miskatonic_field_trip": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 5
   },
   "miskatonic_professor_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 19
   },
   "miskatonic_librarian_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 18
   },
   "miskatonic_psychologist_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 15
   },
   "miskatonic_researcher_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 11
   },
   "miskatonic_book_of_iter_the_unseen_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 3
   },
   "miskatonic_it_might_just_work_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 7
   },
   "miskatonic_thing_on_the_doorstep_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 0
   },
   "miskatonic_lost_knowledge_pod": {
-    "atlasId": "tts_atlas_4c71f8845b",
+    "atlasId": "tts_atlas_207",
     "index": 4
   },
   "miskatonic_mandatory_reading_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 9
   },
   "miskatonic_psychological_profiling_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 6
   },
   "miskatonic_those_meddling_kids_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 1
   },
   "miskatonic_field_trip_pod": {
-    "atlasId": "tts_atlas_b83bad4e65",
+    "atlasId": "tts_atlas_16",
     "index": 5
   },
   "cthulhu_star_spawn": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 19
   },
   "cthulhu_chosen": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 17
   },
   "cthulhu_servitor": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 10
   },
   "cthulhu_altar": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 5
   },
   "cthulhu_recruit_by_force": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 7
   },
   "cthulhu_complete_the_ritual": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 6
   },
   "cthulhu_furthering_the_cause": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 3
   },
   "cthulhu_whispers_in_darkness": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 9
   },
   "cthulhu_corruption": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 0
   },
   "cthulhu_fhtagn": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 11
   },
   "cthulhu_madness_unleashed": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 4
   },
   "cthulhu_seal_is_broken": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 2
   },
   "cthulhu_it_begins_again": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 10
   },
   "cthulhu_star_spawn_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 19
   },
   "cthulhu_chosen_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 17
   },
   "cthulhu_servitor_pod": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 10
   },
   "cthulhu_altar_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 5
   },
   "cthulhu_recruit_by_force_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 7
   },
   "cthulhu_complete_the_ritual_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 6
   },
   "cthulhu_furthering_the_cause_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 3
   },
   "cthulhu_whispers_in_darkness_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 9
   },
   "cthulhu_corruption_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 0
   },
   "cthulhu_fhtagn_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 11
   },
   "cthulhu_madness_unleashed_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 4
   },
   "cthulhu_seal_is_broken_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 2
   },
   "cthulhu_it_begins_again_pod": {
-    "atlasId": "tts_atlas_be3505fbd7",
+    "atlasId": "tts_atlas_15",
     "index": 10
   },
   "innsmouth_the_locals": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 10
   },
   "innsmouth_mysteries_of_the_deep": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 9
   },
   "innsmouth_sacred_circle": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 1
   },
   "innsmouth_return_to_the_sea": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 5
   },
   "innsmouth_new_acolytes": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 0
   },
   "innsmouth_recruitment": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 8
   },
   "innsmouth_spreading_the_word": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 3
   },
   "innsmouth_in_plain_sight": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 2
   },
   "innsmouth_the_deep_ones": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 7
   },
   "innsmouth_the_locals_pod": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 10
   },
   "innsmouth_mysteries_of_the_deep_pod": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 9
   },
   "innsmouth_sacred_circle_pod": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 1
   },
   "innsmouth_return_to_the_sea_pod": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 5
   },
   "innsmouth_new_acolytes_pod": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 0
   },
   "innsmouth_recruitment_pod": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 8
   },
   "innsmouth_spreading_the_word_pod": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 3
   },
   "innsmouth_in_plain_sight_pod": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 2
   },
   "innsmouth_the_deep_ones_pod": {
-    "atlasId": "tts_atlas_e67949e1ba",
+    "atlasId": "tts_atlas_14",
     "index": 7
   },
   "elder_thing_elder_thing": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 19
   },
   "elder_thing_shoggoth": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 17
   },
   "elder_thing_mi_go": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 15
   },
   "elder_thing_byakhee": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 11
   },
   "elder_thing_power_of_madness": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 7
   },
   "elder_thing_insanity": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 2
   },
   "elder_thing_dunwich_horror": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 3
   },
   "elder_thing_begin_the_summoning": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 1
   },
   "elder_thing_spreading_horror": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 5
   },
   "elder_thing_the_price_of_power": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 9
   },
   "elder_thing_unfathomable_goals": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 6
   },
   "elder_thing_touch_of_madness": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 4
   },
   "elder_thing_elder_thing_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 19
   },
   "elder_thing_shoggoth_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 17
   },
   "elder_thing_mi_go_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 15
   },
   "elder_thing_byakhee_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 11
   },
   "elder_thing_power_of_madness_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 7
   },
   "elder_thing_insanity_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 2
   },
   "elder_thing_dunwich_horror_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 3
   },
   "elder_thing_begin_the_summoning_pod": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 1
   },
   "elder_thing_spreading_horror_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 5
   },
   "elder_thing_the_price_of_power_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 9
   },
   "elder_thing_unfathomable_goals_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 6
   },
   "elder_thing_touch_of_madness_pod": {
-    "atlasId": "tts_atlas_d82adb6729",
+    "atlasId": "tts_atlas_13",
     "index": 4
   },
   "special_madness": {
-    "atlasId": "tts_atlas_4c71f8845b",
+    "atlasId": "tts_atlas_207",
     "index": 47
   },
   "ghost_spectre": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 19
   },
   "ghost_haunting": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 17
   },
   "ghost_spirit": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 15
   },
   "ghost_ghost": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 11
   },
   "ghost_incorporeal": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 5
   },
   "ghost_ghostly_arrival": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 6
   },
   "ghost_make_contact": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 6
   },
   "ghost_shady_deal": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 1
   },
   "ghost_door_to_the_beyond": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 7
   },
   "ghost_the_dead_rise": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 0
   },
   "ghost_across_the_divide": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 9
   },
   "ghost_spectre_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 19
   },
   "ghost_haunting_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 17
   },
   "ghost_spirit_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 15
   },
   "ghost_ghost_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 11
   },
   "ghost_incorporeal_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 5
   },
   "ghost_ghostly_arrival_pod": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 6
   },
   "ghost_make_contact_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 6
   },
   "ghost_shady_deal_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 1
   },
   "ghost_door_to_the_beyond_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 7
   },
   "ghost_the_dead_rise_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 0
   },
   "ghost_across_the_divide_pod": {
-    "atlasId": "tts_atlas_9ae2a2880e",
+    "atlasId": "tts_atlas_10",
     "index": 9
   },
   "bear_cavalry_general_ivan": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 19
   },
   "bear_cavalry_polar_commando": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 17
   },
   "bear_cavalry_bear_cavalry": {
-    "atlasId": "tts_atlas_089779424a",
+    "atlasId": "tts_atlas_204",
     "index": 17
   },
   "bear_cavalry_cub_scout": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 11
   },
   "bear_cavalry_bear_hug": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 0
   },
   "bear_cavalry_youre_screwed": {
-    "atlasId": "tts_atlas_089779424a",
+    "atlasId": "tts_atlas_204",
     "index": 13
   },
   "bear_cavalry_bear_necessities": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 1
   },
   "bear_cavalry_youre_pretty_much_borscht": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 9
   },
   "bear_cavalry_bear_rides_you": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 3
   },
   "bear_cavalry_commission": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 6
   },
   "bear_cavalry_superiority": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 8
   },
   "bear_cavalry_high_ground": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 7
   },
   "bear_cavalry_general_ivan_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 19
   },
   "bear_cavalry_polar_commando_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 17
   },
   "bear_cavalry_bear_cavalry_pod": {
-    "atlasId": "tts_atlas_089779424a",
+    "atlasId": "tts_atlas_204",
     "index": 17
   },
   "bear_cavalry_cub_scout_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 11
   },
   "bear_cavalry_bear_hug_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 0
   },
   "bear_cavalry_youre_screwed_pod": {
-    "atlasId": "tts_atlas_089779424a",
+    "atlasId": "tts_atlas_204",
     "index": 13
   },
   "bear_cavalry_bear_necessities_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 1
   },
   "bear_cavalry_youre_pretty_much_borscht_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 9
   },
   "bear_cavalry_bear_rides_you_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 3
   },
   "bear_cavalry_commission_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 6
   },
   "bear_cavalry_superiority_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 8
   },
   "bear_cavalry_high_ground_pod": {
-    "atlasId": "tts_atlas_ebe6348cfc",
+    "atlasId": "tts_atlas_9",
     "index": 7
   },
   "steampunk_steam_queen": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 19
   },
   "steampunk_mechanic": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 18
   },
   "steampunk_steam_man": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 15
   },
   "steampunk_captain_ahab": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 11
   },
   "steampunk_ornate_dome": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 8
   },
   "steampunk_aggromotive": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 0
   },
   "steampunk_scrap_diving": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 4
   },
   "steampunk_zeppelin": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 2
   },
   "steampunk_change_of_venue": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 7
   },
   "steampunk_rotary_slug_thrower": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 5
   },
   "steampunk_difference_engine": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 6
   },
   "steampunk_escape_hatch": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 9
   },
   "steampunk_steam_queen_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 19
   },
   "steampunk_mechanic_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 18
   },
   "steampunk_steam_man_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 15
   },
   "steampunk_captain_ahab_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 11
   },
   "steampunk_ornate_dome_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 8
   },
   "steampunk_aggromotive_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 0
   },
   "steampunk_scrap_diving_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 4
   },
   "steampunk_zeppelin_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 2
   },
   "steampunk_change_of_venue_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 7
   },
   "steampunk_rotary_slug_thrower_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 5
   },
   "steampunk_difference_engine_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 6
   },
   "steampunk_escape_hatch_pod": {
-    "atlasId": "tts_atlas_303683745f",
+    "atlasId": "tts_atlas_12",
     "index": 9
   },
   "killer_plant_venus_man_trap": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 19
   },
   "killer_plant_weed_eater": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 17
   },
   "killer_plant_water_lily": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 15
   },
   "killer_plant_sprout": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 12
   },
   "killer_plant_budding": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 0
   },
   "killer_plant_deep_roots": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 4
   },
   "killer_plant_choking_vines": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 3
   },
   "killer_plant_insta_grow": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 8
   },
   "killer_plant_blossom": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 2
   },
   "killer_plant_sleep_spores": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 6
   },
   "killer_plant_overgrowth": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 1
   },
   "killer_plant_entangled": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 9
   },
   "killer_plant_venus_man_trap_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 19
   },
   "killer_plant_weed_eater_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 17
   },
   "killer_plant_water_lily_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 15
   },
   "killer_plant_sprout_pod": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 12
   },
   "killer_plant_budding_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 0
   },
   "killer_plant_deep_roots_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 4
   },
   "killer_plant_choking_vines_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 3
   },
   "killer_plant_insta_grow_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 8
   },
   "killer_plant_blossom_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 2
   },
   "killer_plant_sleep_spores_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 6
   },
   "killer_plant_overgrowth_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 1
   },
   "killer_plant_entangled_pod": {
-    "atlasId": "tts_atlas_14f0222fe4",
+    "atlasId": "tts_atlas_11",
     "index": 9
   },
   "zombie_lord": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 19
   },
   "zombie_grave_digger": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 17
   },
   "zombie_tenacious_z": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 15
   },
   "zombie_walker": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 10
   },
   "zombie_grave_robbing": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 1
   },
   "zombie_they_keep_coming": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 7
   },
   "zombie_lend_a_hand": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 2
   },
   "zombie_overrun": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 6
   },
   "zombie_theyre_coming_to_get_you": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 9
   },
   "zombie_not_enough_bullets": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 4
   },
   "zombie_outbreak": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 5
   },
   "zombie_mall_crawl": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 3
   },
   "zombie_lord_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 19
   },
   "zombie_grave_digger_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 17
   },
   "zombie_tenacious_z_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 15
   },
   "zombie_walker_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 10
   },
   "zombie_grave_robbing_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 1
   },
   "zombie_they_keep_coming_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 7
   },
   "zombie_lend_a_hand_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 2
   },
   "zombie_overrun_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 6
   },
   "zombie_theyre_coming_to_get_you_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 9
   },
   "zombie_not_enough_bullets_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 4
   },
   "zombie_outbreak_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 5
   },
   "zombie_mall_crawl_pod": {
-    "atlasId": "tts_atlas_2f22a88c27",
+    "atlasId": "tts_atlas_8",
     "index": 3
   },
   "wizard_archmage": {
@@ -1276,563 +1276,563 @@
     "index": 9
   },
   "trickster_leprechaun": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 19
   },
   "trickster_brownie": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 17
   },
   "trickster_gnome": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 15
   },
   "trickster_gremlin": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 11
   },
   "trickster_enshrouding_mist": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 1
   },
   "trickster_hideout": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 4
   },
   "trickster_mark_of_sleep": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 5
   },
   "trickster_flame_trap": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 3
   },
   "trickster_take_the_shinies": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 7
   },
   "trickster_block_the_path": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 0
   },
   "trickster_disenchant": {
-    "atlasId": "tts_atlas_15cd3592e1",
+    "atlasId": "tts_atlas_201",
     "index": 34
   },
   "trickster_pay_the_piper": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 6
   },
   "trickster_leprechaun_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 19
   },
   "trickster_brownie_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 17
   },
   "trickster_gnome_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 15
   },
   "trickster_gremlin_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 11
   },
   "trickster_enshrouding_mist_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 1
   },
   "trickster_hideout_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 4
   },
   "trickster_mark_of_sleep_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 5
   },
   "trickster_flame_trap_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 3
   },
   "trickster_take_the_shinies_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 7
   },
   "trickster_block_the_path_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 0
   },
   "trickster_disenchant_pod": {
-    "atlasId": "tts_atlas_15cd3592e1",
+    "atlasId": "tts_atlas_201",
     "index": 34
   },
   "trickster_pay_the_piper_pod": {
-    "atlasId": "tts_atlas_dc8145c335",
+    "atlasId": "tts_atlas_6",
     "index": 6
   },
   "robot_nukebot": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 19
   },
   "robot_warbot": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 17
   },
   "robot_hoverbot": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 15
   },
   "robot_zapbot": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 11
   },
   "robot_microbot_reclaimer": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 9
   },
   "robot_microbot_archive": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 3
   },
   "robot_microbot_guard": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 7
   },
   "robot_microbot_alpha": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 2
   },
   "robot_microbot_fixer": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 5
   },
   "robot_tech_center": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 0
   },
   "robot_nukebot_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 19
   },
   "robot_warbot_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 17
   },
   "robot_hoverbot_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 15
   },
   "robot_zapbot_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 11
   },
   "robot_microbot_reclaimer_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 9
   },
   "robot_microbot_archive_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 3
   },
   "robot_microbot_guard_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 7
   },
   "robot_microbot_alpha_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 2
   },
   "robot_microbot_fixer_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 5
   },
   "robot_tech_center_pod": {
-    "atlasId": "tts_atlas_dddbad1f6c",
+    "atlasId": "tts_atlas_5",
     "index": 0
   },
   "frankenstein_igor": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 11
   },
   "frankenstein_lab_assistant": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 15
   },
   "frankenstein_the_monster": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 18
   },
   "frankenstein_herr_doktor": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 19
   },
   "frankenstein_german_engineering": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 1
   },
   "frankenstein_jolt": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 0
   },
   "frankenstein_grave_situation": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 8
   },
   "frankenstein_its_alive": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 3
   },
   "frankenstein_angry_mob": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 7
   },
   "frankenstein_body_shop": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 4
   },
   "frankenstein_uberserum": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 6
   },
   "frankenstein_blitzed": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 9
   },
   "frankenstein_igor_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 11
   },
   "frankenstein_lab_assistant_pod": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 15
   },
   "frankenstein_the_monster_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 18
   },
   "frankenstein_herr_doktor_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 19
   },
   "frankenstein_german_engineering_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 1
   },
   "frankenstein_jolt_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 0
   },
   "frankenstein_grave_situation_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 8
   },
   "frankenstein_its_alive_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 3
   },
   "frankenstein_angry_mob_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 7
   },
   "frankenstein_body_shop_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 4
   },
   "frankenstein_uberserum_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 6
   },
   "frankenstein_blitzed_pod": {
-    "atlasId": "tts_atlas_44bfecde20",
+    "atlasId": "tts_atlas_23",
     "index": 9
   },
   "werewolf_howler": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 11
   },
   "werewolf_teenage_wolf": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 15
   },
   "werewolf_loup_garou": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 17
   },
   "werewolf_pack_alpha": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 19
   },
   "werewolf_full_moon": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 3
   },
   "werewolf_frenzy": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 0
   },
   "werewolf_marking_territory": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 7
   },
   "werewolf_chew_toy": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 5
   },
   "werewolf_leader_of_the_pack": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 2
   },
   "werewolf_unstoppable": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 9
   },
   "werewolf_let_the_dog_out": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 6
   },
   "werewolf_moontouched": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 8
   },
   "werewolf_howler_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 11
   },
   "werewolf_teenage_wolf_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 15
   },
   "werewolf_loup_garou_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 17
   },
   "werewolf_pack_alpha_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 19
   },
   "werewolf_full_moon_pod": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 3
   },
   "werewolf_frenzy_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 0
   },
   "werewolf_marking_territory_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 7
   },
   "werewolf_chew_toy_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 5
   },
   "werewolf_leader_of_the_pack_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 2
   },
   "werewolf_unstoppable_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 9
   },
   "werewolf_let_the_dog_out_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 6
   },
   "werewolf_moontouched_pod": {
-    "atlasId": "tts_atlas_0392b4d8c8",
+    "atlasId": "tts_atlas_25",
     "index": 8
   },
   "vampire_fledgling_vampire": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 11
   },
   "vampire_heavy_drinker": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 15
   },
   "vampire_nightstalker": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 18
   },
   "vampire_the_count": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 19
   },
   "vampire_dinner_date": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 8
   },
   "vampire_big_gulp": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 0
   },
   "vampire_opportunist": {
-    "atlasId": "tts_atlas_34823f3ac6",
+    "atlasId": "tts_atlas_216",
     "index": 26
   },
   "vampire_mad_monster_party": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 1
   },
   "vampire_cull_the_weak": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 6
   },
   "vampire_buffet": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 2
   },
   "vampire_crack_of_dusk": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 3
   },
   "vampire_summon_wolves": {
-    "atlasId": "tts_atlas_34823f3ac6",
+    "atlasId": "tts_atlas_216",
     "index": 34
   },
   "vampire_fledgling_vampire_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 11
   },
   "vampire_heavy_drinker_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 15
   },
   "vampire_nightstalker_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 18
   },
   "vampire_the_count_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 19
   },
   "vampire_dinner_date_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 8
   },
   "vampire_big_gulp_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 0
   },
   "vampire_opportunist_pod": {
-    "atlasId": "tts_atlas_34823f3ac6",
+    "atlasId": "tts_atlas_216",
     "index": 26
   },
   "vampire_mad_monster_party_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 1
   },
   "vampire_cull_the_weak_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 6
   },
   "vampire_buffet_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 2
   },
   "vampire_crack_of_dusk_pod": {
-    "atlasId": "tts_atlas_34ab70c63a",
+    "atlasId": "tts_atlas_24",
     "index": 3
   },
   "vampire_summon_wolves_pod": {
-    "atlasId": "tts_atlas_34823f3ac6",
+    "atlasId": "tts_atlas_216",
     "index": 34
   },
   "giant_ant_worker": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 11
   },
   "giant_ant_soldier": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 15
   },
   "giant_ant_drone": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 17
   },
   "giant_ant_killer_queen": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 19
   },
   "giant_ant_who_wants_to_live_forever": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 6
   },
   "giant_ant_a_kind_of_magic": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 0
   },
   "giant_ant_we_will_rock_you": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 5
   },
   "giant_ant_claim_the_prize": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 1
   },
   "giant_ant_under_pressure": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 7
   },
   "giant_ant_headlong": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 9
   },
   "giant_ant_the_show_must_go_on": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 8
   },
   "giant_ant_we_are_the_champions": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 3
   },
   "ninja_master_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 19
   },
   "ninja_tiger_assassin_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 18
   },
   "ninja_shinobi_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 14
   },
   "ninja_acolyte_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 11
   },
   "ninja_way_of_deception_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 3
   },
   "ninja_smoke_bomb_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 2
   },
   "ninja_assassination_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 9
   },
   "ninja_hidden_ninja_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 4
   },
   "ninja_seeing_stars_pod": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 0
   },
   "ninja_disguise_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 7
   },
   "ninja_infiltrate_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 5
   },
   "ninja_poison_pod": {
-    "atlasId": "tts_atlas_aa830cae17",
+    "atlasId": "tts_atlas_3",
     "index": 8
   },
   "base_the_homeworld": {
@@ -1848,7 +1848,7 @@
     "index": 8
   },
   "base_the_jungle": {
-    "atlasId": "tts_atlas_ee67c46828",
+    "atlasId": "tts_atlas_7",
     "index": 9
   },
   "base_temple_of_goju": {
@@ -1916,15 +1916,15 @@
     "index": 4
   },
   "base_cat_fanciers_alley": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 11
   },
   "base_house_of_nine_lives": {
-    "atlasId": "tts_atlas_60d724d1cb",
+    "atlasId": "tts_atlas_1219",
     "index": 3
   },
   "base_beautiful_castle": {
-    "atlasId": "tts_atlas_60d724d1cb",
+    "atlasId": "tts_atlas_1219",
     "index": 7
   },
   "base_ritual_site": {
@@ -1964,11 +1964,11 @@
     "index": 9
   },
   "base_castle_blood": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 4
   },
   "base_crypt": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 5
   },
   "base_laboratorium": {
@@ -1980,71 +1980,71 @@
     "index": 7
   },
   "base_moot_site": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 6
   },
   "base_standing_stones": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 7
   },
   "base_egg_chamber": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 1
   },
   "base_the_hill": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 0
   },
   "special_madness_pod": {
-    "atlasId": "tts_atlas_4c71f8845b",
+    "atlasId": "tts_atlas_207",
     "index": 47
   },
   "giant_ant_worker_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 11
   },
   "giant_ant_soldier_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 15
   },
   "giant_ant_drone_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 17
   },
   "giant_ant_killer_queen_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 19
   },
   "giant_ant_who_wants_to_live_forever_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 6
   },
   "giant_ant_a_kind_of_magic_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 0
   },
   "giant_ant_we_will_rock_you_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 5
   },
   "giant_ant_claim_the_prize_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 1
   },
   "giant_ant_under_pressure_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 7
   },
   "giant_ant_headlong_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 9
   },
   "giant_ant_the_show_must_go_on_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 8
   },
   "giant_ant_we_are_the_champions_pod": {
-    "atlasId": "tts_atlas_0ec09b7cdf",
+    "atlasId": "tts_atlas_22",
     "index": 3
   },
   "base_the_homeworld_pod": {
@@ -2060,7 +2060,7 @@
     "index": 8
   },
   "base_the_jungle_pod": {
-    "atlasId": "tts_atlas_ee67c46828",
+    "atlasId": "tts_atlas_7",
     "index": 9
   },
   "base_temple_of_goju_pod": {
@@ -2128,15 +2128,15 @@
     "index": 4
   },
   "base_cat_fanciers_alley_pod": {
-    "atlasId": "tts_atlas_de514149af",
+    "atlasId": "tts_atlas_52",
     "index": 11
   },
   "base_house_of_nine_lives_pod": {
-    "atlasId": "tts_atlas_60d724d1cb",
+    "atlasId": "tts_atlas_1219",
     "index": 3
   },
   "base_beautiful_castle_pod": {
-    "atlasId": "tts_atlas_60d724d1cb",
+    "atlasId": "tts_atlas_1219",
     "index": 7
   },
   "base_ritual_site_pod": {
@@ -2176,11 +2176,11 @@
     "index": 9
   },
   "base_castle_blood_pod": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 4
   },
   "base_crypt_pod": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 5
   },
   "base_laboratorium_pod": {
@@ -2192,19 +2192,19 @@
     "index": 7
   },
   "base_moot_site_pod": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 6
   },
   "base_standing_stones_pod": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 7
   },
   "base_egg_chamber_pod": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 1
   },
   "base_the_hill_pod": {
-    "atlasId": "tts_atlas_9aed5872d2",
+    "atlasId": "tts_atlas_1218",
     "index": 0
   }
 }

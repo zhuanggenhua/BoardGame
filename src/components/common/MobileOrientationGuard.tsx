@@ -38,29 +38,19 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     };
   }, [isGamePage]);
 
-  // 移动设备且竖屏时显示提示
-  if (isMobile && isPortrait) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center z-[9999]">
-        <div className="text-center text-white p-8 max-w-sm">
-          {/* 旋转图标动画 */}
-          <div className="text-7xl mb-6 animate-bounce">
-            📱
-          </div>
-          <h2 className="text-2xl font-bold mb-3">请旋转设备</h2>
-          <p className="text-gray-300 text-lg">
-            为获得最佳游戏体验，请将设备旋转至横屏模式
-          </p>
-          {/* 旋转指示箭头 */}
-          <div className="mt-8 flex justify-center items-center gap-4 text-4xl opacity-60">
-            <span className="transform rotate-90">📱</span>
-            <span>→</span>
-            <span>📱</span>
+  // 移动设备且竖屏时显示建议（不阻止访问）
+  return (
+    <>
+      {isMobile && isPortrait && (
+        <div className="fixed top-0 left-0 right-0 bg-parchment-brown/95 backdrop-blur-sm text-parchment-cream py-3 px-4 z-[9999] shadow-lg border-b-2 border-parchment-gold/30">
+          <div className="flex items-center justify-center gap-3 text-sm">
+            <span className="text-xl">📱</span>
+            <span className="font-serif">建议旋转至横屏以获得更佳体验</span>
+            <span className="text-xl transform rotate-90">📱</span>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
+      )}
+      {children}
+    </>
+  );
 }

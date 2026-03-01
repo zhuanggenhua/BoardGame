@@ -27,6 +27,7 @@ export const MATCH_CHAT_EVENTS = {
     LEAVE: 'matchChat:leave',
     SEND: 'matchChat:send',
     MESSAGE: 'matchChat:message',
+    HISTORY: 'matchChat:history',
 } as const;
 
 // 重赛投票状态
@@ -53,6 +54,7 @@ export type RematchStateCallback = (state: RematchVoteState) => void;
 export type RematchResetCallback = () => void;
 export type NewRoomCallback = (url: string) => void;
 export type MatchChatCallback = (message: MatchChatMessage) => void;
+export type MatchChatHistoryCallback = (history: MatchChatMessage[]) => void;
 
 class MatchSocketService {
     private socket: Socket | null = null;
@@ -64,6 +66,7 @@ class MatchSocketService {
     private resetCallbacks: Set<RematchResetCallback> = new Set();
     private newRoomCallbacks: Set<NewRoomCallback> = new Set();
     private chatCallbacks: Set<MatchChatCallback> = new Set();
+    private chatHistoryCallbacks: Set<MatchChatHistoryCallback> = new Set();
     private currentState: RematchVoteState = { votes: {}, ready: false, revision: 0 };
     private lastAcceptedRevision = 0;
     private currentChatMatchId: string | null = null;
@@ -163,6 +166,11 @@ class MatchSocketService {
         this.socket.on(MATCH_CHAT_EVENTS.MESSAGE, (payload: MatchChatMessage) => {
             this.notifyChatCallbacks(payload);
         });
+
+        // 接收聊天历史
+        this.socket.on(MATCH_CHAT_EVENTS.HISTORY, (history: MatchChatMessage[]) => {
+            this.notifyChatHistoryCallbacks(history);
+        });
     }
 
     /**
@@ -213,6 +221,19 @@ class MatchSocketService {
                 callback(message);
             } catch (error) {
                 console.error('[MatchSocket] 聊天回调错误:', error);
+            }
+        });
+    }
+
+    /**
+     * 通知聊天历史回调
+     */
+    private notifyChatHistoryCallbacks(history: MatchChatMessage[]): void {
+        this.chatHistoryCallbacks.forEach((callback) => {
+            try {
+                callback(history);
+            } catch (error) {
+                console.error('[MatchSocket] 聊天历史回调错误:', error);
             }
         });
     }
@@ -363,6 +384,16 @@ class MatchSocketService {
     }
 
     /**
+     * 订阅聊天历史消息
+     */
+    subscribeChatHistory(callback: MatchChatHistoryCallback): () => void {
+        this.chatHistoryCallbacks.add(callback);
+        return () => {
+            this.chatHistoryCallbacks.delete(callback);
+        };
+    }
+
+    /**
      * 获取当前状态
      */
     getState(): RematchVoteState {
@@ -398,6 +429,7 @@ class MatchSocketService {
         this.stateCallbacks.clear();
         this.resetCallbacks.clear();
         this.chatCallbacks.clear();
+        this.chatHistoryCallbacks.clear();
     }
 
     /**
