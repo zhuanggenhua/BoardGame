@@ -76,7 +76,8 @@ export const getCardAtlasStyle = (index: number, atlas: CardAtlasConfig) => {
 };
 
 import { registerLazyCardAtlasSource } from '../../../components/common/media/cardAtlasRegistry';
-import ttsAtlasConfig from '../../../../public/assets/i18n/en/smashup/atlas-config.json';
+// TODO: PR #5 引入了 TTS 英文图集支持，但缺少 atlas-config.json 文件
+// import ttsAtlasConfig from '../../../../public/assets/i18n/en/smashup/atlas-config.json';
 
 type TtsConfig = {
     atlases: Record<string, { grid: { rows: number; cols: number } }>;
@@ -95,14 +96,14 @@ export function initSmashUpAtlases() {
         });
     }
 
-    // 动态注册 TTS 英文高清图集（这是本地唯一的图片源表）
-    const ttsData = ttsAtlasConfig as TtsConfig;
-    for (const [atlasId, config] of Object.entries(ttsData.atlases)) {
-        registerLazyCardAtlasSource(atlasId, {
-            image: `smashup/cards/compressed/${atlasId}`,
-            grid: { rows: config.grid.rows, cols: config.grid.cols },
-        });
-    }
+    // TODO: 动态注册 TTS 英文高清图集（等 atlas-config.json 文件补充后启用）
+    // const ttsData = ttsAtlasConfig as TtsConfig;
+    // for (const [atlasId, config] of Object.entries(ttsData.atlases)) {
+    //     registerLazyCardAtlasSource(atlasId, {
+    //         image: `smashup/cards/compressed/${atlasId}`,
+    //         grid: { rows: config.grid.rows, cols: config.grid.cols },
+    //     });
+    // }
 }
 
 /** @deprecated 使用 initSmashUpAtlases 代替 */

@@ -538,16 +538,23 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             console.error('获取房间状态失败:', err);
+            
+            // 404 错误（房间不存在）立即触发错误状态，无需等待 3 次失败
+            const is404 = errorMessage.includes('404') || errorMessage.includes('not found');
+            if (is404) {
+                clearMatchCredentials(currentMatchID);
+                setError('房间不存在或已被删除');
+                setIsLoading(false);
+                return;
+            }
+            
+            // 其他错误（网络问题等）需要连续 3 次失败才触发
             failureCountRef.current += 1;
             if (!lastFailureAtRef.current) {
                 lastFailureAtRef.current = Date.now();
             }
             const shouldExposeError = failureCountRef.current >= 3;
             if (shouldExposeError) {
-                // 404 说明房间已不存在，清理本地凭据（避免创建后短暂抖动误判）
-                if (errorMessage.includes('404') || errorMessage.includes('not found')) {
-                    clearMatchCredentials(currentMatchID);
-                }
                 setError(prev => prev ?? '房间不存在或已被删除');
             } else {
                 setError(null);

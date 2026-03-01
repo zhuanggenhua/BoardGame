@@ -887,10 +887,8 @@ export const MatchRoom = () => {
             setShouldShowMatchError(false);
             return;
         }
-        const timer = window.setTimeout(() => {
-            setShouldShowMatchError(true);
-        }, 4000);
-        return () => window.clearTimeout(timer);
+        // 404 错误立即显示，无需延迟
+        setShouldShowMatchError(true);
     }, [isTutorialRoute, matchStatus.error]);
 
     // 如果房间不存在，显示错误并自动跳转
@@ -898,7 +896,7 @@ export const MatchRoom = () => {
         if (shouldShowMatchError) {
             const timer = setTimeout(() => {
                 navigate('/');
-            }, 2500); // 2.5 秒后自动跳转
+            }, 1500); // 1.5 秒后自动跳转（从 2.5 秒缩短）
 
             return () => clearTimeout(timer);
         }

@@ -434,7 +434,6 @@ class MatchSocketService {
         });
     }
 
-    private _cleanupVisibility: (() => void) | null = null;
     private _cleanupHealthCheck: (() => void) | null = null;
 }
 
