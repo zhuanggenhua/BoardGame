@@ -1,0 +1,62 @@
+[
+  {
+    "factionId": "pirates",
+    "issues": [
+      {
+        "type": "missing",
+        "name": "Saucy Wench",
+        "wikiCount": 3,
+        "description": ""
+      }
+    ]
+  },
+  {
+    "factionId": "zombies",
+    "issues": [
+      {
+        "type": "missing",
+        "name": "They’re Coming To Get You",
+        "wikiCount": 1,
+        "description": ""
+      },
+      {
+        "type": "extra",
+        "name": "They’re Coming to Get You",
+        "codeCount": 1
+      }
+    ]
+  },
+  {
+    "factionId": "miskatonic",
+    "issues": [
+      {
+        "type": "missing",
+        "name": "“Old Man Jenkins!?”",
+        "wikiCount": 1,
+        "description": "Special: Before a base scores, destroy a minion with the highest power there. FAQ"
+      },
+      {
+        "type": "missing",
+        "name": "That’s So Crazy...",
+        "wikiCount": 1,
+        "description": "Draw a Madness card. Each of your minions has +1 power until the end of the turn. You may play an extra action this turn. FAQ"
+      },
+      {
+        "type": "extra",
+        "name": "\"Old Man Jenkins!?\"",
+        "codeCount": 1
+      }
+    ]
+  },
+  {
+    "factionId": "frankenstein",
+    "issues": [
+      {
+        "type": "missing",
+        "name": "IT’S ALIVE!",
+        "wikiCount": 2,
+        "description": "Play an extra minion. Place a +1 power counter on it. FAQ"
+      }
+    ]
+  }
+]

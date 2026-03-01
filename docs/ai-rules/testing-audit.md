@@ -85,7 +85,7 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 | D5 | 交互完整 | 玩家决策点都有对应 UI？**交互模式与描述语义匹配？** **实现模式（额度 vs 交互）与描述语义匹配？** **UI 组件是否复用唯一来源？** |
 | D6 | 副作用传播 | 新增效果是否触发已有机制的连锁？ |
 | D7 | 资源守恒 | 代价/消耗/限制正确扣除和恢复？**有代价操作的验证层是否拒绝必然无效果的激活？** |
-| D8 | 时序正确 | 触发顺序和生命周期正确？**引擎批处理时序与 UI 异步交互是否对齐？阶段结束副作用与阶段推进的执行顺序是否导致验证层状态不一致？事件产生门控是否对所有同类技能普适生效（禁止硬编码特定 abilityId）？状态写入时机是否在消费窗口内（写入后是否有机会被消费，还是会被清理逻辑先抹掉）？多系统协作时，同批事件的处理顺序（按 priority）是否导致低优先级系统的状态驱动检查在高优先级系统执行前误触发？回调函数（onPlay/onMinionPlayed 等）中的计数器检查是否使用了正确的 post-reduce 阈值（首次=1 而非 0）？是否使用权威计数器而非派生状态判定"首次"？** |
+| D8 | 时序正确 | 触发顺序和生命周期正确？**引擎批处理时序与 UI 异步交互是否对齐？阶段结束副作用与阶段推进的执行顺序是否导致验证层状态不一致？事件产生门控是否对所有同类技能普适生效（禁止硬编码特定 abilityId）？状态写入时机是否在消费窗口内（写入后是否有机会被消费，还是会被清理逻辑先抹掉）？交互解决后是否自动恢复流程推进（D8.4）？多系统协作时，同批事件的处理顺序（按 priority）是否导致低优先级系统的状态驱动检查在高优先级系统执行前误触发？回调函数（onPlay/onMinionPlayed 等）中的计数器检查是否使用了正确的 post-reduce 阈值（首次=1 而非 0）？是否使用权威计数器而非派生状态判定"首次"？** |
 | D9 | 幂等与重入 | 重复触发/撤销重做安全？**后处理循环中的事件去重集合是否从正确的数据源构建？** |
 | D10 | 元数据一致 | categories/tags/meta 与实际行为匹配？ |
 | D11 | **Reducer 消耗路径** | 事件写入的资源/额度/状态，在 reducer 消耗时走的分支是否正确？**多种额度来源并存时消耗优先级是否正确？** |
@@ -370,6 +370,60 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
    - **延迟清理时机**：将清理推迟到消费窗口之后（通常不推荐，容易引入状态泄漏）
 
 **排查信号**：
+
+**D8 子项：交互解决后的流程恢复（强制）**（新增/修改 `onPhaseExit` 返回 halt 的逻辑，或修"交互解决后仍需手动推进"/"需要点击两次"时触发）：当 `onPhaseExit` 返回 `{ halt: true }` 阻止阶段推进时，交互解决后必须通过 `onAutoContinueCheck` 自动恢复流程推进。**核心原则：halt 是临时阻塞，不是永久停止。交互解决后如果不自动推进，用户需要重复操作（如点击两次"结束回合"），体验极差。** 审查方法：
+1. **识别 halt 场景**：grep 所有 `onPhaseExit` 中返回 `{ halt: true }` 的代码路径
+2. **追踪 flowHalted 标志**：
+   - `onPhaseExit` 返回 `{ halt: true }` → FlowSystem 设置 `state.sys.flowHalted = true`
+   - 交互解决后 → `onAutoContinueCheck` 被调用
+   - `onAutoContinueCheck` 必须检测 `flowHalted=true` 且无交互 → 返回 `{ autoContinue: true }`
+   - FlowSystem 自动推进阶段 → 清除 `flowHalted` 标志
+3. **检查 onAutoContinueCheck 的条件覆盖**：
+   - ✅ 正确：`if (flowHalted && !interaction.current) return { autoContinue: true }`
+   - ❌ 错误：无条件返回 `undefined`（交互解决后不自动推进）
+   - ❌ 错误：只检查 `!interaction.current` 不检查 `flowHalted`（可能误触发）
+4. **E2E 测试必须覆盖**：
+   - 触发需要交互的阶段结束效果
+   - 解决交互
+   - 验证自动推进到下一阶段（不需要再次点击）
+5. **反模式清单**：
+   - ❌ 紧急修复时无条件禁止自动推进（如 `if (phase === 'xxx') return undefined`）
+   - ❌ 只测试"交互创建"不测试"交互解决后的流程"
+   - ❌ `flowHalted` 标志未被清理（导致后续阶段也被阻塞）
+
+**典型缺陷链**：
+1. 原始 Bug：某个交互导致无限循环
+2. 紧急修复：完全禁止该阶段的自动推进
+3. 副作用 Bug：交互解决后也不自动推进 → 需要点击两次
+4. 测试盲区：单元测试只验证"交互创建"，E2E 测试缺失"交互解决后的流程"
+
+**修复模板**：
+```typescript
+onAutoContinueCheck({ state }) {
+    const phase = state.sys.phase;
+    
+    // 通用守卫：有交互时不自动推进
+    if (state.sys.interaction?.current) {
+        return undefined;
+    }
+    
+    // 阶段特定逻辑
+    if (phase === 'scoreBases') {
+        // 情况1：flowHalted=true 且交互已解决 → 自动推进（恢复流程）
+        if (state.sys.flowHalted) {
+            return { autoContinue: true, playerId };
+        }
+        
+        // 情况2：没有需要处理的内容 → 自动推进
+        if (noWorkToDo(state)) {
+            return { autoContinue: true, playerId };
+        }
+        
+        // 情况3：有工作但未开始 → 不自动推进（等待用户触发）
+        return undefined;
+    }
+}
+```
 
 **D8 子项：多系统 afterEvents 优先级竞争（强制）**（新增/修改引擎系统的 afterEvents 逻辑，或修"功能在测试中正常但实际无效"时触发）：多个引擎系统按 priority 顺序处理同一批事件时，低优先级系统的"状态驱动检查"可能在高优先级系统执行前误触发。**核心原则：系统 A（priority=15）在 afterEvents 中设置 `pendingInteractionId` 后，立即检查 `sys.interaction.current` 是否为空来决定是否解锁——但系统 B（priority=22）尚未执行 `queueInteraction`，`sys.interaction.current` 确实为空，导致系统 A 误判"交互已完成"并解锁/关闭窗口。** 审查方法：
 1. **识别状态驱动检查**：grep 所有系统的 `afterEvents` 中读取其他系统管理的状态字段（如 `sys.interaction.current`、`sys.responseWindow.current`）的逻辑

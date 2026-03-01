@@ -1,0 +1,102 @@
+{
+  "aliens": {
+    "wikiName": "Aliens",
+    "totalCards": 0,
+    "cards": []
+  },
+  "ninjas": {
+    "wikiName": "Ninjas",
+    "totalCards": 0,
+    "cards": []
+  },
+  "pirates": {
+    "wikiName": "Pirates",
+    "totalCards": 0,
+    "cards": []
+  },
+  "robots": {
+    "wikiName": "Robots",
+    "totalCards": 0,
+    "cards": []
+  },
+  "tricksters": {
+    "wikiName": "Tricksters",
+    "totalCards": 0,
+    "cards": []
+  },
+  "wizards": {
+    "wikiName": "Wizards",
+    "totalCards": 0,
+    "cards": []
+  },
+  "zombies": {
+    "wikiName": "Zombies",
+    "totalCards": 0,
+    "cards": []
+  },
+  "dinosaurs": {
+    "wikiName": "Dinosaurs",
+    "totalCards": 0,
+    "cards": []
+  },
+  "bear_cavalry": {
+    "wikiName": "Bear_Cavalry",
+    "totalCards": 0,
+    "cards": []
+  },
+  "ghosts": {
+    "wikiName": "Ghosts",
+    "totalCards": 0,
+    "cards": []
+  },
+  "killer_plants": {
+    "wikiName": "Killer_Plants",
+    "totalCards": 0,
+    "cards": []
+  },
+  "steampunks": {
+    "wikiName": "Steampunks",
+    "totalCards": 0,
+    "cards": []
+  },
+  "elder_things": {
+    "wikiName": "Elder_Things",
+    "totalCards": 0,
+    "cards": []
+  },
+  "innsmouth": {
+    "wikiName": "Innsmouth",
+    "totalCards": 0,
+    "cards": []
+  },
+  "cthulhu": {
+    "wikiName": "Minions_of_Cthulhu",
+    "totalCards": 0,
+    "cards": []
+  },
+  "miskatonic": {
+    "wikiName": "Miskatonic_University",
+    "totalCards": 0,
+    "cards": []
+  },
+  "giant-ants": {
+    "wikiName": "Giant_Ants",
+    "totalCards": 0,
+    "cards": []
+  },
+  "vampires": {
+    "wikiName": "Vampires",
+    "totalCards": 0,
+    "cards": []
+  },
+  "werewolves": {
+    "wikiName": "Werewolves",
+    "totalCards": 0,
+    "cards": []
+  },
+  "frankenstein": {
+    "wikiName": "Mad_Scientists",
+    "totalCards": 0,
+    "cards": []
+  }
+}

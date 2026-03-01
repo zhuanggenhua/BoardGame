@@ -1,0 +1,1782 @@
+{
+  "aliens": [
+    {
+      "name": "Supreme Overlord",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - You may return a minion to its owner’s hand. FAQ"
+    },
+    {
+      "name": "Invader",
+      "count": 2,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Gain 1 VP. FAQ"
+    },
+    {
+      "name": "Scout",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": ""
+    },
+    {
+      "name": "Scout",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Special: After this base is scored, you may return this minion to your hand. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Collector",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": ""
+    },
+    {
+      "name": "Collector",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - You may return a minion of power 3 or less on this base to its owner’s hand. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Abduction",
+      "count": 1,
+      "type": "action",
+      "description": "Return a minion to its owner’s hand. Play an extra minion. FAQ"
+    },
+    {
+      "name": "Beam Up",
+      "count": 2,
+      "type": "action",
+      "description": "Return a minion to its owner’s hand. FAQ"
+    },
+    {
+      "name": "Crop Circles",
+      "count": 1,
+      "type": "action",
+      "description": "Choose a base. Return each minion on that base to its owner’s hand. FAQ"
+    },
+    {
+      "name": "Disintegrator",
+      "count": 2,
+      "type": "action",
+      "power": 3,
+      "description": "Place a minion of power 3 or less on the bottom of its owner’s deck. FAQ"
+    },
+    {
+      "name": "Invasion",
+      "count": 1,
+      "type": "action",
+      "description": "Move a minion to another base. FAQ"
+    },
+    {
+      "name": "Jammed Signal",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Jammed Signal",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: This base's abilities are cancelled. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Probe",
+      "count": 1,
+      "type": "action",
+      "description": "Look at another player’s hand and choose a minion in it. That player discards that minion. FAQ"
+    },
+    {
+      "name": "Terraforming",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Terraforming",
+      "count": 1,
+      "type": "action",
+      "description": "Search the base deck for a base. Swap it with a base in play (discard all actions attached to it). All minions from the original base remain. Shuffle the base deck. You may play an extra minion on the new base. (errata'd by The Bigger Geekier Box) FAQ"
+    },
+    {
+      "name": "Terraforming",
+      "count": 1,
+      "type": "action",
+      "description": "Search the base deck for a base and swap it with a base in play. You may play an extra minion there. (errata'd by Smash Up POD) FAQ"
+    }
+  ],
+  "ninjas": [
+    {
+      "name": "Ninja Master",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - You may destroy a minion on this base. FAQ"
+    },
+    {
+      "name": "Tiger Assassin",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - You may destroy a minion of power 3 or less on this base. FAQ"
+    },
+    {
+      "name": "Shinobi",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Special: Before a base scores, you may play this minion there. You can only use one Shinobi’s ability per base. FAQ"
+    },
+    {
+      "name": "Ninja Acolyte",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": ""
+    },
+    {
+      "name": "Ninja Acolyte",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Talent: If you have not played a minion on this turn, you may return this minion to your hand and play an extra minion here immediately. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Assassination",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Ongoing: Destroy this minion at the end of the turn. FAQ"
+    },
+    {
+      "name": "Disguise",
+      "count": 1,
+      "type": "action",
+      "description": "Choose one or two of your minions on one base. Play an equal number of extra minions there, and return the chosen minions to your hand. FAQ"
+    },
+    {
+      "name": "Hidden Ninja",
+      "count": 1,
+      "type": "action",
+      "description": "Special: Before a base scores, play a minion there. FAQ"
+    },
+    {
+      "name": "Infiltrate",
+      "count": 2,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Infiltrate",
+      "count": 2,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Infiltrate",
+      "count": 2,
+      "type": "action",
+      "description": "Play on a base. You may destroy another action on this base. Talent: Destroy this action to cancel this base's ability until the start of your turn. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Poison",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Destroy any number of actions on it. Ongoing: This minion has -4 power. (Minions have minimum power of 0.) FAQ"
+    },
+    {
+      "name": "Seeing Stars",
+      "count": 2,
+      "type": "action",
+      "power": 3,
+      "description": "Destroy a minion of power 3 or less. FAQ"
+    },
+    {
+      "name": "Smoke Bomb",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Smoke Bomb",
+      "count": 1,
+      "type": "action",
+      "description": "Play on one of your minions. Ongoing: This minion is not affected by other players' actions. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Way of Deception",
+      "count": 1,
+      "type": "action",
+      "description": "Move one of your minions to another base. FAQ"
+    }
+  ],
+  "pirates": [
+    {
+      "name": "Pirate King",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Special: Before a base scores, you may move this minion there. FAQ"
+    },
+    {
+      "name": "Buccaneer",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": ""
+    },
+    {
+      "name": "Buccaneer",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Ongoing: Once per turn, if this minion would be destroyed, you may move it to another base instead. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Saucy Wench",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": ""
+    },
+    {
+      "name": "Cut Lass",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - You may destroy a minion here of power 2 or less. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "First Mate",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Special: After this base is scored, you may move this minion to another base instead of the discard pile. FAQ"
+    },
+    {
+      "name": "Broadside",
+      "count": 2,
+      "type": "action",
+      "power": 2,
+      "description": "Destroy all of one player’s minions of power 2 or less on a base where you have a minion. FAQ"
+    },
+    {
+      "name": "Cannon",
+      "count": 1,
+      "type": "action",
+      "power": 2,
+      "description": "Destroy up to two minions of power 2 or less. FAQ"
+    },
+    {
+      "name": "Dinghy",
+      "count": 2,
+      "type": "action",
+      "description": "Move up to two of your minions to other bases. FAQ"
+    },
+    {
+      "name": "Full Sail",
+      "count": 1,
+      "type": "action",
+      "description": "Move any number of your minions to other bases. Special: Before a base scores, you may play this card. FAQ"
+    },
+    {
+      "name": "Powderkeg",
+      "count": 1,
+      "type": "action",
+      "description": "Destroy one of your minions and all minions with equal or less power on the same base. FAQ"
+    },
+    {
+      "name": "Sea Dogs",
+      "count": 1,
+      "type": "action",
+      "description": "Name a faction. Move all other players’ minions of that faction from one base to another. FAQ"
+    },
+    {
+      "name": "Shanghai",
+      "count": 1,
+      "type": "action",
+      "description": "Move another player’s minion to another base. FAQ"
+    },
+    {
+      "name": "Swashbuckling",
+      "count": 1,
+      "type": "action",
+      "description": "Each of your minions gains +1 power until the end of the turn. FAQ"
+    }
+  ],
+  "robots": [
+    {
+      "name": "Nukebot",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Ongoing: After this minion is destroyed, destroy each other player’s minions on this base. FAQ"
+    },
+    {
+      "name": "Warbot",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Ongoing: This minion cannot be destroyed. FAQ"
+    },
+    {
+      "name": "Hoverbot",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Reveal the top card of your deck. If it is a minion, you may play it as an extra minion. Otherwise, return it to the top of your deck. FAQ"
+    },
+    {
+      "name": "Zapbot",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - You may play an extra minion of power 2 or less. FAQ"
+    },
+    {
+      "name": "Microbot Alpha",
+      "count": 1,
+      "type": "minion",
+      "power": 1,
+      "description": "power 1 - Ongoing: Gains +1 power for each of your other Microbots. All of your minions are considered Microbots. FAQ"
+    },
+    {
+      "name": "Microbot Archive",
+      "count": 1,
+      "type": "minion",
+      "power": 1,
+      "description": "power 1 - Ongoing: After one of your Microbots (including this one) is destroyed, draw a card. FAQ"
+    },
+    {
+      "name": "Microbot Fixer",
+      "count": 2,
+      "type": "minion",
+      "power": 1,
+      "description": "power 1 - If this is the first minion you played this turn, you may play an extra minion. Ongoing: Each of your Microbots gains +1 power. FAQ"
+    },
+    {
+      "name": "Microbot Guard",
+      "count": 2,
+      "type": "minion",
+      "power": 1,
+      "description": "power 1 - Destroy a minion on this base with power less than the number of minions you have here. FAQ"
+    },
+    {
+      "name": "Microbot Reclaimer",
+      "count": 2,
+      "type": "minion",
+      "power": 1,
+      "description": "power 1 - If this is the first minion you played this turn, you may play an extra minion. Shuffle any number of Microbots from your discard pile into your deck. FAQ"
+    },
+    {
+      "name": "Tech Center",
+      "count": 2,
+      "type": "action",
+      "description": "Choose a base. Draw one card for each of your minions there. FAQ"
+    }
+  ],
+  "tricksters": [
+    {
+      "name": "Leprechaun",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Ongoing: After another player plays a minion here with less power than this minion’s power, destroy it (resolve its ability first). FAQ"
+    },
+    {
+      "name": "Brownie",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Ongoing: After another player plays a card that affects this minion, that player discards two random cards. FAQ"
+    },
+    {
+      "name": "Gnome",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - You may destroy a minion on this base with power less than the number of minions you have here. FAQ"
+    },
+    {
+      "name": "Gremlin",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Ongoing: After this minion is destroyed, draw a card and each other player discards a random card. FAQ"
+    },
+    {
+      "name": "Block the Path",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base and name a faction. Ongoing: Minions of that faction cannot be played here. FAQ"
+    },
+    {
+      "name": "Disenchant",
+      "count": 2,
+      "type": "action",
+      "description": "Destroy an action that has been played on a minion or base. FAQ"
+    },
+    {
+      "name": "Enshrouding Mist",
+      "count": 2,
+      "type": "action",
+      "description": "Play on a base. Ongoing: On your turn, you may play an extra minion here. FAQ"
+    },
+    {
+      "name": "Flame Trap",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: After another player plays a minion here, destroy it (resolve its ability first) and this card. FAQ"
+    },
+    {
+      "name": "Hideout",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: If another player’s action would affect your minions here, destroy this card and the action does not affect your minions. FAQ"
+    },
+    {
+      "name": "Mark of Sleep",
+      "count": 1,
+      "type": "action",
+      "description": "Choose a player. That player cannot play actions on his or her next turn. FAQ"
+    },
+    {
+      "name": "Pay the Piper",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: After another player plays a minion here, that player discards a card. FAQ"
+    },
+    {
+      "name": "Take the Shinies",
+      "count": 1,
+      "type": "action",
+      "description": "Each other player discards two random cards. FAQ"
+    }
+  ],
+  "wizards": [
+    {
+      "name": "Archmage",
+      "count": 1,
+      "type": "minion",
+      "power": 4,
+      "description": ""
+    },
+    {
+      "name": "Archmage",
+      "count": 1,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Talent: Play an extra action. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Chronomage",
+      "count": 2,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - You may play an extra action this turn. FAQ"
+    },
+    {
+      "name": "Enchantress",
+      "count": 3,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Draw a card. FAQ"
+    },
+    {
+      "name": "Neophyte",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Reveal the top card of your deck. If it is an action, you may place it in your hand or play it as an extra action. Otherwise, return it to the top of your deck. FAQ"
+    },
+    {
+      "name": "Mass Enchantment",
+      "count": 1,
+      "type": "action",
+      "description": "Reveal the top card of each other player’s deck. Play one revealed action as an extra action. Return unused cards to the top of their decks. FAQ"
+    },
+    {
+      "name": "Mystic Studies",
+      "count": 2,
+      "type": "action",
+      "description": "Draw two cards. FAQ"
+    },
+    {
+      "name": "Portal",
+      "count": 1,
+      "type": "action",
+      "description": "Reveal the top five cards of your deck. Place any number of minions revealed into your hand. Return the other cards to the top of your deck in any order. FAQ"
+    },
+    {
+      "name": "Sacrifice",
+      "count": 1,
+      "type": "action",
+      "description": "Choose one of your minions. Draw cards equal to its power. Destroy that minion. FAQ"
+    },
+    {
+      "name": "Scry",
+      "count": 1,
+      "type": "action",
+      "description": "Search your deck for an action and reveal it to all players. Place it into your hand and shuffle your deck. FAQ"
+    },
+    {
+      "name": "Summon",
+      "count": 2,
+      "type": "action",
+      "description": "Play an extra minion. FAQ"
+    },
+    {
+      "name": "Time Loop",
+      "count": 1,
+      "type": "action",
+      "description": "Play two extra actions. FAQ"
+    },
+    {
+      "name": "Winds of Change",
+      "count": 1,
+      "type": "action",
+      "description": "Shuffle your hand into your deck and draw five cards. You may play an extra action. FAQ"
+    }
+  ],
+  "zombies": [
+    {
+      "name": "Zombie Lord",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - You may play an extra minion of power 2 or less from your discard pile on each base where you have no minions. FAQ"
+    },
+    {
+      "name": "Grave Digger",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - You may place a minion from your discard pile into your hand. FAQ"
+    },
+    {
+      "name": "Tenacious Z",
+      "count": 3,
+      "type": "minion",
+      "power": 2,
+      "description": ""
+    },
+    {
+      "name": "Tenacious Z",
+      "count": 3,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Special: On your turn you may play this card from your discard pile as an extra minion. You may only use the ability of one Tenacious Z each turn. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Walker",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Look at the top card of your deck. Discard it or return it to the top of your deck. FAQ"
+    },
+    {
+      "name": "Grave Robbing",
+      "count": 2,
+      "type": "action",
+      "description": "Place a card from your discard pile into your hand. FAQ"
+    },
+    {
+      "name": "Lend a Hand",
+      "count": 1,
+      "type": "action",
+      "description": "Shuffle any number of cards from your discard pile into your deck. FAQ"
+    },
+    {
+      "name": "Mall Crawl",
+      "count": 1,
+      "type": "action",
+      "description": "Search your deck for any number of cards with the same name and place them into your discard pile. Shuffle your deck. FAQ"
+    },
+    {
+      "name": "Not Enough Bullets",
+      "count": 1,
+      "type": "action",
+      "description": "Place any number of minions with the same name from your discard pile into your hand. FAQ"
+    },
+    {
+      "name": "Outbreak",
+      "count": 1,
+      "type": "action",
+      "description": "Play an extra minion on a base where you have no minions. FAQ"
+    },
+    {
+      "name": "Overrun",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Other players cannot play minions on this base. Destroy this action at the start of your turn. FAQ"
+    },
+    {
+      "name": "They Keep Coming",
+      "count": 2,
+      "type": "action",
+      "description": "Play an extra minion from your discard pile. FAQ"
+    },
+    {
+      "name": "They’re Coming To Get You",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "They’re Coming To Get You",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Once on your turn, you may play a minion here from your discard pile instead of from your hand. (errata'd by Smash Up POD) FAQ"
+    }
+  ],
+  "dinosaurs": [
+    {
+      "name": "King Rex",
+      "count": 1,
+      "type": "minion",
+      "power": 7,
+      "description": "power 7 - (no ability) FAQ"
+    },
+    {
+      "name": "Laseratops",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": ""
+    },
+    {
+      "name": "Laseratops",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - You may destroy a minion here of printed power 2 or less. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Armor Stego",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": ""
+    },
+    {
+      "name": "Armor Stego",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Talent: Until the start of your turn, this minion has +2 power during other players' turns. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "War Raptor",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Ongoing: Gains +1 power for each War Raptor on this base (including this one). FAQ"
+    },
+    {
+      "name": "Augmentation",
+      "count": 2,
+      "type": "action",
+      "description": "One minion gains +4 power until the end of your turn. FAQ"
+    },
+    {
+      "name": "Howl",
+      "count": 2,
+      "type": "action",
+      "description": "Each of your minions gains +1 power until the end of your turn. FAQ"
+    },
+    {
+      "name": "Natural Selection",
+      "count": 1,
+      "type": "action",
+      "description": "Choose one of your minions on a base. Destroy a minion there with less power than yours. FAQ"
+    },
+    {
+      "name": "Rampage",
+      "count": 1,
+      "type": "action",
+      "description": "Reduce the breakpoint of a base by the power of one of your minions on that base until the end of the turn. FAQ"
+    },
+    {
+      "name": "Survival of the Fittest",
+      "count": 1,
+      "type": "action",
+      "description": "Destroy the lowest-power minion (you choose in case of a tie) on each base with a higher-power minion. FAQ"
+    },
+    {
+      "name": "Tooth and Claw... and Guns",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Tooth and Claw... and Guns",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Tooth and Claw... and Guns",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Ongoing: This minion is not affected by other players' cards. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Upgrade",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Ongoing: This minion has +2 power. FAQ"
+    },
+    {
+      "name": "Wildlife Preserve",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Your minions here are not affected by other players’ actions. FAQ"
+    }
+  ],
+  "bear_cavalry": [
+    {
+      "name": "General Ivan",
+      "count": 1,
+      "type": "minion",
+      "power": 6,
+      "description": "power 6 - Ongoing: Your minions cannot be destroyed. FAQ"
+    },
+    {
+      "name": "Polar Commando",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Ongoing: If this is your only minion on this base, it has +2 power and cannot be destroyed. FAQ"
+    },
+    {
+      "name": "Bear Cavalry",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Move another player’s minion from here to another base. FAQ"
+    },
+    {
+      "name": "Cub Scout",
+      "count": 4,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Ongoing: After another player’s minion moves here, if it has less power than this minion, destroy it. FAQ"
+    },
+    {
+      "name": "Bear Hug",
+      "count": 1,
+      "type": "action",
+      "description": "Each other player destroys his or her minion with the least power (owner controller chooses in case of ties). (errata'd by The Bigger Geekier Box) FAQ"
+    },
+    {
+      "name": "Bear Necessities",
+      "count": 1,
+      "type": "action",
+      "description": "Destroy an action that has been played on a minion or base. FAQ"
+    },
+    {
+      "name": "Bear Rides You",
+      "count": 1,
+      "type": "action",
+      "description": "Move one of your minions to another base. FAQ"
+    },
+    {
+      "name": "Commission",
+      "count": 2,
+      "type": "action",
+      "description": "Play an extra minion. Then move another player’s minion from the extra minion’s base to another base. FAQ"
+    },
+    {
+      "name": "High Ground",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: If you have a minion here, destroy any other player’s minion that moves here. FAQ"
+    },
+    {
+      "name": "Superiority",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Your minions here cannot be destroyed, moved, or returned to your hand or deck by other players’ cards. FAQ"
+    },
+    {
+      "name": "You’re Pretty Much Borscht",
+      "count": 1,
+      "type": "action",
+      "description": "Choose a base where you have a minion. Move all other players’ minions from there to one other base. FAQ"
+    },
+    {
+      "name": "You’re Screwed",
+      "count": 2,
+      "type": "action",
+      "description": "Choose a base where you have a minion. Move another player’s minion from there to another base. FAQ"
+    }
+  ],
+  "ghosts": [
+    {
+      "name": "Spectre",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Special: If you have 2 or fewer cards in your hand, any time you can play a minion, you can play this card from your discard pile instead. FAQ"
+    },
+    {
+      "name": "Haunting",
+      "count": 2,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Ongoing: If you have two or fewer cards in your hand, this minion has +3 power and is not affected by other players’ cards. FAQ"
+    },
+    {
+      "name": "Spirit",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Choose a minion. You may discard cards equal to its power to destroy it. FAQ"
+    },
+    {
+      "name": "Ghost",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - You may discard a card from your hand. FAQ"
+    },
+    {
+      "name": "Across the Divide",
+      "count": 1,
+      "type": "action",
+      "description": "Choose a card name. Place any number of minions with that name from your discard pile into your hand. FAQ"
+    },
+    {
+      "name": "Door to the Beyond",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: If you have two or fewer cards in your hand, each of your minions here has +2 power. FAQ"
+    },
+    {
+      "name": "Ghostly Arrival",
+      "count": 2,
+      "type": "action",
+      "description": "You may play an extra minion and/or an extra action. FAQ"
+    },
+    {
+      "name": "Incorporeal",
+      "count": 2,
+      "type": "action",
+      "description": "Play on one of your minions. Ongoing: This minion is not affected by other players’ cards. FAQ"
+    },
+    {
+      "name": "Make Contact",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Make Contact",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. If you have any cards in your hand, destroy this action. Otherwise, take control of this minion. Ongoing: After this action leaves play, give control of this minion to its owner. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Séance",
+      "count": 1,
+      "type": "action",
+      "description": "If you have 2 or fewer cards in your hand, draw until you have 5 cards. FAQ"
+    },
+    {
+      "name": "Shady Deal",
+      "count": 1,
+      "type": "action",
+      "description": "If you have two or fewer cards in your hand, gain 1 VP. FAQ"
+    },
+    {
+      "name": "The Dead Rise",
+      "count": 1,
+      "type": "action",
+      "description": "Discard any number of cards. Play an extra minion from your discard pile with power less than the number of cards you discarded. FAQ"
+    }
+  ],
+  "killer_plants": [
+    {
+      "name": "Venus Man Trap",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Talent: Search your deck for a minion of power 2 or less and play it here as an extra minion. Shuffle your deck. FAQ"
+    },
+    {
+      "name": "Weed Eater",
+      "count": 2,
+      "type": "minion",
+      "power": 5,
+      "description": ""
+    },
+    {
+      "name": "Weed Eater",
+      "count": 2,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Ongoing: At the start of your turn, this minion gains +2 power until the start of your next turn. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Water Lily",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Ongoing: Draw a card at the start of each of your turns. Only use one Water Lily’s ability each turn. FAQ"
+    },
+    {
+      "name": "Sprout",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": ""
+    },
+    {
+      "name": "Sprout",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": ""
+    },
+    {
+      "name": "Sprout",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Ongoing: Destroy this card at the start of your turn. You may search your deck for a minion of power 3 or less, play it here as an extra minion, and shuffle your deck. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Blossom",
+      "count": 1,
+      "type": "action",
+      "description": "Play up to three extra minions that all have the same name. FAQ"
+    },
+    {
+      "name": "Budding",
+      "count": 1,
+      "type": "action",
+      "description": "Choose a minion in play. Search your deck for a copy of that card and place it into your hand. Shuffle your deck. FAQ"
+    },
+    {
+      "name": "Choking Vines",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Ongoing: At the start of your turn, destroy this minion. FAQ"
+    },
+    {
+      "name": "Deep Roots",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Your minions here cannot be moved or returned to your hand by other players' abilities. FAQ"
+    },
+    {
+      "name": "Entangled",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Minions may not be moved or returned to hands from any base where you have a minion. Destroy this card at the start of your turn. FAQ"
+    },
+    {
+      "name": "Insta-Grow",
+      "count": 2,
+      "type": "action",
+      "description": "Play an extra minion. FAQ"
+    },
+    {
+      "name": "Overgrowth",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Overgrowth",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: At the start of your turn, reduce the starting breakpoint of this base to 0 until the end of the turn. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Sleep Spores",
+      "count": 2,
+      "type": "action",
+      "power": 0,
+      "description": "Play on a base. Ongoing: Other players’ minions have -1 power here (minimum power 0). FAQ"
+    }
+  ],
+  "steampunks": [
+    {
+      "name": "Steam Queen",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Ongoing: Your actions are not affected by other players’ cards. FAQ"
+    },
+    {
+      "name": "Mechanic",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Choose an action in your discard pile that can be played on a base and play it as an extra action. FAQ"
+    },
+    {
+      "name": "Steam Man",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Ongoing: Has +1 power if this base has one of your actions played on it. FAQ"
+    },
+    {
+      "name": "Captain Ahab",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Talent: Move this minion to a base that has one of your actions played on it. FAQ"
+    },
+    {
+      "name": "Aggromotive",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: If you have a minion here, you have +5 power here. FAQ"
+    },
+    {
+      "name": "Change of Venue",
+      "count": 1,
+      "type": "action",
+      "description": "Place one of your actions that is on a base or minion into your hand. Play it again as an extra action. FAQ"
+    },
+    {
+      "name": "Difference Engine",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: If you have a minion here, draw an extra card at the end of your turn. FAQ"
+    },
+    {
+      "name": "Escape Hatch",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Escape Hatch",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: If your minions here would be destroyed, return them to your hand instead. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Ornate Dome",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Ornate Dome",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Destroy all other players' actions on this base. Ongoing: Other players cannot play actions on this base. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Rotary Slug Thrower",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Your minions here each have +2 power. FAQ"
+    },
+    {
+      "name": "Scrap Diving",
+      "count": 2,
+      "type": "action",
+      "description": "Place an action from your discard pile into your hand. FAQ"
+    },
+    {
+      "name": "Zeppelin",
+      "count": 2,
+      "type": "action",
+      "description": "Play on a base. Talent: Move one of your minions from another base to here, or from here to another base. FAQ"
+    }
+  ],
+  "elder_things": [
+    {
+      "name": "Elder Thing",
+      "count": 1,
+      "type": "minion",
+      "power": 10,
+      "description": "power 10 - Destroy two of your other minions or place this minion on the bottom of your deck. Ongoing: This minion is not affected by opponents’ cards. (errata'd by The Bigger Geekier Box) FAQ"
+    },
+    {
+      "name": "Shoggoth",
+      "count": 2,
+      "type": "minion",
+      "power": 6,
+      "description": "power 6 - You can only play this minion on a base where you have at least 6 power. Each other player may draw a Madness card. Destroy a minion here belonging to each player who does not do so. FAQ"
+    },
+    {
+      "name": "Mi-go",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Each other player may draw a Madness card. For each other player that does not, you may draw a card. FAQ"
+    },
+    {
+      "name": "Byakhee",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Each other player with a minion at this base draws a Madness card. FAQ"
+    },
+    {
+      "name": "Begin the Summoning",
+      "count": 2,
+      "type": "action",
+      "description": "Place a minion from your discard pile on top of your deck. You may play an extra action this turn. FAQ"
+    },
+    {
+      "name": "Dunwich Horror",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Ongoing: This minion gains 5 power. Destroy this minion at the end of the turn. (errata'd by The Bigger Geekier Box) FAQ"
+    },
+    {
+      "name": "Insanity",
+      "count": 1,
+      "type": "action",
+      "description": "Each other player draws two Madness cards. FAQ"
+    },
+    {
+      "name": "Power of Madness",
+      "count": 2,
+      "type": "action",
+      "description": "All other players reveal their hands, discard all Madness cards and then shuffles their discard pile into their deck. FAQ"
+    },
+    {
+      "name": "Spreading Horror",
+      "count": 1,
+      "type": "action",
+      "description": "Each other player discards cards at random until that player discards a non-Madness card. FAQ"
+    },
+    {
+      "name": "The Price of Power",
+      "count": 1,
+      "type": "action",
+      "description": "Special: Before a base scores, all other players with minions there reveal their hand. One of your minions there has +2 power for each Madness card revealed. FAQ"
+    },
+    {
+      "name": "Touch of Madness",
+      "count": 1,
+      "type": "action",
+      "description": "Each other player draws a Madness card. Draw a card and play an extra action this turn. FAQ"
+    },
+    {
+      "name": "Unfathomable Goals",
+      "count": 1,
+      "type": "action",
+      "description": "All other players reveal his or her hands. Each player who reveals a Madness card must destroy one of their minions. FAQ"
+    }
+  ],
+  "innsmouth": [
+    {
+      "name": "The Locals",
+      "count": 10,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Reveal the top three cards of your deck. Place any The Locals revealed into your hand. Put the rest of the cards on the bottom of your deck. FAQ"
+    },
+    {
+      "name": "In Plain Sight",
+      "count": 1,
+      "type": "action",
+      "power": 2,
+      "description": ""
+    },
+    {
+      "name": "In Plain Sight",
+      "count": 1,
+      "type": "action",
+      "power": 2,
+      "description": ""
+    },
+    {
+      "name": "In Plain Sight",
+      "count": 1,
+      "type": "action",
+      "power": 2,
+      "description": "Play on a base. Ongoing: Your minions here of printed power 2 or less are not affected by opponents' cards. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Mysteries of the Deep",
+      "count": 1,
+      "type": "action",
+      "description": "If you have three or more minions with the same name on a base, draw 3 cards, then you may draw 2 additional cards and 2 Madness cards. FAQ"
+    },
+    {
+      "name": "New Acolytes",
+      "count": 1,
+      "type": "action",
+      "description": "All players shuffle all minions in their discard piles into their decks. FAQ"
+    },
+    {
+      "name": "Recruitment",
+      "count": 1,
+      "type": "action",
+      "description": "Draw up to three Madness cards. For each one drawn, you may play an extra minion this turn. FAQ"
+    },
+    {
+      "name": "Return to the Sea",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Return to the Sea",
+      "count": 1,
+      "type": "action",
+      "description": "Special: After a base scores, return any number of your minions with the same name on that base to your hand. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Sacred Circle",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Talent: You may play an extra minion here with the same name as another minion here. FAQ"
+    },
+    {
+      "name": "Spreading the Word",
+      "count": 2,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Spreading the Word",
+      "count": 2,
+      "type": "action",
+      "description": "Choose a minion in play. Play up to two extra minions with the same name as that minion. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "The Deep Ones",
+      "count": 2,
+      "type": "action",
+      "power": 2,
+      "description": "Each of your minions of power 2 or less get +1 power until the end of the turn. FAQ"
+    }
+  ],
+  "cthulhu": [
+    {
+      "name": "Star-Spawn of Cthulhu",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Talent: Place a Madness card from your hand into another player’s hand. FAQ"
+    },
+    {
+      "name": "Cthulhu’s Chosen",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": ""
+    },
+    {
+      "name": "Cthulhu’s Chosen",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Special: Before a base scores, you may draw a Madness card to give this minion +2 power until the end of the turn. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Servitor of Cthulhu",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Talent: Destroy this minion and place an action card from your discard pile on top of your deck. FAQ"
+    },
+    {
+      "name": "Altar to Cthulhu",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Altar to Cthulhu",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Altar to Cthulhu",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Once per turn, after you play a minion here, you may play an extra action. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Complete the Ritual",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Complete the Ritual",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Complete the Ritual",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base where you have a minion. Ongoing: At the start of your turn, place all cards here on the bottom of their owners' decks and swap this base with the top card of the base deck. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Corruption",
+      "count": 2,
+      "type": "action",
+      "description": "Draw a Madness card. Destroy a minion. FAQ"
+    },
+    {
+      "name": "Cthulhu Fhtagn",
+      "count": 1,
+      "type": "action",
+      "description": "Reveal cards from the top of your deck until you have revealed two actions. Place them into your hand and put the rest of the cards on the bottom of your deck. FAQ"
+    },
+    {
+      "name": "Furthering the Cause",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: At the end of every turn, if another player’s minion here was destroyed, gain 1 VP. FAQ"
+    },
+    {
+      "name": "It Begins Again",
+      "count": 1,
+      "type": "action",
+      "description": "Shuffle any number of actions from your discard pile into your deck. FAQ"
+    },
+    {
+      "name": "Madness Unleashed",
+      "count": 1,
+      "type": "action",
+      "description": "Discard any number of Madness cards. For each one discarded, you may draw a card and play an extra action this turn. FAQ"
+    },
+    {
+      "name": "Recruit by Force",
+      "count": 1,
+      "type": "action",
+      "power": 3,
+      "description": "Place any number of minions of power 3 or less from your discard pile on top of your deck. FAQ"
+    },
+    {
+      "name": "The Seal is Broken",
+      "count": 1,
+      "type": "action",
+      "description": "Draw a Madness card. Gain 1 VP. FAQ"
+    },
+    {
+      "name": "Whispers in Darkness",
+      "count": 2,
+      "type": "action",
+      "description": "Draw a Madness card. You may play two extra actions this turn. FAQ"
+    }
+  ],
+  "miskatonic": [
+    {
+      "name": "Professor",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Talent: Discard a Madness card. If you do, you may play an extra action and/or an extra minion. FAQ"
+    },
+    {
+      "name": "Librarian",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Talent: Discard a Madness card. If you do, draw a card. FAQ"
+    },
+    {
+      "name": "Psychologist",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - You may return a Madness card from your hand or discard pile to the Madness deck. FAQ"
+    },
+    {
+      "name": "Researcher",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - You may draw a Madness card. FAQ"
+    },
+    {
+      "name": "“Old Man Jenkins!?”",
+      "count": 1,
+      "type": "action",
+      "description": "Special: Before a base scores, destroy a minion with the highest power there. FAQ"
+    },
+    {
+      "name": "... It Just Might Work",
+      "count": 1,
+      "type": "action",
+      "description": "Discard a Madness card to give each of your minions +1 power until the end of the turn. FAQ"
+    },
+    {
+      "name": "Field Trip",
+      "count": 2,
+      "type": "action",
+      "description": "Place any number of cards from your hand on the bottom of your deck and draw a card for each card you place there. FAQ"
+    },
+    {
+      "name": "Gate to Beyond",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Talent: Draw a Madness card. You may play an extra minion here. FAQ"
+    },
+    {
+      "name": "Jinkies!",
+      "count": 2,
+      "type": "action",
+      "description": "Return up to 2 Madness cards from your hand or discard pile to the Madness deck. FAQ"
+    },
+    {
+      "name": "That’s So Crazy...",
+      "count": 1,
+      "type": "action",
+      "description": "Draw a Madness card. Each of your minions has +1 power until the end of the turn. You may play an extra action this turn. FAQ"
+    },
+    {
+      "name": "Things Best Not Known",
+      "count": 1,
+      "type": "action",
+      "description": "Special: Before a base scores, choose a minion there. Draw up to 3 Madness cards. That minion gets +2 power for each Madness card you draw. FAQ"
+    },
+    {
+      "name": "Those Meddling Kids",
+      "count": 1,
+      "type": "action",
+      "description": "Destroy any number of actions played on one base. FAQ"
+    }
+  ],
+  "giant-ants": [
+    {
+      "name": "Killer Queen",
+      "count": 1,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Talent: If you played another minion here this turn, place a +1 power counter on this minion and that minion. FAQ"
+    },
+    {
+      "name": "Drone",
+      "count": 2,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Place a +1 power counter on this minion. Ongoing: Before one of your minions is destroyed, you may remove a +1 power counter from this minion to prevent the destruction. FAQ"
+    },
+    {
+      "name": "Soldier",
+      "count": 3,
+      "type": "minion",
+      "power": 1,
+      "description": "power 1 - Place two +1 power counters on this minion. Talent: Transfer a +1 power counter from this minion to another minion. FAQ"
+    },
+    {
+      "name": "Worker",
+      "count": 4,
+      "type": "minion",
+      "power": 0,
+      "description": "power 0 - Place two +1 power counters on this minion. FAQ"
+    },
+    {
+      "name": "A Kind of Magic",
+      "count": 1,
+      "type": "action",
+      "description": "Transfer any or all of your +1 power counters among your minions. FAQ"
+    },
+    {
+      "name": "Gimme the Prize",
+      "count": 2,
+      "type": "action",
+      "description": "Place a +1 power counter on up to 3 of your minions. FAQ"
+    },
+    {
+      "name": "Headlong",
+      "count": 1,
+      "type": "action",
+      "description": "Move one of your minions to another base. Place two +1 power counters on that minion. FAQ"
+    },
+    {
+      "name": "The Show Must Go On",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Your minions here with +1 power counters are not affected by other players’ cards. FAQ"
+    },
+    {
+      "name": "Under Pressure",
+      "count": 1,
+      "type": "action",
+      "description": "Special: Before a base scores, you may transfer any number of +1 power counters from one of your minions to another. FAQ"
+    },
+    {
+      "name": "We Are the Champions",
+      "count": 1,
+      "type": "action",
+      "description": "Special: After this a base scores, transfer any or all +1 power counters from one of your minions here there to another minion. (errata'd by The Bigger Geekier Box) FAQ"
+    },
+    {
+      "name": "We Will Rock You",
+      "count": 2,
+      "type": "action",
+      "description": "Each of your minions gains +1 power for each +1 power counter on it until the end of the turn. FAQ"
+    },
+    {
+      "name": "Who Wants to Live Forever?",
+      "count": 1,
+      "type": "action",
+      "description": "Remove any number of +1 power counters from your minions. Draw a card for each counter removed. FAQ"
+    }
+  ],
+  "vampires": [
+    {
+      "name": "The Count",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Ongoing: After another player’s minion is destroyed, place a +1 power counter on this minion. FAQ"
+    },
+    {
+      "name": "Nightstalker",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Destroy a minion of power 2 or less here to place a +1 power counter on this minion. FAQ"
+    },
+    {
+      "name": "Heavy Drinker",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - You may destroy one of your minions to place a +1 power counter on this minion. FAQ"
+    },
+    {
+      "name": "Fledgling Vampire",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - After you play this minion, if another player has more power here than you do, place a +1 power counter on this minion. FAQ"
+    },
+    {
+      "name": "Big Gulp",
+      "count": 1,
+      "type": "action",
+      "power": 4,
+      "description": "Destroy a minion of power 4 or less. FAQ"
+    },
+    {
+      "name": "Buffet",
+      "count": 1,
+      "type": "action",
+      "description": "Special: Play after a base scores. If you were the winner, place a +1 power counter on each of your minions. FAQ"
+    },
+    {
+      "name": "Crack of Dusk",
+      "count": 2,
+      "type": "action",
+      "power": 2,
+      "description": "Play a minion of power 2 or less from your discard pile as an extra minion. Place a +1 power counter on it. FAQ"
+    },
+    {
+      "name": "Cull the Weak",
+      "count": 1,
+      "type": "action",
+      "description": "Choose your minion. Discard any number of minion cards from your hand. For each minion discarded, place a +1 power counter on that minion. FAQ"
+    },
+    {
+      "name": "Dinner Date",
+      "count": 2,
+      "type": "action",
+      "power": 2,
+      "description": "Place a +1 power counter on your minion. Destroy a minion of power 2 or less at that minion’s base. FAQ"
+    },
+    {
+      "name": "Mad Monster Party",
+      "count": 1,
+      "type": "action",
+      "description": "Place a +1 power counter on each of your minions that does not have one. FAQ"
+    },
+    {
+      "name": "Opportunist",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Ongoing: After another player’s minion is destroyed, place a +1 power counter on this minion. FAQ"
+    },
+    {
+      "name": "Summon Wolves",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: At the start of your turn, place a +1 power counter on this card. If you have a minion here, counters on this card add to your power total. FAQ"
+    }
+  ],
+  "werewolves": [
+    {
+      "name": "Pack Alpha",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Special: Before this base scores, each of your minions here gains +1 power until the end of the turn. FAQ"
+    },
+    {
+      "name": "Loup-Garou",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Special: Before this base scores, this minion gains +2 power until the end of the turn. FAQ"
+    },
+    {
+      "name": "Teenage Wolf",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Talent: This minion gains +1 power until the end of the turn. FAQ"
+    },
+    {
+      "name": "Howler",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - This minion gains +2 power until the end of the turn. FAQ"
+    },
+    {
+      "name": "Chew Toy",
+      "count": 2,
+      "type": "action",
+      "description": "Choose one of your minions. Destroy a minion with lower power at your minion’s base. FAQ"
+    },
+    {
+      "name": "Frenzy",
+      "count": 2,
+      "type": "action",
+      "power": 4,
+      "description": "Each of your minions with power 4 or more gains +1 power until the end of the turn. FAQ"
+    },
+    {
+      "name": "Full Moon",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: Each of your minions here has +1 power. FAQ"
+    },
+    {
+      "name": "Leader of the Pack",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Talent: If this minion has the highest power here, you may play an extra action. FAQ"
+    },
+    {
+      "name": "Let the Dog Out",
+      "count": 1,
+      "type": "action",
+      "description": "Choose one of your minions. Destroy any number of minions at your minion’s base whose total power is less than or equal to your minion’s power. FAQ"
+    },
+    {
+      "name": "Marking Territory",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Marking Territory",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: At the start of your turn, if you have more total power here than each other player, reduce this base's starting breakpoint to 0 until the end of the turn. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "Moontouched",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Talent: If this minion has the highest power here, draw a card. FAQ"
+    },
+    {
+      "name": "Unstoppable",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a minion. Ongoing: This minion cannot be destroyed. FAQ"
+    }
+  ],
+  "frankenstein": [
+    {
+      "name": "Herr Doktor",
+      "count": 1,
+      "type": "minion",
+      "power": 5,
+      "description": "power 5 - Talent: Place a +1 power counter on another one of your minions. FAQ"
+    },
+    {
+      "name": "The Monster",
+      "count": 2,
+      "type": "minion",
+      "power": 4,
+      "description": "power 4 - Talent: Remove a +1 power counter from this minion to play an extra minion. FAQ"
+    },
+    {
+      "name": "Lab Assistant",
+      "count": 3,
+      "type": "minion",
+      "power": 3,
+      "description": "power 3 - Place a +1 power counter on another one of your minions. FAQ"
+    },
+    {
+      "name": "Igor",
+      "count": 4,
+      "type": "minion",
+      "power": 2,
+      "description": "power 2 - Ongoing: After this minion is destroyed or discarded, place a +1 power counter on one of your minions. FAQ"
+    },
+    {
+      "name": "Angry Mob",
+      "count": 1,
+      "type": "action",
+      "description": "Choose one of your minions. Place any number of cards from your hand on the bottom of your deck. For each card you placed there, place a +1 power counter on that minion. FAQ"
+    },
+    {
+      "name": "Blitzed",
+      "count": 1,
+      "type": "action",
+      "description": "Remove any number of +1 power counters from your minions. Destroy a minion with power less than or equal to the number of counters you removed. FAQ"
+    },
+    {
+      "name": "Body Shop",
+      "count": 1,
+      "type": "action",
+      "description": "Destroy one of your minions. Place a number of +1 power counters equal to that minion’s power, split any way you choose, on your minions. FAQ"
+    },
+    {
+      "name": "German Engineering",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: After you play a minion here, place a +1 power counter on it. FAQ"
+    },
+    {
+      "name": "Grave Situation",
+      "count": 1,
+      "type": "action",
+      "description": ""
+    },
+    {
+      "name": "Grave Situation",
+      "count": 1,
+      "type": "action",
+      "description": "Play on a base. Ongoing: If your minions here would be destroyed, return them to your hand instead. (errata'd by Smash Up POD) FAQ"
+    },
+    {
+      "name": "IT’S ALIVE!",
+      "count": 2,
+      "type": "action",
+      "description": "Play an extra minion. Place a +1 power counter on it. FAQ"
+    },
+    {
+      "name": "Jolt",
+      "count": 1,
+      "type": "action",
+      "description": "Place a +1 power counter on each of your minions. FAQ"
+    },
+    {
+      "name": "Überserum",
+      "count": 2,
+      "type": "action",
+      "description": "Play on a minion. Ongoing: At the start of your turn, place a +1 power counter on this minion. This minion cannot be destroyed. FAQ"
+    }
+  ]
+}

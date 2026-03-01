@@ -143,16 +143,6 @@ export const NINJA_ACTIONS: ActionCardDef[] = [
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 23 },
     },
-    {
-        id: 'ninja_invisible_ninja',
-        type: 'action',
-        subtype: 'standard',
-        name: '隐形忍者',
-        nameEn: 'Invisible Ninja',
-        faction: 'ninjas',
-        count: 1,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 24 },
-    },
 ];
 
 export const NINJA_CARDS: CardDef[] = [...NINJA_MINIONS, ...NINJA_ACTIONS];

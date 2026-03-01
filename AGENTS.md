@@ -59,6 +59,26 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 | `summonerwars` | Summoner Wars | 召唤师战争 |
 | `tictactoe` | Tic Tac Toe | 井字棋 |
 
+### 大杀四方 Wiki 爬虫规范（强制）
+
+> **查 Wiki/核对 Wiki/录入数据/审计时，涉及大杀四方必须用爬虫，禁止凭记忆。**
+
+**触发场景**：数据录入、数据核对、审计检查、效果描述查询
+
+**工具**：
+- `scripts/scrape-wiki-with-descriptions.mjs` — 抓取 Wiki 数据
+- `scripts/final-wiki-code-comparison.mjs` — 对比代码与 Wiki
+
+**流程**：
+1. `node scripts/scrape-wiki-with-descriptions.mjs` 抓取数据
+2. `node scripts/final-wiki-code-comparison.mjs` 生成差异报告
+3. 根据报告用 `strReplace`/`editCode` 修复
+
+**注意**：
+- Wiki 用弯引号（`'`），代码用直引号（`'`），对比时需考虑编码差异
+- Wiki 可能有勘误重复（如 Saucy Wench vs Cut Lass），代码只保留勘误版
+- 数据可缓存，除非用户要求"重新抓取"
+
 ---
 
 ## ⚡ 核心行为准则 (MUST)

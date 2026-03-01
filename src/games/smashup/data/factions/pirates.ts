@@ -126,16 +126,6 @@ export const PIRATE_ACTIONS: ActionCardDef[] = [
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 11 },
     },
-    {
-        id: 'pirate_the_kraken',
-        type: 'action',
-        subtype: 'standard',
-        name: '海怪',
-        nameEn: 'The Kraken',
-        faction: 'pirates',
-        count: 1,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 12 },
-    },
 ];
 
 export const PIRATE_CARDS: CardDef[] = [...PIRATE_MINIONS, ...PIRATE_ACTIONS];
