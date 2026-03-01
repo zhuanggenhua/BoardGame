@@ -337,6 +337,15 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
             if (!hooks.onAutoContinueCheck) return;
 
             const result = hooks.onAutoContinueCheck({ state, events, random });
+            
+            // 【生产日志】记录 onAutoContinueCheck 的结果，用于排查自动推进问题
+            const from = getCurrentPhase(state) || hooks.initialPhase;
+            if (result?.autoContinue) {
+                console.log('[FlowSystem][afterEvents] onAutoContinueCheck 返回 autoContinue=true, phase=' + from + ', playerId=' + result.playerId);
+            } else {
+                console.log('[FlowSystem][afterEvents] onAutoContinueCheck 返回 undefined 或 autoContinue=false, phase=' + from + ', 不自动推进');
+            }
+            
             if (!result?.autoContinue) return;
 
             if (!playerIds.includes(result.playerId)) {
@@ -344,7 +353,6 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
             }
 
             // 自动继续：执行与 ADVANCE_PHASE 相同的逻辑
-            const from = getCurrentPhase(state) || hooks.initialPhase;
             const { playerId } = result;
             const syntheticCommand: Command = {
                 type: FLOW_COMMANDS.ADVANCE_PHASE,

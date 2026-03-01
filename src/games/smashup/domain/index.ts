@@ -64,6 +64,14 @@ function scoreOneBase(
     random?: RandomFn,
     matchState?: MatchState<SmashUpCore>,
 ): { events: SmashUpEvent[]; newBaseDeck: string[]; matchState?: MatchState<SmashUpCore> } {
+    console.log('[scoreOneBase] 开始计分:', {
+        baseIndex,
+        baseDefId: core.bases[baseIndex]?.defId,
+        timestamp: now,
+        hasInteraction: !!matchState?.sys?.interaction?.current,
+        interactionId: matchState?.sys?.interaction?.current?.id,
+    });
+    
     // 默认 random（确定性回退，计分中大多数 trigger 不需要随机）
     const rng: RandomFn = random ?? {
         random: () => 0.5,
@@ -613,10 +621,16 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             // 
             // 修复：只有标志存在且交互仍在进行时才 halt，交互完成后自动清除标志
             if (state.sys.flowHalted) {
+                console.log('[FlowSystem] flowHalted=true, 检查交互状态:', {
+                    hasInteraction: !!state.sys.interaction.current,
+                    interactionId: state.sys.interaction.current?.id,
+                });
                 if (state.sys.interaction.current) {
+                    console.log('[FlowSystem] 仍有交互，继续 halt');
                     return { events: [], halt: true } as PhaseExitResult;
                 }
                 // 交互已解决，清除 flowHalted 标志
+                console.log('[FlowSystem] 交互已解决，清除 flowHalted 标志');
                 state.sys.flowHalted = false;
             }
 
@@ -816,45 +830,38 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             return { autoContinue: true, playerId: pid };
         }
 
-        // scoreBases 自动推进：
-        // Me First! 响应窗口打开时不推进（由 ResponseWindowSystem 阻塞命令）
-        // 响应窗口关闭后，检查是否有可激活的 beforeScoring 特殊能力（如忍者侍从）
-        // 有则不推进，等待玩家点击激活或点击"结束回合"
+        // scoreBases 阶段：条件性自动推进
+        // 
+        // 【修复逻辑】
+        // 1. 如果 flowHalted=true 且交互已解决 → 自动推进（清理 halt 状态）
+        // 2. 如果没有 eligible 基地 → 自动推进（无需计分）
+        // 3. 其他情况 → 不自动推进（等待用户点击"结束回合"触发计分）
+        // 
+        // 这样可以避免无限循环，同时在交互解决后自动推进，不需要点击两次。
         if (phase === 'scoreBases') {
-            // 检查响应窗口是否仍然打开
-            const responseWindow = state.sys.responseWindow?.current;
-            if (responseWindow) {
-                // 响应窗口仍然打开，不自动推进
-                return undefined;
-            }
-            // 检查是否有待处理的交互（如忍者侍从选择随从）
-            if (state.sys.interaction?.current) {
-                return undefined;
-            }
-            // 检查达标基地上是否有可激活的 beforeScoring 特殊能力
-            const eligibleIndices = getScoringEligibleBaseIndices(core);
-            const hasActivatableSpecial = eligibleIndices.some(baseIdx => {
-                const base = core.bases[baseIdx];
-                if (!base) return false;
-                return base.minions.some(m => {
-                    if (m.controller !== pid) return false;
-                    const def = getCardDef(m.defId);
-                    if (!def || !('abilityTags' in def) || !def.abilityTags?.includes('special')) return false;
-                    if (isSpecialLimitBlocked(core, m.defId, baseIdx)) return false;
-                    // 忍者侍从额外条件：本回合未打出随从
-                    if (m.defId === 'ninja_acolyte') {
-                        const player = core.players[m.controller];
-                        if (player.minionsPlayed > 0) return false;
-                    }
-                    return true;
-                });
+            console.log('[onAutoContinueCheck] scoreBases 阶段检查:', {
+                flowHalted: state.sys.flowHalted,
+                hasInteraction: !!state.sys.interaction.current,
+                interactionId: state.sys.interaction.current?.id,
             });
-            if (hasActivatableSpecial) {
-                // 有可激活的特殊能力，不自动推进
-                return undefined;
+            
+            // 情况1：flowHalted=true 且交互已解决 → 自动推进
+            if (state.sys.flowHalted && !state.sys.interaction.current) {
+                console.log('[onAutoContinueCheck] scoreBases: flowHalted=true 且交互已解决，自动推进');
+                return { autoContinue: true, playerId: pid };
             }
-            // 响应窗口已关闭且无可激活特殊能力，自动推进
-            return { autoContinue: true, playerId: pid };
+            
+            // 情况2：没有 eligible 基地 → 自动推进
+            const eligibleIndices = getScoringEligibleBaseIndices(core);
+            console.log('[onAutoContinueCheck] scoreBases: eligibleIndices =', eligibleIndices);
+            if (eligibleIndices.length === 0) {
+                console.log('[onAutoContinueCheck] scoreBases: 无 eligible 基地，自动推进');
+                return { autoContinue: true, playerId: pid };
+            }
+            
+            // 情况3：有 eligible 基地但未开始计分 → 不自动推进
+            console.log('[onAutoContinueCheck] scoreBases: 有 eligible 基地，等待用户点击"结束回合"');
+            return undefined;
         }
 
         // draw 阶段：手牌不超限则自动推进到 endTurn

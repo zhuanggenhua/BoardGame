@@ -1,0 +1,182 @@
+{
+  "aliens": {
+    "wikiName": "Aliens",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "bear_cavalry": {
+    "wikiName": "Bear_Cavalry",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "cthulhu": {
+    "wikiName": "Minions_of_Cthulhu",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "dinosaurs": {
+    "wikiName": "Dinosaurs",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "elder_things": {
+    "wikiName": "Elder_Things",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "frankenstein": {
+    "wikiName": "Mad_Scientists",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "ghosts": {
+    "wikiName": "Ghosts",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "giant-ants": {
+    "wikiName": "Giant_Ants",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "innsmouth": {
+    "wikiName": "Innsmouth",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "killer_plants": {
+    "wikiName": "Killer_Plants",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "miskatonic": {
+    "wikiName": "Miskatonic_University",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "ninjas": {
+    "wikiName": "Ninjas",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "pirates": {
+    "wikiName": "Pirates",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "robots": {
+    "wikiName": "Robots",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "steampunks": {
+    "wikiName": "Steampunks",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "tricksters": {
+    "wikiName": "Tricksters",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "vampires": {
+    "wikiName": "Vampires",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "werewolves": {
+    "wikiName": "Werewolves",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "wizards": {
+    "wikiName": "Wizards",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  },
+  "zombies": {
+    "wikiName": "Zombies",
+    "cards": {
+      "minions": [],
+      "actions": []
+    },
+    "totalMinions": 0,
+    "totalActions": 0
+  }
+}

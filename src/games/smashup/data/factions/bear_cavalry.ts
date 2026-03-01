@@ -60,7 +60,7 @@ export const BEAR_CAVALRY_ACTIONS: ActionCardDef[] = [
         subtype: 'standard',
         name: '你们已经完蛋',
         nameEn: 'You’re Screwed',
-        faction: 'bear_cavalry',        count: 1,
+        faction: 'bear_cavalry',        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 13 },
     },
     {
@@ -69,7 +69,7 @@ export const BEAR_CAVALRY_ACTIONS: ActionCardDef[] = [
         subtype: 'standard',
         name: '黑熊口粮',
         nameEn: 'Bear Necessities',
-        faction: 'bear_cavalry',        count: 2,
+        faction: 'bear_cavalry',        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 14 },
     },
     {
@@ -97,7 +97,7 @@ export const BEAR_CAVALRY_ACTIONS: ActionCardDef[] = [
         name: '委任',
         nameEn: 'Commission',
         faction: 'bear_cavalry',        abilityTags: ['extra'],
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 18 },
     },
     {
@@ -117,7 +117,7 @@ export const BEAR_CAVALRY_ACTIONS: ActionCardDef[] = [
         name: '制高点',
         nameEn: 'High Ground',
         faction: 'bear_cavalry',        abilityTags: ['ongoing'],
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 22 },
     },
 ];

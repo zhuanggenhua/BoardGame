@@ -96,7 +96,7 @@ export const NINJA_ACTIONS: ActionCardDef[] = [
         abilityTags: ['special'],
         specialNeedsBase: true,
         specialLimitGroup: 'ninja_hidden_ninja',
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 19 },
     },
     {
@@ -106,7 +106,7 @@ export const NINJA_ACTIONS: ActionCardDef[] = [
         name: '手里剑',
         nameEn: 'Seeing Stars',
         faction: 'ninjas',
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 20 },
     },
     {
@@ -128,7 +128,7 @@ export const NINJA_ACTIONS: ActionCardDef[] = [
         faction: 'ninjas',
         abilityTags: ['ongoing'],
         ongoingTarget: 'minion',
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 22 },
     },
     {
@@ -140,8 +140,18 @@ export const NINJA_ACTIONS: ActionCardDef[] = [
         faction: 'ninjas',
         abilityTags: ['ongoing'],
         ongoingTarget: 'minion',
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 23 },
+    },
+    {
+        id: 'ninja_invisible_ninja',
+        type: 'action',
+        subtype: 'standard',
+        name: '隐形忍者',
+        nameEn: 'Invisible Ninja',
+        faction: 'ninjas',
+        count: 1,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 24 },
     },
 ];
 

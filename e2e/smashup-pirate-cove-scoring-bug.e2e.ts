@@ -12,25 +12,13 @@
  */
 
 import { test, expect } from './fixtures';
-import type { Page } from '@playwright/test';
 
 test.describe('海盗湾计分流程', () => {
-    let page: Page;
-    let roomId: string;
-
-    test.beforeEach(async ({ setupOnlineMatch }) => {
-        const setup = await setupOnlineMatch({
-            gameId: 'smashup',
-            playerCount: 2,
-        });
-        page = setup.page;
-        roomId = setup.roomId;
+    test('海盗湾计分后应该创建移动随从交互', async ({ smashupMatch }) => {
+        const { hostPage: page } = smashupMatch;
 
         // 等待游戏加载
         await page.waitForSelector('[data-testid="game-board"]', { timeout: 10000 });
-    });
-
-    test('海盗湾计分后应该创建移动随从交互', async () => {
         // 1. 注入测试状态：海盗湾达到计分条件
         await page.evaluate(() => {
             const state = window.__BG_TEST_HARNESS__!.state.read();
@@ -214,7 +202,12 @@ test.describe('海盗湾计分流程', () => {
         }
     });
 
-    test('海盗湾计分后移动随从不应该重复触发计分', async () => {
+    test('海盗湾计分后移动随从不应该重复触发计分', async ({ smashupMatch }) => {
+        const { hostPage: page } = smashupMatch;
+
+        // 等待游戏加载
+        await page.waitForSelector('[data-testid="game-board"]', { timeout: 10000 });
+
         // 1. 注入测试状态：海盗湾达到计分条件
         await page.evaluate(() => {
             const state = window.__BG_TEST_HARNESS__!.state.read();

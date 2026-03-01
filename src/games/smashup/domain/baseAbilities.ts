@@ -966,11 +966,36 @@ export function registerBaseAbilities(): void {
     // 注意：afterScoring 能力在 BASE_SCORED 事件处理前收集，此时随从仍在基地上。
     // 但交互解决时随从可能已进入弃牌堆（BASE_CLEARED），因此将随从信息存入 continuation data。
     registerBaseAbility('base_pirate_cove', 'afterScoring', (ctx) => {
+        console.log('[海盗湾] afterScoring 被调用:', {
+            baseIndex: ctx.baseIndex,
+            rankingsCount: ctx.rankings?.length ?? 0,
+            minionsCount: ctx.state.bases[ctx.baseIndex]?.minions.length ?? 0,
+            timestamp: ctx.now,
+        });
+        
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
         const events: SmashUpEvent[] = [];
+        
+        // 【防重复触发】检查是否已经为这个基地创建过交互
+        // 使用 matchState.sys 上的临时标记，避免重复创建相同的交互
+        const sysAny = ctx.matchState?.sys as any;
+        if (!sysAny._pirateCoveTriggered) {
+            sysAny._pirateCoveTriggered = new Set<number>();
+        }
+        const triggeredBases = sysAny._pirateCoveTriggered as Set<number>;
+        
+        if (triggeredBases.has(ctx.baseIndex)) {
+            console.log('[海盗湾] 已为基地', ctx.baseIndex, '创建过交互，跳过');
+            return { events, matchState: ctx.matchState };
+        }
+        
+        // 标记此基地已触发
+        triggeredBases.add(ctx.baseIndex);
+        console.log('[海盗湾] 标记基地', ctx.baseIndex, '已触发');
+        
         // 遍历非冠军玩家，为每位在此有随从的玩家生成 Prompt
         const playerMinions = new Map<string, MinionOnBase[]>();
         for (const m of base.minions) {
@@ -979,6 +1004,12 @@ export function registerBaseAbilities(): void {
             list.push(m);
             playerMinions.set(m.controller, list);
         }
+        
+        console.log('[海盗湾] 非冠军玩家随从:', Array.from(playerMinions.entries()).map(([pid, minions]) => ({
+            playerId: pid,
+            minionCount: minions.length,
+        })));
+        
         for (const [pid, minions] of playerMinions) {
             // 将随从信息存入 continuationContext，供交互解决时使用
             const minionsSnapshot = minions.map(m => ({
@@ -1001,8 +1032,12 @@ export function registerBaseAbilities(): void {
                 ...minionOptions,
             ];
             if (ctx.matchState) {
+                // 使用 state.nextUid 确保交互 ID 唯一
+                const interactionId = `base_pirate_cove_${pid}_${ctx.state.nextUid}`;
+                console.log('[海盗湾] 为玩家', pid, '创建交互:', interactionId);
+                
                 const interaction = createSimpleChoice(
-                    `base_pirate_cove_${pid}_${ctx.now}`, pid,
+                    interactionId, pid,
                     '海盗湾：选择移动一个随从到其他基地', options,
                     { sourceId: 'base_pirate_cove', targetType: 'minion' },
                 );

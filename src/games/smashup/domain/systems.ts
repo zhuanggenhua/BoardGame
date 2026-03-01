@@ -77,8 +77,17 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 const ctx = payload.interactionData?.continuationContext as Record<string, unknown> | undefined;
                                 const deferred = ctx?._deferredPostScoringEvents as { type: string; payload: unknown; timestamp: number }[] | undefined;
                                 if (deferred && deferred.length > 0) {
+                                    console.log('[SmashUpEventSystem] 发现延迟事件:', {
+                                        count: deferred.length,
+                                        types: deferred.map(d => d.type),
+                                        hasInteraction: !!newState.sys.interaction?.current,
+                                        queueLength: newState.sys.interaction?.queue?.length ?? 0,
+                                    });
+                                    
                                     // 仅在没有后续交互时补发（链式交互需要等最后一个解决后再清除）
                                     if (!newState.sys.interaction?.current && (!newState.sys.interaction?.queue || newState.sys.interaction.queue.length === 0)) {
+                                        console.log('[SmashUpEventSystem] 无后续交互，发射延迟事件并设置 flowHalted=true');
+                                        
                                         // 【修复】补发延迟事件前，先设置 flowHalted=true 标志
                                         // 防止 FlowSystem.afterEvents 在 BASE_CLEARED/BASE_REPLACED 后重新进入计分逻辑
                                         // （BASE_CLEARED 会从 scoringEligibleBaseIndices 中移除基地，但如果 FlowSystem
@@ -89,6 +98,8 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                             nextEvents.push({ type: d.type, payload: d.payload, timestamp: d.timestamp } as GameEvent);
                                         }
                                     } else {
+                                        console.log('[SmashUpEventSystem] 有后续交互，传递延迟事件到下一个交互');
+                                        
                                         // 还有后续交互：把 deferred events 传递到下一个交互的 continuationContext
                                         const nextInteraction = newState.sys.interaction.current ?? newState.sys.interaction.queue?.[0];
                                         if (nextInteraction?.data) {

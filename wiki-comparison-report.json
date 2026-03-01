@@ -1,0 +1,134 @@
+[
+  {
+    "factionId": "aliens",
+    "status": "✅ 正确",
+    "issues": []
+  },
+  {
+    "factionId": "ninjas",
+    "status": "✅ 正确",
+    "issues": []
+  },
+  {
+    "factionId": "pirates",
+    "status": "✅ 正确",
+    "issues": []
+  },
+  {
+    "factionId": "robots",
+    "status": "✅ 正确",
+    "issues": []
+  },
+  {
+    "factionId": "tricksters",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Big Funny Giant (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "wizards",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Arcane Protector (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "zombies",
+    "status": "❌ 2 个问题",
+    "issues": [
+      "❌ 缺少: They’re Coming To Get You (Wiki: 1x)",
+      "⚠️  多余: They’re Coming to Get You (代码: 1x, Wiki 中不存在)"
+    ]
+  },
+  {
+    "factionId": "dinosaurs",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Fort Titanosaurus (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "bear_cavalry",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Major Ursa (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "ghosts",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Creampuff Man (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "killer_plants",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Killer Kudzu (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "steampunks",
+    "status": "✅ 正确",
+    "issues": []
+  },
+  {
+    "factionId": "elder_things",
+    "status": "✅ 正确",
+    "issues": []
+  },
+  {
+    "factionId": "innsmouth",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Dagon (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "cthulhu",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Cthulhu (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "miskatonic",
+    "status": "❌ 3 个问题",
+    "issues": [
+      "❌ 缺少: “Old Man Jenkins!?” (Wiki: 1x)",
+      "❌ 缺少: That’s So Crazy... (Wiki: 1x)",
+      "⚠️  多余: \"Old Man Jenkins!?\" (代码: 1x, Wiki 中不存在)"
+    ]
+  },
+  {
+    "factionId": "giant-ants",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Death on Six Legs (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "vampires",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Ancient Lord (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "werewolves",
+    "status": "❌ 1 个问题",
+    "issues": [
+      "❌ 缺少: Great Wolf Spirit (Wiki: 1x)"
+    ]
+  },
+  {
+    "factionId": "frankenstein",
+    "status": "❌ 2 个问题",
+    "issues": [
+      "❌ 缺少: IT’S ALIVE! (Wiki: 2x)",
+      "❌ 缺少: The Bride (Wiki: 1x)"
+    ]
+  }
+]

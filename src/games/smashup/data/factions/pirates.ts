@@ -23,13 +23,12 @@ export const PIRATE_MINIONS: MinionCardDef[] = [
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 1 },
     },
     {
-        id: 'pirate_saucy_wench',
+        id: 'pirate_cut_lass',
         type: 'minion',
-        name: '粗鲁少妇',
-        nameEn: 'Saucy Wench',
+        name: '女剑客',
+        nameEn: 'Cut Lass',
         faction: 'pirates',
         power: 3,
-        abilityTags: ['onPlay'],
         count: 3,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 2 },
     },
@@ -73,7 +72,7 @@ export const PIRATE_ACTIONS: ActionCardDef[] = [
         name: '侧翼开炮',
         nameEn: 'Broadside',
         faction: 'pirates',
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 6 },
     },
     {
@@ -84,7 +83,7 @@ export const PIRATE_ACTIONS: ActionCardDef[] = [
         nameEn: 'Full Sail',
         faction: 'pirates',
         abilityTags: ['special'],
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 7 },
     },
     {
@@ -126,6 +125,16 @@ export const PIRATE_ACTIONS: ActionCardDef[] = [
         faction: 'pirates',
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 11 },
+    },
+    {
+        id: 'pirate_the_kraken',
+        type: 'action',
+        subtype: 'standard',
+        name: '海怪',
+        nameEn: 'The Kraken',
+        faction: 'pirates',
+        count: 1,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 12 },
     },
 ];
 

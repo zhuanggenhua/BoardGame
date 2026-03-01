@@ -56,7 +56,7 @@ export const ELDER_THINGS_ACTIONS: ActionCardDef[] = [
         name: '疯狂之力',
         nameEn: 'Power of Madness',
         faction: 'elder_things',
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 37 },
     },
     {
@@ -89,7 +89,7 @@ export const ELDER_THINGS_ACTIONS: ActionCardDef[] = [
         nameEn: 'Begin the Summoning',
         faction: 'elder_things',
         abilityTags: ['extra'],
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 41 },
     },
     {
@@ -132,7 +132,7 @@ export const ELDER_THINGS_ACTIONS: ActionCardDef[] = [
         nameEn: 'Touch of Madness',
         faction: 'elder_things',
         abilityTags: ['extra'],
-        count: 3,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 46 },
     },
 ];
