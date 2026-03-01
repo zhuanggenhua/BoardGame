@@ -84,9 +84,11 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
             const isAllMode = p.viewerPlayerId === 'all';
             const targetIds = Array.isArray(p.targetPlayerId) ? p.targetPlayerId : [p.targetPlayerId];
             const isTarget = targetIds.includes(currentPlayerId);
+            
+            // 权限过滤：
+            // - all 模式：所有人都能看（包括被展示者）
+            // - 单人模式：只有指定查看者能看，被展示者不能看
             if (!isAllMode && p.viewerPlayerId !== currentPlayerId) continue;
-            // 被展示者看不到卡牌内容（但能看到"你的手牌正在被展示"提示）
-            // 这里只入队给查看者
             if (isTarget && !isAllMode) continue;
 
             const revealType = entry.event.type === SU_EVENTS.REVEAL_HAND ? 'hand' : 'deck_top';
@@ -95,7 +97,7 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                 type: revealType,
                 targetPlayerIds: targetIds,
                 viewerPlayerId: p.viewerPlayerId,
-                cards: isTarget ? [] : p.cards, // 被展示者看不到卡牌内容
+                cards: p.cards, // all 模式下所有人都能看，单人模式下被展示者已被过滤
                 reason: p.reason,
                 timestamp: Date.now(),
             });
@@ -134,8 +136,6 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
         ? t('ui.reveal_hand_title', { player: targetLabel, defaultValue: 'P{{player}} 的手牌' })
         : t('ui.reveal_deck_top_title', { player: targetLabel, defaultValue: 'P{{player}} 的牌库顶' });
 
-    const isTarget = current.targetPlayerIds.includes(currentPlayerId);
-
     return (
         <AnimatePresence mode="wait">
             <motion.div
@@ -161,13 +161,6 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                 >
                     {title}
                 </motion.h2>
-
-                {/* 被展示者提示 */}
-                {isTarget && (
-                    <div className="relative mb-4 text-sm text-yellow-400/80 font-bold animate-pulse">
-                        {t('ui.reveal_your_hand_shown', { defaultValue: '你的手牌正在被展示' })}
-                    </div>
-                )}
 
                 {/* 卡牌展示区 */}
                 {current.cards.length > 0 && (

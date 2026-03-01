@@ -1,16 +1,18 @@
-# D48：UI 交互渲染模式正确性审计
+# D48：UI 交互渲染模式完整性审计（通用）
 
 > **新增维度**：补充 `testing-audit.md` 中缺失的 UI 渲染正确性检查
+> 
+> **适用范围**：所有游戏、所有交互创建方式（`createSimpleChoice`/`createInteraction`/自定义交互）
 
 ---
 
 ## 问题根源
 
-**历史教训**：传送门交互显示按钮而非卡牌预览，全项目 86 处缺失 `displayMode` 声明，审计未发现。
+**历史教训**：SmashUp 传送门交互显示按钮而非卡牌预览，全项目 86 处缺失 `displayMode` 声明，审计未发现。
 
 **根本原因**：
 1. **D34 维度不够具体**：只检查"是否有 displayMode"，未检查"所有应该有的地方是否都有"
-2. **缺少静态扫描**：没有工具自动检查所有交互选项的 displayMode 声明
+2. **缺少静态扫描**：没有工具自动检查所有交互选项的 UI 渲染元数据
 3. **缺少 UI 渲染测试**：E2E 测试只验证功能，不验证 UI 渲染方式
 
 ---
@@ -18,36 +20,94 @@
 ## D48：UI 交互渲染模式完整性审计
 
 ### 触发条件
-- 新增交互能力（`createSimpleChoice`/`createInteraction`）
-- 修复"UI 显示不对"/"卡牌预览不显示"/"显示按钮而非卡牌"类 bug
-- 全面审计（如派系审计）
+- 新增任何交互能力（任何游戏、任何交互创建方式）
+- 修复"UI 显示不对"/"预览不显示"/"渲染模式错误"类 bug
+- 全面审计（如派系审计、游戏审计）
 
 ### 核心原则
 
-**显式声明 > 自动推断**：所有交互选项必须显式声明 `displayMode`，不依赖 UI 层的自动推断逻辑。
+**显式声明 > 自动推断**：所有交互选项必须显式声明 UI 渲染元数据（如 `displayMode`、`targetType`、`renderHint` 等），不依赖 UI 层的自动推断逻辑。
 
-**原因**：
-1. **自动推断脆弱**：UI 根据 `value` 字段推断（有 `cardUid` → 卡牌，有 `skip` → 按钮），但业务语义可能不同
+**通用原因**：
+1. **自动推断脆弱**：UI 根据 `value` 字段推断渲染方式，但业务语义可能不同
 2. **维护困难**：自动推断规则变化时，所有依赖推断的交互都可能破坏
 3. **可读性差**：代码中看不出 UI 渲染方式，需要查看 UI 组件代码才能理解
+4. **跨游戏不一致**：不同游戏的自动推断规则可能不同，导致相同代码在不同游戏中表现不一致
 
 ### 审查方法
 
-#### 1. 静态扫描（自动化）
+#### 1. 识别游戏的交互创建模式
 
+**第一步：确定游戏使用的交互创建方式**
+
+不同游戏可能使用不同的交互创建方式，审查前必须先识别：
+
+```bash
+# 搜索游戏的交互创建方式
+grep -r "createSimpleChoice\|createInteraction\|queueInteraction" src/games/<gameId>/
+```
+
+**常见模式**：
+- **SmashUp**：`createSimpleChoice` + `displayMode` 字段
+- **DiceThrone**：`createInteraction` + `targetType` 字段
+- **SummonerWars**：`createInteraction` + `targetType` 字段
+- **自定义交互**：直接构建 interaction 对象
+
+#### 2. 静态扫描（自动化，需按游戏定制）
+
+**通用检查原则**：
+1. 所有交互选项必须有 UI 渲染元数据（字段名因游戏而异）
+2. 元数据值必须与业务语义一致
+3. 相同类型的交互必须使用相同的元数据声明方式
+
+**SmashUp 示例**：
 ```bash
 # 检查所有缺失 displayMode 的交互选项
 node scripts/check-displaymode.mjs
 ```
 
-**检查规则**：
-- 包含 `cardUid` 的选项 → 必须有 `displayMode: 'card'`
-- 包含 `skip`/`done`/`cancel` 的选项 → 必须有 `displayMode: 'button'`
-- 其他选项 → 根据业务语义判断
+**DiceThrone/SummonerWars 示例**：
+```bash
+# 检查所有缺失 targetType 的交互
+grep -r "createInteraction" src/games/<gameId>/ | grep -v "targetType"
+```
 
-#### 2. 代码审查（手动）
+**通用扫描脚本模板**：
+```javascript
+// scripts/check-interaction-metadata.mjs
+import { readFileSync } from 'fs';
+import { glob } from 'glob';
 
-**检查清单**：
+const gameId = process.argv[2]; // 'smashup' | 'dicethrone' | 'summonerwars'
+const metadataField = {
+  smashup: 'displayMode',
+  dicethrone: 'targetType',
+  summonerwars: 'targetType'
+}[gameId];
+
+const files = glob.sync(`src/games/${gameId}/**/*.ts`);
+// ... 检查逻辑
+```
+
+#### 3. 代码审查（手动，按游戏定制）
+
+**通用检查清单**：
+
+1. **识别选项类型**：
+   - 实体选择（卡牌/单位/格子/基地）
+   - 操作按钮（跳过/完成/取消/确认）
+   - 决策按钮（是/否/选择 A/选择 B）
+
+2. **验证元数据声明**：
+   - 实体选择 → 必须声明实体类型元数据
+   - 操作按钮 → 必须声明按钮类型元数据
+   - 决策按钮 → 根据是否涉及实体选择判断
+
+3. **验证元数据一致性**：
+   - 同一游戏中相同类型的交互必须使用相同的元数据声明方式
+   - 元数据值必须与业务语义一致
+
+**SmashUp 示例**：
 
 ```typescript
 // ❌ 错误：缺少 displayMode
@@ -64,59 +124,73 @@ const options = minions.map(c => ({
     value: { cardUid: c.uid, defId: c.defId },
     displayMode: 'card' as const  // 显式声明
 }));
-
-// ❌ 错误：displayMode 与业务语义不符
-const options = [
-    { id: 'yes', label: '是', value: { cardUid, defId }, displayMode: 'button' as const }  // 应该是 'card'
-];
-
-// ✅ 正确：displayMode 与业务语义一致
-const options = [
-    { id: 'yes', label: '是（打出这张牌）', value: { cardUid, defId }, displayMode: 'card' as const }
-];
 ```
 
-**判定标准**：
-
-| 业务语义 | value 字段 | displayMode | 示例 |
-|---------|-----------|-------------|------|
-| 从列表选择卡牌 | `{ cardUid, defId }` | `'card'` | 传送门：选择随从 |
-| 确认/取消操作 | `{ skip: true }` | `'button'` | 跳过、完成、取消 |
-| 是/否决策（涉及卡牌） | `{ cardUid, defId, activate: true }` | `'button'` | 神选者：是否抽疯狂卡 |
-| 选择随从（场上） | `{ minionUid, baseIndex }` | `'minion'` | 选择要消灭的随从 |
-| 选择基地 | `{ baseIndex }` | `'base'` | 选择要移动到的基地 |
-
-#### 3. UI 渲染验证（E2E）
-
-**测试模板**：
+**DiceThrone 示例**：
 
 ```typescript
-test('传送门交互应显示卡牌预览', async ({ page }) => {
-    // 1. 触发交互
-    await playCard(page, 'wizard_portal');
-    
-    // 2. 验证 UI 渲染方式
-    const cardPreviews = page.locator('[data-testid="card-preview"]');
-    await expect(cardPreviews).toHaveCount(3);  // 3 个随从选项
-    
-    // 3. 验证不是按钮
-    const buttons = page.locator('button:has-text("随从")');
-    await expect(buttons).toHaveCount(0);  // 不应该有按钮
+// ❌ 错误：缺少 targetType
+const interaction = createInteraction({
+    id: 'select_target',
+    playerId,
+    title: '选择目标',
+    options: targets.map(t => ({ id: t.uid, label: t.name, value: t }))
 });
 
-test('跳过选项应显示按钮', async ({ page }) => {
-    // 1. 触发交互
-    await playCard(page, 'zombie_grave_digger');
-    
-    // 2. 验证跳过按钮存在
-    const skipButton = page.locator('button:has-text("跳过")');
-    await expect(skipButton).toBeVisible();
-    
-    // 3. 验证跳过不是卡牌预览
-    const skipCard = page.locator('[data-testid="card-preview"]:has-text("跳过")');
-    await expect(skipCard).toHaveCount(0);
+// ✅ 正确：显式声明
+const interaction = createInteraction({
+    id: 'select_target',
+    playerId,
+    title: '选择目标',
+    targetType: 'opponent',  // 显式声明
+    options: targets.map(t => ({ id: t.uid, label: t.name, value: t }))
 });
 ```
+
+**通用判定标准表**：
+
+| 游戏 | 元数据字段 | 实体选择值 | 按钮选择值 | 示例 |
+|------|-----------|-----------|-----------|------|
+| SmashUp | `displayMode` | `'card'` | `'button'` | 卡牌选择 vs 跳过按钮 |
+| DiceThrone | `targetType` | `'opponent'`/`'self'` | `'generic'` | 选择对手 vs 确认按钮 |
+| SummonerWars | `targetType` | `'unit'`/`'cell'` | `'action'` | 选择单位 vs 跳过按钮 |
+
+#### 4. UI 渲染验证（E2E，通用）
+
+**通用测试模板**：
+
+```typescript
+test('实体选择交互应显示实体预览', async ({ page }) => {
+    // 1. 触发交互
+    await triggerInteraction(page);
+    
+    // 2. 验证 UI 渲染方式（根据游戏调整选择器）
+    const entityPreviews = page.locator('[data-testid="entity-preview"]');
+    await expect(entityPreviews.count()).toBeGreaterThan(0);
+    
+    // 3. 验证不是通用按钮
+    const genericButtons = page.locator('button:has-text("选项")');
+    await expect(genericButtons).toHaveCount(0);
+});
+
+test('操作按钮应显示为按钮', async ({ page }) => {
+    // 1. 触发交互
+    await triggerInteraction(page);
+    
+    // 2. 验证按钮存在
+    const actionButton = page.locator('button:has-text("跳过")');
+    await expect(actionButton).toBeVisible();
+    
+    // 3. 验证不是实体预览
+    const entityPreview = page.locator('[data-testid="entity-preview"]:has-text("跳过")');
+    await expect(entityPreview).toHaveCount(0);
+});
+```
+
+**游戏特定选择器**：
+- **SmashUp**：`[data-testid="card-preview"]`
+- **DiceThrone**：`[data-testid="unit-card"]` 或 `.hero-portrait`
+- **SummonerWars**：`[data-testid="unit-preview"]` 或 `.board-cell`
 
 ### 典型缺陷模式
 

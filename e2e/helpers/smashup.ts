@@ -284,6 +284,13 @@ export async function setupSmashUpOnlineMatch(
         return null;
     }
     await seedMatchCredentials(guestContext, GAME_NAME, matchId, '1', guestCredentials);
+    
+    // 等待 Host 完成第一次派系选择后再让 Guest 加入
+    // 这样可以确保游戏客户端已经正确初始化
+    console.log('[SmashUp] 等待 Host 完成第一次派系选择...');
+    await waitForFactionDraft(hostPage);
+    await selectFaction(hostPage, options?.hostFactions?.[0] ?? 0);
+    
     console.log('[SmashUp] Guest 导航到对局页面...');
     await guestPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
     

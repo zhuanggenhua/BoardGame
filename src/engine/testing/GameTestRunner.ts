@@ -346,6 +346,4 @@ export class GameTestRunner<
     } {
         return this.dispatch(commandType, payload);
     }
-
-    private currentState?: MatchState<TState>;
 }

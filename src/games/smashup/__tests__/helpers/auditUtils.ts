@@ -20,6 +20,28 @@ import type { BaseTriggerTiming } from '../../domain/baseAbilities';
 import { getRegisteredInteractionHandlerIds } from '../../domain/abilityInteractionHandlers';
 
 // ============================================================================
+// 重新导出测试辅助函数
+// ============================================================================
+
+export {
+    makeMinion,
+    makeMinionFromOverrides,
+    makePlayer,
+    makePlayerWithFactions,
+    makeCard,
+    makeBase,
+    makeState,
+    makeStateWithBases,
+    makeStateWithMadness,
+    makeMatchState,
+    applyEvents,
+    callHandler,
+    triggerBaseAbilityWithMS,
+    getInteractionsFromResult,
+    getInteractionsFromMS,
+} from '../helpers';
+
+// ============================================================================
 // i18n 数据缓存
 // ============================================================================
 
