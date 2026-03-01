@@ -227,10 +227,10 @@ const advanceStep = <TCore>(
     };
 };
 
-const shouldBlockCommand = (tutorial: TutorialState, command: Command): boolean => {
-    if (!tutorial.active) return false;
+const shouldBlockCommand = (tutorial: TutorialState | undefined, command: Command): boolean => {
+    if (!tutorial?.active) return false;
     // 系统命令不拦截（SYS_ 前缀，包括 CHEAT 命令和教程命令）
-    if (command.type.startsWith('SYS_')) return false;
+    if (command.type?.startsWith('SYS_')) return false;
 
     // 白名单模式：只允许列出的命令
     if (tutorial.step?.allowedCommands) {
@@ -266,6 +266,11 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
         },
 
         beforeCommand: ({ state, command }): HookResult<TCore> | void => {
+            // 防御性检查：确保 tutorial 存在
+            if (!state.sys?.tutorial) {
+                return;
+            }
+
             if (command.type === TUTORIAL_COMMANDS.START) {
                 const payload = command.payload as TutorialStartPayload;
                 const manifest = payload?.manifest;
