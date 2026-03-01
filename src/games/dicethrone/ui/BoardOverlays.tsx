@@ -19,8 +19,6 @@ import { TokenResponseModal } from './TokenResponseModal';
 import { PurifyModal } from './PurifyModal';
 import { InteractionOverlay } from './InteractionOverlay';
 import { EndgameOverlay } from '../../../components/game/framework/widgets/EndgameOverlay';
-import { RematchActions } from '../../../components/game/framework/widgets/RematchActions';
-import { DiceThroneEndgameContent, renderDiceThroneButton } from './DiceThroneEndgame';
 import type { StatusAtlases } from './statusEffects';
 import type { AbilityCard, DieFace, HeroState, InteractionDescriptor, TokenResponsePhase, PendingBonusDiceSettlement, CharacterId, TurnPhase } from '../domain/types';
 import type { PlayerId } from '../../../engine/types';
@@ -109,8 +107,6 @@ export interface BoardOverlaysProps {
     isTokenResponder: boolean;
     /** 当前阶段可用的 Token 列表（由领域层过滤） */
     usableTokens: TokenDef[];
-    /** Token 可用数量覆盖（太极本回合限制等） */
-    tokenUsableOverrides?: Record<string, number>;
     onUseToken: (tokenId: string, amount: number) => void;
     onSkipTokenResponse: () => void;// 净化相关
     viewPlayer: HeroState;
@@ -164,7 +160,7 @@ const MagnifyUpgradeOverlay: React.FC<{
                             <CardPreview
                                 previewRef={previewRef}
                                 locale={locale}
-                                className="h-full aspect-[0.611] rounded-lg"
+                                className="h-full aspect-[0.61] rounded-lg"
                             />
                         </div>
                     </div>
@@ -183,7 +179,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const magnifyContainerClassName = `
         group/modal
         ${isPlayerBoardPreview ? 'aspect-[2048/1673] h-auto w-auto max-h-[90vh] max-w-[90vw]' : ''}
-        ${props.magnifiedCard ? 'aspect-[0.611] h-auto w-auto max-h-[90vh] max-w-[60vw]' : ''}
+        ${props.magnifiedCard ? 'aspect-[0.61] h-auto w-auto max-h-[90vh] max-w-[60vw]' : ''}
         ${isMultiCardPreview ? 'max-h-[90vh] max-w-[90vw]' : ''}
         ${!isPlayerBoardPreview && !props.magnifiedCard && !isMultiCardPreview ? 'max-h-[90vh] max-w-[90vw]' : ''}
     `;
@@ -205,7 +201,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                 {props.magnifiedCards.map((card) => (
                                     <CardPreview
                                         key={card.id}
-                                        className="w-[28vw] aspect-[0.611] max-w-[350px] max-h-[574px] rounded-xl shadow-2xl border border-white/20 flex-shrink-0"
+                                        className="w-[28vw] aspect-[0.61] max-w-[350px] max-h-[574px] rounded-xl shadow-2xl border border-white/20 flex-shrink-0"
                                         style={{ backgroundColor: '#0f172a' }}
                                         previewRef={card.previewRef}
                                         locale={props.locale}
@@ -268,7 +264,6 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         responsePhase={props.tokenResponsePhase}
                         responderState={props.players[props.pendingDamage.responderId]}
                         usableTokens={props.usableTokens}
-                        tokenUsableOverrides={props.tokenUsableOverrides}
                         onUseToken={props.onUseToken}
                         onSkip={props.onSkipTokenResponse}
                         locale={props.locale}
@@ -362,7 +357,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                 )}
             </AnimatePresence>
 
-            {/* 游戏结束覆盖层 - 注入王权骰铸专属结算内容和街机风格按钮 */}
+            {/* 游戏结束覆盖层 - 独立管理其 Portal */}
             <EndgameOverlay
                 isGameOver={props.isGameOver}
                 result={props.gameoverResult}
@@ -372,21 +367,6 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                 totalPlayers={Object.keys(props.players).length}
                 rematchState={props.rematchState}
                 onVote={props.onRematchVote}
-                renderContent={(contentProps) => (
-                    <DiceThroneEndgameContent
-                        {...contentProps}
-                        players={props.players}
-                        myPlayerId={props.playerID ?? null}
-                        locale={props.locale}
-                    />
-                )}
-                renderActions={(actionsProps) => (
-                    <RematchActions
-                        {...actionsProps}
-                        className="mt-4"
-                        renderButton={renderDiceThroneButton}
-                    />
-                )}
             />
         </>
     );

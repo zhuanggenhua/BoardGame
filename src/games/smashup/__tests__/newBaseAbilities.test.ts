@@ -46,7 +46,7 @@ function makeState(overrides: Partial<SmashUpCore> = {}): SmashUpCore {
 function makeMinion(uid: string, controller: string, power: number, defId = 'd1'): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0,
+        basePower: power, powerModifier: 0,
         talentUsed: false, attachedActions: [],
     };
 }
@@ -217,7 +217,7 @@ describe('base_crypt: 消灭者放指示物', () => {
                 bases: [{
                     defId: 'base_crypt',
                     minions: [
-                        { uid: 'm_destroyer', defId: 'd1', controller: '1', owner: '1', basePower: 4, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_destroyer', defId: 'd1', controller: '1', owner: '1', basePower: 4, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 }],
@@ -697,8 +697,7 @@ describe('base_laboratorium: 实验工坊 - 基地全局首次随从', () => {
         expect(events[0].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
     });
 
-    it('其他玩家已打过随从到该基地时，当前玩家首次打出仍应触发', () => {
-        // 实验工坊按"每个玩家的回合"各自追踪首次打出
+    it('本回合该基地已被其他玩家打过随从时不应再次触发', () => {
         const ctx: BaseAbilityContext = {
             state: makeState({
                 bases: [{ defId: 'base_laboratorium', minions: [makeMinion('m2', '1', 3)], ongoingActions: [] }],
@@ -721,38 +720,6 @@ describe('base_laboratorium: 实验工坊 - 基地全局首次随从', () => {
             baseDefId: 'base_laboratorium',
             playerId: '1',
             minionUid: 'm2',
-            now: 1000,
-        };
-
-        const { events } = triggerBaseAbility('base_laboratorium', 'onMinionPlayed', ctx);
-        // 玩家 1 首次打出到该基地，应触发 +1 力量指示物
-        expect(events.length).toBe(1);
-        expect(events[0].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
-    });
-
-    it('同一玩家第二次打出随从到该基地时不应触发', () => {
-        const ctx: BaseAbilityContext = {
-            state: makeState({
-                bases: [{ defId: 'base_laboratorium', minions: [makeMinion('m3', '0', 2)], ongoingActions: [] }],
-                players: {
-                    '0': {
-                        id: '0', vp: 0, hand: [], deck: [], discard: [],
-                        minionsPlayed: 2, minionLimit: 2, actionsPlayed: 0, actionLimit: 1,
-                        minionsPlayedPerBase: { 0: 2 },
-                        factions: [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.WEREWOLVES],
-                    },
-                    '1': {
-                        id: '1', vp: 0, hand: [], deck: [], discard: [],
-                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
-                        minionsPlayedPerBase: {},
-                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
-                    },
-                } as any,
-            }),
-            baseIndex: 0,
-            baseDefId: 'base_laboratorium',
-            playerId: '0',
-            minionUid: 'm3',
             now: 1000,
         };
 
@@ -793,7 +760,7 @@ describe('base_moot_site: 集会场 - 基地全局首次随从', () => {
         expect(events[0].type).toBe(SU_EVENTS.TEMP_POWER_ADDED);
     });
 
-    it('其他玩家已打过随从到该基地时，当前玩家首次打出仍应触发', () => {
+    it('本回合该基地已被其他玩家打过随从时不应再次触发', () => {
         const ctx: BaseAbilityContext = {
             state: makeState({
                 bases: [{ defId: 'base_moot_site', minions: [makeMinion('m2', '1', 3)], ongoingActions: [] }],
@@ -802,7 +769,7 @@ describe('base_moot_site: 集会场 - 基地全局首次随从', () => {
                         id: '0', vp: 0, hand: [], deck: [], discard: [],
                         minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
                         minionsPlayedPerBase: { 0: 1 },
-                        factions: [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.WEREWOLVES],
+                        factions: [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.FRANKENSTEIN],
                     },
                     '1': {
                         id: '1', vp: 0, hand: [], deck: [], discard: [],
@@ -820,9 +787,7 @@ describe('base_moot_site: 集会场 - 基地全局首次随从', () => {
         };
 
         const { events } = triggerBaseAbility('base_moot_site', 'onMinionPlayed', ctx);
-        // 每个玩家各自追踪首次打出，玩家 1 首次打出应触发
-        expect(events.length).toBe(1);
-        expect(events[0].type).toBe(SU_EVENTS.TEMP_POWER_ADDED);
+        expect(events.length).toBe(0);
     });
 });
 

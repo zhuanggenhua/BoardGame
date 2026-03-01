@@ -516,7 +516,7 @@ export function registerCthulhuInteractionHandlers(): void {
         }] };
     });
 
-    registerInteractionHandler('cthulhu_corruption', (state, playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('cthulhu_corruption', (state, _playerId, value, _iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return { state, events: [] };

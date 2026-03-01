@@ -79,13 +79,6 @@ export function validateCommand(
       return { valid: true };
     }
 
-    case SW_COMMANDS.PLAYER_UNREADY: {
-      if (core.hostStarted) return { valid: false, error: '游戏已开始' };
-      const cmdPid = command.playerId as PlayerId;
-      if (!core.readyPlayers[cmdPid]) return { valid: false, error: '尚未准备' };
-      return { valid: true };
-    }
-
     case SW_COMMANDS.HOST_START_GAME: {
       if (core.hostStarted) return { valid: false, error: '游戏已开始' };
       const cmdPid = command.playerId as PlayerId;

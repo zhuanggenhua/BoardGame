@@ -823,11 +823,6 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       return { ...core, readyPlayers: { ...core.readyPlayers, [pid]: true } };
     }
 
-    case SW_SELECTION_EVENTS.PLAYER_UNREADY: {
-      const { playerId: pid } = payload as { playerId: PlayerId };
-      return { ...core, readyPlayers: { ...core.readyPlayers, [pid]: false } };
-    }
-
     case SW_SELECTION_EVENTS.HOST_STARTED: {
       return { ...core, hostStarted: true };
     }

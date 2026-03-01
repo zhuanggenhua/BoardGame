@@ -2,14 +2,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { ADMIN_API_URL } from '../../config/server';
-import { Plus, Trash2, Pencil, Eye, EyeOff, Pin, PinOff } from 'lucide-react';
+import { Plus, Trash2, Pencil, Eye, EyeOff } from 'lucide-react';
 
 interface NotificationItem {
     _id: string;
     title: string;
     content: string;
     published: boolean;
-    pinned?: boolean;
     expiresAt?: string;
     createdAt: string;
 }
@@ -27,7 +26,6 @@ export default function AdminNotifications() {
     const [content, setContent] = useState('');
     const [expiresAt, setExpiresAt] = useState('');
     const [published, setPublished] = useState(true);
-    const [pinned, setPinned] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     const fetchNotifications = useCallback(async () => {
@@ -54,7 +52,6 @@ export default function AdminNotifications() {
         setContent('');
         setExpiresAt('');
         setPublished(true);
-        setPinned(false);
         setEditing(null);
         setShowForm(false);
     };
@@ -70,7 +67,6 @@ export default function AdminNotifications() {
         setContent(item.content);
         setExpiresAt(item.expiresAt ? item.expiresAt.slice(0, 16) : '');
         setPublished(item.published);
-        setPinned(item.pinned ?? false);
         setShowForm(true);
     };
 
@@ -79,7 +75,7 @@ export default function AdminNotifications() {
         if (!title.trim() || !content.trim()) return;
         setSubmitting(true);
         try {
-            const body: Record<string, unknown> = { title: title.trim(), content: content.trim(), published, pinned };
+            const body: Record<string, unknown> = { title: title.trim(), content: content.trim(), published };
             if (expiresAt) body.expiresAt = new Date(expiresAt).toISOString();
 
             const url = editing
@@ -123,20 +119,6 @@ export default function AdminNotifications() {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ published: !item.published }),
-            });
-            if (!res.ok) throw new Error('Failed');
-            await fetchNotifications();
-        } catch {
-            toast.error('操作失败');
-        }
-    };
-
-    const togglePin = async (item: NotificationItem) => {
-        try {
-            const res = await fetch(`${ADMIN_API_URL}/notifications/${item._id}`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pinned: !item.pinned }),
             });
             if (!res.ok) throw new Error('Failed');
             await fetchNotifications();
@@ -202,10 +184,6 @@ export default function AdminNotifications() {
                                 <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} className="rounded" />
                                 <span className="text-sm text-zinc-600">立即发布</span>
                             </label>
-                            <label className="flex items-center gap-2 pb-2 cursor-pointer">
-                                <input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} className="rounded" />
-                                <span className="text-sm text-zinc-600">置顶</span>
-                            </label>
                         </div>
                         <div className="flex gap-3 pt-2">
                             <button
@@ -236,9 +214,6 @@ export default function AdminNotifications() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-bold text-zinc-800 truncate">{item.title}</h3>
-                                        {item.pinned && (
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded font-medium">置顶</span>
-                                        )}
                                         {!item.published && (
                                             <span className="text-[10px] px-1.5 py-0.5 bg-zinc-100 text-zinc-500 rounded font-medium">草稿</span>
                                         )}
@@ -253,9 +228,6 @@ export default function AdminNotifications() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
-                                    <button onClick={() => togglePin(item)} className={`p-2 rounded-lg hover:bg-amber-50 transition-colors ${item.pinned ? 'text-amber-500' : 'text-zinc-400 hover:text-amber-500'}`} title={item.pinned ? '取消置顶' : '置顶'}>
-                                        {item.pinned ? <PinOff size={16} /> : <Pin size={16} />}
-                                    </button>
                                     <button onClick={() => togglePublish(item)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition-colors" title={item.published ? '取消发布' : '发布'}>
                                         {item.published ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>

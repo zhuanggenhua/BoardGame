@@ -17,8 +17,6 @@ import type { PassiveAbilityDef } from './passiveAbility';
 /** DiceThrone 响应窗口类型（引擎层为通用 string，此处定义游戏特有值） */
 export type DtResponseWindowType = 'afterRollConfirmed' | 'afterCardPlayed' | 'thenBreakpoint' | 'meFirst' | 'afterAttackResolved';
 
-export type TeamId = 'A' | 'B';
-
 export type TurnPhase =
     | 'setup'
     | 'upkeep'
@@ -62,8 +60,6 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'shadow_thief',
     'moon_elf',
     'paladin',
-    'gunslinger',
-    'samurai',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -243,14 +239,12 @@ export type PendingInteraction = InteractionDescriptor;
  * 可抵消即将受到的伤害，下次受伤后清空
  */
 export interface DamageShield {
-    /** 护盾值（固定减免量） */
+    /** 护盾值 */
     value: number;
     /** 来源（卡牌/技能 ID，用于 UI/日志） */
     sourceId?: string;
     /** 是否用于防止本次攻击的状态效果 */
     preventStatus?: boolean;
-    /** 百分比减免（0-100）。设置后 value 字段被忽略，按实际伤害的百分比计算减免量（向上取整） */
-    reductionPercent?: number;
 }
 
 // ============================================================================
@@ -395,14 +389,6 @@ export interface HeroState {
  */
 export interface DiceThroneCore {
     players: Record<PlayerId, HeroState>;
-    /** 座位顺序（用于 2v2 左/右对手语义与回合序列） */
-    seatingOrder?: PlayerId[];
-    /** 2v2 队伍归属映射（1&3 为 A，2&4 为 B） */
-    teamIdByPlayerId?: Record<PlayerId, TeamId>;
-    /** 2v2 队伍共享体力（可见值） */
-    teamHealth?: Record<TeamId, number>;
-    /** 2v2 队伍共享体力上限 */
-    teamHealthMax?: number;
     /** 玩家选角状态（未选时为 unselected） */
     selectedCharacters: Record<PlayerId, CharacterId>;
     /** 玩家准备状态（选角后点击准备） */
@@ -453,13 +439,6 @@ export interface DiceThroneCore {
      * TOKEN_GRANTED 时写入，TOKEN_CONSUMED/潜行自动弃除时清除
      */
     sneakGainedTurn?: Record<PlayerId, number>;
-    /**
-     * 本回合获得的太极数量追踪
-     * key: playerId, value: 本回合累计获得的太极数量
-     * 规则：本回合获得的太极不可用于本回合增强伤害（beforeDamageDealt）
-     * TOKEN_GRANTED(taiji) 时累加，TURN_CHANGED 时清零
-     */
-    taijiGainedThisTurn?: Record<PlayerId, number>;
 }
 
 // ============================================================================

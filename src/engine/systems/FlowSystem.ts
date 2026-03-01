@@ -326,13 +326,6 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
         },
 
         afterEvents: ({ state, events, random, playerIds }): HookResult<TCore> | void => {
-            // 撤回后不自动推进（通用守卫）
-            // UndoSystem 恢复快照后会设置 restoredRandomCursor，
-            // 此时不应触发任何自动推进逻辑，等待玩家手动操作
-            if (state.sys.undo?.restoredRandomCursor !== undefined) {
-                return;
-            }
-
             // 检查是否需要自动继续流程
             if (!hooks.onAutoContinueCheck) return;
 

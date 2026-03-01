@@ -256,7 +256,7 @@ function ghostTheDeadRise(ctx: AbilityContext): AbilityResult {
     });
     const interaction = createSimpleChoice(
         `ghost_the_dead_rise_discard_${ctx.now}`, ctx.playerId,
-        '亡者崛起：选择要弃掉的手牌', [...options, { id: 'skip', label: '跳过', value: { skip: true } }] as any[], { sourceId: 'ghost_the_dead_rise_discard', targetType: 'hand' },
+        '亡者崛起：选择要弃掉的手牌', [...options, { id: 'skip', label: '跳过', value: { skip: true } }] as any[], 'ghost_the_dead_rise_discard',
         undefined, { min: 0, max: discardable.length },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -338,7 +338,7 @@ export function registerGhostInteractionHandlers(): void {
                 [
                     { id: 'yes', label: '消灭', value: { confirm: true, minionUid, minionDefId: targetMinion?.defId, baseIndex, baseDefId: base.defId } },
                     { id: 'no', label: '跳过', value: { confirm: false, minionDefId: targetMinion?.defId } },
-                ], { sourceId: 'ghost_spirit_confirm', targetType: 'generic' }
+                ], { sourceId: 'ghost_spirit_confirm', targetType: 'minion' }
                 );
             return { state: queueInteraction(state, confirmInteraction), events: [] };
         }
@@ -356,7 +356,7 @@ export function registerGhostInteractionHandlers(): void {
             `ghost_spirit_discard_${timestamp}`, playerId,
             `选择 ${power} 张手牌弃置来消灭该随从（可跳过）`,
             [...cardOptions, skipOption] as any[],
-            { sourceId: 'ghost_spirit_discard', targetType: 'hand', multi: { min: 0, max: power } },
+            { sourceId: 'ghost_spirit_discard', multi: { min: 0, max: power } },
         );
         return {
             state: queueInteraction(state, {

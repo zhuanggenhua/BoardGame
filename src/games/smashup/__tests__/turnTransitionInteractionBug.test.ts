@@ -42,7 +42,7 @@ beforeAll(() => {
 function makeMinion(uid: string, controller: string, power: number, defId = 'alien_invader'): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0,
+        basePower: power, powerModifier: 0, tempPowerModifier: 0,
         talentUsed: false, attachedActions: [],
     };
 }
@@ -212,8 +212,7 @@ describe('托尔图加 afterScoring Interaction 导致计分后流程异常', ()
                         ],
                         ongoingActions: [],
                     },
-                    // P1 在其他基地有随从，托尔图加 afterScoring 可以移动到替换基地
-                    { defId: 'base_tar_pits', minions: [makeMinion('tar_m1', '1', 3)], ongoingActions: [] },
+                    { defId: 'base_tar_pits', minions: [], ongoingActions: [] },
                     { defId: 'base_central_brain', minions: [], ongoingActions: [] },
                 ],
                 baseDeck: ['base_castle_blood', 'base_the_homeworld'],

@@ -56,16 +56,16 @@ describe('炎术士 Token 定义', () => {
         expect(kd!.passiveTrigger!.removalCost).toEqual({ resource: RESOURCE_IDS.CP, amount: 2 });
     });
 
-    it('应包含 Burn（燃烧）— debuff, onTurnStart, stackLimit=1（不可叠加，持续效果）', () => {
+    it('应包含 Burn（燃烧）— debuff, onTurnStart, stackLimit=3', () => {
         const burn = PYROMANCER_TOKENS.find(t => t.id === STATUS_IDS.BURN);
         expect(burn).toBeDefined();
         expect(burn!.category).toBe('debuff');
-        expect(burn!.stackLimit).toBe(1);
+        expect(burn!.stackLimit).toBe(3);
         expect(burn!.passiveTrigger).toBeDefined();
         expect(burn!.passiveTrigger!.timing).toBe('onTurnStart');
         expect(burn!.passiveTrigger!.removable).toBe(true);
         expect(burn!.passiveTrigger!.actions).toEqual(
-            expect.arrayContaining([expect.objectContaining({ type: 'damage', target: 'self', value: 2 })])
+            expect.arrayContaining([expect.objectContaining({ type: 'damage', target: 'self', value: 1 })])
         );
     });
 

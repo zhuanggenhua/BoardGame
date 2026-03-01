@@ -550,13 +550,8 @@ function isSourceActive(state: SmashUpCore, sourceDefId: string): boolean {
             if (m.attachedActions.some(a => a.defId === sourceDefId)) return true;
         }
     }
-    // 检查玩家手牌（支持从手牌触发的 beforeScoring 能力，如忍者影舞者）
-    for (const player of Object.values(state.players)) {
-        if (player.hand.some(c => c.defId === sourceDefId)) return true;
-    }
     return false;
 }
-
 
 /**
  * 检查拦截器来源是否在指定基地上活跃

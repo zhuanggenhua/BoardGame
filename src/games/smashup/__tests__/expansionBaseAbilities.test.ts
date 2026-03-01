@@ -63,7 +63,7 @@ function makePlayer(id: string, overrides?: Partial<PlayerState>): PlayerState {
 function makeMinion(uid: string, controller: string, power: number, defId = 'd1'): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0,
+        basePower: power, powerModifier: 0,
         talentUsed: false, attachedActions: [],
     };
 }

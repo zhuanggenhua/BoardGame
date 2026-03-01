@@ -23,7 +23,6 @@ import type {
     CardRecoveredFromDiscardEvent,
     HandShuffledIntoDeckEvent,
     TempPowerAddedEvent,
-    PermanentPowerAddedEvent,
     BreakpointModifiedEvent,
     BaseDeckShuffledEvent,
     RevealHandEvent,
@@ -102,6 +101,7 @@ export function destroyMinion(
     reason: string,
     now: number
 ): MinionDestroyedEvent {
+    console.log(`[destroyMinion] uid=${minionUid}, defId=${minionDefId}, ownerId=${ownerId}, destroyerId=${destroyerId}, reason=${reason}`);
     return {
         type: SU_EVENTS.MINION_DESTROYED,
         payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason },
@@ -202,21 +202,6 @@ export function addTempPower(
 ): TempPowerAddedEvent {
     return {
         type: SU_EVENTS.TEMP_POWER_ADDED,
-        payload: { minionUid, baseIndex, amount, reason },
-        timestamp: now,
-    };
-}
-
-/** 生成永久力量修正事件（非指示物，不可移动/转移） */
-export function addPermanentPower(
-    minionUid: string,
-    baseIndex: number,
-    amount: number,
-    reason: string,
-    now: number
-): PermanentPowerAddedEvent {
-    return {
-        type: SU_EVENTS.PERMANENT_POWER_ADDED,
         payload: { minionUid, baseIndex, amount, reason },
         timestamp: now,
     };

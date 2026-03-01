@@ -76,6 +76,11 @@ export const getCardAtlasStyle = (index: number, atlas: CardAtlasConfig) => {
 };
 
 import { registerLazyCardAtlasSource } from '../../../components/common/media/cardAtlasRegistry';
+import ttsAtlasConfig from '../../../../public/assets/i18n/en/smashup/atlas-config.json';
+
+type TtsConfig = {
+    atlases: Record<string, { grid: { rows: number; cols: number } }>;
+};
 
 /**
  * 初始化 SmashUp 所有图集（模块加载时同步注册）
@@ -87,6 +92,15 @@ export function initSmashUpAtlases() {
         registerLazyCardAtlasSource(atlas.id, {
             image: atlas.image,
             grid: atlas.grid,
+        });
+    }
+
+    // 动态注册 TTS 英文高清图集（这是本地唯一的图片源表）
+    const ttsData = ttsAtlasConfig as TtsConfig;
+    for (const [atlasId, config] of Object.entries(ttsData.atlases)) {
+        registerLazyCardAtlasSource(atlasId, {
+            image: `smashup/cards/compressed/${atlasId}`,
+            grid: { rows: config.grid.rows, cols: config.grid.cols },
         });
     }
 }

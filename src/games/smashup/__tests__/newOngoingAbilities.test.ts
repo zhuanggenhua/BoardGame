@@ -27,7 +27,6 @@ import {
     interceptEvent,
 } from '../domain/ongoingEffects';
 import { reduce } from '../domain/reducer';
-import { processDestroyTriggers, processDestroyMoveCycle, filterProtectedDestroyEvents } from '../domain/reducer';
 import { resolveAbility } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
 import { validate } from '../domain/commands';
@@ -43,7 +42,7 @@ import type { RandomFn } from '../../../engine/types';
 function makeMinion(uid: string, defId: string, controller: string, power: number, overrides: Partial<MinionOnBase> = {}): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerModifier: 0, talentUsed: false, attachedActions: [],
         ...overrides,
     };
 }
@@ -112,58 +111,6 @@ describe('bear_cavalry_general_ivan 保护', () => {
         const base = makeBase({ minions: [ivan, enemy] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, enemy, 0, '0', 'destroy')).toBe(false);
-    });
-
-    it('伊万将军保护己方随从不被暗杀（onTurnEnd 触发器经过保护过滤）', () => {
-        // P0 控制伊万将军和一个盟友，P1 的暗杀卡附着在盟友上
-        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6);
-        const ally = makeMinion('ally', 'test_minion', '0', 3, {
-            attachedActions: [{ uid: 'as-1', defId: 'ninja_assassination', ownerId: '1' }],
-        });
-        const base = makeBase({ minions: [ivan, ally] });
-        const state = makeState({ bases: [base] });
-
-        // 触发 onTurnEnd（暗杀触发器产生 MINION_DESTROYED 事件）
-        const { events } = fireTriggers(state, 'onTurnEnd', {
-            state,
-            playerId: '0',
-            random: dummyRandom,
-            now: 1000,
-        });
-
-        // 暗杀触发器应产生 MINION_DESTROYED 事件（带 destroyerId）
-        expect(events.length).toBeGreaterThan(0);
-        const destroyEvt = events.find(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(destroyEvt).toBeDefined();
-        expect((destroyEvt as any).payload.destroyerId).toBe('1');
-
-        // 经过 filterProtectedDestroyEvents 过滤后，消灭事件应被移除
-        // （伊万将军保护己方随从不被对手消灭，destroyerId='1' !== controller='0'）
-        const filtered = filterProtectedDestroyEvents(events, state, '0');
-        const remainingDestroy = filtered.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(remainingDestroy).toHaveLength(0);
-    });
-
-    it('暗杀卡消灭对手随从时不受伊万将军保护（伊万不保护对手）', () => {
-        // P0 控制伊万将军，P1 的随从附着了 P0 的暗杀卡
-        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6);
-        const enemy = makeMinion('enemy', 'test_minion', '1', 3, {
-            attachedActions: [{ uid: 'as-1', defId: 'ninja_assassination', ownerId: '0' }],
-        });
-        const base = makeBase({ minions: [ivan, enemy] });
-        const state = makeState({ bases: [base] });
-
-        const { events } = fireTriggers(state, 'onTurnEnd', {
-            state,
-            playerId: '1',
-            random: dummyRandom,
-            now: 1000,
-        });
-
-        // 经过过滤后，消灭事件应保留（伊万不保护对手随从）
-        const filtered = filterProtectedDestroyEvents(events, state, '1');
-        const remainingDestroy = filtered.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(remainingDestroy).toHaveLength(1);
     });
 });
 
@@ -627,77 +574,6 @@ describe('pirate_first_mate afterScoring', () => {
             state, playerId: '0', baseIndex: 0, random: dummyRandom, now: 0,
         });
         expect(events.filter(e => e.type === SU_EVENTS.MINION_MOVED).length).toBe(0);
-    });
-
-    it('基地已清除后交互处理器仍能生成移动事件', () => {
-        // 模拟 BASE_CLEARED 已 reduce 后的状态：
-        // - 计分基地（原 index 0）已被移除
-        // - 随从已进入弃牌堆
-        const otherBase = makeBase({ defId: 'other_base' });
-        const newBase = makeBase({ defId: 'new_base' });
-        const mateCard: CardInstance = { uid: 'mate', defId: 'pirate_first_mate', type: 'minion', owner: '0' };
-        const state = makeState({
-            bases: [otherBase, newBase], // 计分基地已被移除，索引已偏移
-            players: {
-                '0': makePlayer('0', { discard: [mateCard] }),
-                '1': makePlayer('1'),
-            },
-        });
-        const ms = { core: state, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } as any } as any;
-
-        // 调用 choose_base handler，模拟玩家选择了目标基地
-        const handler = getInteractionHandler('pirate_first_mate_choose_base');
-        expect(handler).toBeDefined();
-        const result = handler!(
-            ms, '0',
-            { baseIndex: 0 }, // 目标基地
-            { continuationContext: { mateUid: 'mate', mateDefId: 'pirate_first_mate', scoringBaseIndex: 999 } } as any,
-            dummyRandom, 100,
-        );
-        expect(result).toBeDefined();
-        expect(result!.events.length).toBe(1);
-        const moveEvt = result!.events[0] as MinionMovedEvent;
-        expect(moveEvt.type).toBe(SU_EVENTS.MINION_MOVED);
-        expect(moveEvt.payload.minionUid).toBe('mate');
-        expect(moveEvt.payload.toBaseIndex).toBe(0);
-    });
-
-    it('基地已清除后 choose_base handler 生成的 MINION_MOVED 事件能被 reducer 正确处理', () => {
-        // 模拟 BASE_CLEARED 后的状态
-        const otherBase = makeBase({ defId: 'other_base' });
-        const mateCard: CardInstance = { uid: 'mate', defId: 'pirate_first_mate', type: 'minion', owner: '0' };
-        const state = makeState({
-            bases: [otherBase],
-            players: {
-                '0': makePlayer('0', { discard: [mateCard] }),
-                '1': makePlayer('1'),
-            },
-        });
-        const ms = { core: state, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } as any } as any;
-
-        // 调用 choose_base handler
-        const handler = getInteractionHandler('pirate_first_mate_choose_base');
-        expect(handler).toBeDefined();
-        const result = handler!(
-            ms, '0',
-            { baseIndex: 0 }, // 目标基地
-            { continuationContext: { mateUid: 'mate', mateDefId: 'pirate_first_mate', scoringBaseIndex: 999 } } as any,
-            dummyRandom, 100,
-        );
-        expect(result).toBeDefined();
-        expect(result!.events.length).toBe(1);
-        const moveEvt = result!.events[0] as MinionMovedEvent;
-        expect(moveEvt.type).toBe(SU_EVENTS.MINION_MOVED);
-        expect(moveEvt.payload.minionUid).toBe('mate');
-        expect(moveEvt.payload.toBaseIndex).toBe(0);
-
-        // reducer 应该能从弃牌堆恢复随从到目标基地
-        const reduced = reduce(state, moveEvt);
-        expect(reduced.bases[0].minions.length).toBe(1);
-        expect(reduced.bases[0].minions[0].uid).toBe('mate');
-        expect(reduced.bases[0].minions[0].defId).toBe('pirate_first_mate');
-        // 弃牌堆中应该没有大副了
-        expect(reduced.players['0'].discard.find(c => c.uid === 'mate')).toBeUndefined();
     });
 });
 
@@ -1186,62 +1062,6 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
         expect(next.bases[1].minions.length).toBe(1);
         expect(next.bases[1].minions[0].uid).toBe('buc-1');
         expect(next.bases[1].minions[0].defId).toBe('pirate_buccaneer');
-    });
-
-    it('processDestroyTriggers：两个基地时 MINION_MOVED 抑制 MINION_DESTROYED', () => {
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase();
-        const core = makeState({ bases: [base0, base1] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, ownerId: '0', reason: 'action' },
-            timestamp: 100,
-        };
-        const result = processDestroyTriggers([destroyEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // 两个基地时自动移动 → MINION_MOVED 事件应存在
-        const moveEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_MOVED);
-        expect(moveEvents.length).toBe(1);
-        expect((moveEvents[0] as MinionMovedEvent).payload.minionUid).toBe('buc-1');
-
-        // MINION_DESTROYED 应被抑制（随从已被移走）
-        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(destroyEvents.length).toBe(0);
-    });
-
-    it('processDestroyTriggers：三个基地时创建交互并暂缓消灭', () => {
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase();
-        const base2 = makeBase();
-        const core = makeState({ bases: [base0, base1, base2] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, ownerId: '0', reason: 'action' },
-            timestamp: 100,
-        };
-        const result = processDestroyTriggers([destroyEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // 三个基地时创建交互 → pendingSave → MINION_DESTROYED 被暂缓
-        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(destroyEvents.length).toBe(0);
-
-        // 应创建 pirate_buccaneer_move 交互
-        expect(result.matchState).toBeDefined();
-        const interaction = result.matchState!.sys.interaction.current ?? result.matchState!.sys.interaction.queue[0];
-        expect(interaction).toBeDefined();
-        expect((interaction!.data as any).sourceId).toBe('pirate_buccaneer_move');
     });
 });
 
@@ -2152,126 +1972,5 @@ describe('vampire_buffet afterScoring', () => {
 
         const pcEvents = events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
         expect(pcEvents.length).toBe(0);
-    });
-});
-
-// ============================================================================
-// Bug B 集成测试：processDestroyMoveCycle 循环处理
-// 场景：黑熊骑兵移动海盗到制高点基地 → 制高点消灭海盗 → 海盗 onDestroyed 触发移动
-// ============================================================================
-
-describe('processDestroyMoveCycle：移动触发消灭→消灭触发移动 循环', () => {
-    it('一个其他基地时：Buccaneer 被 High Ground 消灭后自动移动到唯一可选基地', () => {
-        // 场景：
-        // base0: Buccaneer (玩家0)
-        // base1: High Ground ongoing (玩家1 拥有), 玩家1 有一个随从在 base1
-        // 动作：Buccaneer 从 base0 移动到 base1
-        // 预期：High Ground 消灭 Buccaneer → Buccaneer onDestroyed 触发 → 只有 base0 可选 → 自动移动
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const enemyMinion = makeMinion('enemy-1', 'test_minion', '1', 3);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase({
-            minions: [enemyMinion],
-            ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '1' }],
-        });
-        const core = makeState({ bases: [base0, base1] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        // 模拟 Buccaneer 从 base0 移动到 base1 的事件
-        const moveEvt: MinionMovedEvent = {
-            type: SU_EVENTS.MINION_MOVED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, toBaseIndex: 1, reason: 'bear_cavalry' },
-            timestamp: 100,
-        };
-
-        const result = processDestroyMoveCycle([moveEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // 验证：Buccaneer 的拯救移动（从 base1 回到 base0）
-        const buccaneerSaveMove = result.events.find(
-            (e: any) => e.type === SU_EVENTS.MINION_MOVED
-                && e.payload.minionUid === 'buc-1'
-                && e.payload.reason === 'pirate_buccaneer'
-        ) as MinionMovedEvent | undefined;
-        expect(buccaneerSaveMove).toBeDefined();
-        expect(buccaneerSaveMove!.payload.fromBaseIndex).toBe(1);
-        expect(buccaneerSaveMove!.payload.toBaseIndex).toBe(0);
-
-        // MINION_DESTROYED 应被抑制（Buccaneer 已被移走拯救）
-        const destroyEvents = result.events.filter(
-            (e: any) => e.type === SU_EVENTS.MINION_DESTROYED
-                && e.payload.minionUid === 'buc-1'
-        );
-        expect(destroyEvents.length).toBe(0);
-    });
-
-    it('两个其他基地时：Buccaneer 被 High Ground 消灭后创建交互选择目标', () => {
-        // base0: Buccaneer (玩家0)
-        // base1: High Ground ongoing (玩家1), 玩家1 有随从
-        // base2: 空基地
-        // 预期：High Ground 消灭 → Buccaneer 有 2 个可选基地(base0, base2) → 创建交互
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const enemyMinion = makeMinion('enemy-1', 'test_minion', '1', 3);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase({
-            minions: [enemyMinion],
-            ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '1' }],
-        });
-        const base2 = makeBase();
-        const core = makeState({ bases: [base0, base1, base2] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        const moveEvt: MinionMovedEvent = {
-            type: SU_EVENTS.MINION_MOVED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, toBaseIndex: 1, reason: 'bear_cavalry' },
-            timestamp: 100,
-        };
-
-        const result = processDestroyMoveCycle([moveEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // Buccaneer 的 MINION_DESTROYED 应被暂缓（等待交互选择）
-        const bucDestroy = result.events.filter(
-            (e: any) => e.type === SU_EVENTS.MINION_DESTROYED
-                && e.payload.minionUid === 'buc-1'
-        );
-        expect(bucDestroy.length).toBe(0);
-
-        // 应创建 pirate_buccaneer_move 交互
-        expect(result.matchState).toBeDefined();
-        const interaction = result.matchState!.sys.interaction.current
-            ?? result.matchState!.sys.interaction.queue[0];
-        expect(interaction).toBeDefined();
-        expect((interaction!.data as any).sourceId).toBe('pirate_buccaneer_move');
-    });
-
-    it('无 High Ground 时：普通移动不触发额外消灭', () => {
-        // 对照组：移动到没有 High Ground 的基地，不应产生额外事件
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase();
-        const core = makeState({ bases: [base0, base1] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        const moveEvt: MinionMovedEvent = {
-            type: SU_EVENTS.MINION_MOVED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, toBaseIndex: 1, reason: 'bear_cavalry' },
-            timestamp: 100,
-        };
-
-        const result = processDestroyMoveCycle([moveEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // 只有原始移动事件，无额外消灭或移动
-        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(destroyEvents.length).toBe(0);
-        const moveEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_MOVED);
-        expect(moveEvents.length).toBe(1); // 只有原始移动
     });
 });

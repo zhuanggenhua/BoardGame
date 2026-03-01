@@ -24,9 +24,9 @@ export const PLAYER_CONFIG = [
         bg: 'bg-green-500'
     },
     {
-        border: 'border-amber-600',
-        ring: 'ring-amber-500',
-        shadow: 'shadow-amber-500/50',
-        bg: 'bg-amber-500'
+        border: 'border-yellow-600',
+        ring: 'ring-yellow-500',
+        shadow: 'shadow-yellow-500/50',
+        bg: 'bg-yellow-500'
     },
 ];

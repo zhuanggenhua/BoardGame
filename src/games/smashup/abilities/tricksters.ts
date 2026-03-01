@@ -154,7 +154,7 @@ export function registerTricksterAbilities(): void {
 /** 注册诡术师派系的交互解决处理函数 */
 export function registerTricksterInteractionHandlers(): void {
     // 侏儒：选择目标后消灭（支持跳过）
-    registerInteractionHandler('trickster_gnome', (state, playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('trickster_gnome', (state, _playerId, value, _iData, _random, timestamp) => {
         // 统一检查 skip 标记
         if ((value as any).skip) return { state, events: [] };
         

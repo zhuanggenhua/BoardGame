@@ -36,11 +36,6 @@ export const diceThroneLatencyConfig: LatencyOptimizationConfig = {
             'CONFIRM_ROLL': 'optimistic',
             'SELECT_ABILITY': 'optimistic',
             'SKIP_TOKEN_RESPONSE': 'optimistic',
-            // 卡牌命令：optimistic 模式确保 CARD_PLAYED 事件立即进入 EventStream，
-            // 远程客户端能及时消费并显示卡牌特写。
-            // 若卡牌效果涉及随机数，Random Probe 会自动检测并丢弃预测（isRandomSynced 时仍可预测）。
-            'PLAY_CARD': 'optimistic',
-            'PLAY_UPGRADE_CARD': 'optimistic',
             // 种子同步后，随机命令也可以乐观预测并立即播放动画
             'ROLL_DICE': 'optimistic',
             'REROLL_DIE': 'optimistic',

@@ -10,8 +10,15 @@ import { pickDiceRollSoundKey } from '../../lib/audio/audioUtils';
 import { createFeedbackResolver, collectPreloadKeys } from '../../lib/audio/defineEvents';
 import { DT_EVENTS } from './domain/events';
 import type { DiceThroneCore, TurnPhase, SelectableCharacterId } from './domain/types';
+import { findPlayerAbility } from './domain/abilityLookup';
 import { findHeroCard } from './heroes';
 import { CHARACTER_DATA_MAP } from './domain/characters';
+
+const resolveTokenSfx = (state: DiceThroneCore, tokenId?: string): string | null => {
+    if (!tokenId) return null;
+    const def = state.tokenDefinitions?.find(token => token.id === tokenId);
+    return def?.sfxKey ?? null;
+};
 
 // DT 专属 BGM
 const BGM_DRAGON_DANCE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.dragon_dance_rt_2.fantasy_vol5_dragon_dance_main';
@@ -129,7 +136,13 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
         // CHARACTER_SELECTED / PLAYER_READY / HOST_STARTED：UI 层已播放，跳过 EventStream
         const eventPlayerId = (event as AudioEvent & { payload?: { playerId?: string } }).payload?.playerId;
         const currentPlayerId = runtime.meta?.currentPlayerId;
-        const traceSelectionAudio = (_action: string, _key: string | null, _reason: string) => {
+        const shouldTraceSelectionAudio =
+            type === 'CHARACTER_SELECTED'
+            || type === 'PLAYER_READY'
+            || type === 'HOST_STARTED'
+            || type === 'SYS_PHASE_CHANGED';
+
+        const traceSelectionAudio = (action: string, key: string | null, reason: string) => {
             // 音频追踪日志已移除
         };
 
@@ -158,7 +171,7 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
                 traceSelectionAudio('skip', null, 'local_player_ready');
                 return null;
             }
-            const key = 'system.general.casual_mobile_sound_fx_pack_vol.alerts.misc_alerts.ready_up_big_metallic';
+            const key = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
             traceSelectionAudio('play', key, 'other_player_ready');
             return key;
         }
@@ -205,9 +218,15 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
             return null;
         }
 
-        // ATTACK_INITIATED：使用通用挥剑音（技能专属音效在 FX 动画 onImpact 时播放）
+        // ATTACK_INITIATED：检查技能自带音效
         if (type === 'ATTACK_INITIATED') {
-            // 回退到框架默认（通用挥剑音）
+            const payload = (event as AudioEvent & { payload?: { attackerId?: string; sourceAbilityId?: string } }).payload;
+            if (payload?.attackerId && payload?.sourceAbilityId) {
+                const match = findPlayerAbility(G, payload.attackerId, payload.sourceAbilityId);
+                const explicitKey = match?.variant?.sfxKey ?? match?.ability?.sfxKey;
+                if (explicitKey) return null;
+            }
+            // 回退到框架默认
         }
 
         // ========== 使用框架自动生成的默认音效 ==========
@@ -305,3 +324,12 @@ const findCardById = (state: DiceThroneCore, cardId?: string) => {
     return findHeroCard(cardId);
 };
 
+const findAbilityById = (state: DiceThroneCore, abilityId?: string) => {
+    if (!abilityId) return null;
+    const players = state.players ?? {};
+    for (const playerId of Object.keys(players)) {
+        const match = findPlayerAbility(state, playerId, abilityId);
+        if (match) return match;
+    }
+    return null;
+};

@@ -31,7 +31,9 @@ export const getSmashUpCardPreviewMeta = (cardId: string): CardPreviewMeta | nul
     if (cardDef) {
         return {
             name: cardDef.name,
-            previewRef: cardDef.previewRef ?? null,
+            previewRef: cardDef.previewRef
+                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId } }
+                : null,
         };
     }
 
@@ -40,7 +42,9 @@ export const getSmashUpCardPreviewMeta = (cardId: string): CardPreviewMeta | nul
     if (baseDef) {
         return {
             name: baseDef.name,
-            previewRef: baseDef.previewRef ?? null,
+            previewRef: baseDef.previewRef
+                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId } }
+                : null,
         };
     }
 

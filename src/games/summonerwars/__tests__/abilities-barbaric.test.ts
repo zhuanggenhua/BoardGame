@@ -137,7 +137,7 @@ function makeRhino(id: string): UnitCard {
 function makeSpiritMage(id: string): UnitCard {
   return {
     id, cardType: 'unit', name: '祖灵法师', unitClass: 'common',
-    faction: 'barbaric', strength: 3, life: 2, cost: 1,
+    faction: 'barbaric', strength: 1, life: 2, cost: 1,
     attackType: 'ranged', attackRange: 3,
     abilities: ['gather_power', 'spirit_bond'], deckSymbols: [],
   };

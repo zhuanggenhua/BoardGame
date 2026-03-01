@@ -45,7 +45,7 @@ function handleHolyDefenseRoll({ targetId, attackerId: _attackerId, sourceAbilit
     // 1. 造成伤害 (Sword) → 反伤给原攻击者 【已迁移到新伤害计算管线】
     if (swordCount > 0 && originalAttackerId) {
         const damageCalc = createDamageCalculation({
-            source: { playerId: targetId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: targetId, abilityId: sourceAbilityId },
             target: { playerId: originalAttackerId },
             baseDamage: swordCount,
             state,
@@ -170,8 +170,6 @@ function handleBlessingPrevent({ targetId, state, timestamp, action }: CustomAct
             state,
             timestamp: timestamp + 2,
             autoCollectShields: false, // bypassShields: 不收集护盾修正
-            autoCollectStatus: false,  // HP 重置不受 debuff 影响
-            autoCollectTokens: false,  // HP 重置不受 token 加伤影响
         });
         const damageEvents = damageCalc.toEvents();
         // 手动添加 bypassShields 标记（引擎层暂不支持）

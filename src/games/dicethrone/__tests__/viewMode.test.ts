@@ -34,7 +34,6 @@ describe('DiceThrone 视角逻辑', () => {
         });
 
         expect(result.shouldAutoObserve).toBe(false);
-        expect(result.isResponseAutoSwitch).toBe(false);
         expect(result.viewMode).toBe('self');
         expect(result.isSelfView).toBe(true);
         expect(result.rollerId).toBe('1');
@@ -83,85 +82,5 @@ describe('DiceThrone 视角逻辑', () => {
         expect(result.shouldAutoObserve).toBe(false);
         expect(result.viewMode).toBe('opponent');
         expect(result.isSelfView).toBe(false);
-    });
-});
-
-describe('响应窗口视角自动切换', () => {
-    const makeResponseWindow = (responderQueue: string[], currentResponderIndex = 0) => ({
-        id: 'test-window',
-        windowType: 'afterRollConfirmed' as const,
-        responderQueue,
-        currentResponderIndex,
-        passedPlayers: [],
-    });
-
-    it('响应窗口打开且本地玩家是响应者时 isResponseAutoSwitch 为 true', () => {
-        const result = computeViewModeState({
-            currentPhase: 'offensiveRoll',
-            pendingAttack: null,
-            activePlayerId: '0',
-            rootPlayerId: '0',
-            manualViewMode: 'self',
-            responseWindow: makeResponseWindow(['1']),
-            isLocalPlayerResponder: true,
-        });
-
-        expect(result.isResponseAutoSwitch).toBe(true);
-    });
-
-    it('响应窗口打开且当前响应者是自己时 isResponseAutoSwitch 为 false', () => {
-        const result = computeViewModeState({
-            currentPhase: 'offensiveRoll',
-            pendingAttack: null,
-            activePlayerId: '0',
-            rootPlayerId: '0',
-            manualViewMode: 'self',
-            responseWindow: makeResponseWindow(['0']),
-        });
-
-        expect(result.isResponseAutoSwitch).toBe(false);
-    });
-
-    it('无响应窗口时 isResponseAutoSwitch 为 false', () => {
-        const result = computeViewModeState({
-            currentPhase: 'offensiveRoll',
-            pendingAttack: null,
-            activePlayerId: '0',
-            rootPlayerId: '0',
-            manualViewMode: 'self',
-        });
-
-        expect(result.isResponseAutoSwitch).toBe(false);
-    });
-
-    it('响应窗口不影响防御阶段的强制观战', () => {
-        const result = computeViewModeState({
-            currentPhase: 'defensiveRoll',
-            pendingAttack: makePendingAttack('1'),
-            activePlayerId: '0',
-            rootPlayerId: '0',
-            manualViewMode: 'self',
-            responseWindow: makeResponseWindow(['0']),
-        });
-
-        // 防御阶段 shouldAutoObserve 仍然生效
-        expect(result.shouldAutoObserve).toBe(true);
-        expect(result.viewMode).toBe('opponent');
-        // 响应者是自己，所以 isResponseAutoSwitch 为 false
-        expect(result.isResponseAutoSwitch).toBe(false);
-    });
-
-    it('多响应者队列中本地玩家是当前响应者时正确识别', () => {
-        const result = computeViewModeState({
-            currentPhase: 'offensiveRoll',
-            pendingAttack: null,
-            activePlayerId: '0',
-            rootPlayerId: '0',
-            manualViewMode: 'self',
-            responseWindow: makeResponseWindow(['0', '1'], 1),
-            isLocalPlayerResponder: true,
-        });
-
-        expect(result.isResponseAutoSwitch).toBe(true);
     });
 });

@@ -46,7 +46,7 @@ describe('一大口 + 雄蜂防止消灭', () => {
                     // 玩家0的科学小怪（力量2）
                     makeMinion('igor1', 'frankenstein_igor', '0', 2),
                     // 玩家0的雄蜂（力量2 + 1个指示物 = 力量3）
-                    makeMinion('drone1', 'giant_ant_drone', '0', 2, { powerCounters: 1 }),
+                    makeMinion('drone1', 'giant_ant_drone', '0', 2, { powerModifier: 1 }),
                     // 玩家1的随从（力量2，给一大口多个候选）
                     makeMinion('pirate1', 'pirate_saucy_wench', '1', 2),
                 ],
@@ -121,7 +121,7 @@ describe('一大口 + 雄蜂防止消灭', () => {
         // 验证：雄蜂指示物减少了1
         const drone = result3.finalState.core.bases[0].minions.find(m => m.uid === 'drone1');
         expect(drone).toBeDefined();
-        expect(drone!.powerCounters).toBe(0); // 从1减到0
+        expect(drone!.powerModifier).toBe(0); // 从1减到0
 
         // 验证：交互已清除
         expect(result3.finalState.sys.interaction?.current).toBeUndefined();
@@ -149,7 +149,7 @@ describe('一大口 + 雄蜂防止消灭', () => {
                     // 只有科学小怪力量≤4（唯一候选，但有跳过选项）
                     makeMinion('igor1', 'frankenstein_igor', '0', 2),
                     // 雄蜂力量5（basePower=2 + powerModifier=3），不是一大口候选
-                    makeMinion('drone1', 'giant_ant_drone', '0', 2, { powerCounters: 3 }),
+                    makeMinion('drone1', 'giant_ant_drone', '0', 2, { powerModifier: 3 }),
                     // 玩家1的随从力量>4，不是候选
                     makeMinion('big1', 'test_big_minion', '1', 5),
                 ],

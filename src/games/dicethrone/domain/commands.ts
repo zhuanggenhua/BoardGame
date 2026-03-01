@@ -111,11 +111,6 @@ export interface PlayerReadyCommand extends Command<'PLAYER_READY'> {
     payload: Record<string, never>;
 }
 
-/** 取消准备命令 */
-export interface PlayerUnreadyCommand extends Command<'PLAYER_UNREADY'> {
-    payload: Record<string, never>;
-}
-
 /** 跳过响应窗口命令 */
 export interface ResponsePassCommand extends Command<'RESPONSE_PASS'> {
     payload: { forPlayerId?: PlayerId };
@@ -256,7 +251,6 @@ export type DiceThroneCommand =
     | SelectCharacterCommand
     | HostStartGameCommand
     | PlayerReadyCommand
-    | PlayerUnreadyCommand
     | ResponsePassCommand
     | ModifyDieCommand
     | RerollDieCommand

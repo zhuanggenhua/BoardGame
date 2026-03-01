@@ -108,34 +108,15 @@ export class MongoStorage implements MatchStorage {
         const ownerType = setupData.ownerType;
 
         // 全局单房间限制：同一 ownerKey 创建新房间时自动清理旧房间
-        // 但保留有 TTL 且未过期的房间（用户明确选择了保存时间），仅在旧房间也是临时房间时覆盖
         if (ownerKey) {
             const existingMatches = await Match.find({
                 'metadata.setupData.ownerKey': ownerKey,
-            }).select('matchID ttlSeconds expiresAt').lean();
+            }).select('matchID').lean();
 
             if (existingMatches.length > 0) {
-                const now = new Date();
-                const toDelete = existingMatches.filter(doc => {
-                    // 临时房间（ttlSeconds=0）：直接覆盖
-                    if (!doc.ttlSeconds || doc.ttlSeconds <= 0) return true;
-                    // TTL 房间已过期：清理
-                    if (doc.expiresAt && doc.expiresAt <= now) return true;
-                    // TTL 房间未过期：保留（用户明确保存的房间）
-                    return false;
-                });
-                if (toDelete.length > 0) {
-                    const matchIds = toDelete.map(doc => doc.matchID);
-                    await Match.deleteMany({ matchID: { $in: matchIds } });
-                    logger.info(`[MongoStorage] 覆盖旧房间 ownerKey=${ownerKey} ownerType=${ownerType ?? 'unknown'} count=${matchIds.length}`);
-                }
-                // 如果有未过期的 TTL 房间存在，阻止创建新房间
-                const activeTtlMatch = existingMatches.find(doc =>
-                    doc.ttlSeconds && doc.ttlSeconds > 0 && doc.expiresAt && doc.expiresAt > now
-                );
-                if (activeTtlMatch) {
-                    throw new Error(`ACTIVE_MATCH_EXISTS:${data.metadata.gameName}:${activeTtlMatch.matchID}`);
-                }
+                const matchIds = existingMatches.map(doc => doc.matchID);
+                await Match.deleteMany({ matchID: { $in: matchIds } });
+                logger.info(`[MongoStorage] 覆盖旧房间 ownerKey=${ownerKey} ownerType=${ownerType ?? 'unknown'} count=${matchIds.length}`);
             }
         }
         
@@ -229,15 +210,12 @@ export class MongoStorage implements MatchStorage {
             ttlSeconds = existing?.ttlSeconds ?? 0;
             const expiresAt = existing?.expiresAt ?? null;
 
-            // TTL 房间：有任意玩家重新连接时刷新 expiresAt
+            // TTL 房间：有玩家重新连接时刷新 expiresAt
             if (ttlSeconds > 0 && expiresAt && expiresAt.getTime() > Date.now()) {
-                const prevPlayers = (existing?.metadata as { players?: Record<string, { isConnected?: boolean }> } | null)?.players ?? {};
-                const nextPlayers = (metadata as { players?: Record<string, { isConnected?: boolean }> } | null)?.players ?? {};
-                const anyReconnected = Object.keys(nextPlayers).some(pid => {
-                    return !prevPlayers[pid]?.isConnected && nextPlayers[pid]?.isConnected;
-                });
+                const prevConnected = (existing?.metadata as { players?: Record<string, { isConnected?: boolean }> } | null)?.players?.['0']?.isConnected;
+                const nextConnected = (metadata as { players?: Record<string, { isConnected?: boolean }> } | null)?.players?.['0']?.isConnected;
 
-                if (anyReconnected) {
+                if (!prevConnected && nextConnected) {
                     refreshedExpiresAt = calculateExpiresAt(ttlSeconds);
                 }
             }
@@ -368,7 +346,7 @@ export class MongoStorage implements MatchStorage {
      * 清理临时房间（ttlSeconds=0 且无在线玩家）
      * 主要用于服务重启时回收“未保存”房间
      */
-    async cleanupEphemeralMatches(graceMs = 30 * 60 * 1000): Promise<number> {
+    async cleanupEphemeralMatches(graceMs = 5 * 60 * 1000): Promise<number> {
         const Match = getMatchModel();
         const ephemeralMatches = await Match.find({
             $or: [{ ttlSeconds: 0 }, { ttlSeconds: null }, { ttlSeconds: { $exists: false } }],
@@ -449,54 +427,29 @@ export class MongoStorage implements MatchStorage {
     }
 
     /**
-     * 兜底清理已过期的 TTL 房间（ttlSeconds > 0 且 expiresAt 已过期）
-     * MongoDB TTL 索引理论上会自动删除，但索引可能未创建或延迟，此方法作为应用层兜底
-     */
-    async cleanupExpiredTtlMatches(): Promise<number> {
-        const Match = getMatchModel();
-        const now = new Date();
-        const result = await Match.deleteMany({
-            ttlSeconds: { $gt: 0 },
-            expiresAt: { $ne: null, $lte: now },
-        });
-        const count = result.deletedCount ?? 0;
-        if (count > 0) {
-            logger.info(`[MongoStorage] 兜底清理过期 TTL 房间: ${count} 个`);
-        }
-        return count;
-    }
-
-    /**
      * 清理同 ownerKey 的重复房间，仅保留最近更新的一条
      */
     async cleanupDuplicateOwnerMatches(): Promise<number> {
         const Match = getMatchModel();
         const docs = await Match.find({
             'metadata.setupData.ownerKey': { $exists: true, $ne: null },
-        }).select('matchID updatedAt ttlSeconds expiresAt metadata.setupData.ownerKey').lean();
+        }).select('matchID updatedAt metadata.setupData.ownerKey').lean();
 
-        const grouped = new Map<string, Array<{ matchID: string; updatedAt?: Date; ttlSeconds?: number; expiresAt?: Date | null }>>();
+        const grouped = new Map<string, Array<{ matchID: string; updatedAt?: Date }>>();
         for (const doc of docs) {
             const ownerKey = (doc as { metadata?: { setupData?: { ownerKey?: string } } }).metadata?.setupData?.ownerKey;
             if (!ownerKey) continue;
             const list = grouped.get(ownerKey) ?? [];
-            list.push({ matchID: doc.matchID, updatedAt: doc.updatedAt ?? undefined, ttlSeconds: doc.ttlSeconds ?? undefined, expiresAt: doc.expiresAt ?? null });
+            list.push({ matchID: doc.matchID, updatedAt: doc.updatedAt ?? undefined });
             grouped.set(ownerKey, list);
         }
 
-        const now = new Date();
         const toDelete: string[] = [];
         for (const [ownerKey, matches] of grouped.entries()) {
             if (matches.length <= 1) continue;
-            // 按更新时间排序，保留最新的
             matches.sort((a, b) => (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0));
             const stale = matches.slice(1);
             for (const match of stale) {
-                // 跳过有 TTL 且未过期的房间
-                if (match.ttlSeconds && match.ttlSeconds > 0 && match.expiresAt && match.expiresAt > now) {
-                    logger.info(`[Cleanup] 保留未过期 TTL 房间 ownerKey=${ownerKey} matchID=${match.matchID} ttlSeconds=${match.ttlSeconds}`);
-                    continue;
-                }
                 toDelete.push(match.matchID);
                 logger.info(`[Cleanup] 删除重复房间 ownerKey=${ownerKey} matchID=${match.matchID}`);
             }

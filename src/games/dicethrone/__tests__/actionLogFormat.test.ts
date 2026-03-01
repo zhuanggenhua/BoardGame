@@ -129,51 +129,6 @@ describe('formatDiceThroneActionEntry', () => {
         }
     });
 
-    it('SKIP_TOKEN_RESPONSE：跨命令护盾减伤应显示净伤害（基于 ATTACK_RESOLVED.totalDamage）', () => {
-        const state = createState();
-        const command: Command = {
-            type: 'SKIP_TOKEN_RESPONSE',
-            playerId: '0',
-            payload: {},
-            timestamp: 11,
-        };
-        const damageEvent: DamageDealtEvent = {
-            type: 'DAMAGE_DEALT',
-            payload: {
-                targetId: '1',
-                amount: 6,
-                actualDamage: 6,
-                sourceAbilityId: 'dagger-strike-4',
-            },
-            timestamp: 11,
-        };
-        const resolvedEvent: AttackResolvedEvent = {
-            type: 'ATTACK_RESOLVED',
-            payload: {
-                attackerId: '0',
-                defenderId: '1',
-                sourceAbilityId: 'dagger-strike-4',
-                defenseAbilityId: 'elusive-step',
-                totalDamage: 3,
-            },
-            timestamp: 11,
-        };
-
-        const entries = normalizeEntries(formatDiceThroneActionEntry({
-            command,
-            state,
-            events: [damageEvent, resolvedEvent] as GameEvent[],
-        }));
-
-        expect(entries).toHaveLength(1);
-        const breakdownSeg = entries[0].segments.find(s => s.type === 'breakdown');
-        expect(breakdownSeg).toBeTruthy();
-        if (breakdownSeg?.type === 'breakdown') {
-            expect(breakdownSeg.displayText).toBe('3');
-            expect(breakdownSeg.lines[0].value).toBe(3);
-        }
-    });
-
     it('伤害修改器应记录在 ActionLog 中（太极减伤）', () => {
         const state = createState();
         const command: Command = {

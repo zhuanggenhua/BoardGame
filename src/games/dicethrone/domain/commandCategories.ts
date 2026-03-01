@@ -55,7 +55,6 @@ export const COMMAND_CATEGORIES: Record<string, CommandCategory> = {
     'SELECT_CHARACTER': CommandCategory.STRATEGIC,
     'HOST_START_GAME': CommandCategory.STRATEGIC,
     'PLAYER_READY': CommandCategory.STRATEGIC,
-    'PLAYER_UNREADY': CommandCategory.STRATEGIC,
     
     // ============================================================================
     // 战术响应（TACTICAL）
@@ -90,7 +89,6 @@ export const COMMAND_CATEGORIES: Record<string, CommandCategory> = {
     'SKIP_BONUS_DICE_REROLL': CommandCategory.STATE_MANAGEMENT,
     'REMOVE_STATUS': CommandCategory.STATE_MANAGEMENT,
     'TRANSFER_STATUS': CommandCategory.STATE_MANAGEMENT,
-    'GRANT_TOKENS': CommandCategory.STATE_MANAGEMENT,
     'RESOLVE_CHOICE': CommandCategory.STATE_MANAGEMENT,
     
     // ============================================================================

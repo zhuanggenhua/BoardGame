@@ -71,85 +71,8 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
         dispatch('SYS_CHEAT_SET_DICE', { diceValues: values });
     };
 
-    // ========== 快速结算测试 ==========
-    const [damageTarget, setDamageTarget] = useState<string>('1');
-    const [damageAmount, setDamageAmount] = useState<string>('10');
-
-    const targetHp = (G as any)?.core?.players?.[damageTarget]?.resources?.hp ?? 0;
-
     return (
         <div className="space-y-4">
-            {/* 快速结算测试 */}
-            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-                <h4 className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-3">
-                    ⚔️ 快速结算测试
-                </h4>
-                <div className="text-[9px] text-red-500 mb-2">
-                    目标 P{damageTarget} 当前 HP: {targetHp}
-                </div>
-                <div className="space-y-2">
-                    <div className="flex gap-2">
-                        <select
-                            value={damageTarget}
-                            onChange={(e) => setDamageTarget(e.target.value)}
-                            className="flex-1 px-2 py-1.5 text-xs border border-red-300 rounded bg-white text-gray-900"
-                        >
-                            <option value="0">P0</option>
-                            <option value="1">P1</option>
-                        </select>
-                        <input
-                            type="number"
-                            min="1"
-                            value={damageAmount}
-                            onChange={(e) => setDamageAmount(e.target.value)}
-                            className="w-20 px-2 py-1.5 text-xs border border-red-300 rounded bg-white text-center text-gray-900"
-                            placeholder="伤害值"
-                        />
-                        <button
-                            onClick={() => {
-                                const dmg = Number(damageAmount);
-                                if (dmg > 0) {
-                                    dispatch('SYS_CHEAT_SET_RESOURCE', {
-                                        playerId: damageTarget,
-                                        resourceId: 'hp',
-                                        value: Math.max(0, targetHp - dmg),
-                                    });
-                                }
-                            }}
-                            className="px-3 py-1.5 bg-red-500 text-white rounded text-xs font-bold hover:bg-red-600"
-                        >
-                            💥 造成伤害
-                        </button>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => {
-                                dispatch('SYS_CHEAT_SET_RESOURCE', {
-                                    playerId: damageTarget,
-                                    resourceId: 'hp',
-                                    value: 1,
-                                });
-                            }}
-                            className="flex-1 px-3 py-1.5 bg-orange-500 text-white rounded text-xs font-bold hover:bg-orange-600"
-                        >
-                            🩸 濒死 (HP=1)
-                        </button>
-                        <button
-                            onClick={() => {
-                                dispatch('SYS_CHEAT_SET_RESOURCE', {
-                                    playerId: damageTarget,
-                                    resourceId: 'hp',
-                                    value: 0,
-                                });
-                            }}
-                            className="flex-1 px-3 py-1.5 bg-red-700 text-white rounded text-xs font-bold hover:bg-red-800"
-                        >
-                            💀 击杀 (HP=0)
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             {/* 资源作弊 */}
             <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                     <h4 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mb-3">

@@ -35,15 +35,15 @@ describe('vampire_buffet 端到端计分流程', () => {
                 {
                     defId: 'base_the_homeworld',
                     minions: [
-                        { uid: 'm1', defId: 'test_a', controller: '0', owner: '0', basePower: 25, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'm2', defId: 'test_b', controller: '1', owner: '1', basePower: 5, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'test_a', controller: '0', owner: '0', basePower: 25, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm2', defId: 'test_b', controller: '1', owner: '1', basePower: 5, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 },
                 {
                     defId: 'base_central_brain',
                     minions: [
-                        { uid: 'm3', defId: 'test_c', controller: '0', owner: '0', basePower: 2, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm3', defId: 'test_c', controller: '0', owner: '0', basePower: 2, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 },
@@ -137,15 +137,15 @@ describe('vampire_buffet 端到端计分流程', () => {
                 {
                     defId: 'base_the_homeworld',
                     minions: [
-                        { uid: 'm1', defId: 'giant_ant_worker', controller: '0', owner: '0', basePower: 25, powerCounters: 2, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'm2', defId: 'test_b', controller: '1', owner: '1', basePower: 5, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'giant_ant_worker', controller: '0', owner: '0', basePower: 25, powerModifier: 2, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm2', defId: 'test_b', controller: '1', owner: '1', basePower: 5, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 },
                 {
                     defId: 'base_central_brain',
                     minions: [
-                        { uid: 'm3', defId: 'giant_ant_worker', controller: '0', owner: '0', basePower: 2, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm3', defId: 'giant_ant_worker', controller: '0', owner: '0', basePower: 2, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 },

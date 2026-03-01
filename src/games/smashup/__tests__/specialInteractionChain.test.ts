@@ -33,7 +33,7 @@ import type { EngineSystem } from '../../../engine/systems/types';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { ActionCardDef } from '../domain/types';
-import { getCardDef, getMinionDef } from '../data/cards';
+import { getCardDef } from '../data/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { SU_COMMANDS } from '../domain/types';
 import type { SmashUpCore, MinionOnBase, CardInstance, BaseInPlay } from '../domain/types';
@@ -57,7 +57,7 @@ function makeMinion(
 ): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
         ...overrides,
     };
 }
@@ -101,33 +101,20 @@ function buildSystems(): EngineSystem<SmashUpCore>[] {
         createSimpleChoiceSystem<SmashUpCore>(),
         createRematchSystem<SmashUpCore>(),
         createResponseWindowSystem<SmashUpCore>({
-            allowedCommands: ['su:play_action', 'su:play_minion'],
-            commandWindowTypeConstraints: {
-                'su:play_action': ['meFirst'],
-                'su:play_minion': ['meFirst'],
-            },
-            responseAdvanceEvents: [
-                { eventType: 'su:action_played', windowTypes: ['meFirst'] },
-                { eventType: 'su:minion_played', windowTypes: ['meFirst'] },
-            ],
+            allowedCommands: ['su:play_action'],
+            commandWindowTypeConstraints: { 'su:play_action': ['meFirst'] },
+            responseAdvanceEvents: [{ eventType: 'su:action_played', windowTypes: ['meFirst'] }],
             loopUntilAllPass: true,
             hasRespondableContent: (state, playerId, windowType) => {
                 if (windowType !== 'meFirst') return true;
                 const core = state as SmashUpCore;
                 const player = core.players[playerId];
                 if (!player) return false;
-                const hasSpecialAction = player.hand.some(c => {
+                return player.hand.some(c => {
                     if (c.type !== 'action') return false;
                     const def = getCardDef(c.defId) as ActionCardDef | undefined;
                     return def?.subtype === 'special';
                 });
-                if (hasSpecialAction) return true;
-                const hasBeforeScoringMinion = player.hand.some(c => {
-                    if (c.type !== 'minion') return false;
-                    const def = getMinionDef(c.defId);
-                    return def?.beforeScoringPlayable === true;
-                });
-                return hasBeforeScoringMinion;
             },
         }),
         createTutorialSystem<SmashUpCore>(),
@@ -980,152 +967,5 @@ describe('onMinionDestroyed trigger: robot_microbot_archive', () => {
         // P0 应该抽了1张牌（microbot_archive 触发）
         const p0 = r1.finalState.core.players['0'];
         expect(p0.hand.length).toBeGreaterThan(handBefore);
-    });
-});
-
-// ============================================================================
-// 17. Ninja beforeScoring + Me First! 交互链
-// ============================================================================
-
-describe('Ninja beforeScoring 交互链', () => {
-    /**
-     * 便衣忍者（ninja_hidden_ninja）：Me First! 窗口中打出后，应创建选随从交互
-     *
-     * 流程：playCards → ADVANCE_PHASE → onPhaseEnter('scoreBases') 打开 Me First! 窗口
-     *       → P0 打出便衣忍者 → 创建选随从交互 → 选择随从 → 随从打出到基地
-     */
-    it('便衣忍者：Me First! 窗口中打出后能选择手牌随从', () => {
-        // 使用真实基地定义（base_the_jungle breakpoint=12），10个力量5随从=50 远超 breakpoint
-        const core = makeState({
-            players: {
-                '0': makePlayer('0', {
-                    hand: [
-                        makeCard('special-0', 'ninja_hidden_ninja', '0', 'action'),
-                        makeCard('minion-a', 'pirate_first_mate', '0', 'minion'),
-                        makeCard('minion-b', 'pirate_saucy_wench', '0', 'minion'),
-                    ],
-                    factions: ['ninjas', 'pirates'] as [string, string],
-                }),
-                '1': makePlayer('1'),
-            },
-            bases: [
-                makeBase('base_the_jungle', [
-                    ...Array.from({ length: 10 }, (_, i) => makeMinion(`fake-${i}`, 'test_minion', '0', 5)),
-                ]),
-                makeBase('base_ninja_dojo'),
-            ],
-        });
-
-        // 从 playCards 阶段推进 → onPhaseEnter('scoreBases') 打开 Me First! 窗口
-        const state = makeFullMatchState(core);
-
-        const r1 = runCommand(state, {
-            type: 'ADVANCE_PHASE', playerId: '0',
-            payload: {},
-        }, 'playCards → scoreBases');
-
-        // 验证 Me First! 窗口已打开
-        const window = r1.finalState.sys.responseWindow?.current;
-        expect(window).toBeDefined();
-        expect(window?.windowType).toBe('meFirst');
-
-        // P0 打出便衣忍者，目标基地 0
-        const r2 = runCommand(r1.finalState, {
-            type: SU_COMMANDS.PLAY_ACTION, playerId: '0',
-            payload: { cardUid: 'special-0', targetBaseIndex: 0 },
-        }, 'play hidden ninja');
-
-        expect(r2.steps[0]?.success).toBe(true);
-
-        // 应该创建了选随从的交互
-        const interaction = r2.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        const choice = asSimpleChoice(interaction);
-        expect(choice).toBeDefined();
-        expect(choice!.sourceId).toBe('ninja_hidden_ninja');
-
-        // 选项应包含手牌中的随从（不含已打出的行动卡）
-        expect(choice!.options.length).toBeGreaterThanOrEqual(2);
-        const minionAOpt = choice!.options.find((o: any) => o.value?.cardUid === 'minion-a');
-        const minionBOpt = choice!.options.find((o: any) => o.value?.cardUid === 'minion-b');
-        expect(minionAOpt).toBeDefined();
-        expect(minionBOpt).toBeDefined();
-
-        // 选择一个随从打出
-        const r3 = respond(r2.finalState, '0', minionAOpt!.id, 'select minion');
-        expect(r3.steps[0]?.success).toBe(true);
-
-        // 随从应该被打出到基地 0
-        const base0 = r3.finalState.core.bases[0];
-        expect(base0.minions.some((m: MinionOnBase) => m.defId === 'pirate_first_mate')).toBe(true);
-    });
-
-    /**
-     * 影舞者（ninja_shinobi）：Me First! 窗口中通过 PLAY_MINION 打出到即将计分的基地
-     *
-     * 流程：playCards → ADVANCE_PHASE → onPhaseEnter('scoreBases') 打开 Me First! 窗口
-     *       → P0 用 PLAY_MINION 打出影舞者到即将计分的基地
-     *       → 不消耗正常随从额度，记录 specialLimitGroup 使用
-     *       → 双方 PASS → Me First! 窗口关闭 → 基地正常计分
-     */
-    it('影舞者：Me First! 窗口中通过 PLAY_MINION 打出到基地', () => {
-        // 使用真实基地定义（base_the_jungle breakpoint=12, vpAwards=[2,0,0]）
-        // P0 有10个力量5随从 = 50力量，远超 breakpoint
-        // P0 手牌有影舞者（力量3），打出后力量变为 53
-        const core = makeState({
-            players: {
-                '0': makePlayer('0', {
-                    hand: [
-                        makeCard('shinobi-0', 'ninja_shinobi', '0', 'minion'),
-                    ],
-                    factions: ['ninjas', 'pirates'] as [string, string],
-                }),
-                '1': makePlayer('1'),
-            },
-            bases: [
-                makeBase('base_the_jungle', [
-                    ...Array.from({ length: 10 }, (_, i) => makeMinion(`fake-${i}`, 'test_minion', '0', 5)),
-                ]),
-                makeBase('base_ninja_dojo'),
-            ],
-            baseDeck: ['base_tar_pits'], // 计分后替换用的基地
-        });
-
-        // 从 playCards 阶段推进 → onPhaseEnter('scoreBases') 打开 Me First! 窗口
-        const state = makeFullMatchState(core);
-
-        const r1 = runCommand(state, {
-            type: 'ADVANCE_PHASE', playerId: '0',
-            payload: {},
-        }, 'playCards → scoreBases');
-
-        // 验证 Me First! 窗口已打开（P0 手牌有 beforeScoringPlayable 随从）
-        const window = r1.finalState.sys.responseWindow?.current;
-        expect(window).toBeDefined();
-        expect(window?.windowType).toBe('meFirst');
-
-        // P0 用 PLAY_MINION 打出影舞者到基地 0
-        const r2 = runCommand(r1.finalState, {
-            type: SU_COMMANDS.PLAY_MINION, playerId: '0',
-            payload: { cardUid: 'shinobi-0', baseIndex: 0 },
-        }, 'play shinobi via PLAY_MINION');
-
-        expect(r2.steps[0]?.success).toBe(true);
-
-        // steps[0].events 是 string[]（事件类型名），不是事件对象
-        const eventTypes = r2.steps[0]?.events ?? [];
-
-        // 验证：MINION_PLAYED 事件已触发
-        expect(eventTypes).toContain('su:minion_played');
-
-        // 验证：影舞者不在手牌中（已打出）
-        const p0 = r2.finalState.core.players['0'];
-        expect(p0.hand.some((c: CardInstance) => c.uid === 'shinobi-0')).toBe(false);
-
-        // 验证：基地已计分（Me First! 窗口关闭后 FlowSystem 自动推进计分）
-        expect(eventTypes).toContain('su:base_scored');
-
-        // 验证：P0 获得 VP（base_the_jungle vpAwards=[2,0,0]，P0 唯一有随从的玩家 → 第1名 = 2VP）
-        expect(p0.vp).toBeGreaterThanOrEqual(2);
     });
 });

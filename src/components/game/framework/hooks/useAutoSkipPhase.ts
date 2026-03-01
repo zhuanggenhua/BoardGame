@@ -33,18 +33,6 @@ export interface UseAutoSkipPhaseConfig {
    * 所有游戏必传，确保撤回保护全局生效。
    */
   undoSnapshotCount: number;
-  /**
-   * 视觉序列是否正在播放（攻击动画、摧毁特效等）。
-   * 为 true 时抑制自动跳过，防止动画期间 scheduleInteraction 队列中的
-   * 交互（连续射击/感染/念力等）被跳过。
-   */
-  isVisualBusy?: boolean;
-  /**
-   * 乐观引擎是否有未确认的命令（等待服务端确认）。
-   * 为 true 时抑制自动跳过，防止 reconcile 回滚期间的临时中间状态
-   * （hasAvailableActions 暂时为 false）触发误跳过。
-   */
-  hasPendingOptimisticCommands?: boolean;
 }
 
 /**
@@ -57,8 +45,6 @@ export interface UseAutoSkipPhaseConfig {
  * 4. 无活跃交互模式
  * 5. hasAvailableActions 为 false
  * 6. 未处于撤回恢复抑制状态
- * 7. 无活跃视觉序列（isVisualBusy 为 false）
- * 8. 无未确认的乐观命令（hasPendingOptimisticCommands 为 false）
  */
 export function useAutoSkipPhase({
   isMyTurn,
@@ -69,8 +55,6 @@ export function useAutoSkipPhase({
   delay = 300,
   enabled = true,
   undoSnapshotCount,
-  isVisualBusy = false,
-  hasPendingOptimisticCommands = false,
 }: UseAutoSkipPhaseConfig): void {
   // 撤回恢复检测：快照数减少 → 永久抑制，直到快照数重新增加
   const prevSnapshotCountRef = useRef(undoSnapshotCount);
@@ -95,12 +79,8 @@ export function useAutoSkipPhase({
     if (hasActiveInteraction) return;
     if (hasAvailableActions) return;
     if (suppressedRef.current) return;
-    if (isVisualBusy) return;
-    if (hasPendingOptimisticCommands) return;
 
-    const timer = setTimeout(() => {
-      advancePhase();
-    }, delay);
+    const timer = setTimeout(advancePhase, delay);
     return () => clearTimeout(timer);
-  }, [enabled, isMyTurn, isGameOver, hasActiveInteraction, hasAvailableActions, advancePhase, delay, isVisualBusy, hasPendingOptimisticCommands]);
+  }, [enabled, isMyTurn, isGameOver, hasActiveInteraction, hasAvailableActions, advancePhase, delay]);
 }

@@ -4,20 +4,8 @@ import { abilityText, abilityEffectText } from '../../../../engine/primitives/ab
 
 const FACE = SHADOW_THIEF_DICE_FACE_IDS;
 
-// 暗影盗贼音效常量 — 按技能语义分配不同音效，确保听感差异化
-/** 匕首打击（标志性匕首音） */
 export const SHADOW_THIEF_SFX_DAGGER = 'combat.general.khron_studio_fight_fury_vol_1_assets.knife_stab.weapknif_knife_stab_01';
-/** 抢夺（快速匕首变体） */
-export const SHADOW_THIEF_SFX_PICKPOCKET = 'combat.general.khron_studio_fight_fury_vol_1_assets.knife_stab.weapknif_knife_stab_02';
-/** 偷窃（偷钱音效） */
-export const SHADOW_THIEF_SFX_STEAL = 'coins.decks_and_cards_sound_fx_pack.small_coin_drop_001';
-/** 破隐一击（重匕首音） */
-export const SHADOW_THIEF_SFX_KIDNEY = 'combat.general.khron_studio_fight_fury_vol_1_assets.knife_stab.weapknif_knife_stab_03';
-/** 聚宝盆（战利品音效） */
-export const SHADOW_THIEF_SFX_LOOT = 'coins.decks_and_cards_sound_fx_pack.big_coin_drop_001';
-/** 暗影之舞 */
 export const SHADOW_THIEF_SFX_SHADOW = 'magic.general.simple_magic_sound_fx_pack_vol.dark.shadow_bolt_impact_a';
-/** 大招（暗影突刺） */
 export const SHADOW_THIEF_SFX_ULTIMATE = 'magic.general.spells_variations_vol_1.shadowstrike_beam.magspel_shadowstrike_beam_01_krst';
 
 // 辅助函数
@@ -60,11 +48,11 @@ export const SHADOW_THIEF_ABILITIES: AbilityDef[] = [
         name: abilityText('pickpocket', 'name'),
         type: 'offensive',
         description: abilityText('pickpocket', 'description'),
-        sfxKey: SHADOW_THIEF_SFX_PICKPOCKET,
+        sfxKey: SHADOW_THIEF_SFX_DAGGER,
         trigger: { type: 'smallStraight' },
         effects: [
             gainCp(3, abilityEffectText('pickpocket', 'gainCp3')),
-            { description: '造成一半CP的伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-half-cp' } }
+            { description: '造成一半CP的伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-half-cp', params: { bonusCp: 3 } } }
         ]
     },
     // 偷窃 (Steal) I
@@ -73,24 +61,24 @@ export const SHADOW_THIEF_ABILITIES: AbilityDef[] = [
         name: abilityText('steal', 'name'),
         type: 'offensive',
         description: abilityText('steal', 'description'),
-        sfxKey: SHADOW_THIEF_SFX_STEAL,
+        sfxKey: SHADOW_THIEF_SFX_DAGGER,
         variants: [
-            { id: 'steal-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 2 } }, effects: [{ description: '获得2CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-2', stealLimit: 1 } }], priority: 1 },
-            { id: 'steal-3', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 3 } }, effects: [{ description: '获得3CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-3', stealLimit: 1 } }], priority: 2 },
-            { id: 'steal-4', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 4 } }, effects: [{ description: '获得4CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-4', stealLimit: 1 } }], priority: 3 }
+            { id: 'steal-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 2 } }, effects: [{ description: '获得2CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-2' } }], priority: 1 },
+            { id: 'steal-3', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 3 } }, effects: [{ description: '获得3CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-3' } }], priority: 2 },
+            { id: 'steal-4', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 4 } }, effects: [{ description: '获得4CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-4' } }], priority: 3 }
         ]
     },
-    // 破隐一击 (Kidney Shot) I
+    // 肾击 (Kidney Shot) I
     {
         id: 'kidney-shot',
         name: abilityText('kidney-shot', 'name'),
         type: 'offensive',
         description: abilityText('kidney-shot', 'description'),
-        sfxKey: SHADOW_THIEF_SFX_KIDNEY,
+        sfxKey: SHADOW_THIEF_SFX_DAGGER,
         trigger: { type: 'largeStraight' },
         effects: [
             gainCp(4, abilityEffectText('kidney-shot', 'gainCp4')),
-            { description: '造成等同CP的伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-full-cp' } }
+            { description: '造成等同CP的伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-full-cp', params: { bonusCp: 4 } } }
         ]
     },
     // 暗影之舞 (Shadow Dance) I
@@ -114,7 +102,7 @@ export const SHADOW_THIEF_ABILITIES: AbilityDef[] = [
         name: abilityText('cornucopia', 'name'),
         type: 'offensive',
         description: abilityText('cornucopia', 'description'),
-        sfxKey: SHADOW_THIEF_SFX_LOOT,
+        sfxKey: SHADOW_THIEF_SFX_DAGGER,
         trigger: { type: 'diceSet', faces: { [FACE.CARD]: 2 } },
         effects: [
             { description: '抽Card面数量牌+若有Shadow弃对手1牌', action: { type: 'custom', target: 'self', customActionId: 'shadow_thief-cornucopia' }, timing: 'withDamage' }
@@ -131,7 +119,7 @@ export const SHADOW_THIEF_ABILITIES: AbilityDef[] = [
         trigger: { type: 'diceSet', faces: { [FACE.SHADOW]: 5 } },
         effects: [
             gainCp(3, abilityEffectText('shadow-shank', 'gainCp3')),
-            { description: '造成CP+5伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-shadow-shank-damage' } },
+            { description: '造成CP+5伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-shadow-shank-damage', params: { bonusCp: 3 } } },
             // Replaced removeStatus with custom action
             { description: '移除负面效果', action: { type: 'custom', target: 'self', customActionId: 'shadow_thief-remove-all-debuffs' } },
             grantToken(TOKEN_IDS.SNEAK, 1, abilityEffectText('shadow-shank', 'gainSneak'))
@@ -184,23 +172,21 @@ export const PICKPOCKET_2: AbilityDef = {
     name: abilityText('pickpocket-2', 'name'),
     type: 'offensive',
     description: abilityText('pickpocket-2', 'description'),
-    sfxKey: SHADOW_THIEF_SFX_PICKPOCKET,
+    sfxKey: SHADOW_THIEF_SFX_DAGGER,
     variants: [
         {
             // 迅捷突袭 II：小顺子触发
             id: 'pickpocket-2',
-            name: abilityText('pickpocket-2', 'name'),
             trigger: { type: 'smallStraight' },
             effects: [
                 gainCp(4, abilityEffectText('pickpocket-2', 'gainCp4')),
-                { description: '造成一半CP的伤害 (向上取整)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-half-cp' } }
+                { description: '造成一半CP的伤害 (向上取整)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-half-cp', params: { bonusCp: 4 } } }
             ],
             priority: 1
         },
         {
             // 暗影突袭：2匕首+2暗影触发
             id: 'shadow-assault',
-            name: abilityText('shadow-assault', 'name'),
             trigger: { type: 'diceSet', faces: { [FACE.DAGGER]: 2, [FACE.SHADOW]: 2 } },
             effects: [
                 { description: '造成1/2 CP伤害 (向上取整)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-half-cp' } },
@@ -216,23 +202,21 @@ export const KIDNEY_SHOT_2: AbilityDef = {
     name: abilityText('kidney-shot-2', 'name'),
     type: 'offensive',
     description: abilityText('kidney-shot-2', 'description'),
-    sfxKey: SHADOW_THIEF_SFX_KIDNEY,
+    sfxKey: SHADOW_THIEF_SFX_DAGGER,
     variants: [
         {
             // 破隐一击 II：大顺子触发
             id: 'kidney-shot-2',
-            name: abilityText('kidney-shot-2', 'name'),
             trigger: { type: 'largeStraight' },
             effects: [
                 gainCp(4, abilityEffectText('kidney-shot-2', 'gainCp4')),
-                { description: '造成等同CP的伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-full-cp' } }
+                { description: '造成等同CP的伤害', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-damage-full-cp', params: { bonusCp: 4 } } }
             ],
             priority: 1
         },
         {
             // 穿刺攻击：匕首+钱袋+卡牌+暗影各1个触发
             id: 'piercing-attack',
-            name: abilityText('piercing-attack', 'name'),
             trigger: { type: 'diceSet', faces: { [FACE.DAGGER]: 1, [FACE.BAG]: 1, [FACE.CARD]: 1, [FACE.SHADOW]: 1 } },
             effects: [
                 gainCp(1, 'Gain 1 CP'),
@@ -265,12 +249,12 @@ export const STEAL_2: AbilityDef = {
     name: abilityText('steal-2', 'name'),
     type: 'offensive',
     description: abilityText('steal-2', 'description'),
-    sfxKey: SHADOW_THIEF_SFX_STEAL,
+    sfxKey: SHADOW_THIEF_SFX_DAGGER,
     variants: [
-        { id: 'steal-2-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 2 } }, effects: [{ description: '获得3CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-3', stealLimit: 2 } }], priority: 1 },
-        { id: 'steal-3-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 3 } }, effects: [{ description: '获得4CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-4', stealLimit: 2 } }], priority: 2 },
-        { id: 'steal-4-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 4 } }, effects: [{ description: '获得5CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-5', stealLimit: 2 } }], priority: 3 },
-        { id: 'steal-5-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 5 } }, effects: [{ description: '获得6CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-6', stealLimit: 2 } }], priority: 4 }
+        { id: 'steal-2-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 2 } }, effects: [{ description: '获得3CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-3' } }], priority: 1 },
+        { id: 'steal-3-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 3 } }, effects: [{ description: '获得4CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-4' } }], priority: 2 },
+        { id: 'steal-4-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 4 } }, effects: [{ description: '获得5CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-5' } }], priority: 3 },
+        { id: 'steal-5-2', trigger: { type: 'diceSet', faces: { [FACE.BAG]: 5 } }, effects: [{ description: '获得6CP (若有Shadow则偷取)', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-steal-cp-6' } }], priority: 4 }
     ]
 };
 
@@ -280,7 +264,7 @@ export const CORNUCOPIA_2: AbilityDef = {
     name: abilityText('cornucopia-2', 'name'),
     type: 'offensive',
     description: abilityText('cornucopia-2', 'description'),
-    sfxKey: SHADOW_THIEF_SFX_LOOT,
+    sfxKey: SHADOW_THIEF_SFX_DAGGER,
     trigger: { type: 'diceSet', faces: { [FACE.CARD]: 2 } },
     effects: [
         { description: '每有[Card]抽1，有[Shadow]弃1，有[Bag]得1CP', action: { type: 'custom', target: 'self', customActionId: 'shadow_thief-cornucopia-2' }, timing: 'withDamage' }

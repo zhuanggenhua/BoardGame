@@ -13,7 +13,7 @@ import { Dice3D } from './Dice3D';
 // DiceThrone 骰子交互元数据类型
 // ============================================================================
 
-export interface DtDiceModifyMeta {
+interface DtDiceModifyMeta {
     dtType: 'modifyDie';
     dieModifyConfig?: {
         mode: 'set' | 'adjust' | 'copy' | 'any';
@@ -24,16 +24,16 @@ export interface DtDiceModifyMeta {
     targetOpponentDice: boolean;
 }
 
-export interface DtDiceSelectMeta {
+interface DtDiceSelectMeta {
     dtType: 'selectDie';
     selectCount: number;
     targetOpponentDice: boolean;
 }
 
-export type DtDiceMeta = DtDiceModifyMeta | DtDiceSelectMeta;
+type DtDiceMeta = DtDiceModifyMeta | DtDiceSelectMeta;
 
 /** 从 multistep-choice interaction 中提取 DiceThrone 元数据 */
-export function getDtMeta(interaction?: InteractionDescriptor): DtDiceMeta | undefined {
+function getDtMeta(interaction?: InteractionDescriptor): DtDiceMeta | undefined {
     if (!interaction || interaction.kind !== 'multistep-choice') return undefined;
     const meta = (interaction.data as any)?.meta as DtDiceMeta | undefined;
     if (!meta?.dtType) return undefined;
@@ -91,14 +91,9 @@ export const DiceTray = ({
     const canAdjustUp = isAdjustMode && totalAdjustment < adjustRange.max;
 
     const isSelected = (dieId: number): boolean => {
-        if (isSelectMode) return (selectResult?.selectedDiceIds.filter(id => id === dieId).length ?? 0) > 0;
+        if (isSelectMode) return selectResult?.selectedDiceIds.includes(dieId) ?? false;
         if (isModifyMode) return dieId in (modifyResult?.modifications ?? {});
         return false;
-    };
-
-    const selectedCount = (dieId: number): number => {
-        if (isSelectMode) return selectResult?.selectedDiceIds.filter(id => id === dieId).length ?? 0;
-        return 0;
     };
 
     const maxSelectCount = dtMeta?.selectCount ?? 1;
@@ -111,16 +106,9 @@ export const DiceTray = ({
         if (isRolling) return;
 
         if (isInteractionMode && !isAnyMode && multistepInteraction) {
-            // set / copy / selectDie 模式：点击骰子
+            // set / copy / selectDie 模式：点击骰子 = step(select/toggle)
             if (isSelectMode) {
-                const alreadySelected = isSelected(dieId);
-                if (alreadySelected && !canSelectMore) {
-                    // 已选满且该骰子已选中 → 移除（允许换选）
-                    multistepInteraction.step({ action: 'remove', dieId } as DiceSelectStep);
-                } else if (canSelectMore) {
-                    // 还能选 → 直接添加（允许同一颗骰子多次选择）
-                    multistepInteraction.step({ action: 'add', dieId } as DiceSelectStep);
-                }
+                multistepInteraction.step({ action: 'toggle', dieId } as DiceSelectStep);
             } else if (isModifyMode) {
                 const die = dice.find(d => d.id === dieId);
                 if (!die) return;
@@ -178,13 +166,13 @@ export const DiceTray = ({
                 {dice.map((d, i) => {
                     const selected = isSelected(d.id);
                     const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
-                    // adjust 模式：对所有骰子显示 +/- 按钮（锁定不影响改骰子）
-                    const showAdjustButtons = isInteractionMode && isAdjustMode;
-                    const showAnyModeButtons = isInteractionMode && isAnyMode &&
+                    // adjust 模式：对所有未锁定骰子显示 +/- 按钮（不依赖 selected，因为 adjust 模式下骰子无需先"选中"）
+                    const showAdjustButtons = isInteractionMode && isAdjustMode && !d.isKept;
+                    const showAnyModeButtons = isInteractionMode && isAnyMode && !d.isKept &&
                         (isModified || currentSelectCount < maxSelectCount);
-                    // 交互模式下锁定不影响骰子可操作性
+                    const isInactiveDie = isInteractionMode && d.isKept;
                     const clickable = isInteractionMode
-                        ? (isAnyMode ? false : (canSelectMore || selected))
+                        ? (isAnyMode ? false : (!isInactiveDie && (canSelectMore || selected)))
                         : canInteract;
                     // any/adjust 模式下使用本地预览值
                     const displayValue = (isAnyMode || isAdjustMode)
@@ -236,10 +224,7 @@ export const DiceTray = ({
                                     )}
                                     {selected && !showAdjustButtons && !showAnyModeButtons && (
                                         <div className="absolute -top-[0.3vw] -right-[0.3vw] w-[1vw] h-[1vw] bg-amber-500 rounded-full flex items-center justify-center z-30">
-                                            {selectedCount(d.id) > 1
-                                                ? <span className="text-white font-bold text-[0.55vw]">{selectedCount(d.id)}</span>
-                                                : <Check size={12} className="text-white" strokeWidth={3} />
-                                            }
+                                            <Check size={12} className="text-white" strokeWidth={3} />
                                         </div>
                                     )}
                                 </div>

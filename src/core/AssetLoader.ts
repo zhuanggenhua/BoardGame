@@ -102,7 +102,7 @@ export function getImagePath(
     }
 
     const relativePath = assets.images[key];
-    
+
     if (preferCompressed) {
         const basePath = relativePath.replace(/\.[^.]+$/, '');
         const dir = basePath.substring(0, basePath.lastIndexOf('/'));
@@ -603,10 +603,10 @@ export function isImagePreloaded(src: string, locale?: string): boolean {
     };
 
     if (check(src)) return true;
-    
+
     const effectiveLocale = locale || 'zh-CN';
     const localizedPath = getLocalizedAssetPath(src, effectiveLocale);
-    
+
     // 如果 src 已经是 compressed/ 下的 URL，直接检查 webp 变体
     if (localizedPath.includes(`/${COMPRESSED_SUBDIR}/`)) {
         const base = stripExtension(localizedPath);
@@ -784,6 +784,7 @@ const isInternalAssetsUrl = (src: string) => {
 const isPassthroughSource = (src: unknown) => {
     if (!isString(src)) return false;
     if (src.startsWith('data:') || src.startsWith('blob:')) return true;
+    if (src.includes('?raw') || src.includes('&raw')) return true;
     // HTTP URL 但不是内部资源域名 → 穿透
     if (isHttpUrl(src) && !isInternalAssetsUrl(src)) return true;
     return false;
@@ -889,13 +890,13 @@ export function getLocalizedAssetPath(path: string, locale?: string): string {
     if (!locale || isPassthroughSource(path)) return assetsPath(path);
     const normalized = assetsPath(path);
     const relative = stripAssetsBasePrefix(normalized);
-    
+
     // 幂等性检查：如果已经包含 i18n/<locale>/ 前缀，直接返回
     const localizedPrefix = `${LOCALIZED_ASSETS_SUBDIR}/${locale}/`;
     if (relative.startsWith(localizedPrefix)) {
         return normalized;
     }
-    
+
     return assetsPath(`${localizedPrefix}${relative}`);
 }
 

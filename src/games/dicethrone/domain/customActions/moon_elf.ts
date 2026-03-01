@@ -9,16 +9,16 @@
  */
 
 import { getActiveDice, getFaceCounts, getPlayerDieFace } from '../rules';
-import { STATUS_IDS, MOON_ELF_DICE_FACE_IDS } from '../ids';
+import { STATUS_IDS, TOKEN_IDS, MOON_ELF_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import type {
     DiceThroneEvent,
     DamageDealtEvent,
     StatusAppliedEvent,
     StatusRemovedEvent,
+    TokenGrantedEvent,
     BonusDieRolledEvent,
     RollLimitChangedEvent,
-    DamageShieldGrantedEvent,
 } from '../types';
 import { buildDrawEvents } from '../deckEvents';
 import { registerCustomActionHandler, type CustomActionContext } from '../effects';
@@ -65,7 +65,7 @@ function dealDamage(
 ): DamageDealtEvent {
     // 使用新伤害计算管线
     const damageCalc = createDamageCalculation({
-        source: { playerId: ctx.attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: ctx.attackerId, abilityId: sourceAbilityId },
         target: { playerId: targetId },
         baseDamage: amount,
         state: ctx.state,
@@ -343,46 +343,49 @@ function handleExplodingArrowResolve3(context: CustomActionContext): DiceThroneE
 // ============================================================================
 
 /**
- * 迷影步 I：防御掷骰，统计足(FOOT)和弓(BOW)数量
+ * 迷影步 I：防御掷骰，统计足(FOOT)数量
  * 图片规则：
  * - 若足面≥2，抵挡一半伤害（向上取整）
- * - 每有2个弓面，造成1伤害
+ * - 每有足面，造成1伤害
  */
 function handleElusiveStepResolve1(context: CustomActionContext): DiceThroneEvent[] {
     const { attackerId, sourceAbilityId, state, timestamp, ctx } = context;
     const events: DiceThroneEvent[] = [];
     const faceCounts = getFaceCounts(getActiveDice(state));
     const footCount = faceCounts[FACE.FOOT] ?? 0;
-    const bowCount = faceCounts[FACE.BOW] ?? 0;
     // 防御上下文：ctx.attackerId = 防御者，ctx.defenderId = 原攻击者
     const opponentId = ctx.defenderId;
 
-    // 每2个弓面造成1伤害（向下取整）
-    const bowDamage = Math.floor(bowCount / 2);
-    if (bowDamage > 0) {
-        events.push(dealDamage(context, opponentId, bowDamage, sourceAbilityId, timestamp));
+    // 每个足面造成1伤害
+    if (footCount > 0) {
+        events.push(dealDamage(context, opponentId, footCount, sourceAbilityId, timestamp));
     }
 
     // 足面≥2时，抵挡一半伤害（向上取整）
-    // 使用百分比减免护盾，在 DAMAGE_DEALT 时按实际伤害的 50% 计算减免量
-    // 解决 custom-action 伤害（如 shadow_thief-damage-half-cp）无法预估的问题
-    if (footCount >= 2) {
-        events.push({
-            type: 'DAMAGE_SHIELD_GRANTED',
-            payload: { targetId: attackerId, value: 0, sourceId: sourceAbilityId, preventStatus: false, reductionPercent: 50 },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp,
-        } as DamageShieldGrantedEvent);
+    if (footCount >= 2 && state.pendingAttack) {
+        const originalDamage = state.pendingAttack.damage + (state.pendingAttack.bonusDamage ?? 0);
+        const reducedDamage = Math.ceil(originalDamage / 2);
+        const reduction = originalDamage - reducedDamage;
+        
+        if (reduction > 0) {
+            events.push({
+                type: 'PREVENT_DAMAGE',
+                payload: { targetId: attackerId, amount: reduction, sourceAbilityId },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp,
+            } as any);
+        }
     }
 
     return events;
 }
 
 /**
- * 迷影步 II：防御掷骰，统计足(FOOT)和弓(BOW)数量
- * 图片规则：
+ * 迷影步 II：防御掷骰，统计足(FOOT)数量
+ * 图片规则（推测升级版）：
  * - 若足面≥2，抵挡一半伤害（向上取整）
- * - 造成1×弓面数伤害
+ * - 每有足面，造成1伤害
+ * - 额外：足面≥3时获得1闪避
  */
 function handleElusiveStepResolve2(context: CustomActionContext): DiceThroneEvent[] {
     const { attackerId, sourceAbilityId, state, timestamp, ctx } = context;
@@ -398,16 +401,20 @@ function handleElusiveStepResolve2(context: CustomActionContext): DiceThroneEven
         events.push(dealDamage(context, opponentId, bowCount, sourceAbilityId, timestamp));
     }
 
-    // 足面≥2时，抵挡一半伤害（向上取整）
-    // 使用百分比减免护盾，在 DAMAGE_DEALT 时按实际伤害的 50% 计算减免量
-    // 解决 custom-action 伤害（如 shadow_thief-damage-half-cp）无法预估的问题
-    if (footCount >= 2) {
-        events.push({
-            type: 'DAMAGE_SHIELD_GRANTED',
-            payload: { targetId: attackerId, value: 0, sourceId: sourceAbilityId, preventStatus: false, reductionPercent: 50 },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp,
-        } as DamageShieldGrantedEvent);
+    // 足面≥2时，防止一半伤害（向上取整）
+    if (footCount >= 2 && state.pendingAttack) {
+        const originalDamage = state.pendingAttack.damage + (state.pendingAttack.bonusDamage ?? 0);
+        const reducedDamage = Math.ceil(originalDamage / 2);
+        const reduction = originalDamage - reducedDamage;
+        
+        if (reduction > 0) {
+            events.push({
+                type: 'PREVENT_DAMAGE',
+                payload: { targetId: attackerId, amount: reduction, sourceAbilityId },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp,
+            } as any);
+        }
     }
 
     return events;
@@ -628,10 +635,9 @@ function handleEntangleEffect(context: CustomActionContext): DiceThroneEvent[] {
     return events;
 }
 
-// 锁定 (Targeted) 是持续效果，因敌人攻击掷骰阶段受到伤害时 +2。
-// 伤害修正通过 TokenDef.passiveTrigger.actions[modifyStat] + sourceCondition.phase='offensiveRoll'，
-// 由 createDamageCalculation 的 collectStatusModifiers 自动处理。
-// 防御反击、灼烧/中毒等非攻击阶段伤害不触发。移除只能通过净化等主动手段。
+// 锁定 (Targeted) 是持续效果，受伤时 +2 伤害，不会自动移除。
+// 伤害修正通过 TokenDef.passiveTrigger.actions[modifyStat]，由 createDamageCalculation 的 collectStatusModifiers 自动处理。
+// 移除只能通过净化等主动手段。
 
 // ============================================================================
 // 注册

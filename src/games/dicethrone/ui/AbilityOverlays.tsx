@@ -7,7 +7,6 @@ import { playSound } from '../../../lib/audio/useGameAudio';
 import { DEFAULT_ABILITY_SLOT_LAYOUT } from './abilitySlotLayout';
 import type { CardPreviewRef } from '../../../core';
 import type { AbilityCard } from '../types';
-import type { AbilityDef } from '../domain/combat';
 // 导入所有英雄的卡牌定义
 import { MONK_CARDS } from '../heroes/monk/cards';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
@@ -54,41 +53,10 @@ export const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] 
     lightning: { labelKey: 'abilitySlots.lightning', ids: ['thunder-strike', 'burn-down', 'suppress', 'blessing-of-might', 'exploding-arrow', 'kidney-shot'] },
     calm: { labelKey: 'abilitySlots.calm', ids: ['calm-water', 'ignite', 'reckless-strike', 'holy-light', 'blinding-shot', 'cornucopia'] },
     meditate: { labelKey: 'abilitySlots.meditate', ids: ['meditation', 'magma-armor', 'thick-skin', 'holy-defense', 'elusive-step', 'fearless-riposte'] },
-    ultimate: { labelKey: 'abilitySlots.ultimate', ids: ['transcendence', 'ultimate-inferno', 'rage', 'unyielding-faith', 'lunar-eclipse', 'shadow-shank'] },
+    ultimate: { labelKey: 'abilitySlots.ultimate', ids: ['transcendence', 'ultimate-inferno', 'unyielding-faith', 'lunar-eclipse', 'shadow-shank'] },
 };
 
-/**
- * 从玩家技能列表构建 variantId → baseAbilityId 的反向查找表
- * 用于将变体 ID（如 deadeye-shot-2、focus）映射回其父技能的 base ID（如 covert-fire）
- */
-export function buildVariantToBaseIdMap(abilities: AbilityDef[]): Map<string, string> {
-    const map = new Map<string, string>();
-    for (const ability of abilities) {
-        // 技能自身 ID 映射到自身
-        map.set(ability.id, ability.id);
-        // 所有变体 ID 映射到父技能 ID
-        if (ability.variants?.length) {
-            for (const variant of ability.variants) {
-                map.set(variant.id, ability.id);
-            }
-        }
-    }
-    return map;
-}
-
-export const getAbilitySlotId = (abilityId: string, variantToBaseMap?: Map<string, string>) => {
-    // 优先通过反向查找表精确匹配（支持非前缀变体 ID）
-    if (variantToBaseMap) {
-        const baseId = variantToBaseMap.get(abilityId);
-        if (baseId) {
-            for (const slotId of Object.keys(ABILITY_SLOT_MAP)) {
-                if (ABILITY_SLOT_MAP[slotId].ids.includes(baseId)) {
-                    return slotId;
-                }
-            }
-        }
-    }
-    // 降级：无查找表时使用 startsWith 匹配（兼容 HandArea 等不传 abilities 的场景）
+export const getAbilitySlotId = (abilityId: string) => {
     for (const slotId of Object.keys(ABILITY_SLOT_MAP)) {
         const mapping = ABILITY_SLOT_MAP[slotId];
         if (mapping.ids.some(baseId => abilityId === baseId || abilityId.startsWith(`${baseId}-`))) {
@@ -131,7 +99,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         lightning: 'suppress',
         calm: 'reckless-strike',
         meditate: 'thick-skin',
-        ultimate: 'rage',
+        // 野蛮人无终极技能（abilities 中未定义 ultimate）
     },
     paladin: {
         // 顶部左侧为被动“教皇税”，不映射为可选技能
@@ -219,9 +187,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         abilityLevels?: Record<string, number>;
         characterId?: string;
         locale?: string;
-        playerTokens?: Record<string, number>;
-        /** 当前视角玩家的技能列表，用于精确匹配变体 ID 到技能槽 */
-        playerAbilities?: AbilityDef[];
+        playerTokens?: Record<string, number>;  // 新增：玩家的 token 状态（用于显示被动能力激活状态）
     }
 
     export const AbilityOverlays = React.forwardRef<AbilityOverlaysHandle, AbilityOverlaysProps>(({
@@ -234,18 +200,11 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         selectedAbilityId,
         activatingAbilityId,
         abilityLevels,
-        characterId = 'monk',
+        characterId = 'monk', // 用于查找对应角色的升级卡定义
         locale,
         playerTokens: _playerTokens,
-        playerAbilities,
     }, ref) => {
         const { t } = useTranslation('game-dicethrone');
-
-        // 构建 variantId → baseAbilityId 反向查找表（用于精确匹配非前缀变体 ID）
-        const variantToBaseMap = React.useMemo(
-            () => playerAbilities ? buildVariantToBaseIdMap(playerAbilities) : undefined,
-            [playerAbilities]
-        );
 
         // 游戏级布局配置：所有用户共享一致的默认布局
         const [slots, setSlots] = React.useState(() => {
@@ -273,14 +232,6 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         const resolveAbilityId = (slotId: string) => {
             const mapping = ABILITY_SLOT_MAP[slotId];
             if (!mapping) return null;
-            // 优先通过反向查找表精确匹配（支持非前缀变体 ID 如 deadeye-shot-2、focus）
-            if (variantToBaseMap) {
-                return availableAbilityIds.find(id => {
-                    const baseId = variantToBaseMap.get(id);
-                    return baseId ? mapping.ids.includes(baseId) : false;
-                }) ?? null;
-            }
-            // 降级：无查找表时使用 startsWith 匹配
             return availableAbilityIds.find(id =>
                 mapping.ids.some(baseId => id === baseId || id.startsWith(`${baseId}-`))
             ) ?? null;
@@ -362,7 +313,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                                         <CardPreview
                                             previewRef={passiveCard.previewRef}
                                             locale={locale}
-                                            className="h-full aspect-[0.611] rounded-lg"
+                                            className="h-full aspect-[0.61] rounded-lg"
                                         />
                                     </div>
                                 )}
@@ -432,7 +383,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                                     <CardPreview
                                         previewRef={upgradePreviewRef}
                                         locale={locale}
-                                        className="h-full aspect-[0.611] rounded-lg"
+                                        className="h-full aspect-[0.61] rounded-lg"
                                     />
                                 </div>
                             )}

@@ -66,8 +66,7 @@
     "ownerRejoinOnly": "空房间仅房主可重连（游客需使用原浏览器/设备，清理缓存后需重新创建）",
     "inAnotherMatch": "您当前已在另一场对局中",
     "inProgress": "对局中",
-    "full": "已满",
-    "gameover": "已结束"
+    "full": "已满"
   },
   "tabs": {
     "lobby": "在线大厅",
@@ -245,11 +244,6 @@
       "7days": "7 天"
     },
     "retentionHint": "保存期内可重连，过期自动清理"
-  },
-  "notification": {
-    "playerJoinedTitle": "有玩家加入了房间",
-    "playerJoinedBody": "{{name}} 加入了你的房间",
-    "playerJoinedBodyAnonymous": "对手已加入，准备开始游戏"
   },
   "socket": {
     "invalidGameId": "非法 gameId，已忽略订阅: {{value}}",

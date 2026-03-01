@@ -7,7 +7,7 @@
  * 3. powerful-strike — 小顺 9 伤害
  * 4. steadfast — 治疗变体
  * 5. violent-assault — 不可防御 + 眩晕
- * 6. reckless-strike — 大顺子触发（15 伤害 + 自伤 4，可防御）
+ * 6. reckless-strike — 终极技能（5个力量面 15 伤害 + 自伤 4）
  * 7. suppress — 自定义投骰伤害
  *
  * 注意：
@@ -257,7 +257,7 @@ describe('狂战士 GTR 技能覆盖', () => {
     });
 
     // ========================================================================
-    // reckless-strike — 鲁莽一击（大顺子触发，可防御）
+    // reckless-strike — 鲁莽一击（终极技能，大顺子触发，不可防御）
     // ========================================================================
     describe('鲁莽一击 (reckless-strike)', () => {
         it('大顺子 [2,3,4,5,6] 造成 15 伤害 + 自伤 4（0心防御）', () => {
@@ -276,10 +276,8 @@ describe('狂战士 GTR 技能覆盖', () => {
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'reckless-strike' }),
-                    cmd('ADVANCE_PHASE', '0'),       // → defensiveRoll（可防御）
-                    cmd('ROLL_DICE', '1'),
-                    cmd('CONFIRM_ROLL', '1'),
-                    cmd('ADVANCE_PHASE', '1'),       // → main2
+                    // 终极技能不可防御，直接到 main2
+                    cmd('ADVANCE_PHASE', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',

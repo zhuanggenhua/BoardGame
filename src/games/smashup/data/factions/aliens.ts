@@ -31,6 +31,7 @@ export const ALIEN_MINIONS: MinionCardDef[] = [
         nameEn: 'Scout',
         faction: 'aliens',
         power: 3,
+        abilityTags: ['special'],
         count: 3,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 26 },
     },

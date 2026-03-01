@@ -63,7 +63,7 @@ export function createReplayAdapter<
 
     return {
         setup: (playerIds: PlayerId[]) => {
-            const core = domain.setup(playerIds, random, undefined);
+            const core = domain.setup(playerIds, random);
             const sys = createInitialSystemState(playerIds, [], undefined);
             return { sys, core };
         },

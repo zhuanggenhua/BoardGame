@@ -79,7 +79,7 @@ export const FriendList = ({ onSelectFriend, activeFriendId }: FriendListProps) 
             </div>
 
             {/* 内容区 */}
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {tab === 'chats' && (
                     <div className="p-2 space-y-1">
                         {/* 固定置顶：系统通知 */}

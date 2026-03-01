@@ -46,7 +46,7 @@ beforeAll(() => {
 function makeMinion(uid: string, defId: string, controller: string, power: number, owner?: string): MinionOnBase {
     return {
         uid, defId, controller, owner: owner ?? controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerModifier: 0, talentUsed: false, attachedActions: [],
     };
 }
 

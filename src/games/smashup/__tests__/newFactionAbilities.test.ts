@@ -331,8 +331,8 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerCounters: 2 }),
-                        makeMinion('m2', 'test_other', '0', 2, { powerCounters: 1 }),
+                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerModifier: 2 }),
+                        makeMinion('m2', 'test_other', '0', 2, { powerModifier: 1 }),
                     ],
                     ongoingActions: [],
                 },
@@ -385,7 +385,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerCounters: 2 }),
+                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerModifier: 2 }),
                         makeMinion('m2', 'test_other', '0', 2, { powerModifier: 0 }),
                     ],
                     ongoingActions: [],
@@ -437,7 +437,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_the_jungle',
                     minions: [
-                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerCounters: 3 }), // 计分基地上的随从（来源）
+                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerModifier: 3 }), // 计分基地上的随从（来源）
                         makeMinion('filler1', 'test_other', '1', 10),
                     ],
                     ongoingActions: [],
@@ -510,8 +510,8 @@ describe('巨蚁派系能力', () => {
         // 验证最终状态：m1 在基地 0，m2 在基地 1
         const m1Final = amountResult.finalState.core.bases[0]?.minions.find(m => m.uid === 'm1');
         const m2Final = amountResult.finalState.core.bases[1]?.minions.find(m => m.uid === 'm2');
-        expect(m1Final?.powerCounters).toBe(0);
-        expect(m2Final?.powerCounters).toBe(3);
+        expect(m1Final?.powerModifier).toBe(0);
+        expect(m2Final?.powerModifier).toBe(3);
     });
 
     it('我们乃最强：计分后触发，来源离场后仍可按快照数量完成转移', () => {
@@ -526,7 +526,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerCounters: 2 }),
+                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerModifier: 2 }),
                         makeMinion('opp1', 'test_other', '1', 2, { powerModifier: 0 }),
                     ],
                     ongoingActions: [],
@@ -711,7 +711,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 1 }),
                         makeMinion('m1', 'cthulhu_servitor', '0', 2),
                     ],
                     ongoingActions: [],
@@ -756,7 +756,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 1 }),
                         makeMinion('m1', 'cthulhu_servitor', '0', 2),
                     ],
                     ongoingActions: [],
@@ -799,8 +799,8 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 2 }),
-                        makeMinion('igor', 'frankenstein_igor', '0', 1, { powerCounters: 0 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 2 }),
+                        makeMinion('igor', 'frankenstein_igor', '0', 1, { powerModifier: 0 }),
                     ],
                     ongoingActions: [],
                 },
@@ -836,8 +836,8 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 2 }),
-                        makeMinion('igor', 'frankenstein_igor', '0', 1, { powerCounters: 0 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 2 }),
+                        makeMinion('igor', 'frankenstein_igor', '0', 1, { powerModifier: 0 }),
                     ],
                     ongoingActions: [],
                 },
@@ -879,7 +879,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 1 }),
                         makeMinion('m1', 'cthulhu_servitor', '0', 2),
                     ],
                     ongoingActions: [],
@@ -924,7 +924,7 @@ describe('巨蚁派系能力', () => {
             bases: [{
                 defId: 'base_a',
                 minions: [
-                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
+                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 1 }),
                 ],
                 ongoingActions: [],
             }],
@@ -971,7 +971,7 @@ describe('巨蚁派系能力', () => {
                 minions: [
                     makeMinion('m1', 'cthulhu_servitor', '0', 5),
                     makeMinion('m2', 'cthulhu_minion', '0', 4),
-                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
+                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 1 }),
                 ],
                 ongoingActions: [],
             }],
@@ -1012,7 +1012,7 @@ describe('巨蚁派系能力', () => {
                 minions: [
                     makeMinion('m1', 'cthulhu_servitor', '0', 2),
                     makeMinion('m2', 'cthulhu_minion', '0', 1),
-                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
+                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 1 }),
                 ],
                 ongoingActions: [],
             }],
@@ -1074,7 +1074,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 2 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 2 }),
                         makeMinion('m1', 'cthulhu_servitor', '0', 2),
                         makeMinion('vc', 'vampire_the_count', '1', 5),
                     ],
@@ -1117,7 +1117,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 2 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 2 }),
                         makeMinion('m1', 'cthulhu_servitor', '0', 2),
                         {
                             ...makeMinion('opp1', 'cthulhu_minion', '1', 3),
@@ -1155,7 +1155,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 2 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 2 }),
                         makeMinion('m1', 'cthulhu_servitor', '0', 2),
                         makeMinion('vc', 'vampire_the_count', '1', 5),
                     ],
@@ -1184,7 +1184,7 @@ describe('巨蚁派系能力', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
-                    minionsPlayedPerBase: { 0: 2 },
+                    minionsPlayedPerBase: { 0: 1 },
                 }),
                 '1': makePlayer('1'),
             },
@@ -1193,8 +1193,7 @@ describe('巨蚁派系能力', () => {
                     defId: 'base_a',
                     minions: [
                         makeMinion('q1', 'giant_ant_killer_queen', '0', 4),
-                        makeMinion('m2', 'test_other', '0', 2, { playedThisTurn: true }),
-                        makeMinion('m3', 'test_other2', '0', 3, { playedThisTurn: true }),
+                        makeMinion('m2', 'test_other', '0', 2),
                     ],
                     ongoingActions: [],
                 },
@@ -1259,10 +1258,10 @@ describe('科学怪人派系能力', () => {
         expect(geEvt).toBeDefined();
         expect((geEvt as any).payload.minionUid).toBe('m1');
 
-        // 断言最终状态中随从的 powerCounters 确实被 +1
+        // 断言最终状态中随从的 powerModifier 确实被 +1
         const finalMinion = afterMinion.finalState.core.bases[0].minions.find(m => m.uid === 'm1');
         expect(finalMinion).toBeDefined();
-        expect(finalMinion!.powerCounters).toBe(1);
+        expect(finalMinion!.powerModifier).toBe(1);
     });
 
     it('怪物：天赋移除指示物并额外打出随从', () => {
@@ -1275,7 +1274,7 @@ describe('科学怪人派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('monster1', 'frankenstein_the_monster', '0', 5, { powerCounters: 2 }),
+                        makeMinion('monster1', 'frankenstein_the_monster', '0', 5, { powerModifier: 2 }),
                     ],
                     ongoingActions: [],
                 },
@@ -1474,7 +1473,7 @@ describe('吸血鬼派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('c1', 'vampire_the_count', '0', 5, { powerCounters: 1 }),
+                        makeMinion('c1', 'vampire_the_count', '0', 5, { powerModifier: 1 }),
                         makeMinion('f1', 'test_fodder', '0', 2),
                     ],
                     ongoingActions: [],
@@ -1570,15 +1569,22 @@ describe('吸血鬼派系能力', () => {
             ],
         });
 
-        // 强制效果 + 单目标 → 自动执行，不创建交互
         const playResult = runCommand(
             makeMatchState(core),
             { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'c1', baseIndex: 0 } },
             defaultTestRandom,
         );
 
-        // 单目标自动消灭，直接检查事件
-        const counterEvt = playResult.events.find(
+        const prompt = getInteractionsFromMS(playResult.finalState)[0];
+        const option = prompt.data.options.find((o: any) => o?.value?.minionUid === 'e1');
+
+        const resolveResult = runCommand(
+            playResult.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        const counterEvt = resolveResult.events.find(
             e => e.type === SU_EVENTS.POWER_COUNTER_ADDED && (e as any).payload.reason === 'vampire_nightstalker',
         );
         expect(counterEvt).toBeDefined();

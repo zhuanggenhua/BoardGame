@@ -147,7 +147,7 @@
     "baseScoredRanking": "{{playerId}} +{{vp}}VP",
     "baseScoredRankingWithBreakdown": "{{playerId}} +{{vp}}VP Power:",
     "powerModifier": {
-      "permanent": "Permanent Power",
+      "permanent": "Power Counters",
       "temp": "Temp Power Modifier"
     },
     "damageSource": {
@@ -474,7 +474,7 @@
     },
     "dino_rampage": {
       "name": "Rampage",
-      "effectText": "Reduce a base's breakpoint by the power of one of your minions there until the end of the turn."
+      "effectText": "Reduce a base's breakpoint by the total power of your minions there until the end of the turn."
     },
     "dino_survival_of_the_fittest": {
       "name": "Survival of the Fittest",
@@ -746,7 +746,7 @@
     },
     "ninja_seeing_stars": {
       "name": "Seeing Stars",
-      "effectText": "Destroy a minion of power 3 or less."
+      "effectText": "Play on a base. Ongoing: Your minions here are not affected by other players' actions."
     },
     "ninja_disguise": {
       "name": "Disguise",
@@ -774,7 +774,7 @@
     },
     "pirate_first_mate": {
       "name": "First Mate",
-      "abilityText": "Special: After this base scores, you may move this minion to another base instead of the discard pile."
+      "abilityText": "Special: After this base scores, you may move up to two of your minions to other bases instead of the discard pile."
     },
     "pirate_dinghy": {
       "name": "Dinghy",
@@ -962,7 +962,7 @@
     },
     "wizard_mass_enchantment": {
       "name": "Mass Enchantment",
-      "effectText": "Reveal the top card of each other player's deck. Play one revealed action as an extra action. Put the remaining cards back on top of their owners' decks."
+      "effectText": "Reveal the top card of each other player's deck. You may play one revealed action as an extra action. Put the remaining cards back on top of their owners' decks."
     },
     "wizard_mystic_studies": {
       "name": "Mystic Studies",
@@ -1093,7 +1093,7 @@
     },
     "base_tortuga": {
       "name": "Tortuga",
-      "abilityText": "After this base scores and is replaced, the runner-up may move one of their minions on another base to the replacement base."
+      "abilityText": "After the winner scores, the runner-up may move one of their minions to the base that replaces this one."
     },
     "base_great_library": {
       "name": "Great Library",

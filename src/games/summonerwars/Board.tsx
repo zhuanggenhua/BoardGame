@@ -78,7 +78,7 @@ const DEFAULT_GRID_CONFIG: GridConfig = {
 };
 
 export const SummonerWarsBoard: React.FC<Props> = ({
-  G, dispatch, playerID, reset, matchData, isMultiplayer, locale, hasPendingOptimisticCommands,
+  G, dispatch, playerID, reset, matchData, isMultiplayer, locale,
 }) => {
   const isGameOver = G.sys.gameover;
   const gameMode = useGameMode();
@@ -111,9 +111,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   }, [dispatch]);
   const handlePlayerReady = useCallback(() => {
     dispatch(SW_COMMANDS.PLAYER_READY, {});
-  }, [dispatch]);
-  const handlePlayerUnready = useCallback(() => {
-    dispatch(SW_COMMANDS.PLAYER_UNREADY, {});
   }, [dispatch]);
   const handleHostStart = useCallback(() => {
     dispatch(SW_COMMANDS.HOST_START_GAME, {});
@@ -317,33 +314,10 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     afterAttackAbilityMode, setAfterAttackAbilityMode,
     rapidFireMode,
     grabFollowMode, setGrabFollowMode,
-    isVisualBusy,
-    hasPendingOptimisticCommands: hasPendingOptimisticCommands ?? false,
   });
 
   // 桥接：useGameEvents 检测到 afterAttack 触发 withdraw → 设置 useEventCardModes 的 withdrawMode
   const setWithdrawMode = interaction.setWithdrawMode;
-
-  // 连续射击确认后自动清除：当 core 状态已反映 extraAttacks（乐观预测或服务端确认），
-  // 安全清除 rapidFireMode，让玩家继续操作。
-  // 这避免了 setRapidFireMode(null) 与 dispatch 之间的竞态：
-  // 若立即清除，hasActiveInteraction=false 但 hasAvailableActions 可能仍为 false（旧状态），
-  // 导致 useAutoSkipPhase 误触发。
-  useEffect(() => {
-    if (!rapidFireMode?.confirmed) return;
-    const unit = core.board[rapidFireMode.sourcePosition.row]?.[rapidFireMode.sourcePosition.col]?.unit;
-    // 状态已更新：单位获得了额外攻击（extraAttacks > 0）或 hasAttacked 被重置
-    if (unit && unit.instanceId === rapidFireMode.sourceUnitId && !unit.hasAttacked) {
-      setRapidFireMode(null);
-      return;
-    }
-    // 安全超时：如果 2 秒内 core 状态未更新（命令失败/网络异常），强制清除防止卡死
-    const timeout = setTimeout(() => {
-      setRapidFireMode(null);
-    }, 2000);
-    return () => clearTimeout(timeout);
-  }, [rapidFireMode, core, setRapidFireMode]);
-
   useEffect(() => {
     if (withdrawTrigger) {
       setWithdrawMode(withdrawTrigger);
@@ -581,10 +555,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     if (!interaction.withdrawMode) return;
     interaction.setWithdrawMode({ ...interaction.withdrawMode, step: 'selectPosition', costType });
   }, [interaction]);
-  const handleCancelWithdraw = useCallback(() => {
-    interaction.resetEndPhaseConfirm();
-    interaction.setWithdrawMode(null);
-  }, [interaction]);
+  const handleCancelWithdraw = useCallback(() => interaction.setWithdrawMode(null), [interaction]);
   const handleConfirmStun = useCallback(() => {
     interaction.handleConfirmStun();
   }, [interaction]);
@@ -601,28 +572,15 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const handleConfirmMindCapture = useCallback((choice: 'control' | 'damage') => {
     interaction.handleConfirmMindCapture(choice);
   }, [interaction]);
-  const handleCancelAfterAttackAbility = useCallback(() => {
-    interaction.resetEndPhaseConfirm();
-    setAfterAttackAbilityMode(null);
-  }, [setAfterAttackAbilityMode, interaction]);
+  const handleCancelAfterAttackAbility = useCallback(() => setAfterAttackAbilityMode(null), [setAfterAttackAbilityMode]);
 
   // 连续射击确认/取消
   const handleConfirmRapidFire = useCallback(() => {
     if (!rapidFireMode) return;
-    // 重置结束阶段确认状态，防止确认连续射击后残留的 endPhaseConfirmPending
-    // 导致下次点击"结束阶段"跳过 actionableUnitPositions 检查
-    interaction.resetEndPhaseConfirm();
     dispatch(SW_COMMANDS.ACTIVATE_ABILITY, { abilityId: 'rapid_fire', sourceUnitId: rapidFireMode.sourceUnitId, _noSnapshot: true });
-    // 不立即清除 rapidFireMode，而是标记为 confirmed。
-    // confirmed 状态仍计入 hasActiveInteraction，防止 useAutoSkipPhase 在
-    // core 状态更新（extraAttacks 生效）之前误触发阶段跳过。
-    // useEffect 监听 core 状态变化后自动清除。
-    setRapidFireMode({ ...rapidFireMode, confirmed: true });
-  }, [dispatch, rapidFireMode, setRapidFireMode, interaction]);
-  const handleCancelRapidFire = useCallback(() => {
-    interaction.resetEndPhaseConfirm();
     setRapidFireMode(null);
-  }, [setRapidFireMode, interaction]);
+  }, [dispatch, rapidFireMode, setRapidFireMode]);
+  const handleCancelRapidFire = useCallback(() => setRapidFireMode(null), [setRapidFireMode]);
   // 鲜血符文选择回调
   const handleConfirmBloodRune = useCallback((choice: 'damage' | 'charge') => {
     if (!abilityMode || abilityMode.abilityId !== 'blood_rune') return;
@@ -707,7 +665,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
               onSelect={handleSelectFaction}
               onSelectCustomDeck={handleSelectCustomDeck}
               onReady={handlePlayerReady}
-              onUnready={handlePlayerUnready}
               onStart={handleHostStart}
             />
             {debugPanel}

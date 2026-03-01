@@ -87,10 +87,10 @@ function createSetupAtPlayer1Upkeep(
 // ============================================================================
 
 describe('燃烧 (Burn) upkeep 执行', () => {
-    it('燃烧：upkeep 造成固定 2 点伤害，状态持续不移除', () => {
+    it('1 层燃烧：upkeep 造成 1 点伤害并移除 1 层', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
-            name: '燃烧upkeep持续',
+            name: '1层燃烧upkeep',
             commands: [
                 cmd('ADVANCE_PHASE', '0'), // discard -> upkeep (player 1)
             ],
@@ -100,10 +100,24 @@ describe('燃烧 (Burn) upkeep 执行', () => {
         });
 
         const core = result.finalState.core;
-        // 固定 2 点伤害（不按层数算）
-        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2);
-        // 持续效果：燃烧不自动移除
-        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1);
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 1);
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(0);
+    });
+
+    it('3 层燃烧：upkeep 造成 3 点伤害并移除 1 层（剩余 2 层）', () => {
+        const runner = createRunner(fixedRandom);
+        const result = runner.run({
+            name: '3层燃烧upkeep',
+            commands: [
+                cmd('ADVANCE_PHASE', '0'),
+            ],
+            setup: createSetupAtPlayer0Discard([
+                { playerId: '1', statusId: STATUS_IDS.BURN, stacks: 3 },
+            ]),
+        });
+        const core = result.finalState.core;
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 3);
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(2);
     });
 });
 
@@ -152,7 +166,7 @@ describe('中毒 (Poison) upkeep 执行', () => {
 // ============================================================================
 
 describe('燃烧 + 中毒 同时 upkeep', () => {
-    it('燃烧 + 1 层中毒：总共造成 3 点伤害（燃烧2 + 中毒1）', () => {
+    it('1 层燃烧 + 1 层中毒：总共造成 2 点伤害', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
             name: '燃烧+中毒同时',
@@ -165,9 +179,9 @@ describe('燃烧 + 中毒 同时 upkeep', () => {
             ]),
         });
         const core = result.finalState.core;
-        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 3);
-        // 燃烧持续（保持 1），毒液持续（保持 1 层）
-        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1);
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2);
+        // 燃烧移除 1 层（变为 0），毒液持续（保持 1 层）
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(0);
         expect(core.players['1'].statusEffects[STATUS_IDS.POISON] ?? 0).toBe(1);
     });
 });
@@ -682,11 +696,11 @@ describe('缠绕 (Entangle) 掷骰限制', () => {
 // ============================================================================
 
 describe('潜行 (Sneak) 伤害免除', () => {
-    it('防御方有潜行时：跳过防御掷骰、免除伤害、潜行不被消耗', () => {
+    it('防御方有潜行时：跳过防御掷骰、免除伤害、消耗潜行', () => {
         const baseSetup = createNoResponseSetupWithEmptyHand();
         const runner = createRunner(fixedRandom);
         const result = runner.run({
-            name: '潜行免除伤害但不消耗',
+            name: '潜行免除伤害',
             commands: [
                 cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> 潜行判定 -> main2
             ],
@@ -713,8 +727,8 @@ describe('潜行 (Sneak) 伤害免除', () => {
             },
         });
         const core = result.finalState.core;
-        // 潜行不被消耗——只在回合末自动弃除
-        expect(core.players['1'].tokens[TOKEN_IDS.SNEAK] ?? 0).toBe(1);
+        // 潜行被消耗
+        expect(core.players['1'].tokens[TOKEN_IDS.SNEAK] ?? 0).toBe(0);
         // 跳过防御掷骰，直接进入 main2
         expect(result.finalState.sys.phase).toBe('main2');
         // 防御方 HP 不变（伤害被免除）
@@ -760,51 +774,6 @@ describe('潜行 (Sneak) 伤害免除', () => {
     it('shadow_thief-sneak-prevent handler 已废弃（潜行改为在攻击流程中处理）', () => {
         const handler = getCustomActionHandler('shadow_thief-sneak-prevent');
         expect(handler).toBeUndefined();
-    });
-
-    it('潜行免伤时攻击仍视为成功：onHit postDamage 效果正常触发（如天人合一获得太极）', () => {
-        // 场景：僧侣（player 0）用 harmony（天人合一）攻击有潜行的 player 1
-        // 预期：伤害被免除，但 onHit 的 grantToken(TAIJI, 2) 仍然触发
-        const baseSetup = createNoResponseSetupWithEmptyHand();
-        const runner = createRunner(fixedRandom);
-        const result = runner.run({
-            name: '潜行免伤但 onHit 效果仍触发',
-            commands: [
-                cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> 潜行判定 -> main2
-            ],
-            setup: (playerIds, random) => {
-                const state = baseSetup(playerIds, random);
-                state.core.activePlayerId = '0';
-                (state.sys as any).phase = 'offensiveRoll';
-                state.core.players['1'].tokens[TOKEN_IDS.SNEAK] = 1;
-                // 记录攻击方初始太极数量
-                const initialTaiji = state.core.players['0'].tokens[TOKEN_IDS.TAIJI] ?? 0;
-                state.core.players['0'].tokens[TOKEN_IDS.TAIJI] = initialTaiji;
-                state.core.pendingAttack = {
-                    attackerId: '0',
-                    defenderId: '1',
-                    isDefendable: true,
-                    sourceAbilityId: 'harmony',
-                    isUltimate: false,
-                    bonusDamage: 0,
-                    preDefenseResolved: false,
-                    damageResolved: false,
-                    resolvedDamage: 0,
-                    attackDiceFaceCounts: {},
-                } as any;
-                state.core.rollConfirmed = true;
-                return state;
-            },
-        });
-        const core = result.finalState.core;
-        // 潜行不被消耗
-        expect(core.players['1'].tokens[TOKEN_IDS.SNEAK] ?? 0).toBe(1);
-        // 跳过防御掷骰，直接进入 main2
-        expect(result.finalState.sys.phase).toBe('main2');
-        // 防御方 HP 不变（伤害被免除）
-        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH);
-        // 关键断言：攻击方获得太极 Token（onHit postDamage 效果触发）
-        expect(core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBeGreaterThanOrEqual(2);
     });
 });
 

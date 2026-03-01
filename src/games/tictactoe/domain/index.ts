@@ -14,19 +14,12 @@ import { execute, reduce } from './reducer';
 export const TicTacToeDomain: DomainCore<TicTacToeCore, TicTacToeCommand, TicTacToeEvent> = {
     gameId: 'tictactoe',
 
-    setup: (playerIds: PlayerId[], _random: RandomFn, setupData?: Record<string, unknown>): TicTacToeCore => {
-        // 重赛先手轮换
-        const firstPlayer = (typeof setupData?.firstPlayerId === 'string' && playerIds.includes(setupData.firstPlayerId))
-            ? setupData.firstPlayerId
-            : playerIds[0];
-        return {
-            cells: Array(9).fill(null),
-            currentPlayer: firstPlayer,
-            startingPlayerId: firstPlayer,
-            playerIds,
-            gameResult: undefined,
-        };
-    },
+    setup: (playerIds: PlayerId[], _random: RandomFn): TicTacToeCore => ({
+        cells: Array(9).fill(null),
+        currentPlayer: playerIds[0],
+        playerIds,
+        gameResult: undefined,
+    }),
 
     validate,
     execute,

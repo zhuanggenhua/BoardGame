@@ -79,7 +79,7 @@ function handleMeditationDamage({ ctx, targetId, sourceAbilityId, state, timesta
     const baseDamage = faceCounts[DICE_FACE_IDS.FIST];
     
     const damageCalc = createDamageCalculation({
-        source: { playerId: ctx.attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: ctx.attackerId, abilityId: sourceAbilityId },
         target: { playerId: targetId },
         baseDamage,
         state,
@@ -204,7 +204,7 @@ const createThunderStrikeRollDamageEvents = (
         // 总和伤害
         const totalDamage = dice.reduce((sum, d) => sum + d.value, 0);
         const damageCalc = createDamageCalculation({
-            source: { playerId: attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: attackerId, abilityId: sourceAbilityId },
             target: { playerId: targetId },
             baseDamage: totalDamage,
             state,

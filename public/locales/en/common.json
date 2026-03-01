@@ -81,8 +81,7 @@
   "game_names": {
     "tictactoe": "Tic-Tac-Toe",
     "dicethrone": "Dice Throne",
-    "summonerwars": "Summoner Wars",
-    "smashup": "Smash Up"
+    "summonerwars": "Summoner Wars"
   },
   "matchRoom": {
     "tutorialTitle": "{{game}} - Tutorial",

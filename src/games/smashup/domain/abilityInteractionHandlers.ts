@@ -61,3 +61,24 @@ export function getInteractionHandlersSize(): number {
 export function getRegisteredInteractionHandlerIds(): Set<string> {
     return new Set(interactionHandlers.keys());
 }
+
+/**
+ * 为所有 POD 版本的卡牌批量注册 InteractionHandler 别名。
+ *
+ * InteractionHandler sourceId 通常与 defId 相同（如 ninja_master）。
+ * 此函数遍历注册表，将每个 sourceId 复制给其对应的 _pod 版本。
+ * 必须在所有 InteractionHandler 注册完毕后调用。
+ */
+export function registerPodInteractionAliases(): void {
+    const allEntries = Array.from(interactionHandlers.entries());
+
+    for (const [sourceId, handler] of allEntries) {
+        if (sourceId.endsWith('_pod')) continue;
+
+        const podSourceId = `${sourceId}_pod`;
+        // 如果已存在则不覆盖
+        if (interactionHandlers.has(podSourceId)) continue;
+
+        interactionHandlers.set(podSourceId, handler);
+    }
+}

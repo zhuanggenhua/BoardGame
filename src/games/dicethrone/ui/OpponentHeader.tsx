@@ -1,6 +1,6 @@
 import { type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Layers } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import type { HeroState } from '../types';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { TokenDef } from '../domain/tokenTypes';
@@ -117,10 +117,6 @@ export const OpponentHeader = ({
                                         <div ref={opponentCpRef} className="flex items-center gap-[0.2vw]">
                                             <div className="w-[0.5vw] h-[0.5vw] bg-amber-500 rounded-full shadow-[0_0_6px_rgba(245,158,11,0.4)]"></div>
                                             <span className="text-amber-500 font-bold text-[0.75vw]">{opponent.resources[RESOURCE_IDS.CP] ?? 0}</span>
-                                        </div>
-                                        <div className="flex items-center gap-[0.2vw]">
-                                            <Layers className="w-[0.7vw] h-[0.7vw] text-sky-400 drop-shadow-[0_0_4px_rgba(56,189,248,0.5)]" />
-                                            <span className="text-sky-400 font-bold text-[0.75vw]">{opponent.hand.length}</span>
                                         </div>
                                         {opponent.damageShields && opponent.damageShields.length > 0 && (
                                             <div className="relative w-[1.1vw] h-[1.1vw] flex items-center justify-center">

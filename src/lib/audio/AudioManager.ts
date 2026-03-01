@@ -315,9 +315,7 @@ class AudioManagerClass {
      * 播放音效
      */
     play(key: SoundKey, spriteKey?: string, onEnd?: () => void): number | null {
-        if (this.failedKeys.has(key)) {
-            return null;
-        }
+        if (this.failedKeys.has(key)) return null;
         let howl = this.sounds.get(key);
         if (!howl) {
             // 限制同时进行的按需加载数，防止浏览器连接拥堵导致延迟

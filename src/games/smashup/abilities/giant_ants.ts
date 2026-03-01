@@ -40,7 +40,7 @@ function giantAntSoldierOnPlay(ctx: AbilityContext): AbilityResult {
 function giantAntSoldierTalent(ctx: AbilityContext): AbilityResult {
     const soldier = ctx.state.bases[ctx.baseIndex]?.minions.find(m => m.uid === ctx.cardUid);
     if (!soldier || soldier.controller !== ctx.playerId) return { events: [] };
-    if ((soldier.powerCounters ?? 0) < 1) {
+    if (soldier.powerModifier < 1) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_power_counters', ctx.now)] };
     }
 
@@ -104,7 +104,7 @@ function giantAntKillerQueenTalent(ctx: AbilityContext): AbilityResult {
     }
 
     const candidates = ctx.state.bases[ctx.baseIndex]?.minions
-        .filter(m => m.controller === ctx.playerId && m.playedThisTurn)
+        .filter(m => m.controller === ctx.playerId)
         .map(m => {
             const def = getCardDef(m.defId);
             return { uid: m.uid, defId: m.defId, baseIndex: ctx.baseIndex, label: def?.name ?? m.defId };
@@ -255,7 +255,7 @@ const handleSoldierChooseMinion: IH = (state, playerId, value, interactionData, 
 
     const soldier = state.core.bases[context.soldierBaseIndex]?.minions.find(m => m.uid === context.soldierUid);
     const target = state.core.bases[selected.baseIndex]?.minions.find(m => m.uid === selected.minionUid);
-    if (!soldier || !target || soldier.controller !== playerId || (soldier.powerCounters ?? 0) < 1) return { state, events: [] };
+    if (!soldier || !target || soldier.controller !== playerId || soldier.powerModifier < 1) return { state, events: [] };
 
     return {
         state,
@@ -309,7 +309,7 @@ const handleDronePreventDestroy: IH = (state, playerId, value, interactionData, 
     const drone = state.core.bases[selected.droneBaseIndex]?.minions.find(m => m.uid === selected.droneUid);
     const target = state.core.bases[context.fromBaseIndex]?.minions.find(m => m.uid === context.targetMinionUid);
     // 防止失败（雄蜂不存在/指示物不足）→ 重新发出 MINION_DESTROYED，避免随从卡在"待拯救"状态
-    if (!drone || !target || drone.controller !== playerId || (drone.powerCounters ?? 0) <= 0) {
+    if (!drone || !target || drone.controller !== playerId || drone.powerModifier <= 0) {
         const destroyEvt: MinionDestroyedEvent = {
             type: SU_EVENTS.MINION_DESTROYED,
             payload: {
@@ -358,7 +358,7 @@ function giantAntAKindOfMagic(ctx: AbilityContext): AbilityResult {
         minionUid: m.uid,
         defId: m.defId,
         baseIndex: m.baseIndex,
-        count: ctx.state.bases[m.baseIndex]?.minions.find(x => x.uid === m.uid)?.powerCounters ?? 0,
+        count: ctx.state.bases[m.baseIndex]?.minions.find(x => x.uid === m.uid)?.powerModifier ?? 0,
     })).filter(item => item.count > 0);
 
     const total = snapshots.reduce((sum, item) => sum + item.count, 0);
@@ -393,8 +393,8 @@ function giantAntWeWillRockYou(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (m.controller !== ctx.playerId) continue;
-            if ((m.powerCounters ?? 0) <= 0) continue;
-            events.push(addTempPower(m.uid, i, m.powerCounters ?? 0, 'giant_ant_we_will_rock_you', ctx.now));
+            if (m.powerModifier <= 0) continue;
+            events.push(addTempPower(m.uid, i, m.powerModifier, 'giant_ant_we_will_rock_you', ctx.now));
         }
     }
     return { events };
@@ -447,14 +447,14 @@ function giantAntUnderPressure(ctx: AbilityContext): AbilityResult {
     }
 
     const sources = scoringBase.minions
-        .filter(m => m.controller === ctx.playerId && (m.powerCounters ?? 0) > 0)
+        .filter(m => m.controller === ctx.playerId && m.powerModifier > 0)
         .map(m => {
             const def = getCardDef(m.defId);
             return {
                 uid: m.uid,  // buildMinionTargetOptions 需要 uid 字段
                 baseIndex: scoringBaseIndex,
                 defId: m.defId,
-                label: `${def?.name ?? m.defId}（力量指示物 ${m.powerCounters ?? 0}）`,
+                label: `${def?.name ?? m.defId}（力量指示物 ${m.powerModifier}）`,
             };
         });
 
@@ -664,7 +664,7 @@ const handleWhoWantsToLiveForever: IH = (state, playerId, value, interactionData
     if (!selected.minionUid || selected.baseIndex === undefined) return undefined;
 
     const minion = state.core.bases[selected.baseIndex]?.minions.find(m => m.uid === selected.minionUid);
-    if (!minion || minion.controller !== playerId || (minion.powerCounters ?? 0) <= 0) {
+    if (!minion || minion.controller !== playerId || minion.powerModifier <= 0) {
         return undefined;
     }
 
@@ -798,7 +798,7 @@ const handleUnderPressureChooseSource: IH = (state, playerId, value, interaction
     if (!selected.minionUid || selected.baseIndex === undefined) return undefined;
 
     const source = state.core.bases[selected.baseIndex]?.minions.find(m => m.uid === selected.minionUid);
-    if (!source || source.controller !== playerId || (source.powerCounters ?? 0) <= 0) return undefined;
+    if (!source || source.controller !== playerId || source.powerModifier <= 0) return undefined;
 
     // 目标必须是非计分基地上的己方随从
     const targets = collectOwnMinions(state.core, playerId).filter(m => 
@@ -821,7 +821,7 @@ const handleUnderPressureChooseSource: IH = (state, playerId, value, interaction
         sourceMinionUid: selected.minionUid,
         sourceDefId: selected.defId ?? source.defId,
         sourceBaseIndex: selected.baseIndex,
-        sourceCounterAmount: source.powerCounters ?? 0,
+        sourceCounterAmount: source.powerModifier,
         reason: 'giant_ant_under_pressure',
     };
 
@@ -849,7 +849,7 @@ const handleUnderPressureChooseTarget: IH = (state, playerId, value, interaction
     const target = state.core.bases[selected.baseIndex]?.minions.find(m => m.uid === selected.minionUid);
     if (!source || !target || source.controller !== playerId || target.controller !== playerId) return { state, events: [] };
 
-    const maxAmount = source.powerCounters ?? 0;
+    const maxAmount = source.powerModifier;
     if (maxAmount <= 0) return { state, events: [] };
     if (maxAmount === 1) {
         return {
@@ -906,7 +906,7 @@ const handleUnderPressureChooseAmount: IH = (state, playerId, value, interaction
     const target = state.core.bases[context.targetBaseIndex]?.minions.find(m => m.uid === context.targetMinionUid);
     if (!source || !target || source.controller !== playerId || target.controller !== playerId) return { state, events: [] };
 
-    const amount = resolveTransferAmount(selected, source.powerCounters ?? 0);
+    const amount = resolveTransferAmount(selected, source.powerModifier);
     if (amount <= 0) return { state, events: [] };
 
     return {
@@ -925,7 +925,7 @@ const handleWeAreTheChampionsChooseSource: IH = (state, playerId, value, _intera
 
     const source = state.core.bases[selected.baseIndex]?.minions.find(m => m.uid === selected.minionUid);
     // 来源离场（计分后）时使用选项快照中的 counterAmount
-    const sourceCounterAmount = source?.powerCounters ?? selected.counterAmount ?? 0;
+    const sourceCounterAmount = source?.powerModifier ?? selected.counterAmount ?? 0;
     const allowScoringFallback = !source && sourceCtx?.scoringBaseIndex !== undefined && sourceCtx.scoringBaseIndex === selected.baseIndex;
     if ((!source && !allowScoringFallback) || (source && source.controller !== playerId) || sourceCounterAmount <= 0) return undefined;
 
@@ -979,7 +979,7 @@ const handleWeAreTheChampionsChooseTarget: IH = (state, playerId, value, interac
     const sourceMissingByScoring = !source && context.scoringBaseIndex !== undefined;
     if ((!source && !sourceMissingByScoring) || !target || (source && source.controller !== playerId) || target.controller !== playerId) return undefined;
 
-    const maxAmount = (source?.powerCounters ?? 0) || context.sourceCounterAmount;
+    const maxAmount = source?.powerModifier ?? context.sourceCounterAmount;
     if (maxAmount <= 0) return { state, events: [] };
     if (maxAmount === 1) {
         const events = sourceMissingByScoring || !source
@@ -1040,7 +1040,7 @@ const handleWeAreTheChampionsChooseAmount: IH = (state, playerId, value, interac
     const sourceMissingByScoring = !source && context.scoringBaseIndex !== undefined;
     if ((!source && !sourceMissingByScoring) || !target || (source && source.controller !== playerId) || target.controller !== playerId) return { state, events: [] };
 
-    const maxAmount = (source?.powerCounters ?? 0) || context.sourceCounterAmount;
+    const maxAmount = source?.powerModifier ?? context.sourceCounterAmount;
     const amount = resolveTransferAmount(selected, maxAmount);
     if (amount <= 0) return { state, events: [] };
 
@@ -1127,11 +1127,11 @@ function registerGiantAntProtections(): void {
     const checker = (ctx: {
         state: SmashUpCore;
         targetBaseIndex: number;
-        targetMinion: { controller: PlayerId; powerCounters: number };
+        targetMinion: { controller: PlayerId; powerModifier: number };
         sourcePlayerId: PlayerId;
     }) => {
         if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
-        if ((ctx.targetMinion.powerCounters ?? 0) <= 0) return false;
+        if (ctx.targetMinion.powerModifier <= 0) return false;
 
         const base = ctx.state.bases[ctx.targetBaseIndex];
         if (!base) return false;
@@ -1182,15 +1182,15 @@ function giantAntWeAreTheChampionsAfterScoring(
         if (allMyMinions.length < 2) continue;
 
         const sources = scoredBase.minions
-            .filter(m => m.controller === armedEntry.playerId && (m.powerCounters ?? 0) > 0)
+            .filter(m => m.controller === armedEntry.playerId && m.powerModifier > 0)
             .map(m => {
                 const def = getCardDef(m.defId);
                 return {
                     uid: m.uid,
                     defId: m.defId,
                     baseIndex,
-                    counterAmount: m.powerCounters ?? 0,
-                    label: `${def?.name ?? m.defId}（力量指示物 ${m.powerCounters ?? 0}）`,
+                    counterAmount: m.powerModifier,
+                    label: `${def?.name ?? m.defId}（力量指示物 ${m.powerModifier}）`,
                 };
             });
         if (sources.length === 0) continue;
@@ -1246,7 +1246,7 @@ function giantAntDronePreventTrigger(ctx: TriggerContext): SmashUpEvent[] | { ev
         for (const m of state.bases[i].minions) {
             if (m.defId !== 'giant_ant_drone') continue;
             if (m.controller !== playerId) continue;
-            if ((m.powerCounters ?? 0) <= 0) continue;
+            if (m.powerModifier <= 0) continue;
             drones.push({ uid: m.uid, baseIndex: i });
         }
     }
@@ -1328,7 +1328,7 @@ function collectOwnMinionsWithCounters(state: SmashUpCore, playerId: PlayerId): 
     for (let i = 0; i < state.bases.length; i++) {
         for (const m of state.bases[i].minions) {
             if (m.controller !== playerId) continue;
-            if ((m.powerCounters ?? 0) <= 0) continue;
+            if (m.powerModifier <= 0) continue;
             const def = getCardDef(m.defId);
             result.push({
                 uid: m.uid,

@@ -31,6 +31,14 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
     const isMyTurn = playerID === getCurrentPlayerId(core);
     const currentPlayerId = getCurrentPlayerId(core);
 
+    // 根据当前界面语言过滤可见阵营：
+    // 设置了 locales 字段的阵营只在指定语言界面中出现
+    // 例如：原版忍者仅在 zh-CN 显示，POD 版两者都可见
+    const locale = i18n.language;
+    const visibleFactions = FACTION_METADATA.filter(
+        fm => !fm.locales || fm.locales.includes(locale)
+    );
+
     const handleConfirmSelect = (factionId: string) => {
         if (!isMyTurn) return;
         if (takenFactions.has(factionId)) return;
@@ -119,7 +127,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
             {/* FACTION GRID - 增加垂直空间 */}
             <div className="flex-1 w-full max-w-7xl overflow-y-auto px-6 py-4 relative z-10 custom-scrollbar">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pb-28">
-                    {FACTION_METADATA.map((faction, idx) => {
+                    {visibleFactions.map((faction, idx) => {
                         const isTaken = takenFactions.has(faction.id);
                         const isSelectedByMe = mySelections.includes(faction.id);
                         const ownerId = Object.entries(selectionState.playerSelections).find(([_, f]) => f.includes(faction.id))?.[0];
@@ -156,7 +164,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                     `}>
                                         <div className="w-full h-full bg-slate-100 overflow-hidden relative border border-slate-200">
                                             <CardPreview
-                                                previewRef={coverCard?.previewRef}
+                                                previewRef={coverCard ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: coverCard.id } } : undefined}
                                                 className="w-full h-full object-cover"
                                             />
 
@@ -320,7 +328,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                             >
                                                 <div className="w-full h-full bg-slate-100 overflow-hidden relative">
                                                     <CardPreview
-                                                        previewRef={card.previewRef}
+                                                        previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.id } }}
                                                         className="w-full h-full object-cover"
                                                     />
 

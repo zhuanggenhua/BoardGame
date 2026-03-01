@@ -61,8 +61,8 @@ describe('BASE_SCORED 竞态条件验证', () => {
                 {
                     defId: 'base_the_homeworld',
                     minions: [
-                        { uid: 'm1', defId: 'test_a', controller: '0', owner: '0', basePower: 25, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'm2', defId: 'test_b', controller: '1', owner: '1', basePower: 5, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'test_a', controller: '0', owner: '0', basePower: 25, powerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm2', defId: 'test_b', controller: '1', owner: '1', basePower: 5, powerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [],
                 },

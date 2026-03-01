@@ -13,18 +13,6 @@ import { useNavigate } from 'react-router-dom';
 import type { RematchVoteState } from '../../../../services/matchSocket';
 import { HoverOverlayLabel } from '../../../common/labels/HoverOverlayLabel';
 
-/** 自定义按钮渲染插槽的 props */
-export interface RematchButtonProps {
-    /** 按钮类型标识 */
-    role: 'playAgain' | 'cancelVote' | 'vote' | 'backToLobby' | 'restarting';
-    /** 按钮文本（已 i18n） */
-    label: string;
-    /** 点击回调 */
-    onClick?: () => void;
-    /** 是否禁用 */
-    disabled?: boolean;
-}
-
 export interface RematchActionsProps {
     /** 当前玩家 playerID */
     playerID: string | null;
@@ -42,8 +30,6 @@ export interface RematchActionsProps {
     onVote?: () => void;
     /** 返回大厅回调（多人模式应在此执行离开/销毁），不传则仅导航 */
     onBackToLobby?: () => void | Promise<void>;
-    /** 自定义按钮渲染插槽（可选，不传则使用默认 HoverOverlayLabel 样式） */
-    renderButton?: (props: RematchButtonProps) => React.ReactNode;
 }
 
 export function RematchActions({
@@ -55,7 +41,6 @@ export function RematchActions({
     rematchState,
     onVote,
     onBackToLobby,
-    renderButton,
 }: RematchActionsProps): React.ReactElement {
     const { t } = useTranslation('common');
     const navigate = useNavigate();
@@ -97,60 +82,6 @@ export function RematchActions({
         navigate('/');
     };
 
-    /**
-     * 统一按钮渲染：自定义 renderButton 存在时使用自定义渲染，否则使用默认 HoverOverlayLabel 样式
-     * @param role 按钮语义角色
-     * @param label 按钮文本（已 i18n）
-     * @param onClick 点击回调
-     * @param defaultProps 默认样式的配置（仅在无 renderButton 时使用）
-     */
-    const renderActionButton = (
-        role: RematchButtonProps['role'],
-        label: string,
-        onClick: (() => void) | undefined,
-        defaultProps: {
-            testId: string;
-            buttonClass: string;
-            hoverTextClass?: string;
-            hoverBorderClass?: string;
-            disabled?: boolean;
-        },
-    ): React.ReactNode => {
-        if (renderButton) {
-            return renderButton({ role, label, onClick, disabled: defaultProps.disabled });
-        }
-        return (
-            <button
-                data-testid={defaultProps.testId}
-                onClick={onClick}
-                disabled={defaultProps.disabled}
-                className={defaultProps.buttonClass}
-            >
-                <HoverOverlayLabel
-                    text={label}
-                    hoverTextClass={defaultProps.hoverTextClass}
-                    hoverBorderClass={defaultProps.hoverBorderClass}
-                />
-            </button>
-        );
-    };
-
-    /** 默认按钮基础样式 */
-    const baseBtnClass = 'group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase';
-
-    /** 返回大厅按钮（多处复用） */
-    const backToLobbyButton = renderActionButton(
-        'backToLobby',
-        t('rematch.backToLobby'),
-        handleBackToLobby,
-        {
-            testId: 'rematch-back-to-lobby',
-            buttonClass: `${baseBtnClass} text-white/70 border border-white/10 bg-black/40 backdrop-blur-md`,
-            hoverTextClass: 'text-white',
-            hoverBorderClass: 'border-white/40',
-        },
-    );
-
     // 单人模式：直接重置
     if (!isMultiplayer) {
         return (
@@ -159,18 +90,28 @@ export function RematchActions({
                 data-rematch-mode="single"
                 className={`flex items-center gap-3 ${className}`}
             >
-                {renderActionButton(
-                    'playAgain',
-                    t('rematch.playAgain'),
-                    () => reset?.(),
-                    {
-                        testId: 'rematch-play-again',
-                        buttonClass: `${baseBtnClass} text-white/90 border border-white/20 bg-black/40 backdrop-blur-md`,
-                        hoverTextClass: 'text-neon-blue',
-                        hoverBorderClass: 'border-neon-blue/60',
-                    },
-                )}
-                {backToLobbyButton}
+                <button
+                    data-testid="rematch-play-again"
+                    onClick={() => reset?.()}
+                    className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/90 border border-white/20 bg-black/40 backdrop-blur-md"
+                >
+                    <HoverOverlayLabel
+                        text={t('rematch.playAgain')}
+                        hoverTextClass="text-neon-blue"
+                        hoverBorderClass="border-neon-blue/60"
+                    />
+                </button>
+                <button
+                    data-testid="rematch-back-to-lobby"
+                    onClick={handleBackToLobby}
+                    className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/70 border border-white/10 bg-black/40 backdrop-blur-md"
+                >
+                    <HoverOverlayLabel
+                        text={t('rematch.backToLobby')}
+                        hoverTextClass="text-white"
+                        hoverBorderClass="border-white/40"
+                    />
+                </button>
             </div>
         );
     }
@@ -186,33 +127,25 @@ export function RematchActions({
         >
             {ready ? (
                 // 双方已确认，重开中
-                renderButton ? (
-                    renderButton({
-                        role: 'restarting',
-                        label: t('rematch.restarting'),
-                        disabled: true,
-                    })
-                ) : (
-                    <div
-                        data-testid="rematch-restarting"
-                        className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-emerald-400 border border-emerald-400/40 bg-black/40 backdrop-blur-md animate-pulse"
-                    >
-                        {t('rematch.restarting')}
-                    </div>
-                )
+                <div
+                    data-testid="rematch-restarting"
+                    className="px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-emerald-400 border border-emerald-400/40 bg-black/40 backdrop-blur-md animate-pulse"
+                >
+                    {t('rematch.restarting')}
+                </div>
             ) : myVote ? (
                 // 已投票，等待对手
                 <>
-                    {renderActionButton(
-                        'cancelVote',
-                        t('rematch.cancelVote'),
-                        handleVote,
-                        {
-                            testId: 'rematch-cancel-vote',
-                            buttonClass: `${baseBtnClass} text-amber-400 border border-amber-400/40 bg-black/40 backdrop-blur-md`,
-                            hoverBorderClass: 'border-amber-400/60',
-                        },
-                    )}
+                    <button
+                        data-testid="rematch-cancel-vote"
+                        onClick={handleVote}
+                        className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-amber-400 border border-amber-400/40 bg-black/40 backdrop-blur-md"
+                    >
+                        <HoverOverlayLabel
+                            text={t('rematch.cancelVote')}
+                            hoverBorderClass="border-amber-400/60"
+                        />
+                    </button>
                     <span data-testid="rematch-vote-dots" className="inline-flex items-center gap-1">
                         {voteDots}
                     </span>
@@ -226,20 +159,30 @@ export function RematchActions({
                     <span data-testid="rematch-vote-dots" className="inline-flex items-center gap-1">
                         {voteDots}
                     </span>
-                    {renderActionButton(
-                        'vote',
-                        t('rematch.votePlayAgain'),
-                        handleVote,
-                        {
-                            testId: 'rematch-vote',
-                            buttonClass: `${baseBtnClass} text-white/90 border border-white/20 bg-black/40 backdrop-blur-md`,
-                            hoverTextClass: 'text-neon-blue',
-                            hoverBorderClass: 'border-neon-blue/60',
-                        },
-                    )}
+                    <button
+                        data-testid="rematch-vote"
+                        onClick={handleVote}
+                        className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/90 border border-white/20 bg-black/40 backdrop-blur-md"
+                    >
+                        <HoverOverlayLabel
+                            text={t('rematch.votePlayAgain')}
+                            hoverTextClass="text-neon-blue"
+                            hoverBorderClass="border-neon-blue/60"
+                        />
+                    </button>
                 </div>
             )}
-            {backToLobbyButton}
+            <button
+                data-testid="rematch-back-to-lobby"
+                onClick={handleBackToLobby}
+                className="group relative inline-flex items-center justify-center px-5 py-2 rounded-full text-sm font-bold tracking-[0.2em] uppercase text-white/70 border border-white/10 bg-black/40 backdrop-blur-md"
+            >
+                <HoverOverlayLabel
+                    text={t('rematch.backToLobby')}
+                    hoverTextClass="text-white"
+                    hoverBorderClass="border-white/40"
+                />
+            </button>
         </div>
     );
 }

@@ -149,12 +149,13 @@ function vampireNightstalker(ctx: AbilityContext): AbilityResult {
             sourceBaseIndex: found.baseIndex,
         };
     }
-    // 强制效果（描述无"你可以"），不提供 skip 选项
+    nsOptions.push({ id: 'skip', label: '跳过（不消灭）', value: { skip: true }, displayMode: 'button' as const });
     return resolveOrPrompt(ctx, nsOptions, {
         id: 'vampire_nightstalker', title: '选择要消灭的力量≤2随从（本随从+1指示物）',
         sourceId: 'vampire_nightstalker', targetType: 'minion' as const,
     }, (rawVal) => {
         const val = rawVal as any;
+        if (val.skip) return { events: [] };
         return {
             events: [
                 destroyMinion(val.minionUid, val.defId, val.baseIndex, ctx.state.bases[val.baseIndex]?.minions.find((m: any) => m.uid === val.minionUid)?.owner ?? ctx.playerId, ctx.playerId, 'vampire_nightstalker', ctx.now),
@@ -261,7 +262,7 @@ function vampireMadMonsterParty(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId && (m.powerCounters ?? 0) === 0) {
+            if (m.controller === ctx.playerId && m.powerModifier === 0) {
                 events.push(addPowerCounter(m.uid, i, 1, 'vampire_mad_monster_party', ctx.now));
             }
         }
@@ -460,10 +461,12 @@ const handleNightstalkerChoice: IH = (state, playerId, value, _data, _random, no
         minionUid?: string;
         defId?: string;
         baseIndex?: number;
+        skip?: boolean;
         sourceMinionUid?: string;
         sourceBaseIndex?: number;
     };
 
+    if (v.skip) return { state, events: [] };
     if (!v.minionUid || !v.defId || v.baseIndex === undefined) return undefined;
     const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
     if (!target) return undefined;
