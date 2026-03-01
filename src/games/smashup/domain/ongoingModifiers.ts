@@ -321,14 +321,14 @@ export function getEffectivePower(
 
 /**
  * 获取 ongoing 卡上的力量指示物贡献（如 vampire_summon_wolves）
- * 仅当该玩家在基地上有随从时才计入
+ * 
+ * 规则：ongoing 卡的力量指示物无需随从即可生效。
+ * 只要玩家有至少 1 点力量（无论来源），就有资格参与计分。
  */
 export function getOngoingCardPowerContribution(
     base: BaseInPlay,
     playerId: PlayerId
 ): number {
-    const hasMinion = base.minions.some(m => m.controller === playerId);
-    if (!hasMinion) return 0;
     let total = 0;
     for (const oa of base.ongoingActions) {
         if (oa.ownerId !== playerId) continue;
@@ -363,10 +363,10 @@ export function getTotalEffectivePowerOnBase(
 ): number {
     const minionPower = base.minions
         .reduce((sum, m) => sum + getEffectivePower(state, m, baseIndex), 0);
-    // 累加所有玩家的 ongoing 卡力量贡献
-    const playerIds = new Set(base.minions.map(m => m.controller));
+    // 累加所有玩家的 ongoing 卡力量贡献（不限于有随从的玩家）
+    // 修复 Bug：只有 ongoing 卡但没有随从的玩家，其力量贡献也应该计入总力量
     let ongoingBonus = 0;
-    for (const pid of playerIds) {
+    for (const pid of Object.keys(state.players)) {
         ongoingBonus += getOngoingCardPowerContribution(base, pid);
     }
     return minionPower + ongoingBonus;

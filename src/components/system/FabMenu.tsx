@@ -408,7 +408,7 @@ const Panel = ({ item, isActive, alignment, isDark }: any) => {
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95, x: alignment.h === 'right' ? -10 : 10 }}
                     className={`
-                        absolute w-[300px] max-w-[calc(90vw-60px)] p-4 rounded-xl shadow-2xl backdrop-blur-xl border-l-[3px]
+                        absolute w-[300px] max-w-[calc(90vw-60px)] md:w-[300px] max-md:w-[260px] p-4 max-md:p-3 rounded-xl shadow-2xl backdrop-blur-xl border-l-[3px]
                         z-30
                         ${isDark ? "bg-black/95 border-white/20 border-l-neon-blue text-white" : "bg-[#fcfbf9]/95 border-[#d3ccba] border-l-[#8c7b64] text-[#433422]"}
 
@@ -499,7 +499,8 @@ const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, toolti
                 data-fab-id={item.id}
                 className={`
                     relative flex items-center justify-center
-                    w-12 h-12 rounded-full backdrop-blur-md border
+                    w-12 h-12 md:w-12 md:h-12 rounded-full backdrop-blur-md border
+                    max-md:w-10 max-md:h-10
                     ${activeStyle}
                     ${item.color || ''}
                     transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105
@@ -571,7 +572,7 @@ const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, toolti
                     tooltipPortalRoot
                 )}
 
-                <div className="flex items-center justify-center w-full h-full">
+                <div className="flex items-center justify-center w-full h-full max-md:scale-90">
                     {item.icon}
                 </div>
             </motion.button>

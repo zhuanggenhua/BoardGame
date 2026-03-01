@@ -149,20 +149,13 @@ function ninjaInfiltrateOnPlay(ctx: AbilityContext): AbilityResult {
     if (!base) return { events: [] };
 
     // 收集基地上的 ongoing 行动卡（排除刚打出的渗透自身）
-    // 基地上的 ongoing：base.ongoingActions + 随从身上的 attachedActions
-    const targets: { uid: string; defId: string; ownerId: string; label: string; onMinion?: boolean }[] = [];
+    // 注意：只收集 base.ongoingActions，不包括随从身上的 attachedActions
+    // 因为卡牌描述是"消灭一个已经被打出到这（基地）的战术"
+    const targets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
     for (const o of base.ongoingActions) {
         if (o.uid === ctx.cardUid) continue; // 排除自身
         const def = getCardDef(o.defId);
         targets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: def?.name ?? o.defId });
-    }
-    for (const m of base.minions) {
-        for (const a of m.attachedActions) {
-            if (a.uid === ctx.cardUid) continue;
-            const def = getCardDef(a.defId);
-            const mDef = getCardDef(m.defId);
-            targets.push({ uid: a.uid, defId: a.defId, ownerId: a.ownerId, label: `${def?.name ?? a.defId}（附着在 ${mDef?.name ?? m.defId} 上）`, onMinion: true });
-        }
     }
 
     if (targets.length === 0) return { events: [] };

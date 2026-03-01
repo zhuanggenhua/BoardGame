@@ -263,7 +263,7 @@ describe('黑熊骑兵派系能力', () => {
             expect((destroyEvt as any).payload.minionUid).toBe('m1');
         });
 
-        it('无对手随从时单个持续行动卡自动消灭', () => {
+        it('单个对手行动卡时自动消灭', () => {
             const ongoing: OngoingActionOnBase = { uid: 'oa1', defId: 'test_ongoing', ownerId: '1' };
             const core = makeState({
                 players: {

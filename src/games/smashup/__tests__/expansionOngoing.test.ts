@@ -366,6 +366,39 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(current).toBeDefined();
             expect(current?.data?.sourceId).toBe('steampunk_mechanic');
         });
+
+        test('只能选择打出到基地上的持续行动卡，不包括打出到随从上的', () => {
+            const base = makeBase();
+            const state = makeState([base]);
+            // 弃牌堆包含：打出到基地的 ongoing、打出到随从的 ongoing、standard 行动卡
+            state.players['0'].discard = [
+                makeCard('dis-1', 'steampunk_escape_hatch', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS), // ongoing to base
+                makeCard('dis-2', 'ninja_smoke_bomb', 'action', '0', SMASHUP_FACTION_IDS.NINJAS), // ongoing to minion
+                makeCard('dis-3', 'steampunk_scrap_diving', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS), // standard
+            ];
+            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+
+            const executor = resolveAbility('steampunk_mechanic', 'onPlay')!;
+            const result = executor({
+                state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
+                baseIndex: 0, random: dummyRandom, now: 1000,
+            });
+
+            const current = (result.matchState?.sys as any)?.interaction?.current;
+            expect(current).toBeDefined();
+            const options = current?.data?.options || [];
+            
+            // 应该有 3 个选项：escape_hatch（打出到基地）、scrap_diving（standard）、取消
+            expect(options.length).toBe(3);
+            const cardUids = options.map((opt: any) => opt.value?.cardUid).filter(Boolean);
+            expect(cardUids).toContain('dis-1'); // escape_hatch
+            expect(cardUids).toContain('dis-3'); // scrap_diving
+            expect(cardUids).not.toContain('dis-2'); // smoke_bomb（打出到随从）应该被排除
+            
+            // 验证有取消选项
+            const hasCancelOption = options.some((opt: any) => opt.id === '__cancel__');
+            expect(hasCancelOption).toBe(true);
+        });
     });
 
     describe('steampunk_captain_ahab: 亚哈船长', () => {

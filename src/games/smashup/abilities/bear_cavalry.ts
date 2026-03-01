@@ -373,11 +373,13 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
     const actionTargets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
+        const baseDef = getBaseDef(base.defId);
+        const baseName = baseDef?.name ?? `基地 ${i + 1}`;
         for (const o of base.ongoingActions) {
             if (o.ownerId !== ctx.playerId) {
                 const def = getCardDef(o.defId);
                 const name = def?.name ?? o.defId;
-                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: `[行动] ${name}` });
+                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: `[行动] ${name} @ ${baseName}` });
             }
         }
         for (const m of base.minions) {
@@ -490,7 +492,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             const baseIndex = baseCandidates[0].baseIndex;
             const playedEvt: MinionPlayedEvent = {
                 type: SU_EVENTS.MINION_PLAYED,
-                payload: { playerId, cardUid, defId, baseIndex, baseDefId: ctx.state.bases[baseIndex].defId, power },
+                payload: { playerId, cardUid, defId, baseIndex, baseDefId: state.core.bases[baseIndex].defId, power },
                 timestamp,
             };
             // 检查该基地是否有对手随从可移动（保护检查在 buildMinionTargetOptions 中）

@@ -359,7 +359,7 @@
     },
     "bear_cavalry_bear_necessities": {
       "name": "黑熊口粮",
-      "effectText": "消灭随从或在基地上打出的一张战术。"
+      "effectText": "消灭一个随从或在基地上打出的一张行动卡。"
     },
     "bear_cavalry_youre_pretty_much_borscht": {
       "name": "你们都是美食",

@@ -100,12 +100,12 @@ function scoreOneBase(
         if (beforeScoringEvents.matchState) ms = beforeScoringEvents.matchState;
         
         // 发射事件标记此基地已触发过 beforeScoring
-        const markEvent: SmashUpEvent = {
+        const markEvent = {
             type: SU_EVENT_TYPES.BEFORE_SCORING_TRIGGERED,
             payload: { baseIndex },
             timestamp: now,
-        } as SmashUpEvent;
-        events.push(markEvent);
+        };
+        events.push(markEvent as unknown as SmashUpEvent);
         
         // ✅ 关键修复：立即将标记事件 reduce 到本地 core 副本
         // 
@@ -120,7 +120,7 @@ function scoreOneBase(
         // - 第一次调用：检查 beforeScoringTriggeredBases → undefined → 触发 beforeScoring → 创建海盗王交互 → halt
         // - 用户点击"移动到该基地" → 交互解决
         // - 第二次调用：如果没有立即 reduce，beforeScoringTriggeredBases 仍是 undefined → 又创建相同 ID 的交互 → UI 卡住
-        core = reduce(core, markEvent);
+        core = reduce(core, markEvent as unknown as SmashUpEvent);
 
         console.log('[scoreBase] After fireTriggers beforeScoring:', {
             hasInteraction: !!ms?.sys?.interaction?.current,
@@ -169,18 +169,26 @@ function scoreOneBase(
     // 计算排名（使用 reduce 后的 core，包含 beforeScoring 的临时力量修正 + ongoing 卡力量贡献）
     const updatedBase = updatedCore.bases[baseIndex];
     const playerPowers = new Map<PlayerId, number>();
+    const playerHasMinions = new Map<PlayerId, boolean>();
     for (const m of updatedBase.minions) {
         const prev = playerPowers.get(m.controller) ?? 0;
         playerPowers.set(m.controller, prev + getEffectivePower(updatedCore, m, baseIndex));
+        playerHasMinions.set(m.controller, true);
     }
     // 加上 ongoing 卡力量贡献（如 vampire_summon_wolves 的力量指示物）
-    for (const [pid, power] of playerPowers) {
+    // 必须遍历所有玩家，因为可能有玩家无随从但有 ongoing 卡力量贡献
+    for (const pid of Object.keys(updatedCore.players)) {
         const bonus = getOngoingCardPowerContribution(updatedBase, pid);
-        if (bonus > 0) playerPowers.set(pid, power + bonus);
+        if (bonus > 0) {
+            const prev = playerPowers.get(pid) ?? 0;
+            playerPowers.set(pid, prev + bonus);
+        }
     }
 
+    // 规则：须有至少 1 个随从或至少 1 点力量才有资格参与计分
+    // 修复 Bug：战力为0但有随从的玩家应该参与计分
     const sorted = Array.from(playerPowers.entries())
-        .filter(([, p]) => p > 0)
+        .filter(([pid, p]) => p > 0 || playerHasMinions.get(pid))
         .sort((a, b) => b[1] - a[1]);
 
     // Property 16: 平局玩家获得该名次最高 VP
@@ -243,9 +251,9 @@ function scoreOneBase(
     const interactionBeforeAfterScoring = ms?.sys?.interaction?.current?.id ?? null;
     const queueLenBeforeAfterScoring = ms?.sys?.interaction?.queue?.length ?? 0;
 
-    // 触发 afterScoring 基地能力
+    // 触发 afterScoring 基地能力（使用 reduce 后的 core，包含 beforeScoring 效果）
     const afterCtx = {
-        state: core,
+        state: updatedCore,
         matchState: ms,
         baseIndex,
         baseDefId: base.defId,
@@ -603,9 +611,13 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             // 必须 halt 等待 SmashUpEventSystem 处理完交互解决事件、core 更新后，
             // 下一轮 afterEvents 再重新进入 onPhaseExit 使用最新 core。
             // 
-            // 修复：如果交互已解决（sys.interaction.current === null），清除 flowHalted 继续执行
-            if (state.sys.flowHalted && state.sys.interaction.current) {
-                return { events: [], halt: true } as PhaseExitResult;
+            // 修复：只有标志存在且交互仍在进行时才 halt，交互完成后自动清除标志
+            if (state.sys.flowHalted) {
+                if (state.sys.interaction.current) {
+                    return { events: [], halt: true } as PhaseExitResult;
+                }
+                // 交互已解决，清除 flowHalted 标志
+                state.sys.flowHalted = false;
             }
 
             // Property 14: 2+ 基地达标 → 通过 InteractionSystem(simple-choice) 让当前玩家选择计分顺序
@@ -665,7 +677,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 type: SU_EVENT_TYPES.BEFORE_SCORING_CLEARED,
                 payload: {},
                 timestamp: now,
-            } as SmashUpEvent);
+            } as unknown as SmashUpEvent);
 
             return events;
         }
@@ -979,10 +991,12 @@ function postProcessSystemEvents(
     const prePlayEvents: SmashUpEvent[] = [];
     
     // 初始化已处理事件集合（如果不存在）
-    if (!ms.sys._processedMinionPlayed) {
-        (ms.sys as any)._processedMinionPlayed = new Set<string>();
+    // 使用 any 类型断言绕过 SystemState 类型限制（这是游戏特定的临时状态）
+    const sysAny = ms.sys as any;
+    if (!sysAny._processedMinionPlayed) {
+        sysAny._processedMinionPlayed = new Set<string>();
     }
-    const processedSet = (ms.sys as any)._processedMinionPlayed as Set<string>;
+    const processedSet = sysAny._processedMinionPlayed as Set<string>;
     
     for (const event of afterAffect.events) {
         if (event.type === SU_EVENTS.MINION_PLAYED) {
@@ -992,13 +1006,13 @@ function postProcessSystemEvents(
             const eventKey = `${playedEvt.payload.cardUid}@${playedEvt.payload.baseIndex}`;
             
             // 如果已处理过，跳过（防止步骤 4.5 和步骤 5 重复处理）
-            if (processedSet[eventKey]) {
+            if (processedSet.has(eventKey)) {
                 prePlayEvents.push(event);
                 continue;
             }
             
             // 标记为已处理
-            processedSet[eventKey] = true;
+            processedSet.add(eventKey);
             
             // 将之前积累的事件 reduce 到临时 core，获取最新牌库/手牌状态
             let tempCore = state;

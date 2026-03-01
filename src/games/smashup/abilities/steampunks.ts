@@ -218,7 +218,14 @@ function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[] {
  */
 function steampunkMechanic(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
-    const actionsInDiscard = player.discard.filter(c => c.type === 'action' && c.uid !== ctx.cardUid);
+    // 机械师只能选择打出到基地上的持续行动卡（不包括打出到随从上的）
+    const actionsInDiscard = player.discard.filter(c => {
+        if (c.type !== 'action' || c.uid === ctx.cardUid) return false;
+        const def = getCardDef(c.defId) as ActionCardDef | undefined;
+        // 排除 ongoingTarget === 'minion' 的持续行动卡
+        if (def?.subtype === 'ongoing' && def.ongoingTarget === 'minion') return false;
+        return true;
+    });
     if (actionsInDiscard.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
     const options = actionsInDiscard.map((c, i) => {
         const def = getCardDef(c.defId);

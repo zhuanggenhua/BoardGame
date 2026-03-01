@@ -79,6 +79,12 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 if (deferred && deferred.length > 0) {
                                     // 仅在没有后续交互时补发（链式交互需要等最后一个解决后再清除）
                                     if (!newState.sys.interaction?.current && (!newState.sys.interaction?.queue || newState.sys.interaction.queue.length === 0)) {
+                                        // 【修复】补发延迟事件前，先设置 flowHalted=true 标志
+                                        // 防止 FlowSystem.afterEvents 在 BASE_CLEARED/BASE_REPLACED 后重新进入计分逻辑
+                                        // （BASE_CLEARED 会从 scoringEligibleBaseIndices 中移除基地，但如果 FlowSystem
+                                        // 在 BASE_CLEARED reduce 前就重新进入 onPhaseExit，会使用旧的 eligible 列表重复计分）
+                                        newState.sys.flowHalted = true;
+                                        
                                         for (const d of deferred) {
                                             nextEvents.push({ type: d.type, payload: d.payload, timestamp: d.timestamp } as GameEvent);
                                         }

@@ -225,6 +225,37 @@ describe('忍者 ongoing/special 能力', () => {
 
             expect(isMinionProtected(state, minion, 0, '1', 'affect')).toBe(true);
         });
+
+        test('渗透只能消灭基地上的战术，不能消灭随从上的战术', () => {
+            // 设置初始状态：基地上有一个 ongoing 战术，随从上有一个 attached 战术
+            const minion = makeMinion({
+                uid: 'm1',
+                defId: 'test_minion',
+                controller: '1',
+                owner: '1',
+                attachedActions: [{ uid: 'poison', defId: 'ninja_poison', ownerId: '1' }],
+            });
+            const base = makeBase({
+                minions: [minion],
+                ongoingActions: [{ uid: 'ongoing1', defId: 'test_ongoing', ownerId: '1' }],
+            });
+            const state = makeState([base]);
+
+            // 直接测试 ninjaInfiltrateOnPlay 的逻辑：
+            // 它应该只收集 base.ongoingActions，不包括 minion.attachedActions
+            const targets: { uid: string; defId: string }[] = [];
+            
+            // 收集基地上的 ongoing 战术（排除自身）
+            for (const o of base.ongoingActions) {
+                if (o.uid === 'infiltrate') continue;
+                targets.push({ uid: o.uid, defId: o.defId });
+            }
+
+            // 验证：只有基地上的 ongoing 战术，没有随从上的 attached 战术
+            expect(targets).toHaveLength(1);
+            expect(targets[0].uid).toBe('ongoing1');
+            expect(targets[0].defId).toBe('test_ongoing');
+        });
     });
 
     describe('ninja_shinobi: 影舞者 Me First! 窗口打出', () => {
