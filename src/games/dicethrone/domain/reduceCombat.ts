@@ -23,6 +23,7 @@ export const handlePreventDamage: EventHandler<Extract<DiceThroneEvent, { type: 
     event
 ) => {
     const { targetId, amount, sourceAbilityId, applyImmediately } = event.payload;
+    console.log('[handlePreventDamage]', { targetId, amount, sourceAbilityId, applyImmediately, hasPendingDamage: !!state.pendingDamage });
     if (amount <= 0) return state;
 
     let pendingDamage = state.pendingDamage;
@@ -86,15 +87,19 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     state,
     event
 ) => {
-    const { targetId, actualDamage, sourceAbilityId, bypassShields } = event.payload;
+    const { targetId, amount, actualDamage, sourceAbilityId, bypassShields } = event.payload;
     const target = state.players[targetId];
 
     if (!target) {
         return state;
     }
 
-    let remainingDamage = actualDamage;
+    // 使用 amount（原始伤害）而不是 actualDamage 来计算护盾消耗
+    // 这样可以避免低血量时护盾被错误地跳过
+    const damageForShields = amount ?? actualDamage;
+    let remainingDamage = damageForShields;
     let newDamageShields = target.damageShields;
+    const shieldsConsumed: Array<{ sourceId: string; value?: number; reductionPercent?: number; absorbed: number }> = [];
 
     // 消耗护盾抵消伤害（忽略 preventStatus 护盾）
     // bypassShields: HP 重置类效果（如神圣祝福）跳过护盾消耗
@@ -114,11 +119,24 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
                     // 百分比护盾：减少伤害的百分比，消耗后不保留
                     const reductionAmount = Math.floor(remainingDamage * (shield.reductionPercent / 100));
                     remainingDamage -= reductionAmount;
+                    // 记录消耗信息
+                    shieldsConsumed.push({
+                        sourceId: shield.sourceId,
+                        reductionPercent: shield.reductionPercent,
+                        absorbed: reductionAmount,
+                    });
                     // 百分比护盾消耗后不保留（一次性使用）
                 } else {
                     // 固定值护盾：按 value 抵消伤害
                     const preventedAmount = Math.min(shield.value, remainingDamage);
                     remainingDamage -= preventedAmount;
+                    
+                    // 记录消耗信息
+                    shieldsConsumed.push({
+                        sourceId: shield.sourceId,
+                        value: shield.value,
+                        absorbed: preventedAmount,
+                    });
                     
                     // 如果护盾还有剩余值，保留护盾
                     const remainingShieldValue = shield.value - preventedAmount;
@@ -134,6 +152,11 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         }
         
         newDamageShields = updatedShields;
+    }
+    
+    // 回填护盾消耗信息到事件 payload
+    if (shieldsConsumed.length > 0) {
+        event.payload.shieldsConsumed = shieldsConsumed;
     }
 
     const hpBefore = target.resources[RESOURCE_IDS.HP] ?? 0;

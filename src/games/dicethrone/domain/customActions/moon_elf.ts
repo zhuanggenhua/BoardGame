@@ -407,6 +407,8 @@ function handleElusiveStepResolve2(context: CustomActionContext): DiceThroneEven
         const reducedDamage = Math.ceil(originalDamage / 2);
         const reduction = originalDamage - reducedDamage;
         
+        console.log('[handleElusiveStepResolve2] 产生 PREVENT_DAMAGE 事件', { footCount, originalDamage, reduction, attackerId });
+        
         if (reduction > 0) {
             events.push({
                 type: 'PREVENT_DAMAGE',

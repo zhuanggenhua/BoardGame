@@ -380,7 +380,7 @@ function formatDiceThroneActionEntry({
 
         if (event.type === 'DAMAGE_DEALT') {
             const damageEvent = event as DamageDealtEvent;
-            const { targetId, amount, actualDamage, sourceAbilityId, modifiers, breakdown, sourcePlayerId } = damageEvent.payload;
+            const { targetId, amount, actualDamage, sourceAbilityId, modifiers, breakdown, sourcePlayerId, shieldsConsumed } = damageEvent.payload;
             let actorId = targetId;
             if (attackResolved) {
                 if (targetId === attackResolved.payload.defenderId) {
@@ -393,6 +393,11 @@ function formatDiceThroneActionEntry({
                 actorId = sourcePlayerId;
             }
             const dealt = actualDamage ?? amount ?? 0;
+            
+            // 计算最终伤害（扣除护盾后）
+            const totalShieldAbsorbed = shieldsConsumed?.reduce((sum, s) => sum + s.absorbed, 0) ?? 0;
+            const finalDamage = Math.max(0, dealt - totalShieldAbsorbed);
+            
             const isSelfDamage = actorId === targetId;
 
             // 解析来源技能名
@@ -401,11 +406,12 @@ function formatDiceThroneActionEntry({
 
             // 使用引擎层通用工具构建 breakdown segment
             const breakdownSeg = buildDamageBreakdownSegment(
-                dealt,
+                finalDamage,
                 {
                     sourceAbilityId: effectiveSourceId,
                     breakdown,
                     modifiers,
+                    shieldsConsumed,
                 },
                 {
                     resolve: (sid) => resolveAbilitySourceLabel(sid, core, actorId),

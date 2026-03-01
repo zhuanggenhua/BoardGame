@@ -192,16 +192,15 @@ function handleShadowManipulation({ attackerId, sourceAbilityId, state, timestam
 /** 肾击：造成等同CP的伤害 (Gain passed beforehand, so use current CP + bonus) 【已迁移到新伤害计算管线】 */
 function handleDamageFullCp({ attackerId, targetId, sourceAbilityId, state, timestamp, ctx, action }: CustomActionContext): DiceThroneEvent[] {
     const currentCp = state.players[attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
-    const params = action.params as Record<string, unknown> | undefined;
-    const bonusCp = (params?.bonusCp as number) || 0;
-    const totalCp = currentCp + bonusCp;
-
-    if (totalCp <= 0) return [];
+    
+    // bonusCp 参数仅用于 estimateDamage（在 gainCp 之前估算），
+    // 实际伤害计算时 gainCp 已经执行，直接使用当前 CP
+    if (currentCp <= 0) return [];
 
     const damageCalc = createDamageCalculation({
         source: { playerId: attackerId, abilityId: sourceAbilityId },
         target: { playerId: targetId },
-        baseDamage: totalCp,
+        baseDamage: currentCp,
         state,
         timestamp,
     });

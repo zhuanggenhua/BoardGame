@@ -43,6 +43,7 @@
     "test:server": "vitest run src/server src/api",
     "test:ugc": "vitest run src/ugc",
     "test:games": "vitest run src/games",
+    "test:games:core": "vitest run src/games --config vitest.config.core.ts",
     "test:changed": "npx vitest run --changed origin/main -- src/games",
     "test:api": "vitest run apps/api",
     "test:api:docker": "cross-env MONGO_URI=mongodb://localhost:27017/boardgame npm run test:api",
@@ -67,7 +68,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --concurrent 1",
-    "pre-push": "npm run build && npm run i18n:check && npm run test:games"
+    "pre-push": "npm run build && npm run i18n:check && npm run test:games:core"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

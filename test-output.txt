@@ -1,17 +1,175 @@
-﻿node.exe : npm error Missing script: "test:unit"
+﻿
+> boardgame-platform@0.5.0 test
+> vitest run moon-elf-shield-integration.test.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/gongzuo/web/BordGame[39m
+
+[90mstdout[2m | src/games/dicethrone/__tests__/moon-elf-shield-integration.test.ts
+[22m[39m[dotenv@17.3.1] injecting env (4) from .env.test.local -- tip: 馃 agentic secret storage: https://dotenvx.com/as2
+
+node.exe : [2m19:09:21[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mw
+arning: [33mDuplicate member "currentState" in class body[33m
 所在位置 C:\Program Files\nodejs\npm.ps1:29 字符: 3
 +   & $NODE_EXE $NPM_CLI_JS $args
 +   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (npm error Missing script: "test:unit":String 
-   ) [], RemoteException
+    + CategoryInfo          : NotSpecified: ([2m19:09:21[2...class body[33m:String) [ 
+   ], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
  
-npm error
-npm error Did you mean one of these?
-npm error   npm run test:ugc # run the "test:ugc" package script
-npm error   npm run test:api # run the "test:api" package script
-npm error
-npm error To see a list of scripts, run:
-npm error   npm run
-npm error A complete log of this run can be found in: C:\Users\zhuagenbao\AppData\Local\np
-m-cache\_logs\2026-02-28T10_17_58_598Z-debug-0.log
+348 |      }
+349 |  
+350 |      private currentState?: MatchState<TState>;
+    |              ^
+351 |  }
+352 |  
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mD:/gongzuo/web/BordGame/src/engine/testing/GameTestRunner.ts[39m
+[90mstderr[2m | src/games/dicethrone/__tests__/moon-elf-shield-integration.test.ts
+[22m[39m[CommandCategories] 浠ヤ笅鍛戒护鏈垎绫伙紝璇峰湪 commandCategories.ts 涓坊鍔犲垎绫伙細 [ [32m'GRAN
+T_TOKENS'[39m ]
+
+[90mstdout[2m | src/games/dicethrone/__tests__/moon-elf-shield-integration.test.ts[2m > [22m[2m鏈堢簿鐏电櫨鍒嗘瘮鎶ょ浘闆嗘垚娴嬭瘯[2m > [22m[2m杩峰奖姝?II 鐨?50% 鎶ょ浘搴斿噺鍏嶆殫褰辩洍璐肩牬闅愪竴鍑荤殑浼ゅ锛堟棤 Token 鍝嶅簲璺緞锛?[22m[39m[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=setup, playerId=0
+[FlowSystem][afterEvents] autoContinue from=setup playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=setup playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=upkeep
+[FlowSystem][afterEvents] phase updated from=setup to=upkeep
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=upkeep, playerId=0
+[FlowSystem][afterEvents] autoContinue from=upkeep playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=upkeep playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=main1
+[FlowSystem][afterEvents] phase updated from=upkeep to=main1
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=main1, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=setup, playerId=0
+[FlowSystem][afterEvents] autoContinue from=setup playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=setup playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=upkeep
+[FlowSystem][afterEvents] phase updated from=setup to=upkeep
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=upkeep, playerId=0
+[FlowSystem][afterEvents] autoContinue from=upkeep playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=upkeep playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=main1
+[FlowSystem][afterEvents] phase updated from=upkeep to=main1
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=main1, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=main1 playerId=0
+[FlowSystem][beforeCommand] getNextPhase returned to=offensiveRoll
+[FlowSystem][beforeCommand] phase updated from=main1 to=offensiveRoll
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=offensiveRoll playerId=0
+[FlowSystem][beforeCommand] getNextPhase returned to=defensiveRoll
+[FlowSystem][beforeCommand] overrideNextPhase to=defensiveRoll
+[FlowSystem][beforeCommand] phase updated from=offensiveRoll to=defensiveRoll
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=defensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=defensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=defensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=defensiveRoll playerId=1
+[FlowSystem][beforeCommand] getNextPhase returned to=main2
+[FlowSystem][beforeCommand] overrideNextPhase to=main2
+[FlowSystem][beforeCommand] phase updated from=defensiveRoll to=main2
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=main2, 涓嶈嚜鍔ㄦ帹杩?
+=== 浜嬩欢搴忓垪 ===
+
+=== 鏈€缁堢姸鎬?===
+鏈堢簿鐏?HP: [33m45[39m (鏈熸湜: [33m48[39m )
+鏈堢簿鐏垫姢鐩? []
+
+[90mstdout[2m | src/games/dicethrone/__tests__/moon-elf-shield-integration.test.ts[2m > [22m[2m鏈堢簿鐏电櫨鍒嗘瘮鎶ょ浘闆嗘垚娴嬭瘯[2m > [22m[2m杩峰奖姝?II 鐨?50% 鎶ょ浘搴斿噺鍏嶆殫褰辩洍璐肩牬闅愪竴鍑荤殑浼ゅ锛堟湁 Token 鍝嶅簲璺緞锛?[22m[39m[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=setup, playerId=0
+[FlowSystem][afterEvents] autoContinue from=setup playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=setup playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=upkeep
+[FlowSystem][afterEvents] phase updated from=setup to=upkeep
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=upkeep, playerId=0
+[FlowSystem][afterEvents] autoContinue from=upkeep playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=upkeep playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=main1
+[FlowSystem][afterEvents] phase updated from=upkeep to=main1
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=main1, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=setup, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=setup, playerId=0
+[FlowSystem][afterEvents] autoContinue from=setup playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=setup playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=upkeep
+[FlowSystem][afterEvents] phase updated from=setup to=upkeep
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=upkeep, playerId=0
+[FlowSystem][afterEvents] autoContinue from=upkeep playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=upkeep playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=main1
+[FlowSystem][afterEvents] phase updated from=upkeep to=main1
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=main1, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=main1 playerId=0
+[FlowSystem][beforeCommand] getNextPhase returned to=offensiveRoll
+[FlowSystem][beforeCommand] phase updated from=main1 to=offensiveRoll
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=offensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=offensiveRoll playerId=0
+[FlowSystem][beforeCommand] getNextPhase returned to=defensiveRoll
+[FlowSystem][beforeCommand] overrideNextPhase to=defensiveRoll
+[FlowSystem][beforeCommand] phase updated from=offensiveRoll to=defensiveRoll
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=defensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=defensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=defensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=defensiveRoll playerId=1
+[FlowSystem][beforeCommand] getNextPhase returned to=main2
+[FlowSystem][beforeCommand] halt=true, not advancing
+[InteractionSystem] popInteraction: No current, making new interaction current: {
+  interactionId: [32m'dt-token-response-damage-10-0-1-kidney-shot-5'[39m,
+  kind: [32m'dt:token-response'[39m
+}
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=defensiveRoll, 涓嶈嚜鍔ㄦ帹杩?[InteractionSystem] resolveInteraction START: {
+  hasNext: [33mfalse[39m,
+  nextId: [90mundefined[39m,
+  nextKind: [90mundefined[39m,
+  queueLength: [33m0[39m
+}
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=defensiveRoll, playerId=1
+[FlowSystem][afterEvents] autoContinue from=defensiveRoll playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=defensiveRoll playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=main2
+[FlowSystem][afterEvents] overrideNextPhase to=main2
+[FlowSystem][afterEvents] phase updated from=defensiveRoll to=main2
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=main2, 涓嶈嚜鍔ㄦ帹杩?
+ [31m鉂?[39m src/games/dicethrone/__tests__/moon-elf-shield-integration.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 55[2mms[22m[39m
+[31m     [31m脳[31m 杩峰奖姝?II 鐨?50% 鎶ょ浘搴斿噺鍏嶆殫褰辩洍璐肩牬闅愪竴鍑荤殑浼ゅ锛堟棤 Token 鍝嶅簲璺緞锛?[39m[32m 35[2mms[22m[39m
+[31m     [31m脳[31m 杩峰奖姝?II 鐨?50% 鎶ょ浘搴斿噺鍏嶆殫褰辩洍璐肩牬闅愪竴鍑荤殑浼ゅ锛堟湁 Token 鍝嶅簲璺緞锛?[39m[32m 18[2mms[22m[39m
+
+[31m鈳幆鈳幆鈳幆鈳?[39m[1m[41m Failed Tests 2 [49m[22m[31m鈳幆鈳幆鈳幆鈳?[39m
+
+[41m[1m FAIL [22m[49m src/games/dicethrone/__tests__/moon-elf-shield-integration.test
+.ts[2m > [22m鏈堢簿鐏电櫨鍒嗘瘮鎶ょ浘闆嗘垚娴嬭瘯[2m > [22m杩峰奖姝?II 鐨?50% 鎶ょ浘搴斿噺鍏嶆殫褰辩洍璐肩牬闅愪竴鍑荤殑浼ゅ锛堟棤 To
+ken 鍝嶅簲璺緞锛?[31m[1mAssertionError[22m: expected 45 to be 48 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 48[39m
+[31m+ 45[39m
+
+[36m [2m鉂?[22m src/games/dicethrone/__tests__/moon-elf-shield-integration.test.ts:[2m1
+66:27[22m[39m
+    [90m164| [39m        console[33m.[39m[34mlog[39m([32m'鏈堢簿鐏垫姢鐩?'[39m[33m,[39
+m core[33m.[39mplayers[[32m'1'[39m][33m.[39mdamageShields)[33m;[39m
+    [90m165| [39m        
+    [90m166| [39m        [34mexpect[39m(moonElfHp)[33m.[39m[34mtoBe[39m(expectedH
+p)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m167| [39m
+    [90m168| [39m        [90m// 鏆楀奖鐩楄醇搴斿彈鍒?3 鐐瑰弽鍑讳激瀹筹紙杩峰奖姝?II: 1脳寮撻潰鏁?3锛?[39m
+
+[31m[2m鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆[1/2]鈳?[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/dicethrone/__tests__/moon-elf-shield-integration.test
+.ts[2m > [22m鏈堢簿鐏电櫨鍒嗘瘮鎶ょ浘闆嗘垚娴嬭瘯[2m > [22m杩峰奖姝?II 鐨?50% 鎶ょ浘搴斿噺鍏嶆殫褰辩洍璐肩牬闅愪竴鍑荤殑浼ゅ锛堟湁 To
+ken 鍝嶅簲璺緞锛?[31m[1mAssertionError[22m: expected 45 to be 48 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 48[39m
+[31m+ 45[39m
+
+[36m [2m鉂?[22m src/games/dicethrone/__tests__/moon-elf-shield-integration.test.ts:[2m2
+43:27[22m[39m
+    [90m241| [39m        [90m// 娉ㄦ剰锛氳糠褰辨 II 浣跨敤 PREVENT_DAMAGE 浜嬩欢锛岃绠楁柟寮忎负 ceil(dama
+ge/2)[39m
+    [90m242| [39m        const moonElfHp = result.finalState.core.players['1'].resource
+鈥?    [90m243| [39m        [34mexpect[39m(moonElfHp)[33m.[39m[34mtoBe[39m([33mIN
+ITIAL_HEALTH[39m [33m-[39m [34m2[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m244| [39m
+    [90m245| [39m        [90m// 鏆楀奖鐩楄醇搴斿彈鍒?3 鐐瑰弽鍑讳激瀹?[39m
+
+[31m[2m鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆[2/2]鈳?[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[90m (2)[39m
+[2m   Start at [22m 19:09:10
+[2m   Duration [22m 13.84s[2m (transform 10.13s, setup 539ms, import 10.16s, tests 55ms, environment 1.92s)[22m
+

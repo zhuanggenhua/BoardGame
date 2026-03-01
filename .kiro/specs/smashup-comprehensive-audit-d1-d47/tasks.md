@@ -52,9 +52,9 @@
 
 ### 任务 2.3：海盗（Pirates）派系审计
 - [x] D1 子项：pirate_broadside 三重条件过滤
-- [~] D8：pirate_king、pirate_first_mate 时序
+- [x] D8：pirate_king、pirate_first_mate 时序
 - [~] D31：pirate_buccaneer、pirate_first_mate 拦截路径
-- [~] D33：pirate_powderkeg 跨派系一致性
+- [x] D33：pirate_powderkeg 跨派系一致性
 - [ ] GameTestRunner 测试：3 个代表性能力
 
 ### 任务 2.4：忍者（Ninjas）派系审计

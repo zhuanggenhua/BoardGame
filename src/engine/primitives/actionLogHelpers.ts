@@ -85,6 +85,13 @@ export interface DamageLogPayload {
         sourceId: string;
         sourceName?: string;
     }>;
+    /** 护盾消耗记录（DiceThrone 专用） */
+    shieldsConsumed?: Array<{
+        sourceId: string;
+        value?: number;
+        reductionPercent?: number;
+        absorbed: number;
+    }>;
 }
 
 // ============================================================================
@@ -191,6 +198,44 @@ export function buildDamageBreakdownSegment(
             labelNs: source.ns,
             value: damage,
             color: 'neutral',
+        });
+    }
+    
+    // 添加护盾消耗行（DiceThrone 专用）
+    if (payload.shieldsConsumed && payload.shieldsConsumed.length > 0) {
+        // 如果没有基础伤害行，先添加一个
+        if (lines.length === 0) {
+            const effectiveBaseLabel = options?.baseLabel ?? 'actionLog.damageSource.original';
+            const effectiveBaseLabelIsI18n = options?.baseLabel ? (options.baseLabelIsI18n ?? false) : true;
+            const effectiveBaseLabelNs = options?.baseLabel ? options.baseLabelNs : fallbackNs;
+            
+            // 计算基础伤害 = 最终伤害 + 护盾吸收总量
+            const totalAbsorbed = payload.shieldsConsumed.reduce((sum, s) => sum + s.absorbed, 0);
+            const baseDamage = damage + totalAbsorbed;
+            
+            lines.push({
+                label: effectiveBaseLabel,
+                labelIsI18n: effectiveBaseLabelIsI18n,
+                labelNs: effectiveBaseLabelNs,
+                value: baseDamage,
+                color: 'neutral',
+            });
+        }
+        
+        // 添加护盾消耗行（负值）
+        payload.shieldsConsumed.forEach(shield => {
+            const shieldSource = resolver.resolve(shield.sourceId);
+            const shieldLabel = shieldSource?.label || shield.sourceId;
+            const shieldLabelIsI18n = shieldSource?.isI18n ?? false;
+            const shieldLabelNs = shieldSource?.ns ?? fallbackNs;
+            
+            lines.push({
+                label: shieldLabel,
+                labelIsI18n: shieldLabelIsI18n,
+                labelNs: shieldLabelNs,
+                value: -shield.absorbed,
+                color: 'negative',
+            });
         });
     }
 
