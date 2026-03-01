@@ -913,7 +913,6 @@ export function getLocalizedAssetPath(path: string, locale?: string): string {
 export function getLocalizedImageUrls(src: string, locale?: string): LocalizedImageUrls {
     if (!locale || isPassthroughSource(src)) {
         const urls = getOptimizedImageUrls(src);
-        console.log('[AssetLoader] getLocalizedImageUrls (no locale):', { src, urls });
         return { primary: urls, fallback: urls };
     }
     
@@ -933,16 +932,6 @@ export function getLocalizedImageUrls(src: string, locale?: string): LocalizedIm
     
     const fallbackPath = getLocalizedAssetPath(src, fallbackLocale);
     const fallback = getOptimizedImageUrls(fallbackPath);
-    
-    console.log('[AssetLoader] getLocalizedImageUrls:', {
-        src,
-        locale,
-        fallbackLocale,
-        localizedPath,
-        fallbackPath,
-        primaryUrl: primary.webp,
-        fallbackUrl: fallback.webp
-    });
     
     return { primary, fallback };
 }

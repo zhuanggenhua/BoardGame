@@ -97,10 +97,7 @@ const REQUIRED_TTS_ATLAS_IDS = Array.from(
  * CriticalImageGate 保证图片在 Board 渲染前已预加载到缓存中。
  */
 export function initSmashUpAtlases() {
-    console.log('[SmashUp] 开始注册图集...');
-    
     for (const atlas of SMASHUP_ATLAS_DEFINITIONS) {
-        console.log('[SmashUp] 注册原版图集:', atlas.id, atlas.image);
         registerLazyCardAtlasSource(atlas.id, {
             image: atlas.image,
             grid: atlas.grid,
@@ -109,24 +106,20 @@ export function initSmashUpAtlases() {
 
     // 动态注册 POD 英文高清图集（只注册 englishAtlasMap 实际使用的 atlasId）
     const podData = podAtlasConfig as TtsConfig;
-    console.log('[SmashUp] 需要注册的 POD 图集数量:', REQUIRED_TTS_ATLAS_IDS.length);
     
     for (const atlasId of REQUIRED_TTS_ATLAS_IDS) {
         const config = podData.atlases[atlasId];
         if (!config) {
-            // eslint-disable-next-line no-console
-            console.warn(`[SmashUp] 缺少 POD 图集配置: ${atlasId}`);
+             
+            console.warn(`[SmashUp.cardAtlas] ⚠️ 缺少 POD 图集配置: ${atlasId}`);
             continue;
         }
         const imagePath = `smashup/pod-assets/${atlasId}`;
-        console.log('[SmashUp] 注册 POD 图集:', atlasId, imagePath, config.grid);
         registerLazyCardAtlasSource(atlasId, {
             image: imagePath,
             grid: { rows: config.grid.rows, cols: config.grid.cols },
         });
     }
-    
-    console.log('[SmashUp] 图集注册完成');
 }
 
 /** @deprecated 使用 initSmashUpAtlases 代替 */

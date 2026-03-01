@@ -68,8 +68,8 @@ export function CardPreview({
     title,
 }: CardPreviewProps): ReactNode {
     const { i18n } = useTranslation();
+    
     if (!previewRef) return null;
-    // 优先使用传入的 locale，否则从 i18next 获取当前语言
     const effectiveLocale = locale || i18n.language || 'zh-CN';
 
     if (previewRef.type === 'image') {
@@ -191,9 +191,13 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             img.onload = () => {
                 // 注册到统一缓存，供其他组件复用
                 if (source) markImageLoaded(source.image, effectiveLocale, img);
-                if (!cancelled) setLoaded(true);
+                if (!cancelled) {
+                    setLoaded(true);
+                }
             };
-            img.onerror = () => tryLoad(idx + 1);
+            img.onerror = () => {
+                tryLoad(idx + 1);
+            };
             img.src = url;
         };
 
@@ -255,15 +259,6 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
 
     const atlasStyle = computeSpriteStyle(index, source.config);
     const backgroundImage = buildLocalizedImageSet(source.image, effectiveLocale);
-    
-    console.log('[CardPreview] Rendering atlas:', {
-        atlasId: previewRef.type === 'atlas' ? previewRef.atlasId : 'unknown',
-        index,
-        image: source.image,
-        effectiveLocale,
-        backgroundImage,
-        loaded: effectiveLoaded
-    });
 
     return (
         <div

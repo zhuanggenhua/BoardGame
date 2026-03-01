@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CardPreview } from '../../../components/common/media/CardPreview';
+import { CardPreview, registerCardPreviewRenderer } from '../../../components/common/media/CardPreview';
 import type { CardPreviewRef } from '../../../core';
 import smashUpEnglishMap from '../data/englishAtlasMap.json';
 import { getCardDef, getBaseDef, resolveCardName, resolveCardText } from '../data/cards';
@@ -23,17 +23,15 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
     const { t, i18n } = useTranslation('game-smashup');
     const { overlayEnabled } = useSmashUpOverlay();
     
+    const effectiveLocale = locale || i18n.language || 'zh-CN';
+    
     // 渲染器必须拿到具体的 defId 才能读取中文字典和做图集覆写
     // 由于只有 renderer 类型的 previewRef 能任意传参，我们假设这里的 payload 透传了 defId
-    if (previewRef.type !== 'renderer') return null;
-
-    const defId = previewRef.payload?.defId as string | undefined;
-    if (!defId) return null;
-
-    const effectiveLocale = locale || i18n.language || 'zh-CN';
+    const defId = previewRef.type === 'renderer' ? (previewRef.payload?.defId as string | undefined) : undefined;
 
     // 默认回退为原始数据的图集坐标，如果没有配置过的话
     const { originalAtlasId, originalIndex } = useMemo(() => {
+        if (!defId) return { originalAtlasId: '', originalIndex: 0 };
         const cardDef = getCardDef(defId);
         if (cardDef?.previewRef?.type === 'atlas') {
             return { originalAtlasId: cardDef.previewRef.atlasId, originalIndex: cardDef.previewRef.index };
@@ -48,7 +46,6 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
     let finalAtlasId = originalAtlasId;
     let finalIndex = originalIndex;
 
-    const isEnglishVariant = effectiveLocale === 'en' || effectiveLocale === 'en-US';
     // 基础牌默认使用高清英文图集（由于缺少低清中文资源），POD 版本也全都是高清英文图集
     const isBase = !!getBaseDef(defId);
     const isPodVersion = defId.endsWith('_pod') || (isBase && getBaseDef(defId)?.faction?.endsWith('_pod'));
@@ -56,6 +53,7 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
     // 只有在英文模式下，或者该卡牌是 POD 专属卡牌，或者本身是基地（Bases 资源只有高分英版），才去查 TTS 高清英文图集。
     // 否则在中文模式下，保留原版 originalAtlasId（会读取 cards1 等带有内嵌中文的低清图）
     // 特殊情况：如果 originalAtlasId 为空，同样回退使用英文图集
+    const isEnglishVariant = effectiveLocale === 'en' || effectiveLocale === 'en-US';
     if (isEnglishVariant || isPodVersion || isBase || !originalAtlasId) {
         const mapped = TTS_MAP[defId];
         if (mapped) {
@@ -66,14 +64,18 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
 
     // 获取当前语言的翻译用于覆盖层显示
     const { name, text } = useMemo(() => {
+        if (!defId) return { name: '', text: '' };
         const cDef = getCardDef(defId);
         if (cDef) return { name: resolveCardName(cDef, t), text: resolveCardText(cDef, t) };
         const bDef = getBaseDef(defId);
         if (bDef) return { name: resolveCardName(bDef, t), text: resolveCardText(bDef, t) };
         return { name: '', text: '' };
     }, [defId, t]);
-
-    // `isBase` 定义已经被提取到了更上面，在此删除冗余声明
+    
+    // Early returns after all hooks
+    if (previewRef.type !== 'renderer' || !defId) {
+        return null;
+    }
 
     // 如果未配置任何图集，只渲染外框和名字
     if (!finalAtlasId) {
@@ -85,78 +87,45 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
         );
     }
 
-    // 判断是否需要悬浮覆盖层
-    // 原则：只有在"图片语言与界面语言不一致"时才显示覆盖层（不得已）
-    // 
-    // 素材可用性：
-    // - POD 卡片：只有英文素材
-    // - 基地卡：只有英文素材
-    // - 原版卡片：中文和英文素材都有
-    //
-    // 判断逻辑：
-    // 1. POD/基地 + 英文环境 → 有对应素材，不显示覆盖层
-    // 2. POD/基地 + 非英文环境 → 无对应素材，显示覆盖层
-    // 3. 原版卡片 + 任何环境 → 有对应素材，不显示覆盖层
-    // 4. 用户在英文环境下关闭覆盖层 → 不显示覆盖层
+    // 硬编码逻辑：POD/base 卡牌只有英文资源，中文 UI 时需要显示覆盖层
+    const needsOverlay = (isPodVersion || isBase) && !isEnglishVariant;
+    // 用户在英文环境下可以关闭覆盖层
+    const shouldShowOverlay = needsOverlay && overlayEnabled;
     
-    const userWantsToSkipOverlay = isEnglishVariant && !overlayEnabled;
-    
-    let hasCurrentLanguageAsset: boolean;
-    if (isPodVersion || isBase) {
-        // POD 和基地：只有英文素材
-        hasCurrentLanguageAsset = isEnglishVariant;
-    } else {
-        // 原版卡片：中文和英文素材都有
-        hasCurrentLanguageAsset = true;
-    }
-
-    const needsOverlay = !hasCurrentLanguageAsset && !userWantsToSkipOverlay;
-
-    if (!needsOverlay) {
-        return (
-            <CardPreview
-                previewRef={{ type: 'atlas', atlasId: finalAtlasId, index: finalIndex }}
-                locale={effectiveLocale}
-                className={className}
-                style={style}
-                title={name}
-            />
-        );
-    }
-
-    // 图片语言与界面语言不一致，不得已显示覆盖层
-    // 适用场景：
-    // - 中文环境 + POD 卡片 → 英文图片 + 中文悬浮（不得已）
-    // - 中文环境 + 基地卡 → 英文图片 + 中文悬浮（不得已）
+    // POD/base 卡牌强制使用英文图片，普通卡牌使用 UI 语言
     const imageLocale = (isPodVersion || isBase) ? 'en' : effectiveLocale;
 
-    // 由于图集是通过 background-image 渲染在 div 上的
-    // 我们在此用绝对定位画一个标题和技能文字区域的 Overlay
+    // 直接返回完整的卡牌（图片 + 覆盖层）
     return (
         <div className={`relative group ${className || ''}`} style={style} title={name}>
-            {/* 底层图集 —— 使用 effectiveLocale，让 AssetLoader 自动处理回退 */}
             <CardPreview
                 previewRef={{ type: 'atlas', atlasId: finalAtlasId, index: finalIndex }}
                 locale={imageLocale}
-                className="w-full h-full absolute inset-0 rounded overflow-hidden pointer-events-none"
+                className="w-full h-full"
             />
-            {/* 顶层当前语言叠加 —— 默认隐藏，悬浮时淡入 */}
-            <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-[4%] opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20">
-                {/* 标题 */}
-                <div className={`w-fit max-w-full bg-black/80 backdrop-blur-sm text-white font-bold rounded px-2 shadow 
-                    ${isBase ? 'text-[1vw] max-w-[50%]' : 'text-[1.2vw]'}`}
-                >
-                    {name}
-                </div>
-                {/* 文本 —— 仅在有内容时渲染 */}
-                {!!text && (
-                    <div className={`w-full bg-white/90 backdrop-blur-md text-slate-900 rounded shadow-md font-medium leading-tight
-                        ${isBase ? 'text-[0.7vw] mb-[25%] p-2' : 'text-[0.8vw] mb-[5%] p-1.5'}`}
+            {/* 覆盖层：仅在需要时显示 */}
+            {shouldShowOverlay && (
+                <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-[4%] opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20">
+                    {/* 标题 */}
+                    <div className={`w-fit max-w-full bg-black/80 backdrop-blur-sm text-white font-bold rounded px-2 shadow 
+                        ${isBase ? 'text-[1vw] max-w-[50%]' : 'text-[1.2vw]'}`}
                     >
-                        {text}
+                        {name}
                     </div>
-                )}
-            </div>
+                    {/* 文本 —— 仅在有内容时渲染 */}
+                    {!!text && (
+                        <div className={`w-full bg-white/90 backdrop-blur-md text-slate-900 rounded shadow-md font-medium leading-tight
+                            ${isBase ? 'text-[0.7vw] mb-[25%] p-2' : 'text-[0.8vw] mb-[5%] p-1.5'}`}
+                        >
+                            {text}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
+
+
+// 注册渲染器（模块加载时自动执行）
+registerCardPreviewRenderer('smashup-card-renderer', SmashUpCardRenderer);

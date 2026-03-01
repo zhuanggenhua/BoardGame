@@ -358,17 +358,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                     : 'ring-1 ring-white/20 group-hover:ring-white/50 group-hover:shadow-2xl'
                                         }`}>
                                             <div className="rounded shadow-xl overflow-hidden">
-                                                {def?.previewRef ? (
-                                                    <CardPreview
-                                                        previewRef={def.previewRef}
-                                                        className="w-[8.5vw] aspect-[0.714] bg-slate-900 rounded"
-                                                        alt={name}
-                                                    />
-                                                ) : (
-                                                    <div className="w-[8.5vw] aspect-[0.714] bg-slate-800 rounded flex items-center justify-center p-2">
-                                                        <span className="text-white text-xs font-bold text-center">{name}</span>
-                                                    </div>
-                                                )}
+                                                <CardPreview
+                                                    previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId } }}
+                                                    className="w-[8.5vw] aspect-[0.714] bg-slate-900 rounded"
+                                                    alt={name}
+                                                />
                                             </div>
                                         </div>
                                         <button

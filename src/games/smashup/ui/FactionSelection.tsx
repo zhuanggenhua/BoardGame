@@ -35,8 +35,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
     // 设置了 locales 字段的阵营只在指定语言界面中出现
     // 例如：原版忍者仅在 zh-CN 显示，POD 版两者都可见
     const locale = i18n.language;
+    const isDev = import.meta.env.DEV;
     const visibleFactions = FACTION_METADATA.filter(
-        fm => !fm.locales || fm.locales.includes(locale)
+        fm => (!fm.locales || fm.locales.includes(locale)) && (!fm.devOnly || isDev)
     );
 
     const handleConfirmSelect = (factionId: string) => {

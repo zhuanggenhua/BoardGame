@@ -76,17 +76,11 @@ export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, on
     }, []);
 
     // CDN 国际化路径（包含语言回退）
-    const localizedUrls = getLocalizedImageUrls(src, effectiveLocale);
+    const localizedUrls = React.useMemo(() => {
+        return getLocalizedImageUrls(src, effectiveLocale);
+    }, [src, effectiveLocale]);
     const cdnUrl = localizedUrls.primary.webp;
     const cdnFallbackUrl = localizedUrls.fallback.webp; // 语言回退 URL
-    
-    console.log('[OptimizedImage] URLs:', {
-        src,
-        effectiveLocale,
-        cdnUrl,
-        cdnFallbackUrl,
-        isCdn: isCdnUrl(cdnUrl)
-    });
 
     // 本地降级路径（/assets/i18n/{locale}/...compressed/xxx.webp）
     const localUrl = React.useMemo(() => {
@@ -108,9 +102,9 @@ export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, on
     // 降级顺序：CDN primary → CDN primary retry → CDN fallback (语言回退) → 本地 primary
     const currentSrc = React.useMemo(() => {
         if (!isCdnUrl(cdnUrl)) {
-            console.log('[OptimizedImage] Using local path (no CDN):', cdnUrl);
             return cdnUrl; // 本地路径不走降级
         }
+        
         let result: string;
         switch (fallbackLevel) {
             case 0: 
@@ -128,11 +122,7 @@ export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, on
             default: 
                 result = cdnUrl;
         }
-        console.log('[OptimizedImage] currentSrc:', {
-            fallbackLevel,
-            levelName: ['primary', 'retry', 'language-fallback', 'local'][fallbackLevel] || 'unknown',
-            result
-        });
+        
         return result;
     }, [cdnUrl, cdnFallbackUrl, localUrl, fallbackLevel]);
 
@@ -183,12 +173,13 @@ export const OptimizedImage = ({ src, fallbackSrc: _fallbackSrc, locale, alt, on
     };
 
     const handleError: React.ReactEventHandler<HTMLImageElement> = (event) => {
-        console.error('[OptimizedImage] Image load error:', {
+        console.error('[OptimizedImage] ❌ 图片加载失败:', {
             src,
             currentSrc,
             fallbackLevel,
             isCdn: isCdnUrl(cdnUrl),
-            autoRetryCount: autoRetryRef.current
+            autoRetryCount: autoRetryRef.current,
+            error: event.type
         });
         
         // 非 CDN 路径或已到最终失败层级 → 进入自动重试

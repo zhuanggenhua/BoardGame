@@ -29,6 +29,7 @@ import { registerCardPreviewGetter } from '../../components/game/registry/cardPr
 import { getSmashUpCardPreviewRef } from './ui/cardPreviewHelper';
 import { registerCriticalImageResolver } from '../../core';
 import { smashUpCriticalImageResolver } from './criticalImageResolver';
+import './ui/SmashUpCardRenderer'; // 注册卡牌渲染器
 
 // 注册所有派系能力
 initAllAbilities();

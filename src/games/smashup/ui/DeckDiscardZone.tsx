@@ -7,6 +7,7 @@ import { getCardDef, resolveCardName } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PromptOverlay } from './PromptOverlay';
 import { UI_Z_INDEX } from '../../../core';
+import { SMASHUP_CARD_BACK } from '../domain/ids';
 
 type Props = {
     deckCount: number;
@@ -47,7 +48,6 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn,
 
     const topCard = discard.length > 0 ? discard[discard.length - 1] : null;
     const topDef = topCard ? getCardDef(topCard.defId) : null;
-    const topName = resolveCardName(topDef ?? undefined, t) || topCard?.defId;
 
     // 弃牌堆卡牌列表（供 PromptOverlay displayCards 使用）
     // 永远显示全部弃牌堆，可打出的卡牌通过 playableDefIds 高亮
@@ -109,7 +109,7 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn,
                 <div className="relative w-[7.5vw] aspect-[0.714]">
                     <div className="absolute inset-0 bg-slate-700 rounded-sm border border-slate-600 shadow-sm translate-x-1 -translate-y-1 rotate-1" />
                     <div className="absolute inset-0 bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2">
-                        <CardPreview previewRef={{ type: 'image', src: '/assets/i18n/en/smashup/card_back.png?raw=true' }} className="w-full h-full object-cover" />
+                        <CardPreview previewRef={SMASHUP_CARD_BACK} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                             <div className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg">
                                 <span className="text-white font-black font-mono text-base">{deckCount}</span>
@@ -139,14 +139,10 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn,
                         <>
                             <div className="absolute inset-0 bg-white rounded-sm border border-slate-300 shadow-sm -translate-x-1 -translate-y-1 -rotate-1" />
                             <div className={`absolute inset-0 bg-white rounded-sm shadow-xl transition-transform group-hover:-translate-y-2 group-hover:rotate-1 border overflow-hidden z-10 ${hasPlayableFromDiscard ? 'border-amber-400 border-2' : 'border-slate-200'}`}>
-                                <CardPreview previewRef={topDef?.previewRef
-                                    ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: topCard!.defId } }
-                                    : undefined} className="w-full h-full object-cover" />
-                                {!topDef?.previewRef && (
-                                    <div className="absolute inset-0 flex items-center justify-center p-1 text-center">
-                                        <span className="text-[0.5vw] font-bold leading-none">{topName}</span>
-                                    </div>
-                                )}
+                                <CardPreview 
+                                    previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: topCard!.defId } }}
+                                    className="w-full h-full object-cover" 
+                                />
                             </div>
                         </>
                     ) : (
