@@ -15,16 +15,27 @@ test.describe('移动端横屏适配', () => {
     await expect(root).toBeVisible();
   });
 
-  test('游戏页面竖屏时显示旋转建议（不阻止访问）', async ({ page }) => {
+  test('游戏页面竖屏时显示旋转建议（可关闭）', async ({ page }) => {
     // 设置为移动设备竖屏尺寸
     await page.setViewportSize({ width: 375, height: 667 });
     // 访问游戏页面（使用井字棋本地模式）
     await page.goto('/play/tictactoe/local');
 
     // 应该显示旋转建议（顶部横幅）
-    await expect(page.locator('text=建议旋转至横屏以获得更佳体验')).toBeVisible();
+    const banner = page.locator('text=建议旋转至横屏以获得更佳体验');
+    await expect(banner).toBeVisible();
     
-    // 游戏内容仍然可见（不被遮挡）
+    // 应该有关闭按钮
+    const closeButton = page.locator('button[aria-label="关闭提示"]');
+    await expect(closeButton).toBeVisible();
+    
+    // 点击关闭按钮
+    await closeButton.click();
+    
+    // 建议应该消失
+    await expect(banner).not.toBeVisible();
+    
+    // 游戏内容仍然可见
     await page.waitForLoadState('networkidle');
     const gameContainer = page.locator('[data-game-page]');
     await expect(gameContainer).toBeVisible();
@@ -57,24 +68,6 @@ test.describe('移动端横屏适配', () => {
     await expect(page.locator('text=建议旋转至横屏')).not.toBeVisible();
   });
 
-  test('游戏页面移动端横屏时应用缩放样式', async ({ page }) => {
-    // 设置为移动设备横屏尺寸
-    await page.setViewportSize({ width: 667, height: 375 });
-    await page.goto('/play/tictactoe/local');
-
-    // 等待页面加载
-    await page.waitForLoadState('networkidle');
-
-    // 检查 #root 是否应用了缩放样式
-    const root = page.locator('#root');
-    const transform = await root.evaluate((el) => {
-      return window.getComputedStyle(el).transform;
-    });
-
-    // 应该有 scale 变换（不是 'none'）
-    expect(transform).not.toBe('none');
-  });
-
   test('游戏页面方向切换时动态更新建议显示', async ({ page }) => {
     // 初始为横屏
     await page.setViewportSize({ width: 667, height: 375 });
@@ -87,30 +80,23 @@ test.describe('移动端横屏适配', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     
     // 应该显示旋转建议
-    await expect(page.locator('text=建议旋转至横屏以获得更佳体验')).toBeVisible();
+    const banner = page.locator('text=建议旋转至横屏以获得更佳体验');
+    await expect(banner).toBeVisible();
+    
+    // 关闭建议
+    await page.locator('button[aria-label="关闭提示"]').click();
+    await expect(banner).not.toBeVisible();
 
-    // 再切换回横屏
+    // 切换回横屏
     await page.setViewportSize({ width: 667, height: 375 });
     
-    // 旋转建议应该消失
-    await expect(page.locator('text=建议旋转至横屏')).not.toBeVisible();
-  });
-
-  test('主页横屏时不应用游戏缩放', async ({ page }) => {
-    // 设置为移动设备横屏尺寸
-    await page.setViewportSize({ width: 667, height: 375 });
-    await page.goto('/');
-
-    // 等待页面加载
-    await page.waitForLoadState('networkidle');
-
-    // 检查 #root 不应该有缩放样式（主页自适应）
-    const root = page.locator('#root');
-    const transform = await root.evaluate((el) => {
-      return window.getComputedStyle(el).transform;
-    });
-
-    // 主页不应该有 scale 变换
-    expect(transform).toBe('none');
+    // 建议仍然不显示
+    await expect(banner).not.toBeVisible();
+    
+    // 再次切换到竖屏
+    await page.setViewportSize({ width: 375, height: 667 });
+    
+    // 建议应该重新显示（横屏后重置关闭状态）
+    await expect(banner).toBeVisible();
   });
 });

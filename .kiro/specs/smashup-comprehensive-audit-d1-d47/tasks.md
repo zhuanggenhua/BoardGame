@@ -51,49 +51,49 @@
 - [~] GameTestRunner 测试：3 个代表性能力
 
 ### 任务 2.3：海盗（Pirates）派系审计
-- [~] D1 子项：pirate_broadside 三重条件过滤
+- [-] D1 子项：pirate_broadside 三重条件过滤
 - [~] D8：pirate_king、pirate_first_mate 时序
 - [~] D31：pirate_buccaneer、pirate_first_mate 拦截路径
 - [~] D33：pirate_powderkeg 跨派系一致性
 - [ ] GameTestRunner 测试：3 个代表性能力
 
 ### 任务 2.4：忍者（Ninjas）派系审计
-- [ ] D1 子项：ninja_master 范围限定
-- [ ] D5：ninja_disguise 交互链完整性
-- [ ] D8：ninja_shinobi、ninja_acolyte 时序和计数器
-- [ ] D8 子项：ninja_acolyte 额度授予时机
-- [ ] D14：ninja_infiltrate 回合清理
-- [ ] D31：ninja_smoke_bomb、ninja_assassination 拦截路径
+- [~] D1 子项：ninja_master 范围限定
+- [~] D5：ninja_disguise 交互链完整性
+- [~] D8：ninja_shinobi、ninja_acolyte 时序和计数器
+- [~] D8 子项：ninja_acolyte 额度授予时机
+- [~] D14：ninja_infiltrate 回合清理
+- [~] D31：ninja_smoke_bomb、ninja_assassination 拦截路径
 - [ ] GameTestRunner 测试：3 个代表性能力
 
 ### 任务 2.5：机器人（Robots）派系审计
-- [ ] D1 子项：robot_microbot_alpha 全局标记
-- [ ] D8：robot_microbot_fixer 计数器
-- [ ] D11/D12：robot_zapbot 额度约束
-- [ ] D19：robot_microbot_alpha 组合场景
-- [ ] D31：robot_warbot、robot_nukebot 拦截路径
-- [ ] D33：robot_hoverbot 跨派系一致性
+- [~] D1 子项：robot_microbot_alpha 全局标记
+- [~] D8：robot_microbot_fixer 计数器
+- [~] D11/D12：robot_zapbot 额度约束
+- [~] D19：robot_microbot_alpha 组合场景
+- [~] D31：robot_warbot、robot_nukebot 拦截路径
+- [~] D33：robot_hoverbot 跨派系一致性
 - [ ] GameTestRunner 测试：3 个代表性能力
 
 ### 任务 2.6：巫师（Wizards）派系审计
-- [ ] D5：wizard_portal、wizard_scry 交互链
-- [ ] D8 子项：wizard_archmage、wizard_time_loop 额度授予
-- [ ] D11/D12：wizard_archmage 额度对称性
-- [ ] D24：wizard_sacrifice 状态一致性
-- [ ] D33：wizard_neophyte 跨派系一致性
+- [~] D5：wizard_portal、wizard_scry 交互链
+- [~] D8 子项：wizard_archmage、wizard_time_loop 额度授予
+- [~] D11/D12：wizard_archmage 额度对称性
+- [~] D24：wizard_sacrifice 状态一致性
+- [~] D33：wizard_neophyte 跨派系一致性
 - [ ] GameTestRunner 测试：3 个代表性能力
 
 ### 任务 2.7：僵尸（Zombies）派系审计
-- [ ] D1 子项：zombie_lord、zombie_outbreak 双重条件
-- [ ] D5：zombie_not_enough_bullets 同名判断
-- [ ] D8：zombie_tenacious_z 时序和限制
-- [ ] D31：zombie_theyre_coming_to_get_you 拦截路径
-- [ ] D33：zombie_grave_digger 跨派系一致性
+- [~] D1 子项：zombie_lord、zombie_outbreak 双重条件
+- [~] D5：zombie_not_enough_bullets 同名判断
+- [~] D8：zombie_tenacious_z 时序和限制
+- [~] D31：zombie_theyre_coming_to_get_you 拦截路径
+- [~] D33：zombie_grave_digger 跨派系一致性
 - [ ] GameTestRunner 测试：3 个代表性能力
 
 ### 任务 2.8：捣蛋鬼（Tricksters）派系审计
-- [ ] D8：trickster_leprechaun、trickster_flame_trap 时序
-- [ ] D14：trickster_mark_of_sleep 回合清理
+- [~] D8：trickster_leprechaun、trickster_flame_trap 时序
+- [~] D14：trickster_mark_of_sleep 回合清理
 - [ ] D31：trickster_hideout、trickster_block_the_path 拦截路径
 - [ ] D33：trickster_brownie 跨派系一致性
 - [ ] GameTestRunner 测试：3 个代表性能力
