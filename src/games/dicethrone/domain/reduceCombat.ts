@@ -99,14 +99,41 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     // 消耗护盾抵消伤害（忽略 preventStatus 护盾）
     // bypassShields: HP 重置类效果（如神圣祝福）跳过护盾消耗
     if (!bypassShields && target.damageShields && target.damageShields.length > 0 && remainingDamage > 0) {
-        const statusShields = target.damageShields.filter(shield => shield.preventStatus);
-        const damageShields = target.damageShields.filter(shield => !shield.preventStatus);
-        if (damageShields.length > 0) {
-            const shield = damageShields[0];
-            const preventedAmount = Math.min(shield.value, remainingDamage);
-            remainingDamage -= preventedAmount;
-            newDamageShields = statusShields;
+        const updatedShields: typeof target.damageShields = [];
+        
+        for (const shield of target.damageShields) {
+            // preventStatus 护盾不参与伤害抵消，直接保留
+            if (shield.preventStatus) {
+                updatedShields.push(shield);
+                continue;
+            }
+            
+            // 如果还有剩余伤害，用当前护盾抵消
+            if (remainingDamage > 0) {
+                if (shield.reductionPercent !== undefined) {
+                    // 百分比护盾：减少伤害的百分比，消耗后不保留
+                    const reductionAmount = Math.floor(remainingDamage * (shield.reductionPercent / 100));
+                    remainingDamage -= reductionAmount;
+                    // 百分比护盾消耗后不保留（一次性使用）
+                } else {
+                    // 固定值护盾：按 value 抵消伤害
+                    const preventedAmount = Math.min(shield.value, remainingDamage);
+                    remainingDamage -= preventedAmount;
+                    
+                    // 如果护盾还有剩余值，保留护盾
+                    const remainingShieldValue = shield.value - preventedAmount;
+                    if (remainingShieldValue > 0) {
+                        updatedShields.push({ ...shield, value: remainingShieldValue });
+                    }
+                    // 否则护盾被完全消耗，不保留
+                }
+            } else {
+                // 没有剩余伤害了，后续护盾全部保留
+                updatedShields.push(shield);
+            }
         }
+        
+        newDamageShields = updatedShields;
     }
 
     const hpBefore = target.resources[RESOURCE_IDS.HP] ?? 0;

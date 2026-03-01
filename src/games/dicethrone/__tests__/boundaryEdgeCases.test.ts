@@ -205,8 +205,9 @@ describe('伤害护盾边界', () => {
             targetId: '0', actualDamage: 3,
         }));
         expect(hit.players['0'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
-        // 护盾消耗后被清除
-        expect(hit.players['0'].damageShields.length).toBe(0);
+        // 护盾消耗 3 点后剩余 7 点
+        expect(hit.players['0'].damageShields.length).toBe(1);
+        expect(hit.players['0'].damageShields[0].value).toBe(7);
     });
 
     it('护盾值 < 伤害时部分吸收，剩余扣血', () => {

@@ -982,6 +982,10 @@ export function registerBaseAbilities(): void {
         // 【防重复触发】检查是否已经为这个基地创建过交互
         // 使用 matchState.sys 上的临时标记，避免重复创建相同的交互
         const sysAny = ctx.matchState?.sys as any;
+        if (!sysAny) {
+            // 无 matchState 时无法创建交互，直接返回
+            return { events };
+        }
         if (!sysAny._pirateCoveTriggered) {
             sysAny._pirateCoveTriggered = new Set<number>();
         }
