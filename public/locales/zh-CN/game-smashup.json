@@ -173,7 +173,19 @@
     "madnessDrawn": "{{playerId}} 抽取{{count}}张疯狂卡",
     "madnessReturned": "{{playerId}} 归还疯狂卡",
     "baseDeckReordered": "基地牌库重排",
-    "onBase": " → {{base}}"
+    "onBase": " → {{base}}",
+    "revealHand": "{{playerId}} 展示手牌（{{count}}张）",
+    "revealDeckTop": "{{playerId}} 展示牌库顶（{{count}}张）",
+    "permanentPowerAdded": "永久力量+{{amount}}：",
+    "tempPowerAdded": "临时力量+{{amount}}：",
+    "ongoingCounterChanged": "持续行动计数器{{delta}}：",
+    "breakpointModified": "{{base}} 爆分线{{delta}}",
+    "baseDeckShuffled": "基地牌库洗牌",
+    "specialLimitUsed": "{{playerId}} 使用特殊{{limitType}}额度",
+    "abilityTriggered": "触发能力（{{triggerType}}）：",
+    "baseCleared": "清空{{base}}",
+    "deckReordered": "{{playerId}} 重排牌库",
+    "factionSelected": "{{playerId}} 选择派系：{{faction}}"
   },
   "factions": {
     "pirates": {

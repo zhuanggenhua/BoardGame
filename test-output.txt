@@ -1,10 +1,10 @@
 ﻿
 [1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/gongzuo/web/BordGame[39m
 
-[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts
-[22m[39m[dotenv@17.3.1] injecting env (4) from .env.test.local -- tip: 鈿欙笍  override existing env vars with { override: true }
+[90mstdout[2m | src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts
+[22m[39m[dotenv@17.3.1] injecting env (4) from .env.test.local -- tip: 鈿欙笍  write to custom object with { processEnv: myObject }
 
-[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD11/D12: 鍐欏叆-娑堣€楀绉版€?鈥?鍗曞熀鍦伴檷浣庣垎鐮寸偣
+[90mstdout[2m | src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22m[2mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22m[2mD31: 鎷︽埅璺緞1锛堢洿鎺ュ懡浠ゆ墽琛岋級鈥?鎷︽埅娑堢伃浜嬩欢
 [22m[39m[DEBUG] PLAY_ACTION validation: start {
   playerId: [32m'0'[39m,
   cardUid: [32m'a1'[39m,
@@ -12,8 +12,112 @@
   hasResponseWindow: [33mfalse[39m,
   windowType: [90mundefined[39m
 }
+[dinoToothAndClawInterceptor] Called with event: su:action_played
+[dinoToothAndClawInterceptor] Called with event: su:ongoing_attached
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=playCards playerId=0
+[FlowSystem][beforeCommand] getNextPhase returned to=scoreBases
+[FlowSystem][beforeCommand] phase updated from=playCards to=scoreBases
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[onAutoContinueCheck] scoreBases 闃舵妫€鏌? {
+  flowHalted: [33mfalse[39m,
+  hasInteraction: [33mfalse[39m,
+  interactionId: [90mundefined[39m,
+  hasResponseWindow: [33mfalse[39m
+}
+[onAutoContinueCheck] scoreBases: eligibleIndices = []
+[onAutoContinueCheck] scoreBases: 鏃?eligible 鍩哄湴锛岃嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=scoreBases, playerId=0
+[FlowSystem][afterEvents] autoContinue from=scoreBases playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=scoreBases playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=draw
+[FlowSystem][afterEvents] phase updated from=scoreBases to=draw
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=draw, playerId=0
+[FlowSystem][afterEvents] autoContinue from=draw playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=draw playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=endTurn
+[FlowSystem][afterEvents] phase updated from=draw to=endTurn
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=endTurn, playerId=0
+[FlowSystem][afterEvents] autoContinue from=endTurn playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=endTurn playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=startTurn
+[FlowSystem][afterEvents] phase updated from=endTurn to=startTurn
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[dinoToothAndClawInterceptor] Called with event: su:ongoing_detached
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=startTurn, playerId=1
+[FlowSystem][afterEvents] autoContinue from=startTurn playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=startTurn playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=playCards
+[FlowSystem][afterEvents] phase updated from=startTurn to=playCards
 [FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
-[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD14: 鍥炲悎娓呯悊瀹屾暣鎬?鈥?鍥炲悎缁撴潫鏃朵复鏃朵慨姝ｆ竻闆?[22m[39m[DEBUG] PLAY_ACTION validation: start {
+[90mstdout[2m | src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22m[2mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22m[2mD31: 鎷︽埅璺緞2锛堜氦浜掕В鍐筹級鈥?鎷︽埅杩斿洖鎵嬬墝浜嬩欢
+[22m[39m[DEBUG] PLAY_ACTION validation: start {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'a1'[39m,
+  targetBaseIndex: [33m0[39m,
+  hasResponseWindow: [33mfalse[39m,
+  windowType: [90mundefined[39m
+}
+[InteractionSystem] popInteraction: No current, making new interaction current: {
+  interactionId: [32m'alien_abduction_1772434173133'[39m,
+  kind: [32m'simple-choice'[39m
+}
+[InteractionSystem] popInteraction: Checking optionsGenerator: {
+  hasOptionsGenerator: [33mfalse[39m,
+  hasContinuationContext: [33mfalse[39m,
+  continuationContext: [90mundefined[39m,
+  originalOptionsCount: [33m1[39m
+}
+[dinoToothAndClawInterceptor] Called with event: su:action_played
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
+[90mstdout[2m | src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22m[2mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22m[2mD31: 涓嶆嫤鎴繁鏂规搷浣?鈥?宸辨柟娑堢伃鑷繁鐨勯殢浠?[22m[39m[DEBUG] PLAY_ACTION validation: start {
+  playerId: [32m'1'[39m,
+  cardUid: [32m'a1'[39m,
+  targetBaseIndex: [33m0[39m,
+  hasResponseWindow: [33mfalse[39m,
+  windowType: [90mundefined[39m
+}
+[dinoToothAndClawInterceptor] Called with event: su:action_played
+[dinoToothAndClawInterceptor] Called with event: su:ongoing_attached
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=playCards playerId=1
+[FlowSystem][beforeCommand] getNextPhase returned to=scoreBases
+[FlowSystem][beforeCommand] phase updated from=playCards to=scoreBases
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[onAutoContinueCheck] scoreBases 闃舵妫€鏌? {
+  flowHalted: [33mfalse[39m,
+  hasInteraction: [33mfalse[39m,
+  interactionId: [90mundefined[39m,
+  hasResponseWindow: [33mfalse[39m
+}
+[onAutoContinueCheck] scoreBases: eligibleIndices = []
+[onAutoContinueCheck] scoreBases: 鏃?eligible 鍩哄湴锛岃嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=scoreBases, playerId=1
+[FlowSystem][afterEvents] autoContinue from=scoreBases playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=scoreBases playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=draw
+[FlowSystem][afterEvents] phase updated from=scoreBases to=draw
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=draw, playerId=1
+[FlowSystem][afterEvents] autoContinue from=draw playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=draw playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=endTurn
+[FlowSystem][afterEvents] phase updated from=draw to=endTurn
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=endTurn, playerId=1
+[FlowSystem][afterEvents] autoContinue from=endTurn playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=endTurn playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=startTurn
+[FlowSystem][afterEvents] phase updated from=endTurn to=startTurn
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[dinoToothAndClawInterceptor] Called with event: su:minion_destroyed
+[dinoToothAndClawInterceptor] Same player, not intercepting
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=startTurn, playerId=0
+[FlowSystem][afterEvents] autoContinue from=startTurn playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=startTurn playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=playCards
+[FlowSystem][afterEvents] phase updated from=startTurn to=playCards
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
+[90mstdout[2m | src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22m[2mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22m[2mD31: POD鐗堢畝鍗曚繚鎶?鈥?鍙繚鎶や笉鑷瘉
+[22m[39m[DEBUG] PLAY_ACTION validation: start {
   playerId: [32m'0'[39m,
   cardUid: [32m'a1'[39m,
   targetBaseIndex: [33m0[39m,
@@ -51,28 +155,91 @@
 [FlowSystem][afterEvents] getNextPhase returned to=playCards
 [FlowSystem][afterEvents] phase updated from=startTurn to=playCards
 [FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
-[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD11/D12: 澶氬熀鍦扮嫭绔嬩慨姝?鈥?涓嶅悓鍩哄湴鐨勪慨姝ｄ簰涓嶅共鎵?[22m[39m[DEBUG] PLAY_ACTION validation: start {
+[90mstdout[2m | src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22m[2mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22m[2mD31: 鎷︽埅璺緞瀹屾暣鎬?鈥?澶氭鎷︽埅
+[22m[39m[DEBUG] PLAY_ACTION validation: start {
   playerId: [32m'0'[39m,
   cardUid: [32m'a1'[39m,
   targetBaseIndex: [33m0[39m,
   hasResponseWindow: [33mfalse[39m,
   windowType: [90mundefined[39m
 }
-[InteractionSystem] popInteraction: No current, making new interaction current: { interactionId: [32m'dino_rampage_1772421352370'[39m, kind: [32m'simple-choice'[39m }
-[InteractionSystem] popInteraction: Checking optionsGenerator: {
-  hasOptionsGenerator: [33mfalse[39m,
-  hasContinuationContext: [33mfalse[39m,
-  continuationContext: [90mundefined[39m,
-  originalOptionsCount: [33m2[39m
+[dinoToothAndClawInterceptor] Called with event: su:action_played
+[dinoToothAndClawInterceptor] Called with event: su:ongoing_attached
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=playCards playerId=0
+[FlowSystem][beforeCommand] getNextPhase returned to=scoreBases
+[FlowSystem][beforeCommand] phase updated from=playCards to=scoreBases
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[onAutoContinueCheck] scoreBases 闃舵妫€鏌? {
+  flowHalted: [33mfalse[39m,
+  hasInteraction: [33mfalse[39m,
+  interactionId: [90mundefined[39m,
+  hasResponseWindow: [33mfalse[39m
 }
-[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
-[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD11/D12: 鍔涢噺蹇収 鈥?淇鍊煎熀浜庢墦鍑烘椂鐨勫姏閲?[22m[39m[DEBUG] PLAY_ACTION validation: start {
-  playerId: [32m'0'[39m,
-  cardUid: [32m'a1'[39m,
-  targetBaseIndex: [33m0[39m,
-  hasResponseWindow: [33mfalse[39m,
-  windowType: [90mundefined[39m
+[onAutoContinueCheck] scoreBases: eligibleIndices = []
+[onAutoContinueCheck] scoreBases: 鏃?eligible 鍩哄湴锛岃嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=scoreBases, playerId=0
+[FlowSystem][afterEvents] autoContinue from=scoreBases playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=scoreBases playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=draw
+[FlowSystem][afterEvents] phase updated from=scoreBases to=draw
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=draw, playerId=0
+[FlowSystem][afterEvents] autoContinue from=draw playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=draw playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=endTurn
+[FlowSystem][afterEvents] phase updated from=draw to=endTurn
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=endTurn, playerId=0
+[FlowSystem][afterEvents] autoContinue from=endTurn playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=endTurn playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=startTurn
+[FlowSystem][afterEvents] phase updated from=endTurn to=startTurn
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[dinoToothAndClawInterceptor] Called with event: su:ongoing_detached
+[dinoToothAndClawInterceptor] Called with event: su:turn_ended
+[dinoToothAndClawInterceptor] Called with event: su:turn_started
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=startTurn, playerId=1
+[FlowSystem][afterEvents] autoContinue from=startTurn playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=startTurn playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=playCards
+[FlowSystem][afterEvents] phase updated from=startTurn to=playCards
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=playCards playerId=1
+[FlowSystem][beforeCommand] getNextPhase returned to=scoreBases
+[FlowSystem][beforeCommand] phase updated from=playCards to=scoreBases
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[onAutoContinueCheck] scoreBases 闃舵妫€鏌? {
+  flowHalted: [33mfalse[39m,
+  hasInteraction: [33mfalse[39m,
+  interactionId: [90mundefined[39m,
+  hasResponseWindow: [33mfalse[39m
 }
+[onAutoContinueCheck] scoreBases: eligibleIndices = []
+[onAutoContinueCheck] scoreBases: 鏃?eligible 鍩哄湴锛岃嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=scoreBases, playerId=1
+[FlowSystem][afterEvents] autoContinue from=scoreBases playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=scoreBases playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=draw
+[FlowSystem][afterEvents] phase updated from=scoreBases to=draw
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[dinoToothAndClawInterceptor] Called with event: su:deck_reshuffled
+[dinoToothAndClawInterceptor] Called with event: su:cards_drawn
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=draw, playerId=1
+[FlowSystem][afterEvents] autoContinue from=draw playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=draw playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=endTurn
+[FlowSystem][afterEvents] phase updated from=draw to=endTurn
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=endTurn, playerId=1
+[FlowSystem][afterEvents] autoContinue from=endTurn playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=endTurn playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=startTurn
+[FlowSystem][afterEvents] phase updated from=endTurn to=startTurn
+[dinoToothAndClawInterceptor] Called with event: SYS_PHASE_CHANGED
+[dinoToothAndClawInterceptor] Called with event: su:ongoing_detached
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=startTurn, playerId=0
+[FlowSystem][afterEvents] autoContinue from=startTurn playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=startTurn playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=playCards
+[FlowSystem][afterEvents] phase updated from=startTurn to=playCards
 [FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?[DEBUG] PLAY_ACTION validation: start {
   playerId: [32m'0'[39m,
   cardUid: [32m'a2'[39m,
@@ -81,554 +248,114 @@
   windowType: [90mundefined[39m
 }
 [FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
-[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD14: 杈圭晫鏉′欢 鈥?鏃犲繁鏂归殢浠庢椂涓嶉檷浣庣垎鐮寸偣
-[22m[39m[DEBUG] PLAY_ACTION validation: start {
-  playerId: [32m'0'[39m,
-  cardUid: [32m'a1'[39m,
-  targetBaseIndex: [33m0[39m,
-  hasResponseWindow: [33mfalse[39m,
-  windowType: [90mundefined[39m
-}
-[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
- [31m脳[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD11/D12: 鍐欏叆-娑堣€楀绉版€?鈥?鍗曞熀鍦伴檷浣庣垎鐮寸偣[32m 21[2mms[22m[39m
-[31m   鈫?expected undefined to be defined[39m
- [31m脳[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD14: 鍥炲悎娓呯悊瀹屾暣鎬?鈥?鍥炲悎缁撴潫鏃朵复鏃朵慨姝ｆ竻闆?[32m 14[2mms[22m[39m
-[31m   鈫?expected undefined to deeply equal {}[39m
- [31m脳[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD11/D12: 澶氬熀鍦扮嫭绔嬩慨姝?鈥?涓嶅悓鍩哄湴鐨勪慨姝ｄ簰涓嶅共鎵?[32m 4[2mms[22m[39m
-[31m   鈫?expected undefined to be -3 // Object.is equality[39m
- [32m鉁?[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD11/D12: 鍔涢噺蹇収 鈥?淇鍊煎熀浜庢墦鍑烘椂鐨勫姏閲?[32m 4[2mms[22m[39m
- [31m脳[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD14: 杈圭晫鏉′欢 鈥?鏃犲繁鏂归殢浠庢椂涓嶉檷浣庣垎鐮寸偣[32m 3[2mms[22m[39m
-[31m   鈫?expected undefined to deeply equal {}[39m
-node.exe 
-: 
-所在位置 C:\P
-rogram Fi
-les\nodej
-s\npx.ps1
-:29 字符: 3
-+   & $NO
-DE_EXE $N
-PX_CLI_JS
- $args
-+   ~~~~~
-~~~~~~~~~
-~~~~~~~~~
-~~~~~~
-    + Ca 
-   tego  
-  ryIn   
- fo      
-         
-       : 
-No    tSp
-e    cifi
-    ed:  
-   (:St  
-  ring   
- ) []    
-, Re    m
-ote    Ex
-ce    pti
-o    n
-    + Fu 
-   llyQ  
-  uali   
- fied    
-Erro    r
-Id     : 
-Na    tiv
-e    Comm
-    andE 
-   rror
+ [32m鉁?[39m src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22mD31: 鎷︽埅璺緞1锛堢洿鎺ュ懡浠ゆ墽琛岋級鈥?鎷︽埅娑堢伃浜嬩欢[32m 10[2mms[22m[39m
+ [31m脳[39m src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22mD31: 鎷︽埅璺緞2锛堜氦浜掕В鍐筹級鈥?鎷︽埅杩斿洖鎵嬬墝浜嬩欢[32m 7[2mms[22m[39m
+[31m   鈫?expected true to be false // Object.is equality[39m
+ [32m鉁?[39m src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22mD31: 涓嶆嫤鎴繁鏂规搷浣?鈥?宸辨柟娑堢伃鑷繁鐨勯殢浠?[32m 2[2mms[22m[39m
+ [32m鉁?[39m src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22mD31: POD鐗堢畝鍗曚繚鎶?鈥?鍙繚鎶や笉鑷瘉[32m 1[2mms[22m[39m
+ [31m脳[39m src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts[2m > [22mAudit D31: dino_tooth_and_claw锛堝叏鍓瑁咃級[2m > [22mD31: 鎷︽埅璺緞瀹屾暣鎬?鈥?澶氭鎷︽埅[32m 2[2mms[22m[39m
+[31m   鈫?expected +0 to be 1 // Object.is equality[39m
+node.exe : 
+所在位置 C:\Program Files\nodejs\npx
+.ps1:29 字符: 3
++   & $NODE_EXE $NPX_CLI_JS $arg
+s
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : N 
+   otSpecified: (:String) [],   
+  RemoteException
+    + FullyQualifiedErrorId : N 
+   ativeCommandError
  
-[31m鈳幆鈳
-幆鈳幆鈳?[3
-9m[1m[4
-1m Failed
- Tests 4 
-[49m[22
-m[31m鈳幆
-鈳幆鈳幆鈳?[
-39m
+[31m鈳幆鈳幆鈳幆鈳?[39m[1m[41m Fa
+iled Tests 2 [49m[22m[31m鈳幆鈳
+幆鈳幆鈳?[39m
 
-[41m[1m
- FAIL [2
-2m[49m s
-rc/games/
-smashup/_
-_tests__/
-audit-d11
--d12-d14-
-dino-ramp
-age.test.
-ts[2m > 
-[22mAudi
-t D11+D12
-+D14: din
-o_rampage
-锛堢媯鏆达級[2
-m > [22m
-D11/D12: 
-鍐欏叆-娑堣€楀
-绉版€?鈥?鍗曞熀
-鍦伴檷浣庣垎鐮寸偣
-[31m[1m
-Assertion
-Error[22
-m: expect
-ed undefi
-ned to be
- defined
-[39m
-[36m [2
-m鉂?[22m s
-rc/games/
-smashup/_
-_tests__/
-audit-d11
--d12-d14-
-dino-ramp
-age.test.
-ts:[2m10
-7:47[22m
-[39m
-    [90m
-105| [39
-m        
-[90m// 楠
-岃瘉浜や簰宸插垱寤
-?[39m
-    [90m
-106| [39
-m        
-[35mlet
-[39m stat
-e [33m=
-[39m runn
-er[33m.
-[39m[34m
-getState
-[39m()[3
-3m;[39m
-    [90m
-107| [39
-m        
-[34mexpe
-ct[39m(s
-tate[33m
-.[39msys
-[33m.[3
-9minterac
-tion[33m
-.[39mcur
-rent)[33
-m.[39m[
-34mtoBeDe
-fined[39
-m()[33m;
-[39m
-    [90m
-   | [39
-m        
-         
-         
-         
-         
-  [31m^
-[39m
-    [90m
-108| [39
-m        
-expect(st
-ate.sys.i
-nteractio
-n.current
-?.id).toC
-ontain('d
-ino_ramp鈥
-?    [90
-m109| [3
-9m       
- 
+[41m[1m FAIL [22m[49m src/ga
+mes/smashup/__tests__/audit-d31-
+dino-tooth-and-claw.test.ts[2m 
+> [22mAudit D31: dino_tooth_and
+_claw锛堝叏鍓瑁咃級[2m > [22mD31: 鎷
+︽埅璺緞2锛堜氦浜掕В鍐筹級鈥?鎷︽埅杩斿洖鎵嬬墝浜嬩欢
+[31m[1mAssertionError[22m: ex
+pected true to be false // Objec
+t.is equality[39m
 
-[31m[2m
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-[1/4]鈳?[2
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m鉂?[22m src/games/smash
+up/__tests__/audit-d31-dino-toot
+h-and-claw.test.ts:[2m181:86[2
 2m[39m
+    [90m179| [39m        [34m
+expect[39m(minion)[33m.[39m[
+34mtoBeDefined[39m()[33m;[39m
+    [90m180| [39m        [90m
+// 楠岃瘉 tooth_and_claw 宸茶绉婚櫎锛堣嚜姣
+侊級[39m
+    [90m181| [39m        expec
+t(minion?.attachedActions.some(a
+ => a.defId === 'dino_too鈥?    
+[90m   | [39m                  
+                                
+                                
+   [31m^[39m
+    [90m182| [39m        [90m
+// 楠岃瘉闅忎粠鏈繑鍥炴墜鐗?[39m
+    [90m183| [39m        expec
+t(state.core.players['1'].hand.f
+ind(c => c.uid === 'm1'))鈥?
+[31m[2m鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳
+幆鈳幆鈳幆鈳幆鈳幆[1/2]鈳?[22m[39m
 
-[41m[1m
- FAIL [2
-2m[49m s
-rc/games/
-smashup/_
-_tests__/
-audit-d11
--d12-d14-
-dino-ramp
-age.test.
-ts[2m > 
-[22mAudi
-t D11+D12
-+D14: din
-o_rampage
-锛堢媯鏆达級[2
-m > [22m
-D14: 鍥炲悎娓
-呯悊瀹屾暣鎬?鈥?
-鍥炲悎缁撴潫鏃朵复
-鏃朵慨姝ｆ竻闆?
-[31m[1mA
-ssertionE
-rror[22m
-: expecte
-d undefin
-ed to dee
-ply equal
- {}[39m
+[41m[1m FAIL [22m[49m src/ga
+mes/smashup/__tests__/audit-d31-
+dino-tooth-and-claw.test.ts[2m 
+> [22mAudit D31: dino_tooth_and
+_claw锛堝叏鍓瑁咃級[2m > [22mD31: 鎷
+︽埅璺緞瀹屾暣鎬?鈥?澶氭鎷︽埅
+[31m[1mAssertionError[22m: ex
+pected +0 to be 1 // Object.is e
+quality[39m
 
-[32m- Ex
-pected:[
-39m 
-{}
+[32m- Expected[39m
+[31m+ Received[39m
 
-[31m+ Re
-ceived:[
-39m 
-undefined
+[32m- 1[39m
+[31m+ 0[39m
 
-[36m [2
-m鉂?[22m s
-rc/games/
-smashup/_
-_tests__/
-audit-d11
--d12-d14-
-dino-ramp
-age.test.
-ts:[2m15
-8:52[22m
-[39m
-    [90m
-156| [39
-m        
-state [3
-3m=[39m 
-runner[3
-3m.[39m
-[34mgetSt
-ate[39m(
-)[33m;[
-39m
-    [90m
-157| [39
-m        
-[90m// 楠
-岃瘉鍥炲悎缁撴潫鍚
-庝复鏃朵慨姝ｆ竻闆
-?[39m
-    [90m
-158| [39
-m        
-[34mexpe
-ct[39m(s
-tate[33m
-.[39mcor
-e[33m.[
-39mtempBr
-eakpointM
-odifiers)
-[33m.[3
-9m[34mto
-Equal[39
-m({})[33
-m;[39m
-    [90m
-   | [39
-m        
-         
-         
-         
-         
-       [
-31m^[39m
-    [90m
-159| [39
-m    })[
-33m;[39m
-    [90m
-160| [39
-m
-
-[31m[2m
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-[2/4]鈳?[2
+[36m [2m鉂?[22m src/games/smash
+up/__tests__/audit-d31-dino-toot
+h-and-claw.test.ts:[2m370:95[2
 2m[39m
+    [90m368| [39m        expec
+t(minion?.attachedActions.filter
+(a => a.defId === 'ninja_鈥?    
+[90m369| [39m        [90m// 楠岃
+瘉杩樻湁涓€寮?tooth_and_claw[39m
+    [90m370| [39m        expec
+t(minion?.attachedActions.filter
+(a => a.defId === 'dino_t鈥?    
+[90m   | [39m                  
+                                
+                                
+            [31m^[39m
+    [90m371| [39m
+    [90m372| [39m        [90m
+// 鎺ㄨ繘鍒板洖鍚堢粨鏉燂紝瑙﹀彂绗簩寮?assassina
+tion[39m
 
-[41m[1m
- FAIL [2
-2m[49m s
-rc/games/
-smashup/_
-_tests__/
-audit-d11
--d12-d14-
-dino-ramp
-age.test.
-ts[2m > 
-[22mAudi
-t D11+D12
-+D14: din
-o_rampage
-锛堢媯鏆达級[2
-m > [22m
-D11/D12: 
-澶氬熀鍦扮嫭绔嬩慨
-姝?鈥?涓嶅悓鍩哄
-湴鐨勪慨姝ｄ簰涓嶅
-共鎵?[31m
-[1mAssert
-ionError
-[22m: exp
-ected und
-efined to
- be -3 //
- Object.i
-s equalit
-y[39m
-
-[32m- Ex
-pected:[
-39m 
--3
-
-[31m+ Re
-ceived:[
-39m 
-undefined
-
-[36m [2
-m鉂?[22m s
-rc/games/
-smashup/_
-_tests__/
-audit-d11
--d12-d14-
-dino-ramp
-age.test.
-ts:[2m20
-2:57[22m
-[39m
-    [90m
-200| [39
-m        
-[35mcons
-t[39m st
-ate [33m
-=[39m ru
-nner[33m
-.[39m[3
-4mgetStat
-e[39m()
-[33m;[39
-m
-    [90m
-201| [39
-m        
-[90m// 楠
-岃瘉涓や釜鍩哄湴鐨
-勪慨姝ｇ嫭绔嬪瓨鍌
-?[39m
-    [90m
-202| [39
-m        
-[34mexpe
-ct[39m(s
-tate[33m
-.[39mcor
-e[33m.[
-39mtempBr
-eakpointM
-odifiers
-[33m?.[3
-9m[[34m0
-[39m])[
-33m.[39m
-[34mtoBe
-[39m([3
-3m-[39m
-[34m3[39
-m)[33m;
-[39m
-    [90m
-   | [39
-m        
-         
-         
-         
-         
-         
-   [31m^
-[39m
-    [90m
-203| [39
-m        
-[34mexpe
-ct[39m(s
-tate[33m
-.[39mcor
-e[33m.[
-39mtempBr
-eakpointM
-odifiers
-[33m?.[3
-9m[[34m1
-[39m])[
-33m.[39m
-[34mtoBe
-[39m([3
-3m-[39m
-[34m5[39
-m)[33m;
-[39m
-    [90m
-204| [39
-m    })[
-33m;[39m
-
-[31m[2m
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-[3/4]鈳?[2
-2m[39m
-
-[41m[1m
- FAIL [2
-2m[49m s
-rc/games/
-smashup/_
-_tests__/
-audit-d11
--d12-d14-
-dino-ramp
-age.test.
-ts[2m > 
-[22mAudi
-t D11+D12
-+D14: din
-o_rampage
-锛堢媯鏆达級[2
-m > [22m
-D14: 杈圭晫鏉
-′欢 鈥?鏃犲繁鏂
-归殢浠庢椂涓嶉檷浣
-庣垎鐮寸偣
-[31m[1m
-Assertion
-Error[22
-m: expect
-ed undefi
-ned to de
-eply equa
-l {}[39m
-
-[32m- Ex
-pected:[
-39m 
-{}
-
-[31m+ Re
-ceived:[
-39m 
-undefined
-
-[36m [2
-m鉂?[22m s
-rc/games/
-smashup/_
-_tests__/
-audit-d11
--d12-d14-
-dino-ramp
-age.test.
-ts:[2m27
-7:52[22m
-[39m
-    [90m
-275| [39
-m        
-[34mexpe
-ct[39m(s
-tate[33m
-.[39msys
-[33m.[3
-9minterac
-tion[33m
-.[39mcur
-rent)[33
-m.[39m[
-34mtoBeUn
-defined[
-39m()[33
-m;[39m
-    [90m
-276| [39
-m        
-[90m// 楠
-岃瘉娌℃湁涓存椂淇
-[39m
-    [90m
-277| [39
-m        
-[34mexpe
-ct[39m(s
-tate[33m
-.[39mcor
-e[33m.[
-39mtempBr
-eakpointM
-odifiers)
-[33m.[3
-9m[34mto
-Equal[39
-m({})[33
-m;[39m
-    [90m
-   | [39
-m        
-         
-         
-         
-         
-       [
-31m^[39m
-    [90m
-278| [39
-m    })[
-33m;[39m
-    [90m
-279| [39
-m})[33m;
-[39m
-
-[31m[2m
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-鈳幆鈳幆鈳幆
-[4/4]鈳?[2
-2m[39m
+[31m[2m鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳
+幆鈳幆鈳幆鈳幆鈳幆[2/2]鈳?[22m[39m
 
 
 [2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
-[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (5)[39m
-[2m   Start at [22m 11:15:35
-[2m   Duration [22m 17.04s[2m (transform 12.26s, setup 587ms, import 12.33s, tests 48ms, environment 2.75s)[22m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 14:49:30
+[2m   Duration [22m 2.74s[2m (transform 1.35s, setup 204ms, import 1.53s, tests 25ms, environment 787ms)[22m
 

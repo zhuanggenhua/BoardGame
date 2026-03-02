@@ -21,7 +21,7 @@ interface SmashUpRendererArgs {
 export function SmashUpCardRenderer({ previewRef, locale, className, style }: SmashUpRendererArgs): ReactNode {
     // Hooks 必须在所有 early return 之前调用
     const { t, i18n } = useTranslation('game-smashup');
-    const { overlayEnabled } = useSmashUpOverlay();
+    const { overlayEnabled, selectedFactions } = useSmashUpOverlay();
     
     const effectiveLocale = locale || i18n.language || 'zh-CN';
     
@@ -48,15 +48,37 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
 
     // 基础牌默认使用高清英文图集（由于缺少低清中文资源），POD 版本也全都是高清英文图集
     const isBase = !!getBaseDef(defId);
-    const isPodVersion = defId.endsWith('_pod') || (isBase && getBaseDef(defId)?.faction?.endsWith('_pod'));
+    // 判断是否为 POD 版本：
+    // 1. 卡牌 ID 以 _pod 结尾（POD 派系的卡牌）
+    // 2. 基地卡：只有当玩家选择了该基地对应派系的 POD 版本时，才使用 POD 图集
+    //    例如：base_wizard_academy (faction: 'wizards') 只有在玩家选择了 'wizards_pod' 时才用 POD 图集
+    //    如果玩家选择的是基础版 'wizards' + 其他 POD 派系，巫师基地仍然用中文图集
+    const isPodVersion = defId.endsWith('_pod') || (isBase && (() => {
+        const baseDef = getBaseDef(defId);
+        if (!baseDef?.faction) return false;
+        // 检查玩家是否选择了该派系的 POD 版本（而不是基础版）
+        const podFactionId = `${baseDef.faction}_pod`;
+        return selectedFactions.has(podFactionId);
+    })());
 
-    // 只有在英文模式下，或者该卡牌是 POD 专属卡牌，或者本身是基地（Bases 资源只有高分英版），才去查 TTS 高清英文图集。
+    // 只有在英文模式下，或者该卡牌是 POD 专属卡牌，或者本身是基地，才去查 TTS 高清英文图集。
     // 否则在中文模式下，保留原版 originalAtlasId（会读取 cards1 等带有内嵌中文的低清图）
     // 特殊情况：如果 originalAtlasId 为空，同样回退使用英文图集
     const isEnglishVariant = effectiveLocale === 'en' || effectiveLocale === 'en-US';
     if (isEnglishVariant || isPodVersion || isBase || !originalAtlasId) {
-        const mapped = TTS_MAP[defId];
+        // 对于基地卡，根据是否为 POD 版本选择不同的映射 key
+        let lookupKey = defId;
+        if (isBase && isPodVersion) {
+            // POD 版本基地：使用 base_xxx_pod 映射
+            lookupKey = `${defId}_pod`;
+        }
+        // 否则使用原始 defId（基础版基地用 base_xxx，POD 卡牌用 xxx_pod）
+        
+        const mapped = TTS_MAP[lookupKey];
         if (mapped) {
+            // 优先使用映射的图集，但如果映射的图集未注册（如 tts_atlas_8），
+            // 则回退到原始图集（smashup:cards4 等）
+            // 注意：不能简单检查 startsWith('smashup:')，因为有些 TTS 图集已经注册了
             finalAtlasId = mapped.atlasId;
             finalIndex = mapped.index;
         }
@@ -93,6 +115,7 @@ export function SmashUpCardRenderer({ previewRef, locale, className, style }: Sm
     const shouldShowOverlay = needsOverlay && overlayEnabled;
     
     // POD/base 卡牌强制使用英文图片，普通卡牌使用 UI 语言
+    // 注意：必须显式传递 locale='en'，确保 CardPreview 内部的 AtlasCard 使用正确的语言加载图集
     const imageLocale = (isPodVersion || isBase) ? 'en' : effectiveLocale;
 
     // 直接返回完整的卡牌（图片 + 覆盖层）

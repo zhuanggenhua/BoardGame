@@ -42,8 +42,10 @@ export const NINJA_POD_MINIONS: MinionCardDef[] = [
         nameEn: 'Shinobi',
         faction: 'ninjas_pod',
         power: 3,
-        abilityTags: ['special'],
+        // 注意：影舞者在 Me First! 窗口中打出（beforeScoringPlayable），不是点击场上随从激活
+        // 因此不应该有 abilityTags: ['special']
         specialLimitGroup: 'ninja_pod_special',
+        beforeScoringPlayable: true,
         count: 3,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 14 },
     },
@@ -107,9 +109,11 @@ export const NINJA_POD_ACTIONS: ActionCardDef[] = [
         name: '便衣忍者',
         nameEn: 'Hidden Ninja',
         faction: 'ninjas_pod',
-        abilityTags: ['special'],
+        // 注意：便衣忍者在 Me First! 窗口中打出，不是点击场上卡牌激活
+        // 因此不应该有 abilityTags: ['special']
         specialNeedsBase: true,
         specialLimitGroup: 'ninja_pod_special',
+        beforeScoringPlayable: true,
         count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 19 },
     },

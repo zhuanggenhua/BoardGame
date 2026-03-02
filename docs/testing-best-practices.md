@@ -516,3 +516,108 @@ import { makeMinion } from './helpers';
 - `docs/ai-rules/engine-systems.md` - 引擎测试工具
 - `src/games/smashup/__tests__/helpers.ts` - 测试辅助函数源码
 - `src/games/smashup/__tests__/testRunner.ts` - runCommand 实现
+
+
+---
+
+## 测试性能和超时
+
+### 测试套件运行时间
+
+项目包含大量测试，不同测试套件的运行时间差异很大：
+
+| 测试套件 | 命令 | 预计时间 | 说明 |
+|---------|------|---------|------|
+| 单个测试文件 | `npm run test -- <file>.test.ts` | 10-60秒 | 最快，推荐开发时使用 |
+| SmashUp 核心测试 | `npm run test:smashup` | 2-3分钟 | 包含大量单元测试 |
+| 所有游戏核心测试 | `npm run test:games:core` | 3-5分钟 | 排除 property/audit/E2E 测试 |
+| 所有游戏测试 | `npm run test:games` | 5-10分钟 | 包含所有测试类型 |
+| 完整测试套件 | `npm run test` | 10-15分钟 | 包含所有测试 |
+
+### Property-Based 测试
+
+项目使用 `fast-check` 进行 property-based 测试，这些测试会运行多次（通常 100-200 次）：
+
+```typescript
+// 示例：运行 200 次
+fc.assert(
+  fc.property(arbBaseStrength(), (baseStrength) => {
+    // 测试逻辑
+  }),
+  { numRuns: 200 }
+);
+```
+
+**位置**：
+- `src/games/summonerwars/__tests__/*.property.test.ts`
+- `src/games/summonerwars/__tests__/deck-*.property.test.ts`
+
+**影响**：这些测试会显著增加测试时间，但提供了更全面的覆盖。
+
+### 超时配置
+
+测试超时在 `vitest.config.core.ts` 中配置：
+
+```typescript
+test: {
+  testTimeout: 180000,  // 3分钟
+}
+```
+
+**注意**：某些 IDE 或 CI 工具可能有自己的超时限制（如 90 秒），需要单独配置。
+
+### 开发时的最佳实践
+
+1. **只运行相关测试**：
+   ```bash
+   # 只运行你修改的文件的测试
+   npm run test -- myFeature.test.ts
+   
+   # 只运行特定游戏的测试
+   npm run test:smashup
+   ```
+
+2. **使用 watch 模式**（开发时）：
+   ```bash
+   npm run test:watch
+   ```
+
+3. **跳过慢速测试**（临时）：
+   ```typescript
+   // 使用 .skip 跳过慢速测试
+   it.skip('slow property test', () => { ... });
+   ```
+
+4. **CI/CD 中运行完整测试**：
+   ```bash
+   # pre-push hook 会自动运行核心测试
+   npm run test:games:core
+   ```
+
+### 性能优化建议
+
+如果测试运行太慢：
+
+1. **检查是否有无限循环**：
+   - 使用 `console.log` 或调试器定位问题
+   - 检查 `while` 循环的退出条件
+
+2. **减少 property-based 测试的运行次数**（开发时）：
+   ```typescript
+   // 临时减少运行次数
+   { numRuns: 10 }  // 而不是 200
+   ```
+
+3. **使用测试分片**（CI 中）：
+   ```bash
+   # 将测试分成多个并行任务
+   npm run test:smashup &
+   npm run test:summonerwars &
+   npm run test:dicethrone &
+   ```
+
+4. **排除不必要的测试**：
+   - `vitest.config.core.ts` 已排除 audit/property/E2E 测试
+   - 开发时使用 `test:games:core` 而不是 `test:games`
+
+---

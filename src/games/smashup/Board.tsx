@@ -61,6 +61,7 @@ import { useCardSpotlightQueue, CardSpotlightQueue } from '../../components/game
 import type { SpotlightItem } from '../../components/game/framework';
 import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
 import { RevealOverlay } from './ui/RevealOverlay';
+import { SmashUpOverlayProvider, useSmashUpOverlay } from './ui/SmashUpOverlayContext';
 
 type Props = GameBoardProps<SmashUpCore>;
 
@@ -84,17 +85,47 @@ function checkPlayConstraintUI(
 
 const getPhaseNameKey = (phase: string) => `phases.${phase}`;
 
-const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, matchData, isMultiplayer }) => {
+const SmashUpBoard: React.FC<Props> = (props) => {
+    // 外层包裹 Provider
+    return (
+        <SmashUpOverlayProvider>
+            <SmashUpBoardInner {...props} />
+        </SmashUpOverlayProvider>
+    );
+};
+
+const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, matchData, isMultiplayer }) => {
     const { t } = useTranslation('game-smashup');
+    const { setSelectedFactions } = useSmashUpOverlay();
     const core = G.core;
     const phase = G.sys.phase;
     const currentPid = getCurrentPlayerId(core);
     const playerID = rawPlayerID;
     const isMyTurn = playerID === currentPid;
-    const myPlayer = playerID ? core.players[playerID] : undefined;
+    // 观战模式下默认显示玩家 0 的视角
+    const myPlayer = playerID ? core.players[playerID] : core.players['0'];
     const isGameOver = G.sys.gameover;
     const rootPid = playerID || '0';
     const isWinner = !!isGameOver && isGameOver.winner === rootPid;
+    
+    // 更新选择的派系到 Context（游戏开始后）
+    useEffect(() => {
+        if (phase !== 'factionSelect') {
+            const allFactions: string[] = [];
+            for (const player of Object.values(core.players)) {
+                if (player.factions) {
+                    allFactions.push(...player.factions);
+                }
+            }
+            setSelectedFactions(allFactions);
+        }
+    }, [phase, core.players, setSelectedFactions]);
+    
+    // 对手视角切换状态（必须在使用前声明，避免 TDZ 错误）
+    const [viewMode, setViewMode] = useState<'self' | 'opponent'>('self');
+    const toggleViewMode = useCallback(() => {
+        setViewMode(prev => prev === 'self' ? 'opponent' : 'self');
+    }, []);
     
     // 对手玩家数据
     const opponentPid = core.turnOrder.find(pid => pid !== playerID) || '1';
@@ -118,12 +149,6 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     const [discardSelection, setDiscardSelection] = useState<Set<string>>(new Set());
     const [meFirstPendingCard, setMeFirstPendingCard] = useState<MeFirstPendingCard | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
-    // 对手视角切换状态
-    const [viewMode, setViewMode] = useState<'self' | 'opponent'>('self');
-    const toggleViewMode = useCallback(() => {
-        setViewMode(prev => prev === 'self' ? 'opponent' : 'self');
-    }, []);
 
     // 弃牌判断：抽牌阶段 + 是我的回合 + 手牌超限
     // 使用 useMemo 确保使用最新的依赖值（避免时序问题）
@@ -207,13 +232,12 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
             return true;
         }
 
-        // 兼容旧模式：所有选项都对应手牌
+        // 兼容旧模式：只要有手牌选项就走手牌直选，跳过/确认选项不影响判断
         const handUids = new Set(myPlayer.hand.map(c => c.uid));
-        const result = currentPrompt.options.length > 0 &&
-            currentPrompt.options.every(opt => {
-                const val = opt.value as { cardUid?: string } | undefined;
-                return val?.cardUid && handUids.has(val.cardUid);
-            });
+        const result = currentPrompt.options.some(opt => {
+            const val = opt.value as { cardUid?: string } | undefined;
+            return val?.cardUid && handUids.has(val.cardUid);
+        });
         console.log('[DEBUG] isHandDiscardPrompt:', result, '(legacy mode check)');
         return result;
     }, [currentPrompt, playerID, myPlayer, currentInteraction]);
@@ -305,7 +329,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
         });
     }, [isBaseSelectPrompt, currentPrompt]);
 
-    // 随从选择交互检测：targetType === 'minion' 或所有选项都包含 minionUid
+    // 随从选择交互检测：targetType === 'minion' 或有随从选项（跳过选项不影响判断）
     const isMinionSelectPrompt = useMemo(() => {
         if (!currentPrompt || currentPrompt.playerId !== playerID) return false;
         const data = currentInteraction?.data as Record<string, unknown> | undefined;
@@ -314,16 +338,11 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
         if (data?.targetType === 'minion') return true;
         // 显式声明了非 minion 的 targetType（如 'generic'/'base'）→ 不走棋盘随从点选
         if (typeof data?.targetType === 'string') return false;
-        // 兼容旧模式：所有选项都包含 minionUid，且不包含确认类字段（accept/confirm/returnIt/skip/done）
-        // 确认类字段说明这是"是/否"交互而非随从选择
-        return currentPrompt.options.length > 0 &&
-            currentPrompt.options.every(opt => {
-                const val = opt.value as Record<string, unknown> | undefined;
-                if (!val || typeof val.minionUid !== 'string') return false;
-                // 排除包含确认类字段的选项（这些是是/否交互，不是随从选择）
-                if ('accept' in val || 'confirm' in val || 'returnIt' in val || 'skip' in val || 'done' in val) return false;
-                return true;
-            });
+        // 兼容旧模式：只要有随从选项就走场地点选，跳过/确认选项不影响判断
+        return currentPrompt.options.some(opt => {
+            const val = opt.value as Record<string, unknown> | undefined;
+            return val && typeof val.minionUid === 'string';
+        });
     }, [currentPrompt, playerID, currentInteraction]);
 
     // 可选随从 UID 集合（只高亮候选随从，排除跳过选项）
@@ -1263,7 +1282,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                         </span>
                                         <motion.div
                                             key={`vp-${pid}-${core.players[pid]?.vp ?? 0}`}
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg} ${isOpponent ? 'cursor-pointer' : ''}`}
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg} ${isOpponent ? 'cursor-pointer relative' : ''}`}
                                             initial={{ scale: 1 }}
                                             animate={{ scale: [1, 1.3, 1] }}
                                             transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -1274,13 +1293,14 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                             }}
                                         >
                                             {core.players[pid]?.vp ?? 0}
-                                            {/* 对手区域悬浮时显示半透明眼睛图标 */}
+                                            {/* 对手区域悬浮时显示眼睛图标（无背景，直接叠加在圆球上） */}
                                             {isOpponent && (
-                                                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px] rounded-full transition-all duration-300 ${viewMode === 'opponent' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.9)]">
-                                                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                                                    </svg>
-                                                </div>
+                                                <svg 
+                                                    viewBox="0 0 24 24" 
+                                                    className={`absolute inset-0 m-auto w-5 h-5 fill-white/80 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)] transition-opacity duration-300 pointer-events-none ${viewMode === 'opponent' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                                                >
+                                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                                </svg>
                                             )}
                                         </motion.div>
                                         {/* 派系图标 */}
@@ -1732,11 +1752,11 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
 
                 {/* 手牌区：z-60，在弃牌遮罩之上 */}
                 {
-                    viewPlayer && (
+                    myPlayer && (
                         <div className="absolute bottom-0 inset-x-0 h-[220px] z-60 pointer-events-none">
 
                             <HandArea
-                                hand={viewPlayer.hand}
+                                hand={viewMode === 'opponent' ? opponentPlayer.hand : myPlayer.hand}
                                 selectedCardUid={selectedCardUid}
                                 onCardSelect={handleCardClick}
                                 isDiscardMode={needDiscard || isHandDiscardPrompt}
@@ -1756,8 +1776,8 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
 
                             {/* NEW: Deck & Discard Zone */}
                             <DeckDiscardZone
-                                deckCount={viewPlayer.deck.length}
-                                discard={viewPlayer.discard}
+                                deckCount={viewMode === 'opponent' ? opponentPlayer.deck.length : myPlayer.deck.length}
+                                discard={viewMode === 'opponent' ? opponentPlayer.discard : myPlayer.discard}
                                 isMyTurn={isMyTurn}
                                 hasPlayableFromDiscard={discardPlayOptions.length > 0 || isDiscardMinionPrompt}
                                 autoOpenPanel={isDiscardMinionPrompt}

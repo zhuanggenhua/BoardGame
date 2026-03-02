@@ -16,6 +16,7 @@ import { Check } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { GameButton } from './GameButton';
 import { CardMagnifyOverlay, type CardMagnifyTarget } from './CardMagnifyOverlay';
+import { CARD_DISPLAY_CONFIG } from './cardDisplayConfig';
 import { INTERACTION_COMMANDS, asSimpleChoice, type InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { PlayerId } from '../../../engine/types';
 import { UI_Z_INDEX } from '../../../core';
@@ -339,12 +340,12 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
                     >
-                        <h2 className="text-center text-base font-black text-amber-100 uppercase tracking-tight mb-3 drop-shadow-lg">
+                        <h2 className="text-center text-xl font-black text-amber-100 uppercase tracking-tight mb-4 drop-shadow-lg">
                             {displayCards.title}
                         </h2>
                         {/* py-3 给 ring 描边留出空间，避免被 overflow-x-auto 裁切 */}
                         {/* 注意：不能用 justify-center，flex + justify-center + overflow 会导致左侧内容不可达 */}
-                        <div ref={revealScrollRef} className="flex gap-3 overflow-x-auto max-w-[90vw] mx-auto px-4 py-3 smashup-h-scrollbar [&>*:first-child]:ml-auto [&>*:last-child]:mr-auto">
+                        <div ref={revealScrollRef} className="flex gap-4 overflow-x-auto max-w-[90vw] mx-auto px-4 py-3 smashup-h-scrollbar [&>*:first-child]:ml-auto [&>*:last-child]:mr-auto">
                             {displayCards.cards.map((card, idx) => {
                                 const def = getCardDef(card.defId);
                                 const name = def ? resolveCardName(def, t) : card.defId;
@@ -363,17 +364,17 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         initial={{ y: 30, opacity: 0 }}
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{ delay: idx * 0.04, type: 'spring', stiffness: 400, damping: 25 }}
-                                        className={`flex-shrink-0 flex flex-col items-center gap-1 group relative ${isPlayable ? 'cursor-pointer' : 'cursor-default'} ${isSel ? 'scale-110 z-10' : isPlayable ? 'hover:scale-105 hover:z-10' : ''}`}
+                                        className={`flex-shrink-0 flex flex-col items-center gap-1.5 group relative ${isPlayable ? 'cursor-pointer' : 'cursor-default'} ${isSel ? 'scale-110 z-10' : isPlayable ? 'hover:scale-105 hover:z-10' : ''}`}
                                         style={{ transition: 'transform 200ms, box-shadow 200ms' }}
                                         onClick={isPlayable ? handleCardClick : undefined}
                                     >
                                         {/* ring 描边放在外层，避免被内层 overflow-hidden 裁切 */}
                                         <div className={`rounded ${
                                             isSel 
-                                                ? 'ring-3 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]' 
+                                                ? 'ring-4 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]' 
                                                 : isPlayable 
                                                     ? 'ring-2 ring-amber-300/80 group-hover:ring-amber-300 group-hover:shadow-2xl' 
-                                                    : 'ring-1 ring-white/20 group-hover:ring-white/50 group-hover:shadow-2xl'
+                                                    : 'ring-2 ring-white/20 group-hover:ring-white/50 group-hover:shadow-2xl'
                                         }`}>
                                             <div className="rounded shadow-xl overflow-hidden">
                                                 <CardPreview
@@ -384,21 +385,21 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             </div>
                                         </div>
                                         <button
-                                            className="absolute -top-[0.4vw] -right-[0.4vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 z-40 cursor-zoom-in"
+                                            className={`absolute -top-[0.5vw] -right-[0.5vw] w-[2vw] h-[2vw] flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border-2 border-white/30 z-40 cursor-zoom-in`}
                                             onClick={(e) => { e.stopPropagation(); setMagnifyTarget({ defId: card.defId, type: def?.type ?? 'action' }); }}
                                         >
-                                            <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
+                                            <svg className={`w-[1.1vw] h-[1.1vw] fill-current`} viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M8 4a4 4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                             </svg>
                                         </button>
-                                        <span className={`text-[10px] font-bold max-w-[8.5vw] truncate text-center ${isSel ? 'text-amber-300' : 'text-white/70'}`}>
+                                        <span className={`text-xs font-bold max-w-[8.5vw] truncate text-center ${isSel ? 'text-amber-300' : 'text-white/80'}`}>
                                             {name}
                                         </span>
                                     </motion.div>
                                 );
                             })}
                         </div>
-                        <div className="flex items-center justify-center gap-3 mt-3">
+                        <div className="flex items-center justify-center gap-3 mt-4">
                             {selUid && displayCards.selectHint && (
                                 <span className="text-sm text-amber-200/80 font-bold animate-pulse">
                                     {displayCards.selectHint}
@@ -591,7 +592,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         {contextPreviewRef && (
                             <CardPreview
                                 previewRef={contextPreviewRef}
-                                className="w-[180px] aspect-[0.714] rounded shadow-[0_4px_24px_rgba(0,0,0,0.6)] ring-2 ring-white/30"
+                                className="w-[8.5vw] aspect-[0.714] rounded shadow-[0_4px_24px_rgba(0,0,0,0.6)] ring-2 ring-white/30"
                             />
                         )}
                         {/* 按钮并排 */}
@@ -653,17 +654,17 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                     className="fixed inset-0 flex flex-col items-center justify-center bg-black/70 pointer-events-auto"
                     style={{ zIndex: UI_Z_INDEX.overlay }}
                 >
-                    <h2 className="text-xl font-black text-amber-100 uppercase tracking-tight mb-5 drop-shadow-lg">
+                    <h2 className="text-2xl font-black text-amber-100 uppercase tracking-tight mb-6 drop-shadow-lg">
                         {title}
                         {contextBaseName && (
-                            <span className="block text-sm text-amber-300/80 font-normal mt-1">
+                            <span className="block text-base text-amber-300/80 font-normal mt-2">
                                 @ {contextBaseName}
                             </span>
                         )}
                     </h2>
 
                     {!isMyPrompt && (
-                        <div className="mb-4 text-sm text-yellow-400/80 font-bold animate-pulse">
+                        <div className="mb-4 text-base text-yellow-400/80 font-bold animate-pulse">
                             {t('ui.waiting_for_player', { id: prompt.playerId })}
                         </div>
                     )}
@@ -671,7 +672,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                     {isMyPrompt && (
                         <div 
                             ref={cardScrollRef} 
-                            className="flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-4 smashup-h-scrollbar relative z-50"
+                            className="flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-6 smashup-h-scrollbar relative z-50"
                             style={{ pointerEvents: 'auto' }}
                         >
                             {cardOptions.map((option, idx) => {
@@ -681,7 +682,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 const name = def ? resolveCardName(def, t) : option.label;
                                 const isSelected = selectedIds.includes(option.id);
                                 const isBase = !!getBaseDef(defId ?? '');
-                                const cardWidth = isBase ? 'w-[200px]' : 'w-[130px]';
+                                // 基地使用场上基地尺寸 14vw，行动卡/随从使用手牌尺寸 8.5vw
+                                const cardWidth = isBase ? 'w-[14vw]' : 'w-[8.5vw]';
                                 const cardAspect = isBase ? 'aspect-[1.43]' : 'aspect-[0.714]';
 
                                 return (
@@ -706,8 +708,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         <div className={`
                                             rounded shadow-xl overflow-hidden
                                             ${isSelected
-                                                ? 'ring-3 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]'
-                                                : 'ring-1 ring-white/20 group-hover:ring-white/50 group-hover:shadow-2xl'}
+                                                ? 'ring-4 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]'
+                                                : 'ring-2 ring-white/20 group-hover:ring-white/50 group-hover:shadow-2xl'}
                                         `}>
                                             {previewRef ? (
                                                 <CardPreview
@@ -716,29 +718,29 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 />
                                             ) : (
                                                 <div className={`${cardWidth} ${cardAspect} bg-slate-800 rounded flex items-center justify-center p-2`}>
-                                                    <span className="text-white text-xs font-bold text-center">{option.label}</span>
+                                                    <span className="text-white text-sm font-bold text-center">{option.label}</span>
                                                 </div>
                                             )}
                                         </div>
-                                        <div className={`mt-1.5 text-center text-[11px] font-bold truncate ${isBase ? 'max-w-[200px]' : 'max-w-[130px]'} ${isSelected ? 'text-amber-300' : 'text-white/70'}`}>
+                                        <div className={`mt-2 text-center text-xs font-bold truncate ${isBase ? 'max-w-[14vw]' : 'max-w-[8.5vw]'} ${isSelected ? 'text-amber-300' : 'text-white/80'}`}>
                                             {name || option.label}
                                         </div>
                                         {isMulti && isSelected && (
-                                            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center shadow-lg">
-                                                <Check size={12} strokeWidth={3} className="text-black" />
+                                            <div className={`absolute -top-[0.5vw] -right-[0.5vw] w-[2vw] h-[2vw] bg-amber-400 rounded-full flex items-center justify-center shadow-lg`}>
+                                                <Check size={14} strokeWidth={3} className="text-black" />
                                             </div>
                                         )}
                                         {/* 放大镜按钮 - 右上角突出显示，多选模式下勾选在左上角 */}
                                         {defId && (
                                             <button
-                                                className="absolute -top-[0.4vw] -right-[0.4vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 z-40 cursor-zoom-in"
+                                                className={`absolute -top-[0.5vw] -right-[0.5vw] w-[2vw] h-[2vw] flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200 shadow-lg border-2 border-white/30 z-40 cursor-zoom-in`}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     const cardType = getBaseDef(defId) ? 'base' as const : (def && 'type' in def ? def.type : 'action' as const);
                                                     setMagnifyTarget({ defId, type: cardType });
                                                 }}
                                             >
-                                                <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
+                                                <svg className={`w-[1.1vw] h-[1.1vw] fill-current`} viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                                 </svg>
                                             </button>

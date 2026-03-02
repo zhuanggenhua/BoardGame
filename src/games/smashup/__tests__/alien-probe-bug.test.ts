@@ -31,7 +31,7 @@ describe('Bug: alien_probe（探究）效果错误', () => {
         initAllAbilities();
     });
 
-    it('单对手场景：打出探究应该创建选择随从的交互', () => {
+    it('单对手场景：打出探究应该创建选择随从的交互（展示所有手牌）', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -69,10 +69,22 @@ describe('Bug: alien_probe（探究）效果错误', () => {
         const interaction = asSimpleChoice(result.finalState.sys.interaction?.current);
         expect(interaction?.sourceId).toBe('alien_probe');
         
-        // 断言：选项应该是对手手牌中的随从（2 张）
-        expect(interaction?.options.length).toBe(2);
-        expect(interaction?.options[0].value).toHaveProperty('cardUid');
-        expect(interaction?.options[0].value).toHaveProperty('targetPlayerId', '1');
+        // 断言：选项应该包含所有手牌（3 张），但只有随从可选
+        expect(interaction?.options.length).toBe(3);
+        
+        // 断言：随从选项应该可选（disabled: false 或 undefined）
+        const minionOptions = interaction?.options.filter(opt => 
+            opt.value.cardUid === 'h1-1' || opt.value.cardUid === 'h1-2'
+        );
+        expect(minionOptions?.length).toBe(2);
+        minionOptions?.forEach(opt => {
+            expect(opt.disabled).toBeFalsy();
+        });
+        
+        // 断言：行动卡选项应该禁用（disabled: true）
+        const actionOption = interaction?.options.find(opt => opt.value.cardUid === 'h1-3');
+        expect(actionOption).toBeDefined();
+        expect(actionOption?.disabled).toBe(true);
         
         // 断言：探究应该从手牌移除
         const player0 = result.finalState.core.players['0'];

@@ -82,13 +82,16 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: true },
+                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: true },
                     ],
                     ongoingActions: [],
                 },
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0, // 玩家0的回合
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
         const state = runner.getState();
@@ -111,13 +114,16 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: true },
+                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: true },
                     ],
                     ongoingActions: [],
                 },
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1, // 玩家1的回合（对手回合）
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
         const state = runner.getState();
@@ -140,13 +146,16 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: false }, // 未使用 Talent
+                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false }, // 未使用 Talent
                     ],
                     ongoingActions: [],
                 },
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1, // 玩家1的回合（对手回合）
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
         const state = runner.getState();
@@ -169,14 +178,17 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: true },
-                        { uid: 'm2', defId: 'dino_armor_stego_pod', controller: '1', owner: '1', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: true },
+                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: true },
+                        { uid: 'm2', defId: 'dino_armor_stego_pod', controller: '1', owner: '1', basePower: 3, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: true },
                     ],
                     ongoingActions: [],
                 },
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0, // 玩家0的回合
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
         const state = runner.getState();
@@ -211,6 +223,9 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1, // 玩家1的回合（对手回合）
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
         const state = runner.getState();

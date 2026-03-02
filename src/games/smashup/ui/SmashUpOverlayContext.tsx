@@ -30,16 +30,23 @@ interface SmashUpOverlayContextValue {
     overlayEnabled: boolean;
     /** 切换开关 */
     toggleOverlay: () => void;
+    /** 所有玩家选择的派系列表（用于判断是否使用 POD 图集） */
+    selectedFactions: Set<string>;
+    /** 设置选择的派系 */
+    setSelectedFactions: (factions: string[]) => void;
 }
 
 const SmashUpOverlayContext = createContext<SmashUpOverlayContextValue>({
     overlayEnabled: true,
     toggleOverlay: () => undefined,
+    selectedFactions: new Set(),
+    setSelectedFactions: () => undefined,
 });
 
 /** 在大杀四方 Board 顶层包裹这个 Provider */
 export function SmashUpOverlayProvider({ children }: { children: React.ReactNode }) {
     const [overlayEnabled, setOverlayEnabled] = useState<boolean>(() => readLSValue());
+    const [selectedFactions, setSelectedFactionsState] = useState<Set<string>>(new Set());
 
     const toggleOverlay = useCallback(() => {
         setOverlayEnabled(prev => {
@@ -53,8 +60,12 @@ export function SmashUpOverlayProvider({ children }: { children: React.ReactNode
         });
     }, []);
 
+    const setSelectedFactions = useCallback((factions: string[]) => {
+        setSelectedFactionsState(new Set(factions));
+    }, []);
+
     return (
-        <SmashUpOverlayContext.Provider value={{ overlayEnabled, toggleOverlay }}>
+        <SmashUpOverlayContext.Provider value={{ overlayEnabled, toggleOverlay, selectedFactions, setSelectedFactions }}>
             {children}
         </SmashUpOverlayContext.Provider>
     );

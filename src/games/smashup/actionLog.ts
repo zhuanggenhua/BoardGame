@@ -529,6 +529,137 @@ export function formatSmashUpActionEntry({
                 pushEntry(event.type, segments, actorId, entryTimestamp, index);
                 break;
             }
+            case SU_EVENTS.REVEAL_HAND: {
+                const payload = event.payload as { targetPlayerId: string; viewerPlayerId: string | 'all'; cards: { uid: string; defId: string }[]; reason?: string };
+                const segments: ActionLogSegment[] = [i18nSeg('actionLog.revealHand', {
+                    playerId: payload.targetPlayerId,
+                    count: payload.cards.length,
+                })];
+                if (payload.reason) {
+                    segments.push(...buildReasonSegments(payload.reason, buildCardSegment));
+                }
+                pushEntry(event.type, segments, payload.targetPlayerId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.REVEAL_DECK_TOP: {
+                const payload = event.payload as { targetPlayerId: string | string[]; viewerPlayerId: string | 'all'; cards: { uid: string; defId: string }[]; count: number; reason?: string; sourcePlayerId?: string };
+                const targetPid = Array.isArray(payload.targetPlayerId) ? payload.targetPlayerId[0] : payload.targetPlayerId;
+                const segments: ActionLogSegment[] = [i18nSeg('actionLog.revealDeckTop', {
+                    playerId: targetPid,
+                    count: payload.count,
+                })];
+                if (payload.reason) {
+                    segments.push(...buildReasonSegments(payload.reason, buildCardSegment));
+                }
+                pushEntry(event.type, segments, payload.sourcePlayerId ?? targetPid, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.PERMANENT_POWER_ADDED: {
+                const payload = event.payload as { minionUid: string; amount: number; baseIndex: number; reason?: string };
+                const baseLabel = formatBaseLabel(getBaseDefId(payload.baseIndex), payload.baseIndex);
+                const minion = core.bases?.[payload.baseIndex]?.minions.find(m => m.uid === payload.minionUid);
+                const minionDefId = minion?.defId ?? payload.reason ?? payload.minionUid;
+                const segments = withCardSegments('actionLog.permanentPowerAdded', minionDefId, { amount: payload.amount });
+                if (baseLabel) {
+                    segments.push(i18nSeg('actionLog.onBase', { base: baseLabel }, ['base']));
+                }
+                pushEntry(event.type, segments, actorId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.TEMP_POWER_ADDED: {
+                const payload = event.payload as { minionUid: string; amount: number; baseIndex: number; reason?: string };
+                const baseLabel = formatBaseLabel(getBaseDefId(payload.baseIndex), payload.baseIndex);
+                const minion = core.bases?.[payload.baseIndex]?.minions.find(m => m.uid === payload.minionUid);
+                const minionDefId = minion?.defId ?? payload.reason ?? payload.minionUid;
+                const segments = withCardSegments('actionLog.tempPowerAdded', minionDefId, { amount: payload.amount });
+                if (baseLabel) {
+                    segments.push(i18nSeg('actionLog.onBase', { base: baseLabel }, ['base']));
+                }
+                pushEntry(event.type, segments, actorId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED: {
+                const payload = event.payload as { cardUid: string; defId: string; delta: number; reason?: string };
+                const segments = withCardSegments('actionLog.ongoingCounterChanged', payload.defId, { delta: payload.delta });
+                if (payload.reason) {
+                    segments.push(...buildReasonSegments(payload.reason, buildCardSegment));
+                }
+                pushEntry(event.type, segments, actorId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.BREAKPOINT_MODIFIED: {
+                const payload = event.payload as { baseIndex: number; delta: number; reason?: string };
+                const baseLabel = formatBaseLabel(getBaseDefId(payload.baseIndex), payload.baseIndex);
+                const segments: ActionLogSegment[] = [i18nSeg('actionLog.breakpointModified', {
+                    base: baseLabel,
+                    delta: payload.delta > 0 ? `+${payload.delta}` : `${payload.delta}`,
+                }, ['base'])];
+                if (payload.reason) {
+                    segments.push(...buildReasonSegments(payload.reason, buildCardSegment));
+                }
+                pushEntry(event.type, segments, actorId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.BASE_DECK_SHUFFLED: {
+                const payload = event.payload as { reason?: string };
+                const segments: ActionLogSegment[] = [i18nSeg('actionLog.baseDeckShuffled')];
+                if (payload.reason) {
+                    segments.push(...buildReasonSegments(payload.reason, buildCardSegment));
+                }
+                pushEntry(event.type, segments, actorId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.SPECIAL_LIMIT_USED: {
+                const payload = event.payload as { playerId: string; limitType: string; reason?: string };
+                const segments: ActionLogSegment[] = [i18nSeg('actionLog.specialLimitUsed', {
+                    playerId: payload.playerId,
+                    limitType: payload.limitType,
+                })];
+                if (payload.reason) {
+                    segments.push(...buildReasonSegments(payload.reason, buildCardSegment));
+                }
+                pushEntry(event.type, segments, payload.playerId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.ABILITY_FEEDBACK: {
+                const payload = event.payload as { playerId: string; messageKey: string; params?: Record<string, string | number> };
+                const segments: ActionLogSegment[] = [i18nSeg(payload.messageKey, payload.params)];
+                pushEntry(event.type, segments, payload.playerId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.ABILITY_TRIGGERED: {
+                const payload = event.payload as { abilityDefId: string; triggerType: string; reason?: string };
+                const segments = withCardSegments('actionLog.abilityTriggered', payload.abilityDefId, { triggerType: payload.triggerType });
+                if (payload.reason) {
+                    segments.push(...buildReasonSegments(payload.reason, buildCardSegment));
+                }
+                pushEntry(event.type, segments, actorId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.BASE_CLEARED: {
+                const payload = event.payload as { baseIndex: number; baseDefId: string };
+                const baseLabel = formatBaseLabel(payload.baseDefId, payload.baseIndex);
+                const segments: ActionLogSegment[] = [i18nSeg('actionLog.baseCleared', { base: baseLabel }, ['base'])];
+                pushEntry(event.type, segments, actorId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.DECK_REORDERED: {
+                const payload = event.payload as { playerId: string; deckUids: string[] };
+                const segments: ActionLogSegment[] = [i18nSeg('actionLog.deckReordered', {
+                    playerId: payload.playerId,
+                })];
+                pushEntry(event.type, segments, payload.playerId, entryTimestamp, index);
+                break;
+            }
+            case SU_EVENTS.FACTION_SELECTED: {
+                const payload = event.payload as { playerId: string; factionId: string };
+                const segments: ActionLogSegment[] = [i18nSeg('actionLog.factionSelected', {
+                    playerId: payload.playerId,
+                    faction: `factions.${payload.factionId}.name`,
+                }, ['faction'])];
+                pushEntry(event.type, segments, payload.playerId, entryTimestamp, index);
+                break;
+            }
             default:
                 break;
         }

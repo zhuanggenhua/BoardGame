@@ -100,18 +100,20 @@ addToWhitelist('elder_thing_elder_thing', 'ongoingProtection'); // 随从自身"
 // ── 特殊标签误报：描述以"特殊："开头但通过 ongoingEffects.trigger 或其他机制实现 ──
 // 这些卡的"特殊"能力通过 beforeScoring/afterScoring trigger 或 beforeScoringPlayable 标记实现，
 // 而非 abilityRegistry 的 special 标签。两种实现路径都是合理的。
-addToWhitelist('pirate_king', 'special');           // beforeScoring trigger：移动到计分基地
-addToWhitelist('pirate_buccaneer', 'special');      // onMinionDestroyed trigger：被消灭时移动
-addToWhitelist('pirate_first_mate', 'special');     // afterScoring trigger：计分后移动
-addToWhitelist('alien_scout', 'special');            // afterScoring trigger：计分后返回手牌
-addToWhitelist('cthulhu_chosen', 'special');         // beforeScoring trigger：计分前抽疯狂卡+力量
-addToWhitelist('ninja_shinobi', 'special');          // beforeScoringPlayable 标记：Me First! 窗口打出
+// 注意：以下卡牌已移除 abilityTags: ['special']，因为它们是被动触发的，不需要主动激活
+// - alien_scout: afterScoring trigger（计分后返回手牌）
+// - pirate_king: beforeScoring trigger（计分前移动到计分基地）
+// - pirate_buccaneer: onMinionDestroyed trigger（被消灭时移动）
+// - pirate_first_mate: afterScoring trigger（计分后移动）
+// - cthulhu_chosen: beforeScoring trigger（计分前抽疯狂卡+力量）
+// - ninja_shinobi: beforeScoringPlayable 标记（Me First! 窗口打出）
+// - ninja_hidden_ninja: Me First! 窗口打出的行动卡
+// - vampire_buffet: afterScoring trigger（计分后放指示物）
 
 // ── 特殊标签误报：描述含"基地计分前/后"但通过 beforeScoring/afterScoring trigger 实现 ──
 // "异能"类卡牌的计分前/后效果通过 trigger 注册，不需要 abilityRegistry::special
 addToWhitelist('werewolf_loup_garou', 'special');   // beforeScoring trigger：计分前+2力量
 addToWhitelist('werewolf_pack_alpha', 'special');   // beforeScoring trigger：计分前全体+1力量
-addToWhitelist('vampire_buffet', 'special');         // afterScoring trigger：计分后放指示物
 
 // ── ongoingTrigger 误报：非 ongoing 卡描述中提到触发时机 ──
 addToWhitelist('vampire_summon_wolves', 'powerModifier'); // 通过 onTurnStart trigger 放指示物（在卡上）

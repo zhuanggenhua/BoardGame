@@ -619,8 +619,32 @@ export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
     const matched = Array.from(_baseRegistry.values())
         .filter(base => base.faction && selected.has(base.faction))
         .map(base => base.id);
-    // fallback：若匹配不到任何基地（派系无对应基地），回退到全部基地
-    return matched.length > 0 ? matched : getAllBaseDefIds();
+    
+    // 检查是否有派系没有对应基地（如 POD 派系）
+    // 统计每个派系匹配到的基地数量
+    const factionBaseCounts = new Map<string, number>();
+    for (const base of _baseRegistry.values()) {
+        if (base.faction && selected.has(base.faction)) {
+            factionBaseCounts.set(base.faction, (factionBaseCounts.get(base.faction) || 0) + 1);
+        }
+    }
+    
+    // 找出没有基地的派系
+    const factionsWithoutBases = factionIds.filter(fid => !factionBaseCounts.has(fid));
+    
+    // 如果有派系没有基地，为每个缺失的派系补充 2 个基地
+    if (factionsWithoutBases.length > 0) {
+        const allBases = getAllBaseDefIds();
+        const usedBases = new Set(matched);
+        const availableBases = allBases.filter(id => !usedBases.has(id));
+        
+        const missingCount = factionsWithoutBases.length * 2;
+        // 从可用基地中选择（不洗牌，保持确定性，由调用方洗牌）
+        const supplementBases = availableBases.slice(0, Math.min(missingCount, availableBases.length));
+        return [...matched, ...supplementBases];
+    }
+    
+    return matched;
 }
 
 

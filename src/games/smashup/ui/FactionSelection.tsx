@@ -166,7 +166,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                         <div className="w-full h-full bg-slate-100 overflow-hidden relative border border-slate-200">
                                             <CardPreview
                                                 previewRef={coverCard ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: coverCard.id } } : undefined}
-                                                className="w-full h-full object-cover"
+                                                className="w-full h-full"
                                             />
 
                                             {/* Taken Status */}
@@ -331,7 +331,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                                 <div className="w-full h-full bg-slate-100 overflow-hidden relative">
                                                     <CardPreview
                                                         previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.id } }}
-                                                        className="w-full h-full object-cover"
+                                                        className="w-full h-full"
                                                     />
 
                                                     {/* 卡牌数量徽章 */}

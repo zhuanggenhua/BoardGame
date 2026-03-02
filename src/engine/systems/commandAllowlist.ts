@@ -25,13 +25,20 @@ export function isCommandAllowlisted(
     allowlist: NormalizedCommandAllowlist,
     options: { fallbackToAllowAll?: boolean } = {}
 ): boolean {
+    // ✅ 先检查 allowlist（显式允许优先级最高）
+    if (allowlist && allowlist.has(commandType)) {
+        return true;
+    }
+
+    // ❌ 再检查 BLOCKED_PREFIXES（隐式拒绝）
     if (BLOCKED_PREFIXES.some(prefix => commandType.startsWith(prefix))) {
         return false;
     }
 
+    // 🤷 fallback 到默认行为
     if (!allowlist) {
         return options.fallbackToAllowAll ?? false;
     }
 
-    return allowlist.has(commandType);
+    return false;
 }

@@ -395,6 +395,8 @@ export class GameTestRunner<
         events: Array<{ type: string; payload: unknown; timestamp: number }>;
         finalState: MatchState<TState>;
     } {
-        return this.dispatch('SYS_INTERACTION_RESPOND', { playerId, value });
+        // 将 value 展开到 payload 中，而不是嵌套在 value 字段下
+        // SimpleChoiceSystem 期望 payload 直接包含 optionId/optionIds/mergedValue
+        return this.dispatch('SYS_INTERACTION_RESPOND', { playerId, ...(value as object) });
     }
 }

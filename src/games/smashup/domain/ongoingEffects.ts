@@ -500,7 +500,17 @@ export function fireTriggers(
     timing: TriggerTiming,
     ctx: Omit<TriggerContext, 'timing'>
 ): TriggerResult {
-    if (triggerRegistry.length === 0) return { events: [] };
+    console.log('[fireTriggers] 开始触发:', {
+        timing,
+        baseIndex: ctx.baseIndex,
+        playerId: ctx.playerId,
+        registrySize: triggerRegistry.length,
+    });
+    
+    if (triggerRegistry.length === 0) {
+        console.log('[fireTriggers] 注册表为空，返回');
+        return { events: [] };
+    }
 
     const events: SmashUpEvent[] = [];
     let matchState = ctx.matchState;
@@ -508,16 +518,42 @@ export function fireTriggers(
 
     for (const entry of triggerRegistry) {
         if (entry.timing !== timing) continue;
-        if (!isSourceActive(state, entry.sourceDefId)) continue;
+        
+        const isActive = isSourceActive(state, entry.sourceDefId);
+        console.log('[fireTriggers] 检查触发器:', {
+            sourceDefId: entry.sourceDefId,
+            timing: entry.timing,
+            isActive,
+        });
+        
+        if (!isActive) continue;
+        
+        console.log('[fireTriggers] 执行触发器回调:', entry.sourceDefId);
         const result = entry.callback({ ...fullCtx, matchState });
         const triggerEvents = Array.isArray(result) ? result : result.events;
         if (triggerEvents.length > 0) {
+            console.log('[fireTriggers] 触发器产生事件:', {
+                sourceDefId: entry.sourceDefId,
+                eventCount: triggerEvents.length,
+                eventTypes: triggerEvents.map(e => e.type),
+            });
             events.push(...triggerEvents);
         }
         if (!Array.isArray(result) && result.matchState) {
+            console.log('[fireTriggers] 触发器更新 matchState:', {
+                sourceDefId: entry.sourceDefId,
+                hasInteraction: !!result.matchState.sys.interaction?.current,
+            });
             matchState = result.matchState;
         }
     }
+    
+    console.log('[fireTriggers] 完成触发:', {
+        timing,
+        totalEvents: events.length,
+        hasMatchState: !!matchState,
+    });
+    
     return { events, matchState };
 }
 
@@ -535,21 +571,52 @@ export function fireTriggers(
  * 4. 随从上附着的 ongoing 行动卡（attachedActions 中的 defId）
  */
 function isSourceActive(state: SmashUpCore, sourceDefId: string): boolean {
+    console.log('[isSourceActive] 检查来源:', {
+        sourceDefId,
+        basesCount: state.bases.length,
+    });
+    
     if (state.pendingAfterScoringSpecials?.some(s => s.sourceDefId === sourceDefId)) {
+        console.log('[isSourceActive] 在 pendingAfterScoringSpecials 中找到');
         return true;
     }
     for (const base of state.bases) {
         // 检查基地本身
-        if (base.defId === sourceDefId) return true;
+        if (base.defId === sourceDefId) {
+            console.log('[isSourceActive] 找到基地本身:', base.defId);
+            return true;
+        }
         // 检查基地上的 ongoing 行动卡
-        if (base.ongoingActions.some(o => o.defId === sourceDefId)) return true;
+        if (base.ongoingActions.some(o => o.defId === sourceDefId)) {
+            console.log('[isSourceActive] 找到 ongoing 行动卡:', sourceDefId);
+            return true;
+        }
         // 检查基地上的随从
-        if (base.minions.some(m => m.defId === sourceDefId)) return true;
+        if (base.minions.some(m => m.defId === sourceDefId)) {
+            console.log('[isSourceActive] 找到随从:', {
+                sourceDefId,
+                baseDefId: base.defId,
+                minionsOnBase: base.minions.map(m => m.defId),
+            });
+            return true;
+        }
         // 检查随从上附着的行动卡
         for (const m of base.minions) {
-            if (m.attachedActions?.some(a => a.defId === sourceDefId)) return true;
+            if (m.attachedActions?.some(a => a.defId === sourceDefId)) {
+                console.log('[isSourceActive] 找到附着行动卡:', sourceDefId);
+                return true;
+            }
         }
     }
+    
+    console.log('[isSourceActive] 未找到来源:', {
+        sourceDefId,
+        allMinionsOnAllBases: state.bases.map((b, i) => ({
+            baseIndex: i,
+            baseDefId: b.defId,
+            minions: b.minions.map(m => m.defId),
+        })),
+    });
     return false;
 }
 

@@ -93,7 +93,7 @@ export class GameTransportClient {
             `${this.config.server}/game`,
             {
                 parser: msgpackParser,
-                transports: ['websocket'],
+                transports: ['websocket', 'polling'], // 允许降级到轮询
                 reconnection: true,
                 reconnectionAttempts: Infinity,
                 reconnectionDelay: 1000,

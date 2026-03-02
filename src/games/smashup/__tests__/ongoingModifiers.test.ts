@@ -530,9 +530,9 @@ describe('registerOngoingPowerModifier 通用叠加', () => {
         });
     });
 
-    // --- firstOwnerMinion：蒸汽机车 ---
-    describe('firstOwnerMinion（蒸汽机车 steampunk_aggromotive）', () => {
-        it('只给 owner 在基地的第一个随从 +5', () => {
+    // --- 基地级别力量修正：蒸汽机车 ---
+    describe('基地级别力量修正（蒸汽机车 steampunk_aggromotive）', () => {
+        it('给 owner 在基地的总力量 +5（不是给单个随从）', () => {
             const m1 = makeMinion('m1', 'test_a', '0', 2, { powerModifier: 0 });
             const m2 = makeMinion('m2', 'test_b', '0', 3, { powerModifier: 0 });
             const base = {
@@ -541,11 +541,14 @@ describe('registerOngoingPowerModifier 通用叠加', () => {
                 ongoingActions: [makeOngoing('steampunk_aggromotive', '0')],
             };
             const state = makeState({ bases: [base] });
-            expect(getEffectivePower(state, m1, 0)).toBe(7); // 2 + 5（第一个）
-            expect(getEffectivePower(state, m2, 0)).toBe(3); // 不是第一个
+            // 随从本身的力量不变
+            expect(getEffectivePower(state, m1, 0)).toBe(2);
+            expect(getEffectivePower(state, m2, 0)).toBe(3);
+            // 但玩家在基地的总力量 = 2 + 3 + 5 = 10
+            expect(getPlayerEffectivePowerOnBase(state, base, 0, '0')).toBe(10);
         });
 
-        it('两张叠加给第一个随从 +10', () => {
+        it('两张叠加给 owner 总力量 +10', () => {
             const m1 = makeMinion('m1', 'test_a', '0', 2, { powerModifier: 0 });
             const base = {
                 defId: 'base_a',
@@ -556,10 +559,13 @@ describe('registerOngoingPowerModifier 通用叠加', () => {
                 ],
             };
             const state = makeState({ bases: [base] });
-            expect(getEffectivePower(state, m1, 0)).toBe(12); // 2 + 10
+            // 随从本身的力量不变
+            expect(getEffectivePower(state, m1, 0)).toBe(2);
+            // 但玩家在基地的总力量 = 2 + 10 = 12
+            expect(getPlayerEffectivePowerOnBase(state, base, 0, '0')).toBe(12);
         });
 
-        it('owner 无随从时无效', () => {
+        it('owner 无随从时不生效', () => {
             const enemy = makeMinion('e1', 'test_a', '1', 3, { powerModifier: 0 });
             const base = {
                 defId: 'base_a',
@@ -567,7 +573,10 @@ describe('registerOngoingPowerModifier 通用叠加', () => {
                 ongoingActions: [makeOngoing('steampunk_aggromotive', '0')],
             };
             const state = makeState({ bases: [base] });
+            // 对手随从不受影响
             expect(getEffectivePower(state, enemy, 0)).toBe(3);
+            // 玩家 0 没有随从，所以蒸汽机车不生效
+            expect(getPlayerEffectivePowerOnBase(state, base, 0, '0')).toBe(0);
         });
     });
 

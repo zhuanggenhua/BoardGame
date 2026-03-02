@@ -2099,9 +2099,29 @@
     "atlasId": "tts_atlas_a9e2eeadeb",
     "index": 13
   },
+  "base_pirate_cove": {
+    "atlasId": "tts_atlas_a9e2eeadeb",
+    "index": 3
+  },
+  "base_pirate_cove_pod": {
+    "atlasId": "tts_atlas_a9e2eeadeb",
+    "index": 3
+  },
+  "base_great_library": {
+    "atlasId": "tts_atlas_a9e2eeadeb",
+    "index": 10
+  },
   "base_great_library_pod": {
     "atlasId": "tts_atlas_a9e2eeadeb",
     "index": 10
+  },
+  "base_wizard_academy": {
+    "atlasId": "tts_atlas_a9e2eeadeb",
+    "index": 12
+  },
+  "base_wizard_academy_pod": {
+    "atlasId": "tts_atlas_a9e2eeadeb",
+    "index": 12
   },
   "base_haunted_house_al9000_pod": {
     "atlasId": "tts_atlas_8310911466",

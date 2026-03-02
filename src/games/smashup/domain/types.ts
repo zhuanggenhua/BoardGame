@@ -362,6 +362,12 @@ export interface SmashUpCore {
      * 在 scoreBases 阶段结束时清空。
      */
     beforeScoringTriggeredBases?: number[];
+    /**
+     * 本次计分阶段中已触发过 afterScoring 的基地索引列表。
+     * 用于防止交互解决后重新进入 scoreBase 时重复触发 afterScoring。
+     * 在 scoreBases 阶段结束时清空。
+     */
+    afterScoringTriggeredBases?: number[];
 }
 
 export interface FactionSelectionState {
@@ -382,10 +388,18 @@ export function getCurrentPlayerId(state: SmashUpCore): PlayerId {
     return state.turnOrder[state.currentPlayerIndex];
 }
 
-export function getPlayerPowerOnBase(base: BaseInPlay, playerId: PlayerId): number {
-    return base.minions
+export function getPlayerPowerOnBase(
+    base: BaseInPlay,
+    playerId: PlayerId,
+    state?: SmashUpCore,
+    baseIndex?: number
+): number {
+    // 随从级别的力量总和（不包含 ongoing 修正）
+    const minionPower = base.minions
         .filter(m => m.controller === playerId)
         .reduce((sum, m) => sum + m.basePower + m.powerCounters + m.powerModifier, 0);
+    
+    return minionPower;
 }
 
 export function getTotalPowerOnBase(base: BaseInPlay): number {
@@ -515,6 +529,8 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         playerId: PlayerId;
         cardUid: string;
         defId: string;
+        /** 是否为额外行动（不消耗行动次数） */
+        isExtraAction?: boolean;
     };
 }
 
@@ -621,6 +637,8 @@ export interface MinionReturnedEvent extends GameEvent<'su:minion_returned'> {
         toPlayerId: PlayerId;
         /** 触发来源 */
         reason: string;
+        /** 效果来源玩家（可选，用于保护检查） */
+        sourcePlayerId?: PlayerId;
     };
 }
 

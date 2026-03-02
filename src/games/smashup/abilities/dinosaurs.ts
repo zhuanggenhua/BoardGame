@@ -424,34 +424,26 @@ export function registerDinosaurInteractionHandlers(): void {
 // 战斗迅猛龙 (ongoing) - 已通过 ongoingModifiers 系统实现力量修正
 // 升级 (ongoing) - 已通过 ongoingModifiers 系统实现 +2 力量修正
 
-/**
- * 全副武装事件拦截器：当附着随从被影响时，自毁此卡以阻止影响
- * 规则：如果一个能力将会影响该随从，消灭本卡，那个能力将不会影响该随从
- * 拦截：MINION_DESTROYED / MINION_RETURNED / CARD_TO_DECK_BOTTOM
- */
 function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): SmashUpEvent | SmashUpEvent[] | null | undefined {
     let targetUid: string | undefined;
     let fromBaseIndex: number | undefined;
-    let ownerId: string | undefined;
+    let sourcePlayerId: string | undefined;
 
     if (event.type === SU_EVENTS.MINION_DESTROYED) {
         const payload = (event as MinionDestroyedEvent).payload;
         targetUid = payload.minionUid;
         fromBaseIndex = payload.fromBaseIndex;
-        ownerId = payload.ownerId;
+        sourcePlayerId = payload.ownerId;
     } else if (event.type === SU_EVENTS.MINION_RETURNED) {
         const payload = (event as MinionReturnedEvent).payload;
         targetUid = payload.minionUid;
         fromBaseIndex = payload.fromBaseIndex;
-        // MINION_RETURNED 没有 ownerId，需要从基地上查找
-        const base = state.bases[fromBaseIndex];
-        const minion = base?.minions.find(m => m.uid === targetUid);
-        ownerId = minion?.owner;
+        sourcePlayerId = payload.sourcePlayerId;
     } else if (event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM) {
         const payload = (event as CardToDeckBottomEvent).payload;
         // CARD_TO_DECK_BOTTOM 的 cardUid 可能是随从
         targetUid = payload.cardUid;
-        ownerId = payload.ownerId;
+        sourcePlayerId = payload.ownerId;
         // 需要在所有基地中查找该随从
         for (let i = 0; i < state.bases.length; i++) {
             if (state.bases[i].minions.some(m => m.uid === targetUid)) {
@@ -463,16 +455,26 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
         return undefined;
     }
 
-    if (targetUid === undefined || fromBaseIndex === undefined) return undefined;
+    if (targetUid === undefined || fromBaseIndex === undefined) {
+        return undefined;
+    }
     const base = state.bases[fromBaseIndex];
-    if (!base) return undefined;
+    if (!base) {
+        return undefined;
+    }
     const target = base.minions.find(m => m.uid === targetUid);
-    if (!target) return undefined;
+    if (!target) {
+        return undefined;
+    }
     const toothCard = target.attachedActions.find(a => a.defId === 'dino_tooth_and_claw');
-    if (!toothCard) return undefined;
-    // 只拦截其他玩家发起的影响（reason 中不含自身控制者的操作）
-    // 简化判断：如果事件的 ownerId 就是随从控制者，不拦截（自毁等）
-    if (ownerId === target.controller) return undefined;
+    if (!toothCard) {
+        return undefined;
+    }
+    // 只拦截其他玩家发起的影响
+    // 如果 sourcePlayerId 未定义，假设是对手操作（保护系统已过滤无效目标）
+    if (sourcePlayerId !== undefined && sourcePlayerId === target.controller) {
+        return undefined;
+    }
     // 自毁全副武装，阻止影响
     const detachEvt: OngoingDetachedEvent = {
         type: SU_EVENTS.ONGOING_DETACHED,

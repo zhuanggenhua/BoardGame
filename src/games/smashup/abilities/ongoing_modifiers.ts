@@ -1,11 +1,11 @@
 /**
  * 大杀四方 - 持续力量修正能力注册
  *
- * 将各派系?ongoing 力量修正注册表?ongoingModifiers 系统?
- * ?initAllAbilities() 中调用）?
+ * 将各派系的 ongoing 力量修正注册到 ongoingModifiers 系统。
+ * （在 initAllAbilities() 中调用）
  */
 
-import { registerPowerModifier, registerOngoingPowerModifier } from '../domain/ongoingModifiers';
+import { registerPowerModifier, registerOngoingPowerModifier, registerBasePowerModifier } from '../domain/ongoingModifiers';
 import type { PowerModifierContext } from '../domain/ongoingModifiers';
 import { getBaseDef } from '../data/cards';
 import { isMicrobot } from '../domain/utils';
@@ -148,7 +148,17 @@ function registerSteampunkModifiers(): void {
     });
 
     // 蒸汽机车（ongoing 行动卡附着在基地上）：拥有者在此基地有随从时，每张 +5 总力量
-    registerOngoingPowerModifier('steampunk_aggromotive', 'base', 'firstOwnerMinion', 5);
+    // 注意：getBasePowerModifiers 会为基地上的每张 ongoing 卡调用一次
+    // 只有当前卡属于该玩家时才返回 5
+    registerBasePowerModifier('steampunk_aggromotive', (ctx) => {
+        // 只有当前卡属于该玩家时才生效
+        if (!ctx.ongoing || ctx.ongoing.ownerId !== ctx.playerId) return 0;
+        
+        // 检查该玩家在此基地是否有随从
+        const hasMinion = ctx.base.minions.some(m => m.controller === ctx.playerId);
+        
+        return hasMinion ? 5 : 0;
+    });
 
     // 旋转弹头发射器（ongoing 行动卡附着在基地上）：每张给同基地己方随从 +2 力量
     registerOngoingPowerModifier('steampunk_rotary_slug_thrower', 'base', 'ownerMinions', 2);

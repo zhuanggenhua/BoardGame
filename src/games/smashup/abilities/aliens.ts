@@ -55,7 +55,8 @@ function alienSupremeOverlord(ctx: AbilityContext): AbilityResult {
     const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
-            if (m.uid === ctx.cardUid) continue; // 排除自身
+            // Wiki 描述："You may return a minion to its owner's hand."
+            // 没有说"another minion"，所以可以返回自己
             const def = getCardDef(m.defId) as MinionCardDef | undefined;
             const name = def?.name ?? m.defId;
             const baseDef = getBaseDef(ctx.state.bases[i].defId);
@@ -124,20 +125,45 @@ function alienInvader(ctx: AbilityContext): AbilityResult {
 }
 
 function alienScoutAfterScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
-    if (ctx.baseIndex === undefined) return [];
+    console.log('[alienScoutAfterScoring] 开始执行:', {
+        baseIndex: ctx.baseIndex,
+        hasMatchState: !!ctx.matchState,
+        stateBasesCount: ctx.state.bases.length,
+    });
+    
+    if (ctx.baseIndex === undefined) {
+        console.log('[alienScoutAfterScoring] baseIndex undefined，返回空');
+        return [];
+    }
     const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) return [];
+    if (!base) {
+        console.log('[alienScoutAfterScoring] base 不存在，返回空');
+        return [];
+    }
+    
     // 规则：所有玩家的 alien_scout 都可以在计分后触发（不限当前回合玩家）
     const scouts = base.minions.filter(m => m.defId === 'alien_scout');
-    if (scouts.length === 0) return [];
+    console.log('[alienScoutAfterScoring] 找到侦察兵:', {
+        scoutCount: scouts.length,
+        scouts: scouts.map(s => ({ uid: s.uid, owner: s.owner, controller: s.controller })),
+        allMinions: base.minions.map(m => ({ uid: m.uid, defId: m.defId, owner: m.owner })),
+    });
+    
+    if (scouts.length === 0) {
+        console.log('[alienScoutAfterScoring] 没有侦察兵，返回空');
+        return [];
+    }
     if (!ctx.matchState) {
+        console.log('[alienScoutAfterScoring] 无 matchState，回退到自动回手');
         // 无 matchState 时回退到自动回手
         return scouts.map(scout => ({
             type: SU_EVENTS.MINION_RETURNED,
-            payload: { minionUid: scout.uid, minionDefId: scout.defId, fromBaseIndex: ctx.baseIndex!, toPlayerId: scout.owner, reason: 'alien_scout' },
+            payload: { minionUid: scout.uid, minionDefId: scout.defId, fromBaseIndex: ctx.baseIndex!, toPlayerId: scout.owner, reason: 'alien_scout', sourcePlayerId: scout.controller },
             timestamp: ctx.now,
         } as MinionReturnedEvent));
     }
+    
+    console.log('[alienScoutAfterScoring] 创建交互');
     // 创建交互让玩家选择是否回手（多个 scout 时链式处理）
     const scoutInfos = scouts.map(s => ({ uid: s.uid, defId: s.defId, owner: s.owner, controller: s.controller, baseIndex: ctx.baseIndex! }));
     const first = scoutInfos[0];
@@ -155,6 +181,15 @@ function alienScoutAfterScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerRe
         ...interaction,
         data: { ...interaction.data, continuationContext: { remaining } },
     });
+    
+    console.log('[alienScoutAfterScoring] 交互已创建:', {
+        interactionId: interaction.id,
+        playerId: first.controller,
+        hasQueue: !!ms.sys.interaction?.queue,
+        queueLength: ms.sys.interaction?.queue?.length ?? 0,
+        hasCurrent: !!ms.sys.interaction?.current,
+    });
+    
     return { events: [], matchState: ms };
 }
 
@@ -253,7 +288,7 @@ function alienProbe(ctx: AbilityContext): AbilityResult {
         const targetPid = value.targetPlayerId;
         const targetPlayer = ctx.state.players[targetPid];
         
-        // 从手牌中筛选随从卡
+        // 从手牌中筛选随从卡（用于检查是否有可选目标）
         const minionCards = targetPlayer.hand.filter(c => c.type === 'minion');
         
         if (minionCards.length === 0) {
@@ -261,37 +296,39 @@ function alienProbe(ctx: AbilityContext): AbilityResult {
             return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_minions_in_hand', ctx.now)] };
         }
         
-        // 创建交互：直接展示随从选项，不发送 REVEAL_HAND 事件
-        // UX 优化：参考 zombieWalker 模式，在 PromptOverlay 中直接展示卡牌预览并允许选择
-        // 避免两步操作（先关闭 RevealOverlay → 再在 PromptOverlay 中选择）
-        const minionOptions = minionCards.map(card => {
-            const def = getMinionDef(card.defId);
+        // 创建交互：展示所有手牌，但只有随从可选
+        // 正确实现：先看手牌（所有卡），再选择其中的随从
+        const allHandOptions = targetPlayer.hand.map(card => {
+            const isMinion = card.type === 'minion';
+            const def = getCardDef(card.defId);
             return {
                 id: card.uid,
                 label: def?.name ?? card.defId,
                 value: { cardUid: card.uid, defId: card.defId, targetPlayerId: targetPid , displayMode: 'card' as const },
                 _source: 'hand' as const,
+                disabled: !isMinion, // 非随从卡禁用（显示但不可选）
             };
         });
         
         const interaction = createSimpleChoice(
             `alien_probe_${ctx.now}`, ctx.playerId,
             '选择对手手牌中的一张随从，让其弃掉',
-            minionOptions,
+            allHandOptions,
             'alien_probe',
         );
         
         // 添加自定义 optionsGenerator，确保刷新时检查对手的手牌而不是当前玩家的手牌
         (interaction.data as any).optionsGenerator = (state: any) => {
             const targetPlayer = state.core.players[targetPid];
-            const currentMinionCards = targetPlayer.hand.filter((c: any) => c.type === 'minion');
-            return currentMinionCards.map((card: any) => {
-                const def = getMinionDef(card.defId);
+            return targetPlayer.hand.map((card: any) => {
+                const isMinion = card.type === 'minion';
+                const def = getCardDef(card.defId);
                 return {
                     id: card.uid,
                     label: def?.name ?? card.defId,
                     value: { cardUid: card.uid, defId: card.defId, targetPlayerId: targetPid , displayMode: 'card' as const },
                     _source: 'hand' as const,
+                    disabled: !isMinion, // 非随从卡禁用
                 };
             });
         };
@@ -383,7 +420,7 @@ export function registerAlienInteractionHandlers(): void {
         // 保护检查已在 buildMinionTargetOptions 中完成，这里不需要重复检查
         return { state, events: [{
             type: SU_EVENTS.MINION_RETURNED,
-            payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_supreme_overlord' },
+            payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_supreme_overlord', sourcePlayerId: playerId },
             timestamp,
         } as MinionReturnedEvent] };
     });
@@ -401,7 +438,7 @@ export function registerAlienInteractionHandlers(): void {
         // 保护检查已在 buildMinionTargetOptions 中完成，这里不需要重复检查
         return { state, events: [{
             type: SU_EVENTS.MINION_RETURNED,
-            payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_collector' },
+            payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_collector', sourcePlayerId: playerId },
             timestamp,
         } as MinionReturnedEvent] };
     });
@@ -459,7 +496,7 @@ export function registerAlienInteractionHandlers(): void {
         // 保护检查已在 buildMinionTargetOptions 中完成，这里不需要重复检查
         return { state, events: [{
             type: SU_EVENTS.MINION_RETURNED,
-            payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_beam_up' },
+            payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_beam_up', sourcePlayerId: playerId },
             timestamp,
         } as MinionReturnedEvent] };
     });
@@ -724,7 +761,7 @@ export function registerAlienInteractionHandlers(): void {
         if (selected.returnIt && selected.minionUid && selected.minionDefId && selected.owner !== undefined && selected.baseIndex !== undefined) {
             events.push({
                 type: SU_EVENTS.MINION_RETURNED,
-                payload: { minionUid: selected.minionUid, minionDefId: selected.minionDefId, fromBaseIndex: selected.baseIndex, toPlayerId: selected.owner, reason: 'alien_scout' },
+                payload: { minionUid: selected.minionUid, minionDefId: selected.minionDefId, fromBaseIndex: selected.baseIndex, toPlayerId: selected.owner, reason: 'alien_scout', sourcePlayerId: playerId },
                 timestamp,
             } as MinionReturnedEvent);
         }
@@ -757,11 +794,12 @@ export function registerAlienInteractionHandlers(): void {
         if (!target) return undefined;
         const events: SmashUpEvent[] = [];
         // 保护检查已在 buildMinionTargetOptions 中完成，这里不需要重复检查
-        events.push({
+        const returnEvent = {
             type: SU_EVENTS.MINION_RETURNED,
-            payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_abduction' },
+            payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_abduction', sourcePlayerId: playerId },
             timestamp,
-        } as MinionReturnedEvent);
+        } as MinionReturnedEvent;
+        events.push(returnEvent);
         // 额外随从额度
         events.push(grantExtraMinion(playerId, 'alien_abduction', timestamp));
         return { state, events };

@@ -5,6 +5,7 @@ import type { CardInstance } from '../domain/types';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardDef as lookupCardDef, getMinionDef as lookupMinionDef, resolveCardName, resolveCardText } from '../data/cards';
 import { UI_Z_INDEX } from '../../../core';
+import { SMASHUP_CARD_BACK } from '../domain/ids';
 
 // ============================================================================
 // Layout Constants
@@ -41,6 +42,8 @@ type HandCardProps = {
     isDisabled: boolean;
     /** 是否显示为对手视角（显示牌背） */
     isOpponentView: boolean;
+    /** 跳过初始动画（用于视角切换） */
+    skipAnimation?: boolean;
     onSelect: () => void;
     onViewDetail?: () => void;
 };
@@ -75,9 +78,6 @@ const HandCard: React.FC<HandCardProps> = ({
     // 弃牌选中时不提升 z-index，避免遮挡其他卡牌选择
     const baseZIndex = isSelected && !isDiscardSelected ? 100 : index;
 
-    // 对手视角：使用牌背图片
-    const cardBackRef = { type: 'atlas' as const, atlasId: 'smashup-card-back', index: 0 };
-
     return (
         <motion.div
             className={`
@@ -91,7 +91,8 @@ const HandCard: React.FC<HandCardProps> = ({
                 marginLeft: index === 0 ? 0 : `${spacingVw}vw`,
                 zIndex: baseZIndex
             }}
-            initial={{ y: 200, opacity: 0, scale: 0.8 }}
+            // 对手视角时不播放进入动画，直接显示
+            initial={isOpponentView ? false : { y: 200, opacity: 0, scale: 0.8 }}
             animate={{
                 // 弃牌选中时小幅上移（2vw），普通选中时大幅上移（5vw）
                 y: isSelected && !isDiscardSelected ? `-${SELECTED_Y_LIFT_VW}vw` : isDiscardSelected ? '-2vw' : '0',
@@ -99,7 +100,7 @@ const HandCard: React.FC<HandCardProps> = ({
                 rotate: isShaking ? [0, -6, 6, -4, 4, 0] : ((isSelected && !isDiscardSelected) ? 0 : rotationSeed),
                 opacity: 1
             }}
-            exit={{ y: 200, opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+            exit={isOpponentView ? false : { y: 200, opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
             transition={{ type: 'spring', stiffness: 400, damping: 28 }}
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
@@ -142,7 +143,7 @@ const HandCard: React.FC<HandCardProps> = ({
                 <div className="w-full h-full rounded-md overflow-hidden bg-[#f3f0e8] border border-slate-400/50 shadow-inner relative">
                     <CardPreview
                         previewRef={isOpponentView 
-                            ? cardBackRef
+                            ? SMASHUP_CARD_BACK
                             : (def?.previewRef
                                 ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId } }
                                 : undefined)

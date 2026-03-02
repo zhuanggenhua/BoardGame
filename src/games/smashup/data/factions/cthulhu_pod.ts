@@ -20,7 +20,8 @@ export const CTHULHU_POD_MINIONS: MinionCardDef[] = [
         nameEn: 'Cthulhu’s Chosen',
         faction: 'minions_of_cthulhu_pod',
         power: 3,
-        abilityTags: ['special'],
+        // 注意：神选者的能力是 beforeScoring trigger（计分前抽疯狂卡+力量），不是点击场上随从激活
+        // 因此不应该有 abilityTags: ['special']
         count: 3,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 12 },
     },

@@ -56,6 +56,23 @@ export interface BreakpointModifierContext {
 /** 临界点修正函数：返回增减值（正数=提高临界点，负数=降低） */
 export type BreakpointModifierFn = (ctx: BreakpointModifierContext) => number;
 
+/** 基地级别力量修正上下文 */
+export interface BasePowerModifierContext {
+    /** 当前游戏状态 */
+    state: SmashUpCore;
+    /** 基地索引 */
+    baseIndex: number;
+    /** 基地 */
+    base: BaseInPlay;
+    /** 玩家 ID */
+    playerId: PlayerId;
+    /** 当前处理的 ongoing 卡（可选，用于判断卡的所有者） */
+    ongoing?: { uid: string; defId: string; ownerId: string };
+}
+
+/** 基地级别力量修正函数：返回该玩家在该基地的额外力量 */
+export type BasePowerModifierFn = (ctx: BasePowerModifierContext) => number;
+
 /** 临界点修正来源 */
 interface BreakpointModifierEntry {
     sourceDefId: string;
@@ -72,6 +89,9 @@ const modifierRegistry: ModifierEntry[] = [];
 /** 持续临界点修正注册表 */
 const breakpointModifierRegistry: BreakpointModifierEntry[] = [];
 
+/** 基地级别力量修正注册表 */
+const basePowerModifiers: Map<string, BasePowerModifierFn> = new Map();
+
 /**
  * 注册一个持续力量修正
  * 
@@ -85,6 +105,43 @@ export function registerPowerModifier(
     // 去重保护：同一 sourceDefId 只注册一次（防止 HMR 重复注册）
     if (modifierRegistry.some(e => e.sourceDefId === sourceDefId)) return;
     modifierRegistry.push({ sourceDefId, modifier });
+}
+
+/**
+ * 注册一个基地级别力量修正
+ * 
+ * @param defId ongoing 行动卡的 defId（如 'steampunk_aggromotive'）
+ * @param modifier 修正函数
+ */
+export function registerBasePowerModifier(defId: string, modifier: BasePowerModifierFn): void {
+    basePowerModifiers.set(defId, modifier);
+}
+
+/**
+ * 计算玩家在基地的额外力量（来自基地级别修正）
+ * 
+ * @param state 当前游戏状态
+ * @param baseIndex 基地索引
+ * @param playerId 玩家 ID
+ * @returns 额外力量值
+ */
+export function getBasePowerModifiers(
+    state: SmashUpCore,
+    baseIndex: number,
+    playerId: PlayerId
+): number {
+    const base = state.bases[baseIndex];
+    let total = 0;
+
+    // 遍历基地上的所有 ongoing 行动卡
+    for (const ongoing of base.ongoingActions) {
+        const modifier = basePowerModifiers.get(ongoing.defId);
+        if (modifier) {
+            total += modifier({ state, baseIndex, base, playerId, ongoing });
+        }
+    }
+
+    return total;
 }
 
 // ============================================================================
@@ -339,7 +396,7 @@ export function getOngoingCardPowerContribution(
 }
 
 /**
- * 获取玩家在基地上的总有效力量（含持续修正 + ongoing 卡力量贡献）
+ * 获取玩家在基地上的总有效力量（含持续修正 + ongoing 卡力量贡献 + 基地级别力量修正）
  */
 export function getPlayerEffectivePowerOnBase(
     state: SmashUpCore,
@@ -350,7 +407,9 @@ export function getPlayerEffectivePowerOnBase(
     const minionPower = base.minions
         .filter(m => m.controller === playerId)
         .reduce((sum, m) => sum + getEffectivePower(state, m, baseIndex), 0);
-    return minionPower + getOngoingCardPowerContribution(base, playerId);
+    const ongoingCardPower = getOngoingCardPowerContribution(base, playerId);
+    const basePowerBonus = getBasePowerModifiers(state, baseIndex, playerId);
+    return minionPower + ongoingCardPower + basePowerBonus;
 }
 
 /**

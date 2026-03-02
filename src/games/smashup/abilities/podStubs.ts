@@ -9,198 +9,187 @@
 
 import { registerTrigger, registerProtection, type ProtectionChecker } from '../domain/ongoingEffects';
 
-// 已警告过的 POD 卡牌集合（避免重复警告）
-const POD_STUB_WARNING_SHOWN = new Set<string>();
-
 /**
- * 创建 POD 占位符 trigger（带运行时警告）
+ * 创建 POD 占位符 trigger（空实现）
  */
-function createPodStubTrigger(cardId: string) {
-    return () => {
-        if (import.meta.env.DEV && !POD_STUB_WARNING_SHOWN.has(cardId)) {
-            console.warn(`[POD Stub] 能力未实现: ${cardId}`);
-            POD_STUB_WARNING_SHOWN.add(cardId);
-        }
-        return { events: [] };
-    };
+function createPodStubTrigger() {
+    return () => ({ events: [] });
 }
 
 /**
- * 创建 POD 占位符 protection（带运行时警告）
+ * 创建 POD 占位符 protection（空实现）
  */
-function createPodStubProtection(cardId: string): ProtectionChecker {
-    return () => {
-        if (import.meta.env.DEV && !POD_STUB_WARNING_SHOWN.has(cardId)) {
-            console.warn(`[POD Stub] 保护效果未实现: ${cardId}`);
-            POD_STUB_WARNING_SHOWN.add(cardId);
-        }
-        return false;
-    };
+function createPodStubProtection(): ProtectionChecker {
+    return () => false;
 }
 
 /**
  * 初始化 POD 派系占位符注册
  */
 export function initPodStubRegistrations() {
+    // 所有 POD 派系占位符使用统一的空实现
+    const stubTrigger = createPodStubTrigger();
+    const stubProtection = createPodStubProtection();
+
     // killer_plant_water_lily_pod: 通用占位符
-    registerTrigger('killer_plant_water_lily_pod', 'onTurnStart', createPodStubTrigger('killer_plant_water_lily_pod'));
+    registerTrigger('killer_plant_water_lily_pod', 'onTurnStart', stubTrigger);
 
     // cthulhu_furthering_the_cause_pod: 通用占位符
-    registerTrigger('cthulhu_furthering_the_cause_pod', 'onTurnStart', createPodStubTrigger('cthulhu_furthering_the_cause_pod'));
+    registerTrigger('cthulhu_furthering_the_cause_pod', 'onTurnStart', stubTrigger);
 
     // steampunk_difference_engine_pod: 通用占位符
-    registerTrigger('steampunk_difference_engine_pod', 'onTurnStart', createPodStubTrigger('steampunk_difference_engine_pod'));
+    registerTrigger('steampunk_difference_engine_pod', 'onTurnStart', stubTrigger);
 
-    // ninja_assassination_pod: 通用占位符
-    registerTrigger('ninja_assassination_pod', 'onTurnStart', createPodStubTrigger('ninja_assassination_pod'));
+    // ninja_assassination_pod: 回合结束时消灭目标随从（与原版相同）
+    registerTrigger('ninja_assassination_pod', 'onTurnEnd', stubTrigger);
 
     // bear_cavalry_general_ivan_pod: 通用占位符
-    registerTrigger('bear_cavalry_general_ivan_pod', 'onTurnStart', createPodStubTrigger('bear_cavalry_general_ivan_pod'));
+    registerTrigger('bear_cavalry_general_ivan_pod', 'onTurnStart', stubTrigger);
 
     // bear_cavalry_polar_commando_pod: 通用占位符
-    registerTrigger('bear_cavalry_polar_commando_pod', 'onTurnStart', createPodStubTrigger('bear_cavalry_polar_commando_pod'));
+    registerTrigger('bear_cavalry_polar_commando_pod', 'onTurnStart', stubTrigger);
 
     // robot_warbot_pod: 保护效果（占位符）
-    registerProtection('robot_warbot_pod', 'destroy', createPodStubProtection('robot_warbot_pod'));
+    registerProtection('robot_warbot_pod', 'destroy', stubProtection);
 
     // frankenstein_uberserum_pod: 通用占位符
-    registerTrigger('frankenstein_uberserum_pod', 'onTurnStart', createPodStubTrigger('frankenstein_uberserum_pod'));
+    registerTrigger('frankenstein_uberserum_pod', 'onTurnStart', stubTrigger);
 
     // steampunk_ornate_dome_pod: 通用占位符
-    registerTrigger('steampunk_ornate_dome_pod', 'onTurnStart', createPodStubTrigger('steampunk_ornate_dome_pod'));
+    registerTrigger('steampunk_ornate_dome_pod', 'onTurnStart', stubTrigger);
 
     // trickster_block_the_path_pod: 通用占位符
-    registerTrigger('trickster_block_the_path_pod', 'onTurnStart', createPodStubTrigger('trickster_block_the_path_pod'));
+    registerTrigger('trickster_block_the_path_pod', 'onTurnStart', stubTrigger);
 
     // ghost_incorporeal_pod: 通用占位符
-    registerTrigger('ghost_incorporeal_pod', 'onTurnStart', createPodStubTrigger('ghost_incorporeal_pod'));
+    registerTrigger('ghost_incorporeal_pod', 'onTurnStart', stubTrigger);
 
     // ninja_smoke_bomb_pod: 通用占位符
-    registerTrigger('ninja_smoke_bomb_pod', 'onTurnStart', createPodStubTrigger('ninja_smoke_bomb_pod'));
+    registerTrigger('ninja_smoke_bomb_pod', 'onTurnStart', stubTrigger);
 
     // dino_upgrade_pod: 通用占位符
-    registerTrigger('dino_upgrade_pod', 'onTurnStart', createPodStubTrigger('dino_upgrade_pod'));
+    registerTrigger('dino_upgrade_pod', 'onTurnStart', stubTrigger);
 
     // ghost_door_to_the_beyond_pod: 通用占位符
-    registerTrigger('ghost_door_to_the_beyond_pod', 'onTurnStart', createPodStubTrigger('ghost_door_to_the_beyond_pod'));
+    registerTrigger('ghost_door_to_the_beyond_pod', 'onTurnStart', stubTrigger);
 
     // steampunk_aggromotive_pod: 通用占位符
-    registerTrigger('steampunk_aggromotive_pod', 'onTurnStart', createPodStubTrigger('steampunk_aggromotive_pod'));
+    registerTrigger('steampunk_aggromotive_pod', 'onTurnStart', stubTrigger);
 
     // steampunk_rotary_slug_thrower_pod: 通用占位符
-    registerTrigger('steampunk_rotary_slug_thrower_pod', 'onTurnStart', createPodStubTrigger('steampunk_rotary_slug_thrower_pod'));
+    registerTrigger('steampunk_rotary_slug_thrower_pod', 'onTurnStart', stubTrigger);
 
     // killer_plant_sleep_spores_pod: 通用占位符
-    registerTrigger('killer_plant_sleep_spores_pod', 'onTurnStart', createPodStubTrigger('killer_plant_sleep_spores_pod'));
+    registerTrigger('killer_plant_sleep_spores_pod', 'onTurnStart', stubTrigger);
 
     // frankenstein_german_engineering_pod: 通用占位符
-    registerTrigger('frankenstein_german_engineering_pod', 'onTurnStart', createPodStubTrigger('frankenstein_german_engineering_pod'));
+    registerTrigger('frankenstein_german_engineering_pod', 'onTurnStart', stubTrigger);
 
     // werewolf_full_moon_pod: 通用占位符
-    registerTrigger('werewolf_full_moon_pod', 'onTurnStart', createPodStubTrigger('werewolf_full_moon_pod'));
+    registerTrigger('werewolf_full_moon_pod', 'onTurnStart', stubTrigger);
 
     // vampire_opportunist_pod: 通用占位符
-    registerTrigger('vampire_opportunist_pod', 'onTurnStart', createPodStubTrigger('vampire_opportunist_pod'));
+    registerTrigger('vampire_opportunist_pod', 'onTurnStart', stubTrigger);
 
     // vampire_summon_wolves_pod: 通用占位符
-    registerTrigger('vampire_summon_wolves_pod', 'onTurnStart', createPodStubTrigger('vampire_summon_wolves_pod'));
+    registerTrigger('vampire_summon_wolves_pod', 'onTurnStart', stubTrigger);
 
     // ninja_poison_pod: 通用占位符
-    registerTrigger('ninja_poison_pod', 'onTurnStart', createPodStubTrigger('ninja_poison_pod'));
+    registerTrigger('ninja_poison_pod', 'onTurnStart', stubTrigger);
 
     // trickster_leprechaun_pod: 通用占位符
-    registerTrigger('trickster_leprechaun_pod', 'onTurnStart', createPodStubTrigger('trickster_leprechaun_pod'));
+    registerTrigger('trickster_leprechaun_pod', 'onTurnStart', stubTrigger);
 
     // trickster_flame_trap_pod: 通用占位符
-    registerTrigger('trickster_flame_trap_pod', 'onTurnStart', createPodStubTrigger('trickster_flame_trap_pod'));
+    registerTrigger('trickster_flame_trap_pod', 'onTurnStart', stubTrigger);
 
     // bear_cavalry_cub_scout_pod: 通用占位符
-    registerTrigger('bear_cavalry_cub_scout_pod', 'onTurnStart', createPodStubTrigger('bear_cavalry_cub_scout_pod'));
+    registerTrigger('bear_cavalry_cub_scout_pod', 'onTurnStart', stubTrigger);
 
     // vampire_the_count_pod: 通用占位符
-    registerTrigger('vampire_the_count_pod', 'onTurnStart', createPodStubTrigger('vampire_the_count_pod'));
+    registerTrigger('vampire_the_count_pod', 'onTurnStart', stubTrigger);
 
     // alien_jammed_signal_pod: 持续效果（占位符）
-    registerTrigger('alien_jammed_signal_pod', 'onTurnStart', createPodStubTrigger('alien_jammed_signal_pod'));
+    registerTrigger('alien_jammed_signal_pod', 'onTurnStart', stubTrigger);
 
     // miskatonic_lost_knowledge_pod: 通用占位符
-    registerTrigger('miskatonic_lost_knowledge_pod', 'onTurnStart', createPodStubTrigger('miskatonic_lost_knowledge_pod'));
+    registerTrigger('miskatonic_lost_knowledge_pod', 'onTurnStart', stubTrigger);
 
     // cthulhu_altar_pod: 通用占位符
-    registerTrigger('cthulhu_altar_pod', 'onTurnStart', createPodStubTrigger('cthulhu_altar_pod'));
+    registerTrigger('cthulhu_altar_pod', 'onTurnStart', stubTrigger);
 
     // cthulhu_complete_the_ritual_pod: 通用占位符
-    registerTrigger('cthulhu_complete_the_ritual_pod', 'onTurnStart', createPodStubTrigger('cthulhu_complete_the_ritual_pod'));
+    registerTrigger('cthulhu_complete_the_ritual_pod', 'onTurnStart', stubTrigger);
 
     // innsmouth_sacred_circle_pod: 持续效果（占位符）
-    registerTrigger('innsmouth_sacred_circle_pod', 'onTurnStart', createPodStubTrigger('innsmouth_sacred_circle_pod'));
+    registerTrigger('innsmouth_sacred_circle_pod', 'onTurnStart', stubTrigger);
 
     // innsmouth_in_plain_sight_pod: 保护效果（占位符）
-    registerProtection('innsmouth_in_plain_sight_pod', 'destroy', createPodStubProtection('innsmouth_in_plain_sight_pod'));
+    registerProtection('innsmouth_in_plain_sight_pod', 'destroy', stubProtection);
 
     // elder_thing_dunwich_horror_pod: 通用占位符
-    registerTrigger('elder_thing_dunwich_horror_pod', 'onTurnStart', createPodStubTrigger('elder_thing_dunwich_horror_pod'));
+    registerTrigger('elder_thing_dunwich_horror_pod', 'onTurnStart', stubTrigger);
 
     // ghost_make_contact_pod: 通用占位符
-    registerTrigger('ghost_make_contact_pod', 'onTurnStart', createPodStubTrigger('ghost_make_contact_pod'));
+    registerTrigger('ghost_make_contact_pod', 'onTurnStart', stubTrigger);
 
     // bear_cavalry_superiority_pod: 通用占位符
-    registerTrigger('bear_cavalry_superiority_pod', 'onTurnStart', createPodStubTrigger('bear_cavalry_superiority_pod'));
+    registerTrigger('bear_cavalry_superiority_pod', 'onTurnStart', stubTrigger);
 
     // bear_cavalry_high_ground_pod: 通用占位符
-    registerTrigger('bear_cavalry_high_ground_pod', 'onTurnStart', createPodStubTrigger('bear_cavalry_high_ground_pod'));
+    registerTrigger('bear_cavalry_high_ground_pod', 'onTurnStart', stubTrigger);
 
     // steampunk_zeppelin_pod: 通用占位符
-    registerTrigger('steampunk_zeppelin_pod', 'onTurnStart', createPodStubTrigger('steampunk_zeppelin_pod'));
+    registerTrigger('steampunk_zeppelin_pod', 'onTurnStart', stubTrigger);
 
     // steampunk_escape_hatch_pod: 通用占位符
-    registerTrigger('steampunk_escape_hatch_pod', 'onTurnStart', createPodStubTrigger('steampunk_escape_hatch_pod'));
+    registerTrigger('steampunk_escape_hatch_pod', 'onTurnStart', stubTrigger);
 
     // killer_plant_deep_roots_pod: 通用占位符
-    registerTrigger('killer_plant_deep_roots_pod', 'onTurnStart', createPodStubTrigger('killer_plant_deep_roots_pod'));
+    registerTrigger('killer_plant_deep_roots_pod', 'onTurnStart', stubTrigger);
 
     // killer_plant_choking_vines_pod: 通用占位符
-    registerTrigger('killer_plant_choking_vines_pod', 'onTurnStart', createPodStubTrigger('killer_plant_choking_vines_pod'));
+    registerTrigger('killer_plant_choking_vines_pod', 'onTurnStart', stubTrigger);
 
     // killer_plant_overgrowth_pod: 通用占位符
-    registerTrigger('killer_plant_overgrowth_pod', 'onTurnStart', createPodStubTrigger('killer_plant_overgrowth_pod'));
+    registerTrigger('killer_plant_overgrowth_pod', 'onTurnStart', stubTrigger);
 
     // killer_plant_entangled_pod: 通用占位符
-    registerTrigger('killer_plant_entangled_pod', 'onTurnStart', createPodStubTrigger('killer_plant_entangled_pod'));
+    registerTrigger('killer_plant_entangled_pod', 'onTurnStart', stubTrigger);
 
     // zombie_theyre_coming_to_get_you_pod: 通用占位符
-    registerTrigger('zombie_theyre_coming_to_get_you_pod', 'onTurnStart', createPodStubTrigger('zombie_theyre_coming_to_get_you_pod'));
+    registerTrigger('zombie_theyre_coming_to_get_you_pod', 'onTurnStart', stubTrigger);
 
     // trickster_enshrouding_mist_pod: 通用占位符
-    registerTrigger('trickster_enshrouding_mist_pod', 'onTurnStart', createPodStubTrigger('trickster_enshrouding_mist_pod'));
+    registerTrigger('trickster_enshrouding_mist_pod', 'onTurnStart', stubTrigger);
 
     // trickster_hideout_pod: 通用占位符
-    registerTrigger('trickster_hideout_pod', 'onTurnStart', createPodStubTrigger('trickster_hideout_pod'));
+    registerTrigger('trickster_hideout_pod', 'onTurnStart', stubTrigger);
 
     // trickster_pay_the_piper_pod: 通用占位符
-    registerTrigger('trickster_pay_the_piper_pod', 'onTurnStart', createPodStubTrigger('trickster_pay_the_piper_pod'));
+    registerTrigger('trickster_pay_the_piper_pod', 'onTurnStart', stubTrigger);
 
     // frankenstein_grave_situation_pod: 通用占位符
-    registerTrigger('frankenstein_grave_situation_pod', 'onTurnStart', createPodStubTrigger('frankenstein_grave_situation_pod'));
+    registerTrigger('frankenstein_grave_situation_pod', 'onTurnStart', stubTrigger);
 
     // werewolf_marking_territory_pod: 通用占位符
-    registerTrigger('werewolf_marking_territory_pod', 'onTurnStart', createPodStubTrigger('werewolf_marking_territory_pod'));
+    registerTrigger('werewolf_marking_territory_pod', 'onTurnStart', stubTrigger);
 
     // werewolf_leader_of_the_pack_pod: 通用占位符
-    registerTrigger('werewolf_leader_of_the_pack_pod', 'onTurnStart', createPodStubTrigger('werewolf_leader_of_the_pack_pod'));
+    registerTrigger('werewolf_leader_of_the_pack_pod', 'onTurnStart', stubTrigger);
 
     // werewolf_unstoppable_pod: 通用占位符
-    registerTrigger('werewolf_unstoppable_pod', 'onTurnStart', createPodStubTrigger('werewolf_unstoppable_pod'));
+    registerTrigger('werewolf_unstoppable_pod', 'onTurnStart', stubTrigger);
 
     // werewolf_moontouched_pod: 通用占位符
-    registerTrigger('werewolf_moontouched_pod', 'onTurnStart', createPodStubTrigger('werewolf_moontouched_pod'));
+    registerTrigger('werewolf_moontouched_pod', 'onTurnStart', stubTrigger);
 
     // ninja_infiltrate_pod: 通用占位符
-    registerTrigger('ninja_infiltrate_pod', 'onTurnStart', createPodStubTrigger('ninja_infiltrate_pod'));
+    registerTrigger('ninja_infiltrate_pod', 'onTurnStart', stubTrigger);
 
     // ninja_acolyte_pod: 通用占位符
-    registerTrigger('ninja_acolyte_pod', 'onTurnStart', createPodStubTrigger('ninja_acolyte_pod'));
+    registerTrigger('ninja_acolyte_pod', 'onTurnStart', stubTrigger);
 
     // killer_plant_sprout_pod: 通用占位符
-    registerTrigger('killer_plant_sprout_pod', 'onTurnStart', createPodStubTrigger('killer_plant_sprout_pod'));
+    registerTrigger('killer_plant_sprout_pod', 'onTurnStart', stubTrigger);
 }

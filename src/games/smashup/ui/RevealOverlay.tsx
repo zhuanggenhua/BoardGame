@@ -16,11 +16,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
-import { getCardDef, resolveCardName } from '../data/cards';
+import { getCardDef, getBaseDef, resolveCardName } from '../data/cards';
 import { CardMagnifyOverlay, type CardMagnifyTarget } from './CardMagnifyOverlay';
 import { useEventStreamCursor } from '../../../engine/hooks';
 import type { EventStreamEntry, PlayerId } from '../../../engine/types';
 import { SU_EVENTS } from '../domain/types';
+import { CARD_DISPLAY_CONFIG } from './cardDisplayConfig';
 
 // ============================================================================
 // 类型
@@ -60,9 +61,17 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
 
     const { consumeNew } = useEventStreamCursor({ entries });
 
-    // 消费新事件
+    // 消费新事件（首次挂载时跳过历史事件）
+    const isFirstMount = useRef(true);
     useEffect(() => {
         const { entries: newEntries, didReset } = consumeNew();
+        
+        // 首次挂载时跳过所有历史事件
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            return;
+        }
+        
         if (didReset) {
             setQueue([]);
             if (newEntries.length === 0) return;
@@ -154,7 +163,7 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
 
                 {/* 标题 */}
                 <motion.h2
-                    className="relative text-xl font-black text-amber-100 uppercase tracking-tight mb-5 drop-shadow-lg"
+                    className="relative text-2xl font-black text-amber-100 uppercase tracking-tight mb-6 drop-shadow-lg"
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.1 }}
@@ -173,7 +182,13 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                     >
                         {current.cards.map((card, idx) => {
                             const def = getCardDef(card.defId);
-                            const name = def ? resolveCardName(def, t) : card.defId;
+                            const baseDef = getBaseDef(card.defId);
+                            const isBase = !!baseDef;
+                            const name = def ? resolveCardName(def, t) : (baseDef ? resolveCardName(baseDef, t) : card.defId);
+                            // 统一使用配置：基地 14vw，行动卡/随从 8.5vw
+                            const cardWidth = isBase ? 'w-[14vw]' : 'w-[8.5vw]';
+                            const cardAspect = isBase ? 'aspect-[1.43]' : 'aspect-[0.714]';
+                            const maxWidth = isBase ? 'max-w-[14vw]' : 'max-w-[8.5vw]';
                             return (
                                 <motion.div
                                     key={card.uid}
@@ -183,23 +198,23 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                                     className="flex-shrink-0 flex flex-col items-center gap-1.5 group relative cursor-pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setMagnifyTarget({ defId: card.defId, type: def?.type ?? 'action' });
+                                        setMagnifyTarget({ defId: card.defId, type: isBase ? 'base' : (def?.type ?? 'action') });
                                     }}
                                 >
-                                    <div className="rounded shadow-xl overflow-hidden ring-1 ring-white/20 hover:ring-amber-400/60 transition-all">
-                                        {def?.previewRef ? (
+                                    <div className="rounded shadow-xl overflow-hidden ring-2 ring-white/20 hover:ring-amber-400/60 transition-all">
+                                        {(def?.previewRef || baseDef?.previewRef) ? (
                                             <CardPreview
                                                 previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId } }}
-                                                className="w-[130px] aspect-[0.714] bg-slate-900 rounded"
+                                                className={`${cardWidth} ${cardAspect} bg-slate-900 rounded`}
                                                 alt={name}
                                             />
                                         ) : (
-                                            <div className="w-[130px] aspect-[0.714] bg-slate-800 rounded flex items-center justify-center p-2">
+                                            <div className={`${cardWidth} ${cardAspect} bg-slate-800 rounded flex items-center justify-center p-2`}>
                                                 <span className="text-white text-xs font-bold text-center">{name}</span>
                                             </div>
                                         )}
                                     </div>
-                                    <span className="text-[11px] font-bold text-white/70 max-w-[130px] truncate text-center">
+                                    <span className={`text-xs font-bold text-white/80 ${maxWidth} truncate text-center`}>
                                         {name}
                                     </span>
                                 </motion.div>

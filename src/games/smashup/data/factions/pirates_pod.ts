@@ -9,7 +9,8 @@ export const PIRATE_POD_MINIONS: MinionCardDef[] = [
         nameEn: 'Pirate King',
         faction: 'pirates_pod',
         power: 5,
-        abilityTags: ['special'],
+        // 注意：海盗王的能力是 beforeScoring trigger（自动创建交互），不是点击场上随从激活
+        // 因此不应该有 abilityTags: ['special']
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 0 },
     },
@@ -42,7 +43,8 @@ export const PIRATE_POD_MINIONS: MinionCardDef[] = [
         nameEn: 'First Mate',
         faction: 'pirates_pod',
         power: 2,
-        abilityTags: ['special'],
+        // 注意：大副的能力是 afterScoring trigger（自动创建交互），不是点击场上随从激活
+        // 因此不应该有 abilityTags: ['special']
         count: 4,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 3 },
     },

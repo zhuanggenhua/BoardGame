@@ -134,6 +134,12 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
     const [resolvedSource, setResolvedSource] = useState(() => getCardAtlasSource(atlasId, effectiveLocale));
     const source = resolvedSource ?? getCardAtlasSource(atlasId, effectiveLocale);
 
+    // 当 atlasId 或 locale 变化时，重新获取 source（修复弃牌堆图标不更新的 bug）
+    useEffect(() => {
+        const newSource = getCardAtlasSource(atlasId, effectiveLocale);
+        setResolvedSource(newSource);
+    }, [atlasId, effectiveLocale]);
+
     // 使用统一的 isImagePreloaded 检查（与 CriticalImageGate 共享缓存）
     const preloaded = source ? isImagePreloaded(source.image, effectiveLocale) : false;
     const [loaded, setLoaded] = useState(() => preloaded);

@@ -78,7 +78,7 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 
 | # | 维度 | 核心问题 |
 |---|------|---------|
-| D1 | 语义保真 | 实现是否忠实于权威描述？（多做/少做/做错）。**特别注意**：伤害/debuff 的作用目标是否与描述一致？custom action handler 中 targetId 来源是否正确？**实体筛选/收集操作的范围是否与描述一致？**（"本基地" vs "其他基地" vs "所有基地"等） |
+| D1 | 语义保真 | 实现是否忠实于权威描述？（多做/少做/做错）。**特别注意**：伤害/debuff 的作用目标是否与描述一致？custom action handler 中 targetId 来源是否正确？**实体筛选/收集操作的范围是否与描述一致？**（"本基地" vs "其他基地" vs "所有基地"等）**力量修正的主语是否与描述一致？**（"你/玩家 +N 力量" vs "随从 +N 力量"） |
 | D2 | 边界完整 | 所有限定条件是否全程约束？ |
 | D3 | 数据流闭环 | 定义→注册→执行→状态→验证→UI→i18n→测试 是否闭环？**写入→读取 ID 一致性**、**引擎 API 调用契约** |
 | D4 | 查询一致性 | 可被 buff/光环动态修改的属性是否走统一入口？ |
@@ -86,7 +86,7 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 | D6 | 副作用传播 | 新增效果是否触发已有机制的连锁？ |
 | D7 | 资源守恒 | 代价/消耗/限制正确扣除和恢复？**有代价操作的验证层是否拒绝必然无效果的激活？** |
 | D8 | 时序正确 | 触发顺序和生命周期正确？**引擎批处理时序与 UI 异步交互是否对齐？阶段结束副作用与阶段推进的执行顺序是否导致验证层状态不一致？事件产生门控是否对所有同类技能普适生效（禁止硬编码特定 abilityId）？状态写入时机是否在消费窗口内（写入后是否有机会被消费，还是会被清理逻辑先抹掉）？交互解决后是否自动恢复流程推进（D8.4）？多系统协作时，同批事件的处理顺序（按 priority）是否导致低优先级系统的状态驱动检查在高优先级系统执行前误触发？回调函数（onPlay/onMinionPlayed 等）中的计数器检查是否使用了正确的 post-reduce 阈值（首次=1 而非 0）？是否使用权威计数器而非派生状态判定"首次"？** |
-| D9 | 幂等与重入 | 重复触发/撤销重做安全？**后处理循环中的事件去重集合是否从正确的数据源构建？** |
+| D9 | 幂等与重入 | 重复触发/撤销重做安全？**后处理循环中的事件去重集合是否从正确的数据源构建？交互解决后函数重入时，函数内所有触发点是否都有防重复机制？** |
 | D10 | 元数据一致 | categories/tags/meta 与实际行为匹配？ |
 | D11 | **Reducer 消耗路径** | 事件写入的资源/额度/状态，在 reducer 消耗时走的分支是否正确？**多种额度来源并存时消耗优先级是否正确？** |
 | D12 | **写入-消耗对称** | 能力/事件写入的字段，在所有消费点（reducer/validate/UI）是否被正确读取和消耗？写入路径和消耗路径的条件分支是否对称？**Reducer 操作范围是否与 payload 声明的范围一致（禁止全量清空 payload 未涉及的数据）？** |
@@ -126,6 +126,7 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 | D46 | **交互选项 UI 渲染模式声明完整性** | 交互选项缺少 `displayMode` 声明，UI 不知道如何渲染？**触发条件**：新增交互能力、修复"UI 显示不对"/"卡牌预览不显示"类 bug。**核心原则**：交互选项的 `value` 字段包含 `defId`/`cardUid` 等字段时，UI 会自动推断为"卡牌选择"并显示卡牌预览。如果业务语义不是卡牌选择（如"是否打出牌库顶的随从"），必须显式声明 `displayMode: 'button'` 覆盖自动推断。**审查方法**：① **识别交互选项结构**：grep 所有 `createSimpleChoice` 调用，检查选项的 `value` 字段包含哪些字段 ② **判定业务语义**：选项是"从列表中选择一张卡"（卡牌选择）还是"确认/取消操作"（按钮选择）？③ **检查 displayMode 声明**：业务语义是按钮选择 + `value` 包含 `defId`/`cardUid` → 必须显式声明 `displayMode: 'button'`；业务语义是卡牌选择 → 可以省略 `displayMode`（自动推断）④ **UI 渲染验证**：实际运行时 UI 是否按预期渲染？（卡牌预览 vs 按钮）。**典型缺陷模式**：❌ 选项 `value: { cardUid, defId }` + 无 `displayMode` 声明 → UI 自动推断为卡牌选择，显示卡牌预览（可能不符合预期）❌ 选项 `value: { done: true }` + 无 `displayMode` 声明 → UI 推断为按钮（正确），但不一致（其他选项有 `displayMode` 声明）。**修复策略**：① **显式声明 displayMode**：所有交互选项都显式声明 `displayMode: 'button'` 或 `displayMode: 'card'`，不依赖自动推断 ② **统一声明风格**：同一交互的所有选项使用相同的声明风格（都显式声明或都省略）。**排查信号**：① "UI 显示不对" + 选项包含 `defId`/`cardUid` 但不应该显示卡牌预览 = 高度怀疑缺少 `displayMode: 'button'` 声明 ② "卡牌预览不显示" + 选项应该显示卡牌但 UI 显示按钮 = 高度怀疑错误声明了 `displayMode: 'button'`。**参考文档**：`docs/bugs/smashup-robot-hoverbot-interaction-double-trigger.md`。**教训**：盘旋机器人交互选项包含 `cardUid` 和 `defId`（用于日志和调试），但业务语义是"是否打出牌库顶的随从"（按钮选择），未显式声明 `displayMode: 'button'`，导致 UI 自动推断为卡牌选择并显示卡牌预览。修复：添加 `displayMode: 'button' as const`。 |
 | D47 | **E2E 测试覆盖完整性** | 测试只覆盖引擎层（GameTestRunner），未覆盖完整的命令执行流程（WebSocket 同步）？**触发条件**：编写新测试、修复"本地测试通过但实际无效"类 bug、架构重构后测试仍通过但功能破坏。**核心原则**：GameTestRunner 直接调用 `executePipeline`，绕过了传输层（WebSocket）和 UI 层的完整流程。如果 bug 发生在 pipeline 之外的层级（如 `postProcessSystemEvents` 被调用两次、UI 交互一闪而过），GameTestRunner 无法发现。**审查方法**：① **识别测试覆盖范围**：测试使用 GameTestRunner（引擎层）还是 E2E 测试（完整流程）？② **追踪 bug 发生层级**：bug 发生在 pipeline 内部（reducer/execute/validate）还是 pipeline 外部（系统钩子/UI 层/传输层）？③ **判定标准**：bug 在 pipeline 内部 + GameTestRunner 测试 → ✅ 可以发现；bug 在 pipeline 外部 + GameTestRunner 测试 → ❌ 无法发现；bug 在任何层级 + E2E 测试 → ✅ 可以发现。**典型缺陷模式**：❌ 只有 GameTestRunner 测试，未覆盖 E2E → pipeline 外部的 bug（如 `postProcessSystemEvents` 重复调用）无法发现 ❌ E2E 测试存在但未覆盖关键交互路径（如 onPlay 能力触发）→ 交互相关 bug 无法发现。**修复策略**：① **补充 E2E 测试**：对关键交互路径（onPlay/onDestroy/响应窗口/交互链）补充 E2E 测试 ② **E2E 测试优先**：新增功能时优先编写 E2E 测试，GameTestRunner 作为补充（快速验证引擎层逻辑）③ **测试金字塔**：E2E 测试覆盖关键路径（少量），GameTestRunner 覆盖边界条件和组合场景（大量）。**排查信号**：① "GameTestRunner 测试全绿但实际无效" = 高度怀疑 bug 在 pipeline 外部 ② "架构重构后测试仍通过但功能破坏" = 高度怀疑测试覆盖不完整。**参考文档**：`docs/bugs/smashup-robot-hoverbot-interaction-double-trigger.md`。**教训**：盘旋机器人 onPlay 能力的交互一闪而过，GameTestRunner 测试全绿（因为直接调用 `executePipeline`，`postProcessSystemEvents` 只被调用一次），但实际游戏中 `postProcessSystemEvents` 在 pipeline 步骤 4.5 和步骤 5 都被调用，导致交互重复创建。E2E 测试可以发现这个问题（因为经过完整的命令执行流程）。 |
 | D48 | **UI 交互渲染模式完整性** | 所有交互选项是否显式声明 `displayMode`？**触发条件**：新增交互能力、修复"UI 显示不对"类 bug、全面审计。**核心原则**：显式声明 > 自动推断。所有交互选项必须显式声明 `displayMode: 'card'` 或 `displayMode: 'button'`，不依赖 UI 层自动推断。**审查方法**：① **静态扫描**：运行 `node scripts/check-displaymode.mjs` 自动检查所有缺失 displayMode 的选项 ② **代码审查**：检查 `createSimpleChoice` 调用，确认所有选项都有 displayMode 声明 ③ **UI 渲染验证**：E2E 测试验证 UI 是否按预期渲染（卡牌预览 vs 按钮）。**判定标准**：业务语义是卡牌选择 → `displayMode: 'card'`；业务语义是按钮选择 → `displayMode: 'button'`；缺少 displayMode → ❌ 不完整。**典型缺陷模式**：❌ 卡牌选项缺少 `displayMode: 'card'` → UI 可能显示按钮 ❌ 跳过选项缺少 `displayMode: 'button'` → UI 可能显示为其他形式 ❌ displayMode 与业务语义不符（如传送门选随从用 'button' 而非 'card'）。**修复策略**：① 运行 `node scripts/fix-all-displaymode.mjs` 批量修复 ② 手动修复 displayMode 错误（如 'button' → 'card'）③ E2E 测试验证 UI 渲染。**排查信号**：① "UI 显示按钮而非卡牌预览" = 高度怀疑缺少 `displayMode: 'card'` ② "卡牌预览不显示" = 高度怀疑缺少 displayMode 或 displayMode 错误。**参考文档**：`docs/ai-rules/testing-audit-d48-ui-rendering.md`。**教训**：传送门交互显示按钮而非卡牌预览，全项目 86 处缺失 displayMode 声明，审计未发现。根因：D34 只关注误判场景，未关注完整性；缺少自动化扫描工具；E2E 测试未验证 UI 渲染。修复：补充 D48 维度 + 创建自动化工具 + 补充 E2E UI 渲染测试。 |
+| D49 | **abilityTags 与触发机制一致性** | 卡牌定义的 `abilityTags` 是否与实际触发机制一致？**触发条件**：新增卡牌/技能、修复"UI 错误高亮"/"按钮不应该显示"类 bug、全面审计。**核心原则**：`abilityTags` 是 UI 层用于判断"是否可主动激活"的元数据，必须与实际触发机制一致。被动触发器（`beforeScoring`/`afterScoring`/`onMinionDestroyed` 等）不应该有 `abilityTags: ['special']`，否则 UI 会错误地高亮并允许玩家点击。**审查方法**：① **识别所有 special 标签**：grep `abilityTags.*special` 找到所有声明 special 的卡牌 ② **追踪触发机制**：每个 special 卡牌的能力是如何触发的？是主动激活（`ACTIVATE_SPECIAL` 命令）还是被动触发器（`registerTrigger`）？③ **判定标准**：主动激活（需要玩家点击）→ ✅ 应该有 `abilityTags: ['special']`；被动触发器（自动触发）→ ❌ 不应该有 `abilityTags: ['special']`；混合模式（既有主动又有被动）→ ⚠️ 需要拆分为两个能力或使用条件判断。**典型案例**：SmashUp 侦察兵（alien_scout）— 卡牌定义有 `abilityTags: ['special']`，但能力是 `afterScoring` 触发器（被动触发），导致 UI 在 `scoreBases` 阶段错误地高亮侦察兵，但此时基地已计分完毕不在达标列表中，玩家点击无效。修复：移除 `abilityTags: ['special']`，添加注释说明是被动触发。**审查输出格式**：```卡牌: alien_scout (src/games/smashup/data/factions/aliens.ts:28)abilityTags: ['special'] ❌触发机制: registerTrigger('alien_scout', 'afterScoring', ...) — 被动触发判定: ❌ 不一致（被动触发不应该有 special 标签）UI 影响: BaseZone.tsx 中 canActivateSpecial=true，错误高亮修复方案: 移除 abilityTags: ['special']```**关联维度**：D10（元数据一致）— handler categories 与输出事件一致；D49（abilityTags 一致）— abilityTags 与触发机制一致。两者都是元数据一致性，但检查的对象不同（handler vs 卡牌定义）。**排查信号**：① "计分后随从仍然高亮" = 高度怀疑被动触发器错误声明 special 标签 ② "点击随从无反应" = 高度怀疑 UI 高亮但实际无对应命令处理器。**自动化检查**：创建 Property 测试遍历所有 special 卡牌，检查是否有对应的 `ACTIVATE_SPECIAL` 处理器或被动触发器注册。 |
 
 ### 需要展开的关键维度
 
@@ -292,6 +293,137 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 1. **事件层**：断言产生了目标事件（如 `POWER_COUNTER_ADDED`）。
 2. **状态层**：断言 reducer 写入了目标字段（如 `minion.powerModifier` 递增）。
 3. **UI 层**：检查渲染条件是否直接读取该字段（如 `powerModifier > 0` 显示徽章/标记），避免读错字段或漏读。
+
+
+**D9 幂等与重入 — 深入审计**（新增/修改创建交互并 halt 的函数、或修"交互解决后能力重复触发"时触发）：
+
+**D9.1 后处理循环事件去重**（原有内容）：后处理循环中判定"新事件"时，去重集合必须从**输入事件**构建，而非从**输出事件**构建。详见 D40。
+
+**D9.2 交互解决后函数重入防重复（强制·通用）**：当函数创建交互并 halt 流程时，交互解决后函数会被重入。函数内部的**所有触发点**（beforeScoring/afterScoring/onPlay/onDestroy/onPhaseStart/onPhaseEnd 等）都必须有防重复机制，不能只保护部分触发点。
+
+**核心原则**：
+- 创建交互 + halt 流程 = 函数会被重入（交互解决后流程恢复，函数继续执行或被再次调用）
+- 函数内有多个触发点时，必须为**每个触发点**单独添加防重复机制
+- 对称设计：`beforeXxxTriggeredYyy` 防止 `beforeXxx` 重复，`afterXxxTriggeredYyy` 防止 `afterXxx` 重复
+- 防重复标记必须在回合/阶段结束时清理，避免泄漏到下一回合
+
+**审查方法**：
+1. **识别创建交互并 halt 的函数**：grep 所有返回 `{ halt: true }` 或设置 `flowHalted=true` 的函数（如 `scoreOneBase`、`processPhaseEnd`、`executeTurn` 等）
+2. **列出函数内所有触发点**：函数内调用了哪些触发器？（`triggerBeforeScoring`/`triggerAfterScoring`/`fireMinionPlayedTriggers`/`fireDestroyTriggers` 等）
+3. **检查每个触发点的防重复机制**：
+   - 是否有"已触发"标记字段？（如 `beforeScoringTriggeredBases`/`afterScoringTriggeredBases`）
+   - 触发前是否检查标记？（如 `if (alreadyTriggered) continue`）
+   - 触发后是否立即设置标记？（发射标记事件 → 立即 reduce 到本地 core 副本）
+4. **检查标记清理时机**：标记在回合/阶段结束时是否正确清理？（通常在 `TURN_CHANGED`/`PHASE_CHANGED` 事件的 reducer 中清理）
+5. **对称性检查**：如果函数有 `beforeXxx` 和 `afterXxx` 两个触发点，是否都有对应的防重复机制？
+
+**典型缺陷模式**：
+- ❌ 只为 `beforeScoring` 添加 `beforeScoringTriggeredBases`，遗漏 `afterScoring` → 交互解决后重入时 `afterScoring` 重复触发
+- ❌ 防重复标记在触发后异步设置（等待 pipeline reduce）→ 同一轮重入时标记尚未生效，仍会重复触发
+- ❌ 防重复标记未在回合结束时清理 → 泄漏到下回合，导致下回合该触发点永远不触发
+- ❌ 多个触发点共享同一个标记 → 触发其中一个后，其他触发点也被误屏蔽
+
+**修复模板**：
+```typescript
+// 1. 在 core 类型中添加防重复标记字段
+export interface GameCore {
+  // ...
+  beforeScoringTriggeredBases?: number[];  // 已触发 beforeScoring 的基地
+  afterScoringTriggeredBases?: number[];   // 已触发 afterScoring 的基地
+}
+
+// 2. 在事件类型中添加标记事件
+export const EVENTS = defineEvents({
+  'game:before_scoring_triggered': { audio: 'silent', sound: null },
+  'game:after_scoring_triggered': { audio: 'silent', sound: null },
+  'game:before_scoring_cleared': { audio: 'silent', sound: null },
+  'game:after_scoring_cleared': { audio: 'silent', sound: null },
+});
+
+// 3. 在函数中检查并设置标记
+function scoreOneBase(state: MatchState, baseIndex: number): MatchState {
+  let core = state.core;
+  
+  // beforeScoring 防重复
+  const alreadyTriggeredBefore = core.beforeScoringTriggeredBases?.includes(baseIndex);
+  if (!alreadyTriggeredBefore) {
+    // 触发 beforeScoring 能力
+    const beforeEvents = triggerBeforeScoring(core, baseIndex);
+    
+    // 立即标记已触发（发射事件 + 立即 reduce）
+    const markEvent = { type: 'game:before_scoring_triggered' as const, baseIndex };
+    core = reduce(core, markEvent);
+    
+    // 应用 beforeScoring 事件
+    for (const event of beforeEvents) {
+      core = reduce(core, event);
+    }
+  }
+  
+  // ... 计分逻辑 ...
+  
+  // afterScoring 防重复
+  const alreadyTriggeredAfter = core.afterScoringTriggeredBases?.includes(baseIndex);
+  if (!alreadyTriggeredAfter) {
+    // 触发 afterScoring 能力
+    const afterEvents = triggerAfterScoring(core, baseIndex);
+    
+    // 立即标记已触发
+    const markEvent = { type: 'game:after_scoring_triggered' as const, baseIndex };
+    core = reduce(core, markEvent);
+    
+    // 应用 afterScoring 事件
+    for (const event of afterEvents) {
+      core = reduce(core, event);
+    }
+  }
+  
+  return { ...state, core };
+}
+
+// 4. 在 reducer 中处理标记事件
+case 'game:before_scoring_triggered':
+  return {
+    ...core,
+    beforeScoringTriggeredBases: [
+      ...(core.beforeScoringTriggeredBases || []),
+      event.baseIndex
+    ]
+  };
+
+case 'game:after_scoring_triggered':
+  return {
+    ...core,
+    afterScoringTriggeredBases: [
+      ...(core.afterScoringTriggeredBases || []),
+      event.baseIndex
+    ]
+  };
+
+// 5. 在阶段/回合结束时清理标记
+case 'game:phase_changed':
+  if (event.newPhase === 'nextPhase') {
+    return {
+      ...core,
+      beforeScoringTriggeredBases: undefined,
+      afterScoringTriggeredBases: undefined
+    };
+  }
+  return core;
+```
+
+**排查信号**：
+- "交互解决后能力重复触发" + 日志显示同一能力被触发两次 = 高度怀疑缺少防重复机制
+- "只有部分触发点有防重复" + 最近修改了 `flowHalted` 清除逻辑 = 高度怀疑遗漏了某些触发点
+- "上回合的防重复标记泄漏到下回合" = 标记未在回合结束时清理
+
+**参考案例**：
+- SmashUp 巫师学院（Wizard Academy）：Commit `5383362` 只为 `beforeScoring` 添加了 `beforeScoringTriggeredBases`，遗漏了 `afterScoring` 的 `afterScoringTriggeredBases`。修复 `flowHalted` 清除逻辑后，交互解决时 `scoreOneBase` 被重入，`afterScoring` 能力重复触发，玩家可以反复点击加分。修复：添加 `afterScoringTriggeredBases` 机制，与 `beforeScoringTriggeredBases` 对称。
+
+**关联维度**：
+- D8（时序正确）：交互解决后是否自动恢复流程推进？
+- D39（流程控制标志清除完整性）：`flowHalted` 标志的清除条件是否正确？
+- D14（回合清理完整）：防重复标记是否在回合结束时清理？
 
 
 **D10 元数据一致 — 深入审计**（新增/修改 handler 时触发）：mock 调用每个 handler，检查输出事件类型与 categories 声明一致。**核心原则：handler 的元数据声明必须与实际运行时行为一致，否则下游依赖元数据做分支决策的逻辑会被跳过。** 典型：handler 产生伤害事件 → categories 必须含 'damage'，否则依赖此标记的下游阶段（如防御阶段）被跳过。

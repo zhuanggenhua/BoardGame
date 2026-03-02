@@ -19,9 +19,11 @@ import {
     createInteractionSystem,
     createSimpleChoiceSystem,
     createEventStreamSystem,
+    createActionLogSystem,
 } from '../../../engine';
 import { smashUpFlowHooks } from '../domain/index';
 import { createSmashUpEventSystem } from '../domain/systems';
+import { ACTION_ALLOWLIST, formatSmashUpActionEntry } from '../actionLog';
 
 // ============================================================================
 // 测试用系统列表（内联创建，避免从 game.ts 导入导致循环依赖）
@@ -29,6 +31,10 @@ import { createSmashUpEventSystem } from '../domain/systems';
 
 export const smashUpTestSystems: EngineSystem<SmashUpCore>[] = [
     createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+    createActionLogSystem<SmashUpCore>({
+        commandAllowlist: ACTION_ALLOWLIST,
+        formatEntry: formatSmashUpActionEntry,
+    }),
     createInteractionSystem(),
     createSimpleChoiceSystem(),
     createEventStreamSystem(),

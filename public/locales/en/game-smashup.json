@@ -173,7 +173,19 @@
     "madnessDrawn": "{{playerId}} draws {{count}} madness cards",
     "madnessReturned": "{{playerId}} returns a madness card",
     "baseDeckReordered": "Base deck reordered",
-    "onBase": " → {{base}}"
+    "onBase": " → {{base}}",
+    "revealHand": "{{playerId}} reveals hand ({{count}} cards)",
+    "revealDeckTop": "{{playerId}} reveals deck top ({{count}} cards)",
+    "permanentPowerAdded": "+{{amount}} permanent power:",
+    "tempPowerAdded": "+{{amount}} temp power:",
+    "ongoingCounterChanged": "Ongoing counter {{delta}}:",
+    "breakpointModified": "{{base}} breakpoint {{delta}}",
+    "baseDeckShuffled": "Base deck shuffled",
+    "specialLimitUsed": "{{playerId}} uses special {{limitType}} limit",
+    "abilityTriggered": "Ability triggered ({{triggerType}}):",
+    "baseCleared": "Clear {{base}}",
+    "deckReordered": "{{playerId}} reorders deck",
+    "factionSelected": "{{playerId}} selects faction: {{faction}}"
   },
   "factions": {
     "pirates": {

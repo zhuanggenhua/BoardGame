@@ -17,6 +17,7 @@ import {
     filterProtectedReturnEvents,
     filterProtectedDeckBottomEvents,
 } from './reducer';
+import { interceptEvent } from './ongoingEffects';
 
 // ============================================================================
 // SmashUp 事件处理系统
@@ -65,11 +66,28 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                             
                             if (result) {
                                 newState = result.state;
-                                // 交互处理函数返回的事件会由 pipeline 的 postProcessSystemEvents 统一处理
-                                // （包括 processDestroyMoveCycle、保护过滤、触发链等）
-                                // 这里只需要直接返回事件，避免重复处理导致 onDestroy 等触发器被调用两次
-                                const rawEvents = result.events as SmashUpEvent[];
-                                nextEvents.push(...rawEvents);
+                                // 【关键修复】交互处理函数返回的事件必须经过拦截器过滤
+                                // 原因：pipeline.reduceEventsToCore 只处理 execute() 返回的事件，
+                                // 而 SmashUpEventSystem.afterEvents 返回的事件走的是系统事件路径，
+                                // 不会自动经过 domain.interceptEvent。
+                                // 必须在这里手动调用拦截器，确保 tooth_and_claw 等保护机制生效。
+                                let rawEvents = result.events as SmashUpEvent[];
+                                const interceptedEvents: SmashUpEvent[] = [];
+                                for (const evt of rawEvents) {
+                                    const interceptResult = interceptEvent(newState.core, evt);
+                                    if (interceptResult === null) {
+                                        // 事件被吞噬，跳过
+                                        continue;
+                                    } else if (interceptResult === undefined) {
+                                        // 无拦截器匹配，保持原事件
+                                        interceptedEvents.push(evt);
+                                    } else {
+                                        // 事件被替换（如 MINION_RETURNED → ONGOING_DETACHED）
+                                        const batch = Array.isArray(interceptResult) ? interceptResult : [interceptResult];
+                                        interceptedEvents.push(...batch as SmashUpEvent[]);
+                                    }
+                                }
+                                nextEvents.push(...interceptedEvents);
 
                                 // 补发延迟的 BASE_CLEARED/BASE_REPLACED 事件
                                 // afterScoring 基地能力创建交互时，清除事件被延迟到交互解决后发出，

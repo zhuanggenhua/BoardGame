@@ -419,6 +419,7 @@ function registerNinjaOngoingEffects(): void {
     });
 
     // 暗杀：回合结束时消灭目标随从（附着在随从上）
+    // 注意：只在暗杀卡拥有者的回合结束时触发
     registerTrigger('ninja_assassination', 'onTurnEnd', (trigCtx) => {
         const events: SmashUpEvent[] = [];
         // 查找所有附着了 assassination 的随从
@@ -426,7 +427,8 @@ function registerNinjaOngoingEffects(): void {
             const base = trigCtx.state.bases[i];
             for (const m of base.minions) {
                 const assassinationCard = m.attachedActions.find(a => a.defId === 'ninja_assassination');
-                if (assassinationCard) {
+                // 只在暗杀卡拥有者的回合结束时触发
+                if (assassinationCard && assassinationCard.ownerId === trigCtx.playerId) {
                     events.push({
                         type: SU_EVENTS.MINION_DESTROYED,
                         payload: {

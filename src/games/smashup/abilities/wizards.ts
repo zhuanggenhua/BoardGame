@@ -14,6 +14,7 @@ import {
     shuffleHandIntoDeck,
     getMinionPower,
     buildMinionTargetOptions,
+    buildBaseTargetOptions,
     revealDeckTop,
     buildAbilityFeedback,
 } from '../domain/abilityHelpers';
@@ -98,7 +99,7 @@ function wizardNeophyte(ctx: AbilityContext): AbilityResult {
             { id: 'to_hand', label: '放入手牌', value: { action: 'to_hand' } },
             { id: 'play_extra', label: '作为额外行动打出', value: { action: 'play_extra' } },
         ],
-        'wizard_neophyte',
+        { sourceId: 'wizard_neophyte', displayCard: { defId: topCard.defId } },
     );
     const extended = {
         ...interaction,
@@ -431,16 +432,40 @@ export function registerWizardInteractionHandlers(): void {
                 } as SmashUpEvent],
             };
         }
-        // play_extra: 放入手牌→立刻打出（不消耗行动额度）
+        
+        // play_extra: 检查是否为 ongoing 行动卡
+        const cardDef = getCardDef(defId);
+        const isOngoing = cardDef?.type === 'action' && (cardDef as any).subtype === 'ongoing';
+        
+        if (isOngoing) {
+            // ongoing 行动卡需要先选择目标基地
+            const candidates = state.core.bases.map((base, i) => {
+                const baseDef = getBaseDef(base.defId);
+                return { baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` };
+            });
+            const baseOptions = buildBaseTargetOptions(candidates, state.core);
+            const interaction = createSimpleChoice(
+                `wizard_neophyte_choose_base_${timestamp}`, playerId,
+                `选择「${cardDef?.name ?? defId}」的目标基地`, baseOptions,
+                { sourceId: 'wizard_neophyte_choose_base', displayCard: { defId } },
+            );
+            // 手动添加 continuationContext（与第一个交互相同的模式）
+            const extended = {
+                ...interaction,
+                data: { ...interaction.data, continuationContext: { cardUid, defId } },
+            };
+            // ongoing 卡直接从牌库打出，不经过手牌
+            return { state: queueInteraction(state, extended), events: [] };
+        }
+        
+        // 非 ongoing 行动卡：放入手牌→立刻打出（不消耗行动额度）
         const events: SmashUpEvent[] = [
             // 1. 从牌库抽到手牌（ACTION_PLAYED reducer 需要从手牌移除）
             { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId, count: 1, cardUids: [cardUid] }, timestamp } as SmashUpEvent,
-            // 2. 直接打出
-            { type: SU_EVENTS.ACTION_PLAYED, payload: { playerId, cardUid, defId }, timestamp } as SmashUpEvent,
-            // 3. 补偿行动额度（ACTION_PLAYED +1 actionsPlayed，这里 +1 actionLimit 抵消）
-            { type: SU_EVENTS.LIMIT_MODIFIED, payload: { playerId, limitType: 'action', delta: 1 }, timestamp } as SmashUpEvent,
+            // 2. 直接打出（isExtraAction: true 表示不消耗行动次数）
+            { type: SU_EVENTS.ACTION_PLAYED, payload: { playerId, cardUid, defId, isExtraAction: true }, timestamp } as SmashUpEvent,
         ];
-        // 4. 执行该卡的 onPlay 能力
+        // 3. 执行该卡的 onPlay 能力
         const executor = resolveOnPlay(defId);
         if (executor) {
             let simCore = state.core;
@@ -462,7 +487,51 @@ export function registerWizardInteractionHandlers(): void {
             if (result.matchState) {
                 return { state: result.matchState, events };
             }
+        } else {
+            console.warn('[wizard_neophyte] 行动卡没有注册 onPlay 能力:', defId);
         }
+        return { state, events };
+    });
+    
+    // 学徒：选择 ongoing 行动卡的目标基地后打出
+    registerInteractionHandler('wizard_neophyte_choose_base', (state, playerId, value, iData, random, timestamp) => {
+        const { baseIndex } = value as { baseIndex: number };
+        const ctx = (iData as Record<string, unknown>)?.continuationContext as { cardUid: string; defId: string } | undefined;
+        const cardUid = ctx?.cardUid ?? '';
+        const defId = ctx?.defId ?? '';
+        
+        // ongoing 行动卡从牌库直接打出并附着到基地
+        const events: SmashUpEvent[] = [
+            // 1. 从牌库移除卡牌
+            { type: SU_EVENTS.CARD_REMOVED_FROM_DECK, payload: { playerId, cardUid, defId, reason: 'wizard_neophyte' }, timestamp } as SmashUpEvent,
+            // 2. 附着到目标基地
+            { type: SU_EVENTS.ONGOING_ATTACHED, payload: { cardUid, defId, ownerId: playerId, targetType: 'base', targetBaseIndex: baseIndex }, timestamp } as SmashUpEvent,
+        ];
+        
+        // 3. 执行该卡的 onPlay 能力（如果有）
+        const executor = resolveOnPlay(defId);
+        if (executor) {
+            let simCore = state.core;
+            for (const evt of events) {
+                simCore = reduce(simCore, evt);
+            }
+            const abilityCtx: AbilityContext = {
+                state: simCore,
+                matchState: { ...state, core: simCore },
+                playerId,
+                cardUid,
+                defId,
+                baseIndex,
+                random,
+                now: timestamp,
+            };
+            const result = executor(abilityCtx);
+            events.push(...result.events);
+            if (result.matchState) {
+                return { state: result.matchState, events };
+            }
+        }
+        
         return { state, events };
     });
 

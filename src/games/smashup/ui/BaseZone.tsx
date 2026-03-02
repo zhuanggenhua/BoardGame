@@ -126,7 +126,7 @@ export const BaseZone: React.FC<{
                                         previewRef={actionDef?.previewRef
                                             ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: oa.defId } }
                                             : undefined}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full"
                                         title={actionTitle}
                                     />
                                 </div>
@@ -192,7 +192,7 @@ export const BaseZone: React.FC<{
                         previewRef={baseDef?.previewRef
                             ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: base.defId } }
                             : undefined}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full"
                         title={baseName}
                     />
                     </motion.div>
@@ -505,7 +505,7 @@ const MinionCard: React.FC<{
                     previewRef={def?.previewRef
                         ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: minion.defId } }
                         : undefined}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full"
                     title={minionTitle}
                 />
 
@@ -642,7 +642,7 @@ const MinionCard: React.FC<{
                                             previewRef={actionDef?.previewRef
                                                 ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: aa.defId } }
                                                 : undefined}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full"
                                             title={actionName}
                                         />
                                     </div>

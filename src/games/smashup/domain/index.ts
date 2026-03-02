@@ -259,19 +259,38 @@ function scoreOneBase(
     const interactionBeforeAfterScoring = ms?.sys?.interaction?.current?.id ?? null;
     const queueLenBeforeAfterScoring = ms?.sys?.interaction?.queue?.length ?? 0;
 
-    // 触发 afterScoring 基地能力（使用 reduce 后的 core，包含 beforeScoring 效果）
-    const afterCtx = {
-        state: updatedCore,
-        matchState: ms,
-        baseIndex,
-        baseDefId: base.defId,
-        playerId: pid,
-        rankings,
-        now,
-    };
-    const afterResult = triggerBaseAbility(base.defId, 'afterScoring', afterCtx);
-    events.push(...afterResult.events);
-    if (afterResult.matchState) ms = afterResult.matchState;
+    // 检查是否已经触发过 afterScoring（防止交互解决后重复触发）
+    const alreadyTriggeredAfterScoring = updatedCore.afterScoringTriggeredBases?.includes(baseIndex) ?? false;
+
+    let afterResult: BaseAbilityResult = { events: [] };
+    if (!alreadyTriggeredAfterScoring) {
+        // 触发 afterScoring 基地能力（使用 reduce 后的 core，包含 beforeScoring 效果）
+        const afterCtx = {
+            state: updatedCore,
+            matchState: ms,
+            baseIndex,
+            baseDefId: base.defId,
+            playerId: pid,
+            rankings,
+            now,
+        };
+        afterResult = triggerBaseAbility(base.defId, 'afterScoring', afterCtx);
+        events.push(...afterResult.events);
+        if (afterResult.matchState) ms = afterResult.matchState;
+
+        // 发射事件标记此基地已触发过 afterScoring
+        const markEvent = {
+            type: SU_EVENT_TYPES.AFTER_SCORING_TRIGGERED,
+            payload: { baseIndex },
+            timestamp: now,
+        };
+        events.push(markEvent as unknown as SmashUpEvent);
+
+        // 立即 reduce 到本地 core 副本，确保后续调用 scoreOneBase 时能看到"已触发"标记
+        updatedCore = reduce(updatedCore, markEvent as unknown as SmashUpEvent);
+    } else {
+        console.log('[scoreBase] afterScoring already triggered for this base, skipping');
+    }
 
     // 将 afterScoring 基地能力产生的事件 reduce 到 core，
     // 确保 ongoing afterScoring 触发器使用最新状态。
@@ -284,6 +303,19 @@ function scoreOneBase(
 
     // 触发 ongoing afterScoring（如 pirate_first_mate 移动到其他基地）
     // 使用 reduce 后的 core，包含基地能力的效果（如随从已被放入牌库底）
+    console.log('[scoreBase] 准备触发 ongoing afterScoring:', {
+        baseIndex,
+        baseDefId: base.defId,
+        afterScoringCoreBasesCount: afterScoringCore.bases.length,
+        minionsOnBase: afterScoringCore.bases[baseIndex]?.minions.map(m => ({
+            uid: m.uid,
+            defId: m.defId,
+            owner: m.owner,
+            controller: m.controller,
+        })) ?? [],
+        hasMatchState: !!ms,
+    });
+    
     const afterScoringEvents = fireTriggers(afterScoringCore, 'afterScoring', {
         state: afterScoringCore,
         playerId: pid,
@@ -347,9 +379,11 @@ function scoreOneBase(
     // 不影响 beforeScoring/onBaseRevealed 等其他来源的交互。
     if (afterScoringCreatedInteraction) {
         // 把 postScoringEvents 序列化存到交互的 continuationContext 中
-        const interaction = ms!.sys.interaction!.current ?? ms!.sys.interaction!.queue[ms!.sys.interaction!.queue.length - 1];
-        if (interaction?.data) {
-            const data = interaction.data as Record<string, unknown>;
+        // 【修复】如果有多个 afterScoring 交互（如母舰 + 侦察兵），必须存到第一个交互中
+        // 这样第一个交互解决时会传递给下一个，最后一个解决时才会补发 BASE_CLEARED
+        const firstInteraction = ms!.sys.interaction!.current ?? ms!.sys.interaction!.queue[0];
+        if (firstInteraction?.data) {
+            const data = firstInteraction.data as Record<string, unknown>;
             const ctx = (data.continuationContext ?? {}) as Record<string, unknown>;
             ctx._deferredPostScoringEvents = postScoringEvents.map(e => ({
                 type: e.type,
@@ -686,9 +720,14 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 return { events, halt: true, updatedState: currentMatchState } as PhaseExitResult;
             }
 
-            // 清空 beforeScoring 触发标记（计分阶段结束）
+            // 清空 beforeScoring 和 afterScoring 触发标记（计分阶段结束）
             events.push({
                 type: SU_EVENT_TYPES.BEFORE_SCORING_CLEARED,
+                payload: {},
+                timestamp: now,
+            } as unknown as SmashUpEvent);
+            events.push({
+                type: SU_EVENT_TYPES.AFTER_SCORING_CLEARED,
                 payload: {},
                 timestamp: now,
             } as unknown as SmashUpEvent);
@@ -1013,6 +1052,16 @@ function postProcessSystemEvents(
         sysAny._processedPlayedEvents = new Set<string>();
     }
     const processedSet = sysAny._processedPlayedEvents as Set<string>;
+    
+    // 【修复】清理返回手牌的随从的去重标记
+    // 当随从返回手牌后再次打出时，应该重新触发 onPlay 能力
+    for (const event of afterAffect.events) {
+        if (event.type === SU_EVENTS.MINION_RETURNED) {
+            const returnedEvt = event as { type: string; payload: { minionUid: string; fromBaseIndex: number } };
+            const eventKey = `MINION:${returnedEvt.payload.minionUid}@${returnedEvt.payload.fromBaseIndex}`;
+            processedSet.delete(eventKey);
+        }
+    }
     
     for (const event of afterAffect.events) {
         if (event.type === SU_EVENTS.MINION_PLAYED) {

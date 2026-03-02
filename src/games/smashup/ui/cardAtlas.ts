@@ -124,3 +124,6 @@ export function initSmashUpAtlases() {
 
 /** @deprecated 使用 initSmashUpAtlases 代替 */
 export const initSmashUpCardAtlases = initSmashUpAtlases;
+
+// 模块加载时同步注册所有图集（包括 POD 图集）
+initSmashUpAtlases();

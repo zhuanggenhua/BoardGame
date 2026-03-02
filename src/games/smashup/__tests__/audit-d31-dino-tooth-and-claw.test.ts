@@ -45,6 +45,7 @@ import { createInitialSystemState } from '../../../engine/pipeline';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import type { SmashUpCore } from '../domain/types';
 import { initAllAbilities } from '../abilities';
+import { createSmashUpEventSystem } from '../domain/systems';
 
 
 beforeAll(() => {
@@ -55,6 +56,7 @@ function createRunner() {
     const systems = [
         createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
         ...createBaseSystems<SmashUpCore>(),
+        createSmashUpEventSystem(), // 必须包含此系统以处理交互解决事件
     ];
     return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
         domain: SmashUpDomain,
@@ -68,6 +70,7 @@ function wrapState(core: SmashUpCore) {
     const systems = [
         createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
         ...createBaseSystems<SmashUpCore>(),
+        createSmashUpEventSystem(), // 必须包含此系统以处理交互解决事件
     ];
     const sys = createInitialSystemState(['0', '1'], systems, undefined);
     sys.phase = 'playCards';
@@ -80,8 +83,8 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         
         runner.setState(wrapState({
             players: {
-                '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['ninjas'] },
-                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
+                '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'ongoing', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['ninjas', 'ninjas'] },
+                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs', 'dinosaurs'] },
             },
             bases: [
                 {
@@ -103,18 +106,33 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
-        // 玩家0打出 ninja_assassination（消灭力量≤3的随从）
-        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
-        runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
+        // 玩家0打出 ninja_assassination（持续行动卡，附着到随从上）
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0, targetMinionUid: 'm1' });
 
-        const state = runner.getState();
-        // 验证随从存活（tooth_and_claw 拦截了消灭事件）
-        const minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
+        let state = runner.getState();
+        // 验证 ninja_assassination 已附着到随从上
+        let minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
+        expect(minion).toBeDefined();
+        expect(minion?.attachedActions.some(a => a.defId === 'ninja_assassination')).toBe(true);
+        // 验证 tooth_and_claw 仍然存在（还未到回合结束）
+        expect(minion?.attachedActions.some(a => a.defId === 'dino_tooth_and_claw')).toBe(true);
+
+        // 推进到回合结束，触发 ninja_assassination 的 onTurnEnd
+        runner.executeCommand('ADVANCE_PHASE', { playerId: '0' });
+
+        state = runner.getState();
+        // 验证随从存活（tooth_and_claw 拦截了消灭事件并自毁）
+        minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         expect(minion).toBeDefined();
         // 验证 tooth_and_claw 已被移除（自毁）
         expect(minion?.attachedActions.some(a => a.defId === 'dino_tooth_and_claw')).toBe(false);
+        // 验证 ninja_assassination 仍然存在（因为消灭事件被拦截，assassination 不会被移除）
+        expect(minion?.attachedActions.some(a => a.defId === 'ninja_assassination')).toBe(true);
     });
 
     it('D31: 拦截路径2（交互解决）— 拦截返回手牌事件', () => {
@@ -122,8 +140,8 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         
         runner.setState(wrapState({
             players: {
-                '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'alien_abduction', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['aliens'] },
-                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
+                '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'alien_abduction', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['aliens', 'aliens'] },
+                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs', 'dinosaurs'] },
             },
             bases: [
                 {
@@ -137,7 +155,8 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
                             basePower: 3, 
                             attachedActions: [{ uid: 'tc1', defId: 'dino_tooth_and_claw', ownerId: '1', metadata: {} }], 
                             powerCounters: 0, 
-                            tempPowerModifier: 0 
+                            tempPowerModifier: 0,
+                            powerModifier: 0
                         },
                     ],
                     ongoingActions: [],
@@ -145,11 +164,14 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
         // 玩家0打出 alien_abduction（返回随从到手牌）
         runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
-        runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
+        const resolveResult = runner.resolveInteraction('0', { optionId: 'minion-0' });
 
         const state = runner.getState();
         // 验证随从存活（tooth_and_claw 拦截了返回手牌事件）
@@ -166,8 +188,8 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         
         runner.setState(wrapState({
             players: {
-                '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
-                '1': { id: '1', vp: 0, hand: [{ uid: 'a1', defId: 'wizard_sacrifice', type: 'action', subtype: 'standard', owner: '1' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['wizards'] },
+                '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs', 'dinosaurs'] },
+                '1': { id: '1', vp: 0, hand: [{ uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'ongoing', owner: '1' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['ninjas', 'ninjas'] },
             },
             bases: [
                 {
@@ -189,15 +211,26 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1,
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
-        // 玩家1打出 wizard_sacrifice（消灭己方随从抽牌）
-        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '1', cardUid: 'a1', targetBaseIndex: 0 });
-        runner.resolveInteraction('1', { minionUid: 'm1', baseIndex: 0 });
+        // 玩家1打出 ninja_assassination 附着到自己的随从上
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '1', cardUid: 'a1', targetBaseIndex: 0, targetMinionUid: 'm1' });
 
-        const state = runner.getState();
+        let state = runner.getState();
+        // 验证 ninja_assassination 已附着
+        let minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
+        expect(minion).toBeDefined();
+        expect(minion?.attachedActions.some(a => a.defId === 'ninja_assassination')).toBe(true);
+
+        // 推进到回合结束，触发 ninja_assassination 的 onTurnEnd
+        runner.executeCommand('ADVANCE_PHASE', { playerId: '1' });
+
+        state = runner.getState();
         // 验证随从被消灭（tooth_and_claw 不拦截己方操作）
-        const minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
+        minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         expect(minion).toBeUndefined();
         // 验证随从进入弃牌堆
         expect(state.core.players['1'].discard.find(c => c.uid === 'm1')).toBeDefined();
@@ -208,8 +241,8 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         
         runner.setState(wrapState({
             players: {
-                '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['ninjas'] },
-                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
+                '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'ongoing', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['ninjas', 'ninjas'] },
+                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs', 'dinosaurs'] },
             },
             bases: [
                 {
@@ -231,18 +264,31 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
-        // 玩家0打出 ninja_assassination（消灭力量≤3的随从）
-        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
-        runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
+        // 玩家0打出 ninja_assassination（持续行动卡，附着到随从上）
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0, targetMinionUid: 'm1' });
 
-        const state = runner.getState();
+        let state = runner.getState();
+        // 验证 ninja_assassination 已附着
+        let minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
+        expect(minion).toBeDefined();
+        expect(minion?.attachedActions.some(a => a.defId === 'ninja_assassination')).toBe(true);
+
+        // 推进到回合结束，触发 ninja_assassination 的 onTurnEnd
+        runner.executeCommand('ADVANCE_PHASE', { playerId: '0' });
+
+        state = runner.getState();
         // 验证随从存活（tooth_and_claw_pod 保护）
-        const minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
+        minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         expect(minion).toBeDefined();
         // 验证 tooth_and_claw_pod 仍然存在（不自毁）
         expect(minion?.attachedActions.some(a => a.defId === 'dino_tooth_and_claw_pod')).toBe(true);
+        // 验证 ninja_assassination 仍然存在（因为消灭事件被拦截）
+        expect(minion?.attachedActions.some(a => a.defId === 'ninja_assassination')).toBe(true);
     });
 
     it('D31: 拦截路径完整性 — 多次拦截', () => {
@@ -251,10 +297,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [
-                    { uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'standard', owner: '0' },
-                    { uid: 'a2', defId: 'ninja_assassination', type: 'action', subtype: 'standard', owner: '0' },
-                ], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 2, factions: ['ninjas'] },
-                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
+                    { uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'ongoing', owner: '0' },
+                    { uid: 'a2', defId: 'ninja_assassination', type: 'action', subtype: 'ongoing', owner: '0' },
+                ], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 2, factions: ['ninjas', 'ninjas'] },
+                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs', 'dinosaurs'] },
             },
             bases: [
                 {
@@ -271,7 +317,8 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
                                 { uid: 'tc2', defId: 'dino_tooth_and_claw', ownerId: '1', metadata: {} }, // 两张 tooth_and_claw
                             ], 
                             powerCounters: 0, 
-                            tempPowerModifier: 0 
+                            tempPowerModifier: 0,
+                            powerModifier: 0
                         },
                     ],
                     ongoingActions: [],
@@ -279,26 +326,58 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
         }));
 
-        // 第一次攻击
-        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
-        runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
+        // 第一次攻击：打出第一张 ninja_assassination
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0, targetMinionUid: 'm1' });
 
         let state = runner.getState();
         let minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
+        expect(minion).toBeDefined();
+        // 验证第一张 assassination 已附着
+        expect(minion?.attachedActions.some(a => a.defId === 'ninja_assassination')).toBe(true);
+        // 验证两张 tooth_and_claw 都还在
+        expect(minion?.attachedActions.filter(a => a.defId === 'dino_tooth_and_claw').length).toBe(2);
+
+        // 推进到回合结束，触发第一张 assassination
+        runner.executeCommand('ADVANCE_PHASE', { playerId: '0' });
+
+        state = runner.getState();
+        minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         // 验证随从存活，第一张 tooth_and_claw 自毁
         expect(minion).toBeDefined();
         expect(minion?.attachedActions.filter(a => a.defId === 'dino_tooth_and_claw').length).toBe(1);
+        // 验证第一张 assassination 仍然存在（因为消灭被拦截）
+        expect(minion?.attachedActions.filter(a => a.defId === 'ninja_assassination').length).toBe(1);
 
-        // 第二次攻击
-        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
-        runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
+        // 切换到玩家0的回合，打出第二张 assassination
+        // 当前应该是玩家1的回合，需要再推进一次回到玩家0
+        runner.executeCommand('ADVANCE_PHASE', { playerId: '1' });
+
+        state = runner.getState();
+        // 第二次攻击：打出第二张 ninja_assassination
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a2', targetBaseIndex: 0, targetMinionUid: 'm1' });
+
+        state = runner.getState();
+        minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
+        expect(minion).toBeDefined();
+        // 验证两张 assassination 都已附着
+        expect(minion?.attachedActions.filter(a => a.defId === 'ninja_assassination').length).toBe(2);
+        // 验证还有一张 tooth_and_claw
+        expect(minion?.attachedActions.filter(a => a.defId === 'dino_tooth_and_claw').length).toBe(1);
+
+        // 推进到回合结束，触发第二张 assassination
+        runner.executeCommand('ADVANCE_PHASE', { playerId: '0' });
 
         state = runner.getState();
         minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         // 验证随从存活，第二张 tooth_and_claw 也自毁
         expect(minion).toBeDefined();
         expect(minion?.attachedActions.filter(a => a.defId === 'dino_tooth_and_claw').length).toBe(0);
+        // 验证两张 assassination 都还在（因为两次消灭都被拦截）
+        expect(minion?.attachedActions.filter(a => a.defId === 'ninja_assassination').length).toBe(2);
     });
 });
