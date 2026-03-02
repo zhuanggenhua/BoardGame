@@ -573,6 +573,16 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
             const mDef = getMinionDef(card.defId);
             if (mDef?.beforeScoringPlayable) {
                 const eligible = getScoringEligibleBaseIndices(core);
+                console.log('[DEBUG] deployableBaseIndices - Me First! beforeScoringPlayable:', {
+                    cardDefId: card.defId,
+                    eligibleBases: eligible,
+                    isMeFirstResponse,
+                    responseWindow: responseWindow ? {
+                        currentResponderIndex: responseWindow.currentResponderIndex,
+                        currentResponderId: responseWindow.responderQueue[responseWindow.currentResponderIndex],
+                        playerID,
+                    } : null,
+                });
                 for (const idx of eligible) {
                     if (!isSpecialLimitBlocked(core, card.defId, idx)) {
                         indices.add(idx);
@@ -946,6 +956,14 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                     if (mDef?.beforeScoringPlayable) {
                         // 检查是否还是当前响应者
                         const currentResponderId = responseWindow.responderQueue[responseWindow.currentResponderIndex];
+                        console.log('[DEBUG] handleBaseClick - Me First! check:', {
+                            cardDefId: card.defId,
+                            baseIndex: index,
+                            playerID,
+                            currentResponderId,
+                            isCurrentResponder: playerID === currentResponderId,
+                            deployableBaseIndices: Array.from(deployableBaseIndices),
+                        });
                         if (playerID !== currentResponderId) {
                             toast(t('ui.wait_for_your_turn', { defaultValue: '等待你的响应回合' }));
                             setSelectedCardUid(null);
@@ -958,6 +976,11 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
             
             // 被限制的基地不可部署
             if (!deployableBaseIndices.has(index)) {
+                console.log('[DEBUG] handleBaseClick - base not deployable:', {
+                    baseIndex: index,
+                    deployableBaseIndices: Array.from(deployableBaseIndices),
+                    deployBlockReason,
+                });
                 toast(deployBlockReason || t('ui.invalid_base_target', { defaultValue: '该基地不可选择' }));
                 return;
             }
@@ -1872,16 +1895,17 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                 {/* PROMPT OVERLAY（手牌弃牌/基地选择/随从选择/行动卡选择/弃牌堆出牌交互时隐藏，由对应区域直接处理） */}
                 {(() => {
                     const shouldRender = !isHandDiscardPrompt && !isBaseSelectPrompt && !isMinionSelectPrompt && !isOngoingSelectPrompt && !isDiscardMinionPrompt;
-                    console.log('[DEBUG] Board: PromptOverlay render decision:', {
-                        shouldRender,
-                        isHandDiscardPrompt,
-                        isBaseSelectPrompt,
-                        isMinionSelectPrompt,
-                        isOngoingSelectPrompt,
-                        isDiscardMinionPrompt,
-                        hasInteraction: !!G.sys.interaction?.current,
-                        interactionId: G.sys.interaction?.current?.id,
-                    });
+                    // 调试日志已注释，避免控制台刷屏
+                    // console.log('[DEBUG] Board: PromptOverlay render decision:', {
+                    //     shouldRender,
+                    //     isHandDiscardPrompt,
+                    //     isBaseSelectPrompt,
+                    //     isMinionSelectPrompt,
+                    //     isOngoingSelectPrompt,
+                    //     isDiscardMinionPrompt,
+                    //     hasInteraction: !!G.sys.interaction?.current,
+                    //     interactionId: G.sys.interaction?.current?.id,
+                    // });
                     return shouldRender ? (
                         <PromptOverlay
                             interaction={G.sys.interaction?.current}

@@ -48,13 +48,21 @@ export const MeFirstOverlay: React.FC<{
     const isMyResponse = playerID === currentResponderId;
     const core = G.core;
 
-    // 检查手牌中是否有特殊行动卡
+    // 检查手牌中是否有特殊行动卡或 beforeScoringPlayable 随从
     const myPlayer = playerID ? core.players[playerID] : undefined;
     const specialCards = myPlayer?.hand.filter(c => {
         if (c.type !== 'action') return false;
         const def = getCardDef(c.defId) as ActionCardDef | undefined;
         return def?.subtype === 'special';
     }) ?? [];
+    
+    const beforeScoringMinions = myPlayer?.hand.filter(c => {
+        if (c.type !== 'minion') return false;
+        const def = getCardDef(c.defId);
+        return (def as any)?.beforeScoringPlayable === true;
+    }) ?? [];
+    
+    const hasRespondableCards = specialCards.length > 0 || beforeScoringMinions.length > 0;
 
     return (
         <motion.div

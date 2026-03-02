@@ -51,13 +51,15 @@ const systems: EngineSystem<SmashUpCore>[] = [
     createMultistepChoiceSystem(),
     createRematchSystem(),
     createResponseWindowSystem({
-        allowedCommands: ['su:play_action'],
+        allowedCommands: ['su:play_action', 'su:play_minion'],
         responderExemptCommands: [],
         commandWindowTypeConstraints: {
             'su:play_action': ['meFirst'],
+            'su:play_minion': ['meFirst'],
         },
         responseAdvanceEvents: [
             { eventType: 'su:action_played', windowTypes: ['meFirst'] },
+            { eventType: 'su:minion_played', windowTypes: ['meFirst'] },
         ],
         loopUntilAllPass: true,
         hasRespondableContent: (state, playerId, windowType) => {

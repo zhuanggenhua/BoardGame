@@ -199,14 +199,16 @@ function registerSteampunkModifiers(): void {
 // ============================================================================
 
 function registerBearCavalryModifiers(): void {
-    // 极地突击队：基地上唯一己方随从?+2 力量的 不可消灭，后者需要?ongoing 保护系统）?
+    // 极地突击队：基地上唯一己方随从时 +2 力量（不可消灭，后者需要 ongoing 保护系统）
     registerPowerModifier('bear_cavalry_polar_commando', (ctx: PowerModifierContext) => {
-        if (ctx.minion.defId !== 'bear_cavalry_polar_commando') return 0;
+        // 处理 POD 版本：检查基础 defId
+        const baseDefId = ctx.minion.defId.replace(/_pod$/, '');
+        if (baseDefId !== 'bear_cavalry_polar_commando') return 0;
         const myMinionCount = ctx.base.minions.filter(
             m => m.controller === ctx.minion.controller
         ).length;
         return myMinionCount === 1 ? 2 : 0;
-    });
+    }, { handlesPodInternally: true }); // 标记已处理 POD
 }
 
 // ============================================================================
@@ -226,7 +228,7 @@ function registerBaseModifiers(): void {
     registerPowerModifier('base_minionPowerBonus', (ctx: PowerModifierContext) => {
         const baseDef = getBaseDef(ctx.base.defId);
         return baseDef?.minionPowerBonus ?? 0;
-    });
+    }, { handlesPodInternally: true }); // 标记已处理 POD（通用修正器，不需要 POD 别名）
 }
 
 // ============================================================================
