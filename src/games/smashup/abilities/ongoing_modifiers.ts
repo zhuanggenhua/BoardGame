@@ -148,7 +148,12 @@ function registerSteampunkModifiers(): void {
     });
 
     // 蒸汽机车（ongoing 行动卡附着在基地上）：拥有者在此基地有随从时，每张 +5 总力量
+    // 注意：这是 BasePowerModifier，ctx.playerId 是正在计算总力量的玩家
+    // ctx.ongoing 是当前正在评估的 ongoing 卡
     registerBasePowerModifier('steampunk_aggromotive', (ctx) => {
+        // 只有当前 ongoing 卡的拥有者才能获得加成
+        if (!ctx.ongoing || ctx.ongoing.ownerId !== ctx.playerId) return 0;
+        
         // 检查该玩家在此基地是否有随从
         const hasMinion = ctx.base.minions.some(m => m.controller === ctx.playerId);
         
