@@ -261,7 +261,7 @@ function vampireMadMonsterParty(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId && m.powerModifier === 0) {
+            if (m.controller === ctx.playerId && m.powerCounters === 0) {
                 events.push(addPowerCounter(m.uid, i, 1, 'vampire_mad_monster_party', ctx.now));
             }
         }

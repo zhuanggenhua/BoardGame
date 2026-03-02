@@ -103,6 +103,9 @@ export default engineConfig;
 // 导出系统配置供测试复用
 export { systems as smashUpSystemsForTest };
 
+// 导出 Domain 和 FlowHooks 供测试使用
+export { SmashUpDomain, smashUpFlowHooks };
+
 // ============================================================================
 // 卡牌预览注册（放文件末尾，避免 Vite SSR 函数提升陷阱）
 // ============================================================================

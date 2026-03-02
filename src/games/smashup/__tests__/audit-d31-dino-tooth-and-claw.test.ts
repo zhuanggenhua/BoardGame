@@ -37,14 +37,47 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { SmashUpDomain, smashUpFlowHooks } from '../game';
+import type { SmashUpCommand, SmashUpEvent } from '../domain/types';
+import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
+import { createInitialSystemState } from '../../../engine/pipeline';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import type { SmashUpCore } from '../domain/types';
+import { initAllAbilities } from '../abilities';
+
+
+beforeAll(() => {
+    initAllAbilities();
+});
+
+function createRunner() {
+    const systems = [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        ...createBaseSystems<SmashUpCore>(),
+    ];
+    return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+        domain: SmashUpDomain,
+        systems,
+        playerIds: ['0', '1'],
+    });
+}
+
+// 辅助函数：将 core 状态包装为 MatchState
+function wrapState(core: SmashUpCore) {
+    const systems = [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        ...createBaseSystems<SmashUpCore>(),
+    ];
+    const sys = createInitialSystemState(['0', '1'], systems, undefined);
+    sys.phase = 'playCards';
+    return { core, sys };
+}
 
 describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
     it('D31: 拦截路径1（直接命令执行）— 拦截消灭事件', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['ninjas'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
@@ -69,10 +102,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
         // 玩家0打出 ninja_assassination（消灭力量≤3的随从）
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         const state = runner.getState();
@@ -84,9 +117,9 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
     });
 
     it('D31: 拦截路径2（交互解决）— 拦截返回手牌事件', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'alien_abduction', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['aliens'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
@@ -111,10 +144,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
         // 玩家0打出 alien_abduction（返回随从到手牌）
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         const state = runner.getState();
@@ -128,9 +161,9 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
     });
 
     it('D31: 不拦截己方操作 — 己方消灭自己的随从', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [{ uid: 'a1', defId: 'wizard_sacrifice', type: 'action', subtype: 'standard', owner: '1' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['wizards'] },
@@ -155,10 +188,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1,
-        });
+        }));
 
         // 玩家1打出 wizard_sacrifice（消灭己方随从抽牌）
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '1', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '1', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('1', { minionUid: 'm1', baseIndex: 0 });
 
         const state = runner.getState();
@@ -170,9 +203,9 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
     });
 
     it('D31: POD版简单保护 — 只保护不自毁', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['ninjas'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
@@ -197,10 +230,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
         // 玩家0打出 ninja_assassination（消灭力量≤3的随从）
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         const state = runner.getState();
@@ -212,9 +245,9 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
     });
 
     it('D31: 拦截路径完整性 — 多次拦截', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [
                     { uid: 'a1', defId: 'ninja_assassination', type: 'action', subtype: 'standard', owner: '0' },
@@ -245,10 +278,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
         // 第一次攻击
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         let state = runner.getState();
@@ -258,7 +291,7 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         expect(minion?.attachedActions.filter(a => a.defId === 'dino_tooth_and_claw').length).toBe(1);
 
         // 第二次攻击
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         state = runner.getState();

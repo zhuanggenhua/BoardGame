@@ -488,7 +488,7 @@ function checkPlayConstraint(
     playerId: string,
 ): string | null {
     if (constraint === 'requireOwnMinion') {
-        const hasOwnMinion = core.bases[baseIndex].minions.some(m => m.owner === playerId);
+        const hasOwnMinion = core.bases[baseIndex].minions.some(m => m.controller === playerId);
         if (!hasOwnMinion) return '目标基地上必须有你的随从';
         return null;
     }

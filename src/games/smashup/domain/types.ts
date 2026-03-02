@@ -492,6 +492,8 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         power: number;
         /** 从弃牌堆打出（而非手牌） */
         fromDiscard?: boolean;
+        /** 从牌库打出（而非手牌） */
+        fromDeck?: boolean;
         /** 弃牌堆出牌来源能力 ID（用于每回合限制追踪） */
         discardPlaySourceId?: string;
         /** 是否消耗正常随从额度 */

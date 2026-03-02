@@ -107,7 +107,22 @@ export class GameTestRunner<
             const sys = createInitialSystemState(ids, systems, undefined);
             return { sys, core };
         });
-        this.currentState = init(playerIds, random);
+        const initialState = init(playerIds, random);
+        
+        // 确保 sys 对象包含所有必需的系统状态
+        if (!initialState.sys.undo) {
+            initialState.sys.undo = {
+                snapshots: [],
+                maxSnapshots: 50,
+            };
+        }
+        if (!initialState.sys.interaction) {
+            initialState.sys.interaction = {
+                queue: [],
+            };
+        }
+        
+        this.currentState = initialState;
     }
 
     run(testCase: TestCase<TExpect>): TestResult<TState> {
@@ -129,6 +144,19 @@ export class GameTestRunner<
             });
 
         let state = init(playerIds, random);
+        
+        // 确保 sys 对象包含所有必需的系统状态
+        if (!state.sys.undo) {
+            state.sys.undo = {
+                snapshots: [],
+                maxSnapshots: 50,
+            };
+        }
+        if (!state.sys.interaction) {
+            state.sys.interaction = {
+                queue: [],
+            };
+        }
 
         const steps: StepLog[] = [];
         const actualErrors: { step: number; error: string }[] = [];
@@ -345,5 +373,28 @@ export class GameTestRunner<
         finalState: MatchState<TState>;
     } {
         return this.dispatch(commandType, payload);
+    }
+
+    /**
+     * 获取当前状态（测试辅助方法）
+     */
+    getState(): MatchState<TState> {
+        if (!this.currentState) {
+            throw new Error('Cannot get state: no current state. Call setState() or run() first.');
+        }
+        return this.currentState;
+    }
+
+    /**
+     * 解决交互（测试辅助方法）
+     * 用于测试中模拟玩家响应交互
+     */
+    resolveInteraction(playerId: string, value: unknown): {
+        success: boolean;
+        error?: string;
+        events: Array<{ type: string; payload: unknown; timestamp: number }>;
+        finalState: MatchState<TState>;
+    } {
+        return this.dispatch('RESOLVE_INTERACTION', { playerId, value });
     }
 }

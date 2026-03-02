@@ -814,8 +814,8 @@ describe('zombie_theyre_coming_to_get_you（它们为你而来）弃牌堆出牌
         expect(r1.steps[0]?.success).toBe(false);
     });
 
-    it('消耗正常随从额度', () => {
-        // "它们为你而来" consumesNormalLimit=true，打出后消耗正常额度
+    it('不消耗正常随从额度（原版）', () => {
+        // "它们为你而来" 原版 consumesNormalLimit=false，打出后不消耗正常额度（额外随从）
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -835,23 +835,24 @@ describe('zombie_theyre_coming_to_get_you（它们为你而来）弃牌堆出牌
         });
         const state = makeFullMatchState(core);
 
-        // 从弃牌堆打出
+        // 从弃牌堆打出（不消耗额度）
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
             payload: { cardUid: 'disc-m1', baseIndex: 0, fromDiscard: true },
-        }, 'theyre_coming: 消耗额度');
+        }, 'theyre_coming: 不消耗额度');
         expect(r1.steps[0]?.success).toBe(true);
         const p0 = r1.finalState.core.players['0'];
-        expect(p0.minionsPlayed).toBe(1);
+        expect(p0.minionsPlayed).toBe(0); // 不消耗额度，仍为 0
 
-        // 再打手牌随从 → 额度已用完，应被拒绝
+        // 再打手牌随从 → 额度未用，应成功
         const r2 = runCommand(r1.finalState, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
             payload: { cardUid: 'hand-m1', baseIndex: 0 },
-        }, 'theyre_coming: 额度用完后打手牌');
-        expect(r2.steps[0]?.success).toBe(false);
+        }, 'theyre_coming: 额度未用，打手牌');
+        expect(r2.steps[0]?.success).toBe(true);
+        expect(r2.finalState.core.players['0'].minionsPlayed).toBe(1); // 手牌打出消耗额度
     });
 });
 

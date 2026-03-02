@@ -385,8 +385,8 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerModifier: 2 }),
-                        makeMinion('m2', 'test_other', '0', 2, { powerModifier: 0 }),
+                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerCounters: 2 }),
+                        makeMinion('m2', 'test_other', '0', 2, { powerCounters: 0 }),
                     ],
                     ongoingActions: [],
                 },
@@ -437,15 +437,15 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_the_jungle',
                     minions: [
-                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerModifier: 3 }), // 计分基地上的随从（来源）
-                        makeMinion('filler1', 'test_other', '1', 10, { powerModifier: 0 }),
+                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerCounters: 3 }), // 计分基地上的随从（来源）
+                        makeMinion('filler1', 'test_other', '1', 10, { powerCounters: 0 }),
                     ],
                     ongoingActions: [],
                 },
                 {
                     defId: 'base_the_hive',
                     minions: [
-                        makeMinion('m2', 'test_other', '0', 2, { powerModifier: 0 }), // 其他基地上的随从（目标）
+                        makeMinion('m2', 'test_other', '0', 2, { powerCounters: 0 }), // 其他基地上的随从（目标）
                     ],
                     ongoingActions: [],
                 },
@@ -510,8 +510,8 @@ describe('巨蚁派系能力', () => {
         // 验证最终状态：m1 在基地 0，m2 在基地 1
         const m1Final = amountResult.finalState.core.bases[0]?.minions.find(m => m.uid === 'm1');
         const m2Final = amountResult.finalState.core.bases[1]?.minions.find(m => m.uid === 'm2');
-        expect(m1Final?.powerModifier).toBe(0);
-        expect(m2Final?.powerModifier).toBe(3);
+        expect(m1Final?.powerCounters).toBe(0);
+        expect(m2Final?.powerCounters).toBe(3);
     });
 
     it('我们乃最强：计分后触发，来源离场后仍可按快照数量完成转移', () => {
@@ -526,14 +526,14 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerModifier: 2 }),
-                        makeMinion('opp1', 'test_other', '1', 2, { powerModifier: 0 }),
+                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerCounters: 2 }),
+                        makeMinion('opp1', 'test_other', '1', 2, { powerCounters: 0 }),
                     ],
                     ongoingActions: [],
                 },
                 {
                     defId: 'base_b',
-                    minions: [makeMinion('m2', 'test_other', '0', 2, { powerModifier: 0 })],
+                    minions: [makeMinion('m2', 'test_other', '0', 2, { powerCounters: 0 })],
                     ongoingActions: [],
                 },
             ],
@@ -1261,7 +1261,7 @@ describe('科学怪人派系能力', () => {
         // 断言最终状态中随从的 powerModifier 确实被 +1
         const finalMinion = afterMinion.finalState.core.bases[0].minions.find(m => m.uid === 'm1');
         expect(finalMinion).toBeDefined();
-        expect(finalMinion!.powerModifier).toBe(1);
+        expect(finalMinion!.powerCounters).toBe(1);
     });
 
     it('怪物：天赋移除指示物并额外打出随从', () => {
@@ -1274,7 +1274,7 @@ describe('科学怪人派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('monster1', 'frankenstein_the_monster', '0', 5, { powerModifier: 2 }),
+                        makeMinion('monster1', 'frankenstein_the_monster', '0', 5, { powerCounters: 2 }),
                     ],
                     ongoingActions: [],
                 },

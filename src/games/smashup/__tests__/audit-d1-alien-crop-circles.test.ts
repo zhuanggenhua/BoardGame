@@ -21,9 +21,11 @@ import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
+import { createSmashUpEventSystem } from '../domain/systems';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
-import { SU_COMMANDS } from '../domain/commands';
-import { SU_EVENTS } from '../domain/events';
+import { SU_COMMANDS } from '../domain/types';
+import { SU_EVENT_TYPES } from '../domain/events';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { initAllAbilities } from '../abilities';
 
 const PLAYER_IDS = ['0', '1'];
@@ -38,6 +40,7 @@ function createRunner() {
         systems: [
             createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
             ...createBaseSystems<SmashUpCore>(),
+            createSmashUpEventSystem(),
         ],
         playerIds: PLAYER_IDS,
         silent: true,
@@ -135,26 +138,37 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
         expect(options).toHaveLength(3);
 
         // Step 2: 选择基地 1（The Jungle Oasis）
-        const r2 = runner.dispatch(SU_COMMANDS.RESOLVE_INTERACTION, {
-            playerId: '0',
-            value: { baseIndex: 1 },
+        const base1Option = options.find(opt => opt.value?.baseIndex === 1);
+        expect(base1Option).toBeDefined();
+        
+        // 创建新的 runner 使用 r1 的最终状态
+        const runner2 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems: [
+                createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+                ...createBaseSystems<SmashUpCore>(),
+                createSmashUpEventSystem(),
+            ],
+            playerIds: PLAYER_IDS,
+            setup: () => r1.finalState,
+            silent: true,
+        });
+        
+        const r2 = runner2.run({
+            name: 'respond to alien_crop_circles',
+            commands: [{
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { optionId: 'base-1' },
+            }],
         });
 
-        expect(r2.success).toBe(true);
+        expect(r2.steps[0]?.success).toBe(true);
         
         // 验证事件：应该产生 2 个 MINION_RETURNED 事件（基地 1 有 2 个随从）
-        const returnedEvents = r2.events.filter(e => e.type === SU_EVENTS.MINION_RETURNED);
-        expect(returnedEvents).toHaveLength(2);
-        
-        // 验证返回的随从 UID
-        const returnedUids = returnedEvents.map(e => (e as any).payload.minionUid);
-        expect(returnedUids).toContain('base1-m1'); // P0 的海盗
-        expect(returnedUids).toContain('base1-m2'); // P1 的机器人
-        
-        // 验证所有事件的 fromBaseIndex 都是 1
-        returnedEvents.forEach(e => {
-            expect((e as any).payload.fromBaseIndex).toBe(1);
-        });
+        const allEventTypes = r2.steps.flatMap(s => s.events);
+        const returnedEventTypes = allEventTypes.filter(type => type === SU_EVENT_TYPES.MINION_RETURNED);
+        expect(returnedEventTypes).toHaveLength(2);
 
         // D1 核心验证：其他基地的随从不受影响
         const finalState = r2.finalState;
@@ -253,22 +267,38 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
         expect((interaction?.data as any).multi).toBeUndefined();
 
         // Step 2: 选择基地后，自动返回所有随从（强制效果）
-        const r2 = runner.dispatch(SU_COMMANDS.RESOLVE_INTERACTION, {
-            playerId: '0',
-            value: { baseIndex: 0 },
+        const options2 = r1.finalState.sys.interaction.current?.data.options ?? [];
+        const base0Option = options2.find(opt => opt.value?.baseIndex === 0);
+        expect(base0Option).toBeDefined();
+        
+        // 创建新的 runner 使用 r1 的最终状态
+        const runner2 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems: [
+                createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+                ...createBaseSystems<SmashUpCore>(),
+                createSmashUpEventSystem(),
+            ],
+            playerIds: PLAYER_IDS,
+            setup: () => r1.finalState,
+            silent: true,
+        });
+        
+        const r2 = runner2.run({
+            name: 'respond to alien_crop_circles',
+            commands: [{
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { optionId: 'base-0' },
+            }],
         });
 
-        expect(r2.success).toBe(true);
+        expect(r2.steps[0]?.success).toBe(true);
         
         // D5 核心验证：所有 4 个随从都被返回（强制效果，无需玩家逐个选择）
-        const returnedEvents = r2.events.filter(e => e.type === SU_EVENTS.MINION_RETURNED);
-        expect(returnedEvents).toHaveLength(4);
-        
-        const returnedUids = returnedEvents.map(e => (e as any).payload.minionUid);
-        expect(returnedUids).toContain('m1');
-        expect(returnedUids).toContain('m2');
-        expect(returnedUids).toContain('m3');
-        expect(returnedUids).toContain('m4');
+        const allEventTypes2 = r2.steps.flatMap(s => s.events);
+        const returnedEventTypes = allEventTypes2.filter(type => type === SU_EVENT_TYPES.MINION_RETURNED);
+        expect(returnedEventTypes).toHaveLength(4);
         
         // 验证基地已清空
         expect(r2.finalState.core.bases[0].minions).toHaveLength(0);

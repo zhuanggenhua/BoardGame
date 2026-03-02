@@ -121,7 +121,7 @@ describe('一大口 + 雄蜂防止消灭', () => {
         // 验证：雄蜂指示物减少了1
         const drone = result3.finalState.core.bases[0].minions.find(m => m.uid === 'drone1');
         expect(drone).toBeDefined();
-        expect(drone!.powerModifier).toBe(0); // 从1减到0
+        expect(drone!.powerCounters).toBe(0); // 从1减到0
 
         // 验证：交互已清除
         expect(result3.finalState.sys.interaction?.current).toBeUndefined();

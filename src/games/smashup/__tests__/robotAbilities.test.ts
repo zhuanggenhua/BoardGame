@@ -224,6 +224,7 @@ describe('robot_microbot_fixer（微型机修理者 onPlay）', () => {
             type: SU_COMMANDS.PLAY_MINION, playerId: '0',
             payload: { cardUid: 'f1', baseIndex: 0 },
         } as any, defaultRandom);
+        
         expect(result.success).toBe(true);
         // 第一个随从 → 额外出牌 → minionLimit 从 1 增加到 2
         expect(result.finalState.core.players['0'].minionLimit).toBe(2);

@@ -38,15 +38,48 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { SmashUpDomain, smashUpFlowHooks } from '../game';
+import type { SmashUpCommand, SmashUpEvent } from '../domain/types';
+import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
+import { createInitialSystemState } from '../../../engine/pipeline';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import type { SmashUpCore } from '../domain/types';
+import { initAllAbilities } from '../abilities';
 import { getEffectiveBreakpoint } from '../domain/ongoingModifiers';
+
+
+beforeAll(() => {
+    initAllAbilities();
+});
+
+function createRunner() {
+    const systems = [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        ...createBaseSystems<SmashUpCore>(),
+    ];
+    return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+        domain: SmashUpDomain,
+        systems,
+        playerIds: ['0', '1'],
+    });
+}
+
+// 辅助函数：将 core 状态包装为 MatchState
+function wrapState(core: SmashUpCore) {
+    const systems = [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        ...createBaseSystems<SmashUpCore>(),
+    ];
+    const sys = createInitialSystemState(['0', '1'], systems, undefined);
+    sys.phase = 'playCards';
+    return { core, sys };
+}
 
 describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
     it('D11/D12: 写入-消耗对称性 — 单基地降低爆破点', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'dino_rampage', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -63,10 +96,10 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
         // 打出狂暴，选择基地0
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { baseIndex: 0 });
 
         const state = runner.getState();
@@ -82,9 +115,9 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
     });
 
     it('D14: 回合清理完整性 — 回合结束时临时修正清零', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'dino_rampage', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -100,10 +133,10 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
         // 打出狂暴
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { baseIndex: 0 });
 
         let state = runner.getState();
@@ -111,7 +144,7 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
         expect(state.tempBreakpointModifiers?.[0]).toBe(-3);
 
         // 结束回合
-        runner.executeCommand({ type: 'END_TURN', playerId: '0' });
+        runner.executeCommand('END_TURN', { playerId: '0' });
 
         state = runner.getState();
         // 验证回合结束后临时修正清零
@@ -119,9 +152,9 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
     });
 
     it('D11/D12: 多基地独立修正 — 不同基地的修正互不干扰', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [
                     { uid: 'a1', defId: 'dino_rampage', type: 'action', subtype: 'standard', owner: '0' },
@@ -147,14 +180,14 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
         // 打出第一张狂暴，选择基地0
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { baseIndex: 0 });
 
         // 打出第二张狂暴，选择基地1
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { baseIndex: 1 });
 
         const state = runner.getState();
@@ -164,9 +197,9 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
     });
 
     it('D11/D12: 力量快照 — 修正值基于打出时的力量', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [
                     { uid: 'a1', defId: 'dino_rampage', type: 'action', subtype: 'standard', owner: '0' },
@@ -185,10 +218,10 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
         // 打出狂暴（此时随从力量为3）
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { baseIndex: 0 });
 
         let state = runner.getState();
@@ -196,7 +229,7 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
         expect(state.tempBreakpointModifiers?.[0]).toBe(-3);
 
         // 打出嚎叫（+1力量给所有己方随从）
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
 
         state = runner.getState();
         // 验证修正值仍为-3（不会因为随从力量变化而改变）
@@ -207,9 +240,9 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
     });
 
     it('D14: 边界条件 — 无己方随从时不降低爆破点', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'dino_rampage', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -225,10 +258,10 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
         // 尝试打出狂暴（无己方随从的基地）
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
         const state = runner.getState();
         // 验证没有创建交互（无合法目标）

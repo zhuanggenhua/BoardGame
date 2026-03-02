@@ -11,6 +11,9 @@
 import { test, expect } from './fixtures';
 
 test.describe('传送门交互', () => {
+    // 增加超时时间到 60 秒，因为派系选择需要时间
+    test.setTimeout(60000);
+    
     test('派系选择应该成功完成', async ({ smashupMatch }, testInfo) => {
         const { hostPage, guestPage } = smashupMatch;
         

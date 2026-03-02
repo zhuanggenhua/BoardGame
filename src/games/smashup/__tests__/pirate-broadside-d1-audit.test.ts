@@ -15,6 +15,8 @@ import { SU_COMMANDS } from '../domain/types';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
+import { createInitialSystemState } from '../../../engine/pipeline';
+import { createSmashUpEventSystem } from '../domain/systems';
 import { initAllAbilities } from '../abilities';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
@@ -26,30 +28,23 @@ beforeAll(() => {
 });
 
 function createRunner(setup: (ids: PlayerId[], random: RandomFn) => MatchState<SmashUpCore>) {
+    const systems = [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        ...createBaseSystems<SmashUpCore>(),
+        createSmashUpEventSystem(),
+    ];
+    
     return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
         domain: SmashUpDomain,
-        systems: [
-            createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-            ...createBaseSystems<SmashUpCore>(),
-        ],
+        systems,
         playerIds: PLAYER_IDS,
         setup: (ids, random) => {
             const customState = setup(ids, random);
-            // 确保 sys 对象完整初始化
-            if (!customState.sys || Object.keys(customState.sys).length === 0) {
-                const systems = [
-                    createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-                    ...createBaseSystems<SmashUpCore>(),
-                ];
-                const sys = systems.reduce((acc, system) => {
-                    if (system.init) {
-                        return { ...acc, [system.name]: system.init(ids) };
-                    }
-                    return acc;
-                }, {} as any);
-                return { ...customState, sys };
-            }
-            return customState;
+            // 使用 createInitialSystemState 确保所有系统状态正确初始化
+            const sys = createInitialSystemState(ids, systems, undefined);
+            // 设置为出牌阶段
+            sys.phase = 'playCards';
+            return { ...customState, sys };
         },
         silent: true,
     });
@@ -71,19 +66,21 @@ describe('pirate_broadside D1 审计：三重条件过滤', () => {
                     defId: 'base_test_1',
                     breakpoint: 20,
                     rewards: [5, 3, 2],
+                    ongoingActions: [],
                     minions: [
                         // 基地0：只有对手随从，没有己方随从
-                        makeMinion('m1', 'pirate_buccaneer', '1', 0, 2),
+                        makeMinion('m1', 'pirate_buccaneer', '1', 2),
                     ],
                 },
                 {
                     defId: 'base_test_2',
                     breakpoint: 20,
                     rewards: [5, 3, 2],
+                    ongoingActions: [],
                     minions: [
                         // 基地1：有己方随从 + 对手弱随从
-                        makeMinion('m2', 'pirate_first_mate', '0', 1, 2),
-                        makeMinion('m3', 'pirate_first_mate', '1', 1, 2),
+                        makeMinion('m2', 'pirate_first_mate', '0', 2),
+                        makeMinion('m3', 'pirate_first_mate', '1', 2),
                     ],
                 },
             ],
@@ -126,14 +123,15 @@ describe('pirate_broadside D1 审计：三重条件过滤', () => {
                     defId: 'base_test_1',
                     breakpoint: 20,
                     rewards: [5, 3, 2],
+                    ongoingActions: [],
                     minions: [
                         // 己方随从
-                        makeMinion('m0', 'pirate_first_mate', '0', 0, 2),
+                        makeMinion('m0', 'pirate_first_mate', '0', 2),
                         // 对手1的弱随从
-                        makeMinion('m1', 'pirate_first_mate', '1', 0, 2),
-                        makeMinion('m2', 'pirate_first_mate', '1', 0, 2),
+                        makeMinion('m1', 'pirate_first_mate', '1', 2),
+                        makeMinion('m2', 'pirate_first_mate', '1', 2),
                         // 对手2的弱随从
-                        makeMinion('m3', 'pirate_first_mate', '2', 0, 2),
+                        makeMinion('m3', 'pirate_first_mate', '2', 2),
                     ],
                 },
             ],
@@ -145,7 +143,8 @@ describe('pirate_broadside D1 审计：三重条件过滤', () => {
             name: '条件2测试',
             commands: [
                 { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'broadside1', baseIndex: 0 } },
-                { type: INTERACTION_COMMANDS.RESOLVE, playerId: '0', payload: { value: { baseIndex: 0, targetPlayerId: '1' } } },
+                // 选择第一个选项（对手1的随从）
+                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'target-1' } },
             ],
         });
 
@@ -173,15 +172,16 @@ describe('pirate_broadside D1 审计：三重条件过滤', () => {
                     defId: 'base_test_1',
                     breakpoint: 20,
                     rewards: [5, 3, 2],
+                    ongoingActions: [],
                     minions: [
                         // 己方随从
-                        makeMinion('m0', 'pirate_first_mate', '0', 0, 2),
+                        makeMinion('m0', 'pirate_first_mate', '0', 2),
                         // 对手的弱随从（力量2）
-                        makeMinion('m1', 'pirate_first_mate', '1', 0, 2),
+                        makeMinion('m1', 'pirate_first_mate', '1', 2),
                         // 对手的强随从（力量3）
-                        makeMinion('m2', 'pirate_cut_lass', '1', 0, 3),
+                        makeMinion('m2', 'pirate_cut_lass', '1', 3),
                         // 对手的强随从（力量4）
-                        makeMinion('m3', 'pirate_buccaneer', '1', 0, 4),
+                        makeMinion('m3', 'pirate_buccaneer', '1', 4),
                     ],
                 },
             ],
@@ -193,7 +193,8 @@ describe('pirate_broadside D1 审计：三重条件过滤', () => {
             name: '条件3测试',
             commands: [
                 { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'broadside1', baseIndex: 0 } },
-                { type: INTERACTION_COMMANDS.RESOLVE, playerId: '0', payload: { value: { baseIndex: 0, targetPlayerId: '1' } } },
+                // 选择对手1的弱随从（target-1，因为 target-0 是己方的弱随从）
+                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'target-1' } },
             ],
         });
 

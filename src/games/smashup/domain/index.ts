@@ -1030,11 +1030,16 @@ function postProcessSystemEvents(
             // 标记为已处理
             processedSet.add(eventKey);
             
-            // 将之前积累的事件 reduce 到临时 core，获取最新牌库/手牌状态
+            // 将之前积累的事件 + 当前 MINION_PLAYED 事件 reduce 到临时 core
+            // 确保 onPlay 触发时看到的是最新状态（随从已在场上，牌库/手牌已更新）
             let tempCore = state;
             for (const preEvt of prePlayEvents) {
                 tempCore = reduce(tempCore, preEvt);
             }
+            // 【修复】先 reduce 当前 MINION_PLAYED 事件，再触发 onPlay
+            // 这样 onPlay 能力（如盘旋机器人）能看到更新后的牌库顶
+            tempCore = reduce(tempCore, event);
+            
             const payload = event.payload;
             const triggers = fireMinionPlayedTriggers({
                 core: tempCore,

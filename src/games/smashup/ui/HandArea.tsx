@@ -24,6 +24,8 @@ type Props = {
     disableInteraction?: boolean;
     /** 被禁用的卡牌 uid 集合（置灰 + 摇头） */
     disabledCardUids?: Set<string>;
+    /** 是否显示为对手视角（显示牌背） */
+    isOpponentView?: boolean;
 };
 
 // New prop for viewing details
@@ -37,13 +39,15 @@ type HandCardProps = {
     disableInteraction: boolean;
     /** 此卡被单独禁用（置灰 + 摇头） */
     isDisabled: boolean;
+    /** 是否显示为对手视角（显示牌背） */
+    isOpponentView: boolean;
     onSelect: () => void;
     onViewDetail?: () => void;
 };
 
 
 const HandCard: React.FC<HandCardProps> = ({
-    card, index, total, isSelected, isDiscardSelected, isDiscardMode, disableInteraction, isDisabled, onSelect, onViewDetail
+    card, index, total, isSelected, isDiscardSelected, isDiscardMode, disableInteraction, isDisabled, isOpponentView, onSelect, onViewDetail
 }) => {
     const { t } = useTranslation('game-smashup');
     const [isHovered, setIsHovered] = useState(false);
@@ -71,11 +75,15 @@ const HandCard: React.FC<HandCardProps> = ({
     // 弃牌选中时不提升 z-index，避免遮挡其他卡牌选择
     const baseZIndex = isSelected && !isDiscardSelected ? 100 : index;
 
+    // 对手视角：使用牌背图片
+    const cardBackRef = { type: 'atlas' as const, atlasId: 'smashup-card-back', index: 0 };
+
     return (
         <motion.div
             className={`
-                relative flex-shrink-0 origin-bottom cursor-pointer pointer-events-auto
+                relative flex-shrink-0 origin-bottom pointer-events-auto
                 hover:!z-50
+                ${isOpponentView ? 'cursor-default' : 'cursor-pointer'}
             `}
             style={{
                 width: `${CARD_WIDTH_VW}vw`,
@@ -96,6 +104,7 @@ const HandCard: React.FC<HandCardProps> = ({
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
             onClick={() => {
+                if (isOpponentView) return; // 对手视角不可点击
                 if (disableInteraction || isDisabled) {
                     // 不可操作时摇头抖动
                     setIsShaking(true);
@@ -111,30 +120,35 @@ const HandCard: React.FC<HandCardProps> = ({
                 ${isDisabled ? 'opacity-40 grayscale cursor-not-allowed' : ''}
                 ${isSelected ? 'ring-4 ring-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]' : 'shadow-black/30'}
                 ${isDiscardSelected ? 'ring-4 ring-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]' : ''}
-                ${!isSelected && !isDiscardSelected && !isDisabled ? (isDiscardMode ? 'ring-2 ring-red-500/30' : 'hover:ring-2 hover:ring-white hover:shadow-xl') : ''}
+                ${!isSelected && !isDiscardSelected && !isDisabled && !isOpponentView ? (isDiscardMode ? 'ring-2 ring-red-500/30' : 'hover:ring-2 hover:ring-white hover:shadow-xl') : ''}
             `}>
 
                 {/* Detail View Button (Magnifying Glass) - Appears on hover, inside card top-right */}
-                <button
-                    className={`absolute top-[0.3vw] right-[0.3vw] w-[2vw] h-[2vw] flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full shadow-xl border-2 border-white/30 z-50 cursor-zoom-in transition-[opacity,background-color] duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onViewDetail?.();
-                    }}
-                >
-                    <svg className="w-[1.1vw] h-[1.1vw] fill-current" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                    </svg>
-                </button>
+                {!isOpponentView && (
+                    <button
+                        className={`absolute top-[0.3vw] right-[0.3vw] w-[2vw] h-[2vw] flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full shadow-xl border-2 border-white/30 z-50 cursor-zoom-in transition-[opacity,background-color] duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onViewDetail?.();
+                        }}
+                    >
+                        <svg className="w-[1.1vw] h-[1.1vw] fill-current" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+                )}
 
                 {/* Card Asset Preview */}
                 <div className="w-full h-full rounded-md overflow-hidden bg-[#f3f0e8] border border-slate-400/50 shadow-inner relative">
                     <CardPreview
-                        previewRef={def?.previewRef
-                            ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId } }
-                            : undefined}
+                        previewRef={isOpponentView 
+                            ? cardBackRef
+                            : (def?.previewRef
+                                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId } }
+                                : undefined)
+                        }
                         className="w-full h-full object-cover"
-                        title={previewTitle}
+                        title={isOpponentView ? t('ui.opponent_card') : previewTitle}
                     />
                 </div>
 
@@ -152,6 +166,7 @@ export const HandArea: React.FC<Props> = ({
     discardSelection,
     disableInteraction = false,
     disabledCardUids,
+    isOpponentView = false,
 }) => {
     // Basic mount animation
     const [isLoaded, setIsLoaded] = useState(false);
@@ -177,6 +192,7 @@ export const HandArea: React.FC<Props> = ({
                             isDiscardMode={isDiscardMode}
                             disableInteraction={disableInteraction}
                             isDisabled={!!disabledCardUids?.has(card.uid)}
+                            isOpponentView={isOpponentView}
                             onSelect={() => onCardSelect(card)}
                             onViewDetail={() => onCardView?.(card)}
                         />

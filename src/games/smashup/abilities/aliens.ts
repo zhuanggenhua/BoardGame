@@ -464,11 +464,13 @@ export function registerAlienInteractionHandlers(): void {
         } as MinionReturnedEvent] };
     });
 
-    // 麦田怪圈：选择基地后，自动返回该基地所有随从（强制效果）
+    // 麦田怪圈：选择基地后,自动返回该基地所有随从（强制效果）
     registerInteractionHandler('alien_crop_circles', (state, playerId, value, _iData, _random, timestamp) => {
         const { baseIndex } = value as { baseIndex: number };
         const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
+        if (!base) {
+            return undefined;
+        }
 
         // 直接返回该基地所有随从（强制效果："返回每个在这个基地上的随从"）
         const events = buildCropCirclesReturnEvents(state.core, baseIndex, base.minions.map(m => m.uid), timestamp, playerId);

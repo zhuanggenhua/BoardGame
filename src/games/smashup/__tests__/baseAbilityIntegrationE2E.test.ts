@@ -420,10 +420,15 @@ describe('集成: base_tortuga 托尔图加 (afterScoring)', () => {
     it('基地达标且有亚军随从 → Interaction 亚军移动随从', () => {
         // 托尔图加 breakpoint=21，亚军可移动随从到替换基地
         const core = makeState({
-            bases: [makeBase('base_tortuga', [
-                makeMinion('m1', 'test_minion', '0', 21),
-                makeMinion('m2', 'test_minion', '1', 10),
-            ])],
+            bases: [
+                makeBase('base_tortuga', [
+                    makeMinion('m1', 'test_minion', '0', 21),
+                    makeMinion('m2', 'test_minion', '1', 10),
+                ]),
+                makeBase('base_other', [
+                    makeMinion('m3', 'test_minion', '1', 5), // 亚军在其他基地的随从
+                ]),
+            ],
             baseDeck: ['base_central_brain'],
             players: { '0': makePlayer('0'), '1': makePlayer('1') },
         });

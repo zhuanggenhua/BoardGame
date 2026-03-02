@@ -181,7 +181,7 @@ describe('海盗派系能力', () => {
         });
 
         const { events, matchState } = execPlayAction(state, '0', 'a1');
-        const powerEvents = events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
+        const powerEvents = events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED);
         // 只有己方随从 m0 和 m2 获得 +1
         expect(powerEvents.length).toBe(2);
         const boostedUids = powerEvents.map(e => (e as any).payload.minionUid);

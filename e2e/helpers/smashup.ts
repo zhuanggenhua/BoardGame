@@ -64,36 +64,16 @@ export async function createSmashUpRoomViaAPI(page: Page): Promise<string | null
 export async function waitForFactionDraft(page: Page, timeout = 60000) {
     console.log('[SmashUp] 开始等待派系选择界面...');
     
-    // 先检查页面 URL
-    const url = page.url();
-    console.log('[SmashUp] 当前页面 URL:', url);
+    // 等待派系选择界面的标题出现
+    await page.waitForSelector('h1', { timeout });
     
-    // 检查页面内容
-    const pageContent = await page.evaluate(() => {
-        const h1s = Array.from(document.querySelectorAll('h1')).map(h => h.textContent);
-        const testIds = Array.from(document.querySelectorAll('[data-testid]')).map(el => el.getAttribute('data-testid'));
-        return { h1s, testIds, bodyText: document.body.innerText.substring(0, 500) };
-    });
-    console.log('[SmashUp] 页面内容:', JSON.stringify(pageContent, null, 2));
+    // 等待派系卡牌网格出现
+    await page.waitForSelector('.grid > div', { timeout: 5000 });
     
-    // 等待派系选择界面的任一标识元素
-    try {
-        await Promise.race([
-            page.waitForSelector('h1:has-text("Draft Your Factions")', { timeout }),
-            page.waitForSelector('h1:has-text("选择派系")', { timeout }),
-            page.waitForSelector('[data-testid="faction-draft"]', { timeout }),
-        ]);
-        console.log('[SmashUp] ✅ 派系选择界面已找到');
-    } catch (error) {
-        console.error('[SmashUp] ❌ 等待派系选择界面超时');
-        console.error('[SmashUp] 错误详情:', error);
-        
-        // 截图保存当前页面状态
-        await page.screenshot({ path: 'test-results/faction-draft-timeout.png', fullPage: true });
-        console.log('[SmashUp] 已保存截图: test-results/faction-draft-timeout.png');
-        
-        throw error;
-    }
+    // 额外等待确保页面稳定
+    await page.waitForTimeout(500);
+    
+    console.log('[SmashUp] ✅ 派系选择界面已就绪');
 }
 
 /** 通过 UI 选择派系（按索引） - 增强版，带重试 */
@@ -110,7 +90,7 @@ export async function selectFaction(page: Page, factionIndex: number) {
     
     // 等待按钮出现并可点击
     await confirmButton.waitFor({ state: 'visible', timeout: 10000 });
-    await page.waitForTimeout(500); // 等待动画稳定
+    await page.waitForTimeout(300); // 减少等待时间，只等待动画稳定
     
     // 尝试点击，如果失败则重试
     let clicked = false;
@@ -122,7 +102,7 @@ export async function selectFaction(page: Page, factionIndex: number) {
             break;
         } catch (e) {
             console.log(`[SmashUp] ⚠️  点击失败，重试 ${i + 1}/3`);
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(300);
         }
     }
     
@@ -130,8 +110,8 @@ export async function selectFaction(page: Page, factionIndex: number) {
         throw new Error(`无法点击确认按钮（派系 ${factionIndex}）`);
     }
     
-    // 3. 等待弹窗关闭
-    await page.waitForTimeout(1000);
+    // 3. 等待弹窗关闭（减少等待时间）
+    await page.waitForTimeout(500);
 }
 
 /** 确认派系选择（已废弃 - 现在在 selectFaction 中完成） */
@@ -183,9 +163,37 @@ export async function completeFactionSelection(
 
 /** 等待 SmashUp 棋盘 UI 就绪 */
 export async function waitForSmashUpUI(page: Page, timeout = 30000) {
-    // 等待游戏棋盘加载（SmashUp 使用 GameDebugPanel，会有 debug-panel 元素）
-    // 或者等待基地区域出现（更可靠的指标）
-    await page.waitForSelector('[data-base-index="0"], [data-testid="debug-panel"], .smashup-board', { timeout });
+    console.log('[SmashUp] 等待游戏棋盘加载...');
+    
+    // 先等待派系选择界面消失
+    try {
+        await page.waitForSelector('h1:has-text("选择派系")', { state: 'hidden', timeout: 5000 });
+        console.log('[SmashUp] ✅ 派系选择界面已关闭');
+    } catch (e) {
+        console.log('[SmashUp] ⚠️  派系选择界面可能已经关闭或未找到');
+    }
+    
+    // 等待游戏棋盘元素出现（多个选择器，任意一个出现即可）
+    try {
+        await page.waitForSelector('[data-base-index], [data-testid="debug-panel"], .base-zone, [data-testid="player-hand"]', { timeout });
+        console.log('[SmashUp] ✅ 游戏棋盘已加载');
+    } catch (e) {
+        console.error('[SmashUp] ❌ 游戏棋盘加载超时');
+        // 输出当前页面状态用于调试
+        const pageState = await page.evaluate(() => {
+            return {
+                url: window.location.href,
+                title: document.title,
+                bodyText: document.body?.innerText?.substring(0, 500),
+                hasDebugPanel: !!document.querySelector('[data-testid="debug-panel"]'),
+                hasBaseZone: !!document.querySelector('.base-zone'),
+                hasPlayerHand: !!document.querySelector('[data-testid="player-hand"]'),
+            };
+        });
+        console.error('[SmashUp] 页面状态:', JSON.stringify(pageState, null, 2));
+        throw e;
+    }
+    
     await page.waitForTimeout(500);
 }
 
@@ -248,67 +256,72 @@ export async function setupSmashUpOnlineMatch(
     guestContext: BrowserContext;
     matchId: string;
 } | null> {
+    console.log('[SmashUp] 开始创建在线对局...');
+    
+    // 1. 创建 Host context 和页面
     const hostContext = await browser.newContext({ baseURL });
     await initContext(hostContext, '__su_storage_reset');
     const hostPage = await hostContext.newPage();
 
+    console.log('[SmashUp] Host 导航到首页...');
     await hostPage.goto('/', { waitUntil: 'domcontentloaded' });
     await hostPage.waitForSelector('[data-game-id]', { timeout: 15000 }).catch(() => {});
 
     if (!(await ensureGameServerAvailable(hostPage))) {
+        console.error('[SmashUp] ❌ 游戏服务器不可用');
         return null;
     }
 
+    // 2. 创建房间
+    console.log('[SmashUp] 创建房间...');
     const matchId = await createSmashUpRoomViaAPI(hostPage);
     if (!matchId) {
+        console.error('[SmashUp] ❌ 创建房间失败');
         return null;
     }
+    console.log(`[SmashUp] ✅ 房间创建成功: ${matchId}`);
 
     if (!(await waitForMatchAvailable(hostPage, GAME_NAME, matchId, 20000))) {
+        console.error('[SmashUp] ❌ 房间不可用');
         return null;
     }
 
+    // 3. Host 加入房间
+    console.log('[SmashUp] Host 加入房间...');
     await hostPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
 
+    // 4. 创建 Guest context 和页面（并行）
+    console.log('[SmashUp] 创建 Guest context...');
     const guestContext = await browser.newContext({ baseURL });
     await initContext(guestContext, '__su_storage_reset_g');
     const guestPage = await guestContext.newPage();
 
+    console.log('[SmashUp] Guest 导航到首页...');
     await guestPage.goto('/', { waitUntil: 'domcontentloaded' });
     await guestPage.waitForSelector('[data-game-id]', { timeout: 15000 }).catch(() => {});
 
+    // 5. Guest 加入房间
+    console.log('[SmashUp] Guest 加入房间...');
     const guestCredentials = await joinMatchViaAPI(guestPage, GAME_NAME, matchId, '1', 'Guest-SU-E2E');
     if (!guestCredentials) {
+        console.error('[SmashUp] ❌ Guest 加入失败');
         await hostContext.close();
         await guestContext.close();
         return null;
     }
     await seedMatchCredentials(guestContext, GAME_NAME, matchId, '1', guestCredentials);
     
-    // 等待 Host 完成第一次派系选择后再让 Guest 加入
-    // 这样可以确保游戏客户端已经正确初始化
-    console.log('[SmashUp] 等待 Host 完成第一次派系选择...');
-    await waitForFactionDraft(hostPage);
-    await selectFaction(hostPage, options?.hostFactions?.[0] ?? 0);
-    
     console.log('[SmashUp] Guest 导航到对局页面...');
     await guestPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
     
-    // 等待页面加载完成
-    console.log('[SmashUp] 等待 Guest 页面加载...');
-    await guestPage.waitForTimeout(2000); // 给页面一些时间渲染
-    
-    // 检查页面是否真的加载了
-    const guestPageLoaded = await guestPage.evaluate(() => {
-        return {
-            hasBody: !!document.body,
-            bodyText: document.body?.innerText?.substring(0, 200),
-            h1Count: document.querySelectorAll('h1').length,
-        };
-    });
-    console.log('[SmashUp] Guest 页面加载状态:', JSON.stringify(guestPageLoaded, null, 2));
+    // 6. 等待双方都看到派系选择界面
+    console.log('[SmashUp] 等待双方派系选择界面加载...');
+    await Promise.all([
+        waitForFactionDraft(hostPage),
+        waitForFactionDraft(guestPage),
+    ]);
 
-    // 完成派系选择（waitForFactionDraft 内部会等待派系选择界面加载）
+    // 7. 完成派系选择（蛇形选秀）
     await completeFactionSelection(
         hostPage,
         guestPage,
@@ -316,9 +329,11 @@ export async function setupSmashUpOnlineMatch(
         options?.guestFactions
     );
 
-    // 等待游戏棋盘加载
+    // 8. 等待游戏棋盘加载
+    console.log('[SmashUp] 等待游戏棋盘加载...');
     await waitForSmashUpUI(hostPage);
     await waitForSmashUpUI(guestPage);
 
+    console.log('[SmashUp] ✅ 对局设置完成');
     return { hostPage, guestPage, hostContext, guestContext, matchId };
 }

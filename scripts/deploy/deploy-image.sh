@@ -424,6 +424,11 @@ deploy() {
   configure_docker_mirror
   ensure_port_available
 
+  # 清理旧镜像和构建缓存（在拉取新镜像之前）
+  log "清理旧镜像和构建缓存"
+  docker image prune -f > /dev/null 2>&1 || true
+  docker builder prune -f > /dev/null 2>&1 || true
+
   log "拉取最新镜像"
   docker compose -f "$COMPOSE_FILE" pull
 
@@ -432,6 +437,11 @@ deploy() {
 
   log "启动服务"
   docker compose -f "$COMPOSE_FILE" up -d
+
+  # 清理停止的容器和未使用的网络（在启动新服务之后）
+  log "清理停止的容器和未使用的网络"
+  docker container prune -f > /dev/null 2>&1 || true
+  docker network prune -f > /dev/null 2>&1 || true
 
   # 等待服务就绪后初始化管理员
   init_admin_if_configured

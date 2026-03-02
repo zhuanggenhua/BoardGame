@@ -288,7 +288,11 @@ export function registerRobotInteractionHandlers(): void {
         if (!cardUid) return undefined;
         // 该卡必须在牌库顶
         const player = state.core.players[playerId];
-        if (player.deck.length === 0 || player.deck[0].uid !== cardUid) return undefined;
+        if (player.deck.length === 0 || player.deck[0].uid !== cardUid) {
+            // 验证失败：卡牌不在牌库顶（可能被其他效果移除）
+            // 抛出错误以阻止命令执行
+            throw new Error(`卡牌 ${cardUid} 不在牌库顶，无法打出`);
+        }
         // 单基地直接打出
         if (state.core.bases.length === 1) {
             const playedEvt: MinionPlayedEvent = {
@@ -299,7 +303,8 @@ export function registerRobotInteractionHandlers(): void {
                     defId, 
                     baseIndex: 0, 
                     baseDefId: state.core.bases[0].defId,
-                    power 
+                    power,
+                    fromDeck: true,
                 },
                 timestamp,
             };
@@ -332,7 +337,7 @@ export function registerRobotInteractionHandlers(): void {
         if (!ctx) return undefined;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid: ctx.cardUid, defId: ctx.defId, baseIndex, power: ctx.power },
+            payload: { playerId, cardUid: ctx.cardUid, defId: ctx.defId, baseIndex, power: ctx.power, fromDeck: true },
             timestamp,
         };
         return { state, events: [
@@ -363,7 +368,7 @@ function registerRobotOngoingEffects(): void {
         // 保守实现：原始微型机 defId 始终触发
         if (!MICROBOT_DEF_IDS.has(trigCtx.triggerMinionDefId)) return [];
 
-        // 找到 microbot_archive 的拥有者?
+        // 找到 microbot_archive 的拥有者
         let archiveOwner: string | undefined;
         for (const base of trigCtx.state.bases) {
             const archive = base.minions.find(m => m.defId === 'robot_microbot_archive');
@@ -374,7 +379,10 @@ function registerRobotOngoingEffects(): void {
         }
         if (!archiveOwner) return [];
 
-        // ?张牌
+        // "你的"微型机 → 被消灭随从必须属于 archive 控制者
+        if (trigCtx.playerId !== archiveOwner) return [];
+
+        // 抽1张牌
         const player = trigCtx.state.players[archiveOwner];
         if (!player || player.deck.length === 0) return [];
         const { drawnUids } = drawCards(player, 1, trigCtx.random);

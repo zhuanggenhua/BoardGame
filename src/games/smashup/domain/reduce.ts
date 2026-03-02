@@ -117,11 +117,12 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MINION_PLAYED: {
-            const { playerId, cardUid, defId, baseIndex, power, fromDiscard, discardPlaySourceId, consumesNormalLimit } = event.payload;
+            const { playerId, cardUid, defId, baseIndex, power, fromDiscard, fromDeck, discardPlaySourceId, consumesNormalLimit } = event.payload;
             const player = state.players[playerId];
-            // 根据来源从手牌或弃牌堆移除卡牌
-            const newHand = fromDiscard ? player.hand : player.hand.filter(c => c.uid !== cardUid);
+            // 根据来源从手牌、弃牌堆或牌库移除卡牌
+            const newHand = (fromDiscard || fromDeck) ? player.hand : player.hand.filter(c => c.uid !== cardUid);
             const newDiscard = fromDiscard ? player.discard.filter(c => c.uid !== cardUid) : player.discard;
+            const newDeck = fromDeck ? player.deck.filter(c => c.uid !== cardUid) : player.deck;
             const minion: MinionOnBase = {
                 uid: cardUid,
                 defId,
@@ -186,6 +187,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         ...player,
                         hand: newHand,
                         discard: newDiscard,
+                        deck: newDeck,
                         minionsPlayed: finalMinionsPlayed,
                         minionsPlayedPerBase: {
                             ...(player.minionsPlayedPerBase ?? {}),

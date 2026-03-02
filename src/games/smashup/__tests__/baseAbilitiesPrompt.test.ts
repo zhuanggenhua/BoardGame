@@ -288,14 +288,22 @@ describe('base_tortuga: 计分后亚军移动随从', () => {
     it('亚军有随从时生成 Prompt', () => {
         const result = triggerBaseAbilityWithMS('base_tortuga', 'afterScoring', makeCtx({
             state: makeState({
-                bases: [makeBase('base_tortuga', {
-                    minions: [
-                        makeMinion('m1', '0', 5),
-                        makeMinion('m2', '1', 3),
-                    ],
-                })],
+                bases: [
+                    makeBase('base_tortuga', {
+                        minions: [
+                            makeMinion('m1', '0', 5),
+                            makeMinion('m2', '1', 3),
+                        ],
+                    }),
+                    makeBase('base_other', {
+                        minions: [
+                            makeMinion('m3', '1', 2), // 亚军在其他基地的随从
+                        ],
+                    }),
+                ],
             }),
             baseDefId: 'base_tortuga',
+            baseIndex: 0,
             rankings: [
                 { playerId: '0', power: 5, vp: 4 },
                 { playerId: '1', power: 3, vp: 2 },
@@ -303,8 +311,8 @@ describe('base_tortuga: 计分后亚军移动随从', () => {
         }));
 
         expect(result.events).toHaveLength(0);
-            const interactions = getInteractionsFromResult(result);
-            expect(interactions).toHaveLength(1);
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
         expect(interactions[0].data.sourceId).toBe('base_tortuga');
         expect(interactions[0].playerId).toBe('1'); // 亚军
     });

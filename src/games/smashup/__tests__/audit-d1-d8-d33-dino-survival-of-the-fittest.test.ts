@@ -31,14 +31,47 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { SmashUpDomain, smashUpFlowHooks } from '../game';
+import type { SmashUpCommand, SmashUpEvent } from '../domain/types';
+import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
+import { createInitialSystemState } from '../../../engine/pipeline';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import type { SmashUpCore } from '../domain/types';
+import { initAllAbilities } from '../abilities';
+
+
+beforeAll(() => {
+    initAllAbilities();
+});
+
+function createRunner() {
+    const systems = [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        ...createBaseSystems<SmashUpCore>(),
+    ];
+    return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+        domain: SmashUpDomain,
+        systems,
+        playerIds: ['0', '1'],
+    });
+}
+
+// 辅助函数：将 core 状态包装为 MatchState
+function wrapState(core: SmashUpCore) {
+    const systems = [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        ...createBaseSystems<SmashUpCore>(),
+    ];
+    const sys = createInitialSystemState(['0', '1'], systems, undefined);
+    sys.phase = 'playCards';
+    return { core, sys };
+}
 
 describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
     it('D1: 全局扫描 — 单基地单个最低力量随从自动消灭', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'dino_survival_of_the_fittest', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -55,21 +88,21 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
-        const finalState = runner.getState();
+        const state = runner.getState();
         // 验证 m2 被消灭（最低力量随从）
-        expect(finalState.bases[0].minions.find(m => m.uid === 'm2')).toBeUndefined();
+        expect(state.core.bases[0].minions.find(m => m.uid === 'm2')).toBeUndefined();
         // 验证 m1 存活
-        expect(finalState.bases[0].minions.find(m => m.uid === 'm1')).toBeDefined();
+        expect(state.core.bases[0].minions.find(m => m.uid === 'm1')).toBeDefined();
     });
 
     it('D1: 全局扫描 — 单基地多个最低力量随从（平局）创建交互', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'dino_survival_of_the_fittest', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -87,24 +120,24 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
-        const finalState = runner.getState();
+        const state = runner.getState();
         // 验证创建了交互（平局选择）
-        expect(finalState.sys.interaction.current).toBeDefined();
-        expect(finalState.sys.interaction.current?.data.sourceId).toBe('dino_survival_tiebreak');
+        expect(state.sys.interaction.current).toBeDefined();
+        expect(state.sys.interaction.current?.data.sourceId).toBe('dino_survival_tiebreak');
         // 验证选项包含 m2 和 m3
-        const options = finalState.sys.interaction.current?.data.options ?? [];
+        const options = state.sys.interaction.current?.data.options ?? [];
         expect(options.some((o: any) => o.value.minionUid === 'm2')).toBe(true);
         expect(options.some((o: any) => o.value.minionUid === 'm3')).toBe(true);
     });
 
     it('D1: 全局扫描 — 多基地同时触发（验证遍历所有基地）', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'dino_survival_of_the_fittest', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -129,23 +162,23 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
-        const finalState = runner.getState();
+        const state = runner.getState();
         // 验证两个基地的最低力量随从都被消灭
-        expect(finalState.bases[0].minions.find(m => m.uid === 'm2')).toBeUndefined();
-        expect(finalState.bases[1].minions.find(m => m.uid === 'm4')).toBeUndefined();
+        expect(state.core.bases[0].minions.find(m => m.uid === 'm2')).toBeUndefined();
+        expect(state.core.bases[1].minions.find(m => m.uid === 'm4')).toBeUndefined();
         // 验证高力量随从存活
-        expect(finalState.bases[0].minions.find(m => m.uid === 'm1')).toBeDefined();
-        expect(finalState.bases[1].minions.find(m => m.uid === 'm3')).toBeDefined();
+        expect(state.core.bases[0].minions.find(m => m.uid === 'm1')).toBeDefined();
+        expect(state.core.bases[1].minions.find(m => m.uid === 'm3')).toBeDefined();
     });
 
     it('D1: 边界条件 — 基地无力量差异不触发消灭', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'dino_survival_of_the_fittest', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -162,15 +195,15 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
-        const finalState = runner.getState();
+        const state = runner.getState();
         // 验证没有随从被消灭（无力量差异）
-        expect(finalState.bases[0].minions.length).toBe(2);
-        expect(finalState.bases[0].minions.find(m => m.uid === 'm1')).toBeDefined();
-        expect(finalState.bases[0].minions.find(m => m.uid === 'm2')).toBeDefined();
+        expect(state.core.bases[0].minions.length).toBe(2);
+        expect(state.core.bases[0].minions.find(m => m.uid === 'm1')).toBeDefined();
+        expect(state.core.bases[0].minions.find(m => m.uid === 'm2')).toBeDefined();
     });
 
     it('D33: 跨派系一致性 — 与 dino_natural_selection 使用相同的力量计算和消灭事件', () => {
@@ -181,9 +214,9 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
         // 
         // 这确保了跨派系同类能力的实现路径一致性
         
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'dino_survival_of_the_fittest', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -200,15 +233,15 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-        });
+        }));
 
-        runner.executeCommand({ type: 'PLAY_ACTION', playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
-        const finalState = runner.getState();
+        const state = runner.getState();
         // 验证使用 getMinionPower 计算力量（包含 powerCounters）
         // m1 的有效力量是 4（3 + 1），m2 的有效力量是 2
         // m2 应该被消灭（最低力量）
-        expect(finalState.bases[0].minions.find(m => m.uid === 'm2')).toBeUndefined();
-        expect(finalState.bases[0].minions.find(m => m.uid === 'm1')).toBeDefined();
+        expect(state.core.bases[0].minions.find(m => m.uid === 'm2')).toBeUndefined();
+        expect(state.core.bases[0].minions.find(m => m.uid === 'm1')).toBeDefined();
     });
 });

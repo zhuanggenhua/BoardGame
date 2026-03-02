@@ -31,15 +31,48 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { SmashUpDomain, smashUpFlowHooks } from '../game';
+import type { SmashUpCommand, SmashUpEvent } from '../domain/types';
+import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
+import { createInitialSystemState } from '../../../engine/pipeline';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import type { SmashUpCore } from '../domain/types';
+import { initAllAbilities } from '../abilities';
 import { getMinionPower } from '../domain/abilityHelpers';
+
+
+beforeAll(() => {
+    initAllAbilities();
+});
+
+function createRunner() {
+    const systems = [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        ...createBaseSystems<SmashUpCore>(),
+    ];
+    return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+        domain: SmashUpDomain,
+        systems,
+        playerIds: ['0', '1'],
+    });
+}
+
+// 辅助函数：将 core 状态包装为 MatchState
+function wrapState(core: SmashUpCore) {
+    const systems = [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        ...createBaseSystems<SmashUpCore>(),
+    ];
+    const sys = createInitialSystemState(['0', '1'], systems, undefined);
+    sys.phase = 'playCards';
+    return { core, sys };
+}
 
 describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
     it('D8: 回合判断 — 己方回合无力量加成', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -55,7 +88,7 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0, // 玩家0的回合
-        });
+        }));
 
         const state = runner.getState();
         const minion = state.bases[0].minions[0];
@@ -66,9 +99,9 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
     });
 
     it('D8: 回合判断 — 对手回合+2力量加成', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -84,7 +117,7 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1, // 玩家1的回合（对手回合）
-        });
+        }));
 
         const state = runner.getState();
         const minion = state.bases[0].minions[0];
@@ -95,9 +128,9 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
     });
 
     it('D8: Talent 标记 — 未使用 Talent 时无力量加成', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -113,7 +146,7 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1, // 玩家1的回合（对手回合）
-        });
+        }));
 
         const state = runner.getState();
         const minion = state.bases[0].minions[0];
@@ -124,9 +157,9 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
     });
 
     it('D8: 多个剑龙 — 各自独立计算', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -143,7 +176,7 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0, // 玩家0的回合
-        });
+        }));
 
         const state = runner.getState();
         const minion0 = state.bases[0].minions.find(m => m.uid === 'm1')!;
@@ -159,9 +192,9 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
     });
 
     it('D8: 原版 dino_armor_stego — 永久被动无需 Talent', () => {
-        const runner = new GameTestRunner<SmashUpCore>('smashup');
+        const runner = createRunner();
         
-        runner.setState({
+        runner.setState(wrapState({
             players: {
                 '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
                 '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
@@ -177,7 +210,7 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
             ],
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1, // 玩家1的回合（对手回合）
-        });
+        }));
 
         const state = runner.getState();
         const minion = state.bases[0].minions[0];

@@ -42,7 +42,7 @@ describe('盘旋机器人链式打出', () => {
         let ms = makeMatchState(state);
         
         // 1. 打出第一个盘旋机器人
-        ms = runCommand(ms, SU_COMMANDS.PLAY_MINION, '0', { cardUid: 'hoverbot-1', baseIndex: 0 });
+        ms = runCommand(ms, { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'hoverbot-1', baseIndex: 0 } }).finalState;
         
         // 验证：应该创建交互，选项引用第二个盘旋机器人
         const interaction1 = ms.sys.interaction?.current;
@@ -59,7 +59,7 @@ describe('盘旋机器人链式打出', () => {
         expect(playOption1.value.defId).toBe('robot_hoverbot');
         
         // 2. 选择打出第二个盘旋机器人
-        ms = runCommand(ms, 'SYS_INTERACTION_RESPOND', '0', { optionId: 'play' });
+        ms = runCommand(ms, { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: 'play' } }).finalState;
         
         // 验证：第二个盘旋机器人应该在场上
         const core = ms.core as SmashUpCore;
@@ -107,7 +107,7 @@ describe('盘旋机器人链式打出', () => {
         let ms = makeMatchState(state);
         
         // 1. 打出盘旋机器人
-        ms = runCommand(ms, SU_COMMANDS.PLAY_MINION, '0', { cardUid: 'hoverbot-1', baseIndex: 0 });
+        ms = runCommand(ms, { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'hoverbot-1', baseIndex: 0 } }).finalState;
         
         // 验证：交互选项引用 minion-a
         const interaction = ms.sys.interaction?.current;
@@ -122,13 +122,21 @@ describe('盘旋机器人链式打出', () => {
         core.players['0'].deck.shift(); // 移除牌库顶的卡，现在牌库顶是 minion-b
         
         // 3. 尝试响应交互（打出 minion-a）
-        const result = runCommand(ms, 'SYS_INTERACTION_RESPOND', '0', { optionId: 'play' }, { expectError: true });
+        // 期望：命令应该失败（因为 minion-a 已经不在牌库顶）
+        let commandFailed = false;
+        try {
+            runCommand(ms, { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: 'play' } });
+        } catch (error) {
+            // 交互处理器抛出异常表示验证失败
+            commandFailed = true;
+            expect((error as Error).message).toContain('不在牌库顶');
+        }
         
-        // 验证：命令应该失败（因为 minion-a 已经不在牌库顶）
-        expect(result.success).toBe(false);
+        // 验证：命令应该失败
+        expect(commandFailed).toBe(true);
         
         // 验证：牌库顶仍然是 minion-b（没有被错误地打出）
-        const coreFinal = result.state.core as SmashUpCore;
+        const coreFinal = ms.core as SmashUpCore;
         expect(coreFinal.players['0'].deck[0]?.uid).toBe('minion-b');
     });
 });

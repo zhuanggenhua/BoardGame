@@ -548,7 +548,7 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             const result = handler!(ms, '0', { count: 3, minionUid: 'm1', baseIndex: 0 }, undefined, defaultRandom, 0);
             const newState = applyEvents(state, result.events);
             expect(newState.players['0'].hand.filter(c => c.defId === MADNESS_CARD_DEF_ID).length).toBe(3);
-            expect(newState.bases[0].minions[0].powerModifier).toBe(6);
+            expect(newState.bases[0].minions[0].tempPowerModifier).toBe(6);
             expect(newState.madnessDeck!.length).toBe(MADNESS_DECK_SIZE - 3);
         });
 

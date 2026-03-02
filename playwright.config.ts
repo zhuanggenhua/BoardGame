@@ -73,7 +73,8 @@ if (useDevServers) {
 const webServerConfig = shouldStartServers
     ? [
         {
-            command: `npx vite --port ${port}`,
+            // 使用 npm run dev:frontend，通过 VITE_DEV_PORT 环境变量设置端口
+            command: `cross-env VITE_DEV_PORT=${port} GAME_SERVER_PORT=${gameServerPort} API_SERVER_PORT=${apiServerPort} npm run dev:frontend`,
             url: baseURL,
             reuseExistingServer: !process.env.CI, // CI 环境不复用，本地开发可以复用
             timeout: 120000,

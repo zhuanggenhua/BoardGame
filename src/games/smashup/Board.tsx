@@ -95,6 +95,14 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     const isGameOver = G.sys.gameover;
     const rootPid = playerID || '0';
     const isWinner = !!isGameOver && isGameOver.winner === rootPid;
+    
+    // 对手玩家数据
+    const opponentPid = core.turnOrder.find(pid => pid !== playerID) || '1';
+    const opponentPlayer = core.players[opponentPid];
+    
+    // 根据视角模式选择显示的玩家数据
+    const viewPlayer = viewMode === 'opponent' ? opponentPlayer : myPlayer;
+    const viewPid = viewMode === 'opponent' ? opponentPid : rootPid;
 
     // 重赛系统（通用 hook）
     const { overlayProps: endgameProps, isSpectator } = useEndgame({
@@ -110,6 +118,12 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
     const [discardSelection, setDiscardSelection] = useState<Set<string>>(new Set());
     const [meFirstPendingCard, setMeFirstPendingCard] = useState<MeFirstPendingCard | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // 对手视角切换状态
+    const [viewMode, setViewMode] = useState<'self' | 'opponent'>('self');
+    const toggleViewMode = useCallback(() => {
+        setViewMode(prev => prev === 'self' ? 'opponent' : 'self');
+    }, []);
 
     // 弃牌判断：抽牌阶段 + 是我的回合 + 手牌超限
     // 使用 useMemo 确保使用最新的依赖值（避免时序问题）
@@ -1229,6 +1243,7 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                 const isCurrent = pid === currentPid;
                                 const player = core.players[pid];
                                 const isMe = pid === playerID;
+                                const isOpponent = !isMe;
                                 // 派系图标
                                 const factionIcons = (player.factions ?? [])
                                     .map(fid => getFactionMeta(fid))
@@ -1236,21 +1251,37 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                 return (
                                     <motion.div
                                         key={pid}
-                                        className={`flex flex-col items-center relative ${isCurrent ? 'scale-110' : 'opacity-60 grayscale'}`}
+                                        className={`flex flex-col items-center relative group ${isCurrent ? 'scale-110' : 'opacity-60 grayscale'}`}
                                         animate={isCurrent ? { scale: 1.1 } : { scale: 1 }}
                                         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                        onMouseEnter={() => {
+                                            // 悬浮在对手区域时显示眼睛图标
+                                        }}
                                     >
                                         <span className="text-xs font-black uppercase mb-1">
                                             {isMe ? t('ui.you_short') : t('ui.player_short', { id: pid })}
                                         </span>
                                         <motion.div
                                             key={`vp-${pid}-${core.players[pid]?.vp ?? 0}`}
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg}`}
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg} ${isOpponent ? 'cursor-pointer' : ''}`}
                                             initial={{ scale: 1 }}
                                             animate={{ scale: [1, 1.3, 1] }}
                                             transition={{ duration: 0.4, ease: 'easeOut' }}
+                                            onClick={() => {
+                                                if (isOpponent) {
+                                                    toggleViewMode();
+                                                }
+                                            }}
                                         >
                                             {core.players[pid]?.vp ?? 0}
+                                            {/* 对手区域悬浮时显示半透明眼睛图标 */}
+                                            {isOpponent && (
+                                                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px] rounded-full transition-all duration-300 ${viewMode === 'opponent' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.9)]">
+                                                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                                    </svg>
+                                                </div>
+                                            )}
                                         </motion.div>
                                         {/* 派系图标 */}
                                         <div className="flex gap-0.5 mt-1">
@@ -1272,7 +1303,32 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                     </div>
                 </div>
 
-                {/* --- FINISH TURN BUTTON: Fixed Position (Right Edge) --- */}
+                {/* 对手视角指示器 */}
+                <AnimatePresence>
+                    {viewMode === 'opponent' && (
+                        <motion.div
+                            initial={{ y: -20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -20, opacity: 0 }}
+                            className="absolute top-[120px] inset-x-0 z-30 flex justify-center pointer-events-none"
+                        >
+                            <div className="bg-amber-900/95 backdrop-blur-sm text-amber-100 px-6 py-3 rounded-lg border-2 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.3)] flex items-center gap-3">
+                                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
+                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                </svg>
+                                <span className="font-black text-lg uppercase tracking-wider">
+                                    {t('ui.opponent_view', { defaultValue: '对手视角' })}
+                                </span>
+                                <button
+                                    onClick={toggleViewMode}
+                                    className="ml-2 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-sm rounded transition-colors pointer-events-auto"
+                                >
+                                    {t('ui.back_to_self', { defaultValue: '返回' })}
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
                 <div className="fixed right-[8vw] bottom-[28vh] z-50 flex pointer-events-none w-24 h-24" data-tutorial-id="su-end-turn-btn">
                     <AnimatePresence>
                         {isMyTurn && (phase === 'playCards' || (phase === 'scoreBases' && !G.sys.responseWindow?.current && !G.sys.interaction?.current)) && (
@@ -1676,11 +1732,11 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
 
                 {/* 手牌区：z-60，在弃牌遮罩之上 */}
                 {
-                    myPlayer && (
+                    viewPlayer && (
                         <div className="absolute bottom-0 inset-x-0 h-[220px] z-60 pointer-events-none">
 
                             <HandArea
-                                hand={myPlayer.hand}
+                                hand={viewPlayer.hand}
                                 selectedCardUid={selectedCardUid}
                                 onCardSelect={handleCardClick}
                                 isDiscardMode={needDiscard || isHandDiscardPrompt}
@@ -1693,14 +1749,15 @@ const SmashUpBoard: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID, res
                                 }
                                 disabledCardUids={meFirstDisabledUids ?? handPromptDisabledUids ?? tutorialDisabledUids}
                                 onCardView={handleViewCardDetail}
+                                isOpponentView={viewMode === 'opponent'}
                             />
 
 
 
                             {/* NEW: Deck & Discard Zone */}
                             <DeckDiscardZone
-                                deckCount={myPlayer.deck.length}
-                                discard={myPlayer.discard}
+                                deckCount={viewPlayer.deck.length}
+                                discard={viewPlayer.discard}
                                 isMyTurn={isMyTurn}
                                 hasPlayableFromDiscard={discardPlayOptions.length > 0 || isDiscardMinionPrompt}
                                 autoOpenPanel={isDiscardMinionPrompt}

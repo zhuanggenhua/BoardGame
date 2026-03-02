@@ -547,7 +547,7 @@ function isSourceActive(state: SmashUpCore, sourceDefId: string): boolean {
         if (base.minions.some(m => m.defId === sourceDefId)) return true;
         // 检查随从上附着的行动卡
         for (const m of base.minions) {
-            if (m.attachedActions.some(a => a.defId === sourceDefId)) return true;
+            if (m.attachedActions?.some(a => a.defId === sourceDefId)) return true;
         }
     }
     return false;

@@ -40,7 +40,7 @@ describe('InteractionSystem - 通用刷新', () => {
             },
         } as any;
 
-        // 2. 创建包含 cardUid 的交互
+        // 2. 创建包含 cardUid 的交互（声明 autoRefresh: 'hand'）
         const interaction = createSimpleChoice(
             'test-interaction',
             'p1',
@@ -50,6 +50,7 @@ describe('InteractionSystem - 通用刷新', () => {
                 { id: 'opt-2', label: '卡牌 2', value: { cardUid: 'card-2', defId: 'test-card-2' } },
                 { id: 'opt-3', label: '卡牌 3', value: { cardUid: 'card-3', defId: 'test-card-3' } },
             ],
+            { sourceId: 'test', autoRefresh: 'hand' },
         );
 
         // 3. 将交互加入队列
@@ -104,7 +105,7 @@ describe('InteractionSystem - 通用刷新', () => {
             },
         } as any;
 
-        // 2. 创建第一个交互
+        // 2. 创建第一个交互（声明 autoRefresh: 'hand'）
         const interaction1 = createSimpleChoice(
             'interaction-1',
             'p1',
@@ -114,9 +115,10 @@ describe('InteractionSystem - 通用刷新', () => {
                 { id: 'opt-2', label: '卡牌 2', value: { cardUid: 'card-2', defId: 'test-card-2' } },
                 { id: 'opt-3', label: '卡牌 3', value: { cardUid: 'card-3', defId: 'test-card-3' } },
             ],
+            { sourceId: 'test', autoRefresh: 'hand' },
         );
 
-        // 3. 创建第二个交互（使用相同的初始选项）
+        // 3. 创建第二个交互（使用相同的初始选项，声明 autoRefresh: 'hand'）
         const interaction2 = createSimpleChoice(
             'interaction-2',
             'p1',
@@ -126,6 +128,7 @@ describe('InteractionSystem - 通用刷新', () => {
                 { id: 'opt-2', label: '卡牌 2', value: { cardUid: 'card-2', defId: 'test-card-2' } },
                 { id: 'opt-3', label: '卡牌 3', value: { cardUid: 'card-3', defId: 'test-card-3' } },
             ],
+            { sourceId: 'test', autoRefresh: 'hand' },
         );
 
         // 4. 将两个交互加入队列
@@ -261,7 +264,7 @@ describe('InteractionSystem - 通用刷新', () => {
             },
         } as any;
 
-        // 创建第一个交互
+        // 创建第一个交互（声明 autoRefresh: 'hand'）
         const interaction1 = createSimpleChoice(
             'interaction-1',
             'p1',
@@ -270,9 +273,10 @@ describe('InteractionSystem - 通用刷新', () => {
                 { id: 'opt-1', label: '卡牌 1', value: { cardUid: 'card-1', defId: 'test-card-1' } },
                 { id: 'opt-2', label: '卡牌 2', value: { cardUid: 'card-2', defId: 'test-card-2' } },
             ],
+            { sourceId: 'test', autoRefresh: 'hand' },
         );
 
-        // 创建第二个交互（包含 skip 选项）
+        // 创建第二个交互（包含 skip 选项，声明 autoRefresh: 'hand'）
         const interaction2 = createSimpleChoice(
             'interaction-2',
             'p1',
@@ -282,6 +286,7 @@ describe('InteractionSystem - 通用刷新', () => {
                 { id: 'opt-2', label: '卡牌 2', value: { cardUid: 'card-2', defId: 'test-card-2' } },
                 { id: 'skip', label: '跳过', value: { skip: true } },
             ],
+            { sourceId: 'test', autoRefresh: 'hand' },
         );
 
         // 将两个交互加入队列
@@ -334,7 +339,7 @@ describe('InteractionSystem - 通用刷新', () => {
             },
         } as any;
 
-        // 创建多选交互（min=2, max=2）
+        // 创建多选交互（min=2, max=2，声明 autoRefresh: 'hand'）
         const interaction = createSimpleChoice(
             'multi-select',
             'p1',
@@ -344,7 +349,7 @@ describe('InteractionSystem - 通用刷新', () => {
                 { id: 'opt-2', label: '卡牌 2', value: { cardUid: 'card-2', defId: 'test-card-2' } },
                 { id: 'opt-3', label: '卡牌 3', value: { cardUid: 'card-3', defId: 'test-card-3' } },
             ],
-            { multi: { min: 2, max: 2 } },
+            { sourceId: 'test', autoRefresh: 'hand', multi: { min: 2, max: 2 } },
         );
 
         state = queueInteraction(state, interaction);
