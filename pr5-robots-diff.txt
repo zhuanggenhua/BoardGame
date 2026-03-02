@@ -1,0 +1,47 @@
+﻿diff --git a/src/games/smashup/abilities/robots.ts b/src/games/smashup/abilities/robots.ts
+index 8374a4e..3013b28 100644
+--- a/src/games/smashup/abilities/robots.ts
++++ b/src/games/smashup/abilities/robots.ts
+@@ -307,7 +307,7 @@ export function registerRobotInteractionHandlers(): void {
+     });
+ 
+     // 寰瀷鏈哄畧鎶よ€咃細閫夋嫨鐩爣鍚庢秷鐏?-    registerInteractionHandler('robot_microbot_guard', (state, playerId, value, _iData, _random, timestamp) => {
++    registerInteractionHandler('robot_microbot_guard', (state, _playerId, value, _iData, _random, timestamp) => {
+         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
+         const base = state.core.bases[baseIndex];
+         if (!base) return undefined;
+@@ -410,11 +410,16 @@ function registerRobotOngoingEffects(): void {
+     });
+ 
+     // 寰瀷鏈烘。妗堥锛氬井鍨嬫満琚秷鐏悗鎺у埗鑰呮娊1寮犵墝
+-    // alpha 鑱斿姩锛氬綋 alpha 鍦ㄥ満鏃讹紝鍚屾帶鍒惰€呯殑鎵€鏈夐殢浠庡潎瑙嗕负寰瀷鏈?     registerTrigger('robot_microbot_archive', 'onMinionDestroyed', (trigCtx) => {
+         if (!trigCtx.triggerMinionDefId) return [];
++        // 妫€鏌ヨ娑堢伃鐨勬槸鍚︽槸寰瀷鏈?+        // 闇€瑕佹壘鍒拌娑堢伃闅忎粠鐨勬帶鍒惰€呮潵鍒ゆ柇 alpha 鏄惁鍦ㄥ満
++        // trigCtx 涓病鏈夎娑堢伃闅忎粠鐨勫畬鏁翠俊鎭紝鐢?defId 鍒ゆ柇鍘熷寰瀷鏈?+        // alpha 鑱斿姩闇€瑕佺煡閬撴帶鍒惰€咃紝浣?onMinionDestroyed 瑙﹀彂鏃堕殢浠庡凡绉婚櫎
++        // 淇濆畧瀹炵幇锛氬師濮嬪井鍨嬫満 defId 濮嬬粓瑙﹀彂
++        if (!MICROBOT_DEF_IDS.has(trigCtx.triggerMinionDefId)) return [];
+ 
+-        // 鎵惧埌 microbot_archive 鐨勬嫢鏈夎€?+        // 鎵惧埌 microbot_archive 鐨勬嫢鏈夎€?
+         let archiveOwner: string | undefined;
+         for (const base of trigCtx.state.bases) {
+             const archive = base.minions.find(m => m.defId === 'robot_microbot_archive');
+@@ -425,20 +430,6 @@ function registerRobotOngoingEffects(): void {
+         }
+         if (!archiveOwner) return [];
+ 
+-        // "浣犵殑"寰瀷鏈?鈥?琚秷鐏殢浠庡繀椤诲睘浜?archive 鎺у埗鑰?-        if (trigCtx.playerId !== archiveOwner) return [];
+-
+-        // 鍒ゆ柇琚秷鐏殑闅忎粠鏄惁绠楀井鍨嬫満
+-        const isOriginalMicrobot = MICROBOT_DEF_IDS.has(trigCtx.triggerMinionDefId);
+-        if (!isOriginalMicrobot) {
+-            // 闈炲師濮嬪井鍨嬫満 defId 鈫?妫€鏌?alpha 鑱斿姩
+-            // alpha 鍦ㄥ満 = 鍚屾帶鍒惰€呮墍鏈夐殢浠庤涓哄井鍨嬫満
+-            const alphaOnField = trigCtx.state.bases.some(base =>
+-                base.minions.some(m => m.defId === 'robot_microbot_alpha' && m.controller === archiveOwner)
+-            );
+-            if (!alphaOnField) return [];
+-        }
+-
+         // ?寮犵墝
+         const player = trigCtx.state.players[archiveOwner];
+         if (!player || player.deck.length === 0) return [];

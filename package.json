@@ -45,6 +45,7 @@
     "test:ugc": "vitest run src/ugc",
     "test:games": "vitest run src/games",
     "test:games:core": "vitest run src/games --config vitest.config.core.ts",
+    "test:games:audit": "vitest run src/games --config vitest.config.audit.ts",
     "test:changed": "npx vitest run --changed origin/main -- src/games",
     "test:api": "vitest run apps/api",
     "test:api:docker": "cross-env MONGO_URI=mongodb://localhost:27017/boardgame npm run test:api",

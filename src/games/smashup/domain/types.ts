@@ -300,6 +300,13 @@ export interface PendingAfterScoringSpecial {
     sourceDefId: string;
     playerId: PlayerId;
     baseIndex: number;
+    // 随从快照（可选）：用于计分后随从已离场的场景（如 giant_ant_we_are_the_champions）
+    minionSnapshots?: Array<{
+        uid: string;
+        defId: string;
+        baseIndex: number;
+        counterAmount: number;
+    }>;
 }
 
 export interface SmashUpCore {
@@ -966,6 +973,13 @@ export interface SpecialAfterScoringArmedEvent extends GameEvent<typeof SU_EVENT
         sourceDefId: string;
         playerId: PlayerId;
         baseIndex: number;
+        // 随从快照（可选）：用于计分后随从已离场的场景（如 giant_ant_we_are_the_champions）
+        minionSnapshots?: Array<{
+            uid: string;
+            defId: string;
+            baseIndex: number;
+            counterAmount: number;
+        }>;
     };
 }
 

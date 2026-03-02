@@ -1,0 +1,313 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/gongzuo/web/BordGame[39m
+
+[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts
+[22m[39m[dotenv@17.3.1] injecting env (4) from .env.test.local -- tip: 馃 agentic secret storage: https://dotenvx.com/as2
+
+[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD11/D12: 鍐欏叆-娑堣€楀绉版€?鈥?鍗曞熀鍦伴檷浣庣垎鐮寸偣
+[22m[39m[DEBUG] PLAY_ACTION validation: start {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'a1'[39m,
+  targetBaseIndex: [33m0[39m,
+  hasResponseWindow: [33mfalse[39m,
+  windowType: [90mundefined[39m
+}
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
+[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD14: 鍥炲悎娓呯悊瀹屾暣鎬?鈥?鍥炲悎缁撴潫鏃朵复鏃朵慨姝ｆ竻闆?[22m[39m[DEBUG] PLAY_ACTION validation: start {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'a1'[39m,
+  targetBaseIndex: [33m0[39m,
+  hasResponseWindow: [33mfalse[39m,
+  windowType: [90mundefined[39m
+}
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?[FlowSystem][beforeCommand] ADVANCE_PHASE from=playCards playerId=0
+[FlowSystem][beforeCommand] getNextPhase returned to=scoreBases
+[FlowSystem][beforeCommand] phase updated from=playCards to=scoreBases
+[onAutoContinueCheck] scoreBases 闃舵妫€鏌? {
+  flowHalted: [33mfalse[39m,
+  hasInteraction: [33mfalse[39m,
+  interactionId: [90mundefined[39m,
+  hasResponseWindow: [33mfalse[39m
+}
+[onAutoContinueCheck] scoreBases: eligibleIndices = []
+[onAutoContinueCheck] scoreBases: 鏃?eligible 鍩哄湴锛岃嚜鍔ㄦ帹杩?[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=scoreBases, playerId=0
+[FlowSystem][afterEvents] autoContinue from=scoreBases playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=scoreBases playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=draw
+[FlowSystem][afterEvents] phase updated from=scoreBases to=draw
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=draw, playerId=0
+[FlowSystem][afterEvents] autoContinue from=draw playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=draw playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=endTurn
+[FlowSystem][afterEvents] phase updated from=draw to=endTurn
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=endTurn, playerId=0
+[FlowSystem][afterEvents] autoContinue from=endTurn playerId=0
+[FlowSystem][afterEvents] ADVANCE_PHASE from=endTurn playerId=0
+[FlowSystem][afterEvents] getNextPhase returned to=startTurn
+[FlowSystem][afterEvents] phase updated from=endTurn to=startTurn
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 autoContinue=true, phase=startTurn, playerId=1
+[FlowSystem][afterEvents] autoContinue from=startTurn playerId=1
+[FlowSystem][afterEvents] ADVANCE_PHASE from=startTurn playerId=1
+[FlowSystem][afterEvents] getNextPhase returned to=playCards
+[FlowSystem][afterEvents] phase updated from=startTurn to=playCards
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
+[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD11/D12: 澶氬熀鍦扮嫭绔嬩慨姝?鈥?涓嶅悓鍩哄湴鐨勪慨姝ｄ簰涓嶅共鎵?[22m[39m[DEBUG] PLAY_ACTION validation: start {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'a1'[39m,
+  targetBaseIndex: [33m0[39m,
+  hasResponseWindow: [33mfalse[39m,
+  windowType: [90mundefined[39m
+}
+[InteractionSystem] popInteraction: No current, making new interaction current: { interactionId: [32m'dino_rampage_1772421472985'[39m, kind: [32m'simple-choice'[39m }
+[InteractionSystem] popInteraction: Checking optionsGenerator: {
+  hasOptionsGenerator: [33mfalse[39m,
+  hasContinuationContext: [33mfalse[39m,
+  continuationContext: [90mundefined[39m,
+  originalOptionsCount: [33m2[39m
+}
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
+[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD11/D12: 鍔涢噺蹇収 鈥?淇鍊煎熀浜庢墦鍑烘椂鐨勫姏閲?[22m[39m[DEBUG] PLAY_ACTION validation: start {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'a1'[39m,
+  targetBaseIndex: [33m0[39m,
+  hasResponseWindow: [33mfalse[39m,
+  windowType: [90mundefined[39m
+}
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?[DEBUG] PLAY_ACTION validation: start {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'a2'[39m,
+  targetBaseIndex: [33m0[39m,
+  hasResponseWindow: [33mfalse[39m,
+  windowType: [90mundefined[39m
+}
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
+[90mstdout[2m | src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22m[2mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22m[2mD14: 杈圭晫鏉′欢 鈥?鏃犲繁鏂归殢浠庢椂涓嶉檷浣庣垎鐮寸偣
+[22m[39m[DEBUG] PLAY_ACTION validation: start {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'a1'[39m,
+  targetBaseIndex: [33m0[39m,
+  hasResponseWindow: [33mfalse[39m,
+  windowType: [90mundefined[39m
+}
+[FlowSystem][afterEvents] onAutoContinueCheck 杩斿洖 undefined 鎴?autoContinue=false, phase=playCards, 涓嶈嚜鍔ㄦ帹杩?
+ [31m脳[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD11/D12: 鍐欏叆-娑堣€楀绉版€?鈥?鍗曞熀鍦伴檷浣庣垎鐮寸偣[32m 10[2mms[22m[39m
+[31m   鈫?Cannot read properties of undefined (reading '0')[39m
+ [31m脳[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD14: 鍥炲悎娓呯悊瀹屾暣鎬?鈥?鍥炲悎缁撴潫鏃朵复鏃朵慨姝ｆ竻闆?[32m 6[2mms[22m[39m
+[31m   鈫?expected undefined to deeply equal {}[39m
+ [31m脳[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD11/D12: 澶氬熀鍦扮嫭绔嬩慨姝?鈥?涓嶅悓鍩哄湴鐨勪慨姝ｄ簰涓嶅共鎵?[32m 2[2mms[22m[39m
+[31m   鈫?expected undefined to be -3 // Object.is equality[39m
+ [32m鉁?[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD11/D12: 鍔涢噺蹇収 鈥?淇鍊煎熀浜庢墦鍑烘椂鐨勫姏閲?[32m 2[2mms[22m[39m
+ [32m鉁?[39m src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts[2m > [22mAudit D11+D12+D14: dino_rampage锛堢媯鏆达級[2m > [22mD14: 杈圭晫鏉′欢 鈥?鏃犲繁鏂归殢浠庢椂涓嶉檷浣庣垎鐮寸偣[32m 1[2mms[22m[39m
+node.exe : 
+所在位置 C:\Program File
+s\nodejs\npx.ps1:29 
+字符: 3
++   & $NODE_EXE $NPX
+_CLI_JS $args
++   ~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (:Str   
+ ing) [], Remote    
+Exception
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+[31m鈳幆鈳幆鈳幆鈳?[39m
+[1m[41m Failed Tes
+ts 3 [49m[22m[31m
+鈳幆鈳幆鈳幆鈳?[39m
+
+[41m[1m FAIL [22m
+[49m src/games/smas
+hup/__tests__/audit-
+d11-d12-d14-dino-ram
+page.test.ts[2m > 
+[22mAudit D11+D12+D1
+4: dino_rampage锛堢媯鏆达
+級[2m > [22mD11/D12
+: 鍐欏叆-娑堣€楀绉版€?鈥?鍗曞熀
+鍦伴檷浣庣垎鐮寸偣
+[31m[1mTypeError[
+22m: Cannot read pro
+perties of undefined
+ (reading '0')[39m
+[36m [2m鉂?[22m get
+EffectiveBreakpoint 
+src/games/smashup/do
+main/ongoingModifier
+s.ts:[2m384:24[22m
+[39m
+    [90m382| [39m 
+   baseIndex[33m:[
+39m number
+    [90m383| [39m)
+[33m:[39m number {
+    [90m384| [39m 
+   [35mconst[39m b
+ase [33m=[39m stat
+e[33m.[39mbases[ba
+seIndex][33m;[39m
+    [90m   | [39m 
+                    
+  [31m^[39m
+    [90m385| [39m 
+   [35mif[39m ([3
+3m![39mbase) [35mr
+eturn[39m [33mInfi
+nity[39m[33m;[39m
+    [90m386| [39m 
+   [35mconst[39m b
+aseDef [33m=[39m 
+[34mgetBaseDef[39m(
+base[33m.[39mdefId
+)[33m;[39m
+[90m [2m鉂?[22m src
+/games/smashup/__tes
+ts__/audit-d11-d12-d
+14-dino-rampage.test
+.ts:[2m111:37[22m
+[39m
+
+[31m[2m鈳幆鈳幆鈳幆鈳
+幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳
+幆鈳幆[1/3]鈳?[22m[39
+m
+
+[41m[1m FAIL [22m
+[49m src/games/smas
+hup/__tests__/audit-
+d11-d12-d14-dino-ram
+page.test.ts[2m > 
+[22mAudit D11+D12+D1
+4: dino_rampage锛堢媯鏆达
+級[2m > [22mD14: 鍥炲
+悎娓呯悊瀹屾暣鎬?鈥?鍥炲悎缁撴潫鏃朵复
+鏃朵慨姝ｆ竻闆?[31m[1mAss
+ertionError[22m: ex
+pected undefined to 
+deeply equal {}[39m
+
+[32m- Expected:[39
+m 
+{}
+
+[31m+ Received:[39
+m 
+undefined
+
+[36m [2m鉂?[22m src
+/games/smashup/__tes
+ts__/audit-d11-d12-d
+14-dino-rampage.test
+.ts:[2m152:52[22m
+[39m
+    [90m150| [39m 
+       state [33m=
+[39m runner[33m.[3
+9m[34mgetState[39m
+()[33m;[39m
+    [90m151| [39m 
+       [90m// 楠岃瘉鍥炲
+悎缁撴潫鍚庝复鏃朵慨姝ｆ竻闆?[39m
+    [90m152| [39m 
+       [34mexpect[
+39m(state[33m.[39m
+core[33m.[39mtempB
+reakpointModifiers)
+[33m.[39m[34mtoEqu
+al[39m({})[33m;[3
+9m
+    [90m   | [39m 
+                    
+                    
+          [31m^[39
+m
+    [90m153| [39m 
+   })[33m;[39m
+    [90m154| [39m
+
+[31m[2m鈳幆鈳幆鈳幆鈳
+幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳
+幆鈳幆[2/3]鈳?[22m[39
+m
+
+[41m[1m FAIL [22m
+[49m src/games/smas
+hup/__tests__/audit-
+d11-d12-d14-dino-ram
+page.test.ts[2m > 
+[22mAudit D11+D12+D1
+4: dino_rampage锛堢媯鏆达
+級[2m > [22mD11/D12
+: 澶氬熀鍦扮嫭绔嬩慨姝?鈥?涓嶅悓鍩哄
+湴鐨勪慨姝ｄ簰涓嶅共鎵?[31m[1
+mAssertionError[22m
+: expected undefined
+ to be -3 // Object.
+is equality[39m
+
+[32m- Expected:[39
+m 
+-3
+
+[31m+ Received:[39
+m 
+undefined
+
+[36m [2m鉂?[22m src
+/games/smashup/__tes
+ts__/audit-d11-d12-d
+14-dino-rampage.test
+.ts:[2m196:57[22m
+[39m
+    [90m194| [39m 
+       [35mconst[3
+9m state [33m=[39m
+ runner[33m.[39m[
+34mgetState[39m()[
+33m;[39m
+    [90m195| [39m 
+       [90m// 楠岃瘉涓や
+釜鍩哄湴鐨勪慨姝ｇ嫭绔嬪瓨鍌?[39m
+    [90m196| [39m 
+       [34mexpect[
+39m(state[33m.[39m
+core[33m.[39mtempB
+reakpointModifiers[
+33m?.[39m[[34m0[3
+9m])[33m.[39m[34m
+toBe[39m([33m-[39
+m[34m3[39m)[33m;
+[39m
+    [90m   | [39m 
+                    
+                    
+               [31m
+^[39m
+    [90m197| [39m 
+       [34mexpect[
+39m(state[33m.[39m
+core[33m.[39mtempB
+reakpointModifiers[
+33m?.[39m[[34m1[3
+9m])[33m.[39m[34m
+toBe[39m([33m-[39
+m[34m5[39m)[33m;
+[39m
+    [90m198| [39m 
+   })[33m;[39m
+
+[31m[2m鈳幆鈳幆鈳幆鈳
+幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳
+幆鈳幆[3/3]鈳?[22m[39
+m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 11:17:50
+[2m   Duration [22m 2.92s[2m (transform 1.40s, setup 190ms, import 1.59s, tests 21ms, environment 908ms)[22m
+

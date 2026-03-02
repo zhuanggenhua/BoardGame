@@ -542,6 +542,14 @@ describe('巨蚁派系能力', () => {
                     sourceDefId: 'giant_ant_we_are_the_champions',
                     playerId: '0',
                     baseIndex: 0,
+                    minionSnapshots: [
+                        {
+                            uid: 'm1',
+                            defId: 'giant_ant_worker',
+                            baseIndex: 0,
+                            counterAmount: 2,
+                        },
+                    ],
                 },
             ],
         });

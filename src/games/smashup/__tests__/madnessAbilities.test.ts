@@ -516,8 +516,8 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             const madnessEvents = result.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
             expect((madnessEvents[0] as any).payload.count).toBe(2);
-            // 随从获得+4力量（2张×2力量）
-            const powerEvents = result.events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
+            // 随从获得+4力量（2张×2力量）- 使用永久力量修正
+            const powerEvents = result.events.filter(e => e.type === SU_EVENTS.PERMANENT_POWER_ADDED);
             expect(powerEvents.length).toBe(1);
             expect((powerEvents[0] as any).payload.minionUid).toBe('m1');
             expect((powerEvents[0] as any).payload.amount).toBe(4);
@@ -548,7 +548,7 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             const result = handler!(ms, '0', { count: 3, minionUid: 'm1', baseIndex: 0 }, undefined, defaultRandom, 0);
             const newState = applyEvents(state, result.events);
             expect(newState.players['0'].hand.filter(c => c.defId === MADNESS_CARD_DEF_ID).length).toBe(3);
-            expect(newState.bases[0].minions[0].tempPowerModifier).toBe(6);
+            expect(newState.bases[0].minions[0].powerModifier).toBe(6);
             expect(newState.madnessDeck!.length).toBe(MADNESS_DECK_SIZE - 3);
         });
 

@@ -111,8 +111,15 @@ function executeCommand(
     random: RandomFn,
     now: number
 ): { events: SmashUpEvent[]; updatedState?: MatchState<SmashUpCore> } {
-    // 防御性初始化：确保 sys.interaction 存在（测试环境可能未初始化）
-    if (!state.sys.interaction) {
+    // 防御性初始化：处理测试环境可能传递裸 core 的情况
+    // 如果 state 没有 core 字段，说明传递的是裸 core，需要包装
+    if (!(state as any).core) {
+        state = { core: state as any, sys: { interaction: { queue: [] } } as any };
+    }
+    // 确保 sys 和 sys.interaction 存在
+    if (!state.sys) {
+        state = { ...state, sys: { interaction: { queue: [] } } as any };
+    } else if (!state.sys.interaction) {
         state = { ...state, sys: { ...state.sys, interaction: { queue: [] } } };
     }
     const core = state.core;

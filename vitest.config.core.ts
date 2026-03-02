@@ -1,6 +1,17 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
 
+/**
+ * 核心功能测试配置
+ * 
+ * 排除以下测试：
+ * - 审计测试（audit-*.test.ts, *Audit.test.ts）
+ * - 属性测试（*.property.test.ts）
+ * - E2E 测试（*.e2e.test.ts）
+ * 
+ * 用途：快速验证核心功能是否正常工作
+ * 命令：npm run test:games:core
+ */
 export default defineConfig({
     resolve: {
         alias: {
@@ -21,31 +32,26 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         include: [
-            'src/core/**/__tests__/**/*.test.{ts,tsx}',
-            'src/components/**/__tests__/**/*.test.{ts,tsx}',
-            'src/api/**/__tests__/**/*.test.{ts,tsx}',
-            'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
-            'src/lib/**/__tests__/**/*.test.{ts,tsx}',
-            'src/shared/**/__tests__/**/*.test.{ts,tsx}',
             'src/games/**/__tests__/**/*.test.{ts,tsx}',
-            'src/engine/**/__tests__/**/*.test.{ts,tsx}',
-            'src/server/**/__tests__/**/*.test.{ts,tsx}',
-            'src/ugc/**/__tests__/**/*.test.{ts,tsx}',
-            'src/pages/**/__tests__/**/*.test.{ts,tsx}',
-            'apps/api/test/**/*.test.{ts,tsx}',
-            'apps/api/test/**/*.e2e-spec.ts',
         ],
-        // 排除审计和属性测试
         exclude: [
-            '**/node_modules/**',
-            '**/dist/**',
+            // 排除审计测试
             '**/*audit*.test.{ts,tsx}',
             '**/*Audit*.test.{ts,tsx}',
-            '**/*property*.test.{ts,tsx}',
-            '**/properties/**/*.test.{ts,tsx}',
-            '**/*Properties*.test.{ts,tsx}',
+            // 排除属性测试
+            '**/*.property.test.{ts,tsx}',
+            // 排除 E2E 测试
+            '**/*.e2e.test.{ts,tsx}',
+            '**/*E2E*.test.{ts,tsx}',
+            // 排除调试测试
+            '**/*debug*.test.{ts,tsx}',
+            '**/*Debug*.test.{ts,tsx}',
+            // 默认排除
+            '**/node_modules/**',
+            '**/dist/**',
+            '**/.{idea,git,cache,output,temp}/**',
         ],
         testTimeout: 180000,
-        setupFiles: ['./vitest.setup.ts', './apps/api/test/vitest.setup.ts'],
+        setupFiles: ['./vitest.setup.ts'],
     },
 });

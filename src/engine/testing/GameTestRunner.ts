@@ -395,6 +395,6 @@ export class GameTestRunner<
         events: Array<{ type: string; payload: unknown; timestamp: number }>;
         finalState: MatchState<TState>;
     } {
-        return this.dispatch('RESOLVE_INTERACTION', { playerId, value });
+        return this.dispatch('SYS_INTERACTION_RESPOND', { playerId, value });
     }
 }

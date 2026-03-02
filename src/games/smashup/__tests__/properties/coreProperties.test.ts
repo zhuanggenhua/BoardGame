@@ -636,8 +636,8 @@ describe('Property 13: 力量指示物不变量', () => {
                 fc.integer({ min: 0, max: 5 }),
                 fc.integer({ min: 1, max: 10 }),
                 (initial, addAmount) => {
-                    const minion = makeMinion('pm-1', 'test', '0', 3, { powerModifier: 0 });
-                    minion.powerModifier = initial;
+                    const minion = makeMinion('pm-1', 'test', '0', 3, { powerCounters: 0 });
+                    minion.powerCounters = initial;
                     const state: SmashUpCore = {
                         players: {
                             '0': makePlayer('0', [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.NINJAS]),
@@ -653,7 +653,7 @@ describe('Property 13: 力量指示物不变量', () => {
                         timestamp: Date.now(),
                     } as any);
                     const m = s.bases[0].minions.find(x => x.uid === 'pm-1');
-                    if (m) expect(m.powerModifier).toBe(initial + addAmount);
+                    if (m) expect(m.powerCounters).toBe(initial + addAmount);
                 },
             ),
             { numRuns: 50 },

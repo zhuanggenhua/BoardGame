@@ -486,6 +486,17 @@ function giantAntUnderPressure(ctx: AbilityContext): AbilityResult {
 }
 
 function giantAntWeAreTheChampions(ctx: AbilityContext): AbilityResult {
+    // 捕获当前基地上己方有力量指示物的随从快照
+    const base = ctx.state.bases[ctx.baseIndex];
+    const sources = base?.minions
+        .filter(m => m.controller === ctx.playerId && m.powerCounters > 0)
+        .map(m => ({
+            uid: m.uid,
+            defId: m.defId,
+            baseIndex: ctx.baseIndex,
+            counterAmount: m.powerCounters,
+        })) ?? [];
+
     return {
         events: [{
             type: SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED,
@@ -493,6 +504,8 @@ function giantAntWeAreTheChampions(ctx: AbilityContext): AbilityResult {
                 sourceDefId: 'giant_ant_we_are_the_champions',
                 playerId: ctx.playerId,
                 baseIndex: ctx.baseIndex,
+                // 保存随从快照，供 afterScoring 使用（计分后随从已离场）
+                minionSnapshots: sources,
             },
             timestamp: ctx.now,
         } as SmashUpEvent],
@@ -1174,36 +1187,25 @@ function giantAntWeAreTheChampionsAfterScoring(
 
     let matchState = ctx.matchState;
     for (const armedEntry of armed) {
-        const scoredBase = state.bases[baseIndex];
-        if (!scoredBase) continue;
-        
         // 检查是否有足够的随从进行转移（至少需要2个随从：来源+目标）
         const allMyMinions = collectOwnMinions(state, armedEntry.playerId);
         if (allMyMinions.length < 2) continue;
 
-        const sources = scoredBase.minions
-            .filter(m => m.controller === armedEntry.playerId && m.powerCounters > 0)
-            .map(m => {
-                const def = getCardDef(m.defId);
-                return {
-                    uid: m.uid,
-                    defId: m.defId,
-                    baseIndex,
-                    counterAmount: m.powerCounters,
-                    label: `${def?.name ?? m.defId}（力量指示物 ${m.powerCounters}）`,
-                };
-            });
+        // 使用快照中的随从（计分后随从已离场）
+        const sources = armedEntry.minionSnapshots ?? [];
         if (sources.length === 0) continue;
 
-        // 手动构建选项（包含 counterAmount 快照），不使用 buildMinionTargetOptions
-        // 因为来源是己方随从（无需保护检查），且计分后离场后仍需 counterAmount
-        const sourceOptions = sources.map((s, i) => ({
-            id: `minion-${i}`,
-            label: s.label,
-            value: { minionUid: s.uid, baseIndex: s.baseIndex, defId: s.defId, counterAmount: s.counterAmount },
-            // 计分后来源随从可能已离场，必须保留快照选项，不能走 field 动态校验
-            _source: 'static' as const,
-        }));
+        // 手动构建选项（使用快照数据）
+        const sourceOptions = sources.map((s, i) => {
+            const def = getCardDef(s.defId);
+            return {
+                id: `minion-${i}`,
+                label: `${def?.name ?? s.defId}（力量指示物 ${s.counterAmount}）`,
+                value: { minionUid: s.uid, baseIndex: s.baseIndex, defId: s.defId, counterAmount: s.counterAmount },
+                // 计分后来源随从已离场，必须保留快照选项，不能走 field 动态校验
+                _source: 'static' as const,
+            };
+        });
 
         const interaction = createSimpleChoice(
             `giant_ant_we_are_the_champions_choose_source_${now}_${armedEntry.playerId}`,
@@ -1212,7 +1214,7 @@ function giantAntWeAreTheChampionsAfterScoring(
             sourceOptions,
             {
                 sourceId: 'giant_ant_we_are_the_champions_choose_source',
-                // 来源可能已离场，使用通用弹层选择（卡牌模式）而不是棋盘点选
+                // 来源已离场，使用通用弹层选择（卡牌模式）而不是棋盘点选
                 targetType: 'generic',
             },
         );

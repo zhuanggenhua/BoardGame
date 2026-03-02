@@ -39,6 +39,7 @@
 import { describe, it, expect } from 'vitest';
 import { SmashUpDomain, smashUpFlowHooks } from '../game';
 import type { SmashUpCommand, SmashUpEvent } from '../domain/types';
+import { SU_COMMANDS } from '../domain/types';
 import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
@@ -91,10 +92,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
                             defId: 'test_minion', 
                             controller: '1', 
                             owner: '1', 
-                            power: 3, 
+                            basePower: 3, 
                             attachedActions: [{ uid: 'tc1', defId: 'dino_tooth_and_claw', ownerId: '1', metadata: {} }], 
                             powerCounters: 0, 
-                            tempPower: 0 
+                            tempPowerModifier: 0 
                         },
                     ],
                     ongoingActions: [],
@@ -105,12 +106,12 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         }));
 
         // 玩家0打出 ninja_assassination（消灭力量≤3的随从）
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         const state = runner.getState();
         // 验证随从存活（tooth_and_claw 拦截了消灭事件）
-        const minion = state.bases[0].minions.find(m => m.uid === 'm1');
+        const minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         expect(minion).toBeDefined();
         // 验证 tooth_and_claw 已被移除（自毁）
         expect(minion?.attachedActions.some(a => a.defId === 'dino_tooth_and_claw')).toBe(false);
@@ -133,10 +134,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
                             defId: 'test_minion', 
                             controller: '1', 
                             owner: '1', 
-                            power: 3, 
+                            basePower: 3, 
                             attachedActions: [{ uid: 'tc1', defId: 'dino_tooth_and_claw', ownerId: '1', metadata: {} }], 
                             powerCounters: 0, 
-                            tempPower: 0 
+                            tempPowerModifier: 0 
                         },
                     ],
                     ongoingActions: [],
@@ -147,17 +148,17 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         }));
 
         // 玩家0打出 alien_abduction（返回随从到手牌）
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         const state = runner.getState();
         // 验证随从存活（tooth_and_claw 拦截了返回手牌事件）
-        const minion = state.bases[0].minions.find(m => m.uid === 'm1');
+        const minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         expect(minion).toBeDefined();
         // 验证 tooth_and_claw 已被移除（自毁）
         expect(minion?.attachedActions.some(a => a.defId === 'dino_tooth_and_claw')).toBe(false);
         // 验证随从未返回手牌
-        expect(state.players['1'].hand.find(c => c.uid === 'm1')).toBeUndefined();
+        expect(state.core.players['1'].hand.find(c => c.uid === 'm1')).toBeUndefined();
     });
 
     it('D31: 不拦截己方操作 — 己方消灭自己的随从', () => {
@@ -177,10 +178,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
                             defId: 'test_minion', 
                             controller: '1', 
                             owner: '1', 
-                            power: 3, 
+                            basePower: 3, 
                             attachedActions: [{ uid: 'tc1', defId: 'dino_tooth_and_claw', ownerId: '1', metadata: {} }], 
                             powerCounters: 0, 
-                            tempPower: 0 
+                            tempPowerModifier: 0 
                         },
                     ],
                     ongoingActions: [],
@@ -191,15 +192,15 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         }));
 
         // 玩家1打出 wizard_sacrifice（消灭己方随从抽牌）
-        runner.executeCommand('PLAY_ACTION', { playerId: '1', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '1', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('1', { minionUid: 'm1', baseIndex: 0 });
 
         const state = runner.getState();
         // 验证随从被消灭（tooth_and_claw 不拦截己方操作）
-        const minion = state.bases[0].minions.find(m => m.uid === 'm1');
+        const minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         expect(minion).toBeUndefined();
         // 验证随从进入弃牌堆
-        expect(state.players['1'].discard.find(c => c.uid === 'm1')).toBeDefined();
+        expect(state.core.players['1'].discard.find(c => c.uid === 'm1')).toBeDefined();
     });
 
     it('D31: POD版简单保护 — 只保护不自毁', () => {
@@ -219,10 +220,10 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
                             defId: 'test_minion', 
                             controller: '1', 
                             owner: '1', 
-                            power: 3, 
+                            basePower: 3, 
                             attachedActions: [{ uid: 'tc1', defId: 'dino_tooth_and_claw_pod', ownerId: '1', metadata: {} }], 
                             powerCounters: 0, 
-                            tempPower: 0 
+                            tempPowerModifier: 0 
                         },
                     ],
                     ongoingActions: [],
@@ -233,12 +234,12 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         }));
 
         // 玩家0打出 ninja_assassination（消灭力量≤3的随从）
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         const state = runner.getState();
         // 验证随从存活（tooth_and_claw_pod 保护）
-        const minion = state.bases[0].minions.find(m => m.uid === 'm1');
+        const minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         expect(minion).toBeDefined();
         // 验证 tooth_and_claw_pod 仍然存在（不自毁）
         expect(minion?.attachedActions.some(a => a.defId === 'dino_tooth_and_claw_pod')).toBe(true);
@@ -264,13 +265,13 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
                             defId: 'test_minion', 
                             controller: '1', 
                             owner: '1', 
-                            power: 3, 
+                            basePower: 3, 
                             attachedActions: [
                                 { uid: 'tc1', defId: 'dino_tooth_and_claw', ownerId: '1', metadata: {} },
                                 { uid: 'tc2', defId: 'dino_tooth_and_claw', ownerId: '1', metadata: {} }, // 两张 tooth_and_claw
                             ], 
                             powerCounters: 0, 
-                            tempPower: 0 
+                            tempPowerModifier: 0 
                         },
                     ],
                     ongoingActions: [],
@@ -281,21 +282,21 @@ describe('Audit D31: dino_tooth_and_claw（全副武装）', () => {
         }));
 
         // 第一次攻击
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         let state = runner.getState();
-        let minion = state.bases[0].minions.find(m => m.uid === 'm1');
+        let minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         // 验证随从存活，第一张 tooth_and_claw 自毁
         expect(minion).toBeDefined();
         expect(minion?.attachedActions.filter(a => a.defId === 'dino_tooth_and_claw').length).toBe(1);
 
         // 第二次攻击
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
         runner.resolveInteraction('0', { minionUid: 'm1', baseIndex: 0 });
 
         state = runner.getState();
-        minion = state.bases[0].minions.find(m => m.uid === 'm1');
+        minion = state.core.bases[0].minions.find(m => m.uid === 'm1');
         // 验证随从存活，第二张 tooth_and_claw 也自毁
         expect(minion).toBeDefined();
         expect(minion?.attachedActions.filter(a => a.defId === 'dino_tooth_and_claw').length).toBe(0);

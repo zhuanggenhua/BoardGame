@@ -33,6 +33,7 @@
 import { describe, it, expect } from 'vitest';
 import { SmashUpDomain, smashUpFlowHooks } from '../game';
 import type { SmashUpCommand, SmashUpEvent } from '../domain/types';
+import { SU_COMMANDS } from '../domain/types';
 import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
@@ -81,7 +82,7 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0, talentUsed: true },
+                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: true },
                     ],
                     ongoingActions: [],
                 },
@@ -91,8 +92,8 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
         }));
 
         const state = runner.getState();
-        const minion = state.bases[0].minions[0];
-        const effectivePower = getMinionPower(state, minion, 0);
+        const minion = state.core.bases[0].minions[0];
+        const effectivePower = getMinionPower(state.core, minion, 0);
         
         // 验证己方回合无力量加成（基础力量3）
         expect(effectivePower).toBe(3);
@@ -110,7 +111,7 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0, talentUsed: true },
+                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: true },
                     ],
                     ongoingActions: [],
                 },
@@ -120,8 +121,8 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
         }));
 
         const state = runner.getState();
-        const minion = state.bases[0].minions[0];
-        const effectivePower = getMinionPower(state, minion, 0);
+        const minion = state.core.bases[0].minions[0];
+        const effectivePower = getMinionPower(state.core, minion, 0);
         
         // 验证对手回合+2力量加成（基础力量3 + 2 = 5）
         expect(effectivePower).toBe(5);
@@ -139,7 +140,7 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0, talentUsed: false }, // 未使用 Talent
+                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: false }, // 未使用 Talent
                     ],
                     ongoingActions: [],
                 },
@@ -149,8 +150,8 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
         }));
 
         const state = runner.getState();
-        const minion = state.bases[0].minions[0];
-        const effectivePower = getMinionPower(state, minion, 0);
+        const minion = state.core.bases[0].minions[0];
+        const effectivePower = getMinionPower(state.core, minion, 0);
         
         // 验证未使用 Talent 时无力量加成（即使在对手回合）
         expect(effectivePower).toBe(3);
@@ -168,8 +169,8 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0, talentUsed: true },
-                        { uid: 'm2', defId: 'dino_armor_stego_pod', controller: '1', owner: '1', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0, talentUsed: true },
+                        { uid: 'm1', defId: 'dino_armor_stego_pod', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: true },
+                        { uid: 'm2', defId: 'dino_armor_stego_pod', controller: '1', owner: '1', basePower: 3, attachedActions: [], powerCounters: 0, tempPowerModifier: 0, talentUsed: true },
                     ],
                     ongoingActions: [],
                 },
@@ -179,10 +180,10 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
         }));
 
         const state = runner.getState();
-        const minion0 = state.bases[0].minions.find(m => m.uid === 'm1')!;
-        const minion1 = state.bases[0].minions.find(m => m.uid === 'm2')!;
-        const power0 = getMinionPower(state, minion0, 0);
-        const power1 = getMinionPower(state, minion1, 0);
+        const minion0 = state.core.bases[0].minions.find(m => m.uid === 'm1')!;
+        const minion1 = state.core.bases[0].minions.find(m => m.uid === 'm2')!;
+        const power0 = getMinionPower(state.core, minion0, 0);
+        const power1 = getMinionPower(state.core, minion1, 0);
         
         // 验证各自独立计算
         // m1 是玩家0的随从，在己方回合，无加成：3
@@ -203,7 +204,7 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'dino_armor_stego', controller: '0', owner: '0', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0 }, // 原版无 talentUsed 字段
+                        { uid: 'm1', defId: 'dino_armor_stego', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false }, // 原版无 talentUsed 字段
                     ],
                     ongoingActions: [],
                 },
@@ -213,8 +214,8 @@ describe('Audit D8: dino_armor_stego_pod（装甲剑龙 POD版）', () => {
         }));
 
         const state = runner.getState();
-        const minion = state.bases[0].minions[0];
-        const effectivePower = getMinionPower(state, minion, 0);
+        const minion = state.core.bases[0].minions[0];
+        const effectivePower = getMinionPower(state.core, minion, 0);
         
         // 验证原版在对手回合+2力量加成（无需 Talent）
         expect(effectivePower).toBe(5);

@@ -32,11 +32,11 @@
 
 import { describe, it, expect } from 'vitest';
 import { SmashUpDomain, smashUpFlowHooks } from '../game';
-import type { SmashUpCommand, SmashUpEvent } from '../domain/types';
+import type { SmashUpCommand, SmashUpEvent, SmashUpCore } from '../domain/types';
+import { SU_COMMANDS } from '../domain/types';
 import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
-import type { SmashUpCore } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 
 
@@ -80,8 +80,8 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0 },
-                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', power: 2, attachedActions: [], powerCounters: 0, tempPower: 0 }, // 最低力量
+                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false },
+                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', basePower: 2, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false }, // 最低力量
                     ],
                     ongoingActions: [],
                 },
@@ -90,7 +90,7 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             currentPlayerIndex: 0,
         }));
 
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
         const state = runner.getState();
         // 验证 m2 被消灭（最低力量随从）
@@ -111,9 +111,9 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0 },
-                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', power: 2, attachedActions: [], powerCounters: 0, tempPower: 0 }, // 平局最低
-                        { uid: 'm3', defId: 'test_minion', controller: '1', owner: '1', power: 2, attachedActions: [], powerCounters: 0, tempPower: 0 }, // 平局最低
+                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false },
+                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', basePower: 2, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false }, // 平局最低
+                        { uid: 'm3', defId: 'test_minion', controller: '1', owner: '1', basePower: 2, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false }, // 平局最低
                     ],
                     ongoingActions: [],
                 },
@@ -122,7 +122,7 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             currentPlayerIndex: 0,
         }));
 
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
         const state = runner.getState();
         // 验证创建了交互（平局选择）
@@ -146,16 +146,16 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0 },
-                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', power: 2, attachedActions: [], powerCounters: 0, tempPower: 0 }, // 基地1最低
+                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false },
+                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', basePower: 2, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false }, // 基地1最低
                     ],
                     ongoingActions: [],
                 },
                 {
                     defId: 'test_base_2',
                     minions: [
-                        { uid: 'm3', defId: 'test_minion', controller: '0', owner: '0', power: 4, attachedActions: [], powerCounters: 0, tempPower: 0 },
-                        { uid: 'm4', defId: 'test_minion', controller: '1', owner: '1', power: 1, attachedActions: [], powerCounters: 0, tempPower: 0 }, // 基地2最低
+                        { uid: 'm3', defId: 'test_minion', controller: '0', owner: '0', basePower: 4, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false },
+                        { uid: 'm4', defId: 'test_minion', controller: '1', owner: '1', basePower: 1, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false }, // 基地2最低
                     ],
                     ongoingActions: [],
                 },
@@ -164,7 +164,7 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             currentPlayerIndex: 0,
         }));
 
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
         const state = runner.getState();
         // 验证两个基地的最低力量随从都被消灭
@@ -187,8 +187,8 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', power: 2, attachedActions: [], powerCounters: 0, tempPower: 0 },
-                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', power: 2, attachedActions: [], powerCounters: 0, tempPower: 0 }, // 相同力量
+                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', basePower: 2, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false },
+                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', basePower: 2, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false }, // 相同力量
                     ],
                     ongoingActions: [],
                 },
@@ -197,7 +197,7 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             currentPlayerIndex: 0,
         }));
 
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
         const state = runner.getState();
         // 验证没有随从被消灭（无力量差异）
@@ -225,8 +225,8 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
                 {
                     defId: 'test_base_1',
                     minions: [
-                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', power: 3, attachedActions: [], powerCounters: 0, tempPower: 0, powerCounters: 1 }, // 基础力量3 + 计数器1 = 4
-                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', power: 2, attachedActions: [], powerCounters: 0, tempPower: 0 },
+                        { uid: 'm1', defId: 'test_minion', controller: '0', owner: '0', basePower: 3, attachedActions: [], powerCounters: 1, powerModifier: 0, tempPowerModifier: 0, talentUsed: false }, // 基础力量3 + 计数器1 = 4
+                        { uid: 'm2', defId: 'test_minion', controller: '1', owner: '1', basePower: 2, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0 , talentUsed: false },
                     ],
                     ongoingActions: [],
                 },
@@ -235,7 +235,7 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
             currentPlayerIndex: 0,
         }));
 
-        runner.executeCommand('PLAY_ACTION', { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
         const state = runner.getState();
         // 验证使用 getMinionPower 计算力量（包含 powerCounters）

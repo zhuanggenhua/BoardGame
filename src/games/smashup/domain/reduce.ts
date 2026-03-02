@@ -1235,10 +1235,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             );
             if (exists) return state;
 
-            const newEntry = {
+            const newEntry: PendingAfterScoringSpecial = {
                 sourceDefId: payload.sourceDefId,
                 playerId: payload.playerId,
                 baseIndex: payload.baseIndex,
+                ...(payload.minionSnapshots ? { minionSnapshots: payload.minionSnapshots } : {}),
             };
             const newState = {
                 ...state,

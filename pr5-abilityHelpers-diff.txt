@@ -1,0 +1,42 @@
+﻿diff --git a/src/games/smashup/domain/abilityHelpers.ts b/src/games/smashup/domain/abilityHelpers.ts
+index b3adce4..a15dcb8 100644
+--- a/src/games/smashup/domain/abilityHelpers.ts
++++ b/src/games/smashup/domain/abilityHelpers.ts
+@@ -23,7 +23,6 @@ import type {
+     CardRecoveredFromDiscardEvent,
+     HandShuffledIntoDeckEvent,
+     TempPowerAddedEvent,
+-    PermanentPowerAddedEvent,
+     BreakpointModifiedEvent,
+     BaseDeckShuffledEvent,
+     RevealHandEvent,
+@@ -102,6 +101,7 @@ export function destroyMinion(
+     reason: string,
+     now: number
+ ): MinionDestroyedEvent {
++    console.log(`[destroyMinion] uid=${minionUid}, defId=${minionDefId}, ownerId=${ownerId}, destroyerId=${destroyerId}, reason=${reason}`);
+     return {
+         type: SU_EVENTS.MINION_DESTROYED,
+         payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason },
+@@ -207,21 +207,6 @@ export function addTempPower(
+     };
+ }
+ 
+-/** 鐢熸垚姘镐箙鍔涢噺淇浜嬩欢锛堥潪鎸囩ず鐗╋紝涓嶅彲绉诲姩/杞Щ锛?*/
+-export function addPermanentPower(
+-    minionUid: string,
+-    baseIndex: number,
+-    amount: number,
+-    reason: string,
+-    now: number
+-): PermanentPowerAddedEvent {
+-    return {
+-        type: SU_EVENTS.PERMANENT_POWER_ADDED,
+-        payload: { minionUid, baseIndex, amount, reason },
+-        timestamp: now,
+-    };
+-}
+-
+ /** 鐢熸垚涓寸晫鐐逛复鏃朵慨姝ｄ簨浠讹紙鍥炲悎缁撴潫鑷姩娓呴浂锛?*/
+ export function modifyBreakpoint(
+     baseIndex: number,

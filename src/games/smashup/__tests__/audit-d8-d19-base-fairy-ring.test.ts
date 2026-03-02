@@ -137,60 +137,66 @@ describe('base_fairy_ring D8 & D19 审计', () => {
         });
 
         it('第二次打出随从不触发额度授予', () => {
-            const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
-        domain: SmashUpDomain,
-        systems: [
-            createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-            ...createBaseSystems<SmashUpCore>(),
-        ],
-        playerIds: PLAYER_IDS,
-        silent: true,
-    });
+            const runner = createRunner();
             
             // 初始化：玩家0已经打出过1个随从（minionsPlayedPerBase[0] = 1）
-            const initialState = runner.getInitialState({
-                players: {
-                    '0': {
-                        hand: [
-                            { uid: 'c2', defId: 'alien_invader', type: 'minion', owner: '0' },
-                        ],
-                        deck: [],
-                        discard: [],
-                        minionLimit: 2,
-                        minionsPlayed: 1,
-                        minionsPlayedPerBase: { 0: 1 }, // 已经打出过1个到基地0
-                        actionLimit: 1,
-                        actionsPlayed: 0,
+            runner.patchState({
+                core: {
+                    players: {
+                        '0': {
+                            id: '0',
+                            vp: 0,
+                            hand: [
+                                { uid: 'c2', defId: 'alien_invader', type: 'minion', owner: '0' },
+                            ],
+                            deck: [],
+                            discard: [],
+                            minionLimit: 2,
+                            minionsPlayed: 1,
+                            minionsPlayedPerBase: { 0: 1 }, // 已经打出过1个到基地0
+                            actionLimit: 1,
+                            actionsPlayed: 0,
+                            factions: ['aliens', 'pirates'] as [string, string],
+                        },
+                        '1': {
+                            id: '1',
+                            vp: 0,
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            minionsPlayed: 0,
+                            minionLimit: 1,
+                            actionsPlayed: 0,
+                            actionLimit: 1,
+                            factions: ['ninjas', 'robots'] as [string, string],
+                        },
                     },
-                    '1': {
-                        hand: [],
-                        deck: [],
-                        discard: [],
-                    },
+                    bases: [
+                        {
+                            defId: 'base_fairy_ring',
+                            minions: [
+                                { uid: 'm1', defId: 'alien_invader', controller: '0', owner: '0', basePower: 2, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false },
+                            ],
+                            ongoingActions: [],
+                        },
+                    ],
+                    turnOrder: ['0', '1'],
+                    currentPlayerIndex: 0,
                 },
-                bases: [
-                    {
-                        defId: 'base_fairy_ring',
-                        minions: [
-                            { uid: 'm1', defId: 'alien_invader', controller: '0', power: 2 },
-                        ],
-                        ongoingActions: [],
-                    },
-                ],
-                currentPlayer: '0',
-                phase: 'playCards',
+                sys: {
+                    phase: 'playCards',
+                },
             });
 
             // 打出第二张随从
-            const result = runner.runCommand(initialState, {
-                type: SU_COMMANDS.PLAY_MINION,
+            const result = runner.executeCommand(SU_COMMANDS.PLAY_MINION, {
                 playerId: '0',
                 cardUid: 'c2',
                 baseIndex: 0,
             });
 
             expect(result.success).toBe(true);
-            const state = result.state!;
+            const state = runner.getState();
 
             // 验证：第二次打出不触发额度授予
             const player = state.core.players['0'];

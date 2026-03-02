@@ -207,6 +207,21 @@ export function addTempPower(
     };
 }
 
+/** 生成永久力量修正事件（非指示物，不可移动/转移） */
+export function addPermanentPower(
+    minionUid: string,
+    baseIndex: number,
+    amount: number,
+    reason: string,
+    now: number
+): PermanentPowerAddedEvent {
+    return {
+        type: SU_EVENTS.PERMANENT_POWER_ADDED,
+        payload: { minionUid, baseIndex, amount, reason },
+        timestamp: now,
+    };
+}
+
 /** 生成临界点临时修正事件（回合结束自动清零） */
 export function modifyBreakpoint(
     baseIndex: number,
