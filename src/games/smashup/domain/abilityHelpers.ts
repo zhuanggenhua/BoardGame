@@ -426,16 +426,6 @@ export function revealAndPickFromDeck(params: {
     console.log('[revealAndPickFromDeck] 完成，总共生成', events.length, '个事件');
     return { events, picked, missed };
 }
-            : [...missed.map(c => c.uid), ...remainingDeck.map(c => c.uid)];
-        events.push({
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: { playerId, deckUids: newDeckUids },
-            timestamp: now,
-        } as DeckReorderedEvent);
-    }
-
-    return { events, picked, missed };
-}
 
 /**
  * 查看牌库顶1张并展示给指定观察者
