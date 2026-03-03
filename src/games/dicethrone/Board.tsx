@@ -356,10 +356,31 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         : null;
     const isTokenResponder = pendingDamage && (pendingDamage.responderId === rootPid);
 
+    // 调试日志：Token 响应状态
+    React.useEffect(() => {
+        if (pendingDamage) {
+            console.log('[Board] Token 响应状态', {
+                hasPendingDamage: !!pendingDamage,
+                responderId: pendingDamage.responderId,
+                rootPid,
+                isTokenResponder,
+                tokenResponsePhase,
+                responseType: pendingDamage.responseType,
+                currentDamage: pendingDamage.currentDamage,
+            });
+        }
+    }, [pendingDamage, rootPid, isTokenResponder, tokenResponsePhase]);
+
     // 领域层计算当前阶段可用的 Token 列表（唯一数据源）
     const usableTokens = React.useMemo(() => {
         if (!pendingDamage) return [];
-        return getUsableTokensForTiming(G, pendingDamage.responderId, pendingDamage.responseType);
+        const tokens = getUsableTokensForTiming(G, pendingDamage.responderId, pendingDamage.responseType);
+        console.log('[Board] 计算可用 Token', {
+            responderId: pendingDamage.responderId,
+            responseType: pendingDamage.responseType,
+            usableTokens: tokens.map(t => t.id),
+        });
+        return tokens;
     }, [G, pendingDamage]);
 
     // 太极本回合限制：攻击方加伤时，可用数量 = 持有量 - 本回合获得量
@@ -377,7 +398,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     // 响应窗口状态
     const isResponseWindowOpen = !!rawG.sys.responseWindow?.current;
-    const currentResponderId = rawG.sys.responseWindow?.current?.responderId;
+    const currentResponderId = rawG.sys.responseWindow?.current
+        ? rawG.sys.responseWindow.current.responderQueue[rawG.sys.responseWindow.current.currentResponderIndex]
+        : undefined;
 
     const { rollerId, shouldAutoObserve, viewMode, isSelfView, isResponseAutoSwitch } = computeViewModeState({
         currentPhase,
@@ -390,27 +413,24 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         pendingDamage,
     });
 
-    // 响应窗口视角自动切换：
-    // - 打开时：当前响应者是对手 → 切到对手视角看对方技能
-    // - 响应者切换到自己 → 切回自己视角
-    // - 关闭时：自动切回自己视角，但下一阶段是防御阶段时不切
-    const prevResponseWindowRef = React.useRef<boolean>(false);
-    React.useEffect(() => {
-        const wasOpen = prevResponseWindowRef.current;
-        const isOpen = isResponseWindowOpen;
-        prevResponseWindowRef.current = isOpen;
+    // 响应窗口视角自动切换已禁用 - 保持当前视角不变
+    // const prevResponseWindowRef = React.useRef<boolean>(false);
+    // React.useEffect(() => {
+    //     const wasOpen = prevResponseWindowRef.current;
+    //     const isOpen = isResponseWindowOpen;
+    //     prevResponseWindowRef.current = isOpen;
 
-        if (isOpen && isResponseAutoSwitch) {
-            setViewMode('opponent');
-        } else if (isOpen && !isResponseAutoSwitch) {
-            setViewMode('self');
-        } else if (wasOpen && !isOpen) {
-            // 响应窗口关闭，自动切回自己视角（除非下一阶段是防御阶段）
-            if (currentPhase !== 'defensiveRoll') {
-                setViewMode('self');
-            }
-        }
-    }, [isResponseWindowOpen, isResponseAutoSwitch, currentPhase, setViewMode]);
+    //     if (isOpen && isResponseAutoSwitch) {
+    //         setViewMode('opponent');
+    //     } else if (isOpen && !isResponseAutoSwitch) {
+    //         setViewMode('self');
+    //     } else if (wasOpen && !isOpen) {
+    //         // 响应窗口关闭，自动切回自己视角（除非下一阶段是防御阶段）
+    //         if (currentPhase !== 'defensiveRoll') {
+    //             setViewMode('self');
+    //         }
+    //     }
+    // }, [isResponseWindowOpen, isResponseAutoSwitch, currentPhase, setViewMode]);
 
     const viewPid = isSelfView ? rootPid : otherPid;
     const viewPlayer = (isSelfView ? player : opponent) || player;

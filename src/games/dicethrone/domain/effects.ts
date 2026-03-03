@@ -493,6 +493,15 @@ function resolveEffectAction(
                         ctx.isDefensiveContext
                     );
 
+                    console.log('[DT-Effects] shouldOpenTokenResponse 检查', {
+                        attackerId,
+                        dmgTargetId,
+                        damage: result.finalDamage,
+                        isDefensiveContext: ctx.isDefensiveContext,
+                        tokenResponseType,
+                        hasPendingDamage: !!state.pendingDamage,
+                    });
+
                     if (tokenResponseType) {
                         // 创建待处理伤害，暂停伤害结算
                         const responseType = tokenResponseType === 'attackerBoost'
@@ -508,6 +517,11 @@ function resolveEffectAction(
                             passiveModifiers.length > 0 ? passiveModifiers : undefined
                         );
                         const tokenResponseEvent = createTokenResponseRequestedEvent(pendingDamage, timestamp);
+                        console.log('[DT-Effects] 生成 TOKEN_RESPONSE_REQUESTED 事件', {
+                            pendingDamageId: pendingDamage.id,
+                            responderId: pendingDamage.responderId,
+                            responseType: pendingDamage.responseType,
+                        });
                         events.push(tokenResponseEvent);
                         // 不在这里生成 DAMAGE_DEALT，等待 Token 响应完成后再生成
                         continue;

@@ -212,7 +212,7 @@ function bearCavalryCubScoutTrigger(ctx: TriggerContext): SmashUpEvent[] {
         if (scout.defId !== 'bear_cavalry_cub_scout') continue;
         if (scout.controller === movedMinion.controller) continue;
         const scoutPower = getMinionPower(ctx.state, scout, destBaseIndex);
-        const movedPower = getMinionPower(ctx.state, movedMinion, movedBaseIndex);
+        const movedPower = getMinionPower(ctx.state, movedMinion, destBaseIndex);
         if (movedPower < scoutPower) {
             events.push(destroyMinion(
                 movedMinion.uid, movedMinion.defId, destBaseIndex, movedMinion.owner, undefined, 'bear_cavalry_cub_scout', ctx.now

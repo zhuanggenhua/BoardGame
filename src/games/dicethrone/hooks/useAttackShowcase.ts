@@ -78,8 +78,11 @@ function buildShowcaseData(
 
     const slotId = getAbilitySlotId(sourceAbilityId);
 
-    // 技能 ID 可能带变体后缀（如 fist-technique-5），提取基础 ID
-    const baseAbilityId = sourceAbilityId.replace(/-\d+$/, '');
+    // 技能 ID 可能带变体后缀（如 fist-technique-5 或 fist-technique-2-3），提取基础 ID
+    // 格式：基础ID-[等级-]骰子数
+    // 示例：fist-technique-5（基础版，5个骰子）→ fist-technique
+    //       fist-technique-2-3（2级，3个骰子）→ fist-technique
+    const baseAbilityId = sourceAbilityId.replace(/-\d+(-\d+)?$/, '');
     const attackerLevels = abilityLevels[pendingAttack.attackerId] ?? {};
     const level = attackerLevels[baseAbilityId] ?? attackerLevels[sourceAbilityId] ?? 1;
 

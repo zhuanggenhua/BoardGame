@@ -481,13 +481,31 @@ export function shouldOpenTokenResponse(
     damage: number,
     isDefensiveContext?: boolean
 ): 'attackerBoost' | 'defenderMitigation' | null {
-    if (damage <= 0) return null;
+    console.log('[DT-TokenResponse] shouldOpenTokenResponse 调用', {
+        attackerId,
+        defenderId,
+        damage,
+        isDefensiveContext,
+        hasPendingDamage: !!state.pendingDamage,
+        isUltimate: state.pendingAttack?.isUltimate,
+    });
+
+    if (damage <= 0) {
+        console.log('[DT-TokenResponse] 伤害 <= 0，不打开窗口');
+        return null;
+    }
     
     // 检查是否已有待处理伤害（避免重复打开）
-    if (state.pendingDamage) return null;
+    if (state.pendingDamage) {
+        console.log('[DT-TokenResponse] 已有 pendingDamage，不打开窗口');
+        return null;
+    }
 
     // 防御技能的反击伤害不是"攻击"（规则 §7.2），不触发 Token 响应窗口
-    if (isDefensiveContext) return null;
+    if (isDefensiveContext) {
+        console.log('[DT-TokenResponse] 防御技能上下文，不打开窗口');
+        return null;
+    }
 
     // 终极技能（规则 §4.4）：伤害可被攻击方强化，但不可被防御方降低/忽略/回避
     const isUltimate = state.pendingAttack?.isUltimate ?? false;
@@ -495,17 +513,33 @@ export function shouldOpenTokenResponse(
     // 先检查攻击方是否有太极可用于加伤
     // 注意：规则说"本回合获得的太极不可用于本回合增强伤害"
     // 这个限制需要额外的状态追踪，暂时先不实现
-    if (hasOffensiveTokens(state, attackerId)) {
+    const hasOffensiveTokensResult = hasOffensiveTokens(state, attackerId);
+    console.log('[DT-TokenResponse] 检查攻击方 Token', {
+        attackerId,
+        hasOffensiveTokens: hasOffensiveTokensResult,
+    });
+    if (hasOffensiveTokensResult) {
+        console.log('[DT-TokenResponse] 返回 attackerBoost');
         return 'attackerBoost';
     }
     
     // 终极技能跳过防御方 Token 响应（规则 §4.4：不可被降低/忽略/回避）
-    if (isUltimate) return null;
+    if (isUltimate) {
+        console.log('[DT-TokenResponse] 终极技能，跳过防御方响应');
+        return null;
+    }
     
     // 检查防御方是否有可用的防御 Token
-    if (hasDefensiveTokens(state, defenderId)) {
+    const hasDefensiveTokensResult = hasDefensiveTokens(state, defenderId);
+    console.log('[DT-TokenResponse] 检查防御方 Token', {
+        defenderId,
+        hasDefensiveTokens: hasDefensiveTokensResult,
+    });
+    if (hasDefensiveTokensResult) {
+        console.log('[DT-TokenResponse] 返回 defenderMitigation');
         return 'defenderMitigation';
     }
     
+    console.log('[DT-TokenResponse] 无可用 Token，返回 null');
     return null;
 }

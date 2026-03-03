@@ -270,6 +270,21 @@ export function createSimpleChoice<T>(
         finalOptions = [...options, cancelOption];
     }
     
+    // 运行时检查：防止创建空选项交互（会导致玩家卡死）
+    if (finalOptions.length === 0) {
+        console.error(`[InteractionSystem] 创建了空选项交互！id=${id}, sourceId=${config.sourceId}, title=${title}`);
+        console.error('[InteractionSystem] 这会导致玩家无法选择任何选项而卡死。请在调用 createSimpleChoice 前检查选项列表不为空。');
+        console.trace(); // 打印调用栈
+        
+        // 添加一个紧急保底选项，防止完全卡死
+        finalOptions = [{
+            id: '__emergency_skip__',
+            label: '跳过（无可用选项）',
+            value: { __emergency_skip__: true } as T,
+            displayMode: 'button' as const,
+        }];
+    }
+    
     return {
         id,
         kind: 'simple-choice',

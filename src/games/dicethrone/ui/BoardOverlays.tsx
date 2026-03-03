@@ -259,21 +259,31 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                 )}
 
                 {/* Token 响应窗口 */}
-                {props.pendingDamage && props.tokenResponsePhase && props.isTokenResponder && (
-                    <TokenResponseModal
-                        key="token-response"
-                        pendingDamage={props.pendingDamage}
-                        responsePhase={props.tokenResponsePhase}
-                        responderState={props.players[props.pendingDamage.responderId]}
-                        usableTokens={props.usableTokens}
-                        tokenUsableOverrides={props.tokenUsableOverrides}
-                        onUseToken={props.onUseToken}
-                        onSkip={props.onSkipTokenResponse}
-                        locale={props.locale}
-                        lastEvasionRoll={props.pendingDamage.lastEvasionRoll}
-                        statusIconAtlas={props.statusIconAtlas}
-                    />
-                )}
+                {(() => {
+                    const shouldRender = props.pendingDamage && props.tokenResponsePhase && props.isTokenResponder;
+                    console.log('[BoardOverlays] Token 响应窗口渲染检查', {
+                        hasPendingDamage: !!props.pendingDamage,
+                        hasTokenResponsePhase: !!props.tokenResponsePhase,
+                        isTokenResponder: props.isTokenResponder,
+                        shouldRender,
+                        usableTokensCount: props.usableTokens?.length ?? 0,
+                    });
+                    return shouldRender ? (
+                        <TokenResponseModal
+                            key="token-response"
+                            pendingDamage={props.pendingDamage!}
+                            responsePhase={props.tokenResponsePhase!}
+                            responderState={props.players[props.pendingDamage!.responderId]}
+                            usableTokens={props.usableTokens}
+                            tokenUsableOverrides={props.tokenUsableOverrides}
+                            onUseToken={props.onUseToken}
+                            onSkip={props.onSkipTokenResponse}
+                            locale={props.locale}
+                            lastEvasionRoll={props.pendingDamage!.lastEvasionRoll}
+                            statusIconAtlas={props.statusIconAtlas}
+                        />
+                    ) : null;
+                })()}
 
                 {/* 净化弹窗 */}
                 {props.isPurifyModalOpen && (

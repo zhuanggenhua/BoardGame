@@ -357,9 +357,17 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 // 业务数据仅存 core.pendingDamage；sys.interaction 只做阻塞标记
                 if (dtEvent.type === 'TOKEN_RESPONSE_REQUESTED') {
                     const payload = (dtEvent as TokenResponseRequestedEvent).payload;
+                    console.log('[DT-EventSystem] TOKEN_RESPONSE_REQUESTED', {
+                        pendingDamageId: payload.pendingDamage.id,
+                        responderId: payload.pendingDamage.responderId,
+                        responseType: payload.pendingDamage.responseType,
+                        currentDamage: payload.pendingDamage.currentDamage,
+                        currentInteraction: newState.sys.interaction.current?.kind,
+                    });
                     const current = newState.sys.interaction.current;
                     if (current && current.kind === 'dt:token-response') {
                         // 同一伤害响应内的阶段切换（攻击方加伤 → 防御方减伤），原地更新 playerId
+                        console.log('[DT-EventSystem] 更新现有 token-response 交互');
                         newState = {
                             ...newState,
                             sys: {
@@ -376,6 +384,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             },
                         };
                     } else {
+                        console.log('[DT-EventSystem] 创建新 token-response 交互');
                         const interaction: EngineInteractionDescriptor = {
                             id: `dt-token-response-${payload.pendingDamage.id}`,
                             kind: 'dt:token-response',
@@ -388,6 +397,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
 
                 // ---- TOKEN_RESPONSE_CLOSED → resolve ----
                 if (dtEvent.type === 'TOKEN_RESPONSE_CLOSED') {
+                    console.log('[DT-EventSystem] TOKEN_RESPONSE_CLOSED，resolve 交互');
                     newState = resolveInteraction(newState);
                 }
 

@@ -48,15 +48,16 @@ export const computeViewModeState = (params: ViewModeParams): ViewModeResult => 
         : activePlayerId;
     const shouldAutoObserve = currentPhase === 'defensiveRoll' && Boolean(pendingAttack) && rootPlayerId !== rollerId;
 
-    // 响应窗口自动切换逻辑
-    let isResponseAutoSwitch = false;
-    if (isResponseWindowOpen && currentResponderId) {
-        // 当前响应者是对手 → 切到对手视角看对方技能
-        isResponseAutoSwitch = currentResponderId !== rootPlayerId;
-    } else if (pendingDamage) {
-        // Token 响应窗口：响应者是对手 → 切到对手视角
-        isResponseAutoSwitch = pendingDamage.responderId !== rootPlayerId;
-    }
+    // 响应窗口自动切换逻辑（已禁用 - 保持当前视角）
+    const isResponseAutoSwitch = false;
+    // 注释掉自动切换逻辑，响应窗口期间不改变视角
+    // if (isResponseWindowOpen && currentResponderId) {
+    //     // 当前响应者是对手 → 切到对手视角看对方技能
+    //     isResponseAutoSwitch = currentResponderId !== rootPlayerId;
+    // } else if (pendingDamage) {
+    //     // Token 响应窗口：响应者是对手 → 切到对手视角
+    //     isResponseAutoSwitch = pendingDamage.responderId !== rootPlayerId;
+    // }
 
     // 优先级：防御阶段自动观战 > 响应窗口自动切换 > 手动视角
     let viewMode = manualViewMode;

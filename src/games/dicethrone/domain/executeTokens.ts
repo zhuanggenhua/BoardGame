@@ -158,6 +158,10 @@ export function executeTokenCommand(
         }
 
         case 'SKIP_TOKEN_RESPONSE': {
+            console.log('[DT-Execute] SKIP_TOKEN_RESPONSE 命令执行', {
+                playerId: command.playerId,
+                hasPendingDamage: !!state.pendingDamage,
+            });
             const pendingDamage = state.pendingDamage;
             
             if (!pendingDamage) {
@@ -170,6 +174,7 @@ export function executeTokenCommand(
                 // 攻击方跳过加伤，检查防御方是否有可用 Token
                 if (hasDefensiveTokens(state, pendingDamage.targetPlayerId)) {
                     // 切换到防御方响应
+                    console.log('[DT-Execute] 切换到防御方响应');
                     const newPendingDamage: PendingDamage = {
                         ...pendingDamage,
                         responseType: 'beforeDamageReceived',
@@ -182,6 +187,7 @@ export function executeTokenCommand(
             }
             
             // 关闭响应窗口，应用最终伤害
+            console.log('[DT-Execute] 关闭响应窗口，生成 TOKEN_RESPONSE_CLOSED');
             const closeEvents = finalizeTokenResponse(pendingDamage, state, timestamp);
             events.push(...closeEvents);
             break;
