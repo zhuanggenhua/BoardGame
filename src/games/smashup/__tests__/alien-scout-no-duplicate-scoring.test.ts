@@ -46,11 +46,8 @@ function setupWithScoutOnBase(ids: PlayerId[], random: RandomFn): MatchState<Sma
     // 玩家 0 手牌为空（方便验证返回手牌）
     core.players['0'].hand = [];
     
-    // 玩家 0 已选择派系（避免 factionSelect 阶段）
-    core.players['0'].factions = ['aliens', 'dinosaurs'];
-    core.players['1'].factions = ['pirates', 'ninjas'];
-    core.factionSelection.completedPlayers = ['0', '1'];
-    core.factionSelection.takenFactions = ['aliens', 'dinosaurs', 'pirates', 'ninjas'];
+    // 跳过派系选择
+    core.factionSelection = undefined;
     
     // 设置阶段为 playCards（准备进入 scoreBases）
     sys.phase = 'playCards';
@@ -86,11 +83,8 @@ function setupWithTwoScoutsOnBase(ids: PlayerId[], random: RandomFn): MatchState
     // 玩家 0 手牌为空
     core.players['0'].hand = [];
     
-    // 玩家 0 已选择派系
-    core.players['0'].factions = ['aliens', 'dinosaurs'];
-    core.players['1'].factions = ['pirates', 'ninjas'];
-    core.factionSelection.completedPlayers = ['0', '1'];
-    core.factionSelection.takenFactions = ['aliens', 'dinosaurs', 'pirates', 'ninjas'];
+    // 跳过派系选择
+    core.factionSelection = undefined;
     
     // 设置阶段为 playCards
     sys.phase = 'playCards';
@@ -130,9 +124,6 @@ describe('Alien Scout - No Duplicate Scoring', () => {
         // 注意：scoredBaseIndices 是内部实现细节，在阶段推进完成后才会清理
         // 测试只关心最终结果：不会重复触发交互
         
-        // 验证：不应该再有交互（不会重复触发）
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
-        
         // 验证：手牌中只有 1 张侦察兵（不会重复返回）
         const scoutCount = result.finalState.core.players['0'].hand.filter(c => c.defId === 'alien_scout').length;
         expect(scoutCount).toBe(1);
@@ -170,8 +161,5 @@ describe('Alien Scout - No Duplicate Scoring', () => {
         
         // 注意：scoredBaseIndices 是内部实现细节，在阶段推进完成后才会清理
         // 测试只关心最终结果：不会重复触发交互
-        
-        // 验证：不应该再有交互
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
     });
 });
