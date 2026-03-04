@@ -360,68 +360,70 @@ function scoreOneBase(
     // 【新增】检查是否需要打开 afterScoring 响应窗口
     // 注意：afterScoring 响应窗口在 BASE_SCORED 之后、BASE_CLEARED 之前打开
     // 这样玩家打出的 afterScoring 卡牌可以影响该基地的力量，并可能导致重新计分
-    if (!afterScoringCreatedInteraction) {
-        // 检查是否有玩家手牌中有 afterScoring 卡牌
-        const playersWithAfterScoringCards: PlayerId[] = [];
-        for (const [playerId, player] of Object.entries(afterScoringCore.players)) {
-            const hasAfterScoringCard = player.hand.some(c => {
-                if (c.type !== 'action') return false;
-                const def = getCardDef(c.defId) as ActionCardDef | undefined;
-                return def?.subtype === 'special' && def.specialTiming === 'afterScoring';
-            });
-            if (hasAfterScoringCard) {
-                playersWithAfterScoringCards.push(playerId);
-            }
+    // 
+    // ⚠️ 【关键修复】无论基地能力是否创建了交互，都要检查是否有 afterScoring 卡牌
+    // 原因：基地能力创建交互（如海盗湾移动随从）和响应窗口（让玩家打出 afterScoring 卡牌）
+    // 是两个独立的机制，应该同时存在
+    // 检查是否有玩家手牌中有 afterScoring 卡牌
+    const playersWithAfterScoringCards: PlayerId[] = [];
+    for (const [playerId, player] of Object.entries(afterScoringCore.players)) {
+        const hasAfterScoringCard = player.hand.some(c => {
+            if (c.type !== 'action') return false;
+            const def = getCardDef(c.defId) as ActionCardDef | undefined;
+            return def?.subtype === 'special' && def.specialTiming === 'afterScoring';
+        });
+        if (hasAfterScoringCard) {
+            playersWithAfterScoringCards.push(playerId);
         }
+    }
 
-        // 如果有玩家有 afterScoring 卡牌，打开 afterScoring 响应窗口
-        if (playersWithAfterScoringCards.length > 0) {
-            // 【重新计分规则】记录初始力量（用于响应窗口关闭后对比）
-            // 规则：afterScoring 卡牌可以影响该基地的力量，如果力量变化则需要重新计分
-            const initialPowers = new Map<PlayerId, number>();
-            const currentBase = afterScoringCore.bases[baseIndex];
-            for (const m of currentBase.minions) {
-                const prev = initialPowers.get(m.controller) ?? 0;
-                initialPowers.set(m.controller, prev + getEffectivePower(afterScoringCore, m, baseIndex));
-            }
-            // 加上 ongoing 卡力量贡献
-            for (const playerId of Object.keys(afterScoringCore.players)) {
-                const bonus = getOngoingCardPowerContribution(currentBase, playerId);
-                if (bonus > 0) {
-                    const prev = initialPowers.get(playerId) ?? 0;
-                    initialPowers.set(playerId, prev + bonus);
-                }
-            }
-            
-            // 将初始力量存储到 matchState.sys（用于响应窗口关闭后对比）
-            // 注意：不能存到响应窗口的 continuationContext 中，因为响应窗口不是交互
-            if (ms) {
-                ms = {
-                    ...ms,
-                    sys: {
-                        ...ms.sys,
-                        afterScoringInitialPowers: {
-                            baseIndex,
-                            powers: Object.fromEntries(initialPowers.entries()),
-                        } as any,
-                    },
-                };
-            }
-            
-            // 打开 afterScoring 响应窗口（在 BASE_CLEARED 之前）
-            const afterScoringWindowEvt = openAfterScoringWindow('scoreBases', pid, afterScoringCore.turnOrder, now);
-            events.push(afterScoringWindowEvt);
-            
-            // 延迟发出 postScoringEvents（等响应窗口关闭后再发）
-            // 将 postScoringEvents 存到响应窗口的 continuationContext 中
-            // 注意：响应窗口关闭后，需要检查基地力量是否变化，如果变化则重新计分
-            // 这个逻辑需要在 onPhaseExit 中处理
-            
-            // 【修复】不需要在这里修改 newBaseDeck，因为还没有发出 BASE_REPLACED 事件
-            // BASE_REPLACED 事件会在响应窗口关闭后、postScoringEvents 中发出
-            
-            return { events, newBaseDeck, matchState: ms };
+    // 如果有玩家有 afterScoring 卡牌，打开 afterScoring 响应窗口
+    if (playersWithAfterScoringCards.length > 0) {
+        // 【重新计分规则】记录初始力量（用于响应窗口关闭后对比）
+        // 规则：afterScoring 卡牌可以影响该基地的力量，如果力量变化则需要重新计分
+        const initialPowers = new Map<PlayerId, number>();
+        const currentBase = afterScoringCore.bases[baseIndex];
+        for (const m of currentBase.minions) {
+            const prev = initialPowers.get(m.controller) ?? 0;
+            initialPowers.set(m.controller, prev + getEffectivePower(afterScoringCore, m, baseIndex));
         }
+        // 加上 ongoing 卡力量贡献
+        for (const playerId of Object.keys(afterScoringCore.players)) {
+            const bonus = getOngoingCardPowerContribution(currentBase, playerId);
+            if (bonus > 0) {
+                const prev = initialPowers.get(playerId) ?? 0;
+                initialPowers.set(playerId, prev + bonus);
+            }
+        }
+        
+        // 将初始力量存储到 matchState.sys（用于响应窗口关闭后对比）
+        // 注意：不能存到响应窗口的 continuationContext 中，因为响应窗口不是交互
+        if (ms) {
+            ms = {
+                ...ms,
+                sys: {
+                    ...ms.sys,
+                    afterScoringInitialPowers: {
+                        baseIndex,
+                        powers: Object.fromEntries(initialPowers.entries()),
+                    } as any,
+                },
+            };
+        }
+        
+        // 打开 afterScoring 响应窗口（在 BASE_CLEARED 之前）
+        const afterScoringWindowEvt = openAfterScoringWindow('scoreBases', pid, afterScoringCore.turnOrder, now);
+        events.push(afterScoringWindowEvt);
+        
+        // 延迟发出 postScoringEvents（等响应窗口关闭后再发）
+        // 将 postScoringEvents 存到响应窗口的 continuationContext 中
+        // 注意：响应窗口关闭后，需要检查基地力量是否变化，如果变化则重新计分
+        // 这个逻辑需要在 onPhaseExit 中处理
+        
+        // 【修复】不需要在这里修改 newBaseDeck，因为还没有发出 BASE_REPLACED 事件
+        // BASE_REPLACED 事件会在响应窗口关闭后、postScoringEvents 中发出
+        
+        return { events, newBaseDeck, matchState: ms };
     }
 
     // 构建清除+替换事件
@@ -1094,6 +1096,28 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 });
 
                 const result = scoreOneBase(currentCore, foundIndex, currentBaseDeck, pid, now, random, currentMatchState);
+                
+                // ⚠️ 【关键修复】立即检查是否打开了响应窗口，如果打开了就立即 halt
+                // 问题：之前的代码先 push 所有事件，再检查响应窗口，导致多个基地同时计分时，
+                // 第一个基地打开响应窗口后，循环继续计分第二个基地，第二个基地的 BASE_CLEARED 被发送
+                // 修复：在 push 事件之前先检查响应窗口，如果打开了就立即 halt，不 push 事件，不继续循环
+                const hasResponseWindowOpened = result.events.some(
+                    (evt: SmashUpEvent) => evt.type === 'RESPONSE_WINDOW_OPENED'
+                );
+                if (hasResponseWindowOpened) {
+                    console.log('[onPhaseExit] afterScoring 响应窗口打开（检测到 RESPONSE_WINDOW_OPENED 事件），立即 halt');
+                    // ⚠️ 关键：不 push 事件到 events 数组，因为响应窗口打开后，
+                    // 这些事件会在响应窗口关闭后重新生成（重新计分）
+                    // 如果 push 了，会导致事件重复（第一次 halt 时 push，第二次重新计分时又 push）
+                    // 
+                    // 正确流程：
+                    // 1. scoreOneBase 打开 afterScoring 响应窗口 → 立即 halt（不 push 事件）
+                    // 2. 响应窗口关闭 → onPhaseExit 重新进入 → 重新计分该基地
+                    // 3. 重新计分时生成新的事件（包括 BASE_SCORED、BASE_CLEARED、BASE_REPLACED）
+                    return { events, halt: true, updatedState: result.matchState ?? currentMatchState } as PhaseExitResult;
+                }
+                
+                // 没有打开响应窗口，正常 push 事件
                 events.push(...result.events);
                 currentBaseDeck = result.newBaseDeck;
                 // 不可变传播 matchState（afterScoring 基地能力可能创建 Interaction）
@@ -1108,26 +1132,6 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
                 // beforeScoring 创建了交互（如海盗王移动确认）→ halt 等交互解决后重新计分
                 if (currentMatchState.sys.interaction?.current) {
-                    return { events, halt: true, updatedState: currentMatchState } as PhaseExitResult;
-                }
-                
-                // afterScoring 响应窗口打开 → halt 等响应窗口关闭后重新计分
-                // 检查返回的事件中是否包含 RESPONSE_WINDOW_OPENED 事件
-                const hasResponseWindowOpened = result.events.some(
-                    (evt: SmashUpEvent) => evt.type === 'RESPONSE_WINDOW_OPENED'
-                );
-                if (hasResponseWindowOpened) {
-                    console.log('[onPhaseExit] afterScoring 响应窗口打开（检测到 RESPONSE_WINDOW_OPENED 事件），halt 等待响应');
-                    // ⚠️ 关键修复：afterScoring 响应窗口打开时，不标记基地为"已记分"
-                    // 原因：响应窗口关闭后，onPhaseExit 重新进入时，需要重新计分该基地
-                    // 如果此时标记为"已记分"，remainingIndices 会过滤掉该基地，导致不计分
-                    // 
-                    // 正确流程：
-                    // 1. scoreOneBase 打开 afterScoring 响应窗口 → halt（不标记"已记分"）
-                    // 2. 响应窗口关闭 → onAutoContinueCheck 返回 autoContinue: true
-                    // 3. onPhaseExit 重新进入 → remainingIndices 包含该基地 → 重新计分
-                    // 4. 重新计分时检查力量变化 → 如果变化则发出新的 BASE_SCORED 事件
-                    // 5. 发出 BASE_CLEARED 和 BASE_REPLACED 事件 → 标记"已记分"
                     return { events, halt: true, updatedState: currentMatchState } as PhaseExitResult;
                 }
 

@@ -40,7 +40,7 @@ function setupWithScoutOnBase(ids: PlayerId[], random: RandomFn): MatchState<Sma
         defId: 'alien_scout',
         owner: '0',
         controller: '0',
-        basePower: 20, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false,
+        basePower: 20, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
     }];
     
     // 玩家 0 手牌为空（方便验证返回手牌）
@@ -72,14 +72,14 @@ function setupWithTwoScoutsOnBase(ids: PlayerId[], random: RandomFn): MatchState
             defId: 'alien_scout',
             owner: '0',
             controller: '0',
-            basePower: 10, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false,
+            basePower: 10, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
         },
         {
             uid: 'minion-scout-2',
             defId: 'alien_scout',
             owner: '0',
             controller: '0',
-            basePower: 10, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false,
+            basePower: 10, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
         },
     ];
     
