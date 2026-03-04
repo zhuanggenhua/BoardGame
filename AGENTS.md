@@ -248,38 +248,43 @@ Keep this managed block so 'openspec update' can refresh the instructions.
   - **临时调试日志**：允许临时日志用于排障，不得引入额外 debug 开关，问题解决后必须清理
 - **新增功能必须补充测试（强制）**：新增功能/技能/API 必须同步补充测试，覆盖正常+异常场景。详见 `docs/automated-testing.md` 和 `docs/testing-best-practices.md`（测试编写常见陷阱和最佳实践）。
 - **E2E 测试必须使用 GameTestContext API（强制）**：所有新的 E2E 测试必须使用 `GameTestContext` API（`e2e/framework/GameTestContext.ts`），禁止使用旧的 helper 函数（`setupSmashUpOnlineMatch`、`readCoreState`、`applyCoreState` 等）或测试模式（`/play/<gameId>/test`）。E2E 测试用于验证 UI 交互，不得用 GameTestRunner 单元测试替代。详见 `docs/automated-testing.md`「测试框架 API（强制使用）」节。
-  - **测试模式已过时（禁止使用）**：`/play/<gameId>/test?skipFactionSelect=true` 测试模式存在加载问题（卡在"加载 UNDEFINED..."），禁止在新测试中使用。必须使用 GameTestContext API 创建在线对局。
-  - **正确模式（GameTestContext）**：
+  - **测试模式已过时（禁止使用）**：`/play/<gameId>/test?skipFactionSelect=true` 测试模式存在加载问题（卡在"加载 UNDEFINED..."），禁止在新测试中使用。必须使用 GameTestContext API。
+  - **正确模式（GameTestContext + game fixture）**：
     ```typescript
-    import { GameTestContext } from './framework/GameTestContext';
+    import { test, expect } from '@/e2e/framework';
     
-    const game = new GameTestContext(page);
-    
-    // 1. 创建在线对局
-    await game.createMatch('smashup', {
-        factions: [
-            { player: 0, factions: ['ninjas', 'aliens'] },
-            { player: 1, factions: ['dinosaurs', 'robots'] }
-        ]
-    });
-    
-    // 2. 注入状态（使用 setupScene 或直接 patch）
-    await game.setupScene({
-        gameId: 'smashup',
-        player0: { hand: ['ninja_infiltrate'] },
-        currentPlayer: '0',
-        phase: 'playCards',
-    });
-    
-    // 或使用 page.evaluate 直接 patch
-    await page.evaluate(() => {
-        const harness = (window as any).__BG_TEST_HARNESS__;
-        harness.state.patch({
-            'core.bases.0.ongoingActions': [...]
+    test('测试名称', async ({ game }, testInfo) => {
+        // 1. 导航到游戏（自动启用 TestHarness）
+        await game.page.goto('/play/smashup');
+        
+        // 2. 等待游戏加载
+        await game.page.waitForFunction(
+            () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered(),
+            { timeout: 15000 }
+        );
+        
+        // 3. 快速场景构建（跳过派系选择，直接注入状态）
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: { hand: ['ninja_infiltrate'] },
+            currentPlayer: '0',
+            phase: 'playCards',
         });
+        
+        // 4. 游戏动作
+        await game.playCard('ninja_infiltrate');
+        await game.waitForInteraction('ninja_infiltrate_pick');
+        await game.selectOption('base-0');
+        await game.confirm();
+        
+        // 5. 断言
+        await game.expectPhase('playCards');
+        
+        // 6. 截图
+        await game.screenshot('final-state', testInfo);
     });
     ```
-  - **参考示例**：`e2e/smashup-ninja-acolyte-extra-minion.e2e.ts`（使用 GameTestContext + setupScene + patch）
+  - **参考示例**：`e2e/smashup-ninja-infiltrate.e2e.ts`（使用 GameTestContext + setupScene）
 - **E2E 测试必须通过并自审截图（强制）**：
   - **绝对禁止用单元测试糊弄**：UI 交互、多玩家协作、展示/提示等功能必须用 E2E 测试验证，不得用 GameTestRunner 单元测试替代
   - **测试必须实际运行并通过**：AI 编写测试后必须立即运行 `npm run test:e2e:ci -- <测试文件名>`，不得交给用户手动运行

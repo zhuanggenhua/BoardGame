@@ -279,6 +279,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const { activeModifiers } = useActiveModifiers({
         eventStreamEntries: rawG.sys.eventStream?.entries ?? [],
     });
+    
+    // 调试日志：检查 activeModifiers 是否正确返回
+    React.useEffect(() => {
+        console.log('[Board] activeModifiers from useActiveModifiers:', activeModifiers);
+    }, [activeModifiers]);
 
     // 防御阶段进攻技能特写
     const attackerAbilityLevels = React.useMemo(() => {
@@ -475,17 +480,18 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             isResponseAutoSwitch,
             currentResponderId,
             rootPid,
+            logic: isResponseAutoSwitch ? 'Self is responder → switch to opponent view' : 'Opponent is responder → stay on self view',
             currentPhase,
             currentViewMode: viewMode,
         });
 
-        // 只在对手响应时切换到对手视角
+        // 自己响应时切换到对手视角（看对手的骰子/状态）
         if (isOpen && isResponseAutoSwitch) {
-            console.log('[Board] Switching to opponent view (opponent is responder)');
+            console.log('[Board] Switching to opponent view (self is responder, need to see opponent dice)');
             setViewMode('opponent');
         }
         // 注意：
-        // 1. 自己响应时（isOpen && !isResponseAutoSwitch）不做任何操作，保持当前视角
+        // 1. 对手响应时（isOpen && !isResponseAutoSwitch）不做任何操作，保持当前视角（通常是自己视角）
         // 2. 响应窗口关闭时也不做任何操作，避免干扰正常的视角切换
     }, [isResponseWindowOpen, isResponseAutoSwitch, currentResponderId, rootPid, currentPhase, setViewMode, viewMode]);
 
@@ -1080,14 +1086,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         canHighlightAbility={canHighlightAbility}
                         onSelectAbility={(abilityId) => {
                             if (shouldBlockTutorialAction('ability-slots')) return;
-                            console.log('[Board] 🔵 onSelectAbility called', { abilityId, currentPhase, rollConfirmed: G.rollConfirmed });
                             // 进攻阶段确认骰面后，检查该 slot 是否有多个 variant 同时满足
                             if (currentPhase === 'offensiveRoll' && G.rollConfirmed) {
                                 // 对于变体 ID（如 incinerate），先通过 findPlayerAbility 获取基础技能 ID
                                 const match = findPlayerAbility(G, rollerId, abilityId);
                                 const baseAbilityId = match?.ability.id ?? abilityId;
                                 const slotId = getAbilitySlotId(baseAbilityId);
-                                console.log('[Board] 🔵 Variant check', { abilityId, baseAbilityId, slotId, hasMatch: !!match });
                                 if (slotId) {
                                     const mapping = ABILITY_SLOT_MAP[slotId];
                                     if (mapping) {
@@ -1097,21 +1101,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                         const slotVariants = availableAbilityIdsForRoller.filter(id => {
                                             const match = findPlayerAbility(G, rollerId, id);
                                             if (!match) {
-                                                console.log('[Board] 🔴 No match found for', id);
                                                 return false;
                                             }
                                             const included = mapping.ids.includes(match.ability.id);
-                                            console.log('[Board] 🔵 Checking variant', {
-                                                variantId: id,
-                                                abilityId: match.ability.id,
-                                                mappingIds: mapping.ids,
-                                                included
-                                            });
                                             return included;
                                         });
-                                        console.log('[Board] 🔵 Slot variants', { slotId, slotVariants, availableAbilityIdsForRoller });
                                         if (slotVariants.length >= 2 && hasDivergentVariants(G, rollerId, slotVariants)) {
-                                            console.log('[Board] 🟢 Multiple divergent variants found, showing choice modal');
                                             const options: AbilityChoiceOption[] = [];
                                             for (const vid of slotVariants) {
                                                 const match = findPlayerAbility(G, rollerId, vid);

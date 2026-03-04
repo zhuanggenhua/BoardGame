@@ -80,18 +80,33 @@ export async function waitForFactionDraft(page: Page, timeout = 60000) {
 export async function selectFaction(page: Page, factionIndex: number, testInfo?: any) {
     console.log(`[SmashUp] 选择派系索引: ${factionIndex}`);
     
-    // 1. 点击派系卡牌
+    // 1. 等待轮到该玩家（检查按钮文本）
+    const confirmButton = page.getByTestId('faction-confirm-button');
+    await confirmButton.waitFor({ state: 'visible', timeout: 10000 });
+    
+    // 等待按钮文本变为"确认选择"（而不是"Wait for your turn"）
+    await page.waitForFunction(
+        () => {
+            const button = document.querySelector('[data-testid="faction-confirm-button"]');
+            const text = button?.textContent || '';
+            return !text.includes('Wait') && !text.includes('等待');
+        },
+        { timeout: 20000 }
+    ).catch(async (e) => {
+        console.log('[SmashUp] ⚠️  等待轮次超时，当前按钮状态：');
+        const buttonText = await confirmButton.textContent();
+        console.log(`[SmashUp]    按钮文本: ${buttonText}`);
+        throw e;
+    });
+    
+    console.log(`[SmashUp] ✅ 轮到该玩家，开始选择派系`);
+    
+    // 2. 点击派系卡牌
     const factionCards = page.locator('.grid > div').filter({ hasNot: page.locator('.opacity-40') });
     await factionCards.nth(factionIndex).click();
     console.log(`[SmashUp] ✅ 已点击派系卡牌 ${factionIndex}`);
     
-    // 2. 等待并点击确认按钮（带重试）
-    const confirmButton = page.getByTestId('faction-confirm-button');
-    
-    // 等待按钮出现
-    await confirmButton.waitFor({ state: 'visible', timeout: 10000 });
-    
-    // 等待按钮可点击（enabled）- 这是关键！
+    // 3. 等待按钮可点击（enabled）
     await expect(confirmButton).toBeEnabled({ timeout: 15000 });
     await page.waitForTimeout(300); // 等待动画稳定
     
@@ -163,34 +178,19 @@ export async function completeFactionSelection(
     // 蛇形选秀：P0 → P1 → P1 → P0
     console.log('[SmashUp] 第1轮：Host 选择第1个派系...');
     await selectFaction(hostPage, hostFactions[0], testInfo);
-    // 暂时注释掉等待逻辑，因为有 bug
-    // await guestPage.waitForFunction(
-    //     () => {
-    //         const turnIndicator = document.body.innerText;
-    //         return turnIndicator.includes('IT\'S YOUR TURN NOW') || turnIndicator.includes('轮到你了');
-    //     },
-    //     { timeout: 15000 }
-    // ).catch(() => {});
-    await guestPage.waitForTimeout(2000); // 简单等待 2 秒
+    await hostPage.waitForTimeout(1000); // 等待状态同步
     
     console.log('[SmashUp] 第2轮：Guest 选择第1个派系...');
     await selectFaction(guestPage, guestFactions[0], testInfo);
-    await guestPage.waitForTimeout(1000);
+    await guestPage.waitForTimeout(1000); // 等待状态同步
     
     console.log('[SmashUp] 第3轮：Guest 选择第2个派系...');
     await selectFaction(guestPage, guestFactions[1], testInfo);
-    // await hostPage.waitForFunction(
-    //     () => {
-    //         const turnIndicator = document.body.innerText;
-    //         return turnIndicator.includes('IT\'S YOUR TURN NOW') || turnIndicator.includes('轮到你了');
-    //     },
-    //     { timeout: 15000 }
-    // ).catch(() => {});
-    await hostPage.waitForTimeout(2000); // 简单等待 2 秒
+    await guestPage.waitForTimeout(1000); // 等待状态同步
     
     console.log('[SmashUp] 第4轮：Host 选择第2个派系...');
     await selectFaction(hostPage, hostFactions[1], testInfo);
-    await hostPage.waitForTimeout(1000);
+    await hostPage.waitForTimeout(1000); // 等待状态同步
     
     console.log('[SmashUp] ✅ 派系选择流程完成');
 }

@@ -335,7 +335,7 @@ export const HOT_STREAK_2: AbilityDef = {
         {
             id: 'incinerate',
             name: abilityText('incinerate', 'name'),
-            trigger: { type: 'diceSet', faces: { [PYROMANCER_DICE_FACE_IDS.FIRE]: 2, [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 2 } },
+            trigger: { type: 'diceSet', faces: { [PYROMANCER_DICE_FACE_IDS.FIRE]: 2, [PYROMANCER_DICE_FACE_IDS.MAGMA]: 2 } },
             effects: [
                 grantToken(TOKEN_IDS.FIRE_MASTERY, 2, abilityEffectText('incinerate', 'gainFM2')),
                 inflictStatus(STATUS_IDS.BURN, 1, abilityEffectText('incinerate', 'inflictBurn')),

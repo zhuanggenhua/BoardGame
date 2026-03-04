@@ -113,9 +113,96 @@
 
 - `src/games/dicethrone/hooks/useActiveModifiers.ts`：添加 `consumeNew` 结果日志
 
-## 下一步
+## 代码验证
 
-请把打出 Volley 卡牌后的完整控制台日志发给我，特别是：
+### CARD_PLAYED 事件生成（已确认 ✅）
+
+**位置**：`src/games/dicethrone/domain/executeCards.ts:157-167`
+
+```typescript
+const cardPlayedEvent: CardPlayedEvent = {
+    type: 'CARD_PLAYED',
+    payload: {
+        playerId: actingPlayerId,
+        cardId: card.id,
+        cpCost: 0,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+};
+events.push(cardPlayedEvent);
+```
+
+**结论**：CARD_PLAYED 事件确实被创建并添加到 events 数组中。
+
+### EventStream 集成（需要验证）
+
+**问题**：events 数组是否被正确添加到 EventStream？
+
+**验证方法**：
+1. 检查 `executePipeline` 是否将 events 添加到 EventStream
+2. 检查 EventStream 的 `entries` 是否包含 CARD_PLAYED 事件
+
+### useEventStreamCursor 行为（需要验证）
+
+**问题**：`consumeNew()` 是否正确返回新事件？
+
+**可能原因**：
+1. 首次挂载时调用 `consumeNew()` 推进了游标，跳过了所有历史事件
+2. 后续 EventStream 更新时，`useEffect` 依赖项没有正确触发
+3. `useEventStreamCursor` 的游标推进逻辑有问题
+
+## 下一步验证
+
+### 方案 A：等待用户日志（推荐）
+
+请打出 Volley 卡牌后，把完整控制台日志发给我，特别是：
 - `[useActiveModifiers] consumeNew 结果` 的输出
 - 是否有 `[useActiveModifiers] CARD_PLAYED 事件` 的输出
 - 是否有 `[useActiveModifiers] 添加新修正卡` 的输出
+- `[RightSidebar] activeModifiers` 的输出
+
+### 方案 B：添加更多日志（如果方案 A 不够）
+
+如果日志显示 `consumeNew` 返回空数组，需要在 `useEventStreamCursor` 中添加日志：
+
+```typescript
+// src/engine/hooks/useEventStreamCursor.ts
+const consumeNew = useCallback((): ConsumeResult => {
+    console.log('[useEventStreamCursor] consumeNew called:', {
+        entriesLength: entries.length,
+        lastSeenId: lastSeenIdRef.current,
+        isFirstCall: isFirstCallRef.current,
+    });
+    
+    // ... 现有逻辑 ...
+    
+    const newEntries = entries.filter(e => e.id > lastSeenIdRef.current);
+    console.log('[useEventStreamCursor] filtered newEntries:', {
+        newEntriesLength: newEntries.length,
+        newEntriesIds: newEntries.map(e => e.id),
+        newEntriesTypes: newEntries.map(e => (e.event as any).type),
+    });
+    
+    // ... 现有逻辑 ...
+}, [entries, ...]);
+```
+
+### 方案 C：检查 EventStream 是否包含 CARD_PLAYED（如果方案 B 不够）
+
+在 Board.tsx 中添加日志，验证 EventStream 是否包含 CARD_PLAYED 事件：
+
+```typescript
+React.useEffect(() => {
+    const entries = rawG.sys.eventStream?.entries ?? [];
+    const cardPlayedEvents = entries.filter(e => (e.event as any).type === 'CARD_PLAYED');
+    console.log('[Board] EventStream 包含的 CARD_PLAYED 事件:', {
+        totalEntries: entries.length,
+        cardPlayedCount: cardPlayedEvents.length,
+        cardPlayedEvents: cardPlayedEvents.map(e => ({
+            id: e.id,
+            cardId: (e.event as any).payload?.cardId,
+        })),
+    });
+}, [rawG.sys.eventStream?.entries]);
+```

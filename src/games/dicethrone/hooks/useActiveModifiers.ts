@@ -99,8 +99,9 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
             if (restoredModifiers.length > 0) {
                 setModifiers(restoredModifiers);
             }
-            // 推进游标（跳过历史事件）
-            consumeNew();
+            // ❌ 不要在这里调用 consumeNew()！
+            // useEventStreamCursor 首次调用时会自动跳过历史事件
+            // 如果这里调用，会导致游标推进两次，后续新事件被跳过
             return;
         }
 

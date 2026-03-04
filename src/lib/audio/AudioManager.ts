@@ -317,6 +317,7 @@ class AudioManagerClass {
     play(key: SoundKey, spriteKey?: string, onEnd?: () => void): number | null {
         if (this.failedKeys.has(key)) return null;
         let howl = this.sounds.get(key);
+        const isAttackSound = key.includes('weapon_swoosh') || key.includes('melee_swoosh');
         if (!howl) {
             // 限制同时进行的按需加载数，防止浏览器连接拥堵导致延迟
             if (this._loadingCount >= MAX_CONCURRENT_LOADS) {
@@ -329,14 +330,29 @@ class AudioManagerClass {
             }
             this.soundDefinitions.set(key, definition);
             this._loadingCount++;
+            const calculatedVolume = (definition.volume ?? 1.0) * this._sfxVolume;
+            if (isAttackSound) {
+                console.log('[Audio Debug] Creating new Howl for attack sound:', {
+                    key,
+                    definitionVolume: definition.volume,
+                    sfxVolume: this._sfxVolume,
+                    calculatedVolume,
+                });
+            }
             howl = new Howl({
                 src: Array.isArray(definition.src) ? definition.src : [definition.src],
-                volume: (definition.volume ?? 1.0) * this._sfxVolume,
+                volume: calculatedVolume,
                 loop: definition.loop ?? false,
                 sprite: definition.sprite,
                 preload: true,
                 onload: () => {
                     this._loadingCount = Math.max(0, this._loadingCount - 1);
+                    if (isAttackSound) {
+                        console.log('[Audio Debug] Attack sound loaded:', {
+                            key,
+                            volume: howl?.volume(),
+                        });
+                    }
                 },
                 onloaderror: (_id, error) => {
                     this._loadingCount = Math.max(0, this._loadingCount - 1);
@@ -349,8 +365,23 @@ class AudioManagerClass {
             // 音频仍在加载中，不再重复入队，避免加载完成后延迟播放过时的音效
             return null;
         }
+        if (isAttackSound) {
+            console.log('[Audio Debug] Playing attack sound:', {
+                key,
+                isNewHowl: !this.sounds.has(key),
+                currentVolume: howl.volume(),
+                state: howl.state(),
+            });
+        }
         this.resumeContextIfNeeded();
         const soundId = howl.play(spriteKey);
+        if (isAttackSound) {
+            console.log('[Audio Debug] Attack sound play() returned:', {
+                key,
+                soundId,
+                volumeAfterPlay: howl.volume(),
+            });
+        }
         if (onEnd && soundId != null) {
             howl.once('end', onEnd, soundId);
         }

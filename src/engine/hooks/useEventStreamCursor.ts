@@ -194,10 +194,16 @@ export function useEventStreamCursor(config: UseEventStreamCursorConfig): UseEve
             return { entries: [], didReset: false, didOptimisticRollback: false };
         }
 
-        // ── entries 为空：保持游标不变，不消费 ──
+        // ── entries 为空：检查是否需要重置游标 ──
         // 乐观引擎的 wait-confirm 模式会暂时剥离 EventStream，
         // 这不是 Undo 回退，不应重置游标。
+        // 但如果游标已经推进过（lastSeenIdRef > -1），且 entries 为空，
+        // 说明 EventStream 被清空了，需要重置游标，防止后续新事件被跳过。
         if (curLen === 0) {
+            if (lastSeenIdRef.current > -1) {
+                // EventStream 被清空，重置游标
+                lastSeenIdRef.current = -1;
+            }
             return { entries: [], didReset: false, didOptimisticRollback: false };
         }
 
@@ -210,6 +216,17 @@ export function useEventStreamCursor(config: UseEventStreamCursorConfig): UseEve
 
         // ── 正常消费 ──
         const newEntries = entries.filter(e => e.id > lastSeenIdRef.current);
+        
+        // ── 调试日志：记录游标状态 ──
+        console.log('[useEventStreamCursor] 正常消费:', {
+            cursor: lastSeenIdRef.current,
+            totalEntries: curLen,
+            maxId: curLen > 0 ? entries[curLen - 1].id : -1,
+            newEntriesCount: newEntries.length,
+            allEventIds: entries.map(e => e.id),
+            newEventIds: newEntries.map(e => e.id),
+        });
+        
         if (newEntries.length > 0) {
             // ── 生产诊断日志：仅在包含攻击/技能事件时输出 ──
             // TODO: 问题定位后删除

@@ -430,21 +430,13 @@ export const getAvailableAbilityIds = (
             // 收集满足条件的变体，按 priority 降序排列后加入
             // 确保 UI 层 find() 取第一个匹配时自动选中最高优先级变体
             const matched: { id: string; priority: number }[] = [];
-            console.log('[rules] 🔵 Checking ability with variants', { abilityId: def.id, variantCount: def.variants.length });
             for (const variant of def.variants) {
                 const result = combatAbilityManager.instance.checkTrigger(variant.trigger, context);
-                console.log('[rules] 🔵 Variant trigger check', {
-                    variantId: variant.id,
-                    trigger: variant.trigger,
-                    faceCounts: context.faceCounts,
-                    result
-                });
                 if (result) {
                     matched.push({ id: variant.id, priority: variant.priority ?? 0 });
                 }
             }
             matched.sort((a, b) => b.priority - a.priority);
-            console.log('[rules] 🔵 Matched variants', { abilityId: def.id, matched: matched.map(m => m.id) });
             for (const m of matched) {
                 available.push(m.id);
             }

@@ -80,10 +80,26 @@ function findLastLogEntryIndex(entries: unknown[], signature: string): number {
  * @param key 音效键名
  */
 export function playSound(key: SoundKey): void {
+    // 临时调试：记录攻击音效播放
+    const isAttackSound = key.includes('weapon_swoosh') || key.includes('melee_swoosh');
+    if (isAttackSound) {
+        console.log('[Audio Debug] playSound called:', {
+            key,
+            timestamp: Date.now(),
+        });
+    }
+    
     // 节流：同一音效在 SFX_THROTTLE_MS 内只播放一次
     const now = Date.now();
     const lastPlayed = lastPlayedTime.get(key);
     if (lastPlayed !== undefined && now - lastPlayed < SFX_THROTTLE_MS) {
+        if (isAttackSound) {
+            console.log('[Audio Debug] playSound throttled:', {
+                key,
+                timeSinceLastPlay: now - lastPlayed,
+                throttleMs: SFX_THROTTLE_MS,
+            });
+        }
         return;
     }
     lastPlayedTime.set(key, now);
@@ -95,10 +111,32 @@ export function playSound(key: SoundKey): void {
         if (isSynthKey) {
             playSynthSound(key);
         }
+        if (isAttackSound) {
+            console.log('[Audio Debug] playSound failed (known failure):', { key });
+        }
         return;
     }
 
     const result = AudioManager.play(key);
+    
+    if (isAttackSound) {
+        console.log('[Audio Debug] AudioManager.play result:', {
+            key,
+            result,
+            isFailed: AudioManager.isFailed(key),
+        });
+        
+        // 检查音频是否真的在播放
+        if (result !== null) {
+            setTimeout(() => {
+                console.log('[Audio Debug] Attack sound status after 100ms:', {
+                    key,
+                    soundId: result,
+                    // 注意：这里无法直接访问 Howl 实例，需要通过 AudioManager
+                });
+            }, 100);
+        }
+    }
     
     // 仅在音效确实加载失败时标记为永久失败并回退到合成音
     // （因并发加载限制被跳过的不算失败）
@@ -390,6 +428,12 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
                     resolvedKey: key,
                     payload: event.payload,
                 });
+                console.log('[Audio Debug] ATTACK_INITIATED - About to check playedKeys:', {
+                    key,
+                    hasKey: playedKeys.has(key),
+                    playedKeysSize: playedKeys.size,
+                    playedKeysArray: Array.from(playedKeys),
+                });
             }
             
             // 临时调试：记录 POWER_COUNTER_ADDED 事件的音效解析
@@ -408,7 +452,23 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
             // 立即播放（去重）
             if (!playedKeys.has(key)) {
                 playedKeys.add(key);
+                
+                // 临时调试：记录 ATTACK_INITIATED 音效播放
+                if (gameId === 'dicethrone' && event.type === 'ATTACK_INITIATED') {
+                    console.log('[Audio Debug] Playing ATTACK_INITIATED sound:', {
+                        key,
+                        eventType: event.type,
+                        willPlay: true,
+                    });
+                }
+                
                 playSound(key);
+            } else if (gameId === 'dicethrone' && event.type === 'ATTACK_INITIATED') {
+                // 临时调试：记录重复的 ATTACK_INITIATED 音效被跳过
+                console.log('[Audio Debug] ATTACK_INITIATED sound skipped (duplicate):', {
+                    key,
+                    eventType: event.type,
+                });
             }
         }
     }, [registryLoaded, eventEntriesVersion, config]);
