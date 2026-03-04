@@ -43,7 +43,7 @@ export const ABILITY_IDS_DECK_I = {
     // 影响力 1-4
     MERCENARY_SWORDSMAN: 'ability_i_mercenary_swordsman',  // 雇佣剑士：弃掉本牌和相对的牌
     VOID_MAGE: 'ability_i_void_mage',                      // 虚空法师：从任一张牌上弃掉所有修正标记和持续标记
-    SURGEON: 'ability_i_surgeon',                          // 外科医生：为你一张打出的牌添加+5影响力
+    SURGEON: 'ability_i_surgeon',                          // 外科医生：为你下一张打出的牌添加-5影响力
     MEDIATOR: 'ability_i_mediator',                        // 调停者：🔄 这次遭遇为平局
     
     // 影响力 5-8
@@ -56,7 +56,7 @@ export const ABILITY_IDS_DECK_I = {
     AMBUSHER: 'ability_i_ambusher',                        // 伏击者：选择一个派系，你的对手弃掉所有该派系的手牌
     PUPPETEER: 'ability_i_puppeteer',                      // 傀儡师：弃掉相对的牌，替换为你从对手手牌随机抽取的一张牌。对方的能力不会被触发
     CLOCKMAKER: 'ability_i_clockmaker',                    // 钟表匠：添加+3影响力到你上一个遭遇的牌和你下一次打出的牌
-    TREASURER: 'ability_i_treasurer',                      // 财务官：🔄 在上一个遭遇获胜的那张牌额外获得1枚印戒
+    TREASURER: 'ability_i_treasurer',                      // 财务官：🔄 上个遭遇获胜的牌额外获得1枚印戒
     
     // 影响力 13-16
     SWAMP_GUARD: 'ability_i_swamp_guard',                  // 沼泽守卫：拿取一张你之前打出的牌回到手上，并弃掉其相对的牌

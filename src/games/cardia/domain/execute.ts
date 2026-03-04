@@ -8,6 +8,7 @@ import type { CardiaCommand } from './commands';
 import type { CardiaEvent } from './events';
 import { CARDIA_COMMANDS } from './commands';
 import { CARDIA_EVENTS } from './events';
+import { ABILITY_IDS } from './ids';
 import { getOpponentId } from './utils';
 import { abilityExecutorRegistry, type CardiaAbilityContext } from './abilityExecutor';
 import { abilityRegistry } from './abilityRegistry';
@@ -151,16 +152,21 @@ function resolveEncounter(
     }
     
     // 3. 应用持续能力效果（按优先级）
-    // 3.1 检查调停者（forceTie）- 强制平局
+    // 保存原始的 winner 值，用于判断是否触发能力
+    // 审判官规则："平局不会触发能力"，即使审判官赢得平局，也不进入能力阶段
+    const originalWinner = winner;
+    
+    // 3.1 检查调停者（forceTie）- 强制平局（只影响特定遭遇）
+    const currentEncounterIndex = core.turnNumber;
     const mediatorAbility = core.ongoingAbilities.find(
-        a => a.effectType === 'forceTie'
+        a => a.effectType === 'forceTie' && a.encounterIndex === currentEncounterIndex
     );
     if (mediatorAbility) {
         winner = 'tie';
         loser = null;
     }
     
-    // 3.2 检查审判官（winTies）- 赢得平局（优先级高于调停者）
+    // 3.2 检查审判官（winTies）- 赢得平局（影响所有遭遇）
     const magistrateAbility = core.ongoingAbilities.find(
         a => a.effectType === 'winTies'
     );
@@ -194,32 +200,43 @@ function resolveEncounter(
             },
         });
         
-        // 5.2 检查财务官/顾问（extraSignet）- 额外印戒（一次性）
+        // 5.2 检查财务官/顾问（extraSignet）- 额外印戒
+        // 财务官：不区分玩家，任何玩家获胜都触发（永久持续）
+        // 顾问：只对放置标记的玩家生效（一次性）
         const extraSignetAbilities = core.ongoingAbilities.filter(
-            a => a.effectType === 'extraSignet' && a.playerId === winner
+            a => a.effectType === 'extraSignet'
         );
         
         for (const ability of extraSignetAbilities) {
-            // 额外印戒
-            events.push({
-                type: CARDIA_EVENTS.EXTRA_SIGNET_PLACED,
-                timestamp: Date.now(),
-                payload: {
-                    cardId: winnerCard.uid,
-                    playerId: winner,
-                },
-            });
+            // 检查是否应该触发
+            const shouldTrigger = ability.abilityId === ABILITY_IDS.TREASURER 
+                ? true  // 财务官：任何玩家获胜都触发
+                : ability.playerId === winner;  // 顾问：只对自己生效
             
-            // 移除一次性持续标记
-            events.push({
-                type: CARDIA_EVENTS.ONGOING_ABILITY_REMOVED,
-                timestamp: Date.now(),
-                payload: {
-                    abilityId: ability.abilityId,
-                    cardId: ability.cardId,
-                    playerId: ability.playerId,
-                },
-            });
+            if (shouldTrigger) {
+                // 额外印戒
+                events.push({
+                    type: CARDIA_EVENTS.EXTRA_SIGNET_PLACED,
+                    timestamp: Date.now(),
+                    payload: {
+                        cardId: winnerCard.uid,
+                        playerId: winner,
+                    },
+                });
+                
+                // 顾问是一次性效果，触发后移除；财务官是永久效果，不移除
+                if (ability.abilityId === ABILITY_IDS.ADVISOR) {
+                    events.push({
+                        type: CARDIA_EVENTS.ONGOING_ABILITY_REMOVED,
+                        timestamp: Date.now(),
+                        payload: {
+                            abilityId: ability.abilityId,
+                            cardId: ability.cardId,
+                            playerId: ability.playerId,
+                        },
+                    });
+                }
+            }
         }
         
         // 5.3 检查机械精灵（conditionalVictory）- 条件胜利（一次性）
@@ -252,13 +269,14 @@ function resolveEncounter(
     }
     
     // 6. 推进到 ability 阶段（如果有失败者）或直接结束回合（如果平局）
-    if (winner === 'tie') {
-        // 平局时，跳过能力阶段，直接执行回合结束逻辑
-        // 注意：这里不需要推进到 ability 阶段，直接执行回合结束
+    // 注意：审判官规则 - "平局不会触发能力"
+    // 即使审判官通过 winTies 赢得平局，也不进入能力阶段（因为原本是平局）
+    if (originalWinner === 'tie') {
+        // 原本是平局时，跳过能力阶段，直接执行回合结束逻辑
         const endTurnEvents = executeAutoEndTurn(core, player1Id, random);
         events.push(...endTurnEvents);
     } else {
-        // 有胜负时，推进到 ability 阶段
+        // 原本有胜负时，推进到 ability 阶段
         events.push({
             type: CARDIA_EVENTS.PHASE_CHANGED,
             timestamp: Date.now(),
@@ -521,7 +539,7 @@ function executeEndTurn(
  * @param affectedCardUid 受影响的卡牌 UID
  * @param newModifierValue 新添加的修正标记值（用于临时计算）
  */
-function recalculateEncounterState(
+export function recalculateEncounterState(
     core: CardiaCore,
     affectedCardUid: string,
     newModifierValue: number
@@ -531,31 +549,42 @@ function recalculateEncounterState(
 
     // 1. 找到受影响的遭遇（包含被修正卡牌的遭遇）
     const encounterIndex = core.encounterHistory.findIndex(encounter =>
-        encounter.player1Card.uid === affectedCardUid ||
-        encounter.player2Card.uid === affectedCardUid
+        encounter.player1Card?.uid === affectedCardUid ||
+        encounter.player2Card?.uid === affectedCardUid
     );
 
     if (encounterIndex === -1) {
         // 卡牌不在任何遭遇中，无需回溯
+        console.log('[recalculateEncounterState] Card not in any encounter, skipping recalculation:', {
+            affectedCardUid,
+            encounterHistoryLength: core.encounterHistory.length,
+        });
         return events;
     }
 
     const encounter = core.encounterHistory[encounterIndex];
+    
+    // 安全检查：确保遭遇中的卡牌存在
+    if (!encounter.player1Card || !encounter.player2Card) {
+        console.warn('[recalculateEncounterState] Encounter has missing cards, skipping recalculation:', {
+            encounterIndex,
+            hasPlayer1Card: !!encounter.player1Card,
+            hasPlayer2Card: !!encounter.player2Card,
+        });
+        return events;
+    }
 
     // 2. 重新计算双方卡牌的最终影响力
-    // 注意：此时 MODIFIER_ADDED 事件还未被 reduce，所以需要手动加上新修正标记
+    // 注意：此时 MODIFIER_TOKEN_PLACED 事件还未被 reduce，所以需要手动加上新修正标记
     const player1Card = encounter.player1Card;
     const player2Card = encounter.player2Card;
 
-    // 从卡牌的 modifiers 字段计算影响力
-    const player1ModifierSum = player1Card.modifiers.entries.reduce(
-        (acc, entry) => acc + entry.def.value,
-        0
-    );
-    const player2ModifierSum = player2Card.modifiers.entries.reduce(
-        (acc, entry) => acc + entry.def.value,
-        0
-    );
+    // 从 core.modifierTokens 计算影响力（而不是从卡牌的 modifiers.entries）
+    const player1Modifiers = core.modifierTokens.filter(t => t.cardId === player1Card.uid);
+    const player2Modifiers = core.modifierTokens.filter(t => t.cardId === player2Card.uid);
+    
+    const player1ModifierSum = player1Modifiers.reduce((acc, m) => acc + m.value, 0);
+    const player2ModifierSum = player2Modifiers.reduce((acc, m) => acc + m.value, 0);
 
     // 如果受影响的是 player1 的卡牌，加上新修正标记
     const newPlayer1Influence = player1Card.uid === affectedCardUid

@@ -173,6 +173,12 @@ export interface CardiaCore {
         cardId: string;
     } | null;
     gameWonBy?: PlayerId;                       // 游戏胜利标记（精灵能力等直接获胜）
+    inventorPending?: {                         // 发明家能力待续标记
+        playerId: PlayerId;
+        timestamp: number;
+        firstCardId: string;                    // 第一次选择的卡牌 ID
+        triggeringCardId?: string;              // ✅ 触发能力的卡牌 ID（女导师/发明家本身）
+    };
     
     // 游戏设置
     deckVariant: DeckVariantId;  // 牌组变体

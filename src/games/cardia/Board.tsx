@@ -129,6 +129,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         playerID,
         matchData,
         reset,
+        isMultiplayer,
     });
     
     useGameAudio({
@@ -231,23 +232,50 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
             return;
         }
         
-        // 找到对应的选项
         const data = currentInteraction.data as any;
-        const selectedCard = data.cards?.find((c: any) => c.uid === selectedCardUids[0]);
+        const maxSelect = data.maxSelect || 1;
         
         console.log('[Cardia] handleCardSelectionConfirm:', {
             selectedCardUids,
-            selectedCard,
-            hasOptionId: !!selectedCard?.optionId,
+            maxSelect,
             interactionId: currentInteraction.id,
         });
         
-        if (selectedCard && selectedCard.optionId) {
-            // 使用标准的交互响应命令
-            console.log('[Cardia] Dispatching INTERACTION_COMMANDS.RESPOND with optionId:', selectedCard.optionId);
-            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: selectedCard.optionId });
+        // 多选模式：使用 optionIds + mergedValue 传递所有选中的卡牌 UID
+        if (maxSelect > 1) {
+            console.log('[Cardia] Multi-select mode: dispatching with optionIds and mergedValue');
+            
+            // 找到所有选中卡牌对应的 optionId
+            const selectedCards = data.cards?.filter((c: any) => selectedCardUids.includes(c.uid)) || [];
+            const optionIds = selectedCards.map((c: any) => c.optionId).filter(Boolean);
+            
+            console.log('[Cardia] Selected cards:', {
+                selectedCardUids,
+                selectedCards: selectedCards.map((c: any) => ({ uid: c.uid, optionId: c.optionId })),
+                optionIds,
+                allCards: data.cards?.map((c: any) => ({ uid: c.uid, optionId: c.optionId })),
+            });
+            
+            if (optionIds.length !== selectedCardUids.length) {
+                console.error('[Cardia] Some selected cards do not have optionId');
+                return;
+            }
+            
+            // 使用 optionIds（用于验证）+ mergedValue（用于传递给 handler）
+            dispatch(INTERACTION_COMMANDS.RESPOND, { 
+                optionIds,
+                mergedValue: { cardUids: selectedCardUids }
+            });
         } else {
-            console.error('[Cardia] No optionId found for selected card');
+            // 单选模式：找到对应的选项
+            const selectedCard = data.cards?.find((c: any) => c.uid === selectedCardUids[0]);
+            
+            if (selectedCard && selectedCard.optionId) {
+                console.log('[Cardia] Single-select mode: dispatching with optionId:', selectedCard.optionId);
+                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: selectedCard.optionId });
+            } else {
+                console.error('[Cardia] No optionId found for selected card');
+            }
         }
         
         setShowCardSelection(false);
@@ -262,10 +290,22 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     // 处理派系选择确认
     const handleFactionSelectionConfirm = (factionId: FactionId) => {
         if (!currentInteraction) return;
-        dispatch(CARDIA_COMMANDS.CHOOSE_FACTION, {
-            interactionId: currentInteraction.id,
-            factionId,
-        });
+        
+        // 找到对应的选项
+        const data = currentInteraction.data as any;
+        const options = data.options || [];
+        const selectedOption = options.find((opt: any) => opt.value?.faction === factionId);
+        
+        if (selectedOption && selectedOption.id) {
+            console.log('[Cardia] Faction selected, dispatching RESPOND:', {
+                optionId: selectedOption.id,
+                faction: factionId,
+            });
+            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: selectedOption.id });
+        } else {
+            console.error('[Cardia] No optionId found for selected faction:', factionId);
+        }
+        
         setShowFactionSelection(false);
     };
     
@@ -368,6 +408,9 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                         cards={(currentInteraction.data as any).cards || []}
                         minSelect={(currentInteraction.data as any).minSelect || 1}
                         maxSelect={(currentInteraction.data as any).maxSelect || 1}
+                        disabledCardUids={(currentInteraction.data as any).disabledCardUids || []}
+                        myPlayerId={(currentInteraction.data as any).myPlayerId || myPlayerId}
+                        opponentId={(currentInteraction.data as any).opponentId || opponentId}
                         onConfirm={handleCardSelectionConfirm}
                         onCancel={handleCardSelectionCancel}
                     />
@@ -487,7 +530,7 @@ const EncounterSequence: React.FC<EncounterSequenceProps> = ({ myPlayer, opponen
                 <EncounterPair
                     key={encounter.encounterIndex}
                     encounter={encounter}
-                    isLatest={idx === encounters.length - 1}
+                    isLatest={encounter.encounterIndex === core.turnNumber}
                     myPlayerId={myPlayerId}
                     opponentId={opponentId}
                     core={core}
@@ -519,10 +562,19 @@ const EncounterPair: React.FC<EncounterPairProps> = ({ encounter, isLatest, myPl
     const { myCard, opponentCard } = encounter;
     
     // 判断是否已翻开
+    // 历史遭遇（已解析过的）永远显示为翻开状态
+    // 当前遭遇：
+    //   - 我的卡牌：只要打出就翻开（myCard 存在即翻开）
+    //   - 对手卡牌：需要对手也打出才翻开（opponentCard 存在且 opponent.cardRevealed）
     const myPlayer = core.players[myPlayerId];
     const opponent = core.players[opponentId];
-    const myRevealed = isLatest ? myPlayer.cardRevealed : true;
-    const opponentRevealed = isLatest ? opponent.cardRevealed : true;
+    
+    // 如果是历史遭遇，卡牌已经被解析过，应该显示为翻开
+    // 如果是当前遭遇：
+    //   - 我的卡牌：只要存在就翻开（玩家知道自己打了什么）
+    //   - 对手卡牌：需要 cardRevealed 状态（双方都打出后才翻开）
+    const myRevealed = !isLatest || !!myCard;
+    const opponentRevealed = !isLatest || opponent.cardRevealed;
     
     return (
         <div className="flex flex-col items-center gap-2">
@@ -720,9 +772,22 @@ const CardDisplay: React.FC<CardDisplayProps> = ({ card, core, size = 'normal', 
  * 卡背组件
  */
 const CardBack: React.FC = () => {
+    const [imageError, setImageError] = React.useState(false);
+    
     return (
-        <div className="w-32 h-48 bg-gradient-to-br from-purple-800 to-blue-800 rounded-lg border-2 border-purple-600 flex items-center justify-center shadow-lg">
-            <div className="text-6xl">🎴</div>
+        <div className="w-32 h-48 rounded-lg border-2 border-purple-600 shadow-lg overflow-hidden">
+            {!imageError ? (
+                <OptimizedImage
+                    src="cardia/cards/deck1-back"
+                    alt="Card Back"
+                    className="w-full h-full object-cover"
+                    onError={() => setImageError(true)}
+                />
+            ) : (
+                <div className="w-full h-full bg-gradient-to-br from-purple-800 to-blue-800 flex items-center justify-center">
+                    <div className="text-6xl">🎴</div>
+                </div>
+            )}
         </div>
     );
 };

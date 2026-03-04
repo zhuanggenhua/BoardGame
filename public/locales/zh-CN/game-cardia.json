@@ -43,6 +43,7 @@
   "selectOneCard": "请选择一张卡牌",
   "selectCards": "请选择 {{min}}-{{max}} 张卡牌",
   "noCardsAvailable": "没有可选的卡牌",
+  "alreadySelected": "已选择",
   "confirm": "确认",
   "cancel": "取消",
   "selectFaction": "请选择一个派系",
@@ -64,7 +65,7 @@
     },
     "surgeon": {
       "name": "外科医生",
-      "description": "为你一张打出的牌添加+5影响力"
+      "description": "为你下一张打出的牌添加-5影响力"
     },
     "mediator": {
       "name": "调停者",
@@ -100,7 +101,7 @@
     },
     "treasurer": {
       "name": "财务官",
-      "description": "🔄 在一个上遭遇获胜的那张牌额外获得1枚印戒"
+      "description": "🔄 上个遭遇获胜的牌额外获得1枚印戒"
     },
     "swamp_guard": {
       "name": "沼泽守卫",
@@ -195,7 +196,7 @@
     },
     "deck_i_card_03": {
       "name": "外科医生",
-      "description": "影响力 3 | 行会 | ⚡ 为你一张打出的牌添加+5影响力"
+      "description": "影响力 3 | 行会 | ⚡ 为你下一张打出的牌添加-5影响力"
     },
     "deck_i_card_04": {
       "name": "调停者",
@@ -231,7 +232,7 @@
     },
     "deck_i_card_12": {
       "name": "财务官",
-      "description": "影响力 12 | 王朝 | 🔄 在一个上遭遇获胜的那张牌额外获得1枚印戒"
+      "description": "影响力 12 | 王朝 | 🔄 上个遭遇获胜的牌额外获得1枚印戒"
     },
     "deck_i_card_13": {
       "name": "沼泽守卫",

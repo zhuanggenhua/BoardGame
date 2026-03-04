@@ -16,60 +16,28 @@ import type { CardiaEvent } from '../events';
 
 /**
  * 外科医生（Surgeon）- 影响力 3
- * 效果：为己方一张打出的牌添加 +5 修正标记
+ * 效果：为你下一张打出的牌添加 -5 影响力
  * 
- * 实现：需要交互选择目标卡牌
+ * 实现：注册延迟效果，在下次打出牌时触发
  */
 abilityExecutorRegistry.register(ABILITY_IDS.SURGEON, (ctx: CardiaAbilityContext) => {
-    try {
-        const availableCards = filterCards(ctx.core, {
-            location: 'field',
-            owner: ctx.playerId,
-        });
-        
-        if (availableCards.length === 0) {
-            // 己方没有场上卡牌，发射提示事件
-            return {
-                events: [{
-                    type: CARDIA_EVENTS.ABILITY_NO_VALID_TARGET,
+    return {
+        events: [
+            {
+                type: CARDIA_EVENTS.DELAYED_EFFECT_REGISTERED,
+                payload: {
+                    effectType: 'modifyInfluence',
+                    target: 'self',
+                    value: -5,
+                    condition: 'onNextCardPlayed',
+                    sourceAbilityId: ctx.abilityId,
+                    sourcePlayerId: ctx.playerId,
                     timestamp: ctx.timestamp,
-                    payload: {
-                        abilityId: ctx.abilityId,
-                        cardId: ctx.cardId,
-                        playerId: ctx.playerId,
-                        reason: 'no_field_cards',
-                    },
-                }],
-            };
-        }
-        
-        const interaction = createCardSelectionInteraction(
-            `${ctx.abilityId}_${ctx.timestamp}`,
-            ctx.abilityId,
-            ctx.playerId,
-            '选择目标卡牌',
-            '为你的一张打出的牌添加+5影响力',
-            1,
-            1,
-            { location: 'field', owner: ctx.playerId }
-        );
-        
-        interaction.availableCards = availableCards;
-        
-        return {
-            events: [],
-            interaction,
-        };
-    } catch (error) {
-        console.error('[Surgeon] Executor error:', error, {
-            abilityId: ctx.abilityId,
-            cardId: ctx.cardId,
-            playerId: ctx.playerId,
-        });
-        
-        // 返回空事件，避免游戏崩溃
-        return { events: [] };
-    }
+                },
+                timestamp: ctx.timestamp,
+            }
+        ],
+    };
 });
 
 
@@ -236,144 +204,41 @@ abilityExecutorRegistry.register(ABILITY_IDS.MESSENGER, (ctx: CardiaAbilityConte
  * 发明家（Inventor）- 影响力 15
  * 效果：添加+3影响力到任一张牌，并添加-3影响力到另外任一张牌
  * 
- * 实现：需要交互选择 2 张目标卡牌（第一张+3，第二张-3）
- * ✅ 完整实现：支持选择任意场上牌（己方或对手）
+ * 实现：两次独立的单选交互
+ * - 能力执行器：创建第一次交互
+ * - 第一次交互处理器：放置 +3，设置 inventorPending 标记
+ * - CardiaEventSystem：检测到 inventorPending，创建第二次交互
+ * - 第二次交互处理器：放置 -3，清理 inventorPending 标记
  */
 abilityExecutorRegistry.register(ABILITY_IDS.INVENTOR, (ctx: CardiaAbilityContext) => {
-    // 如果还没有选择第一张卡牌
-    if (!ctx.selectedCardId && !ctx.selectedCards) {
-        // 获取所有场上卡牌（己方+对手）
-        const availableCards = filterCards(ctx.core, {
-            location: 'field',
-        });
-        
-        if (availableCards.length === 0) {
-            return { events: [] };
-        }
-        
-        // 创建第一次交互：选择第一张卡牌（+3）
-        const interaction = createCardSelectionInteraction(
-            `${ctx.abilityId}_first_${ctx.timestamp}`,
-            ctx.abilityId,
-            ctx.playerId,
-            '选择第一张卡牌',
-            '为任一张场上牌添加+3影响力',
-            1,
-            1,
-            { location: 'field' }
-        );
-        
-        interaction.availableCards = availableCards;
-        
-        return {
-            events: [],
-            interaction,
-        };
-    }
+    // 获取所有场上卡牌（己方+对手）
+    const availableCards = filterCards(ctx.core, {
+        location: 'field',
+    });
     
-    // 如果已选择第一张卡牌，但还没选择第二张
-    if (ctx.selectedCardId && !ctx.selectedCards) {
-        // 获取所有场上卡牌（己方+对手）
-        const availableCards = filterCards(ctx.core, {
-            location: 'field',
-        });
-        
-        if (availableCards.length === 0) {
-            return { events: [] };
-        }
-        
-        // 创建第二次交互：选择第二张卡牌（-3）
-        const interaction = createCardSelectionInteraction(
-            `${ctx.abilityId}_second_${ctx.timestamp}`,
-            ctx.abilityId,
-            ctx.playerId,
-            '选择第二张卡牌',
-            '为任一张场上牌添加-3影响力（可以与第一张相同）',
-            1,
-            1,
-            { location: 'field' }
-        );
-        
-        interaction.availableCards = availableCards;
-        
-        // 存储第一张卡牌的 ID
-        (interaction as any).firstCardId = ctx.selectedCardId;
-        
-        return {
-            events: [],
-            interaction,
-        };
-    }
-    
-    // 已选择两张卡牌，执行效果
-    if (ctx.selectedCards && ctx.selectedCards.length === 2) {
-        const [firstCardId, secondCardId] = ctx.selectedCards;
-        
-        return {
-            events: [
-                // 第一张卡牌 +3
-                {
-                    type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED,
-                    payload: {
-                        cardId: firstCardId,
-                        value: 3,
-                        source: ctx.abilityId,
-                        timestamp: ctx.timestamp,
-                    },
-                    timestamp: ctx.timestamp,
-                },
-                // 第二张卡牌 -3
-                {
-                    type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED,
-                    payload: {
-                        cardId: secondCardId,
-                        value: -3,
-                        source: ctx.abilityId,
-                        timestamp: ctx.timestamp,
-                    },
-                    timestamp: ctx.timestamp,
-                }
-            ],
-        };
-    }
-    
-    // 降级：如果上下文不符合预期，使用简化版本
-    const playerFieldCards = getPlayerFieldCards(ctx.core, ctx.playerId);
-    
-    // 至少需要 1 张场上卡牌
-    if (playerFieldCards.length === 0) {
+    if (availableCards.length === 0) {
         return { events: [] };
     }
     
-    const events: any[] = [];
+    // 创建第一次交互
+    const interaction = createCardSelectionInteraction(
+        `${ctx.abilityId}_first_${ctx.timestamp}`,
+        ctx.abilityId,
+        ctx.playerId,
+        '选择第一张卡牌',
+        '为第一张卡牌添加+3影响力',
+        1,
+        1,
+        { location: 'field' },
+        ctx.cardId  // ✅ 添加：传入发明家的 cardId
+    );
     
-    // 第一张卡牌 +3
-    events.push({
-        type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED,
-        payload: {
-            cardId: playerFieldCards[0],
-            value: 3,
-            source: ctx.abilityId,
-            timestamp: ctx.timestamp,
-        },
-        timestamp: ctx.timestamp,
-    });
+    interaction.availableCards = availableCards;
     
-    // 如果有第二张卡牌，-3
-    if (playerFieldCards.length >= 2) {
-        events.push({
-            type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED,
-            payload: {
-                cardId: playerFieldCards[1],
-                value: -3,
-                source: ctx.abilityId,
-                timestamp: ctx.timestamp,
-            },
-            timestamp: ctx.timestamp,
-        });
-    }
-    
-    return { events };
+    return {
+        events: [],
+        interaction,
+    };
 });
 
 /**
@@ -737,49 +602,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.MERCENARY_SWORDSMAN, (ctx: CardiaAb
  * 注册影响力修正能力的交互处理函数
  */
 export function registerModifierInteractionHandlers(): void {
-    // 外科医生：选择目标卡牌后放置 +5 修正标记
-    registerInteractionHandler(ABILITY_IDS.SURGEON, (state, playerId, value, _interactionData, _random, timestamp) => {
-        try {
-            // value 包含选中的卡牌信息
-            const selectedCard = value as { cardUid?: string };
-            
-            if (!selectedCard?.cardUid) {
-                console.error('[Surgeon] No cardUid in interaction value');
-                return { state, events: [] };
-            }
-            
-            // 验证卡牌是否仍在场上且属于己方
-            const player = state.core.players[playerId];
-            const targetCard = player.playedCards.find(c => c.uid === selectedCard.cardUid);
-            
-            if (!targetCard) {
-                console.error('[Surgeon] Selected card not found or not owned by player:', selectedCard.cardUid);
-                return { state, events: [] };
-            }
-            
-            return {
-                state,
-                events: [
-                    {
-                        type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED,
-                        payload: {
-                            cardId: selectedCard.cardUid,
-                            value: 5,
-                            source: ABILITY_IDS.SURGEON,
-                            timestamp,
-                        },
-                        timestamp,
-                    }
-                ],
-            };
-        } catch (error) {
-            console.error('[Surgeon] Interaction handler error:', error, {
-                playerId,
-                value,
-            });
-            return { state, events: [] };
-        }
-    });
+    // 外科医生：不需要交互处理器（延迟效果由系统自动处理）
     
     // 天才：选择目标卡牌后放置 +3 修正标记
     registerInteractionHandler(ABILITY_IDS.GENIUS, (state, playerId, value, _interactionData, _random, timestamp) => {
@@ -938,6 +761,7 @@ export function registerModifierInteractionHandlers(): void {
                 type: 'choice',
                 interactionId: `${ABILITY_IDS.COURT_GUARD}_opponent_${timestamp}`,
                 playerId: opponentId,
+                abilityId: ABILITY_IDS.COURT_GUARD,  // ← 添加 abilityId 字段
                 title: '选择是否弃牌',
                 description: `对手选择了${selectedFaction}派系，你可以弃掉一张该派系的手牌，否则对手的牌添加+7影响力`,
                 options: [
@@ -1008,6 +832,7 @@ export function registerModifierInteractionHandlers(): void {
                     type: 'card_selection',
                     interactionId: `${ABILITY_IDS.COURT_GUARD}_discard_${timestamp}`,
                     playerId,
+                    abilityId: ABILITY_IDS.COURT_GUARD,  // ← 添加 abilityId 字段
                     title: '选择要弃掉的牌',
                     description: `选择一张${faction}派系的手牌弃掉`,
                     availableCards: availableCards.map(c => c.uid),
@@ -1059,44 +884,88 @@ export function registerModifierInteractionHandlers(): void {
         return { state, events: [] };
     });
     
-    // 发明家：选择两张目标卡牌（第一张+3，第二张-3）
-    registerInteractionHandler(ABILITY_IDS.INVENTOR, (state, playerId, value, _interactionData, _random, timestamp) => {
-        const selection = value as { cardUids?: string[] };
+    // 发明家：两次独立的单选交互
+    // 使用 inventorPending 标记判断是第几次交互
+    // 第一次交互：inventorPending 不存在 → 放置 +3，设置 inventorPending
+    // 第二次交互：inventorPending 存在 → 放置 -3，清理 inventorPending
+    registerInteractionHandler(ABILITY_IDS.INVENTOR, (state, playerId, value, interactionData, _random, timestamp) => {
+        const selectedCard = value as { cardUid?: string };
         
-        if (!selection?.cardUids || selection.cardUids.length !== 2) {
-            console.error('[Inventor] Invalid selection, expected 2 cards:', selection);
+        if (!selectedCard?.cardUid) {
+            console.error('[Inventor] No cardUid in interaction value');
             return { state, events: [] };
         }
         
-        const [firstCardId, secondCardId] = selection.cardUids;
+        // 使用 inventorPending 标记判断是第几次交互
+        const isFirstInteraction = !state.core.inventorPending;
         
-        return {
-            state,
-            events: [
-                // 第一张卡牌 +3
-                {
-                    type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED,
-                    payload: {
-                        cardId: firstCardId,
-                        value: 3,
-                        source: ABILITY_IDS.INVENTOR,
+        console.log('[Inventor] Interaction handler called:', {
+            isFirstInteraction,
+            hasPendingFlag: !!state.core.inventorPending,
+            selectedCardUid: selectedCard.cardUid,
+        });
+        
+        if (isFirstInteraction) {
+            // 第一次交互：放置 +3，设置待续标记
+            console.log('[Inventor] First interaction: placing +3 modifier and setting pending flag');
+            console.log('[Inventor] First interaction selectedCardUid:', selectedCard.cardUid);
+            
+            // ✅ 修复 Bug 1：从 interactionData 中获取触发能力的卡牌 ID
+            const cardiaInteraction = (interactionData as any)?.cardiaInteraction;
+            const triggeringCardId = cardiaInteraction?.cardId;
+            
+            return {
+                state,
+                events: [
+                    {
+                        type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED,
+                        payload: {
+                            cardId: selectedCard.cardUid,
+                            value: 3,
+                            source: ABILITY_IDS.INVENTOR,
+                            timestamp,
+                        },
                         timestamp,
                     },
-                    timestamp,
-                },
-                // 第二张卡牌 -3
-                {
-                    type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED,
-                    payload: {
-                        cardId: secondCardId,
-                        value: -3,
-                        source: ABILITY_IDS.INVENTOR,
+                    {
+                        type: CARDIA_EVENTS.INVENTOR_PENDING_SET,
+                        payload: {
+                            playerId,
+                            timestamp,
+                            firstCardId: selectedCard.cardUid,  // 记录第一次选择的卡牌
+                            triggeringCardId,  // ✅ 记录触发能力的卡牌 ID（女导师/发明家本身）
+                        },
+                        timestamp,
+                    }
+                ],
+            };
+        } else {
+            // 第二次交互：放置 -3，清理待续标记
+            console.log('[Inventor] Second interaction: placing -3 modifier and clearing pending flag');
+            
+            return {
+                state,
+                events: [
+                    {
+                        type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED,
+                        payload: {
+                            cardId: selectedCard.cardUid,
+                            value: -3,
+                            source: ABILITY_IDS.INVENTOR,
+                            timestamp,
+                        },
                         timestamp,
                     },
-                    timestamp,
-                }
-            ],
-        };
+                    {
+                        type: CARDIA_EVENTS.INVENTOR_PENDING_CLEARED,
+                        payload: {
+                            playerId,
+                        },
+                        timestamp,
+                    }
+                ],
+            };
+        }
     });
     
     // 念动力法师：选择两张卡牌（从第一张移动所有标记到第二张）

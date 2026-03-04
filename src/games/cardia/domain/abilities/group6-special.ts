@@ -17,6 +17,8 @@ import type { CardiaAbilityContext } from '../abilityExecutor';
  * 注意：替换的卡牌不触发能力（在 execute.ts 中处理）
  */
 abilityExecutorRegistry.register(ABILITY_IDS.PUPPETEER, (ctx: CardiaAbilityContext) => {
+    console.log('[Puppeteer] 能力执行器被调用');
+    
     const player = ctx.core.players[ctx.playerId];
     const opponent = ctx.core.players[ctx.opponentId];
     
@@ -24,6 +26,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.PUPPETEER, (ctx: CardiaAbilityConte
     const currentCard = player.playedCards.find(card => card.uid === ctx.cardId);
     
     if (!currentCard) {
+        console.warn('[Puppeteer] 未找到当前卡牌');
         return { events: [] };
     }
     
@@ -33,17 +36,25 @@ abilityExecutorRegistry.register(ABILITY_IDS.PUPPETEER, (ctx: CardiaAbilityConte
     );
     
     if (!oppositeCard) {
+        console.warn('[Puppeteer] 未找到相对的卡牌');
         return { events: [] };
     }
     
     // 对手手牌为空，无法替换
     if (opponent.hand.length === 0) {
+        console.warn('[Puppeteer] 对手手牌为空');
         return { events: [] };
     }
     
     // 随机选择对手手牌中的一张
     const randomIndex = Math.floor(ctx.random() * opponent.hand.length);
     const replacementCard = opponent.hand[randomIndex];
+    
+    console.log('[Puppeteer] 准备替换卡牌:', {
+        oldCard: { uid: oppositeCard.uid, defId: oppositeCard.defId },
+        newCard: { uid: replacementCard.uid, defId: replacementCard.defId },
+        encounterIndex: currentCard.encounterIndex,
+    });
     
     return {
         events: [

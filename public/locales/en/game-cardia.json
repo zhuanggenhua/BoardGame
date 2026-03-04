@@ -43,6 +43,7 @@
   "selectOneCard": "Please select one card",
   "selectCards": "Please select {{min}}-{{max}} cards",
   "noCardsAvailable": "No cards available",
+  "alreadySelected": "Already Selected",
   "confirm": "Confirm",
   "cancel": "Cancel",
   "selectFaction": "Please select a faction",
@@ -64,7 +65,7 @@
     },
     "surgeon": {
       "name": "Surgeon",
-      "description": "Add +5 influence to one of your played cards"
+      "description": "Add -5 influence to your next played card"
     },
     "mediator": {
       "name": "Mediator",
@@ -100,7 +101,7 @@
     },
     "treasurer": {
       "name": "Treasurer",
-      "description": "🔄 A card that won a previous encounter gains an additional signet"
+      "description": "🔄 Winner of previous encounter gains extra signet"
     },
     "swamp_guard": {
       "name": "Swamp Guard",
@@ -195,7 +196,7 @@
     },
     "deck_i_card_03": {
       "name": "Surgeon",
-      "description": "Influence 3 | Guild | ⚡ Add +5 influence to one of your played cards"
+      "description": "Influence 3 | Guild | ⚡ Add -5 influence to your next played card"
     },
     "deck_i_card_04": {
       "name": "Mediator",
@@ -231,7 +232,7 @@
     },
     "deck_i_card_12": {
       "name": "Treasurer",
-      "description": "Influence 12 | Dynasty | 🔄 Previous winner gains extra signet"
+      "description": "Influence 12 | Dynasty | 🔄 Winner of previous encounter gains extra signet"
     },
     "deck_i_card_13": {
       "name": "Swamp Guard",

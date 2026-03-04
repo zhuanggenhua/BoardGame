@@ -102,6 +102,12 @@ function handleSimpleChoiceRespond<TCore>(
     let selectedOptions: PromptOption[] = [];
     let selectedOptionIds: string[] = [];
 
+    console.log('[SimpleChoiceSystem] handleSimpleChoiceRespond', {
+        isMulti,
+        payload,
+        availableOptions: data.options.map(o => o.id),
+    });
+
     if (isMulti) {
         const optionIds = Array.isArray(payload.optionIds)
             ? payload.optionIds
@@ -112,7 +118,16 @@ function handleSimpleChoiceRespond<TCore>(
             (id) => typeof id === 'string',
         );
         const optionsById = new Map(data.options.map((o) => [o.id, o]));
-        if (uniqueIds.find((id) => !optionsById.has(id))) {
+        
+        console.log('[SimpleChoiceSystem] Multi-select validation', {
+            uniqueIds,
+            optionsById: Array.from(optionsById.keys()),
+            invalidIds: uniqueIds.filter((id) => !optionsById.has(id)),
+        });
+        
+        const invalidIds = uniqueIds.filter((id) => !optionsById.has(id));
+        if (invalidIds.length > 0) {
+            console.error('[SimpleChoiceSystem] Invalid option IDs:', invalidIds);
             return { halt: true, error: '无效的选择' };
         }
         if (uniqueIds.find((id) => optionsById.get(id)?.disabled)) {
@@ -167,6 +182,14 @@ function handleSimpleChoiceRespond<TCore>(
         },
         timestamp,
     };
+
+    console.info('[SimpleChoiceSystem] Producing INTERACTION_RESOLVED event', {
+        type: event.type,
+        sourceId: data.sourceId,
+        playerId,
+        optionId: selectedOptionIds[0],
+        value: resolvedValue,
+    });
 
     return { halt: false, state: newState, events: [event] };
 }

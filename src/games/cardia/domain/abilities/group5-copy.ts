@@ -25,6 +25,13 @@ import type { CardiaAbilityContext } from '../abilityExecutor';
 abilityExecutorRegistry.register(ABILITY_IDS.GOVERNESS, (ctx: CardiaAbilityContext) => {
     const player = ctx.core.players[ctx.playerId];
     
+    console.log('[Governess] 能力执行器被调用:', {
+        playerId: ctx.playerId,
+        cardId: ctx.cardId,
+        selectedCardId: ctx.selectedCardId,
+        playedCardsCount: player.playedCards.length,
+    });
+    
     // 查找己方场上影响力≥14的卡牌（排除当前卡牌）
     const eligibleCards = player.playedCards.filter(card => {
         if (card.uid === ctx.cardId) return false;
@@ -36,7 +43,22 @@ abilityExecutorRegistry.register(ABILITY_IDS.GOVERNESS, (ctx: CardiaAbilityConte
         // 检查是否有即时能力（至少有一个能力ID）
         const hasInstantAbility = card.abilityIds.length > 0;
         
+        console.log('[Governess] 检查卡牌:', {
+            uid: card.uid,
+            defId: card.defId,
+            baseInfluence: card.baseInfluence,
+            currentInfluence,
+            hasInstantAbility,
+            abilityIds: card.abilityIds,
+            eligible: currentInfluence >= 14 && hasInstantAbility,
+        });
+        
         return currentInfluence >= 14 && hasInstantAbility;
+    });
+    
+    console.log('[Governess] 符合条件的卡牌:', {
+        count: eligibleCards.length,
+        cards: eligibleCards.map(c => ({ uid: c.uid, defId: c.defId })),
     });
     
     if (eligibleCards.length === 0) {
@@ -66,6 +88,14 @@ abilityExecutorRegistry.register(ABILITY_IDS.GOVERNESS, (ctx: CardiaAbilityConte
         
         const targetAbilityId = targetCard.abilityIds[0];
         
+        console.log('[Governess] 复制能力:', {
+            targetCardId: targetCard.uid,
+            targetCardDefId: targetCard.defId,
+            targetAbilityId,
+            governessCardId: ctx.cardId,
+            governessAbilityId: ctx.abilityId,
+        });
+        
         // 递归执行被复制的能力
         const copiedAbilityExecutor = abilityExecutorRegistry.resolve(targetAbilityId);
         if (!copiedAbilityExecutor) {
@@ -80,8 +110,16 @@ abilityExecutorRegistry.register(ABILITY_IDS.GOVERNESS, (ctx: CardiaAbilityConte
             // 注意：cardId 保持为女导师的 cardId，因为是女导师在执行能力
         };
         
+        console.log('[Governess] 执行被复制的能力:', copiedContext);
+        
         // 执行被复制的能力
         const result = copiedAbilityExecutor(copiedContext);
+        
+        console.log('[Governess] 被复制能力的返回结果:', {
+            eventsCount: result.events.length,
+            hasInteraction: !!result.interaction,
+            interaction: result.interaction,
+        });
         
         // 在事件前添加 ABILITY_COPIED 事件（用于日志记录）
         const events: any[] = [
@@ -97,6 +135,11 @@ abilityExecutorRegistry.register(ABILITY_IDS.GOVERNESS, (ctx: CardiaAbilityConte
             },
             ...result.events,
         ];
+        
+        console.log('[Governess] 最终返回:', {
+            eventsCount: events.length,
+            hasInteraction: !!result.interaction,
+        });
         
         return {
             events,
@@ -118,7 +161,8 @@ abilityExecutorRegistry.register(ABILITY_IDS.GOVERNESS, (ctx: CardiaAbilityConte
             location: 'field',
             minInfluence: 14,
             hasInstantAbility: true,
-        }
+        },
+        ctx.cardId  // ✅ 添加：传入女导师的 cardId
     );
     
     // 填充可选卡牌列表
@@ -222,7 +266,8 @@ abilityExecutorRegistry.register(ABILITY_IDS.ILLUSIONIST, (ctx: CardiaAbilityCon
             owner: ctx.opponentId,
             location: 'field',
             hasInstantAbility: true,
-        }
+        },
+        ctx.cardId  // ✅ 添加：传入幻术师的 cardId
     );
     
     // 填充可选卡牌列表
@@ -347,7 +392,8 @@ abilityExecutorRegistry.register(ABILITY_IDS.ELEMENTALIST, (ctx: CardiaAbilityCo
             owner: ctx.playerId,
             location: 'hand',
             hasInstantAbility: true,
-        }
+        },
+        ctx.cardId  // ✅ 添加：传入元素师的 cardId
     );
     
     // 填充可选卡牌列表
@@ -386,9 +432,15 @@ export function registerCopyInteractionHandlers(): void {
             return { state, events: [] };
         }
         
-        // 创建上下文（需要找到女导师的 cardId）
-        // 注意：这里需要从 interactionData 中获取原始的 cardId
-        const cardId = (_interactionData?.cardId as string) || '';
+        // ✅ 修复：从 cardiaInteraction.cardId 获取女导师的 cardId
+        const cardiaInteraction = (_interactionData as any)?.cardiaInteraction;
+        const cardId = cardiaInteraction?.cardId || '';
+        
+        console.log('[Governess] Interaction handler:', {
+            cardId,
+            selectedCardId: selectedCard.cardUid,
+            interactionData: _interactionData,
+        });
         
         const ctx: CardiaAbilityContext = {
             core: state.core,
@@ -406,6 +458,7 @@ export function registerCopyInteractionHandlers(): void {
         return {
             state,
             events: result.events,
+            interaction: result.interaction, // ✅ 修复：传递被复制能力的交互
         };
     });
     
@@ -433,7 +486,9 @@ export function registerCopyInteractionHandlers(): void {
             return { state, events: [] };
         }
         
-        const cardId = (_interactionData?.cardId as string) || '';
+        // ✅ 修复：从 cardiaInteraction.cardId 获取幻术师的 cardId
+        const cardiaInteraction = (_interactionData as any)?.cardiaInteraction;
+        const cardId = cardiaInteraction?.cardId || '';
         
         const ctx: CardiaAbilityContext = {
             core: state.core,
@@ -451,6 +506,7 @@ export function registerCopyInteractionHandlers(): void {
         return {
             state,
             events: result.events,
+            interaction: result.interaction, // ✅ 修复：传递被复制能力的交互
         };
     });
     
@@ -478,7 +534,9 @@ export function registerCopyInteractionHandlers(): void {
         }
         
         const opponentId = playerId === '0' ? '1' : '0';
-        const cardId = (_interactionData?.cardId as string) || '';
+        // ✅ 修复：从 cardiaInteraction.cardId 获取元素师的 cardId
+        const cardiaInteraction = (_interactionData as any)?.cardiaInteraction;
+        const cardId = cardiaInteraction?.cardId || '';
         
         const ctx: CardiaAbilityContext = {
             core: state.core,
@@ -496,6 +554,7 @@ export function registerCopyInteractionHandlers(): void {
         return {
             state,
             events: result.events,
+            interaction: result.interaction, // ✅ 修复：传递被复制能力的交互
         };
     });
 }

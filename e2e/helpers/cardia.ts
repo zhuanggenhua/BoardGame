@@ -521,20 +521,22 @@ async function buildStateFromScenario(
     const state = JSON.parse(JSON.stringify(baseState)) as Record<string, unknown>; // 深拷贝
     
     // 1. 配置玩家1
-    (state.players as Record<string, unknown>)['0'] = await buildPlayerState(
+    const player1State = await buildPlayerState(
         page,
         ((baseState.players as Record<string, unknown>)['0'] as Record<string, unknown>) || {},
         scenario.player1,
         '0'
     );
+    (state.players as Record<string, unknown>)['0'] = player1State;
     
     // 2. 配置玩家2
-    (state.players as Record<string, unknown>)['1'] = await buildPlayerState(
+    const player2State = await buildPlayerState(
         page,
         ((baseState.players as Record<string, unknown>)['1'] as Record<string, unknown>) || {},
         scenario.player2,
         '1'
     );
+    (state.players as Record<string, unknown>)['1'] = player2State;
     
     // 3. 设置阶段
     if (scenario.phase) {
@@ -546,9 +548,62 @@ async function buildStateFromScenario(
         state.modifierTokens = scenario.modifierTokens;
     }
     
-    // 5. 设置持续能力
+    // 5. 设置持续能力（state 本身就是 core，不需要 .core）
     if (scenario.ongoingAbilities) {
         state.ongoingAbilities = scenario.ongoingAbilities;
+    } else {
+        // 自动从 playedCards 的 ongoingMarkers 生成 ongoingAbilities
+        const ongoingAbilities: Array<Record<string, unknown>> = [];
+        
+        // 处理 P1 的 playedCards
+        if (scenario.player1.playedCards) {
+            for (const playedCard of scenario.player1.playedCards) {
+                if (playedCard.ongoingMarkers && playedCard.ongoingMarkers.length > 0) {
+                    const cardInstance = (player1State.playedCards as Array<Record<string, unknown>>).find(
+                        (c: Record<string, unknown>) => c.defId === playedCard.defId
+                    );
+                    if (cardInstance) {
+                        for (const abilityId of playedCard.ongoingMarkers) {
+                            ongoingAbilities.push({
+                                abilityId,
+                                cardId: cardInstance.uid as string,
+                                playerId: '0',
+                                effectType: 'ongoing', // 默认类型
+                                timestamp: Date.now(),
+                                encounterIndex: playedCard.encounterIndex,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 处理 P2 的 playedCards
+        if (scenario.player2.playedCards) {
+            for (const playedCard of scenario.player2.playedCards) {
+                if (playedCard.ongoingMarkers && playedCard.ongoingMarkers.length > 0) {
+                    const cardInstance = (player2State.playedCards as Array<Record<string, unknown>>).find(
+                        (c: Record<string, unknown>) => c.defId === playedCard.defId
+                    );
+                    if (cardInstance) {
+                        for (const abilityId of playedCard.ongoingMarkers) {
+                            ongoingAbilities.push({
+                                abilityId,
+                                cardId: cardInstance.uid as string,
+                                playerId: '1',
+                                effectType: 'ongoing', // 默认类型
+                                timestamp: Date.now(),
+                                encounterIndex: playedCard.encounterIndex,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (ongoingAbilities.length > 0) {
+            state.ongoingAbilities = ongoingAbilities;
+        }
     }
     
     // 6. 设置揭示顺序
@@ -560,6 +615,20 @@ async function buildStateFromScenario(
     if (scenario.currentEncounter) {
         state.currentEncounter = scenario.currentEncounter;
     }
+    
+    // 8. 自动计算 turnNumber（基于已打出牌的最大 encounterIndex）
+    const allPlayedCards = [
+        ...(player1State.playedCards as Array<Record<string, unknown>>),
+        ...(player2State.playedCards as Array<Record<string, unknown>>),
+    ];
+    const maxEncounterIndex = allPlayedCards.reduce((max, card) => {
+        const encounterIndex = card.encounterIndex as number;
+        return encounterIndex > max ? encounterIndex : max;
+    }, -1);
+    
+    // turnNumber 应该是下一个遭遇的序号（maxEncounterIndex + 1）
+    // 但如果没有已打出的牌，turnNumber 应该是 0
+    state.turnNumber = maxEncounterIndex >= 0 ? maxEncounterIndex + 1 : 0;
     
     return state;
 }
@@ -610,6 +679,9 @@ async function buildPlayerState(
 
 /**
  * 创建卡牌实例数组（在浏览器上下文中执行，访问 cardRegistry）
+ * 
+ * UID 格式与游戏代码一致：`{defId}_{timestamp}_{random}`
+ * 这样可以确保注入的状态与 UI 渲染的状态一致
  */
 async function createCardInstances(
     page: Page,
@@ -630,8 +702,14 @@ async function createCardInstances(
                 throw new Error(`Card definition not found: ${defId}`);
             }
             
+            // 生成与游戏代码一致的 UID 格式：{defId}_{timestamp}_{random}
+            // 使用固定的时间戳和索引，确保测试可重现
+            const timestamp = Date.now() + index; // 每张卡牌的时间戳略有不同
+            const random = Math.random().toString(36).substring(2, 11);
+            const uid = `${defId}_${timestamp}_${random}`;
+            
             return {
-                uid: `test_${ownerId}_${startIndex + index}`,
+                uid,
                 defId: defId,
                 ownerId: ownerId,
                 baseInfluence: cardDef.influence,

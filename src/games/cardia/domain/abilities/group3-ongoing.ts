@@ -81,10 +81,11 @@ abilityExecutorRegistry.register(ABILITY_IDS.MAGISTRATE, (ctx: CardiaAbilityCont
 
 /**
  * 财务官（Treasurer）- 影响力 12
- * 效果：在下一个遭遇获胜的那张牌额外获得1枚印戒
+ * 效果：🔄 上个遭遇获胜的牌额外获得1枚印戒
  * 
- * 实现：放置持续标记，在下次遭遇结算时额外放置印戒
- * 持续时间：一次性（触发后自动移除）
+ * 实现：放置持续标记，在之后的每次遭遇结算时，获胜的牌额外获得1枚印戒
+ * 持续时间：永久（直到被虚空法师移除）
+ * 不区分玩家：任何玩家获胜都会触发
  */
 abilityExecutorRegistry.register(ABILITY_IDS.TREASURER, (ctx: CardiaAbilityContext) => {
     return {

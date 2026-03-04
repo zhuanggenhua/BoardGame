@@ -41,10 +41,11 @@ abilityExecutorRegistry.register(ABILITY_IDS.SWAMP_GUARD, (ctx: CardiaAbilityCon
     
     // 如果还没有选择目标卡牌，创建交互
     if (!ctx.selectedCardId) {
-        const interaction: any = {
+        const interaction: CardiaInteraction = {
             type: 'card_selection',
             interactionId: `${ctx.abilityId}_${ctx.timestamp}`,
             playerId: ctx.playerId,
+            abilityId: ctx.abilityId,  // ← 添加 abilityId 字段
             title: '选择要回收的卡牌',
             description: '选择一张你之前打出的牌回到手上，并弃掉其相对的牌',
             availableCards: eligibleCards.map(c => c.uid),
@@ -109,6 +110,14 @@ abilityExecutorRegistry.register(ABILITY_IDS.SWAMP_GUARD, (ctx: CardiaAbilityCon
  */
 abilityExecutorRegistry.register(ABILITY_IDS.VOID_MAGE, (ctx: CardiaAbilityContext) => {
     try {
+        console.log('[VoidMage] 能力执行器被调用:', {
+            playerId: ctx.playerId,
+            cardId: ctx.cardId,
+            selectedCardId: ctx.selectedCardId,
+            modifierTokens: ctx.core.modifierTokens,
+            ongoingAbilities: ctx.core.ongoingAbilities,
+        });
+        
         // 如果还没有选择目标卡牌，创建交互
         if (!ctx.selectedCardId) {
             // 查找所有有修正标记或持续标记的卡牌
@@ -124,8 +133,15 @@ abilityExecutorRegistry.register(ABILITY_IDS.VOID_MAGE, (ctx: CardiaAbilityConte
                 ...cardsWithOngoing,
             ]));
             
+            console.log('[VoidMage] 检测到的标记:', {
+                cardsWithModifiers: Array.from(cardsWithModifiers),
+                cardsWithOngoing: Array.from(cardsWithOngoing),
+                allCardsWithMarkers,
+            });
+            
             if (allCardsWithMarkers.length === 0) {
                 // 场上没有标记，发射提示事件
+                console.warn('[VoidMage] 场上没有标记，返回 NO_VALID_TARGET');
                 return {
                     events: [{
                         type: CARDIA_EVENTS.ABILITY_NO_VALID_TARGET,
@@ -141,16 +157,19 @@ abilityExecutorRegistry.register(ABILITY_IDS.VOID_MAGE, (ctx: CardiaAbilityConte
             }
             
             // 创建交互让玩家选择目标卡牌
-            const interaction: any = {
+            const interaction: CardiaInteraction = {
                 type: 'card_selection',
                 interactionId: `${ctx.abilityId}_${ctx.timestamp}`,
                 playerId: ctx.playerId,
+                abilityId: ctx.abilityId,  // ← 添加 abilityId 字段
                 title: '选择目标卡牌',
                 description: '从任一张牌上弃掉所有修正标记和持续标记',
                 availableCards: allCardsWithMarkers,
                 minSelect: 1,
                 maxSelect: 1,
             };
+            
+            console.log('[VoidMage] 创建交互:', interaction);
             
             return {
                 events: [],

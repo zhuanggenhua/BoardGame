@@ -32,6 +32,8 @@ export const CARDIA_EVENTS = {
     DECK_SHUFFLED: 'cardia:deck_shuffled',
     DELAYED_EFFECT_REGISTERED: 'cardia:delayed_effect_registered',
     DELAYED_EFFECT_TRIGGERED: 'cardia:delayed_effect_triggered',
+    INVENTOR_PENDING_SET: 'cardia:inventor_pending_set',
+    INVENTOR_PENDING_CLEARED: 'cardia:inventor_pending_cleared',
     TURN_ENDED: 'cardia:turn_ended',
     PHASE_CHANGED: 'cardia:phase_changed',
     GAME_WON: 'cardia:game_won',
@@ -327,6 +329,26 @@ export interface DelayedEffectTriggeredEvent extends GameEvent<typeof CARDIA_EVE
 }
 
 /**
+ * 发明家待续标记设置事件
+ */
+export interface InventorPendingSetEvent extends GameEvent<typeof CARDIA_EVENTS.INVENTOR_PENDING_SET> {
+    payload: {
+        playerId: PlayerId;
+        timestamp: number;
+        firstCardId: string;  // 第一次选择的卡牌 ID
+    };
+}
+
+/**
+ * 发明家待续标记清理事件
+ */
+export interface InventorPendingClearedEvent extends GameEvent<typeof CARDIA_EVENTS.INVENTOR_PENDING_CLEARED> {
+    payload: {
+        playerId: PlayerId;
+    };
+}
+
+/**
  * 游戏胜利事件
  */
 export interface GameWonEvent extends GameEvent<typeof CARDIA_EVENTS.GAME_WON> {
@@ -410,6 +432,8 @@ export type CardiaEvent =
     | DeckShuffledEvent
     | DelayedEffectRegisteredEvent
     | DelayedEffectTriggeredEvent
+    | InventorPendingSetEvent
+    | InventorPendingClearedEvent
     | TurnEndedEvent
     | PhaseChangedEvent
     | GameWonEvent;

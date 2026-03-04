@@ -43,8 +43,8 @@ describe('影响力修正集成测试', () => {
   });
 
   describe('修正标记放置和影响力计算', () => {
-    it('应该正确放置 +5 修正标记并更新影响力', () => {
-      // 构造场景：p1 失败，发动外科医生能力（+5 修正标记）
+    it('应该注册延迟效果，为下一张打出的牌添加 -5 影响力', () => {
+      // 构造场景：p1 失败，发动外科医生能力（注册延迟效果）
       const p1Card = createTestCard({
         uid: 'c1',
         owner: 'p1',
@@ -85,8 +85,7 @@ describe('影响力修正集成测试', () => {
         }
       };
 
-      // 执行外科医生能力（需要选择目标卡牌）
-      // 注意：这个测试简化了交互流程，实际游戏中需要通过交互系统选择目标
+      // 执行外科医生能力（注册延迟效果）
       const command: CardiaCommand = {
         type: CARDIA_COMMANDS.ACTIVATE_ABILITY,
         playerId: 'p1',
@@ -102,9 +101,8 @@ describe('影响力修正集成测试', () => {
       expect(events.length).toBeGreaterThanOrEqual(1);
       expect(events[0].type).toBe('cardia:ability_activated');
       
-      // 注意：由于外科医生需要交互选择目标卡牌，
-      // 在没有交互系统的情况下，执行器可能返回交互请求而不是直接产生修正标记事件
-      // 这个测试主要验证能力激活事件正确产生
+      // 外科医生现在注册延迟效果，不再需要交互选择目标卡牌
+      // 延迟效果会在下次打出牌时自动触发
     });
 
     it('应该正确放置 -3 修正标记并更新影响力', () => {
@@ -185,7 +183,7 @@ describe('影响力修正集成测试', () => {
             {
               id: 'm1',
               cardId: 'c1',
-              value: 5,
+              value: -5,
               sourceAbilityId: ABILITY_IDS.SURGEON,
               sourcePlayerId: 'p1',
             },
@@ -207,11 +205,11 @@ describe('影响力修正集成测试', () => {
         }
       };
 
-      // 计算最终影响力：5 (基础) + 5 (外科医生) + 1 (天才) - 3 (税务官) = 8
+      // 计算最终影响力：5 (基础) - 5 (外科医生) + 1 (天才) - 3 (税务官) = -2
       const modifiers = state.core.modifierTokens.filter(t => t.cardId === 'c1');
       const finalInfluence = modifiers.reduce((acc, m) => acc + m.value, p1Card.baseInfluence);
 
-      expect(finalInfluence).toBe(8);
+      expect(finalInfluence).toBe(-2);
     });
   });
 

@@ -131,35 +131,23 @@ describe('组 2：影响力修正能力', () => {
   });
 
   describe('外科医生（Surgeon）', () => {
-    it('应该为己方一张打出的牌添加 +5 修正标记', () => {
-      mockContext.selectedCardId = 'played1';
-
+    it('应该注册延迟效果，为下一张打出的牌添加 -5 影响力', () => {
+      // 设置正确的 abilityId
+      mockContext.abilityId = ABILITY_IDS.SURGEON;
+      
       const executor = abilityExecutorRegistry.resolve(ABILITY_IDS.SURGEON);
       expect(executor).toBeDefined();
 
       const result = executor!(mockContext);
 
       expect(result.events).toHaveLength(1);
-      expect(result.events[0].type).toBe(CARDIA_EVENTS.MODIFIER_TOKEN_PLACED);
-      expect(result.events[0].payload.cardId).toBe('played1');
-      expect(result.events[0].payload.value).toBe(5);
-    });
-
-    it('未选择卡牌时，应该创建卡牌选择交互', () => {
-      const executor = abilityExecutorRegistry.resolve(ABILITY_IDS.SURGEON);
-      const result = executor!(mockContext);
-
-      expect(result.interaction).toBeDefined();
-      expect(result.interaction?.type).toBe('card_selection');
-    });
-
-    it('当己方没有场上卡牌时，应该不产生事件', () => {
-      mockCore.players['player1'].playedCards = [];
-
-      const executor = abilityExecutorRegistry.resolve(ABILITY_IDS.SURGEON);
-      const result = executor!(mockContext);
-
-      expect(result.events).toHaveLength(0);
+      expect(result.events[0].type).toBe(CARDIA_EVENTS.DELAYED_EFFECT_REGISTERED);
+      expect(result.events[0].payload.effectType).toBe('modifyInfluence');
+      expect(result.events[0].payload.target).toBe('self');
+      expect(result.events[0].payload.value).toBe(-5);
+      expect(result.events[0].payload.condition).toBe('onNextCardPlayed');
+      expect(result.events[0].payload.sourceAbilityId).toBe(ABILITY_IDS.SURGEON);
+      expect(result.events[0].payload.sourcePlayerId).toBe('player1');
     });
   });
 

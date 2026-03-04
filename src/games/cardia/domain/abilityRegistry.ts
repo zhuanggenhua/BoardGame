@@ -229,7 +229,7 @@ abilityRegistry.register({
     ],
 });
 
-// 影响力 12：财务官 - 🔄 在一个上遭遇获胜的那张牌额外获得1枚印戒
+// 影响力 12：财务官 - 🔄 上个遭遇获胜的牌额外获得1枚印戒
 abilityRegistry.register({
     id: ABILITY_IDS.TREASURER,
     name: 'abilities.treasurer.name',
@@ -239,7 +239,7 @@ abilityRegistry.register({
     isOngoing: true,
     requiresMarker: true,
     effects: [
-        { type: 'extraSignet', condition: 'on_previous_winner' }
+        { type: 'extraSignet', condition: 'on_any_winner' }
     ],
 });
 

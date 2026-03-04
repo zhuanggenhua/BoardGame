@@ -6,6 +6,7 @@
 import type { CardiaCore, CardInstance, EncounterState, ModifierToken, OngoingAbility, DelayedEffect, PlayedCard } from './core-types';
 import type { CardiaEvent } from './events';
 import { CARDIA_EVENTS } from './events';
+import { ABILITY_IDS } from './ids';
 import { updatePlayer, getOpponentId } from './utils';
 
 /**
@@ -83,6 +84,12 @@ export function reduce(core: CardiaCore, event: CardiaEvent): CardiaCore {
         case CARDIA_EVENTS.DELAYED_EFFECT_TRIGGERED:
             return reduceDelayedEffectTriggered(core, event);
         
+        case CARDIA_EVENTS.INVENTOR_PENDING_SET:
+            return reduceInventorPendingSet(core, event);
+        
+        case CARDIA_EVENTS.INVENTOR_PENDING_CLEARED:
+            return reduceInventorPendingCleared(core, event);
+        
         case CARDIA_EVENTS.TURN_ENDED:
             return reduceTurnEnded(core, event);
         
@@ -120,12 +127,15 @@ function reduceCardPlayed(
         ...player.hand.slice(cardIndex + 1),
     ];
     
-    // 更新玩家状态（卡牌暗置，未翻开）
+    // 检查占卜师能力：如果当前玩家是 revealFirstNextEncounter 指定的玩家，则立即揭示
+    const shouldRevealImmediately = core.revealFirstNextEncounter === playerId;
+    
+    // 更新玩家状态
     return updatePlayer(core, playerId, {
         hand: newHand,
         currentCard: card,
         hasPlayed: true,
-        cardRevealed: false,  // 暗牌机制：初始未翻开
+        cardRevealed: shouldRevealImmediately,  // 占卜师能力：对手先揭示
     });
 }
 
@@ -282,13 +292,32 @@ function reduceCardRecycled(
         ...player.playedCards.slice(cardIndex + 1),
     ];
     
-    // 将卡牌添加到手牌
-    const newHand = [...player.hand, card];
+    // 清空卡牌上的所有标记信息（回到手牌时重置为初始状态）
+    const cleanedCard = {
+        ...card,
+        signets: 0,
+        ongoingMarkers: [],
+        encounterIndex: -1, // 重置遭遇序号
+    };
     
-    return updatePlayer(core, playerId, {
-        hand: newHand,
-        playedCards: newPlayedCards,
-    });
+    // 将清理后的卡牌添加到手牌
+    const newHand = [...player.hand, cleanedCard];
+    
+    // 同时需要清理该卡牌相关的修正标记
+    const newModifierTokens = core.modifierTokens.filter(token => token.cardId !== cardId);
+    
+    return {
+        ...core,
+        players: {
+            ...core.players,
+            [playerId]: {
+                ...player,
+                hand: newHand,
+                playedCards: newPlayedCards,
+            },
+        },
+        modifierTokens: newModifierTokens,
+    };
 }
 
 /**
@@ -313,7 +342,7 @@ function reduceOngoingAbilityPlaced(
     core: CardiaCore,
     event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ONGOING_ABILITY_PLACED }>
 ): CardiaCore {
-    const { abilityId, cardId, playerId, effectType, timestamp, encounterIndex } = event.payload;
+    const { abilityId, cardId, playerId, effectType, timestamp, encounterIndex, targetCardId, targetPlayerId } = event.payload;
     
     const newAbility: OngoingAbility = {
         abilityId,
@@ -322,6 +351,8 @@ function reduceOngoingAbilityPlaced(
         effectType,
         timestamp,
         encounterIndex,  // 添加 encounterIndex 字段
+        targetCardId,    // 添加 targetCardId 字段（财务官使用）
+        targetPlayerId,  // 添加 targetPlayerId 字段（财务官使用）
     };
     
     // 更新卡牌的 ongoingMarkers 字段
@@ -330,7 +361,7 @@ function reduceOngoingAbilityPlaced(
         if (card.uid === cardId) {
             return {
                 ...card,
-                ongoingMarkers: [...card.ongoingMarkers, abilityId],
+                ongoingMarkers: [...(card.ongoingMarkers || []), abilityId],
             };
         }
         return card;
@@ -358,8 +389,13 @@ function reduceOngoingAbilityRemoved(
 ): CardiaCore {
     const { abilityId, cardId, playerId } = event.payload;
     
+    // 查找被移除的持续能力（用于获取 targetCardId 和 targetPlayerId）
+    const removedAbility = core.ongoingAbilities.find(
+        ability => ability.abilityId === abilityId && ability.cardId === cardId
+    );
+    
     // 移除 core.ongoingAbilities 中的记录
-    const newCore = {
+    let newCore = {
         ...core,
         ongoingAbilities: core.ongoingAbilities.filter(
             ability => !(ability.abilityId === abilityId && ability.cardId === cardId)
@@ -372,15 +408,50 @@ function reduceOngoingAbilityRemoved(
         if (card.uid === cardId) {
             return {
                 ...card,
-                ongoingMarkers: card.ongoingMarkers.filter(id => id !== abilityId),
+                ongoingMarkers: (card.ongoingMarkers || []).filter(id => id !== abilityId),
             };
         }
         return card;
     });
     
-    return updatePlayer(newCore, playerId, {
+    newCore = updatePlayer(newCore, playerId, {
         playedCards: updatedPlayedCards,
     });
+    
+    // 特殊处理：财务官能力移除时，收回额外印戒
+    if (removedAbility && abilityId === ABILITY_IDS.TREASURER) {
+        const targetCardId = (removedAbility as any).targetCardId;
+        const targetPlayerId = (removedAbility as any).targetPlayerId;
+        
+        if (targetCardId && targetPlayerId) {
+            const targetPlayer = newCore.players[targetPlayerId];
+            const targetCardIndex = targetPlayer.playedCards.findIndex(c => c.uid === targetCardId);
+            
+            if (targetCardIndex !== -1) {
+                const targetCard = targetPlayer.playedCards[targetCardIndex];
+                
+                // 只有当卡牌还有印戒时才减少
+                if (targetCard.signets > 0) {
+                    const updatedTargetCard = {
+                        ...targetCard,
+                        signets: targetCard.signets - 1,
+                    };
+                    
+                    const newTargetPlayedCards = [
+                        ...targetPlayer.playedCards.slice(0, targetCardIndex),
+                        updatedTargetCard,
+                        ...targetPlayer.playedCards.slice(targetCardIndex + 1),
+                    ];
+                    
+                    newCore = updatePlayer(newCore, targetPlayerId, {
+                        playedCards: newTargetPlayedCards,
+                    });
+                }
+            }
+        }
+    }
+    
+    return newCore;
 }
 
 /**
@@ -391,6 +462,22 @@ function reduceModifierTokenPlaced(
     event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.MODIFIER_TOKEN_PLACED }>
 ): CardiaCore {
     const { cardId, value, source, timestamp } = event.payload;
+    
+    // 检查是否已存在相同的修正标记（去重）
+    const isDuplicate = core.modifierTokens.some(
+        token => 
+            token.cardId === cardId &&
+            token.value === value &&
+            token.source === source &&
+            token.timestamp === timestamp
+    );
+    
+    if (isDuplicate) {
+        console.warn('[Reducer] Duplicate modifier token detected, skipping:', {
+            cardId, value, source, timestamp
+        });
+        return core;  // 不修改状态
+    }
     
     const newToken: ModifierToken = {
         cardId,
@@ -435,22 +522,37 @@ function reduceCardInfluenceModified(
     
     // 更新遭遇历史中的影响力
     const encounterIndex = core.encounterHistory.findIndex(encounter => 
-        encounter.player1Card.uid === cardId || 
-        encounter.player2Card.uid === cardId
+        encounter.player1Card?.uid === cardId || 
+        encounter.player2Card?.uid === cardId
     );
     
     if (encounterIndex === -1) {
         // 卡牌不在任何遭遇中，无需更新
+        console.log('[reduceCardInfluenceModified] Card not in any encounter, skipping update:', {
+            cardId,
+            encounterHistoryLength: core.encounterHistory.length,
+        });
         return core;
     }
     
     const encounter = core.encounterHistory[encounterIndex];
+    
+    // 安全检查：确保遭遇中的卡牌存在
+    if (!encounter.player1Card || !encounter.player2Card) {
+        console.warn('[reduceCardInfluenceModified] Encounter has missing cards, skipping update:', {
+            encounterIndex,
+            hasPlayer1Card: !!encounter.player1Card,
+            hasPlayer2Card: !!encounter.player2Card,
+        });
+        return core;
+    }
+    
     const updatedEncounter: EncounterState = {
         ...encounter,
-        player1Influence: encounter.player1Card.uid === cardId 
+        player1Influence: encounter.player1Card?.uid === cardId 
             ? newInfluence 
             : encounter.player1Influence,
-        player2Influence: encounter.player2Card.uid === cardId 
+        player2Influence: encounter.player2Card?.uid === cardId 
             ? newInfluence 
             : encounter.player2Influence,
     };
@@ -483,13 +585,15 @@ function reduceEncounterResultChanged(
     }
     
     const encounter = core.encounterHistory[slotIndex];
+    const oldWinner = encounter.winnerId;
+    
     const updatedEncounter: EncounterState = {
         ...encounter,
         winnerId: newWinner === 'tie' ? undefined : newWinner,
         loserId: newWinner === 'tie' ? undefined : (
-            newWinner === encounter.player1Card.ownerId 
-                ? encounter.player2Card.ownerId 
-                : encounter.player1Card.ownerId
+            newWinner === encounter.player1Card?.ownerId 
+                ? encounter.player2Card?.ownerId 
+                : encounter.player1Card?.ownerId
         ),
     };
     
@@ -502,11 +606,57 @@ function reduceEncounterResultChanged(
     // 如果修改的是当前遭遇（最后一个），也更新 currentEncounter
     const isCurrentEncounter = slotIndex === core.encounterHistory.length - 1;
     
-    return {
+    let newCore = {
         ...core,
         encounterHistory: newHistory,
         currentEncounter: isCurrentEncounter ? updatedEncounter : core.currentEncounter,
     };
+    
+    // 处理印戒移动：从有获胜方变为平局时，移除获胜方卡牌上的印戒
+    if (oldWinner && oldWinner !== 'tie' && newWinner === 'tie') {
+        // 安全检查：确保遭遇中的卡牌存在
+        if (!encounter.player1Card || !encounter.player2Card) {
+            console.warn('[reduceEncounterResultChanged] Encounter has missing cards, skipping signet removal:', {
+                hasPlayer1Card: !!encounter.player1Card,
+                hasPlayer2Card: !!encounter.player2Card,
+            });
+            return newCore;
+        }
+        
+        // 找到旧获胜方的卡牌
+        const oldWinnerCard = oldWinner === encounter.player1Card.ownerId 
+            ? encounter.player1Card 
+            : encounter.player2Card;
+        
+        // 从对应玩家的 playedCards 中移除印戒
+        for (const playerId of core.playerOrder) {
+            const player = newCore.players[playerId];
+            const cardIndex = player.playedCards.findIndex(c => c.uid === oldWinnerCard.uid);
+            
+            if (cardIndex !== -1) {
+                const card = player.playedCards[cardIndex];
+                if (card.signets > 0) {
+                    const updatedCard = {
+                        ...card,
+                        signets: card.signets - 1,
+                    };
+                    
+                    const newPlayedCards = [
+                        ...player.playedCards.slice(0, cardIndex),
+                        updatedCard,
+                        ...player.playedCards.slice(cardIndex + 1),
+                    ];
+                    
+                    newCore = updatePlayer(newCore, playerId, {
+                        playedCards: newPlayedCards,
+                    });
+                }
+                break;
+            }
+        }
+    }
+    
+    return newCore;
 }
 
 /**
@@ -650,15 +800,319 @@ function reduceSignetGranted(
 }
 
 /**
- * 归约卡牌替换事件
+ * 归约卡牌替换事件（傀儡师能力）
  */
 function reduceCardReplaced(
     core: CardiaCore,
     event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_REPLACED }>
 ): CardiaCore {
-    // TODO: 实现卡牌替换逻辑（傀儡师能力）
-    // 这需要更复杂的状态管理，暂时返回原状态
-    return core;
+    console.log('[reduceCardReplaced] 开始处理卡牌替换事件:', event.payload);
+    
+    try {
+        const { oldCardId, newCardId, playerId, encounterIndex, suppressAbility } = event.payload;
+        const player = core.players[playerId];
+        
+        // 1. 找到要替换的旧卡牌
+        const oldCard = player.playedCards.find(c => c.uid === oldCardId);
+        if (!oldCard) {
+            console.warn('[reduceCardReplaced] 未找到要替换的卡牌:', oldCardId);
+            return core;
+        }
+        
+        // 2. 找到替换用的新卡牌（从手牌中）
+        const newCard = player.hand.find(c => c.uid === newCardId);
+        if (!newCard) {
+            console.warn('[reduceCardReplaced] 未找到替换用的卡牌:', newCardId);
+            return core;
+        }
+        
+        console.log('[reduceCardReplaced] 找到卡牌:', {
+            oldCard: { uid: oldCard.uid, defId: oldCard.defId, signets: oldCard.signets },
+            newCard: { uid: newCard.uid, defId: newCard.defId },
+        });
+    
+    // 3. 找到对应的遭遇记录，计算替换前后的遭遇结果
+    const encounterIdx = core.encounterHistory.findIndex(enc => 
+        (enc.player1Card?.uid === oldCardId || enc.player2Card?.uid === oldCardId)
+    );
+    
+    console.log('[reduceCardReplaced] 查找遭遇记录:', {
+        oldCardId,
+        encounterHistoryLength: core.encounterHistory.length,
+        encounterIdx,
+        foundEncounter: encounterIdx !== -1 ? {
+            player1CardUid: core.encounterHistory[encounterIdx].player1Card?.uid,
+            player2CardUid: core.encounterHistory[encounterIdx].player2Card?.uid,
+            winnerId: core.encounterHistory[encounterIdx].winnerId,
+        } : null,
+    });
+    
+    let oldWinnerId: string | undefined;
+    let newWinnerId: string | undefined;
+    let opponentCardId: string | undefined;
+    
+    if (encounterIdx !== -1) {
+        const encounter = core.encounterHistory[encounterIdx];
+        oldWinnerId = encounter.winnerId;
+        
+        // 计算新卡牌的影响力（基础影响力 + 修正标记）
+        const newCardModifiers = core.modifierTokens.filter(t => t.cardId === newCardId);
+        const newCardInfluence = newCardModifiers.reduce((acc, m) => acc + m.value, newCard.baseInfluence);
+        
+        // 确定是 player1 还是player2 被替换
+        const isPlayer1 = encounter.player1Card?.uid === oldCardId;
+        const opponentInfluence = isPlayer1 ? encounter.player2Influence : encounter.player1Influence;
+        opponentCardId = isPlayer1 ? encounter.player2Card?.uid : encounter.player1Card?.uid;
+        
+        // 计算新的获胜者
+        if (newCardInfluence > opponentInfluence) {
+            newWinnerId = playerId;
+        } else if (newCardInfluence < opponentInfluence) {
+            newWinnerId = isPlayer1 ? encounter.player2Card?.ownerId : encounter.player1Card?.ownerId;
+        } else {
+            newWinnerId = undefined; // 平局
+        }
+        
+        console.log('[reduceCardReplaced] 遭遇结果变化:', {
+            encounterIdx,
+            oldWinnerId,
+            newWinnerId,
+            newCardInfluence,
+            opponentInfluence,
+            isPlayer1,
+        });
+    }
+    
+    // 4. 将旧卡牌移到弃牌堆（移除印戒）
+    const oldCardWithoutSignets = { ...oldCard, signets: 0 };
+    const newDiscard = [...player.discard, oldCardWithoutSignets];
+    
+    // 5. 从手牌中移除新卡牌
+    const newHand = player.hand.filter(c => c.uid !== newCardId);
+    
+    // 6. 将新卡牌放到场上（保持相同的遭遇序号，初始印戒为 0）
+    const replacedCard = {
+        ...newCard,
+        encounterIndex,
+        signets: 0,  // 新卡牌初始印戒为 0
+        suppressAbility: suppressAbility || false,
+    };
+    
+    const newPlayedCards = player.playedCards.map(c => 
+        c.uid === oldCardId ? replacedCard : c
+    );
+    
+    console.log('[reduceCardReplaced] 替换完成:', {
+        handSize: newHand.length,
+        discardSize: newDiscard.length,
+        playedCardsCount: newPlayedCards.length,
+        oldCardSignets: oldCard.signets,
+        newCardSignets: replacedCard.signets,
+    });
+    
+    // 7. 更新遭遇历史中的卡牌引用和影响力
+    const newEncounterHistory = core.encounterHistory.map((encounter, index) => {
+        if (index !== encounterIdx) return encounter;
+        
+        const isPlayer1Match = encounter.player1Card?.uid === oldCardId;
+        const isPlayer2Match = encounter.player2Card?.uid === oldCardId;
+        
+        if (isPlayer1Match) {
+            // 计算新影响力
+            const newCardModifiers = core.modifierTokens.filter(t => t.cardId === newCardId);
+            const newInfluence = newCardModifiers.reduce((acc, m) => acc + m.value, newCard.baseInfluence);
+            
+            return {
+                ...encounter,
+                player1Card: replacedCard,
+                player1Influence: newInfluence,
+                winnerId: newWinnerId,
+                loserId: newWinnerId === undefined ? undefined : (
+                    newWinnerId === encounter.player1Card?.ownerId 
+                        ? encounter.player2Card?.ownerId 
+                        : encounter.player1Card?.ownerId
+                ),
+            };
+        } else if (isPlayer2Match) {
+            // 计算新影响力
+            const newCardModifiers = core.modifierTokens.filter(t => t.cardId === newCardId);
+            const newInfluence = newCardModifiers.reduce((acc, m) => acc + m.value, newCard.baseInfluence);
+            
+            return {
+                ...encounter,
+                player2Card: replacedCard,
+                player2Influence: newInfluence,
+                winnerId: newWinnerId,
+                loserId: newWinnerId === undefined ? undefined : (
+                    newWinnerId === encounter.player2Card?.ownerId 
+                        ? encounter.player1Card?.ownerId 
+                        : encounter.player2Card?.ownerId
+                ),
+            };
+        }
+        return encounter;
+    });
+    
+    // 8. 同时更新 currentEncounter 和 previousEncounter（如果包含旧卡牌）
+    let newCurrentEncounter = core.currentEncounter;
+    if (newCurrentEncounter && (newCurrentEncounter.player1Card?.uid === oldCardId || newCurrentEncounter.player2Card?.uid === oldCardId)) {
+        const isPlayer1 = newCurrentEncounter.player1Card?.uid === oldCardId;
+        const newCardModifiers = core.modifierTokens.filter(t => t.cardId === newCardId);
+        const newInfluence = newCardModifiers.reduce((acc, m) => acc + m.value, newCard.baseInfluence);
+        
+        newCurrentEncounter = {
+            ...newCurrentEncounter,
+            ...(isPlayer1 ? {
+                player1Card: replacedCard,
+                player1Influence: newInfluence,
+            } : {
+                player2Card: replacedCard,
+                player2Influence: newInfluence,
+            }),
+            winnerId: newWinnerId,
+            loserId: newWinnerId === undefined ? undefined : (
+                newWinnerId === (isPlayer1 ? newCurrentEncounter.player1Card?.ownerId : newCurrentEncounter.player2Card?.ownerId)
+                    ? (isPlayer1 ? newCurrentEncounter.player2Card?.ownerId : newCurrentEncounter.player1Card?.ownerId)
+                    : (isPlayer1 ? newCurrentEncounter.player1Card?.ownerId : newCurrentEncounter.player2Card?.ownerId)
+            ),
+        };
+    }
+    
+    let newPreviousEncounter = core.previousEncounter;
+    if (newPreviousEncounter && (newPreviousEncounter.player1Card?.uid === oldCardId || newPreviousEncounter.player2Card?.uid === oldCardId)) {
+        const isPlayer1 = newPreviousEncounter.player1Card?.uid === oldCardId;
+        const newCardModifiers = core.modifierTokens.filter(t => t.cardId === newCardId);
+        const newInfluence = newCardModifiers.reduce((acc, m) => acc + m.value, newCard.baseInfluence);
+        
+        newPreviousEncounter = {
+            ...newPreviousEncounter,
+            ...(isPlayer1 ? {
+                player1Card: replacedCard,
+                player1Influence: newInfluence,
+            } : {
+                player2Card: replacedCard,
+                player2Influence: newInfluence,
+            }),
+            winnerId: newWinnerId,
+            loserId: newWinnerId === undefined ? undefined : (
+                newWinnerId === (isPlayer1 ? newPreviousEncounter.player1Card?.ownerId : newPreviousEncounter.player2Card?.ownerId)
+                    ? (isPlayer1 ? newPreviousEncounter.player2Card?.ownerId : newPreviousEncounter.player1Card?.ownerId)
+                    : (isPlayer1 ? newPreviousEncounter.player1Card?.ownerId : newPreviousEncounter.player2Card?.ownerId)
+            ),
+        };
+    }
+    
+    let newCore = {
+        ...core,
+        players: {
+            ...core.players,
+            [playerId]: {
+                ...player,
+                hand: newHand,
+                playedCards: newPlayedCards,
+                discard: newDiscard,
+            },
+        },
+        encounterHistory: newEncounterHistory,
+        currentEncounter: newCurrentEncounter,
+        previousEncounter: newPreviousEncounter,
+    };
+    
+    // 9. 处理印戒转移：如果遭遇结果发生变化（获胜者改变）
+    console.log('[reduceCardReplaced] 检查印戒转移条件:', {
+        hasOldWinnerId: !!oldWinnerId,
+        hasNewWinnerId: !!newWinnerId,
+        oldWinnerId,
+        newWinnerId,
+        winnersAreDifferent: oldWinnerId !== newWinnerId,
+        oldCardSignets: oldCard.signets,
+    });
+    
+    if (oldWinnerId && newWinnerId && oldWinnerId !== newWinnerId) {
+        console.log('[reduceCardReplaced] 检测到遭遇结果变化，转移印戒:', {
+            oldWinnerId,
+            newWinnerId,
+            oldCardSignets: oldCard.signets,
+        });
+        
+        // 印戒从旧获胜者的卡牌转移到新获胜者的卡牌
+        // 旧获胜者的卡牌已经在弃牌堆（印戒已清零）
+        // 需要给新获胜者的卡牌添加印戒
+        
+        // 找到新获胜者的卡牌
+        let newWinnerCardId: string | undefined;
+        
+        // 确定傀儡师的主人（触发能力的玩家）
+        const puppeteerOwnerId = getOpponentId(newCore, playerId);  // playerId 是被替换卡牌的拥有者，所以对手是傀儡师的主人
+        
+        if (newWinnerId === puppeteerOwnerId) {
+            // 新获胜者是傀儡师的主人
+            // 找到傀儡师的卡牌 ID（在相同遭遇序号的卡牌）
+            const puppeteerCard = newCore.players[puppeteerOwnerId].playedCards.find(
+                c => c.encounterIndex === encounterIndex
+            );
+            newWinnerCardId = puppeteerCard?.uid;
+            console.log('[reduceCardReplaced] 新获胜者是傀儡师的主人:', {
+                puppeteerOwnerId,
+                puppeteerCardId: newWinnerCardId,
+            });
+        } else {
+            // 新获胜者是对手（被替换卡牌的主人）
+            // 找到对手在相同遭遇序号的卡牌（替换后的新卡牌）
+            newWinnerCardId = replacedCard.uid;
+            console.log('[reduceCardReplaced] 新获胜者是对手（替换后的卡牌）:', {
+                replacedCardId: newWinnerCardId,
+            });
+        }
+        
+        if (newWinnerCardId) {
+            // 找到新获胜者的卡牌并添加印戒
+            for (const pid of core.playerOrder) {
+                const p = newCore.players[pid];
+                const cardIndex = p.playedCards.findIndex(c => c.uid === newWinnerCardId);
+                
+                if (cardIndex !== -1) {
+                    const card = p.playedCards[cardIndex];
+                    const updatedCard = {
+                        ...card,
+                        signets: card.signets + oldCard.signets,  // 添加旧卡牌的印戒数量
+                    };
+                    
+                    const updatedPlayedCards = [
+                        ...p.playedCards.slice(0, cardIndex),
+                        updatedCard,
+                        ...p.playedCards.slice(cardIndex + 1),
+                    ];
+                    
+                    newCore = updatePlayer(newCore, pid, {
+                        playedCards: updatedPlayedCards,
+                    });
+                    
+                    console.log('[reduceCardReplaced] 印戒转移完成:', {
+                        toCardId: newWinnerCardId,
+                        toPlayerId: pid,
+                        signetsAdded: oldCard.signets,
+                        newSignets: updatedCard.signets,
+                    });
+                    break;
+                }
+            }
+        } else {
+            console.warn('[reduceCardReplaced] 未找到新获胜者的卡牌');
+        }
+    }
+    
+    return newCore;
+    } catch (error) {
+        console.error('[reduceCardReplaced] 发生错误:', error);
+        console.error('[reduceCardReplaced] 错误堆栈:', error instanceof Error ? error.stack : 'No stack');
+        console.error('[reduceCardReplaced] 事件:', event);
+        console.error('[reduceCardReplaced] Core状态:', {
+            playerOrder: core.playerOrder,
+            players: Object.keys(core.players),
+        });
+        throw error; // 重新抛出错误以便上层捕获
+    }
 }
 
 /**
@@ -748,14 +1202,70 @@ function reduceDelayedEffectTriggered(
     core: CardiaCore,
     event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.DELAYED_EFFECT_TRIGGERED }>
 ): CardiaCore {
-    const { effectType, targetCardId } = event.payload;
+    const { effectType, sourceAbilityId, sourcePlayerId } = event.payload;
     
-    // 移除已触发的延迟效果
+    console.log('[Cardia] reduceDelayedEffectTriggered:', {
+        effectType,
+        sourceAbilityId,
+        sourcePlayerId,
+        beforeCount: core.delayedEffects.length,
+    });
+    
+    // 移除已触发的延迟效果（匹配 effectType, sourceAbilityId, sourcePlayerId）
+    const newDelayedEffects = core.delayedEffects.filter(
+        effect => !(
+            effect.effectType === effectType &&
+            effect.sourceAbilityId === sourceAbilityId &&
+            effect.sourcePlayerId === sourcePlayerId
+        )
+    );
+    
+    console.log('[Cardia] reduceDelayedEffectTriggered: after filter', {
+        afterCount: newDelayedEffects.length,
+        removed: core.delayedEffects.length - newDelayedEffects.length,
+    });
+    
     return {
         ...core,
-        delayedEffects: core.delayedEffects.filter(
-            effect => !(effect.effectType === effectType)
-        ),
+        delayedEffects: newDelayedEffects,
+    };
+}
+
+/**
+ * 归约发明家待续标记设置事件
+ */
+function reduceInventorPendingSet(
+    core: CardiaCore,
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.INVENTOR_PENDING_SET }>
+): CardiaCore {
+    const { playerId, timestamp, firstCardId } = event.payload;
+    
+    console.log('[reduceInventorPendingSet] Setting inventorPending:', {
+        playerId,
+        timestamp,
+        firstCardId,
+    });
+    
+    return {
+        ...core,
+        inventorPending: {
+            playerId,
+            timestamp,
+            firstCardId,
+        },
+    };
+}
+
+/**
+ * 归约发明家待续标记清理事件
+ */
+function reduceInventorPendingCleared(
+    core: CardiaCore,
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.INVENTOR_PENDING_CLEARED }>
+): CardiaCore {
+    return {
+        ...core,
+        inventorPending: undefined,
     };
 }
 
@@ -875,8 +1385,14 @@ function reduceTurnEnded(
         ...core,
         turnNumber: core.turnNumber + 1,
         currentPlayerId: opponentId,
-        currentEncounter: undefined,
+        // P0-001 修复：currentEncounter 应该保持当前遭遇，而不是设为 undefined
+        // currentEncounter 在下一次 ENCOUNTER_RESOLVED 时会被更新
         previousEncounter: core.currentEncounter,
+        // P0-002 修复：回合结束时清理发明家待续标记
+        inventorPending: undefined,
+        // P0-003 修复：回合结束时清理占卜师能力标记
+        revealFirstNextEncounter: null,
+        forcedPlayOrderNextEncounter: null,
     };
     
     // 重置 player1 的回合状态
@@ -938,6 +1454,7 @@ function reduceRevealOrderChanged(
     return {
         ...core,
         revealFirstNextEncounter: event.payload.revealFirstPlayerId,
+        forcedPlayOrderNextEncounter: event.payload.forcedPlayOrderPlayerId || null,
     };
 }
 

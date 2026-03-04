@@ -51,6 +51,7 @@ export function createCardInstanceFromDef(
         modifiers: createModifierStack(),
         tags: createTagContainer(),
         signets: 0,
+        ongoingMarkers: [],  // 初始化为空数组
         imagePath: def.imagePath,
     };
 }

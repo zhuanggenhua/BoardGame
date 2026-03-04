@@ -13,9 +13,11 @@ export interface CardSelectionInteraction {
     title: string;
     description: string;
     availableCards: string[];  // 可选卡牌 UID 列表
+    disabledCards?: string[];  // 禁用的卡牌 UID 列表（显示但不可选）
     minSelect: number;
     maxSelect: number;
     filter?: CardFilter;
+    cardId?: string;  // ✅ 添加：触发能力的卡牌 ID（用于交互处理器）
 }
 
 /**
@@ -74,7 +76,8 @@ export function createCardSelectionInteraction(
     description: string,
     minSelect: number,
     maxSelect: number,
-    filter?: CardFilter
+    filter?: CardFilter,
+    cardId?: string  // ✅ 添加：触发能力的卡牌 ID
 ): CardSelectionInteraction {
     return {
         type: 'card_selection',
@@ -87,6 +90,7 @@ export function createCardSelectionInteraction(
         minSelect,
         maxSelect,
         filter,
+        cardId,  // ✅ 添加：保存 cardId
     };
 }
 

@@ -1,6 +1,6 @@
 import { createAbilityExecutorRegistry } from '../../../engine/primitives/ability';
 import type { AbilityContext, AbilityResult } from '../../../engine/primitives/ability';
-import type { GameEvent } from '../../../engine/types';
+import type { GameEvent, RandomFn } from '../../../engine/types';
 import type { PlayerId } from '../../../engine/types';
 import type { CardiaCore, FactionType } from './core-types';
 
@@ -14,7 +14,7 @@ export interface CardiaAbilityContext extends AbilityContext {
     playerId: PlayerId;
     opponentId: PlayerId;
     timestamp: number;
-    random: () => number;  // 随机数生成器（0-1）
+    random: RandomFn;  // 随机数生成器对象（包含 random()、d()、range()、shuffle() 方法）
     // 交互结果（如果有）
     selectedCardId?: string;
     selectedFaction?: FactionType;

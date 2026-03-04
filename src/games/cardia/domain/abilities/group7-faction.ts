@@ -58,8 +58,19 @@ abilityExecutorRegistry.register(ABILITY_IDS.WITCH_KING, (ctx: CardiaAbilityCont
 export function registerFactionInteractionHandlers(): void {
     // 伏击者：选择派系后，对手弃掉所有该派系的手牌
     registerInteractionHandler(ABILITY_IDS.AMBUSHER, (state, playerId, value, _interactionData, _random, timestamp) => {
+        console.info('[AMBUSHER] Handler called', {
+            playerId,
+            value,
+            valueType: typeof value,
+            valueKeys: value && typeof value === 'object' ? Object.keys(value) : undefined,
+        });
+        
         const selectedFaction = (value as { faction?: string })?.faction;
+        
+        console.info('[AMBUSHER] Selected faction', { selectedFaction });
+        
         if (!selectedFaction) {
+            console.error('[AMBUSHER] No faction selected!');
             return undefined;
         }
         
@@ -69,7 +80,15 @@ export function registerFactionInteractionHandlers(): void {
         // 查找对手该派系的所有手牌
         const factionCards = opponentPlayer.hand.filter(card => card.faction === selectedFaction);
         
+        console.info('[AMBUSHER] Faction cards found', {
+            opponentId,
+            faction: selectedFaction,
+            count: factionCards.length,
+            cards: factionCards.map(c => ({ uid: c.uid, defId: c.defId, faction: c.faction })),
+        });
+        
         if (factionCards.length === 0) {
+            console.info('[AMBUSHER] No cards to discard');
             return { state, events: [] };
         }
         
@@ -86,6 +105,8 @@ export function registerFactionInteractionHandlers(): void {
                 timestamp,
             }
         ];
+        
+        console.info('[AMBUSHER] Returning events', { events });
         
         return { state, events };
     });
