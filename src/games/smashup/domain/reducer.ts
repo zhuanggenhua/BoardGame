@@ -151,8 +151,8 @@ function executeCommand(
                         const info = canPlayFromDiscard(core, command.playerId, card.uid, baseIndex);
                         return info ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit } : {};
                     })() : {}),
-                    // beforeScoring 响应窗口中打出 beforeScoringPlayable 随从不消耗正常额度
-                    ...(state.sys.responseWindow?.current?.windowType === 'beforeScoring' && minionDef?.beforeScoringPlayable
+                    // meFirst 响应窗口中打出 beforeScoringPlayable 随从不消耗正常额度
+                    ...(state.sys.responseWindow?.current?.windowType === 'meFirst' && minionDef?.beforeScoringPlayable
                         ? { consumesNormalLimit: false }
                         : {}),
                 },
@@ -161,8 +161,8 @@ function executeCommand(
             };
             events.push(playedEvt);
 
-            // beforeScoring 响应窗口中打出 beforeScoringPlayable 随从时，记录 specialLimitGroup 使用
-            if (state.sys.responseWindow?.current?.windowType === 'beforeScoring' && minionDef?.beforeScoringPlayable) {
+            // meFirst 响应窗口中打出 beforeScoringPlayable 随从时，记录 specialLimitGroup 使用
+            if (state.sys.responseWindow?.current?.windowType === 'meFirst' && minionDef?.beforeScoringPlayable) {
                 const limitGroup = minionDef.specialLimitGroup;
                 if (limitGroup) {
                     events.push({

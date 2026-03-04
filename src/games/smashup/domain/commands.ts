@@ -34,9 +34,9 @@ export function validate(
 
     switch (command.type) {
         case SU_COMMANDS.PLAY_MINION: {
-            // beforeScoring 响应窗口期间：允许从手牌打出 beforeScoringPlayable 随从到即将计分的基地
+            // meFirst 响应窗口期间：允许从手牌打出 beforeScoringPlayable 随从到即将计分的基地
             const minionResponseWindow = state.sys.responseWindow?.current;
-            if (minionResponseWindow && minionResponseWindow.windowType === 'beforeScoring') {
+            if (minionResponseWindow && minionResponseWindow.windowType === 'meFirst') {
                 const responderQueue = minionResponseWindow.responderQueue;
                 const currentResponderId = responderQueue[minionResponseWindow.currentResponderIndex];
                 if (command.playerId !== currentResponderId) {
@@ -171,14 +171,15 @@ export function validate(
             
             // 响应窗口期间：允许当前响应者打出特殊行动卡
             const responseWindow = state.sys.responseWindow?.current;
-            if (responseWindow && (responseWindow.windowType === 'beforeScoring' || responseWindow.windowType === 'afterScoring')) {
+            if (responseWindow && (responseWindow.windowType === 'meFirst' || responseWindow.windowType === 'afterScoring')) {
                 const responderQueue = responseWindow.responderQueue;
                 const currentResponderId = responderQueue[responseWindow.currentResponderIndex];
                 
-                console.log('[DEBUG] PLAY_ACTION validation: in Me First! window', {
+                console.log('[DEBUG] PLAY_ACTION validation: in response window', {
                     currentResponderId,
                     commandPlayerId: command.playerId,
                     isCurrentResponder: command.playerId === currentResponderId,
+                    windowType: responseWindow.windowType,
                 });
                 
                 if (command.playerId !== currentResponderId) {
@@ -213,8 +214,8 @@ export function validate(
                 
                 // 检查 specialTiming 是否匹配窗口类型
                 const cardTiming = rDef.specialTiming ?? 'beforeScoring'; // 默认为 beforeScoring
-                if (responseWindow.windowType === 'beforeScoring' && cardTiming !== 'beforeScoring') {
-                    console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - wrong timing for beforeScoring window', {
+                if (responseWindow.windowType === 'meFirst' && cardTiming !== 'beforeScoring') {
+                    console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - wrong timing for meFirst window', {
                         cardTiming,
                         windowType: responseWindow.windowType,
                     });

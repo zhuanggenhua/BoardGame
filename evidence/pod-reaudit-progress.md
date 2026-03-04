@@ -672,3 +672,91 @@ DiceThrone domain 层的所有非 POD 相关代码都已完全恢复，且代码
 
 DiceThrone 英雄和 hooks 文件恢复情况良好，只有 2 个文件需要详细检查。
 
+
+
+---
+
+## SmashUp 游戏层批量审计
+
+### 审计结果
+
+- **总文件数**: 99
+- **已恢复**: 87（87.9%）
+- **需要检查**: 9（9.1%）
+
+### 需要检查的文件
+
+| 文件 | POD 之前 | 当前 | 变化 | 说明 |
+|------|----------|------|------|------|
+| __tests__/factionAbilities.test.ts | 1076 | 804 | -272 | 测试文件，可能是测试重构 |
+| __tests__/newOngoingAbilities.test.ts | 2228 | 1976 | -252 | 测试文件，可能是测试重构 |
+| __tests__/specialInteractionChain.test.ts | 1069 | 971 | -98 | 测试文件，可能是测试重构 |
+| abilities/zombies.ts | 618 | 591 | -27 | 业务逻辑文件，需要详细检查 |
+| __tests__/zombieInteractionChain.test.ts | 923 | 900 | -23 | 测试文件 |
+| __tests__/baseAbilitiesPrompt.test.ts | 538 | 516 | -22 | 测试文件 |
+| __tests__/newBaseAbilities.test.ts | 892 | 874 | -18 | 测试文件 |
+| __tests__/baseAbilityIntegrationE2E.test.ts | 553 | 544 | -9 | 测试文件 |
+| __tests__/sleep-spores-e2e.test.ts | 185 | 177 | -8 | 测试文件 |
+
+### 关键发现
+
+1. **87.9% 的文件已恢复**：SmashUp 的大部分文件都已恢复
+2. **8 个测试文件需要检查**：可能是测试重构导致的行数减少
+3. **1 个业务逻辑文件需要检查**：`abilities/zombies.ts` 需要详细检查
+
+---
+
+## SummonerWars 游戏层批量审计
+
+### 审计结果
+
+- **总文件数**: 18
+- **已恢复**: 18（100%）
+- **需要检查**: 0
+
+### 关键发现
+
+✅ **SummonerWars 的所有文件都已恢复**
+
+---
+
+## 审计进度更新
+
+### 已审计文件统计
+
+| 类别 | 文件数 | 已恢复 | 需要检查 | 恢复率 |
+|------|--------|--------|----------|--------|
+| 引擎层 | 6 | 6 | 0 | 100% |
+| 框架层 | 2 | 2 | 0 | 100% |
+| DiceThrone domain | 13 | 11 | 2 | 84.6% |
+| DiceThrone UI | 18 | 14 | 4 | 77.8% |
+| DiceThrone heroes & hooks | 17 | 15 | 2 | 88.2% |
+| SmashUp | 99 | 87 | 9 | 87.9% |
+| SummonerWars | 18 | 18 | 0 | 100% |
+| **总计** | **173** | **153** | **17** | **88.4%** |
+
+### 需要检查的文件汇总
+
+**DiceThrone（8 个文件）**：
+1. `domain/characters.ts`（-27 行）- POD 派系删除
+2. `domain/index.ts`（-35 行）- POD 派系删除
+3. `ui/AbilityOverlays.tsx`（-37 行）
+4. `ui/CenterBoard.tsx`（-5 行）
+5. `ui/CharacterSelectionAdapter.tsx`（-1 行）
+6. `ui/GameHints.tsx`（-30 行）
+7. `heroes/shadow_thief/abilities.ts`（-1 行）
+8. `hooks/useAnimationEffects.ts`（-47 行）
+
+**SmashUp（9 个文件）**：
+1. `abilities/zombies.ts`（-27 行）- 业务逻辑
+2. `__tests__/factionAbilities.test.ts`（-272 行）- 测试
+3. `__tests__/newOngoingAbilities.test.ts`（-252 行）- 测试
+4. `__tests__/specialInteractionChain.test.ts`（-98 行）- 测试
+5. `__tests__/zombieInteractionChain.test.ts`（-23 行）- 测试
+6. `__tests__/baseAbilitiesPrompt.test.ts`（-22 行）- 测试
+7. `__tests__/newBaseAbilities.test.ts`（-18 行）- 测试
+8. `__tests__/baseAbilityIntegrationE2E.test.ts`（-9 行）- 测试
+9. `__tests__/sleep-spores-e2e.test.ts`（-8 行）- 测试
+
+**总计**：17 个文件需要详细检查（其中 2 个是 POD 派系删除，8 个是测试文件）
+

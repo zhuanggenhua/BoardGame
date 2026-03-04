@@ -116,8 +116,70 @@ const meFirstDisabledUids = useMemo<Set<string> | undefined>(() => {
 ## 相关文件
 
 - `src/games/smashup/Board.tsx`：修复卡牌禁用逻辑
+- `src/games/smashup/domain/commands.ts`：修复 PLAY_ACTION 和 PLAY_MINION 验证逻辑（`beforeScoring` → `meFirst`）
+- `src/games/smashup/domain/reducer.ts`：修复 PLAY_MINION 事件处理逻辑（`beforeScoring` → `meFirst`）
 - `src/games/smashup/ui/HandArea.tsx`：接收 `disabledCardUids` prop 并应用置灰效果
 - `src/games/smashup/ui/MeFirstOverlay.tsx`：参考实现（窗口内卡牌过滤逻辑）
+
+## 额外修复：全面统一窗口类型命名
+
+在测试过程中发现，响应窗口期间打出 special 卡牌时验证失败，错误信息为"只能在出牌阶段打出行动卡"。
+
+**根本原因**：代码中存在多处使用 `'beforeScoring'` 作为窗口类型的地方，但我们已经将窗口类型重命名为 `'meFirst'`，导致验证逻辑没有进入响应窗口分支。
+
+**全面重构**：一次性修复所有使用 `windowType === 'beforeScoring'` 的地方，统一改为 `windowType === 'meFirst'`：
+
+1. **`commands.ts` - PLAY_ACTION 验证**（第 173 行）：
+   ```typescript
+   // 修改前
+   if (responseWindow && (responseWindow.windowType === 'beforeScoring' || responseWindow.windowType === 'afterScoring')) {
+       // ...
+       if (responseWindow.windowType === 'beforeScoring' && cardTiming !== 'beforeScoring') {
+           return { valid: false, error: '该卡牌只能在计分后打出' };
+       }
+   }
+   
+   // 修改后
+   if (responseWindow && (responseWindow.windowType === 'meFirst' || responseWindow.windowType === 'afterScoring')) {
+       // ...
+       if (responseWindow.windowType === 'meFirst' && cardTiming !== 'beforeScoring') {
+           return { valid: false, error: '该卡牌只能在计分后打出' };
+       }
+   }
+   ```
+
+2. **`commands.ts` - PLAY_MINION 验证**（第 39 行）：
+   ```typescript
+   // 修改前
+   if (minionResponseWindow && minionResponseWindow.windowType === 'beforeScoring') {
+   
+   // 修改后
+   if (minionResponseWindow && minionResponseWindow.windowType === 'meFirst') {
+   ```
+
+3. **`reducer.ts` - PLAY_MINION 事件处理**（第 155 和 165 行）：
+   ```typescript
+   // 修改前
+   ...(state.sys.responseWindow?.current?.windowType === 'beforeScoring' && minionDef?.beforeScoringPlayable
+       ? { consumesNormalLimit: false }
+       : {}),
+   
+   if (state.sys.responseWindow?.current?.windowType === 'beforeScoring' && minionDef?.beforeScoringPlayable) {
+   
+   // 修改后
+   ...(state.sys.responseWindow?.current?.windowType === 'meFirst' && minionDef?.beforeScoringPlayable
+       ? { consumesNormalLimit: false }
+       : {}),
+   
+   if (state.sys.responseWindow?.current?.windowType === 'meFirst' && minionDef?.beforeScoringPlayable) {
+   ```
+
+**重要说明**：
+- `'beforeScoring'` 作为 `SpecialTiming` 类型值（卡牌的 `specialTiming` 属性）保持不变
+- `'beforeScoring'` 作为触发时机（`BaseTriggerTiming`）保持不变
+- 只有作为**窗口类型**（`ResponseWindow.windowType`）时才改为 `'meFirst'`
+
+这确保了整个代码库中窗口类型命名的一致性。
 
 ## 测试验证
 
