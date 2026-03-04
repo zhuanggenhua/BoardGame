@@ -8,10 +8,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Paperclip } from 'lucide-react';
 import type { SmashUpCore, BaseInPlay, MinionOnBase } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
-import { getTotalEffectivePowerOnBase, getEffectivePower, getEffectivePowerBreakdown, getEffectiveBreakpoint, getOngoingCardPowerContribution } from '../domain/ongoingModifiers';
+import { getTotalEffectivePowerOnBase, getEffectivePower, getEffectivePowerBreakdown, getEffectiveBreakpoint, getOngoingCardPowerContribution, getBasePowerModifiers } from '../domain/ongoingModifiers';
 import { getBaseDef, getMinionDef, getCardDef, resolveCardName, resolveCardText } from '../data/cards';
 import { isSpecialLimitBlocked } from '../domain/abilityHelpers';
 import { getScoringEligibleBaseIndices } from '../domain/ongoingModifiers';
+import { getBaseRestrictions } from '../domain/ongoingEffects';
+import { getFactionMeta } from './factionMeta';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PLAYER_CONFIG } from './playerConfig';
 import { UI_Z_INDEX } from '../../../core';
@@ -61,6 +63,9 @@ export const BaseZone: React.FC<{
     const ratio = totalPower / breakpoint;
     const isNearBreak = ratio >= 0.8 && ratio < 1;
     const isAtBreak = ratio >= 1;
+
+    // 获取基地限制信息
+    const restrictions = getBaseRestrictions(core, baseIndex);
 
     // 分组
     const minionsByController: Record<string, MinionOnBase[]> = {};
@@ -118,17 +123,12 @@ export const BaseZone: React.FC<{
                             >
                                 <div className="w-full h-full overflow-hidden rounded-[0.1vw]">
                                     <CardPreview
-                                        previewRef={actionDef?.previewRef}
-                                        className="w-full h-full object-cover"
+                                        previewRef={actionDef?.previewRef
+                                            ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: oa.defId } }
+                                            : undefined}
+                                        className="w-full h-full"
                                         title={actionTitle}
                                     />
-                                    {!actionDef?.previewRef && (
-                                        <div className="absolute inset-0 flex items-center justify-center p-[0.15vw] bg-gradient-to-br from-purple-100 to-purple-50">
-                                            <span className="text-[0.5vw] font-bold text-center text-slate-700 leading-tight line-clamp-2">
-                                                {actionName}
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
                                 {/* 天赋可用发光叠层 */}
                                 {canUseOngoingTalent && (
@@ -189,36 +189,10 @@ export const BaseZone: React.FC<{
                         transition={{ duration: 0.4, ease: 'easeInOut' }}
                     >
                     <CardPreview
-                        previewRef={baseDef?.previewRef}
-                        className="w-full h-full object-cover"
+                        previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: base.defId } }}
+                        className="w-full h-full"
                         title={baseName}
                     />
-
-                    {/* Fallback Text (no card art) */}
-                    {!baseDef?.previewRef && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-between p-[0.6vw] bg-gradient-to-br from-slate-100 via-slate-50 to-amber-50">
-                            {/* 基地名称 */}
-                            <h3 className="font-black text-[1vw] text-slate-800 uppercase tracking-tight leading-tight text-center border-b border-slate-300 pb-[0.2vw] w-full">
-                                {baseName}
-                            </h3>
-                            {/* 能力文本 */}
-                            <div className="flex-1 flex items-center px-[0.2vw]">
-                                <p className="text-[0.55vw] text-slate-600 leading-snug text-center">
-                                    {baseText}
-                                </p>
-                            </div>
-                            {/* VP 奖励 */}
-                            {baseDef?.vpAwards && (
-                                <div className="flex items-center gap-[0.3vw] border-t border-slate-300 pt-[0.2vw] w-full justify-center">
-                                    {baseDef.vpAwards.map((vp, i) => (
-                                        <span key={i} className={`font-black text-[0.7vw] ${i === 0 ? 'text-amber-600' : i === 1 ? 'text-slate-500' : 'text-amber-800/50'}`}>
-                                            {vp}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
                     </motion.div>
                 </AnimatePresence>
 
@@ -275,6 +249,37 @@ export const BaseZone: React.FC<{
                         </div>
                     </motion.div>
                 </div>
+
+                {/* 基地限制标识（右侧，从下往上排列） */}
+                {restrictions.length > 0 && (
+                    <div className="absolute bottom-[0.5vw] -right-[3vw] flex flex-col-reverse gap-[0.4vw] z-30">
+                        {restrictions.map((restriction, idx) => {
+                            if (restriction.type === 'blocked_faction') {
+                                const factionMeta = getFactionMeta(restriction.displayText);
+                                if (!factionMeta) return null;
+                                const FactionIcon = factionMeta.icon;
+                                return (
+                                    <motion.div
+                                        key={`${restriction.sourceDefId}-${idx}`}
+                                        className="relative w-[2.8vw] h-[2.8vw] rounded-full bg-red-600/95 backdrop-blur-sm flex items-center justify-center shadow-lg border-[0.2vw] border-red-400"
+                                        initial={{ scale: 0, rotate: -180, x: 20 }}
+                                        animate={{ scale: 1, rotate: 0, x: 0 }}
+                                        transition={{ type: 'spring', stiffness: 300, damping: 15, delay: idx * 0.1 }}
+                                        title={`${factionMeta.nameKey} 派系随从不能打出到此基地`}
+                                    >
+                                        {/* 派系图标 */}
+                                        <FactionIcon className="w-[1.5vw] h-[1.5vw] text-white" strokeWidth={2.5} />
+                                        {/* 斜杠 */}
+                                        <svg className="absolute inset-0 w-full h-full text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                    </motion.div>
+                                );
+                            }
+                            return null;
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* --- PLAYER COLUMNS CONTAINER --- */}
@@ -282,10 +287,11 @@ export const BaseZone: React.FC<{
                 {turnOrder.map(pid => {
                     const minions = minionsByController[pid] || [];
 
-                    // Calc Power（使用 getEffectivePower 包含 ongoing 修正和临时修正 + ongoing 卡力量贡献）
+                    // Calc Power（使用 getEffectivePower 包含 ongoing 修正和临时修正 + ongoing 卡力量贡献 + 基地级力量修正）
                     const minionTotal = minions.reduce((sum, m) => sum + getEffectivePower(core, m, baseIndex), 0);
                     const ongoingBonus = getOngoingCardPowerContribution(base, pid);
-                    const total = minionTotal + ongoingBonus;
+                    const basePowerBonus = getBasePowerModifiers(core, baseIndex, pid);
+                    const total = minionTotal + ongoingBonus + basePowerBonus;
                     const basePowerTotal = minions.reduce((sum, m) => sum + m.basePower, 0);
                     const modifierDelta = total - basePowerTotal;
 
@@ -495,16 +501,12 @@ const MinionCard: React.FC<{
         >
             <div className="w-full h-full bg-slate-100 relative overflow-hidden">
                 <CardPreview
-                    previewRef={def?.previewRef}
-                    className="w-full h-full object-cover"
+                    previewRef={def?.previewRef
+                        ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: minion.defId } }
+                        : undefined}
+                    className="w-full h-full"
                     title={minionTitle}
                 />
-
-                {!def?.previewRef && (
-                    <div className="absolute inset-0 p-[0.2vw] flex items-center justify-center text-center bg-slate-50">
-                        <p className="text-[0.6vw] font-bold leading-none text-slate-800 line-clamp-4">{resolvedName}</p>
-                    </div>
-                )}
 
                 {/* 多选已选中勾选标记 */}
                 {isMultiSelected && (
@@ -537,7 +539,7 @@ const MinionCard: React.FC<{
             </button>
 
             {/* 力量增幅徽章 - 增益绿色/减益红色（左上角），仅有变化时显示 */}
-            {((effectivePower !== minion.basePower) || !def?.previewRef) && (
+            {(effectivePower !== minion.basePower) && (
                 <div
                     className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] z-30 ${
                         effectivePower > minion.basePower ? 'bg-green-600' :
@@ -567,7 +569,7 @@ const MinionCard: React.FC<{
             {(minion.powerCounters ?? 0) > 0 && (
                 <motion.div
                     className={`absolute -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white px-[0.1vw] z-30 ${
-                        (effectivePower !== minion.basePower) || !def?.previewRef ? 'top-[1vw]' : '-top-[0.4vw]'
+                        (effectivePower !== minion.basePower) ? 'top-[1vw]' : '-top-[0.4vw]'
                     }`}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -636,17 +638,12 @@ const MinionCard: React.FC<{
                                 >
                                     <div className="w-full h-full overflow-hidden rounded-[0.06vw]">
                                         <CardPreview
-                                            previewRef={actionDef?.previewRef}
-                                            className="w-full h-full object-cover"
+                                            previewRef={actionDef?.previewRef
+                                                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: aa.defId, disableHoverOverlay: true } }
+                                                : undefined}
+                                            className="w-full h-full"
                                             title={actionName}
                                         />
-                                        {!actionDef?.previewRef && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-purple-50 p-[0.05vw]">
-                                                <span className="text-[0.3vw] font-bold text-purple-800 leading-tight text-center line-clamp-2">
-                                                    {actionName}
-                                                </span>
-                                            </div>
-                                        )}
                                     </div>
                                 </motion.div>
                             );

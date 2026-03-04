@@ -1,0 +1,300 @@
+﻿commit 6ea1f9f069d2cbec322636f9cc0455bc21437ad8
+Author: EasyBoardGame Developer <developer@easyboardgame.top>
+Date:   Sat Feb 28 14:11:43 2026 +0800
+
+    feat: add Smash Up POD faction support with full UI and ability system
+
+diff --git a/src/games/smashup/domain/reducer.ts b/src/games/smashup/domain/reducer.ts
+index b71e961..4af0b5d 100644
+--- a/src/games/smashup/domain/reducer.ts
++++ b/src/games/smashup/domain/reducer.ts
+@@ -47,7 +47,6 @@ import type {
+     PowerCounterAddedEvent,
+     PowerCounterRemovedEvent,
+     TempPowerAddedEvent,
+-    CardToDeckBottomEvent,
+ } from './types';
+ import type { PlayerId } from '../../../engine/types';
+ import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
+@@ -86,16 +85,16 @@ export function execute(
+         state.sys = updatedState.sys;
+     }
+     
+-    // 鍚庡鐞嗭細onDestroy 瑙﹀彂 鈫?onMove 瑙﹀彂锛堝惊鐜洿鍒扮ǔ瀹氾級鈫?onAffected 瑙﹀彂
+-    const afterDestroyMove = processDestroyMoveCycle(events, state, command.playerId, random, now);
+-    if (afterDestroyMove.matchState) {
+-        state.sys = afterDestroyMove.matchState.sys;
++    // 鍚庡鐞嗭細onDestroy 瑙﹀彂 鈫?onMove 瑙﹀彂 鈫?onAffected 瑙﹀彂
++    const afterDestroy = processDestroyTriggers(events, state, command.playerId, random, now);
++    if (afterDestroy.matchState) {
++        state.sys = afterDestroy.matchState.sys;
+     }
+-    // 杩斿洖鎵嬬墝淇濇姢杩囨护锛坉eep_roots / entangled / ghost_incorporeal 绛夛級
+-    const afterReturn = filterProtectedReturnEvents(afterDestroyMove.events, state.core, command.playerId);
+-    // 鏀惧叆鐗屽簱搴曚繚鎶よ繃婊わ紙bear_cavalry_superiority / ghost_incorporeal 绛夛級
+-    const afterDeckBottom = filterProtectedDeckBottomEvents(afterReturn, state.core, command.playerId);
+-    const afterAffect = processAffectTriggers(afterDeckBottom, state, command.playerId, random, now);
++    const afterMove = processMoveTriggers(afterDestroy.events, state, command.playerId, random, now);
++    if (afterMove.matchState) {
++        state.sys = afterMove.matchState.sys;
++    }
++    const afterAffect = processAffectTriggers(afterMove.events, state, command.playerId, random, now);
+     if (afterAffect.matchState) {
+         state.sys = afterAffect.matchState.sys;
+     }
+@@ -141,33 +140,12 @@ function executeCommand(
+                         const info = canPlayFromDiscard(core, command.playerId, card.uid, baseIndex);
+                         return info ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit } : {};
+                     })() : {}),
+-                    // Me First! 绐楀彛涓墦鍑?beforeScoringPlayable 闅忎粠涓嶆秷鑰楁甯搁搴?-                    ...(state.sys.responseWindow?.current?.windowType === 'meFirst' && minionDef?.beforeScoringPlayable
+-                        ? { consumesNormalLimit: false }
+-                        : {}),
+                 },
+                 sourceCommandType: command.type,
+                 timestamp: now,
+             };
+             events.push(playedEvt);
+ 
+-            // Me First! 绐楀彛涓墦鍑?beforeScoringPlayable 闅忎粠鏃讹紝璁板綍 specialLimitGroup 浣跨敤
+-            if (state.sys.responseWindow?.current?.windowType === 'meFirst' && minionDef?.beforeScoringPlayable) {
+-                const limitGroup = minionDef.specialLimitGroup;
+-                if (limitGroup) {
+-                    events.push({
+-                        type: SU_EVENTS.SPECIAL_LIMIT_USED,
+-                        payload: {
+-                            playerId: command.playerId,
+-                            baseIndex,
+-                            limitGroup,
+-                            abilityDefId: card.defId,
+-                        },
+-                        timestamp: now,
+-                    } as SmashUpEvent);
+-                }
+-            }
+-
+             // 瑙﹀彂閾剧敱 postProcessSystemEvents 缁熶竴澶勭悊锛岄伩鍏嶉噸澶嶈Е鍙?             // 锛坧ostProcessSystemEvents 浼氭娴嬫墍鏈?MINION_PLAYED 浜嬩欢骞惰皟鐢?fireMinionPlayedTriggers锛? 
+@@ -484,32 +462,6 @@ function executeCommand(
+             return { events };
+         }
+ 
+-        case SU_COMMANDS.ACTIVATE_SPECIAL: {
+-            const { minionUid: spUid, baseIndex: spIdx } = command.payload;
+-            const spBase = core.bases[spIdx];
+-            const spMinion = spBase?.minions.find(m => m.uid === spUid);
+-            if (!spMinion) return { events: [] };
+-
+-            const executor = resolveSpecial(spMinion.defId);
+-            if (!executor) return { events: [] };
+-
+-            const ctx: AbilityContext = {
+-                state: core,
+-                matchState: state,
+-                playerId: command.playerId,
+-                cardUid: spUid,
+-                defId: spMinion.defId,
+-                baseIndex: spIdx,
+-                random,
+-                now,
+-            };
+-            const result = executor(ctx);
+-            if (result.matchState) {
+-                return { events: result.events, updatedState: result.matchState };
+-            }
+-            return { events: result.events };
+-        }
+-
+         default:
+             // RESPONSE_PASS 鐢卞紩鎿?ResponseWindowSystem.beforeCommand 澶勭悊锛岄鍩熷眰涓嶇敓鎴愪簨浠?             return { events: [] };
+@@ -536,17 +488,15 @@ export function filterProtectedDestroyEvents(
+         const base = core.bases[fromBaseIndex];
+         const minion = base?.minions.find(m => m.uid === minionUid);
+         if (!minion) { result.push(e); continue; }
+-        // 浼樺厛浣跨敤浜嬩欢涓殑 destroyerId锛堝鏆楁潃鍗＄殑 ownerId锛夛紝鍥為€€鍒颁紶鍏ョ殑 sourcePlayerId
+-        const effectiveSource = de.payload.destroyerId ?? sourcePlayerId;
+         // 妫€鏌?destroy 淇濇姢鍜?action 淇濇姢
+-        if (isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'destroy')) continue;
++        if (isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'destroy')) continue;
+         // 妫€鏌?'action' 鍜?'affect' 涓ょ骞夸箟淇濇姢绫诲瀷锛坱ooth_and_claw 娉ㄥ唽涓?'affect'锛?-        const actionProtected = isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'action');
+-        const affectProtected = isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'affect');
++        const actionProtected = isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'action');
++        const affectProtected = isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'affect');
+         if (actionProtected || affectProtected) {
+             // 娑堣€楀瀷淇濇姢锛氬彂灏勮嚜姣佷簨浠?             const protType = actionProtected ? 'action' : 'affect';
+-            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, effectiveSource, protType);
++            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, sourcePlayerId, protType);
+             if (source) {
+                 result.push({
+                     type: SU_EVENTS.ONGOING_DETACHED,
+@@ -637,17 +587,12 @@ export function processDestroyTriggers(
+         saveEvents.push(...ongoingDestroyEvents.events);
+         if (ongoingDestroyEvents.matchState) ms = ongoingDestroyEvents.matchState;
+ 
+-        // 妫€娴?寰呮嫰鏁?妯″紡锛歜aseTrigger/ongoing 鍒涘缓浜嗘柊浜や簰浣嗘湭浜х敓 MINION_RETURNED/MINION_MOVED
++        // 妫€娴?寰呮嫰鏁?妯″紡锛歜aseTrigger/ongoing 鍒涘缓浜嗘柊浜や簰浣嗘湭浜х敓 MINION_RETURNED
+         // 鍏稿瀷鍦烘櫙锛氫節鍛戒箣灞嬪垱寤虹帺瀹堕€夋嫨浜や簰锛屾殏缂撴秷鐏瓑寰呯帺瀹跺喅瀹?-        // 娴风洍鍗曞熀鍦版椂鐩存帴杩斿洖 MINION_MOVED 浜嬩欢锛屼篃瑙嗕负鎷晳
++        // 鎺掗櫎锛氬湴绐栫瓑"缁欏叾浠栭殢浠庡姞鎸囩ず鐗?鐨勪氦浜掞紙sourceId 涓嶆槸 base_nine_lives_intercept锛?         const hasReturn = saveEvents.some(e => e.type === SU_EVENTS.MINION_RETURNED);
+-        const hasMoveAway = saveEvents.some(e =>
+-            e.type === SU_EVENTS.MINION_MOVED &&
+-            (e as MinionMovedEvent).payload.minionUid === minionUid
+-        );
+-        const hasSaveEvent = hasReturn || hasMoveAway;
+         let isPendingSave = false;
+-        if (!hasSaveEvent && ms) {
++        if (!hasReturn && ms) {
+             const interactionCountAfter =
+                 (ms.sys.interaction.current ? 1 : 0) + ms.sys.interaction.queue.length;
+             if (interactionCountAfter > interactionCountBefore) {
+@@ -656,7 +601,6 @@ export function processDestroyTriggers(
+                 const PREVENT_DESTROY_SOURCE_IDS = [
+                     'base_nine_lives_intercept',        // 涔濆懡涔嬪眿
+                     'giant_ant_drone_prevent_destroy',   // 闆勮渹闃叉娑堢伃
+-                    'pirate_buccaneer_move',             // 娴风洍锛氳娑堢伃鏃剁Щ鍔ㄥ埌鍏朵粬鍩哄湴
+                 ];
+                 const newInteraction = ms.sys.interaction.current ?? ms.sys.interaction.queue[ms.sys.interaction.queue.length - 1];
+                 const sourceId = (newInteraction?.data as any)?.sourceId as string | undefined;
+@@ -668,23 +612,20 @@ export function processDestroyTriggers(
+             }
+         }
+ 
+-        // === Phase 2: 鍙湁纭娑堢伃锛堟棤闃叉/鏃犺繑鍥?鏃犵Щ璧帮級鏃舵墠瑙﹀彂 onDestroy ===
++        // === Phase 2: 鍙湁纭娑堢伃锛堟棤闃叉/鏃犺繑鍥烇級鏃舵墠瑙﹀彂 onDestroy ===
+         // 褰?isPendingSave 鏃讹紝Phase 1 鐨?saveEvents 涓寘鍚簡鎵€鏈?onMinionDestroyed 瑙﹀彂鍣ㄧ殑浜嬩欢
+         // 锛堝寘鎷惛琛€楝间集鐖?鎶曟満涓讳箟绛夊姞鎸囩ず鐗╀簨浠讹級锛岃繖浜涘繀椤昏鎶戝埗鈥斺€?         // 鍥犱负娑堢伃灏氭湭纭锛岀瓑浜や簰瑙ｅ喅鍚庡啀鍐冲畾鏄惁瑙﹀彂銆?         // 鍙繚鐣?matchState 鍙樻洿锛堜氦浜掑垱寤猴級锛屼涪寮冩墍鏈夊壇浣滅敤浜嬩欢銆?         //
+-        // 褰?hasSaveEvent 鏃讹紝闅忎粠琚嫰鏁戯紙鍥炴墜鐗屾垨绉诲姩鍒板叾浠栧熀鍦帮級锛屾秷鐏湭鍙戠敓锛?-        // 鍚屾牱闇€瑕佹姂鍒跺叾浠栬Е鍙戝櫒鐨勫壇浣滅敤浜嬩欢锛屼絾淇濈暀 MINION_RETURNED/MINION_MOVED 浜嬩欢鏈韩銆?+        // 褰?hasReturn 鏃讹紝闅忎粠琚嫰鏁戯紙濡傞€冪敓鑸卞洖鎵嬬墝锛夛紝娑堢伃鏈彂鐢燂紝
++        // 鍚屾牱闇€瑕佹姂鍒跺叾浠栬Е鍙戝櫒鐨勫壇浣滅敤浜嬩欢锛屼絾淇濈暀 MINION_RETURNED 浜嬩欢鏈韩銆?         const localEvents: SmashUpEvent[] = isPendingSave
+             ? []
+-            : hasSaveEvent
+-                ? saveEvents.filter(e =>
+-                    e.type === SU_EVENTS.MINION_RETURNED ||
+-                    (e.type === SU_EVENTS.MINION_MOVED && (e as MinionMovedEvent).payload.minionUid === minionUid)
+-                )
++            : hasReturn
++                ? saveEvents.filter(e => e.type === SU_EVENTS.MINION_RETURNED)
+                 : [...saveEvents];
+-        if (!isPendingSave && !hasSaveEvent) {
++        if (!isPendingSave && !hasReturn) {
+             // 1. 瑙﹀彂闅忎粠鑷韩鐨?onDestroy 鑳藉姏
+             const executor = resolveOnDestroy(minionDefId);
+             if (executor) {
+@@ -708,18 +649,12 @@ export function processDestroyTriggers(
+         extraEvents.push(...filteredLocal);
+     }
+ 
+-    // 闇€瑕佹姂鍒剁殑闅忎粠 uid锛氬凡琚?MINION_RETURNED/MINION_MOVED 鎷晳 + 寰呬氦浜掓嫰鏁?+    // 闇€瑕佹姂鍒剁殑闅忎粠 uid锛氬凡琚?MINION_RETURNED 鎷晳 + 寰呬氦浜掓嫰鏁?     const suppressedMinionUids = new Set(
+         extraEvents
+             .filter(e => e.type === SU_EVENTS.MINION_RETURNED)
+             .map(e => (e as MinionReturnedEvent).payload.minionUid)
+     );
+-    // 琚?MINION_MOVED 绉昏蛋鐨勯殢浠庝篃瑙嗕负鎷晳锛堝娴风洍鍗曞熀鍦拌嚜鍔ㄧЩ鍔級
+-    for (const e of extraEvents) {
+-        if (e.type === SU_EVENTS.MINION_MOVED) {
+-            suppressedMinionUids.add((e as MinionMovedEvent).payload.minionUid);
+-        }
+-    }
+     for (const uid of pendingSaveMinionUids) {
+         suppressedMinionUids.add(uid);
+     }
+@@ -757,132 +692,9 @@ export function filterProtectedMoveEvents(
+         const minion = base?.minions.find(m => m.uid === minionUid);
+         if (!minion) { result.push(e); continue; }
+         if (isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'move')) continue;
+-        // 妫€鏌?'action' 鍜?'affect' 涓ょ骞夸箟淇濇姢绫诲瀷锛堜笌 filterProtectedDestroyEvents 瀵归綈锛?-        const actionProtected = isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'action');
+-        const affectProtected = isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'affect');
+-        if (actionProtected || affectProtected) {
++        if (isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'action')) {
+             // 娑堣€楀瀷淇濇姢锛氬彂灏勮嚜姣佷簨浠?-            const protType = actionProtected ? 'action' : 'affect';
+-            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, sourcePlayerId, protType);
+-            if (source) {
+-                result.push({
+-                    type: SU_EVENTS.ONGOING_DETACHED,
+-                    payload: { cardUid: source.uid, defId: source.defId, ownerId: source.ownerId, reason: `${source.defId}_self_destruct` },
+-                    timestamp: e.timestamp,
+-                } as OngoingDetachedEvent);
+-            }
+-            continue;
+-        }
+-        result.push(e);
+-    }
+-    return result;
+-}
+-
+-// ============================================================================
+-// onReturn 淇濇姢杩囨护锛氭壂鎻?MINION_RETURNED 浜嬩欢锛岃繃婊ゅ彈淇濇姢鐨勯殢浠?-// ============================================================================
+-
+-/**
+- * 杩囨护鍙椾繚鎶ょ殑闅忎粠鐨勮繑鍥炴墜鐗屼簨浠?- *
+- * 涓?filterProtectedMoveEvents 瀵归綈锛?- * - 'move' 淇濇姢鍚屾椂闃绘绉诲姩鍜岃繑鍥炴墜鐗岋紙deep_roots / entangled锛?- * - 'action' / 'affect' 骞夸箟淇濇姢涔熼樆姝㈣繑鍥炴墜鐗岋紙ghost_incorporeal / elder_thing锛?- *
+- * 娉ㄦ剰锛歵ooth_and_claw 閫氳繃 interceptor 鎷︽埅 MINION_RETURNED锛堝紩鎿庣绾垮眰锛夛紝
+- * 姝ゅ嚱鏁板鐞嗙殑鏄?registerProtection 娉ㄥ唽鐨勪繚鎶わ紙棰嗗煙灞傚悗澶勭悊锛夈€?- */
+-export function filterProtectedReturnEvents(
+-    events: SmashUpEvent[],
+-    core: SmashUpCore,
+-    sourcePlayerId: PlayerId
+-): SmashUpEvent[] {
+-    const result: SmashUpEvent[] = [];
+-    for (const e of events) {
+-        if (e.type !== SU_EVENTS.MINION_RETURNED) {
+-            result.push(e);
+-            continue;
+-        }
+-        const re = e as MinionReturnedEvent;
+-        const { minionUid, fromBaseIndex } = re.payload;
+-        const base = core.bases[fromBaseIndex];
+-        const minion = base?.minions.find(m => m.uid === minionUid);
+-        if (!minion) { result.push(e); continue; }
+-        // 'move' 淇濇姢鍚屾椂闃绘绉诲姩鍜岃繑鍥炴墜鐗?-        if (isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'move')) continue;
+-        // 妫€鏌?'action' 鍜?'affect' 涓ょ骞夸箟淇濇姢绫诲瀷锛堜笌 filterProtectedDestroyEvents / filterProtectedMoveEvents 瀵归綈锛?-        const actionProtected = isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'action');
+-        const affectProtected = isMinionProtected(core, minion, fromBaseIndex, sourcePlayerId, 'affect');
+-        if (actionProtected || affectProtected) {
+-            // 娑堣€楀瀷淇濇姢锛氬彂灏勮嚜姣佷簨浠?-            const protType = actionProtected ? 'action' : 'affect';
+-            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, sourcePlayerId, protType);
+-            if (source) {
+-                result.push({
+-                    type: SU_EVENTS.ONGOING_DETACHED,
+-                    payload: { cardUid: source.uid, defId: source.defId, ownerId: source.ownerId, reason: `${source.defId}_self_destruct` },
+-                    timestamp: e.timestamp,
+-                } as OngoingDetachedEvent);
+-            }
+-            continue;
+-        }
+-        result.push(e);
+-    }
+-    return result;
+-}
+-
+-// ============================================================================
+-// onDeckBottom 淇濇姢杩囨护锛氭壂鎻?CARD_TO_DECK_BOTTOM 浜嬩欢锛岃繃婊ゅ彈淇濇姢鐨勯殢浠?-// ============================================================================
+-
+-/**
+- * 杩囨护鍙椾繚鎶ょ殑闅忎粠鐨勬斁鍏ョ墝搴撳簳浜嬩欢
+- *
+- * CARD_TO_DECK_BOTTOM 娌℃湁 fromBaseIndex锛岄渶瑕侀亶鍘嗗熀鍦版煡鎵鹃殢浠庛€?- * 淇濇姢妫€鏌ラ€昏緫涓?filterProtectedReturnEvents 瀵归綈锛?- * - 'move' 淇濇姢闃绘锛坆ear_cavalry_superiority 鎻忚堪鍚?杩斿洖鐗屽簱"锛?- * - 'action' / 'affect' 骞夸箟淇濇姢涔熼樆姝紙ghost_incorporeal / elder_thing 绛夛級
+- *
+- * 娉ㄦ剰锛歵ooth_and_claw 閫氳繃 interceptor 鎷︽埅 CARD_TO_DECK_BOTTOM锛堝紩鎿庣绾垮眰锛夛紝
+- * 姝ゅ嚱鏁板鐞嗙殑鏄?registerProtection 娉ㄥ唽鐨勪繚鎶わ紙棰嗗煙灞傚悗澶勭悊锛夈€?- * 娉ㄦ剰锛氬彧杩囨护鍦轰笂闅忎粠鐨勬斁鐗屽簱搴曚簨浠讹紝涓嶈繃婊ゆ墜鐗?寮冪墝鍫嗙殑鍗＄墝鎿嶄綔銆?- */
+-export function filterProtectedDeckBottomEvents(
+-    events: SmashUpEvent[],
+-    core: SmashUpCore,
+-    sourcePlayerId: PlayerId
+-): SmashUpEvent[] {
+-    const result: SmashUpEvent[] = [];
+-    for (const e of events) {
+-        if (e.type !== SU_EVENTS.CARD_TO_DECK_BOTTOM) {
+-            result.push(e);
+-            continue;
+-        }
+-        const dbe = e as CardToDeckBottomEvent;
+-        const { cardUid, ownerId } = dbe.payload;
+-        // 鍦ㄦ墍鏈夊熀鍦颁腑鏌ユ壘璇ラ殢浠庯紙CARD_TO_DECK_BOTTOM 娌℃湁 fromBaseIndex锛?-        let fromBaseIndex: number | undefined;
+-        let minion: import('./types').MinionOnBase | undefined;
+-        for (let i = 0; i < core.bases.length; i++) {
+-            const found = core.bases[i].minions.find(m => m.uid === cardUid);
+-            if (found) {
+-                fromBaseIndex = i;
+-                minion = found;
+-                break;
+-            }
+-        }
+-        // 涓嶅湪鍩哄湴涓婄殑鍗＄墝锛堟墜鐗?寮冪墝鍫嗭級涓嶅仛淇濇姢妫€鏌?-        if (fromBaseIndex === undefined || !minion) { result.push(e); continue; }
+-        // 鑷韩鏁堟灉涓嶆嫤鎴紙濡傝繙鍙や箣鐗╄嚜宸遍€夋嫨鏀剧墝搴撳簳锛?-        if (ownerId === sourcePlayerId) { result.push(e); continue; }
+-        // 'move' 淇濇姢闃绘鏀剧墝搴撳簳

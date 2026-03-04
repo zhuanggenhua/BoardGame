@@ -7,7 +7,7 @@
  * 3. powerful-strike — 小顺 9 伤害
  * 4. steadfast — 治疗变体
  * 5. violent-assault — 不可防御 + 眩晕
- * 6. reckless-strike — 大顺子触发（15 伤害 + 自伤 4，可防御）
+ * 6. reckless-strike — 终极技能（5个力量面 15 伤害 + 自伤 4）
  * 7. suppress — 自定义投骰伤害
  *
  * 注意：
@@ -102,6 +102,7 @@ describe('狂战士 GTR 技能覆盖', () => {
                     cmd('ADVANCE_PHASE', '0'),       // offensiveRoll → defensiveRoll
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'thick-skin' }),
                     cmd('ADVANCE_PHASE', '1'),       // defensiveRoll → main2
                 ],
                 expect: { turnPhase: 'main2', players: { '1': { hp: 46 } } },
@@ -128,6 +129,7 @@ describe('狂战士 GTR 技能覆盖', () => {
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'thick-skin' }),
                     cmd('ADVANCE_PHASE', '1'),
                 ],
                 expect: { turnPhase: 'main2', players: { '1': { hp: 42 } } },
@@ -187,6 +189,7 @@ describe('狂战士 GTR 技能覆盖', () => {
                     cmd('ADVANCE_PHASE', '0'),       // → defensiveRoll
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'thick-skin' }),
                     cmd('ADVANCE_PHASE', '1'),       // → main2
                 ],
                 // 防御骰 0 心 → thick-skin 治疗 0 → HP: 50 - 9 = 41
@@ -248,7 +251,8 @@ describe('狂战士 GTR 技能覆盖', () => {
                 expect: {
                     turnPhase: 'main2',
                     players: {
-                        '1': { hp: 45, statusEffects: { [STATUS_IDS.DAZE]: 1 } },
+                        '0': { statusEffects: { [STATUS_IDS.DAZE]: 1 } },  // 攻击方获得 DAZE
+                        '1': { hp: 45 },  // 防御方受到伤害
                     },
                 },
             });
@@ -257,35 +261,33 @@ describe('狂战士 GTR 技能覆盖', () => {
     });
 
     // ========================================================================
-    // reckless-strike — 鲁莽一击（大顺子触发，可防御）
+    // rage — 狂怒（终极技能，5个力量面触发，眩晕+15伤害）
     // ========================================================================
-    describe('鲁莽一击 (reckless-strike)', () => {
-        it('大顺子 [2,3,4,5,6] 造成 15 伤害 + 自伤 4（0心防御）', () => {
-            // 大顺子: [2,3,4,5,6] → sword(2), sword(3), heart(4), heart(5), strength(6)
+    describe('狂怒 (rage)', () => {
+        it('5个力量面 [6,6,6,6,6] 造成眩晕 + 15 伤害（0心防御）', () => {
+            // 5个力量面: [6,6,6,6,6] → 5 strength
             // 防御骰: [6,6,6] → 0 heart（thick-skin 治疗 0）
-            const random = createQueuedRandom([2, 3, 4, 5, 6, 6, 6, 6]);
+            const random = createQueuedRandom([6, 6, 6, 6, 6, 6, 6, 6]);
             const runner = new GameTestRunner({
                 domain: DiceThroneDomain, systems: testSystems,
                 playerIds: ['0', '1'], random,
                 setup: createBarbarianSetup(), assertFn: assertState, silent: true,
             });
             const result = runner.run({
-                name: '鲁莽一击 大顺子=15伤害+自伤4',
+                name: '狂怒 5个力量面=眩晕+15伤害',
                 commands: [
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
-                    cmd('SELECT_ABILITY', '0', { abilityId: 'reckless-strike' }),
-                    cmd('ADVANCE_PHASE', '0'),       // → defensiveRoll（可防御）
-                    cmd('ROLL_DICE', '1'),
-                    cmd('CONFIRM_ROLL', '1'),
-                    cmd('ADVANCE_PHASE', '1'),       // → main2
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'rage' }),
+                    // 终极技能不可防御，直接到 main2
+                    cmd('ADVANCE_PHASE', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
                     players: {
-                        '0': { hp: 46 },  // 50 - 4 自伤
-                        '1': { hp: 35 },  // 50 - 15
+                        '0': { hp: 50 },  // 无自伤
+                        '1': { hp: 35, statusEffects: { [STATUS_IDS.DAZE]: 1 } },  // 50 - 15，眩晕
                     },
                 },
             });

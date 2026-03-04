@@ -17,6 +17,7 @@ import {
     filterProtectedReturnEvents,
     filterProtectedDeckBottomEvents,
 } from './reducer';
+import { interceptEvent } from './ongoingEffects';
 
 // ============================================================================
 // SmashUp 事件处理系统
@@ -65,17 +66,28 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                             
                             if (result) {
                                 newState = result.state;
-                                // 对交互解决产生的事件应用保护过滤和触发链
-                                // 与 execute() 后处理对齐：destroy ↔ move 循环 → return → deckBottom → affect
-                                const rawEvents = result.events as SmashUpEvent[];
-                                const sourcePlayerId = payload.playerId;
-                                const afterDestroyMove = processDestroyMoveCycle(rawEvents, newState, sourcePlayerId, random as RandomFn, eventTimestamp);
-                                if (afterDestroyMove.matchState) newState = afterDestroyMove.matchState;
-                                const afterReturn = filterProtectedReturnEvents(afterDestroyMove.events, newState.core, sourcePlayerId);
-                                const afterDeckBottom = filterProtectedDeckBottomEvents(afterReturn, newState.core, sourcePlayerId);
-                                const afterAffect = processAffectTriggers(afterDeckBottom, newState, sourcePlayerId, random as RandomFn, eventTimestamp);
-                                if (afterAffect.matchState) newState = afterAffect.matchState;
-                                nextEvents.push(...afterAffect.events);
+                                // 【关键修复】交互处理函数返回的事件必须经过拦截器过滤
+                                // 原因：pipeline.reduceEventsToCore 只处理 execute() 返回的事件，
+                                // 而 SmashUpEventSystem.afterEvents 返回的事件走的是系统事件路径，
+                                // 不会自动经过 domain.interceptEvent。
+                                // 必须在这里手动调用拦截器，确保 tooth_and_claw 等保护机制生效。
+                                let rawEvents = result.events as SmashUpEvent[];
+                                const interceptedEvents: SmashUpEvent[] = [];
+                                for (const evt of rawEvents) {
+                                    const interceptResult = interceptEvent(newState.core, evt);
+                                    if (interceptResult === null) {
+                                        // 事件被吞噬，跳过
+                                        continue;
+                                    } else if (interceptResult === undefined) {
+                                        // 无拦截器匹配，保持原事件
+                                        interceptedEvents.push(evt);
+                                    } else {
+                                        // 事件被替换（如 MINION_RETURNED → ONGOING_DETACHED）
+                                        const batch = Array.isArray(interceptResult) ? interceptResult : [interceptResult];
+                                        interceptedEvents.push(...batch as SmashUpEvent[]);
+                                    }
+                                }
+                                nextEvents.push(...interceptedEvents);
 
                                 // 补发延迟的 BASE_CLEARED/BASE_REPLACED 事件
                                 // afterScoring 基地能力创建交互时，清除事件被延迟到交互解决后发出，
@@ -83,6 +95,11 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 const ctx = payload.interactionData?.continuationContext as Record<string, unknown> | undefined;
                                 const deferred = ctx?._deferredPostScoringEvents as { type: string; payload: unknown; timestamp: number }[] | undefined;
                                 if (deferred && deferred.length > 0) {
+                                    // 【关键修复】无论是否有后续交互，都立即设置 flowHalted=true
+                                    // 防止 FlowSystem.afterEvents 在交互解决后重新进入 onPhaseExit('scoreBases')
+                                    // 导致同一个基地被重复计分（因为 BASE_CLEARED 还没有从 scoringEligibleBaseIndices 中移除基地）
+                                    newState.sys.flowHalted = true;
+                                    
                                     // 仅在没有后续交互时补发（链式交互需要等最后一个解决后再清除）
                                     if (!newState.sys.interaction?.current && (!newState.sys.interaction?.queue || newState.sys.interaction.queue.length === 0)) {
                                         for (const d of deferred) {

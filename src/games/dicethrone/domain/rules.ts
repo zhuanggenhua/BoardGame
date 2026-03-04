@@ -119,7 +119,7 @@ export const getTokenStackLimit = (state: DiceThroneCore, playerId: PlayerId, to
 };
 
 // ============================================================================
-// 玩家顺序规则
+// 团队模式规则（2v2）
 // ============================================================================
 
 const TEAM_MODE_PLAYER_COUNT = 4;
@@ -223,57 +223,26 @@ const findOpponentByDirection = (
             return candidate;
         }
     }
-
     return undefined;
 };
 
 export const getLeftOpponentId = (state: DiceThroneCore, playerId: PlayerId): PlayerId | undefined => {
-    return findOpponentByDirection(state, playerId, 1);
-};
-
-export const getRightOpponentId = (state: DiceThroneCore, playerId: PlayerId): PlayerId | undefined => {
     return findOpponentByDirection(state, playerId, -1);
 };
 
-export const getTeamHp = (state: DiceThroneCore, teamId: TeamId): number => {
-    if (state.teamHealth && typeof state.teamHealth[teamId] === 'number') {
-        return state.teamHealth[teamId];
-    }
-    const playerIds = Object.keys(state.players) as PlayerId[];
-    const memberId = playerIds.find((pid) => getTeamId(state, pid) === teamId);
-    if (!memberId) return 0;
-    return state.players[memberId]?.resources[RESOURCE_IDS.HP] ?? 0;
+export const getRightOpponentId = (state: DiceThroneCore, playerId: PlayerId): PlayerId | undefined => {
+    return findOpponentByDirection(state, playerId, 1);
 };
 
-export const getTeamHpMax = (state: DiceThroneCore): number => {
-    return state.teamHealthMax ?? DEFAULT_TEAM_HEALTH_MAX;
-};
+// ============================================================================
+// 玩家顺序规则
+// ============================================================================
 
 /**
  * 获取玩家顺序列表
  */
 export const getPlayerOrder = (state: DiceThroneCore): PlayerId[] => {
-    const fallbackOrder = Object.keys(state.players) as PlayerId[];
-    if (!isTeamMode(state)) return fallbackOrder;
-
-    const seatingOrder = getSeatingOrder(state);
-    const teamMap = getTeamIdByPlayerIdMap(state);
-    const teamA = seatingOrder.filter((pid) => teamMap[pid] === 'A');
-    const teamB = seatingOrder.filter((pid) => teamMap[pid] === 'B');
-    if (teamA.length !== 2 || teamB.length !== 2) return fallbackOrder;
-
-    const startingTeam = teamMap[state.startingPlayerId] ?? teamMap[seatingOrder[0]];
-    const startingTeamPlayers = startingTeam === 'A' ? teamA : teamB;
-    const oppositeTeamPlayers = startingTeam === 'A' ? teamB : teamA;
-    if (startingTeamPlayers.length !== 2 || oppositeTeamPlayers.length !== 2) return fallbackOrder;
-
-    const firstPlayer = startingTeamPlayers.includes(state.startingPlayerId)
-        ? state.startingPlayerId
-        : startingTeamPlayers[0];
-    const teammatePlayer = startingTeamPlayers.find((pid) => pid !== firstPlayer);
-    if (!teammatePlayer) return fallbackOrder;
-
-    return [firstPlayer, teammatePlayer, oppositeTeamPlayers[0], oppositeTeamPlayers[1]];
+    return Object.keys(state.players);
 };
 
 /**
@@ -498,6 +467,7 @@ export type CardPlayCheckResult =
 export type CardPlayFailReason =
     | 'playerNotFound'
     | 'upgradeCardCannotPlay'      // 升级卡缺少目标技能
+    | 'upgradeCardSkipLevel'       // 升级卡不能跳级（如 1→3）
     | 'upgradeCardMaxLevel'        // 技能已达到最高级
     | 'wrongPhaseForUpgrade'       // 升级卡只能在主要阶段
     | 'wrongPhaseForMain'          // 主要阶段卡只能在主要阶段
@@ -554,21 +524,21 @@ export const checkPlayCard = (
             return { ok: false, reason: 'upgradeCardCannotPlay' };
         }
         
-        // 检查技能等级（允许跳级，如 L1→L3，但不允许降级或同级）
+        // 检查技能等级（必须逐级升级）
         const currentLevel = player.abilityLevels[targetAbilityId] ?? 1;
         const replaceAction = card.effects?.find(e => e.action?.type === 'replaceAbility')?.action;
         const desiredLevel = (replaceAction?.type === 'replaceAbility' ? replaceAction.newAbilityLevel : undefined) ?? (currentLevel + 1);
         if (currentLevel >= 3) {
             return { ok: false, reason: 'upgradeCardMaxLevel' };
         }
-        if (desiredLevel <= currentLevel) {
-            return { ok: false, reason: 'upgradeCardMaxLevel' };
+        if (desiredLevel !== currentLevel + 1) {
+            return { ok: false, reason: 'upgradeCardSkipLevel' };
         }
         
-        // 计算实际 CP 消耗：有前置升级卡时只付差价，否则付全额
+        // 计算实际 CP 消耗
         const previousUpgradeCost = player.upgradeCardByAbilityId?.[targetAbilityId]?.cpCost;
         let actualCost = card.cpCost;
-        if (previousUpgradeCost !== undefined) {
+        if (previousUpgradeCost !== undefined && currentLevel > 1) {
             actualCost = Math.max(0, card.cpCost - previousUpgradeCost);
         }
         
@@ -695,6 +665,7 @@ export type UpgradeCardPlayFailReason =
     | 'upgradeCardCannotPlay'     // 升级卡缺少 replaceAbility 效果
     | 'upgradeCardTargetMismatch' // 目标技能不匹配
     | 'upgradeCardMaxLevel'
+    | 'upgradeCardSkipLevel'
     | 'notEnoughCp';
 
 /** 升级卡打出检查结果 */
@@ -734,20 +705,20 @@ export const checkPlayUpgradeCard = (
         return { ok: false, reason: 'upgradeCardTargetMismatch' };
     }
 
-    // 检查技能等级（允许跳级，如 L1→L3，但不允许降级或同级）
+    // 检查技能等级（必须逐级升级，不允许跳级）
     const currentLevel = player.abilityLevels[targetAbilityId] ?? 1;
     const desiredLevel = replaceAction.newAbilityLevel ?? Math.min(3, currentLevel + 1);
     if (currentLevel >= 3) {
         return { ok: false, reason: 'upgradeCardMaxLevel' };
     }
-    if (desiredLevel <= currentLevel) {
-        return { ok: false, reason: 'upgradeCardMaxLevel' };
+    if (desiredLevel !== currentLevel + 1) {
+        return { ok: false, reason: 'upgradeCardSkipLevel' };
     }
 
-    // 计算实际 CP 消耗：有前置升级卡时只付差价，否则付全额
+    // 计算实际 CP 消耗
     const previousUpgradeCost = player.upgradeCardByAbilityId?.[targetAbilityId]?.cpCost;
     let actualCost = card.cpCost;
-    if (previousUpgradeCost !== undefined) {
+    if (previousUpgradeCost !== undefined && currentLevel > 1) {
         actualCost = Math.max(0, card.cpCost - previousUpgradeCost);
     }
     
@@ -1111,20 +1082,9 @@ export const getResponderQueue = (
     
     const allPlayers = Object.keys(state.players) as PlayerId[];
     const queue: PlayerId[] = [];
-    const excludedTeamId = excludeId ? getTeamId(state, excludeId) : undefined;
-
-    const shouldSkipByTeamIsolation = (pid: PlayerId): boolean => {
-        if (!isTeamMode(state)) return false;
-        if (!excludedTeamId) return false;
-        return getTeamId(state, pid) === excludedTeamId;
-    };
     
     // 触发者优先（如果有可响应内容且未被排除）
-    if (
-        triggerId !== excludeId
-        && !shouldSkipByTeamIsolation(triggerId)
-        && hasRespondableContent(state, triggerId, windowType, sourceId, phase)
-    ) {
+    if (triggerId !== excludeId && hasRespondableContent(state, triggerId, windowType, sourceId, phase)) {
         queue.push(triggerId);
     }
     
@@ -1132,7 +1092,6 @@ export const getResponderQueue = (
     for (const pid of allPlayers) {
         if (pid === triggerId) continue;
         if (pid === excludeId) continue;
-        if (shouldSkipByTeamIsolation(pid)) continue;
         if (hasRespondableContent(state, pid, windowType, sourceId, phase)) {
             queue.push(pid);
         }

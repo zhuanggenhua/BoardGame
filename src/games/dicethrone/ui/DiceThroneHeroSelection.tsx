@@ -157,7 +157,7 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                         {t('selection.title')}
                     </h2>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-[1vw] grid grid-cols-2 gap-[0.8vw] content-start pt-[1vw]">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-[1vw] grid grid-cols-2 gap-[0.8vw] content-start pt-[1vw]">
                     {availableCharacters.map((char, index) => {
                         const isSelectedByMe = selectedCharacters[currentPlayerId] === char.id;
 
@@ -322,7 +322,7 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                                 initial={{ scale: 0.9, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 onClick={handleUnready}
-                                className="px-[3vw] py-[1vw] rounded-full text-[1.2vw] font-black uppercase tracking-[0.2em] transition-all duration-300 border-2 bg-white/5 text-emerald-400 border-emerald-400/50 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/50 cursor-pointer"
+                                className="px-[3vw] py-[1vw] rounded-full text-[1.2vw] font-black uppercase tracking-[0.2em] transition-all duration-300 border-2 bg-white/5 text-emerald-400/70 border-emerald-400/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/50 cursor-pointer"
                             >
                                 {t('selection.cancelReady')}
                             </motion.button>

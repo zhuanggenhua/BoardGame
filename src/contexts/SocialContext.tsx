@@ -4,7 +4,6 @@ import { socialSocket, SOCIAL_EVENTS, type FriendStatusPayload, type FriendReque
 import { AUTH_API_URL } from '../config/server';
 import type { FriendUser, FriendRequest, Conversation, Message, SearchUserResult } from '../services/social.types';
 import i18n from '../lib/i18n';
-import { generateId } from '../lib/utils';
 
 interface SocialContextType {
     friends: FriendUser[];
@@ -237,7 +236,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         // 服务端返回 { message: "成功提示", messageData: { id, toUser } }
         // 构造本地 Message 对象
         const msg: Message = {
-            id: data.messageData?.id ?? generateId(),
+            id: data.messageData?.id ?? crypto.randomUUID(),
             from: user?.id ?? '',
             to: toUserId,
             content,

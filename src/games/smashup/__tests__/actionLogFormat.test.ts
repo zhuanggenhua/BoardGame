@@ -169,4 +169,113 @@ describe('formatSmashUpActionEntry', () => {
         const reasonSeg = findI18nSegment(vpEntry!.segments, 'actionLog.reasonSuffix');
         expect(reasonSeg?.params?.reason).toBe('test-reason');
     });
+
+    it('REVEAL_HAND 生成正确的 i18n segment', () => {
+        const command: Command = {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'test-1', baseIndex: 0 },
+            timestamp: 1,
+        };
+        const event: GameEvent = {
+            type: SU_EVENTS.REVEAL_HAND,
+            payload: {
+                targetPlayerId: '0',
+                viewerPlayerId: 'all',
+                cards: [{ uid: 'card1', defId: 'pirate_king' }, { uid: 'card2', defId: 'pirate_first_mate' }],
+                reason: 'wizard_scry',
+            },
+            timestamp: 1,
+        } as GameEvent;
+
+        const result = formatSmashUpActionEntry({
+            command,
+            state: createMatchState(),
+            events: [event],
+        });
+
+        const entries = normalizeEntries(result);
+        expect(entries).toHaveLength(1);
+        const entry = entries[0];
+        expect(entry).toBeTruthy();
+        const i18nKeys = getI18nKeys(entry!.segments);
+        expect(i18nKeys).toContain('actionLog.revealHand');
+        
+        const revealSeg = findI18nSegment(entry!.segments, 'actionLog.revealHand');
+        expect(revealSeg?.params?.playerId).toBe('0');
+        expect(revealSeg?.params?.count).toBe(2);
+    });
+
+    it('REVEAL_DECK_TOP 生成正确的 i18n segment', () => {
+        const command: Command = {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'test-1', baseIndex: 0 },
+            timestamp: 1,
+        };
+        const event: GameEvent = {
+            type: SU_EVENTS.REVEAL_DECK_TOP,
+            payload: {
+                targetPlayerId: '0',
+                viewerPlayerId: 'all',
+                cards: [{ uid: 'card1', defId: 'wizard_summon' }],
+                count: 1,
+                reason: 'wizard_neophyte',
+                sourcePlayerId: '0',
+            },
+            timestamp: 1,
+        } as GameEvent;
+
+        const result = formatSmashUpActionEntry({
+            command,
+            state: createMatchState(),
+            events: [event],
+        });
+
+        const entries = normalizeEntries(result);
+        expect(entries).toHaveLength(1);
+        const entry = entries[0];
+        expect(entry).toBeTruthy();
+        const i18nKeys = getI18nKeys(entry!.segments);
+        expect(i18nKeys).toContain('actionLog.revealDeckTop');
+        
+        const revealSeg = findI18nSegment(entry!.segments, 'actionLog.revealDeckTop');
+        expect(revealSeg?.params?.playerId).toBe('0');
+        expect(revealSeg?.params?.count).toBe(1);
+    });
+
+    it('PERMANENT_POWER_ADDED 生成正确的 i18n segment', () => {
+        const command: Command = {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'test-1', baseIndex: 0 },
+            timestamp: 1,
+        };
+        const event: GameEvent = {
+            type: SU_EVENTS.PERMANENT_POWER_ADDED,
+            payload: {
+                minionUid: 'minion-1',
+                amount: 2,
+                baseIndex: 0,
+                reason: 'frankenstein_igor',
+            },
+            timestamp: 1,
+        } as GameEvent;
+
+        const result = formatSmashUpActionEntry({
+            command,
+            state: createMatchState(),
+            events: [event],
+        });
+
+        const entries = normalizeEntries(result);
+        expect(entries).toHaveLength(1);
+        const entry = entries[0];
+        expect(entry).toBeTruthy();
+        const i18nKeys = getI18nKeys(entry!.segments);
+        expect(i18nKeys).toContain('actionLog.permanentPowerAdded');
+        
+        const powerSeg = findI18nSegment(entry!.segments, 'actionLog.permanentPowerAdded');
+        expect(powerSeg?.params?.amount).toBe(2);
+    });
 });

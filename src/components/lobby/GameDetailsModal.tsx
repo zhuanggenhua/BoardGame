@@ -132,7 +132,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     ownerKey: m.ownerKey,
                     ownerType: m.ownerType,
                     isLocked: m.isLocked,
-                    gameover: m.gameover,
                 }));
                 setRooms(roomList);
             });

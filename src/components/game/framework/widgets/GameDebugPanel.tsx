@@ -13,7 +13,6 @@ import { destroyMatch, persistMatchCredentials } from '../../../../hooks/match/u
 import { getOrCreateGuestId, getGuestName as resolveGuestName } from '../../../../hooks/match/ownerIdentity';
 import { UI_Z_INDEX } from '../../../../core';
 import { useToast } from '../../../../contexts/ToastContext';
-import { copyToClipboard } from '../../../../lib/utils';
 
 const DEBUG_BUTTON_SIZE = 48;
 const EDGE_PADDING = 16;
@@ -139,7 +138,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, dispatch, events,
     
     const handleCopyState = useCallback(async () => {
         try {
-            await copyToClipboard(JSON.stringify(G, null, 2));
+            await navigator.clipboard.writeText(JSON.stringify(G, null, 2));
             setCopySuccess(true);
             setTimeout(() => setCopySuccess(false), 2000);
         } catch (err) {
@@ -417,8 +416,8 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, dispatch, events,
                                                     data-testid="debug-state-paste"
                                                     onClick={async () => {
                                                         try {
-                                                            const text = await navigator.clipboard?.readText?.();
-                                                            if (text) setStateInput(text);
+                                                            const text = await navigator.clipboard.readText();
+                                                            setStateInput(text);
                                                         } catch (err) {
                                                             console.error('粘贴失败:', err);
                                                         }

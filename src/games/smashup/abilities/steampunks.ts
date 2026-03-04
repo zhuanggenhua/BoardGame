@@ -6,7 +6,7 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { recoverCardsFromDiscard, grantExtraAction, moveMinion, resolveOrPrompt, buildAbilityFeedback } from '../domain/abilityHelpers';
+import { recoverCardsFromDiscard, grantExtraAction, moveMinion, resolveOrPrompt, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, getMinionPower } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, SmashUpCore, CardsDrawnEvent, MinionReturnedEvent, OngoingDetachedEvent, ActionCardDef } from '../domain/types';
 import { registerProtection, registerRestriction, registerTrigger, registerInterceptor } from '../domain/ongoingEffects';
@@ -218,7 +218,14 @@ function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[] {
  */
 function steampunkMechanic(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
-    const actionsInDiscard = player.discard.filter(c => c.type === 'action' && c.uid !== ctx.cardUid);
+    // 机械师只能选择打出到基地上的持续行动卡（不包括打出到随从上的）
+    const actionsInDiscard = player.discard.filter(c => {
+        if (c.type !== 'action' || c.uid === ctx.cardUid) return false;
+        const def = getCardDef(c.defId) as ActionCardDef | undefined;
+        // 排除 ongoingTarget === 'minion' 的持续行动卡
+        if (def?.subtype === 'ongoing' && def.ongoingTarget === 'minion') return false;
+        return true;
+    });
     if (actionsInDiscard.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
     const options = actionsInDiscard.map((c, i) => {
         const def = getCardDef(c.defId);
@@ -293,7 +300,7 @@ function steampunkCaptainAhab(ctx: AbilityContext): AbilityResult {
 
     // 单候选自动执行，多候选让玩家选择
     return resolveOrPrompt<{ baseIndex: number }>(ctx,
-        candidates.map(c => ({ id: `base-${c.baseIndex}`, label: c.label, value: { baseIndex: c.baseIndex } })),
+        candidates.map(c => ({ id: `base-${c.baseIndex}`, label: c.label, value: { baseIndex: c.baseIndex }, _source: 'base' as const })),
         { id: 'steampunk_captain_ahab', title: '选择要移动到的基地', sourceId: 'steampunk_captain_ahab', targetType: 'base' },
         (value) => ({
             events: [moveMinion(ctx.cardUid, ctx.defId, currentBaseIndex, value.baseIndex, 'steampunk_captain_ahab', ctx.now)],
@@ -303,7 +310,11 @@ function steampunkCaptainAhab(ctx: AbilityContext): AbilityResult {
 
 
 /**
- * 齐柏林飞艇?talent：从另一个基地移动一个你的随从到这里，或从这里移动到另一个基地
+ * 齐柏林飞艇 talent：从另一个基地移动一个你的随从到这里，或从这里移动到另一个基地
+ * 
+ * 交互流程：
+ * 1. 玩家直接点击场地上要移动的随从（targetType: 'minion'）
+ * 2. 玩家直接点击目标基地（targetType: 'base'）
  */
 function steampunkZeppelin(ctx: AbilityContext): AbilityResult {
     // 找到 zeppelin 所在基地
@@ -316,48 +327,34 @@ function steampunkZeppelin(ctx: AbilityContext): AbilityResult {
     }
     if (zepBaseIndex === -1) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
 
-    const zepBase = ctx.state.bases[zepBaseIndex];
-    const candidates: { id: string; label: string; value: { minionUid: string; minionDefId: string; fromBase: number; toBase: number } }[] = [];
-
-    // 方向A：从其他基地移动到这?
+    // 收集所有可移动的己方随从
+    const candidates: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
-        if (i === zepBaseIndex) continue;
         for (const m of ctx.state.bases[i].minions) {
             if (m.controller !== ctx.playerId) continue;
             const def = getCardDef(m.defId);
             const name = def?.name ?? m.defId;
+            const baseDef = getBaseDef(ctx.state.bases[i].defId);
+            const baseName = baseDef?.name ?? `基地 ${i + 1}`;
+            const power = getMinionPower(ctx.state, m, i);
             candidates.push({
-                id: `from-${i}-${m.uid}`,
-                label: `${name} ?此基地`,
-                value: { minionUid: m.uid, minionDefId: m.defId, fromBase: i, toBase: zepBaseIndex },
-            });
-        }
-    }
-
-    // 方向B：从这里移动到其他基地
-    for (const m of zepBase.minions) {
-        if (m.controller !== ctx.playerId) continue;
-        const mDef = getCardDef(m.defId);
-        const mName = mDef?.name ?? m.defId;
-        for (let i = 0; i < ctx.state.bases.length; i++) {
-            if (i === zepBaseIndex) continue;
-            const bDef = getBaseDef(ctx.state.bases[i].defId);
-            const bName = bDef?.name ?? `基地${i}`;
-            candidates.push({
-                id: `to-${i}-${m.uid}`,
-                label: `${mName} ?${bName}`,
-                value: { minionUid: m.uid, minionDefId: m.defId, fromBase: zepBaseIndex, toBase: i },
+                uid: m.uid,
+                defId: m.defId,
+                baseIndex: i,
+                label: `${name} (力量 ${power}) @ ${baseName}`,
             });
         }
     }
 
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
 
+    const options = buildMinionTargetOptions(candidates, { state: ctx.state, sourcePlayerId: ctx.playerId });
     const interaction = createSimpleChoice(
-        `steampunk_zeppelin_${ctx.now}`, ctx.playerId,
-        '选择要移动的随从', candidates as any[],
-        { sourceId: 'steampunk_zeppelin', targetType: 'generic' },
+        `steampunk_zeppelin_minion_${ctx.now}`, ctx.playerId,
+        '齐柏林飞艇：点击要移动的随从', options,
+        { sourceId: 'steampunk_zeppelin_choose_minion', targetType: 'minion' },
     );
+    (interaction.data as any).continuationContext = { zepBaseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -387,6 +384,48 @@ export function registerSteampunkInteractionHandlers(): void {
         return { state, events: [recoverCardsFromDiscard(playerId, [cardUid], 'steampunk_scrap_diving', timestamp)] };
     });
 
+    // 齐柏林飞艇第一步：选择随从后，链式选择目标基地
+    registerInteractionHandler('steampunk_zeppelin_choose_minion', (state, playerId, value, iData, _random, timestamp) => {
+        const { minionUid, baseIndex: fromBase } = value as { minionUid: string; baseIndex: number };
+        const ctx = (iData as any)?.continuationContext as { zepBaseIndex: number };
+        if (ctx === undefined) return undefined;
+        
+        const base = state.core.bases[fromBase];
+        if (!base) return undefined;
+        const minion = base.minions.find(m => m.uid === minionUid);
+        if (!minion) return undefined;
+
+        // 构建目标基地选项
+        const destCandidates: { baseIndex: number; label: string }[] = [];
+        for (let i = 0; i < state.core.bases.length; i++) {
+            if (i === fromBase) continue; // 不能移动到当前基地
+            const baseDef = getBaseDef(state.core.bases[i].defId);
+            const name = baseDef?.name ?? `基地 ${i + 1}`;
+            // 标注是否为齐柏林所在基地
+            const suffix = i === ctx.zepBaseIndex ? ' (齐柏林所在基地)' : '';
+            destCandidates.push({ baseIndex: i, label: `${name}${suffix}` });
+        }
+
+        if (destCandidates.length === 0) return { state, events: [] };
+
+        const next = createSimpleChoice(
+            `steampunk_zeppelin_base_${timestamp}`, playerId,
+            '齐柏林飞艇：点击目标基地',
+            buildBaseTargetOptions(destCandidates, state.core),
+            { sourceId: 'steampunk_zeppelin_choose_base', targetType: 'base' }
+        );
+        (next.data as any).continuationContext = { minionUid, minionDefId: minion.defId, fromBase };
+        return { state: queueInteraction(state, next), events: [] };
+    });
+
+    // 齐柏林飞艇第二步：选择基地后移动
+    registerInteractionHandler('steampunk_zeppelin_choose_base', (state, _playerId, value, iData, _random, timestamp) => {
+        const { baseIndex: destBase } = value as { baseIndex: number };
+        const ctx = (iData as any)?.continuationContext as { minionUid: string; minionDefId: string; fromBase: number };
+        if (!ctx) return undefined;
+        return { state, events: [moveMinion(ctx.minionUid, ctx.minionDefId, ctx.fromBase, destBase, 'steampunk_zeppelin', timestamp)] };
+    });
+
     registerInteractionHandler('steampunk_mechanic', (state, playerId, value, _iData, random, timestamp) => {
         // 检查取消标记
         if ((value as any).__cancel__) return { state, events: [] };
@@ -401,11 +440,11 @@ export function registerSteampunkInteractionHandlers(): void {
             const baseOptions = state.core.bases.map((base, i) => {
                 const baseDef = getBaseDef(base.defId);
                 const name = baseDef?.name ?? base.defId;
-                return { id: `base-${i}`, label: name, value: { baseIndex: i } };
+                return { id: `base-${i}`, label: name, value: { baseIndex: i }, _source: 'base' as const };
             });
             const interaction = createSimpleChoice(
                 `steampunk_mechanic_target_${timestamp}`, playerId,
-                '选择要将行动卡打出到的基地', baseOptions, { sourceId: 'steampunk_mechanic_target', targetType: 'base' },
+                '选择要将行动卡打出到的基地', baseOptions, 'steampunk_mechanic_target',
             );
             const extended = {
                 ...interaction,
@@ -468,7 +507,7 @@ export function registerSteampunkInteractionHandlers(): void {
                 }
                 const interaction = createSimpleChoice(
                     `steampunk_cov_target_${timestamp}`, playerId,
-                    '选择要将行动卡附着到的随从', minionOptions, { sourceId: 'steampunk_change_of_venue_target', targetType: 'minion' },
+                    '选择要将行动卡附着到的随从', minionOptions, 'steampunk_change_of_venue_target',
                 );
                 const extended = { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ongoingUid, defId } } };
                 return { state: queueInteraction(state, extended), events: [detachEvt as SmashUpEvent, recoverEvt] };
@@ -476,11 +515,11 @@ export function registerSteampunkInteractionHandlers(): void {
             // 附着到基地的 ongoing 卡
             const baseOptions = state.core.bases.map((base, i) => {
                 const baseDef = getBaseDef(base.defId);
-                return { id: `base-${i}`, label: baseDef?.name ?? base.defId, value: { baseIndex: i } };
+                return { id: `base-${i}`, label: baseDef?.name ?? base.defId, value: { baseIndex: i }, _source: 'base' as const };
             });
             const interaction = createSimpleChoice(
                 `steampunk_cov_target_${timestamp}`, playerId,
-                '选择要将行动卡打出到的基地', baseOptions, { sourceId: 'steampunk_change_of_venue_target', targetType: 'base' },
+                '选择要将行动卡打出到的基地', baseOptions, 'steampunk_change_of_venue_target',
             );
             const extended = { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ongoingUid, defId } } };
             return { state: queueInteraction(state, extended), events: [detachEvt as SmashUpEvent, recoverEvt] };

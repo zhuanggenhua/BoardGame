@@ -169,7 +169,7 @@ describe('防御阶段触发审计', () => {
             expect(hasDamage).toBe(false);
         });
 
-        it('✅ Kidney Shot (破隐一击) - 有基础伤害，应触发防御', () => {
+        it('✅ Kidney Shot (肾击) - 有基础伤害，应触发防御', () => {
             const state = createTestState('shadow_thief');
             const hasDamage = playerAbilityHasDamage(state, 'p1' as PlayerId, 'kidney-shot');
             expect(hasDamage).toBe(true);

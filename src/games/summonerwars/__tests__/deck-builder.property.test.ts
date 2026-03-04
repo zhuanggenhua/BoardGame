@@ -1,4 +1,4 @@
-﻿/**
+/**
  * useDeckBuilder 核心逻辑 - 属性测试 (Property-Based Testing)
  *
  * 使用 fast-check 对牌组构建核心逻辑进行属性测试，每个属性 ≥100 次迭代。

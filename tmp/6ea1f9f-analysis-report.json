@@ -1,0 +1,80 @@
+{
+  "fileChanges": {
+    "src/games/smashup/domain/reducer.ts": {
+      "additions": 25,
+      "deletions": 295
+    },
+    "src/games/smashup/domain/index.ts": {
+      "additions": 90,
+      "deletions": 241
+    },
+    "src/games/smashup/domain/reduce.ts": {
+      "additions": 17,
+      "deletions": 69
+    },
+    "src/games/smashup/domain/types.ts": {
+      "additions": 4,
+      "deletions": 42
+    },
+    "src/games/smashup/domain/commands.ts": {
+      "additions": 6,
+      "deletions": 75
+    },
+    "src/games/smashup/abilities/ninjas.ts": {
+      "additions": 201,
+      "deletions": 115
+    },
+    "src/games/smashup/abilities/pirates.ts": {
+      "additions": 225,
+      "deletions": 57
+    },
+    "src/games/smashup/abilities/dinosaurs.ts": {
+      "additions": 116,
+      "deletions": 101
+    }
+  },
+  "suspiciousCode": [
+    {
+      "file": "src/games/smashup/domain/reducer.ts",
+      "pattern": "直接修改状态",
+      "count": 5,
+      "samples": [
+        "state.sys =",
+        "state.sys =",
+        "state.sys ="
+      ]
+    },
+    {
+      "file": "src/games/smashup/domain/index.ts",
+      "pattern": "直接修改状态",
+      "count": 2,
+      "samples": [
+        "ctx._deferredPostScoringEvents =",
+        "data.continuationContext ="
+      ]
+    },
+    {
+      "file": "src/games/smashup/domain/types.ts",
+      "pattern": "未初始化字段",
+      "count": 2,
+      "samples": [
+        "?: PendingAfterScoringSpecial[]",
+        "?: number[]"
+      ]
+    },
+    {
+      "file": "src/games/smashup/abilities/ninjas.ts",
+      "pattern": "直接修改状态",
+      "count": 1,
+      "samples": [
+        "MinionCardDef.beforeScoringPlayable="
+      ]
+    }
+  ],
+  "summary": {
+    "totalFiles": 8,
+    "totalAdditions": 684,
+    "totalDeletions": 995,
+    "suspiciousCount": 4
+  }
+}

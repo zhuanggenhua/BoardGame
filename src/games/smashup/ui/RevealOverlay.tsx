@@ -16,11 +16,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
-import { getCardDef, resolveCardName } from '../data/cards';
+import { getCardDef, getBaseDef, resolveCardName } from '../data/cards';
 import { CardMagnifyOverlay, type CardMagnifyTarget } from './CardMagnifyOverlay';
 import { useEventStreamCursor } from '../../../engine/hooks';
 import type { EventStreamEntry, PlayerId } from '../../../engine/types';
 import { SU_EVENTS } from '../domain/types';
+import { CARD_DISPLAY_CONFIG } from './cardDisplayConfig';
 
 // ============================================================================
 // 类型
@@ -60,9 +61,26 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
 
     const { consumeNew } = useEventStreamCursor({ entries });
 
-    // 消费新事件
+    // 消费新事件（首次挂载时跳过历史事件）
+    const isFirstMount = useRef(true);
     useEffect(() => {
         const { entries: newEntries, didReset } = consumeNew();
+        
+        console.log('[RevealOverlay] consumeNew:', {
+            newEntriesCount: newEntries.length,
+            didReset,
+            isFirstMount: isFirstMount.current,
+            currentPlayerId,
+            totalEntries: entries.length,
+        });
+        
+        // 首次挂载时跳过所有历史事件
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            console.log('[RevealOverlay] 首次挂载，跳过历史事件');
+            return;
+        }
+        
         if (didReset) {
             setQueue([]);
             if (newEntries.length === 0) return;
@@ -71,6 +89,13 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
 
         const newItems: RevealItem[] = [];
         for (const entry of newEntries) {
+            console.log('[RevealOverlay] 处理事件:', {
+                entryId: entry.id,
+                eventType: entry.event.type,
+                isTriggerEvent: TRIGGER_EVENTS.has(entry.event.type),
+                payload: entry.event.payload,
+            });
+            
             if (!TRIGGER_EVENTS.has(entry.event.type)) continue;
             const p = entry.event.payload as {
                 targetPlayerId: string | string[];
@@ -78,31 +103,64 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                 cards: { uid: string; defId: string }[];
                 reason: string;
             };
-            if (!p?.cards?.length) continue;
+            
+            console.log('[RevealOverlay] REVEAL 事件详情:', {
+                targetPlayerId: p.targetPlayerId,
+                viewerPlayerId: p.viewerPlayerId,
+                cardsCount: p?.cards?.length,
+                cards: p?.cards,
+                reason: p.reason,
+            });
+            
+            if (!p?.cards?.length) {
+                console.log('[RevealOverlay] 跳过：无卡牌数据');
+                continue;
+            }
 
             // 权限过滤：单人模式下只有指定查看者能看
             const isAllMode = p.viewerPlayerId === 'all';
             const targetIds = Array.isArray(p.targetPlayerId) ? p.targetPlayerId : [p.targetPlayerId];
             const isTarget = targetIds.includes(currentPlayerId);
-            if (!isAllMode && p.viewerPlayerId !== currentPlayerId) continue;
-            // 被展示者看不到卡牌内容（但能看到"你的手牌正在被展示"提示）
-            // 这里只入队给查看者
-            if (isTarget && !isAllMode) continue;
+            
+            console.log('[RevealOverlay] 权限检查:', {
+                isAllMode,
+                targetIds,
+                currentPlayerId,
+                isTarget,
+                viewerPlayerId: p.viewerPlayerId,
+            });
+            
+            // 权限过滤：
+            // - all 模式：所有人都能看（包括被展示者）
+            // - 单人模式：只有指定查看者能看，被展示者不能看
+            if (!isAllMode && p.viewerPlayerId !== currentPlayerId) {
+                console.log('[RevealOverlay] 跳过：非 all 模式且不是指定查看者');
+                continue;
+            }
+            if (isTarget && !isAllMode) {
+                console.log('[RevealOverlay] 跳过：是被展示者且非 all 模式');
+                continue;
+            }
 
             const revealType = entry.event.type === SU_EVENTS.REVEAL_HAND ? 'hand' : 'deck_top';
-            newItems.push({
+            const item = {
                 id: `reveal-${entry.id}`,
                 type: revealType,
                 targetPlayerIds: targetIds,
                 viewerPlayerId: p.viewerPlayerId,
-                cards: isTarget ? [] : p.cards, // 被展示者看不到卡牌内容
+                cards: p.cards, // all 模式下所有人都能看，单人模式下被展示者已被过滤
                 reason: p.reason,
                 timestamp: Date.now(),
-            });
+            };
+            console.log('[RevealOverlay] 添加到队列:', item);
+            newItems.push(item);
         }
 
         if (newItems.length > 0) {
+            console.log('[RevealOverlay] 更新队列，新增项:', newItems.length);
             setQueue(prev => [...prev, ...newItems].slice(-5));
+        } else {
+            console.log('[RevealOverlay] 无新项添加到队列');
         }
     }, [entries, consumeNew, currentPlayerId, TRIGGER_EVENTS]);
 
@@ -134,8 +192,6 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
         ? t('ui.reveal_hand_title', { player: targetLabel, defaultValue: 'P{{player}} 的手牌' })
         : t('ui.reveal_deck_top_title', { player: targetLabel, defaultValue: 'P{{player}} 的牌库顶' });
 
-    const isTarget = current.targetPlayerIds.includes(currentPlayerId);
-
     return (
         <AnimatePresence mode="wait">
             <motion.div
@@ -154,20 +210,13 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
 
                 {/* 标题 */}
                 <motion.h2
-                    className="relative text-xl font-black text-amber-100 uppercase tracking-tight mb-5 drop-shadow-lg"
+                    className="relative text-2xl font-black text-amber-100 uppercase tracking-tight mb-6 drop-shadow-lg"
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.1 }}
                 >
                     {title}
                 </motion.h2>
-
-                {/* 被展示者提示 */}
-                {isTarget && (
-                    <div className="relative mb-4 text-sm text-yellow-400/80 font-bold animate-pulse">
-                        {t('ui.reveal_your_hand_shown', { defaultValue: '你的手牌正在被展示' })}
-                    </div>
-                )}
 
                 {/* 卡牌展示区 */}
                 {current.cards.length > 0 && (
@@ -180,7 +229,13 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                     >
                         {current.cards.map((card, idx) => {
                             const def = getCardDef(card.defId);
-                            const name = def ? resolveCardName(def, t) : card.defId;
+                            const baseDef = getBaseDef(card.defId);
+                            const isBase = !!baseDef;
+                            const name = def ? resolveCardName(def, t) : (baseDef ? resolveCardName(baseDef, t) : card.defId);
+                            // 统一使用配置：基地 14vw，行动卡/随从 8.5vw
+                            const cardWidth = isBase ? 'w-[14vw]' : 'w-[8.5vw]';
+                            const cardAspect = isBase ? 'aspect-[1.43]' : 'aspect-[0.714]';
+                            const maxWidth = isBase ? 'max-w-[14vw]' : 'max-w-[8.5vw]';
                             return (
                                 <motion.div
                                     key={card.uid}
@@ -190,23 +245,23 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                                     className="flex-shrink-0 flex flex-col items-center gap-1.5 group relative cursor-pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setMagnifyTarget({ defId: card.defId, type: def?.type ?? 'action' });
+                                        setMagnifyTarget({ defId: card.defId, type: isBase ? 'base' : (def?.type ?? 'action') });
                                     }}
                                 >
-                                    <div className="rounded shadow-xl overflow-hidden ring-1 ring-white/20 hover:ring-amber-400/60 transition-all">
-                                        {def?.previewRef ? (
+                                    <div className="rounded shadow-xl overflow-hidden ring-2 ring-white/20 hover:ring-amber-400/60 transition-all">
+                                        {(def?.previewRef || baseDef?.previewRef) ? (
                                             <CardPreview
-                                                previewRef={def.previewRef}
-                                                className="w-[130px] aspect-[0.714] bg-slate-900 rounded"
+                                                previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId } }}
+                                                className={`${cardWidth} ${cardAspect} bg-slate-900 rounded`}
                                                 alt={name}
                                             />
                                         ) : (
-                                            <div className="w-[130px] aspect-[0.714] bg-slate-800 rounded flex items-center justify-center p-2">
+                                            <div className={`${cardWidth} ${cardAspect} bg-slate-800 rounded flex items-center justify-center p-2`}>
                                                 <span className="text-white text-xs font-bold text-center">{name}</span>
                                             </div>
                                         )}
                                     </div>
-                                    <span className="text-[11px] font-bold text-white/70 max-w-[130px] truncate text-center">
+                                    <span className={`text-xs font-bold text-white/80 ${maxWidth} truncate text-center`}>
                                         {name}
                                     </span>
                                 </motion.div>
@@ -236,9 +291,8 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
                         {queue.map((item, idx) => (
                             <div
                                 key={item.id}
-                                className={`w-2 h-2 rounded-full transition-all ${
-                                    idx === 0 ? 'bg-white scale-125' : 'bg-white/40'
-                                }`}
+                                className={`w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-white scale-125' : 'bg-white/40'
+                                    }`}
                             />
                         ))}
                     </div>

@@ -35,7 +35,7 @@ function makeMinion(
 ): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
         ...overrides,
     };
 }
@@ -141,9 +141,9 @@ describe('E2E: 保护→消灭过滤 (general_ivan)', () => {
         // 基地0：P0 的伊万将军 + P0 的力量2小兵
         // 基地1：P1 的力量2小兵
         // cannon 应该能消灭 P1 的小兵，但 P0 的小兵受 ivan 保护
-        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6);
-        const allyWeak = makeMinion('ally', 'test_minion', '0', 2);
-        const enemyWeak = makeMinion('enemy', 'test_minion', '1', 2);
+        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6, { powerModifier: 0 });
+        const allyWeak = makeMinion('ally', 'test_minion', '0', 2, { powerModifier: 0 });
+        const enemyWeak = makeMinion('enemy', 'test_minion', '1', 2, { powerModifier: 0 });
 
         const state = makeState({
             players: {
@@ -172,8 +172,8 @@ describe('E2E: 移动保护→事件过滤 (entangled)', () => {
         // 基地0：P0 的随从 + P1 的随从 + entangled（P0）
         // P0 试图用 pirate_full_sail 移动 P1 的随从
         // entangled 应阻止移动
-        const myMinion = makeMinion('m0', 'test_minion', '0', 3);
-        const enemyMinion = makeMinion('m1', 'test_minion', '1', 2);
+        const myMinion = makeMinion('m0', 'test_minion', '0', 3, { powerModifier: 0 });
+        const enemyMinion = makeMinion('m1', 'test_minion', '1', 2, { powerModifier: 0 });
 
         const state = makeState({
             players: {
@@ -211,8 +211,8 @@ describe('E2E: 移动触发链 (cub_scout + processMoveTriggers)', () => {
         // 用一个更简单的方式：直接构造 execute + MINION_MOVED 事件检查 processMoveTriggers
         // 让 pirate_shanghai（上海）来移动对手随从到 cub_scout 所在基地
 
-        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3);
-        const enemyWeak = makeMinion('target', 'test_minion', '1', 2);
+        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3, { powerModifier: 0 });
+        const enemyWeak = makeMinion('target', 'test_minion', '1', 2, { powerModifier: 0 });
 
         const state = makeState({
             players: {
@@ -306,7 +306,7 @@ describe('E2E: 保护→消灭过滤 (upgrade+tooth_and_claw)', () => {
         const protectedMinion = makeMinion('m1', 'test_minion', '1', 2, {
             attachedActions: [{ uid: 'up-1', defId: 'dino_upgrade', ownerId: '1' }],
         });
-        const weakMinion = makeMinion('m2', 'test_minion', '1', 1);
+        const weakMinion = makeMinion('m2', 'test_minion', '1', 1, { powerModifier: 0 });
 
         const state = makeState({
             players: {
@@ -333,7 +333,7 @@ describe('E2E: 保护→消灭过滤 (upgrade+tooth_and_claw)', () => {
         const protectedMinion = makeMinion('m1', 'test_minion', '1', 3, {
             attachedActions: [{ uid: 'tc-1', defId: 'dino_tooth_and_claw', ownerId: '1' }],
         });
-        const unprotectedMinion = makeMinion('m2', 'test_minion', '1', 2);
+        const unprotectedMinion = makeMinion('m2', 'test_minion', '1', 2, { powerModifier: 0 });
 
         const state = makeState({
             players: {
@@ -400,8 +400,8 @@ function makeFullMatchState(core: SmashUpCore): MatchState<SmashUpCore> {
 describe('E2E Prompt 链: shanghai → cub_scout 移动触发', () => {
     it('shanghai 完整 Prompt 链：选随从 → 选基地 → MINION_MOVED + 状态更新', () => {
         // 构造：base0 有 cub_scout(P0)，base1 有弱随从(P1)，P0 手牌有 shanghai
-        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3);
-        const enemyWeak = makeMinion('target', 'test_minion', '1', 2);
+        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3, { powerModifier: 0 });
+        const enemyWeak = makeMinion('target', 'test_minion', '1', 2, { powerModifier: 0 });
 
         const core = makeState({
             players: {
@@ -482,8 +482,8 @@ describe('E2E Prompt 链: shanghai → cub_scout 移动触发', () => {
     it('entangled 在 Prompt 链中也阻止移动（保护检查在 reduce 前）', () => {
         // base0 有 entangled + P0 随从 + P1 随从，base1 空
         // P0 用 shanghai 尝试移动 base0 上的 P1 随从
-        const myMinion = makeMinion('m0', 'test_minion', '0', 3);
-        const target = makeMinion('target', 'test_minion', '1', 2);
+        const myMinion = makeMinion('m0', 'test_minion', '0', 3, { powerModifier: 0 });
+        const target = makeMinion('target', 'test_minion', '1', 2, { powerModifier: 0 });
 
         const core = makeState({
             players: {

@@ -149,12 +149,13 @@ function vampireNightstalker(ctx: AbilityContext): AbilityResult {
             sourceBaseIndex: found.baseIndex,
         };
     }
-    // 强制效果（描述无"你可以"），不提供 skip 选项
+    nsOptions.push({ id: 'skip', label: '跳过（不消灭）', value: { skip: true }, displayMode: 'button' as const });
     return resolveOrPrompt(ctx, nsOptions, {
         id: 'vampire_nightstalker', title: '选择要消灭的力量≤2随从（本随从+1指示物）',
         sourceId: 'vampire_nightstalker', targetType: 'minion' as const,
     }, (rawVal) => {
         const val = rawVal as any;
+        if (val.skip) return { events: [] };
         return {
             events: [
                 destroyMinion(val.minionUid, val.defId, val.baseIndex, ctx.state.bases[val.baseIndex]?.minions.find((m: any) => m.uid === val.minionUid)?.owner ?? ctx.playerId, ctx.playerId, 'vampire_nightstalker', ctx.now),
@@ -219,7 +220,7 @@ function vampireDinnerDate(ctx: AbilityContext): AbilityResult {
     });
 }
 
-/** 一大口 onPlay：消灭一个力量≤4的随从 */
+/** 一大口 onPlay：消灭一个力量≤4的随从（可跳过） */
 function vampireBigGulp(ctx: AbilityContext): AbilityResult {
     const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
@@ -234,13 +235,19 @@ function vampireBigGulp(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const options = buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
     if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.all_protected', ctx.now)] };
-    return resolveOrPrompt(ctx, options, {
-        id: 'vampire_big_gulp', title: '选择要消灭的力量≤4随从',
+    
+    // 添加"跳过"选项
+    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
+    
+    return resolveOrPrompt(ctx, [...options, skipOption], {
+        id: 'vampire_big_gulp', title: '选择要消灭的力量≤4随从（可跳过）',
         sourceId: 'vampire_big_gulp', targetType: 'minion' as const,
     }, (val) => {
+        // 跳过时不消灭随从
+        if ((val as any).skip) return { events: [] };
+        
         const minion = ctx.state.bases[val.baseIndex]?.minions.find(m => m.uid === val.minionUid);
         if (!minion) {
-            console.error(`[vampire_big_gulp] minion ${val.minionUid} not found at base ${val.baseIndex}`);
             return { events: [] };
         }
         return {
@@ -254,7 +261,7 @@ function vampireMadMonsterParty(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId && (m.powerCounters ?? 0) === 0) {
+            if (m.controller === ctx.playerId && m.powerCounters === 0) {
                 events.push(addPowerCounter(m.uid, i, 1, 'vampire_mad_monster_party', ctx.now));
             }
         }
@@ -306,7 +313,7 @@ function vampireCrackOfDusk(ctx: AbilityContext): AbilityResult {
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const options = candidates.map((c, i) => {
         const def = getCardDef(c.defId);
-        return { id: `card-${i}`, label: `${def?.name ?? c.defId}`, value: { cardUid: c.uid, defId: c.defId } };
+        return { id: `card-${i}`, label: `${def?.name ?? c.defId}`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
     });
     return resolveOrPrompt(ctx, options, {
         id: 'vampire_crack_of_dusk', title: '从弃牌堆选择力量≤2的随从打出（+1指示物）',
@@ -360,7 +367,7 @@ function buildCullTheWeakCardOptions(core: SmashUpCore, playerId: string) {
             return {
                 id: `card-${i}`,
                 label: `${def?.name ?? c.defId}`,
-                value: { cardUid: c.uid, defId: c.defId },
+                value: { cardUid: c.uid, defId: c.defId , displayMode: 'card' as const },
             };
         });
     return [
@@ -453,10 +460,12 @@ const handleNightstalkerChoice: IH = (state, playerId, value, _data, _random, no
         minionUid?: string;
         defId?: string;
         baseIndex?: number;
+        skip?: boolean;
         sourceMinionUid?: string;
         sourceBaseIndex?: number;
     };
 
+    if (v.skip) return { state, events: [] };
     if (!v.minionUid || !v.defId || v.baseIndex === undefined) return undefined;
     const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
     if (!target) return undefined;
@@ -511,7 +520,6 @@ const handleDinnerDateChooseTarget: IH = (state, playerId, value, _data, _random
     const v = value as { minionUid: string; defId: string; baseIndex: number };
     const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
     if (!target) {
-        console.error(`[handleDinnerDateChooseTarget] minion ${v.minionUid} not found at base ${v.baseIndex}`);
         return { state, events: [] };
     }
     return {
@@ -524,7 +532,6 @@ const handleBigGulpChoice: IH = (state, playerId, value, _data, _random, now) =>
     const v = value as { minionUid: string; defId: string; baseIndex: number };
     const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
     if (!target) {
-        console.error(`[handleBigGulpChoice] minion ${v.minionUid} not found at base ${v.baseIndex}`);
         return { state, events: [] };
     }
     return {
@@ -663,7 +670,7 @@ function registerVampireOngoingEffects(): void {
 
         const events: SmashUpEvent[] = armed.map(s => ({
             type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED,
-            payload: { sourceDefId: s.sourceDefId, playerId: s.playerId, baseIndex: s.baseIndex },
+            payload: { sourceDefId: s.sourceDefId, playerId: s.playerId, baseIndex: s.baseIndex, baseDefId: ctx.state.bases[s.baseIndex].defId  },
             timestamp: now,
         } as SmashUpEvent));
 

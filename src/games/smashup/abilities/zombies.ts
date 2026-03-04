@@ -34,11 +34,25 @@ export function registerZombieAbilities(): void {
     registerAbility('zombie_lord', 'onPlay', zombieLord);
     // 它们不断来临：从弃牌堆额外打出一个随从
     registerAbility('zombie_they_keep_coming', 'onPlay', zombieTheyKeepComing);
+    registerAbility('zombie_they_keep_coming_pod', 'onPlay', zombieTheyKeepComing); // POD 规则没变
+
+    // 常规行动/随从也映射 POD
+    registerAbility('zombie_grave_digger_pod', 'onPlay', zombieGraveDigger);
+    registerAbility('zombie_walker_pod', 'onPlay', zombieWalker);
+    registerAbility('zombie_grave_robbing_pod', 'onPlay', zombieGraveRobbing);
+    registerAbility('zombie_not_enough_bullets_pod', 'onPlay', zombieNotEnoughBullets);
+    registerAbility('zombie_lend_a_hand_pod', 'onPlay', zombieLendAHand);
+    registerAbility('zombie_outbreak_pod', 'onPlay', zombieOutbreak);
+    registerAbility('zombie_mall_crawl_pod', 'onPlay', zombieMallCrawl);
+    registerAbility('zombie_lord_pod', 'onPlay', zombieLord);
 
     // === ongoing 效果注册 ===
     // 泛滥横行：其他玩家不能打随从到此基地 + 回合开始自毁
     registerRestriction('zombie_overrun', 'play_minion', zombieOverrunRestriction);
     registerTrigger('zombie_overrun', 'onTurnStart', zombieOverrunSelfDestruct);
+
+    registerRestriction('zombie_overrun_pod', 'play_minion', zombieOverrunRestriction);
+    registerTrigger('zombie_overrun_pod', 'onTurnStart', zombieOverrunSelfDestruct);
 
     // === 弃牌堆出牌能力注册 ===
     // 顽强丧尸：被动，弃牌堆中可作为额外随从打出（每回合限一次）
@@ -49,23 +63,25 @@ export function registerZombieAbilities(): void {
             if (!player) return [];
             // 每回合限一次（能力级别限制，不是卡牌级别）
             if (player.usedDiscardPlayAbilities?.includes('zombie_tenacious_z')) return [];
-            const cards = player.discard.filter(c => c.defId === 'zombie_tenacious_z');
+            const cards = player.discard.filter(c => c.defId === 'zombie_tenacious_z' || c.defId === 'zombie_tenacious_z_pod');
             if (cards.length === 0) return [];
             // 返回所有同 defId 的卡牌，用户选哪张都行（同名卡无区别）
-            const def = getCardDef('zombie_tenacious_z') as MinionCardDef | undefined;
-            return cards.map(card => ({
-                card,
-                allowedBaseIndices: 'all' as const,
-                consumesNormalLimit: false, // 额外打出，不消耗正常额度
-                sourceId: 'zombie_tenacious_z',
-                defId: card.defId,
-                power: def?.power ?? 0,
-                name: def?.name ?? card.defId,
-            }));
+            return cards.map(card => {
+                const def = getCardDef(card.defId) as MinionCardDef | undefined;
+                return {
+                    card,
+                    allowedBaseIndices: 'all' as const,
+                    consumesNormalLimit: false, // 额外打出，不消耗正常额度
+                    sourceId: 'zombie_tenacious_z',
+                    defId: card.defId,
+                    power: def?.power ?? 0,
+                    name: def?.name ?? card.defId,
+                }
+            });
         },
     });
 
-    // 它们为你而来（ongoing 行动卡）：持续效果，可从弃牌堆打出随从到此基地（替代手牌，消耗正常额度）
+    // 它们为你而来（ongoing 行动卡）：持续效果，可从弃牌堆打出随从到此基地（POD版为替代手牌）
     registerDiscardPlayProvider({
         id: 'zombie_theyre_coming_to_get_you',
         getPlayableCards(core, playerId) {
@@ -73,26 +89,42 @@ export function registerZombieAbilities(): void {
             if (!player) return [];
             // 找到所有附着了此 ongoing 卡的基地
             const allowedBases: number[] = [];
+            // 记录对应基地上提供此能力的具体Ongoing实例，判断它是原版还是POD版
+            const podBases = new Set<number>();
+
             for (let i = 0; i < core.bases.length; i++) {
                 const base = core.bases[i];
-                if (base.ongoingActions.some(o => o.defId === 'zombie_theyre_coming_to_get_you' && o.ownerId === playerId)) {
-                    allowedBases.push(i);
+                for (const o of base.ongoingActions) {
+                    if (o.ownerId === playerId && (o.defId === 'zombie_theyre_coming_to_get_you' || o.defId === 'zombie_theyre_coming_to_get_you_pod')) {
+                        allowedBases.push(i);
+                        if (o.defId === 'zombie_theyre_coming_to_get_you_pod') {
+                            podBases.add(i);
+                        }
+                    }
                 }
             }
+            // 修正：原版“They're Coming To Get You”是“Play an extra minion here from your discard pile” -> 额外打出
+            // POD版“They're Coming To Get You_pod”是 “Play a minion here from your discard pile instead of from your hand” -> 消耗正常额度
+
             if (allowedBases.length === 0) return [];
             // 弃牌堆中所有随从都可打出到这些基地
             const minions = player.discard.filter(c => c.type === 'minion');
-            return minions.map(card => {
+            return minions.flatMap(card => {
                 const def = getCardDef(card.defId) as MinionCardDef | undefined;
-                return {
-                    card,
-                    allowedBaseIndices: allowedBases,
-                    consumesNormalLimit: true, // 替代手牌，消耗正常额度
-                    sourceId: 'zombie_theyre_coming_to_get_you',
-                    defId: card.defId,
-                    power: def?.power ?? 0,
-                    name: def?.name ?? card.defId,
-                };
+                const options = [];
+                for (const bIndex of allowedBases) {
+                    const isPod = podBases.has(bIndex);
+                    options.push({
+                        card,
+                        allowedBaseIndices: [bIndex], // 每个基地由于可能额度消耗不同，必须拆分选项
+                        consumesNormalLimit: isPod ? true : false, // POD 版消耗正常随从额度（代替手牌），原版不消耗（额外随从）
+                        sourceId: 'zombie_theyre_coming_to_get_you',
+                        defId: card.defId,
+                        power: def?.power ?? 0,
+                        name: def?.name ?? card.defId,
+                    });
+                }
+                return options;
             });
         },
     });
@@ -106,9 +138,9 @@ function zombieGraveDigger(ctx: AbilityContext): AbilityResult {
     const options = minionsInDiscard.map((c, i) => {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
-        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } };
+        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
     });
-    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } };
+    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
     const interaction = createSimpleChoice(
         `zombie_grave_digger_${ctx.now}`, ctx.playerId,
         '选择要从弃牌堆取回的随从（可跳过）', [...options, skipOption] as any[], 'zombie_grave_digger',
@@ -120,9 +152,9 @@ function zombieGraveDigger(ctx: AbilityContext): AbilityResult {
         const opts = minions.map((c: any, i: number) => {
             const def = getCardDef(c.defId);
             const name = def?.name ?? c.defId;
-            return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } };
+            return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
         });
-        return [...opts, { id: 'skip', label: '跳过', value: { skip: true } }];
+        return [...opts, { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }];
     };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -158,7 +190,7 @@ function zombieGraveRobbing(ctx: AbilityContext): AbilityResult {
     const options = player.discard.map((c, i) => {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
-        return { id: `card-${i}`, label: `${name} (${c.type === 'minion' ? '随从' : '行动'})`, value: { cardUid: c.uid, defId: c.defId } };
+        return { id: `card-${i}`, label: `${name} (${c.type === 'minion' ? '随从' : '行动'})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `zombie_grave_robbing_${ctx.now}`, ctx.playerId,
@@ -170,7 +202,7 @@ function zombieGraveRobbing(ctx: AbilityContext): AbilityResult {
         return p.discard.map((c: any, i: number) => {
             const def = getCardDef(c.defId);
             const name = def?.name ?? c.defId;
-            return { id: `card-${i}`, label: `${name} (${c.type === 'minion' ? '随从' : '行动'})`, value: { cardUid: c.uid, defId: c.defId } };
+            return { id: `card-${i}`, label: `${name} (${c.type === 'minion' ? '随从' : '行动'})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
         });
     };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -210,7 +242,7 @@ function zombieLendAHand(ctx: AbilityContext): AbilityResult {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
         const typeLabel = c.type === 'minion' ? '随从' : '行动';
-        return { id: `card-${i}`, label: `${name} (${typeLabel})`, value: { cardUid: c.uid, defId: c.defId } };
+        return { id: `card-${i}`, label: `${name} (${typeLabel})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `zombie_lend_a_hand_${ctx.now}`, ctx.playerId,
@@ -224,7 +256,7 @@ function zombieLendAHand(ctx: AbilityContext): AbilityResult {
             const def = getCardDef(c.defId);
             const name = def?.name ?? c.defId;
             const typeLabel = c.type === 'minion' ? '随从' : '行动';
-            return { id: `card-${i}`, label: `${name} (${typeLabel})`, value: { cardUid: c.uid, defId: c.defId } };
+            return { id: `card-${i}`, label: `${name} (${typeLabel})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
         });
     };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -249,7 +281,7 @@ function zombieOutbreak(ctx: AbilityContext): AbilityResult {
     const baseOptions = buildBaseTargetOptions(emptyBases, ctx.state);
     const interaction = createSimpleChoice(
         `zombie_outbreak_base_${ctx.now}`, ctx.playerId,
-        '爆发：选择一个没有你随从的基地', baseOptions as any[], { sourceId: 'zombie_outbreak_choose_base', targetType: 'base' },
+        '爆发：选择一个没有你随从的基地', baseOptions as any[], 'zombie_outbreak_choose_base',
     );
     const extended = {
         ...interaction,
@@ -297,9 +329,9 @@ function zombieLordBuildInteraction(
             const def = getCardDef(c.defId) as MinionCardDef | undefined;
             const name = def?.name ?? c.defId;
             const power = def?.power ?? 0;
-            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } };
+            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , displayMode: 'card' as const };
         });
-    options.push({ id: 'done', label: '完成', value: { done: true } } as any);
+    options.push({ id: 'done', label: '完成', value: { done: true }, displayMode: 'button' as const } as any);
     const allowedBaseIndices = emptyBases.filter(b => !filledBases.includes(b.baseIndex)).map(b => b.baseIndex);
     const interaction = createSimpleChoice(
         `zombie_lord_${timestamp}`, playerId,
@@ -317,9 +349,9 @@ function zombieLordBuildInteraction(
             const def = getCardDef(c.defId) as MinionCardDef | undefined;
             const name = def?.name ?? c.defId;
             const power = def?.power ?? 0;
-            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } };
+            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , displayMode: 'card' as const };
         });
-        opts.push({ id: 'done', label: '完成', value: { done: true } } as any);
+        opts.push({ id: 'done', label: '完成', value: { done: true }, displayMode: 'button' as const } as any);
         return opts;
     };
     return {
@@ -377,7 +409,7 @@ function zombieTheyKeepComing(ctx: AbilityContext): AbilityResult {
         const def = getCardDef(c.defId) as MinionCardDef | undefined;
         const name = def?.name ?? c.defId;
         const power = def?.power ?? 0;
-        return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } };
+        return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `zombie_they_keep_coming_${ctx.now}`, ctx.playerId,
@@ -391,7 +423,7 @@ function zombieTheyKeepComing(ctx: AbilityContext): AbilityResult {
             const def = getCardDef(c.defId) as MinionCardDef | undefined;
             const name = def?.name ?? c.defId;
             const power = def?.power ?? 0;
-            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } };
+            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , displayMode: 'card' as const };
         });
     };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -405,7 +437,7 @@ function zombieTheyKeepComing(ctx: AbilityContext): AbilityResult {
 function zombieOverrunRestriction(ctx: RestrictionCheckContext): boolean {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return false;
-    const overrun = base.ongoingActions.find(o => o.defId === 'zombie_overrun');
+    const overrun = base.ongoingActions.find(o => o.defId === 'zombie_overrun' || o.defId === 'zombie_overrun_pod');
     if (!overrun) return false;
     // 只限制非拥有者?
     return ctx.playerId !== overrun.ownerId;
@@ -416,7 +448,7 @@ function zombieOverrunSelfDestruct(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
-        const overrun = base.ongoingActions.find(o => o.defId === 'zombie_overrun');
+        const overrun = base.ongoingActions.find(o => o.defId === 'zombie_overrun' || o.defId === 'zombie_overrun_pod');
         if (!overrun) continue;
         if (overrun.ownerId !== ctx.playerId) continue;
         events.push({
@@ -494,8 +526,8 @@ export function registerZombieInteractionHandlers(): void {
     });
 
     // 进发商场：选择卡名后搜索同名卡放入弃牌堆，之后重洗牌库
-    // 事件顺序：先 DECK_RESHUFFLED（重建牌库，同名卡放在牌库顶部以便后续弃牌），
-    // 再 CARDS_DISCARDED（从牌库中将同名卡移入弃牌堆）。
+    // Wiki 规则："Search your deck for any number of cards with the same name and place them into your discard pile. Shuffle your deck."
+    // 注意：只洗牌库，不合并弃牌堆！
     registerInteractionHandler('zombie_mall_crawl', (state, playerId, value, _iData, random, timestamp) => {
         const { defId } = value as { defId: string };
         const player = state.core.players[playerId];
@@ -503,23 +535,24 @@ export function registerZombieInteractionHandlers(): void {
         if (sameNameCards.length === 0) {
             // 牌库中未找到同名卡（极端边缘情况），规则仍要求重洗牌库
             const shuffled = random.shuffle([...player.deck]);
-            const deckUids = [...shuffled.map(c => c.uid), ...player.discard.map(c => c.uid)];
-            return { state, events: [
-                { type: SU_EVENTS.DECK_RESHUFFLED, payload: { playerId, deckUids }, timestamp } as DeckReshuffledEvent,
-                buildAbilityFeedback(playerId, 'feedback.deck_search_no_match', timestamp),
-            ] };
+            const deckUids = shuffled.map(c => c.uid); // 只洗牌库，不包含弃牌堆
+            return {
+                state, events: [
+                    { type: SU_EVENTS.DECK_RESHUFFLED, payload: { playerId, deckUids }, timestamp } as DeckReshuffledEvent,
+                    buildAbilityFeedback(playerId, 'feedback.deck_search_no_match', timestamp),
+                ]
+            };
         }
         const uids = sameNameCards.map(c => c.uid);
         // 剩余牌库洗牌，同名卡放在最前面（它们会被后续 CARDS_DISCARDED 移走）
         const remainingDeck = player.deck.filter(c => c.defId !== defId);
         const shuffledRemaining = random.shuffle([...remainingDeck]);
-        // deckUids = 同名卡 + 洗牌后的剩余牌库 + 当前弃牌堆（DECK_RESHUFFLED 会合并 deck+discard）
-        const deckUids = [...uids, ...shuffledRemaining.map(c => c.uid), ...player.discard.map(c => c.uid)];
+        // deckUids = 同名卡 + 洗牌后的剩余牌库（不包含弃牌堆）
+        const deckUids = [...uids, ...shuffledRemaining.map(c => c.uid)];
         return {
             state,
             events: [
-                // 1. 重建牌库：合并 deck+discard，按 deckUids 排序，discard 清空
-                //    同名卡在 deckUids 中所以会保留在新 deck 里，原 discard 的卡也合并进 deck
+                // 1. 重建牌库：只洗牌库，不合并弃牌堆（DECK_RESHUFFLED 会检查 deckUids 是否包含弃牌堆的卡）
                 { type: SU_EVENTS.DECK_RESHUFFLED, payload: { playerId, deckUids }, timestamp } as DeckReshuffledEvent,
                 // 2. 弃牌：同名卡从 deck 移入 discard
                 { type: SU_EVENTS.CARDS_DISCARDED, payload: { playerId, cardUids: uids }, timestamp } as CardsDiscardedEvent,
@@ -537,11 +570,11 @@ export function registerZombieInteractionHandlers(): void {
             const def = getCardDef(c.defId) as MinionCardDef | undefined;
             const name = def?.name ?? c.defId;
             const power = def?.power ?? 0;
-            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } };
+            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , displayMode: 'card' as const };
         });
         const next = createSimpleChoice(
             `zombie_outbreak_minion_${timestamp}`, playerId,
-            '爆发：选择要打出的随从', options, { sourceId: 'zombie_outbreak_choose_minion', targetType: 'hand' },
+            '爆发：选择要打出的随从', options, 'zombie_outbreak_choose_minion',
         );
         return {
             state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { targetBaseIndex: baseIndex } } }),

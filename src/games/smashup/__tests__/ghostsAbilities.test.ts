@@ -119,7 +119,7 @@ describe('ghost_make_contact（交朋友）', () => {
                 },
                 bases: [{
                     defId: 'b1',
-                    minions: [makeMinion('m1', 'test', '1', 2)],
+                    minions: [makeMinion('m1', 'test', '1', 2, { powerModifier: 0 })],
                     ongoingActions: [],
                 }],
             });
@@ -141,7 +141,7 @@ describe('ghost_make_contact（交朋友）', () => {
                 },
                 bases: [{
                     defId: 'b1',
-                    minions: [makeMinion('m2', 'test', '1', 2)],
+                    minions: [makeMinion('m2', 'test', '1', 2, { powerModifier: 0 })],
                     ongoingActions: [],
                 }],
             });
@@ -164,7 +164,7 @@ describe('ghost_make_contact（交朋友）', () => {
                 },
                 bases: [{
                     defId: 'b1',
-                    minions: [makeMinion('m1', 'test', '1', 2)],
+                    minions: [makeMinion('m1', 'test', '1', 2, { powerModifier: 0 })],
                     ongoingActions: [],
                 }],
             });

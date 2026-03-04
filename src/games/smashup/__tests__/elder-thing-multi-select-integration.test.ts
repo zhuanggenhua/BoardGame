@@ -4,13 +4,24 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { SmashUpDomain } from '../domain';
+import { smashUpFlowHooks } from '../domain/index';
+import { createFlowSystem, createBaseSystems } from '../../../engine';
 // TODO: createSmashUpGame 不存在，需要适配 GameTestRunner 到 SmashUp 的 engineConfig
 // import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 // import { createSmashUpGame } from '../game';
 
 describe.skip('远古之物多选集成测试', () => {
     it('应该能够选择并消灭两个己方随从', async () => {
-        const runner = new GameTestRunner(createSmashUpGame());
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+        domain: SmashUpDomain,
+        systems: [
+            createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+            ...createBaseSystems<SmashUpCore>(),
+        ],
+        playerIds: PLAYER_IDS,
+        silent: true,
+    });
         
         // 初始化游戏
         await runner.start({ numPlayers: 2 });

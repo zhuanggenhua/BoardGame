@@ -24,8 +24,7 @@ const BreakdownLineItem: React.FC<{ line: BreakdownLine }> = ({ line }) => {
               ? 'text-rose-400'
               : 'text-slate-300';
 
-    // neutral 行（基础值）不加符号，positive/negative 行加 +/- 符号
-    const sign = line.color === 'neutral' ? '' : (line.value > 0 ? '+' : '');
+    const sign = line.value > 0 ? '+' : '';
 
     return (
         <div className="flex items-center justify-between gap-3 text-[11px] leading-relaxed">

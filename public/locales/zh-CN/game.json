@@ -122,6 +122,7 @@
       "contactLabel": "联系方式（可选）",
       "contactPlaceholder": "邮箱或 QQ（便于跟进）",
       "attachLog": "附带操作日志",
+      "attachState": "附带状态快照（用于精确复现）",
       "submit": "提交反馈",
       "success": "反馈已提交，感谢支持！",
       "errors": {

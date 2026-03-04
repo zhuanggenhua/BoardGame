@@ -653,6 +653,7 @@ export function createResponseWindowSystem<TCore>(
                     const currentResponderId = getCurrentResponderId(currentWindow);
                     // 只有当前响应者的事件才推进
                     if (cardPayload.playerId !== currentResponderId) break;
+                    
                     // 前瞻：同批事件中有交互锁定请求（如 INTERACTION_REQUESTED），
                     // 但 InteractionSystem（优先级更高）尚未执行，sys.interaction.current 还是空的。
                     // 此时不能推进窗口，等后续 interactionLock 分支处理锁定。

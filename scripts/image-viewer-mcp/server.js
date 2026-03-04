@@ -177,12 +177,10 @@ class ImageViewerServer {
         if (!fs.existsSync(dir)) return;
 
         const entries = fs.readdirSync(dir, { withFileTypes: true });
-
         for (const entry of entries) {
           if (images.length >= limit) break;
 
           const entryPath = path.join(dir, entry.name);
-
           if (entry.isFile()) {
             const ext = path.extname(entry.name).toLowerCase();
             if (IMAGE_EXTENSIONS.includes(ext)) {

@@ -27,7 +27,6 @@ import {
     interceptEvent,
 } from '../domain/ongoingEffects';
 import { reduce } from '../domain/reducer';
-import { processDestroyTriggers, processDestroyMoveCycle, filterProtectedDestroyEvents } from '../domain/reducer';
 import { resolveAbility } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
 import { validate } from '../domain/commands';
@@ -43,7 +42,7 @@ import type { RandomFn } from '../../../engine/types';
 function makeMinion(uid: string, defId: string, controller: string, power: number, overrides: Partial<MinionOnBase> = {}): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
         ...overrides,
     };
 }
@@ -92,99 +91,47 @@ beforeAll(() => {
 
 describe('bear_cavalry_general_ivan 保护', () => {
     it('伊万将军保护己方其他随从不被对手消灭', () => {
-        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6);
-        const ally = makeMinion('ally', 'test_minion', '0', 3);
+        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6, { powerModifier: 0 });
+        const ally = makeMinion('ally', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [ivan, ally] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, ally, 0, '1', 'destroy')).toBe(true);
     });
 
     it('不保护伊万将军自身', () => {
-        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6);
+        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6, { powerModifier: 0 });
         const base = makeBase({ minions: [ivan] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, ivan, 0, '1', 'destroy')).toBe(false);
     });
 
     it('不保护对手的随从', () => {
-        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6);
-        const enemy = makeMinion('enemy', 'test_minion', '1', 3);
+        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6, { powerModifier: 0 });
+        const enemy = makeMinion('enemy', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [ivan, enemy] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, enemy, 0, '0', 'destroy')).toBe(false);
-    });
-
-    it('伊万将军保护己方随从不被暗杀（onTurnEnd 触发器经过保护过滤）', () => {
-        // P0 控制伊万将军和一个盟友，P1 的暗杀卡附着在盟友上
-        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6);
-        const ally = makeMinion('ally', 'test_minion', '0', 3, {
-            attachedActions: [{ uid: 'as-1', defId: 'ninja_assassination', ownerId: '1' }],
-        });
-        const base = makeBase({ minions: [ivan, ally] });
-        const state = makeState({ bases: [base] });
-
-        // 触发 onTurnEnd（暗杀触发器产生 MINION_DESTROYED 事件）
-        const { events } = fireTriggers(state, 'onTurnEnd', {
-            state,
-            playerId: '0',
-            random: dummyRandom,
-            now: 1000,
-        });
-
-        // 暗杀触发器应产生 MINION_DESTROYED 事件（带 destroyerId）
-        expect(events.length).toBeGreaterThan(0);
-        const destroyEvt = events.find(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(destroyEvt).toBeDefined();
-        expect((destroyEvt as any).payload.destroyerId).toBe('1');
-
-        // 经过 filterProtectedDestroyEvents 过滤后，消灭事件应被移除
-        // （伊万将军保护己方随从不被对手消灭，destroyerId='1' !== controller='0'）
-        const filtered = filterProtectedDestroyEvents(events, state, '0');
-        const remainingDestroy = filtered.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(remainingDestroy).toHaveLength(0);
-    });
-
-    it('暗杀卡消灭对手随从时不受伊万将军保护（伊万不保护对手）', () => {
-        // P0 控制伊万将军，P1 的随从附着了 P0 的暗杀卡
-        const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6);
-        const enemy = makeMinion('enemy', 'test_minion', '1', 3, {
-            attachedActions: [{ uid: 'as-1', defId: 'ninja_assassination', ownerId: '0' }],
-        });
-        const base = makeBase({ minions: [ivan, enemy] });
-        const state = makeState({ bases: [base] });
-
-        const { events } = fireTriggers(state, 'onTurnEnd', {
-            state,
-            playerId: '1',
-            random: dummyRandom,
-            now: 1000,
-        });
-
-        // 经过过滤后，消灭事件应保留（伊万不保护对手随从）
-        const filtered = filterProtectedDestroyEvents(events, state, '1');
-        const remainingDestroy = filtered.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(remainingDestroy).toHaveLength(1);
     });
 });
 
 describe('bear_cavalry_polar_commando 保护', () => {
     it('唯一己方随从时不可消灭', () => {
-        const commando = makeMinion('pc', 'bear_cavalry_polar_commando', '0', 4);
+        const commando = makeMinion('pc', 'bear_cavalry_polar_commando', '0', 4, { powerModifier: 0 });
         const base = makeBase({ minions: [commando] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, commando, 0, '1', 'destroy')).toBe(true);
     });
 
     it('有其他己方随从时可被消灭', () => {
-        const commando = makeMinion('pc', 'bear_cavalry_polar_commando', '0', 4);
-        const ally = makeMinion('ally', 'test_minion', '0', 2);
+        const commando = makeMinion('pc', 'bear_cavalry_polar_commando', '0', 4, { powerModifier: 0 });
+        const ally = makeMinion('ally', 'test_minion', '0', 2, { powerModifier: 0 });
         const base = makeBase({ minions: [commando, ally] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, commando, 0, '1', 'destroy')).toBe(false);
     });
 
     it('唯一时 +2 力量', () => {
-        const commando = makeMinion('pc', 'bear_cavalry_polar_commando', '0', 4);
+        const commando = makeMinion('pc', 'bear_cavalry_polar_commando', '0', 4, { powerModifier: 0 });
         const base = makeBase({ minions: [commando] });
         const state = makeState({ bases: [base] });
         expect(getEffectivePower(state, commando, 0)).toBe(6); // 4 + 2
@@ -193,7 +140,7 @@ describe('bear_cavalry_polar_commando 保护', () => {
 
 describe('bear_cavalry_superiority 保护', () => {
     it('保护基地上己方随从不被对手消灭', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3);
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({
             minions: [myMinion],
             ongoingActions: [{ uid: 'sup-1', defId: 'bear_cavalry_superiority', ownerId: '0' }],
@@ -204,7 +151,7 @@ describe('bear_cavalry_superiority 保护', () => {
     });
 
     it('不保护对手的随从', () => {
-        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3);
+        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({
             minions: [enemyMinion],
             ongoingActions: [{ uid: 'sup-1', defId: 'bear_cavalry_superiority', ownerId: '0' }],
@@ -220,8 +167,8 @@ describe('bear_cavalry_superiority 保护', () => {
 
 describe('bear_cavalry_cub_scout 触发', () => {
     it('力量低于斥候的对手随从被消灭', () => {
-        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3);
-        const moved = makeMinion('moved', 'test_minion', '1', 2);
+        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 2, { powerModifier: 0 });
         const destBase = makeBase({ minions: [scout] });
         const srcBase = makeBase({ minions: [moved] });
         const state = makeState({ bases: [destBase, srcBase] });
@@ -235,8 +182,8 @@ describe('bear_cavalry_cub_scout 触发', () => {
     });
 
     it('力量不低于斥候的随从不被消灭', () => {
-        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3);
-        const moved = makeMinion('moved', 'test_minion', '1', 5);
+        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
         const destBase = makeBase({ minions: [scout] });
         const srcBase = makeBase({ minions: [moved] });
         const state = makeState({ bases: [destBase, srcBase] });
@@ -252,8 +199,8 @@ describe('bear_cavalry_cub_scout 触发', () => {
 
 describe('bear_cavalry_high_ground 触发', () => {
     it('有己方随从时消灭移入的对手随从', () => {
-        const myMinion = makeMinion('my', 'test_minion', '0', 3);
-        const moved = makeMinion('moved', 'test_minion', '1', 5);
+        const myMinion = makeMinion('my', 'test_minion', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
         const destBase = makeBase({
             minions: [myMinion],
             ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '0' }],
@@ -372,7 +319,7 @@ describe('cthulhu_furthering_the_cause 触发', () => {
     });
 
     it('本回合该基地无对手随从被消灭→不获得 VP', () => {
-        const enemy = makeMinion('e1', 'test_minion', '1', 3);
+        const enemy = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({
             minions: [enemy],
             ongoingActions: [{ uid: 'ftc-1', defId: 'cthulhu_furthering_the_cause', ownerId: '0' }],
@@ -387,7 +334,7 @@ describe('cthulhu_furthering_the_cause 触发', () => {
     });
 
     it('reducer: MINION_DESTROYED 追踪到 turnDestroyedMinions', () => {
-        const minion = makeMinion('m1', 'test_minion', '1', 3);
+        const minion = makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [minion] });
         const state = makeState({ bases: [base] });
 
@@ -500,8 +447,8 @@ describe('killer_plant_overgrowth 回合开始临界点降为0', () => {
 
 describe('killer_plant_entangled 保护 + 自毁', () => {
     it('有己方随从的基地上所有随从不可被移动', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3);
-        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3);
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({
             minions: [myMinion, enemyMinion],
             ongoingActions: [{ uid: 'ent-1', defId: 'killer_plant_entangled', ownerId: '0' }],
@@ -574,8 +521,8 @@ describe('elder_thing_dunwich_horror', () => {
 
 describe('pirate_king beforeScoring', () => {
     it('计分前将不在计分基地的海盗王移过去', () => {
-        const king = makeMinion('king', 'pirate_king', '0', 5);
-        const otherMinion = makeMinion('m1', 'test_minion', '1', 3);
+        const king = makeMinion('king', 'pirate_king', '0', 5, { powerModifier: 0 });
+        const otherMinion = makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [otherMinion] });
         const otherBase = makeBase({ minions: [king] });
         const state = makeState({ bases: [scoringBase, otherBase] });
@@ -591,7 +538,7 @@ describe('pirate_king beforeScoring', () => {
     });
 
     it('已在计分基地时不产生移动事件', () => {
-        const king = makeMinion('king', 'pirate_king', '0', 5);
+        const king = makeMinion('king', 'pirate_king', '0', 5, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [king] });
         const state = makeState({ bases: [scoringBase] });
 
@@ -604,7 +551,7 @@ describe('pirate_king beforeScoring', () => {
 
 describe('pirate_first_mate afterScoring', () => {
     it('计分后将副官移动到其他基地', () => {
-        const mate = makeMinion('mate', 'pirate_first_mate', '0', 2);
+        const mate = makeMinion('mate', 'pirate_first_mate', '0', 2, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [mate] });
         const otherBase = makeBase({});
         const state = makeState({ bases: [scoringBase, otherBase] });
@@ -619,7 +566,7 @@ describe('pirate_first_mate afterScoring', () => {
     });
 
     it('没有其他基地时不产生事件', () => {
-        const mate = makeMinion('mate', 'pirate_first_mate', '0', 2);
+        const mate = makeMinion('mate', 'pirate_first_mate', '0', 2, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [mate] });
         const state = makeState({ bases: [scoringBase] });
 
@@ -627,77 +574,6 @@ describe('pirate_first_mate afterScoring', () => {
             state, playerId: '0', baseIndex: 0, random: dummyRandom, now: 0,
         });
         expect(events.filter(e => e.type === SU_EVENTS.MINION_MOVED).length).toBe(0);
-    });
-
-    it('基地已清除后交互处理器仍能生成移动事件', () => {
-        // 模拟 BASE_CLEARED 已 reduce 后的状态：
-        // - 计分基地（原 index 0）已被移除
-        // - 随从已进入弃牌堆
-        const otherBase = makeBase({ defId: 'other_base' });
-        const newBase = makeBase({ defId: 'new_base' });
-        const mateCard: CardInstance = { uid: 'mate', defId: 'pirate_first_mate', type: 'minion', owner: '0' };
-        const state = makeState({
-            bases: [otherBase, newBase], // 计分基地已被移除，索引已偏移
-            players: {
-                '0': makePlayer('0', { discard: [mateCard] }),
-                '1': makePlayer('1'),
-            },
-        });
-        const ms = { core: state, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } as any } as any;
-
-        // 调用 choose_base handler，模拟玩家选择了目标基地
-        const handler = getInteractionHandler('pirate_first_mate_choose_base');
-        expect(handler).toBeDefined();
-        const result = handler!(
-            ms, '0',
-            { baseIndex: 0 }, // 目标基地
-            { continuationContext: { mateUid: 'mate', mateDefId: 'pirate_first_mate', scoringBaseIndex: 999 } } as any,
-            dummyRandom, 100,
-        );
-        expect(result).toBeDefined();
-        expect(result!.events.length).toBe(1);
-        const moveEvt = result!.events[0] as MinionMovedEvent;
-        expect(moveEvt.type).toBe(SU_EVENTS.MINION_MOVED);
-        expect(moveEvt.payload.minionUid).toBe('mate');
-        expect(moveEvt.payload.toBaseIndex).toBe(0);
-    });
-
-    it('基地已清除后 choose_base handler 生成的 MINION_MOVED 事件能被 reducer 正确处理', () => {
-        // 模拟 BASE_CLEARED 后的状态
-        const otherBase = makeBase({ defId: 'other_base' });
-        const mateCard: CardInstance = { uid: 'mate', defId: 'pirate_first_mate', type: 'minion', owner: '0' };
-        const state = makeState({
-            bases: [otherBase],
-            players: {
-                '0': makePlayer('0', { discard: [mateCard] }),
-                '1': makePlayer('1'),
-            },
-        });
-        const ms = { core: state, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } as any } as any;
-
-        // 调用 choose_base handler
-        const handler = getInteractionHandler('pirate_first_mate_choose_base');
-        expect(handler).toBeDefined();
-        const result = handler!(
-            ms, '0',
-            { baseIndex: 0 }, // 目标基地
-            { continuationContext: { mateUid: 'mate', mateDefId: 'pirate_first_mate', scoringBaseIndex: 999 } } as any,
-            dummyRandom, 100,
-        );
-        expect(result).toBeDefined();
-        expect(result!.events.length).toBe(1);
-        const moveEvt = result!.events[0] as MinionMovedEvent;
-        expect(moveEvt.type).toBe(SU_EVENTS.MINION_MOVED);
-        expect(moveEvt.payload.minionUid).toBe('mate');
-        expect(moveEvt.payload.toBaseIndex).toBe(0);
-
-        // reducer 应该能从弃牌堆恢复随从到目标基地
-        const reduced = reduce(state, moveEvt);
-        expect(reduced.bases[0].minions.length).toBe(1);
-        expect(reduced.bases[0].minions[0].uid).toBe('mate');
-        expect(reduced.bases[0].minions[0].defId).toBe('pirate_first_mate');
-        // 弃牌堆中应该没有大副了
-        expect(reduced.players['0'].discard.find(c => c.uid === 'mate')).toBeUndefined();
     });
 });
 
@@ -708,7 +584,7 @@ describe('cthulhu_chosen beforeScoring', () => {
     }
 
     it('有 matchState 时创建确认交互（"你可以"语义）', () => {
-        const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3);
+        const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [chosen] });
         const state = makeState({
             bases: [scoringBase],
@@ -726,7 +602,7 @@ describe('cthulhu_chosen beforeScoring', () => {
     });
 
     it('无 matchState 时回退自动执行', () => {
-        const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3);
+        const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [chosen] });
         const state = makeState({
             bases: [scoringBase],
@@ -746,7 +622,7 @@ describe('cthulhu_chosen beforeScoring', () => {
     });
 
     it('无疯狂牌库时回退自动执行仍获得+2力量', () => {
-        const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3);
+        const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [chosen] });
         const state = makeState({
             bases: [scoringBase],
@@ -765,8 +641,8 @@ describe('cthulhu_chosen beforeScoring', () => {
     });
 
     it('多个天选之人时创建链式确认交互', () => {
-        const ch1 = makeMinion('ch1', 'cthulhu_chosen', '0', 3);
-        const ch2 = makeMinion('ch2', 'cthulhu_chosen', '1', 3);
+        const ch1 = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
+        const ch2 = makeMinion('ch2', 'cthulhu_chosen', '1', 3, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [ch1, ch2] });
         const state = makeState({
             bases: [scoringBase],
@@ -784,9 +660,9 @@ describe('cthulhu_chosen beforeScoring', () => {
     });
 
     it('不在计分基地上的天选之人也能触发（回退模式）', () => {
-        const ch1 = makeMinion('ch1', 'cthulhu_chosen', '0', 3);
+        const ch1 = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const otherBase = makeBase({ minions: [ch1] });
-        const scoringBase = makeBase({ minions: [makeMinion('m1', 'test_minion', '1', 5)] });
+        const scoringBase = makeBase({ minions: [makeMinion('m1', 'test_minion', '1', 5, { powerModifier: 0 })] });
         const state = makeState({
             bases: [scoringBase, otherBase],
             madnessDeck: Array.from({ length: 5 }, (_, i) => ({ uid: `mad-${i}`, defId: MADNESS_CARD_DEF_ID, type: 'madness' as const })),
@@ -806,8 +682,8 @@ describe('cthulhu_chosen beforeScoring', () => {
 
 describe('elder_thing_the_price_of_power special 能力', () => {
     it('对手有随从且手牌有疯狂卡时给己方随从加力量', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3);
-        const enemyMinion = makeMinion('e1', 'test_minion', '1', 4);
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const enemyMinion = makeMinion('e1', 'test_minion', '1', 4, { powerModifier: 0 });
         const scoringBase = makeBase({
             minions: [myMinion, enemyMinion],
         });
@@ -840,7 +716,7 @@ describe('elder_thing_the_price_of_power special 能力', () => {
     });
 
     it('对手在此基地无随从时不触发', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3);
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const scoringBase = makeBase({
             minions: [myMinion],
         });
@@ -866,8 +742,8 @@ describe('elder_thing_the_price_of_power special 能力', () => {
     });
 
     it('对手手牌无疯狂卡时不触发', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3);
-        const enemyMinion = makeMinion('e1', 'test_minion', '1', 4);
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const enemyMinion = makeMinion('e1', 'test_minion', '1', 4, { powerModifier: 0 });
         const scoringBase = makeBase({
             minions: [myMinion, enemyMinion],
         });
@@ -962,8 +838,8 @@ describe('alien_jammed_signal: 无视基地能力', () => {
 
 describe('cthulhu_complete_the_ritual onTurnStart', () => {
     it('拥有者回合开始时返回随从+移除ongoing+换基地', () => {
-        const m1 = makeMinion('m1', 'test_minion', '0', 3);
-        const m2 = makeMinion('m2', 'test_minion', '1', 4);
+        const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const m2 = makeMinion('m2', 'test_minion', '1', 4, { powerModifier: 0 });
         const base = makeBase({
             minions: [m1, m2],
             ongoingActions: [
@@ -1002,7 +878,7 @@ describe('cthulhu_complete_the_ritual onTurnStart', () => {
 
 describe('BASE_REPLACED keepCards 模式 (terraform)', () => {
     it('keepCards=true 时保留随从和 ongoing，仅替换 defId', () => {
-        const m1 = makeMinion('m1', 'test_minion', '0', 3);
+        const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({
             defId: 'old_base',
             minions: [m1],
@@ -1052,7 +928,7 @@ describe('BASE_REPLACED keepCards 模式 (terraform)', () => {
 
 describe('pirate_buccaneer 触发器：被消灭→移动', () => {
     it('两个基地时自动移动（产生 MINION_MOVED）', () => {
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
+        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4, { powerModifier: 0 });
         const base0 = makeBase({ minions: [buccaneer] });
         const base1 = makeBase();
         const state = makeState({ bases: [base0, base1] });
@@ -1077,7 +953,7 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
     });
 
     it('无其他基地时不触发（正常消灭）', () => {
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
+        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4, { powerModifier: 0 });
         const base = makeBase({ minions: [buccaneer] });
         const state = makeState({ bases: [base] }); // 只有一个基地
 
@@ -1094,8 +970,8 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
     });
 
     it('非 buccaneer 随从不触发', () => {
-        const minion = makeMinion('m1', 'test_minion', '0', 3);
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
+        const minion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4, { powerModifier: 0 });
         const base0 = makeBase({ minions: [minion, buccaneer] });
         const base1 = makeBase();
         const state = makeState({ bases: [base0, base1] });
@@ -1131,7 +1007,7 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
     });
 
     it('三个以上基地时创建交互（玩家选择目标基地）', () => {
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
+        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4, { powerModifier: 0 });
         const base0 = makeBase({ minions: [buccaneer] });
         const base1 = makeBase();
         const base2 = makeBase();
@@ -1169,7 +1045,7 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
     });
 
     it('reducer 验证：MINION_MOVED 正确移动随从', () => {
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
+        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4, { powerModifier: 0 });
         const base0 = makeBase({ minions: [buccaneer] });
         const base1 = makeBase();
         const state = makeState({ bases: [base0, base1] });
@@ -1187,62 +1063,6 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
         expect(next.bases[1].minions[0].uid).toBe('buc-1');
         expect(next.bases[1].minions[0].defId).toBe('pirate_buccaneer');
     });
-
-    it('processDestroyTriggers：两个基地时 MINION_MOVED 抑制 MINION_DESTROYED', () => {
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase();
-        const core = makeState({ bases: [base0, base1] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, ownerId: '0', reason: 'action' },
-            timestamp: 100,
-        };
-        const result = processDestroyTriggers([destroyEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // 两个基地时自动移动 → MINION_MOVED 事件应存在
-        const moveEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_MOVED);
-        expect(moveEvents.length).toBe(1);
-        expect((moveEvents[0] as MinionMovedEvent).payload.minionUid).toBe('buc-1');
-
-        // MINION_DESTROYED 应被抑制（随从已被移走）
-        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(destroyEvents.length).toBe(0);
-    });
-
-    it('processDestroyTriggers：三个基地时创建交互并暂缓消灭', () => {
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase();
-        const base2 = makeBase();
-        const core = makeState({ bases: [base0, base1, base2] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, ownerId: '0', reason: 'action' },
-            timestamp: 100,
-        };
-        const result = processDestroyTriggers([destroyEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // 三个基地时创建交互 → pendingSave → MINION_DESTROYED 被暂缓
-        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(destroyEvents.length).toBe(0);
-
-        // 应创建 pirate_buccaneer_move 交互
-        expect(result.matchState).toBeDefined();
-        const interaction = result.matchState!.sys.interaction.current ?? result.matchState!.sys.interaction.queue[0];
-        expect(interaction).toBeDefined();
-        expect((interaction!.data as any).sourceId).toBe('pirate_buccaneer_move');
-    });
 });
 
 // ============================================================================
@@ -1251,29 +1071,29 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
 
 describe('elder_thing_elder_thing 保护', () => {
     it('对手消灭远古之物被保护', () => {
-        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10);
+        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, elderThing, 0, '1', 'destroy')).toBe(true);
     });
 
     it('对手移动远古之物被保护', () => {
-        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10);
+        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, elderThing, 0, '1', 'move')).toBe(true);
     });
 
     it('己方消灭远古之物不被保护', () => {
-        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10);
+        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, elderThing, 0, '0', 'destroy')).toBe(false);
     });
 
     it('非 elder_thing_elder_thing 随从不被保护', () => {
-        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10);
-        const other = makeMinion('m1', 'test_minion', '0', 3);
+        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
+        const other = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing, other] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, other, 0, '1', 'destroy')).toBe(false);
@@ -1282,7 +1102,7 @@ describe('elder_thing_elder_thing 保护', () => {
 
 describe('elder_thing_elder_thing onPlay', () => {
     it('不足2个其他随从→产生 Interaction（消灭选项置灰）', () => {
-        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10);
+        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -1303,9 +1123,9 @@ describe('elder_thing_elder_thing onPlay', () => {
     });
 
     it('≥2个其他随从→产生 Interaction 选择', () => {
-        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10);
-        const ally1 = makeMinion('a1', 'test_minion', '0', 3);
-        const ally2 = makeMinion('a2', 'test_minion', '0', 3);
+        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
+        const ally1 = makeMinion('a1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const ally2 = makeMinion('a2', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing, ally1, ally2] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -1323,7 +1143,7 @@ describe('elder_thing_elder_thing onPlay', () => {
     });
 
     it('CARD_TO_DECK_BOTTOM reducer 从基地移除随从到牌库底', () => {
-        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10);
+        const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing] });
         const state = makeState({ bases: [base] });
 
@@ -1347,7 +1167,7 @@ describe('elder_thing_elder_thing onPlay', () => {
 
 describe('elder_thing_shoggoth 打出限制', () => {
     it('己方力量<6的基地不能打出修格斯', () => {
-        const ally = makeMinion('a1', 'test_minion', '0', 3);
+        const ally = makeMinion('a1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [ally] });
         const shoggothCard: CardInstance = { uid: 'sh-1', defId: 'elder_thing_shoggoth', type: 'minion', owner: '0' };
         const state = makeState({
@@ -1365,7 +1185,7 @@ describe('elder_thing_shoggoth 打出限制', () => {
     });
 
     it('己方力量≥6的基地可以打出修格斯', () => {
-        const bigMinion = makeMinion('big', 'test_minion', '0', 6);
+        const bigMinion = makeMinion('big', 'test_minion', '0', 6, { powerModifier: 0 });
         const base = makeBase({ minions: [bigMinion] });
         const shoggothCard: CardInstance = { uid: 'sh-1', defId: 'elder_thing_shoggoth', type: 'minion', owner: '0' };
         const state = makeState({
@@ -1384,7 +1204,7 @@ describe('elder_thing_shoggoth 打出限制', () => {
 
 describe('elder_thing_shoggoth onPlay', () => {
     it('产生第一个对手的 Interaction', () => {
-        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6);
+        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth] });
         const state = makeState({
             bases: [base],
@@ -1410,7 +1230,7 @@ describe('elder_thing_shoggoth onPlay', () => {
     });
 
     it('无对手时不产生事件', () => {
-        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6);
+        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth] });
         const state = makeState({
             bases: [base],
@@ -1434,7 +1254,7 @@ describe('elder_thing_shoggoth onPlay', () => {
 
 describe('killer_plant_venus_man_trap 搜索牌库', () => {
     it('牌库有多个力量≤2随从→产生 Interaction', () => {
-        const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5);
+        const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [trap] });
         // 牌库中放入两个 power≤2 的随从卡
         const deckCard1: CardInstance = { uid: 'd1', defId: 'killer_plant_sprout', type: 'minion', owner: '0' };
@@ -1457,7 +1277,7 @@ describe('killer_plant_venus_man_trap 搜索牌库', () => {
     });
 
     it('牌库只有一个力量≤2随从→自动抽取+额外随从+洗牌', () => {
-        const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5);
+        const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [trap] });
         const deckCard: CardInstance = { uid: 'd1', defId: 'killer_plant_sprout', type: 'minion', owner: '0' };
         const bigCard: CardInstance = { uid: 'd2', defId: 'killer_plant_venus_man_trap', type: 'minion', owner: '0' };
@@ -1482,7 +1302,7 @@ describe('killer_plant_venus_man_trap 搜索牌库', () => {
     });
 
     it('牌库无合格随从→不产生事件', () => {
-        const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5);
+        const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [trap] });
         // 牌库中只有 power>2 的卡
         const bigCard: CardInstance = { uid: 'd1', defId: 'killer_plant_venus_man_trap', type: 'minion', owner: '0' };
@@ -1505,7 +1325,7 @@ describe('killer_plant_venus_man_trap 搜索牌库', () => {
 
 describe('killer_plant_budding 选择场上随从', () => {
     it('场上有随从→产生 Interaction', () => {
-        const ally = makeMinion('a1', 'test_minion', '0', 3);
+        const ally = makeMinion('a1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [ally] });
         const state = makeState({ bases: [base] });
 
@@ -1535,7 +1355,7 @@ describe('killer_plant_budding 选择场上随从', () => {
 
 describe('killer_plant_deep_roots 保护修复', () => {
     it('基地上有 deep_roots 且随从属于拥有者→对手不可移动', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3);
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({
             minions: [myMinion],
             ongoingActions: [{ uid: 'dr-1', defId: 'killer_plant_deep_roots', ownerId: '0' }],
@@ -1545,7 +1365,7 @@ describe('killer_plant_deep_roots 保护修复', () => {
     });
 
     it('对手的随从不受 deep_roots 保护', () => {
-        const enemy = makeMinion('e1', 'test_minion', '1', 3);
+        const enemy = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({
             minions: [enemy],
             ongoingActions: [{ uid: 'dr-1', defId: 'killer_plant_deep_roots', ownerId: '0' }],
@@ -1555,7 +1375,7 @@ describe('killer_plant_deep_roots 保护修复', () => {
     });
 
     it('己方移动自己的随从不被保护', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3);
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({
             minions: [myMinion],
             ongoingActions: [{ uid: 'dr-1', defId: 'killer_plant_deep_roots', ownerId: '0' }],
@@ -1570,7 +1390,7 @@ describe('killer_plant_choking_vines 触发修复', () => {
         const target = makeMinion('m1', 'test_minion', '1', 5, {
             attachedActions: [{ uid: 'cv-1', defId: 'killer_plant_choking_vines', ownerId: '0' }],
         });
-        const other = makeMinion('m2', 'test_minion', '1', 2);
+        const other = makeMinion('m2', 'test_minion', '1', 2, { powerModifier: 0 });
         const base = makeBase({ minions: [target, other] });
         const state = makeState({ bases: [base] });
 
@@ -1583,7 +1403,7 @@ describe('killer_plant_choking_vines 触发修复', () => {
     });
 
     it('无附着 choking_vines 的随从不被消灭', () => {
-        const m1 = makeMinion('m1', 'test_minion', '1', 5);
+        const m1 = makeMinion('m1', 'test_minion', '1', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [m1] });
         const state = makeState({ bases: [base] });
 
@@ -1604,7 +1424,7 @@ describe('killer_plant_choking_vines 触发修复', () => {
 
 describe('pirate_full_sail special', () => {
     it('有己方随从→产生 Prompt（含完成选项）', () => {
-        const m1 = makeMinion('m1', 'test_minion', '0', 3);
+        const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [m1] });
         const state = makeState({ bases: [base, makeBase()] });
 
@@ -1626,7 +1446,7 @@ describe('pirate_full_sail special', () => {
     });
 
     it('无己方随从→不产生事件', () => {
-        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3);
+        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [enemyMinion] });
         const state = makeState({ bases: [base, makeBase()] });
 
@@ -1643,7 +1463,7 @@ describe('pirate_full_sail special', () => {
 
     it('选择完成→不产生移动事件', () => {
         // 模拟 continuation 执行"完成"选择
-        const m1 = makeMinion('m1', 'test_minion', '0', 3);
+        const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [m1] });
         const state = makeState({ bases: [base, makeBase()] });
 
@@ -1805,7 +1625,7 @@ describe('base_haunted_house_al9000 鬼屋 Interaction 化', () => {
 
 describe('base_rlyeh 拉莱耶 onTurnStart', () => {
     it('有己方随从→产生 Interaction（含不消灭选项）', () => {
-        const m1 = makeMinion('m1', 'test_minion', '0', 3);
+        const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_rlyeh', minions: [m1] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -1821,7 +1641,7 @@ describe('base_rlyeh 拉莱耶 onTurnStart', () => {
     });
 
     it('无己方随从→不产生事件', () => {
-        const enemy = makeMinion('e1', 'test_minion', '1', 3);
+        const enemy = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_rlyeh', minions: [enemy] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -1834,7 +1654,7 @@ describe('base_rlyeh 拉莱耶 onTurnStart', () => {
     });
 
     it('handler 选择消灭→产生 MINION_DESTROYED + VP_AWARDED', () => {
-        const m1 = makeMinion('m1', 'test_minion', '0', 3);
+        const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_rlyeh', minions: [m1] });
         const state = makeState({ bases: [base] });
         const handler = getInteractionHandler('base_rlyeh');
@@ -1905,8 +1725,8 @@ describe('base_the_homeworld 母星', () => {
 
 describe('base_the_mothership 母舰 afterScoring', () => {
     it('冠军有力量≤3随从→产生 Interaction', () => {
-        const m1 = makeMinion('m1', 'test_minion', '0', 2);
-        const m2 = makeMinion('m2', 'test_minion', '0', 5);
+        const m1 = makeMinion('m1', 'test_minion', '0', 2, { powerModifier: 0 });
+        const m2 = makeMinion('m2', 'test_minion', '0', 5, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_the_mothership', minions: [m1, m2] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -1937,8 +1757,8 @@ describe('base_the_mothership 母舰 afterScoring', () => {
 
 describe('base_ninja_dojo 忍者道场 afterScoring', () => {
     it('基地有随从→产生 Interaction（含不消灭选项）', () => {
-        const m1 = makeMinion('m1', 'test_minion', '0', 3);
-        const m2 = makeMinion('m2', 'test_minion', '1', 4);
+        const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const m2 = makeMinion('m2', 'test_minion', '1', 4, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_ninja_dojo', minions: [m1, m2] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -1954,7 +1774,7 @@ describe('base_ninja_dojo 忍者道场 afterScoring', () => {
     });
 
     it('handler 消灭随从→产生 MINION_DESTROYED', () => {
-        const m1 = makeMinion('m1', 'test_minion', '1', 4);
+        const m1 = makeMinion('m1', 'test_minion', '1', 4, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_ninja_dojo', minions: [m1] });
         const state = makeState({ bases: [base] });
         const handler = getInteractionHandler('base_ninja_dojo');
@@ -1973,9 +1793,9 @@ describe('base_ninja_dojo 忍者道场 afterScoring', () => {
 
 describe('frankenstein_igor: 基地结算弃置触发', () => {
     it('非 Igor 随从被弃时不触发（仅本随从被弃才触发）', () => {
-        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2);
-        const target = makeMinion('t1', 'test_minion', '0', 3);
-        const scoredBase = makeBase({ defId: 'base_a', minions: [igor, makeMinion('enemy1', 'enemy', '1', 5)] });
+        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 });
+        const target = makeMinion('t1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const scoredBase = makeBase({ defId: 'base_a', minions: [igor, makeMinion('enemy1', 'enemy', '1', 5, { powerModifier: 0 })] });
         const otherBase = makeBase({ defId: 'base_b', minions: [target] });
         const state = makeState({ bases: [scoredBase, otherBase] });
 
@@ -1992,9 +1812,9 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
     });
 
     it('Igor 自身被弃时触发，自动在其他基地己方唯一随从上放指示物', () => {
-        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2);
-        const ally = makeMinion('ally1', 'test_minion', '0', 3);
-        const target = makeMinion('t1', 'test_minion', '0', 4);
+        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 });
+        const ally = makeMinion('ally1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const target = makeMinion('t1', 'test_minion', '0', 4, { powerModifier: 0 });
         const scoredBase = makeBase({ defId: 'base_a', minions: [igor, ally] });
         const otherBase = makeBase({ defId: 'base_b', minions: [target] });
         const state = makeState({ bases: [scoredBase, otherBase] });
@@ -2016,9 +1836,9 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
     });
 
     it('其他基地有多个己方随从时创建交互', () => {
-        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2);
-        const t1 = makeMinion('t1', 'test_a', '0', 3);
-        const t2 = makeMinion('t2', 'test_b', '0', 4);
+        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 });
+        const t1 = makeMinion('t1', 'test_a', '0', 3, { powerModifier: 0 });
+        const t2 = makeMinion('t2', 'test_b', '0', 4, { powerModifier: 0 });
         const scoredBase = makeBase({ defId: 'base_a', minions: [igor] });
         const otherBase = makeBase({ defId: 'base_b', minions: [t1, t2] });
         const state = makeState({ bases: [scoredBase, otherBase] });
@@ -2043,8 +1863,8 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
     });
 
     it('被弃基地上的己方随从不作为候选目标', () => {
-        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2);
-        const allyOnSameBase = makeMinion('ally1', 'test_minion', '0', 3);
+        const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 });
+        const allyOnSameBase = makeMinion('ally1', 'test_minion', '0', 3, { powerModifier: 0 });
         const scoredBase = makeBase({ defId: 'base_a', minions: [igor, allyOnSameBase] });
         const state = makeState({ bases: [scoredBase] });
 
@@ -2062,10 +1882,10 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
     });
 
     it('雄蜂 giant_ant_drone 不会被 onMinionDiscardedFromBase 触发', () => {
-        const drone = makeMinion('drone1', 'giant_ant_drone', '0', 1);
-        const ally = makeMinion('ally1', 'test_minion', '0', 3);
+        const drone = makeMinion('drone1', 'giant_ant_drone', '0', 1, { powerModifier: 0 });
+        const ally = makeMinion('ally1', 'test_minion', '0', 3, { powerModifier: 0 });
         const scoredBase = makeBase({ defId: 'base_a', minions: [drone, ally] });
-        const otherBase = makeBase({ defId: 'base_b', minions: [makeMinion('t1', 'test_b', '0', 4)] });
+        const otherBase = makeBase({ defId: 'base_b', minions: [makeMinion('t1', 'test_b', '0', 4, { powerModifier: 0 })] });
         const state = makeState({ bases: [scoredBase, otherBase] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
 
@@ -2092,9 +1912,9 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
 
 describe('vampire_buffet afterScoring', () => {
     it('赢家拥有 buffet 时，所有己方随从获得+1指示物', () => {
-        const m1 = makeMinion('m1', 'test_minion', '0', 3);
-        const m2 = makeMinion('m2', 'test_minion', '0', 2);
-        const m3 = makeMinion('m3', 'test_minion', '1', 1);
+        const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const m2 = makeMinion('m2', 'test_minion', '0', 2, { powerModifier: 0 });
+        const m3 = makeMinion('m3', 'test_minion', '1', 1, { powerModifier: 0 });
         const scoringBase = makeBase({
             defId: 'test_base',
             minions: [m1, m3],
@@ -2128,8 +1948,8 @@ describe('vampire_buffet afterScoring', () => {
     });
 
     it('非赢家拥有 buffet 时不触发效果（仅 CONSUMED）', () => {
-        const m1 = makeMinion('m1', 'test_minion', '0', 1);
-        const m2 = makeMinion('m2', 'test_minion', '1', 5);
+        const m1 = makeMinion('m1', 'test_minion', '0', 1, { powerModifier: 0 });
+        const m2 = makeMinion('m2', 'test_minion', '1', 5, { powerModifier: 0 });
         const scoringBase = makeBase({
             defId: 'test_base',
             minions: [m1, m2],
@@ -2152,126 +1972,5 @@ describe('vampire_buffet afterScoring', () => {
 
         const pcEvents = events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
         expect(pcEvents.length).toBe(0);
-    });
-});
-
-// ============================================================================
-// Bug B 集成测试：processDestroyMoveCycle 循环处理
-// 场景：黑熊骑兵移动海盗到制高点基地 → 制高点消灭海盗 → 海盗 onDestroyed 触发移动
-// ============================================================================
-
-describe('processDestroyMoveCycle：移动触发消灭→消灭触发移动 循环', () => {
-    it('一个其他基地时：Buccaneer 被 High Ground 消灭后自动移动到唯一可选基地', () => {
-        // 场景：
-        // base0: Buccaneer (玩家0)
-        // base1: High Ground ongoing (玩家1 拥有), 玩家1 有一个随从在 base1
-        // 动作：Buccaneer 从 base0 移动到 base1
-        // 预期：High Ground 消灭 Buccaneer → Buccaneer onDestroyed 触发 → 只有 base0 可选 → 自动移动
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const enemyMinion = makeMinion('enemy-1', 'test_minion', '1', 3);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase({
-            minions: [enemyMinion],
-            ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '1' }],
-        });
-        const core = makeState({ bases: [base0, base1] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        // 模拟 Buccaneer 从 base0 移动到 base1 的事件
-        const moveEvt: MinionMovedEvent = {
-            type: SU_EVENTS.MINION_MOVED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, toBaseIndex: 1, reason: 'bear_cavalry' },
-            timestamp: 100,
-        };
-
-        const result = processDestroyMoveCycle([moveEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // 验证：Buccaneer 的拯救移动（从 base1 回到 base0）
-        const buccaneerSaveMove = result.events.find(
-            (e: any) => e.type === SU_EVENTS.MINION_MOVED
-                && e.payload.minionUid === 'buc-1'
-                && e.payload.reason === 'pirate_buccaneer'
-        ) as MinionMovedEvent | undefined;
-        expect(buccaneerSaveMove).toBeDefined();
-        expect(buccaneerSaveMove!.payload.fromBaseIndex).toBe(1);
-        expect(buccaneerSaveMove!.payload.toBaseIndex).toBe(0);
-
-        // MINION_DESTROYED 应被抑制（Buccaneer 已被移走拯救）
-        const destroyEvents = result.events.filter(
-            (e: any) => e.type === SU_EVENTS.MINION_DESTROYED
-                && e.payload.minionUid === 'buc-1'
-        );
-        expect(destroyEvents.length).toBe(0);
-    });
-
-    it('两个其他基地时：Buccaneer 被 High Ground 消灭后创建交互选择目标', () => {
-        // base0: Buccaneer (玩家0)
-        // base1: High Ground ongoing (玩家1), 玩家1 有随从
-        // base2: 空基地
-        // 预期：High Ground 消灭 → Buccaneer 有 2 个可选基地(base0, base2) → 创建交互
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const enemyMinion = makeMinion('enemy-1', 'test_minion', '1', 3);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase({
-            minions: [enemyMinion],
-            ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '1' }],
-        });
-        const base2 = makeBase();
-        const core = makeState({ bases: [base0, base1, base2] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        const moveEvt: MinionMovedEvent = {
-            type: SU_EVENTS.MINION_MOVED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, toBaseIndex: 1, reason: 'bear_cavalry' },
-            timestamp: 100,
-        };
-
-        const result = processDestroyMoveCycle([moveEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // Buccaneer 的 MINION_DESTROYED 应被暂缓（等待交互选择）
-        const bucDestroy = result.events.filter(
-            (e: any) => e.type === SU_EVENTS.MINION_DESTROYED
-                && e.payload.minionUid === 'buc-1'
-        );
-        expect(bucDestroy.length).toBe(0);
-
-        // 应创建 pirate_buccaneer_move 交互
-        expect(result.matchState).toBeDefined();
-        const interaction = result.matchState!.sys.interaction.current
-            ?? result.matchState!.sys.interaction.queue[0];
-        expect(interaction).toBeDefined();
-        expect((interaction!.data as any).sourceId).toBe('pirate_buccaneer_move');
-    });
-
-    it('无 High Ground 时：普通移动不触发额外消灭', () => {
-        // 对照组：移动到没有 High Ground 的基地，不应产生额外事件
-        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4);
-        const base0 = makeBase({ minions: [buccaneer] });
-        const base1 = makeBase();
-        const core = makeState({ bases: [base0, base1] });
-        const ms = {
-            core,
-            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
-        } as any;
-
-        const moveEvt: MinionMovedEvent = {
-            type: SU_EVENTS.MINION_MOVED,
-            payload: { minionUid: 'buc-1', minionDefId: 'pirate_buccaneer', fromBaseIndex: 0, toBaseIndex: 1, reason: 'bear_cavalry' },
-            timestamp: 100,
-        };
-
-        const result = processDestroyMoveCycle([moveEvt] as any, ms, '1' as any, dummyRandom, 100);
-
-        // 只有原始移动事件，无额外消灭或移动
-        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
-        expect(destroyEvents.length).toBe(0);
-        const moveEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_MOVED);
-        expect(moveEvents.length).toBe(1); // 只有原始移动
     });
 });

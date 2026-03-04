@@ -403,7 +403,8 @@ describe('Moon Elf 状态效果逻辑', () => {
                 cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll（致盲判定通过）
                 cmd('ROLL_DICE', '1'),     // 防御方掷骰
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> main2（结算攻击）
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> main2（结算攻击）
             ],
             expect: {
                 turnPhase: 'main2',
@@ -450,7 +451,8 @@ describe('Moon Elf 状态效果逻辑', () => {
                 cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> main2
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> main2
             ],
             expect: {
                 turnPhase: 'main2',
@@ -488,7 +490,8 @@ describe('Moon Elf 状态效果逻辑', () => {
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: {
                 turnPhase: 'main2',
@@ -593,7 +596,8 @@ describe('Moon Elf 自定义动作', () => {
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: {
                 turnPhase: 'main2',
@@ -638,7 +642,8 @@ describe('Moon Elf 自定义动作', () => {
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: {
                 turnPhase: 'main2',
@@ -686,7 +691,8 @@ describe('Moon Elf 自定义动作', () => {
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: {
                 turnPhase: 'main2',
@@ -736,7 +742,8 @@ describe('Moon Elf 自定义动作', () => {
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: {
                 turnPhase: 'main2',
@@ -791,7 +798,8 @@ describe('Moon Elf 自定义动作', () => {
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: {
                 turnPhase: 'main2',
@@ -844,7 +852,8 @@ describe('Moon Elf 自定义动作', () => {
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: {
                 turnPhase: 'main2',

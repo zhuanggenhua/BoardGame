@@ -122,6 +122,7 @@
       "contactLabel": "Contact (optional)",
       "contactPlaceholder": "Email or QQ (for follow-up)",
       "attachLog": "Attach action log",
+      "attachState": "Attach state snapshot (for precise reproduction)",
       "submit": "Submit Feedback",
       "success": "Feedback submitted. Thanks for the support!",
       "errors": {

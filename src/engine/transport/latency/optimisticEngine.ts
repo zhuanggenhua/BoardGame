@@ -307,18 +307,6 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
     let waitConfirmWatermark: EventStreamWatermark = null;
 
     /**
-     * 乐观执行前的基线水位线
-     *
-     * 记录第一个乐观命令执行前，确认状态的 EventStream 最大事件 ID。
-     * 客户端的 EventStream 游标已消费到此位置。
-     *
-     * 回滚时，只应过滤 id <= preOptimisticWatermark 的事件（客户端已消费的），
-     * 而不是过滤 id <= optimisticEventWatermark 的事件（乐观预测产生的）。
-     * 后者会错误过滤掉对手命令产生的新事件（ID 空间重叠）。
-     */
-    let preOptimisticWatermark: EventStreamWatermark = null;
-
-    /**
      * 最后一次服务端确认的 stateID
      *
      * 用于推算 pending 命令的 predictedStateID（confirmedStateID + 1, +2, ...）。
@@ -548,18 +536,6 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 const mode = getAnimationMode(type);
                 const predictedState = applyAnimationMode(result.state, currentState, mode);
 
-                // ── 首个乐观命令：记录基线水位线 ──
-                // 客户端 EventStream 游标已消费到确认状态的 maxEventId。
-                // 回滚时只需过滤到此位置，不过滤对手命令产生的新事件。
-                if (preOptimisticWatermark === null) {
-                    // 首个乐观命令前，基线 = 确认状态的 maxEventId
-                    // （confirmedState 是 processCommand 前的最后确认状态）
-                    const baselineMaxId = confirmedState
-                        ? getMaxEventId(confirmedState.sys.eventStream)
-                        : null;
-                    preOptimisticWatermark = baselineMaxId;
-                }
-
                 // 乐观动画模式：更新水位线（取最大值）
                 if (mode === 'optimistic') {
                     const newWatermark = getMaxEventId(result.state.sys.eventStream);
@@ -634,7 +610,6 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 // 无 pending 命令，直接使用确认状态，重置水位线
                 optimisticEventWatermark = null;
                 waitConfirmWatermark = null;
-                preOptimisticWatermark = null;
                 // 清除未预测命令屏障：服务端确认状态已包含所有命令的效果
                 unpredictedBarrier = false;
                 return {
@@ -703,16 +678,13 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 //   乐观动画已播放，服务端事件与乐观事件一致，无需过滤 → null
                 //   此时不算回滚（didRollback: false），预测准确
                 // - 状态发散（对手命令/非确定性结果）导致 pending 全部失效：
-                //   使用 preOptimisticWatermark（乐观执行前的基线水位线）过滤。
-                //   只过滤客户端游标已消费的事件（id <= 基线），
-                //   不过滤对手命令产生的新事件（ID 可能与乐观预测重叠但内容不同）。
-                //   旧逻辑用 optimisticEventWatermark 会错误过滤对手的 CARD_PLAYED 等事件。
+                //   需要过滤已播放的乐观事件，防止重复播放
+                //   同时需要过滤 wait-confirm 模式下客户端游标已消费的事件
                 const watermark = firstCommandConfirmed
                     ? null
-                    : preOptimisticWatermark;
+                    : (optimisticEventWatermark ?? waitConfirmWatermark);
                 optimisticEventWatermark = null;
                 waitConfirmWatermark = null;
-                preOptimisticWatermark = null;
                 return {
                     stateToRender: serverState,
                     didRollback: !firstCommandConfirmed,
@@ -724,9 +696,6 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
             // 清除屏障：confirmed state 已包含未预测命令的效果，
             // replayed pending 基于完整状态，后续预测可以恢复
             unpredictedBarrier = false;
-            // 更新 preOptimisticWatermark：基于新确认状态重新计算基线
-            // （pending 命令已基于新确认状态重放，基线应为新确认状态的 maxEventId）
-            preOptimisticWatermark = getMaxEventId(serverState.sys.eventStream);
             const latestPredicted = pendingCommands[pendingCommands.length - 1].predictedState;
             return {
                 stateToRender: latestPredicted,
@@ -749,7 +718,6 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
             nextSeq = 1;
             optimisticEventWatermark = null;
             waitConfirmWatermark = null;
-            preOptimisticWatermark = null;
             confirmedStateID = null;
             unpredictedBarrier = false;
             // 重置时不清除 isRandomSynced/syncedSeed，重连后 state:sync 会重新同步

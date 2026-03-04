@@ -16,6 +16,7 @@ import {
     createResponseWindowSystem,
     createTutorialSystem,
     createUndoSystem,
+    CharacterSelectionSystem,
     type CheatResourceModifier,
 } from '../../engine';
 import { createGameEngine } from '../../engine/adapter';
@@ -129,6 +130,7 @@ const summonerWarsCheatModifier: CheatResourceModifier<SummonerWarsCore> = {
 
 // 创建系统集合（包含 FlowSystem）
 const systems = [
+    new CharacterSelectionSystem({ setupPhaseName: 'setup' }),
     createFlowSystem<SummonerWarsCore>({ hooks: summonerWarsFlowHooks }),
     createEventStreamSystem(),
     createActionLogSystem({
@@ -136,6 +138,7 @@ const systems = [
         formatEntry: formatSummonerWarsActionEntry,
     }),
     createUndoSystem({
+        maxSnapshots: 3,
         snapshotCommandAllowlist: UNDO_ALLOWLIST,
         // 回合切换时固定创建快照，确保玩家至少能回滚到回合开始
         snapshotOnNewTurn: true,

@@ -78,7 +78,7 @@ describe('潜行 vs 高温爆破 — 额外投掷触发', () => {
                 mutate: (core) => {
                     // 给防御者（玩家1）1层潜行
                     core.players['1'].tokens[TOKEN_IDS.SNEAK] = 1;
-                    core.sneakGainedTurn = { '1': 0 };
+                    core.sneakGainedTurn = { '1': 1 }; // 第1回合获得（当前回合）
                 },
             }),
             assertFn: assertState,
@@ -99,10 +99,10 @@ describe('潜行 vs 高温爆破 — 额外投掷触发', () => {
                 players: {
                     '1': {
                         tokens: {
-                            [TOKEN_IDS.SNEAK]: 1,
+                            [TOKEN_IDS.SNEAK]: 1, // 潜行不立即消耗，回合末清除
                         },
                         resources: {
-                            [RESOURCE_IDS.HP]: 50,
+                            [RESOURCE_IDS.HP]: 50, // 伤害被免除
                         },
                     },
                 },
@@ -139,7 +139,7 @@ describe('潜行 vs 高温爆破 — 额外投掷触发', () => {
                 mutate: (core) => {
                     // 给防御者（玩家1）1层潜行
                     core.players['1'].tokens[TOKEN_IDS.SNEAK] = 1;
-                    core.sneakGainedTurn = { '1': 0 };
+                    core.sneakGainedTurn = { '1': 1 }; // 第1回合获得（当前回合）
                     // 升级 pyro-blast → PYRO_BLAST_2
                     const p0 = core.players['0'];
                     const idx = p0.abilities.findIndex(a => a.id === 'pyro-blast');
@@ -182,8 +182,8 @@ describe('潜行 vs 高温爆破 — 额外投掷触发', () => {
                 turnPhase: 'main2',
                 players: {
                     '1': {
-                        tokens: { [TOKEN_IDS.SNEAK]: 1 },
-                        resources: { [RESOURCE_IDS.HP]: 50 },
+                        tokens: { [TOKEN_IDS.SNEAK]: 1 }, // 潜行不立即消耗，回合末清除
+                        resources: { [RESOURCE_IDS.HP]: 50 }, // 伤害被免除
                     },
                 },
             },

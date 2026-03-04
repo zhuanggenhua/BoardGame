@@ -23,10 +23,10 @@
  * 若未来需要精确支持，需在 reducer 中计算 netDamage 并写回事件或侧信道。
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { EventStreamEntry } from '../../../engine/types';
-import type { DamageDealtEvent, HealAppliedEvent, HeroState } from '../domain/types';
-import type { AttackResolvedEvent, CpChangedEvent } from '../domain/events';
+import type { DamageDealtEvent, HealAppliedEvent, HeroState, AbilityDef } from '../domain/types';
+import type { CpChangedEvent, AttackResolvedEvent } from '../domain/events';
 import type { PlayerId } from '../../../engine/types';
 import type { StatusAtlases } from '../ui/statusEffects';
 import { getStatusEffectIconNode } from '../ui/statusEffects';
@@ -40,7 +40,6 @@ import {
     resolveTokenImpactKey,
     resolveCpImpactKey,
 } from '../ui/fxSetup';
-import type { AbilityDef } from '../domain/combat';
 import { useVisualStateBuffer } from '../../../components/game/framework/hooks/useVisualStateBuffer';
 import type { UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
 import { RESOURCE_IDS } from '../domain/resources';
@@ -56,11 +55,16 @@ interface AnimStep {
     damage: number;
 }
 
+/** 护盾值阈值：>= 此值视为"完全免疫"（如暗影守护 999 护盾） */
 const FULL_IMMUNITY_SHIELD_THRESHOLD = 100;
 
-export interface DamageAnimationContext {
+/** 伤害动画上下文：护盾与攻击结算信息 */
+interface DamageAnimationContext {
+    /** 被大额护盾完全保护的目标集合（护盾值 >= FULL_IMMUNITY_SHIELD_THRESHOLD） */
     shieldedTargets: Set<string>;
+    /** 百分比护盾信息（targetId → reductionPercent） */
     percentShields: Map<string, number>;
+    /** ATTACK_RESOLVED 的权威净伤害（targetId → totalDamage） */
     resolvedDamageByTarget: Map<string, number>;
     /** 固定值护盾消耗信息（targetId → 总吸收量） */
     fixedShieldsByTarget: Map<string, number>;
@@ -69,7 +73,7 @@ export interface DamageAnimationContext {
 /**
  * 解析本批次事件中的护盾与攻击结算上下文，供动画层计算净伤害。
  */
-export function collectDamageAnimationContext(newEntries: EventStreamEntry[]): DamageAnimationContext {
+function collectDamageAnimationContext(newEntries: EventStreamEntry[]): DamageAnimationContext {
     const shieldedTargets = new Set<string>();
     const percentShields = new Map<string, number>();
     const resolvedDamageByTarget = new Map<string, number>();
@@ -115,10 +119,9 @@ export function collectDamageAnimationContext(newEntries: EventStreamEntry[]): D
         }
     }
 
-    // ATTACK_RESOLVED.totalDamage 是该次攻击对防御方的权威净伤害。
+    // ATTACK_RESOLVED.totalDamage 是本次攻击对防御方的权威净伤害。
     // 当批次内只有 1 条对防御方的 DAMAGE_DEALT 时，可用其覆盖动画数值，
     // 兼容跨命令护盾（shield 在上一命令授予）导致 DAMAGE_DEALT 仍携带原始伤害的场景。
-
     const resolvedEvents = newEntries
         .map(entry => entry.event)
         .filter((event): event is AttackResolvedEvent => event.type === 'ATTACK_RESOLVED');
@@ -144,11 +147,11 @@ export function collectDamageAnimationContext(newEntries: EventStreamEntry[]): D
  * 计算伤害动画应展示的净伤害。
  * 
  * 计算顺序（与日志层保持一致）：
- * 1. 扣除百分比护盾（如打不到我 50%）
+ * 1. 扣除百分比护盾（如打不到戒 50%）
  * 2. 扣除固定值护盾（如下次一定 6 点、神圣防御 3 点）
  * 3. 如果有 ATTACK_RESOLVED.totalDamage，使用它作为最终值
  */
-export function resolveAnimationDamage(
+function resolveAnimationDamage(
     rawDamage: number,
     targetId: string,
     percentShields?: Map<string, number>,
@@ -308,7 +311,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         const sourceId = dmgEvent.payload.sourceAbilityId ?? '';
         const isDot = sourceId.startsWith('upkeep-');
         const cue = isDot ? DT_FX.DOT_DAMAGE : DT_FX.DAMAGE;
-        // 技能专属音效优先（如和尚拳术/雷霆万钧各有独立音效），
+        // 技能专属音效优先（如和尚拳法、雷霆万钧各有独立音效），
         // 找不到时回退到通用打击音（按伤害量区分轻/重击）
         const abilitySfx = isDot ? undefined : findAbilitySfxKey(sourceId || undefined);
         const soundKey = abilitySfx ?? (isDot ? undefined : resolveDamageImpactKey(damage, targetId, currentPlayerId));
@@ -431,18 +434,20 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
     }, [opponentId, currentPlayerId, getEffectStartPos, refs.opponentCp, refs.selfCp]);
 
     /**
-     * 统一消费事件流：伤害 + 治疗 + CP 变化
+     * 统一消费事件流：伤害 + 治疗
      * 
-     * 在 useLayoutEffect 中一次性完成：消费事件 → freezeSync → commitSync → push FX。
-     * useLayoutEffect 在 DOM 更新后、浏览器绘制前同步执行，保证 HP 冻结无间隙帧。
+     * 分两阶段执行：
+     * 1. render 阶段（同步）：消费事件 + freezeSync 写 ref → 同一帧 get() 即可读到冻结值
+     * 2. effect 阶段（异步）：commitSync 同步 state + push FX 动画（需要 DOM 位置）
      * 
-     * 注意：不能在 render 阶段调用 consumeNew()，因为 React 18 StrictMode 会双重调用
-     * render 函数，导致游标被提前推进、FX 系统完全不触发。详见下方 useLayoutEffect 注释。
+     * 这样消除了"core HP 已变但 freeze 还没生效"的间隙帧。
      */
     // 待播放步骤队列（FIFO）
     const pendingStepsRef = useRef<AnimStep[]>([]);
     // 当前正在播放的 fxId（用于 advanceQueue 匹配）
     const activeFxIdRef = useRef<string | null>(null);
+    // render 阶段计算出的待推送步骤（effect 中消费）
+    const pendingPushRef = useRef<AnimStep[] | null>(null);
 
     /** 推入队列中的下一步，返回是否成功 */
     const pushNextStep = useCallback(() => {
@@ -471,32 +476,17 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         }
     }, [pushNextStep]);
 
-    // ── 统一在 useLayoutEffect 中消费事件 + freezeSync + push FX ──
-    // 
-    // 【根因修复】之前 consumeNew() 在 render 阶段直接调用，但 React 18 StrictMode
-    // 会在开发模式下双重调用 render 函数。consumeNew() 内部通过 ref（lastSeenIdRef）
-    // 推进游标，ref 的修改不会被 React 回滚，导致：
-    //   1. 第一次 render（StrictMode 额外调用）：consumeNew() 消费了新事件，推进游标
-    //   2. React 丢弃第一次 render 的结果（包括 pendingPushRef 的赋值）
-    //   3. 第二次 render（真正的 render）：游标已推进，consumeNew() 返回空数组
-    //   4. FX 系统完全不触发 → 无伤害飞行动画、无受击音效、无技能音效
-    //
-    // 修复：将 consumeNew() 移到 useLayoutEffect 中。useLayoutEffect 在 commit 阶段
-    // 同步执行（DOM 更新后、浏览器绘制前），StrictMode 不会双重调用 effect。
-    // freezeSync 也在此处执行，保证在绘制前完成 HP 冻结，消除间隙帧。
-    useLayoutEffect(() => {
-        const { entries: newEntries } = consumeNew();
-        if (newEntries.length === 0) return;
-
+    // ── 阶段 1：render 阶段同步消费事件 + freezeSync ──
+    // consumeNew() 是幂等的（内部游标 ref 保证同一批 entries 只消费一次），
+    // 在 render 中调用安全（无 setState，仅写 ref）。
+    const { entries: newEntries } = consumeNew();
+    if (newEntries.length > 0) {
         const damageSteps: AnimStep[] = [];
         const healSteps: AnimStep[] = [];
         const cpSteps: AnimStep[] = [];
 
-        const {
-            shieldedTargets,
-            percentShields,
-            resolvedDamageByTarget,
-        } = collectDamageAnimationContext(newEntries);
+        // 收集本批次中的护盾与攻击结算上下文（供动画层计算净伤害）
+        const { shieldedTargets, percentShields, resolvedDamageByTarget, fixedShieldsByTarget } = collectDamageAnimationContext(newEntries);
 
         for (const entry of newEntries) {
             const event = entry.event as { type: string; payload: Record<string, unknown> };
@@ -506,7 +496,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
                     shieldedTargets,
                     percentShields,
                     resolvedDamageByTarget,
-                    fixedShieldsByTarget,
+                    fixedShieldsByTarget
                 );
                 if (step) damageSteps.push(step);
             } else if (event.type === 'HEAL_APPLIED') {
@@ -519,21 +509,31 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         }
 
         const allSteps = [...damageSteps, ...healSteps, ...cpSteps];
-        if (allSteps.length === 0) return;
-
-        // 同步冻结 HP（useLayoutEffect 在绘制前执行，无间隙帧）— 跳过 CP 步骤（无需冻结）
-        for (const step of allSteps) {
-            if (!step.bufferKey) continue;
-            const currentFrozen = damageBuffer.get(step.bufferKey, -1);
-            if (currentFrozen === -1) {
-                damageBuffer.freezeSync(step.bufferKey, step.frozenHp);
+        if (allSteps.length > 0) {
+            // 同步冻结 HP（仅写 ref，render 阶段安全）— 跳过 CP 步骤（无需冻结）
+            for (const step of allSteps) {
+                if (!step.bufferKey) continue;
+                const currentFrozen = damageBuffer.get(step.bufferKey, -1);
+                if (currentFrozen === -1) {
+                    damageBuffer.freezeSync(step.bufferKey, step.frozenHp);
+                }
             }
+            // 缓存待推送步骤，effect 中消费
+            pendingPushRef.current = allSteps;
         }
+    }
+
+    // ── 阶段 2：effect 中 commitSync + push FX ──
+    useEffect(() => {
+        const steps = pendingPushRef.current;
+        if (!steps) return;
+        pendingPushRef.current = null;
+
         // 将 freezeSync 写入的 ref 同步到 React state
         damageBuffer.commitSync();
 
         // 第一步立即 push，剩余入队
-        const [first, ...rest] = allSteps;
+        const [first, ...rest] = steps;
         pendingStepsRef.current.push(...rest);
 
         const fxId = fxBus.push(first.cue, {}, first.params);
@@ -545,13 +545,9 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         }
     }, [
         eventStreamEntries,
-        consumeNew,
         fxBus,
         pushNextStep,
         damageBuffer,
-        buildDamageStep,
-        buildHealStep,
-        buildCpStep,
     ]);
 
     // ========================================================================

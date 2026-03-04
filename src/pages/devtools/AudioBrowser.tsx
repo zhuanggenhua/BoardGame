@@ -15,7 +15,6 @@ import {
 } from '../../lib/audio/commonRegistry';
 // 直接 import src/ 下的 JSON
 import phraseMappingsData from '../../assets/audio/phrase-mappings.zh-CN.json';
-import { copyToClipboard } from '../../lib/utils';
 
 // ============================================================================
 // 类型与常量
@@ -183,7 +182,7 @@ const AudioTable: React.FC<{
   const timerRef = useRef<number>(0);
 
   const copyKey = useCallback((key: string) => {
-    void copyToClipboard(key);
+    void navigator.clipboard.writeText(key);
     setCopiedKey(key);
     window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => setCopiedKey(null), 1500);

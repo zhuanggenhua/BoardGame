@@ -44,8 +44,6 @@ const CHARACTER_DIR_MAP: Record<SelectableCharacterId, string> = {
     shadow_thief: 'shadow_thief',
     moon_elf: 'moon_elf',
     paladin: 'paladin',
-    gunslinger: 'gunslinger',
-    samurai: 'samurai',
 };
 
 /** 已实现完整资源的角色列表（直接引用类型系统常量，避免两处维护） */

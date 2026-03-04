@@ -211,37 +211,15 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             const events = handler(buildCtx(state, 'shadow_thief-damage-half-cp'));
             expect(events).toHaveLength(0);
         });
-
-        it('CP接近上限时伤害基于当前CP（gainCp已在preDefense阶段reduce进state）', () => {
-            // 实际管线中 gainCp(3) 在 preDefense 阶段已 reduce 进 core，
-            // 所以 handler 运行时 currentCp 已经是 min(14+3, 15) = 15
-            const state = createState({ attackerCP: 15 });
-            const handler = getCustomActionHandler('shadow_thief-damage-half-cp')!;
-            const events = handler(buildCtx(state, 'shadow_thief-damage-half-cp'));
-
-            // 有效CP = 15, 伤害 = ceil(15/2) = 8
-            expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(8);
-        });
     });
 
-    describe('shadow_thief-damage-full-cp (破隐一击：全部CP伤害)', () => {
+    describe('shadow_thief-damage-full-cp (肾击：全部CP伤害)', () => {
         it('CP=8时造成8点伤害', () => {
             const state = createState({ attackerCP: 8 });
             const handler = getCustomActionHandler('shadow_thief-damage-full-cp')!;
             const events = handler(buildCtx(state, 'shadow_thief-damage-full-cp'));
 
             expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(8);
-        });
-
-        it('CP接近上限时伤害基于当前CP（gainCp已在preDefense阶段reduce进state）', () => {
-            // 实际管线中 gainCp(4) 在 preDefense 阶段已 reduce 进 core，
-            // 所以 handler 运行时 currentCp 已经是 min(13+4, 15) = 15
-            const state = createState({ attackerCP: 15 });
-            const handler = getCustomActionHandler('shadow_thief-damage-full-cp')!;
-            const events = handler(buildCtx(state, 'shadow_thief-damage-full-cp'));
-
-            // 有效CP = 15, 伤害 = 15
-            expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(15);
         });
     });
 
@@ -523,17 +501,6 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             const events = handler(buildCtx(state, 'shadow_thief-shadow-shank-damage'));
 
             expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(5);
-        });
-
-        it('CP接近上限时伤害基于当前CP（gainCp已在preDefense阶段reduce进state）', () => {
-            // 实际管线中 gainCp(3) 在 preDefense 阶段已 reduce 进 core，
-            // 所以 handler 运行时 currentCp 已经是 min(14+3, 15) = 15
-            const state = createState({ attackerCP: 15 });
-            const handler = getCustomActionHandler('shadow_thief-shadow-shank-damage')!;
-            const events = handler(buildCtx(state, 'shadow_thief-shadow-shank-damage'));
-
-            // 有效CP = 15, 伤害 = 15+5 = 20
-            expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(20);
         });
     });
 

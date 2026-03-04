@@ -73,22 +73,28 @@ if (useDevServers) {
 const webServerConfig = shouldStartServers
     ? [
         {
-            command: `npx vite --port ${port}`,
-            url: baseURL,
+            // 使用 npm run dev:frontend，通过 VITE_DEV_PORT 环境变量设置端口
+            command: `cross-env VITE_DEV_PORT=${port} GAME_SERVER_PORT=${gameServerPort} API_SERVER_PORT=${apiServerPort} npm run dev:frontend`,
+            // 使用专门的就绪检查端点，确保 Vite 完全就绪
+            url: `${baseURL}/__ready`,
             reuseExistingServer: !process.env.CI, // CI 环境不复用，本地开发可以复用
             timeout: 120000,
+            // 增强就绪检查：确保返回 200 状态码（Vite 插件会在就绪后才返回 200）
+            ignoreHTTPSErrors: true,
         },
         {
             command: `cross-env USE_PERSISTENT_STORAGE=false GAME_SERVER_PORT=${gameServerPort} npm run dev:game`,
             url: `http://localhost:${gameServerPort}/games`,
             reuseExistingServer: !process.env.CI,
             timeout: 120000,
+            // Game Server 的 /games 端点返回游戏列表，确保服务已初始化
         },
         {
             command: `cross-env API_SERVER_PORT=${apiServerPort} npm run dev:api`,
             url: `http://localhost:${apiServerPort}/health`,
             reuseExistingServer: !process.env.CI,
             timeout: 120000,
+            // API Server 的 /health 端点专门用于健康检查
         },
     ]
     : undefined;
@@ -111,7 +117,7 @@ export default defineConfig({
     use: {
         baseURL,
         trace: 'on-first-retry',
-        screenshot: 'only-on-failure',
+        screenshot: 'only-on-failure', // 只在失败时截图，减少测试耗时
     },
     // 默认启动独立的测试服务器（完全隔离）
     webServer: webServerConfig,

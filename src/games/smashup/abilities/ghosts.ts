@@ -83,9 +83,9 @@ function ghostGhost(ctx: AbilityContext): AbilityResult {
     const initialOptions = discardable.map((c, i) => {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
-        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const };
+        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const , displayMode: 'card' as const };
     });
-    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } };
+    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
     
     const allOptions = [...initialOptions, skipOption];
     
@@ -108,7 +108,7 @@ function ghostGhost(ctx: AbilityContext): AbilityResult {
         if (cards.length === 0) return [skipOption];
         const opts = cards.map((c: any, i: number) => {
             const def = getCardDef(c.defId);
-            return { id: `card-${i}`, label: def?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId } };
+            return { id: `card-${i}`, label: def?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
         });
         return [...opts, skipOption];
     };
@@ -252,11 +252,11 @@ function ghostTheDeadRise(ctx: AbilityContext): AbilityResult {
     const options = discardable.map((c, i) => {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
-        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const };
+        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const , displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `ghost_the_dead_rise_discard_${ctx.now}`, ctx.playerId,
-        '亡者崛起：选择要弃掉的手牌', [...options, { id: 'skip', label: '跳过', value: { skip: true } }] as any[], { sourceId: 'ghost_the_dead_rise_discard', targetType: 'hand' },
+        '亡者崛起：选择要弃掉的手牌', [...options, { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }] as any[], 'ghost_the_dead_rise_discard',
         undefined, { min: 0, max: discardable.length },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -338,7 +338,7 @@ export function registerGhostInteractionHandlers(): void {
                 [
                     { id: 'yes', label: '消灭', value: { confirm: true, minionUid, minionDefId: targetMinion?.defId, baseIndex, baseDefId: base.defId } },
                     { id: 'no', label: '跳过', value: { confirm: false, minionDefId: targetMinion?.defId } },
-                ], { sourceId: 'ghost_spirit_confirm', targetType: 'generic' }
+                ], { sourceId: 'ghost_spirit_confirm', targetType: 'minion' }
                 );
             return { state: queueInteraction(state, confirmInteraction), events: [] };
         }
@@ -347,16 +347,16 @@ export function registerGhostInteractionHandlers(): void {
         const cardOptions = discardable.map((c, i) => {
             const def = getCardDef(c.defId);
             const name = def?.name ?? c.defId;
-            return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const };
+            return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const , displayMode: 'card' as const };
         });
         // 使用 min=0 允许不选（跳过），max=power 限制上限
         // 但在 handler 中只接受 0 张（跳过）或 power 张（执行）
-        const skipOption = { id: 'skip', label: '跳过', value: { skip: true } };
+        const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
         const discardInteraction = createSimpleChoice(
             `ghost_spirit_discard_${timestamp}`, playerId,
             `选择 ${power} 张手牌弃置来消灭该随从（可跳过）`,
             [...cardOptions, skipOption] as any[],
-            { sourceId: 'ghost_spirit_discard', targetType: 'hand', multi: { min: 0, max: power } },
+            { sourceId: 'ghost_spirit_discard', multi: { min: 0, max: power } },
         );
         return {
             state: queueInteraction(state, {
@@ -442,7 +442,7 @@ export function registerGhostInteractionHandlers(): void {
             const def = getCardDef(c.defId) as MinionCardDef | undefined;
             const name = def?.name ?? c.defId;
             const power = def?.power ?? 0;
-            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'discard' as const };
+            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'discard' as const , displayMode: 'card' as const };
         });
         const next = createSimpleChoice(
             `ghost_the_dead_rise_play_${timestamp}`, playerId,
@@ -460,7 +460,7 @@ export function registerGhostInteractionHandlers(): void {
         if (state.core.bases.length === 1) {
             const playedEvt: MinionPlayedEvent = {
                 type: SU_EVENTS.MINION_PLAYED,
-                payload: { playerId, cardUid, defId, baseIndex: 0, power, fromDiscard: true },
+                payload: { playerId, cardUid, defId, baseIndex: 0, baseDefId: ctx.state.bases[0].defId, power, fromDiscard: true },
                 timestamp,
             };
             return { state, events: [

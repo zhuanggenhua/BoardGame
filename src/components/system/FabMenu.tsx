@@ -27,16 +27,29 @@ interface FabMenuProps {
 
 type FabAlignment = { v: 'top' | 'bottom'; h: 'left' | 'right' };
 
-const BUTTON_SIZE = 48;
-const BUTTON_GAP = 12;
-const EDGE_PADDING = 32;
-
 export const FabMenu = ({
     items,
     position: initialPosition = 'bottom-right',
     isDark = true,
     zIndex = UI_Z_INDEX.hud,
 }: FabMenuProps) => {
+    // 响应式尺寸
+    const [buttonSize, setButtonSize] = useState(48);
+    const [buttonGap, setButtonGap] = useState(12);
+    const [edgePadding, setEdgePadding] = useState(32);
+    
+    useEffect(() => {
+        const updateSizes = () => {
+            const mobile = window.innerWidth < 1024;
+            setButtonSize(mobile ? 36 : 48);
+            setButtonGap(mobile ? 8 : 12);
+            setEdgePadding(mobile ? 16 : 32);
+        };
+        updateSizes();
+        window.addEventListener('resize', updateSizes);
+        return () => window.removeEventListener('resize', updateSizes);
+    }, []);
+    
     const [isOpen, setIsOpen] = useState(false);
     const [activeItemId, setActiveItemId] = useState<string | null>(null);
     const prevActiveItemIdRef = useRef<string | null>(null);
@@ -56,34 +69,34 @@ export const FabMenu = ({
     }, []);
 
     const clampPosition = useCallback((target: { left: number; top: number }) => {
-        const maxLeft = window.innerWidth - BUTTON_SIZE - EDGE_PADDING;
-        const maxTop = window.innerHeight - BUTTON_SIZE - EDGE_PADDING;
+        const maxLeft = window.innerWidth - buttonSize - edgePadding;
+        const maxTop = window.innerHeight - buttonSize - edgePadding;
         return {
-            left: Math.min(Math.max(target.left, EDGE_PADDING), maxLeft),
-            top: Math.min(Math.max(target.top, EDGE_PADDING), maxTop),
+            left: Math.min(Math.max(target.left, edgePadding), maxLeft),
+            top: Math.min(Math.max(target.top, edgePadding), maxTop),
         };
-    }, []);
+    }, [buttonSize, edgePadding]);
 
     const getAlignmentForPosition = useCallback((target: { left: number; top: number }): FabAlignment => {
         const centerY = window.innerHeight / 2;
         const centerX = window.innerWidth / 2;
-        const anchorX = target.left + BUTTON_SIZE / 2;
-        const anchorY = target.top + BUTTON_SIZE / 2;
+        const anchorX = target.left + buttonSize / 2;
+        const anchorY = target.top + buttonSize / 2;
         const v: FabAlignment['v'] = anchorY < centerY ? 'top' : 'bottom';
         const h: FabAlignment['h'] = anchorX < centerX ? 'right' : 'left';
         return { v, h };
-    }, []);
+    }, [buttonSize]);
 
     const getInitialPosition = useCallback(() => {
-        const maxLeft = window.innerWidth - BUTTON_SIZE - EDGE_PADDING;
-        const maxTop = window.innerHeight - BUTTON_SIZE - EDGE_PADDING;
+        const maxLeft = window.innerWidth - buttonSize - edgePadding;
+        const maxTop = window.innerHeight - buttonSize - edgePadding;
         // 默认位置往内偏移，不贴边
         const DEFAULT_INSET = 48;
         if (initialPosition === 'bottom-right') return { left: maxLeft - DEFAULT_INSET, top: maxTop - DEFAULT_INSET };
-        if (initialPosition === 'bottom-left') return { left: EDGE_PADDING + DEFAULT_INSET, top: maxTop - DEFAULT_INSET };
-        if (initialPosition === 'top-right') return { left: maxLeft - DEFAULT_INSET, top: EDGE_PADDING + DEFAULT_INSET };
-        return { left: EDGE_PADDING + DEFAULT_INSET, top: EDGE_PADDING + DEFAULT_INSET };
-    }, [initialPosition]);
+        if (initialPosition === 'bottom-left') return { left: edgePadding + DEFAULT_INSET, top: maxTop - DEFAULT_INSET };
+        if (initialPosition === 'top-right') return { left: maxLeft - DEFAULT_INSET, top: edgePadding + DEFAULT_INSET };
+        return { left: edgePadding + DEFAULT_INSET, top: edgePadding + DEFAULT_INSET };
+    }, [initialPosition, buttonSize, edgePadding]);
 
     // 加载保存的位置（支持百分比格式，兼容旧绝对坐标）
     useEffect(() => {
@@ -408,7 +421,7 @@ const Panel = ({ item, isActive, alignment, isDark }: any) => {
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95, x: alignment.h === 'right' ? -10 : 10 }}
                     className={`
-                        absolute w-[300px] max-w-[calc(90vw-60px)] p-4 rounded-xl shadow-2xl backdrop-blur-xl border-l-[3px]
+                        absolute w-[300px] max-w-[calc(90vw-60px)] md:w-[300px] max-md:w-[260px] p-4 max-md:p-3 rounded-xl shadow-2xl backdrop-blur-xl border-l-[3px]
                         z-30
                         ${isDark ? "bg-black/95 border-white/20 border-l-neon-blue text-white" : "bg-[#fcfbf9]/95 border-[#d3ccba] border-l-[#8c7b64] text-[#433422]"}
 
@@ -499,7 +512,8 @@ const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, toolti
                 data-fab-id={item.id}
                 className={`
                     relative flex items-center justify-center
-                    w-12 h-12 rounded-full backdrop-blur-md border
+                    w-9 h-9 rounded-full backdrop-blur-md border
+                    md:w-12 md:h-12
                     ${activeStyle}
                     ${item.color || ''}
                     transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105
@@ -571,7 +585,7 @@ const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, toolti
                     tooltipPortalRoot
                 )}
 
-                <div className="flex items-center justify-center w-full h-full">
+                <div className="flex items-center justify-center w-full h-full max-md:scale-90">
                     {item.icon}
                 </div>
             </motion.button>

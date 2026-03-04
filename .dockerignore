@@ -73,6 +73,7 @@ public/**/*.webm
 !public/assets/**/assets-manifest.json
 !public/assets/demo/
 !public/assets/demo/**
+!public/assets/common/logos/**
 public/**/*.glb
 public/**/*.gltf
 public/**/*.fbx

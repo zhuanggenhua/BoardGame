@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo } from 'react';
 
-export type GameMode = 'local' | 'online' | 'tutorial';
+export type GameMode = 'local' | 'online' | 'tutorial' | 'test';
 
 export interface GameModeState {
     mode: GameMode;

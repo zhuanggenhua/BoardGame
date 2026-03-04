@@ -62,26 +62,6 @@ export interface DamageSourceResolver {
 }
 
 /**
- * 护盾消耗信息（标准格式）
- */
-export interface ShieldConsumedInfo {
-    /** 护盾 ID */
-    id: string;
-    /** 吸收的伤害值 */
-    absorbed: number;
-    /** 显示名称（可选，i18n key 或纯文本） */
-    name?: string;
-    /** 护盾类型（可选，用于游戏层自定义渲染） */
-    type?: string;
-    /** 百分比（可选，用于百分比护盾显示） */
-    percent?: number;
-    /** 原始值（可选，用于固定值护盾显示） */
-    value?: number;
-    /** 减免百分比（可选，用于百分比护盾显示） */
-    reductionPercent?: number;
-}
-
-/**
  * 标准化伤害事件 payload 接口
  *
  * 游戏层的伤害事件 payload 应包含这些字段（可选），
@@ -105,24 +85,13 @@ export interface DamageLogPayload {
         sourceId: string;
         sourceName?: string;
     }>;
-    /** 护盾消耗信息（新增，用于自动渲染护盾减免） */
-    shieldsConsumed?: ShieldConsumedInfo[];
-}
-
-/**
- * buildDamageBreakdownSegment 的可选配置
- */
-export interface BuildDamageBreakdownOptions {
-    /** 自定义护盾渲染函数（可选，覆盖默认行为） */
-    renderShields?: (shields: ShieldConsumedInfo[], fallbackNs?: string) => BreakdownLine[];
-    
-    /** 自定义 displayText 计算（可选，覆盖默认行为） */
-    calculateDisplayText?: (damage: number, payload: DamageLogPayload) => string;
-    
-    /** 自定义基础值标签（可选，覆盖默认 'actionLog.damageSource.original'） */
-    baseLabel?: string;
-    baseLabelIsI18n?: boolean;
-    baseLabelNs?: string;
+    /** 护盾消耗记录（DiceThrone 专用） */
+    shieldsConsumed?: Array<{
+        sourceId: string;
+        value?: number;
+        reductionPercent?: number;
+        absorbed: number;
+    }>;
 }
 
 // ============================================================================
@@ -142,28 +111,23 @@ function extractSourceId(payload: DamageLogPayload): string | undefined {
  * 适用于有修改器明细的伤害（如 DiceThrone 的技能伤害）。
  * 游戏层只需提供 payload + resolver，框架层自动构建 BreakdownLine[]。
  *
- * **默认行为**：
- * - 基础伤害 + 修改器
- * - 标准护盾渲染（name + absorbed）
- * - displayText = 最终伤害
- *
- * **可选覆盖**（通过 options）：
- * - renderShields: 自定义护盾渲染（如 DiceThrone 的双重护盾）
- * - calculateDisplayText: 自定义 displayText 计算
- * - baseLabel: 自定义基础值标签
- *
- * @param damage 最终伤害数值（扣除护盾后）
- * @param payload 伤害 payload（含 breakdown/modifiers/shieldsConsumed）
+ * @param damage 最终伤害数值
+ * @param payload 伤害 payload（含 breakdown/modifiers/sourceId）
  * @param resolver 游戏层来源解析器
  * @param fallbackNs 无法解析时的 i18n namespace（用于 fallback 文案）
- * @param options 可选配置（覆盖默认行为）
+ * @param options 可选配置（自定义基础值标签，不同游戏可使用不同标签如"基础伤害"/"基础战力"/"基础力量"）
  */
 export function buildDamageBreakdownSegment(
     damage: number,
     payload: DamageLogPayload,
     resolver: DamageSourceResolver,
     fallbackNs?: string,
-    options?: BuildDamageBreakdownOptions,
+    options?: {
+        /** 自定义基础值标签（默认 'actionLog.damageSource.original'） */
+        baseLabel?: string;
+        baseLabelIsI18n?: boolean;
+        baseLabelNs?: string;
+    },
 ): ActionLogSegment {
     const lines: BreakdownLine[] = [];
     const sourceId = extractSourceId(payload);
@@ -236,34 +200,48 @@ export function buildDamageBreakdownSegment(
             color: 'neutral',
         });
     }
-
-    // 新增：自动处理护盾（可通过 options.renderShields 覆盖）
+    
+    // 添加护盾消耗行（DiceThrone 专用）
     if (payload.shieldsConsumed && payload.shieldsConsumed.length > 0) {
-        if (options?.renderShields) {
-            // 游戏层自定义渲染
-            lines.push(...options.renderShields(payload.shieldsConsumed, fallbackNs));
-        } else {
-            // 默认渲染：标准格式（name + absorbed）
-            payload.shieldsConsumed.forEach(shield => {
-                lines.push({
-                    label: shield.name || shield.id,
-                    labelIsI18n: shield.name?.includes('.') ?? false,
-                    labelNs: fallbackNs,
-                    value: -shield.absorbed,
-                    color: 'negative',
-                });
+        // 如果没有基础伤害行，先添加一个
+        if (lines.length === 0) {
+            const effectiveBaseLabel = options?.baseLabel ?? 'actionLog.damageSource.original';
+            const effectiveBaseLabelIsI18n = options?.baseLabel ? (options.baseLabelIsI18n ?? false) : true;
+            const effectiveBaseLabelNs = options?.baseLabel ? options.baseLabelNs : fallbackNs;
+            
+            // 计算基础伤害 = 最终伤害 + 护盾吸收总量
+            const totalAbsorbed = payload.shieldsConsumed.reduce((sum, s) => sum + s.absorbed, 0);
+            const baseDamage = damage + totalAbsorbed;
+            
+            lines.push({
+                label: effectiveBaseLabel,
+                labelIsI18n: effectiveBaseLabelIsI18n,
+                labelNs: effectiveBaseLabelNs,
+                value: baseDamage,
+                color: 'neutral',
             });
         }
+        
+        // 添加护盾消耗行（负值）
+        payload.shieldsConsumed.forEach(shield => {
+            const shieldSource = resolver.resolve(shield.sourceId);
+            const shieldLabel = shieldSource?.label || shield.sourceId;
+            const shieldLabelIsI18n = shieldSource?.isI18n ?? false;
+            const shieldLabelNs = shieldSource?.ns ?? fallbackNs;
+            
+            lines.push({
+                label: shieldLabel,
+                labelIsI18n: shieldLabelIsI18n,
+                labelNs: shieldLabelNs,
+                value: -shield.absorbed,
+                color: 'negative',
+            });
+        });
     }
-
-    // 计算 displayText（可通过 options.calculateDisplayText 覆盖）
-    const displayText = options?.calculateDisplayText
-        ? options.calculateDisplayText(damage, payload)
-        : String(damage);
 
     return {
         type: 'breakdown',
-        displayText,
+        displayText: String(damage),
         lines,
     };
 }
@@ -319,7 +297,7 @@ export function buildDamageSourceAnnotation(
 }
 
 // ============================================================================
-// 累计值计算辅助函数（防止累计状态污染）
+// 累计值计算辅助函数（防止撤回后状态污染）
 // ============================================================================
 
 /**

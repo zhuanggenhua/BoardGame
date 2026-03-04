@@ -28,6 +28,7 @@ interface SystemHooks {
 export const CHARACTER_SELECTION_COMMANDS = {
     SELECT_CHARACTER: 'SELECT_CHARACTER',
     PLAYER_READY: 'PLAYER_READY',
+    PLAYER_UNREADY: 'PLAYER_UNREADY',
     HOST_START_GAME: 'HOST_START_GAME',
 } as const;
 
@@ -41,6 +42,10 @@ export interface PlayerReadyCommand extends Command<'PLAYER_READY'> {
     payload: Record<string, never>;
 }
 
+export interface PlayerUnreadyCommand extends Command<'PLAYER_UNREADY'> {
+    payload: Record<string, never>;
+}
+
 export interface HostStartGameCommand extends Command<'HOST_START_GAME'> {
     payload: Record<string, never>;
 }
@@ -48,6 +53,7 @@ export interface HostStartGameCommand extends Command<'HOST_START_GAME'> {
 export type CharacterSelectionCommand =
     | SelectCharacterCommand
     | PlayerReadyCommand
+    | PlayerUnreadyCommand
     | HostStartGameCommand;
 
 // ============================================================================
@@ -69,6 +75,12 @@ export interface PlayerReadyEvent extends GameEvent<'PLAYER_READY'> {
     };
 }
 
+export interface PlayerUnreadyEvent extends GameEvent<'PLAYER_UNREADY'> {
+    payload: {
+        playerId: PlayerId;
+    };
+}
+
 export interface HostStartedEvent extends GameEvent<'HOST_STARTED'> {
     payload: {
         playerId: PlayerId;
@@ -78,6 +90,7 @@ export interface HostStartedEvent extends GameEvent<'HOST_STARTED'> {
 export type CharacterSelectionEvent =
     | CharacterSelectedEvent
     | PlayerReadyEvent
+    | PlayerUnreadyEvent
     | HostStartedEvent;
 
 // ============================================================================
@@ -147,6 +160,9 @@ export class CharacterSelectionSystem {
                 if (command.type === CHARACTER_SELECTION_COMMANDS.PLAYER_READY) {
                     return this.validatePlayerReady(state, command as PlayerReadyCommand);
                 }
+                if (command.type === CHARACTER_SELECTION_COMMANDS.PLAYER_UNREADY) {
+                    return this.validatePlayerUnready(state, command as PlayerUnreadyCommand);
+                }
                 if (command.type === CHARACTER_SELECTION_COMMANDS.HOST_START_GAME) {
                     return this.validateHostStartGame(state, command as HostStartGameCommand);
                 }
@@ -163,6 +179,9 @@ export class CharacterSelectionSystem {
                 }
                 if (event.type === 'PLAYER_READY') {
                     this.handlePlayerReady(state, event as PlayerReadyEvent);
+                }
+                if (event.type === 'PLAYER_UNREADY') {
+                    this.handlePlayerUnready(state, event as PlayerUnreadyEvent);
                 }
                 if (event.type === 'HOST_STARTED') {
                     this.handleHostStarted(state, event as HostStartedEvent);
@@ -227,6 +246,38 @@ export class CharacterSelectionSystem {
             return { valid: false, error: 'character_not_selected' };
         }
 
+        // 游戏已开始后不能再准备
+        if (selection.hostStarted) {
+            return { valid: false, error: 'game_already_started' };
+        }
+
+        return { valid: true };
+    }
+
+    private validatePlayerUnready(
+        state: { sys: { characterSelection?: CharacterSelectionState; phase?: string; flow?: { currentPhase?: string } } },
+        command: PlayerUnreadyCommand
+    ) {
+        const selection = state.sys.characterSelection;
+        if (!selection) {
+            return { valid: false, error: 'character_selection_not_initialized' };
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(selection.selectedCharacters, command.playerId)) {
+            return { valid: false, error: 'player_mismatch' };
+        }
+
+        // 必须在 setup 阶段
+        const currentPhase = state.sys.phase ?? state.sys.flow?.currentPhase;
+        if (currentPhase !== this.config.setupPhaseName) {
+            return { valid: false, error: 'invalid_phase' };
+        }
+
+        // 游戏已开始后不能取消准备
+        if (selection.hostStarted) {
+            return { valid: false, error: 'game_already_started' };
+        }
+
         return { valid: true };
     }
 
@@ -279,6 +330,16 @@ export class CharacterSelectionSystem {
         if (!selection) return;
 
         selection.readyPlayers[event.payload.playerId] = true;
+    }
+
+    private handlePlayerUnready(
+        state: { sys: { characterSelection?: CharacterSelectionState } },
+        event: PlayerUnreadyEvent
+    ) {
+        const selection = state.sys.characterSelection;
+        if (!selection) return;
+
+        selection.readyPlayers[event.payload.playerId] = false;
     }
 
     private handleHostStarted(

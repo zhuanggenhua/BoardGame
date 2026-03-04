@@ -63,8 +63,7 @@ function makeMinion(
 ): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0,
-        talentUsed: false, attachedActions: [],
+        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
     };
 }
 
@@ -275,7 +274,7 @@ describe('Property 4: 能力注册表往返一致性', () => {
 
 describe('Property 6: 天赋每回合一次', () => {
     test('talentUsed=true 时验证拒绝', () => {
-        const minion = makeMinion('t-1', 'miskatonic_professor', '0', 5);
+        const minion = makeMinion('t-1', 'miskatonic_professor', '0', 5, { powerModifier: 0 });
         minion.talentUsed = true;
         const state: SmashUpCore = {
             players: {
@@ -298,7 +297,7 @@ describe('Property 6: 天赋每回合一次', () => {
     });
 
     test('TURN_STARTED 重置 talentUsed', () => {
-        const minion = makeMinion('t-1', 'test', '0', 3);
+        const minion = makeMinion('t-1', 'test', '0', 3, { powerModifier: 0 });
         minion.talentUsed = true;
         const state: SmashUpCore = {
             players: {
@@ -384,7 +383,7 @@ describe('Property 9: 持续行动卡附着', () => {
     test('ongoing 行动卡附着到随从', () => {
         // dino_upgrade 是 ongoing 子类型，可附着到随从
         const card = makeCard('og-2', 'dino_upgrade', 'action');
-        const minion = makeMinion('m-1', 'test', '0', 3);
+        const minion = makeMinion('m-1', 'test', '0', 3, { powerModifier: 0 });
         const state: SmashUpCore = {
             players: {
                 '0': makePlayer('0', [SMASHUP_FACTION_IDS.DINOSAURS, SMASHUP_FACTION_IDS.NINJAS], {
@@ -429,7 +428,7 @@ describe('Property 9: 持续行动卡附着', () => {
 
     test('ongoing（随从目标）缺少 targetMinionUid 时应校验失败', () => {
         const card = makeCard('og-4', 'dino_upgrade', 'action');
-        const minion = makeMinion('m-1', 'test', '0', 3);
+        const minion = makeMinion('m-1', 'test', '0', 3, { powerModifier: 0 });
         const state: SmashUpCore = {
             players: {
                 '0': makePlayer('0', [SMASHUP_FACTION_IDS.DINOSAURS, SMASHUP_FACTION_IDS.NINJAS], { hand: [card] }),
@@ -448,7 +447,7 @@ describe('Property 9: 持续行动卡附着', () => {
 
     test('ongoing（基地目标）携带 targetMinionUid 时应校验失败', () => {
         const card = makeCard('og-5', 'trickster_enshrouding_mist', 'action');
-        const minion = makeMinion('m-1', 'test', '0', 3);
+        const minion = makeMinion('m-1', 'test', '0', 3, { powerModifier: 0 });
         const state: SmashUpCore = {
             players: {
                 '0': makePlayer('0', [SMASHUP_FACTION_IDS.TRICKSTERS, SMASHUP_FACTION_IDS.GHOSTS], { hand: [card] }),
@@ -490,7 +489,7 @@ describe('Property 11: 基地记分时持续行动清理', () => {
                         },
                         turnOrder: ['0', '1'], currentPlayerIndex: 0,
                         bases: [makeBase('scored_base', {
-                            minions: [makeMinion('m1', 'x', '0', 3)],
+                            minions: [makeMinion('m1', 'x', '0', 3, { powerModifier: 0 })],
                             ongoingActions,
                         })],
                         baseDeck: [], turnNumber: 1, nextUid: 100,
@@ -534,7 +533,7 @@ describe('Property 12: 随从离场时附着行动清理', () => {
             { uid: 'att-0', defId: 'att_def_0', ownerId: '0' },
             { uid: 'att-1', defId: 'att_def_1', ownerId: '1' },
         ];
-        const minion = makeMinion('m-1', 'test', '0', 3);
+        const minion = makeMinion('m-1', 'test', '0', 3, { powerModifier: 0 });
         minion.attachedActions = attached;
         const state: SmashUpCore = {
             players: {
@@ -565,7 +564,7 @@ describe('Property 12: 随从离场时附着行动清理', () => {
 
     test('基地记分时随从附着行动卡也被清理', () => {
         const attached = [{ uid: 'att-x', defId: 'att_x', ownerId: '1' }];
-        const minion = makeMinion('m-2', 'test2', '0', 5);
+        const minion = makeMinion('m-2', 'test2', '0', 5, { powerModifier: 0 });
         minion.attachedActions = attached;
         const state: SmashUpCore = {
             players: {
@@ -601,14 +600,14 @@ describe('Property 12: 随从离场时附着行动清理', () => {
 // ============================================================================
 
 describe('Property 13: 力量指示物不变量', () => {
-    test('powerCounters 始终 >= 0', () => {
+    test('powerModifier 始终 >= 0', () => {
         fc.assert(
             fc.property(
                 fc.integer({ min: 0, max: 10 }),
                 fc.integer({ min: 0, max: 20 }),
                 (initial, removeAmount) => {
-                    const minion = makeMinion('pm-1', 'test', '0', 3);
-                    minion.powerCounters = initial;
+                    const minion = makeMinion('pm-1', 'test', '0', 3, { powerModifier: 0 });
+                    minion.powerModifier = initial;
                     const state: SmashUpCore = {
                         players: {
                             '0': makePlayer('0', [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.NINJAS]),
@@ -624,7 +623,7 @@ describe('Property 13: 力量指示物不变量', () => {
                         timestamp: Date.now(),
                     } as any);
                     const m = s.bases[0].minions.find(x => x.uid === 'pm-1');
-                    if (m) expect(m.powerCounters).toBeGreaterThanOrEqual(0);
+                    if (m) expect(m.powerModifier).toBeGreaterThanOrEqual(0);
                 },
             ),
             { numRuns: 50 },
@@ -637,7 +636,7 @@ describe('Property 13: 力量指示物不变量', () => {
                 fc.integer({ min: 0, max: 5 }),
                 fc.integer({ min: 1, max: 10 }),
                 (initial, addAmount) => {
-                    const minion = makeMinion('pm-1', 'test', '0', 3);
+                    const minion = makeMinion('pm-1', 'test', '0', 3, { powerCounters: 0 });
                     minion.powerCounters = initial;
                     const state: SmashUpCore = {
                         players: {
@@ -754,7 +753,7 @@ describe('Property 16: VP 分配正确性', () => {
             },
             turnOrder: ['0', '1'], currentPlayerIndex: 0,
             bases: [makeBase('b', {
-                minions: [makeMinion('m0', 'x', '0', 5)],
+                minions: [makeMinion('m0', 'x', '0', 5, { powerModifier: 0 })],
             })],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
@@ -898,7 +897,7 @@ describe('Property 18: Me First 窗口协议', () => {
             bases: [
                 makeBase('base_central_brain'),
                 makeBase('base_central_brain', {
-                    minions: [makeMinion('m-1', 'test', '1', 99)],
+                    minions: [makeMinion('m-1', 'test', '1', 99, { powerModifier: 0 })],
                 }),
             ],
             baseDeck: [], turnNumber: 1, nextUid: 100,
@@ -1123,7 +1122,7 @@ describe('Property 5: onPlay 能力触发', () => {
                         },
                         turnOrder: ['0', '1'], currentPlayerIndex: 0,
                         bases: [makeBase('test_base', {
-                            minions: [makeMinion('existing-m', 'test', '1', 2)],
+                            minions: [makeMinion('existing-m', 'test', '1', 2, { powerModifier: 0 })],
                         })],
                         baseDeck: [], turnNumber: 1, nextUid: 200,
                     };
@@ -1188,7 +1187,7 @@ describe('Property 7: 目标选择提示匹配', () => {
             fc.property(
                 fc.constantFrom('m-exist', 'm-nonexist'),
                 (minionUid) => {
-                    const minion = makeMinion('m-exist', 'miskatonic_professor', '0', 5);
+                    const minion = makeMinion('m-exist', 'miskatonic_professor', '0', 5, { powerModifier: 0 });
                     const state: SmashUpCore = {
                         players: {
                             '0': makePlayer('0', [SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY, SMASHUP_FACTION_IDS.GHOSTS], {
@@ -1234,7 +1233,7 @@ describe('Property 10: 特殊行动卡生命周期', () => {
             },
             turnOrder: ['0', '1'], currentPlayerIndex: 0,
             bases: [makeBase('test_base', {
-                minions: [makeMinion('m1', 'test', '1', 3)],
+                minions: [makeMinion('m1', 'test', '1', 3, { powerModifier: 0 })],
             })],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
@@ -1362,8 +1361,8 @@ describe('Property 15: 记分循环完整性', () => {
 
     test('连续记分多个基地后所有基地都被移除', () => {
         const bases = [
-            makeBase('b0', { minions: [makeMinion('m0', 'd0', '0', 5)] }),
-            makeBase('b1', { minions: [makeMinion('m1', 'd1', '1', 3)] }),
+            makeBase('b0', { minions: [makeMinion('m0', 'd0', '0', 5, { powerModifier: 0 })] }),
+            makeBase('b1', { minions: [makeMinion('m1', 'd1', '1', 3, { powerModifier: 0 })] }),
         ];
         let state: SmashUpCore = {
             players: {
@@ -1662,7 +1661,7 @@ describe('Property 21: 保护机制一致性', () => {
     });
 
     test('美丽城堡：不在美丽城堡上的随从不受保护', () => {
-        const minion = makeMinion('m-1', 'test_minion', '0', 8);
+        const minion = makeMinion('m-1', 'test_minion', '0', 8, { powerModifier: 0 });
         const state: SmashUpCore = {
             players: {
                 '0': makePlayer('0', [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.NINJAS]),
@@ -1710,8 +1709,8 @@ describe('Property 21: 保护机制一致性', () => {
     });
 
     test('小马乐园：不同控制者的随从不互相提供保护', () => {
-        const p0Minion = makeMinion('m-0', 'test_0', '0', 3);
-        const p1Minion = makeMinion('m-1', 'test_1', '1', 3);
+        const p0Minion = makeMinion('m-0', 'test_0', '0', 3, { powerModifier: 0 });
+        const p1Minion = makeMinion('m-1', 'test_1', '1', 3, { powerModifier: 0 });
         const state: SmashUpCore = {
             players: {
                 '0': makePlayer('0', [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.NINJAS]),

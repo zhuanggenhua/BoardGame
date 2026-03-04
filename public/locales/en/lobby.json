@@ -66,8 +66,7 @@
     "ownerRejoinOnly": "Only the room owner can rejoin an empty room (guests must use the original browser/device; clearing storage requires creating a new room)",
     "inAnotherMatch": "You are already in another match",
     "inProgress": "In match",
-    "full": "Full",
-    "gameover": "Ended"
+    "full": "Full"
   },
   "tabs": {
     "lobby": "Lobby",
@@ -251,11 +250,6 @@
     },
     "retentionHint": "Reconnect within retention period; auto-cleanup after expiry"
   },
-  "notification": {
-    "playerJoinedTitle": "A player joined the room",
-    "playerJoinedBody": "{{name}} joined your room",
-    "playerJoinedBodyAnonymous": "Your opponent has joined, get ready"
-  },
   "socket": {
     "invalidGameId": "Invalid gameId, subscription ignored: {{value}}",
     "alreadyConnected": "Already connected, skipping duplicate connection",
@@ -276,5 +270,10 @@
     "subscriberError": "Subscriber callback error: {{message}}",
     "subscribeMissingGameId": "Subscribe failed: missing gameId",
     "noSubscribers": "No subscribers, unsubscribing from lobby"
+  },
+  "notification": {
+    "playerJoinedTitle": "Player Joined",
+    "playerJoinedBody": "{{username}} joined the room",
+    "playerJoinedBodyAnonymous": "A player joined the room"
   }
 }

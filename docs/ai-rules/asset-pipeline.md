@@ -19,17 +19,25 @@ public/assets/
 │   ├── zh-CN/                   # 中文资源（当前通过符号链接指向原始路径）
 │   │   └── <gameId>/            # 游戏资源（符号链接 → ../../<gameId>）
 │   │       └── <资源分类>/
-│   │           ├── foo.png      # 原始图片
+│   │           ├── foo.png      # 原始图片（可选，仅用于重新压缩）
 │   │           └── compressed/
-│   │               └── foo.webp
+│   │               └── foo.webp # 压缩后的图片（必需，运行时使用）
 │   └── en/                      # 英文资源（未来）
 │       └── <gameId>/
+├── atlas-configs/               # 图集配置文件（与语言无关）
+│   └── <gameId>/
+│       └── xxx.atlas.json       # 图集配置（rows/cols 或精确坐标）
 └── <gameId>/                    # 原始资源位置（过渡期保留，通过符号链接被 i18n/zh-CN/ 引用）
     └── <资源分类>/
         ├── foo.png
         └── compressed/
             └── foo.webp
 ```
+
+**关键规则**：
+- **图片文件**：必须在 `i18n/<locale>/<gameId>/<分类>/compressed/` 目录（需要国际化）
+- **图集配置 JSON**：必须在 `atlas-configs/<gameId>/` 目录（与语言无关，不需要国际化）
+- **原始图片**：可选，仅在需要重新压缩时使用。如果只有 WebP 文件，可以直接放在 `compressed/` 目录
 
 **当前状态（过渡期）**：
 - 物理文件仍在 `public/assets/<gameId>/`
@@ -47,9 +55,15 @@ public/assets/
 
 ### 压缩流程
 
+**如果有原始图片**：
 1. **压缩命令**：`npm run compress:images -- public/assets/<gameId>`
 2. **压缩脚本**：`scripts/assets/compress_images.js`（启动器）+ `scripts/assets/compress_images.py`（实现）
 3. **输出位置**：同级 `compressed/` 子目录，生成 `.webp`
+
+**如果只有 WebP 文件**：
+- 直接将 `.webp` 文件放入 `i18n/<locale>/<gameId>/<分类>/compressed/` 目录
+- 无需原始图片，代码会自动从 `compressed/` 目录加载
+- 注意：压缩脚本运行时会清理 `compressed/` 目录，如果没有原始图片，不要运行压缩脚本
 
 ### 前端引用方式
 
@@ -143,13 +157,14 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 
 ### 新增游戏资源检查清单
 
-1. ✅ 原始图片放入 `public/assets/<gameId>/` 对应目录
-2. ✅ 运行 `npm run compress:images -- public/assets/<gameId>`
-3. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件
-4. ✅ 代码中使用 `OptimizedImage` 或 `getOptimizedImageUrls`
-5. ✅ **确认路径中不含 `compressed/` 子目录**
-6. ❌ **禁止**直接写 `<img src="/assets/xxx.png" />`
-7. ❌ **禁止**硬编码 `compressed/` 路径
+1. ✅ 原始图片放入 `public/assets/<gameId>/` 对应目录（如果有原始图片）
+2. ✅ 运行 `npm run compress:images -- public/assets/<gameId>`（如果有原始图片）
+3. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件（或直接放入 WebP 文件）
+4. ✅ **图集配置 JSON 放入 `public/assets/atlas-configs/<gameId>/`**（不要放在 `i18n/` 目录）
+5. ✅ 代码中使用 `OptimizedImage` 或 `getOptimizedImageUrls`
+6. ✅ **确认路径中不含 `compressed/` 子目录**
+7. ❌ **禁止**直接写 `<img src="/assets/xxx.png" />`
+8. ❌ **禁止**硬编码 `compressed/` 路径
 
 ---
 

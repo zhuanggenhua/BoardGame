@@ -34,6 +34,13 @@ const getPlayerCp = (core: Record<string, unknown>, playerId: string) => {
     return resources?.[RESOURCE_IDS.CP] ?? 0;
 };
 
+const INITIAL_CP = 1; // 初始 CP 值
+const getPlayerCp = (core: Record<string, unknown>, playerId: string) => {
+    const players = core.players as Record<string, Record<string, unknown>>;
+    const resources = players[playerId]?.resources as Record<string, number> | undefined;
+    return resources?.[RESOURCE_IDS.CP] ?? 0;
+};
+
 test.describe('圣骑士复仇 II - 选择玩家授予反击', () => {
 
     test('选择自己授予反击 token', async ({ browser }, testInfo) => {
@@ -105,13 +112,19 @@ test.describe('圣骑士复仇 II - 选择玩家授予反击', () => {
             await page.waitForTimeout(1000);
 
             // 验证圣骑士获得了反击 token
-            const core = await readCoreState(page) as Record<string, unknown>;
-            const tokens = getPlayerTokens(core, paladinId);
+            let core = await readCoreState(page) as Record<string, unknown>;
+            let tokens = getPlayerTokens(core, paladinId);
             expect(tokens[TOKEN_IDS.RETRIBUTION], '圣骑士应获得 1 层反击').toBe(1);
 
-            // 验证获得了 4 CP（复仇 II 的第二个效果）
+            // 推进阶段到 main2（触发 postDamage 效果）
+            const nextPhaseBtn2 = page.locator('[data-tutorial-id="advance-phase-button"]');
+            await nextPhaseBtn2.click();
+            await page.waitForTimeout(1000);
+
+            // 验证获得了 4 CP（复仇 II 的第二个效果，在 postDamage 时机执行）
+            core = await readCoreState(page) as Record<string, unknown>;
             const cp = getPlayerCp(core, paladinId);
-            expect(cp, '圣骑士应获得 4 CP').toBeGreaterThanOrEqual(4);
+            expect(cp, '圣骑士应在攻击结算后获得 4 CP').toBe(INITIAL_CP + 4);
 
             await closeDebugPanelIfOpen(page);
             await page.screenshot({ path: testInfo.outputPath('vengeance-self-complete.png'), fullPage: false });
@@ -181,13 +194,23 @@ test.describe('圣骑士复仇 II - 选择玩家授予反击', () => {
             await page.waitForTimeout(1000);
 
             // 验证对手获得了反击 token
-            const core = await readCoreState(page) as Record<string, unknown>;
+            let core = await readCoreState(page) as Record<string, unknown>;
             const opponentTokens = getPlayerTokens(core, opponentId);
             expect(opponentTokens[TOKEN_IDS.RETRIBUTION], '对手应获得 1 层反击').toBe(1);
 
             // 验证圣骑士没有获得反击
             const paladinTokens = getPlayerTokens(core, paladinId);
             expect(paladinTokens[TOKEN_IDS.RETRIBUTION] ?? 0, '圣骑士不应获得反击').toBe(0);
+
+            // 推进阶段到 main2（触发 postDamage 效果）
+            const nextPhaseBtn2 = page.locator('[data-tutorial-id="advance-phase-button"]');
+            await nextPhaseBtn2.click();
+            await page.waitForTimeout(1000);
+
+            // 验证圣骑士获得了 4 CP（在 postDamage 时机执行）
+            core = await readCoreState(page) as Record<string, unknown>;
+            const cp = getPlayerCp(core, paladinId);
+            expect(cp, '圣骑士应在攻击结算后获得 4 CP').toBe(INITIAL_CP + 4);
 
             await closeDebugPanelIfOpen(page);
             await page.screenshot({ path: testInfo.outputPath('vengeance-opponent-complete.png'), fullPage: false });

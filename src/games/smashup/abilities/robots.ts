@@ -12,7 +12,7 @@ import type { SmashUpEvent, MinionPlayedEvent } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import { getCardDef, getBaseDef } from '../data/cards';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { drawCards, isDiscardMicrobot, MICROBOT_DEF_IDS } from '../domain/utils';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 
@@ -44,10 +44,8 @@ function robotMicrobotGuard(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     // Prompt 选择
     const options = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
         const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
+        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `cards.${t.defId}.name (力量 ${power})` };
     });
     const interaction = createSimpleChoice(
         `robot_microbot_guard_${ctx.now}`, ctx.playerId,
@@ -85,18 +83,29 @@ function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
     );
     if (microbotsInDiscard.length === 0) return { events };
 
-    const options = microbotsInDiscard.map((c, i) => {
-        const def = getCardDef(c.defId);
-        const name = def?.name ?? c.defId;
-        return { id: `microbot-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } };
+    const options: PromptOption<{ cardUid: string; defId: string } | { skip: true }>[] = microbotsInDiscard.map((c, i) => {
+        return { 
+            id: `microbot-${i}`, 
+            label: `cards.${c.defId}.name`, 
+            value: { cardUid: c.uid, defId: c.defId , displayMode: 'card' as const },
+            displayMode: 'card' as const,
+        };
     });
-    const skipOption = { id: 'skip', label: '跳过（不洗回）', value: { skip: true } };
-    const interaction = createSimpleChoice(
+    const skipOption: PromptOption<{ cardUid: string; defId: string } | { skip: true }> = { id: 'skip', label: '跳过（不洗回）', value: { skip: true } , displayMode: 'button' as const };
+    const interaction = createSimpleChoice<{ cardUid: string; defId: string } | { skip: true }>(
         `robot_microbot_reclaimer_${ctx.now}`, ctx.playerId,
         '选择要洗回牌库的微型机（任意数量，可跳过）', [...options, skipOption],
         { sourceId: 'robot_microbot_reclaimer', multi: { min: 0, max: microbotsInDiscard.length } },
     );
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+// 盘旋机器人交互计数器（用于生成稳定的交互 ID）
+let robotHoverbotCounter = 0;
+
+/** 重置盘旋机器人计数器（仅用于测试） */
+export function resetRobotHoverbotCounter(): void {
+    robotHoverbotCounter = 0;
 }
 
 /** 盘旋机器人 onPlay：展示牌库顶，如果是随从"你可以"将其作为额外随从打出 */
@@ -105,40 +114,71 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
         ctx.state.players[ctx.playerId], ctx.playerId,
         'all', 'robot_hoverbot', ctx.now,
     );
-    if (!peek) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+    
+    if (!peek) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+    }
     const events: SmashUpEvent[] = [peek.revealEvent];
+    
     if (peek.card.type === 'minion') {
         const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? peek.card.defId;
         const power = def?.power ?? 0;
+        
         // "你可以" → 创建交互让玩家选择是否打出该特定随从
-        const interaction = createSimpleChoice(
-            `robot_hoverbot_${ctx.now}`, ctx.playerId,
-            `牌库顶是 ${name}（力量 ${power}），是否作为额外随从打出？`,
-            [
-                { id: 'play', label: `打出 ${name}`, value: { cardUid: peek.card.uid, defId: peek.card.defId, power } },
-                { id: 'skip', label: '放回牌库顶', value: { skip: true } },
-            ],
+        // 使用静态计数器而非时间戳，确保交互 ID 稳定（防止重复处理时 ID 变化）
+        // 标题和选项 label 使用 i18n key，由 UI 层的 resolveI18nKeys 翻译
+        const initialOptions: PromptOption<{ cardUid: string; defId: string; power: number } | { skip: true }>[] = [
+            { 
+                id: 'play', 
+                label: `打出 cards.${peek.card.defId}.name`, 
+                value: { cardUid: peek.card.uid, defId: peek.card.defId, power , displayMode: 'card' as const },
+                displayMode: 'card' as const,
+                _source: 'static' as const,  // ✅ 关键修复：显式声明为静态选项，防止框架层自动刷新时误判为手牌选项
+            },
+            { id: 'skip', label: '放回牌库顶', value: { skip: true } , displayMode: 'button' as const },
+        ];
+        
+        const interaction = createSimpleChoice<{ cardUid: string; defId: string; power: number } | { skip: true }>(
+            `robot_hoverbot_${robotHoverbotCounter++}`, ctx.playerId,
+            `牌库顶是 cards.${peek.card.defId}.name（力量 ${power}），是否作为额外随从打出？`,
+            initialOptions,
             'robot_hoverbot',
         );
-        // 手动提供 optionsGenerator：选项固定，不需要从状态中查找
-        (interaction.data as any).optionsGenerator = (state: any) => {
-            const p = state.core.players[ctx.playerId];
-            // 检查牌库顶是否仍然是同一张卡
-            if (p.deck.length > 0 && p.deck[0].uid === peek.card.uid) {
-                const def = getCardDef(peek.card.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? peek.card.defId;
-                const power = def?.power ?? 0;
-                return [
-                    { id: 'play', label: `打出 ${name}`, value: { cardUid: peek.card.uid, defId: peek.card.defId, power } },
-                    { id: 'skip', label: '放回牌库顶', value: { skip: true } },
-                ];
-            }
-            // 如果牌库顶已变化，只提供跳过选项
-            return [{ id: 'skip', label: '跳过', value: { skip: true } }];
+        
+        // ⚠️ 关键：必须先设置 continuationContext，再设置 optionsGenerator
+        // 因为 optionsGenerator 可能在交互创建时立即被调用（如果没有 current 交互）
+        const interactionData = interaction.data as any;
+        interactionData.continuationContext = {
+            cardUid: peek.card.uid,
+            defId: peek.card.defId,
+            power,
         };
+        
+        // 手动提供 optionsGenerator：从 continuationContext 读取卡牌信息，而不是从牌库顶读取
+        // 这样即使牌库顶变化了，交互选项仍然显示原来看到的那张卡
+        interactionData.optionsGenerator = (_state: any, iData: any) => {
+            const ctx = iData?.continuationContext as { cardUid: string; defId: string; power: number } | undefined;
+            
+            if (!ctx) {
+                return [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }];
+            }
+            
+            // 从 continuationContext 读取卡牌信息（不依赖牌库顶状态）
+            return [
+                { 
+                    id: 'play', 
+                    label: `打出 cards.${ctx.defId}.name`, 
+                    value: { cardUid: ctx.cardUid, defId: ctx.defId, power: ctx.power , displayMode: 'card' as const },
+                    displayMode: 'card' as const,
+                    _source: 'static' as const,
+                },
+                { id: 'skip', label: '放回牌库顶', value: { skip: true } , displayMode: 'button' as const },
+            ];
+        };
+        
         return { events, matchState: queueInteraction(ctx.matchState, interaction) };
     }
+    
     // 非随从→放回牌库顶（peek 不移除卡，无需操作）
     return { events };
 }
@@ -155,9 +195,8 @@ function robotTechCenter(ctx: AbilityContext): AbilityResult {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const count = ctx.state.bases[i].minions.filter(m => m.controller === ctx.playerId).length;
         if (count > 0) {
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-            candidates.push({ baseIndex: i, count, label: `${baseName} (${count} 个随从)` });
+            const baseDefId = ctx.state.bases[i].defId;
+            candidates.push({ baseIndex: i, count, label: `cards.${baseDefId}.name (${count} 个随从)` });
         }
     }
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
@@ -212,13 +251,13 @@ export function registerRobotInteractionHandlers(): void {
     });
 
     // 微型机守护者：选择目标后消灭
-    registerInteractionHandler('robot_microbot_guard', (state, playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('robot_microbot_guard', (state, sourcePlayerId, value, _iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
         const base = state.core.bases[baseIndex];
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'robot_microbot_guard', timestamp)] };
+        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, sourcePlayerId, 'robot_microbot_guard', timestamp)] };
     });
 
     // 技术中心：选择基地后按随从数抽牌
@@ -249,12 +288,24 @@ export function registerRobotInteractionHandlers(): void {
         if (!cardUid) return undefined;
         // 该卡必须在牌库顶
         const player = state.core.players[playerId];
-        if (player.deck.length === 0 || player.deck[0].uid !== cardUid) return undefined;
+        if (player.deck.length === 0 || player.deck[0].uid !== cardUid) {
+            // 验证失败：卡牌不在牌库顶（可能被其他效果移除）
+            // 抛出错误以阻止命令执行
+            throw new Error(`卡牌 ${cardUid} 不在牌库顶，无法打出`);
+        }
         // 单基地直接打出
         if (state.core.bases.length === 1) {
             const playedEvt: MinionPlayedEvent = {
                 type: SU_EVENTS.MINION_PLAYED,
-                payload: { playerId, cardUid, defId, baseIndex: 0, power },
+                payload: { 
+                    playerId, 
+                    cardUid, 
+                    defId, 
+                    baseIndex: 0, 
+                    baseDefId: state.core.bases[0].defId,
+                    power,
+                    fromDeck: true,
+                },
                 timestamp,
             };
             return { state, events: [
@@ -286,7 +337,7 @@ export function registerRobotInteractionHandlers(): void {
         if (!ctx) return undefined;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid: ctx.cardUid, defId: ctx.defId, baseIndex, power: ctx.power },
+            payload: { playerId, cardUid: ctx.cardUid, defId: ctx.defId, baseIndex, power: ctx.power, fromDeck: true },
             timestamp,
         };
         return { state, events: [
@@ -308,9 +359,14 @@ function registerRobotOngoingEffects(): void {
     });
 
     // 微型机档案馆：微型机被消灭后控制者抽1张牌
-    // alpha 联动：当 alpha 在场时，同控制者的所有随从均视为微型机
     registerTrigger('robot_microbot_archive', 'onMinionDestroyed', (trigCtx) => {
         if (!trigCtx.triggerMinionDefId) return [];
+        // 检查被消灭的是否是微型机
+        // 需要找到被消灭随从的控制者来判断 alpha 是否在场
+        // trigCtx 中没有被消灭随从的完整信息，用 defId 判断原始微型机
+        // alpha 联动需要知道控制者，但 onMinionDestroyed 触发时随从已移除
+        // 保守实现：原始微型机 defId 始终触发
+        if (!MICROBOT_DEF_IDS.has(trigCtx.triggerMinionDefId)) return [];
 
         // 找到 microbot_archive 的拥有者
         let archiveOwner: string | undefined;
@@ -323,21 +379,10 @@ function registerRobotOngoingEffects(): void {
         }
         if (!archiveOwner) return [];
 
-        // "你的"微型机 — 被消灭随从必须属于 archive 控制者
+        // "你的"微型机 → 被消灭随从必须属于 archive 控制者
         if (trigCtx.playerId !== archiveOwner) return [];
 
-        // 判断被消灭的随从是否算微型机
-        const isOriginalMicrobot = MICROBOT_DEF_IDS.has(trigCtx.triggerMinionDefId);
-        if (!isOriginalMicrobot) {
-            // 非原始微型机 defId → 检查 alpha 联动
-            // alpha 在场 = 同控制者所有随从视为微型机
-            const alphaOnField = trigCtx.state.bases.some(base =>
-                base.minions.some(m => m.defId === 'robot_microbot_alpha' && m.controller === archiveOwner)
-            );
-            if (!alphaOnField) return [];
-        }
-
-        // ?张牌
+        // 抽1张牌
         const player = trigCtx.state.players[archiveOwner];
         if (!player || player.deck.length === 0) return [];
         const { drawnUids } = drawCards(player, 1, trigCtx.random);

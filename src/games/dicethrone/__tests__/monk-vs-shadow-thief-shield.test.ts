@@ -215,9 +215,11 @@ describe('僧侣 vs 暗影刺客：太极连环掌 + 暗影防御护盾', () => 
                 cmd('CONFIRM_ROLL', '1'),
                 cmd('ADVANCE_PHASE', '1'),                              // defensiveRoll exit → resolveAttack
                 // rollDie(diceCount=2) 产生 displayOnly BONUS_DICE_REROLL_REQUESTED → halt
-                cmd('SKIP_BONUS_DICE_REROLL', '0'),                     // 确认骰子结果
+                cmd('SKIP_BONUS_DICE_REROLL', '0'),                     // 确认第一个骰子结果
                 // damage(5) 产生 TOKEN_RESPONSE_REQUESTED（僧侣有太极）→ halt
-                cmd('SKIP_TOKEN_RESPONSE', '0'),                        // 跳过太极加伤 → main2
+                cmd('SKIP_TOKEN_RESPONSE', '0'),                        // 跳过太极加伤
+                // resolvePostDamageEffects 产生第二个 BONUS_DICE_REROLL_REQUESTED → halt
+                cmd('SKIP_BONUS_DICE_REROLL', '0'),                     // 确认第二个骰子结果 → 自动推进到 main2
             ],
             expect: {
                 turnPhase: 'main2',

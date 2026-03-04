@@ -38,6 +38,7 @@
     "me_first_your_turn": "轮到你响应 — 打出特殊牌或让过",
     "me_first_waiting": "等待 P{{player}} 响应...",
     "me_first_pass": "让过",
+    "me_first_no_special": "你没有可打出的特殊行动卡",
     "me_first_select_base": "点击一个达标基地来打出特殊牌",
     "me_first_click_base": "点击达标基地",
     "me_first_select_from_hand": "从手牌中选择特殊行动卡打出",
@@ -45,6 +46,9 @@
     "continue": "继续",
     "your_turn_prompt": "现在轮到你了",
     "waiting_for_player": "正在等待 P{{id}}",
+    "opponent_view": "对手视角",
+    "back_to_self": "返回",
+    "opponent_card": "对手的牌",
     "select_factions_title": "选择你的派系",
     "select_factions_desc": "组合两个派系来构建你的终极牌组。利用不同的能力组合来大杀四方。",
     "player_taken": "P{{id}} 已占领",
@@ -99,7 +103,8 @@
     "select_all": "全选",
     "waiting_opponent": "等待对方操作",
     "power_counter": "力量指示物",
-    "skip": "跳过"
+    "skip": "跳过",
+    "wait_for_your_turn": "等待你的响应回合"
   },
   "feedback": {
     "deck_search_no_match": "牌库中未找到符合条件的卡牌，已重洗牌库",
@@ -169,7 +174,19 @@
     "madnessDrawn": "{{playerId}} 抽取{{count}}张疯狂卡",
     "madnessReturned": "{{playerId}} 归还疯狂卡",
     "baseDeckReordered": "基地牌库重排",
-    "onBase": " → {{base}}"
+    "onBase": " → {{base}}",
+    "revealHand": "{{playerId}} 展示手牌（{{count}}张）",
+    "revealDeckTop": "{{playerId}} 展示牌库顶（{{count}}张）",
+    "permanentPowerAdded": "永久力量+{{amount}}：",
+    "tempPowerAdded": "临时力量+{{amount}}：",
+    "ongoingCounterChanged": "持续行动计数器{{delta}}：",
+    "breakpointModified": "{{base}} 爆分线{{delta}}",
+    "baseDeckShuffled": "基地牌库洗牌",
+    "specialLimitUsed": "{{playerId}} 使用特殊{{limitType}}额度",
+    "abilityTriggered": "触发能力（{{triggerType}}）：",
+    "baseCleared": "清空{{base}}",
+    "deckReordered": "{{playerId}} 重排牌库",
+    "factionSelected": "{{playerId}} 选择派系：{{faction}}"
   },
   "factions": {
     "pirates": {
@@ -314,7 +331,7 @@
     },
     "alien_probe": {
       "name": "探究",
-      "effectText": "查看一个玩家的手牌。查看该玩家牌库顶的一张牌，将其放回牌库顶或放到牌库底。"
+      "effectText": "查看一个玩家的手牌并选择其中一张随从。该玩家弃掉那张随从。"
     },
     "alien_crop_circles": {
       "name": "麦田怪圈",
@@ -358,7 +375,7 @@
     },
     "bear_cavalry_bear_necessities": {
       "name": "黑熊口粮",
-      "effectText": "消灭随从或在基地上打出的一张战术。"
+      "effectText": "消灭一个随从或在基地上打出的一张行动卡。"
     },
     "bear_cavalry_youre_pretty_much_borscht": {
       "name": "你们都是美食",
@@ -1429,6 +1446,952 @@
     "giant_ant_killer_queen": {
       "name": "杀手女皇",
       "abilityText": "天赋：如果你在本回合中打出了一个随从到此基地，在该随从以及本随从身上放置一个+1力量指示物。"
+    },
+    "alien_supreme_overlord_pod": {
+      "name": "最高指挥官",
+      "abilityText": "你可以将一个随从返回到其拥有者的手上。"
+    },
+    "alien_invader_pod": {
+      "name": "入侵者",
+      "abilityText": "获得1VP。"
+    },
+    "alien_scout_pod": {
+      "name": "侦察兵",
+      "abilityText": "特殊：在这个基地计分后，你可以将此随从放回手牌而非弃牌堆。"
+    },
+    "alien_collector_pod": {
+      "name": "收集者",
+      "abilityText": "你可以将这个基地的一个力量为3或以下的随从返回其拥有者的手上。"
+    },
+    "alien_invasion_pod": {
+      "name": "入侵",
+      "effectText": "将一个随从移动到另一个基地。"
+    },
+    "alien_disintegrator_pod": {
+      "name": "分解者",
+      "effectText": "将一个力量为3或以下的随从放到它的拥有者的牌库底。"
+    },
+    "alien_beam_up_pod": {
+      "name": "光束捕捉",
+      "effectText": "将一个随从返回其拥有者的手上。"
+    },
+    "alien_probe_pod": {
+      "name": "探究",
+      "effectText": "查看一个玩家的手牌并选择其中一张随从。该玩家弃掉那张随从。"
+    },
+    "alien_crop_circles_pod": {
+      "name": "麦田怪圈",
+      "effectText": "选择一个基地。返回每个在这个基地上的随从到它的拥有者的手上。"
+    },
+    "alien_terraform_pod": {
+      "name": "适居化",
+      "effectText": "从基地牌库搜寻一张基地。将它与场上一张基地交换（弃掉上面所有行动卡）。洗混基地牌库。你可以在新基地上额外打出一个随从。"
+    },
+    "alien_abduction_pod": {
+      "name": "绑架",
+      "effectText": "将一个随从返回其拥有者的手上。额外打出一个随从。"
+    },
+    "alien_jammed_signal_pod": {
+      "name": "糟糕的信号",
+      "effectText": "打出到基地上。持续：所有玩家无视此基地的能力。"
+    },
+    "bear_cavalry_general_ivan_pod": {
+      "name": "伊万将军",
+      "abilityText": "持续：你的随从不能被消灭。"
+    },
+    "bear_cavalry_polar_commando_pod": {
+      "name": "极地突击队员",
+      "abilityText": "持续：如果这个随从是所在基地上唯一的你的随从，则它获得力量+2并且不能被消灭。"
+    },
+    "bear_cavalry_bear_cavalry_pod": {
+      "name": "黑熊骑兵",
+      "abilityText": "将其他玩家在本随从所在的基地的一个随从移动到另一个基地。"
+    },
+    "bear_cavalry_cub_scout_pod": {
+      "name": "幼熊斥候",
+      "abilityText": "持续：当其他玩家的随从移动到本随从所在的基地之后，如果它的力量低于本随从，则消灭它。"
+    },
+    "bear_cavalry_bear_hug_pod": {
+      "name": "黑熊擒抱",
+      "effectText": "每位其他玩家均消灭自己战斗力最低的一张随从。（平局则由拥有者选择）"
+    },
+    "bear_cavalry_youre_screwed_pod": {
+      "name": "你们已经完蛋",
+      "effectText": "选择一个有你随从的基地，将另一位玩家在这里的一张随从移动到其他基地。"
+    },
+    "bear_cavalry_bear_necessities_pod": {
+      "name": "黑熊口粮",
+      "effectText": "消灭一个随从或在基地上打出的一张行动卡。"
+    },
+    "bear_cavalry_youre_pretty_much_borscht_pod": {
+      "name": "你们都是美食",
+      "effectText": "选择一个有你随从的基地，将其他玩家在该基地的所有随从移动到其他基地。"
+    },
+    "bear_cavalry_bear_rides_you_pod": {
+      "name": "与熊同行",
+      "effectText": "将你的一张随从从移动到其他基地。"
+    },
+    "bear_cavalry_commission_pod": {
+      "name": "委任",
+      "effectText": "打出一张额外随从。然后将该随从所在基地上另一位玩家的一张随从移动到其他基地。"
+    },
+    "bear_cavalry_superiority_pod": {
+      "name": "全面优势",
+      "effectText": "打出到基地上。持续：你在这里的随从不能被其他玩家的卡牌能力消灭、移动或者返回到你的手牌或牌库。"
+    },
+    "bear_cavalry_high_ground_pod": {
+      "name": "制高点",
+      "effectText": "打出到基地上。持续：如果这里有你的随从，则消灭其他玩家移动到这里的任何随从。"
+    },
+    "cthulhu_star_spawn_pod": {
+      "name": "克苏鲁的星之眷族",
+      "abilityText": "天赋：将一张疯狂卡从你的手上放到另一个玩家的手上。"
+    },
+    "cthulhu_chosen_pod": {
+      "name": "克苏鲁的神选者",
+      "abilityText": "特殊：在一个基地计分前，你可以抽一张疯狂卡。该随从获得+2力量直到回合结束。"
+    },
+    "cthulhu_servitor_pod": {
+      "name": "克苏鲁的仆人",
+      "abilityText": "天赋：消灭本卡并从你的弃牌堆中选择一张战术卡放到你牌库顶。"
+    },
+    "cthulhu_altar_pod": {
+      "name": "克苏鲁祭坛",
+      "effectText": "打出到基地上。任何时候当你打出一个随从到这时，你在本回合可以额外打出一个战术。"
+    },
+    "cthulhu_recruit_by_force_pod": {
+      "name": "强制招募",
+      "effectText": "将任意数量的力量为3或以下的随从从你的弃牌堆放到你的牌库顶。"
+    },
+    "cthulhu_complete_the_ritual_pod": {
+      "name": "完成仪式",
+      "effectText": "打出到一个你至少拥有一个随从的基地上。在你的回合开始时，将所有在基地上的随从和战术放回其拥有者的牌库底并将该基地同基地牌库最顶部的卡交换。"
+    },
+    "cthulhu_furthering_the_cause_pod": {
+      "name": "深化目标",
+      "effectText": "打出到基地上。持续：在每回合结束时如果其他玩家在这里的随从被消灭过，获得1VP。"
+    },
+    "cthulhu_whispers_in_darkness_pod": {
+      "name": "在黑暗中低语",
+      "effectText": "抽一张疯狂卡。你在本回合可以额外打出两个战术。"
+    },
+    "cthulhu_corruption_pod": {
+      "name": "腐化",
+      "effectText": "抽一张疯狂卡。消灭一个随从。"
+    },
+    "cthulhu_fhtagn_pod": {
+      "name": "克苏鲁的馈赠",
+      "effectText": "从你的牌库顶依次展示卡牌直到你展示出2张战术。将它们放进你的手中并将剩下的放到你的牌库底。"
+    },
+    "cthulhu_madness_unleashed_pod": {
+      "name": "疯狂解放",
+      "effectText": "弃掉任意数量的疯狂卡。你每弃掉一张卡，你就可以抽一张卡并在本回合中额外打出一个战术。"
+    },
+    "cthulhu_seal_is_broken_pod": {
+      "name": "封印破坏",
+      "effectText": "抽一张疯狂卡获得1VP。"
+    },
+    "cthulhu_it_begins_again_pod": {
+      "name": "再次降临",
+      "effectText": "将你弃牌堆任意数量的战术洗回你的牌库。"
+    },
+    "dino_king_rex_pod": {
+      "name": "雷克斯王"
+    },
+    "dino_laser_triceratops_pod": {
+      "name": "激光三角龙",
+      "abilityText": "消灭一个本基地的力量为2或以下的随从。"
+    },
+    "dino_armor_stego_pod": {
+      "name": "装甲剑龙",
+      "abilityText": "持续：在其他玩家的回合中+2力量。"
+    },
+    "dino_war_raptor_pod": {
+      "name": "战斗迅猛龙",
+      "abilityText": "持续：这个基地每有一个战斗迅猛龙（包括本卡）使本卡获得+1力量。"
+    },
+    "dino_wildlife_preserve_pod": {
+      "name": "野生保护区",
+      "effectText": "打出到基地上。持续：你在这里的随从不会受到其他玩家的战术影响。"
+    },
+    "dino_natural_selection_pod": {
+      "name": "物竞天择",
+      "effectText": "选择你的在一个基地上的随从。消灭一个在那里力量小于你的随从的随从。"
+    },
+    "dino_survival_of_the_fittest_pod": {
+      "name": "适者生存",
+      "effectText": "每个基地在存在两个及以上的随从且其中有随从有更高力量的情况下消灭一个最低力量的随从（如果出现平局你来选择）。"
+    },
+    "dino_upgrade_pod": {
+      "name": "升级",
+      "effectText": "打出到一个随从上。持续：该随从+2力量。"
+    },
+    "dino_howl_pod": {
+      "name": "嚎叫",
+      "effectText": "每个你的随从获得+1力量直到回合结束。"
+    },
+    "dino_rampage_pod": {
+      "name": "狂暴",
+      "effectText": "将一个基地的爆破点降低等同于你在这个基地的一个随从的力量数直到回合结束。"
+    },
+    "dino_augmentation_pod": {
+      "name": "增强",
+      "effectText": "一个随从获得+4力量直到回合结束。"
+    },
+    "dino_tooth_and_claw_pod": {
+      "name": "全副武装",
+      "effectText": "打出到一个随从上。持续：如果一个能力将会影响该随从，消灭本卡，那么那个能力将不会影响该随从。"
+    },
+    "elder_thing_elder_thing_pod": {
+      "name": "远古之物",
+      "abilityText": "消灭两个你的其他的随从或将这个随从放到你的牌库底，这个随从不受对手卡牌的影响。"
+    },
+    "elder_thing_shoggoth_pod": {
+      "name": "修格斯",
+      "abilityText": "你只能将这张卡打到你至少拥有6点力量的基地。每位其他玩家可以抽一张疯狂卡。消灭每个没这样做的玩家在这个基地的一个随从。"
+    },
+    "elder_thing_mi_go_pod": {
+      "name": "米-格",
+      "abilityText": "每个其他玩家可以抽一张疯狂卡。每个不这样做的玩家，都能让你抽一张卡。"
+    },
+    "elder_thing_byakhee_pod": {
+      "name": "拜亚基",
+      "abilityText": "如果其他玩家有随从在这个基地抽一张疯狂卡。"
+    },
+    "elder_thing_power_of_madness_pod": {
+      "name": "疯狂之力",
+      "effectText": "所有其他玩家展示他们的手牌，弃掉所有疯狂卡并且将他们的弃牌堆洗回他们的牌库。"
+    },
+    "elder_thing_insanity_pod": {
+      "name": "精神错乱",
+      "effectText": "其他玩家抽两张疯狂卡。"
+    },
+    "elder_thing_dunwich_horror_pod": {
+      "name": "敦威治恐怖",
+      "effectText": "打到一个随从上。这个随从获得+5力量。在回合结束时消灭这个随从。"
+    },
+    "elder_thing_begin_the_summoning_pod": {
+      "name": "开始召唤",
+      "effectText": "将你的弃牌堆中的一个随从放到你的牌库顶。这回合你可以额外打出一张战术。"
+    },
+    "elder_thing_spreading_horror_pod": {
+      "name": "散播恐怖",
+      "effectText": "每位其他玩家随机弃牌直到弃出一张非疯狂卡。"
+    },
+    "elder_thing_the_price_of_power_pod": {
+      "name": "力量的代价",
+      "effectText": "特殊：在一个基地计分前，所有有随从在这里的其他玩家展示他们的手牌。每展示出一张疯狂卡，你在这里的一个随从就获得+2力量。"
+    },
+    "elder_thing_unfathomable_goals_pod": {
+      "name": "深不可测的目的",
+      "effectText": "所有其他玩家展示他的手牌。每位展示出疯狂卡的玩家必须消灭一个他的随从。"
+    },
+    "elder_thing_touch_of_madness_pod": {
+      "name": "疯狂接触",
+      "effectText": "每个其他玩家抽一张疯狂卡。你抽一张卡并且本回合额外打出一张战术。"
+    },
+    "frankenstein_igor_pod": {
+      "name": "科学小怪蛋",
+      "abilityText": "持续：在本随从被消灭或者被弃掉之后，在你的一个随从上放置一个+1力量指示物。"
+    },
+    "frankenstein_lab_assistant_pod": {
+      "name": "实验室助手",
+      "abilityText": "在你的另一个随从上放置一个+1力量指示物。"
+    },
+    "frankenstein_the_monster_pod": {
+      "name": "怪物",
+      "abilityText": "天赋：从本随从身上移除一个+1力量指示物来额外打出一个随从。"
+    },
+    "frankenstein_herr_doktor_pod": {
+      "name": "黑尔博士",
+      "abilityText": "天赋：在你的另一个随从身上放置一个+1力量指示物。"
+    },
+    "frankenstein_german_engineering_pod": {
+      "name": "德国工程学",
+      "effectText": "打出到基地上。持续：在你打出一个随从到这后，在它上面放置一个+1力量指示物。"
+    },
+    "frankenstein_jolt_pod": {
+      "name": "震撼",
+      "effectText": "在你的每个随从上放置一个+1力量指示物。"
+    },
+    "frankenstein_grave_situation_pod": {
+      "name": "死亡境地",
+      "effectText": "打出到基地上。持续：当你的一个随从在这里被消灭后，把它放到手牌而不是弃牌堆。"
+    },
+    "frankenstein_its_alive_pod": {
+      "name": "它活过来了！",
+      "effectText": "打出一个额外的随从并在它的身上放置一个+1力量指示物。"
+    },
+    "frankenstein_angry_mob_pod": {
+      "name": "愤怒的民众",
+      "effectText": "选择你的一个随从。从你的手上放置任意数量的卡牌到你的牌库底。你每放一张牌，你就在该随从身上放置一个+1力量指示物。"
+    },
+    "frankenstein_body_shop_pod": {
+      "name": "尸体商店",
+      "effectText": "消灭你的一个随从。放置等同于该随从力量的+1力量指示物到你的随从上，你可以任意分配它们。"
+    },
+    "frankenstein_uberserum_pod": {
+      "name": "身体改造",
+      "effectText": "打出到一个随从上。持续：在你的回合开始时，在该随从上放置一个+1力量指示物。该随从不能被消灭。"
+    },
+    "frankenstein_blitzed_pod": {
+      "name": "闪电攻击",
+      "effectText": "从你的随从身上移除任意数量的+1力量指示物。消灭一个力量少于或等于你移除的数量的随从。"
+    },
+    "ghost_spectre_pod": {
+      "name": "幽灵之主",
+      "abilityText": "异能：如果你只有2张或更少的手牌，则任何你可以打出一个随从的时候，你可以从弃牌堆打出本卡代替。"
+    },
+    "ghost_haunting_pod": {
+      "name": "不散阴魂",
+      "abilityText": "持续：如果你只有2张或更少的手牌，本随从+3力量并且不能被其他玩家的卡牌影响。"
+    },
+    "ghost_spirit_pod": {
+      "name": "幽灵侍者",
+      "abilityText": "选择一个随从。你可以弃置等同于该随从力量数量的卡来消灭它。"
+    },
+    "ghost_ghost_pod": {
+      "name": "幽灵",
+      "abilityText": "你可以从你的手牌弃一张卡。"
+    },
+    "ghost_seance_pod": {
+      "name": "招魂",
+      "effectText": "如果你有2张或更少的手牌，抽牌直到你拥有5张手牌。"
+    },
+    "ghost_incorporeal_pod": {
+      "name": "幽灵化",
+      "effectText": "打出到你的一个随从上。持续：本随从不会受到其他玩家卡牌的影响。"
+    },
+    "ghost_ghostly_arrival_pod": {
+      "name": "悄然而至",
+      "effectText": "你可以打出一个额外的随从和/或一个额外的行动。"
+    },
+    "ghost_make_contact_pod": {
+      "name": "交朋友",
+      "effectText": "你只能在本卡是你的唯一手牌时打出它。打出到一个随从上。持续：只要本卡和该随从都在场，则该随从视作你的随从。"
+    },
+    "ghost_shady_deal_pod": {
+      "name": "阴暗交易",
+      "effectText": "如果你有2张或更少的手牌，则获得1VP。"
+    },
+    "ghost_door_to_the_beyond_pod": {
+      "name": "彼岸之门",
+      "effectText": "打出到基地上。持续：如果你只有2张或更少的手牌，则每个你在此基地的随从+2力量。"
+    },
+    "ghost_the_dead_rise_pod": {
+      "name": "亡者崛起",
+      "effectText": "弃掉任意数量的卡。从你的弃牌堆中打出一个力量少于你弃牌数的额外随从。"
+    },
+    "ghost_across_the_divide_pod": {
+      "name": "越过边界",
+      "effectText": "选择一张卡的名字。将任意数量的该名字随从从你的弃牌堆放入你的手牌。"
+    },
+    "giant_ant_worker_pod": {
+      "name": "工蚁",
+      "abilityText": "在本随从身上放置两个+1力量指示物。"
+    },
+    "giant_ant_soldier_pod": {
+      "name": "兵蚁",
+      "abilityText": "在本随从上放置两个+1力量指示物。天赋：从本随从身上移除两个+1力量指示物来移动另一个随从到另一个基地上。"
+    },
+    "giant_ant_drone_pod": {
+      "name": "雄蜂",
+      "abilityText": "在本随从上放置一个+1力量指示物。持续：在你的一个随从被消灭前，你可以从本随从身上移除一个+1力量指示物来防止你的随从被消灭。"
+    },
+    "giant_ant_killer_queen_pod": {
+      "name": "杀手女皇",
+      "abilityText": "天赋：如果你在本回合中打出了一个随从到此基地，在该随从以及本随从身上放置一个+1力量指示物。"
+    },
+    "giant_ant_who_wants_to_live_forever_pod": {
+      "name": "无人想要永生",
+      "effectText": "从你的随从身上移除任意数量的+1力量指示物。之后你每移除一个指示物，就抽一张卡。"
+    },
+    "giant_ant_a_kind_of_magic_pod": {
+      "name": "如同魔法",
+      "effectText": "在你的随从之中随意分配它们身上的+1力量指示物。"
+    },
+    "giant_ant_we_will_rock_you_pod": {
+      "name": "我们会摇文你",
+      "effectText": "每个你的随从为它自身上的每个+1力量指示物获得+1力量直到回合结束。"
+    },
+    "giant_ant_claim_the_prize_pod": {
+      "name": "夺图奖励",
+      "effectText": "在至多3个你的随从的身上放置一个+1力量指示物。"
+    },
+    "giant_ant_under_pressure_pod": {
+      "name": "承受压力",
+      "effectText": "异能：在一个基地即将计分前，你可以从你的一个随从身上转移任意数量的+1力量指示物到另一个随从身上。"
+    },
+    "giant_ant_headlong_pod": {
+      "name": "奔撞",
+      "effectText": "移动你的一个随从到另一个基地。在本随从上放置两个+1力量指示物。"
+    },
+    "giant_ant_the_show_must_go_on_pod": {
+      "name": "好戏还将继续",
+      "effectText": "打出到基地上。持续：你在这里的拥有+1力量指示物的随从不受其他玩家卡牌的影响。"
+    },
+    "giant_ant_we_are_the_champions_pod": {
+      "name": "我们乃最强",
+      "effectText": "异能：在一个基地计分后，从你在这里的一个随从身上转移任意数量的+1力量指示物到另一个随从身上。"
+    },
+    "innsmouth_the_locals_pod": {
+      "name": "本地人",
+      "abilityText": "展示你牌库顶的三张牌，将任何以此方式展示的本地人放到你的手牌。将剩下的牌放入你的牌库底。"
+    },
+    "innsmouth_mysteries_of_the_deep_pod": {
+      "name": "深潜者的秘密",
+      "effectText": "如果你在一个基地中有三个或更多拥有相同名字的随从，抽3张牌，之后你可以额外抽2张牌和2张疯狂卡。"
+    },
+    "innsmouth_sacred_circle_pod": {
+      "name": "宗教圆环",
+      "effectText": "打出到基地上。天赋：你可以额外打出一个与这里的一个随从有着相同名字的随从到这里。"
+    },
+    "innsmouth_return_to_the_sea_pod": {
+      "name": "重返深海",
+      "effectText": "特殊：在一个基地计分后，将任意数量在这里的你的同名随从返回到手中而不是弃牌堆。"
+    },
+    "innsmouth_new_acolytes_pod": {
+      "name": "新人",
+      "effectText": "所有玩家将它们弃牌堆中的所有随从洗回他们的牌库。"
+    },
+    "innsmouth_recruitment_pod": {
+      "name": "招募",
+      "effectText": "抽取至多三张疯狂卡。你每这样做一次，你本回合就可以额外打出一个随从。"
+    },
+    "innsmouth_spreading_the_word_pod": {
+      "name": "散播谣言",
+      "effectText": "额外打出至多两个与场中一个随从同名的随从。"
+    },
+    "innsmouth_in_plain_sight_pod": {
+      "name": "一目了然",
+      "effectText": "打出到一个基地上。你在这里的力量为2或以下的随从不会被对手的卡牌影响。"
+    },
+    "innsmouth_the_deep_ones_pod": {
+      "name": "深潜者",
+      "effectText": "每个你的力量为2或以下的随从获得+1力量直到回合结束。"
+    },
+    "killer_plant_venus_man_trap_pod": {
+      "name": "维纳斯捕食者",
+      "abilityText": "天赋：从你的牌库搜寻一个力量为2或以下的随从，将其作为一个额外随从打出到此基地。重洗你的牌库。"
+    },
+    "killer_plant_weed_eater_pod": {
+      "name": "野生食人花",
+      "abilityText": "本随从在你打出它的回合中-2力量。"
+    },
+    "killer_plant_water_lily_pod": {
+      "name": "浇花睡莲",
+      "abilityText": "持续：在你的每回合开始时抽一张卡。你每回合只能使用一次浇花睡莲的能力。"
+    },
+    "killer_plant_sprout_pod": {
+      "name": "幼苗",
+      "abilityText": "持续：在你的回合开始时消灭本卡。你可以从你的牌库中搜寻一个力量为3或以下的随从，作为额外随从打出到此基地，之后重洗牌库。"
+    },
+    "killer_plant_budding_pod": {
+      "name": "出芽生殖",
+      "effectText": "选择一个在场中的随从。从你的牌库中搜寻一张同名的卡将其加入手牌，之后重洗牌库。"
+    },
+    "killer_plant_deep_roots_pod": {
+      "name": "深根",
+      "effectText": "打出到基地上。持续：你在此基地的随从不能因为其他玩家的能力而移动或返回你的手牌。"
+    },
+    "killer_plant_choking_vines_pod": {
+      "name": "食人藤蔓",
+      "effectText": "打出到一个随从上。持续：在你的回合开始时，消灭该随从。"
+    },
+    "killer_plant_insta_grow_pod": {
+      "name": "急速生长",
+      "effectText": "打出一个额外随从。"
+    },
+    "killer_plant_blossom_pod": {
+      "name": "繁荣生长",
+      "effectText": "打出至多三个同名的额外随从。"
+    },
+    "killer_plant_sleep_spores_pod": {
+      "name": "睡眠孢子",
+      "effectText": "打出到基地上。持续：其他玩家在此基地的随从-1力量。（最低到0）"
+    },
+    "killer_plant_overgrowth_pod": {
+      "name": "过度生长",
+      "effectText": "打出到基地上。持续：自你的回合开始时，将本基地的爆破点降低到0点。"
+    },
+    "killer_plant_entangled_pod": {
+      "name": "藤蔓缠绕",
+      "effectText": "打出到基地上。持续：任何有你随从的基地里的随从都不能被移动或返回手牌。在你的回合开始时消灭本卡。"
+    },
+    "miskatonic_professor_pod": {
+      "name": "教授",
+      "abilityText": "天赋：弃掉一张疯狂卡。如果你这样做，你可以额外打出一个战术和/或一个额外的随从。"
+    },
+    "miskatonic_librarian_pod": {
+      "name": "图书管理员",
+      "abilityText": "天赋：弃掉一张疯狂卡。如果你这样做，抽一张牌。"
+    },
+    "miskatonic_psychologist_pod": {
+      "name": "心理学家",
+      "abilityText": "你可以将手牌或弃牌堆中的一张疯狂卡返回疯狂牌库。"
+    },
+    "miskatonic_researcher_pod": {
+      "name": "研究员",
+      "abilityText": "你可以抽一张疯狂卡。"
+    },
+    "miskatonic_book_of_iter_the_unseen_pod": {
+      "name": "金克丝!",
+      "effectText": "从你的手牌和弃牌堆返回至多两张疯狂卡到疯狂卡牌堆。"
+    },
+    "miskatonic_it_might_just_work_pod": {
+      "name": "它可能有用",
+      "effectText": "弃掉一张疯狂卡来使你的每个随从获得+1力量直到回合结束。"
+    },
+    "miskatonic_thing_on_the_doorstep_pod": {
+      "name": "老詹金斯!?",
+      "effectText": "特殊：在一个基地计分前，消灭一个在那里拥有最高力量的随从。"
+    },
+    "miskatonic_lost_knowledge_pod": {
+      "name": "通往超凡的门",
+      "effectText": "打出到基地上。天赋：抽一张疯狂卡，你可以额外打出一个随从到这。"
+    },
+    "miskatonic_mandatory_reading_pod": {
+      "name": "最好不知道的事",
+      "effectText": "特殊：在一个基地计分前，选择这里的一个随从。抽最多3张疯狂卡。每抽取一张疯狂卡这个随从都获得+2力量。"
+    },
+    "miskatonic_psychological_profiling_pod": {
+      "name": "这太疯狂了...",
+      "effectText": "抽一张疯狂卡。你的每个随从获得+1力量直到回合结束。本回合你可以打出一个额外的战术。"
+    },
+    "miskatonic_those_meddling_kids_pod": {
+      "name": "这些多管闲事的小鬼",
+      "effectText": "消灭一个基地上任意数量的战术。"
+    },
+    "miskatonic_field_trip_pod": {
+      "name": "实地考察",
+      "effectText": "从你的手上放置任意数量的卡牌到你的牌库底且你每放一张就可以抽一张卡。"
+    },
+    "ninja_master_pod": {
+      "name": "忍者大师",
+      "abilityText": "你可以消灭一个本基地的随从。"
+    },
+    "ninja_tiger_assassin_pod": {
+      "name": "猛虎刺客",
+      "abilityText": "你可以消灭本基地一个力量为3或以下的随从。"
+    },
+    "ninja_shinobi_pod": {
+      "name": "影舞者",
+      "abilityText": "特殊：在一个基地计分前，你可以打出本随从到那里。每个基地只能使用一次忍者的能力。"
+    },
+    "ninja_acolyte_pod": {
+      "name": "忍者侍从",
+      "abilityText": "特殊：在你的回合中，如果你还未打出随从卡，则你可以将本卡放回手中并额外打出一个随从到这个基地。"
+    },
+    "ninja_way_of_deception_pod": {
+      "name": "诈术",
+      "effectText": "移动一个你的随从到另一个基地。"
+    },
+    "ninja_smoke_bomb_pod": {
+      "name": "烟幕弹",
+      "effectText": "打出到你的一个随从上。持续：该随从不会受到其他玩家战术的影响。在你回合开始的时候消灭本卡。"
+    },
+    "ninja_assassination_pod": {
+      "name": "暗杀",
+      "effectText": "打出到一个随从上。持续：在回合结束时消灭该随从。"
+    },
+    "ninja_hidden_ninja_pod": {
+      "name": "便衣忍者",
+      "effectText": "特殊：在一个基地计分前，打出一个随从到这。"
+    },
+    "ninja_seeing_stars_pod": {
+      "name": "手里剑",
+      "effectText": "消灭一个力量为3或以下的随从。"
+    },
+    "ninja_disguise_pod": {
+      "name": "伪装",
+      "effectText": "选择一个基地里的你的一个或两个随从。打出等数量的随从到那里，并将选择的随从拿回手上。"
+    },
+    "ninja_infiltrate_pod": {
+      "name": "渗透",
+      "effectText": "打出到一个基地上。消灭一个已经被打出到这的战术。持续：你可以无视这个基地的能力直到你下个回合开始的时候。"
+    },
+    "ninja_poison_pod": {
+      "name": "下毒",
+      "effectText": "打出到一个随从上。消灭在它身上的任意数量的战术。持续：这个随从-4力量（随从的力量最低减到0）。"
+    },
+    "pirate_king_pod": {
+      "name": "海盗王",
+      "abilityText": "特殊：在一个基地计分前，你可以移动本随从到那里。"
+    },
+    "pirate_buccaneer_pod": {
+      "name": "海盗",
+      "abilityText": "特殊：如果本随从将要被消灭，将其移动到其他基地来代替。"
+    },
+    "pirate_saucy_wench_pod": {
+      "name": "粗鲁少妇",
+      "abilityText": "你可以消灭本基地的一个力量为2或以下的随从。"
+    },
+    "pirate_first_mate_pod": {
+      "name": "大副",
+      "abilityText": "特殊：在本基地计分后，你可以移动本随从到其他基地而不是弃牌堆。"
+    },
+    "pirate_dinghy_pod": {
+      "name": "小船",
+      "effectText": "移动至多你的两个随从到其他基地。"
+    },
+    "pirate_powderkeg_pod": {
+      "name": "炸药桶",
+      "effectText": "消灭一个你的随从之后消灭所有同基地中与你被消灭的随从相等力量或更低的随从。"
+    },
+    "pirate_broadside_pod": {
+      "name": "侧翼开炮",
+      "effectText": "消灭一个你拥有一个随从的基地里的一个玩家的所有力量为2或以下的随从。"
+    },
+    "pirate_full_sail_pod": {
+      "name": "全速航行",
+      "effectText": "移动你任意数量的随从到其他基地。特殊：在一个基地计分前，你可以打出本卡。"
+    },
+    "pirate_cannon_pod": {
+      "name": "加农炮",
+      "effectText": "消灭至多两个力量为2或以下的随从。"
+    },
+    "pirate_shanghai_pod": {
+      "name": "诱拐",
+      "effectText": "移动一个其他玩家的随从到另一个基地。"
+    },
+    "pirate_sea_dogs_pod": {
+      "name": "水手",
+      "effectText": "指定一个派系。移动所有其他玩家该派系的随从从一个基地到另一个。"
+    },
+    "pirate_swashbuckling_pod": {
+      "name": "虚张声势",
+      "effectText": "你的每个随从获得+1力量直到回合结束。"
+    },
+    "robot_nukebot_pod": {
+      "name": "核弹机器人",
+      "abilityText": "持续：在本随从被消灭后，消灭本基地上其他玩家的所有随从。"
+    },
+    "robot_warbot_pod": {
+      "name": "战斗机器人",
+      "abilityText": "持续：本随从不能被消灭。"
+    },
+    "robot_hoverbot_pod": {
+      "name": "盘旋机器人",
+      "abilityText": "展示你牌库顶的牌。如果它是随从牌，你可以将其作为额外随从打出。否则将其回你的牌库顶。"
+    },
+    "robot_zapbot_pod": {
+      "name": "高速机器人",
+      "abilityText": "你可以打出一张力量为2或更低的额外随从。"
+    },
+    "robot_microbot_reclaimer_pod": {
+      "name": "微型机回收者",
+      "abilityText": "如果这是你在本回合中打出的第一个随从，你可以打出一张额外的随从。从你的弃牌堆中将任意数量的微型机洗回你的牌库。"
+    },
+    "robot_microbot_archive_pod": {
+      "name": "微型机存储者",
+      "abilityText": "持续：每当你的一个微型机（包括本随从）被消灭后，抓一张牌。"
+    },
+    "robot_microbot_guard_pod": {
+      "name": "微型机守护者",
+      "abilityText": "消灭本基地上一个力量低于你在这里随从数量的随从。"
+    },
+    "robot_microbot_alpha_pod": {
+      "name": "微型机阿尔法号",
+      "abilityText": "持续：你每有一个其他的微型机在场上，都让微型机阿尔法号力量+1。你的所有随从均视为微型机。"
+    },
+    "robot_microbot_fixer_pod": {
+      "name": "微型机修理者",
+      "abilityText": "如果这是你在本回合中打出的第一个随从，你可以打出一张额外的随从。持续：你的每个微型机的力量+1。"
+    },
+    "robot_tech_center_pod": {
+      "name": "技术中心",
+      "effectText": "选择一个基地。该基地上你每有一个随从，就抓一张牌。"
+    },
+    "steampunk_steam_queen_pod": {
+      "name": "蒸汽女皇",
+      "abilityText": "持续：你的战术不会被其他玩家的卡牌所影响。"
+    },
+    "steampunk_mechanic_pod": {
+      "name": "机械师",
+      "abilityText": "选择一个在你弃牌堆中可以被打到基地上的战术，将其作为一个额外战术打出。"
+    },
+    "steampunk_steam_man_pod": {
+      "name": "蒸汽人",
+      "abilityText": "持续：+1力量如果你本基地有至少一个你的战术附属在它上面。"
+    },
+    "steampunk_captain_ahab_pod": {
+      "name": "亚哈船长",
+      "abilityText": "天赋：移动该随从到一个附属有你的战术的基地上。"
+    },
+    "steampunk_ornate_dome_pod": {
+      "name": "华丽穹顶",
+      "effectText": "打出到基地上。摧毁所有其他玩家打到这里的战术。持续：其他玩家不能打出战术到本基地上。"
+    },
+    "steampunk_aggromotive_pod": {
+      "name": "蒸汽机车",
+      "effectText": "打出到基地上。持续：如果你有一个随从在此基地，你在这里就拥有+5力量。"
+    },
+    "steampunk_scrap_diving_pod": {
+      "name": "废物利用",
+      "effectText": "将一个战术从你的弃牌堆中加入你的手牌。"
+    },
+    "steampunk_zeppelin_pod": {
+      "name": "齐柏林飞艇",
+      "effectText": "打出到基地上。天赋：从另一个基地移动一个你的随从到这里，或者从这里到另一个基地。"
+    },
+    "steampunk_change_of_venue_pod": {
+      "name": "集结号角",
+      "effectText": "将你的一个打出在基地或随从上的战术拿回手牌。将其作为一个额外战术打出。"
+    },
+    "steampunk_rotary_slug_thrower_pod": {
+      "name": "转轮式喷射机枪",
+      "effectText": "打出到基地上。持续：你在这里的每个随从都获得+2力量。"
+    },
+    "steampunk_difference_engine_pod": {
+      "name": "差分机",
+      "effectText": "打出到基地上。持续：如果你有一个随从在此基地，则在你回合结束时多抽一张牌。"
+    },
+    "steampunk_escape_hatch_pod": {
+      "name": "逃生通道",
+      "effectText": "打出到基地上。持续：当你在此基地的随从被消灭时，将它们放到手牌而不是弃牌堆。"
+    },
+    "trickster_leprechaun_pod": {
+      "name": "矮妖",
+      "abilityText": "持续：在另一个玩家打出一个力量少于这个随从的随从到这时，消灭它（先结算它的能力）。"
+    },
+    "trickster_brownie_pod": {
+      "name": "棕仙",
+      "abilityText": "持续：当其他玩家打出的一张卡的效果影响到了本随从，那个玩家随机弃两张手牌。"
+    },
+    "trickster_gnome_pod": {
+      "name": "侏儒",
+      "abilityText": "你可以摧毁这个基地的一个力量少于你在这个基地随从数量的随从。"
+    },
+    "trickster_gremlin_pod": {
+      "name": "小鬼",
+      "abilityText": "持续：在这个随从被消灭后，抽一张卡并且每个其他玩家随机弃掉一张卡。"
+    },
+    "trickster_enshrouding_mist_pod": {
+      "name": "隐蔽迷雾",
+      "effectText": "打出到基地上。持续：在你的回合，你可以额外打出一个随从到此基地。"
+    },
+    "trickster_hideout_pod": {
+      "name": "藏身处",
+      "effectText": "打出到基地上。持续：如果另一个玩家的战术会影响到你在此基地的随从，消灭本卡来使战术无效。"
+    },
+    "trickster_mark_of_sleep_pod": {
+      "name": "睡眠印记",
+      "effectText": "选择一个玩家，该玩家不能在他的下个回合中打出战术。"
+    },
+    "trickster_flame_trap_pod": {
+      "name": "火焰陷阱",
+      "effectText": "打出到基地上。持续：当其他玩家打出一个随从到此基地时，消灭它（先结算它的能力）和本卡。"
+    },
+    "trickster_take_the_shinies_pod": {
+      "name": "带走宝物",
+      "effectText": "每个其他玩家随机弃两张手牌。"
+    },
+    "trickster_block_the_path_pod": {
+      "name": "通路禁止",
+      "effectText": "打出到基地上。持续：选择一个派系，该派系的随从不能被打出到此基地。"
+    },
+    "trickster_disenchant_pod": {
+      "name": "幻想破碎",
+      "effectText": "消灭一个已经被打出到一个随从或基地上的战术。"
+    },
+    "trickster_pay_the_piper_pod": {
+      "name": "留下买路钱",
+      "effectText": "打出到基地上。持续：在其他玩家打出一个随从到此基地后，那个玩家弃一张手牌。"
+    },
+    "vampire_fledgling_vampire_pod": {
+      "name": "新生吸血鬼",
+      "abilityText": "在你打出本随从后，如果另一个玩家在这里比你有更高的力量，在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_heavy_drinker_pod": {
+      "name": "渴血鬼",
+      "abilityText": "你可以消灭你的一个随从来在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_nightstalker_pod": {
+      "name": "夜行者",
+      "abilityText": "消灭一个这里的力量为2或以下的随从来在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_the_count_pod": {
+      "name": "吸血鬼伯爵",
+      "abilityText": "持续：在另一个玩家的随从被消灭后，在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_dinner_date_pod": {
+      "name": "晚餐约会",
+      "effectText": "在你的一个随从身上放置一个+1力量指示物。消灭一个与该随从在同一个基地力量为2或以下的随从。"
+    },
+    "vampire_big_gulp_pod": {
+      "name": "一大口",
+      "effectText": "消灭一个力量为4或者以下的随从。"
+    },
+    "vampire_opportunist_pod": {
+      "name": "投机主义",
+      "effectText": "打出到一个随从上。持续：在另一个玩家的随从被消灭后，在本随从身上放置一个+1力量指示物。"
+    },
+    "vampire_mad_monster_party_pod": {
+      "name": "疯狂怪物派对",
+      "effectText": "在每个你没有+1力量指示物的随从身上放置一个+1力量指示物。"
+    },
+    "vampire_cull_the_weak_pod": {
+      "name": "剔除弱者",
+      "effectText": "选择你的一个随从。从你的手中弃置任意数量的随从卡。你每弃一张牌，你就在该随从身上放置一个+1力量指示物。"
+    },
+    "vampire_buffet_pod": {
+      "name": "自助餐",
+      "effectText": "异能：在一个基地计分后，如果你是赢家，在你的每个随从身上放置+1力量标记。"
+    },
+    "vampire_crack_of_dusk_pod": {
+      "name": "破晓",
+      "effectText": "从你的弃牌堆额外打出一个力量为2或以下的随从。放置一个+1力量指示物在它的上面。"
+    },
+    "vampire_summon_wolves_pod": {
+      "name": "召唤狼群",
+      "effectText": "打出到基地上。持续：在你的回合开始时，在本卡上放置一个+1力量指示物。如果你有随从在这，指示物会被加进你的总力量中。"
+    },
+    "werewolf_howler_pod": {
+      "name": "咆哮者",
+      "abilityText": "本随从获得+2力量直到回合结束。"
+    },
+    "werewolf_teenage_wolf_pod": {
+      "name": "青年狼人",
+      "abilityText": "天赋：本随从获得+1力量直到回合结束。"
+    },
+    "werewolf_loup_garou_pod": {
+      "name": "狼人",
+      "abilityText": "异能：在本基地计分前，本随从获得+2力量直到回合结束。"
+    },
+    "werewolf_pack_alpha_pod": {
+      "name": "阿尔法狼群",
+      "abilityText": "异能：在本基地计分前，每个你在这里的随从获得+1力量直到回合结束。"
+    },
+    "werewolf_full_moon_pod": {
+      "name": "满月",
+      "effectText": "打出到基地上。持续：每个你在这里的随从获得+1力量。"
+    },
+    "werewolf_frenzy_pod": {
+      "name": "狂怒",
+      "effectText": "每个你的力量为4或更高的随从获得+1力量直到回合结束。"
+    },
+    "werewolf_marking_territory_pod": {
+      "name": "制造恐慌",
+      "effectText": "打出到一个基地上。持续：在你的回合开始的时候，如果你在这里比其他玩家有更高的总力量，将本基地的爆破点降低到0。"
+    },
+    "werewolf_chew_toy_pod": {
+      "name": "咀嚼玩具",
+      "effectText": "选择你的一个随从。消灭一个在你的随从所在基地中比它力量低的随从。"
+    },
+    "werewolf_leader_of_the_pack_pod": {
+      "name": "狼群领袖",
+      "effectText": "打出到一个随从上。天赋：如果本随从在这里拥有最高的力量，你就可以额外打出一个行动。"
+    },
+    "werewolf_unstoppable_pod": {
+      "name": "势不可挡",
+      "effectText": "打出到一个随从上。持续：本随从不能够被消灭。"
+    },
+    "werewolf_let_the_dog_out_pod": {
+      "name": "关门放狗",
+      "effectText": "选择一个你的随从。消灭任意数量力量加起来小于或等于你随从的力量的随从。"
+    },
+    "werewolf_moontouched_pod": {
+      "name": "月之触",
+      "effectText": "打出到一个随从上。天赋：如果本随从在这里拥有最高的力量，抽一张牌。"
+    },
+    "wizard_archmage_pod": {
+      "name": "大法师",
+      "abilityText": "持续：你可以在你的每个回合打出一个额外战术。"
+    },
+    "wizard_chronomage_pod": {
+      "name": "时间法师",
+      "abilityText": "本回合你可以额外打出一个战术。"
+    },
+    "wizard_enchantress_pod": {
+      "name": "女巫",
+      "abilityText": "抽一张牌。"
+    },
+    "wizard_neophyte_pod": {
+      "name": "学徒",
+      "abilityText": "展示你牌库最顶端的牌。如果它是一个战术，你可以将其放到手牌或作为一个额外战术打出。如果不是，将其返回你牌库顶。"
+    },
+    "wizard_mass_enchantment_pod": {
+      "name": "聚集秘术",
+      "effectText": "展示每个其他玩家的牌库顶的牌。将其中一张战术卡作为一个额外战术打出。将其他未使用的卡放到拥有者的牌库顶。"
+    },
+    "wizard_mystic_studies_pod": {
+      "name": "秘术学习",
+      "effectText": "抽两张牌。"
+    },
+    "wizard_summon_pod": {
+      "name": "召唤",
+      "effectText": "打出一张额外随从。"
+    },
+    "wizard_time_loop_pod": {
+      "name": "时间圆环",
+      "effectText": "打出两张额外的战术。"
+    },
+    "wizard_portal_pod": {
+      "name": "传送",
+      "effectText": "展示你牌库顶的5张牌。将以此方式展示的任意数量的随从展示并置入你的手牌。将其他牌以任意顺序返回你的牌库顶。"
+    },
+    "wizard_sacrifice_pod": {
+      "name": "献祭",
+      "effectText": "选择你的一个随从。抽等同于它力量的卡牌数。消灭那个随从。"
+    },
+    "wizard_scry_pod": {
+      "name": "占卜",
+      "effectText": "从你的牌库搜寻一个战术并展示给所有玩家。将它放入你的手中并重洗牌库。"
+    },
+    "wizard_winds_of_change_pod": {
+      "name": "变化之风",
+      "effectText": "将你的手牌洗回你的牌库再抽5张牌。你可以额外打出一个战术。"
+    },
+    "zombie_lord_pod": {
+      "name": "僵尸领主",
+      "abilityText": "你可以从弃牌堆在每个没有你随从的基地额外打出一个力量为2或以下的随从。"
+    },
+    "zombie_grave_digger_pod": {
+      "name": "掘墓者",
+      "abilityText": "你可以将一个随从从你的弃牌堆置入你的手牌中。"
+    },
+    "zombie_tenacious_z_pod": {
+      "name": "顽强丧尸",
+      "abilityText": "异能：在你的回合中你可以从弃牌堆中把本随从作为额外随从打出，你每回合只能使用一个顽强丧尸的能力。"
+    },
+    "zombie_walker_pod": {
+      "name": "行尸",
+      "abilityText": "查看你牌库顶的一张牌，弃掉它或将其返回你的牌库顶。"
+    },
+    "zombie_grave_robbing_pod": {
+      "name": "掘墓",
+      "effectText": "将一张卡从你的弃牌堆置入你的手牌中。"
+    },
+    "zombie_they_keep_coming_pod": {
+      "name": "它们不断来临",
+      "effectText": "从你的弃牌堆中额外打出一个随从。"
+    },
+    "zombie_lend_a_hand_pod": {
+      "name": "借把手",
+      "effectText": "将任意数量的牌从你的弃牌堆洗回你的牌库中。"
+    },
+    "zombie_overrun_pod": {
+      "name": "泛滥横行",
+      "effectText": "打出到基地上。持续：其他玩家不能打出随从到此基地。在你的回合开始的时候消灭本战术。"
+    },
+    "zombie_theyre_coming_to_get_you_pod": {
+      "name": "它们为你而来",
+      "effectText": "打出到基地上。持续：在你的回合，你可以从你的弃牌堆而不是你的手中打出一个随从到此基地。"
+    },
+    "zombie_not_enough_bullets_pod": {
+      "name": "子弹不够",
+      "effectText": "将任意数量的同名随从从你的弃牌堆置入你的手牌中。"
+    },
+    "zombie_outbreak_pod": {
+      "name": "爆发",
+      "effectText": "在一个没有你随从的基地额外打出一个随从。"
+    },
+    "zombie_mall_crawl_pod": {
+      "name": "进发商场",
+      "effectText": "从你的牌库搜寻任意数量的同名的卡牌并将它们置入你的弃牌堆。之后重洗牌库。"
+    },
+    "pirate_cut_lass": {
+      "name": "女剑客"
     }
   },
   "endgame": {

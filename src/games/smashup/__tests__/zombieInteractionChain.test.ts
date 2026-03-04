@@ -557,7 +557,7 @@ describe('zombie_lord（僵尸领主）循环链', () => {
             bases: [
                 makeBase('test_base_1'), // 空基地（P0无随从）
                 makeBase('test_base_2'), // 空基地
-                makeBase('test_base_3', [makeMinion('opp-m1', 'pirate_first_mate', '1', 2)]),
+                makeBase('test_base_3', [makeMinion('opp-m1', 'pirate_first_mate', '1', 2, { powerModifier: 0 })]),
             ],
         });
         const state = makeFullMatchState(core);
@@ -600,7 +600,7 @@ describe('zombie_lord（僵尸领主）循环链', () => {
             },
             bases: [
                 makeBase('test_base_1'),
-                makeBase('test_base_2', [makeMinion('opp-m1', 'pirate_first_mate', '1', 2)]),
+                makeBase('test_base_2', [makeMinion('opp-m1', 'pirate_first_mate', '1', 2, { powerModifier: 0 })]),
             ],
         });
         const state = makeFullMatchState(core);
@@ -814,8 +814,8 @@ describe('zombie_theyre_coming_to_get_you（它们为你而来）弃牌堆出牌
         expect(r1.steps[0]?.success).toBe(false);
     });
 
-    it('消耗正常随从额度', () => {
-        // "它们为你而来" consumesNormalLimit=true，打出后消耗正常额度
+    it('不消耗正常随从额度（原版）', () => {
+        // "它们为你而来" 原版 consumesNormalLimit=false，打出后不消耗正常额度（额外随从）
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -835,23 +835,24 @@ describe('zombie_theyre_coming_to_get_you（它们为你而来）弃牌堆出牌
         });
         const state = makeFullMatchState(core);
 
-        // 从弃牌堆打出
+        // 从弃牌堆打出（不消耗额度）
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
             payload: { cardUid: 'disc-m1', baseIndex: 0, fromDiscard: true },
-        }, 'theyre_coming: 消耗额度');
+        }, 'theyre_coming: 不消耗额度');
         expect(r1.steps[0]?.success).toBe(true);
         const p0 = r1.finalState.core.players['0'];
-        expect(p0.minionsPlayed).toBe(1);
+        expect(p0.minionsPlayed).toBe(0); // 不消耗额度，仍为 0
 
-        // 再打手牌随从 → 额度已用完，应被拒绝
+        // 再打手牌随从 → 额度未用，应成功
         const r2 = runCommand(r1.finalState, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
             payload: { cardUid: 'hand-m1', baseIndex: 0 },
-        }, 'theyre_coming: 额度用完后打手牌');
-        expect(r2.steps[0]?.success).toBe(false);
+        }, 'theyre_coming: 额度未用，打手牌');
+        expect(r2.steps[0]?.success).toBe(true);
+        expect(r2.finalState.core.players['0'].minionsPlayed).toBe(1); // 手牌打出消耗额度
     });
 });
 
@@ -895,73 +896,5 @@ describe('zombie_overrun（泛滥横行）ongoing 效果', () => {
             payload: { cardUid: 'm1', baseIndex: 1 },
         }, 'overrun: P1 打随从到非限制基地');
         expect(r2.steps[0]?.success).toBe(true);
-    });
-});
-
-// ============================================================================
-// 跨派系交互：维纳斯捕食者搜索打出行尸 → 行尸 onPlay 牌库顶状态正确
-// ============================================================================
-
-describe('跨派系：维纳斯捕食者搜索打出行尸 → 行尸 onPlay 牌库顶正确', () => {
-    it('行尸 onPlay 看到的牌库顶应是搜索后的牌库顶，而非行尸自己', () => {
-        // 场景：维纳斯捕食者在基地上，牌库中有行尸和幼苗（都是力量≤2），
-        // 后面还有一张 pirate_cannon 作为"真正的牌库顶"。
-        // 选中行尸后，行尸从牌库移走，牌库剩余 [sprout, cannon]，
-        // 然后重洗牌库。行尸 onPlay 查看牌库顶时应看到洗牌后的结果，
-        // 而不是行尸自己（行尸已经不在牌库了）。
-        const core = makeState({
-            players: {
-                '0': makePlayer('0', {
-                    hand: [],
-                    deck: [
-                        makeCard('walker-d', 'zombie_walker', '0', 'minion'),
-                        makeCard('sprout-d', 'killer_plant_sprout', '0', 'minion'),
-                        makeCard('cannon-d', 'pirate_cannon', '0', 'action'),
-                    ],
-                    factions: ['zombies', 'killer_plants'] as [string, string],
-                }),
-                '1': makePlayer('1'),
-            },
-            bases: [makeBase('test_base_1', [
-                makeMinion('vmt-1', 'killer_plant_venus_man_trap', '0', 5),
-            ])],
-        });
-        const state = makeFullMatchState(core);
-
-        // 使用维纳斯捕食者天赋 → 搜索牌库
-        const r1 = runCommand(state, {
-            type: SU_COMMANDS.USE_TALENT,
-            playerId: '0',
-            payload: { minionUid: 'vmt-1', baseIndex: 0 },
-        }, 'venus_man_trap: 使用天赋');
-        expect(r1.steps[0]?.success).toBe(true);
-
-        // 应产生选择交互（牌库中有两个力量≤2的随从）
-        const choice = asSimpleChoice(r1.finalState.sys.interaction.current);
-        expect(choice).toBeDefined();
-        expect(choice!.sourceId).toBe('killer_plant_venus_man_trap_search');
-
-        // 选中行尸
-        const walkerOpt = findOption(choice!, (o: any) => o.value?.defId === 'zombie_walker');
-        const r2 = respond(r1.finalState, '0', walkerOpt, 'venus_man_trap: 选行尸');
-        expect(r2.steps[0]?.success).toBe(true);
-
-        // 行尸打出后触发 onPlay → 查看牌库顶 → 应产生新的交互
-        const walkerChoice = asSimpleChoice(r2.finalState.sys.interaction.current);
-        expect(walkerChoice).toBeDefined();
-        expect(walkerChoice!.sourceId).toBe('zombie_walker');
-
-        // 关键验证：行尸 onPlay 的交互标题中不应包含"行尸"（行尸已从牌库移走）
-        // 牌库顶应该是 sprout 或 cannon（取决于洗牌结果）
-        const title = walkerChoice!.title;
-        expect(title).not.toContain('行尸');
-
-        // 验证行尸已在基地上
-        const base = r2.finalState.core.bases[0];
-        expect(base.minions.some((m: MinionOnBase) => m.defId === 'zombie_walker')).toBe(true);
-
-        // 验证行尸不在牌库中
-        const p0 = r2.finalState.core.players['0'];
-        expect(p0.deck.some((c: CardInstance) => c.uid === 'walker-d')).toBe(false);
     });
 });

@@ -37,6 +37,9 @@ COPY package.json ./
 # 复制前端构建产物
 COPY --from=builder /app/dist ./dist
 
+# 复制静态资源（用于内网部署或 CDN 降级）
+COPY public/assets ./public/assets
+
 # 复制 NestJS API 源码（tsx 运行时编译）
 COPY apps/ ./apps/
 COPY tsconfig.api.json ./

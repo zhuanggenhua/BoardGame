@@ -6,6 +6,7 @@ import {
     generateUniformAtlasConfig as engineGenerateUniform,
 } from '../../../engine/primitives/spriteAtlas';
 import { SMASHUP_ATLAS_DEFINITIONS } from '../domain/atlasCatalog';
+import smashUpEnglishMap from '../data/englishAtlasMap.json';
 
 // 向后兼容类型别名
 export type CardAtlasConfig = SpriteAtlasConfig;
@@ -76,6 +77,19 @@ export const getCardAtlasStyle = (index: number, atlas: CardAtlasConfig) => {
 };
 
 import { registerLazyCardAtlasSource } from '../../../components/common/media/cardAtlasRegistry';
+import podAtlasConfig from '../../../../public/assets/atlas-configs/smashup/pod-atlas-config.json';
+
+type TtsConfig = {
+    atlases: Record<string, { grid: { rows: number; cols: number } }>;
+};
+
+type EnglishMapConfig = { atlasId: string; index: number };
+
+const REQUIRED_TTS_ATLAS_IDS = Array.from(
+    new Set(
+        Object.values(smashUpEnglishMap as Record<string, EnglishMapConfig>).map(entry => entry.atlasId)
+    )
+).sort();
 
 /**
  * 初始化 SmashUp 所有图集（模块加载时同步注册）
@@ -89,7 +103,27 @@ export function initSmashUpAtlases() {
             grid: atlas.grid,
         });
     }
+
+    // 动态注册 POD 英文高清图集（只注册 englishAtlasMap 实际使用的 atlasId）
+    const podData = podAtlasConfig as TtsConfig;
+    
+    for (const atlasId of REQUIRED_TTS_ATLAS_IDS) {
+        const config = podData.atlases[atlasId];
+        if (!config) {
+             
+            console.warn(`[SmashUp.cardAtlas] ⚠️ 缺少 POD 图集配置: ${atlasId}`);
+            continue;
+        }
+        const imagePath = `smashup/pod-assets/${atlasId}`;
+        registerLazyCardAtlasSource(atlasId, {
+            image: imagePath,
+            grid: { rows: config.grid.rows, cols: config.grid.cols },
+        });
+    }
 }
 
 /** @deprecated 使用 initSmashUpAtlases 代替 */
 export const initSmashUpCardAtlases = initSmashUpAtlases;
+
+// 模块加载时同步注册所有图集（包括 POD 图集）
+initSmashUpAtlases();

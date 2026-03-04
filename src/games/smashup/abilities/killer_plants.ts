@@ -34,7 +34,7 @@ function killerPlantWeedEater(ctx: AbilityContext): AbilityResult {
         type: SU_EVENTS.TEMP_POWER_ADDED,
         payload: {
             minionUid: ctx.cardUid,
-            baseIndex: ctx.baseIndex,
+            baseIndex: ctx.baseIndex, baseDefId: ctx.state.bases[ctx.baseIndex].defId,
             amount: -2,
             reason: 'killer_plant_weed_eater',
         },
@@ -131,7 +131,7 @@ function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
                 );
                 const playedEvt: MinionPlayedEvent = {
                     type: SU_EVENTS.MINION_PLAYED,
-                    payload: { playerId: m.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, power },
+                    payload: { playerId: m.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, baseDefId: ctx.state.bases[sproutBaseIndex].defId, power },
                     timestamp: ctx.now,
                 };
                 events.push(playedEvt);
@@ -140,9 +140,9 @@ function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
                 // 多候选：创建交互让玩家选择
                 const options = eligible.map((c, idx) => {
                     const def = getMinionDef(c.defId);
-                    return { id: `minion-${idx}`, label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`, value: { cardUid: c.uid, defId: c.defId } };
+                    return { id: `minion-${idx}`, label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
                 });
-                options.push({ id: 'skip', label: '跳过', value: { skip: true } } as any);
+                options.push({ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const } as any);
                 const interaction = createSimpleChoice(
                     `killer_plant_sprout_search_${m.uid}_${ctx.now}`, m.controller,
                     '嫩芽：选择一个力量≤3的随从打出（可跳过）', options as any[], 'killer_plant_sprout_search',
@@ -161,7 +161,7 @@ function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
                 );
                 const playedEvt: MinionPlayedEvent = {
                     type: SU_EVENTS.MINION_PLAYED,
-                    payload: { playerId: m.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, power },
+                    payload: { playerId: m.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, baseDefId: ctx.state.bases[sproutBaseIndex].defId, power },
                     timestamp: ctx.now,
                 };
                 events.push(playedEvt);
@@ -220,7 +220,7 @@ function killerPlantVenusManTrap(ctx: AbilityContext): AbilityResult {
         const power = def?.power ?? 0;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId: ctx.playerId, cardUid: card.uid, defId: card.defId, baseIndex: ctx.baseIndex, power },
+            payload: { playerId: ctx.playerId, cardUid: card.uid, defId: card.defId, baseIndex: ctx.baseIndex, baseDefId: ctx.state.bases[ctx.baseIndex].defId, power },
             timestamp: ctx.now,
         };
         return {
@@ -235,7 +235,7 @@ function killerPlantVenusManTrap(ctx: AbilityContext): AbilityResult {
     // 多个候选，Prompt 选择
     const options = eligible.map((c, idx) => {
         const def = getMinionDef(c.defId);
-        return { id: `minion-${idx}`, label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`, value: { cardUid: c.uid, defId: c.defId } };
+        return { id: `minion-${idx}`, label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `killer_plant_venus_man_trap_search_${ctx.now}`, ctx.playerId,
@@ -440,7 +440,7 @@ function killerPlantOvergrowthTrigger(ctx: TriggerContext): SmashUpEvent[] {
         const delta = -baseDef.breakpoint * count;
         events.push({
             type: SU_EVENTS.BREAKPOINT_MODIFIED,
-            payload: { baseIndex: i, delta, reason: 'killer_plant_overgrowth' },
+            payload: { baseIndex: i, baseDefId: ctx.state.bases[i].defId, delta, reason: 'killer_plant_overgrowth' },
             timestamp: ctx.now,
         } as BreakpointModifiedEvent);
     }

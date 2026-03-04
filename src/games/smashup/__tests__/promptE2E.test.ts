@@ -31,7 +31,7 @@ import type { MatchState, RandomFn } from '../../../engine/types';
 function makeMinion(uid: string, defId: string, controller: string, power: number): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
     };
 }
 
@@ -123,8 +123,8 @@ describe('Prompt E2E: 确定性状态测试', () => {
                     },
                 },
                 bases: [
-                    makeBase('base1', [makeMinion('m1', 'test_minion', '1', 2)]),
-                    makeBase('base2', [makeMinion('m2', 'test_minion', '1', 1)]),
+                    makeBase('base1', [makeMinion('m1', 'test_minion', '1', 2, { powerModifier: 0 })]),
+                    makeBase('base2', [makeMinion('m2', 'test_minion', '1', 1, { powerModifier: 0 })]),
                 ],
             });
 
@@ -153,8 +153,8 @@ describe('Prompt E2E: 确定性状态测试', () => {
                     },
                 },
                 bases: [
-                    makeBase('base1', [makeMinion('m1', 'test_minion', '1', 2)]),
-                    makeBase('base2', [makeMinion('m2', 'test_minion', '1', 5)]), // 力量>2，不符合
+                    makeBase('base1', [makeMinion('m1', 'test_minion', '1', 2, { powerModifier: 0 })]),
+                    makeBase('base2', [makeMinion('m2', 'test_minion', '1', 5, { powerModifier: 0 })]), // 力量>2，不符合
                 ],
             });
 
@@ -183,8 +183,8 @@ describe('Prompt E2E: 确定性状态测试', () => {
                     },
                 },
                 bases: [
-                    makeBase('base1', [makeMinion('m1', 'test_minion', '1', 5)]),
-                    makeBase('base2', [makeMinion('m2', 'test_minion', '1', 4)]),
+                    makeBase('base1', [makeMinion('m1', 'test_minion', '1', 5, { powerModifier: 0 })]),
+                    makeBase('base2', [makeMinion('m2', 'test_minion', '1', 4, { powerModifier: 0 })]),
                 ],
             });
 
@@ -386,8 +386,8 @@ describe('Prompt E2E: 确定性状态测试', () => {
                     },
                 },
                 bases: [
-                    makeBase('base1', [makeMinion('m1', 'test', '0', 3)]),
-                    makeBase('base2', [makeMinion('m2', 'test', '1', 2)]),
+                    makeBase('base1', [makeMinion('m1', 'test', '0', 3, { powerModifier: 0 })]),
+                    makeBase('base2', [makeMinion('m2', 'test', '1', 2, { powerModifier: 0 })]),
                     makeBase('base3'),  // 空基地
                 ],
             });
@@ -418,7 +418,7 @@ describe('Prompt E2E: 确定性状态测试', () => {
                     },
                 },
                 bases: [
-                    makeBase('base1', [makeMinion('m1', 'test', '0', 3), makeMinion('m2', 'test', '1', 2)]),
+                    makeBase('base1', [makeMinion('m1', 'test', '0', 3, { powerModifier: 0 }), makeMinion('m2', 'test', '1', 2, { powerModifier: 0 })]),
                     makeBase('base2'),  // 空
                     makeBase('base3'),  // 空
                 ],

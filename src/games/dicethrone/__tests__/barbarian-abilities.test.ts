@@ -105,10 +105,10 @@ describe('狂战士技能定义', () => {
             expect(ability!.effects![0].action.customActionId).toBe('barbarian-suppress-roll');
         });
 
-        it('鲁莽一击 - 大顺子触发，可防御', () => {
+        it('鲁莽一击 - 大顺子触发，15伤害+自伤4', () => {
             const ability = BARBARIAN_ABILITIES.find(a => a.id === 'reckless-strike');
             expect(ability).toBeDefined();
-            expect(ability!.tags).not.toContain('ultimate');
+            expect(ability!.tags).toEqual([]);
             expect(ability!.trigger!.type).toBe('largeStraight');
             // 15 伤害 + 自伤 4
             expect(ability!.effects![0].action.value).toBe(15);
@@ -117,6 +117,18 @@ describe('狂战士技能定义', () => {
             expect(ability!.effects![1].action.value).toBe(4);
             expect(ability!.effects![1].timing).toBe('postDamage');
             expect(ability!.effects![1].condition).toEqual({ type: 'onHit' });
+        });
+
+        it('狂怒 - 终极技能，5个力量面触发', () => {
+            const ability = BARBARIAN_ABILITIES.find(a => a.id === 'rage');
+            expect(ability).toBeDefined();
+            expect(ability!.tags).toContain('ultimate');
+            expect(ability!.trigger!.type).toBe('diceSet');
+            expect((ability!.trigger as any).faces).toEqual({ [FACES.STRENGTH]: 5 });
+            // 眩晕 + 15 伤害
+            expect(ability!.effects![0].action.type).toBe('grantStatus');
+            expect(ability!.effects![0].action.statusId).toBe(STATUS_IDS.DAZE);
+            expect(ability!.effects![1].action.value).toBe(15);
         });
 
         it('厚皮 - 防御技能，3 骰', () => {

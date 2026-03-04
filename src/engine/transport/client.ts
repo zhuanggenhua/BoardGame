@@ -85,16 +85,6 @@ export class GameTransportClient {
         return this._matchPlayers;
     }
 
-    /**
-     * 更新本地缓存的最新状态
-     *
-     * 供 GameProvider 在乐观引擎回滚时回写权威状态，
-     * 确保后续 patch 应用基准正确。
-     */
-    updateLatestState(state: unknown): void {
-        this._latestState = state;
-    }
-
     /** 连接到服务端 */
     connect(): void {
         if (this._destroyed || this.socket) return;
@@ -106,7 +96,7 @@ export class GameTransportClient {
             `${this.config.server}/game`,
             {
                 parser: msgpackParser,
-                transports: ['websocket', 'polling'],
+                transports: ['websocket', 'polling'], // 允许降级到轮询
                 reconnection: true,
                 reconnectionAttempts: Infinity,
                 reconnectionDelay: 1000,
@@ -120,9 +110,6 @@ export class GameTransportClient {
         socket.on('connect', () => {
             if (this._destroyed) return;
             // 连接后立即发送 sync 请求
-            // 注意：socket.io 自动重连成功时 connect 和 reconnect 都会触发，
-            // 但 sendSync 内部有 clearSyncTimer 保护，重复调用只会重置超时计时器，不会产生问题。
-            this._syncRetries = 0;
             this.sendSync();
         });
 
@@ -160,13 +147,6 @@ export class GameTransportClient {
                     expected: this._lastReceivedStateID + 1,
                     received: meta.stateID,
                 });
-                this.sendSync();
-                return;
-            }
-
-            // 无基础状态，请求全量同步
-            if (this._latestState === null) {
-                console.warn('[GameTransportClient] 收到 patch 但无基础状态，请求 resync', { matchID });
                 this.sendSync();
                 return;
             }
@@ -213,12 +193,12 @@ export class GameTransportClient {
             this.config.onConnectionChange?.(false);
         });
 
-        // socket.io 自动重连成功后的处理
-        // 注意：reconnect（Manager 级别）和 connect（Socket 级别）在重连时都会触发。
-        // sendSync 已在 connect 回调中处理，这里只需更新连接状态。
+        // socket.io 自动重连成功后重新 sync
         socket.io.on('reconnect', () => {
             if (this._destroyed) return;
             this._connectionState = 'connecting';
+            this._syncRetries = 0;
+            this.sendSync();
         });
 
         // 启动健康检查

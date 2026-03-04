@@ -76,7 +76,7 @@ const resolveSoulBurnDamage = (ctx: CustomActionContext): DiceThroneEvent[] => {
         opponentIds.forEach((targetId, idx) => {
             // 使用新伤害计算管线（基础伤害，自动收集所有修正）
             const damageCalc = createDamageCalculation({
-                source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+                source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
                 target: { playerId: targetId },
                 baseDamage: dmg,
                 state: ctx.state,
@@ -117,7 +117,7 @@ const resolveFieryCombo = (ctx: CustomActionContext): DiceThroneEvent[] => {
     // 使用新伤害计算管线
     // 注意：伤害基于授予后的 FM 数量，需要手动添加修正（因为 state 还未更新）
     const damageCalc = createDamageCalculation({
-        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
         target: { playerId: opponentId },
         baseDamage: 5,
         state: ctx.state,
@@ -153,7 +153,7 @@ const resolveFieryCombo2 = (ctx: CustomActionContext): DiceThroneEvent[] => {
     
     // 使用新伤害计算管线
     const damageCalc = createDamageCalculation({
-        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
         target: { playerId: opponentId },
         baseDamage: 6,
         state: ctx.state,
@@ -202,7 +202,7 @@ const resolveMeteor = (ctx: CustomActionContext): DiceThroneEvent[] => {
     if (updatedFM > 0) {
         // 使用新伤害计算管线（伤害值 = FM 数量，自动收集所有修正）
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: updatedFM,
             state: ctx.state,
@@ -248,7 +248,7 @@ const resolveBurnDown = (ctx: CustomActionContext, dmgPerToken: number, limit: n
 
         // 使用新伤害计算管线
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: toConsume * dmgPerToken,
             state: ctx.state,
@@ -287,7 +287,7 @@ const resolveIgnite = (ctx: CustomActionContext, base: number, multiplier: numbe
 
     // 使用新伤害计算管线，添加乘法修正
     const damageCalc = createDamageCalculation({
-        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
         target: { playerId: opponentId },
         baseDamage: base,
         state: ctx.state,
@@ -342,9 +342,10 @@ const resolveMagmaArmor = (ctx: CustomActionContext, opts: { dmgPerFire?: number
     if (fierySoulCount > 0) {
         const currentFM = getFireMasteryCount(ctx);
         const limit = ctx.state.players[ctx.attackerId]?.tokenStackLimits?.[TOKEN_IDS.FIRE_MASTERY] || 5;
+        const newTotal = Math.min(currentFM + fierySoulCount, limit);
         events.push({
             type: 'TOKEN_GRANTED',
-            payload: { targetId: ctx.attackerId, tokenId: TOKEN_IDS.FIRE_MASTERY, amount: fierySoulCount, newTotal: Math.min(currentFM + fierySoulCount, limit), sourceAbilityId: ctx.sourceAbilityId },
+            payload: { targetId: ctx.attackerId, tokenId: TOKEN_IDS.FIRE_MASTERY, amount: fierySoulCount, newTotal, sourceAbilityId: ctx.sourceAbilityId },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp: ctx.timestamp
         } as TokenGrantedEvent);
@@ -355,7 +356,13 @@ const resolveMagmaArmor = (ctx: CustomActionContext, opts: { dmgPerFire?: number
         const opponentId = ctx.ctx.defenderId;
         events.push({
             type: 'STATUS_APPLIED',
-            payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: (ctx.state.players[opponentId]?.statusEffects[STATUS_IDS.BURN] || 0) + 1, sourceAbilityId: ctx.sourceAbilityId },
+            payload: {
+                targetId: opponentId,
+                statusId: STATUS_IDS.BURN,
+                stacks: 1,
+                newTotal: (ctx.state.players[opponentId]?.statusEffects[STATUS_IDS.BURN] || 0) + 1,
+                sourceAbilityId: ctx.sourceAbilityId
+            },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp: ctx.timestamp + 0.05
         } as StatusAppliedEvent);
@@ -364,17 +371,17 @@ const resolveMagmaArmor = (ctx: CustomActionContext, opts: { dmgPerFire?: number
     // 火面：对原攻击者造成伤害（ctx.defenderId = 原攻击者，不是 ctx.targetId）
     if (fireCount > 0) {
         const totalDamage = fireCount * dmgPerFire;
-        // 防御上下文：ctx.defenderId 是原攻击者（被防御技能影响的人）
         const opponentId = ctx.ctx.defenderId;
-        
+
         // 使用新伤害计算管线（自动收集所有修正）
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: totalDamage,
             state: ctx.state,
             timestamp: ctx.timestamp + 0.1,
         });
+
         events.push(...damageCalc.toEvents());
     }
 
@@ -427,7 +434,7 @@ const resolveMagmaArmor3 = (ctx: CustomActionContext): DiceThroneEvent[] => {
     if (totalDamage > 0) {
         const opponentId = ctx.ctx.defenderId;
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: totalDamage,
             state: ctx.state,
@@ -650,7 +657,7 @@ export function registerPyromancerCustomActions(): void {
     registerCustomActionHandler('meteor-2-resolve', resolveMeteor, { categories: ['damage', 'resource'] });
 
     registerCustomActionHandler('burn-down-resolve', (ctx) => resolveBurnDown(ctx, 3, 4), { categories: ['damage', 'resource'] });
-    registerCustomActionHandler('burn-down-2-resolve', (ctx) => resolveBurnDown(ctx, 4, 4), { categories: ['damage', 'resource'] });
+    registerCustomActionHandler('burn-down-2-resolve', (ctx) => resolveBurnDown(ctx, 4, 99), { categories: ['damage', 'resource'] });
 
     registerCustomActionHandler('ignite-resolve', (ctx) => resolveIgnite(ctx, 4, 2), { categories: ['damage', 'resource'] });
     registerCustomActionHandler('ignite-2-resolve', (ctx) => resolveIgnite(ctx, 5, 2), { categories: ['damage', 'resource'] });

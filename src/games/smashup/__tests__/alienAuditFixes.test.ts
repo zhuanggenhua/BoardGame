@@ -29,7 +29,7 @@ function makeCard(uid: string, defId: string, type: 'minion' | 'action', owner: 
 function makeMinion(uid: string, defId: string, controller: string, power: number, owner?: string): MinionOnBase {
   return {
     uid, defId, controller, owner: owner ?? controller,
-    basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+    basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
   };
 }
 
@@ -89,7 +89,7 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     const handler = getInteractionHandler('alien_disintegrator');
     expect(handler).toBeDefined();
     const core = makeState({
-      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 2)])],
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 2, { powerModifier: 0 })])],
     });
     const result = handler!(makeMatchState(core), '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 1000);
     expect(result).toBeDefined();
@@ -107,8 +107,8 @@ describe('Aliens 审计修复回归（新 ID）', () => {
         '1': makePlayer('1'),
       },
       bases: [
-        makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3)]),
-        makeBase('base_new', [makeMinion('m2', 'minion_b', '1', 2)]),
+        makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })]),
+        makeBase('base_new', [makeMinion('m2', 'minion_b', '1', 2, { powerModifier: 0 })]),
       ],
     });
     const { matchState } = execPlayAction(state, '0', 'a1');
@@ -127,7 +127,7 @@ describe('Aliens 审计修复回归（新 ID）', () => {
   it('alien_crop_circles: 选择基地后自动返回所有随从（强制效果）', () => {
     const core = makeState({
       bases: [makeBase('base_old', [
-        makeMinion('m1', 'minion_a', '0', 3),
+        makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 }),
         makeMinion('m2', 'minion_b', '1', 2),
       ])],
     });
@@ -155,7 +155,7 @@ describe('Aliens 审计修复回归（新 ID）', () => {
         '0': makePlayer('0', { hand: [makeCard('h1', 'alien_invader', 'minion', '0')] }),
         '1': makePlayer('1'),
       },
-      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3)])],
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })])],
       baseDeck: ['base_new', 'base_alt'],
     });
 
@@ -220,7 +220,7 @@ describe('Aliens 审计修复回归（新 ID）', () => {
         '0': makePlayer('0', { hand: [makeCard('h1', 'alien_invader', 'minion', '0')] }),
         '1': makePlayer('1'),
       },
-      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3)])],
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })])],
       baseDeck: ['base_new', 'base_alt'],
     });
 
@@ -257,7 +257,7 @@ describe('Aliens 审计修复回归（新 ID）', () => {
 
   it('alien_abduction: 返回随从 + 额外随从额度', () => {
     const core = makeState({
-      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '1', 3)])],
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '1', 3, { powerModifier: 0 })])],
     });
     const handler = getInteractionHandler('alien_abduction');
     expect(handler).toBeDefined();

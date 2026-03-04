@@ -56,7 +56,7 @@ export const ZOMBIE_ACTIONS: ActionCardDef[] = [
         name: '掘墓',
         nameEn: 'Grave Robbing',
         faction: 'zombies',
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 4 },
     },
     {
@@ -130,7 +130,7 @@ export const ZOMBIE_ACTIONS: ActionCardDef[] = [
         name: '进发商场',
         nameEn: 'Mall Crawl',
         faction: 'zombies',
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 11 },
     },
 ];

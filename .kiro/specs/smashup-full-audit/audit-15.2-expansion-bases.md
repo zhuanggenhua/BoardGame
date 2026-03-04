@@ -57,9 +57,9 @@
 #### 5. base_plateau_of_leng（伦格高原）
 - i18n: "每回合玩家第一次打出一个随从从手牌到这以后，他们可以额外打出一张与其同名的随从到这里。"
 - 实现: `onMinionPlayed` → 检查手牌中同 defId 随从 → Prompt（含跳过）→ `MINION_PLAYED`
-- ⚠️ 未检查"每回合第一次"限制 — 每次打出随从都会触发，不限首次
-- 测试: ✅ `expansionBaseAbilities.test.ts` 有测试
-- **结论: ⚠️ 语义偏差** — 缺少"每回合首次"限制
+- ✅ 已实现"每回合第一次"限制 — 通过 `minionsPlayedPerBase[baseIndex] === 1` 检查（每个玩家在整个游戏回合内的首次）
+- 测试: ✅ `expansionBaseAbilities.test.ts` 有测试，包含跨玩家回合场景
+- **结论: ✅ 通过** — 首次限制正确实现（2026-03-02 修复：将 `minionsPlayedPerBase` 清理从 `TURN_STARTED` 移到 `TURN_ENDED`，确保每个玩家在整个游戏回合内的首次都能触发）
 
 #### 6. base_rlyeh（拉莱耶）
 - i18n: "在每位玩家回合开始时，该玩家可以消灭他在本地的一个随从，如果他这样做，获得1VP。"
@@ -139,6 +139,6 @@
 
 1. **base_miskatonic_university_base 三重偏差**：这是本批次最严重的问题。冠军限定、任意数量、来源范围三个维度都需要修复
 2. **base_the_asylum vs base_miskatonic_university_base**：两者都涉及返回疯狂卡，但触发时机不同（打出随从 vs 计分后），且 asylum 的来源范围也有偏差
-3. **base_plateau_of_leng 首次限制**：与 base_fairy_ring 类似都有"首次"限制，但 fairy_ring 通过随从计数实现了首次检查，plateau_of_leng 未实现
+3. **~~base_plateau_of_leng 首次限制~~**：✅ 已修复（2026-03-02）— 将 `minionsPlayedPerBase` 清理从 `TURN_STARTED` 移到 `TURN_ENDED`，确保每个玩家在整个游戏回合内的首次都能触发
 4. **base_house_of_nine_lives + base_cave_of_shinies**：九命之家拦截消灭后，闪光洞穴的 VP 奖励是否仍触发？取决于框架层消灭事件是否被取消
 5. **base_beautiful_castle + base_pony_paradise**：两者都是被动保护，可能叠加。美丽城堡保护力量 ≥5，小马乐园保护有 2+ 随从的玩家，两者互不冲突

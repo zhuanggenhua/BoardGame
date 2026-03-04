@@ -13,6 +13,7 @@ import { UgcAsset, UgcAssetSchema } from '../ugc/schemas/ugc-asset.schema';
 import { UgcPackage, UgcPackageSchema } from '../ugc/schemas/ugc-package.schema';
 import { MatchRecord, MatchRecordSchema } from './schemas/match-record.schema';
 import { ROOM_MATCH_MODEL_NAME, RoomMatchSchema } from './schemas/room-match.schema';
+import { HybridStorageProvider } from '../../shared/providers/hybrid-storage.provider';
 
 @Module({
     imports: [
@@ -28,6 +29,6 @@ import { ROOM_MATCH_MODEL_NAME, RoomMatchSchema } from './schemas/room-match.sch
         ]),
     ],
     controllers: [AdminController],
-    providers: [AdminService, AdminGuard, JwtAuthGuard, Reflector],
+    providers: [AdminService, AdminGuard, JwtAuthGuard, Reflector, HybridStorageProvider],
 })
 export class AdminModule {}

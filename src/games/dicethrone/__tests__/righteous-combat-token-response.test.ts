@@ -128,7 +128,8 @@ describe('正义冲击 Token 响应后 rollDie 执行', () => {
                 cmd('ADVANCE_PHASE', '0'),           // offensiveRoll → defensiveRoll
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),           // defensiveRoll exit → resolveAttack → rollDie
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'divine-shield' }),
+                    cmd('ADVANCE_PHASE', '1'),           // defensiveRoll exit → resolveAttack → rollDie
                 // 无 Token → 无 TOKEN_RESPONSE_REQUESTED → rollDie 直接执行
                 // → BONUS_DICE_REROLL_REQUESTED (displayOnly) → halt
                 cmd('SKIP_BONUS_DICE_REROLL', '0'),  // 跳过重掷 → main2

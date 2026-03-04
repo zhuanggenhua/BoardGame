@@ -331,7 +331,7 @@ export function useGameEvents({
       console.warn(`[SW-EVENT] event=stream_backlog size=${entries.length} max=${EVENT_STREAM_WARN}`);
     }
 
-    const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
+    const { entries: newEntries, didReset } = consumeNew();
 
     if (didReset) {
       pendingAttackRef.current = null;
@@ -341,27 +341,6 @@ export function useGameEvents({
       damageBuffer.clear();
       // 撤回导致 EventStream 回退时，清理所有 UI 交互状态
       // 防止撤回后残留的技能按钮仍可点击（如锻造师 frost_axe 充能）
-      setAbilityMode(null);
-      setSoulTransferMode(null);
-      setMindCaptureMode(null);
-      setAfterAttackAbilityMode(null);
-      setRapidFireMode(null);
-      setWithdrawTrigger(null);
-      setGrabFollowMode(null);
-      gateRef.current.reset();
-    }
-
-    // 乐观回滚 / visibilitychange resync：之前乐观预测产生的事件已被消费（beginSequence 等），
-    // 回滚后这些事件会被重新消费，需要重置门控和攻击状态防止计数器重复递增。
-    // visibilitychange 场景：engine.reset() + state:sync 后 entries 为空，
-    // gate 深度卡住、交互队列永远不排空，需要完全清理所有 UI 交互状态。
-    // 注意：didOptimisticRollback 时 newEntries 包含回滚后的新事件，需要继续处理。
-    if (didOptimisticRollback) {
-      pendingAttackRef.current = null;
-      pendingDestroyRef.current = [];
-      setDiceResult(null);
-      setDyingEntities([]);
-      damageBuffer.clear();
       setAbilityMode(null);
       setSoulTransferMode(null);
       setMindCaptureMode(null);
@@ -409,15 +388,6 @@ export function useGameEvents({
         };
         const attackerUnit = core.board[p.attacker.row]?.[p.attacker.col]?.unit;
         const isOpponentAttack = attackerUnit ? attackerUnit.owner !== myPlayerId : false;
-
-        // 乐观回滚/重放防护：如果已有未完成的攻击序列（乐观预测产生），
-        // 先重置门控，防止 beginSequence 计数器重复递增导致 endSequence 无法归零、
-        // 交互队列（连续射击/感染/念力等）永远不被排空。
-        // 场景：对手命令插入导致 replayPending 重新执行 DECLARE_ATTACK，
-        // EventStream nextId 偏移使事件 ID 变化，游标视为"新事件"再次消费。
-        if (pendingAttackRef.current) {
-          gateRef.current.reset();
-        }
 
         gateRef.current.beginSequence();
         pendingAttackRef.current = {

@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 /**
- * 移动端横屏守卫组件
- * 检测设备方向，竖屏时显示旋转提示，横屏时正常渲染内容
+ * 移动端横屏建议组件
+ * 仅在游戏页面（/play/）检测设备方向，竖屏时显示顶部横幅建议
+ * 主页和其他页面支持竖屏自适应
  */
 export function MobileOrientationGuard({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  // 判断是否为游戏页面（需要建议横屏）
+  const isGamePage = location.pathname.startsWith('/play/');
 
   useEffect(() => {
     const checkOrientation = () => {
@@ -14,9 +21,14 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
       
-      // 仅在移动设备上检测横竖屏
-      if (mobile) {
-        setIsPortrait(window.innerHeight > window.innerWidth);
+      // 仅在移动设备且游戏页面上检测横竖屏
+      if (mobile && isGamePage) {
+        const portrait = window.innerHeight > window.innerWidth;
+        setIsPortrait(portrait);
+        // 如果切换到横屏，重置关闭状态（下次竖屏时再显示）
+        if (!portrait) {
+          setIsDismissed(false);
+        }
       } else {
         setIsPortrait(false);
       }
@@ -30,31 +42,44 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
       window.removeEventListener('resize', checkOrientation);
       window.removeEventListener('orientationchange', checkOrientation);
     };
-  }, []);
+  }, [isGamePage]);
 
-  // 移动设备且竖屏时显示提示
-  if (isMobile && isPortrait) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center z-[9999]">
-        <div className="text-center text-white p-8 max-w-sm">
-          {/* 旋转图标动画 */}
-          <div className="text-7xl mb-6 animate-bounce">
-            📱
-          </div>
-          <h2 className="text-2xl font-bold mb-3">请旋转设备</h2>
-          <p className="text-gray-300 text-lg">
-            为获得最佳游戏体验，请将设备旋转至横屏模式
-          </p>
-          {/* 旋转指示箭头 */}
-          <div className="mt-8 flex justify-center items-center gap-4 text-4xl opacity-60">
-            <span className="transform rotate-90">📱</span>
-            <span>→</span>
-            <span>📱</span>
+  // 移动设备且竖屏且未关闭时显示建议
+  const shouldShowBanner = isMobile && isPortrait && !isDismissed;
+
+  return (
+    <>
+      {shouldShowBanner && (
+        <div className="fixed top-0 left-0 right-0 bg-parchment-brown/95 backdrop-blur-sm text-parchment-cream py-3 px-4 z-[9999] shadow-lg border-b-2 border-parchment-gold/30">
+          <div className="flex items-center justify-between gap-3 max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 text-sm font-serif">
+              {/* 竖屏手机图标 */}
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="7" y="2" width="10" height="20" rx="2" />
+                <line x1="12" y1="18" x2="12" y2="18" strokeLinecap="round" />
+              </svg>
+              <span>建议旋转至横屏以获得更佳体验</span>
+              {/* 横屏手机图标 */}
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="7" width="20" height="10" rx="2" />
+                <line x1="18" y1="12" x2="18" y2="12" strokeLinecap="round" />
+              </svg>
+            </div>
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setIsDismissed(true)}
+              className="flex-shrink-0 p-1 hover:bg-parchment-gold/20 rounded transition-colors"
+              aria-label="关闭提示"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
+      )}
+      {children}
+    </>
+  );
 }

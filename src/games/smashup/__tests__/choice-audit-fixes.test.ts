@@ -68,10 +68,10 @@ beforeAll(() => {
 
 describe('远古之物：消灭两个随从选择权', () => {
     it('有 >2 个己方随从时，选择"消灭"应产生多选交互而非自动选前两个', () => {
-        const etMinion = makeMinion('et-1', 'elder_thing_elder_thing', '0', 5);
-        const m1 = makeMinion('m-1', 'test_a', '0', 2);
-        const m2 = makeMinion('m-2', 'test_b', '0', 3);
-        const m3 = makeMinion('m-3', 'test_c', '0', 4);
+        const etMinion = makeMinion('et-1', 'elder_thing_elder_thing', '0', 5, { powerModifier: 0 });
+        const m1 = makeMinion('m-1', 'test_a', '0', 2, { powerModifier: 0 });
+        const m2 = makeMinion('m-2', 'test_b', '0', 3, { powerModifier: 0 });
+        const m3 = makeMinion('m-3', 'test_c', '0', 4, { powerModifier: 0 });
         const base = makeBase({ minions: [etMinion, m1, m2, m3] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -92,9 +92,9 @@ describe('远古之物：消灭两个随从选择权', () => {
     });
 
     it('恰好 2 个己方随从时，选择"消灭"直接消灭全部（无需选择）', () => {
-        const etMinion = makeMinion('et-1', 'elder_thing_elder_thing', '0', 5);
-        const m1 = makeMinion('m-1', 'test_a', '0', 2);
-        const m2 = makeMinion('m-2', 'test_b', '0', 3);
+        const etMinion = makeMinion('et-1', 'elder_thing_elder_thing', '0', 5, { powerModifier: 0 });
+        const m1 = makeMinion('m-1', 'test_a', '0', 2, { powerModifier: 0 });
+        const m2 = makeMinion('m-2', 'test_b', '0', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [etMinion, m1, m2] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -109,8 +109,8 @@ describe('远古之物：消灭两个随从选择权', () => {
     });
 
     it('只有 1 个己方随从时，选择"消灭"直接消灭该随从', () => {
-        const etMinion = makeMinion('et-1', 'elder_thing_elder_thing', '0', 5);
-        const m1 = makeMinion('m-1', 'test_a', '0', 2);
+        const etMinion = makeMinion('et-1', 'elder_thing_elder_thing', '0', 5, { powerModifier: 0 });
+        const m1 = makeMinion('m-1', 'test_a', '0', 2, { powerModifier: 0 });
         const base = makeBase({ minions: [etMinion, m1] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -124,9 +124,9 @@ describe('远古之物：消灭两个随从选择权', () => {
     });
 
     it('两步单选交互处理：玩家依次选择 2 个随从后正确消灭', () => {
-        const m1 = makeMinion('m-1', 'test_a', '0', 2);
-        const m2 = makeMinion('m-2', 'test_b', '0', 3);
-        const m3 = makeMinion('m-3', 'test_c', '0', 4);
+        const m1 = makeMinion('m-1', 'test_a', '0', 2, { powerModifier: 0 });
+        const m2 = makeMinion('m-2', 'test_b', '0', 3, { powerModifier: 0 });
+        const m3 = makeMinion('m-3', 'test_c', '0', 4, { powerModifier: 0 });
         const base = makeBase({ minions: [m1, m2, m3] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -154,10 +154,10 @@ describe('远古之物：消灭两个随从选择权', () => {
     });
 
     it('选择"放牌库底"时不消灭随从', () => {
-        const etMinion = makeMinion('et-1', 'elder_thing_elder_thing', '0', 5);
-        const m1 = makeMinion('m-1', 'test_a', '0', 2);
-        const m2 = makeMinion('m-2', 'test_b', '0', 3);
-        const m3 = makeMinion('m-3', 'test_c', '0', 4);
+        const etMinion = makeMinion('et-1', 'elder_thing_elder_thing', '0', 5, { powerModifier: 0 });
+        const m1 = makeMinion('m-1', 'test_a', '0', 2, { powerModifier: 0 });
+        const m2 = makeMinion('m-2', 'test_b', '0', 3, { powerModifier: 0 });
+        const m3 = makeMinion('m-3', 'test_c', '0', 4, { powerModifier: 0 });
         const base = makeBase({ minions: [etMinion, m1, m2, m3] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -180,10 +180,10 @@ describe('远古之物：消灭两个随从选择权', () => {
 
 describe('刚柔流寺庙：力量并列最高时拥有者选择', () => {
     it('某玩家有多个力量并列最高的随从时，产生选择交互', () => {
-        const m1 = makeMinion('m-1', 'test_a', '0', 5);
-        const m2 = makeMinion('m-2', 'test_b', '0', 5);
-        const m3 = makeMinion('m-3', 'test_c', '0', 3);
-        const p1m = makeMinion('p1-1', 'test_d', '1', 4);
+        const m1 = makeMinion('m-1', 'test_a', '0', 5, { powerModifier: 0 });
+        const m2 = makeMinion('m-2', 'test_b', '0', 5, { powerModifier: 0 });
+        const m3 = makeMinion('m-3', 'test_c', '0', 3, { powerModifier: 0 });
+        const p1m = makeMinion('p1-1', 'test_d', '1', 4, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_temple_of_goju', minions: [m1, m2, m3, p1m] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'scoring', interaction: { current: undefined, queue: [] } } } as any;
@@ -205,9 +205,9 @@ describe('刚柔流寺庙：力量并列最高时拥有者选择', () => {
     });
 
     it('所有玩家都只有唯一最强随从时，直接放牌库底（无交互）', () => {
-        const m1 = makeMinion('m-1', 'test_a', '0', 5);
-        const m2 = makeMinion('m-2', 'test_b', '0', 3);
-        const p1m = makeMinion('p1-1', 'test_c', '1', 4);
+        const m1 = makeMinion('m-1', 'test_a', '0', 5, { powerModifier: 0 });
+        const m2 = makeMinion('m-2', 'test_b', '0', 3, { powerModifier: 0 });
+        const p1m = makeMinion('p1-1', 'test_c', '1', 4, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_temple_of_goju', minions: [m1, m2, p1m] });
         const state = makeState({ bases: [base] });
 
@@ -223,8 +223,8 @@ describe('刚柔流寺庙：力量并列最高时拥有者选择', () => {
     });
 
     it('平局选择交互处理：玩家选择后正确放入牌库底', () => {
-        const m1 = makeMinion('m-1', 'test_a', '0', 5);
-        const m2 = makeMinion('m-2', 'test_b', '0', 5);
+        const m1 = makeMinion('m-1', 'test_a', '0', 5, { powerModifier: 0 });
+        const m2 = makeMinion('m-2', 'test_b', '0', 5, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_temple_of_goju', minions: [m1, m2] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'scoring', interaction: { current: undefined, queue: [] } } } as any;
@@ -239,10 +239,10 @@ describe('刚柔流寺庙：力量并列最高时拥有者选择', () => {
     });
 
     it('多个玩家都有平局时，链式处理', () => {
-        const p0m1 = makeMinion('p0-1', 'test_a', '0', 5);
-        const p0m2 = makeMinion('p0-2', 'test_b', '0', 5);
-        const p1m1 = makeMinion('p1-1', 'test_c', '1', 4);
-        const p1m2 = makeMinion('p1-2', 'test_d', '1', 4);
+        const p0m1 = makeMinion('p0-1', 'test_a', '0', 5, { powerModifier: 0 });
+        const p0m2 = makeMinion('p0-2', 'test_b', '0', 5, { powerModifier: 0 });
+        const p1m1 = makeMinion('p1-1', 'test_c', '1', 4, { powerModifier: 0 });
+        const p1m2 = makeMinion('p1-2', 'test_d', '1', 4, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_temple_of_goju', minions: [p0m1, p0m2, p1m1, p1m2] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'scoring', interaction: { current: undefined, queue: [] } } } as any;

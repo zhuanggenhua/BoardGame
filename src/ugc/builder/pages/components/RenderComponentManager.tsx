@@ -156,7 +156,7 @@ export function RenderComponentManager({
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs text-slate-400">正面渲染结果（粘贴导入）</label>
                 <button
-                  onClick={() => navigator.clipboard?.writeText(generatePrompt())}
+                  onClick={() => navigator.clipboard.writeText(generatePrompt())}
                   className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
                 >
                   复制正面提示词
@@ -181,7 +181,7 @@ export function RenderComponentManager({
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs text-slate-400">背面渲染结果（粘贴导入）</label>
                 <button
-                  onClick={() => navigator.clipboard?.writeText(generateBackPrompt())}
+                  onClick={() => navigator.clipboard.writeText(generateBackPrompt())}
                   className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
                 >
                   复制背面提示词

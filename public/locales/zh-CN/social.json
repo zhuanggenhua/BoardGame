@@ -50,8 +50,7 @@
     "notification": {
         "title": "系统通知",
         "subtitle": "来自管理员的公告",
-        "empty": "暂无通知",
-        "pinned": "置顶"
+        "empty": "暂无通知"
     },
     "matchHistory": {
         "title": "对局记录",

@@ -16,6 +16,8 @@ import type { QueryUgcPackagesDto } from './dtos/query-ugc-packages.dto';
 import type { RoomFilterDto } from './dtos/room-filter.dto';
 import { MatchRecord, type MatchRecordDocument, type MatchRecordPlayer } from './schemas/match-record.schema';
 import { ROOM_MATCH_MODEL_NAME, type RoomMatchDocument } from './schemas/room-match.schema';
+import { HYBRID_STORAGE } from '../../shared/providers/hybrid-storage.provider';
+import type { MatchStorage } from '../../../../../src/engine/transport/storage';
 
 const ADMIN_STATS_CACHE_KEY = 'admin:stats';
 const ADMIN_STATS_TREND_CACHE_PREFIX = 'admin:stats:trend:';
@@ -296,6 +298,7 @@ export class AdminService implements OnModuleInit {
         @InjectModel(UgcPackage.name) private readonly ugcPackageModel: Model<UgcPackageDocument>,
         @InjectModel(UgcAsset.name) private readonly ugcAssetModel: Model<UgcAssetDocument>,
         @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+        @Inject(HYBRID_STORAGE) private readonly hybridStorage: MatchStorage,
     ) { }
 
     /** 启动时清除 admin stats 缓存，防止 Redis 中残留永不过期的旧数据 */
@@ -394,20 +397,44 @@ export class AdminService implements OnModuleInit {
     async getRooms(query: QueryRoomsDto) {
         const page = query.page || 1;
         const limit = query.limit || 20;
-        const filter = this.buildRoomFilter(query);
+        
+        // 1. 通过 HybridStorage 获取所有房间 ID（包括内存中的游客房间）
+        const gameName = query.gameName?.trim();
+        const allMatchIds = await this.hybridStorage.listMatches(
+            gameName ? { gameName } : undefined
+        );
 
-        const [records, total] = await Promise.all([
-            this.roomMatchModel
-                .find(filter)
-                .sort({ updatedAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .select('matchID gameName metadata state createdAt updatedAt')
-                .lean<RoomMatchLean[]>(),
-            this.roomMatchModel.countDocuments(filter),
-        ]);
+        // 2. 获取每个房间的 metadata 并构建房间列表
+        const allItems: RoomListItem[] = [];
+        for (const matchID of allMatchIds) {
+            const { metadata } = await this.hybridStorage.fetch(matchID, { metadata: true });
+            if (!metadata) continue;
 
-        const items: RoomListItem[] = records.map(record => this.buildRoomListItem(record));
+            // 构建房间信息（从 metadata 中提取）
+            const item = this.buildRoomListItemFromMetadata(matchID, metadata);
+            
+            // 应用搜索过滤
+            if (query.search) {
+                const search = query.search.trim().toLowerCase();
+                const matchesSearch = 
+                    matchID.toLowerCase().includes(search) ||
+                    (item.roomName && item.roomName.toLowerCase().includes(search));
+                if (!matchesSearch) continue;
+            }
+
+            allItems.push(item);
+        }
+
+        // 3. 按更新时间降序排序
+        allItems.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+        // 4. 分页
+        const total = allItems.length;
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const items = allItems.slice(startIndex, endIndex);
+
+        // 5. 获取房主用户名
         const ownerUserIds = Array.from(
             new Set(items.map(item => resolveOwnerUserId(item.ownerKey)).filter(Boolean) as string[])
         );
@@ -580,8 +607,9 @@ export class AdminService implements OnModuleInit {
     }
 
     async destroyRoom(matchID: string): Promise<boolean> {
-        const result = await this.roomMatchModel.deleteOne({ matchID });
-        return (result.deletedCount ?? 0) > 0;
+        // 尝试从 HybridStorage 删除（会同时处理 MongoDB 和内存）
+        await this.hybridStorage.wipe(matchID);
+        return true;
     }
 
     async bulkDestroyRooms(matchIDs: string[]) {
@@ -589,18 +617,62 @@ export class AdminService implements OnModuleInit {
         if (!uniqueIds.length) {
             return { requested: 0, deleted: 0 };
         }
-        const result = await this.roomMatchModel.deleteMany({ matchID: { $in: uniqueIds } });
-        return { requested: uniqueIds.length, deleted: result.deletedCount ?? 0 };
+        
+        // 通过 HybridStorage 删除每个房间
+        let deleted = 0;
+        for (const matchID of uniqueIds) {
+            try {
+                await this.hybridStorage.wipe(matchID);
+                deleted++;
+            } catch (err) {
+                // 忽略不存在的房间
+            }
+        }
+        
+        return { requested: uniqueIds.length, deleted };
     }
 
     async bulkDestroyRoomsByFilter(filterDto: RoomFilterDto) {
-        const filter = this.buildRoomFilter(filterDto);
-        const total = await this.roomMatchModel.countDocuments(filter);
-        if (total === 0) {
-            return { requested: 0, deleted: 0 };
+        // 1. 获取所有匹配的房间 ID
+        const gameName = filterDto.gameName?.trim();
+        const search = filterDto.search?.trim();
+        
+        const allMatchIds = await this.hybridStorage.listMatches(
+            gameName ? { gameName } : undefined
+        );
+
+        // 2. 过滤匹配搜索条件的房间
+        const matchingIds: string[] = [];
+        for (const matchID of allMatchIds) {
+            if (search) {
+                const { metadata } = await this.hybridStorage.fetch(matchID, { metadata: true });
+                if (!metadata) continue;
+                
+                const meta = metadata as { setupData?: { roomName?: string } };
+                const roomName = meta.setupData?.roomName ?? '';
+                
+                const searchLower = search.toLowerCase();
+                const matchesSearch = 
+                    matchID.toLowerCase().includes(searchLower) ||
+                    roomName.toLowerCase().includes(searchLower);
+                
+                if (!matchesSearch) continue;
+            }
+            matchingIds.push(matchID);
         }
-        const result = await this.roomMatchModel.deleteMany(filter);
-        return { requested: total, deleted: result.deletedCount ?? 0 };
+
+        // 3. 删除所有匹配的房间
+        let deleted = 0;
+        for (const matchID of matchingIds) {
+            try {
+                await this.hybridStorage.wipe(matchID);
+                deleted++;
+            } catch (err) {
+                // 忽略删除失败的房间
+            }
+        }
+
+        return { requested: matchingIds.length, deleted };
     }
 
     async getUsers(query: QueryUsersDto) {
@@ -1088,6 +1160,40 @@ export class AdminService implements OnModuleInit {
             players,
             createdAt: record.createdAt,
             updatedAt: record.updatedAt,
+        };
+    }
+
+    /**
+     * 从 MatchMetadata 构建房间列表项（用于 HybridStorage 查询）
+     */
+    private buildRoomListItemFromMetadata(matchID: string, metadata: unknown): RoomListItem {
+        const meta = metadata as {
+            gameName?: string;
+            players?: Record<string, { name?: string; isConnected?: boolean }>;
+            setupData?: RoomMatchSetupData;
+            createdAt?: number;
+            updatedAt?: number;
+        };
+
+        const setupData = meta.setupData ?? {};
+        const playersObj = meta.players ?? {};
+        const players: RoomPlayerItem[] = Object.entries(playersObj).map(([id, data]) => ({
+            id: Number(id),
+            name: data?.name,
+            isConnected: data?.isConnected,
+        }));
+        const isLocked = Boolean(setupData.password && String(setupData.password).length > 0);
+
+        return {
+            matchID,
+            gameName: meta.gameName ?? 'unknown',
+            roomName: setupData.roomName,
+            ownerKey: setupData.ownerKey,
+            ownerType: setupData.ownerType,
+            isLocked,
+            players,
+            createdAt: meta.createdAt ? new Date(meta.createdAt) : new Date(),
+            updatedAt: meta.updatedAt ? new Date(meta.updatedAt) : new Date(),
         };
     }
 

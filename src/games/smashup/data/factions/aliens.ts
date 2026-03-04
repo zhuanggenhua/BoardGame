@@ -31,6 +31,8 @@ export const ALIEN_MINIONS: MinionCardDef[] = [
         nameEn: 'Scout',
         faction: 'aliens',
         power: 3,
+        // 注意：侦察兵的能力是 afterScoring 触发器（被动触发），不是主动激活的 special 能力
+        // 因此不应该有 abilityTags: ['special']，否则会在 scoreBases 阶段错误地高亮
         count: 3,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 26 },
     },
@@ -65,7 +67,7 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
         name: '分解者',
         nameEn: 'Disintegrator',
         faction: 'aliens',
-        count: 1,
+        count: 2,  // Wiki: Disintegrator (2x)
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 29 },
     },
     {
@@ -75,7 +77,7 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
         name: '光束捕捉',
         nameEn: 'Beam Up',
         faction: 'aliens',
-        count: 1,
+        count: 2,  // Wiki: Beam Up (2x)
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 30 },
     },
     {
@@ -95,7 +97,7 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
         name: '麦田怪圈',
         nameEn: 'Crop Circles',
         faction: 'aliens',
-        count: 2,
+        count: 1,  // Wiki: Crop Circles (1x)
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 31 },
     },
     {
@@ -127,7 +129,7 @@ export const ALIEN_ACTIONS: ActionCardDef[] = [
         faction: 'aliens',
         abilityTags: ['ongoing'],
         ongoingTarget: 'base',
-        count: 2,
+        count: 1,  // Wiki: 1 play-on-base action (未标注数量，默认1张)
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 32 },
     },
 ];

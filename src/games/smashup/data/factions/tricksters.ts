@@ -52,7 +52,7 @@ export const TRICKSTER_ACTIONS: ActionCardDef[] = [
         name: '隐蔽迷雾',
         nameEn: 'Enshrouding Mist',
         faction: 'tricksters',        abilityTags: ['ongoing', 'extra'],
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 28 },
     },
     {
@@ -81,7 +81,7 @@ export const TRICKSTER_ACTIONS: ActionCardDef[] = [
         name: '火焰陷阱',
         nameEn: 'Flame Trap',
         faction: 'tricksters',        abilityTags: ['ongoing'],
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 31 },
     },
     {
@@ -109,7 +109,7 @@ export const TRICKSTER_ACTIONS: ActionCardDef[] = [
         subtype: 'standard',
         name: '幻想破碎',
         nameEn: 'Disenchant',
-        faction: 'tricksters',        count: 1,
+        faction: 'tricksters',        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 34 },
     },
     {
@@ -119,7 +119,7 @@ export const TRICKSTER_ACTIONS: ActionCardDef[] = [
         name: '留下买路钱',
         nameEn: 'Pay the Piper',
         faction: 'tricksters',        abilityTags: ['ongoing'],
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 35 },
     },
 ];

@@ -17,6 +17,7 @@ import {
     createResponseWindowSystem,
     createTutorialSystem,
     createUndoSystem,
+    CharacterSelectionSystem,
 } from '../../engine';
 import { createGameEngine } from '../../engine/adapter';
 import { buildDamageBreakdownSegment, type DamageSourceResolver } from '../../engine/primitives/actionLogHelpers';
@@ -37,9 +38,7 @@ import type {
     TokenUsedEvent,
     CpChangedEvent,
     CardDrawnEvent,
-    CardDiscardedEvent,
     BonusDieRolledEvent,
-    PreventDamageEvent,
     DamageShieldGrantedEvent,
 } from './domain/types';
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
@@ -75,8 +74,6 @@ const UNDO_ALLOWLIST = [
     'SELL_CARD',
     'SELECT_ABILITY',
     'ADVANCE_PHASE',
-    // 确认骰面前创建快照，允许撤回到重新选择锁骰/重掷
-    'CONFIRM_ROLL',
 ] as const;
 
 const DT_NS = 'game-dicethrone';
@@ -271,8 +268,8 @@ function formatDiceThroneActionEntry({
             segments: [i18nSeg('actionLog.advancePhase', { phase: phaseI18nKey }, ['phase'])],
         });
 
-        // 自动选择的防御技能（唯一防御技能时在 onPhaseEnter 自动激活）
-        // 此时 ABILITY_ACTIVATED 事件在 ADVANCE_PHASE 命令中，需要额外记录
+        // 检查是否有自动防御技能触发（onPhaseEnter 触发的防御技能）
+        // 这些 ABILITY_ACTIVATED 事件在 ADVANCE_PHASE 命令后产生，需要单独记录
         const autoDefenseEvent = events.find(
             (e): e is AbilityActivatedEvent =>
                 e.type === 'ABILITY_ACTIVATED' && (e as AbilityActivatedEvent).payload.isDefense === true
@@ -306,7 +303,7 @@ function formatDiceThroneActionEntry({
         const playerId = abilityEvent?.payload.playerId ?? command.playerId;
         if (abilityId && playerId) {
             const match = findPlayerAbility(core, playerId, abilityId);
-            // 分歧型变体有独立名称时优先使用（如"战吼"而非父级"力大无穷 II"）
+            // 分层型变体有独立名称时优先使用（如战斗"而非父级"力大无穷 II"）
             const rawAbilityName = match?.variant?.name ?? match?.ability.name ?? abilityId;
             const abilityNameKey = getAbilityI18nKey(rawAbilityName) || abilityId;
             const isI18nKey = abilityNameKey.includes('.');
@@ -314,7 +311,7 @@ function formatDiceThroneActionEntry({
                 ? 'actionLog.abilityActivatedDefense'
                 : 'actionLog.abilityActivated';
             entries.push({
-                id: `${command.type}-${playerId}-${abilityId}-${timestamp}`,
+                id: `${command.type}-${playerId}-${timestamp}`,
                 timestamp,
                 actorId: playerId,
                 kind: command.type,
@@ -438,12 +435,6 @@ function formatDiceThroneActionEntry({
     const attackResolved = [...events].reverse().find(
         (event): event is AttackResolvedEvent => event.type === 'ATTACK_RESOLVED'
     );
-    const defenderDamageEventCount = attackResolved
-        ? events.filter((event): event is DamageDealtEvent =>
-            event.type === 'DAMAGE_DEALT'
-            && (event as DamageDealtEvent).payload.targetId === attackResolved.payload.defenderId
-        ).length
-        : 0;
 
     events.forEach((event, index) => {
         // 效果事件的 timestamp 必须严格大于命令 entry 的 timestamp，
@@ -465,76 +456,29 @@ function formatDiceThroneActionEntry({
                 // Token 响应窗口关闭后产生的伤害：用 sourcePlayerId 推断攻击方
                 actorId = sourcePlayerId;
             }
-            const rawDealt = actualDamage ?? amount ?? 0;
+            const dealt = actualDamage ?? amount ?? 0;
+            
+            // 计算最终伤害（扣除护盾后）
+            const totalShieldAbsorbed = shieldsConsumed?.reduce((sum, s) => sum + s.absorbed, 0) ?? 0;
+            const finalDamage = Math.max(0, dealt - totalShieldAbsorbed);
+            
             const isSelfDamage = actorId === targetId;
-
-            // 查找同批次中针对同一目标的百分比护盾，计算实际伤害
-            const shieldEvent = events.find(
-                (e): e is DamageShieldGrantedEvent =>
-                    e.type === 'DAMAGE_SHIELD_GRANTED' &&
-                    (e as DamageShieldGrantedEvent).payload.targetId === targetId &&
-                    (e as DamageShieldGrantedEvent).payload.reductionPercent != null
-            );
-            const shieldPercent = shieldEvent?.payload.reductionPercent ?? 0;
-            const shieldAbsorbed = shieldPercent > 0 ? Math.ceil(rawDealt * shieldPercent / 100) : 0;
-            const dealtFromSameBatchShield = rawDealt - shieldAbsorbed;
-            
-            /**
-             * 计算固定值护盾的总消耗量
-             * 
-             * 注意：shieldsConsumed 包含所有护盾（百分比 + 固定值），需要过滤
-             * - 百分比护盾：有 reductionPercent 字段，无 value 字段
-             * - 固定值护盾：有 value 字段，无 reductionPercent 字段
-             * 
-             * 百分比护盾的吸收量已在 shieldAbsorbed 中计算，这里只统计固定值护盾
-             */
-            const fixedShieldAbsorbed = shieldsConsumed?.reduce((sum, shield) => {
-                // 只统计固定值护盾（有 value 字段的）
-                return shield.value != null ? sum + shield.absorbed : sum;
-            }, 0) ?? 0;
-            
-            /**
-             * 计算最终伤害
-             * 
-             * 公式：最终伤害 = 基础伤害 - 百分比护盾吸收 - 固定值护盾吸收
-             * 
-             * 当同批次仅有 1 条 "defender 侧 DAMAGE_DEALT" 且存在 ATTACK_RESOLVED 时，
-             * totalDamage 是该次攻击对防御方的权威净伤害（含跨命令护盾结算）。
-             * 其余场景回退到事件内护盾明细计算。
-             */
-            const dealtFromEvents = Math.max(0, dealtFromSameBatchShield - fixedShieldAbsorbed);
-            const resolvedDamage =
-                attackResolved
-                && targetId === attackResolved.payload.defenderId
-                && defenderDamageEventCount === 1
-                && Number.isFinite(attackResolved.payload.totalDamage)
-                    ? Math.max(0, attackResolved.payload.totalDamage)
-                    : undefined;
-            const dealt = resolvedDamage ?? dealtFromEvents;
-            
-            const normalizedModifiers = modifiers?.map(mod => ({
-                ...mod,
-                sourceId: mod.sourceId ?? mod.type,
-            }));
 
             // 解析来源技能名
             const effectiveSourceId = sourceAbilityId ?? attackResolved?.payload.sourceAbilityId;
             const source = resolveAbilitySourceLabel(effectiveSourceId, core, actorId);
 
-            // 使用引擎层通用工具构建 breakdown segment（带护盾自动处理）
+            // 使用引擎层通用工具构建 breakdown segment
             const breakdownSeg = buildDamageBreakdownSegment(
-                dealt,  // 传入最终伤害（扣除护盾后）
+                finalDamage,
                 {
                     sourceAbilityId: effectiveSourceId,
                     breakdown,
-                    modifiers: normalizedModifiers,
-                    shieldsConsumed,  // 新增：传入护盾消耗信息
+                    modifiers,
+                    shieldsConsumed,
                 },
                 {
                     resolve: (sid) => resolveAbilitySourceLabel(sid, core, actorId),
-                },
-                DT_NS,
-                {
                     // 自定义护盾渲染：解析护盾来源名称
                     renderShields: (shields) => shields.map(shield => {
                         const shieldSource = shield.sourceId
@@ -549,6 +493,7 @@ function formatDiceThroneActionEntry({
                         };
                     }),
                 },
+                DT_NS,
             );
 
             // 统一用 before + breakdown + after 模式
@@ -584,59 +529,6 @@ function formatDiceThroneActionEntry({
                 actorId,
                 kind: 'DAMAGE_DEALT',
                 segments,
-            });
-            return;
-        }
-
-        if (event.type === 'PREVENT_DAMAGE') {
-            const preventEvent = event as PreventDamageEvent;
-            const { targetId, amount, sourceAbilityId } = preventEvent.payload;
-            if (amount <= 0) return;
-
-            const source = resolveAbilitySourceLabel(sourceAbilityId, core, command.playerId);
-            const key = source ? 'actionLog.damagePrevented' : 'actionLog.damagePreventedPlain';
-            const params: Record<string, string | number> = { amount };
-            const paramI18nKeys: string[] = [];
-            if (source) {
-                params.source = source.label;
-                if (source.isI18n) paramI18nKeys.push('source');
-            }
-
-            entries.push({
-                id: `PREVENT_DAMAGE-${targetId}-${entryTimestamp}-${index}`,
-                timestamp: entryTimestamp,
-                actorId: targetId,
-                kind: 'PREVENT_DAMAGE',
-                segments: [
-                    i18nSeg(key, params, paramI18nKeys.length > 0 ? paramI18nKeys : undefined),
-                ],
-            });
-            return;
-        }
-
-        if (event.type === 'DAMAGE_SHIELD_GRANTED') {
-            const shieldEvent = event as DamageShieldGrantedEvent;
-            const { targetId, sourceId, reductionPercent } = shieldEvent.payload;
-            // 只为百分比减免护盾生成日志（固定值护盾由 PREVENT_DAMAGE 处理）
-            if (reductionPercent == null) return;
-
-            const source = resolveAbilitySourceLabel(sourceId, core, command.playerId);
-            const key = source ? 'actionLog.damageShieldPercent' : 'actionLog.damageShieldPercentPlain';
-            const params: Record<string, string | number> = { percent: reductionPercent };
-            const paramI18nKeys: string[] = [];
-            if (source) {
-                params.source = source.label;
-                if (source.isI18n) paramI18nKeys.push('source');
-            }
-
-            entries.push({
-                id: `DAMAGE_SHIELD-${targetId}-${entryTimestamp}-${index}`,
-                timestamp: entryTimestamp,
-                actorId: targetId,
-                kind: 'DAMAGE_SHIELD_GRANTED',
-                segments: [
-                    i18nSeg(key, params, paramI18nKeys.length > 0 ? paramI18nKeys : undefined),
-                ],
             });
             return;
         }
@@ -767,20 +659,21 @@ function formatDiceThroneActionEntry({
             const segments = [
                 i18nSeg('actionLog.tokenUsed', { tokenLabel: tokenKey, effectLabel: effectLabelKey }, paramI18nKeys),
             ];
-            if (typeof damageModifier === 'number') {
-                // 掷骰加伤型 Token（如伏击）：damageModifier=0 但同批有 BONUS_DIE_ROLLED，
-                // 用掷骰值替代显示，避免误导性的"调整 0"
-                let displayModifier = damageModifier;
-                if (damageModifier === 0) {
-                    const bonusDie = events.find(
-                        (e): e is BonusDieRolledEvent =>
-                            e.type === 'BONUS_DIE_ROLLED' && !!(e as BonusDieRolledEvent).payload.pendingDamageBonus
-                    );
-                    if (bonusDie) {
-                        displayModifier = bonusDie.payload.pendingDamageBonus!;
-                    }
+            
+            // 伏击 Token：damageModifier 在 reducer 层为 0，真正的伤害值在 BONUS_DIE_ROLLED 的 pendingDamageBonus
+            // 优先使用 BONUS_DIE_ROLLED 的值（如果存在）
+            let actualDamageModifier = damageModifier;
+            if (tokenId === 'sneak_attack' && typeof damageModifier === 'number') {
+                const bonusDieEvent = events.find(
+                    (e): e is BonusDieRolledEvent => e.type === 'BONUS_DIE_ROLLED'
+                ) as BonusDieRolledEvent | undefined;
+                if (bonusDieEvent?.payload.pendingDamageBonus !== undefined) {
+                    actualDamageModifier = bonusDieEvent.payload.pendingDamageBonus;
                 }
-                segments.push(i18nSeg('actionLog.tokenModifier', { amount: displayModifier }));
+            }
+            
+            if (typeof actualDamageModifier === 'number') {
+                segments.push(i18nSeg('actionLog.tokenModifier', { amount: actualDamageModifier }));
             }
             if (evasionRoll) {
                 const resultKey = evasionRoll.success ? 'actionLog.tokenEvasionSuccess' : 'actionLog.tokenEvasionFail';
@@ -827,34 +720,30 @@ function formatDiceThroneActionEntry({
             });
         }
 
-        if (event.type === 'CARD_DISCARDED') {
-            const discardEvent = event as CardDiscardedEvent;
-            const { playerId, cardId } = discardEvent.payload;
-            const card = findDiceThroneCard(core, cardId, playerId);
-            const segments: ActionLogSegment[] = [
-                i18nSeg('actionLog.cardDiscarded'),
-            ];
-            if (card?.previewRef) {
-                const isI18nKey = card.name?.includes('.');
-                segments.push({
-                    type: 'card',
-                    cardId: card.id,
-                    previewText: card.name ?? cardId,
-                    previewRef: card.previewRef,
-                    ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
-                });
-            } else {
-                const displayName = card?.name ?? cardId;
-                segments.push({ type: 'text', text: displayName });
+        if (event.type === 'DAMAGE_SHIELD_GRANTED') {
+            const shieldEvent = event as DamageShieldGrantedEvent;
+            const { targetId, sourceId, reductionPercent } = shieldEvent.payload;
+            // 只为百分比减免护盾生成日志（固定值护盾由 PREVENT_DAMAGE 处理）
+            if (reductionPercent == null) return;
+
+            const source = resolveAbilitySourceLabel(sourceId, core, command.playerId);
+            const key = source ? 'actionLog.damageShieldPercent' : 'actionLog.damageShieldPercentPlain';
+            const params: Record<string, string | number> = { percent: reductionPercent };
+            const paramI18nKeys: string[] = [];
+            if (source) {
+                params.source = source.label;
+                if (source.isI18n) paramI18nKeys.push('source');
             }
+
             entries.push({
-                id: `CARD_DISCARDED-${playerId}-${entryTimestamp}-${index}`,
+                id: `DAMAGE_SHIELD-${targetId}-${entryTimestamp}-${index}`,
                 timestamp: entryTimestamp,
-                actorId: playerId,
-                kind: 'CARD_DISCARDED',
-                segments,
+                actorId: targetId,
+                kind: 'DAMAGE_SHIELD_GRANTED',
+                segments: [
+                    i18nSeg(key, params, paramI18nKeys.length > 0 ? paramI18nKeys : undefined),
+                ],
             });
-            return;
         }
 
         if (event.type === 'CARD_DRAWN') {
@@ -931,6 +820,7 @@ function findDiceThroneCard(
 // FlowSystem 配置由 FlowHooks 提供，符合设计规范
 // 注意：撤销快照保留 1 个 + 极度缩减日志（maxEntries: 20）以避免 MongoDB 16MB 限制
 const systems = [
+    new CharacterSelectionSystem({ setupPhaseName: 'setup' }),
     createFlowSystem<DiceThroneCore>({ hooks: diceThroneFlowHooks }),
     createEventStreamSystem(),
     createActionLogSystem({
@@ -938,6 +828,7 @@ const systems = [
         formatEntry: formatDiceThroneActionEntry,
     }),
     createUndoSystem({
+        maxSnapshots: 3,
         // 只对白名单命令做撤回快照，避免 UI/系统行为导致“一进局就可撤回”。
         snapshotCommandAllowlist: UNDO_ALLOWLIST,
     }),
@@ -1036,7 +927,6 @@ const adapterConfig = {
     domain: DiceThroneDomain,
     systems,
     minPlayers: 2,
-    // TODO(dice-throne-2v2): 2v2完整联调后恢复为 4
     maxPlayers: 2,
     commandTypes: COMMAND_TYPES,
 };

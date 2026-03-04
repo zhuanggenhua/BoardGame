@@ -1,0 +1,100 @@
+﻿diff --git a/src/games/smashup/domain/reducer.ts b/src/games/smashup/domain/reducer.ts
+index 4af0b5d..a157416 100644
+--- a/src/games/smashup/domain/reducer.ts
++++ b/src/games/smashup/domain/reducer.ts
+@@ -47,6 +47,7 @@ import type {
+     PowerCounterAddedEvent,
+     PowerCounterRemovedEvent,
+     TempPowerAddedEvent,
++    CardToDeckBottomEvent,
+ } from './types';
+ import type { PlayerId } from '../../../engine/types';
+ import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
+@@ -85,16 +86,17 @@ export function execute(
+         state.sys = updatedState.sys;
+     }
+     
+-    // 鍚庡鐞嗭細onDestroy 瑙﹀彂 鈫?onMove 瑙﹀彂 鈫?onAffected 瑙﹀彂
+-    const afterDestroy = processDestroyTriggers(events, state, command.playerId, random, now);
+-    if (afterDestroy.matchState) {
+-        state.sys = afterDestroy.matchState.sys;
+-    }
+-    const afterMove = processMoveTriggers(afterDestroy.events, state, command.playerId, random, now);
+-    if (afterMove.matchState) {
+-        state.sys = afterMove.matchState.sys;
++    // 鍚庡鐞嗭細onDestroy 瑙﹀彂 鈫?onMove 瑙﹀彂锛堝惊鐜洿鍒扮ǔ瀹氾級鈫?onAffected 瑙﹀彂
++    const afterDestroyMove = processDestroyMoveCycle(events, state, command.playerId, random, now);
++    
++    if (afterDestroyMove.matchState) {
++        state.sys = afterDestroyMove.matchState.sys;
+     }
+-    const afterAffect = processAffectTriggers(afterMove.events, state, command.playerId, random, now);
++    // 杩斿洖鎵嬬墝淇濇姢杩囨护锛坉eep_roots / entangled / ghost_incorporeal 绛夛級
++    const afterReturn = filterProtectedReturnEvents(afterDestroyMove.events, state.core, command.playerId);
++    // 鏀惧叆鐗屽簱搴曚繚鎶よ繃婊わ紙bear_cavalry_superiority / ghost_incorporeal 绛夛級
++    const afterDeckBottom = filterProtectedDeckBottomEvents(afterReturn, state.core, command.playerId);
++    const afterAffect = processAffectTriggers(afterDeckBottom, state, command.playerId, random, now);
+     if (afterAffect.matchState) {
+         state.sys = afterAffect.matchState.sys;
+     }
+@@ -109,8 +111,15 @@ function executeCommand(
+     random: RandomFn,
+     now: number
+ ): { events: SmashUpEvent[]; updatedState?: MatchState<SmashUpCore> } {
+-    // 闃插尽鎬у垵濮嬪寲锛氱‘淇?sys.interaction 瀛樺湪锛堟祴璇曠幆澧冨彲鑳芥湭鍒濆鍖栵級
+-    if (!state.sys.interaction) {
++    // 闃插尽鎬у垵濮嬪寲锛氬鐞嗘祴璇曠幆澧冨彲鑳戒紶閫掕８ core 鐨勬儏鍐?+    // 濡傛灉 state 娌℃湁 core 瀛楁锛岃鏄庝紶閫掔殑鏄８ core锛岄渶瑕佸寘瑁?+    if (!(state as any).core) {
++        state = { core: state as any, sys: { interaction: { queue: [] } } as any };
++    }
++    // 纭繚 sys 鍜?sys.interaction 瀛樺湪
++    if (!state.sys) {
++        state = { ...state, sys: { interaction: { queue: [] } } as any };
++    } else if (!state.sys.interaction) {
+         state = { ...state, sys: { ...state.sys, interaction: { queue: [] } } };
+     }
+     const core = state.core;
+@@ -134,18 +143,40 @@ function executeCommand(
+                     cardUid: card.uid,
+                     defId: card.defId,
+                     baseIndex,
++                    baseDefId: core.bases[baseIndex].defId,
+                     power: minionDef?.power ?? 0,
+                     fromDiscard: fromDiscard || undefined,
+                     ...(fromDiscard ? (() => {
+                         const info = canPlayFromDiscard(core, command.playerId, card.uid, baseIndex);
+                         return info ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit } : {};
+                     })() : {}),
++                    // Me First! 绐楀彛涓墦鍑?beforeScoringPlayable 闅忎粠涓嶆秷鑰楁甯搁搴?+                    ...(state.sys.responseWindow?.current?.windowType === 'meFirst' && minionDef?.beforeScoringPlayable
++                        ? { consumesNormalLimit: false }
++                        : {}),
+                 },
+                 sourceCommandType: command.type,
+                 timestamp: now,
+             };
+             events.push(playedEvt);
+ 
++            // Me First! 绐楀彛涓墦鍑?beforeScoringPlayable 闅忎粠鏃讹紝璁板綍 specialLimitGroup 浣跨敤
++            if (state.sys.responseWindow?.current?.windowType === 'meFirst' && minionDef?.beforeScoringPlayable) {
++                const limitGroup = minionDef.specialLimitGroup;
++                if (limitGroup) {
++                    events.push({
++                        type: SU_EVENTS.SPECIAL_LIMIT_USED,
++                        payload: {
++                            playerId: command.playerId,
++                            baseIndex,
++                            limitGroup,
++                            abilityDefId: card.defId,
++                        },
++                        timestamp: now,
++                    } as SmashUpEvent);
++                }
++            }
++
+             // 瑙﹀彂閾剧敱 postProcessSystemEvents 缁熶竴澶勭悊锛岄伩鍏嶉噸澶嶈Е鍙?             // 锛坧ostProcessSystemEvents 浼氭娴嬫墍鏈?MINION_PLAYED 浜嬩欢骞惰皟鐢?fireMinionPlayedTriggers锛? 
+@@ -462,6 +493,32 @@ function executeCommand(
+             return { events };
+         }
+ 
++        case SU_COMMANDS.ACTIVATE_SPECIAL: {
++            const { minionUid: spUid, baseIndex: spIdx } = command.payload;
++            const spBase = core.bases[spIdx];

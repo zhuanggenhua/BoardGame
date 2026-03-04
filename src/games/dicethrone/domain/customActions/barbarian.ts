@@ -57,7 +57,7 @@ function handleBarbarianSuppressRoll({ ctx, attackerId, sourceAbilityId, state, 
     // 造成点数总和的伤害
     if (total > 0) {
         const damageCalc = createDamageCalculation({
-            source: { playerId: attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: attackerId, abilityId: sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: total,
             state,
@@ -120,7 +120,7 @@ function handleBarbarianSuppress2Roll({ ctx, attackerId, sourceAbilityId, state,
 
     if (total > 0) {
         const damageCalc = createDamageCalculation({
-            source: { playerId: attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: attackerId, abilityId: sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: total,
             state,
@@ -293,7 +293,7 @@ function handleMorePleaseRollDamage({ ctx, attackerId, sourceAbilityId, state, t
     // 直接造成剑骰面数量的伤害
     if (swordCount > 0) {
         const damageCalc = createDamageCalculation({
-            source: { playerId: attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: attackerId, abilityId: sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: swordCount,
             state,

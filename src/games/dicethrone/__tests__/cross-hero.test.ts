@@ -197,7 +197,7 @@ describe('跨英雄对战', () => {
                 { '0': 'barbarian', '1': 'pyromancer' }
             );
 
-            // 狂战士应有 9 个技能（含 rage 终极技能）
+            // 狂战士应有 9 个技能
             expect(state.core.players['0'].abilities).toHaveLength(9);
             const barbarianAbilityIds = state.core.players['0'].abilities.map(a => a.id);
             expect(barbarianAbilityIds).toContain('slap');

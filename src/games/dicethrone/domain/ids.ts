@@ -81,12 +81,6 @@ export const TOKEN_IDS = {
 
     /** 教会税升级（圣骑士） - income 阶段额外 +1CP */
     TITHES_UPGRADED: 'tithes_upgraded',
-
-    /** 装填弹药（枪手） - 增加伤害 */
-    LOADED: 'loaded',
-
-    /** 赏金（枪手） - 对手攻击+1伤害且获得1CP */
-    BOUNTY: 'bounty',
 } as const;
 
 export type TokenId = (typeof TOKEN_IDS)[keyof typeof TOKEN_IDS];
@@ -195,21 +189,6 @@ export const PALADIN_DICE_FACE_IDS = {
 export type PaladinDiceFaceId = (typeof PALADIN_DICE_FACE_IDS)[keyof typeof PALADIN_DICE_FACE_IDS];
 
 // ============================================================================
-// 骰面 ID（枪手骰子）
-// ============================================================================
-
-export const GUNSLINGER_DICE_FACE_IDS = {
-    /** 子弹 - 骰值 1, 2, 3 */
-    BULLET: 'bullet',
-    /** 冲刺 - 骰值 4, 5 */
-    DASH: 'dash',
-    /** 准心 - 骰值 6 */
-    BULLSEYE: 'bullseye',
-} as const;
-
-export type GunslingerDiceFaceId = (typeof GUNSLINGER_DICE_FACE_IDS)[keyof typeof GUNSLINGER_DICE_FACE_IDS];
-
-// ============================================================================
 // DiceThrone 领域命令 ID
 // ============================================================================
 
@@ -233,8 +212,6 @@ export const DICETHRONE_CARD_ATLAS_IDS = {
     MOON_ELF: 'dicethrone:moon_elf-cards',
     SHADOW_THIEF: 'dicethrone:shadow_thief-cards',
     PALADIN: 'dicethrone:paladin-cards',
-    GUNSLINGER: 'dicethrone:gunslinger-cards',
-    SAMURAI: 'dicethrone:samurai-cards',
 } as const;
 
 export const DICETHRONE_STATUS_ATLAS_IDS = {
@@ -244,6 +221,4 @@ export const DICETHRONE_STATUS_ATLAS_IDS = {
     MOON_ELF: 'dicethrone:moon_elf-status',
     SHADOW_THIEF: 'dicethrone:shadow_thief-status',
     PALADIN: 'dicethrone:paladin-status',
-    GUNSLINGER: 'dicethrone:gunslinger-status',
-    SAMURAI: 'dicethrone:samurai-status',
 } as const;

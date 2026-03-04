@@ -152,7 +152,7 @@ describe('MongoStorage 行为', () => {
 
     it('cleanupEphemeralMatches 在断线超时后清理临时房间', async () => {
         const Match = mongoose.model('Match');
-        const disconnectedSince = Date.now() - 31 * 60 * 1000;
+        const disconnectedSince = Date.now() - 6 * 60 * 1000;
         await Match.create({
             matchID: 'ephemeral-empty',
             gameName: 'tictactoe',

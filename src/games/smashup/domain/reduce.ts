@@ -37,7 +37,7 @@ import type {
     PlayerState,
 } from './types';
 import type { PlayerId } from '../../../engine/types';
-import { SU_EVENTS, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
+import { SU_EVENTS, SU_EVENT_TYPES, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
 import { getMinionDef, getCardDef } from '../data/cards';
 import { hasCthulhuExpansionFaction } from './abilityHelpers';
 
@@ -117,11 +117,12 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MINION_PLAYED: {
-            const { playerId, cardUid, defId, baseIndex, power, fromDiscard, discardPlaySourceId, consumesNormalLimit } = event.payload;
+            const { playerId, cardUid, defId, baseIndex, power, fromDiscard, fromDeck, discardPlaySourceId, consumesNormalLimit } = event.payload;
             const player = state.players[playerId];
-            // 根据来源从手牌或弃牌堆移除卡牌
-            const newHand = fromDiscard ? player.hand : player.hand.filter(c => c.uid !== cardUid);
+            // 根据来源从手牌、弃牌堆或牌库移除卡牌
+            const newHand = (fromDiscard || fromDeck) ? player.hand : player.hand.filter(c => c.uid !== cardUid);
             const newDiscard = fromDiscard ? player.discard.filter(c => c.uid !== cardUid) : player.discard;
+            const newDeck = fromDeck ? player.deck.filter(c => c.uid !== cardUid) : player.deck;
             const minion: MinionOnBase = {
                 uid: cardUid,
                 defId,
@@ -186,6 +187,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         ...player,
                         hand: newHand,
                         discard: newDiscard,
+                        deck: newDeck,
                         minionsPlayed: finalMinionsPlayed,
                         minionsPlayedPerBase: {
                             ...(player.minionsPlayedPerBase ?? {}),
@@ -202,7 +204,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ACTION_PLAYED: {
-            const { playerId, cardUid } = event.payload;
+            const { playerId, cardUid, isExtraAction } = event.payload;
             const player = state.players[playerId];
             const card = player.hand.find(c => c.uid === cardUid);
             const def = card ? getCardDef(card.defId) : undefined;
@@ -220,8 +222,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         ...player,
                         hand: newHand,
                         discard: newDiscard,
-                        // Special 卡不消耗行动额度（规则：打出 Special 不算作你的行动）
-                        actionsPlayed: isSpecial ? player.actionsPlayed : player.actionsPlayed + 1,
+                        // Special 卡和额外行动不消耗行动额度
+                        actionsPlayed: (isSpecial || isExtraAction) ? player.actionsPlayed : player.actionsPlayed + 1,
                     },
                 },
             };
@@ -410,6 +412,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         case SU_EVENTS.TURN_STARTED: {
             const { playerId, turnNumber } = event.payload;
             const player = state.players[playerId];
+            
+            // 检查是否是新的游戏回合（turnNumber 增加）
+            const isNewGameTurn = turnNumber > state.turnNumber;
+            
             // 重置天赋使用状态 + 清零临时力量修正（随从 + ongoing 行动卡）
             const newBases = state.bases.map(base => ({
                 ...base,
@@ -437,6 +443,62 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const newSleepMarked = isSleepMarked
                 ? (state.sleepMarkedPlayers?.filter(p => p !== playerId) ?? [])
                 : state.sleepMarkedPlayers;
+            
+            // 如果是新的游戏回合，清空所有玩家的 minionsPlayedPerBase
+            // 否则只清空当前玩家的其他回合状态
+            let newPlayers: Record<PlayerId, SmashUpPlayer>;
+            if (isNewGameTurn) {
+                // 新游戏回合：清空所有玩家的 minionsPlayedPerBase
+                newPlayers = {};
+                for (const pid of Object.keys(state.players)) {
+                    const p = state.players[pid];
+                    if (pid === playerId) {
+                        // 当前玩家：清空所有回合状态
+                        newPlayers[pid] = {
+                            ...p,
+                            minionsPlayed: 0,
+                            minionLimit: 1,
+                            actionsPlayed: 0,
+                            actionLimit: newActionLimit,
+                            minionsPlayedPerBase: undefined,
+                            usedDiscardPlayAbilities: undefined,
+                            baseLimitedMinionQuota: undefined,
+                            baseLimitedSameNameRequired: undefined,
+                            extraMinionPowerMax: undefined,
+                            sameNameMinionRemaining: undefined,
+                            sameNameMinionDefId: null,
+                            pendingMinionPlayEffects: undefined,
+                        };
+                    } else {
+                        // 其他玩家：只清空 minionsPlayedPerBase
+                        newPlayers[pid] = {
+                            ...p,
+                            minionsPlayedPerBase: undefined,
+                        };
+                    }
+                }
+            } else {
+                // 同一游戏回合内的玩家回合：只清空当前玩家的回合状态，保留 minionsPlayedPerBase
+                newPlayers = {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: newActionLimit,
+                        // minionsPlayedPerBase 保留，不清空
+                        usedDiscardPlayAbilities: undefined,
+                        baseLimitedMinionQuota: undefined,
+                        baseLimitedSameNameRequired: undefined,
+                        extraMinionPowerMax: undefined,
+                        sameNameMinionRemaining: undefined,
+                        sameNameMinionDefId: null,
+                        pendingMinionPlayEffects: undefined,
+                    },
+                };
+            }
+            
             return {
                 ...state,
                 turnNumber,
@@ -456,24 +518,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 // 清空计分阶段锁定的 eligible 基地列表
                 scoringEligibleBaseIndices: undefined,
                 sleepMarkedPlayers: newSleepMarked?.length ? newSleepMarked : undefined,
-                players: {
-                    ...state.players,
-                    [playerId]: {
-                        ...player,
-                        minionsPlayed: 0,
-                        minionLimit: 1,
-                        actionsPlayed: 0,
-                        actionLimit: newActionLimit,
-                        minionsPlayedPerBase: undefined,
-                        usedDiscardPlayAbilities: undefined,
-                        baseLimitedMinionQuota: undefined,
-                        baseLimitedSameNameRequired: undefined,
-                        extraMinionPowerMax: undefined,
-                        sameNameMinionRemaining: undefined,
-                        sameNameMinionDefId: null,
-                        pendingMinionPlayEffects: undefined,
-                    },
-                },
+                players: newPlayers,
             };
         }
 
@@ -523,11 +568,17 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const reshuffledDeck = deckUids
                 .map(uid => cardMap.get(uid))
                 .filter((card): card is CardInstance => card !== undefined);
+            
+            // 检查 deckUids 是否包含弃牌堆的卡：如果包含，说明是合并洗牌，清空弃牌堆；否则保持弃牌堆不变
+            const deckUidSet = new Set(deckUids);
+            const discardMerged = player.discard.some(c => deckUidSet.has(c.uid));
+            const newDiscard = discardMerged ? [] : player.discard;
+            
             return {
                 ...state,
                 players: {
                     ...state.players,
-                    [playerId]: { ...player, deck: reshuffledDeck, discard: [] },
+                    [playerId]: { ...player, deck: reshuffledDeck, discard: newDiscard },
                 },
             };
         }
@@ -568,24 +619,52 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
         case SU_EVENTS.MINION_RETURNED: {
             const { minionUid, minionDefId, fromBaseIndex, toPlayerId } = event.payload;
-            const newBases = state.bases.map((base, i) => {
-                if (i !== fromBaseIndex) return base;
-                return { ...base, minions: base.minions.filter(m => m.uid !== minionUid) };
+            const base = state.bases[fromBaseIndex];
+            const minion = base?.minions.find(m => m.uid === minionUid);
+            
+            // 从基地移除随从
+            const newBases = state.bases.map((b, i) => {
+                if (i !== fromBaseIndex) return b;
+                return { ...b, minions: b.minions.filter(m => m.uid !== minionUid) };
             });
-            const owner = state.players[toPlayerId];
+            
+            // 随从返回手牌
+            let newPlayers = { ...state.players };
+            const owner = newPlayers[toPlayerId];
             const returnedCard: CardInstance = {
                 uid: minionUid,
                 defId: minionDefId,
                 type: 'minion',
                 owner: toPlayerId,
             };
+            newPlayers = {
+                ...newPlayers,
+                [toPlayerId]: { ...owner, hand: [...owner.hand, returnedCard] },
+            };
+            
+            // 附着的行动卡回各自所有者弃牌堆（与 MINION_DESTROYED 逻辑一致）
+            if (minion) {
+                for (const attached of minion.attachedActions) {
+                    const attachedOwner = newPlayers[attached.ownerId];
+                    if (attachedOwner) {
+                        const attachedCard: CardInstance = {
+                            uid: attached.uid,
+                            defId: attached.defId,
+                            type: 'action',
+                            owner: attached.ownerId,
+                        };
+                        newPlayers = {
+                            ...newPlayers,
+                            [attached.ownerId]: { ...newPlayers[attached.ownerId], discard: [...newPlayers[attached.ownerId].discard, attachedCard] },
+                        };
+                    }
+                }
+            }
+            
             return {
                 ...state,
                 bases: newBases,
-                players: {
-                    ...state.players,
-                    [toPlayerId]: { ...owner, hand: [...owner.hand, returnedCard] },
-                },
+                players: newPlayers,
             };
         }
 
@@ -1233,10 +1312,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             );
             if (exists) return state;
 
-            const newEntry = {
+            const newEntry: PendingAfterScoringSpecial = {
                 sourceDefId: payload.sourceDefId,
                 playerId: payload.playerId,
                 baseIndex: payload.baseIndex,
+                ...(payload.minionSnapshots ? { minionSnapshots: payload.minionSnapshots } : {}),
             };
             const newState = {
                 ...state,
@@ -1267,6 +1347,45 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             return {
                 ...state,
                 scoringEligibleBaseIndices: baseIndices,
+            };
+        }
+
+        case SU_EVENT_TYPES.BEFORE_SCORING_TRIGGERED: {
+            const { baseIndex } = event.payload as { baseIndex: number };
+            const existing = state.beforeScoringTriggeredBases ?? [];
+            // 防御性检查：防止重复添加同一个 baseIndex
+            // 正常情况下不应该发生（scoreOneBase 中已有检查），但作为额外保护
+            if (existing.includes(baseIndex)) return state;
+            return {
+                ...state,
+                beforeScoringTriggeredBases: [...existing, baseIndex],
+            };
+        }
+
+        case SU_EVENT_TYPES.BEFORE_SCORING_CLEARED: {
+            // 计分阶段结束时清空标记，准备下一轮计分
+            return {
+                ...state,
+                beforeScoringTriggeredBases: undefined,
+            };
+        }
+
+        case SU_EVENT_TYPES.AFTER_SCORING_TRIGGERED: {
+            const { baseIndex } = event.payload as { baseIndex: number };
+            const existing = state.afterScoringTriggeredBases ?? [];
+            // 防御性检查：防止重复添加同一个 baseIndex
+            if (existing.includes(baseIndex)) return state;
+            return {
+                ...state,
+                afterScoringTriggeredBases: [...existing, baseIndex],
+            };
+        }
+
+        case SU_EVENT_TYPES.AFTER_SCORING_CLEARED: {
+            // 计分阶段结束时清空标记，准备下一轮计分
+            return {
+                ...state,
+                afterScoringTriggeredBases: undefined,
             };
         }
 

@@ -20,7 +20,7 @@ export { createRematchSystem, resetRematchState, getPlayerVote, isRematchReady, 
 export { createResponseWindowSystem, createResponseWindow, openResponseWindow, closeResponseWindow, hasActiveResponseWindow, getResponseWindowResponderId, RESPONSE_WINDOW_COMMANDS, RESPONSE_WINDOW_EVENTS } from './ResponseWindowSystem';
 export { createCheatSystem, CHEAT_COMMANDS, type CheatResourceModifier, type AddResourcePayload, type SetResourcePayload, type SetPhasePayload, type SetDicePayload } from './CheatSystem';
 export { createTutorialSystem, TUTORIAL_COMMANDS, TUTORIAL_EVENTS, TUTORIAL_ERRORS } from './TutorialSystem';
-export { CharacterSelectionSystem, CHARACTER_SELECTION_COMMANDS, type CharacterSelectionSystemConfig, type SelectCharacterCommand, type PlayerReadyCommand, type HostStartGameCommand, type CharacterSelectedEvent, type PlayerReadyEvent, type HostStartedEvent } from './CharacterSelectionSystem';
+export { CharacterSelectionSystem, CHARACTER_SELECTION_COMMANDS, type CharacterSelectionSystemConfig, type SelectCharacterCommand, type PlayerReadyCommand, type PlayerUnreadyCommand, type HostStartGameCommand, type CharacterSelectedEvent, type PlayerReadyEvent, type PlayerUnreadyEvent, type HostStartedEvent } from './CharacterSelectionSystem';
 
 // 默认系统集合
 import { createUndoSystem } from './UndoSystem';

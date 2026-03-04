@@ -9,6 +9,7 @@
 import type { CheatResourceModifier } from '../../engine/systems/CheatSystem';
 import type { PlayerId } from '../../engine/types';
 import type { SmashUpCore } from './domain/types';
+import { getBaseDef } from './data/cards';
 
 export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
     getResource: (core: SmashUpCore, playerId: PlayerId, resourceId: string): number | undefined => {
@@ -160,6 +161,32 @@ export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
                     discard: [...player.discard, card],
                 },
             },
+        };
+    },
+
+    /**
+     * 将所有有随从的基地分上限设为 0（触发立即结算）
+     * 通过 tempBreakpointModifiers 实现临时修改
+     */
+    forceScoreBasesWithMinions: (core: SmashUpCore): SmashUpCore => {
+        const newModifiers: Record<string, number> = { ...core.tempBreakpointModifiers };
+        
+        // 遍历所有基地，找出有随从的基地
+        core.bases.forEach((base, index) => {
+            if (base.minions.length > 0) {
+                // 获取基地原始分上限
+                const baseDef = getBaseDef(base.defId);
+                if (baseDef) {
+                    // 设置修正值，使得 breakpoint + modifier = 0
+                    // 即 modifier = -breakpoint
+                    newModifiers[String(index)] = -baseDef.breakpoint;
+                }
+            }
+        });
+
+        return {
+            ...core,
+            tempBreakpointModifiers: newModifiers,
         };
     },
 };

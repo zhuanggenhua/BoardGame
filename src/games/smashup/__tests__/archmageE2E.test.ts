@@ -55,7 +55,7 @@ describe('大法师 E2E: 回合开始额外行动', () => {
     it('P0 控制大法师，P0 回合开始时 actionLimit 应为 2', () => {
         // 构造：P0 控制大法师在基地上，当前是 P1 的回合
         // 当 P1 结束回合后，P0 的回合开始，大法师应触发给 P0 额外行动
-        const archmage = makeMinion('am-1', 'wizard_archmage', '0', 4);
+        const archmage = makeMinion('am-1', 'wizard_archmage', '0', 4, { powerModifier: 0 });
 
         const core = makeState({
             currentPlayerIndex: 1, // P1 的回合
@@ -103,7 +103,7 @@ describe('大法师 E2E: 回合开始额外行动', () => {
     it('P1 控制大法师，P0 回合开始时 actionLimit 应为 1（不触发）', () => {
         // 构造：P1 控制大法师，当前是 P1 的回合
         // 当 P1 结束回合后，P0 的回合开始，大法师不应触发（因为控制者是 P1）
-        const archmage = makeMinion('am-1', 'wizard_archmage', '1', 4);
+        const archmage = makeMinion('am-1', 'wizard_archmage', '1', 4, { powerModifier: 0 });
 
         const core = makeState({
             currentPlayerIndex: 1,
@@ -143,7 +143,7 @@ describe('大法师 E2E: 回合开始额外行动', () => {
     it('P0 控制大法师，P1 回合开始时 actionLimit 应为 1（不触发）', () => {
         // 构造：P0 控制大法师，当前是 P0 的回合
         // 当 P0 结束回合后，P1 的回合开始，大法师不应触发（因为不是控制者的回合）
-        const archmage = makeMinion('am-1', 'wizard_archmage', '0', 4);
+        const archmage = makeMinion('am-1', 'wizard_archmage', '0', 4, { powerModifier: 0 });
 
         const core = makeState({
             currentPlayerIndex: 0,

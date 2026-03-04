@@ -102,7 +102,7 @@ export function getImagePath(
     }
 
     const relativePath = assets.images[key];
-    
+
     if (preferCompressed) {
         const basePath = relativePath.replace(/\.[^.]+$/, '');
         const dir = basePath.substring(0, basePath.lastIndexOf('/'));
@@ -603,10 +603,10 @@ export function isImagePreloaded(src: string, locale?: string): boolean {
     };
 
     if (check(src)) return true;
-    
+
     const effectiveLocale = locale || 'zh-CN';
     const localizedPath = getLocalizedAssetPath(src, effectiveLocale);
-    
+
     // 如果 src 已经是 compressed/ 下的 URL，直接检查 webp 变体
     if (localizedPath.includes(`/${COMPRESSED_SUBDIR}/`)) {
         const base = stripExtension(localizedPath);
@@ -729,6 +729,18 @@ async function preloadOptimizedImage(src: string): Promise<void> {
     // 已成功加载过的跳过（naturalWidth > 0 表示真正加载成功）
     const cached = preloadedImages.get(webp);
     if (cached && cached.naturalWidth > 0) return;
+    
+    // 同步检查浏览器磁盘缓存：创建临时 Image 对象，如果浏览器缓存命中，
+    // complete 和 naturalWidth 会立即可用（无需等待网络请求）。
+    // 这避免了"资源已缓存但 preloadedImages Map 为空"时仍然等待 30s 超时的问题。
+    const testImg = new Image();
+    testImg.src = webp;
+    if (testImg.complete && testImg.naturalWidth > 0) {
+        // 浏览器缓存命中，直接标记为已加载，跳过异步加载流程
+        preloadedImages.set(webp, testImg);
+        return;
+    }
+    
     // 同一 URL 正在加载中 → 复用已有 Promise，不发新请求
     const inFlight = inFlightPreloads.get(webp);
     if (inFlight) return inFlight;
@@ -784,6 +796,7 @@ const isInternalAssetsUrl = (src: string) => {
 const isPassthroughSource = (src: unknown) => {
     if (!isString(src)) return false;
     if (src.startsWith('data:') || src.startsWith('blob:')) return true;
+    if (src.includes('?raw') || src.includes('&raw')) return true;
     // HTTP URL 但不是内部资源域名 → 穿透
     if (isHttpUrl(src) && !isInternalAssetsUrl(src)) return true;
     return false;
@@ -889,28 +902,50 @@ export function getLocalizedAssetPath(path: string, locale?: string): string {
     if (!locale || isPassthroughSource(path)) return assetsPath(path);
     const normalized = assetsPath(path);
     const relative = stripAssetsBasePrefix(normalized);
-    
+
     // 幂等性检查：如果已经包含 i18n/<locale>/ 前缀，直接返回
     const localizedPrefix = `${LOCALIZED_ASSETS_SUBDIR}/${locale}/`;
     if (relative.startsWith(localizedPrefix)) {
         return normalized;
     }
-    
+
     return assetsPath(`${localizedPrefix}${relative}`);
 }
 
 /**
  * 获取语言化图片 URL（包含回退）
+ * 
+ * 回退策略：
+ * - 中文 (zh-CN) → 英文 (en)
+ * - 英文 (en) → 中文 (zh-CN)
+ * - 其他语言 → 英文 (en) → 中文 (zh-CN)
+ * 
+ * 这样确保中文和英文素材必有一个可用，未来添加新语言素材时自动生效。
  */
 export function getLocalizedImageUrls(src: string, locale?: string): LocalizedImageUrls {
     if (!locale || isPassthroughSource(src)) {
         const urls = getOptimizedImageUrls(src);
         return { primary: urls, fallback: urls };
     }
+    
     const localizedPath = getLocalizedAssetPath(src, locale);
     const primary = getOptimizedImageUrls(localizedPath);
-    // 原始路径已删除，fallback 也指向国际化路径
-    return { primary, fallback: primary };
+    
+    // 回退逻辑：中文 ↔ 英文互为回退
+    let fallbackLocale: string;
+    if (locale === 'zh-CN') {
+        fallbackLocale = 'en';
+    } else if (locale === 'en') {
+        fallbackLocale = 'zh-CN';
+    } else {
+        // 其他语言先回退到英文
+        fallbackLocale = 'en';
+    }
+    
+    const fallbackPath = getLocalizedAssetPath(src, fallbackLocale);
+    const fallback = getOptimizedImageUrls(fallbackPath);
+    
+    return { primary, fallback };
 }
 
 /**

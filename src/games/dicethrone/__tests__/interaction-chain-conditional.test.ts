@@ -14,12 +14,16 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { fixedRandom, createQueuedRandom, createRunner, cmd, createHeroMatchup } from './test-utils';
 import { initializeCustomActions } from '../domain/customActions';
+import { registerDiceThroneConditions } from '../conditions';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { INITIAL_HEALTH } from '../domain/types';
 import { RESOURCE_IDS } from '../domain/resources';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
 
-beforeAll(() => { initializeCustomActions(); });
+beforeAll(() => {
+    registerDiceThroneConditions();
+    initializeCustomActions();
+});
 
 describe('晕眩（Daze）额外攻击链', () => {
     it('攻击方有 daze  攻击结算后触发对手额外攻击', () => {
@@ -36,7 +40,8 @@ describe('晕眩（Daze）额外攻击链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
                 cmd('ROLL_DICE', '1'), cmd('ROLL_DICE', '1'), cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
                 cmd('SELECT_ABILITY', '1', { abilityId: 'fist-technique-5' }),
@@ -64,7 +69,8 @@ describe('晕眩（Daze）额外攻击链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: { turnPhase: 'main2', activePlayerId: '0' },
         });
@@ -138,7 +144,8 @@ describe('致盲（Blinded）攻击判定链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: {
                 turnPhase: 'main2',
@@ -164,7 +171,8 @@ describe('不可防御攻击链', () => {
             expect: {
                 turnPhase: 'main2',
                 players: {
-                    '1': { hp: INITIAL_HEALTH - 5, statusEffects: { [STATUS_IDS.DAZE]: 1 } },
+                    '0': { statusEffects: { [STATUS_IDS.DAZE]: 1 } },  // 攻击方获得 DAZE
+                    '1': { hp: INITIAL_HEALTH - 5 },  // 防御方受到伤害
                 },
             },
         });
@@ -192,26 +200,23 @@ describe('不可防御攻击链', () => {
 });
 
 describe('终极技能链', () => {
-    it('reckless-strike 大顺子 15 伤害 + 4 自伤', () => {
-        // 大顺子: [2,3,4,5,6]，防御骰: [6,6,6,6] → monk meditation 无心面
-        const runner = createRunner(createQueuedRandom([2, 3, 4, 5, 6, 6, 6, 6, 6]));
+    it('rage 5个力量面 眩晕 + 15 伤害', () => {
+        // 5个力量面: [6,6,6,6,6]
+        const runner = createRunner(createQueuedRandom([6, 6, 6, 6, 6]));
         const result = runner.run({
-            name: 'reckless-strike',
+            name: 'rage',
             setup: createHeroMatchup('barbarian', 'monk'),
             commands: [
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '0'), cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: 'reckless-strike' }),
-                cmd('ADVANCE_PHASE', '0'),       // → defensiveRoll（可防御）
-                cmd('ROLL_DICE', '1'),
-                cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),       // → main2
+                cmd('SELECT_ABILITY', '0', { abilityId: 'rage' }),
+                cmd('ADVANCE_PHASE', '0'),
             ],
             expect: {
                 turnPhase: 'main2',
                 players: {
-                    '0': { hp: INITIAL_HEALTH - 4 },
-                    '1': { hp: INITIAL_HEALTH - 15 },
+                    '0': { hp: INITIAL_HEALTH },  // 无自伤
+                    '1': { hp: INITIAL_HEALTH - 15, statusEffects: { [STATUS_IDS.DAZE]: 1 } },  // 受伤 + 眩晕
                 },
             },
         });
@@ -260,7 +265,8 @@ describe('Token 响应链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
                 cmd('SKIP_TOKEN_RESPONSE', '1'),
             ],
             expect: {
@@ -292,7 +298,8 @@ describe('Token 响应链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
                 cmd('SKIP_TOKEN_RESPONSE', '0'),
             ],
             expect: {
@@ -319,7 +326,8 @@ describe('压制奖励骰链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'suppress' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
                 cmd('SKIP_BONUS_DICE_REROLL', '0'),
             ],
             expect: {
@@ -342,7 +350,8 @@ describe('压制奖励骰链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'suppress' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
                 cmd('SKIP_BONUS_DICE_REROLL', '0'),
             ],
             expect: {
@@ -376,7 +385,8 @@ describe('card-dizzy afterAttackResolved 响应窗口链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
                 cmd('PLAY_CARD', '0', { cardId: 'card-dizzy' }),
                 cmd('RESPONSE_PASS', '0'),
             ],
@@ -407,7 +417,8 @@ describe('card-dizzy afterAttackResolved 响应窗口链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
                 cmd('RESPONSE_PASS', '0'),
             ],
             expect: {
@@ -436,7 +447,8 @@ describe('card-dizzy afterAttackResolved 响应窗口链', () => {
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-3' }),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
             ],
             expect: {
                 turnPhase: 'main2',

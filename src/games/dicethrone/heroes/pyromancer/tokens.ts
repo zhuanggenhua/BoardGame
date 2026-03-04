@@ -68,8 +68,7 @@ export const PYROMANCER_TOKENS: TokenDef[] = [
     },
 
     /**
-     * 燃烧 - 持续效果，不可叠加，每回合维持阶段受到 2 点不可防御伤害
-     * 需要通过净化等手段移除，不会自动消失
+     * 燃烧 - 回合开始时受到伤害
      */
     {
         id: STATUS_IDS.BURN,
@@ -77,12 +76,13 @@ export const PYROMANCER_TOKENS: TokenDef[] = [
         colorTheme: 'from-orange-600 to-red-500',
         description: statusText(STATUS_IDS.BURN, 'description') as unknown as string[],
         sfxKey: 'magic.general.simple_magic_sound_fx_pack_vol.fire.flame_chain_a',
-        stackLimit: 1,
+        stackLimit: 3,
         category: 'debuff',
         passiveTrigger: {
             timing: 'onTurnStart',
             removable: true,
-            actions: [{ type: 'damage', target: 'self', value: 2 }],
+            // value 仅为占位，实际伤害按 stacks 数量计算（见 flowHooks.ts）
+            actions: [{ type: 'damage', target: 'self', value: 1 }],
         },
         frameId: 'pyro-status-4',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.PYROMANCER,

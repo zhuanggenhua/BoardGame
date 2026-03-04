@@ -55,14 +55,6 @@ export const AutoResponseToggle = ({
             <span className={`text-[0.7vw] font-bold ${enabled ? 'text-emerald-300' : 'text-slate-400'}`}>
                 {enabled ? t('hud.autoResponse') : t('hud.manualResponse')}
             </span>
-            {/* 状态指示灯 */}
-            <div className={`
-                absolute -top-[0.2vw] -right-[0.2vw] w-[0.6vw] h-[0.6vw] rounded-full
-                ${enabled
-                    ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse'
-                    : 'bg-slate-600'
-                }
-            `} />
         </button>
     );
 };

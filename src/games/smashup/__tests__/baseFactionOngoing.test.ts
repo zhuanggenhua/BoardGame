@@ -120,6 +120,19 @@ const dummyRandom = {
     shuffle: <T>(arr: T[]): T[] => [...arr],
 } as any;
 
+/** 创建完整的 MatchState（用于能力执行器） */
+function makeMatchState(core: SmashUpCore): import('../../../engine/types').MatchState<SmashUpCore> {
+    return {
+        core,
+        sys: {
+            phase: 'playCards',
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: null },
+            gameover: null,
+        } as any,
+    };
+}
+
 // ============================================================================
 // 忍者 ongoing/special 能力
 // ============================================================================
@@ -212,6 +225,37 @@ describe('忍者 ongoing/special 能力', () => {
 
             expect(isMinionProtected(state, minion, 0, '1', 'affect')).toBe(true);
         });
+
+        test('渗透只能消灭基地上的战术，不能消灭随从上的战术', () => {
+            // 设置初始状态：基地上有一个 ongoing 战术，随从上有一个 attached 战术
+            const minion = makeMinion({
+                uid: 'm1',
+                defId: 'test_minion',
+                controller: '1',
+                owner: '1',
+                attachedActions: [{ uid: 'poison', defId: 'ninja_poison', ownerId: '1' }],
+            });
+            const base = makeBase({
+                minions: [minion],
+                ongoingActions: [{ uid: 'ongoing1', defId: 'test_ongoing', ownerId: '1' }],
+            });
+            const state = makeState([base]);
+
+            // 直接测试 ninjaInfiltrateOnPlay 的逻辑：
+            // 它应该只收集 base.ongoingActions，不包括 minion.attachedActions
+            const targets: { uid: string; defId: string }[] = [];
+            
+            // 收集基地上的 ongoing 战术（排除自身）
+            for (const o of base.ongoingActions) {
+                if (o.uid === 'infiltrate') continue;
+                targets.push({ uid: o.uid, defId: o.defId });
+            }
+
+            // 验证：只有基地上的 ongoing 战术，没有随从上的 attached 战术
+            expect(targets).toHaveLength(1);
+            expect(targets[0].uid).toBe('ongoing1');
+            expect(targets[0].defId).toBe('test_ongoing');
+        });
     });
 
     describe('ninja_shinobi: 影舞者 Me First! 窗口打出', () => {
@@ -273,10 +317,11 @@ describe('忍者 ongoing/special 能力', () => {
                 minions: [makeMinion({ defId: 'ninja_acolyte', uid: 'ac-1', controller: '0' })],
             });
             const state = makeState([base]);
-            state.specialLimitUsed = { ninja_special: [0] };
+            state.specialLimitUsed = { ninja_acolyte: [0] };
+            const matchState = makeMatchState(state);
             const executor = resolveAbility('ninja_acolyte', 'special')!;
             const result = executor({
-                state, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
+                state, matchState, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
             const acolyteEvents = result.events.filter(e =>
@@ -291,9 +336,10 @@ describe('忍者 ongoing/special 能力', () => {
             });
             const state = makeState([base]);
             state.players['0'].minionsPlayed = 1;
+            const matchState = makeMatchState(state);
             const executor = resolveAbility('ninja_acolyte', 'special')!;
             const result = executor({
-                state, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
+                state, matchState, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
             expect(result.events).toHaveLength(0);
@@ -309,10 +355,11 @@ describe('忍者 ongoing/special 能力', () => {
         test('同基地已使用忍者 special 时被阻止', () => {
             const base = makeBase({ minions: [] });
             const state = makeState([base]);
-            state.specialLimitUsed = { ninja_special: [0] };
+            state.specialLimitUsed = { ninja_hidden_ninja: [0] };
+            const matchState = makeMatchState(state);
             const executor = resolveAbility('ninja_hidden_ninja', 'special')!;
             const result = executor({
-                state, playerId: '0', cardUid: 'hn-1', defId: 'ninja_hidden_ninja',
+                state, matchState, playerId: '0', cardUid: 'hn-1', defId: 'ninja_hidden_ninja',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
             expect(result.events).toHaveLength(0);
@@ -320,16 +367,17 @@ describe('忍者 ongoing/special 能力', () => {
     });
 
     describe('specialLimitGroup: 跨卡牌共享限制', () => {
-        test('使用 shinobi 后同基地 acolyte 被阻止', () => {
+        test('使用 ninja_acolyte 后同基地再次使用被阻止', () => {
             const base = makeBase({
                 minions: [makeMinion({ defId: 'ninja_acolyte', uid: 'ac-1', controller: '0' })],
             });
             const state = makeState([base]);
-            // 模拟 shinobi 已使用（同组 ninja_special）
-            state.specialLimitUsed = { ninja_special: [0] };
+            // 模拟 ninja_acolyte 已使用
+            state.specialLimitUsed = { ninja_acolyte: [0] };
+            const matchState = makeMatchState(state);
             const executor = resolveAbility('ninja_acolyte', 'special')!;
             const result = executor({
-                state, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
+                state, matchState, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
             const acolyteEvents = result.events.filter(e =>
@@ -343,15 +391,15 @@ describe('忍者 ongoing/special 能力', () => {
             const state = makeState([base]);
             const evt = {
                 type: SU_EVENTS.SPECIAL_LIMIT_USED,
-                payload: { playerId: '0', baseIndex: 0, limitGroup: 'ninja_special', abilityDefId: 'ninja_shinobi' },
+                payload: { playerId: '0', baseIndex: 0, limitGroup: 'ninja_acolyte', abilityDefId: 'ninja_acolyte' },
                 timestamp: 1000,
             };
             const next = reduce(state, evt as any);
-            expect(next.specialLimitUsed).toEqual({ ninja_special: [0] });
+            expect(next.specialLimitUsed).toEqual({ ninja_acolyte: [0] });
             // 再次使用不同基地
             const evt2 = { ...evt, payload: { ...evt.payload, baseIndex: 1 } };
             const next2 = reduce(next, evt2 as any);
-            expect(next2.specialLimitUsed).toEqual({ ninja_special: [0, 1] });
+            expect(next2.specialLimitUsed).toEqual({ ninja_acolyte: [0, 1] });
         });
 
         test('TURN_STARTED 清除 specialLimitUsed', () => {
@@ -681,6 +729,18 @@ describe('诡术师 ongoing 能力', () => {
             const state = makeState([base]);
 
             expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
+        });
+
+        test('不保护敌方随从', () => {
+            const enemyMinion = makeMinion({ defId: 'robot_a', uid: 'r-1', controller: '1' });
+            const base = makeBase({
+                minions: [enemyMinion],
+                ongoingActions: [{ uid: 'ho-1', defId: 'trickster_hideout', ownerId: '0' }],
+            });
+            const state = makeState([base]);
+
+            // 玩家 0 的 Hideout 不应该保护玩家 1 的随从
+            expect(isMinionProtected(state, enemyMinion, 0, '0', 'action')).toBe(false);
         });
     });
 

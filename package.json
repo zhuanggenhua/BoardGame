@@ -4,11 +4,11 @@
   "version": "0.5.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && docker compose up -d mongodb",
+    "predev": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && docker compose up -d mongodb",
     "dev": "concurrently \"npm:dev:game\" \"npm:dev:api\" \"npm:dev:frontend:wait\"",
-    "predev:un": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && docker compose up -d mongodb",
+    "predev:un": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && docker compose up -d mongodb",
     "dev:un": "concurrently \"npx tsx server.ts\" \"npm:dev:api\" \"npm:dev:frontend:wait\"",
-    "predev:lite": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js",
+    "predev:lite": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs",
     "dev:lite": "cross-env USE_PERSISTENT_STORAGE=false concurrently \"npx tsx server.ts\" \"npm:dev:api\" \"npm:dev:frontend:wait\"",
     "db:start": "docker compose up -d mongodb",
     "db:stop": "docker compose stop mongodb",
@@ -31,6 +31,7 @@
     "compress:audio": "node scripts/audio/compress_audio.js",
     "audio:catalog": "node scripts/audio/generate_audio_catalog.js",
     "audio:slim": "node scripts/audio/generate-slim-registry.mjs",
+    "audio:verify": "node scripts/audio/verify-slim-registry.mjs",
     "atlas:scan": "node scripts/assets/atlas_grid_scan.js",
     "i18n:check": "npx tsx scripts/verify/i18n-check.ts",
     "test": "vitest run",
@@ -43,12 +44,14 @@
     "test:server": "vitest run src/server src/api",
     "test:ugc": "vitest run src/ugc",
     "test:games": "vitest run src/games",
+    "test:games:core": "vitest run src/games --config vitest.config.core.ts",
+    "test:games:audit": "vitest run src/games --config vitest.config.audit.ts",
     "test:changed": "npx vitest run --changed origin/main -- src/games",
     "test:api": "vitest run apps/api",
     "test:api:docker": "cross-env MONGO_URI=mongodb://localhost:27017/boardgame npm run test:api",
-    "test:e2e": "node scripts/infra/check-e2e-safety.js && npx playwright test",
-    "test:e2e:isolated": "cross-env PW_USE_DEV_SERVERS=false node scripts/infra/check-e2e-safety.js && npx playwright test",
-    "test:e2e:ci": "cross-env PW_START_SERVERS=true node scripts/infra/check-e2e-safety.js && npx playwright test",
+    "test:e2e": "node scripts/infra/check-file-encoding.mjs && node scripts/infra/check-e2e-safety.js && npx playwright test",
+    "test:e2e:isolated": "node scripts/infra/check-file-encoding.mjs && cross-env PW_USE_DEV_SERVERS=false node scripts/infra/check-e2e-safety.js && npx playwright test",
+    "test:e2e:ci": "node scripts/infra/check-file-encoding.mjs && cross-env PW_START_SERVERS=true node scripts/infra/check-e2e-safety.js && npx playwright test",
     "test:e2e:critical": "node scripts/infra/check-e2e-safety.js && npx playwright test e2e/smashup.e2e.ts e2e/tictactoe-rematch.e2e.ts",
     "test:e2e:cleanup": "node scripts/infra/cleanup_test_connections.js",
     "test:e2e:parallel": "npx playwright test --config=playwright.config.parallel.ts",
@@ -67,7 +70,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --concurrent 1",
-    "pre-push": "npm run build && npm run i18n:check && npm run test:games"
+    "pre-push": "npm run build && npm run i18n:check && npm run test:games:core"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

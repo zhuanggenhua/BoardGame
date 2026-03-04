@@ -33,7 +33,7 @@ export const LeaderboardTab = ({ leaderboardData, error }: LeaderboardTabProps) 
     }
 
     return (
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-h-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
             <div className="space-y-6">
                 <section>
                     <h4 className="text-xs font-bold text-[#8c7b64] uppercase tracking-widest mb-3">{t('leaderboard.title')}</h4>

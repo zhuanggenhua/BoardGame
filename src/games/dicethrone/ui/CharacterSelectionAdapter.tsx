@@ -17,7 +17,6 @@ export interface DiceThroneCharacterSelectionProps {
     playerNames: Record<PlayerId, string>;
     onSelect: (characterId: SelectableCharacterId) => void;
     onReady: () => void;
-    onUnready: () => void;
     onStart: () => void;
     locale: string;
 }
@@ -33,7 +32,6 @@ export const DiceThroneCharacterSelection: React.FC<DiceThroneCharacterSelection
             playerNames={props.playerNames}
             onSelect={props.onSelect}
             onReady={props.onReady}
-            onUnready={props.onUnready}
             onStart={props.onStart}
             locale={props.locale}
         />

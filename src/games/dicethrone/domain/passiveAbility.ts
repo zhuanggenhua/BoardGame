@@ -112,9 +112,9 @@ export function isPassiveActionUsable(
         if (rollerId !== playerId) return false;
         // 必须已投掷过至少一次才能重掷（防止防御阶段未投掷就重掷）
         if (state.rollCount === 0) return false;
-        // 还需要有活跃骰子（rollDiceCount 范围内）
-        const hasActiveDie = state.dice.some((_d, i) => i < state.rollDiceCount);
-        if (!hasActiveDie) return false;
+        // 还需要有活跃骰子（rollDiceCount 范围内且未锁定的骰子）
+        const hasUnlockedDie = state.dice.some((d, i) => i < state.rollDiceCount && !d.isKept);
+        if (!hasUnlockedDie) return false;
     }
 
     // 时机检查

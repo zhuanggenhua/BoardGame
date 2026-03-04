@@ -391,8 +391,8 @@ describe('僵尸派系能力', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'b1', minions: [makeMinion('m0', 'test', '0', 3)], ongoingActions: [] },
-                { defId: 'b2', minions: [makeMinion('m1', 'test', '1', 2)], ongoingActions: [] },
+                { defId: 'b1', minions: [makeMinion('m0', 'test', '0', 3, { powerModifier: 0 })], ongoingActions: [] },
+                { defId: 'b2', minions: [makeMinion('m1', 'test', '1', 2, { powerModifier: 0 })], ongoingActions: [] },
             ],
         });
 
@@ -421,7 +421,7 @@ describe('僵尸派系能力', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'b1', minions: [makeMinion('m0', 'test', '0', 3)], ongoingActions: [] },
+                { defId: 'b1', minions: [makeMinion('m0', 'test', '0', 3, { powerModifier: 0 })], ongoingActions: [] },
             ],
         });
 
@@ -487,12 +487,12 @@ describe('僵尸派系能力', () => {
         expect(discardUids).toContain('d1');
         expect(discardUids).toContain('d3');
 
-        // 验证：a1, x1（原弃牌堆的卡）应在牌库中（被 DECK_RESHUFFLED 合并进牌库）
-        const deckUids = finalState.players['0'].deck.map(c => c.uid);
-        expect(deckUids).toContain('a1');
-        expect(deckUids).toContain('x1');
+        // 验证：a1, x1（原弃牌堆的卡）应保持在弃牌堆中（Wiki 规则：只洗牌库，不合并弃牌堆）
+        expect(discardUids).toContain('a1');
+        expect(discardUids).toContain('x1');
 
         // 验证：d2, d4 应在牌库中（非同名卡留在牌库）
+        const deckUids = finalState.players['0'].deck.map(c => c.uid);
         expect(deckUids).toContain('d2');
         expect(deckUids).toContain('d4');
 
@@ -614,7 +614,7 @@ describe('巫师派系能力（新增）', () => {
                 '1': makePlayer('1'),
             },
             bases: [{
-                defId: 'b1', minions: [makeMinion('m1', 'test', '1', 3)], ongoingActions: [],
+                defId: 'b1', minions: [makeMinion('m1', 'test', '1', 3, { powerModifier: 0 })], ongoingActions: [],
             }],
         });
 

@@ -161,7 +161,7 @@ export function createSeededRandom(seed: string): RandomFn {
         const b0 = bLo & 0xFFFF, b1 = bLo >>> 16;
         const b2 = bHi & 0xFFFF, b3 = bHi >>> 16;
 
-        let c0 = a0 * b0;
+        const c0 = a0 * b0;
         let c1 = (c0 >>> 16) + a1 * b0;
         let c2 = (c1 >>> 16) + a2 * b0;
         let c3 = (c2 >>> 16) + a3 * b0;
@@ -343,7 +343,9 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
 
         // 领域层系统事件后处理（如 trigger 回调），在 reduce 前追加派生事件
         if (roundEvents.length > 0 && domain.postProcessSystemEvents) {
-            const domainEvents = roundEvents.filter((e) => !e.type.startsWith('SYS_'));
+            // 过滤掉 undefined 事件（防御性编程）
+            const validEvents = roundEvents.filter((e) => e && e.type);
+            const domainEvents = validEvents.filter((e) => !e.type.startsWith('SYS_'));
             if (domainEvents.length > 0) {
                 const processResult = domain.postProcessSystemEvents(
                     currentState.core,
@@ -358,7 +360,7 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
 
                 // PPSE 可能过滤事件（如压制 MINION_DESTROYED）并追加派生事件（如 trigger 产生的 POWER_COUNTER_ADDED）
                 // 必须用 PPSE 返回的完整事件列表替换 roundEvents 中的领域事件
-                const sysOnlyEvents = roundEvents.filter((e) => e.type.startsWith('SYS_'));
+                const sysOnlyEvents = validEvents.filter((e) => e.type.startsWith('SYS_'));
                 roundEvents.length = 0;
                 roundEvents.push(...sysOnlyEvents, ...processed);
                 if (newMatchState) {

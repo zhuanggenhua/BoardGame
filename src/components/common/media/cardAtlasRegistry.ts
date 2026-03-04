@@ -53,7 +53,10 @@ export function getCardAtlasSource(id: string, locale?: string): CardAtlasSource
             img.naturalWidth, img.naturalHeight,
             lazy.grid.rows, lazy.grid.cols,
         );
-        const source: CardAtlasSource = { image: lazy.image, config };
+        const source: CardAtlasSource = { 
+            image: lazy.image, 
+            config,
+        };
         // 提升为完整注册，后续访问零开销
         cardAtlasRegistry.set(id, source);
         lazyRegistry.delete(id);

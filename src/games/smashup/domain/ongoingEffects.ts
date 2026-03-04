@@ -232,6 +232,105 @@ export function clearOngoingEffectRegistry(): void {
     baseAbilitySuppressionRegistry.length = 0;
 }
 
+/**
+ * 为所有 POD 版本的卡牌批量注册 trigger/restriction/protection 别名
+ * 
+ * POD 版 defId 格式为"原版defId + _pod"（如 alien_scout_pod）。
+ * 此函数遍历已注册表，将符合原始形式的 defId 的所有 trigger/restriction/protection 复制给对应的 _pod 版本。
+ * 这样无需为每个 POD 卡单独编写 trigger 代码，就能让其自动继承基础版的全套游戏逻辑。
+ * 
+ * 必须在所有派系注册完毕后调用此函数。
+ */
+export function registerPodOngoingAliases(): void {
+    let mappedCount = 0;
+    
+    // 1. 映射 Trigger
+    const triggersToAdd: TriggerEntry[] = [];
+    for (const entry of triggerRegistry) {
+        const { sourceDefId, timing, callback } = entry;
+        
+        // 跳过已经是 _pod 的
+        if (sourceDefId.endsWith('_pod')) continue;
+        
+        const podDefId = `${sourceDefId}_pod`;
+        
+        // 如果 POD 版本已经注册，跳过（不覆盖显式注册）
+        const alreadyRegistered = triggerRegistry.some(
+            e => e.sourceDefId === podDefId && e.timing === timing
+        );
+        if (alreadyRegistered) continue;
+        
+        // 添加到待注册列表
+        triggersToAdd.push({ sourceDefId: podDefId, timing, callback });
+        mappedCount++;
+    }
+    
+    // 批量添加（避免在遍历时修改数组）
+    triggerRegistry.push(...triggersToAdd);
+    
+    // 2. 映射 Restriction
+    const restrictionsToAdd: RestrictionEntry[] = [];
+    for (const entry of restrictionRegistry) {
+        const { sourceDefId, restrictionType, checker } = entry;
+        
+        if (sourceDefId.endsWith('_pod')) continue;
+        
+        const podDefId = `${sourceDefId}_pod`;
+        
+        const alreadyRegistered = restrictionRegistry.some(
+            e => e.sourceDefId === podDefId && e.restrictionType === restrictionType
+        );
+        if (alreadyRegistered) continue;
+        
+        restrictionsToAdd.push({ sourceDefId: podDefId, restrictionType, checker });
+        mappedCount++;
+    }
+    
+    restrictionRegistry.push(...restrictionsToAdd);
+    
+    // 3. 映射 Protection
+    const protectionsToAdd: ProtectionEntry[] = [];
+    for (const entry of protectionRegistry) {
+        const { sourceDefId, protectionType, checker } = entry;
+        
+        if (sourceDefId.endsWith('_pod')) continue;
+        
+        const podDefId = `${sourceDefId}_pod`;
+        
+        const alreadyRegistered = protectionRegistry.some(
+            e => e.sourceDefId === podDefId && e.protectionType === protectionType
+        );
+        if (alreadyRegistered) continue;
+        
+        protectionsToAdd.push({ sourceDefId: podDefId, protectionType, checker });
+        mappedCount++;
+    }
+    
+    protectionRegistry.push(...protectionsToAdd);
+    
+    // 4. 映射 BaseAbilitySuppression
+    const suppressionsToAdd: { sourceDefId: string; checker: BaseAbilitySuppressionChecker }[] = [];
+    for (const entry of baseAbilitySuppressionRegistry) {
+        const { sourceDefId, checker } = entry;
+        
+        if (sourceDefId.endsWith('_pod')) continue;
+        
+        const podDefId = `${sourceDefId}_pod`;
+        
+        const alreadyRegistered = baseAbilitySuppressionRegistry.some(
+            e => e.sourceDefId === podDefId
+        );
+        if (alreadyRegistered) continue;
+        
+        suppressionsToAdd.push({ sourceDefId: podDefId, checker });
+        mappedCount++;
+    }
+    
+    baseAbilitySuppressionRegistry.push(...suppressionsToAdd);
+    
+    // 映射完成（已自动映射 POD 版本的 trigger/restriction/protection）
+}
+
 /** 获取注册表大小（调试用） */
 export function getOngoingEffectRegistrySize(): {
     protection: number;
@@ -500,7 +599,9 @@ export function fireTriggers(
     timing: TriggerTiming,
     ctx: Omit<TriggerContext, 'timing'>
 ): TriggerResult {
-    if (triggerRegistry.length === 0) return { events: [] };
+    if (triggerRegistry.length === 0) {
+        return { events: [] };
+    }
 
     const events: SmashUpEvent[] = [];
     let matchState = ctx.matchState;
@@ -508,7 +609,10 @@ export function fireTriggers(
 
     for (const entry of triggerRegistry) {
         if (entry.timing !== timing) continue;
-        if (!isSourceActive(state, entry.sourceDefId)) continue;
+        
+        const isActive = isSourceActive(state, entry.sourceDefId);
+        if (!isActive) continue;
+        
         const result = entry.callback({ ...fullCtx, matchState });
         const triggerEvents = Array.isArray(result) ? result : result.events;
         if (triggerEvents.length > 0) {
@@ -518,6 +622,7 @@ export function fireTriggers(
             matchState = result.matchState;
         }
     }
+    
     return { events, matchState };
 }
 
@@ -540,23 +645,27 @@ function isSourceActive(state: SmashUpCore, sourceDefId: string): boolean {
     }
     for (const base of state.bases) {
         // 检查基地本身
-        if (base.defId === sourceDefId) return true;
+        if (base.defId === sourceDefId) {
+            return true;
+        }
         // 检查基地上的 ongoing 行动卡
-        if (base.ongoingActions.some(o => o.defId === sourceDefId)) return true;
+        if (base.ongoingActions.some(o => o.defId === sourceDefId)) {
+            return true;
+        }
         // 检查基地上的随从
-        if (base.minions.some(m => m.defId === sourceDefId)) return true;
+        if (base.minions.some(m => m.defId === sourceDefId)) {
+            return true;
+        }
         // 检查随从上附着的行动卡
         for (const m of base.minions) {
-            if (m.attachedActions.some(a => a.defId === sourceDefId)) return true;
+            if (m.attachedActions?.some(a => a.defId === sourceDefId)) {
+                return true;
+            }
         }
     }
-    // 检查玩家手牌（支持从手牌触发的 beforeScoring 能力，如忍者影舞者）
-    for (const player of Object.values(state.players)) {
-        if (player.hand.some(c => c.defId === sourceDefId)) return true;
-    }
+    
     return false;
 }
-
 
 /**
  * 检查拦截器来源是否在指定基地上活跃
@@ -572,4 +681,59 @@ export function isSourceActiveOnBase(state: SmashUpCore, sourceDefId: string, ba
     // 检查基地上的随从
     if (base.minions.some(m => m.defId === sourceDefId)) return true;
     return false;
+}
+
+// ============================================================================
+// 基地限制信息查询（UI 层使用）
+// ============================================================================
+
+/** 基地限制信息（用于 UI 显示） */
+export interface BaseRestrictionInfo {
+    /** 限制类型 */
+    type: 'blocked_faction' | 'blocked_action';
+    /** 显示文本（如派系名称） */
+    displayText: string;
+    /** 来源卡牌 defId */
+    sourceDefId: string;
+}
+
+/**
+ * 获取基地上的所有限制信息（用于 UI 显示）
+ *
+ * @param state 当前游戏状态
+ * @param baseIndex 基地索引
+ * @returns 限制信息数组
+ */
+export function getBaseRestrictions(state: SmashUpCore, baseIndex: number): BaseRestrictionInfo[] {
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+
+    const restrictions: BaseRestrictionInfo[] = [];
+
+    // 检查 Block the Path（封路）
+    const blockAction = base.ongoingActions.find(o => o.defId === 'trickster_block_the_path');
+    if (blockAction) {
+        const blockedFaction = blockAction.metadata?.blockedFaction as string | undefined;
+        if (blockedFaction) {
+            // 导入 FACTION_DISPLAY_NAMES 会造成循环依赖，所以这里直接使用 factionId
+            // UI 层会通过 i18n 或 FACTION_DISPLAY_NAMES 转换显示名称
+            restrictions.push({
+                type: 'blocked_faction',
+                displayText: blockedFaction,
+                sourceDefId: 'trickster_block_the_path',
+            });
+        }
+    }
+
+    // 未来可以在这里添加其他限制类型（如 Ornate Dome 禁止打行动卡）
+    // const domeAction = base.ongoingActions.find(o => o.defId === 'steampunk_ornate_dome');
+    // if (domeAction) {
+    //     restrictions.push({
+    //         type: 'blocked_action',
+    //         displayText: 'action',
+    //         sourceDefId: 'steampunk_ornate_dome',
+    //     });
+    // }
+
+    return restrictions;
 }

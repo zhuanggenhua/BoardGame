@@ -567,7 +567,6 @@ describe('Token 响应窗口契约完整性', () => {
         'modifyDamageReceived',
         'rollToNegate',
         'removeDebuff',
-        'rollForDamageBonus',
     ]);
 
     // UI 层在响应窗口中展示的 effect type（damage modifier + evasion）

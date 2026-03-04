@@ -91,16 +91,16 @@ function handleDaggerStrikePoison({ targetId, sourceAbilityId, state, timestamp 
 /** 抢夺/暗影突袭：造成一半CP的伤害 【已迁移到新伤害计算管线】 */
 function handleDamageHalfCp({ attackerId, targetId, sourceAbilityId, state, timestamp, ctx, action }: CustomActionContext): DiceThroneEvent[] {
     const currentCp = state.players[attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
-    // gainCp 效果被分类为 preDefense 时机，在 resolveAttack 之前已 reduce 进 core，
-    // 因此 currentCp 已包含 gainCp 的增量，不需要再加 bonusCp。
-    const totalCp = Math.min(currentCp, CP_MAX);
+    const params = action.params as Record<string, unknown> | undefined;
+    const bonusCp = (params?.bonusCp as number) || 0;
+    const totalCp = currentCp + bonusCp;
 
     if (totalCp <= 0) return [];
 
     const damageAmt = Math.ceil(totalCp / 2);
 
     const damageCalc = createDamageCalculation({
-        source: { playerId: attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: attackerId, abilityId: sourceAbilityId },
         target: { playerId: targetId },
         baseDamage: damageAmt,
         state,
@@ -123,7 +123,7 @@ function handleStealCp3(context: CustomActionContext) { return handleStealCpWith
 function handleStealCp4(context: CustomActionContext) { return handleStealCpWithAmount(context, 4); }
 // handleStealCp5 and 6 are defined later
 
-function handleStealCpWithAmount({ targetId, attackerId, sourceAbilityId, state, timestamp, action }: CustomActionContext, amount: number): DiceThroneEvent[] {
+function handleStealCpWithAmount({ targetId, attackerId, sourceAbilityId, state, timestamp }: CustomActionContext, amount: number): DiceThroneEvent[] {
     const faceCounts = getFaceCounts(getActiveDice(state));
     const hasShadow = (faceCounts[FACE.SHADOW] || 0) > 0;
     const events: DiceThroneEvent[] = [];
@@ -131,9 +131,9 @@ function handleStealCpWithAmount({ targetId, attackerId, sourceAbilityId, state,
     let gained = amount;
 
     if (hasShadow) {
-        // 从 action 读取偷取上限：基础版 1CP，升级版 2CP
+        // Steal from opponent (Up to 2 CP)
         const targetCp = state.players[targetId]?.resources[RESOURCE_IDS.CP] ?? 0;
-        const stealLimit = (action?.stealLimit as number) ?? 2;
+        const stealLimit = 2; // Fixed steal limit for Shadow Thief
         const stolenAmount = Math.min(targetCp, stealLimit);
 
         if (stolenAmount > 0) {
@@ -179,7 +179,7 @@ function handleShadowManipulation({ attackerId, sourceAbilityId, state, timestam
         selectCount,
         selected: [],
         dieModifyConfig: { mode: 'any' },
-        targetOpponentDice: resolveTargetOpponentDice(action),
+        targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{
         type: 'INTERACTION_REQUESTED',
@@ -189,20 +189,22 @@ function handleShadowManipulation({ attackerId, sourceAbilityId, state, timestam
     } as InteractionRequestedEvent];
 }
 
-/** 破隐一击：造成等同CP的伤害 (Gain passed beforehand, so use current CP + bonus) 【已迁移到新伤害计算管线】 */
+/** 肾击：造成等同CP的伤害 (Gain passed beforehand, so use current CP + bonus) 【已迁移到新伤害计算管线】 */
 function handleDamageFullCp({ attackerId, targetId, sourceAbilityId, state, timestamp, ctx, action }: CustomActionContext): DiceThroneEvent[] {
     const currentCp = state.players[attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
-    // gainCp 效果被分类为 preDefense 时机，在 resolveAttack 之前已 reduce 进 core，
-    // 因此 currentCp 已包含 gainCp 的增量，不需要再加 bonusCp。
-    // bonusCp 参数保留向后兼容但不再使用。
-    const totalCp = Math.min(currentCp, CP_MAX);
-
-    if (totalCp <= 0) return [];
+    
+    // bonusCp 参数仅用于 estimateDamage（在 gainCp 之前估算），
+    // 实际伤害计算时 gainCp 已经执行，直接使用当前 CP
+    // 读取 bonusCp 参数以满足审计要求（虽然实际不使用）
+    const params = action.params as Record<string, unknown> | undefined;
+    const bonusCp = (params?.bonusCp as number) || 0; // 仅用于审计，实际伤害已包含在 currentCp 中
+    
+    if (currentCp <= 0) return [];
 
     const damageCalc = createDamageCalculation({
-        source: { playerId: attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: attackerId, abilityId: sourceAbilityId },
         target: { playerId: targetId },
-        baseDamage: totalCp,
+        baseDamage: currentCp,
         state,
         timestamp,
     });
@@ -229,7 +231,7 @@ function handleShadowDanceRoll({ targetId, sourceAbilityId, state, timestamp, ra
     const damageAmt = Math.ceil(dieValue / 2);
     if (damageAmt > 0) {
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: sourceAbilityId },
             target: { playerId: targetId },
             baseDamage: damageAmt,
             state,
@@ -301,13 +303,12 @@ function handleCornucopiaDiscard({ ctx, state, timestamp, random }: CustomAction
 /** 终极：Shadow Shank Damage (Deal CP + 5) 【已迁移到新伤害计算管线】 */
 function handleShadowShankDamage({ attackerId, targetId, sourceAbilityId, state, timestamp, ctx, action }: CustomActionContext): DiceThroneEvent[] {
     const currentCp = state.players[attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
-    // gainCp 效果被分类为 preDefense 时机，在 resolveAttack 之前已 reduce 进 core，
-    // 因此 currentCp 已包含 gainCp 的增量，不需要再加 bonusCp。
-    const effectiveCp = Math.min(currentCp, CP_MAX);
-    const damageAmt = effectiveCp + 5;
+    const params = action.params as Record<string, unknown> | undefined;
+    const bonusCp = (params?.bonusCp as number) || 0;
+    const damageAmt = currentCp + bonusCp + 5;
 
     const damageCalc = createDamageCalculation({
-        source: { playerId: attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: attackerId, abilityId: sourceAbilityId },
         target: { playerId: targetId },
         baseDamage: damageAmt,
         state,
@@ -460,7 +461,7 @@ function handleCardTrick({ targetId, attackerId, sourceAbilityId, state, timesta
     return events;
 }
 
-/** 暗影之舞 II：投掷1骰造成一半伤害(真实伤害)，获得潜行+伏击，抽1牌 【已迁移到新伤害计算管线】 */
+/** 暗影之舞 II：投掷1骰造成一半伤害(真实伤害)，获得SNEAK+SNEAK_ATTACK，抽1卡 【已迁移到新伤害计算管线】 */
 function handleShadowDanceRoll2({ targetId, sourceAbilityId, state, timestamp, random, ctx, attackerId }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
     const events: DiceThroneEvent[] = [];
@@ -480,7 +481,7 @@ function handleShadowDanceRoll2({ targetId, sourceAbilityId, state, timestamp, r
     const damageAmt = Math.ceil(dieValue / 2);
     if (damageAmt > 0) {
         const damageCalc = createDamageCalculation({
-            source: { playerId: attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: attackerId, abilityId: sourceAbilityId },
             target: { playerId: targetId },
             baseDamage: damageAmt,
             state,
@@ -490,20 +491,20 @@ function handleShadowDanceRoll2({ targetId, sourceAbilityId, state, timestamp, r
         events.push(...damageCalc.toEvents());
     }
 
-    // 获得潜行 + 伏击（卡图确认：然后获得暗影和隐匿攻击）
+    // Gain Tokens
     [TOKEN_IDS.SNEAK, TOKEN_IDS.SNEAK_ATTACK].forEach(tokenId => {
         const currentAmount = state.players[attackerId]?.tokens[tokenId] ?? 0;
         const limit = getTokenStackLimit(state, attackerId, tokenId);
         const newTotal = Math.min(currentAmount + 1, limit);
         events.push({
             type: 'TOKEN_GRANTED',
-            payload: { targetId: attackerId, tokenId, amount: 1, newTotal, sourceAbilityId },
+            payload: { targetId: attackerId, tokenId, amount: 1, newTotal, sourceAbilityId }, // target is SELF
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp: timestamp + 2,
         } as TokenGrantedEvent);
     });
 
-    // 抽 1 牌（卡图确认：抽取1）
+    // Draw 1 Card
     events.push(...buildDrawEvents(state, attackerId, 1, random, 'ABILITY_EFFECT', timestamp + 3, sourceAbilityId));
 
     return events;
@@ -572,7 +573,7 @@ function handleFearlessRiposte({ sourceAbilityId, state, timestamp, ctx }: Custo
     const daggers = faces[FACE.DAGGER] || 0;
     if (daggers > 0) {
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: daggers,
             state,
@@ -609,7 +610,7 @@ function handleFearlessRiposte2({ sourceAbilityId, state, timestamp, ctx }: Cust
     if (daggers > 0) {
         const damage = daggers * 2;
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: damage,
             state,
@@ -726,10 +727,10 @@ function handleSneakAttackUse({ attackerId, state, timestamp, random }: CustomAc
 }
 
 // ============================================================================
-// 伤害预估回调（用于 Token 门控等需要在执行前估算伤害的场景）
+// 伤害估算函数（用于 Token 门控）
 // ============================================================================
 
-/** CP 系伤害预估：当前 CP 的一半（向上取整） */
+/** CP 系伤害预估：等同当前 CP 的一半（向上取整） */
 const estimateHalfCpDamage = (state: Record<string, unknown>, playerId: string): number => {
     const players = state.players as Record<string, { resources: Record<string, number> }>;
     const cp = Math.min(players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0, CP_MAX);

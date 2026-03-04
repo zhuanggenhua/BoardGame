@@ -319,6 +319,210 @@ API_SERVER_PORT=18001
 
 测试环境端口硬编码在 `playwright.config.ts` 中，无需配置。
 
+## 测试框架最佳实践
+
+### 自动化检查
+
+测试运行前会自动执行以下检查：
+
+#### 1. 文件编码检查
+
+**脚本**：`scripts/infra/check-file-encoding.mjs`
+
+**功能**：
+- 自动扫描所有源码文件（`src/**/*.{ts,tsx}`）
+- 检测 UTF-8 BOM（Byte Order Mark）
+- 自动修复 BOM 问题
+- 检测无效字符（编码错误）
+
+**触发时机**：
+- 所有 E2E 测试命令（`test:e2e`、`test:e2e:ci`、`test:e2e:isolated`）
+- 自动运行，无需手动执行
+
+**输出示例**：
+```
+🔍 检查文件编码...
+
+⚠️  src/components/system/AboutModal.tsx: 包含 UTF-8 BOM
+✅ src/components/system/AboutModal.tsx: 已移除 BOM
+
+📊 检查完成:
+   总文件数: 1237
+   修复文件数: 1
+   错误文件数: 0
+
+✅ 所有文件编码正常
+```
+
+**为什么需要**：
+- UTF-8 BOM 会导致 Vite 编译失败
+- 编码错误会导致服务器启动超时
+- 自动修复避免手动排查
+
+#### 2. 服务器就绪检查
+
+**插件**：`vite-plugins/ready-check.ts`
+
+**功能**：
+- 提供 `/__ready` 端点
+- 只有在 Vite 完全就绪后才返回 200 状态码
+- Playwright 等待此端点就绪才开始测试
+
+**工作原理**：
+```typescript
+// Vite 启动后 1 秒设置就绪标志
+server.httpServer?.once('listening', () => {
+  setTimeout(() => {
+    isReady = true;
+    console.log('✅ Vite 服务器已就绪（/__ready 端点可用）');
+  }, 1000);
+});
+
+// /__ready 端点
+server.middlewares.use('/__ready', (req, res) => {
+  if (isReady) {
+    res.statusCode = 200;
+    res.end(JSON.stringify({ ready: true, timestamp: Date.now() }));
+  } else {
+    res.statusCode = 503; // Service Unavailable
+    res.end(JSON.stringify({ ready: false, message: 'Server is starting...' }));
+  }
+});
+```
+
+**Playwright 配置**：
+```typescript
+webServer: [
+  {
+    command: `npm run dev:frontend`,
+    url: `http://localhost:5173/__ready`,  // 使用就绪端点
+    timeout: 120000,
+  },
+  // ...
+]
+```
+
+**为什么需要**：
+- Vite 在编译完成前也会响应 HTTP 请求
+- 传统的 URL 检查无法确保服务真正就绪
+- 就绪端点确保测试开始时服务完全可用
+
+#### 3. 环境隔离检查
+
+**脚本**：`scripts/infra/check-e2e-safety.js`
+
+**功能**：
+- 检查测试模式（独立测试环境 vs 使用开发服务器）
+- 检查端口占用情况
+- 给出建议和警告
+
+**输出示例**：
+```
+🔍 E2E 测试环境检查...
+
+测试模式: ✅ 独立测试环境（推荐）
+
+✅ 测试环境完全隔离
+   测试端口: 5173, 19000, 19001
+   开发端口: 3000, 18000, 18001
+   → 测试不会影响开发环境
+
+开发环境端口占用:
+  ✓ frontend (3000): 已占用
+  ○ gameServer (18000): 空闲
+  ○ apiServer (18001): 空闲
+
+E2E 测试环境端口占用:
+  ○ frontend (5173): 空闲
+  ○ gameServer (19000): 空闲
+  ○ apiServer (19001): 空闲
+
+状态分析:
+  ✅ 完全隔离模式
+  → 开发环境: 1/3 服务运行中
+  → 测试环境: 0/3 服务运行中
+  → Playwright 会自动启动测试服务器
+  → 测试不会影响开发环境 ✓
+
+✅ 检查完成
+```
+
+### 测试性能优化
+
+#### 1. 轮询间隔优化
+
+**优化前**：
+```typescript
+await page.waitForFunction(condition, { timeout: 5000 });
+// 默认轮询间隔 100ms，最多轮询 50 次
+```
+
+**优化后**：
+```typescript
+await page.waitForFunction(condition, { 
+  timeout: 5000, 
+  polling: 200  // 增加到 200ms
+});
+// 轮询次数减少 50%，减少跨进程通信开销
+```
+
+**效果**：
+- 减少轮询次数：50 次 → 25 次
+- 减少跨进程通信开销
+- 节省 ~1-2 秒
+
+#### 2. 同步等待 + 异步降级
+
+**优化前**：
+```typescript
+// 打出卡牌
+await page.evaluate(() => {
+  harness.command.dispatch({ type: 'su:play_action', payload: { cardUid } });
+});
+
+// 异步等待交互创建（跨进程通信）
+await page.waitForFunction(() => {
+  return !!harness.state.get()?.sys?.interaction?.current;
+}, { timeout: 5000 });
+```
+
+**优化后**：
+```typescript
+// 打出卡牌并同步等待交互创建
+const result = await page.evaluate(() => {
+  harness.command.dispatch({ type: 'su:play_action', payload: { cardUid } });
+  
+  // 同步等待（在浏览器进程内，无跨进程通信）
+  const startTime = Date.now();
+  while (Date.now() - startTime < 100) {
+    if (harness.state.get()?.sys?.interaction?.current) {
+      return { hasInteraction: true };
+    }
+  }
+  return { hasInteraction: false };
+});
+
+// 如果同步等待失败，降级到异步等待
+if (!result.hasInteraction) {
+  await page.waitForFunction(() => {
+    return !!harness.state.get()?.sys?.interaction?.current;
+  }, { timeout: 5000 });
+}
+```
+
+**效果**：
+- 大多数情况下交互立即创建（< 10ms），直接返回
+- 节省 ~1 秒
+- 异步降级确保稳定性
+
+#### 3. 性能提升总结
+
+| 指标 | 优化前 | 优化后 | 提升 |
+|------|--------|--------|------|
+| 总耗时 | 38.1 秒 | 31.7 秒 | **-17%** |
+| 测试本身 | ~22 秒 | 14.6 秒 | **-34%** |
+| 服务器启动 | ~16 秒 | 17.1 秒 | 稳定 |
+
 ## 最佳实践
 
 ### 默认模式

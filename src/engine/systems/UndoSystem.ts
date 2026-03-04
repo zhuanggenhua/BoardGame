@@ -103,7 +103,7 @@ export function createUndoSystem<TCore>(
     config: UndoSystemConfig = {}
 ): EngineSystem<TCore> {
     const {
-        maxSnapshots = 10,
+        maxSnapshots = 1,
         requireApproval = true,
         requiredApprovals = 1,
         // 由具体游戏提供：哪些“领域命令”会产生可撤回快照。
@@ -433,7 +433,7 @@ function handleApproveUndo<TCore>(
 ): HookResult<TCore> {
     const { undo } = state.sys;
 
-    if (!undo.pendingRequest) {
+    if (!undo?.pendingRequest) {
         logUndoServer('approve-rejected', { reason: 'no-pending', approverId });
         return { halt: true, error: '没有待处理的撤销请求' };
     }

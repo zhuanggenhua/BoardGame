@@ -68,8 +68,8 @@ export function CardPreview({
     title,
 }: CardPreviewProps): ReactNode {
     const { i18n } = useTranslation();
+    
     if (!previewRef) return null;
-    // 优先使用传入的 locale，否则从 i18next 获取当前语言
     const effectiveLocale = locale || i18n.language || 'zh-CN';
 
     if (previewRef.type === 'image') {
@@ -129,18 +129,16 @@ interface AtlasCardProps {
 function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCardProps) {
     const { i18n } = useTranslation();
     const effectiveLocale = locale || i18n.language || 'zh-CN';
+
     // 传入 locale 以支持懒解析模式（从预加载缓存读取图片尺寸）
     const [resolvedSource, setResolvedSource] = useState(() => getCardAtlasSource(atlasId, effectiveLocale));
-
-    // atlasId 变化时重置 resolvedSource（如切换视角导致不同英雄的图集切换）
-    const [prevAtlasId, setPrevAtlasId] = useState(atlasId);
-    if (atlasId !== prevAtlasId) {
-        setPrevAtlasId(atlasId);
-        const newSource = getCardAtlasSource(atlasId, effectiveLocale);
-        setResolvedSource(newSource ?? null);
-    }
-
     const source = resolvedSource ?? getCardAtlasSource(atlasId, effectiveLocale);
+
+    // 当 atlasId 或 locale 变化时，重新获取 source（修复弃牌堆图标不更新的 bug）
+    useEffect(() => {
+        const newSource = getCardAtlasSource(atlasId, effectiveLocale);
+        setResolvedSource(newSource);
+    }, [atlasId, effectiveLocale]);
 
     // 使用统一的 isImagePreloaded 检查（与 CriticalImageGate 共享缓存）
     const preloaded = source ? isImagePreloaded(source.image, effectiveLocale) : false;
@@ -199,9 +197,13 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             img.onload = () => {
                 // 注册到统一缓存，供其他组件复用
                 if (source) markImageLoaded(source.image, effectiveLocale, img);
-                if (!cancelled) setLoaded(true);
+                if (!cancelled) {
+                    setLoaded(true);
+                }
             };
-            img.onerror = () => tryLoad(idx + 1);
+            img.onerror = () => {
+                tryLoad(idx + 1);
+            };
             img.src = url;
         };
 
@@ -209,7 +211,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
         return () => {
             cancelled = true;
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [checkKey, source?.image, effectiveLocale]);
 
     // Fallback：source 为 undefined 时（CriticalImageGate 预加载超时/失败），

@@ -25,7 +25,6 @@ import type {
     SelectCharacterCommand,
     HostStartGameCommand,
     PlayerReadyCommand,
-    PlayerUnreadyCommand,
     ResponsePassCommand,
     ModifyDieCommand,
     RerollDieCommand,
@@ -87,11 +86,6 @@ const validateRollDice = (
 
     if (state.rollCount >= state.rollLimit) {
         return fail('roll_limit_reached');
-    }
-
-    // 已确认掷骰后不允许再掷（防止绕过 UI 直接 dispatch）
-    if (state.rollConfirmed) {
-        return fail('roll_already_confirmed');
     }
 
     // 防御阶段必须先选择防御技能才能掷骰（规则 §3.6 步骤 2→3）
@@ -167,27 +161,6 @@ const validatePlayerReady = (
     const char = state.selectedCharacters[playerId];
     if (!char || char === 'unselected') {
         return fail('character_not_selected');
-    }
-
-    return ok();
-};
-
-/**
- * 验证取消准备命令
- */
-const validatePlayerUnready = (
-    state: DiceThroneCore,
-    _cmd: PlayerUnreadyCommand,
-    playerId: PlayerId,
-    phase: TurnPhase
-): ValidationResult => {
-    if (phase !== 'setup') {
-        return fail('invalid_phase');
-    }
-
-    // 必须已准备才能取消
-    if (!state.readyPlayers[playerId]) {
-        return fail('not_ready');
     }
 
     return ok();
@@ -304,11 +277,6 @@ const validateSelectAbility = (
     
     if (!state.rollConfirmed) {
         return fail('roll_not_confirmed');
-    }
-
-    // 已发起攻击（pendingAttack 存在），禁止重复选择技能
-    if (state.pendingAttack) {
-        return fail('attack_already_initiated');
     }
     
     // 实时计算可用技能（派生状态）
@@ -782,18 +750,6 @@ const validateUseToken = (
         return fail('invalid_amount');
     }
 
-    // 规则：本回合获得的太极不可用于本回合增强伤害（beforeDamageDealt）
-    if (cmd.payload.tokenId === TOKEN_IDS.TAIJI && state.pendingDamage.responseType === 'beforeDamageDealt') {
-        const gainedThisTurn = state.taijiGainedThisTurn?.[playerId] ?? 0;
-        const usableAmount = currentAmount - gainedThisTurn;
-        if (usableAmount <= 0) {
-            return fail('taiji_gained_this_turn');
-        }
-        if (cmd.payload.amount > usableAmount) {
-            return fail('taiji_gained_this_turn');
-        }
-    }
-
     return ok();
 };
 
@@ -971,7 +927,10 @@ const validateUsePassiveAbility = (
         if (state.rollCount === 0) {
             return fail('no_roll_yet');
         }
-        // 锁定不影响被动技能重掷（锁定仅影响普通 ROLL_DICE）
+        // 不能重掷被锁定的骰子
+        if (die.isKept) {
+            return fail('die_is_locked');
+        }
     }
 
     return ok();
@@ -1032,7 +991,6 @@ export const validateCommand = (
     if (isCommandType(command, 'SELECT_CHARACTER')) return validateSelectCharacter(state, command, playerId, phase);
     if (isCommandType(command, 'HOST_START_GAME')) return validateHostStartGame(state, command, playerId, phase);
     if (isCommandType(command, 'PLAYER_READY')) return validatePlayerReady(state, command, playerId, phase);
-    if (isCommandType(command, 'PLAYER_UNREADY')) return validatePlayerUnready(state, command, playerId, phase);
     if (isCommandType(command, 'RESPONSE_PASS')) return validateResponsePass(state, command, playerId);
     if (isCommandType(command, 'MODIFY_DIE')) return validateModifyDie(state, command, playerId, pendingInteraction);
     if (isCommandType(command, 'REROLL_DIE')) return validateRerollDie(state, command, playerId, pendingInteraction);

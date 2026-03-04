@@ -11,7 +11,6 @@ const entry: GameManifestEntry = {
     icon: '🎲',
     thumbnailPath: 'dicethrone/thumbnails/fengm',
     allowLocalMode: false,
-    // TODO(dice-throne-2v2): 2v2完整联调后恢复为 [2, 4]
     playerOptions: [2],
     tags: ['dice_driven', 'combat'],
     bestPlayers: [2],

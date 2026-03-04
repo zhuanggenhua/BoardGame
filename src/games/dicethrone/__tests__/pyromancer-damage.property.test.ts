@@ -250,7 +250,7 @@ describe('Property 4: Pyromancer 伤害正确应用所有修正', () => {
   /**
    * **Validates: Requirements 2.3**
    *
-   * Pyromancer 使用默认 autoCollect 时，目标的 damageShields
+   * Pyromancer 使用 autoCollectShields 时，目标的 damageShields
    * 被正确收集并应用到伤害计算中。
    */
   it(
@@ -273,7 +273,7 @@ describe('Property 4: Pyromancer 伤害正确应用所有修正', () => {
               target: { playerId: '1' },
               state,
               timestamp: 1000,
-              autoCollectShields: true, // 显式启用以测试护盾收集功能
+              autoCollectShields: true, // 启用护盾自动收集
             });
 
             const result = calc.resolve();
@@ -340,7 +340,8 @@ describe('Property 4: Pyromancer 伤害正确应用所有修正', () => {
               target: { playerId: '1' },
               state,
               timestamp: 1000,
-              autoCollectShields: true, // 显式启用以测试三种修正累加
+              // 全部使用默认 autoCollect: true
+              autoCollectShields: true, // 启用护盾自动收集
             });
 
             const result = calc.resolve();
@@ -400,8 +401,8 @@ describe('Property 4: Pyromancer 伤害正确应用所有修正', () => {
               state,
               timestamp: 1000,
               autoCollectTokens: false,
-              // autoCollectStatus: true（默认）
-              // autoCollectShields: false（默认，护盾由 reducer 统一消耗）
+              autoCollectShields: true, // 启用护盾自动收集
+              // autoCollectStatus: true（默认，3.1 修复后）
               additionalModifiers: fmBonus > 0 ? [{
                 id: 'fiery-combo-fm',
                 type: 'flat' as const,
@@ -415,8 +416,7 @@ describe('Property 4: Pyromancer 伤害正确应用所有修正', () => {
             const result = calc.resolve();
 
             const statusReduct = damageReduction * statusStacks;
-            // autoCollectShields 默认 false，护盾不参与计算管线（由 reducer 统一消耗）
-            const expectedDamage = Math.max(0, baseDamage + fmBonus - statusReduct);
+            const expectedDamage = Math.max(0, baseDamage + fmBonus - statusReduct - shieldValue);
             expect(result.finalDamage).toBe(expectedDamage);
           },
         ),
@@ -461,7 +461,7 @@ describe('Property 4: Pyromancer 伤害正确应用所有修正', () => {
               target: { playerId: '1' },
               state,
               timestamp: 1000,
-              autoCollectShields: true, // 显式启用以测试负值下限
+              autoCollectShields: true, // 启用护盾自动收集
             });
 
             const result = calc.resolve();

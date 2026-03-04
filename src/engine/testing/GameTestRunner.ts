@@ -95,9 +95,34 @@ export class GameTestRunner<
     TExpect extends StateExpectation = StateExpectation
 > {
     private config: TestRunnerConfig<TState, TCommand, TEvent, TExpect>;
+    private currentState?: MatchState<TState>;
 
     constructor(config: TestRunnerConfig<TState, TCommand, TEvent, TExpect>) {
         this.config = config;
+        // Initialize currentState with setup
+        const { domain, playerIds, systems = [] } = config;
+        const random = config.random ?? defaultRandom;
+        const init = config.setup ?? ((ids: PlayerId[], rnd: RandomFn) => {
+            const core = domain.setup(ids, rnd);
+            const sys = createInitialSystemState(ids, systems, undefined);
+            return { sys, core };
+        });
+        const initialState = init(playerIds, random);
+        
+        // 确保 sys 对象包含所有必需的系统状态
+        if (!initialState.sys.undo) {
+            initialState.sys.undo = {
+                snapshots: [],
+                maxSnapshots: 50,
+            };
+        }
+        if (!initialState.sys.interaction) {
+            initialState.sys.interaction = {
+                queue: [],
+            };
+        }
+        
+        this.currentState = initialState;
     }
 
     run(testCase: TestCase<TExpect>): TestResult<TState> {
@@ -119,6 +144,19 @@ export class GameTestRunner<
             });
 
         let state = init(playerIds, random);
+        
+        // 确保 sys 对象包含所有必需的系统状态
+        if (!state.sys.undo) {
+            state.sys.undo = {
+                snapshots: [],
+                maxSnapshots: 50,
+            };
+        }
+        if (!state.sys.interaction) {
+            state.sys.interaction = {
+                queue: [],
+            };
+        }
 
         const steps: StepLog[] = [];
         const actualErrors: { step: number; error: string }[] = [];
@@ -246,5 +284,119 @@ export class GameTestRunner<
         }
 
         return results;
+    }
+
+    /**
+     * 设置当前状态（测试辅助方法）
+     * 用于测试中快速构造特定场景
+     */
+    setState(state: MatchState<TState>): void {
+        this.currentState = state;
+    }
+
+    /**
+     * 部分更新当前状态（测试辅助方法）
+     * 用于测试中快速修改状态的部分字段
+     */
+    patchState(partial: Partial<MatchState<TState>>): void {
+        if (!this.currentState) {
+            throw new Error('Cannot patch state: no current state. Call setState() or run() first.');
+        }
+        // Deep merge core and sys
+        const newCore = partial.core ? { ...this.currentState.core as object, ...partial.core as object } : this.currentState.core;
+        const newSys = partial.sys ? { ...this.currentState.sys, ...partial.sys } : this.currentState.sys;
+        this.currentState = {
+            ...this.currentState,
+            ...partial,
+            core: newCore as TState,
+            sys: newSys,
+        };
+    }
+
+    /**
+     * 分发命令（测试辅助方法）
+     * 基于当前状态执行命令并更新状态
+     */
+    dispatch(commandType: string, payload: { playerId: string; [key: string]: unknown }): {
+        success: boolean;
+        error?: string;
+        events: Array<{ type: string; payload: unknown; timestamp: number }>;
+        finalState: MatchState<TState>;
+    } {
+        if (!this.currentState) {
+            throw new Error('Cannot dispatch: no current state. Call setState() or patchState() first.');
+        }
+
+        const { domain, playerIds } = this.config;
+        const systems = this.config.systems ?? [];
+        const random = this.config.random ?? defaultRandom;
+
+        const pipelineConfig: PipelineConfig<TState, TCommand, TEvent> = {
+            domain,
+            systems,
+        };
+
+        const command = {
+            type: commandType,
+            playerId: payload.playerId,
+            payload,
+            timestamp: Date.now(),
+        } as TCommand;
+
+        const result = executePipeline(
+            pipelineConfig,
+            this.currentState,
+            command,
+            random,
+            playerIds
+        );
+
+        if (result.success) {
+            this.currentState = result.state;
+        }
+
+        return {
+            success: result.success,
+            error: result.error,
+            events: result.events,
+            finalState: result.success ? result.state : this.currentState,
+        };
+    }
+
+    /**
+     * 执行命令（别名，向后兼容）
+     */
+    executeCommand(commandType: string, payload: { playerId: string; [key: string]: unknown }): {
+        success: boolean;
+        error?: string;
+        events: Array<{ type: string; payload: unknown; timestamp: number }>;
+        finalState: MatchState<TState>;
+    } {
+        return this.dispatch(commandType, payload);
+    }
+
+    /**
+     * 获取当前状态（测试辅助方法）
+     */
+    getState(): MatchState<TState> {
+        if (!this.currentState) {
+            throw new Error('Cannot get state: no current state. Call setState() or run() first.');
+        }
+        return this.currentState;
+    }
+
+    /**
+     * 解决交互（测试辅助方法）
+     * 用于测试中模拟玩家响应交互
+     */
+    resolveInteraction(playerId: string, value: unknown): {
+        success: boolean;
+        error?: string;
+        events: Array<{ type: string; payload: unknown; timestamp: number }>;
+        finalState: MatchState<TState>;
+    } {
+        // 将 value 展开到 payload 中，而不是嵌套在 value 字段下
+        // SimpleChoiceSystem 期望 payload 直接包含 optionId/optionIds/mergedValue
+        return this.dispatch('SYS_INTERACTION_RESPOND', { playerId, ...(value as object) });
     }
 }

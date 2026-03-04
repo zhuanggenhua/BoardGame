@@ -112,7 +112,7 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
                 <CardPreview
                     previewRef={currentItem.previewRef}
                     locale={locale}
-                    className="w-[16vw] aspect-[0.611] rounded-[0.6vw] shadow-2xl border-2 border-amber-500/60"
+                    className="w-[16vw] aspect-[0.61] rounded-[0.6vw] shadow-2xl border-2 border-amber-500/60"
                     style={{ boxShadow: '0 0 1.5vw 0.3vw rgba(251, 191, 36, 0.4)' }}
                 />
 

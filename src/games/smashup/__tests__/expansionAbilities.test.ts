@@ -41,7 +41,7 @@ beforeAll(() => {
 function makeMinion(uid: string, defId: string, controller: string, power: number, owner?: string): MinionOnBase {
     return {
         uid, defId, controller, owner: owner ?? controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
     };
 }
 
@@ -688,7 +688,7 @@ describe('cthulhu_complete_the_ritual 打出约束', () => {
             },
             bases: [{
                 defId: 'b1',
-                minions: [makeMinion('m1', 'test_minion', '0', 3)],
+                minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })],
                 ongoingActions: [],
             }],
             baseDeck: ['b2'],
@@ -712,7 +712,7 @@ describe('cthulhu_complete_the_ritual 打出约束', () => {
             },
             bases: [{
                 defId: 'b1',
-                minions: [makeMinion('m1', 'test_minion', '1', 3)], // 对手的随从
+                minions: [makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 })], // 对手的随从
                 ongoingActions: [],
             }],
         });

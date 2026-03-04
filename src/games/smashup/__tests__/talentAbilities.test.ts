@@ -66,7 +66,7 @@ describe('miskatonic_professor（教授 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'miskatonic_professor', '0', 5)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'miskatonic_professor', '0', 5, { powerModifier: 0 })], ongoingActions: [] },
             ],
         });
 
@@ -102,7 +102,7 @@ describe('miskatonic_professor（教授 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'miskatonic_professor', '0', 5)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'miskatonic_professor', '0', 5, { powerModifier: 0 })], ongoingActions: [] },
             ],
         });
 
@@ -160,7 +160,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5, { powerModifier: 0 })], ongoingActions: [] },
             ],
             madnessDeck: ['madness_def_1', 'madness_def_2', 'madness_def_3'],
         });
@@ -195,7 +195,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5, { powerModifier: 0 })], ongoingActions: [] },
             ],
             madnessDeck: ['madness_def_1'],
         });
@@ -230,7 +230,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5, { powerModifier: 0 })], ongoingActions: [] },
             ],
             madnessDeck: ['madness_def_1'],
         });
@@ -257,7 +257,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5, { powerModifier: 0 })], ongoingActions: [] },
             ],
             madnessDeck: [],
         });
@@ -292,7 +292,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
             },
             turnOrder: ['0', '1', '2'],
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5, { powerModifier: 0 })], ongoingActions: [] },
             ],
             madnessDeck: ['madness_def_1', 'madness_def_2'],
         });
@@ -350,7 +350,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
             },
             turnOrder: ['0', '1', '2', '3'],
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_star_spawn', '0', 5, { powerModifier: 0 })], ongoingActions: [] },
             ],
             madnessDeck: ['madness_def_1'],
         });
@@ -407,7 +407,7 @@ describe('cthulhu_servitor（仆人 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_servitor', '0', 2)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_servitor', '0', 2, { powerModifier: 0 })], ongoingActions: [] },
             ],
         });
 
@@ -443,7 +443,7 @@ describe('cthulhu_servitor（仆人 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_servitor', '0', 2)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_servitor', '0', 2, { powerModifier: 0 })], ongoingActions: [] },
             ],
         });
 
@@ -467,7 +467,7 @@ describe('cthulhu_servitor（仆人 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_servitor', '0', 2)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_servitor', '0', 2, { powerModifier: 0 })], ongoingActions: [] },
             ],
         });
 
@@ -497,7 +497,7 @@ describe('cthulhu_servitor（仆人 talent）', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_servitor', '0', 2)], ongoingActions: [] },
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_servitor', '0', 2, { powerModifier: 0 })], ongoingActions: [] },
             ],
         });
 
@@ -525,7 +525,7 @@ describe('天赋基础设施', () => {
             bases: [
                 {
                     defId: 'base_a',
-                    minions: [makeMinion('m1', 'nonexistent_talent_minion', '0', 3)],
+                    minions: [makeMinion('m1', 'nonexistent_talent_minion', '0', 3, { powerModifier: 0 })],
                     ongoingActions: [],
                 },
             ],

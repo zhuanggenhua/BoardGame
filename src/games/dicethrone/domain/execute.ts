@@ -23,8 +23,8 @@ import type {
     PlayerReadyEvent,
 } from './types';
 import {
-    getDefaultOpponentId,
     getRollerId,
+    getNextPlayerId,
     getResponderQueue,
     getTokenStackLimit,
 } from './rules';
@@ -177,18 +177,6 @@ export function execute(
             break;
         }
 
-        case 'PLAYER_UNREADY': {
-            events.push({
-                type: 'PLAYER_UNREADY',
-                payload: {
-                    playerId: command.playerId,
-                },
-                sourceCommandType: command.type,
-                timestamp,
-            } as DiceThroneEvent);
-            break;
-        }
-
         case 'TOGGLE_DIE_LOCK': {
             const payload = command.payload as { dieId: number };
             const die = state.dice.find(d => d.id === payload.dieId);
@@ -223,7 +211,8 @@ export function execute(
             // 关键：必须用 ROLL_CONFIRMED 事件应用后的状态来检查响应窗口
             // 否则 rollConfirmed 仍为 false，requireRollConfirmed 的卡牌（如抬一手）会被过滤掉
             const stateAfterConfirm = applyEvents(state, [event] as DiceThroneEvent[], reduce);
-            const opponentId = getDefaultOpponentId(stateAfterConfirm, rollerId) || rollerId;
+            const playerIds = Object.keys(state.players);
+            const opponentId = playerIds.find(pid => pid !== rollerId) || rollerId;
             const responderQueue = getResponderQueue(stateAfterConfirm, 'afterRollConfirmed', opponentId, undefined, rollerId, phase);
             if (responderQueue.length > 0) {
                 const windowId = `afterRollConfirmed-${timestamp}`;
@@ -275,7 +264,7 @@ export function execute(
                 events.push(abilityActivatedEvent);
                 
                 // 2. 再发起放击事件
-                const defenderId = getDefaultOpponentId(state, state.activePlayerId) ?? state.activePlayerId;
+                const defenderId = getNextPlayerId(state);
                 const isDefendable = isDefendableAttack(state, state.activePlayerId, abilityId);
                 
                 // 检查是否为终极技能

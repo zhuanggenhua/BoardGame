@@ -103,7 +103,7 @@ describe('onDestroy 基础设施', () => {
             bases: [{
                 defId: 'base_cave_of_shinies',
                 minions: [
-                    makeMinion('gremlin', 'trickster_gremlin', '1', 2),
+                    makeMinion('gremlin', 'trickster_gremlin', '1', 2, { powerModifier: 0 }),
                 ],
                 ongoingActions: [],
             }],
@@ -306,7 +306,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
             },
             bases: [{
                 defId: 'base_a',
-                minions: [makeMinion('gremlin', 'trickster_gremlin', '1', 2)],
+                minions: [makeMinion('gremlin', 'trickster_gremlin', '1', 2, { powerModifier: 0 })],
                 ongoingActions: [],
             }],
         });
@@ -351,7 +351,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
             },
             bases: [{
                 defId: 'base_a',
-                minions: [makeMinion('gremlin', 'trickster_gremlin', '1', 2)],
+                minions: [makeMinion('gremlin', 'trickster_gremlin', '1', 2, { powerModifier: 0 })],
                 ongoingActions: [],
             }],
         });
@@ -390,7 +390,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
             },
             bases: [{
                 defId: 'base_a',
-                minions: [makeMinion('gremlin', 'trickster_gremlin', '1', 2)],
+                minions: [makeMinion('gremlin', 'trickster_gremlin', '1', 2, { powerModifier: 0 })],
                 ongoingActions: [],
             }],
         });

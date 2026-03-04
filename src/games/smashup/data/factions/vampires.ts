@@ -108,7 +108,8 @@ export const VAMPIRE_ACTIONS: ActionCardDef[] = [
         name: '自助餐',
         nameEn: 'Buffet',
         faction: 'vampires',
-        abilityTags: ['special'],
+        // 注意：自助餐的能力是 afterScoring trigger（计分后放指示物），不是点击场上卡牌激活
+        // 因此不应该有 abilityTags: ['special']
         specialNeedsBase: true,
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS5, index: 30 },

@@ -17,7 +17,7 @@ const DICE_ROLL_MULTI_KEYS = [
     'dice.decks_and_cards_sound_fx_pack.dice_roll_velvet_003',
     'dice.decks_and_cards_sound_fx_pack.few_dice_roll_005',
 ];
-const READY_SIGNAL_KEY = 'system.general.casual_mobile_sound_fx_pack_vol.alerts.misc_alerts.ready_up_big_metallic';
+const READY_SIGNAL_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
 const HOST_STARTED_SIGNAL_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
 const PHASE_CHANGED_KEY = 'fantasy.gothic_fantasy_sound_fx_pack_vol.musical.drums_of_fate_002';
 
@@ -34,8 +34,8 @@ const resolveKey = (event: AudioEvent, ctx: unknown = { G: {}, ctx: {}, meta: {}
 };
 
 const ABILITY_SFX_KEYS = {
-    transcendence: 'magic.general.modern_magic_sound_fx_pack_vol.offensive_spells.offensive_spells_thunderstrike_crash_001',
-    thunderStrike: 'magic.general.simple_magic_sound_fx_pack_vol.shock.thunderbolt_strike_cast_a',
+    transcendence: 'combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_02_krst',
+    thunderStrike: 'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_01_krst',
     taijiCombo: 'combat.general.mini_games_sound_effects_and_music_pack.kick_punch.sfx_fight_kick_swoosh_1',
 } as const;
 

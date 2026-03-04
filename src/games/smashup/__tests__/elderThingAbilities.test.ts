@@ -46,7 +46,7 @@ beforeAll(() => {
 function makeMinion(uid: string, defId: string, controller: string, power: number, owner?: string): MinionOnBase {
     return {
         uid, defId, controller, owner: owner ?? controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
     };
 }
 
@@ -139,7 +139,7 @@ describe('远古之物派系能力', () => {
                 },
                 bases: [{
                     defId: 'b1',
-                    minions: [makeMinion('opp1', 'test', '1', 3)],
+                    minions: [makeMinion('opp1', 'test', '1', 3, { powerModifier: 0 })],
                     ongoingActions: [],
                 }],
             });
@@ -177,7 +177,7 @@ describe('远古之物派系能力', () => {
                 },
                 bases: [{
                     defId: 'b1',
-                    minions: [makeMinion('opp1', 'test', '1', 3)],
+                    minions: [makeMinion('opp1', 'test', '1', 3, { powerModifier: 0 })],
                     ongoingActions: [],
                 }],
                 madnessDeck: [],
@@ -487,7 +487,7 @@ describe('远古之物派系能力', () => {
                 bases: [{
                     defId: 'b1',
                     minions: [
-                        makeMinion('m1', 'test', '1', 2),
+                        makeMinion('m1', 'test', '1', 2, { powerModifier: 0 }),
                         makeMinion('m2', 'test', '1', 5),
                     ],
                     ongoingActions: [],

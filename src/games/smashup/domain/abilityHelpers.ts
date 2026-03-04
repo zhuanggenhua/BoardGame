@@ -35,7 +35,7 @@ import type {
     AbilityFeedbackEvent,
     OngoingCardCounterChangedEvent,
 } from './types';
-import { SU_EVENTS } from './types';
+import { SU_EVENT_TYPES as SU_EVENTS } from './events';
 import { getEffectivePower } from './ongoingModifiers';
 import { triggerAllBaseAbilities } from './baseAbilities';
 import { fireTriggers } from './ongoingEffects';
@@ -102,6 +102,7 @@ export function destroyMinion(
     reason: string,
     now: number
 ): MinionDestroyedEvent {
+    console.log(`[destroyMinion] uid=${minionUid}, defId=${minionDefId}, ownerId=${ownerId}, destroyerId=${destroyerId}, reason=${reason}`);
     return {
         type: SU_EVENTS.MINION_DESTROYED,
         payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason },
@@ -321,7 +322,9 @@ export function revealAndPickFromDeck(params: {
     const missTarget = params.missTarget ?? 'deck_bottom';
     const revealTo = params.revealTo ?? 'none';
 
-    if (player.deck.length === 0) return { events: [], picked: [], missed: [] };
+    if (player.deck.length === 0) {
+        return { events: [], picked: [], missed: [] };
+    }
 
     const picked: CardInstance[] = [];
     const missed: CardInstance[] = [];
@@ -348,18 +351,21 @@ export function revealAndPickFromDeck(params: {
         }
     }
 
-    if (picked.length === 0 && missed.length === 0) return { events: [], picked: [], missed: [] };
+    if (picked.length === 0 && missed.length === 0) {
+        return { events: [], picked: [], missed: [] };
+    }
 
     const allRevealed = [...picked, ...missed];
     const events: SmashUpEvent[] = [];
 
     // 1. 展示事件（仅当 revealTo 不为 'none' 时生成）
     if (revealTo !== 'none') {
-        events.push(revealDeckTop(
+        const revealEvent = revealDeckTop(
             playerId, revealTo,
             allRevealed.map(c => ({ uid: c.uid, defId: c.defId })),
             allRevealed.length, reason, now,
-        ));
+        );
+        events.push(revealEvent);
     }
 
     // 2. 命中的卡放入手牌

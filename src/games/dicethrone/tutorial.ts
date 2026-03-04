@@ -212,16 +212,6 @@ export const DiceThroneTutorial: TutorialManifest = {
             allowedCommands: ['ROLL_DICE'],
             advanceOnEvents: [{ type: 'DICE_ROLLED' }],
         },
-        // 锁定骰子教学：掷骰后教玩家点击骰子锁定/解锁
-        {
-            id: 'dice-lock',
-            content: 'game-dicethrone:tutorial.steps.diceLock',
-            highlightTarget: 'dice-tray',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: ['TOGGLE_DIE_LOCK'],
-            advanceOnEvents: [{ type: 'DIE_LOCK_TOGGLED' }],
-        },
         {
             id: 'play-six',
             content: 'game-dicethrone:tutorial.steps.playSix',

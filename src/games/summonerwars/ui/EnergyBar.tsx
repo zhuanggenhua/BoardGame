@@ -37,8 +37,7 @@ export const EnergyBar: React.FC<EnergyBarProps> = ({
       
       {/* 分段条 - 统一使用琥珀色 */}
       <div className="flex gap-[2px]">
-        {Array.from({ length: total }, (_, i) => {
-          const value = i + 1;
+        {Array.from({ length: total + 1 }, (_, value) => {
           const isActive = value <= current;
           const isCurrent = value === current;
           return (

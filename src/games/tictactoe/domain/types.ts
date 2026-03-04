@@ -21,8 +21,6 @@ export interface TicTacToeCore {
     cells: CellValue[];
     /** 当前玩家 */
     currentPlayer: PlayerId;
-    /** 先手玩家（重赛轮换用，整局不变） */
-    startingPlayerId: PlayerId;
     /** 玩家列表 */
     playerIds: PlayerId[];
     /** 游戏结果（用于 isGameOver 读取） */

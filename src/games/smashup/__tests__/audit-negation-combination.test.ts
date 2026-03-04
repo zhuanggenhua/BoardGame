@@ -15,7 +15,7 @@ import {
     makeMinion,
     makeCard,
     applyEvents,
-} from './helpers';
+} from './helpers/auditUtils';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import type { SmashUpCore } from '../domain/types';
 import { grantExtraMinion } from '../domain/abilityHelpers';

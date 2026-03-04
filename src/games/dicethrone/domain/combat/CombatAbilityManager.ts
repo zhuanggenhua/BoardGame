@@ -76,9 +76,6 @@ export class CombatAbilityManager {
 
   /**
    * 获取当前可用的技能 ID 列表
-   * 
-   * 注意：此方法从全局注册表获取技能定义，不适用于 DiceThrone 的升级机制。
-   * DiceThrone 应该直接从 player.abilities 匹配，因为升级卡会替换技能定义。
    */
   getAvailableAbilities(
     abilityIds: string[],

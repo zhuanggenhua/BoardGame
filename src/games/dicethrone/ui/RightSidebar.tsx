@@ -169,7 +169,7 @@ export const RightSidebar = ({
             if (currentCount >= maxCount) return t('interaction.hint_done');
             return t('interaction.hint_any');
         }
-        // selectDie 模式（重掷）
+        // selectDie 模式（重投）
         if (isSelectMode) {
             if (currentCount >= maxCount) return t('interaction.hint_done');
             const key = dtMeta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';

@@ -53,7 +53,7 @@ function makeOngoing(uid: string, defId: string, ownerId: string): OngoingAction
 describe('wildlife_preserve: action 保护检查', () => {
     it('对手随从在有 wildlife_preserve 的基地上受 action 保护', () => {
         const base = makeBase('test_base', {
-            minions: [makeMinion('m1', 'test_minion', '0', 3)],
+            minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })],
             ongoingActions: [makeOngoing('wp1', 'dino_wildlife_preserve', '0')],
         });
         const state = makeState({ bases: [base] });
@@ -64,7 +64,7 @@ describe('wildlife_preserve: action 保护检查', () => {
 
     it('己方效果不受 wildlife_preserve 保护', () => {
         const base = makeBase('test_base', {
-            minions: [makeMinion('m1', 'test_minion', '0', 3)],
+            minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })],
             ongoingActions: [makeOngoing('wp1', 'dino_wildlife_preserve', '0')],
         });
         const state = makeState({ bases: [base] });
@@ -75,7 +75,7 @@ describe('wildlife_preserve: action 保护检查', () => {
 
     it('wildlife_preserve 不在场时不提供保护', () => {
         const base = makeBase('test_base', {
-            minions: [makeMinion('m1', 'test_minion', '0', 3)],
+            minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })],
         });
         const state = makeState({ bases: [base] });
         const minion = base.minions[0];
@@ -115,7 +115,7 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
     it('对手行动卡通过交互消灭随从时，wildlife_preserve 阻止消灭', () => {
         // 构造状态：基地上有 P0 的随从 + wildlife_preserve
         const base = makeBase('test_base', {
-            minions: [makeMinion('target_m', 'test_minion_weak', '0', 2)],
+            minions: [makeMinion('target_m', 'test_minion_weak', '0', 2, { powerModifier: 0 })],
             ongoingActions: [makeOngoing('wp1', 'dino_wildlife_preserve', '0')],
         });
         const core = makeState({
@@ -173,7 +173,7 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
     it('无 wildlife_preserve 时，行动卡正常消灭随从', () => {
         // 对照组：没有 wildlife_preserve 时消灭应正常生效
         const base = makeBase('test_base', {
-            minions: [makeMinion('target_m', 'test_minion_weak', '0', 2)],
+            minions: [makeMinion('target_m', 'test_minion_weak', '0', 2, { powerModifier: 0 })],
             // 无 ongoingActions
         });
         const core = makeState({

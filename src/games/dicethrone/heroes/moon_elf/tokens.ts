@@ -93,9 +93,8 @@ export const MOON_ELF_TOKENS: TokenDef[] = [
 
     /**
      * 锁定 (Targeted)
-     * 效果：因敌人的攻击掷骰阶段受到伤害时，伤害总值 +2。
-     * 执行逻辑：createDamageCalculation 的 collectStatusModifiers 自动处理，
-     *          通过 sourceCondition.phase 限制只在攻击掷骰阶段伤害时触发。
+     * 效果：受到的伤害 +2。
+     * 执行逻辑：effects.ts resolveEffectAction damage case 中实现
      */
     {
         id: STATUS_IDS.TARGETED,
@@ -111,8 +110,6 @@ export const MOON_ELF_TOKENS: TokenDef[] = [
                 { type: 'modifyStat', target: 'self', value: 2 },
                 // 锁定是持续效果，不会在受伤后自动移除，只能通过净化等手段移除
             ],
-            // 只在攻击掷骰阶段的伤害中生效（防御反击、灼烧/中毒等不触发）
-            sourceCondition: { phase: 'offensiveRoll' },
         },
         frameId: 'targeted',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.MOON_ELF,

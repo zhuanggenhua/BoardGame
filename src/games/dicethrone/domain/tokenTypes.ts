@@ -57,8 +57,7 @@ export type TokenUseEffectType =
     | 'modifyDamageDealt'     // 修改造成的伤害
     | 'modifyDamageReceived'  // 修改受到的伤害
     | 'rollToNegate'          // 掷骰尝试免伤（闪避）
-    | 'removeDebuff'          // 移除负面状态（净化）
-    | 'rollForDamageBonus';   // 掷骰获取额外伤害（枪手 Loaded）
+    | 'removeDebuff';         // 移除负面状态（净化）
 
 /**
  * Token 使用效果
@@ -67,10 +66,6 @@ export interface TokenUseEffect {
     type: TokenUseEffectType;
     /** 数值（伤害修改量等） */
     value?: number;
-    /** 额外伤害倍率（用于 rollForDamageBonus） */
-    multiplier?: number;
-    /** 是否向上取整（用于 rollForDamageBonus） */
-    roundUp?: boolean;
     /** 掷骰成功条件（用于 rollToNegate） */
     rollSuccess?: {
         /** 成功的骰面范围 [min, max] */
@@ -257,16 +252,6 @@ export interface PassiveTriggerConfig {
     removable: boolean;
     /** 移除此效果需要的代价（如 CP） */
     removalCost?: { resource: string; amount: number };
-    /**
-     * 伤害来源条件（仅 onDamageReceived 时机有效）
-     * 用于限制 token 只在特定来源的伤害中触发。
-     * 例：锁定只在攻击掷骰阶段（phase: 'offensiveRoll'）的伤害中生效。
-     * 未声明时，对所有伤害来源生效（向后兼容）。
-     */
-    sourceCondition?: {
-        /** 伤害必须来自指定阶段才触发 */
-        phase?: string;
-    };
 }
 
 // ============================================================================

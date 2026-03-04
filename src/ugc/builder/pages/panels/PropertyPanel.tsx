@@ -388,7 +388,7 @@ export function PropertyPanel({ handleLayoutChange, layoutOutputsSummary, render
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => {
-                                      navigator.clipboard?.writeText(buildActionHookPrompt({
+                                      navigator.clipboard.writeText(buildActionHookPrompt({
                                         requirement: String(action.requirement || ''),
                                         componentType: comp.type,
                                       }));
@@ -814,7 +814,7 @@ export function PropertyPanel({ handleLayoutChange, layoutOutputsSummary, render
                                   <div className="flex items-center gap-2">
                                     <button
                                       onClick={() => {
-                                        navigator.clipboard?.writeText(buildActionHookPrompt({
+                                        navigator.clipboard.writeText(buildActionHookPrompt({
                                           requirement: String(action.requirement || ''),
                                           componentType: comp.type,
                                         }));
@@ -959,7 +959,7 @@ export function PropertyPanel({ handleLayoutChange, layoutOutputsSummary, render
                                   requirement: String(comp.data.renderRequirement || '显示数据的基本信息'),
                                   schema: targetSchema,
                                 });
-                                navigator.clipboard?.writeText(prompt);
+                                navigator.clipboard.writeText(prompt);
                               }}
                               className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
                             >
@@ -998,7 +998,7 @@ export function PropertyPanel({ handleLayoutChange, layoutOutputsSummary, render
                                 const prompt = generateBack({
                                   requirement: String(comp.data.renderRequirement || '生成背面样式'),
                                 });
-                                navigator.clipboard?.writeText(prompt);
+                                navigator.clipboard.writeText(prompt);
                               }}
                               className="px-1.5 py-0.5 bg-purple-600 hover:bg-purple-500 rounded text-[10px]"
                             >

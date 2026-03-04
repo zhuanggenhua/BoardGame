@@ -146,7 +146,7 @@ function innsmouthReturnToTheSea(ctx: AbilityContext): AbilityResult {
     });
     const interaction = createSimpleChoice(
         `innsmouth_return_to_the_sea_${ctx.now}`, ctx.playerId,
-        '选择要返回手牌的同名随从', options as any[], { sourceId: 'innsmouth_return_to_the_sea', targetType: 'minion' },
+        '选择要返回手牌的同名随从', options as any[], 'innsmouth_return_to_the_sea',
         undefined, { min: 0, max: sameDefMinions.length },
     );
     return { events: [], matchState: ctx.matchState ? queueInteraction(ctx.matchState, interaction) : undefined };
@@ -166,6 +166,7 @@ function innsmouthTheLocals(ctx: AbilityContext): AbilityResult {
         reason: 'innsmouth_the_locals',
         now: ctx.now,
     });
+    
     return { events };
 }
 

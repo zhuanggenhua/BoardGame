@@ -110,7 +110,7 @@ export const createClaimSeatHandler = ({
             return;
         }
 
-        const players = metadata.players as Record<string, { name?: string; credentials?: string; ownerKey?: string }> | undefined;
+        const players = metadata.players as Record<string, { name?: string; credentials?: string }> | undefined;
         const player = players?.[resolvedPlayerID];
         if (!player) {
             logger.warn(`[claim-seat] rejected reason=player_not_found matchID=${matchID} playerID=${resolvedPlayerID}`);
@@ -120,20 +120,10 @@ export const createClaimSeatHandler = ({
 
         const playerCredentials = await auth.generateCredentials(ctx);
         player.credentials = playerCredentials;
-        // 存入真实用户标识
-        player.ownerKey = expectedOwnerKey;
         if (!player.name) {
             const resolvedName = payload?.username || requestedName;
             if (resolvedName) {
                 player.name = resolvedName;
-            }
-        }
-
-        // 状态机：所有座位都有玩家时，从 waiting → playing
-        if (metadata.status === 'waiting' || !metadata.status) {
-            const allSeated = Object.values(metadata.players).every(p => p.name || p.credentials);
-            if (allSeated) {
-                metadata.status = 'playing';
             }
         }
 

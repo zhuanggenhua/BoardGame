@@ -12,7 +12,7 @@ export const MONK_SFX_PUNCH_2 = 'combat.general.mini_games_sound_effects_and_mus
 export const MONK_SFX_PUNCH_3 = 'combat.general.mini_games_sound_effects_and_music_pack.kick_punch.sfx_fight_punch_swoosh_3';
 export const MONK_SFX_KICK_1 = 'combat.general.mini_games_sound_effects_and_music_pack.kick_punch.sfx_fight_kick_swoosh_1';
 export const MONK_SFX_KICK_2 = 'combat.general.mini_games_sound_effects_and_music_pack.kick_punch.sfx_fight_kick_swoosh_2';
-export const MONK_SFX_THUNDER = 'magic.general.simple_magic_sound_fx_pack_vol.shock.thunderbolt_strike_cast_a';
+export const MONK_SFX_THUNDER = 'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_01_krst';
 export const MONK_SFX_ZEN = 'magic.general.simple_magic_sound_fx_pack_vol.light.heavenly_flame';
 
 // 辅助函数：创建伤害效果
@@ -220,7 +220,7 @@ export const MONK_ABILITIES: AbilityDef[] = [
         type: 'offensive',
         description: abilityText('transcendence', 'description'),
         tags: ['ultimate'],
-        sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.offensive_spells.offensive_spells_thunderstrike_crash_001',
+        sfxKey: 'combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_02_krst',
         trigger: { type: 'diceSet', faces: { [DICE_FACE_IDS.LOTUS]: 5 } },
         effects: [
             // 造成10伤害，造成击倒

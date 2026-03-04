@@ -4,8 +4,6 @@
  * 定义客户端与服务端之间的 socket.io 事件协议和共享类型。
  */
 
-import type { Operation } from 'fast-json-patch';
-
 // ============================================================================
 // 玩家信息
 // ============================================================================
@@ -62,11 +60,12 @@ export interface ServerToClientEvents {
         meta?: { stateID?: number; lastCommandPlayerId?: string; randomCursor?: number },
     ) => void;
 
-    /** 增量状态更新（JSON Patch） */
+    /** 增量状态 patch（命令执行后，状态变化较小时） */
     'state:patch': (
         matchID: string,
-        patches: Operation[],
+        patches: import('fast-json-patch').Operation[],
         matchPlayers: MatchPlayerInfo[],
+        /** 元数据，用于乐观更新校验 */
         meta: { stateID: number; lastCommandPlayerId?: string; randomCursor: number },
     ) => void;
 
@@ -125,10 +124,4 @@ export interface GameBoardProps<
 
     /** 重置游戏回调（用于重赛） */
     reset?: () => void;
-
-    /**
-     * 乐观引擎是否有未确认的命令（等待服务端确认）。
-     * 本地模式始终为 false。
-     */
-    hasPendingOptimisticCommands?: boolean;
 }

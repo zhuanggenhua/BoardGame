@@ -3,7 +3,7 @@
  * 
  * 测试偷窃技能的完整功能：
  * - 无 Shadow：只从银行获得 CP
- * - 有 Shadow：从对手偷取 CP（Steal I 最多 1）
+ * - 有 Shadow：从对手偷取 CP（最多 2）
  * - 对手 CP 不足：只偷取实际拥有的
  * - 偷窃 II：获得更多 CP
  */
@@ -88,7 +88,7 @@ describe('暗影刺客 - 偷窃技能', () => {
         expect(state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(5); // 对手 CP 不变
     });
 
-    it('有 Shadow：从对手偷取 CP（Steal I 最多 1）', () => {
+    it('有 Shadow：从对手偷取 CP（最多 2）', () => {
         let state = createTestState(['0', '1'], fixedRandom);
         
         // 给对手一些 CP
@@ -115,8 +115,8 @@ describe('暗影刺客 - 偷窃技能', () => {
         state = dispatch(state, { type: 'SELECT_ABILITY', playerId: '0', payload: { abilityId: 'steal-2' } });
         state = dispatch(state, { type: 'ADVANCE_PHASE', playerId: '0' });
 
-        expect(state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(initialP0Cp + 2); // 获得 2 CP（1 偷取 + 1 银行）
-        expect(state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(4); // 对手失去 1 CP (5-1=4)
+        expect(state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(initialP0Cp + 2); // 获得 2 CP
+        expect(state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(3); // 对手失去 2 CP (5-2=3)
     });
 
     it('有 Shadow 但对手 CP 不足：只偷取实际拥有的', () => {
@@ -177,7 +177,7 @@ describe('暗影刺客 - 偷窃技能', () => {
         state = dispatch(state, { type: 'SELECT_ABILITY', playerId: '0', payload: { abilityId: 'steal-3' } });
         state = dispatch(state, { type: 'ADVANCE_PHASE', playerId: '0' });
 
-        expect(state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(initialP0Cp + 3); // 获得 3 CP（1 偷取 + 2 银行）
-        expect(state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(4); // 对手失去 1 CP (5-1=4，Steal I 偷取上限是 1)
+        expect(state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(initialP0Cp + 3); // 获得 3 CP
+        expect(state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(3); // 对手失去 2 CP (5-2=3，偷取上限是 2)
     });
 });

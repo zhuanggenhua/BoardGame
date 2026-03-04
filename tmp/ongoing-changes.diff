@@ -1,0 +1,100 @@
+﻿diff --git a/src/games/smashup/domain/ongoingModifiers.ts b/src/games/smashup/domain/ongoingModifiers.ts
+index 0f1061c..bdb655f 100644
+--- a/src/games/smashup/domain/ongoingModifiers.ts
++++ b/src/games/smashup/domain/ongoingModifiers.ts
+@@ -56,6 +56,23 @@ export interface BreakpointModifierContext {
+ /** 涓寸晫鐐逛慨姝ｅ嚱鏁帮細杩斿洖澧炲噺鍊硷紙姝ｆ暟=鎻愰珮涓寸晫鐐癸紝璐熸暟=闄嶄綆锛?*/
+ export type BreakpointModifierFn = (ctx: BreakpointModifierContext) => number;
+ 
++/** 鍩哄湴绾у埆鍔涢噺淇涓婁笅鏂?*/
++export interface BasePowerModifierContext {
++    /** 褰撳墠娓告垙鐘舵€?*/
++    state: SmashUpCore;
++    /** 鍩哄湴绱㈠紩 */
++    baseIndex: number;
++    /** 鍩哄湴 */
++    base: BaseInPlay;
++    /** 鐜╁ ID */
++    playerId: PlayerId;
++    /** 褰撳墠澶勭悊鐨?ongoing 鍗★紙鍙€夛紝鐢ㄤ簬鍒ゆ柇鍗＄殑鎵€鏈夎€咃級 */
++    ongoing?: { uid: string; defId: string; ownerId: string };
++}
++
++/** 鍩哄湴绾у埆鍔涢噺淇鍑芥暟锛氳繑鍥炶鐜╁鍦ㄨ鍩哄湴鐨勯澶栧姏閲?*/
++export type BasePowerModifierFn = (ctx: BasePowerModifierContext) => number;
++
+ /** 涓寸晫鐐逛慨姝ｆ潵婧?*/
+ interface BreakpointModifierEntry {
+     sourceDefId: string;
+@@ -72,6 +89,9 @@ const modifierRegistry: ModifierEntry[] = [];
+ /** 鎸佺画涓寸晫鐐逛慨姝ｆ敞鍐岃〃 */
+ const breakpointModifierRegistry: BreakpointModifierEntry[] = [];
+ 
++/** 鍩哄湴绾у埆鍔涢噺淇娉ㄥ唽琛?*/
++const basePowerModifiers: Map<string, BasePowerModifierFn> = new Map();
++
+ /**
+  * 娉ㄥ唽涓€涓寔缁姏閲忎慨姝?  * 
+@@ -87,6 +107,43 @@ export function registerPowerModifier(
+     modifierRegistry.push({ sourceDefId, modifier });
+ }
+ 
++/**
++ * 娉ㄥ唽涓€涓熀鍦扮骇鍒姏閲忎慨姝?+ * 
++ * @param defId ongoing 琛屽姩鍗＄殑 defId锛堝 'steampunk_aggromotive'锛?+ * @param modifier 淇鍑芥暟
++ */
++export function registerBasePowerModifier(defId: string, modifier: BasePowerModifierFn): void {
++    basePowerModifiers.set(defId, modifier);
++}
++
++/**
++ * 璁＄畻鐜╁鍦ㄥ熀鍦扮殑棰濆鍔涢噺锛堟潵鑷熀鍦扮骇鍒慨姝ｏ級
++ * 
++ * @param state 褰撳墠娓告垙鐘舵€?+ * @param baseIndex 鍩哄湴绱㈠紩
++ * @param playerId 鐜╁ ID
++ * @returns 棰濆鍔涢噺鍊?+ */
++export function getBasePowerModifiers(
++    state: SmashUpCore,
++    baseIndex: number,
++    playerId: PlayerId
++): number {
++    const base = state.bases[baseIndex];
++    let total = 0;
++
++    // 閬嶅巻鍩哄湴涓婄殑鎵€鏈?ongoing 琛屽姩鍗?+    for (const ongoing of base.ongoingActions) {
++        const modifier = basePowerModifiers.get(ongoing.defId);
++        if (modifier) {
++            total += modifier({ state, baseIndex, base, playerId, ongoing });
++        }
++    }
++
++    return total;
++}
++
+ // ============================================================================
+ // 澹版槑寮?ongoing 鍔涢噺淇 API锛堥€氱敤锛岃嚜鍔ㄦ寜瀹炰緥鏁板彔鍔狅級
+ // ============================================================================
+@@ -260,6 +317,7 @@ export function getEffectivePowerBreakdown(
+     baseIndex: number
+ ): {
+     basePower: number;
++    powerCounters: number;
+     permanentModifier: number;
+     tempModifier: number;
+     ongoingDetails: PowerModifierDetail[];
+@@ -267,12 +325,14 @@ export function getEffectivePowerBreakdown(
+ } {
+     const ongoingDetails = getOngoingPowerModifierDetails(state, minion, baseIndex);
+     const ongoingTotal = ongoingDetails.reduce((sum, d) => sum + d.value, 0);
++    const counters = minion.powerCounters ?? 0;
+     return {
+         basePower: minion.basePower,
++        powerCounters: counters,
+         permanentModifier: minion.powerModifier,
+         tempModifier: minion.tempPowerModifier ?? 0,
+         ongoingDetails,
+-        finalPower: Math.max(0, minion.basePower + minion.powerModifier + (minion.tempPowerModifier ?? 0) + ongoingTotal),
++        finalPower: Math.max(0, minion.basePower + counters + minion.powerModifier + (minion.tempPowerModifier ?? 0) + ongoingTotal),
+     };
+ }
+ 

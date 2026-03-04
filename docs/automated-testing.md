@@ -55,10 +55,42 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 
 ### 开发工作流建议
 
-1. **开发特定游戏时**：只运行该游戏的测试（6-12秒）
+1. **开发特定游戏时**：只运行该游戏的测试（快速反馈）
+   ```bash
+   npm run test:smashup  # 2-3分钟
+   ```
+
 2. **修改核心框架时**：先运行核心测试，再运行游戏测试
-3. **提交前**：运行所有测试
-4. **调试单个测试文件**：`npx vitest run <文件路径>`
+   ```bash
+   npm run test:core     # 1-2分钟
+   ```
+
+3. **提交前**：运行核心游戏测试（排除慢速测试）
+   ```bash
+   npm run test:games:core  # 3-5分钟（排除 property/audit/E2E）
+   ```
+
+4. **调试单个测试文件**：最快的方式
+   ```bash
+   npm run test -- myFeature.test.ts  # 10-60秒
+   ```
+
+5. **CI/CD 中**：运行完整测试套件
+   ```bash
+   npm test  # 10-15分钟
+   ```
+
+### 测试性能参考
+
+| 测试范围 | 预计时间 | 说明 |
+|---------|---------|------|
+| 单个测试文件 | 10-60秒 | 最快，推荐开发时使用 |
+| 单个游戏 | 2-3分钟 | 包含该游戏的所有测试 |
+| 核心游戏测试 | 3-5分钟 | 排除 property/audit/E2E |
+| 所有游戏测试 | 5-10分钟 | 包含 property-based 测试 |
+| 完整测试套件 | 10-15分钟 | 包含所有模块 |
+
+**注意**：测试时间受机器性能影响。如果遇到超时，参考 `docs/testing-best-practices.md` 中的性能优化建议。
 
 ---
 
@@ -206,6 +238,161 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 ## E2E 测试
 
 测试文件位于 `e2e/` 目录。
+
+### E2E 测试框架规范（强制）
+
+#### 1. 测试前自动检查
+
+所有 E2E 测试命令会自动执行以下检查：
+
+**文件编码检查**（`scripts/infra/check-file-encoding.mjs`）：
+- 扫描所有源码文件（`src/**/*.{ts,tsx}`）
+- 检测并自动修复 UTF-8 BOM
+- 检测无效字符（编码错误）
+- 防止 Vite 编译失败
+
+**环境隔离检查**（`scripts/infra/check-e2e-safety.js`）：
+- 检查测试模式（独立测试环境 vs 使用开发服务器）
+- 检查端口占用情况
+- 给出建议和警告
+
+#### 2. 服务器就绪检查
+
+**Vite 就绪检查插件**（`vite-plugins/ready-check.ts`）：
+- 提供 `/__ready` 端点
+- 只有在 Vite 完全就绪后才返回 200 状态码
+- Playwright 等待此端点就绪才开始测试
+- 防止测试开始时服务还在编译
+
+**配置示例**（`playwright.config.ts`）：
+```typescript
+webServer: [
+  {
+    command: `npm run dev:frontend`,
+    url: `http://localhost:5173/__ready`,  // 使用就绪端点
+    timeout: 120000,
+  },
+  // ...
+]
+```
+
+#### 3. 测试性能优化规范
+
+**轮询间隔优化**：
+```typescript
+// ❌ 错误：使用默认轮询间隔（100ms）
+await page.waitForFunction(condition, { timeout: 5000 });
+
+// ✅ 正确：增加轮询间隔到 200ms
+await page.waitForFunction(condition, { 
+  timeout: 5000, 
+  polling: 200  // 减少 50% 轮询次数
+});
+```
+
+**同步等待 + 异步降级**：
+```typescript
+// ✅ 推荐：先尝试同步等待（无跨进程通信），失败后降级到异步等待
+const result = await page.evaluate(() => {
+  // 执行操作
+  harness.command.dispatch({ type: 'action', payload });
+  
+  // 同步等待结果（最多 100ms）
+  const startTime = Date.now();
+  while (Date.now() - startTime < 100) {
+    if (harness.state.get()?.someCondition) {
+      return { success: true };
+    }
+  }
+  return { success: false };
+});
+
+// 如果同步等待失败，降级到异步等待
+if (!result.success) {
+  await page.waitForFunction(() => {
+    return harness.state.get()?.someCondition;
+  }, { timeout: 5000, polling: 200 });
+}
+```
+
+**性能基准**：
+- 单个测试耗时应 < 20 秒
+- 服务器启动耗时应 < 20 秒
+- 总耗时应 < 40 秒
+
+#### 4. 测试框架 API（强制使用）
+
+> **⚠️ 强制规定**：所有新的 E2E 测试必须使用 GameTestContext API。禁止使用旧的 helper 函数（`setupSmashUpOnlineMatch`、`readCoreState`、`applyCoreState` 等）。旧测试可以保留，但新测试必须用新框架。
+
+**GameTestContext**（`e2e/framework/GameTestContext.ts`）：
+
+提供统一的测试 API，封装状态注入、游戏动作、断言等功能。
+
+```typescript
+import { test } from './framework';
+
+test('测试名称', async ({ page, game }, testInfo) => {
+  // 1. 快速场景构建
+  await game.setupScene({
+    gameId: 'smashup',
+    player0: {
+      hand: ['wizard_portal'],
+      discard: ['alien_invader'],
+    },
+    currentPlayer: '0',
+    phase: 'playCards',
+  });
+  
+  // 2. 游戏动作
+  await game.playCard('wizard_portal');
+  await game.waitForInteraction('wizard_portal_pick');
+  await game.selectOption('minion-0');
+  await game.confirm();
+  
+  // 3. 断言
+  await game.expectCardInHand('alien_invader');
+  await game.expectPhase('playCards');
+  
+  // 4. 截图（可选）
+  await game.screenshot('final-state', testInfo);
+});
+```
+
+**核心方法**：
+- `setupScene(config)` - 快速构建测试场景（跳过前置步骤）
+- `playCard(cardDefId, options?)` - 打出指定卡牌
+- `waitForInteraction(sourceId)` - 等待交互出现
+- `selectOption(optionId)` - 选择交互选项
+- `confirm()` / `skip()` - 确认/跳过交互
+- `advancePhase()` - 推进阶段
+- `getState()` - 读取当前游戏状态
+- `expectCardInHand(cardDefId)` - 断言手牌中有指定卡牌
+- `expectCardInDiscard(cardDefId)` - 断言弃牌堆中有指定卡牌
+- `expectPhase(phase)` - 断言当前阶段
+- `screenshot(name, testInfo)` - 截图
+
+**详细文档**：`docs/e2e-testing-guide.md`
+
+**为什么必须使用新框架**：
+- ✅ 自动处理状态注入和等待（避免超时问题）
+- ✅ 统一的 API，减少样板代码（60-70% 代码量）
+- ✅ 更好的错误信息和调试支持
+- ✅ 自动截图和测试报告
+- ✅ 类型安全，编译期检查
+- ❌ 旧的 helper 函数容易出现超时和环境问题
+- ❌ 旧的方式需要手动管理状态、等待、清理
+
+**禁止使用旧方式**：
+```typescript
+// ❌ 禁止：使用旧的 helper 函数
+import { setupSmashUpOnlineMatch, readCoreState, applyCoreState } from './helpers/smashup';
+
+// ✅ 正确：使用新的 GameTestContext API
+import { test } from './framework';
+test('test', async ({ page, game }) => {
+  await game.setupScene({ ... });
+});
+```
 
 ### 使用 Fixture 简化测试（推荐）
 

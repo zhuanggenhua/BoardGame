@@ -125,4 +125,42 @@ uploads/
 
 # 临时文件和开发中间产物
 temp/
+tmp/
 *.tmp
+.worktrees/
+
+# 临时分析文档（应移到 docs/bugs/ 或 evidence/）
+BUG-*.md
+DEBUG-*.md
+fix-*.md
+test-*.md
+*-summary.md
+*-analysis.md
+*-report.md
+*-status.md
+
+# 临时脚本（应移到 scripts/temp/）
+_*.cjs
+_*.mjs
+check-*.mjs
+test-*.mjs
+
+# 临时数据文件（应移到 temp/）
+wiki-*.json
+wiki-*.txt
+wiki-*.html
+*-report.json
+*-results.json
+*-diff.txt
+temp_*.txt
+tmp_*.txt
+
+# 临时日志文件（应移到 test-results/）
+_vitest_*.log
+*-failures.txt
+*-output.txt
+
+# 其他临时文件
+threshold
+edge_check.txt
+scan_results.txt

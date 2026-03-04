@@ -5,7 +5,6 @@
 
 import type { PlayerId } from '../../../engine/types';
 import type { DiceThroneCore, HeroState, AbilityCard } from './types';
-import { areTeammates, isTeamMode } from './rules';
 
 /**
  * 隐藏卡牌内容（只保留 id 用于数量统计）
@@ -61,8 +60,7 @@ export const playerView = (
 
     for (const [playerId, player] of Object.entries(state.players)) {
         const isOwner = playerId === viewingPlayerId;
-        const isTeammate = isTeamMode(state) && areTeammates(state, playerId as PlayerId, viewingPlayerId);
-        filteredPlayers[playerId] = filterPlayerView(player, isOwner || isTeammate);
+        filteredPlayers[playerId] = filterPlayerView(player, isOwner);
     }
 
     return {

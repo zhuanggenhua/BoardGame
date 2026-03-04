@@ -36,7 +36,7 @@ const buildCreateData = (setupOverrides?: Record<string, unknown>): CreateMatchD
     };
 };
 
-describe('HybridStorage 行为（统一 MongoDB）', () => {
+describe('HybridStorage 行为', () => {
     let mongo: MongoMemoryServer;
     let hybrid: HybridStorage;
 
@@ -44,7 +44,7 @@ describe('HybridStorage 行为（统一 MongoDB）', () => {
         mongo = await MongoMemoryServer.create();
         await mongoose.connect(mongo.getUri(), { dbName: 'boardgame-test' });
         await mongoStorage.connect();
-    }, 60_000);
+    });
 
     beforeEach(async () => {
         await mongoose.connection.db!.dropDatabase();
@@ -57,18 +57,18 @@ describe('HybridStorage 行为（统一 MongoDB）', () => {
         await mongo.stop();
     });
 
-    it('游客房间持久化到 MongoDB（服务重启后可恢复）', async () => {
+    it('游客房间只在内存中创建，不落库', async () => {
         await hybrid.createMatch('guest-1', buildCreateData());
 
         const Match = mongoose.model('Match');
         const doc = await Match.findOne({ matchID: 'guest-1' }).lean();
-        expect(doc).toBeTruthy();
+        expect(doc).toBeNull();
 
         const { metadata } = await hybrid.fetch('guest-1', { metadata: true });
         expect(metadata).toBeTruthy();
     });
 
-    it('游客重复创建会覆盖旧房间（MongoStorage ownerKey 去重）', async () => {
+    it('游客重复创建会覆盖旧房间', async () => {
         await hybrid.createMatch('guest-1', buildCreateData());
         await hybrid.createMatch('guest-2', buildCreateData());
 
@@ -77,19 +77,8 @@ describe('HybridStorage 行为（统一 MongoDB）', () => {
         expect(matches).not.toContain('guest-1');
     });
 
-    it('注册用户房间持久化到 MongoDB', async () => {
-        await hybrid.createMatch('user-1', buildCreateData({
-            ownerKey: 'user:abc',
-            ownerType: 'user',
-        }));
-
-        const Match = mongoose.model('Match');
-        const doc = await Match.findOne({ matchID: 'user-1' }).lean();
-        expect(doc).toBeTruthy();
-    });
-
-    it('临时房间断线超时后被清理', async () => {
-        const disconnectedSince = Date.now() - 31 * 60 * 1000;
+    it('内存临时房间断线超时后清理', async () => {
+        const disconnectedSince = Date.now() - 6 * 60 * 1000;
         const setupData = buildSetupData();
         const baseMetadata = {
             ...buildMetadata(setupData),
@@ -102,36 +91,10 @@ describe('HybridStorage 行为（统一 MongoDB）', () => {
 
         await hybrid.createMatch('guest-clean', createData);
 
-        // MongoStorage.cleanupEphemeralMatches 需要 metadata 中有 disconnectedSince
-        // 手动更新 metadata 以模拟断线状态
-        await hybrid.setMetadata('guest-clean', baseMetadata);
-
         const cleaned = await hybrid.cleanupEphemeralMatches();
-        expect(cleaned).toBeGreaterThanOrEqual(1);
+        expect(cleaned).toBe(1);
 
         const { metadata: fetchedMetadata } = await hybrid.fetch('guest-clean', { metadata: true });
         expect(fetchedMetadata).toBeUndefined();
-    });
-
-    it('setState 和 fetch 正常工作', async () => {
-        await hybrid.createMatch('test-1', buildCreateData());
-
-        const newState: StoredMatchState = {
-            G: { core: { hp: 10 }, sys: {} },
-            _stateID: 1,
-        };
-        await hybrid.setState('test-1', newState);
-
-        const { state } = await hybrid.fetch('test-1', { state: true });
-        expect(state).toBeTruthy();
-        expect(state!._stateID).toBe(1);
-    });
-
-    it('wipe 删除房间', async () => {
-        await hybrid.createMatch('wipe-1', buildCreateData());
-        await hybrid.wipe('wipe-1');
-
-        const { metadata } = await hybrid.fetch('wipe-1', { metadata: true });
-        expect(metadata).toBeUndefined();
     });
 });

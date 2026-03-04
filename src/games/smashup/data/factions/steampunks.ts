@@ -81,7 +81,7 @@ export const STEAMPUNK_ACTIONS: ActionCardDef[] = [
         name: '齐柏林飞艇',
         nameEn: 'Zeppelin',
         faction: 'steampunks',        abilityTags: ['ongoing', 'talent'],
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 27 },
     },
     {
@@ -121,7 +121,7 @@ export const STEAMPUNK_ACTIONS: ActionCardDef[] = [
         name: '逃生通道',
         nameEn: 'Escape Hatch',
         faction: 'steampunks',        abilityTags: ['ongoing'],
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 34 },
     },
 ];

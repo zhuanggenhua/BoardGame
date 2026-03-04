@@ -6,8 +6,8 @@ import type { CardInstance } from '../domain/types';
 import { getCardDef, resolveCardName } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PromptOverlay } from './PromptOverlay';
-import { SMASHUP_CARD_BACK } from '../domain/ids';
 import { UI_Z_INDEX } from '../../../core';
+import { SMASHUP_CARD_BACK } from '../domain/ids';
 
 type Props = {
     deckCount: number;
@@ -46,9 +46,11 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn,
         prevAutoOpen.current = !!autoOpenPanel;
     }, [autoOpenPanel]);
 
+    // 使用 discard 数组的长度作为 topCard 判断依据，避免在中间状态（弃牌堆暂时为空）时渲染错误
+    // zombie_mall_crawl 等卡牌会先清空弃牌堆（DECK_RESHUFFLED），再放回卡牌（CARDS_DISCARDED）
+    // 如果直接读取 discard[discard.length - 1]，在中间状态会得到 undefined
     const topCard = discard.length > 0 ? discard[discard.length - 1] : null;
     const topDef = topCard ? getCardDef(topCard.defId) : null;
-    const topName = resolveCardName(topDef ?? undefined, t) || topCard?.defId;
 
     // 弃牌堆卡牌列表（供 PromptOverlay displayCards 使用）
     // 永远显示全部弃牌堆，可打出的卡牌通过 playableDefIds 高亮
@@ -110,7 +112,7 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn,
                 <div className="relative w-[7.5vw] aspect-[0.714]">
                     <div className="absolute inset-0 bg-slate-700 rounded-sm border border-slate-600 shadow-sm translate-x-1 -translate-y-1 rotate-1" />
                     <div className="absolute inset-0 bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2">
-                        <CardPreview previewRef={SMASHUP_CARD_BACK} className="w-full h-full object-cover" />
+                        <CardPreview previewRef={SMASHUP_CARD_BACK} className="w-full h-full" />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                             <div className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg">
                                 <span className="text-white font-black font-mono text-base">{deckCount}</span>
@@ -140,12 +142,10 @@ export const DeckDiscardZone: React.FC<Props> = ({ deckCount, discard, isMyTurn,
                         <>
                             <div className="absolute inset-0 bg-white rounded-sm border border-slate-300 shadow-sm -translate-x-1 -translate-y-1 -rotate-1" />
                             <div className={`absolute inset-0 bg-white rounded-sm shadow-xl transition-transform group-hover:-translate-y-2 group-hover:rotate-1 border overflow-hidden z-10 ${hasPlayableFromDiscard ? 'border-amber-400 border-2' : 'border-slate-200'}`}>
-                                <CardPreview previewRef={topDef?.previewRef} className="w-full h-full object-cover" />
-                                {!topDef?.previewRef && (
-                                    <div className="absolute inset-0 flex items-center justify-center p-1 text-center">
-                                        <span className="text-[0.5vw] font-bold leading-none">{topName}</span>
-                                    </div>
-                                )}
+                                <CardPreview 
+                                    previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: topCard!.defId } }}
+                                    className="w-full h-full" 
+                                />
                             </div>
                         </>
                     ) : (

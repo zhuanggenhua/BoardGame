@@ -127,7 +127,7 @@ export const DINOSAUR_ACTIONS: ActionCardDef[] = [
         type: 'action',
         subtype: 'ongoing',
         name: '全副武装',
-        nameEn: 'Tooth and Claw...and Guns',
+        nameEn: 'Tooth and Claw... and Guns',
         faction: 'dinosaurs',
         abilityTags: ['ongoing'],
         ongoingTarget: 'minion',

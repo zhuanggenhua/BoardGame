@@ -28,7 +28,6 @@ export interface HeroSelectionOverlayProps {
     playerNames: Record<PlayerId, string>;
     onSelect: (characterId: SelectableCharacterId) => void;
     onReady: () => void;
-    onUnready: () => void;
     onStart: () => void;
     locale: string;
 }
@@ -57,7 +56,6 @@ export const HeroSelectionOverlay: React.FC<HeroSelectionOverlayProps> = ({
     playerNames,
     onSelect,
     onReady,
-    onUnready,
     onStart,
     locale,
 }) => {
@@ -145,7 +143,7 @@ export const HeroSelectionOverlay: React.FC<HeroSelectionOverlayProps> = ({
                         {t('selection.title', '选择你的英雄')}
                     </h2>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-[1vw] pt-[1vw] grid grid-cols-2 gap-[0.8vw] content-start">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-[1vw] pt-[1vw] grid grid-cols-2 gap-[0.8vw] content-start">
                     {availableCharacters.map((char, index) => {
                         const isSelectedByMe = selectedCharacters[currentPlayerId] === char.id;
 
@@ -318,18 +316,16 @@ export const HeroSelectionOverlay: React.FC<HeroSelectionOverlayProps> = ({
                         </motion.button>
                     )}
 
-                    {/* 已准备状态：非房主玩家准备后可取消 */}
+                    {/* 已准备状态：非房主玩家准备后等待 */}
                     {!isHost && readyPlayers[currentPlayerId] && (
-                        <motion.button
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            onClick={onUnready}
-                            className="px-[3vw] py-[1vw] rounded-full text-[1.2vw] font-black uppercase tracking-[0.2em] transition-all duration-300 border-2 bg-white/5 text-emerald-400 border-emerald-400/50 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/50 cursor-pointer"
-                        >
+                        <div className="px-[3vw] py-[1vw] rounded-full text-[1.2vw] font-black uppercase tracking-[0.2em] border-2 bg-white/5 text-emerald-400 border-emerald-400/50">
                             <span className="inline-flex items-center gap-[0.8vw]">
-                                <span>{t('selection.cancelReady', '取消准备')}</span>
+                                <span>{t('selection.readyWaiting', '等待其他玩家...')}</span>
+                                <span className="flex items-center gap-[0.35vw]">
+                                    {readyProgressDots}
+                                </span>
                             </span>
-                        </motion.button>
+                        </div>
                     )}
 
                     {/* 开始游戏按钮：只有房主可见，选好角色后立即显示 */}

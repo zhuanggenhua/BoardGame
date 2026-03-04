@@ -99,7 +99,7 @@ export const LocalMatchRoom = () => {
     }
 
     return (
-        <div className="relative w-full h-screen bg-black overflow-hidden font-sans">
+        <div className="relative w-full h-screen bg-black overflow-hidden font-sans" data-game-page>
             <GameHUD mode="local" />
             <div
                 className="w-full h-full"

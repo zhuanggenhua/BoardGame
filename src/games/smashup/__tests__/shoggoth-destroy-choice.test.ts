@@ -74,9 +74,9 @@ function triggerShoggothOnPlay(state: SmashUpCore, baseIndex = 0) {
 
 describe('修格斯消灭随从选择权', () => {
     it('对手拒绝且有多个随从时，产生由修格斯控制者选择的 Interaction', () => {
-        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6);
-        const opM1 = makeMinion('op-1', 'test_minion_a', '1', 2);
-        const opM2 = makeMinion('op-2', 'test_minion_b', '1', 5);
+        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6, { powerModifier: 0 });
+        const opM1 = makeMinion('op-1', 'test_minion_a', '1', 2, { powerModifier: 0 });
+        const opM2 = makeMinion('op-2', 'test_minion_b', '1', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth, opM1, opM2] });
         const state = makeState({ bases: [base] });
 
@@ -99,8 +99,8 @@ describe('修格斯消灭随从选择权', () => {
     });
 
     it('对手拒绝且只有1个随从时，直接消灭', () => {
-        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6);
-        const opM1 = makeMinion('op-1', 'test_minion_a', '1', 3);
+        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6, { powerModifier: 0 });
+        const opM1 = makeMinion('op-1', 'test_minion_a', '1', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth, opM1] });
         const state = makeState({ bases: [base] });
 
@@ -118,9 +118,9 @@ describe('修格斯消灭随从选择权', () => {
     });
 
     it('控制者选择消灭指定随从后产生正确事件', () => {
-        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6);
-        const opM1 = makeMinion('op-1', 'test_minion_a', '1', 2);
-        const opM2 = makeMinion('op-2', 'test_minion_b', '1', 5);
+        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6, { powerModifier: 0 });
+        const opM1 = makeMinion('op-1', 'test_minion_a', '1', 2, { powerModifier: 0 });
+        const opM2 = makeMinion('op-2', 'test_minion_b', '1', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth, opM1, opM2] });
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -138,8 +138,8 @@ describe('修格斯消灭随从选择权', () => {
     });
 
     it('对手选择抽疯狂卡时不触发消灭', () => {
-        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6);
-        const opM1 = makeMinion('op-1', 'test_minion_a', '1', 3);
+        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6, { powerModifier: 0 });
+        const opM1 = makeMinion('op-1', 'test_minion_a', '1', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth, opM1] });
         const state = makeState({ bases: [base] });
 
@@ -154,10 +154,10 @@ describe('修格斯消灭随从选择权', () => {
     });
 
     it('多对手链式处理：P1拒绝后P0选择消灭，然后继续询问P2', () => {
-        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6);
-        const p1m1 = makeMinion('p1-1', 'test_a', '1', 2);
-        const p1m2 = makeMinion('p1-2', 'test_b', '1', 4);
-        const p2m1 = makeMinion('p2-1', 'test_c', '2', 3);
+        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6, { powerModifier: 0 });
+        const p1m1 = makeMinion('p1-1', 'test_a', '1', 2, { powerModifier: 0 });
+        const p1m2 = makeMinion('p1-2', 'test_b', '1', 4, { powerModifier: 0 });
+        const p2m1 = makeMinion('p2-1', 'test_c', '2', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth, p1m1, p1m2, p2m1] });
         const state = makeState({
             bases: [base],
@@ -195,7 +195,7 @@ describe('修格斯消灭随从选择权', () => {
     });
 
     it('对手在基地没有随从时，拒绝不产生任何消灭', () => {
-        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6);
+        const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth] });
         const state = makeState({ bases: [base] });
 

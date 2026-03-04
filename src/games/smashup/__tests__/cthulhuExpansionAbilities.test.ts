@@ -42,7 +42,7 @@ beforeAll(() => {
 function makeMinion(uid: string, defId: string, controller: string, power: number, owner?: string): MinionOnBase {
     return {
         uid, defId, controller, owner: owner ?? controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, talentUsed: false, attachedActions: [],
+        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
     };
 }
 
@@ -349,7 +349,7 @@ describe('米斯卡塔尼克大学派系能力', () => {
 
         it('消灭随从上附着的行动卡（通过 interaction handler 逐个点击）', () => {
             const minionWithActions: MinionOnBase = {
-                ...makeMinion('m1', 'test', '1', 3),
+                ...makeMinion('m1', 'test', '1', 3, { powerModifier: 0 }),
                 attachedActions: [
                     { uid: 'att1', defId: 'test_attached', ownerId: '1' },
                 ],

@@ -16,8 +16,8 @@ import { Server as IOServer, Socket as IOSocket } from 'socket.io';
 import msgpackParser from 'socket.io-msgpack-parser';
 import { nanoid } from 'nanoid';
 import { connectDB } from './src/server/db';
-import { MAX_CHAT_LENGTH, sanitizeChatText } from './src/server/chatUtils';
-import { MAX_CHAT_HISTORY } from './src/shared/chat';
+import { sanitizeChatText } from './src/server/chatUtils';
+import { MAX_CHAT_MESSAGES } from './src/shared/chat';
 import { MatchRecord } from './src/server/models/MatchRecord';
 import { GAME_SERVER_MANIFEST } from './src/games/manifest.server';
 import { mongoStorage } from './src/server/storage/MongoStorage';
@@ -548,6 +548,46 @@ router.post('/games/:name/create', async (ctx) => {
         setupData,
         status: 'waiting',
     };
+
+    // ✅ 单房间限制：同一 ownerKey 创建新房间时自动清理旧房间
+    if (ownerKey) {
+        try {
+            const allMatchIds = await storage.listMatches();
+            const ownerMatches: Array<{ matchID: string; gameName: string }> = [];
+            
+            // 查找该 ownerKey 的所有房间
+            for (const existingMatchID of allMatchIds) {
+                const { metadata: existingMetadata } = await storage.fetch(existingMatchID, { metadata: true });
+                if (existingMetadata?.setupData?.ownerKey === ownerKey) {
+                    ownerMatches.push({
+                        matchID: existingMatchID,
+                        gameName: existingMetadata.gameName,
+                    });
+                }
+            }
+            
+            // 删除旧房间并发送 MATCH_ENDED 事件
+            if (ownerMatches.length > 0) {
+                gameLogger.info('清理旧房间', {
+                    ownerKey,
+                    ownerType: ownerType ?? 'unknown',
+                    count: ownerMatches.length,
+                    matchIds: ownerMatches.map(m => m.matchID),
+                });
+                
+                for (const match of ownerMatches) {
+                    await storage.wipe(match.matchID);
+                    emitMatchEnded(match.gameName as SupportedGame, match.matchID);
+                }
+            }
+        } catch (err) {
+            // 清理失败不应阻止创建新房间，记录日志后继续
+            logger.error('清理旧房间失败', {
+                ownerKey,
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+    }
 
     try {
         await storage.createMatch(matchID, {
@@ -1557,8 +1597,8 @@ lobbySocketIO.on('connection', (socket) => {
         }
         history.push(message);
         // 超过上限时裁剪旧消息
-        if (history.length > MAX_CHAT_HISTORY) {
-            chatHistoryByMatch.set(matchId, history.slice(-MAX_CHAT_HISTORY));
+        if (history.length > MAX_CHAT_MESSAGES) {
+            chatHistoryByMatch.set(matchId, history.slice(-MAX_CHAT_MESSAGES));
         }
 
         lobbySocketIO.to(`matchchat:${matchId}`).emit(MATCH_CHAT_EVENTS.MESSAGE, message);

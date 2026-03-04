@@ -202,6 +202,106 @@ describe('CharacterSelectionSystem', () => {
             expect(result?.error).toBe('player_mismatch');
         });
 
+        it('PLAYER_READY 游戏已开始后不能准备', () => {
+            const system = new CharacterSelectionSystem();
+            const hooks = system.getHooks();
+
+            const state = {
+                sys: {
+                    characterSelection: {
+                        ...system.createInitialState(['0', '1']),
+                        selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+                        hostStarted: true,
+                    },
+                    flow: { currentPhase: 'setup' },
+                },
+            };
+
+            const command = {
+                type: CHARACTER_SELECTION_COMMANDS.PLAYER_READY,
+                playerId: '1',
+                payload: {},
+                sourceCommandType: CHARACTER_SELECTION_COMMANDS.PLAYER_READY,
+            };
+
+            const result = hooks.beforeCommand?.(state, command);
+            expect(result?.valid).toBe(false);
+            expect(result?.error).toBe('game_already_started');
+        });
+
+        it('PLAYER_UNREADY 需要在 setup 阶段', () => {
+            const system = new CharacterSelectionSystem();
+            const hooks = system.getHooks();
+
+            const state = {
+                sys: {
+                    characterSelection: system.createInitialState(['0', '1']),
+                    flow: { currentPhase: 'play' },
+                },
+            };
+
+            const command = {
+                type: CHARACTER_SELECTION_COMMANDS.PLAYER_UNREADY,
+                playerId: '1',
+                payload: {},
+                sourceCommandType: CHARACTER_SELECTION_COMMANDS.PLAYER_UNREADY,
+            };
+
+            const result = hooks.beforeCommand?.(state, command);
+            expect(result?.valid).toBe(false);
+            expect(result?.error).toBe('invalid_phase');
+        });
+
+        it('PLAYER_UNREADY 需要合法玩家', () => {
+            const system = new CharacterSelectionSystem();
+            const hooks = system.getHooks();
+
+            const state = {
+                sys: {
+                    characterSelection: system.createInitialState(['0', '1']),
+                    flow: { currentPhase: 'setup' },
+                },
+            };
+
+            const command = {
+                type: CHARACTER_SELECTION_COMMANDS.PLAYER_UNREADY,
+                playerId: '2',
+                payload: {},
+                sourceCommandType: CHARACTER_SELECTION_COMMANDS.PLAYER_UNREADY,
+            };
+
+            const result = hooks.beforeCommand?.(state, command);
+            expect(result?.valid).toBe(false);
+            expect(result?.error).toBe('player_mismatch');
+        });
+
+        it('PLAYER_UNREADY 游戏已开始后不能取消准备', () => {
+            const system = new CharacterSelectionSystem();
+            const hooks = system.getHooks();
+
+            const state = {
+                sys: {
+                    characterSelection: {
+                        ...system.createInitialState(['0', '1']),
+                        readyPlayers: { '0': false, '1': true },
+                        hostStarted: true,
+                    },
+                    flow: { currentPhase: 'setup' },
+                },
+            };
+
+            const command = {
+                type: CHARACTER_SELECTION_COMMANDS.PLAYER_UNREADY,
+                playerId: '1',
+                payload: {},
+                sourceCommandType: CHARACTER_SELECTION_COMMANDS.PLAYER_UNREADY,
+            };
+
+            const result = hooks.beforeCommand?.(state, command);
+            expect(result?.valid).toBe(false);
+            expect(result?.error).toBe('game_already_started');
+        });
+
         it('HOST_START_GAME 只能由房主执行', () => {
             const system = new CharacterSelectionSystem();
             const hooks = system.getHooks();
@@ -301,6 +401,32 @@ describe('CharacterSelectionSystem', () => {
 
             hooks.afterEvent?.(state, event);
             expect(state.sys.characterSelection?.readyPlayers['1']).toBe(true);
+        });
+
+        it('PLAYER_UNREADY 应该更新准备状态', () => {
+            const system = new CharacterSelectionSystem();
+            const hooks = system.getHooks();
+            
+            const state = {
+                sys: {
+                    characterSelection: {
+                        ...system.createInitialState(['0', '1']),
+                        readyPlayers: { '0': false, '1': true },
+                    },
+                },
+            };
+
+            const event = {
+                type: 'PLAYER_UNREADY' as const,
+                payload: {
+                    playerId: '1',
+                },
+                timestamp: 0,
+                sourceCommandType: CHARACTER_SELECTION_COMMANDS.PLAYER_UNREADY,
+            };
+
+            hooks.afterEvent?.(state, event);
+            expect(state.sys.characterSelection?.readyPlayers['1']).toBe(false);
         });
 
         it('HOST_STARTED 应该更新开始状态', () => {

@@ -81,6 +81,13 @@ async function bootstrap() {
 
     const distPath = join(process.cwd(), 'dist');
     const uploadsPath = join(process.cwd(), 'uploads');
+    const publicAssetsPath = join(process.cwd(), 'public/assets');
+    
+    // 静态资源服务优先级：
+    // 1. uploads/ - UGC 动态上传的资源（头像、UGC 包等）
+    // 2. dist/assets/ - Vite 构建产物（JS/CSS，带 content hash）
+    // 3. public/assets/ - 原始静态资源（图片/音频，用于内网部署或 CDN 降级）
+    
     if (existsSync(uploadsPath)) {
         expressApp.use('/assets', express.static(uploadsPath));
     }
@@ -108,6 +115,14 @@ async function bootstrap() {
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             return res.sendFile(join(distPath, 'index.html'));
         });
+    }
+    // 原始静态资源（用于内网部署或 CDN 降级）
+    if (existsSync(publicAssetsPath)) {
+        expressApp.use('/assets', express.static(publicAssetsPath, {
+            maxAge: '7d', // 7天缓存（比构建产物短，因为可能更新）
+            etag: true,
+            lastModified: true,
+        }));
     }
 
     app.useGlobalPipes(

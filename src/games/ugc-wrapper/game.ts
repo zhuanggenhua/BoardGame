@@ -48,7 +48,7 @@ const normalizeRuntimePlayerIds = (playerIds: Array<string | number>) => (
 const buildDomainCore = (packageId: string, domain: UGCDomainCore): DomainCore<unknown, Command, GameEvent> => {
     return {
         gameId: packageId,
-        setup: (playerIds, random, _setupData) => domain.setup(normalizeRuntimePlayerIds(playerIds), random),
+        setup: (playerIds, random) => domain.setup(normalizeRuntimePlayerIds(playerIds), random),
         validate: (state, command) =>
             domain.validate(
                 (state as MatchState<unknown>).core,

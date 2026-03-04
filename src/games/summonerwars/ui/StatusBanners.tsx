@@ -555,7 +555,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
     );
   }
 
-  if (rapidFireMode && !rapidFireMode.confirmed) {
+  if (rapidFireMode) {
     return (
       <div className="bg-orange-900/90 px-4 py-2 rounded-lg border border-orange-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-orange-200 text-sm font-bold">

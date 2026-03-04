@@ -120,14 +120,10 @@ function hasEffectDamage(effects: AbilityEffect[]): boolean {
 }
 
 /**
- * 计算技能的预期基础伤害（用于暴击门控等判断）
+ * 计算技能的预期基础伤害（用于暴击门控判断）
+ * 只计算显式 damage action 的 value，不包括 rollDie/custom action 的动态伤害
  * 
- * 计算范围：
- * - 显式 damage action 的 value
- * - custom action 的 estimateDamage 回调（如果注册时提供了）
- * 
- * 不包括 rollDie/bonusDamage 等动态伤害（保守估计）。
- * 未提供 estimateDamage 的 custom action 贡献 0。
+ * 注意：这是一个保守估计，实际伤害可能更高（如 rollDie 的 bonusDamage）
  */
 export function getPlayerAbilityBaseDamage(
     state: DiceThroneCore,

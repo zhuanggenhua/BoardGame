@@ -73,13 +73,6 @@ interface GameClientContextValue {
     isMultiplayer: boolean;
     /** 重置游戏（本地模式用） */
     reset?: () => void;
-    /**
-     * 乐观引擎是否有未确认的命令（等待服务端确认）。
-     * reconcile 回滚期间的临时中间状态可能导致 hasAvailableActions=false，
-     * 此标志用于抑制 useAutoSkipPhase 在此期间误触发。
-     * 本地模式始终为 false。
-     */
-    hasPendingOptimisticCommands: boolean;
 }
 
 const GameClientContext = createContext<GameClientContextValue | null>(null);
@@ -109,7 +102,6 @@ export function useGameClient<
         isConnected: boolean;
         isMultiplayer: boolean;
         reset?: () => void;
-        hasPendingOptimisticCommands: boolean;
     };
 }
 
@@ -128,7 +120,7 @@ export function useBoardProps<TCore = unknown>(): GameBoardProps<TCore> | null {
 
     if (!ctx || !ctx.state) return null;
 
-    const { state, dispatch, playerId, matchPlayers, isConnected, isMultiplayer, reset, hasPendingOptimisticCommands } = ctx;
+    const { state, dispatch, playerId, matchPlayers, isConnected, isMultiplayer, reset } = ctx;
 
     return {
         G: state as MatchState<TCore>,
@@ -138,7 +130,6 @@ export function useBoardProps<TCore = unknown>(): GameBoardProps<TCore> | null {
         isConnected,
         isMultiplayer,
         reset,
-        hasPendingOptimisticCommands,
     };
 }
 
@@ -161,8 +152,6 @@ export interface GameProviderProps {
     onError?: (error: string) => void;
     /** 连接状态变更回调 */
     onConnectionChange?: (connected: boolean) => void;
-    /** 玩家连接状态变更回调（WebSocket 实时推送） */
-    onPlayerConnectionChange?: (playerID: string, connected: boolean) => void;
     /** 游戏引擎配置（乐观更新需要在客户端执行 Pipeline） */
     engineConfig?: GameEngineConfig;
     /** 延迟优化配置（可选，不传则不启用任何优化） */
@@ -177,7 +166,6 @@ export function GameProvider({
     children,
     onError,
     onConnectionChange,
-    onPlayerConnectionChange: onPlayerConnectionChangeProp,
     engineConfig,
     latencyConfig,
 }: GameProviderProps) {
@@ -185,11 +173,6 @@ export function GameProvider({
     const [matchPlayers, setMatchPlayers] = useState<MatchPlayerInfo[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const clientRef = useRef<GameTransportClient | null>(null);
-
-    // 乐观回滚信号：通过 Context 传递给 useEventStreamCursor
-    const [rollbackSignal, setRollbackSignal] = useState<EventStreamRollbackValue>({ watermark: null, seq: 0, reconcileSeq: 0 });
-    const rollbackSeqRef = useRef(0);
-    const reconcileSeqRef = useRef(0);
 
     // 延迟优化组件 refs
     const optimisticEngineRef = useRef<OptimisticEngineType | null>(null);
@@ -203,13 +186,18 @@ export function GameProvider({
     // 状态版本号追踪：防止旧状态覆盖新状态（WebSocket 消息乱序/重复广播）
     const lastConfirmedStateIDRef = useRef<number | null>(null);
 
+    // 乐观回滚信号：传递给 useEventStreamCursor
+    const [rollbackSignal, setRollbackSignal] = useState<EventStreamRollbackValue>({
+        watermark: null,
+        seq: 0,
+        reconcileSeq: 0,
+    });
+
     // 用 ref 存储回调，避免回调引用变化导致 effect 重新执行（断开重连）
     const onErrorRef = useRef(onError);
     onErrorRef.current = onError;
     const onConnectionChangeRef = useRef(onConnectionChange);
     onConnectionChangeRef.current = onConnectionChange;
-    const onPlayerConnectionChangeRef = useRef(onPlayerConnectionChangeProp);
-    onPlayerConnectionChangeRef.current = onPlayerConnectionChangeProp;
 
     // 初始化乐观更新引擎
     useEffect(() => {
@@ -295,32 +283,28 @@ export function GameProvider({
                     if (randomMeta) {
                         engine.syncRandom(randomMeta.seed, randomMeta.cursor);
                     }
-                    const hasPendingBefore = engine.hasPendingCommands();
                     const result = engine.reconcile(newState as MatchState<unknown>, meta);
-
+                    
+                    // 更新回滚信号
                     if (result.didRollback && result.optimisticEventWatermark !== null) {
-                        // 回滚：使用 preOptimisticWatermark 过滤客户端已消费的事件
-                        // 只过滤基线以下的事件，保留对手命令产生的新事件
-                        const filteredState = filterPlayedEvents(result.stateToRender, result.optimisticEventWatermark);
-                        finalState = filteredState;
-                        // 通知 useEventStreamCursor 重置游标到基线位置
-                        const newSeq = ++rollbackSeqRef.current;
-                        setRollbackSignal({ watermark: result.optimisticEventWatermark, seq: newSeq, reconcileSeq: reconcileSeqRef.current });
-                    } else if (!result.didRollback && hasPendingBefore && !engine.hasPendingCommands()) {
-                        // reconcile 成功确认：之前有 pending 命令，现在全部确认完毕。
-                        // stateToRender 从乐观状态切换为服务端状态，EventStream 的 maxId
-                        // 可能与乐观预测不同（PRNG 微小漂移）。
-                        // 发送 reconcileSeq 信号，让 cursor 静默调整到新的 maxId，
-                        // 防止 Undo 检测误触发（maxId 回退 ≠ Undo 回退）。
+                        // 回滚：通知 useEventStreamCursor 重置游标到水位线
+                        setRollbackSignal(prev => ({
+                            watermark: result.optimisticEventWatermark,
+                            seq: prev.seq + 1,
+                            reconcileSeq: prev.reconcileSeq,
+                        }));
+                        // 过滤已通过乐观动画播放的事件，防止重复播放
+                        finalState = filterPlayedEvents(result.stateToRender, result.optimisticEventWatermark);
+                    } else if (!result.didRollback) {
+                        // reconcile 确认：静默调整游标到新的 maxId
+                        setRollbackSignal(prev => ({
+                            watermark: null,
+                            seq: prev.seq,
+                            reconcileSeq: prev.reconcileSeq + 1,
+                        }));
                         finalState = result.stateToRender;
-                        const newReconcileSeq = ++reconcileSeqRef.current;
-                        setRollbackSignal(prev => ({ ...prev, reconcileSeq: newReconcileSeq }));
                     } else {
                         finalState = result.stateToRender;
-                    }
-                    // 回滚后回写权威状态到 client，确保后续 patch 应用基准正确
-                    if (result.didRollback) {
-                        clientRef.current?.updateLatestState(newState);
                     }
                 } else {
                     finalState = newState as MatchState<unknown>;
@@ -328,6 +312,18 @@ export function GameProvider({
 
                 // 实时刷新交互选项（如果策略是 realtime）
                 const refreshedState = refreshInteractionOptions(finalState);
+
+                // ── 增量诊断日志：交互状态变更 ──
+                const interactionCurrent = (refreshedState as MatchState<unknown>).sys?.interaction?.current;
+                if (interactionCurrent || meta?.stateID !== undefined) {
+                    console.log('[GameProvider:onStateUpdate]', {
+                        stateID: meta?.stateID ?? '-',
+                        interactionId: interactionCurrent?.id ?? 'none',
+                        interactionPlayer: interactionCurrent?.playerId ?? '-',
+                        sourceId: interactionCurrent?.sourceId ?? '-',
+                        ts: Date.now(),
+                    });
+                }
                 
                 setState(refreshedState);
                 setMatchPlayers(players);
@@ -338,22 +334,11 @@ export function GameProvider({
                 // 断线重连时重置乐观引擎和状态版本号追踪
                 if (connected && optimisticEngineRef.current) {
                     optimisticEngineRef.current.reset();
-                    // 通知 useEventStreamCursor 重置游标（与 visibilitychange 同理）
-                    const newSeq = ++rollbackSeqRef.current;
-                    setRollbackSignal({ watermark: null, seq: newSeq, reconcileSeq: reconcileSeqRef.current });
                 }
                 if (!connected) {
                     // 断线时重置状态版本号追踪，重连后从服务端同步最新状态
                     lastConfirmedStateIDRef.current = null;
                 }
-            },
-            onPlayerConnectionChange: (playerID, connected) => {
-                // 实时更新 matchPlayers 中的连接状态，避免依赖 HTTP 轮询
-                setMatchPlayers(prev => prev.map(p =>
-                    String(p.id) === playerID ? { ...p, isConnected: connected } : p
-                ));
-                // 通知外部（MatchRoom 层）实时更新对手在线状态
-                onPlayerConnectionChangeRef.current?.(playerID, connected);
             },
             onError: (error) => {
                 onErrorRef.current?.(error);
@@ -382,15 +367,13 @@ export function GameProvider({
             // 重置乐观引擎：后台期间可能错过了多次状态更新，pending 队列已过时
             if (optimisticEngineRef.current) {
                 optimisticEngineRef.current.reset();
+                // 重置回滚信号（watermark=null 通知 useEventStreamCursor 清理 UI 状态）
+                setRollbackSignal(prev => ({
+                    watermark: null,
+                    seq: prev.seq + 1,
+                    reconcileSeq: prev.reconcileSeq,
+                }));
             }
-            // 通知 useEventStreamCursor 重置游标：
-            // engine.reset() 清空了所有 pending 命令，乐观预测产生的 EventStream 事件
-            // 可能已被 UI 消费（如 beginSequence/scheduleInteraction），但 state:sync
-            // 返回的状态 EventStream 被 strip（entries 为空），不会触发 didReset 或
-            // didOptimisticRollback，导致 gate 深度卡住、交互队列永远不排空。
-            // 发送 watermark=null 的 rollback signal，让游标重置到最新位置并通知消费者清理。
-            const newSeq = ++rollbackSeqRef.current;
-            setRollbackSignal({ watermark: null, seq: newSeq, reconcileSeq: reconcileSeqRef.current });
             client.resync();
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -400,6 +383,19 @@ export function GameProvider({
     }, []);
 
     const dispatch = useCallback((type: string, payload: unknown) => {
+        // ── 增量诊断日志：交互/响应窗口命令 ──
+        const isInteractionCmd = type.startsWith('SYS_INTERACTION_') || type === 'RESPONSE_PASS';
+        if (isInteractionCmd) {
+            const pl = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
+            console.log('[GameProvider:dispatch]', {
+                type,
+                optionId: pl.optionId ?? pl.optionIds ?? '-',
+                playerId,
+                stateID: lastConfirmedStateIDRef.current,
+                ts: Date.now(),
+            });
+        }
+
         // 内部：走 optimistic engine + batcher/sendCommand 路径
         const dispatchToNetwork = (cmdType: string, cmdPayload: unknown) => {
             // 1. 乐观更新
@@ -450,7 +446,6 @@ export function GameProvider({
         matchPlayers,
         isConnected,
         isMultiplayer: true,
-        hasPendingOptimisticCommands: optimisticEngineRef.current?.hasPendingCommands() ?? false,
     }), [state, dispatch, playerId, matchPlayers, isConnected]);
 
     return (
@@ -494,6 +489,12 @@ export function LocalGameProvider({
     onCommandRejected,
     playerId: localPlayerId,
 }: LocalGameProviderProps) {
+    console.log('[LocalGameProvider] 组件渲染:', {
+        numPlayers,
+        seed,
+        playerId: localPlayerId,
+    });
+    
     const playerIds = useMemo(
         () => Array.from({ length: numPlayers }, (_, i) => String(i)),
         [numPlayers],
@@ -504,12 +505,143 @@ export function LocalGameProvider({
     onCommandRejectedRef.current = onCommandRejected;
 
     const [state, setState] = useState<MatchState<unknown>>(() => {
+        console.log('[LocalGameProvider] 初始化状态');
         const random = randomRef.current;
+        
+        // 检查是否启用 skipInitialization（测试模式 - 完全跳过初始化）
+        const testConfig = typeof window !== 'undefined' 
+            ? (window as Window & { __BG_TEST_CONFIG__?: { 
+                skipInitialization?: boolean; 
+                skipFactionSelect?: boolean; 
+                player0Factions?: string[]; 
+                player1Factions?: string[] 
+            } }).__BG_TEST_CONFIG__
+            : undefined;
+        
+        // 优先级：skipInitialization > skipFactionSelect > 正常流程
+        if (testConfig?.skipInitialization) {
+            console.log('[LocalGameProvider] skipInitialization=true，创建最小化空白状态');
+            
+            // 创建最小化的空白状态（仅包含必要的框架结构）
+            const core: any = {
+                players: {},
+                turnOrder: playerIds,
+                currentPlayerIndex: 0,
+                bases: [],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 1,
+            };
+            
+            // 为每个玩家创建空白状态
+            for (const pid of playerIds) {
+                core.players[pid] = {
+                    id: pid,
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    factions: ['', ''],
+                };
+            }
+            
+            const sys = createInitialSystemState(
+                playerIds,
+                config.systems as EngineSystem[],
+            );
+            
+            // 直接进入 playCards 阶段（测试会通过 setupScene 注入完整状态）
+            sys.flow.phase = 'playCards';
+            
+            console.log('[LocalGameProvider] 最小化空白状态已创建，等待测试注入状态');
+            
+            return { sys, core };
+        }
+        
+        const shouldSkipFactionSelect = testConfig?.skipFactionSelect === true &&
+                                       testConfig.player0Factions &&
+                                       testConfig.player0Factions.length > 0;
+        
+        if (shouldSkipFactionSelect) {
+            console.log('[LocalGameProvider] skipFactionSelect=true，同步执行派系选择');
+            
+            // 调用 domain.setup 创建初始状态
+            let core = config.domain.setup(playerIds, random) as any;
+            let sys = createInitialSystemState(
+                playerIds,
+                config.systems as EngineSystem[],
+            );
+            let currentState: MatchState<unknown> = { sys, core };
+            
+            // 同步执行 4 个派系选择命令（蛇形选秀：P0 → P1 → P1 → P0）
+            const selectionOrder: Array<{ playerId: string; factionIndex: number }> = [
+                { playerId: '0', factionIndex: 0 },
+                { playerId: '1', factionIndex: 0 },
+                { playerId: '1', factionIndex: 1 },
+                { playerId: '0', factionIndex: 1 },
+            ];
+            
+            const pipelineConfig: PipelineConfig<unknown, Command, GameEvent> = {
+                domain: config.domain,
+                systems: config.systems as EngineSystem<unknown>[],
+                systemsConfig: config.systemsConfig,
+            };
+            
+            for (const { playerId, factionIndex } of selectionOrder) {
+                const factions = playerId === '0' ? testConfig.player0Factions! : testConfig.player1Factions!;
+                const factionId = factions[factionIndex];
+                
+                if (!factionId) {
+                    console.warn(`[LocalGameProvider] 玩家 ${playerId} 的第 ${factionIndex + 1} 个派系未指定，跳过`);
+                    continue;
+                }
+                
+                console.log(`[LocalGameProvider] 同步执行派系选择: 玩家 ${playerId}, 派系 ${factionId}`);
+                
+                const command: Command = {
+                    type: 'su:select_faction',
+                    playerId,
+                    payload: { factionId },
+                    timestamp: Date.now(),
+                    skipValidation: true,
+                };
+                
+                const result = executePipeline(
+                    pipelineConfig,
+                    currentState,
+                    command,
+                    random,
+                    playerIds,
+                );
+                
+                if (!result.success) {
+                    console.error(`[LocalGameProvider] 派系选择失败:`, result.error);
+                    break;
+                }
+                
+                currentState = result.state;
+            }
+            
+            console.log('[LocalGameProvider] 派系选择完成，游戏状态已就绪:', {
+                phase: currentState.sys.flow?.phase,
+                player0Hand: (currentState.core as any).players?.['0']?.hand?.length,
+                player1Hand: (currentState.core as any).players?.['1']?.hand?.length,
+            });
+            
+            return currentState;
+        }
+        
+        // 正常流程：从 factionSelect 阶段开始
         const core = config.domain.setup(playerIds, random);
         const sys = createInitialSystemState(
             playerIds,
             config.systems as EngineSystem[],
         );
+        console.log('[LocalGameProvider] 状态初始化完成:', {
+            hasCore: !!core,
+            hasSys: !!sys,
+            phase: sys?.flow?.phase,
+        });
         return { sys, core };
     });
 
@@ -622,12 +754,19 @@ export function LocalGameProvider({
         isConnected: true,
         isMultiplayer: false,
         reset,
-        hasPendingOptimisticCommands: false, // 本地模式无乐观更新
     }), [state, dispatch, matchPlayers, reset, localPlayerId, config.domain]);
 
     // 注册测试工具访问器（仅在测试环境生效）
     useEffect(() => {
-        if (!isTestEnvironment()) return;
+        const isTest = isTestEnvironment();
+        console.log('[LocalGameProvider] useEffect 触发:', {
+            isTestEnvironment: isTest,
+            hasWindow: typeof window !== 'undefined',
+            hasFlag: typeof window !== 'undefined' && !!(window as any).__E2E_TEST_MODE__,
+            stateExists: !!state,
+        });
+        
+        if (!isTest) return;
         
         const harness = TestHarness.getInstance();
         

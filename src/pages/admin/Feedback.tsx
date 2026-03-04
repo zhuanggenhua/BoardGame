@@ -29,6 +29,7 @@ interface FeedbackItem {
     gameName?: string;
     contactInfo?: string;
     actionLog?: string;
+    stateSnapshot?: string; // 完整游戏状态 JSON
     createdAt: string;
 }
 
@@ -591,6 +592,37 @@ function FeedbackRow({
                                             <pre className="mt-2 max-h-48 overflow-auto rounded bg-zinc-100 border border-zinc-200 p-3 text-[11px] text-zinc-600 font-mono whitespace-pre-wrap leading-relaxed">
                                                 {item.actionLog}
                                             </pre>
+                                        </details>
+                                    )}
+                                    {item.stateSnapshot && (
+                                        <details className="mt-3">
+                                            <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-700 font-medium flex items-center gap-2">
+                                                <ScrollText size={12} />
+                                                {t('feedback.stateSnapshot.title')}
+                                            </summary>
+                                            <div className="mt-2 relative group">
+                                                <pre className="max-h-64 overflow-auto rounded bg-zinc-900 border border-zinc-700 p-3 text-[11px] text-emerald-400 font-mono whitespace-pre-wrap leading-relaxed">
+                                                    {item.stateSnapshot}
+                                                </pre>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigator.clipboard.writeText(item.stateSnapshot!).then(() => {
+                                                            // 临时显示复制成功提示
+                                                            const btn = e.currentTarget;
+                                                            const originalText = btn.textContent;
+                                                            btn.textContent = '✓ ' + t('feedback.stateSnapshot.copied');
+                                                            setTimeout(() => {
+                                                                btn.textContent = originalText;
+                                                            }, 2000);
+                                                        });
+                                                    }}
+                                                    className="absolute top-2 right-2 px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+                                                >
+                                                    <Copy size={10} />
+                                                    {t('feedback.stateSnapshot.copy')}
+                                                </button>
+                                            </div>
                                         </details>
                                     )}
                                     <div className="flex items-center gap-4 text-xs text-zinc-400 mt-3">

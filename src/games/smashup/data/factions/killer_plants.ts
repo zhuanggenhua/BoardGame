@@ -55,7 +55,7 @@ export const KILLER_PLANT_ACTIONS: ActionCardDef[] = [
         name: '出芽生殖',
         nameEn: 'Budding',
         faction: 'killer_plants',
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 36 },
     },
     {
@@ -111,7 +111,7 @@ export const KILLER_PLANT_ACTIONS: ActionCardDef[] = [
         nameEn: 'Sleep Spores',
         faction: 'killer_plants',
         abilityTags: ['ongoing'],
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 42 },
     },
     {

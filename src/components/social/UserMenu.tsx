@@ -30,33 +30,22 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
     // 铃铛红点 = 系统通知 OR 好友请求 OR 未读消息
     const hasBellBadge = hasNewNotification || requests.length > 0 || unreadTotal > 0;
 
-    // 检查是否有新通知（对比 localStorage 记录的上次查看时间），定期轮询
+    // 检查是否有新通知（对比 localStorage 记录的上次查看时间）
     useEffect(() => {
-        if (!user) return;
         let active = true;
-        const checkNotifications = () => {
-            fetch(NOTIFICATION_API_URL)
-                .then(res => res.ok ? res.json() : Promise.reject())
-                .then(data => {
-                    if (!active) return;
-                    const list = data.notifications as { _id: string; createdAt: string }[];
-                    if (list.length === 0) {
-                        setHasNewNotification(false);
-                        return;
-                    }
-                    const lastSeen = localStorage.getItem(NOTIFICATION_SEEN_KEY) || '';
-                    // 取所有通知中最新的 createdAt（排序是 pinned 优先，list[0] 不一定最新）
-                    const latestTime = list.reduce((max, n) => n.createdAt > max ? n.createdAt : max, list[0].createdAt);
-                    setHasNewNotification(latestTime > lastSeen);
-                })
-                .catch(() => {});
-        };
-        // 立即检查一次
-        checkNotifications();
-        // 每 60 秒轮询一次
-        const timer = setInterval(checkNotifications, 60_000);
-        return () => { active = false; clearInterval(timer); };
-    }, [user]);
+        fetch(NOTIFICATION_API_URL)
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                if (!active) return;
+                const list = data.notifications as { _id: string; createdAt: string }[];
+                if (list.length === 0) return;
+                const lastSeen = localStorage.getItem(NOTIFICATION_SEEN_KEY) || '';
+                const latestTime = list[0].createdAt;
+                if (latestTime > lastSeen) setHasNewNotification(true);
+            })
+            .catch(() => {});
+        return () => { active = false; };
+    }, []);
 
     // 点击外部关闭
     useEffect(() => {

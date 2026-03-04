@@ -38,6 +38,20 @@ export default defineConfig({
             'apps/api/test/**/*.test.{ts,tsx}',
             'apps/api/test/**/*.e2e-spec.ts',
         ],
+        exclude: [
+            // 排除审计测试（只在 npm run test:games:audit 时运行）
+            '**/*audit*.test.{ts,tsx}',
+            '**/*Audit*.test.{ts,tsx}',
+            // 排除属性测试（只在 npm run test:games:audit 时运行）
+            '**/*.property.test.{ts,tsx}',
+            // 排除调试测试
+            '**/*debug*.test.{ts,tsx}',
+            '**/*Debug*.test.{ts,tsx}',
+            // 默认排除
+            '**/node_modules/**',
+            '**/dist/**',
+            '**/.{idea,git,cache,output,temp}/**',
+        ],
         testTimeout: 180000,
         setupFiles: ['./vitest.setup.ts', './apps/api/test/vitest.setup.ts'],
     },
