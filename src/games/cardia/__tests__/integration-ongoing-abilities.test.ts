@@ -61,7 +61,7 @@ describe('持续能力集成测试', () => {
         signets: 1,
       });
       
-      const state: MatchState<CardiaCore> = {
+      let state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...initialState.core,
@@ -100,18 +100,33 @@ describe('持续能力集成测试', () => {
         }
       };
 
-      const events = CardiaDomain.execute(state, command, { random: () => 0.5 });
-
-      // 验证事件
-      expect(events.length).toBeGreaterThanOrEqual(1);
-      expect(events[0].type).toBe('cardia:ability_activated');
-      
-      // 检查是否产生持续标记放置事件
-      const ongoingEvent = events.find(e => e.type === 'cardia:ongoing_ability_placed');
-      expect(ongoingEvent).toBeDefined();
-      if (ongoingEvent && ongoingEvent.type === 'cardia:ongoing_ability_placed') {
-        expect(ongoingEvent.payload.effectType).toBe('forceTie');
+      let events = CardiaDomain.execute(state, command, { random: () => 0.5 });
+      for (const event of events) {
+        state = { ...state, core: CardiaDomain.reduce(state.core, event) };
       }
+
+      // 如果有交互，解决它
+      while (state.sys.interaction.current) {
+        const interaction = state.sys.interaction.current;
+        const resolveCommand: CardiaCommand = {
+          type: CARDIA_COMMANDS.RESOLVE_INTERACTION,
+          playerId: interaction.playerId,
+          payload: {
+            interactionId: interaction.id,
+            response: { confirmed: true }
+          }
+        };
+        events = CardiaDomain.execute(state, resolveCommand, { random: () => 0.5 });
+        for (const event of events) {
+          state = { ...state, core: CardiaDomain.reduce(state.core, event) };
+        }
+      }
+      
+      // 检查是否产生持续标记
+      const ongoingAbility = state.core.ongoingAbilities.find(
+        a => a.abilityId === ABILITY_IDS.MEDIATOR && a.effectType === 'forceTie'
+      );
+      expect(ongoingAbility).toBeDefined();
     });
 
     it('应该正确放置审判官持续标记', () => {
@@ -132,7 +147,7 @@ describe('持续能力集成测试', () => {
         signets: 1,
       });
       
-      const state: MatchState<CardiaCore> = {
+      let state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...initialState.core,
@@ -171,18 +186,33 @@ describe('持续能力集成测试', () => {
         }
       };
 
-      const events = CardiaDomain.execute(state, command, { random: () => 0.5 });
-
-      // 验证事件
-      expect(events.length).toBeGreaterThanOrEqual(1);
-      expect(events[0].type).toBe('cardia:ability_activated');
-      
-      // 检查是否产生持续标记放置事件
-      const ongoingEvent = events.find(e => e.type === 'cardia:ongoing_ability_placed');
-      expect(ongoingEvent).toBeDefined();
-      if (ongoingEvent && ongoingEvent.type === 'cardia:ongoing_ability_placed') {
-        expect(ongoingEvent.payload.effectType).toBe('winTies');
+      let events = CardiaDomain.execute(state, command, { random: () => 0.5 });
+      for (const event of events) {
+        state = { ...state, core: CardiaDomain.reduce(state.core, event) };
       }
+
+      // 如果有交互，解决它
+      while (state.sys.interaction.current) {
+        const interaction = state.sys.interaction.current;
+        const resolveCommand: CardiaCommand = {
+          type: CARDIA_COMMANDS.RESOLVE_INTERACTION,
+          playerId: interaction.playerId,
+          payload: {
+            interactionId: interaction.id,
+            response: { confirmed: true }
+          }
+        };
+        events = CardiaDomain.execute(state, resolveCommand, { random: () => 0.5 });
+        for (const event of events) {
+          state = { ...state, core: CardiaDomain.reduce(state.core, event) };
+        }
+      }
+      
+      // 检查是否产生持续标记
+      const ongoingAbility = state.core.ongoingAbilities.find(
+        a => a.abilityId === ABILITY_IDS.MAGISTRATE && a.effectType === 'winTies'
+      );
+      expect(ongoingAbility).toBeDefined();
     });
 
     it('应该正确放置财务官持续标记', () => {
@@ -203,7 +233,7 @@ describe('持续能力集成测试', () => {
         signets: 1,
       });
       
-      const state: MatchState<CardiaCore> = {
+      let state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...initialState.core,
@@ -242,18 +272,33 @@ describe('持续能力集成测试', () => {
         }
       };
 
-      const events = CardiaDomain.execute(state, command, { random: () => 0.5 });
-
-      // 验证事件
-      expect(events.length).toBeGreaterThanOrEqual(1);
-      expect(events[0].type).toBe('cardia:ability_activated');
-      
-      // 检查是否产生持续标记放置事件
-      const ongoingEvent = events.find(e => e.type === 'cardia:ongoing_ability_placed');
-      expect(ongoingEvent).toBeDefined();
-      if (ongoingEvent && ongoingEvent.type === 'cardia:ongoing_ability_placed') {
-        expect(ongoingEvent.payload.effectType).toBe('extraSignet');
+      let events = CardiaDomain.execute(state, command, { random: () => 0.5 });
+      for (const event of events) {
+        state = { ...state, core: CardiaDomain.reduce(state.core, event) };
       }
+
+      // 如果有交互，解决它
+      while (state.sys.interaction.current) {
+        const interaction = state.sys.interaction.current;
+        const resolveCommand: CardiaCommand = {
+          type: CARDIA_COMMANDS.RESOLVE_INTERACTION,
+          playerId: interaction.playerId,
+          payload: {
+            interactionId: interaction.id,
+            response: { confirmed: true }
+          }
+        };
+        events = CardiaDomain.execute(state, resolveCommand, { random: () => 0.5 });
+        for (const event of events) {
+          state = { ...state, core: CardiaDomain.reduce(state.core, event) };
+        }
+      }
+      
+      // 检查是否产生持续标记
+      const ongoingAbility = state.core.ongoingAbilities.find(
+        a => a.abilityId === ABILITY_IDS.TREASURER && a.effectType === 'extraSignet'
+      );
+      expect(ongoingAbility).toBeDefined();
     });
   });
 
