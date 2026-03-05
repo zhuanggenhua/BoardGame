@@ -201,6 +201,9 @@ describe('Cardia - Event Reduction', () => {
         it('should move card from discard to hand', () => {
             // First add a card to discard
             const card = state.players['0'].hand[0];
+            // Remove from hand first
+            state.players['0'].hand = state.players['0'].hand.slice(1);
+            // Then add to discard
             state.players['0'].discard.push(card);
             
             const initialHandSize = state.players['0'].hand.length;
