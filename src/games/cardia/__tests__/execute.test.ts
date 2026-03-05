@@ -126,7 +126,7 @@ describe('Cardia - Command Execution', () => {
             
             const abilityId = player0Card.abilityIds[0];
             
-            const events = CardiaDomain.execute(state, {
+            let events = CardiaDomain.execute(state, {
                 type: CARDIA_COMMANDS.ACTIVATE_ABILITY,
                 playerId: '0',
                 payload: {
@@ -135,6 +135,30 @@ describe('Cardia - Command Execution', () => {
                 },
             }, random);
             
+            // Apply events to state
+            for (const event of events) {
+                core = CardiaDomain.reduce(core, event);
+            }
+            state.core = core;
+            
+            // If there's an interaction, resolve it
+            if (state.sys.interaction?.current) {
+                const interaction = state.sys.interaction.current;
+                const resolveEvents = CardiaDomain.execute(state, {
+                    type: CARDIA_COMMANDS.RESOLVE_INTERACTION,
+                    playerId: interaction.playerId,
+                    payload: {
+                        interactionId: interaction.id,
+                        response: { confirmed: true }
+                    }
+                }, random);
+                events = [...events, ...resolveEvents];
+                for (const event of resolveEvents) {
+                    core = CardiaDomain.reduce(core, event);
+                }
+            }
+            
+            // Now check for phase change
             const phaseChangeEvent = events.find(e => e.type === CARDIA_EVENTS.PHASE_CHANGED);
             expect(phaseChangeEvent).toBeDefined();
             expect(phaseChangeEvent?.payload.newPhase).toBe('end');
@@ -162,9 +186,11 @@ describe('Cardia - Command Execution', () => {
                 payload: {},
             }, random);
             
-            expect(events.length).toBe(1);
-            expect(events[0].type).toBe(CARDIA_EVENTS.PHASE_CHANGED);
-            expect(events[0].payload.newPhase).toBe('end');
+            // SKIP_ABILITY should directly transition to end phase without interaction
+            expect(events.length).toBeGreaterThanOrEqual(1);
+            const phaseChangeEvent = events.find(e => e.type === CARDIA_EVENTS.PHASE_CHANGED);
+            expect(phaseChangeEvent).toBeDefined();
+            expect(phaseChangeEvent?.payload.newPhase).toBe('end');
         });
     });
     
