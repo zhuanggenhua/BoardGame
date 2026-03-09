@@ -29,6 +29,49 @@ beforeAll(() => {
     initAllAbilities();
 });
 
+describe('trickster interaction regressions', () => {
+    it('trickster_gnome resolves selected target', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m_gnome', 'trickster_gnome', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'b1', minions: [
+                    makeMinion('ally1', 'test_ally', '0', 3),
+                    makeMinion('e1', 'test_enemy', '1', 1),
+                    makeMinion('e2', 'test_enemy', '1', 1),
+                ], ongoingActions: [],
+            }],
+        });
+
+        const playResult = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm_gnome', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const prompt = playResult.finalState.sys.interaction?.current as any;
+        expect(prompt?.data?.sourceId).toBe('trickster_gnome');
+
+        const targetOption = prompt?.data?.options?.find((option: any) => option?.value?.minionUid === 'e1');
+        expect(targetOption).toBeDefined();
+
+        const respondResult = runCommand(playResult.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: targetOption.id },
+        } as any, defaultRandom);
+
+        const destroyEvent = respondResult.events.find(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvent).toBeDefined();
+        expect((destroyEvent as any).payload.minionUid).toBe('e1');
+        expect(respondResult.finalState.core.bases[0].minions.some(m => m.uid === 'e1')).toBe(false);
+    });
+});
+
 // ============================================================================
 // 辅助函数
 // ============================================================================
@@ -481,6 +524,45 @@ describe('机器人派系能力', () => {
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('robot_tech_center');
     });
+
+    it('robot_microbot_fixer + base_the_homeworld: 3战力随从应消耗普通额度，保留≤2额度', () => {
+        const initialState = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('m1', 'robot_microbot_fixer', 'minion', '0'),
+                        makeCard('m2', 'alien_invader', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [] },
+                { defId: 'base_rhodes_plaza', minions: [], ongoingActions: [] },
+            ],
+        });
+
+        const firstPlay = runCommand(makeMatchState(initialState), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(firstPlay.success).toBe(true);
+        expect(firstPlay.finalState.core.players['0'].minionLimit).toBe(3);
+        expect(firstPlay.finalState.core.players['0'].extraMinionPowerCaps).toEqual([2]);
+        expect(firstPlay.finalState.core.players['0'].extraMinionPowerMax).toBe(2);
+
+        const secondPlay = runCommand(firstPlay.finalState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm2', baseIndex: 1 },
+        } as any, defaultRandom);
+        expect(secondPlay.success).toBe(true);
+        expect(secondPlay.finalState.core.players['0'].minionsPlayed).toBe(2);
+        expect(secondPlay.finalState.core.players['0'].minionLimit).toBe(3);
+        expect(secondPlay.finalState.core.players['0'].extraMinionPowerCaps).toEqual([2]);
+        expect(secondPlay.finalState.core.players['0'].extraMinionPowerMax).toBe(2);
+    });
 });
 
 // ============================================================================
@@ -504,6 +586,7 @@ describe('巫师派系能力', () => {
         const current = (matchState.sys as any).interaction?.current;
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('wizard_neophyte');
+        expect(current?.data?.targetType).toBe('button');
     });
 
     it('wizard_neophyte: 牌库顶不是行动卡时不产生事件', () => {

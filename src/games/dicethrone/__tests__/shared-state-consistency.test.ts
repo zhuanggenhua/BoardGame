@@ -114,7 +114,7 @@ const advanceToPlayer0Upkeep = () => [
 ];
 
 describe('燃烧 upkeep 处理正确性', () => {
-    it('1层燃烧：造成1点伤害，移除1层', () => {
+    it('1层燃烧：造成固定2点伤害，状态持续不移除', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
             name: '1层燃烧upkeep',
@@ -125,13 +125,13 @@ describe('燃烧 upkeep 处理正确性', () => {
             },
             commands: advanceToPlayer0Upkeep(),
             expect: {
-                players: { '0': { hp: 49, statusEffects: { [STATUS_IDS.BURN]: 0 } } },
+                players: { '0': { hp: 48, statusEffects: { [STATUS_IDS.BURN]: 1 } } },
             },
         });
         expect(result.assertionErrors).toEqual([]);
     });
 
-    it('3层燃烧：造成3点伤害，移除1层（剩余2层）', () => {
+    it('3层燃烧：造成固定2点伤害，状态持续不移除', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
             name: '3层燃烧upkeep',
@@ -142,7 +142,7 @@ describe('燃烧 upkeep 处理正确性', () => {
             },
             commands: advanceToPlayer0Upkeep(),
             expect: {
-                players: { '0': { hp: 47, statusEffects: { [STATUS_IDS.BURN]: 2 } } },
+                players: { '0': { hp: 48, statusEffects: { [STATUS_IDS.BURN]: 3 } } },
             },
         });
         expect(result.assertionErrors).toEqual([]);
@@ -200,9 +200,9 @@ describe('燃烧+中毒同时存在时 upkeep 处理', () => {
             expect: {
                 players: {
                     '0': {
-                        hp: 47,
-                        // 燃烧移除 1 层（2→1），毒液持续不变（1→1）
-                        statusEffects: { [STATUS_IDS.BURN]: 1, [STATUS_IDS.POISON]: 1 },
+                        hp: 47, // 燃烧 2 + 中毒 1 = 3 点伤害
+                        // 燃烧持续不变（2→2），毒液持续不变（1→1）
+                        statusEffects: { [STATUS_IDS.BURN]: 2, [STATUS_IDS.POISON]: 1 },
                     },
                 },
             },

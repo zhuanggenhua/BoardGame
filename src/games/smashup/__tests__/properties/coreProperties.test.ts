@@ -1495,20 +1495,22 @@ describe('Property 20: 基地限制一致性', () => {
         );
     });
 
-    test('extraPlayMinionPowerMax 条件限制：额外出牌时力量 > limit 被限制', () => {
+    test('extraPlayMinionPowerMax 条件限制：仅在只剩基地限定额度时限制超限随从', () => {
         const extraPlayBases = basesWithRestrictions.filter(r => r.extraPlayMax !== undefined);
         fc.assert(
             fc.property(
                 fc.integer({ min: 0, max: Math.max(extraPlayBases.length - 1, 0) }),
                 fc.integer({ min: 1, max: 10 }),
-                fc.integer({ min: 0, max: 3 }),
-                (idx, basePower, minionsPlayed) => {
+                fc.boolean(),
+                (idx, basePower, onlyBaseQuota) => {
                     fc.pre(extraPlayBases.length > 0);
                     const { defId, extraPlayMax } = extraPlayBases[idx];
                     const state: SmashUpCore = {
                         players: {
                             '0': makePlayer('0', [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.NINJAS], {
-                                minionsPlayed,
+                                minionsPlayed: 1,
+                                minionLimit: onlyBaseQuota ? 1 : 2,
+                                baseLimitedMinionQuota: { 0: 1 },
                             }),
                             '1': makePlayer('1', [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.GHOSTS]),
                         },
@@ -1516,12 +1518,15 @@ describe('Property 20: 基地限制一致性', () => {
                         bases: [makeBase(defId)],
                         baseDeck: [], turnNumber: 1, nextUid: 100,
                     };
-                    const restricted = isOperationRestricted(state, 0, '0', 'play_minion', { basePower });
-                    if (minionsPlayed >= 1 && basePower > extraPlayMax!) {
-                        // 额外出牌且力量超限 → 应被限制
+                    const restricted = isOperationRestricted(state, 0, '0', 'play_minion', {
+                        minionDefId: 'test_minion',
+                        basePower,
+                    });
+                    if (onlyBaseQuota && basePower > extraPlayMax!) {
+                        // 只有基地限定额度可用，且力量超限 → 应被限制
                         expect(restricted).toBe(true);
                     } else {
-                        // 首次出牌或力量不超限 → 不被限制
+                        // 还有其他可用额度，或力量不超限 → 不被限制
                         expect(restricted).toBe(false);
                     }
                 },

@@ -32,6 +32,7 @@ const Home = React.lazy(() => import('./pages/Home').then(m => ({ default: m.Hom
 const MatchRoom = React.lazy(() => import('./pages/MatchRoom').then(m => ({ default: m.MatchRoom })));
 const LocalMatchRoom = React.lazy(() => import('./pages/LocalMatchRoom').then(m => ({ default: m.LocalMatchRoom })));
 const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoom').then(m => ({ default: m.TestMatchRoom })));
+// 旧的测试路由已废弃，使用新的 TestHarness 框架
 
 const queryClient = new QueryClient();
 
@@ -96,7 +97,9 @@ const AppContent = () => {
                     <Route path="/" element={<React.Suspense fallback={null}><Home /></React.Suspense>} />
                     <Route path="/play/:gameId/match/:matchId" element={<React.Suspense fallback={<LoadingScreen />}><MatchRoom /></React.Suspense>} />
                     <Route path="/play/:gameId/local" element={<React.Suspense fallback={<LoadingScreen />}><LocalMatchRoom /></React.Suspense>} />
-                    <Route path="/play/:gameId/test" element={<React.Suspense fallback={<LoadingScreen />}><TestMatchRoom /></React.Suspense>} />
+                    {/* E2E 测试路由：使用 TestMatchRoom + TestHarness 框架进行状态注入测试 */}
+                    <Route path="/play/:gameId" element={<React.Suspense fallback={<LoadingScreen />}><TestMatchRoom /></React.Suspense>} />
+                    {/* /test 路由已废弃，使用新的 TestHarness 框架（/play/:gameId + setupScene） */}
                     <Route path="/dev/slicer" element={<React.Suspense fallback={<LoadingScreen title={t('matchRoom.devTools.assetSlicer')} />}><DevToolsSlicer /></React.Suspense>} />
                     <Route path="/dev/fx" element={<React.Suspense fallback={<LoadingScreen title={t('matchRoom.devTools.effectPreview')} />}><DevToolsFxPreview /></React.Suspense>} />
                     <Route path="/dev/audio" element={<React.Suspense fallback={<LoadingScreen title={t('matchRoom.devTools.audioBrowser')} />}><DevToolsAudioBrowser /></React.Suspense>} />

@@ -7,6 +7,11 @@ import { playSound } from '../../../lib/audio/useGameAudio';
 import { DEFAULT_ABILITY_SLOT_LAYOUT } from './abilitySlotLayout';
 import type { CardPreviewRef } from '../../../core';
 import type { AbilityCard } from '../types';
+import {
+    ABILITY_SLOT_MAP as SHARED_ABILITY_SLOT_MAP,
+    getAbilitySlotId as getSharedAbilitySlotId,
+    slotContainsAbilityId,
+} from './abilitySlotMapping';
 // 导入所有英雄的卡牌定义
 import { MONK_CARDS } from '../heroes/monk/cards';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
@@ -43,27 +48,10 @@ const getUpgradeTargetFromCard = (card?: AbilityCard): string | null => {
 };
 
 
-export const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] }> = {
-    // 基础技能 ID（跨英雄）— 每个槽位包含所有英雄对应的技能 ID
-    fist: { labelKey: 'abilitySlots.fist', ids: ['fist-technique', 'fireball', 'slap', 'longbow', 'dagger-strike'] },
-    chi: { labelKey: 'abilitySlots.chi', ids: ['zen-forget', 'soul-burn', 'all-out-strike', 'vengeance', 'covert-fire', 'pickpocket'] },
-    sky: { labelKey: 'abilitySlots.sky', ids: ['harmony', 'fiery-combo', 'powerful-strike', 'holy-strike', 'entangling-shot', 'shadow-dance'] },
-    lotus: { labelKey: 'abilitySlots.lotus', ids: ['lotus-palm', 'meteor', 'violent-assault', 'righteous-prayer', 'eclipse', 'shadow-defense'] },
-    combo: { labelKey: 'abilitySlots.combo', ids: ['taiji-combo', 'pyro-blast', 'steadfast', 'righteous-combat', 'covering-fire', 'steal'] },
-    lightning: { labelKey: 'abilitySlots.lightning', ids: ['thunder-strike', 'burn-down', 'suppress', 'blessing-of-might', 'exploding-arrow', 'kidney-shot'] },
-    calm: { labelKey: 'abilitySlots.calm', ids: ['calm-water', 'ignite', 'reckless-strike', 'holy-light', 'blinding-shot', 'cornucopia'] },
-    meditate: { labelKey: 'abilitySlots.meditate', ids: ['meditation', 'magma-armor', 'thick-skin', 'holy-defense', 'elusive-step', 'fearless-riposte'] },
-    ultimate: { labelKey: 'abilitySlots.ultimate', ids: ['transcendence', 'ultimate-inferno', 'rage', 'unyielding-faith', 'lunar-eclipse', 'shadow-shank'] },
-};
+export const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
 
 export const getAbilitySlotId = (abilityId: string) => {
-    for (const slotId of Object.keys(ABILITY_SLOT_MAP)) {
-        const mapping = ABILITY_SLOT_MAP[slotId];
-        if (mapping.ids.some(baseId => abilityId === baseId || abilityId.startsWith(`${baseId}-`))) {
-            return slotId;
-        }
-    }
-    return null;
+    return getSharedAbilitySlotId(abilityId);
 };
 
 // 技能槽到基础技能 ID 的映射（按角色分类）
@@ -232,9 +220,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         const resolveAbilityId = (slotId: string) => {
             const mapping = ABILITY_SLOT_MAP[slotId];
             if (!mapping) return null;
-            return availableAbilityIds.find(id =>
-                mapping.ids.some(baseId => id === baseId || id.startsWith(`${baseId}-`))
-            ) ?? null;
+            return availableAbilityIds.find(id => slotContainsAbilityId(slotId, id)) ?? null;
         };
 
         const handleMouseDown = (e: React.MouseEvent, id: string, type: 'move' | 'resize') => {

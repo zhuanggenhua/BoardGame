@@ -775,6 +775,31 @@ describe('DiscardPlayProvider: ghost_spectre', () => {
         expect(p0.minionsPlayed).toBe(1);
     });
 
+    it('手牌≤2时也可从弃牌堆打出 ghost_spectre_pod', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('h1', 'test_minion', '0', 'action')],
+                    discard: [makeCard('sp-pod-1', 'ghost_spectre_pod', '0', 'minion')],
+                    factions: ['ghosts', 'pirates'] as [string, string],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base_1')],
+        });
+        const state = makeFullMatchState(core);
+
+        const r1 = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION, playerId: '0',
+            payload: { cardUid: 'sp-pod-1', baseIndex: 0, fromDiscard: true },
+        }, 'ghost_spectre_pod: 从弃牌堆打出');
+        expect(r1.steps[0]?.success).toBe(true);
+        const p0 = r1.finalState.core.players['0'];
+        expect(p0.discard.some((c: CardInstance) => c.uid === 'sp-pod-1')).toBe(false);
+        expect(r1.finalState.core.bases[0].minions.some((m: MinionOnBase) => m.uid === 'sp-pod-1')).toBe(true);
+        expect(p0.minionsPlayed).toBe(1);
+    });
+
     it('随从额度用完后不能从弃牌堆打出 spectre', () => {
         const core = makeState({
             players: {

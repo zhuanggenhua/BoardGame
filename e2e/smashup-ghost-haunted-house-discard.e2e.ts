@@ -1,168 +1,163 @@
 /**
- * SmashUp E2E 测试：幽灵 + 鬼屋同时触发弃牌 Bug 验证
- * 
- * Bug 描述：
- * - 当幽灵（Ghost）打出到鬼屋（Haunted House）基地时，会同时触发两个弃牌交互
- * - 第二个交互看到的是初始状态，导致可以选择已经弃掉的卡牌
- * 
- * 修复方案：
- * - InteractionSystem 自动注入 optionsGenerator
- * - 当选项包含 cardUid 字段时，自动基于最新状态过滤选项
- * - 确保后续交互看到的是最新的手牌状态
+ * SmashUp - 幽灵 + 鬼屋链式弃牌 E2E 测试
  */
 
-import { test, expect } from './fixtures';
-import type { Page } from '@playwright/test';
+import { test, expect } from './framework';
 
-test.describe('SmashUp - Ghost + Haunted House 弃牌 Bug', () => {
-    let page: Page;
-    let matchId: string;
+const SMASHUP_GHOST_HAUNTED_QUERY = {
+    p0: 'ghosts,aliens',
+    p1: 'robots,ninjas',
+    skipFactionSelect: true,
+    skipInitialization: false,
+    seed: 12345,
+};
 
-    test.beforeEach(async ({ createSmashUpMatch }) => {
-        const result = await createSmashUpMatch({
-            factions: [
-                { player: 'p1', factions: ['ghosts', 'aliens'] },
-                { player: 'p2', factions: ['robots', 'ninjas'] },
-            ],
-        });
-        page = result.page;
-        matchId = result.matchId;
-    });
-
-    test('幽灵打出到鬼屋时，第二次弃牌不应显示已弃掉的卡牌', async () => {
-        // 1. 构造测试场景：玩家手牌有 3 张卡，其中一张是幽灵随从
-        const testState = {
-            core: {
-                players: {
-                    p1: {
-                        hand: [
-                            { uid: 'card-ghost-1', defId: 'ghost_ghost', type: 'minion' },
-                            { uid: 'card-action-1', defId: 'ghost_seance', type: 'action' },
-                            { uid: 'card-action-2', defId: 'ghost_shady_deal', type: 'action' },
-                        ],
-                    },
-                },
-                bases: [
-                    {
-                        defId: 'base_haunted_house_al9000', // 鬼屋基地
-                        minions: [],
-                    },
-                ],
+async function openGhostHauntedHouseScene(game: any, hand: string[]): Promise<void> {
+    await game.openTestGame('smashup', SMASHUP_GHOST_HAUNTED_QUERY, 20000);
+    await game.setupScene({
+        gameId: 'smashup',
+        player0: {
+            hand,
+            deck: [],
+            discard: [],
+            actionsPlayed: 0,
+            actionLimit: 1,
+            minionsPlayed: 0,
+            minionLimit: 1,
+        },
+        player1: {
+            hand: [],
+            deck: [],
+            discard: [],
+        },
+        bases: [
+            {
+                defId: 'base_haunted_house_al9000',
+                minions: [],
+                ongoingActions: [],
             },
-        };
+        ],
+        currentPlayer: '0',
+        phase: 'playCards',
+    });
+}
 
-        // 注入测试状态
-        await page.evaluate((state) => {
-            if (window.__BG_TEST_HARNESS__) {
-                window.__BG_TEST_HARNESS__.state.patch(state);
-            }
-        }, testState);
+async function selectInteractionOptionByDefId(game: any, defId: string): Promise<void> {
+    const options = await game.getInteractionOptions();
+    const option = options.find((entry: any) => entry?.value?.defId === defId);
+    expect(option, `交互中未找到 defId=${defId} 的选项`).toBeTruthy();
+    await game.selectOption(option.id);
+}
 
-        // 2. 打出幽灵随从到鬼屋基地
-        // 这会触发两个弃牌交互：
-        // - 幽灵自身能力：弃一张手牌
-        // - 鬼屋基地能力：打出随从后必须弃一张手牌
-        await page.click('[data-card-uid="card-ghost-1"]'); // 选择幽灵卡牌
-        await page.click('[data-base-index="0"]'); // 打出到鬼屋基地
+async function clickCurrentPlayerHandCardByDefId(game: any, page: any, defId: string): Promise<void> {
+    const state = await game.getState();
+    const player0 = getCurrentPlayer(state);
+    const card = player0.hand.find((entry: any) => entry.defId === defId);
+    expect(card, `当前玩家手牌中未找到 ${defId}`).toBeTruthy();
+    await page.click(`[data-card-uid="${card.uid}"]`);
+    await page.waitForTimeout(300);
+}
 
-        // 3. 第一次弃牌交互（幽灵能力）
-        // 等待弹窗出现
-        await page.waitForSelector('[data-testid="interaction-overlay"]', { timeout: 5000 });
-        
-        // 验证第一次弹窗显示 2 张可弃卡牌（排除幽灵自身）
-        const firstOptions = await page.$$('[data-testid="prompt-option"]');
-        expect(firstOptions.length).toBe(3); // 2 张卡牌 + 1 个跳过选项
+async function waitForNoInteraction(game: any): Promise<void> {
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return state.sys.interaction?.current?.data?.sourceId ?? null;
+    }).toBe(null);
+}
 
-        // 选择弃掉第一张行动卡
-        await page.click('[data-option-id="card-0"]');
+function getCurrentPlayer(state: any): any {
+    const currentPlayerId = state.core.turnOrder[state.core.currentPlayerIndex];
+    return state.core.players[currentPlayerId];
+}
 
-        // 4. 第二次弃牌交互（鬼屋能力）
-        // 等待第二个弹窗出现
-        await page.waitForSelector('[data-testid="interaction-overlay"]', { timeout: 5000 });
+test.describe('SmashUp - Ghost + Haunted House 链式弃牌', () => {
+    test('当第一段弃牌后只剩 1 张可弃手牌时，鬼屋第二段只应显示这 1 张最新手牌', async ({ game, page }, testInfo) => {
+        await openGhostHauntedHouseScene(game, [
+            'ghost_ghost',
+            'ghost_seance',
+            'ghost_shady_deal',
+        ]);
 
-        // 验证第二次弹窗只显示 1 张可弃卡牌（第一张已被弃掉）
-        const secondOptions = await page.$$('[data-testid="prompt-option"]');
-        expect(secondOptions.length).toBe(1); // 只剩 1 张卡牌（第一张已弃掉）
+        const initialState = await game.getState();
+        expect(getCurrentPlayer(initialState).hand.map((card: any) => card.defId)).toEqual([
+            'ghost_ghost',
+            'ghost_seance',
+            'ghost_shady_deal',
+        ]);
 
-        // 验证选项内容：不应包含已弃掉的卡牌
-        const optionTexts = await Promise.all(
-            secondOptions.map(opt => opt.textContent())
+        await game.playCard('ghost_ghost', { targetBaseIndex: 0 });
+        await game.waitForInteraction('ghost_ghost');
+
+        const firstOptions = await game.getInteractionOptions();
+        expect(firstOptions.map((option: any) => option.value?.defId).filter(Boolean)).toEqual([
+            'ghost_seance',
+            'ghost_shady_deal',
+        ]);
+        await game.screenshot('ghost-first-discard-prompt', testInfo);
+
+        await clickCurrentPlayerHandCardByDefId(game, page, 'ghost_seance');
+
+        await game.waitForInteraction('base_haunted_house_al9000');
+        const secondOptions = await game.getInteractionOptions();
+        expect(secondOptions.map((option: any) => option.value?.defId).filter(Boolean)).toEqual([
+            'ghost_shady_deal',
+        ]);
+        await game.screenshot('haunted-house-single-latest-card', testInfo);
+
+        await clickCurrentPlayerHandCardByDefId(game, page, 'ghost_shady_deal');
+        await waitForNoInteraction(game);
+
+        const finalState = await game.getState();
+        const player0 = getCurrentPlayer(finalState);
+        expect(player0.hand).toHaveLength(0);
+        expect(player0.discard.map((card: any) => card.defId)).toEqual(
+            expect.arrayContaining(['ghost_seance', 'ghost_shady_deal']),
         );
-        expect(optionTexts).not.toContain('ghost_seance'); // 第一张已弃掉
-        expect(optionTexts.some(t => t?.includes('ghost_shady_deal'))).toBe(true); // 第二张仍在
+        expect(finalState.core.bases[0].minions).toHaveLength(1);
+        expect(finalState.core.bases[0].minions[0].defId).toBe('ghost_ghost');
 
-        // 选择弃掉剩余的卡牌
-        await page.click('[data-option-id="card-0"]');
-
-        // 5. 验证最终状态：手牌应该为空（3 张卡：1 张打出 + 2 张弃掉）
-        const finalState = await page.evaluate(() => {
-            if (window.__BG_TEST_HARNESS__) {
-                return window.__BG_TEST_HARNESS__.state.read();
-            }
-            return null;
-        });
-
-        expect(finalState?.core?.players?.p1?.hand?.length).toBe(0);
+        await game.screenshot('ghost-haunted-auto-discard-final', testInfo);
     });
 
-    test('自动注入的 optionsGenerator 应该正确过滤已弃掉的卡牌', async () => {
-        // 这个测试直接验证 InteractionSystem 的自动注入机制
+    test('当第二段仍需选择时，鬼屋交互只应显示最新剩余手牌', async ({ game, page }, testInfo) => {
+        await openGhostHauntedHouseScene(game, [
+            'ghost_ghost',
+            'ghost_seance',
+            'ghost_shady_deal',
+            'ghost_ghostly_arrival',
+        ]);
 
-        // 1. 构造初始状态：3 张手牌
-        const initialHand = [
-            { uid: 'card-1', defId: 'ghost_ghost', type: 'minion' },
-            { uid: 'card-2', defId: 'ghost_seance', type: 'action' },
-            { uid: 'card-3', defId: 'ghost_shady_deal', type: 'action' },
-        ];
+        const initialState = await game.getState();
+        expect(getCurrentPlayer(initialState).hand.map((card: any) => card.defId)).toEqual([
+            'ghost_ghost',
+            'ghost_seance',
+            'ghost_shady_deal',
+            'ghost_ghostly_arrival',
+        ]);
 
-        await page.evaluate((hand) => {
-            if (window.__BG_TEST_HARNESS__) {
-                window.__BG_TEST_HARNESS__.state.patch({
-                    core: {
-                        players: {
-                            p1: { hand },
-                        },
-                    },
-                });
-            }
-        }, initialHand);
+        await game.playCard('ghost_ghost', { targetBaseIndex: 0 });
+        await game.waitForInteraction('ghost_ghost');
+        await clickCurrentPlayerHandCardByDefId(game, page, 'ghost_seance');
 
-        // 2. 创建两个连续的弃牌交互（模拟幽灵 + 鬼屋）
-        await page.evaluate(() => {
-            if (window.__BG_TEST_HARNESS__) {
-                const { command } = window.__BG_TEST_HARNESS__;
-                
-                // 第一个交互：选择弃掉 card-2
-                command.dispatch({
-                    type: 'SYS_INTERACTION_RESPOND',
-                    playerId: 'p1',
-                    payload: { optionId: 'card-1', mergedValue: { cardUid: 'card-2' } },
-                });
-            }
-        });
+        await game.waitForInteraction('base_haunted_house_al9000');
+        const secondOptions = await game.getInteractionOptions();
+        const secondDefIds = secondOptions.map((option: any) => option.value?.defId).filter(Boolean);
+        expect(secondDefIds).toEqual(['ghost_shady_deal', 'ghost_ghostly_arrival']);
+        expect(secondDefIds).not.toContain('ghost_seance');
+        await game.screenshot('haunted-house-refreshed-second-prompt', testInfo);
 
-        // 等待第一次弃牌完成
-        await page.waitForTimeout(500);
+        await clickCurrentPlayerHandCardByDefId(game, page, 'ghost_shady_deal');
+        await waitForNoInteraction(game);
 
-        // 3. 验证第二个交互的选项不包含 card-2
-        const secondInteraction = await page.evaluate(() => {
-            if (window.__BG_TEST_HARNESS__) {
-                const state = window.__BG_TEST_HARNESS__.state.read();
-                return state?.sys?.interaction?.current;
-            }
-            return null;
-        });
+        const finalState = await game.getState();
+        const player0 = getCurrentPlayer(finalState);
+        expect(player0.hand.map((card: any) => card.defId)).toEqual(['ghost_ghostly_arrival']);
+        expect(player0.discard.map((card: any) => card.defId)).toEqual(
+            expect.arrayContaining(['ghost_seance', 'ghost_shady_deal']),
+        );
+        expect(finalState.core.bases[0].minions).toHaveLength(1);
+        expect(finalState.core.bases[0].minions[0].defId).toBe('ghost_ghost');
 
-        expect(secondInteraction).toBeTruthy();
-        const options = (secondInteraction as any)?.data?.options || [];
-        const cardUids = options
-            .map((opt: any) => opt.value?.cardUid)
-            .filter(Boolean);
-
-        // 验证：选项中不应包含已弃掉的 card-2
-        expect(cardUids).not.toContain('card-2');
-        // 验证：选项中应该包含 card-1 和 card-3
-        expect(cardUids).toContain('card-1');
-        expect(cardUids).toContain('card-3');
+        await game.screenshot('haunted-house-after-second-discard', testInfo);
     });
 });

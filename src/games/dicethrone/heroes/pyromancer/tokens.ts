@@ -68,7 +68,7 @@ export const PYROMANCER_TOKENS: TokenDef[] = [
     },
 
     /**
-     * 燃烧 - 回合开始时受到伤害
+     * 燃烧 - 回合开始时受到固定 2 点伤害（可移除的持续效果）
      */
     {
         id: STATUS_IDS.BURN,
@@ -80,9 +80,9 @@ export const PYROMANCER_TOKENS: TokenDef[] = [
         category: 'debuff',
         passiveTrigger: {
             timing: 'onTurnStart',
-            removable: true,
-            // value 仅为占位，实际伤害按 stacks 数量计算（见 flowHooks.ts）
-            actions: [{ type: 'damage', target: 'self', value: 1 }],
+            removable: true, // 可移除的持续效果
+            // value 仅为占位，实际伤害固定为 2 点（见 flowHooks.ts）
+            actions: [{ type: 'damage', target: 'self', value: 2 }],
         },
         frameId: 'pyro-status-4',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.PYROMANCER,

@@ -13,8 +13,8 @@ import { test, expect } from './fixtures';
 
 test.describe('印斯茅斯"本地人"展示功能（简化版）', () => {
     test('打出"本地人"后应该显示展示 UI', async ({ page }) => {
-        // 1. 导航到测试模式（跳过派系选择）
-        await page.goto('/play/smashup/test?p0=innsmouth,aliens&p1=dinosaurs,robots&seed=12345&skipFactionSelect=true');
+        // 1. 导航到游戏
+        await page.goto('/play/smashup');
         
         // 2. 等待游戏加载完成
         await page.waitForFunction(

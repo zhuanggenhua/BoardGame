@@ -121,8 +121,8 @@ test.describe('忍者侍从 - 额外随从', () => {
     test('应该允许选择跳过', async ({ page }, testInfo) => {
         const game = new GameTestContext(page);
 
-        // 1. 导航到测试模式（跳过派系选择）
-        await page.goto('/play/smashup/test?p0=ninjas,pirates&p1=robots,zombies&seed=12346&skipFactionSelect=true');
+        // 1. 导航到游戏
+        await page.goto('/play/smashup');
         
         // 2. 等待游戏加载完成
         await page.waitForFunction(
@@ -201,8 +201,8 @@ test.describe('忍者侍从 - 额外随从', () => {
     test('本回合已打出随从时应该无法使用', async ({ page }, testInfo) => {
         const game = new GameTestContext(page);
 
-        // 1. 导航到测试模式（跳过派系选择）
-        await page.goto('/play/smashup/test?p0=ninjas,pirates&p1=robots,zombies&seed=12347&skipFactionSelect=true');
+        // 1. 导航到游戏
+        await page.goto('/play/smashup');
         
         // 2. 等待游戏加载完成
         await page.waitForFunction(
@@ -286,8 +286,8 @@ test.describe('忍者侍从 - 额外随从', () => {
     test('同一基地不能使用两次', async ({ page }, testInfo) => {
         const game = new GameTestContext(page);
 
-        // 1. 导航到测试模式（跳过派系选择）
-        await page.goto('/play/smashup/test?p0=ninjas,pirates&p1=robots,zombies&seed=12348&skipFactionSelect=true');
+        // 1. 导航到游戏
+        await page.goto('/play/smashup');
         
         // 2. 等待游戏加载完成
         await page.waitForFunction(

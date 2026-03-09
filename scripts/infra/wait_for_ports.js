@@ -15,22 +15,29 @@ const ports = portsFromArgs.length > 0 ? portsFromArgs : defaultPorts;
 
 const host = process.env.WAIT_PORT_HOST || '127.0.0.1';
 const intervalMs = Number(process.env.WAIT_PORT_INTERVAL || 1000);
-const probeTimeoutMs = Number(process.env.WAIT_PORT_PROBE_TIMEOUT || 1000);
+const probeTimeoutMs = Number(process.env.WAIT_PORT_PROBE_TIMEOUT || 3000); // 增加到 3 秒
 const logIntervalMs = 15000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const probePort = (port) => new Promise((resolve) => {
     const socket = new net.Socket();
-    const finalize = (result) => {
+    let resolved = false;
+    
+    const finalize = (result, reason) => {
+        if (resolved) return;
+        resolved = true;
         socket.destroy();
+        if (!result && process.env.DEBUG_WAIT_PORTS) {
+            console.log(`[wait_for_ports] ${host}:${port} probe failed: ${reason}`);
+        }
         resolve(result);
     };
 
     socket.setTimeout(probeTimeoutMs);
-    socket.once('connect', () => finalize(true));
-    socket.once('error', () => finalize(false));
-    socket.once('timeout', () => finalize(false));
+    socket.once('connect', () => finalize(true, 'connected'));
+    socket.once('error', (err) => finalize(false, `error: ${err.code || err.message}`));
+    socket.once('timeout', () => finalize(false, 'timeout'));
     socket.connect(port, host);
 });
 

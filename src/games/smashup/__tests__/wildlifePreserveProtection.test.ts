@@ -96,6 +96,18 @@ describe('wildlife_preserve: action 保护检查', () => {
         // 玩家1的随从不受保护（wildlife_preserve 的 ownerId 是 '0'，不保护 '1' 的随从）
         expect(isMinionProtected(state, base.minions[1], 0, '0', 'action')).toBe(false);
     });
+
+    it('POD 版 wildlife_preserve_pod 也提供同样的 action 保护', () => {
+        const base = makeBase('test_base', {
+            minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })],
+            ongoingActions: [makeOngoing('wp1', 'dino_wildlife_preserve_pod', '0')],
+        });
+        const state = makeState({ bases: [base] });
+        const minion = base.minions[0];
+
+        expect(isMinionProtected(state, minion, 0, '1', 'action')).toBe(true);
+        expect(isMinionProtected(state, minion, 0, '0', 'action')).toBe(false);
+    });
 });
 
 // ============================================================================

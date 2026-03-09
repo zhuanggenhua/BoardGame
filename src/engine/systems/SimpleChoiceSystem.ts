@@ -15,6 +15,8 @@ import type { EngineSystem, HookResult } from './types';
 import {
     INTERACTION_COMMANDS,
     INTERACTION_EVENTS,
+    getFreshSimpleChoiceOptions,
+    getSimpleChoiceResponseValidationMode,
     resolveInteraction,
     stripNonSerializableFromData,
     type SimpleChoiceData,
@@ -99,6 +101,10 @@ function handleSimpleChoiceRespond<TCore>(
 
     const data = current.data as SimpleChoiceData;
     const isMulti = !!data.multi;
+    const responseValidationMode = getSimpleChoiceResponseValidationMode(data);
+    const availableOptions = responseValidationMode === 'live'
+        ? getFreshSimpleChoiceOptions(state, current as any)
+        : data.options;
     let selectedOptions: PromptOption[] = [];
     let selectedOptionIds: string[] = [];
 
@@ -111,7 +117,7 @@ function handleSimpleChoiceRespond<TCore>(
         const uniqueIds = Array.from(new Set(optionIds)).filter(
             (id) => typeof id === 'string',
         );
-        const optionsById = new Map(data.options.map((o) => [o.id, o]));
+        const optionsById = new Map(availableOptions.map((o) => [o.id, o]));
         if (uniqueIds.find((id) => !optionsById.has(id))) {
             return { halt: true, error: '无效的选择' };
         }
@@ -132,7 +138,7 @@ function handleSimpleChoiceRespond<TCore>(
         if (typeof payload.optionId !== 'string') {
             return { halt: true, error: '无效的选择' };
         }
-        const selectedOption = data.options.find(
+        const selectedOption = availableOptions.find(
             (o) => o.id === payload.optionId,
         );
         if (!selectedOption) {
@@ -152,6 +158,9 @@ function handleSimpleChoiceRespond<TCore>(
         : isMulti
             ? selectedOptions.map((o) => o.value)
             : selectedOptions[0]?.value;
+    const interactionDataForEvent = responseValidationMode === 'live'
+        ? { ...current.data, options: availableOptions }
+        : current.data;
 
     const event: GameEvent = {
         type: INTERACTION_EVENTS.RESOLVED,
@@ -163,7 +172,7 @@ function handleSimpleChoiceRespond<TCore>(
             optionIds: isMulti ? selectedOptionIds : undefined,
             value: resolvedValue,
             sourceId: data.sourceId,
-            interactionData: stripNonSerializableFromData(current.data),
+            interactionData: stripNonSerializableFromData(interactionDataForEvent),
         },
         timestamp,
     };

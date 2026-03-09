@@ -273,6 +273,8 @@ export interface PlayerState {
     baseLimitedSameNameDefId?: Record<number, string>;
     /** 额外出牌的力量上限（如家园给的额外出牌只能打力量≤2的随从），回合结束清零 */
     extraMinionPowerMax?: number;
+    /** 带力量上限的全局额外随从额度集合（每个元素代表 1 次受限额度），回合结束清零 */
+    extraMinionPowerCaps?: number[];
     /** 同名额外随从约束：剩余额度数 */
     sameNameMinionRemaining?: number;
     /** 同名额外随从约束：已锁定的 defId（null = 尚未锁定，string = 已锁定） */
@@ -322,6 +324,29 @@ export interface PendingAfterScoringSpecial {
     }>;
 }
 
+/**
+ * 计分后需要等基地清场/替换完成后再执行的动作。
+ * 典型场景：效果目标是“替换后的基地”而不是已计分的旧基地。
+ */
+export type PendingPostScoringAction =
+    | {
+        kind: 'playMinionOnReplacementBase';
+        playerId: PlayerId;
+        cardUid: string;
+        defId: string;
+        baseIndex: number;
+        targetBaseDefId: string;
+        power: number;
+    }
+    | {
+        kind: 'moveMinionToReplacementBase';
+        minionUid: string;
+        minionDefId: string;
+        fromBaseIndex: number;
+        toBaseIndex: number;
+        reason: string;
+    };
+
 export interface SmashUpCore {
     players: Record<PlayerId, PlayerState>;
     /** 玩家回合顺序 */
@@ -344,8 +369,8 @@ export interface SmashUpCore {
     factionSelection?: FactionSelectionState;
     /** 疯狂牌库（克苏鲁扩展，defId 列表） */
     madnessDeck?: string[];
-    /** 本回合被消灭的随从记录（用于 cthulhu_furthering_the_cause 等能力的精确判定） */
-    turnDestroyedMinions?: { defId: string; baseIndex: number; owner: string }[];
+    /** 本回合被消灭的随从记录（用于 cthulhu_furthering_the_cause 等能力判定，并阻止过期移动把它们从弃牌堆拉回场上） */
+    turnDestroyedMinions?: { uid: string; defId: string; baseIndex: number; owner: string }[];
     /** 被沉睡印记标记的玩家（下回合不能打行动卡） */
     sleepMarkedPlayers?: PlayerId[];
     /** 本回合每位玩家移动随从到各基地的次数（用于牧场等"首次移动"触发） */
@@ -362,6 +387,8 @@ export interface SmashUpCore {
     standingStonesDoubleTalentMinionUid?: string;
     /** 计分后触发的 special 延迟记录（回合开始自动清空） */
     pendingAfterScoringSpecials?: PendingAfterScoringSpecial[];
+    /** 计分后需等待基地完成清场/替换后再落地的动作 */
+    pendingPostScoringActions?: PendingPostScoringAction[];
     /**
      * 进入 scoreBases 阶段时锁定的 eligible 基地索引列表。
      * 规则：一旦基地在进入计分阶段时达到 breakpoint，即使 Me First! 响应窗口中
@@ -696,6 +723,7 @@ export type SmashUpEvent =
     | OngoingAttachedEvent
     | OngoingDetachedEvent
     | TalentUsedEvent
+    | CardRemovedFromDeckEvent
     | CardToDeckTopEvent
     | CardToDeckBottomEvent
     | CardTransferredEvent
@@ -835,6 +863,15 @@ export interface TalentUsedEvent extends GameEvent<typeof SU_EVENTS.TALENT_USED>
 }
 
 /** 卡牌放入牌库底 */
+export interface CardRemovedFromDeckEvent extends GameEvent<typeof SU_EVENTS.CARD_REMOVED_FROM_DECK> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
+        defId: string;
+        reason: string;
+    };
+}
+
 export interface CardToDeckBottomEvent extends GameEvent<typeof SU_EVENTS.CARD_TO_DECK_BOTTOM> {
     payload: {
         cardUid: string;

@@ -9,7 +9,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createInteractionSystem, createSimpleChoice, queueInteraction, resolveInteraction, refreshInteractionOptions } from '../InteractionSystem';
+import {
+    INTERACTION_COMMANDS,
+    INTERACTION_EVENTS,
+    createInteractionSystem,
+    createSimpleChoice,
+    queueInteraction,
+    resolveInteraction,
+    refreshInteractionOptions,
+} from '../InteractionSystem';
+import { createSimpleChoiceSystem } from '../SimpleChoiceSystem';
 import type { MatchState } from '../../types';
 
 interface TestCore {
@@ -19,6 +28,13 @@ interface TestCore {
         };
     };
 }
+
+const dummyRandom = {
+    random: () => 0.5,
+    d: () => 1,
+    range: (min: number) => min,
+    shuffle: <T>(array: T[]) => array,
+};
 
 describe('InteractionSystem - 通用刷新', () => {
     it('应该自动检测选项中的 cardUid 字段并刷新选项', () => {
@@ -434,5 +450,181 @@ describe('InteractionSystem - 通用刷新', () => {
         expect(options).toHaveLength(1); // 只剩紧急跳过选项
         expect(options[0].id).toBe('__emergency_skip__');
         expect(options[0].value.__emergency_skip__).toBe(true);
+    });
+
+    it('未声明 live 响应校验时保持原有快照响应行为', () => {
+        let state: MatchState<TestCore> = {
+            core: {
+                players: {
+                    p1: {
+                        hand: [
+                            { uid: 'card-1', defId: 'test-card-1' },
+                            { uid: 'card-2', defId: 'test-card-2' },
+                        ],
+                    },
+                },
+            },
+            sys: {
+                interaction: { queue: [] },
+            },
+        } as any;
+
+        const interaction = createSimpleChoice(
+            'respond-with-snapshot',
+            'p1',
+            '选择一张卡牌',
+            [
+                { id: 'opt-1', label: '卡牌 1', value: { cardUid: 'card-1', defId: 'test-card-1' } },
+                { id: 'opt-2', label: '卡牌 2', value: { cardUid: 'card-2', defId: 'test-card-2' } },
+            ],
+            { sourceId: 'test', autoRefresh: 'hand' },
+        );
+
+        state = queueInteraction(state, interaction);
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                players: {
+                    p1: {
+                        hand: [{ uid: 'card-1', defId: 'test-card-1' }],
+                    },
+                },
+            },
+        };
+
+        const system = createSimpleChoiceSystem<TestCore>();
+        const result = system.beforeCommand?.({
+            state,
+            command: {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: 'p1',
+                payload: { optionId: 'opt-2' },
+            } as any,
+            events: [],
+            random: dummyRandom as any,
+            playerIds: ['p1'],
+        });
+
+        expect(result?.halt).toBe(false);
+        expect(result?.events).toHaveLength(1);
+        expect(result?.events?.[0].type).toBe(INTERACTION_EVENTS.RESOLVED);
+        expect((result?.events?.[0] as any).payload.optionId).toBe('opt-2');
+    });
+
+    it('responseValidationMode 为 live 时应拒绝已失效的响应选项', () => {
+        let state: MatchState<TestCore> = {
+            core: {
+                players: {
+                    p1: {
+                        hand: [
+                            { uid: 'card-1', defId: 'test-card-1' },
+                            { uid: 'card-2', defId: 'test-card-2' },
+                        ],
+                    },
+                },
+            },
+            sys: {
+                interaction: { queue: [] },
+            },
+        } as any;
+
+        const interaction = createSimpleChoice(
+            'respond-with-revalidation',
+            'p1',
+            '选择一张卡牌',
+            [
+                { id: 'opt-1', label: '卡牌 1', value: { cardUid: 'card-1', defId: 'test-card-1' } },
+                { id: 'opt-2', label: '卡牌 2', value: { cardUid: 'card-2', defId: 'test-card-2' } },
+            ],
+            { sourceId: 'test', autoRefresh: 'hand', responseValidationMode: 'live' },
+        );
+
+        state = queueInteraction(state, interaction);
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                players: {
+                    p1: {
+                        hand: [{ uid: 'card-1', defId: 'test-card-1' }],
+                    },
+                },
+            },
+        };
+
+        const system = createSimpleChoiceSystem<TestCore>();
+        const result = system.beforeCommand?.({
+            state,
+            command: {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: 'p1',
+                payload: { optionId: 'opt-2' },
+            } as any,
+            events: [],
+            random: dummyRandom as any,
+            playerIds: ['p1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result?.error).toBe('无效的选择');
+    });
+
+    it('旧字段 revalidateOnRespond 仍兼容映射到 live 语义', () => {
+        let state: MatchState<TestCore> = {
+            core: {
+                players: {
+                    p1: {
+                        hand: [
+                            { uid: 'card-1', defId: 'test-card-1' },
+                            { uid: 'card-2', defId: 'test-card-2' },
+                        ],
+                    },
+                },
+            },
+            sys: {
+                interaction: { queue: [] },
+            },
+        } as any;
+
+        const interaction = createSimpleChoice(
+            'respond-with-legacy-live-flag',
+            'p1',
+            '选择一张卡牌',
+            [
+                { id: 'opt-1', label: '卡牌 1', value: { cardUid: 'card-1', defId: 'test-card-1' } },
+                { id: 'opt-2', label: '卡牌 2', value: { cardUid: 'card-2', defId: 'test-card-2' } },
+            ],
+            { sourceId: 'test', autoRefresh: 'hand', revalidateOnRespond: true },
+        );
+
+        state = queueInteraction(state, interaction);
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                players: {
+                    p1: {
+                        hand: [{ uid: 'card-1', defId: 'test-card-1' }],
+                    },
+                },
+            },
+        };
+
+        const system = createSimpleChoiceSystem<TestCore>();
+        const result = system.beforeCommand?.({
+            state,
+            command: {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: 'p1',
+                payload: { optionId: 'opt-2' },
+            } as any,
+            events: [],
+            random: dummyRandom as any,
+            playerIds: ['p1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result?.error).toBe('无效的选择');
     });
 });

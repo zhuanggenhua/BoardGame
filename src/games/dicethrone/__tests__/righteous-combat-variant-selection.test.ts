@@ -14,6 +14,7 @@ import { evaluateTriggerCondition } from '../domain/combat/conditions';
 import { registerDiceThroneConditions } from '../conditions';
 import { PALADIN_DICE_FACE_IDS as FACES } from '../domain/ids';
 import type { AbilityContext } from '../domain/combat/conditions';
+import { getAbilityChoiceText } from '../ui/abilityChoiceText';
 
 describe('正义战法 III 变体选择', () => {
     beforeAll(() => {
@@ -106,5 +107,46 @@ describe('正义战法 III 变体选择', () => {
         expect(tenacityFaces[FACES.HELM]).toBe(1);
         expect(mainFaces[FACES.SWORD]).toBe(3);
         expect(mainFaces[FACES.HELM]).toBe(2);
+    });
+});
+
+describe('变体选择文案兜底', () => {
+    const translations: Record<string, string> = {
+        'abilities.righteous-combat-3.name': 'righteous-combat-3',
+        'abilities.righteous-combat-3.effects.heal2': 'heal-2',
+        'abilities.righteous-combat-3.effects.damage2Unblockable': 'damage-2-unblockable',
+        'abilities.righteous-combat-3.effects.damage6': 'damage-6',
+        'abilities.righteous-combat-3.effects.roll3': 'roll-3',
+    };
+
+    const resolver = {
+        t: (key: string, options?: Record<string, unknown>) => {
+            if (key === 'abilityChoice.trigger.countFace') {
+                return `${options?.count ?? ''}${options?.face ?? ''}`;
+            }
+            return translations[key] ?? key;
+        },
+        exists: (key: string) => key in translations,
+    };
+
+    it('缺少变体 locale key 时使用基础技能名和触发条件兜底', () => {
+        const tenacity = RIGHTEOUS_COMBAT_3.variants?.find(variant => variant.id === 'righteous-combat-3-tenacity');
+        if (!tenacity) {
+            throw new Error('missing righteous-combat-3-tenacity');
+        }
+
+        const text = getAbilityChoiceText('righteous-combat-3-tenacity', {
+            ability: RIGHTEOUS_COMBAT_3,
+            variant: tenacity,
+        }, resolver);
+        const description = text.description ?? '';
+
+        expect(text.name).toContain('righteous-combat-3');
+        expect(text.name).toContain('2');
+        expect(text.name).toContain('剑');
+        expect(text.name).toContain('1');
+        expect(text.name).toContain('头盔');
+        expect(description).toContain('heal-2');
+        expect(description).toContain('damage-2-unblockable');
     });
 });

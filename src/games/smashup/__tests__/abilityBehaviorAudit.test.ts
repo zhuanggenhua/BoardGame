@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFileSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 /** 可审计实体最小抽象 */
 interface AuditableEntity {
@@ -21,13 +21,15 @@ interface AuditableEntity {
     abilityTags?: string[];
     meta?: Record<string, unknown>;
 }
-import { getAllCardDefs } from '../data/cards';
+import { getAllCardDefs, getFactionCards } from '../data/cards';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, getRegisteredAbilityKeys } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { getRegisteredOngoingEffectIds } from '../domain/ongoingEffects';
 import { getRegisteredModifierIds } from '../domain/ongoingModifiers';
 import type { CardDef, ActionCardDef, MinionCardDef } from '../domain/types';
+import { FACTION_METADATA } from '../ui/factionMeta';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 
 // ============================================================================
 // i18n 数据
@@ -35,6 +37,9 @@ import type { CardDef, ActionCardDef, MinionCardDef } from '../domain/types';
 
 const zhCN = JSON.parse(
     readFileSync(resolve(__dirname, '../../../../public/locales/zh-CN/game-smashup.json'), 'utf-8'),
+);
+const enUS = JSON.parse(
+    readFileSync(resolve(__dirname, '../../../../public/locales/en/game-smashup.json'), 'utf-8'),
 );
 
 // ============================================================================
@@ -46,6 +51,22 @@ function getCardDescription(defId: string, def: CardDef): string {
     if (!i18n) return '';
     if (def.type === 'minion') return i18n.abilityText ?? '';
     return i18n.effectText ?? '';
+}
+
+function collectPodFactionIdsFromDataFiles(): string[] {
+    const factionsDir = resolve(__dirname, '../data/factions');
+    const podFactionIds = new Set<string>();
+
+    for (const fileName of readdirSync(factionsDir)) {
+        if (!fileName.endsWith('_pod.ts')) continue;
+
+        const content = readFileSync(resolve(factionsDir, fileName), 'utf-8');
+        for (const match of content.matchAll(/faction:\s*'([^']+_pod)'/g)) {
+            podFactionIds.add(match[1]);
+        }
+    }
+
+    return Array.from(podFactionIds).sort();
 }
 
 function buildEntities(): AuditableEntity[] {
@@ -100,6 +121,38 @@ beforeAll(() => {
 // ============================================================================
 
 describe('SmashUp 能力行为审计', () => {
+    describe('POD 阵营接入完整性', () => {
+        it('所有 POD 阵营数据文件都已接入 cards / ids / factionMeta / locale', () => {
+            const podFactionIds = collectPodFactionIdsFromDataFiles();
+            const knownFactionIds = new Set(Object.values(SMASHUP_FACTION_IDS));
+            const metaIds = new Set(FACTION_METADATA.map(meta => meta.id));
+            const violations: string[] = [];
+
+            for (const factionId of podFactionIds) {
+                if (!knownFactionIds.has(factionId)) {
+                    violations.push(`[ids] 缺少 ${factionId}`);
+                }
+
+                if (getFactionCards(factionId as any).length === 0) {
+                    violations.push(`[cards] ${factionId} 在 getFactionCards() 中为空`);
+                }
+
+                if (!metaIds.has(factionId)) {
+                    violations.push(`[factionMeta] 缺少 ${factionId}`);
+                }
+
+                if (!zhCN.factions?.[factionId]) {
+                    violations.push(`[zh-CN locale] 缺少 factions.${factionId}`);
+                }
+
+                if (!enUS.factions?.[factionId]) {
+                    violations.push(`[en locale] 缺少 factions.${factionId}`);
+                }
+            }
+
+            expect(violations, '以下 POD 阵营存在直接接入缺口').toEqual([]);
+        });
+    });
 
     // ── 1. 关键词→行为映射 ──
     describe('关键词→行为映射', () => {

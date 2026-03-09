@@ -6,7 +6,18 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, grantExtraMinion, moveMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, resolveOrPrompt, buildAbilityFeedback } from '../domain/abilityHelpers';
+import {
+    destroyMinion,
+    grantExtraMinion,
+    moveMinion,
+    getMinionPower,
+    buildMinionTargetOptions,
+    buildBaseTargetOptions,
+    resolveOrPrompt,
+    buildAbilityFeedback,
+    buildValidatedMoveEvents,
+    buildValidatedDestroyEvents,
+} from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionOnBase, OngoingDetachedEvent, MinionPlayedEvent } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
@@ -15,6 +26,7 @@ import { registerProtection, registerTrigger, isMinionProtected } from '../domai
 import type { ProtectionCheckContext, TriggerContext } from '../domain/ongoingEffects';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { matchesDefId } from '../domain/utils';
 
 /** 注册黑熊骑兵派系所有能力*/
 export function registerBearCavalryAbilities(): void {
@@ -147,11 +159,12 @@ function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
         const def = getCardDef(c.defId) as MinionCardDef | undefined;
         const name = def?.name ?? c.defId;
         const power = def?.power ?? 0;
-        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'hand' as const };
+        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'hand' as const, displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `bear_cavalry_commission_choose_minion_${ctx.now}`, ctx.playerId,
-        '委任：选择要额外打出的随从', options as any[], 'bear_cavalry_commission_choose_minion',
+        '委任：选择要额外打出的随从', options as any[],
+        { sourceId: 'bear_cavalry_commission_choose_minion', targetType: 'hand' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -163,7 +176,7 @@ function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
 /** 伊万将军保护检查：控制者的随从不收回能被消灭*/
 function bearCavalryGeneralIvanChecker(ctx: ProtectionCheckContext): boolean {
     for (const base of ctx.state.bases) {
-        const ivan = base.minions.find(m => m.defId === 'bear_cavalry_general_ivan');
+        const ivan = base.minions.find(m => matchesDefId(m.defId, 'bear_cavalry_general_ivan'));
         if (ivan && ivan.controller === ctx.targetMinion.controller) {
             if (ctx.targetMinion.uid === ivan.uid) continue;
             if (ctx.sourcePlayerId !== ctx.targetMinion.controller) return true;
@@ -174,7 +187,7 @@ function bearCavalryGeneralIvanChecker(ctx: ProtectionCheckContext): boolean {
 
 /** 极地突击队员保护检查：基地上唯一己方随从时不收回可消灭*/
 function bearCavalryPolarCommandoChecker(ctx: ProtectionCheckContext): boolean {
-    if (ctx.targetMinion.defId !== 'bear_cavalry_polar_commando') return false;
+    if (!matchesDefId(ctx.targetMinion.defId, 'bear_cavalry_polar_commando')) return false;
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
     const myMinionCount = base.minions.filter(m => m.controller === ctx.targetMinion.controller).length;
@@ -187,7 +200,7 @@ function bearCavalrySuperiorityChecker(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
     return base.ongoingActions.some(
-        a => a.defId === 'bear_cavalry_superiority' && a.ownerId === ctx.targetMinion.controller
+        a => matchesDefId(a.defId, 'bear_cavalry_superiority') && a.ownerId === ctx.targetMinion.controller
     );
 }
 
@@ -209,7 +222,7 @@ function bearCavalryCubScoutTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!movedMinion) return events;
 
     for (const scout of destBase.minions) {
-        if (scout.defId !== 'bear_cavalry_cub_scout') continue;
+        if (!matchesDefId(scout.defId, 'bear_cavalry_cub_scout')) continue;
         if (scout.controller === movedMinion.controller) continue;
         const scoutPower = getMinionPower(ctx.state, scout, destBaseIndex);
         const movedPower = getMinionPower(ctx.state, movedMinion, destBaseIndex);
@@ -239,7 +252,7 @@ function bearCavalryHighGroundTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!movedMinion) return events;
 
     for (const ongoing of destBase.ongoingActions) {
-        if (ongoing.defId !== 'bear_cavalry_high_ground') continue;
+        if (!matchesDefId(ongoing.defId, 'bear_cavalry_high_ground')) continue;
         if (ongoing.ownerId === movedMinion.controller) continue;
         const ownerHasMinion = destBase.minions.some(m => m.controller === ongoing.ownerId);
         if (!ownerHasMinion) continue;
@@ -283,7 +296,8 @@ function bearCavalryBearCavalryAbility(ctx: AbilityContext): AbilityResult {
     
     const interaction = createSimpleChoice(
         `bear_cavalry_bear_cavalry_choose_minion_${ctx.now}`, ctx.playerId,
-        '选择要移动的对手随从', options, 'bear_cavalry_bear_cavalry_choose_minion',
+        '选择要移动的对手随从', options,
+        { sourceId: 'bear_cavalry_bear_cavalry_choose_minion', targetType: 'minion' },
     );
     (interaction.data as any).continuationContext = { fromBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -410,7 +424,15 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
         targetType: 'generic',
     }, (value) => {
         if (value.type === 'minion') {
-            return { events: [destroyMinion(value.uid, value.defId, value.baseIndex, value.owner, undefined, 'bear_cavalry_bear_necessities', ctx.now)] };
+            return {
+                events: buildValidatedDestroyEvents(ctx.state, {
+                    minionUid: value.uid,
+                    minionDefId: value.defId,
+                    fromBaseIndex: value.baseIndex,
+                    reason: 'bear_cavalry_bear_necessities',
+                    now: ctx.now,
+                }),
+            };
         }
         return { events: [{ type: SU_EVENTS.ONGOING_DETACHED, payload: { cardUid: value.uid, defId: value.defId, ownerId: value.ownerId, reason: 'bear_cavalry_bear_necessities' }, timestamp: ctx.now } as OngoingDetachedEvent] };
     });
@@ -424,7 +446,7 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
 /** 注册黑熊骑兵派系的交互解决处理函数 */
 export function registerBearCavalryInteractionHandlers(): void {
     // 黑熊擒抱：平局时拥有者选择消灭哪个（链式处理多个对手）
-    registerInteractionHandler('bear_cavalry_bear_hug', (state, _playerId, value, iData, _random, timestamp) => {
+    registerInteractionHandler('bear_cavalry_bear_hug', (state, playerId, value, iData, _random, timestamp) => {
         // 检查取消标记
         if ((value as any).__cancel__) return { state, events: [] };
         
@@ -519,7 +541,8 @@ export function registerBearCavalryInteractionHandlers(): void {
             }
             const next = createSimpleChoice(
                 `bear_cavalry_commission_move_minion_${timestamp}`, playerId,
-                '委任：选择要移动的对手随从', moveOptions, 'bear_cavalry_commission_move_minion',
+                '委任：选择要移动的对手随从', moveOptions,
+                { sourceId: 'bear_cavalry_commission_move_minion', targetType: 'minion' },
             );
             return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { fromBaseIndex: baseIndex } } }), events: [playedEvt] };
         }
@@ -562,7 +585,8 @@ export function registerBearCavalryInteractionHandlers(): void {
         }
         const next = createSimpleChoice(
             `bear_cavalry_commission_move_minion_${timestamp}`, playerId,
-            '委任：选择要移动的对手随从', moveOptions, 'bear_cavalry_commission_move_minion',
+            '委任：选择要移动的对手随从', moveOptions,
+            { sourceId: 'bear_cavalry_commission_move_minion', targetType: 'minion' },
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { fromBaseIndex: baseIndex } } }), events: [playedEvt] };
     });
@@ -594,7 +618,17 @@ export function registerBearCavalryInteractionHandlers(): void {
         const { baseIndex: toBase } = value as { baseIndex: number };
         const ctx = (iData as any)?.continuationContext as { minionUid: string; minionDefId: string; fromBase: number };
         if (!ctx) return undefined;
-        return { state, events: [moveMinion(ctx.minionUid, ctx.minionDefId, ctx.fromBase, toBase, 'bear_cavalry_commission', timestamp)] };
+        return {
+            state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: ctx.minionUid,
+                minionDefId: ctx.minionDefId,
+                fromBaseIndex: ctx.fromBase,
+                toBaseIndex: toBase,
+                reason: 'bear_cavalry_commission',
+                now: timestamp,
+            }),
+        };
     });
 
     // 黑熊骑兵第一步：选择随从后，链式选择目标基地
@@ -621,14 +655,34 @@ export function registerBearCavalryInteractionHandlers(): void {
         const { baseIndex: toBase } = value as { baseIndex: number };
         const ctx = (iData as any)?.continuationContext as { minionUid: string; minionDefId: string; fromBase: number };
         if (!ctx) return undefined;
-        return { state, events: [moveMinion(ctx.minionUid, ctx.minionDefId, ctx.fromBase, toBase, 'bear_cavalry_bear_cavalry', timestamp)] };
+        return {
+            state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: ctx.minionUid,
+                minionDefId: ctx.minionDefId,
+                fromBaseIndex: ctx.fromBase,
+                toBaseIndex: toBase,
+                reason: 'bear_cavalry_bear_cavalry',
+                now: timestamp,
+            }),
+        };
     });
 
     // 黑熊口粮：选择目标后消灭
-    registerInteractionHandler('bear_cavalry_bear_necessities', (state, _playerId, value, _iData, _random, timestamp) => {
+    registerInteractionHandler('bear_cavalry_bear_necessities', (state, playerId, value, _iData, _random, timestamp) => {
         const selected = value as { type: string; uid: string; defId: string; baseIndex?: number; owner?: string; ownerId?: string };
         if (selected.type === 'minion') {
-            return { state, events: [destroyMinion(selected.uid, selected.defId, selected.baseIndex!, selected.owner!, playerId, 'bear_cavalry_bear_necessities', timestamp)] };
+            return {
+                state,
+                events: buildValidatedDestroyEvents(state, {
+                    minionUid: selected.uid,
+                    minionDefId: selected.defId,
+                    fromBaseIndex: selected.baseIndex!,
+                    destroyerId: playerId,
+                    reason: 'bear_cavalry_bear_necessities',
+                    now: timestamp,
+                }),
+            };
         }
         return { state, events: [{ type: SU_EVENTS.ONGOING_DETACHED, payload: { cardUid: selected.uid, defId: selected.defId, ownerId: selected.ownerId!, reason: 'bear_cavalry_bear_necessities' }, timestamp }] };
     });
@@ -657,7 +711,8 @@ export function registerBearCavalryInteractionHandlers(): void {
         if (options.length === 0) return { state, events: [] };
         const next = createSimpleChoice(
             `bear_cavalry_youre_screwed_choose_minion_${timestamp}`, playerId,
-            '选择要移动的对手随从', options, 'bear_cavalry_youre_screwed_choose_minion',
+            '选择要移动的对手随从', options,
+            { sourceId: 'bear_cavalry_youre_screwed_choose_minion', targetType: 'minion' },
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { fromBaseIndex: baseIndex } } }), events: [] };
     });
@@ -685,7 +740,17 @@ export function registerBearCavalryInteractionHandlers(): void {
         const { baseIndex: toBase } = value as { baseIndex: number };
         const ctx = (iData as any)?.continuationContext as { minionUid: string; minionDefId: string; fromBase: number };
         if (!ctx) return undefined;
-        return { state, events: [moveMinion(ctx.minionUid, ctx.minionDefId, ctx.fromBase, toBase, 'bear_cavalry_youre_screwed', timestamp)] };
+        return {
+            state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: ctx.minionUid,
+                minionDefId: ctx.minionDefId,
+                fromBaseIndex: ctx.fromBase,
+                toBaseIndex: toBase,
+                reason: 'bear_cavalry_youre_screwed',
+                now: timestamp,
+            }),
+        };
     });
 
     // 与熊同行：选择随从后→链式选择目标基地
@@ -711,7 +776,17 @@ export function registerBearCavalryInteractionHandlers(): void {
         const { baseIndex: toBase } = value as { baseIndex: number };
         const ctx = (iData as any)?.continuationContext as { minionUid: string; minionDefId: string; fromBase: number };
         if (!ctx) return undefined;
-        return { state, events: [moveMinion(ctx.minionUid, ctx.minionDefId, ctx.fromBase, toBase, 'bear_cavalry_bear_rides_you', timestamp)] };
+        return {
+            state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: ctx.minionUid,
+                minionDefId: ctx.minionDefId,
+                fromBaseIndex: ctx.fromBase,
+                toBaseIndex: toBase,
+                reason: 'bear_cavalry_bear_rides_you',
+                now: timestamp,
+            }),
+        };
     });
 
     // 你们都是美食：选择来源基地后→链式选择目标基地
@@ -743,7 +818,14 @@ export function registerBearCavalryInteractionHandlers(): void {
         for (const m of opponentMinions) {
             // 检查保护（手动检查，因为这里不是构建选项而是批量移动）
             if (isMinionProtected(state.core, m, ctx.fromBase, playerId, 'affect')) continue;
-            events.push(moveMinion(m.uid, m.defId, ctx.fromBase, destBase, 'bear_cavalry_youre_pretty_much_borscht', timestamp));
+            events.push(...buildValidatedMoveEvents(state, {
+                minionUid: m.uid,
+                minionDefId: m.defId,
+                fromBaseIndex: ctx.fromBase,
+                toBaseIndex: destBase,
+                reason: 'bear_cavalry_youre_pretty_much_borscht',
+                now: timestamp,
+            }));
         }
         return { state, events };
     });

@@ -110,7 +110,7 @@ function ghostGhost(ctx: AbilityContext): AbilityResult {
         if (cards.length === 0) return [skipOption];
         const opts = cards.map((c: any, i: number) => {
             const def = getCardDef(c.defId);
-            return { id: `card-${i}`, label: def?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+            return { id: `card-${i}`, label: def?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const, displayMode: 'card' as const };
         });
         return [...opts, skipOption];
     };

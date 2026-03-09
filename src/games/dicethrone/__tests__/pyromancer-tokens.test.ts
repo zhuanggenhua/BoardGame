@@ -65,7 +65,7 @@ describe('炎术士 Token 定义', () => {
         expect(burn!.passiveTrigger!.timing).toBe('onTurnStart');
         expect(burn!.passiveTrigger!.removable).toBe(true);
         expect(burn!.passiveTrigger!.actions).toEqual(
-            expect.arrayContaining([expect.objectContaining({ type: 'damage', target: 'self', value: 1 })])
+            expect.arrayContaining([expect.objectContaining({ type: 'damage', target: 'self', value: 2 })])
         );
     });
 

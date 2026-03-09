@@ -89,20 +89,20 @@ if (isMultiWorker) {
 const webServerConfig = shouldStartServers && !isMultiWorker
     ? [
         {
-            command: `cross-env E2E_PROXY_QUIET=true VITE_DEV_PORT=${frontendPort} GAME_SERVER_PORT=${gameServerPort} API_SERVER_PORT=${apiServerPort} npm run dev:frontend`,
+            command: `cross-env NODE_OPTIONS=--max-old-space-size=4096 E2E_PROXY_QUIET=true VITE_DEV_PORT=${frontendPort} GAME_SERVER_PORT=${gameServerPort} API_SERVER_PORT=${apiServerPort} npm run dev:frontend`,
             url: `${singleWorkerBaseURL}/__ready`,
             reuseExistingServer: shouldReuseExistingServers,
             timeout: 120000,
             ignoreHTTPSErrors: true,
         },
         {
-            command: `cross-env USE_PERSISTENT_STORAGE=false GAME_SERVER_PORT=${gameServerPort} npm run dev:game`,
+            command: `cross-env NODE_OPTIONS=--max-old-space-size=2048 USE_PERSISTENT_STORAGE=false GAME_SERVER_PORT=${gameServerPort} npm run dev:game`,
             url: `http://localhost:${gameServerPort}/games`,
             reuseExistingServer: shouldReuseExistingServers,
             timeout: 120000,
         },
         {
-            command: `cross-env API_SERVER_PORT=${apiServerPort} npm run dev:api`,
+            command: `cross-env NODE_OPTIONS=--max-old-space-size=2048 API_SERVER_PORT=${apiServerPort} npm run dev:api`,
             url: `http://localhost:${apiServerPort}/health`,
             reuseExistingServer: shouldReuseExistingServers,
             timeout: 120000,

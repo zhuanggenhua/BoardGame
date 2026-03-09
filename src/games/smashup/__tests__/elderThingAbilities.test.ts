@@ -209,6 +209,7 @@ describe('远古之物派系能力', () => {
             const miGoInteraction = interactions.find(i => i.data?.sourceId === 'elder_thing_mi_go');
             expect(miGoInteraction).toBeDefined();
             expect(miGoInteraction.playerId).toBe('1'); // 对手选择
+            expect(miGoInteraction?.data?.targetType).toBe('button');
         });
 
         it('对手选择抽疯狂卡时产生疯狂卡事件', () => {

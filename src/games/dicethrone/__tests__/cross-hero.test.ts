@@ -23,6 +23,7 @@ import {
     assertState,
     type CommandInput,
 } from './test-utils';
+import { getAbilitySlotId } from '../ui/abilitySlotMapping';
 
 // ============================================================================
 // 跨英雄 setup 工具
@@ -223,5 +224,14 @@ describe('跨英雄对战', () => {
             expect(state.core.players['0'].hand).toHaveLength(4);
             expect(state.core.players['1'].hand).toHaveLength(4);
         });
+    });
+});
+
+describe('变体槽位归属', () => {
+    it('非前缀变体 ID 也能定位到正确技能槽', () => {
+        expect(getAbilitySlotId('deadeye-shot-2')).toBe('chi');
+        expect(getAbilitySlotId('focus')).toBe('chi');
+        expect(getAbilitySlotId('blazing-soul')).toBe('chi');
+        expect(getAbilitySlotId('righteous-combat-3-main')).toBe('combo');
     });
 });

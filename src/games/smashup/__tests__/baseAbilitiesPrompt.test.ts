@@ -18,16 +18,18 @@
 import { describe, expect, it, beforeAll } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
+import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
     clearBaseAbilityRegistry,
     triggerBaseAbility,
 } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase } from '../domain/types';
+import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, CardInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { triggerBaseAbilityWithMS, getInteractionsFromResult } from './helpers';
+import { triggerBaseAbilityWithMS, getInteractionsFromResult, makeMatchState } from './helpers';
+import type { RandomFn } from '../../../engine/types';
 
 // ============================================================================
 // 初始化
@@ -40,6 +42,13 @@ beforeAll(() => {
     resetAbilityInit();
     initAllAbilities();
 });
+
+const dummyRandom: RandomFn = {
+    shuffle: (arr: any[]) => [...arr],
+    random: () => 0.5,
+    d: (_max: number) => 1,
+    range: (_min: number, _max: number) => _min,
+};
 
 // ============================================================================
 // 辅助函数
@@ -64,6 +73,10 @@ function makeMinion(uid: string, controller: string, power: number, defId = 'd1'
 
 function makeBase(defId: string, overrides?: Partial<BaseInPlay>): BaseInPlay {
     return { defId, minions: [], ongoingActions: [], ...overrides };
+}
+
+function makeCard(uid: string, defId: string, type: 'minion' | 'action', owner: string): CardInstance {
+    return { uid, defId, type, owner };
 }
 
 function makeState(overrides?: Partial<SmashUpCore>): SmashUpCore {
@@ -174,6 +187,214 @@ describe('base_the_mothership: 计分后冠军收回随从', () => {
     });
 });
 
+describe('stale move regression: 基础基地 Prompt 移动', () => {
+    it('base_pirate_cove: 第二步若目标已离开来源基地则不再移动', () => {
+        const result = triggerBaseAbilityWithMS('base_pirate_cove', 'afterScoring', makeCtx({
+            state: makeState({
+                bases: [
+                    makeBase('base_pirate_cove', {
+                        minions: [makeMinion('m1', '0', 5), makeMinion('m2', '1', 3)],
+                    }),
+                    makeBase('base_other_1'),
+                    makeBase('base_other_2'),
+                ],
+            }),
+            baseDefId: 'base_pirate_cove',
+            baseIndex: 0,
+            rankings: [
+                { playerId: '0', power: 5, vp: 4 },
+                { playerId: '1', power: 3, vp: 2 },
+            ],
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        const chooseMinion = getInteractionHandler('base_pirate_cove');
+        const chooseBase = getInteractionHandler('base_pirate_cove_choose_base');
+        expect(interaction?.data?.sourceId).toBe('base_pirate_cove');
+        expect(chooseMinion).toBeDefined();
+        expect(chooseBase).toBeDefined();
+
+        const step1 = chooseMinion!(
+            result.matchState!,
+            '1',
+            { minionUid: 'm2', minionDefId: 'd1' },
+            interaction.data,
+            dummyRandom,
+            1200,
+        );
+        const nextInteraction = (step1?.state.sys as any).interaction?.queue?.[0];
+        expect(nextInteraction?.data?.sourceId).toBe('base_pirate_cove_choose_base');
+
+        const staleCore = makeState({
+            bases: [
+                makeBase('base_pirate_cove', {
+                    minions: [makeMinion('m1', '0', 5)],
+                }),
+                makeBase('base_other_1'),
+                makeBase('base_other_2'),
+            ],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    discard: [makeCard('m2', 'd1', 'minion', '1')],
+                }),
+            },
+        });
+
+        const step2 = chooseBase!(
+            makeMatchState(staleCore),
+            '1',
+            { baseIndex: 1 },
+            nextInteraction?.data,
+            dummyRandom,
+            1201,
+        );
+        expect(step2?.events ?? []).toHaveLength(0);
+    });
+
+    it('base_tortuga: 若所选随从已离开原基地则不再移动', () => {
+        const result = triggerBaseAbilityWithMS('base_tortuga', 'afterScoring', makeCtx({
+            state: makeState({
+                bases: [
+                    makeBase('base_tortuga', {
+                        minions: [makeMinion('m1', '0', 5), makeMinion('m2', '1', 3)],
+                    }),
+                    makeBase('base_other', {
+                        minions: [makeMinion('m3', '1', 2)],
+                    }),
+                ],
+            }),
+            baseDefId: 'base_tortuga',
+            baseIndex: 0,
+            rankings: [
+                { playerId: '0', power: 5, vp: 4 },
+                { playerId: '1', power: 3, vp: 2 },
+            ],
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        const option = interaction.data.options.find((entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm3');
+        const handler = getInteractionHandler('base_tortuga');
+        expect(interaction?.data?.sourceId).toBe('base_tortuga');
+        expect(handler).toBeDefined();
+
+        const staleCore = makeState({
+            bases: [
+                makeBase('base_tortuga', {
+                    minions: [makeMinion('m1', '0', 5), makeMinion('m2', '1', 3)],
+                }),
+                makeBase('base_other', {
+                    minions: [],
+                }),
+            ],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    discard: [makeCard('m3', 'd1', 'minion', '1')],
+                }),
+            },
+        });
+
+        const resolved = handler!(
+            makeMatchState(staleCore),
+            '1',
+            option.value,
+            interaction.data,
+            dummyRandom,
+            1300,
+        );
+        expect(resolved?.events ?? []).toHaveLength(0);
+    });
+
+    it('base_mushroom_kingdom: 若所选对手随从已离开原基地则不再移动', () => {
+        const result = triggerBaseAbilityWithMS('base_mushroom_kingdom', 'onTurnStart', makeCtx({
+            state: makeState({
+                bases: [
+                    makeBase('base_mushroom_kingdom'),
+                    makeBase('other_base', {
+                        minions: [makeMinion('m1', '1', 3)],
+                    }),
+                ],
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_mushroom_kingdom',
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        const option = interaction.data.options.find((entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
+        const handler = getInteractionHandler('base_mushroom_kingdom');
+        expect(interaction?.data?.sourceId).toBe('base_mushroom_kingdom');
+        expect(handler).toBeDefined();
+
+        const staleCore = makeState({
+            bases: [
+                makeBase('base_mushroom_kingdom'),
+                makeBase('other_base', {
+                    minions: [],
+                }),
+            ],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    discard: [makeCard('m1', 'd1', 'minion', '1')],
+                }),
+            },
+        });
+
+        const resolved = handler!(
+            makeMatchState(staleCore),
+            '0',
+            option.value,
+            interaction.data,
+            dummyRandom,
+            1400,
+        );
+        expect(resolved?.events ?? []).toHaveLength(0);
+    });
+
+    it('base_the_hill: 若所选随从已离开原基地则不再移动', () => {
+        const result = triggerBaseAbilityWithMS('base_the_hill', 'onTurnStart', makeCtx({
+            state: makeState({
+                bases: [
+                    makeBase('base_the_hill'),
+                    makeBase('other_base', {
+                        minions: [makeMinion('m1', '0', 3)],
+                    }),
+                ],
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_the_hill',
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        const option = interaction.data.options.find((entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
+        const handler = getInteractionHandler('base_the_hill');
+        expect(interaction?.data?.sourceId).toBe('base_the_hill');
+        expect(handler).toBeDefined();
+
+        const staleCore = makeState({
+            bases: [
+                makeBase('base_the_hill'),
+                makeBase('other_base', {
+                    minions: [],
+                }),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('m1', 'd1', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const resolved = handler!(
+            makeMatchState(staleCore),
+            '0',
+            option.value,
+            interaction.data,
+            dummyRandom,
+            1500,
+        );
+        expect(resolved?.events ?? []).toHaveLength(0);
+    });
+});
+
 // ============================================================================
 // base_ninja_dojo: 忍者道场 - afterScoring → Prompt（消灭随从）
 // ============================================================================
@@ -215,6 +436,92 @@ describe('base_ninja_dojo: 计分后冠军消灭随从', () => {
         }));
 
         expect(events).toHaveLength(0);
+    });
+});
+
+describe('stale return/destroy regression: 基础基地 Prompt', () => {
+    it('base_the_mothership: 若所选随从已离开基地则不再回手', () => {
+        const result = triggerBaseAbilityWithMS('base_the_mothership', 'afterScoring', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_the_mothership', {
+                    minions: [makeMinion('m1', '0', 2)],
+                })],
+            }),
+            baseDefId: 'base_the_mothership',
+            rankings: [{ playerId: '0', power: 2, vp: 4 }],
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        const option = interaction.data.options.find((entry: any) => entry.value?.minionUid === 'm1');
+        const handler = getInteractionHandler('base_the_mothership');
+        expect(interaction?.data?.sourceId).toBe('base_the_mothership');
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+
+        const staleCore = makeState({
+            bases: [makeBase('base_the_mothership')],
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('m1', 'd1', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const resolved = handler!(
+            makeMatchState(staleCore),
+            '0',
+            option.value,
+            interaction.data,
+            dummyRandom,
+            1450,
+        );
+        expect(resolved?.events ?? []).toHaveLength(0);
+    });
+
+    it('base_ninja_dojo: 若所选随从已离开基地则不再消灭', () => {
+        const result = triggerBaseAbilityWithMS('base_ninja_dojo', 'afterScoring', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_ninja_dojo', {
+                    minions: [
+                        makeMinion('m1', '0', 3),
+                        makeMinion('m2', '1', 2),
+                    ],
+                })],
+            }),
+            baseDefId: 'base_ninja_dojo',
+            rankings: [
+                { playerId: '0', power: 3, vp: 3 },
+                { playerId: '1', power: 2, vp: 2 },
+            ],
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        const option = interaction.data.options.find((entry: any) => entry.value?.minionUid === 'm2');
+        const handler = getInteractionHandler('base_ninja_dojo');
+        expect(interaction?.data?.sourceId).toBe('base_ninja_dojo');
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+
+        const staleCore = makeState({
+            bases: [makeBase('base_ninja_dojo', {
+                minions: [makeMinion('m1', '0', 3)],
+            })],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    discard: [makeCard('m2', 'd1', 'minion', '1')],
+                }),
+            },
+        });
+
+        const resolved = handler!(
+            makeMatchState(staleCore),
+            '0',
+            option.value,
+            interaction.data,
+            dummyRandom,
+            1451,
+        );
+        expect(resolved?.events ?? []).toHaveLength(0);
     });
 });
 
@@ -342,6 +649,95 @@ describe('base_tortuga: 计分后亚军移动随从', () => {
         }));
 
         expect(events).toHaveLength(0);
+    });
+
+    it('存在延迟清场时，先登记为替换基地后的移动动作', () => {
+        const result = triggerBaseAbilityWithMS('base_tortuga', 'afterScoring', makeCtx({
+            state: makeState({
+                bases: [
+                    makeBase('base_tortuga', {
+                        minions: [
+                            makeMinion('m1', '0', 5),
+                            makeMinion('m2', '1', 3),
+                        ],
+                    }),
+                    makeBase('base_other', {
+                        minions: [
+                            makeMinion('m3', '1', 2),
+                        ],
+                    }),
+                ],
+            }),
+            baseDefId: 'base_tortuga',
+            baseIndex: 0,
+            rankings: [
+                { playerId: '0', power: 5, vp: 4 },
+                { playerId: '1', power: 3, vp: 2 },
+            ],
+        }));
+
+        const interaction = getInteractionsFromResult(result)[0];
+        const option = interaction.data.options.find((entry: any) => entry.value?.minionUid === 'm3');
+        const handler = getInteractionHandler('base_tortuga');
+        expect(interaction?.data?.sourceId).toBe('base_tortuga');
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+
+        const resolved = handler!(
+            makeMatchState(makeState({
+                bases: [
+                    makeBase('base_tortuga', {
+                        minions: [
+                            makeMinion('m1', '0', 5),
+                            makeMinion('m2', '1', 3),
+                        ],
+                    }),
+                    makeBase('base_other', {
+                        minions: [
+                            makeMinion('m3', '1', 2),
+                        ],
+                    }),
+                ],
+            })),
+            '1',
+            option.value,
+            {
+                ...interaction.data,
+                continuationContext: {
+                    ...(interaction.data as any).continuationContext,
+                    _deferredPostScoringEvents: [
+                        {
+                            type: SU_EVENTS.BASE_CLEARED,
+                            payload: { baseIndex: 0, baseDefId: 'base_tortuga' },
+                            timestamp: 2000,
+                        },
+                        {
+                            type: SU_EVENTS.BASE_REPLACED,
+                            payload: {
+                                baseIndex: 0,
+                                oldBaseDefId: 'base_tortuga',
+                                newBaseDefId: 'base_secret_garden',
+                            },
+                            timestamp: 2000,
+                        },
+                    ],
+                },
+            } as any,
+            dummyRandom,
+            2001,
+        );
+
+        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved?.state.core.pendingPostScoringActions).toEqual([
+            {
+                kind: 'moveMinionToReplacementBase',
+                minionUid: 'm3',
+                minionDefId: 'd1',
+                fromBaseIndex: 1,
+                toBaseIndex: 0,
+                reason: '托尔图加：亚军移动随从到替换基地',
+            },
+        ]);
     });
 });
 

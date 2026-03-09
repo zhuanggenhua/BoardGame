@@ -253,6 +253,7 @@ export function registerExpansionBaseAbilities(): void {
                     id: `minion-${i}`,
                     label: `${def?.name ?? c.defId} (力量${def?.power ?? '?'})`,
                     value: { cardUid: c.uid, defId: c.defId, power: def?.power ?? 0 },
+                    _source: 'static' as const,
                     displayMode: 'card' as const,
                 };
             }),
@@ -307,6 +308,7 @@ export function registerExpansionBaseAbilities(): void {
                     id: `action-${i}`,
                     label: def?.name ?? c.defId,
                     value: { cardUid: c.uid, defId: c.defId },
+                    _source: 'discard' as const,
                     displayMode: 'card' as const,
                 };
             }),
@@ -342,6 +344,7 @@ export function registerExpansionBaseAbilities(): void {
                 id: `minion-${i}`,
                 label: `${def?.name ?? m.defId} (力量${getEffectivePower(ctx.state, m, ctx.baseIndex)})`,
                 value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner },
+                _source: 'field' as const,
                 displayMode: 'card' as const,
             };
         });
@@ -437,6 +440,7 @@ export function registerExpansionBaseAbilities(): void {
             id: `minion-${i}`,
             label: m.label,
             value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.baseIndex },
+            _source: 'field' as const,
             displayMode: 'card' as const,
         }));
         const options: PromptOption<Record<string, unknown>>[] = [
@@ -597,6 +601,7 @@ export function registerExpansionBaseAbilities(): void {
                 id: `minion-${i}`,
                 label: m.label,
                 value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.baseIndex },
+                _source: 'field' as const,
                 displayMode: 'card' as const,
             }));
             const options: PromptOption<Record<string, unknown>>[] = [
@@ -655,6 +660,7 @@ export function registerExpansionBaseAbilities(): void {
             id: `minion-${i}`,
             label: m.label,
             value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.baseIndex },
+            _source: 'field' as const,
             displayMode: 'card' as const,
         }));
 
@@ -712,6 +718,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 id: `card-${i}`,
                 label: def?.name ?? c.defId,
                 value: { cardUid: c.uid, defId: c.defId, ownerId: targetPlayerId },
+                _source: 'discard' as const,
                 displayMode: 'card' as const,
             };
         });

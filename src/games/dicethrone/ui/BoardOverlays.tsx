@@ -178,6 +178,17 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const { t } = useTranslation('game-dicethrone');
     const { ref: multiCardScrollRef, dragProps: multiCardDragProps } = useHorizontalDragScroll();
 
+    // 调试日志：bonusDie prop
+    React.useEffect(() => {
+        console.log('[BoardOverlays] 📦 bonusDie prop 更新:', {
+            show: props.bonusDie.show,
+            value: props.bonusDie.value,
+            face: props.bonusDie.face,
+            effectKey: props.bonusDie.effectKey,
+            characterId: props.bonusDie.characterId,
+        });
+    }, [props.bonusDie]);
+
     const isPlayerBoardPreview = Boolean(props.magnifiedImage?.includes('player-board'));
     const isMultiCardPreview = props.magnifiedCards.length > 0;
     const magnifyContainerClassName = `

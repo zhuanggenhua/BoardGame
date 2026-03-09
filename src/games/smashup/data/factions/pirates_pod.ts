@@ -21,7 +21,7 @@ export const PIRATE_POD_MINIONS: MinionCardDef[] = [
         nameEn: 'Buccaneer',
         faction: 'pirates_pod',
         power: 4,
-        abilityTags: ['ongoing'], // POD版：每回合一次被消灭时可移动到其他基地
+        // 注意：该能力是 onMinionDestroyed 触发，不是 ongoing / special 点击能力
         count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 1 },
     },

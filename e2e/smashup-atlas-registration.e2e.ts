@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 
 test('SmashUp card atlases should be registered', async ({ page }) => {
     // 访问 SmashUp 派系选择页面
-    await page.goto('http://localhost:5173/play/smashup/local');
+    await page.goto('/play/smashup/local');
     
     // 等待页面加载
     await page.waitForTimeout(2000);

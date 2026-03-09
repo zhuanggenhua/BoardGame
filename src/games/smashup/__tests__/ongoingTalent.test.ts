@@ -16,6 +16,7 @@ import type { SmashUpCore, OngoingActionOnBase } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
+import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
     makeMinion, makeCard, makePlayer, makeState, makeMatchState,
     getInteractionsFromMS, applyEvents,
@@ -311,6 +312,94 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
         const types = events.map(e => e.type);
         expect(types).toContain(SU_EVENTS.TALENT_USED);
         expect(types).toContain(SU_EVENTS.ABILITY_FEEDBACK);
+    });
+
+    it('第二步若目标已离开来源基地则不再移动', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('m1', 'pirate_first_mate', '0', 3, { powerModifier: 0 })],
+                    ongoingActions: [makeOngoing('oa1', 'steampunk_zeppelin', '0')],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('m2', 'pirate_saucy_wench', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const ms = makeMatchState(core);
+        execute(ms, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const chooseMinionInteraction = getInteractionsFromMS(ms)[0];
+        expect(chooseMinionInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_minion');
+
+        const chooseMinion = getInteractionHandler('steampunk_zeppelin_choose_minion');
+        const chooseBase = getInteractionHandler('steampunk_zeppelin_choose_base');
+        const legacyHandler = getInteractionHandler('steampunk_zeppelin');
+        expect(chooseMinion).toBeDefined();
+        expect(chooseBase).toBeDefined();
+        expect(legacyHandler).toBeDefined();
+
+        const step1 = chooseMinion!(
+            ms,
+            '0',
+            { minionUid: 'm2', baseIndex: 1 },
+            chooseMinionInteraction?.data,
+            defaultRandom,
+            2100,
+        );
+        const chooseBaseInteraction = (step1?.state.sys as any).interaction?.queue?.[0];
+        expect(chooseBaseInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_base');
+
+        const staleCore = makeState({
+            ...core,
+            players: {
+                ...core.players,
+                '0': makePlayer('0', {
+                    ...core.players['0'],
+                    discard: [makeCard('m2', 'pirate_saucy_wench', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                core.bases[0],
+                {
+                    ...core.bases[1],
+                    minions: [],
+                },
+            ],
+        });
+
+        const step2 = chooseBase!(
+            makeMatchState(staleCore),
+            '0',
+            { baseIndex: 0 },
+            chooseBaseInteraction?.data,
+            defaultRandom,
+            2101,
+        );
+        expect(step2?.events ?? []).toHaveLength(0);
+
+        const legacy = legacyHandler!(
+            makeMatchState(staleCore),
+            '0',
+            { minionUid: 'm2', minionDefId: 'pirate_saucy_wench', fromBase: 1, toBase: 0 },
+            undefined,
+            defaultRandom,
+            2102,
+        );
+        expect(legacy?.events ?? []).toHaveLength(0);
     });
 
     it('reduce 后 talentUsed 标记为 true', () => {

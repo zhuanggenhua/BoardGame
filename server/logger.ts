@@ -45,6 +45,10 @@ const logger = winston.createLogger({
     new winston.transports.Console({
       format: consoleFormat,
       level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
+      // 防止 EPIPE 错误导致无限循环（nodemon 重启时 stdout 管道会关闭）
+      handleExceptions: false,
+      handleRejections: false,
+      silent: false,
     }),
 
     // 所有日志（按日期轮转，保留 30 天，旧日志自动压缩）

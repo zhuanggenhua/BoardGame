@@ -245,6 +245,41 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(result?.randomCursor).toBeGreaterThan(0);
     });
 
+    it('setupMatch 应透传 setupData 到 domain.setup', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const setupData = { firstPlayerId: '1', tag: 'from-test' };
+        let receivedSetupData: unknown;
+
+        const engineWithSetupData: GameEngineConfig = {
+            ...createEngineConfig(),
+            domain: {
+                ...createEngineConfig().domain,
+                setup: (_playerIds, _random, incomingSetupData) => {
+                    receivedSetupData = incomingSetupData;
+                    return { currentPlayer: '0' };
+                },
+            },
+        };
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [engineWithSetupData],
+        });
+
+        const result = await server.setupMatch(
+            'match-setup-data',
+            'test-game',
+            ['0', '1'],
+            'seed-2',
+            setupData,
+        );
+
+        expect(result).toBeTruthy();
+        expect(receivedSetupData).toEqual(setupData);
+    });
+
     it('离线裁决在 dt:card-interaction 下应走领域取消命令', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -487,5 +522,40 @@ describe('GameTransportServer（离座与重连）', () => {
         await newSocket.clientEmit('sync', 'match-2', '0', 'seat-cred-new');
         expect(hasEvent(newSocket, 'state:sync')).toBe(true);
         expect(hasEvent(newSocket, 'error', (args) => args[1] === 'unauthorized')).toBe(false);
+    });
+
+    it('不应通过 /game socket 暴露 test:injectState', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const initialState = createStoredState();
+        await storage.createMatch('match-no-socket-inject', {
+            initialState,
+            metadata: createMetadata('cred-0'),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-no-inject');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-no-socket-inject', '0', 'cred-0');
+        expect(hasEvent(socket, 'state:sync')).toBe(true);
+
+        const injectedState = createStoredState().G as { core: { currentPlayer: string } };
+        injectedState.core.currentPlayer = '1';
+
+        await socket.clientEmit('test:injectState', 'match-no-socket-inject', injectedState);
+
+        const persisted = await storage.fetch('match-no-socket-inject', { state: true });
+        expect((persisted.state?.G as { core: { currentPlayer: string } }).core.currentPlayer).toBe('0');
+        expect(hasEvent(socket, 'test:injectState:success')).toBe(false);
+        expect(hasEvent(socket, 'test:injectState:error')).toBe(false);
     });
 });

@@ -23,6 +23,7 @@ import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { applyEvents as _applyEventsHelper } from './helpers';
+import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 
 beforeAll(() => {
@@ -31,6 +32,47 @@ beforeAll(() => {
     resetAbilityInit();
     clearInteractionHandlers();
     initAllAbilities();
+});
+
+describe('interaction handler regressions', () => {
+    it('cthulhu_corruption resolves selected target', () => {
+        const core = makeStateWithMadness({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'cthulhu_corruption', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'b1', minions: [
+                    makeMinion('m1', 'test_m', '1', 2),
+                ], ongoingActions: [],
+            }],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } } as any,
+            defaultRandom
+        );
+
+        const prompt = playResult.finalState.sys.interaction?.current as any;
+        expect(prompt?.data?.sourceId).toBe('cthulhu_corruption');
+
+        const targetOption = prompt?.data?.options?.find((option: any) => option?.value?.minionUid === 'm1');
+        expect(targetOption).toBeDefined();
+
+        const respondResult = runCommand(
+            playResult.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
+            defaultRandom
+        );
+
+        const destroyEvent = respondResult.events.find(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvent).toBeDefined();
+        expect((destroyEvent as any).payload.minionUid).toBe('m1');
+        expect(respondResult.finalState.core.bases[0].minions.some(m => m.uid === 'm1')).toBe(false);
+    });
 });
 
 // ============================================================================
@@ -494,6 +536,7 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             expect(hasInteraction).toBe(true);
             const i = interaction!.current ?? interaction!.queue[0];
             expect((i.data as any).sourceId).toBe('miskatonic_mandatory_reading_draw');
+            expect((i.data as any).targetType).toBe('button');
         });
 
         it('抽疯狂卡后随从获得力量加成（handler 验证）', () => {

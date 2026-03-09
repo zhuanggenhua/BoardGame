@@ -14,6 +14,7 @@ import {
     registerRestriction,
     registerTrigger,
     clearOngoingEffectRegistry,
+    registerPodOngoingAliases,
     isMinionProtected,
     isOperationRestricted,
     fireTriggers,
@@ -142,6 +143,7 @@ describe('忍者 ongoing/special 能力', () => {
         clearOngoingEffectRegistry();
         clearRegistry();
         registerNinjaAbilities();
+        registerPodOngoingAliases();
     });
 
     describe('ninja_smoke_bomb: 烟雾弹保护', () => {
@@ -149,6 +151,19 @@ describe('忍者 ongoing/special 能力', () => {
             const myMinion = makeMinion({
                 defId: 'ninja_a', uid: 'n-1', controller: '0',
                 attachedActions: [{ uid: 'sb-1', defId: 'ninja_smoke_bomb', ownerId: '0' }],
+            });
+            const base = makeBase({
+                minions: [myMinion],
+            });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
+        });
+
+        test('POD 版烟雾弹也会保护被附着的随从', () => {
+            const myMinion = makeMinion({
+                defId: 'ninja_a', uid: 'n-pod-1', controller: '0',
+                attachedActions: [{ uid: 'sb-pod-1', defId: 'ninja_smoke_bomb_pod', ownerId: '0' }],
             });
             const base = makeBase({
                 minions: [myMinion],
@@ -198,6 +213,27 @@ describe('忍者 ongoing/special 能力', () => {
             expect((events[0] as any).payload.destroyerId).toBe('0');
         });
 
+        test('POD 版暗杀也会在回合结束时消灭被附着的随从', () => {
+            const target = makeMinion({
+                defId: 'opp_minion', uid: 'om-pod-1', controller: '1', owner: '1',
+                attachedActions: [{ uid: 'as-pod-1', defId: 'ninja_assassination_pod', ownerId: '0' }],
+            });
+            const base = makeBase({ minions: [target] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onTurnEnd', {
+                state,
+                playerId: '0',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+            expect((events[0] as any).payload.minionUid).toBe('om-pod-1');
+            expect((events[0] as any).payload.reason).toBe('ninja_assassination');
+        });
+
         test('无附着暗杀时不触发', () => {
             const target = makeMinion({ defId: 'opp_minion', uid: 'om-1', controller: '1' });
             const base = makeBase({ minions: [target] });
@@ -219,6 +255,17 @@ describe('忍者 ongoing/special 能力', () => {
             const minion = makeMinion({
                 defId: 'ninja_a', uid: 'n-1', controller: '0',
                 attachedActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '0' }],
+            });
+            const base = makeBase({ minions: [minion] });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, minion, 0, '1', 'affect')).toBe(true);
+        });
+
+        test('POD 版渗透附着后也会提供保护', () => {
+            const minion = makeMinion({
+                defId: 'ninja_a', uid: 'n-inf-pod-1', controller: '0',
+                attachedActions: [{ uid: 'inf-pod-1', defId: 'ninja_infiltrate_pod', ownerId: '0' }],
             });
             const base = makeBase({ minions: [minion] });
             const state = makeState([base]);
@@ -255,6 +302,82 @@ describe('忍者 ongoing/special 能力', () => {
             expect(targets).toHaveLength(1);
             expect(targets[0].uid).toBe('ongoing1');
             expect(targets[0].defId).toBe('test_ongoing');
+        });
+
+        test('有多个基地战术时创建选择交互', () => {
+            const base = makeBase({
+                ongoingActions: [
+                    { uid: 'ongoing-1', defId: 'zombie_overrun', ownerId: '1' },
+                    { uid: 'ongoing-2', defId: 'ninja_smoke_bomb', ownerId: '0' },
+                ],
+            });
+            const state = makeState([base]);
+            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
+
+            const executor = resolveAbility('ninja_infiltrate', 'onPlay')!;
+            const result = executor({
+                state,
+                matchState,
+                playerId: '0',
+                cardUid: 'infiltrate-1',
+                defId: 'ninja_infiltrate',
+                baseIndex: 0,
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(result.events).toHaveLength(0);
+            const current = (result.matchState?.sys as any)?.interaction?.current;
+            expect(current).toBeDefined();
+            expect(current?.data?.sourceId).toBe('ninja_infiltrate_destroy');
+            expect(current?.data?.targetType).toBe('ongoing');
+            expect(current?.data?.options).toHaveLength(2);
+        });
+
+        test('只有一个基地战术时自动消灭，不创建交互', () => {
+            const base = makeBase({
+                ongoingActions: [{ uid: 'ongoing-1', defId: 'zombie_overrun', ownerId: '1' }],
+            });
+            const state = makeState([base]);
+            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
+
+            const executor = resolveAbility('ninja_infiltrate', 'onPlay')!;
+            const result = executor({
+                state,
+                matchState,
+                playerId: '0',
+                cardUid: 'infiltrate-1',
+                defId: 'ninja_infiltrate',
+                baseIndex: 0,
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(result.matchState).toBeUndefined();
+            expect(result.events).toHaveLength(1);
+            expect(result.events[0].type).toBe(SU_EVENTS.ONGOING_DETACHED);
+            expect((result.events[0] as any).payload.cardUid).toBe('ongoing-1');
+        });
+
+        test('没有基地战术时不创建交互也不额外发事件', () => {
+            const base = makeBase({ ongoingActions: [] });
+            const state = makeState([base]);
+            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
+
+            const executor = resolveAbility('ninja_infiltrate', 'onPlay')!;
+            const result = executor({
+                state,
+                matchState,
+                playerId: '0',
+                cardUid: 'infiltrate-1',
+                defId: 'ninja_infiltrate',
+                baseIndex: 0,
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(result.matchState).toBeUndefined();
+            expect(result.events).toHaveLength(0);
         });
     });
 
@@ -520,11 +643,20 @@ describe('机器人 ongoing 能力', () => {
         clearOngoingEffectRegistry();
         clearRegistry();
         registerRobotAbilities();
+        registerPodOngoingAliases();
     });
 
     describe('robot_warbot: 战争机器人不可被消灭', () => {
         test('warbot 受 destroy 保护', () => {
             const warbot = makeMinion({ defId: 'robot_warbot', uid: 'wb-1', controller: '0' });
+            const base = makeBase({ minions: [warbot] });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, warbot, 0, '1', 'destroy')).toBe(true);
+        });
+
+        test('POD 版 warbot 也受 destroy 保护', () => {
+            const warbot = makeMinion({ defId: 'robot_warbot_pod', uid: 'wb-pod-1', controller: '0' });
             const base = makeBase({ minions: [warbot] });
             const state = makeState([base]);
 
@@ -553,6 +685,26 @@ describe('机器人 ongoing 能力', () => {
                 baseIndex: 0,
                 triggerMinionUid: 'mg-1',
                 triggerMinionDefId: 'robot_microbot_guard',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
+            expect((events[0] as any).payload.playerId).toBe('0');
+        });
+
+        test('POD 版档案馆也会对 POD 微型机的消灭触发抽牌', () => {
+            const archive = makeMinion({ defId: 'robot_microbot_archive_pod', uid: 'ma-pod-1', controller: '0' });
+            const base = makeBase({ minions: [archive] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionDestroyed', {
+                state,
+                playerId: '0',
+                baseIndex: 0,
+                triggerMinionUid: 'mg-pod-1',
+                triggerMinionDefId: 'robot_microbot_guard_pod',
                 random: dummyRandom,
                 now: 1000,
             });
@@ -611,6 +763,7 @@ describe('巫师 ongoing 能力', () => {
         clearOngoingEffectRegistry();
         clearRegistry();
         registerWizardAbilities();
+        registerPodOngoingAliases();
     });
 
     describe('wizard_archmage: 大法师回合开始额外行动', () => {
@@ -633,6 +786,26 @@ describe('巫师 ongoing 能力', () => {
             expect((events[0] as any).payload.delta).toBe(1);
         });
 
+        test('POD 版控制者回合开始时也获得额外行动额度', () => {
+            const archmage = makeMinion({ defId: 'wizard_archmage_pod', uid: 'am-pod-1', controller: '0' });
+            const base = makeBase({ minions: [archmage] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onTurnStart', {
+                state,
+                playerId: '0',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
+            expect((events[0] as any).payload.playerId).toBe('0');
+            expect((events[0] as any).payload.limitType).toBe('action');
+            expect((events[0] as any).payload.delta).toBe(1);
+            expect((events[0] as any).payload.reason).toBe('wizard_archmage_pod');
+        });
+
         test('非控制者回合不触发', () => {
             const archmage = makeMinion({ defId: 'wizard_archmage', uid: 'am-1', controller: '0' });
             const base = makeBase({ minions: [archmage] });
@@ -647,6 +820,29 @@ describe('巫师 ongoing 能力', () => {
 
             expect(events).toHaveLength(0);
         });
+
+        test('POD 版打出当回合立即获得额外行动额度', () => {
+            const archmage = makeMinion({ defId: 'wizard_archmage_pod', uid: 'am-pod-1', controller: '0' });
+            const base = makeBase({ minions: [archmage] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '0',
+                baseIndex: 0,
+                triggerMinionUid: 'am-pod-1',
+                triggerMinionDefId: 'wizard_archmage_pod',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
+            expect((events[0] as any).payload.playerId).toBe('0');
+            expect((events[0] as any).payload.limitType).toBe('action');
+            expect((events[0] as any).payload.delta).toBe(1);
+            expect((events[0] as any).payload.reason).toBe('wizard_archmage_pod');
+        });
     });
 });
 
@@ -659,6 +855,7 @@ describe('诡术师 ongoing 能力', () => {
         clearOngoingEffectRegistry();
         clearRegistry();
         registerTricksterAbilities();
+        registerPodOngoingAliases();
     });
 
     describe('trickster_flame_trap: 火焰陷阱', () => {
@@ -703,6 +900,29 @@ describe('诡术师 ongoing 能力', () => {
             });
 
             expect(events).toHaveLength(0);
+        });
+    });
+
+    describe('trickster_brownie: 布朗尼', () => {
+        test('POD 版被对手影响时，对手弃两张牌', () => {
+            const brownie = makeMinion({ defId: 'trickster_brownie_pod', uid: 'brownie-pod-1', controller: '0', owner: '0' });
+            const base = makeBase({ minions: [brownie] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionAffected', {
+                state,
+                playerId: '1',
+                triggerMinionUid: 'brownie-pod-1',
+                triggerMinionDefId: 'trickster_brownie_pod',
+                triggerMinion: brownie,
+                random: dummyRandom,
+                now: 1000,
+            } as any);
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
+            expect((events[0] as any).payload.playerId).toBe('1');
+            expect((events[0] as any).payload.cardUids).toHaveLength(2);
         });
     });
 
@@ -867,6 +1087,7 @@ describe('诡术师 ongoing 能力', () => {
             const current = interaction?.current;
             expect(current).toBeDefined();
             expect(current?.data?.sourceId).toBe('trickster_mark_of_sleep');
+            expect(current?.data?.targetType).toBe('player');
         });
     });
 });

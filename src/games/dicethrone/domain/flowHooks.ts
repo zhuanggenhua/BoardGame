@@ -522,9 +522,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 // 检查攻击方是否有可用的 onOffensiveRollEnd 时机 Token
                 const attackerId = core.pendingAttack.attackerId;
                 const sourceAbilityId = core.pendingAttack.sourceAbilityId;
-                const expectedDamage = sourceAbilityId 
-                    ? getPlayerAbilityBaseDamage(coreAfterPreDefense, attackerId, sourceAbilityId) + (core.pendingAttack.bonusDamage ?? 0)
-                    : 0;
+                const expectedDamage = getPendingAttackExpectedDamage(coreAfterPreDefense, core.pendingAttack);
                 const offensiveRollEndTokens = getUsableTokensForOffensiveRollEnd(coreAfterPreDefense, attackerId, expectedDamage);
                 
                 // 检查是否已经处理过 Token 选择（避免重复询问）
@@ -883,26 +881,20 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     } as DiceThroneEvent);
                 }
 
-                // 1. 燃烧 (burn) — 每层造成 1 点伤害，然后移除 1 层
+                // 1. 燃烧 (burn) — 持续效果，不可叠加，每回合固定造成 2 点不可防御伤害，不自动移除
                 // 【已迁移到新伤害计算管线】
                 const burnStacks = player.statusEffects[STATUS_IDS.BURN] ?? 0;
                 if (burnStacks > 0) {
                     const damageCalc = createDamageCalculation({
                         source: { playerId: 'system', abilityId: 'upkeep-burn' },
                         target: { playerId: activeId },
-                        baseDamage: burnStacks,
+                        baseDamage: 2,
                         state: core,
                         timestamp,
                     });
                     const damageEvents = damageCalc.toEvents();
                     events.push(...damageEvents);
-                    // 移除 1 层燃烧
-                    events.push({
-                        type: 'STATUS_REMOVED',
-                        payload: { targetId: activeId, statusId: STATUS_IDS.BURN, stacks: 1 },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    } as DiceThroneEvent);
+                    // 持续效果：燃烧不自动移除，需要通过净化等手段移除
                 }
 
                 // 2. 中毒 (poison) — 每层造成 1 点伤害，持续效果（不自动移除层数）

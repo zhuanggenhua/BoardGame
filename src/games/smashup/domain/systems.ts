@@ -8,9 +8,9 @@
 
 import type { GameEvent, RandomFn } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
-import { INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_EVENTS, resolveInteraction } from '../../../engine/systems/InteractionSystem';
 import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
-import type { SmashUpCore, SmashUpEvent } from './types';
+import type { SmashUpCore, SmashUpEvent, MinionPlayedEvent, PendingPostScoringAction } from './types';
 import { getInteractionHandler } from './abilityInteractionHandlers';
 import {
     processDestroyMoveCycle,
@@ -18,6 +18,7 @@ import {
     filterProtectedReturnEvents,
     filterProtectedDeckBottomEvents,
 } from './reducer';
+import { buildValidatedMoveEvents } from './abilityHelpers';
 import { interceptEvent } from './ongoingEffects';
 import { triggerExtendedBaseAbility } from './baseAbilities';
 import type { BaseClearedEvent, BaseReplacedEvent } from './events';
@@ -26,6 +27,52 @@ import { SU_EVENT_TYPES } from './events';
 // ============================================================================
 // SmashUp 事件处理系统
 // ============================================================================
+
+function buildPendingPostScoringActionEvents(
+    state: { core: SmashUpCore },
+    actions: PendingPostScoringAction[],
+    timestamp: number,
+): SmashUpEvent[] {
+    const events: SmashUpEvent[] = [];
+    for (const action of actions) {
+        if (action.kind === 'playMinionOnReplacementBase') {
+            const player = state.core.players[action.playerId];
+            const cardStillInDeck = player?.deck.some(card =>
+                card.uid === action.cardUid
+                && card.defId === action.defId
+                && card.type === 'minion',
+            );
+            if (!player || !cardStillInDeck) {
+                continue;
+            }
+            events.push({
+                type: SU_EVENT_TYPES.MINION_PLAYED,
+                payload: {
+                    playerId: action.playerId,
+                    cardUid: action.cardUid,
+                    defId: action.defId,
+                    baseIndex: action.baseIndex,
+                    baseDefId: action.targetBaseDefId,
+                    power: action.power,
+                    fromDeck: true,
+                    consumesNormalLimit: false,
+                },
+                timestamp,
+            } as MinionPlayedEvent);
+            continue;
+        }
+
+        events.push(...buildValidatedMoveEvents(state as any, {
+            minionUid: action.minionUid,
+            minionDefId: action.minionDefId,
+            fromBaseIndex: action.fromBaseIndex,
+            toBaseIndex: action.toBaseIndex,
+            reason: action.reason,
+            now: timestamp,
+        }));
+    }
+    return events;
+}
 
 /**
  * 创建 SmashUp 事件处理系统
@@ -134,7 +181,18 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                             );
                             
                             if (result) {
+                                // 【关键修复】检查交互处理器是否创建了新交互
+                                // 如果没有创建新交互（如返回 ABILITY_FEEDBACK），则解决当前交互
+                                const hadInteractionBefore = !!newState.sys.interaction?.current;
+                                const hasInteractionAfter = !!result.state.sys.interaction?.current || (result.state.sys.interaction?.queue?.length ?? 0) > (newState.sys.interaction?.queue?.length ?? 0);
+                                
                                 newState = result.state;
+                                
+                                // 如果 handler 没有创建新交互，则解决当前交互
+                                if (hadInteractionBefore && !hasInteractionAfter) {
+                                    newState = resolveInteraction(newState);
+                                }
+                                
                                 // 【关键修复】交互处理函数返回的事件必须经过拦截器过滤
                                 // 原因：pipeline.reduceEventsToCore 只处理 execute() 返回的事件，
                                 // 而 SmashUpEventSystem.afterEvents 返回的事件走的是系统事件路径，
@@ -163,6 +221,14 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 // 确保 targetType: 'minion' 的场上点选交互能看到随从
                                 const ctx = payload.interactionData?.continuationContext as Record<string, unknown> | undefined;
                                 const deferred = ctx?._deferredPostScoringEvents as { type: string; payload: unknown; timestamp: number }[] | undefined;
+                                console.log('[SmashUpEventSystem] 检查延迟事件:', {
+                                    interactionId: payload.interactionId,
+                                    sourceId: payload.sourceId,
+                                    hasDeferredEvents: !!deferred,
+                                    deferredEventsCount: deferred?.length || 0,
+                                    hasCurrentInteraction: !!newState.sys.interaction?.current,
+                                    queueLength: newState.sys.interaction?.queue?.length || 0,
+                                });
                                 if (deferred && deferred.length > 0) {
                                     // 【关键修复】无论是否有后续交互，都立即设置 flowHalted=true
                                     // 防止 FlowSystem.afterEvents 在交互解决后重新进入 onPhaseExit('scoreBases')
@@ -173,6 +239,17 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                     if (!newState.sys.interaction?.current && (!newState.sys.interaction?.queue || newState.sys.interaction.queue.length === 0)) {
                                         for (const d of deferred) {
                                             nextEvents.push({ type: d.type, payload: d.payload, timestamp: d.timestamp } as GameEvent);
+                                        }
+                                        const pendingActions = newState.core.pendingPostScoringActions ?? [];
+                                        if (pendingActions.length > 0) {
+                                            nextEvents.push(...buildPendingPostScoringActionEvents(newState, pendingActions, eventTimestamp));
+                                            newState = {
+                                                ...newState,
+                                                core: {
+                                                    ...newState.core,
+                                                    pendingPostScoringActions: undefined,
+                                                },
+                                            };
                                         }
                                     } else {
                                         // 还有后续交互：把 deferred events 传递到下一个交互的 continuationContext

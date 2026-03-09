@@ -13,7 +13,7 @@ test('SmashUp card atlases registration check', async ({ page }) => {
     });
     
     // 访问首页（触发模块加载）
-    await page.goto('http://localhost:5173');
+    await page.goto('/');
     
     // 等待页面加载完成
     await page.waitForTimeout(2000);

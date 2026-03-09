@@ -122,7 +122,8 @@ function pirateBroadside(ctx: AbilityContext): AbilityResult {
     const options = candidates.map((c, i) => ({ 
         id: `target-${i}`, 
         label: c.label, 
-        value: { baseIndex: c.baseIndex, targetPlayerId: c.targetPlayerId },
+        value: { baseIndex: c.baseIndex, baseDefId: ctx.state.bases[c.baseIndex]?.defId, targetPlayerId: c.targetPlayerId },
+        _source: 'base' as const,
         displayMode: 'card' as const,
     }));
     const interaction = createSimpleChoice(
@@ -268,6 +269,7 @@ function buccaneerOnDestroyed(ctx: TriggerContext): SmashUpEvent[] | TriggerResu
             id: `base_${c.baseIndex}`,
             label: c.label,
             value: { minionUid: triggerMinionUid, minionDefId: triggerMinionDefId, fromBaseIndex: baseIndex, baseIndex: c.baseIndex, toBaseIndex: c.baseIndex, baseDefId: c.baseDefId },
+            _source: 'base' as const,
             displayMode: 'card' as const,
         })),
         { sourceId: 'pirate_buccaneer_move', targetType: 'base' },
@@ -411,7 +413,13 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
         const baseOptions = otherBases.map(b => {
             const baseDef = getBaseDef(b.defId);
             const baseName = baseDef?.name ?? `基地 ${b.index + 1}`;
-            return { id: `base-${b.index}`, label: baseName, value: { baseIndex: b.index }, _source: 'base' as const, displayMode: 'card' as const };
+            return {
+                id: `base-${b.index}`,
+                label: baseName,
+                value: { baseIndex: b.index, baseDefId: b.defId },
+                _source: 'base' as const,
+                displayMode: 'card' as const,
+            };
         });
         const allOptions = [
             { id: 'skip', label: '跳过（不移动大副）', value: { skip: true } , displayMode: 'button' as const },

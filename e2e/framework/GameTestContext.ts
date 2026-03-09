@@ -10,29 +10,85 @@
  * 4. 可组合 - 场景构建器 + 动作 + 断言
  */
 
-import type { Page } from '@playwright/test';
+import { copyFile, mkdir } from 'node:fs/promises';
+import { join, parse } from 'node:path';
+import type { Page, TestInfo } from '@playwright/test';
+import { getCardDef as getSmashUpCardDef } from '../../src/games/smashup/data/cards';
 
-/**
- * 卡牌定义（简化版）
- */
-interface CardDef {
-    uid: string;
+type SceneQueryValue = string | number | boolean | null | undefined;
+
+type SmashUpCardType = 'minion' | 'action';
+
+interface SmashUpCardSceneConfig {
+    uid?: string;
     defId: string;
-    type: 'minion' | 'action';
+    type?: SmashUpCardType;
+    owner?: string;
+}
+
+interface SmashUpAttachedActionSceneConfig {
+    uid?: string;
+    defId: string;
+    ownerId?: string;
+    talentUsed?: boolean;
+    metadata?: Record<string, unknown>;
+}
+
+interface SmashUpMinionSceneConfig {
+    uid?: string;
+    defId: string;
+    baseIndex: number;
+    owner?: string;
+    controller?: string;
+    basePower?: number;
+    power?: number;
+    powerCounters?: number;
+    powerModifier?: number;
+    tempPowerModifier?: number;
+    attachedActions?: Array<string | SmashUpAttachedActionSceneConfig>;
+    talentUsed?: boolean;
+    playedThisTurn?: boolean;
+}
+
+interface SmashUpBaseSceneConfig {
+    defId?: string;
+    breakpoint?: number;
+    power?: number;
+    minions?: SmashUpMinionSceneConfig[];
+    ongoingActions?: Array<string | SmashUpAttachedActionSceneConfig>;
+}
+
+interface SmashUpResponseWindowSceneConfig {
+    windowType: string;
+    id?: string;
+    sourceId?: string;
+    responderQueue?: string[];
+    currentResponderIndex?: number;
+    passedPlayers?: string[];
+    pendingInteractionId?: string;
+    actionTakenThisRound?: boolean;
+    consecutivePassRounds?: number;
 }
 
 /**
  * 玩家场景配置（SmashUp）
  */
 interface PlayerSceneConfig {
-    /** 手牌（defId 数组） */
-    hand?: string[];
-    /** 牌库（defId 数组） */
-    deck?: string[];
-    /** 弃牌堆（defId 数组） */
-    discard?: string[];
-    /** 场上随从（defId 数组） */
-    field?: string[];
+    /** 手牌 */
+    hand?: Array<string | SmashUpCardSceneConfig>;
+    /** 牌库 */
+    deck?: Array<string | SmashUpCardSceneConfig>;
+    /** 弃牌堆 */
+    discard?: Array<string | SmashUpCardSceneConfig>;
+    /** 场上随从 */
+    field?: SmashUpMinionSceneConfig[];
+    /** 阵营 */
+    factions?: [string, string] | string[];
+    minionsPlayed?: number;
+    minionLimit?: number;
+    actionsPlayed?: number;
+    actionLimit?: number;
+    vp?: number;
 }
 
 /**
@@ -65,6 +121,12 @@ interface SceneConfig {
     currentPlayer?: string;
     /** 回合阶段 */
     phase?: string;
+    /** 顶层 sys 补丁 */
+    sys?: Record<string, any>;
+    /** SmashUp 基地配置 */
+    bases?: SmashUpBaseSceneConfig[];
+    /** SmashUp 响应窗口配置 */
+    responseWindow?: SmashUpResponseWindowSceneConfig | null;
     /** 随机数队列 */
     randomQueue?: number[];
     /** 额外的状态字段（游戏特定） */
@@ -76,8 +138,73 @@ interface SceneConfig {
  * 
  * 提供统一的测试 API，封装所有测试操作。
  */
+const FALLBACK_SMASHUP_ACTION_KEYWORDS = [
+    'portal', 'time_loop', 'full_steam', 'cannon', 'broadside',
+    'disintegrate', 'augmentation', 'upgrade', 'power_up',
+    'terraform', 'crop_circles', 'abduction', 'probe',
+    'shamble', 'not_dead_yet', 'grave_digger',
+    'king', 'swashbuckling',
+    'ninjutsu', 'disguise', 'smoke_bomb',
+];
+
+function resolveSmashUpCardType(defId: string, explicitType?: SmashUpCardType): SmashUpCardType {
+    if (explicitType) return explicitType;
+
+    const def = getSmashUpCardDef(defId);
+    if (def?.type === 'action' || def?.type === 'minion') {
+        return def.type;
+    }
+
+    if (defId.startsWith('action_')) return 'action';
+    if (FALLBACK_SMASHUP_ACTION_KEYWORDS.some((keyword) => defId.includes(keyword))) {
+        return 'action';
+    }
+    return 'minion';
+}
+
+function normalizeSmashUpCardEntry(entry: string | SmashUpCardSceneConfig): SmashUpCardSceneConfig {
+    const card = typeof entry === 'string' ? { defId: entry } : { ...entry };
+    return {
+        ...card,
+        type: resolveSmashUpCardType(card.defId, card.type),
+    };
+}
+
+function normalizeSmashUpPlayerConfig(
+    playerConfig?: PlayerSceneConfig | DiceThronePlayerConfig,
+): PlayerSceneConfig | DiceThronePlayerConfig | undefined {
+    if (!playerConfig) return playerConfig;
+
+    const config = playerConfig as PlayerSceneConfig;
+    return {
+        ...config,
+        hand: config.hand?.map(normalizeSmashUpCardEntry),
+        deck: config.deck?.map(normalizeSmashUpCardEntry),
+        discard: config.discard?.map(normalizeSmashUpCardEntry),
+    };
+}
+
 export class GameTestContext {
     constructor(private page: Page) {}
+
+    private static sanitizePathSegment(value: string): string {
+        return value
+            // eslint-disable-next-line no-control-regex
+            .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '')
+            .slice(0, 120);
+    }
+
+    private async dismissRevealOverlayIfPresent(): Promise<void> {
+        const dismissHint = this.page.getByText(/Click anywhere to close/i);
+        const isVisible = await dismissHint.isVisible({ timeout: 200 }).catch(() => false);
+        if (!isVisible) return;
+
+        await dismissHint.click({ force: true });
+        await this.page.waitForTimeout(200);
+    }
 
     /**
      * 等待测试工具就绪
@@ -86,6 +213,33 @@ export class GameTestContext {
         await this.page.waitForFunction(
             () => !!(window as any).__BG_TEST_HARNESS__,
             { timeout }
+        );
+    }
+
+    /**
+     * 打开启用 TestHarness 的测试游戏页，并等待状态注入能力就绪。
+     *
+     * 新框架：直接导航到 `/play/<gameId>`，自动启用 TestHarness。
+     * 使用 `setupScene()` 注入测试场景，无需 URL 参数。
+     * 
+     * @param gameId 游戏 ID
+     * @param query 已废弃，保留仅为向后兼容
+     * @param timeout 超时时间（毫秒）
+     */
+    async openTestGame(
+        gameId: string,
+        query: Record<string, SceneQueryValue> = {},
+        timeout = 15000,
+    ): Promise<void> {
+        // 新框架：直接导航到 /play/<gameId>，不使用 /test 路由
+        // query 参数已废弃，保留参数签名仅为向后兼容
+        const url = `/play/${gameId}`;
+
+        await this.page.goto(url);
+        await this.waitForTestHarness(timeout);
+        await this.page.waitForFunction(
+            () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+            { timeout },
         );
     }
 
@@ -138,8 +292,15 @@ export class GameTestContext {
      */
     async setupScene(config: SceneConfig): Promise<void> {
         await this.waitForTestHarness();
+        const preparedConfig: SceneConfig = config.gameId === 'smashup'
+            ? {
+                ...config,
+                player0: normalizeSmashUpPlayerConfig(config.player0),
+                player1: normalizeSmashUpPlayerConfig(config.player1),
+            }
+            : config;
 
-        await this.page.evaluate((cfg) => {
+        await this.page.evaluate(async (cfg) => {
             const harness = (window as any).__BG_TEST_HARNESS__;
             if (!harness) throw new Error('TestHarness not available');
 
@@ -188,11 +349,15 @@ export class GameTestContext {
 
                 // 构造状态补丁
                 const patch: any = {
+                    ...state,
                     core: {
                         ...state.core,
                         players: {
                             ...state.core.players,
                         },
+                    },
+                    sys: {
+                        ...(state.sys ?? {}),
                     },
                 };
 
@@ -217,9 +382,19 @@ export class GameTestContext {
                     patch.core.currentPlayer = cfg.currentPlayer;
                 }
 
-                // 设置阶段
+                // 设置阶段（phase 在 sys 中，不在 core 中）
                 if (cfg.phase !== undefined) {
-                    patch.core.phase = cfg.phase;
+                    patch.sys = {
+                        ...(patch.sys ?? {}),
+                        phase: cfg.phase,
+                    };
+                }
+
+                if (cfg.sys) {
+                    patch.sys = {
+                        ...(patch.sys ?? {}),
+                        ...cfg.sys,
+                    };
                 }
 
                 // 应用额外字段（如 rollCount, dice, pendingAttack 等）
@@ -228,15 +403,14 @@ export class GameTestContext {
                 }
 
                 // 应用状态
-                harness.state.set(patch);
+                await harness.state.set(patch);
             } else {
-                // SmashUp 逻辑（原有代码）
                 const now = Date.now();
                 const generateUid = (defId: string, index: number) => `${defId}_${now}_${index}`;
 
-                const inferCardType = (defId: string): 'minion' | 'action' => {
+                const inferCardType = (defId: string): SmashUpCardType => {
                     if (defId.startsWith('action_')) return 'action';
-                    
+
                     const actionKeywords = [
                         'portal', 'time_loop', 'full_steam', 'cannon', 'broadside',
                         'disintegrate', 'augmentation', 'upgrade', 'power_up',
@@ -245,67 +419,273 @@ export class GameTestContext {
                         'king', 'swashbuckling',
                         'ninjutsu', 'disguise', 'smoke_bomb',
                     ];
-                    
+
                     for (const keyword of actionKeywords) {
                         if (defId.includes(keyword)) return 'action';
                     }
-                    
+
                     return 'minion';
                 };
 
-                const buildPlayerState = (playerConfig: any, playerId: string, offset: number) => {
-                    const hand = (playerConfig?.hand || []).map((defId: string, i: number) => ({
-                        uid: generateUid(defId, offset + i),
-                        defId,
-                        type: inferCardType(defId),
-                    }));
+                const normalizeCard = (entry: string | SmashUpCardSceneConfig) =>
+                    typeof entry === 'string' ? { defId: entry } : entry;
 
-                    const deck = (playerConfig?.deck || []).map((defId: string, i: number) => ({
-                        uid: generateUid(defId, offset + 1000 + i),
-                        defId,
-                        type: inferCardType(defId),
-                    }));
-
-                    const discard = (playerConfig?.discard || []).map((defId: string, i: number) => ({
-                        uid: generateUid(defId, offset + 2000 + i),
-                        defId,
-                        type: inferCardType(defId),
-                    }));
-
-                    return { hand, deck, discard };
+                const buildCard = (entry: string | SmashUpCardSceneConfig, ownerId: string, index: number) => {
+                    const card = normalizeCard(entry);
+                    return {
+                        uid: card.uid ?? generateUid(card.defId, index),
+                        defId: card.defId,
+                        type: card.type ?? inferCardType(card.defId),
+                        owner: card.owner ?? ownerId,
+                    };
                 };
+
+                const buildAttachedAction = (
+                    entry: string | SmashUpAttachedActionSceneConfig,
+                    ownerId: string,
+                    index: number,
+                ) => {
+                    const action = typeof entry === 'string' ? { defId: entry } : entry;
+                    const builtAction: any = {
+                        uid: action.uid ?? generateUid(`${action.defId}_attached`, index),
+                        defId: action.defId,
+                        ownerId: action.ownerId ?? ownerId,
+                    };
+                    if (action.talentUsed !== undefined) {
+                        builtAction.talentUsed = action.talentUsed;
+                    }
+                    if (action.metadata !== undefined) {
+                        builtAction.metadata = action.metadata;
+                    }
+                    return builtAction;
+                };
+
+                const buildMinion = (minion: SmashUpMinionSceneConfig, ownerId: string, index: number) => {
+                    const basePower = minion.basePower ?? minion.power ?? 1;
+                    const builtMinion: any = {
+                        uid: minion.uid ?? generateUid(minion.defId, index),
+                        defId: minion.defId,
+                        owner: minion.owner ?? ownerId,
+                        controller: minion.controller ?? minion.owner ?? ownerId,
+                        basePower,
+                        powerCounters: minion.powerCounters ?? 0,
+                        powerModifier: minion.powerModifier ?? 0,
+                        tempPowerModifier: minion.tempPowerModifier ?? 0,
+                        talentUsed: minion.talentUsed ?? false,
+                        attachedActions: (minion.attachedActions ?? []).map((action, actionIndex) =>
+                            buildAttachedAction(action, minion.owner ?? ownerId, index * 100 + actionIndex),
+                        ),
+                    };
+                    if (minion.playedThisTurn !== undefined) {
+                        builtMinion.playedThisTurn = minion.playedThisTurn;
+                    }
+                    return builtMinion;
+                };
+
+                const buildPlayerState = (playerConfig: any, playerId: string, offset: number) => {
+                    const nextPlayerState: any = {};
+
+                    if (playerConfig?.hand !== undefined) {
+                        nextPlayerState.hand = (playerConfig.hand || []).map((entry: string | SmashUpCardSceneConfig, i: number) =>
+                            buildCard(entry, playerId, offset + i),
+                        );
+                    }
+                    if (playerConfig?.deck !== undefined) {
+                        nextPlayerState.deck = (playerConfig.deck || []).map((entry: string | SmashUpCardSceneConfig, i: number) =>
+                            buildCard(entry, playerId, offset + 1000 + i),
+                        );
+                    }
+                    if (playerConfig?.discard !== undefined) {
+                        nextPlayerState.discard = (playerConfig.discard || []).map((entry: string | SmashUpCardSceneConfig, i: number) =>
+                            buildCard(entry, playerId, offset + 2000 + i),
+                        );
+                    }
+                    if (playerConfig?.factions !== undefined) {
+                        nextPlayerState.factions = [...playerConfig.factions];
+                    }
+
+                    const numericKeys = ['minionsPlayed', 'minionLimit', 'actionsPlayed', 'actionLimit', 'vp'];
+                    for (const key of numericKeys) {
+                        if (playerConfig?.[key] !== undefined) {
+                            nextPlayerState[key] = playerConfig[key];
+                        }
+                    }
+
+                    return nextPlayerState;
+                };
+
+                const fieldMinionsByBase = new Map<number, any[]>();
+                const appendFieldMinions = (playerId: string, field: SmashUpMinionSceneConfig[] | undefined, offset: number) => {
+                    for (const [index, minion] of (field ?? []).entries()) {
+                        const bucket = fieldMinionsByBase.get(minion.baseIndex) ?? [];
+                        bucket.push(buildMinion(minion, playerId, offset + index));
+                        fieldMinionsByBase.set(minion.baseIndex, bucket);
+                    }
+                };
+
+                appendFieldMinions('0', (cfg.player0 as PlayerSceneConfig | undefined)?.field, 3000);
+                appendFieldMinions('1', (cfg.player1 as PlayerSceneConfig | undefined)?.field, 4000);
+
+                const baseCount = Math.max(
+                    state.core?.bases?.length ?? 0,
+                    cfg.bases?.length ?? 0,
+                    ...Array.from(fieldMinionsByBase.keys(), key => key + 1),
+                );
+
+                const bases = Array.from({ length: baseCount }, (_, baseIndex) => {
+                    const currentBase = state.core?.bases?.[baseIndex] ?? {
+                        defId: cfg.bases?.[baseIndex]?.defId ?? 'base_the_mothership',
+                        minions: [],
+                        ongoingActions: [],
+                    };
+                    const baseConfig = cfg.bases?.[baseIndex];
+                    const fieldMinions = fieldMinionsByBase.get(baseIndex) ?? [];
+
+                    const nextBase: any = {
+                        ...currentBase,
+                        defId: baseConfig?.defId ?? currentBase.defId,
+                    };
+
+                    // 复制基地配置的特定字段（breakpoint, power 等），但不覆盖 minions 和 ongoingActions
+                    if (baseConfig) {
+                        const { minions: _, ongoingActions: __, ...otherFields } = baseConfig;
+                        Object.assign(nextBase, otherFields);
+                    }
+
+                    if (baseConfig?.minions !== undefined) {
+                        nextBase.minions = [
+                            ...baseConfig.minions.map((minion, index) => buildMinion(minion, minion.owner ?? '0', 5000 + baseIndex * 100 + index)),
+                            ...fieldMinions,
+                        ];
+                    } else if (fieldMinions.length > 0) {
+                        nextBase.minions = fieldMinions;
+                    }
+
+                    if (baseConfig?.ongoingActions !== undefined) {
+                        nextBase.ongoingActions = baseConfig.ongoingActions.map((action, index) =>
+                            buildAttachedAction(action, typeof action === 'string' ? '0' : action.ownerId ?? '0', 6000 + baseIndex * 100 + index),
+                        );
+                    }
+
+                    return nextBase;
+                });
 
                 const patch: any = {
                     core: {
-                        players: {},
+                        players: {
+                            ...state.core.players,
+                        },
+                        bases,
+                        factionSelection: undefined,
                     },
                 };
 
                 if (cfg.player0) {
-                    const player0State = buildPlayerState(cfg.player0, '0', 0);
                     patch.core.players['0'] = {
-                        ...player0State,
+                        ...state.core.players['0'],
+                        ...buildPlayerState(cfg.player0, '0', 0),
                     };
                 }
                 if (cfg.player1) {
-                    const player1State = buildPlayerState(cfg.player1, '1', 10000);
                     patch.core.players['1'] = {
-                        ...player1State,
+                        ...state.core.players['1'],
+                        ...buildPlayerState(cfg.player1, '1', 10000),
                     };
                 }
 
                 if (cfg.currentPlayer !== undefined) {
                     const playerIndex = parseInt(cfg.currentPlayer, 10);
                     patch.core.currentPlayerIndex = playerIndex;
+                    // 确保 turnOrder 存在（默认双人游戏）
+                    if (!patch.core.turnOrder) {
+                        patch.core.turnOrder = ['0', '1'];
+                    }
                 }
                 if (cfg.phase !== undefined) {
-                    if (!patch.sys) patch.sys = {};
-                    patch.sys.phase = cfg.phase;
+                    patch.sys = {
+                        ...(patch.sys ?? {}),
+                        phase: cfg.phase,
+                    };
+                    
+                    // SmashUp 特殊处理：scoreBases 阶段需要设置 scoringEligibleBaseIndices
+                    if (cfg.phase === 'scoreBases' && cfg.bases) {
+                        // 计算达到临界点的基地
+                        const eligibleIndices: number[] = [];
+                        for (let i = 0; i < patch.core.bases.length; i++) {
+                            const base = patch.core.bases[i];
+                            const baseConfig = cfg.bases[i];
+                            
+                            // 计算基地总力量
+                            // minion 的总力量 = basePower + powerCounters + powerModifier + tempPowerModifier
+                            const totalPower = base.minions.reduce((sum: number, m: any) => {
+                                const minionPower = (m.basePower || 0) + 
+                                                   (m.powerCounters || 0) + 
+                                                   (m.powerModifier || 0) + 
+                                                   (m.tempPowerModifier || 0);
+                                return sum + minionPower;
+                            }, 0);
+                            
+                            // 从基地配置读取 breakpoint（如果提供），否则尝试从卡牌定义读取
+                            let breakpoint = baseConfig?.breakpoint;
+                            if (breakpoint === undefined) {
+                                const baseDef = (window as any).__BG_CARD_REGISTRY__?.getBaseDef(base.defId);
+                                breakpoint = baseDef?.breakpoint || 0;
+                            }
+                            
+                            if (totalPower >= breakpoint) {
+                                eligibleIndices.push(i);
+                            }
+                        }
+                        patch.core.scoringEligibleBaseIndices = eligibleIndices;
+                    }
+                }
+                if (cfg.sys) {
+                    patch.sys = {
+                        ...(patch.sys ?? {}),
+                        ...cfg.sys,
+                    };
+                }
+                if ('responseWindow' in cfg) {
+                    patch.sys = {
+                        ...(patch.sys ?? {}),
+                        responseWindow: cfg.responseWindow
+                            ? {
+                                current: {
+                                    id: cfg.responseWindow.id ?? `${cfg.responseWindow.windowType}_${now}`,
+                                    windowType: cfg.responseWindow.windowType,
+                                    sourceId: cfg.responseWindow.sourceId,
+                                    responderQueue: cfg.responseWindow.responderQueue ?? ['0', '1'],
+                                    currentResponderIndex: cfg.responseWindow.currentResponderIndex ?? 0,
+                                    passedPlayers: cfg.responseWindow.passedPlayers ?? [],
+                                    pendingInteractionId: cfg.responseWindow.pendingInteractionId,
+                                    actionTakenThisRound: cfg.responseWindow.actionTakenThisRound ?? false,
+                                    consecutivePassRounds: cfg.responseWindow.consecutivePassRounds ?? 0,
+                                },
+                            }
+                            : { current: undefined },
+                    };
+                }
+                if (cfg.extra) {
+                    if (cfg.extra.core) {
+                        patch.core = {
+                            ...patch.core,
+                            ...cfg.extra.core,
+                        };
+                    }
+                    if (cfg.extra.sys) {
+                        patch.sys = {
+                            ...(patch.sys ?? {}),
+                            ...cfg.extra.sys,
+                        };
+                    }
+                    if (!cfg.extra.core && !cfg.extra.sys) {
+                        Object.assign(patch.core, cfg.extra);
+                    }
                 }
 
-                harness.state.patch(patch);
+                await harness.state.patch(patch);
             }
-        }, config);
+        }, preparedConfig);
 
         // 等待 React 重新渲染
         await this.page.waitForTimeout(500);
@@ -350,10 +730,30 @@ export class GameTestContext {
         await this.page.click(`[data-card-uid="${cardUid}"]`);
         await this.page.waitForTimeout(300);
 
-        // 3. 如果需要选择目标基地，点击基地
+        const isCardStillInHand = async () => {
+            return await this.page.evaluate((uid) => {
+                const harness = (window as any).__BG_TEST_HARNESS__;
+                const state = harness?.state?.get?.();
+                if (!state?.core?.turnOrder || state.core.currentPlayerIndex === undefined) {
+                    return false;
+                }
+                const currentPlayerId = state.core.turnOrder[state.core.currentPlayerIndex];
+                const player = state.core.players?.[currentPlayerId];
+                return !!player?.hand?.some((card: any) => card.uid === uid);
+            }, cardUid);
+        };
+
+        // 3. 如果需要选择目标基地，点击基地。
+        // 基地选择 UI 进入有一拍延迟；首击如果太早，会导致卡仍停留在手牌中。
+        // 这里基于“卡是否还在手牌”做一次轻量重试，减少 E2E 抖动。
         if (options?.targetBaseIndex !== undefined) {
-            await this.page.click(`[data-base-index="${options.targetBaseIndex}"]`);
-            await this.page.waitForTimeout(300);
+            for (let attempt = 0; attempt < 3; attempt += 1) {
+                await this.selectBase(options.targetBaseIndex);
+                if (!(await isCardStillInHand())) {
+                    break;
+                }
+                await this.page.waitForTimeout(250);
+            }
         }
 
         // 4. 如果需要选择目标随从，点击随从
@@ -361,6 +761,15 @@ export class GameTestContext {
             await this.page.click(`[data-minion-uid="${options.targetMinionUid}"]`);
             await this.page.waitForTimeout(300);
         }
+    }
+
+    /**
+     * 选择基地（用于基地高亮选择或常规落点选择）。
+     */
+    async selectBase(baseIndex: number): Promise<void> {
+        await this.dismissRevealOverlayIfPresent();
+        await this.page.click(`[data-base-index="${baseIndex}"]`);
+        await this.page.waitForTimeout(300);
     }
 
     /**
@@ -420,7 +829,41 @@ export class GameTestContext {
      * ```
      */
     async selectOption(optionId: string): Promise<void> {
-        await this.page.click(`[data-option-id="${optionId}"]`);
+        await this.dismissRevealOverlayIfPresent();
+        const cardLikeOption = this.page.locator(`[data-option-id="${optionId}"]`);
+        if ((await cardLikeOption.count()) > 0) {
+            await cardLikeOption.click({ force: true });
+            await this.page.waitForTimeout(300);
+            return;
+        }
+
+        const optionMeta = await this.page.evaluate((id) => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const state = harness?.state?.get?.();
+            const options = state?.sys?.interaction?.current?.data?.options ?? [];
+            const option = options.find((entry: any) => entry.id === id);
+            return {
+                label: typeof option?.label === 'string' ? option.label : null,
+                value: option?.value ?? null,
+            };
+        }, optionId);
+
+        const optionCardUid = optionMeta?.value?.cardUid;
+        if (typeof optionCardUid === 'string') {
+            const handCardOption = this.page.locator(`[data-card-uid="${optionCardUid}"]`);
+            if ((await handCardOption.count()) > 0) {
+                await handCardOption.click({ force: true });
+                await this.page.waitForTimeout(300);
+                return;
+            }
+        }
+
+        const optionLabel = optionMeta?.label;
+        if (!optionLabel) {
+            throw new Error(`Interaction option ${optionId} not found`);
+        }
+
+        await this.page.getByRole('button', { name: optionLabel }).click({ force: true });
         await this.page.waitForTimeout(300);
     }
 
@@ -433,7 +876,8 @@ export class GameTestContext {
      * ```
      */
     async confirm(): Promise<void> {
-        await this.page.click('button:has-text("确认")');
+        await this.dismissRevealOverlayIfPresent();
+        await this.page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).click({ force: true });
         await this.page.waitForTimeout(300);
     }
 
@@ -446,7 +890,8 @@ export class GameTestContext {
      * ```
      */
     async skip(): Promise<void> {
-        await this.page.click('button:has-text("跳过")');
+        await this.dismissRevealOverlayIfPresent();
+        await this.page.getByRole('button', { name: /^(跳过|Skip)(?:\s*\(\d+\))?$/i }).click({ force: true });
         await this.page.waitForTimeout(300);
     }
 
@@ -558,8 +1003,25 @@ export class GameTestContext {
      * await game.screenshot('portal-interaction', testInfo);
      * ```
      */
-    async screenshot(name: string, testInfo: any): Promise<void> {
+    async screenshot(name: string, testInfo: TestInfo): Promise<void> {
         const path = testInfo.outputPath(`${name}.png`);
         await this.page.screenshot({ path, fullPage: true });
+
+        const fileStem = GameTestContext.sanitizePathSegment(parse(testInfo.file).name || 'unknown-test');
+        const titleStem = GameTestContext.sanitizePathSegment(testInfo.title || 'unnamed');
+        const nameStem = GameTestContext.sanitizePathSegment(name);
+        const preservedDir = join(process.cwd(), 'test-results', 'preserved-screenshots', fileStem);
+        const preservedPath = join(preservedDir, `${titleStem}-${nameStem}.png`);
+        const flatDir = join(process.cwd(), 'test-results', 'preserved-screenshots-flat');
+        const flatPath = join(flatDir, `${fileStem}-${nameStem}.png`);
+        const evidenceDir = join(testInfo.config.rootDir, 'test-results', 'evidence-screenshots', fileStem);
+        const evidencePath = join(evidenceDir, `${titleStem}-${nameStem}.png`);
+
+        await mkdir(preservedDir, { recursive: true });
+        await mkdir(flatDir, { recursive: true });
+        await mkdir(evidenceDir, { recursive: true });
+        await copyFile(path, preservedPath);
+        await copyFile(path, flatPath);
+        await copyFile(path, evidencePath);
     }
 }

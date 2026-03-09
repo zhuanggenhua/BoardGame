@@ -13,6 +13,7 @@
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
 import type { SmashUpCore, SmashUpEvent, MinionOnBase } from './types';
 import { getBaseDef } from '../data/cards';
+import { matchesDefId, mustUseBaseLimitedMinionQuota } from './utils';
 
 // ============================================================================
 // 类型定义
@@ -531,9 +532,15 @@ export function isOperationRestricted(
             // 条件限制：extraPlayMinionPowerMax（额外出牌时力量 > limit 的随从被禁止）
             if (r.condition.extraPlayMinionPowerMax !== undefined && restrictionType === 'play_minion') {
                 const basePower = extra?.basePower as number | undefined;
-                const minionsPlayed = state.players[playerId]?.minionsPlayed ?? 0;
-                // 仅在使用额外出牌机会时生效（已打出 >= 1 个随从）
-                if (minionsPlayed >= 1 && basePower !== undefined && basePower > r.condition.extraPlayMinionPowerMax) {
+                const usingBaseLimitedQuota = (extra?.usesBaseLimitedMinionQuota as boolean | undefined)
+                    ?? mustUseBaseLimitedMinionQuota(
+                        state,
+                        state.players[playerId],
+                        baseIndex,
+                        extra?.minionDefId as string | undefined,
+                        basePower,
+                    );
+                if (usingBaseLimitedQuota && basePower !== undefined && basePower > r.condition.extraPlayMinionPowerMax) {
                     return true;
                 }
             }
@@ -711,7 +718,7 @@ export function getBaseRestrictions(state: SmashUpCore, baseIndex: number): Base
     const restrictions: BaseRestrictionInfo[] = [];
 
     // 检查 Block the Path（封路）
-    const blockAction = base.ongoingActions.find(o => o.defId === 'trickster_block_the_path');
+    const blockAction = base.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_block_the_path'));
     if (blockAction) {
         const blockedFaction = blockAction.metadata?.blockedFaction as string | undefined;
         if (blockedFaction) {
@@ -720,7 +727,7 @@ export function getBaseRestrictions(state: SmashUpCore, baseIndex: number): Base
             restrictions.push({
                 type: 'blocked_faction',
                 displayText: blockedFaction,
-                sourceDefId: 'trickster_block_the_path',
+                sourceDefId: blockAction.defId,
             });
         }
     }

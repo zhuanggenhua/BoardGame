@@ -16,12 +16,12 @@ import {
 } from '../domain/abilityHelpers';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
-import type { TriggerContext } from '../domain/ongoingEffects';
+import type { ProtectionChecker, TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
 import { drawCards } from '../domain/utils';
 import { SU_EVENTS } from '../domain/types';
 import type { CardsDrawnEvent, DeckReshuffledEvent, MinionDestroyedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 
 interface MinionCandidate {
@@ -30,6 +30,15 @@ interface MinionCandidate {
     baseIndex: number;
     label: string;
 }
+
+type MinionTargetChoiceValue = { minionUid: string; baseIndex: number; defId: string };
+type WhoWantsControlChoiceValue =
+    | { skip: true; confirm: true; displayMode: 'button' }
+    | { skip: true; cancel: true; displayMode: 'button' };
+type KindOfMagicControlChoiceValue = { skip: true; cancel: true; displayMode: 'button' };
+type DronePreventChoiceValue =
+    | { skip: true }
+    | { droneUid: string; droneBaseIndex: number; minionUid: string; minionDefId: string };
 
 function giantAntSoldierOnPlay(ctx: AbilityContext): AbilityResult {
     return {
@@ -239,6 +248,7 @@ export function registerGiantAntInteractionHandlers(): void {
     registerInteractionHandler('giant_ant_under_pressure_choose_amount', handleUnderPressureChooseAmount);
 
     registerInteractionHandler('giant_ant_we_are_the_champions_choose_source', handleWeAreTheChampionsChooseSource);
+    registerInteractionHandler('giant_ant_we_are_the_champions_choose_snapshot_source', handleWeAreTheChampionsChooseSource);
     registerInteractionHandler('giant_ant_we_are_the_champions_choose_target', handleWeAreTheChampionsChooseTarget);
     registerInteractionHandler('giant_ant_we_are_the_champions_choose_amount', handleWeAreTheChampionsChooseAmount);
 
@@ -417,7 +427,7 @@ function giantAntClaimThePrize(ctx: AbilityContext): AbilityResult {
         label: m.label,
         displayMode: 'card' as const,
         _source: 'field' as const,
-        value: { minionUid: m.uid, baseIndex: m.baseIndex, defId: m.defId },
+        value: { minionUid: m.uid, minionDefId: m.defId, baseIndex: m.baseIndex, defId: m.defId },
     }));
 
     const interaction = createSimpleChoice(
@@ -526,8 +536,15 @@ function giantAntWeAreTheChampions(ctx: AbilityContext): AbilityResult {
             return {
                 id: `minion-${i}`,
                 label: `${def?.name ?? s.defId}（力量指示物 ${s.counterAmount}）`,
-                value: { minionUid: s.uid, baseIndex: s.baseIndex, defId: s.defId, counterAmount: s.counterAmount },
+                value: {
+                    minionUid: s.uid,
+                    minionDefId: s.defId,
+                    baseIndex: s.baseIndex,
+                    defId: s.defId,
+                    counterAmount: s.counterAmount,
+                },
                 _source: 'field' as const,
+                displayMode: 'card' as const,
             };
         });
         
@@ -538,7 +555,7 @@ function giantAntWeAreTheChampions(ctx: AbilityContext): AbilityResult {
             sourceOptions,
             {
                 sourceId: 'giant_ant_we_are_the_champions_choose_source',
-                targetType: 'generic',
+                targetType: 'minion',
             },
         );
         
@@ -615,7 +632,7 @@ function createWhoWantsToLiveForeverInteraction(
     now: number,
 ) {
     const options = buildWhoWantsToLiveForeverOptions(state.core, playerId, context.removedTotal);
-    const interaction = createSimpleChoice<any>(
+    const interaction = createSimpleChoice<MinionTargetChoiceValue | WhoWantsControlChoiceValue>(
         `giant_ant_who_wants_to_live_forever_${now}`,
         playerId,
         `无人想要永生：点击随从移除1个力量指示物（已移除 ${context.removedTotal}）`,
@@ -630,13 +647,13 @@ function createWhoWantsToLiveForeverInteraction(
     return {
         ...interaction,
         data: {
-            ...interaction.data,
-            continuationContext: context,
-            optionsGenerator: (nextState: { core: SmashUpCore }, data: any) => {
-                const cc = (data?.continuationContext as WhoWantsContext | undefined) ?? context;
-                return buildWhoWantsToLiveForeverOptions(nextState.core, playerId, cc.removedTotal);
+                ...interaction.data,
+                continuationContext: context,
+                optionsGenerator: (nextState, data) => {
+                    const cc = ((data as typeof interaction.data & { continuationContext?: WhoWantsContext }).continuationContext) ?? context;
+                    return buildWhoWantsToLiveForeverOptions(nextState.core, playerId, cc.removedTotal);
+                },
             },
-        },
     };
 }
 
@@ -647,7 +664,7 @@ function createAKindOfMagicInteraction(
     now: number,
 ) {
     const options = buildAKindOfMagicOptions(state.core, playerId);
-    const interaction = createSimpleChoice<any>(
+    const interaction = createSimpleChoice<MinionTargetChoiceValue | KindOfMagicControlChoiceValue>(
         `giant_ant_a_kind_of_magic_${now}`,
         playerId,
         `如同魔法：将力量指示物重新分配（剩余 ${context.remaining}）`,
@@ -673,7 +690,7 @@ function buildWhoWantsToLiveForeverOptions(
     core: SmashUpCore,
     playerId: PlayerId,
     removedTotal: number,
-): any[] {
+): PromptOption<MinionTargetChoiceValue | WhoWantsControlChoiceValue>[] {
     const candidates = collectOwnMinionsWithCounters(core, playerId).map(item => ({
         ...item,
         label: `${item.label}（移除1个）`,
@@ -690,18 +707,18 @@ function buildWhoWantsToLiveForeverOptions(
             id: 'confirm',
             label: removedTotal > 0 ? `确认并抽 ${removedTotal} 张牌` : '确认（不抽牌）',
             displayMode: 'button' as const,
-            value: { skip: true, confirm: true , displayMode: 'button' as const },
+            value: { skip: true, confirm: true },
         },
         {
             id: 'cancel',
             label: '取消并撤回此牌',
             displayMode: 'button' as const,
-            value: { skip: true, cancel: true , displayMode: 'button' as const },
+            value: { skip: true, cancel: true },
         },
     ];
 }
 
-function buildAKindOfMagicOptions(core: SmashUpCore, playerId: PlayerId): any[] {
+function buildAKindOfMagicOptions(core: SmashUpCore, playerId: PlayerId): PromptOption<MinionTargetChoiceValue | KindOfMagicControlChoiceValue>[] {
     const candidates = collectOwnMinions(core, playerId);
     const minionOptions = buildMinionTargetOptions(candidates, {
         state: core,
@@ -714,7 +731,7 @@ function buildAKindOfMagicOptions(core: SmashUpCore, playerId: PlayerId): any[] 
             id: 'cancel',
             label: '取消并撤回此牌',
             displayMode: 'button' as const,
-            value: { skip: true, cancel: true , displayMode: 'button' as const },
+            value: { skip: true, cancel: true },
         },
     ];
 }
@@ -890,6 +907,7 @@ const handleUnderPressureChooseSource: IH = (state, playerId, value, interaction
     const targets = collectOwnMinions(state.core, playerId).filter(m => 
         m.uid !== selected.minionUid && m.baseIndex !== scoringBaseIndex
     );
+    
     if (targets.length === 0) {
         return { 
             state, 
@@ -956,7 +974,7 @@ const handleUnderPressureChooseTarget: IH = (state, playerId, value, interaction
         `giant_ant_under_pressure_choose_amount_${timestamp}`,
         playerId,
         '承受压力：选择要转移的力量指示物数量',
-        [{ id: 'confirm-transfer', label: '确认转移', value: { amount: maxAmount }, _source: 'static' as const }],
+        [{ id: 'confirm-transfer', label: '确认转移', value: { amount: maxAmount }, _source: 'static' as const, displayMode: 'button' as const }],
         {
             sourceId: 'giant_ant_under_pressure_choose_amount',
             targetType: 'generic',
@@ -1094,7 +1112,7 @@ const handleWeAreTheChampionsChooseTarget: IH = (state, playerId, value, interac
         `giant_ant_we_are_the_champions_choose_amount_${timestamp}`,
         playerId,
         '我们乃最强：选择要转移的力量指示物数量',
-        [{ id: 'confirm-transfer', label: '确认转移', value: { amount: maxAmount }, _source: 'static' as const }],
+        [{ id: 'confirm-transfer', label: '确认转移', value: { amount: maxAmount }, _source: 'static' as const, displayMode: 'button' as const }],
         {
             sourceId: 'giant_ant_we_are_the_champions_choose_amount',
             targetType: 'generic',
@@ -1220,12 +1238,7 @@ const handleHeadlongChooseBase: IH = (state, playerId, value, interactionData, _
 };
 
 function registerGiantAntProtections(): void {
-    const checker = (ctx: {
-        state: SmashUpCore;
-        targetBaseIndex: number;
-        targetMinion: { controller: PlayerId; powerCounters: number };
-        sourcePlayerId: PlayerId;
-    }) => {
+    const checker: ProtectionChecker = ctx => {
         if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
         if (ctx.targetMinion.powerCounters <= 0) return false;
 
@@ -1237,9 +1250,9 @@ function registerGiantAntProtections(): void {
         );
     };
 
-    registerProtection('giant_ant_the_show_must_go_on', 'affect', checker as any);
-    registerProtection('giant_ant_the_show_must_go_on', 'move', checker as any);
-    registerProtection('giant_ant_the_show_must_go_on', 'destroy', checker as any);
+    registerProtection('giant_ant_the_show_must_go_on', 'affect', checker);
+    registerProtection('giant_ant_the_show_must_go_on', 'move', checker);
+    registerProtection('giant_ant_the_show_must_go_on', 'destroy', checker);
 
     registerTrigger('giant_ant_we_are_the_champions', 'afterScoring', giantAntWeAreTheChampionsAfterScoring);
     registerTrigger('giant_ant_drone', 'onMinionDestroyed', giantAntDronePreventTrigger);
@@ -1284,9 +1297,16 @@ function giantAntWeAreTheChampionsAfterScoring(
             return {
                 id: `minion-${i}`,
                 label: `${def?.name ?? s.defId}（力量指示物 ${s.counterAmount}）`,
-                value: { minionUid: s.uid, baseIndex: s.baseIndex, defId: s.defId, counterAmount: s.counterAmount },
+                value: {
+                    minionUid: s.uid,
+                    minionDefId: s.defId,
+                    baseIndex: s.baseIndex,
+                    defId: s.defId,
+                    counterAmount: s.counterAmount,
+                },
                 // 计分后来源随从已离场，必须保留快照选项，不能走 field 动态校验
                 _source: 'static' as const,
+                displayMode: 'card' as const,
             };
         });
 
@@ -1296,7 +1316,7 @@ function giantAntWeAreTheChampionsAfterScoring(
             '我们乃最强：计分后选择转出力量指示物的随从',
             sourceOptions,
             {
-                sourceId: 'giant_ant_we_are_the_champions_choose_source',
+                sourceId: 'giant_ant_we_are_the_champions_choose_snapshot_source',
                 // 来源已离场，使用通用弹层选择（卡牌模式）而不是棋盘点选
                 targetType: 'generic',
             },
@@ -1326,13 +1346,13 @@ function giantAntDronePreventTrigger(ctx: TriggerContext): SmashUpEvent[] | { ev
     const target = state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
     if (!target || target.controller !== playerId) return [];
 
-    const drones: { uid: string; baseIndex: number }[] = [];
+    const drones: { uid: string; defId: string; baseIndex: number }[] = [];
     for (let i = 0; i < state.bases.length; i++) {
         for (const m of state.bases[i].minions) {
             if (m.defId !== 'giant_ant_drone') continue;
             if (m.controller !== playerId) continue;
             if (m.powerCounters <= 0) continue;
-            drones.push({ uid: m.uid, baseIndex: i });
+            drones.push({ uid: m.uid, defId: m.defId, baseIndex: i });
         }
     }
     if (drones.length === 0) return [];
@@ -1343,19 +1363,20 @@ function giantAntDronePreventTrigger(ctx: TriggerContext): SmashUpEvent[] | { ev
         ...drones.map((d, i) => ({
             id: `drone-${i}`,
             label: `移除雄蜂的1个指示物（基地 ${d.baseIndex + 1}）来防止消灭`,
-            value: { droneUid: d.uid, droneBaseIndex: d.baseIndex, minionUid: d.uid },
+            value: { droneUid: d.uid, droneBaseIndex: d.baseIndex, minionUid: d.uid, minionDefId: d.defId },
             _source: 'field' as const,
+            displayMode: 'card' as const,
         })),
     ];
 
-    const interaction = createSimpleChoice<any>(
+    const interaction = createSimpleChoice<DronePreventChoiceValue>(
         `giant_ant_drone_prevent_destroy_${now}`,
         playerId,
         '雄蜂：是否移除1个力量指示物来防止该随从被消灭？',
         options,
         {
             sourceId: 'giant_ant_drone_prevent_destroy',
-            targetType: 'generic',
+            targetType: 'minion',
             autoResolveIfSingle: false,
         },
     );

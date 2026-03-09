@@ -6,7 +6,7 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, moveMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback } from '../domain/abilityHelpers';
+import { destroyMinion, moveMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback, buildValidatedMoveEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionReturnedEvent, OngoingDetachedEvent, MinionPlayedEvent } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
@@ -14,6 +14,7 @@ import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { matchesDefId } from '../domain/utils';
 
 /** 注册忍者派系所有能力*/
 export function registerNinjaAbilities(): void {
@@ -146,7 +147,9 @@ function ninjaPoisonOnPlay(ctx: AbilityContext): AbilityResult {
  */
 function ninjaInfiltrateOnPlay(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) return { events: [] };
+    if (!base) {
+        return { events: [] };
+    }
 
     // 收集基地上的 ongoing 行动卡（排除刚打出的渗透自身）
     // 注意：只收集 base.ongoingActions，不包括随从身上的 attachedActions
@@ -158,7 +161,9 @@ function ninjaInfiltrateOnPlay(ctx: AbilityContext): AbilityResult {
         targets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: def?.name ?? o.defId });
     }
 
-    if (targets.length === 0) return { events: [] };
+    if (targets.length === 0) {
+        return { events: [] };
+    }
 
     // 只有一个目标时自动消灭
     if (targets.length === 1) {
@@ -175,8 +180,9 @@ function ninjaInfiltrateOnPlay(ctx: AbilityContext): AbilityResult {
     const options = targets.map((t, i) => ({
         id: `tactic-${i}`,
         label: t.label,
-        value: { cardUid: t.uid, defId: t.defId, ownerId: t.ownerId , displayMode: 'card' as const },
+        value: { cardUid: t.uid, defId: t.defId, ownerId: t.ownerId },
         _source: 'ongoing' as const,
+        displayMode: 'card' as const,
     }));
     const interaction = createSimpleChoice(
         `ninja_infiltrate_${ctx.now}`, ctx.playerId,
@@ -296,7 +302,7 @@ function ninjaHiddenNinja(ctx: AbilityContext): AbilityResult {
         const def = getCardDef(c.defId) as MinionCardDef | undefined;
         const name = def?.name ?? c.defId;
         const power = def?.power ?? 0;
-        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , displayMode: 'card' as const };
+        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , _source: 'hand' as const, displayMode: 'card' as const };
     });
     
     // 添加"跳过"选项（允许玩家选择不打出随从）
@@ -349,10 +355,10 @@ function ninjaAcolyteSpecial(ctx: AbilityContext): AbilityResult {
             const def = getCardDef(c.defId) as MinionCardDef | undefined;
             const name = def?.name ?? c.defId;
             const power = def?.power ?? 0;
-            return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , displayMode: 'card' as const };
+            return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , _source: 'hand' as const, displayMode: 'card' as const };
         }),
         // 忍者侍从自身（刚返回手牌）
-        { id: `hand-self`, label: `${acolyteDef?.name ?? '忍者侍从'} (力量 ${acolyteDef?.power ?? 2})`, value: { cardUid: ctx.cardUid, defId: 'ninja_acolyte', power: acolyteDef?.power ?? 2 } , displayMode: 'card' as const },
+        { id: `hand-self`, label: `${acolyteDef?.name ?? '忍者侍从'} (力量 ${acolyteDef?.power ?? 2})`, value: { cardUid: ctx.cardUid, defId: 'ninja_acolyte', power: acolyteDef?.power ?? 2 } , _source: 'hand' as const, displayMode: 'card' as const },
     ];
 
     if (allOptions.length === 0) return { events };
@@ -388,7 +394,7 @@ function registerNinjaOngoingEffects(): void {
     // 卡牌描述："该随从不会受到其他玩家战术的影响" → 保护被附着的随从
     registerProtection('ninja_smoke_bomb', 'action', (ctx) => {
         // 检查目标随从是否附着了烟幕弹，且来源是对手
-        const bomb = ctx.targetMinion.attachedActions.find(a => a.defId === 'ninja_smoke_bomb');
+        const bomb = ctx.targetMinion.attachedActions.find(a => matchesDefId(a.defId, 'ninja_smoke_bomb'));
         if (!bomb) return false;
         return ctx.sourcePlayerId !== bomb.ownerId;
     });
@@ -400,7 +406,7 @@ function registerNinjaOngoingEffects(): void {
         for (const base of trigCtx.state.bases) {
             for (const m of base.minions) {
                 for (const attached of m.attachedActions) {
-                    if (attached.defId !== 'ninja_smoke_bomb') continue;
+                    if (!matchesDefId(attached.defId, 'ninja_smoke_bomb')) continue;
                     if (attached.ownerId !== trigCtx.playerId) continue;
                     events.push({
                         type: SU_EVENTS.ONGOING_DETACHED,
@@ -426,7 +432,7 @@ function registerNinjaOngoingEffects(): void {
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             const base = trigCtx.state.bases[i];
             for (const m of base.minions) {
-                const assassinationCard = m.attachedActions.find(a => a.defId === 'ninja_assassination');
+                const assassinationCard = m.attachedActions.find(a => matchesDefId(a.defId, 'ninja_assassination'));
                 // 只在暗杀卡拥有者的回合结束时触发
                 if (assassinationCard && assassinationCard.ownerId === trigCtx.playerId) {
                     events.push({
@@ -450,7 +456,7 @@ function registerNinjaOngoingEffects(): void {
     // 渗透：附着此卡的随从不受基地能力影响（广义保护）?
     registerProtection('ninja_infiltrate', 'affect', (ctx) => {
         // 检查目标随从是否附着了?infiltrate
-        return ctx.targetMinion.attachedActions.some(a => a.defId === 'ninja_infiltrate');
+        return ctx.targetMinion.attachedActions.some(a => matchesDefId(a.defId, 'ninja_infiltrate'));
     });
     // 渗透：拥有者下回合开始时自毁
     registerTrigger('ninja_infiltrate', 'onTurnStart', (trigCtx) => {
@@ -458,7 +464,7 @@ function registerNinjaOngoingEffects(): void {
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             for (const m of trigCtx.state.bases[i].minions) {
                 for (const a of m.attachedActions) {
-                    if (a.defId !== 'ninja_infiltrate') continue;
+                    if (!matchesDefId(a.defId, 'ninja_infiltrate')) continue;
                     if (a.ownerId !== trigCtx.playerId) continue;
                     events.push({
                         type: SU_EVENTS.ONGOING_DETACHED,
@@ -559,7 +565,17 @@ export function registerNinjaInteractionHandlers(): void {
         const { baseIndex: destBase } = value as { baseIndex: number };
         const ctx = (iData as any)?.continuationContext as { minionUid: string; minionDefId: string; fromBaseIndex: number };
         if (!ctx) return undefined;
-        return { state, events: [moveMinion(ctx.minionUid, ctx.minionDefId, ctx.fromBaseIndex, destBase, 'ninja_way_of_deception', timestamp)] };
+        return {
+            state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: ctx.minionUid,
+                minionDefId: ctx.minionDefId,
+                fromBaseIndex: ctx.fromBaseIndex,
+                toBaseIndex: destBase,
+                reason: 'ninja_way_of_deception',
+                now: timestamp,
+            }),
+        };
     });
 
     // 伪装：选择基地后，链式选择随从
@@ -668,7 +684,7 @@ export function registerNinjaInteractionHandlers(): void {
         if (!ctx) return undefined;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, baseDefId: ctx.state.bases[ctx.baseIndex].defId, power },
+            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, baseDefId: state.core.bases[ctx.baseIndex]?.defId, power },
             timestamp,
         };
         const events: SmashUpEvent[] = [playedEvt];

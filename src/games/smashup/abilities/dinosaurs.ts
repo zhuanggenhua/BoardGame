@@ -6,7 +6,19 @@
 
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, addPowerCounter, addTempPower, modifyBreakpoint, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, resolveOrPrompt, buildAbilityFeedback, createSkipOption } from '../domain/abilityHelpers';
+import {
+    destroyMinion,
+    addPowerCounter,
+    addTempPower,
+    modifyBreakpoint,
+    getMinionPower,
+    buildMinionTargetOptions,
+    buildBaseTargetOptions,
+    resolveOrPrompt,
+    buildAbilityFeedback,
+    createSkipOption,
+    buildValidatedDestroyEvents,
+} from '../domain/abilityHelpers';
 import type { SmashUpEvent, SmashUpCore, MinionOnBase, OngoingDetachedEvent, MinionDestroyedEvent, MinionReturnedEvent, CardToDeckBottomEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
@@ -16,6 +28,7 @@ import type { ProtectionCheckContext } from '../domain/ongoingEffects';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { MatchState } from '../../../engine/types';
+import { matchesDefId } from '../domain/utils';
 
 /** 注册恐龙派系所有能力 */
 export function registerDinosaurAbilities(): void {
@@ -79,7 +92,13 @@ function dinoLaserTriceratops(ctx: AbilityContext): AbilityResult {
         sourceId: 'dino_laser_triceratops',
         targetType: 'minion',
     }, (value) => ({
-        events: [destroyMinion(value.minionUid, value.defId, value.baseIndex, targets.find(t => t.uid === value.minionUid)?.owner ?? ctx.playerId, undefined, 'dino_laser_triceratops', ctx.now)],
+        events: buildValidatedDestroyEvents(ctx.state, {
+            minionUid: value.minionUid,
+            minionDefId: value.defId,
+            fromBaseIndex: value.baseIndex,
+            reason: 'dino_laser_triceratops',
+            now: ctx.now,
+        }),
     }));
 }
 
@@ -508,6 +527,6 @@ function dinoWildlifePreserveChecker(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
     return base.ongoingActions.some(
-        a => a.defId === 'dino_wildlife_preserve' && a.ownerId === ctx.targetMinion.controller
+        a => matchesDefId(a.defId, 'dino_wildlife_preserve') && a.ownerId === ctx.targetMinion.controller
     );
 }

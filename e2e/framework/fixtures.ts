@@ -16,6 +16,8 @@
  * ```
  */
 
+/* eslint-disable react-hooks/rules-of-hooks */
+
 import { test as base, expect as baseExpect } from '@playwright/test';
 import { GameTestContext } from './GameTestContext';
 import { loadWorkerPorts } from '../../scripts/infra/port-allocator.js';
@@ -72,8 +74,8 @@ function getWorkerPorts(parallelIndex: number): WorkerPorts {
  * 扩展 Playwright test，添加 game 和 workerPorts fixtures
  */
 export const test = base.extend<FrameworkFixtures>({
-    baseURL: [async ({ workerPorts }, provideFixture) => {
-        await provideFixture(`http://127.0.0.1:${workerPorts.frontend}`);
+    baseURL: [async ({ workerPorts }, use) => {
+        await use(`http://127.0.0.1:${workerPorts.frontend}`);
     }, { option: true }],
 
     /**
@@ -81,9 +83,9 @@ export const test = base.extend<FrameworkFixtures>({
      * 
      * 提供当前 worker 的端口信息。
      */
-    workerPorts: [async (_unused, provideFixture, testInfo) => {
+    workerPorts: [async (_: any, use, testInfo) => {
         const ports = getWorkerPorts(testInfo.parallelIndex);
-        await provideFixture(ports);
+        await use(ports);
     }, { scope: 'worker' }],
     
     /**
@@ -92,7 +94,8 @@ export const test = base.extend<FrameworkFixtures>({
      * 自动创建 GameTestContext，测试结束后自动清理。
      * 同时注入测试模式标志，启用 TestHarness。
      */
-    game: async ({ page, context, workerPorts }, provideFixture) => {
+    game: async ({ page, context, workerPorts }, use) => {
+         
         // 注入测试模式标志（启用 TestHarness）
         await context.addInitScript(() => {
             (window as any).__E2E_TEST_MODE__ = true;
@@ -104,7 +107,7 @@ export const test = base.extend<FrameworkFixtures>({
         }, workerPorts);
 
         const game = new GameTestContext(page);
-        await provideFixture(game);
+        await use(game);
         // 清理逻辑（如果需要）
     },
 });

@@ -94,7 +94,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                                 className="flex-1 px-2 py-1.5 text-xs border border-yellow-300 rounded bg-white text-gray-900"
                             >
                                 <option value="cp">CP</option>
-                                <option value="health">HP</option>
+                                <option value="hp">HP</option>
                             </select>
                             <input
                                 type="number"

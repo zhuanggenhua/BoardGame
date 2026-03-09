@@ -189,6 +189,33 @@ describe('base_the_homeworld: 母星力量限制（全局）', () => {
         } as any);  
         expect(result.valid).toBe(true);
     });
+
+    it('validate：全局受限额度和普通额度同时存在时，power>2 随从仍可通过', () => {
+        const state = makeState({
+            bases: [makeBase('base_the_homeworld'), makeBase('base_rhodes_plaza')],
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 3,
+                    extraMinionPowerMax: 2,
+                    extraMinionPowerCaps: [2],
+                    hand: [makeCard('h1', 'alien_invader', 'minion')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState: MatchState<SmashUpCore> = {
+            core: state,
+            sys: { phase: 'playCards' } as any,
+        };
+
+        const result = validate(matchState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'h1', baseIndex: 1 },
+        } as any);
+        expect(result.valid).toBe(true);
+    });
 });
 
 // ============================================================================
@@ -209,30 +236,90 @@ describe('base_secret_garden: 神秘花园力量限制', () => {
         expect(restricted).toBe(false);
     });
 
-    it('额外打随从时 power>2 被拒', () => {
+    it('只剩神秘花园基地限定额度时，power>2 被拒', () => {
         const state = makeState({
             bases: [makeBase('base_secret_garden')],
             players: {
-                '0': makePlayer('0', { minionsPlayed: 1, minionLimit: 2 }),
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    baseLimitedMinionQuota: { 0: 1 },
+                }),
                 '1': makePlayer('1'),
             },
         });
 
-        const restricted = isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 4 });
+        const restricted = isOperationRestricted(state, 0, '0', 'play_minion', {
+            minionDefId: 'alien_invader',
+            basePower: 4,
+        });
         expect(restricted).toBe(true);
     });
 
-    it('额外打随从时 power≤2 通过', () => {
+    it('只剩神秘花园基地限定额度时，power≤2 通过', () => {
         const state = makeState({
             bases: [makeBase('base_secret_garden')],
             players: {
-                '0': makePlayer('0', { minionsPlayed: 1, minionLimit: 2 }),
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    baseLimitedMinionQuota: { 0: 1 },
+                }),
                 '1': makePlayer('1'),
             },
         });
 
-        const restricted = isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 2 });
+        const restricted = isOperationRestricted(state, 0, '0', 'play_minion', {
+            minionDefId: 'wizard_neophyte',
+            basePower: 2,
+        });
         expect(restricted).toBe(false);
+    });
+
+    it('还有其他可用随从额度时，power>2 不应被神秘花园误拦截', () => {
+        const state = makeState({
+            bases: [makeBase('base_secret_garden')],
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 2,
+                    baseLimitedMinionQuota: { 0: 1 },
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const restricted = isOperationRestricted(state, 0, '0', 'play_minion', {
+            minionDefId: 'killer_plant_water_lily',
+            basePower: 3,
+        });
+        expect(restricted).toBe(false);
+    });
+
+    it('validate：消费过神秘花园≤2额度后，仍可用其他额度打出3战力随从到这里', () => {
+        const state = makeState({
+            bases: [makeBase('base_secret_garden')],
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 2,
+                    baseLimitedMinionQuota: { 0: 0 },
+                    hand: [makeCard('m1', 'killer_plant_water_lily', 'minion')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState: MatchState<SmashUpCore> = {
+            core: state,
+            sys: { phase: 'playCards' } as any,
+        };
+
+        const result = validate(matchState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        } as any);
+        expect(result.valid).toBe(true);
     });
 });
 

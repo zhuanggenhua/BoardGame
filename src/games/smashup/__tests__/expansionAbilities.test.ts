@@ -34,6 +34,48 @@ beforeAll(() => {
     initAllAbilities();
 });
 
+describe('bear cavalry interaction regressions', () => {
+    it('bear_cavalry_bear_hug resolves tied weakest choice', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'bear_cavalry_bear_hug', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'b1', minions: [
+                    makeMinion('m1', 'test', '1', 2),
+                    makeMinion('m2', 'test', '1', 2),
+                ], ongoingActions: [],
+            }],
+        });
+
+        const playResult = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a1' },
+        } as any, defaultRandom);
+
+        const prompt = playResult.finalState.sys.interaction?.current as any;
+        expect(prompt?.data?.sourceId).toBe('bear_cavalry_bear_hug');
+
+        const targetOption = prompt?.data?.options?.find((option: any) => option?.value?.minionUid === 'm1');
+        expect(targetOption).toBeDefined();
+
+        const respondResult = runCommand(playResult.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '1',
+            payload: { optionId: targetOption.id },
+        } as any, defaultRandom);
+
+        const destroyEvent = respondResult.events.find(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvent).toBeDefined();
+        expect((destroyEvent as any).payload.minionUid).toBe('m1');
+        expect(respondResult.finalState.core.bases[0].minions.some(m => m.uid === 'm1')).toBe(false);
+    });
+});
+
 // ============================================================================
 // 辅助函数
 // ============================================================================

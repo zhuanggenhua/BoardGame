@@ -1,379 +1,165 @@
-/**
- * 测试框架试点 - 传送门完整流程
- * 
- * 验证测试框架的完整能力：
- * 1. 场景构建（setupScene�?
- * 2. 命令分发（通过 TestHarness�?
- * 3. 交互系统（等待交互、选择选项、确认）
- * 4. 状态验证（断言方法�?
- * 
- * 测试场景：传送门（从弃牌堆返回随从到手牌�?
- * - 玩家 0 手牌：wizard_portal
- * - 玩家 0 弃牌堆：alien_invader, wizard_apprentice
- * - 打出传送门 �?创建交互 �?选择 alien_invader �?确认
- * - 验证：alien_invader 在手牌中，wizard_portal 在弃牌堆�?
+﻿/**
+ * SmashUp - Wizard Portal 新框架 E2E 试点
  */
 
 import { test, expect } from './framework';
 
+const SMASHUP_PORTAL_QUERY = {
+    p0: 'wizards,aliens',
+    p1: 'zombies,pirates',
+    skipFactionSelect: true,
+    skipInitialization: false,
+    seed: 12345,
+};
 
-test.describe('测试框架试点 - 传送门完整流程', () => {
-    test('应该能从弃牌堆返回随从到手牌（完整流程）', async ({ page, game }) => {
-        // 1. 导航到测试模式（自动完成派系选择�?
-        console.log('📍 步骤 1: 导航到测试模�?);
-        await page.goto('/play/smashup/test?p0=wizards,aliens&p1=zombies,pirates&seed=12345');
-        
-        // 2. 等待游戏加载完成
-        console.log('�?步骤 2: 等待游戏加载');
-        await page.waitForFunction(
-            () => {
-                const harness = (window as any).__BG_TEST_HARNESS__;
-                return harness?.state?.isRegistered();
-            },
-            { timeout: 15000 }
-        );
-        console.log('�?游戏已加载，TestHarness 已就�?);
+function getCurrentPlayer(state: any): any {
+    const currentPlayerId = state.core.turnOrder[state.core.currentPlayerIndex];
+    return state.core.players[currentPlayerId];
+}
 
-        // 3. 构建测试场景
-        console.log('📝 步骤 3: 构建测试场景');
-        await game.setupScene({
-            gameId: 'smashup',
-            player0: {
-                hand: ['wizard_portal'],
-                discard: ['alien_invader', 'wizard_apprentice'],
-            },
-            player1: {
-                hand: [],
-                discard: [],
-            },
-            currentPlayer: '0',
-            phase: 'playCards',
+async function openWizardPortalScene(
+    game: any,
+    player0: {
+        deck: string[];
+        discard?: string[];
+    },
+): Promise<void> {
+    await game.openTestGame('smashup', SMASHUP_PORTAL_QUERY, 20000);
+    await game.setupScene({
+        gameId: 'smashup',
+        player0: {
+            hand: ['wizard_portal'],
+            deck: player0.deck,
+            discard: player0.discard ?? [],
+            actionsPlayed: 0,
+            actionLimit: 1,
+            minionsPlayed: 0,
+            minionLimit: 1,
+        },
+        player1: {
+            hand: [],
+            deck: [],
+            discard: [],
+        },
+        currentPlayer: '0',
+        phase: 'playCards',
+    });
+}
+
+async function selectInteractionOptionByDefId(game: any, defId: string): Promise<void> {
+    const options = await game.getInteractionOptions();
+    const option = options.find((entry: any) => entry?.value?.defId === defId);
+    expect(option, `交互中未找到 defId=${defId} 的选项`).toBeTruthy();
+    await game.selectOption(option.id);
+}
+
+async function waitForNoInteraction(game: any): Promise<void> {
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return state.sys.interaction?.current?.data?.sourceId ?? null;
+    }).toBe(null);
+}
+
+test.describe('SmashUp Wizard Portal（新框架）', () => {
+    test('应该能把选中的随从拿到手牌，并按选择顺序放回剩余牌', async ({ game }, testInfo) => {
+        await openWizardPortalScene(game, {
+            deck: ['alien_invader', 'pirate_cannon', 'pirate_shanghai', 'wizard_apprentice'],
         });
-        console.log('�?场景构建完成');
-        
-        // 验证初始状�?
-        await game.expectCardInHand('wizard_portal');
-        await game.expectCardInDiscard('alien_invader');
-        console.log('�?初始状态验证通过');
 
-        // 4. 打出传送门（通过命令分发�?
-        console.log('🎴 步骤 4: 打出传送门');
-        const cardUid = await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            const state = harness.state.get();
-            const currentPlayerIndex = state.core.currentPlayerIndex;
-            const currentPlayerId = state.core.turnOrder[currentPlayerIndex];
-            const player = state.core.players[currentPlayerId];
-            const card = player.hand.find((c: any) => c.defId === 'wizard_portal');
-            return card?.uid;
-        });
-        
-        if (!cardUid) {
-            throw new Error('wizard_portal not found in hand');
-        }
-        console.log(`�?找到传送门卡牌: ${cardUid}`);
-        
-        // 分发 PLAY_ACTION 命令
-        await page.evaluate((uid) => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            harness.command.dispatch({
-                type: 'su:play_action',
-                payload: { cardUid: uid }
-            });
-        }, cardUid);
-        console.log('�?传送门已打�?);
+        await game.playCard('wizard_portal');
+        await game.waitForInteraction('wizard_portal_pick');
 
-        // 5. 等待交互出现
-        console.log('�?步骤 5: 等待交互出现');
-        await page.waitForFunction(
-            () => {
-                const harness = (window as any).__BG_TEST_HARNESS__;
-                const state = harness.state.get();
-                const current = state.sys?.interaction?.current;
-                // 传送门交互�?sourceId �?'wizard_portal_pick'（不�?'wizard_portal'�?
-                return current?.data?.sourceId === 'wizard_portal_pick';
-            },
-            { timeout: 5000 }
-        );
-        console.log('�?交互已出�?);
+        const pickState = await game.getState();
+        expect(pickState.sys.interaction.current.data.multi).toEqual({ min: 0, max: 2 });
+        await game.screenshot('01-portal-pick-single', testInfo);
 
-        // 6. 读取交互选项
-        console.log('🔍 步骤 6: 读取交互选项');
-        const options = await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            const state = harness.state.get();
-            const current = state.sys?.interaction?.current;
-            return current?.data?.options || [];
-        });
-        console.log(`�?找到 ${options.length} 个选项:`, options.map((o: any) => o.label || o.id));
+        await selectInteractionOptionByDefId(game, 'alien_invader');
+        await game.confirm();
 
-        // 7. 选择 alien_invader
-        console.log('👆 步骤 7: 选择 alien_invader');
-        const alienOption = options.find((o: any) => 
-            o.value?.cardUid?.includes('alien_invader') || 
-            o.value?.defId === 'alien_invader' ||
-            o.id?.includes('alien_invader')
-        );
-        
-        if (!alienOption) {
-            console.error('可用选项:', JSON.stringify(options, null, 2));
-            throw new Error('未找�?alien_invader 选项');
-        }
-        console.log(`�?找到 alien_invader 选项: ${alienOption.id}`);
+        await game.waitForInteraction('wizard_portal_order');
+        await selectInteractionOptionByDefId(game, 'pirate_cannon');
+        await game.waitForInteraction('wizard_portal_order');
+        await selectInteractionOptionByDefId(game, 'wizard_apprentice');
+        await waitForNoInteraction(game);
 
-        // 8. 解决交互（选择选项�?
-        console.log('✔️ 步骤 8: 解决交互');
-        await page.evaluate((optionValue) => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            harness.command.dispatch({
-                type: 'resolve_interaction',
-                payload: { value: optionValue }
-            });
-        }, alienOption.value);
-        console.log('�?交互已解�?);
+        const finalState = await game.getState();
+        const player0 = getCurrentPlayer(finalState);
+        expect(player0.hand.map((card: any) => card.defId)).toContain('alien_invader');
+        expect(player0.hand.map((card: any) => card.defId)).not.toContain('wizard_portal');
+        expect(player0.discard.map((card: any) => card.defId)).toContain('wizard_portal');
+        expect(player0.deck.slice(0, 3).map((card: any) => card.defId)).toEqual([
+            'pirate_cannon',
+            'wizard_apprentice',
+            'pirate_shanghai',
+        ]);
 
-        // 9. 等待状态更�?
-        console.log('�?步骤 9: 等待状态更�?);
-        await page.waitForTimeout(500);
-
-        // 10. 验证最终状�?
-        console.log('🔍 步骤 10: 验证最终状�?);
-        
-        // alien_invader 应该在手牌中
-        await game.expectCardInHand('alien_invader');
-        console.log('�?alien_invader 在手牌中');
-        
-        // wizard_portal 应该在弃牌堆�?
-        await game.expectCardInDiscard('wizard_portal');
-        console.log('�?wizard_portal 在弃牌堆�?);
-
-        // wizard_apprentice 应该仍在弃牌堆中
-        await game.expectCardInDiscard('wizard_apprentice');
-        console.log('�?wizard_apprentice 仍在弃牌堆中');
-
-        console.log('🎉 传送门完整流程测试通过�?);
+        await game.screenshot('02-portal-after-single-pick', testInfo);
     });
 
-    test('应该能跳过传送门交互', async ({ page, game }) => {
-        // 1. 导航到测试模�?
-        console.log('📍 步骤 1: 导航到测试模�?);
-        await page.goto('/play/smashup/test?p0=wizards,aliens&p1=zombies,pirates&seed=12345');
-        
-        // 2. 等待游戏加载完成
-        console.log('�?步骤 2: 等待游戏加载');
-        await page.waitForFunction(
-            () => {
-                const harness = (window as any).__BG_TEST_HARNESS__;
-                return harness?.state?.isRegistered();
-            },
-            { timeout: 15000 }
-        );
-        console.log('�?游戏已加�?);
-
-        // 3. 构建场景
-        console.log('📝 步骤 3: 构建测试场景');
-        await game.setupScene({
-            gameId: 'smashup',
-            player0: {
-                hand: ['wizard_portal'],
-                discard: ['alien_invader'],
-            },
-            currentPlayer: '0',
-            phase: 'playCards',
+    test('应该能跳过随从领取，并只重排剩余牌库顶', async ({ game }, testInfo) => {
+        await openWizardPortalScene(game, {
+            deck: ['alien_invader', 'wizard_apprentice', 'pirate_cannon'],
         });
-        console.log('�?场景构建完成');
 
-        // 4. 打出传送门
-        console.log('🎴 步骤 4: 打出传送门');
-        const cardUid = await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            const state = harness.state.get();
-            const currentPlayerIndex = state.core.currentPlayerIndex;
-            const currentPlayerId = state.core.turnOrder[currentPlayerIndex];
-            const player = state.core.players[currentPlayerId];
-            const card = player.hand.find((c: any) => c.defId === 'wizard_portal');
-            return card?.uid;
-        });
-        
-        await page.evaluate((uid) => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            harness.command.dispatch({
-                type: 'su:play_action',
-                payload: { cardUid: uid }
-            });
-        }, cardUid);
-        console.log('�?传送门已打�?);
+        await game.playCard('wizard_portal');
+        await game.waitForInteraction('wizard_portal_pick');
+        await game.screenshot('03-portal-pick-skip', testInfo);
 
-        // 5. 等待交互出现
-        console.log('�?步骤 5: 等待交互出现');
-        await page.waitForFunction(
-            () => {
-                const harness = (window as any).__BG_TEST_HARNESS__;
-                const state = harness.state.get();
-                const current = state.sys?.interaction?.current;
-                return current?.data?.sourceId === 'wizard_portal_pick';
-            },
-            { timeout: 5000 }
-        );
-        console.log('�?交互已出�?);
+        await game.confirm();
 
-        // 6. 跳过交互（选择 null 值）
-        console.log('⏭️ 步骤 6: 跳过交互');
-        await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            harness.command.dispatch({
-                type: 'resolve_interaction',
-                payload: { value: null }
-            });
-        });
-        console.log('�?交互已跳�?);
+        await game.waitForInteraction('wizard_portal_order');
+        await selectInteractionOptionByDefId(game, 'alien_invader');
+        await game.waitForInteraction('wizard_portal_order');
+        await selectInteractionOptionByDefId(game, 'wizard_apprentice');
+        await waitForNoInteraction(game);
 
-        // 7. 等待状态更�?
-        await page.waitForTimeout(500);
+        const finalState = await game.getState();
+        const player0 = getCurrentPlayer(finalState);
+        expect(player0.hand.map((card: any) => card.defId)).not.toContain('alien_invader');
+        expect(player0.hand.map((card: any) => card.defId)).not.toContain('wizard_apprentice');
+        expect(player0.discard.map((card: any) => card.defId)).toContain('wizard_portal');
+        expect(player0.deck.slice(0, 3).map((card: any) => card.defId)).toEqual([
+            'alien_invader',
+            'wizard_apprentice',
+            'pirate_cannon',
+        ]);
 
-        // 8. 验证最终状�?
-        console.log('🔍 步骤 8: 验证最终状�?);
-        
-        // alien_invader 应该仍在弃牌堆中
-        await game.expectCardInDiscard('alien_invader');
-        console.log('�?alien_invader 仍在弃牌堆中');
-        
-        // wizard_portal 应该在弃牌堆�?
-        await game.expectCardInDiscard('wizard_portal');
-        console.log('�?wizard_portal 在弃牌堆�?);
-
-        console.log('🎉 跳过传送门交互测试通过�?);
+        await game.screenshot('04-portal-after-skip', testInfo);
     });
 
-    test('应该能选择多个随从（多选交互）', async ({ page, game }) => {
-        // 1. 导航到测试模�?
-        console.log('📍 步骤 1: 导航到测试模�?);
-        await page.goto('/play/smashup/test?p0=wizards,aliens&p1=zombies,pirates&seed=12345');
-        
-        // 2. 等待游戏加载完成
-        console.log('�?步骤 2: 等待游戏加载');
-        await page.waitForFunction(
-            () => {
-                const harness = (window as any).__BG_TEST_HARNESS__;
-                return harness?.state?.isRegistered();
-            },
-            { timeout: 15000 }
+    test('应该支持多选多个随从加入手牌', async ({ game }, testInfo) => {
+        await openWizardPortalScene(game, {
+            deck: ['alien_invader', 'wizard_apprentice', 'pirate_cannon', 'pirate_shanghai'],
+        });
+
+        await game.playCard('wizard_portal');
+        await game.waitForInteraction('wizard_portal_pick');
+
+        const pickState = await game.getState();
+        expect(pickState.sys.interaction.current.data.multi).toEqual({ min: 0, max: 2 });
+        const pickOptions = await game.getInteractionOptions();
+        expect(pickOptions.filter((option: any) => option.value?.defId).length).toBe(2);
+        await game.screenshot('05-portal-pick-multi', testInfo);
+
+        await selectInteractionOptionByDefId(game, 'alien_invader');
+        await selectInteractionOptionByDefId(game, 'wizard_apprentice');
+        await game.confirm();
+
+        await game.waitForInteraction('wizard_portal_order');
+        await selectInteractionOptionByDefId(game, 'pirate_shanghai');
+        await waitForNoInteraction(game);
+
+        const finalState = await game.getState();
+        const player0 = getCurrentPlayer(finalState);
+        expect(player0.hand.map((card: any) => card.defId)).toEqual(
+            expect.arrayContaining(['alien_invader', 'wizard_apprentice']),
         );
-        console.log('�?游戏已加�?);
+        expect(player0.discard.map((card: any) => card.defId)).toContain('wizard_portal');
+        expect(player0.deck.slice(0, 2).map((card: any) => card.defId)).toEqual([
+            'pirate_shanghai',
+            'pirate_cannon',
+        ]);
 
-        // 3. 构建场景（弃牌堆�?3 张卡�?
-        console.log('📝 步骤 3: 构建测试场景');
-        await game.setupScene({
-            gameId: 'smashup',
-            player0: {
-                hand: ['wizard_portal'],
-                discard: ['alien_invader', 'wizard_apprentice', 'alien_scout'],
-            },
-            currentPlayer: '0',
-            phase: 'playCards',
-        });
-        console.log('�?场景构建完成');
-
-        // 4. 打出传送门
-        console.log('🎴 步骤 4: 打出传送门');
-        const cardUid = await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            const state = harness.state.get();
-            const currentPlayerIndex = state.core.currentPlayerIndex;
-            const currentPlayerId = state.core.turnOrder[currentPlayerIndex];
-            const player = state.core.players[currentPlayerId];
-            const card = player.hand.find((c: any) => c.defId === 'wizard_portal');
-            return card?.uid;
-        });
-        
-        await page.evaluate((uid) => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            harness.command.dispatch({
-                type: 'su:play_action',
-                payload: { cardUid: uid }
-            });
-        }, cardUid);
-        console.log('�?传送门已打�?);
-
-        // 5. 等待交互出现
-        console.log('�?步骤 5: 等待交互出现');
-        await page.waitForFunction(
-            () => {
-                const harness = (window as any).__BG_TEST_HARNESS__;
-                const state = harness.state.get();
-                const current = state.sys?.interaction?.current;
-                return current?.data?.sourceId === 'wizard_portal_pick';
-            },
-            { timeout: 5000 }
-        );
-        console.log('�?交互已出�?);
-
-        // 6. 验证交互配置（应该是多选，最�?2 张）
-        const interactionConfig = await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            const state = harness.state.get();
-            const current = state.sys?.interaction?.current;
-            return {
-                multi: current?.data?.multi,
-                optionsCount: current?.data?.options?.length || 0,
-            };
-        });
-        console.log('�?交互配置:', interactionConfig);
-        expect(interactionConfig.multi).toBeTruthy();
-        expect(interactionConfig.optionsCount).toBe(3);
-
-        // 7. 选择 2 张卡（alien_invader �?wizard_apprentice�?
-        console.log('👆 步骤 7: 选择 2 张卡');
-        const options = await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            const state = harness.state.get();
-            const current = state.sys?.interaction?.current;
-            return current?.data?.options || [];
-        });
-        
-        const selectedOptions = options.filter((o: any) => 
-            o.value?.defId === 'alien_invader' || 
-            o.value?.defId === 'wizard_apprentice'
-        );
-        
-        if (selectedOptions.length !== 2) {
-            throw new Error(`Expected 2 options, got ${selectedOptions.length}`);
-        }
-        console.log(`�?找到 2 个选项:`, selectedOptions.map((o: any) => o.value?.defId));
-
-        // 8. 解决交互（多选）
-        console.log('✔️ 步骤 8: 解决交互（多选）');
-        await page.evaluate((values) => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            harness.command.dispatch({
-                type: 'resolve_interaction',
-                payload: { value: values }
-            });
-        }, selectedOptions.map((o: any) => o.value));
-        console.log('�?交互已解�?);
-
-        // 9. 等待状态更�?
-        await page.waitForTimeout(500);
-
-        // 10. 验证最终状�?
-        console.log('🔍 步骤 10: 验证最终状�?);
-        
-        // alien_invader �?wizard_apprentice 应该在手牌中
-        await game.expectCardInHand('alien_invader');
-        console.log('�?alien_invader 在手牌中');
-        
-        await game.expectCardInHand('wizard_apprentice');
-        console.log('�?wizard_apprentice 在手牌中');
-        
-        // alien_scout 应该仍在弃牌堆中
-        await game.expectCardInDiscard('alien_scout');
-        console.log('�?alien_scout 仍在弃牌堆中');
-        
-        // wizard_portal 应该在弃牌堆�?
-        await game.expectCardInDiscard('wizard_portal');
-        console.log('�?wizard_portal 在弃牌堆�?);
-
-        console.log('🎉 多选交互测试通过�?);
+        await game.screenshot('06-portal-after-multi-pick', testInfo);
     });
 });
-

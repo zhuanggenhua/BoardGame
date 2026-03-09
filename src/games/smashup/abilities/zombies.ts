@@ -138,12 +138,13 @@ function zombieGraveDigger(ctx: AbilityContext): AbilityResult {
     const options = minionsInDiscard.map((c, i) => {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
-        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } , _source: 'discard' as const, displayMode: 'card' as const };
     });
     const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
     const interaction = createSimpleChoice(
         `zombie_grave_digger_${ctx.now}`, ctx.playerId,
-        '选择要从弃牌堆取回的随从（可跳过）', [...options, skipOption] as any[], 'zombie_grave_digger',
+        '选择要从弃牌堆取回的随从（可跳过）', [...options, skipOption] as any[],
+        { sourceId: 'zombie_grave_digger', targetType: 'generic' },
     );
     // 手动提供 optionsGenerator：从弃牌堆过滤随从
     (interaction.data as any).optionsGenerator = (state: any) => {
@@ -152,7 +153,7 @@ function zombieGraveDigger(ctx: AbilityContext): AbilityResult {
         const opts = minions.map((c: any, i: number) => {
             const def = getCardDef(c.defId);
             const name = def?.name ?? c.defId;
-            return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+            return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'discard' as const, displayMode: 'card' as const };
         });
         return [...opts, { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }];
     };
@@ -170,10 +171,10 @@ function zombieWalker(ctx: AbilityContext): AbilityResult {
         `zombie_walker_${ctx.now}`, ctx.playerId,
         `牌库顶是「${cardName}」，选择处理方式`,
         [
-            { id: 'discard', label: '弃掉', value: { action: 'discard' } },
-            { id: 'keep', label: '放回牌库顶', value: { action: 'keep' } },
+            { id: 'discard', label: '弃掉', value: { action: 'discard' }, displayMode: 'button' as const },
+            { id: 'keep', label: '放回牌库顶', value: { action: 'keep' }, displayMode: 'button' as const },
         ],
-        'zombie_walker',
+        { sourceId: 'zombie_walker', targetType: 'button' },
     );
     const extended = {
         ...interaction,
@@ -190,11 +191,12 @@ function zombieGraveRobbing(ctx: AbilityContext): AbilityResult {
     const options = player.discard.map((c, i) => {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
-        return { id: `card-${i}`, label: `${name} (${c.type === 'minion' ? '随从' : '行动'})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+        return { id: `card-${i}`, label: `${name} (${c.type === 'minion' ? '随从' : '行动'})`, value: { cardUid: c.uid, defId: c.defId } , _source: 'discard' as const, displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `zombie_grave_robbing_${ctx.now}`, ctx.playerId,
-        '选择要从弃牌堆取回的卡牌', options, 'zombie_grave_robbing',
+        '选择要从弃牌堆取回的卡牌', options,
+        { sourceId: 'zombie_grave_robbing', targetType: 'generic' },
     );
     // 手动提供 optionsGenerator：从弃牌堆获取所有卡牌
     (interaction.data as any).optionsGenerator = (state: any) => {
@@ -202,7 +204,7 @@ function zombieGraveRobbing(ctx: AbilityContext): AbilityResult {
         return p.discard.map((c: any, i: number) => {
             const def = getCardDef(c.defId);
             const name = def?.name ?? c.defId;
-            return { id: `card-${i}`, label: `${name} (${c.type === 'minion' ? '随从' : '行动'})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+            return { id: `card-${i}`, label: `${name} (${c.type === 'minion' ? '随从' : '行动'})`, value: { cardUid: c.uid, defId: c.defId }, _source: 'discard' as const, displayMode: 'card' as const };
         });
     };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -228,7 +230,8 @@ function zombieNotEnoughBullets(ctx: AbilityContext): AbilityResult {
     }));
     const interaction = createSimpleChoice(
         `zombie_not_enough_bullets_${ctx.now}`, ctx.playerId,
-        '选择要取回的随从名（取回所有同名随从）', options, 'zombie_not_enough_bullets',
+        '选择要取回的随从名（取回所有同名随从）', options,
+        { sourceId: 'zombie_not_enough_bullets', targetType: 'generic' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -242,12 +245,12 @@ function zombieLendAHand(ctx: AbilityContext): AbilityResult {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
         const typeLabel = c.type === 'minion' ? '随从' : '行动';
-        return { id: `card-${i}`, label: `${name} (${typeLabel})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+        return { id: `card-${i}`, label: `${name} (${typeLabel})`, value: { cardUid: c.uid, defId: c.defId } , _source: 'discard' as const, displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `zombie_lend_a_hand_${ctx.now}`, ctx.playerId,
-        '借把手：选择要洗回牌库的卡牌（任意数量，可不选）', options, 'zombie_lend_a_hand',
-        undefined, { min: 0, max: player.discard.length },
+        '借把手：选择要洗回牌库的卡牌（任意数量，可不选）', options,
+        { sourceId: 'zombie_lend_a_hand', targetType: 'generic', multi: { min: 0, max: player.discard.length } },
     );
     // 手动提供 optionsGenerator：从弃牌堆获取所有卡牌
     (interaction.data as any).optionsGenerator = (state: any) => {
@@ -256,7 +259,7 @@ function zombieLendAHand(ctx: AbilityContext): AbilityResult {
             const def = getCardDef(c.defId);
             const name = def?.name ?? c.defId;
             const typeLabel = c.type === 'minion' ? '随从' : '行动';
-            return { id: `card-${i}`, label: `${name} (${typeLabel})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+            return { id: `card-${i}`, label: `${name} (${typeLabel})`, value: { cardUid: c.uid, defId: c.defId }, _source: 'discard' as const, displayMode: 'card' as const };
         });
     };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -283,13 +286,10 @@ function zombieOutbreak(ctx: AbilityContext): AbilityResult {
     const baseOptions = buildBaseTargetOptions(emptyBases, ctx.state);
     const interaction = createSimpleChoice(
         `zombie_outbreak_base_${ctx.now}`, ctx.playerId,
-        '爆发：选择一个没有你随从的基地', baseOptions as any[], 'zombie_outbreak_choose_base',
+        '爆发：选择一个没有你随从的基地', baseOptions as any[],
+        { sourceId: 'zombie_outbreak_choose_base', targetType: 'base' },
     );
-    const extended = {
-        ...interaction,
-        data: { ...interaction.data, targetType: 'base' },
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, extended) };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 /** 僵尸领主 onPlay：在每个没有己方随从的基地从弃牌堆打出力量≤2的随从 */
@@ -331,13 +331,14 @@ function zombieLordBuildInteraction(
             const def = getCardDef(c.defId) as MinionCardDef | undefined;
             const name = def?.name ?? c.defId;
             const power = def?.power ?? 0;
-            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , displayMode: 'card' as const };
+            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , _source: 'discard' as const, displayMode: 'card' as const };
         });
     options.push({ id: 'done', label: '完成', value: { done: true }, displayMode: 'button' as const } as any);
     const allowedBaseIndices = emptyBases.filter(b => !filledBases.includes(b.baseIndex)).map(b => b.baseIndex);
     const interaction = createSimpleChoice(
         `zombie_lord_${timestamp}`, playerId,
-        '僵尸领主：选择弃牌堆中的随从，然后点击目标基地', options, 'zombie_lord_pick',
+        '僵尸领主：选择弃牌堆中的随从，然后点击目标基地', options,
+        { sourceId: 'zombie_lord_pick', targetType: 'discard_minion' },
     );
     // 手动提供 optionsGenerator：从弃牌堆过滤力量≤2的随从
     (interaction.data as any).optionsGenerator = (state: any) => {
@@ -351,7 +352,7 @@ function zombieLordBuildInteraction(
             const def = getCardDef(c.defId) as MinionCardDef | undefined;
             const name = def?.name ?? c.defId;
             const power = def?.power ?? 0;
-            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , displayMode: 'card' as const };
+            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'discard' as const, displayMode: 'card' as const };
         });
         opts.push({ id: 'done', label: '完成', value: { done: true }, displayMode: 'button' as const } as any);
         return opts;
@@ -360,7 +361,6 @@ function zombieLordBuildInteraction(
         ...interaction,
         data: {
             ...interaction.data,
-            targetType: 'discard_minion',
             allowedBaseIndices,
             continuationContext: { emptyBases, usedCardUids, filledBases },
         },
@@ -393,7 +393,8 @@ function zombieMallCrawl(ctx: AbilityContext): AbilityResult {
     });
     const interaction = createSimpleChoice(
         `zombie_mall_crawl_${ctx.now}`, ctx.playerId,
-        '选择一个卡名，将牌库中所有同名卡放入弃牌堆', options, 'zombie_mall_crawl',
+        '选择一个卡名，将牌库中所有同名卡放入弃牌堆', options,
+        { sourceId: 'zombie_mall_crawl', targetType: 'generic' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }

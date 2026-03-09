@@ -40,6 +40,7 @@ import { WEREWOLF_POD_CARDS } from './factions/werewolves_pod';
 import { VAMPIRE_CARDS } from './factions/vampires';
 import { VAMPIRE_POD_CARDS } from './factions/vampires_pod';
 import { GIANT_ANT_CARDS } from './factions/giant-ants';
+import { GIANT_ANT_CARDS as GIANT_ANT_POD_CARDS } from './factions/giant-ants_pod';
 import { NINJA_POD_CARDS } from './factions/ninjas_pod';
 
 // ============================================================================
@@ -110,6 +111,7 @@ registerCards(WEREWOLF_POD_CARDS);
 registerCards(VAMPIRE_CARDS);
 registerCards(VAMPIRE_POD_CARDS);
 registerCards(GIANT_ANT_CARDS);
+registerCards(GIANT_ANT_POD_CARDS);
 // POD 版本阵营（最新英文 POD 版本）
 registerCards(NINJA_POD_CARDS);
 
@@ -666,6 +668,18 @@ export function getBaseDef(defId: string): BaseCardDef | undefined {
     return _baseRegistry.get(defId);
 }
 
+function resolveLocaleValue(t: (key: string) => string, keys: string[]): string | undefined {
+    for (const key of keys) {
+        const resolved = t(key);
+        if (resolved && resolved !== key) return resolved;
+    }
+    return undefined;
+}
+
+function getPodFallbackKeyId(defId: string): string | undefined {
+    return defId.endsWith('_pod') ? defId.replace(/_pod$/, '') : undefined;
+}
+
 /**
  * 解析卡牌名称（从 i18n 获取）
  *
@@ -675,6 +689,18 @@ export function getBaseDef(defId: string): BaseCardDef | undefined {
  */
 export function resolveCardName(def: CardDef | BaseCardDef | undefined, t: (key: string) => string): string {
     if (!def) return '';
+    const localeKeys = [`cards.${def.id}.name`];
+    if (def.name.startsWith('cards.') && !localeKeys.includes(def.name)) {
+        localeKeys.push(def.name);
+    }
+
+    const fallbackLocaleKeyId = getPodFallbackKeyId(def.id);
+    if (fallbackLocaleKeyId) {
+        localeKeys.push(`cards.${fallbackLocaleKeyId}.name`);
+    }
+
+    const localeValue = resolveLocaleValue(t, localeKeys);
+    if (localeValue) return localeValue;
     // 如果原定义是以 cards. 开头则直接使用；否则根据 id 生成
     const keyId = def.id.replace(/_pod$/, '');
     const key = def.name.startsWith('cards.') ? def.name : `cards.${keyId}.name`;
@@ -692,6 +718,15 @@ export function resolveCardName(def: CardDef | BaseCardDef | undefined, t: (key:
  */
 export function resolveCardText(def: CardDef | BaseCardDef | undefined, t: (key: string) => string): string {
     if (!def) return '';
+    const textField = ('type' in def && def.type === 'action') ? 'effectText' : 'abilityText';
+    const localeKeys = [`cards.${def.id}.${textField}`];
+    const fallbackLocaleKeyId = getPodFallbackKeyId(def.id);
+    if (fallbackLocaleKeyId) {
+        localeKeys.push(`cards.${fallbackLocaleKeyId}.${textField}`);
+    }
+
+    const localeValue = resolveLocaleValue(t, localeKeys);
+    if (localeValue) return localeValue;
     // 随从用 abilityText，行动卡用 effectText，基地用 abilityText
     const field = ('type' in def && def.type === 'action') ? 'effectText' : 'abilityText';
     const keyId = def.id.replace(/_pod$/, '');

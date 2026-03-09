@@ -148,7 +148,7 @@ function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
                 // 多候选：创建交互让玩家选择
                 const options = eligible.map((c, idx) => {
                     const def = getMinionDef(c.defId);
-                    return { id: `minion-${idx}`, label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+                    return { id: `minion-${idx}`, label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`, value: { cardUid: c.uid, defId: c.defId }, _source: 'static' as const, displayMode: 'card' as const };
                 });
                 options.push({ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const } as any);
                 const interaction = createSimpleChoice(
@@ -252,7 +252,7 @@ function killerPlantVenusManTrap(ctx: AbilityContext): AbilityResult {
     // 多个候选，Prompt 选择
     const options = eligible.map((c, idx) => {
         const def = getMinionDef(c.defId);
-        return { id: `minion-${idx}`, label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+        return { id: `minion-${idx}`, label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`, value: { cardUid: c.uid, defId: c.defId }, _source: 'static' as const, displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `killer_plant_venus_man_trap_search_${ctx.now}`,

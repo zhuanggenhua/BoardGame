@@ -361,6 +361,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 return (
                                     <motion.div
                                         key={card.uid}
+                                        data-card-uid={card.uid}
+                                        data-card-def-id={card.defId}
                                         initial={{ y: 30, opacity: 0 }}
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{ delay: idx * 0.04, type: 'spring', stiffness: 400, damping: 25 }}

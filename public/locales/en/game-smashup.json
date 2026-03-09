@@ -270,6 +270,86 @@
     "giant_ants": {
       "name": "Giant Ants",
       "description": "Flexibly distribute and transfer power counters, teamwork."
+    },
+    "pirates_pod": {
+      "name": "Pirates (POD)",
+      "description": "Highly mobile; move minions between bases."
+    },
+    "ninjas_pod": {
+      "name": "Ninjas (POD)",
+      "description": "Ambush tactics, stealth, and minion assassinations."
+    },
+    "dinosaurs_pod": {
+      "name": "Dinosaurs (POD)",
+      "description": "Massive power that crushes everything."
+    },
+    "aliens_pod": {
+      "name": "Aliens (POD)",
+      "description": "Disrupt opponents, bounce minions, control bases."
+    },
+    "robots_pod": {
+      "name": "Robots (POD)",
+      "description": "A swarm of micro-bots that floods the board."
+    },
+    "zombies_pod": {
+      "name": "Zombies (POD)",
+      "description": "Rise from the discard and never stay dead."
+    },
+    "wizards_pod": {
+      "name": "Wizards (POD)",
+      "description": "Extra actions, deck manipulation, spell bursts."
+    },
+    "tricksters_pod": {
+      "name": "Tricksters (POD)",
+      "description": "Set traps, discard opponents, cause chaos."
+    },
+    "steampunks_pod": {
+      "name": "Steampunks (POD)",
+      "description": "Leverage base actions, upgrades, and recycling."
+    },
+    "ghosts_pod": {
+      "name": "Ghosts (POD)",
+      "description": "Fewer cards, stronger effects, phase through matter."
+    },
+    "killer_plants_pod": {
+      "name": "Killer Plants (POD)",
+      "description": "Rapid growth and minion control."
+    },
+    "bear_cavalry_pod": {
+      "name": "Bear Cavalry (POD)",
+      "description": "Force movement and crush opponents."
+    },
+    "minions_of_cthulhu_pod": {
+      "name": "Minions of Cthulhu (POD)",
+      "description": "Use madness cards and sacrifice minions. Note: every 2 madness cards cost 1 VP at game end."
+    },
+    "elder_things_pod": {
+      "name": "Elder Things (POD)",
+      "description": "Hand out madness and manipulate minds. Note: every 2 madness cards cost 1 VP at game end."
+    },
+    "innsmouth_pod": {
+      "name": "Innsmouth (POD)",
+      "description": "Swarm tactics; rally identical minions. Note: every 2 madness cards cost 1 VP at game end."
+    },
+    "miskatonic_university_pod": {
+      "name": "Miskatonic University (POD)",
+      "description": "Leverage madness for advantage and research. Note: every 2 madness cards cost 1 VP at game end."
+    },
+    "frankenstein_pod": {
+      "name": "Frankenstein (POD)",
+      "description": "Use +1 power counters to enhance minions, gain advantage through sacrifice and transfer."
+    },
+    "werewolves_pod": {
+      "name": "Werewolves (POD)",
+      "description": "High-power minions that burst at turn end, control base breakpoints."
+    },
+    "vampires_pod": {
+      "name": "Vampires (POD)",
+      "description": "Gain power counters by destroying minions, accumulate advantage."
+    },
+    "giant_ants_pod": {
+      "name": "Giant Ants (POD)",
+      "description": "Flexibly distribute and transfer power counters, teamwork."
     }
   },
   "tutorial": {
@@ -1602,11 +1682,11 @@
     },
     "dino_laser_triceratops_pod": {
       "name": "Laseratops",
-      "abilityText": "You may destroy a minion of power 2 or less on this base."
+      "abilityText": "You may destroy a minion of printed power 2 or less on this base."
     },
     "dino_armor_stego_pod": {
       "name": "Armor Stego",
-      "abilityText": "Ongoing: This minion has +2 power during other players' turns."
+      "abilityText": "Talent: Until the start of your next turn, this minion has +2 power during other players' turns."
     },
     "dino_war_raptor_pod": {
       "name": "War Raptor",
@@ -1642,7 +1722,7 @@
     },
     "dino_tooth_and_claw_pod": {
       "name": "Tooth and Claw...and Guns",
-      "effectText": "Play on a minion. Ongoing: If an ability would affect this minion, destroy this card and that ability does not affect this minion."
+      "effectText": "Play on a minion. Ongoing: This minion is not affected by other players' cards."
     },
     "elder_thing_elder_thing_pod": {
       "name": "Elder Thing",
@@ -2010,7 +2090,7 @@
     },
     "ninja_infiltrate_pod": {
       "name": "Infiltrate",
-      "effectText": "Play on a base. Destroy an action that has been played here. Ongoing: You may ignore this base's ability until the start of your next turn."
+      "effectText": "Play on a base. You may destroy another action on this base. Talent: Destroy this action to cancel this base's ability until the start of your turn."
     },
     "ninja_poison_pod": {
       "name": "Poison",

@@ -687,6 +687,7 @@ export function registerBaseAbilities(): void {
                 id: `minion-${i}`,
                 label: def?.name ?? m.defId,
                 value: { minionUid: m.uid, minionDefId: m.defId, baseIndex: ctx.baseIndex, defId: m.defId },
+                _source: 'field' as const,
                 displayMode: 'card' as const,
             };
         });
@@ -806,6 +807,7 @@ export function registerBaseAbilities(): void {
                 id: `minion-${i}`,
                 label: c.label,
                 value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, defId: c.defId },
+                _source: 'field' as const,
                 displayMode: 'card' as const,
             })),
         ];
@@ -867,6 +869,7 @@ export function registerBaseAbilities(): void {
                 id: `minion-${i}`,
                 label: `${def?.name ?? m.defId} (力量${getEffectivePower(ctx.state, m, ctx.baseIndex)})`,
                 value: { minionUid: m.uid, minionDefId: m.defId, baseIndex: ctx.baseIndex },
+                _source: 'field' as const,
                 displayMode: 'card' as const,
             };
         });
@@ -932,6 +935,7 @@ export function registerBaseAbilities(): void {
                 id: `minion-${i}`,
                 label: `${def?.name ?? m.defId} (力量${m.power})`,
                 value: { minionUid: m.uid, minionDefId: m.defId, baseIndex: ctx.baseIndex },
+                _source: 'field' as const,
                 displayMode: 'card' as const,
             };
         });
@@ -983,6 +987,7 @@ export function registerBaseAbilities(): void {
             id: `minion-${i}`,
             label: m.label,
             value: { minionUid: m.uid, baseIndex: m.baseIndex, minionDefId: m.defId, ownerId: m.owner },
+            _source: 'field' as const,
             displayMode: 'card' as const,
         }));
         const options: PromptOption<{ skip: true } | { minionUid: string; baseIndex: number; minionDefId: string; ownerId: string }>[] = [
@@ -1068,6 +1073,7 @@ export function registerBaseAbilities(): void {
                     id: `minion-${i}`,
                     label: `${def?.name ?? m.defId} (力量${m.power})`,
                     value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner },
+                    _source: 'field' as const,
                     displayMode: 'card' as const,
                 };
             });
@@ -1110,6 +1116,7 @@ export function registerBaseAbilities(): void {
                             id: `minion-${i}`,
                             label: `${def?.name ?? m.defId} (力量${m.power})`,
                             value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner },
+                            _source: 'field' as const,
                             displayMode: 'card' as const,
                         };
                     });
@@ -1178,6 +1185,7 @@ export function registerBaseAbilities(): void {
             id: `minion-${i}`,
             label: m.label,
             value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner, fromBaseIndex: m.baseIndex },
+            _source: 'field' as const,
             displayMode: 'card' as const,
         }));
         const options = [
@@ -1261,6 +1269,7 @@ export function registerBaseAbilities(): void {
             id: `minion-${i}`,
             label: m.label,
             value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.baseIndex },
+            _source: 'field' as const,
             displayMode: 'card' as const,
         }));
         const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; fromBaseIndex: number }>[] = [

@@ -86,6 +86,15 @@ export class GameTransportClient {
     }
 
     /**
+     * 获取底层 socket 实例（仅供测试使用）
+     * 
+     * @internal
+     */
+    getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> | null {
+        return this.socket;
+    }
+
+    /**
      * 更新本地缓存的最新状态
      *
      * 供 GameProvider 在乐观引擎回滚时回写权威状态，

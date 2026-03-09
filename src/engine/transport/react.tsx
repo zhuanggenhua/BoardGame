@@ -425,10 +425,15 @@ export function GameProvider({
         
         const harness = TestHarness.getInstance();
         
-        // 注册状态访问器
+        // 注册状态访问器（联机模式只允许读取）
+        // 这里的 state 已经过服务端 playerView 过滤，只是当前玩家视角。
+        // 若允许客户端直接写回，会把隐藏信息裁掉后的视图污染成服务器权威状态。
+        // 联机 E2E 需要注入权威状态时，必须改走服务端 /test API。
         harness.state.register(
             () => state,
-            (newState) => setState(newState as MatchState<unknown>)
+            () => {
+                throw new Error('[GameProvider] 联机模式下禁止通过客户端玩家视图注入状态，请改用服务端 /test 状态注入接口');
+            },
         );
         
         // 注册命令分发器
@@ -550,8 +555,9 @@ export function LocalGameProvider({
                 config.systems as EngineSystem[],
             );
             
-            // 直接进入 playCards 阶段（测试会通过 setupScene 注入完整状态）
-            sys.flow.phase = 'playCards';
+            // 直接进入 playCards 阶段（测试会通过 setupScene 注入完整状态）。
+            // SystemState 已统一使用顶层 `sys.phase`，这里不能再写历史遗留的 `sys.flow.phase`。
+            sys.phase = 'playCards';
             
             console.log('[LocalGameProvider] 最小化空白状态已创建，等待测试注入状态');
             
@@ -566,8 +572,8 @@ export function LocalGameProvider({
             console.log('[LocalGameProvider] skipFactionSelect=true，同步执行派系选择');
             
             // 调用 domain.setup 创建初始状态
-            let core = config.domain.setup(playerIds, random) as any;
-            let sys = createInitialSystemState(
+            const core = config.domain.setup(playerIds, random) as any;
+            const sys = createInitialSystemState(
                 playerIds,
                 config.systems as EngineSystem[],
             );
@@ -775,10 +781,11 @@ export function LocalGameProvider({
         
         const harness = TestHarness.getInstance();
         
-        // 注册状态访问器
+        // 注册状态访问器（本地模式可直接读写当前快照）
+        // 本地模式没有 playerView 过滤，因此允许 TestHarness 直接注入状态。
         harness.state.register(
             () => state,
-            (newState) => setState(newState as MatchState<unknown>)
+            (newState) => setState(newState as MatchState<unknown>),
         );
         
         // 注册命令分发器

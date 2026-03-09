@@ -10,7 +10,8 @@ import type { MatchState } from '../../src/core/types';
 /**
  * 测试环境配置
  */
-const TEST_API_BASE = process.env.TEST_API_BASE || 'http://localhost:18001';
+const TEST_API_PORT = process.env.PW_API_SERVER_PORT || process.env.API_SERVER_PORT || '18001';
+const TEST_API_BASE = process.env.TEST_API_BASE || `http://localhost:${TEST_API_PORT}`;
 const TEST_API_TOKEN = process.env.TEST_API_TOKEN || 'test-token-12345';
 
 /**

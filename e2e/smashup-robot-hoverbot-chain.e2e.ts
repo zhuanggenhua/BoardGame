@@ -12,24 +12,18 @@
  * - 交互解决器的校验机制生效
  */
 
-import { test, expect } from './fixtures';
-import { GameTestContext } from './framework/GameTestContext';
+import { test, expect } from './framework';
+
+const SMASHUP_TEST_QUERY = {
+    p0: 'robots,pirates',
+    p1: 'ninjas,dinosaurs',
+    skipFactionSelect: true,
+    skipInitialization: false,
+};
 
 test.describe('盘旋机器人链式打出', () => {
-    test('应该正确处理连续打出两个盘旋机器人', async ({ page }, testInfo) => {
-        const game = new GameTestContext(page);
-
-        // 1. 导航到测试模式
-        await page.goto('/play/smashup/test?p0=robots,pirates&p1=ninjas,dinosaurs&seed=12345');
-        
-        // 2. 等待游戏加载完成
-        await page.waitForFunction(
-            () => {
-                const harness = (window as any).__BG_TEST_HARNESS__;
-                return harness?.state?.isRegistered();
-            },
-            { timeout: 15000 }
-        );
+    test('应该正确处理连续打出两个盘旋机器人', async ({ game }, testInfo) => {
+        await game.openTestGame('smashup', SMASHUP_TEST_QUERY);
 
         // 3. 快速场景构建：手牌有第一个盘旋，牌库顶是第二个盘旋和 zapbot
         await game.setupScene({
@@ -46,7 +40,7 @@ test.describe('盘旋机器人链式打出', () => {
         });
 
         // 2. 打出第一个盘旋机器人
-        await game.playCard('robot_hoverbot');
+        await game.playCard('robot_hoverbot', { targetBaseIndex: 0 });
 
         // 3. 等待交互：应该看到第二个盘旋机器人
         await game.waitForInteraction('robot_hoverbot');
@@ -60,7 +54,8 @@ test.describe('盘旋机器人链式打出', () => {
 
         // 5. 选择打出第二个盘旋机器人
         await game.selectOption('play');
-        await game.confirm();
+        await game.waitForInteraction('robot_hoverbot_base');
+        await game.selectBase(0);
 
         // 6. 等待新的交互：应该看到 zapbot（新的牌库顶）
         await game.waitForInteraction('robot_hoverbot');
@@ -74,7 +69,8 @@ test.describe('盘旋机器人链式打出', () => {
 
         // 8. 选择打出 zapbot
         await game.selectOption('play');
-        await game.confirm();
+        await game.waitForInteraction('robot_hoverbot_base');
+        await game.selectBase(0);
 
         // 9. 验证最终状态：三个随从都在场上
         const finalState = await game.getState();
@@ -94,15 +90,8 @@ test.describe('盘旋机器人链式打出', () => {
         console.log('[E2E] ✅ 测试通过：连续打出两个盘旋机器人，第二个盘旋看到新的牌库顶');
     });
 
-    test('第二个盘旋应该看到新的牌库顶（不是自己）', async ({ page }, testInfo) => {
-        const game = new GameTestContext(page);
-
-        // 1. 导航到测试模式
-        await page.goto('/play/smashup/test?p0=robots,pirates&p1=ninjas,dinosaurs&seed=12345');
-        await page.waitForFunction(
-            () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered(),
-            { timeout: 15000 }
-        );
+    test('第二个盘旋应该看到新的牌库顶（不是自己）', async ({ game }, testInfo) => {
+        await game.openTestGame('smashup', SMASHUP_TEST_QUERY);
 
         // 2. 场景构建
         await game.setupScene({
@@ -116,12 +105,13 @@ test.describe('盘旋机器人链式打出', () => {
         });
 
         // 2. 打出第一个盘旋
-        await game.playCard('robot_hoverbot');
+        await game.playCard('robot_hoverbot', { targetBaseIndex: 0 });
         await game.waitForInteraction('robot_hoverbot');
 
         // 3. 选择打出第二个盘旋
         await game.selectOption('play');
-        await game.confirm();
+        await game.waitForInteraction('robot_hoverbot_base');
+        await game.selectBase(0);
 
         // 4. 等待新的交互
         await game.waitForInteraction('robot_hoverbot');
@@ -145,15 +135,8 @@ test.describe('盘旋机器人链式打出', () => {
         console.log('[E2E] ✅ 测试通过：第二个盘旋看到新的牌库顶（zapbot）');
     });
 
-    test('交互不应该一闪而过', async ({ page }, testInfo) => {
-        const game = new GameTestContext(page);
-
-        // 1. 导航到测试模式
-        await page.goto('/play/smashup/test?p0=robots,pirates&p1=ninjas,dinosaurs&seed=12345');
-        await page.waitForFunction(
-            () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered(),
-            { timeout: 15000 }
-        );
+    test('交互不应该一闪而过', async ({ game, page }, testInfo) => {
+        await game.openTestGame('smashup', SMASHUP_TEST_QUERY);
 
         // 2. 场景构建
         await game.setupScene({
@@ -167,13 +150,13 @@ test.describe('盘旋机器人链式打出', () => {
         });
 
         // 2. 打出盘旋机器人
-        await game.playCard('robot_hoverbot');
+        await game.playCard('robot_hoverbot', { targetBaseIndex: 0 });
 
         // 3. 等待交互出现
         await game.waitForInteraction('robot_hoverbot');
 
         // 4. 等待 2 秒，确认交互仍然存在
-        await page.waitForTimeout(2000);
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // 5. 再次检查交互是否仍然存在
         const stillExists = await page.evaluate(() => {
@@ -194,15 +177,8 @@ test.describe('盘旋机器人链式打出', () => {
         console.log('[E2E] ✅ 测试通过：交互不会一闪而过');
     });
 
-    test('应该允许选择"跳过"', async ({ page }, testInfo) => {
-        const game = new GameTestContext(page);
-
-        // 1. 导航到测试模式
-        await page.goto('/play/smashup/test?p0=robots,pirates&p1=ninjas,dinosaurs&seed=12345');
-        await page.waitForFunction(
-            () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered(),
-            { timeout: 15000 }
-        );
+    test('应该允许选择"跳过"', async ({ game }, testInfo) => {
+        await game.openTestGame('smashup', SMASHUP_TEST_QUERY);
 
         // 2. 场景构建
         await game.setupScene({
@@ -216,11 +192,11 @@ test.describe('盘旋机器人链式打出', () => {
         });
 
         // 2. 打出盘旋机器人
-        await game.playCard('robot_hoverbot');
+        await game.playCard('robot_hoverbot', { targetBaseIndex: 0 });
         await game.waitForInteraction('robot_hoverbot');
 
         // 3. 选择"跳过"
-        await game.skip();
+        await game.selectOption('skip');
 
         // 4. 验证交互已消失
         const state = await game.getState();
@@ -239,15 +215,8 @@ test.describe('盘旋机器人链式打出', () => {
         console.log('[E2E] ✅ 测试通过：跳过功能正常工作');
     });
 
-    test('牌库顶是行动卡时不应该创建交互', async ({ page }, testInfo) => {
-        const game = new GameTestContext(page);
-
-        // 1. 导航到测试模式
-        await page.goto('/play/smashup/test?p0=robots,pirates&p1=ninjas,dinosaurs&seed=12345');
-        await page.waitForFunction(
-            () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered(),
-            { timeout: 15000 }
-        );
+    test('牌库顶是行动卡时不应该创建交互', async ({ game }, testInfo) => {
+        await game.openTestGame('smashup', SMASHUP_TEST_QUERY);
 
         // 2. 场景构建：牌库顶是行动卡
         await game.setupScene({
@@ -261,10 +230,10 @@ test.describe('盘旋机器人链式打出', () => {
         });
 
         // 2. 打出盘旋机器人
-        await game.playCard('robot_hoverbot');
+        await game.playCard('robot_hoverbot', { targetBaseIndex: 0 });
 
         // 3. 等待 2 秒，确认不会出现交互
-        await page.waitForTimeout(2000);
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // 4. 验证没有交互
         const state = await game.getState();

@@ -24,9 +24,9 @@ test.describe('测试框架试点 - 简化版', () => {
             console.error(error.stack);
         });
         
-        // 1. 导航到测试模式（启用 skipFactionSelect）
-        console.log('📍 步骤 1: 导航到测试模式');
-        await page.goto('/play/smashup/test?p0=wizards,aliens&p1=zombies,pirates&seed=12345&skipFactionSelect=true');
+        // 1. 导航到游戏
+        console.log('📍 步骤 1: 导航到游戏');
+        await page.goto('/play/smashup');
         
         // 2. 等待游戏完全就绪（优化：合并等待条件，增加轮询间隔）
         console.log('⏳ 步骤 2: 等待游戏就绪');

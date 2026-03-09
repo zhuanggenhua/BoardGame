@@ -1,15 +1,8 @@
 /**
  * 状态注入器
- * 
- * 提供直接读写游戏状态的能力，绕过 WebSocket 同步。
- * 
- * @example
- * ```typescript
- * // E2E 测试中
- * const state = await window.__BG_TEST_HARNESS__.state.get();
- * state.players['0'].resources.hp = 10;
- * await window.__BG_TEST_HARNESS__.state.set(state);
- * ```
+ *
+ * 仅负责读写当前前端持有的状态快照。
+ * 权威联机状态的注入必须走服务端测试 API，不能复用玩家视角的客户端状态。
  */
 
 export class StateInjector {
@@ -17,7 +10,7 @@ export class StateInjector {
     private setStateFn?: (state: any) => void;
 
     /**
-     * 注册状态访问器（由游戏引擎调用）
+     * 注册状态访问器，由 Provider 在测试环境下调用。
      */
     register(getState: () => any, setState: (state: any) => void) {
         this.getStateFn = getState;
@@ -26,77 +19,63 @@ export class StateInjector {
     }
 
     /**
-     * 获取当前状态
+     * 获取当前状态快照。
      */
     get(): any {
         if (!this.getStateFn) {
-            throw new Error('[StateInjector] 状态访问器未注册，请确保游戏已加载');
+            throw new Error('[StateInjector] 状态访问器未注册，请确认游戏已加载');
         }
         const state = this.getStateFn();
-        console.log('[StateInjector] 获取状态:', state);
+        console.log('[StateInjector] 获取状态', state);
         return state;
     }
 
     /**
-     * 设置状态（完全替换）
+     * `read()` 是 `get()` 的异步别名，兼容现有 E2E 用法。
      */
-    set(state: any) {
+    async read(): Promise<any> {
+        return this.get();
+    }
+
+    /**
+     * 完整替换当前前端状态。
+     */
+    async set(state: any): Promise<void> {
         if (!this.setStateFn) {
-            throw new Error('[StateInjector] 状态访问器未注册，请确保游戏已加载');
+            throw new Error('[StateInjector] 状态访问器未注册，请确认游戏已加载');
         }
-        console.log('[StateInjector] 设置状态:', state);
+        console.log('[StateInjector] 设置状态', state);
         this.setStateFn(state);
     }
 
     /**
-     * 修改状态（部分更新）
-     * 
+     * 部分更新当前前端状态。
+     *
      * 支持两种格式：
-     * 1. 嵌套对象格式：
-     * ```typescript
-     * harness.state.patch({
-     *     players: {
-     *         '0': { resources: { hp: 10 } }
-     *     }
-     * });
-     * ```
-     * 
-     * 2. 路径格式（推荐）：
-     * ```typescript
-     * harness.state.patch({
-     *     'core.players.0.hand': [...],
-     *     'core.bases.0.minions': [...]
-     * });
-     * ```
+     * 1. 嵌套对象格式
+     * 2. 路径格式（key 中包含 `.`）
      */
-    patch(patch: any) {
+    async patch(patch: any): Promise<void> {
         const current = this.get();
         let updated = current;
 
-        // 检查是否使用路径格式（key 包含 '.'）
         const hasPathKeys = Object.keys(patch).some(key => key.includes('.'));
 
         if (hasPathKeys) {
-            // 路径格式：逐个应用路径更新
-            updated = JSON.parse(JSON.stringify(current)); // 深拷贝
+            updated = JSON.parse(JSON.stringify(current));
             for (const path in patch) {
                 if (Object.prototype.hasOwnProperty.call(patch, path)) {
                     this.setByPath(updated, path, patch[path]);
                 }
             }
         } else {
-            // 嵌套对象格式：使用深度合并
             updated = this.deepMerge(current, patch);
         }
 
-        this.set(updated);
-        console.log('[StateInjector] 应用补丁:', patch);
+        await this.set(updated);
+        console.log('[StateInjector] 应用补丁', patch);
     }
 
-    /**
-     * 通过路径设置值
-     * @example setByPath(obj, 'core.players.0.hand', [...])
-     */
     private setByPath(obj: any, path: string, value: any) {
         const keys = path.split('.');
         let current = obj;
@@ -104,7 +83,6 @@ export class StateInjector {
         for (let i = 0; i < keys.length - 1; i++) {
             const key = keys[i];
             if (!(key in current)) {
-                // 如果下一个 key 是数字，创建数组，否则创建对象
                 const nextKey = keys[i + 1];
                 current[key] = /^\d+$/.test(nextKey) ? [] : {};
             }
@@ -114,9 +92,6 @@ export class StateInjector {
         current[keys[keys.length - 1]] = value;
     }
 
-    /**
-     * 深度合并对象
-     */
     private deepMerge(target: any, source: any): any {
         if (typeof target !== 'object' || target === null) return source;
         if (typeof source !== 'object' || source === null) return source;
@@ -136,9 +111,6 @@ export class StateInjector {
         return result;
     }
 
-    /**
-     * 检查状态访问器是否已注册
-     */
     isRegistered(): boolean {
         return !!(this.getStateFn && this.setStateFn);
     }

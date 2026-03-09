@@ -33,6 +33,8 @@ interface SpotlightContainerProps {
     disableAutoClose?: boolean;
     /** 禁用点击背景关闭（用于交互模式） */
     disableBackdropClose?: boolean;
+    /** 首次挂载后的点击关闭保护时长，避免触发它的同一次点击立刻把特写关掉 */
+    closeClickGuardMs?: number;
 }
 
 const DEFAULT_CONTENT_MOTION: SpotlightMotion = {
@@ -58,7 +60,41 @@ export const SpotlightContainer: React.FC<SpotlightContainerProps> = ({
     closeOnContentClick = true,
     disableAutoClose = false,
     disableBackdropClose = false,
+    closeClickGuardMs = 180,
 }) => {
+    console.log('[SpotlightContainer] 🎬 渲染:', { 
+        id, 
+        isVisible, 
+        closeClickGuardMs,
+        timestamp: Date.now(),
+    });
+    const visibleSinceRef = React.useRef<number>(0);
+
+    React.useEffect(() => {
+        if (isVisible) {
+            const now = Date.now();
+            visibleSinceRef.current = now;
+            console.log('[SpotlightContainer] 🟢 变为可见:', {
+                id,
+                visibleSince: now,
+                closeClickGuardMs,
+            });
+        }
+    }, [id, isVisible, closeClickGuardMs]);
+
+    const isCloseClickGuardActive = React.useCallback(() => {
+        if (closeClickGuardMs <= 0) return false;
+        const elapsed = Date.now() - visibleSinceRef.current;
+        const isActive = elapsed < closeClickGuardMs;
+        console.log('[SpotlightContainer] 🛡️ 检查点击保护:', {
+            id,
+            elapsed,
+            closeClickGuardMs,
+            isActive,
+            timestamp: Date.now(),
+        });
+        return isActive;
+    }, [id, closeClickGuardMs]);
 
     // 自动关闭计时器
     React.useEffect(() => {
@@ -90,7 +126,21 @@ export const SpotlightContainer: React.FC<SpotlightContainerProps> = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                onClick={disableBackdropClose ? undefined : onClose}
+                onClick={disableBackdropClose
+                    ? undefined
+                    : () => {
+                        console.log('[SpotlightContainer] 🖱️ 背景点击:', {
+                            id,
+                            guardActive: isCloseClickGuardActive(),
+                            timestamp: Date.now(),
+                        });
+                        if (isCloseClickGuardActive()) {
+                            console.log('[SpotlightContainer] 🛡️ 点击保护生效，忽略关闭');
+                            return;
+                        }
+                        console.log('[SpotlightContainer] ❌ 执行关闭');
+                        onClose();
+                    }}
             >
                 {/* 内容容器 */}
                 <motion.div
@@ -99,7 +149,25 @@ export const SpotlightContainer: React.FC<SpotlightContainerProps> = ({
                     animate={m.animate}
                     exit={m.exit}
                     transition={m.transition}
-                    onClick={closeOnContentClick ? onClose : (e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('[SpotlightContainer] 🖱️ 内容点击:', {
+                            id,
+                            closeOnContentClick,
+                            guardActive: isCloseClickGuardActive(),
+                            timestamp: Date.now(),
+                        });
+                        if (!closeOnContentClick) {
+                            console.log('[SpotlightContainer] ⏸️ closeOnContentClick=false，不关闭');
+                            return;
+                        }
+                        if (isCloseClickGuardActive()) {
+                            console.log('[SpotlightContainer] 🛡️ 点击保护生效，忽略关闭');
+                            return;
+                        }
+                        console.log('[SpotlightContainer] ❌ 执行关闭');
+                        onClose();
+                    }}
                 >
                     {children}
                 </motion.div>

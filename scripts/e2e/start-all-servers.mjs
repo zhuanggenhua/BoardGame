@@ -8,15 +8,16 @@
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { E2E_SINGLE_WORKER_PORTS } from '../infra/e2e-port-config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '../..');
 
 // 从环境变量或默认值获取端口
-const FRONTEND_PORT = process.env.PW_PORT || process.env.E2E_PORT || '5173';
-const GAME_SERVER_PORT = process.env.GAME_SERVER_PORT || process.env.PW_GAME_SERVER_PORT || '19000';
-const API_SERVER_PORT = process.env.API_SERVER_PORT || process.env.PW_API_SERVER_PORT || '19001';
+const FRONTEND_PORT = process.env.PW_PORT || process.env.E2E_PORT || String(E2E_SINGLE_WORKER_PORTS.frontend);
+const GAME_SERVER_PORT = process.env.GAME_SERVER_PORT || process.env.PW_GAME_SERVER_PORT || String(E2E_SINGLE_WORKER_PORTS.gameServer);
+const API_SERVER_PORT = process.env.API_SERVER_PORT || process.env.PW_API_SERVER_PORT || String(E2E_SINGLE_WORKER_PORTS.apiServer);
 
 console.log('🚀 启动 E2E 测试服务器...');
 console.log(`   前端: http://localhost:${FRONTEND_PORT}`);

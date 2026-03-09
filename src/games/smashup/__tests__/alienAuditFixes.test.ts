@@ -294,4 +294,89 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     expect(step2!.events).toHaveLength(1);
     expect(step2!.events[0].type).toBe(SU_EVENTS.MINION_MOVED);
   });
+
+  it('alien_invasion: 第二步若目标已离开来源基地则不再移动', () => {
+    const core = makeState({
+      players: {
+        '0': makePlayer('0'),
+        '1': makePlayer('1'),
+      },
+      bases: [
+        makeBase('base_a', [makeMinion('m1', 'minion_a', '0', 3)]),
+        makeBase('base_b', []),
+      ],
+    });
+
+    const handler1 = getInteractionHandler('alien_invasion_choose_minion');
+    const handler2 = getInteractionHandler('alien_invasion_choose_base');
+    expect(handler1).toBeDefined();
+    expect(handler2).toBeDefined();
+
+    const step1 = handler1!(makeMatchState(core), '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 5100);
+    const step1Current = (step1!.state.sys as any).interaction?.current;
+    expect(step1Current?.data?.sourceId).toBe('alien_invasion_choose_base');
+
+    const staleCore = makeState({
+      ...core,
+      players: {
+        ...core.players,
+        '0': makePlayer('0', {
+          ...core.players['0'],
+          discard: [makeCard('m1', 'minion_a', 'minion', '0')],
+        }),
+      },
+      bases: [
+        makeBase('base_a', []),
+        makeBase('base_b', []),
+      ],
+    });
+
+    const step2 = handler2!(
+      makeMatchState(staleCore),
+      '0',
+      { baseIndex: 1 },
+      step1Current?.data,
+      dummyRandom,
+      5101,
+    );
+    expect(step2?.events ?? []).toHaveLength(0);
+  });
+
+  it('alien_invasion: 第二步若目标基地已不存在则不再移动', () => {
+    const core = makeState({
+      players: {
+        '0': makePlayer('0'),
+        '1': makePlayer('1'),
+      },
+      bases: [
+        makeBase('base_a', [makeMinion('m1', 'minion_a', '0', 3)]),
+        makeBase('base_b', []),
+      ],
+    });
+
+    const handler1 = getInteractionHandler('alien_invasion_choose_minion');
+    const handler2 = getInteractionHandler('alien_invasion_choose_base');
+    expect(handler1).toBeDefined();
+    expect(handler2).toBeDefined();
+
+    const step1 = handler1!(makeMatchState(core), '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 5200);
+    const step1Current = (step1!.state.sys as any).interaction?.current;
+    expect(step1Current?.data?.sourceId).toBe('alien_invasion_choose_base');
+
+    const staleCore = makeState({
+      ...core,
+      bases: [makeBase('base_a', [makeMinion('m1', 'minion_a', '0', 3)])],
+    });
+
+    const step2 = handler2!(
+      makeMatchState(staleCore),
+      '0',
+      { baseIndex: 1 },
+      step1Current?.data,
+      dummyRandom,
+      5201,
+    );
+
+    expect(step2?.events ?? []).toHaveLength(0);
+  });
 });

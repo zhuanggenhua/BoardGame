@@ -219,7 +219,7 @@ function executeCommand(
                     timestamp: now,
                 };
                 events.push(attachEvt);
-                // ongoing 卡也可以有 onPlay 能力（如 block_the_path 需要选择派系）
+                // ongoing 卡的 onPlay 能力（如 block_the_path 阻挡路径）
                 const ongoingExecutor = resolveOnPlay(card.defId);
                 if (ongoingExecutor) {
                     const ctx: AbilityContext = {

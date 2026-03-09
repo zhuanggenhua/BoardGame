@@ -13,7 +13,7 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 import { registerWizardAbilities, registerWizardInteractionHandlers } from '../abilities/wizards';
 import { registerZombieAbilities, registerZombieInteractionHandlers } from '../abilities/zombies';
 import { clearRegistry } from '../domain/abilityRegistry';
-import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 
 beforeAll(() => {
     clearRegistry();
@@ -92,6 +92,7 @@ describe('学徒打出 ongoing 行动卡', () => {
 
         // 验证卡牌不在手牌中
         expect(finalState.players['0'].hand.find(c => c.uid === 'overrun')).toBeUndefined();
+        expect(finalState.players['0'].deck.find(c => c.uid === 'overrun')).toBeUndefined();
 
         // 验证行动额度没有被消耗（额外行动）
         expect(finalState.players['0'].actionsPlayed).toBe(0);
@@ -143,5 +144,29 @@ describe('学徒打出 ongoing 行动卡', () => {
         
         // 验证行动额度没有被消耗（额外行动）
         expect(finalState.players['0'].actionsPlayed).toBe(0);
+    });
+
+    it('wizard_neophyte_choose_base: 若待打出的 ongoing 已不在牌库则不再附着', () => {
+        const handler = getInteractionHandler('wizard_neophyte_choose_base');
+        expect(handler).toBeDefined();
+
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase(), makeBase()],
+        });
+
+        const result = handler!(
+            makeMatchState(state),
+            '0',
+            { baseIndex: 0 },
+            { continuationContext: { cardUid: 'overrun', defId: 'zombie_overrun' } },
+            defaultTestRandom,
+            1000,
+        );
+
+        expect(result?.events ?? []).toHaveLength(0);
     });
 });

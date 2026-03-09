@@ -88,18 +88,6 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
     // 特殊情况：如果 originalAtlasId 为空，同样回退使用英文图集（兜底逻辑）
     const isEnglishVariant = effectiveLocale === 'en' || effectiveLocale === 'en-US';
     
-    // 🔍 DEBUG: Log atlas mapping for innsmouth_the_locals
-    if (defId === 'innsmouth_the_locals') {
-        console.log('[SmashUpCardRenderer] Atlas mapping before override:', {
-            originalAtlasId,
-            originalIndex,
-            isBase,
-            isPodVersion,
-            shouldUseEnglishAtlas,
-            isEnglishVariant,
-        });
-    }
-    
     if (isEnglishVariant || isPodVersion || shouldUseEnglishAtlas || !originalAtlasId) {
         // 对于基地卡，根据是否为 POD 版本选择不同的映射 key
         let lookupKey = defId || '';
@@ -165,19 +153,6 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
     const imageLocale = (isPodVersion || shouldUseEnglishAtlas || usesTtsAtlas) ? 'en' : effectiveLocale;
 
     // 直接返回完整的卡牌（图片 + 覆盖层）
-    // 🔍 DEBUG: Log final rendering info for innsmouth_the_locals
-    if (defId === 'innsmouth_the_locals') {
-        console.log('[SmashUpCardRenderer] Final rendering:', {
-            finalAtlasId,
-            finalIndex,
-            imageLocale,
-            needsOverlay,
-            shouldShowOverlay,
-            name,
-            textLength: text?.length || 0,
-        });
-    }
-    
     return (
         <div className={`relative group ${className || ''}`} style={style} title={name}>
             <CardPreview

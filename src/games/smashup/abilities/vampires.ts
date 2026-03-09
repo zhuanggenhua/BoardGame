@@ -11,6 +11,7 @@ import {
     buildMinionTargetOptions,
     resolveOrPrompt, findMinionOnBases, buildAbilityFeedback,
     buildBaseTargetOptions,
+    buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, SmashUpCore } from '../domain/types';
@@ -22,6 +23,7 @@ import { createSimpleChoice, queueInteraction } from '../../../engine/systems/In
 import type { MinionPlayedEvent } from '../domain/types';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import { matchesDefId } from '../domain/utils';
 
 // ============================================================================
 // 注册入口
@@ -102,11 +104,14 @@ function vampireHeavyDrinker(ctx: AbilityContext): AbilityResult {
         id: `minion-${i}`, label: `消灭 ${t.label}`,
         value: {
             minionUid: t.uid,
+            minionDefId: t.defId,
             defId: t.defId,
             baseIndex: t.baseIndex,
             sourceMinionUid: found.minion.uid,
             sourceBaseIndex: found.baseIndex,
         },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
     options.push({ id: 'skip', label: '跳过（不消灭）', value: { skip: true }, displayMode: 'button' as const });
     return resolveOrPrompt(ctx, options, {
@@ -115,9 +120,18 @@ function vampireHeavyDrinker(ctx: AbilityContext): AbilityResult {
     }, (rawVal) => {
         const val = rawVal as any;
         if (val.skip) return { events: [] };
+        const destroyEvents = buildValidatedDestroyEvents(ctx.state, {
+            minionUid: val.minionUid,
+            minionDefId: val.defId,
+            fromBaseIndex: val.baseIndex,
+            destroyerId: ctx.playerId,
+            reason: 'vampire_heavy_drinker',
+            now: ctx.now,
+        });
+        if (destroyEvents.length === 0) return { events: [] };
         return {
             events: [
-                destroyMinion(val.minionUid, val.defId, val.baseIndex, ctx.playerId, ctx.playerId, 'vampire_heavy_drinker', ctx.now),
+                ...destroyEvents,
                 addPowerCounter(val.sourceMinionUid, val.sourceBaseIndex, 1, 'vampire_heavy_drinker', ctx.now),
             ],
         };
@@ -156,9 +170,18 @@ function vampireNightstalker(ctx: AbilityContext): AbilityResult {
     }, (rawVal) => {
         const val = rawVal as any;
         if (val.skip) return { events: [] };
+        const destroyEvents = buildValidatedDestroyEvents(ctx.state, {
+            minionUid: val.minionUid,
+            minionDefId: val.defId,
+            fromBaseIndex: val.baseIndex,
+            destroyerId: ctx.playerId,
+            reason: 'vampire_nightstalker',
+            now: ctx.now,
+        });
+        if (destroyEvents.length === 0) return { events: [] };
         return {
             events: [
-                destroyMinion(val.minionUid, val.defId, val.baseIndex, ctx.state.bases[val.baseIndex]?.minions.find((m: any) => m.uid === val.minionUid)?.owner ?? ctx.playerId, ctx.playerId, 'vampire_nightstalker', ctx.now),
+                ...destroyEvents,
                 addPowerCounter(val.sourceMinionUid, val.sourceBaseIndex, 1, 'vampire_nightstalker', ctx.now + 1), // +1ms 避免音频节流
             ],
         };
@@ -199,7 +222,9 @@ function vampireDinnerDate(ctx: AbilityContext): AbilityResult {
     if (ownMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const options = ownMinions.map((c, i) => ({
         id: `minion-${i}`, label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
     return resolveOrPrompt(ctx, options, {
         id: 'vampire_dinner_date', title: '选择你的随从放置+1指示物（然后消灭同基地力量≤2随从）',
@@ -287,7 +312,9 @@ function vampireCullTheWeak(ctx: AbilityContext): AbilityResult {
     if (minionCardsInHand.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_minion_cards_in_hand', ctx.now)] };
     const options = ownMinions.map((c, i) => ({
         id: `minion-${i}`, label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
     return resolveOrPrompt(ctx, options, {
         id: 'vampire_cull_the_weak', title: '选择你的随从（弃手牌随从卡来放指示物）',
@@ -314,7 +341,7 @@ function vampireCrackOfDusk(ctx: AbilityContext): AbilityResult {
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const options = candidates.map((c, i) => {
         const def = getCardDef(c.defId);
-        return { id: `card-${i}`, label: `${def?.name ?? c.defId}`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+        return { id: `card-${i}`, label: `${def?.name ?? c.defId}`, value: { cardUid: c.uid, defId: c.defId }, _source: 'discard' as const, displayMode: 'card' as const };
     });
     return resolveOrPrompt(ctx, options, {
         id: 'vampire_crack_of_dusk', title: '从弃牌堆选择力量≤2的随从打出（+1指示物）',
@@ -368,7 +395,9 @@ function buildCullTheWeakCardOptions(core: SmashUpCore, playerId: string) {
             return {
                 id: `card-${i}`,
                 label: `${def?.name ?? c.defId}`,
-                value: { cardUid: c.uid, defId: c.defId , displayMode: 'card' as const },
+                value: { cardUid: c.uid, defId: c.defId },
+                _source: 'hand' as const,
+                displayMode: 'card' as const,
             };
         });
     return [
@@ -437,7 +466,7 @@ const handleHeavyDrinkerChoice: IH = (state, playerId, value, _data, _random, no
     let hdBase = v.sourceBaseIndex ?? -1;
     if (!hdUid || hdBase < 0) {
         for (let i = 0; i < state.core.bases.length; i++) {
-            const found = state.core.bases[i].minions.find(m => m.defId === 'vampire_heavy_drinker' && m.controller === playerId);
+            const found = state.core.bases[i].minions.find(m => matchesDefId(m.defId, 'vampire_heavy_drinker') && m.controller === playerId);
             if (found) {
                 hdUid = found.uid;
                 hdBase = i;
@@ -447,10 +476,19 @@ const handleHeavyDrinkerChoice: IH = (state, playerId, value, _data, _random, no
     }
 
     if (!hdUid) return undefined;
+    const destroyEvents = buildValidatedDestroyEvents(state, {
+        minionUid: v.minionUid,
+        minionDefId: v.defId,
+        fromBaseIndex: v.baseIndex,
+        destroyerId: playerId,
+        reason: 'vampire_heavy_drinker',
+        now,
+    });
+    if (destroyEvents.length === 0) return { state, events: [] };
     return {
         state,
         events: [
-            destroyMinion(v.minionUid, v.defId, v.baseIndex, state.core.bases[v.baseIndex]?.minions.find((m: any) => m.uid === v.minionUid)?.owner ?? playerId, playerId, 'vampire_heavy_drinker', now),
+            ...destroyEvents,
             addPowerCounter(hdUid, hdBase, 1, 'vampire_heavy_drinker', now + 1), // +1ms 避免音频节流
         ],
     };
@@ -475,7 +513,7 @@ const handleNightstalkerChoice: IH = (state, playerId, value, _data, _random, no
     let nsBase = v.sourceBaseIndex ?? -1;
     if (!nsUid || nsBase < 0) {
         for (let i = 0; i < state.core.bases.length; i++) {
-            const found = state.core.bases[i].minions.find(m => m.defId === 'vampire_nightstalker' && m.controller === playerId);
+            const found = state.core.bases[i].minions.find(m => matchesDefId(m.defId, 'vampire_nightstalker') && m.controller === playerId);
             if (found) {
                 nsUid = found.uid;
                 nsBase = i;
@@ -485,10 +523,19 @@ const handleNightstalkerChoice: IH = (state, playerId, value, _data, _random, no
     }
 
     if (!nsUid) return undefined;
+    const destroyEvents = buildValidatedDestroyEvents(state, {
+        minionUid: v.minionUid,
+        minionDefId: v.defId,
+        fromBaseIndex: v.baseIndex,
+        destroyerId: playerId,
+        reason: 'vampire_nightstalker',
+        now,
+    });
+    if (destroyEvents.length === 0) return { state, events: [] };
     return {
         state,
         events: [
-            destroyMinion(v.minionUid, v.defId, v.baseIndex, target.owner, playerId, 'vampire_nightstalker', now),
+            ...destroyEvents,
             addPowerCounter(nsUid, nsBase, 1, 'vampire_nightstalker', now + 1), // +1ms 避免音频节流
         ],
     };
@@ -623,7 +670,7 @@ function registerVampireOngoingEffects(): void {
         const events: SmashUpEvent[] = [];
         for (let i = 0; i < state.bases.length; i++) {
             for (const m of state.bases[i].minions) {
-                if (m.defId === 'vampire_the_count' && m.controller !== destroyedOwnerId) {
+                if (matchesDefId(m.defId, 'vampire_the_count') && m.controller !== destroyedOwnerId) {
                     events.push(addPowerCounter(m.uid, i, 1, 'vampire_the_count', now));
                 }
             }
@@ -638,7 +685,7 @@ function registerVampireOngoingEffects(): void {
         for (let i = 0; i < state.bases.length; i++) {
             for (const m of state.bases[i].minions) {
                 if (m.controller === destroyedOwnerId) continue;
-                if (m.attachedActions.some(a => a.defId === 'vampire_opportunist')) {
+                if (m.attachedActions.some(a => matchesDefId(a.defId, 'vampire_opportunist'))) {
                     events.push(addPowerCounter(m.uid, i, 1, 'vampire_opportunist', now));
                 }
             }
@@ -652,7 +699,7 @@ function registerVampireOngoingEffects(): void {
         const events: SmashUpEvent[] = [];
         for (let i = 0; i < state.bases.length; i++) {
             for (const oa of state.bases[i].ongoingActions) {
-                if (oa.defId === 'vampire_summon_wolves' && oa.ownerId === playerId) {
+                if (matchesDefId(oa.defId, 'vampire_summon_wolves') && oa.ownerId === playerId) {
                     events.push(addOngoingCardCounter(oa.uid, i, 1, 'vampire_summon_wolves', now) as unknown as SmashUpEvent);
                 }
             }

@@ -214,6 +214,6 @@ describe.skip('vampire_buffet 端到端计分流程', () => {
         // We Are The Champions 应该创建选择来源随从的交互
         const interaction = currentState.sys.interaction?.current;
         expect(interaction).toBeTruthy();
-        expect((interaction as any)?.data?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
+        expect((interaction as any)?.data?.sourceId).toBe('giant_ant_we_are_the_champions_choose_snapshot_source');
     });
 });

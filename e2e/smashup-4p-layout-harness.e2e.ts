@@ -8,7 +8,7 @@ import { test } from './fixtures';
 test.describe('大杀四方四人局布局', () => {
     test('四人局布局截图', async ({ page }) => {
         // 1. 访问测试环境
-        await page.goto('http://localhost:5173');
+        await page.goto('/');
         await page.waitForLoadState('networkidle');
         
         // 2. 点击 Smash Up

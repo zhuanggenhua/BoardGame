@@ -270,6 +270,86 @@
     "giant_ants": {
       "name": "巨蚁",
       "description": "灵活分配和转移力量指示物，团队协作。"
+    },
+    "pirates_pod": {
+      "name": "海盗 (POD版)",
+      "description": "高机动性，可以在基地间移动随从。"
+    },
+    "ninjas_pod": {
+      "name": "忍者 (POD版)",
+      "description": "出其不意，隐蔽行动，暗杀随从。"
+    },
+    "dinosaurs_pod": {
+      "name": "恐龙 (POD版)",
+      "description": "巨大的力量，无坚不摧。"
+    },
+    "aliens_pod": {
+      "name": "外星人 (POD版)",
+      "description": "干扰对手，将随从送回手牌，控制基地。"
+    },
+    "robots_pod": {
+      "name": "机器人 (POD版)",
+      "description": "微型机器人大军，快速铺场。"
+    },
+    "zombies_pod": {
+      "name": "丧尸 (POD版)",
+      "description": "从弃牌堆复活，永不消逝。"
+    },
+    "wizards_pod": {
+      "name": "巫师 (POD版)",
+      "description": "额外的行动，操控牌库，法术轰炸。"
+    },
+    "tricksters_pod": {
+      "name": "捣蛋鬼 (POD版)",
+      "description": "设置陷阱，弃置对手手牌，制造混乱。"
+    },
+    "steampunks_pod": {
+      "name": "蒸汽朋克 (POD版)",
+      "description": "利用基地行动卡，升级与回收。"
+    },
+    "ghosts_pod": {
+      "name": "幽灵 (POD版)",
+      "description": "手牌越少越强，穿过物质。"
+    },
+    "killer_plants_pod": {
+      "name": "食人花 (POD版)",
+      "description": "快速生长，控制随从。"
+    },
+    "bear_cavalry_pod": {
+      "name": "熊骑兵 (POD版)",
+      "description": "强迫移动对手，无情碾压。"
+    },
+    "minions_of_cthulhu_pod": {
+      "name": "克苏鲁仆从 (POD版)",
+      "description": "利用疯狂牌，献祭随从。注意：每2张疯狂牌终局扣1VP。"
+    },
+    "elder_things_pod": {
+      "name": "远古物种 (POD版)",
+      "description": "给予疯狂牌，控制人心。注意：每2张疯狂牌终局扣1VP。"
+    },
+    "innsmouth_pod": {
+      "name": "印斯茅斯 (POD版)",
+      "description": "人海战术，同样的随从集结。注意：每2张疯狂牌终局扣1VP。"
+    },
+    "miskatonic_university_pod": {
+      "name": "米斯卡塔尼克 (POD版)",
+      "description": "利用疯狂牌获得优势，研究知识。注意：每2张疯狂牌终局扣1VP。"
+    },
+    "frankenstein_pod": {
+      "name": "科学怪人 (POD版)",
+      "description": "利用+1力量指示物增强随从，通过牺牲和转移指示物获得优势。"
+    },
+    "werewolves_pod": {
+      "name": "狼人 (POD版)",
+      "description": "高力量随从，在回合结束时爆发，控制基地爆破点。"
+    },
+    "vampires_pod": {
+      "name": "吸血鬼 (POD版)",
+      "description": "通过消灭随从获得力量指示物，积累优势。"
+    },
+    "giant_ants_pod": {
+      "name": "巨蚁 (POD版)",
+      "description": "灵活分配和转移力量指示物，团队协作。"
     }
   },
   "tutorial": {
@@ -1602,11 +1682,11 @@
     },
     "dino_laser_triceratops_pod": {
       "name": "激光三角龙",
-      "abilityText": "消灭一个本基地的力量为2或以下的随从。"
+      "abilityText": "你可以消灭本基地一个印制力量为2或以下的随从。"
     },
     "dino_armor_stego_pod": {
       "name": "装甲剑龙",
-      "abilityText": "持续：在其他玩家的回合中+2力量。"
+      "abilityText": "天赋：直到你下个回合开始的时候，在其他玩家的回合中+2力量。"
     },
     "dino_war_raptor_pod": {
       "name": "战斗迅猛龙",
@@ -1642,7 +1722,7 @@
     },
     "dino_tooth_and_claw_pod": {
       "name": "全副武装",
-      "effectText": "打出到一个随从上。持续：如果一个能力将会影响该随从，消灭本卡，那么那个能力将不会影响该随从。"
+      "effectText": "打出到一个随从上。持续：该随从不受其他玩家卡牌的影响。"
     },
     "elder_thing_elder_thing_pod": {
       "name": "远古之物",
@@ -2010,7 +2090,7 @@
     },
     "ninja_infiltrate_pod": {
       "name": "渗透",
-      "effectText": "打出到一个基地上。消灭一个已经被打出到这的战术。持续：你可以无视这个基地的能力直到你下个回合开始的时候。"
+      "effectText": "打出到一个基地上。你可以消灭这个基地上的另一个战术。天赋：消灭本卡来取消这个基地的能力直到你回合开始的时候。"
     },
     "ninja_poison_pod": {
       "name": "下毒",

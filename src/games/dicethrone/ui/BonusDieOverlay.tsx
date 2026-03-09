@@ -78,7 +78,26 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
     const costAmount = rerollCostAmount ?? 1;
     const tokenName = rerollCostTokenId ? t(`tokens.${rerollCostTokenId}.name`) : t('tokens.taiji.name');
 
-    if (!isVisible) return null;
+    // 调试日志：组件渲染
+    React.useEffect(() => {
+        console.log('[BonusDieOverlay] 🎯 组件渲染:', {
+            isVisible,
+            value,
+            face,
+            effectKey,
+            characterId,
+            isRerollMode,
+            bonusDiceCount: bonusDice?.length ?? 0,
+            timestamp: Date.now(),
+        });
+    }, [isVisible, value, face, effectKey, characterId, isRerollMode, bonusDice]);
+
+    if (!isVisible) {
+        console.log('[BonusDieOverlay] ❌ isVisible=false, 不渲染, timestamp:', Date.now());
+        return null;
+    }
+
+    console.log('[BonusDieOverlay] ✅ 开始渲染 SpotlightContainer, timestamp:', Date.now());
 
     // 重掷交互模式：显示多颗骰子
     if (isRerollMode && bonusDice) {
@@ -96,7 +115,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                 autoCloseDelay={displayOnly ? 5000 : 3000}
                 zIndex={UI_Z_INDEX.overlayRaised + 100}
             >
-                <div className="flex flex-col items-center gap-[1.5vw]">
+                <div className="flex flex-col items-center gap-[1.5vw]" data-testid="bonus-die-overlay">
                     {/* 提示文字 - DiceThrone 风格 */}
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
@@ -190,7 +209,12 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
     }
 
     // 普通单颗骰子特写模式
-    if (value === undefined) return null;
+    if (value === undefined) {
+        console.log('[BonusDieOverlay] ❌ value=undefined, 不渲染, timestamp:', Date.now());
+        return null;
+    }
+
+    console.log('[BonusDieOverlay] ✅ 渲染普通单骰特写, timestamp:', Date.now());
 
     return (
         <SpotlightContainer
@@ -200,15 +224,17 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
             autoCloseDelay={autoCloseDelay}
             zIndex={UI_Z_INDEX.overlayRaised + 100}
         >
-            <BonusDieSpotlightContent
-                value={value}
-                face={face}
-                effectKey={effectKey}
-                effectParams={effectParams}
-                locale={locale}
-                size="8vw"
-                characterId={characterId}
-            />
+            <div data-testid="bonus-die-overlay">
+                <BonusDieSpotlightContent
+                    value={value}
+                    face={face}
+                    effectKey={effectKey}
+                    effectParams={effectParams}
+                    locale={locale}
+                    size="8vw"
+                    characterId={characterId}
+                />
+            </div>
         </SpotlightContainer>
     );
 };

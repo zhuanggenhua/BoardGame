@@ -271,6 +271,7 @@ describe('僵尸派系能力', () => {
         const current = (matchState.sys as any).interaction?.current;
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('zombie_walker');
+        expect(current?.data?.targetType).toBe('button');
     });
 
     it('zombie_grave_robbing: 多张弃牌时创建 Prompt', () => {

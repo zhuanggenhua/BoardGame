@@ -21,7 +21,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { loadStatusAtlases, type StatusAtlases } from './ui/statusEffects';
-import { getAbilitySlotId, ABILITY_SLOT_MAP } from './ui/AbilityOverlays';
+import { ABILITY_SLOT_MAP, getAbilitySlotId } from './ui/abilitySlotMapping';
 import type { AbilityOverlaysHandle } from './ui/AbilityOverlays';
 import { AbilityChoiceModal, type AbilityChoiceOption } from './ui/AbilityChoiceModal';
 import { findPlayerAbility } from './domain/abilityLookup';
@@ -62,6 +62,7 @@ import { useAttackShowcase } from './hooks/useAttackShowcase';
 import { AttackShowcaseOverlay } from './ui/AttackShowcaseOverlay';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
 import { getAutoResponseEnabled } from './ui/AutoResponseToggle';
+import { getAbilityChoiceText } from './ui/abilityChoiceText';
 
 type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
 
@@ -545,10 +546,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const canInteractDice = canOperateView && isViewRolling && !isAttackShowcaseVisible;
 
     // 防御阶段进入时就应高亮可用的防御技能，不需要等投骰
-    const canHighlightAbility = canOperateView && isViewRolling && isRollPhase
-        && (currentPhase === 'defensiveRoll' || hasRolled) && !isAttackShowcaseVisible;
-    const canSelectAbility = canOperateView && isViewRolling && isRollPhase
-        && (currentPhase === 'defensiveRoll' ? true : G.rollConfirmed) && !isAttackShowcaseVisible;
+    // 响应窗口打开时，如果本地玩家是响应者，也应该高亮可用技能
+    const canHighlightAbility = (
+        (canOperateView && isViewRolling && isRollPhase && (currentPhase === 'defensiveRoll' || hasRolled))
+        || (isResponseWindowOpen && currentResponderId === rootPid)
+    ) && !isAttackShowcaseVisible;
+    const canSelectAbility = (
+        (canOperateView && isViewRolling && isRollPhase && (currentPhase === 'defensiveRoll' ? true : G.rollConfirmed))
+        || (isResponseWindowOpen && currentResponderId === rootPid)
+    ) && !isAttackShowcaseVisible;
 
     // 同一 slot 多 variant 选择：玩家点击 slot 时，如果该 slot 有多个 variant 同时满足，弹窗让玩家选
     const [abilityChoiceOptions, setAbilityChoiceOptions] = React.useState<AbilityChoiceOption[]>([]);
@@ -566,8 +572,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const respondableCardIds = React.useMemo(() => {
         if (!isResponseWindowOpen || !responseWindow?.windowType) return undefined;
         
-        // 如果当前视角是响应者，高亮响应者的可响应卡牌
-        if (currentResponderId && viewPid === currentResponderId) {
+        // 如果本地玩家是响应者，高亮本地玩家的可响应卡牌（无论当前视角是谁）
+        // 修复：使用 rootPid 而不是 viewPid，因为响应时视角会自动切换到对手
+        if (currentResponderId && rootPid === currentResponderId) {
             const responder = G.players[currentResponderId];
             if (!responder) return undefined;
             
@@ -581,7 +588,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }
         
         return undefined;
-    }, [isResponseWindowOpen, currentResponderId, viewPid, responseWindow?.windowType, G, currentPhase]);
+    }, [isResponseWindowOpen, currentResponderId, rootPid, responseWindow?.windowType, G, currentPhase]);
 
     // 检测当前响应者是否离线，如果离线则自动跳过
     const isResponderOffline = React.useMemo(() => {
@@ -925,7 +932,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             }
             return;
         }
-        if (currentPhase === 'offensiveRoll' && isActivePlayer) setViewMode('self');
+        if (currentPhase === 'offensiveRoll' && isActivePlayer) {
+            setViewMode('self');
+            return;
+        }
+        // 防御阶段结束后（进入 main2/discard 等阶段），如果是自己的回合，切换回自己视角
+        // 修复：防御阶段结束后没有自动切换回自己视角的问题
+        if (isActivePlayer && (currentPhase === 'main2' || currentPhase === 'discard')) {
+            setViewMode('self');
+        }
     }, [currentPhase, isActivePlayer, rollerId, rootPid, setViewMode]);
 
     React.useEffect(() => {
@@ -1147,14 +1162,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                             for (const vid of slotVariants) {
                                                 const match = findPlayerAbility(G, rollerId, vid);
                                                 if (!match) continue;
+                                                const text = getAbilityChoiceText(vid, match, {
+                                                    t: (key, options) => t(key, options),
+                                                    exists: (key) => i18n.exists(key, { ns: 'game-dicethrone' }),
+                                                });
                                                 options.push({
                                                     abilityId: vid,
-                                                    name: match.variant
-                                                        ? `abilities.${vid}.name`
-                                                        : match.ability.name ?? vid,
-                                                    description: match.variant
-                                                        ? `abilities.${vid}.description`
-                                                        : match.ability.description,
+                                                    name: text.name,
+                                                    description: text.description,
                                                     slotId,
                                                 });
                                             }

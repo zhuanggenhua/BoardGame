@@ -506,27 +506,55 @@ export function registerMultiBaseScoringInteractionHandler(): void {
         let currentState = state;
         let currentBaseDeck = state.core.baseDeck;
 
-        // ✅ 修复：清除当前交互（已经被解决了），避免 scoreOneBase 提前返回
-        // 注意：这里不能直接修改 state，必须创建新对象（不可变更新）
-        currentState = {
-            ...currentState,
-            sys: {
-                ...currentState.sys,
-                interaction: {
-                    ...currentState.sys.interaction,
-                    current: undefined,
-                },
-            },
-        };
+        // ⚠️ 注意：不需要清除 current，因为 SimpleChoiceSystem 已经在 beforeCommand 中调用了 resolveInteraction
+        // resolveInteraction 会弹出下一个交互，所以 current 已经是下一个交互了（如果有的话）
 
         // 【修复】提取延迟的 BASE_CLEARED/BASE_REPLACED 事件（但不立即补发）
         const deferredEvents = (_iData?.continuationContext as any)?._deferredPostScoringEvents as 
             { type: string; payload: unknown; timestamp: number }[] | undefined;
+        
         // 1. 计分玩家选择的基地
-        const result = scoreOneBase(currentState.core, baseIndex, currentBaseDeck, playerId, timestamp, random, currentState);
+        // ⚠️ 【关键修复】beforeScoring 交互解决后，需要重新调用 scoreOneBase 继续执行计分逻辑
+        // 问题：scoreOneBase 在 beforeScoring 创建交互后会立即返回，交互解决后不会自动继续
+        // 解决方案：检查是否只触发了 beforeScoring 但没有完成计分（没有 BASE_SCORED 事件），
+        // 如果是，则重新调用 scoreOneBase 继续执行
+        let result = scoreOneBase(currentState.core, baseIndex, currentBaseDeck, playerId, timestamp, random, currentState);
         events.push(...result.events);
         currentBaseDeck = result.newBaseDeck;
         if (result.matchState) currentState = result.matchState;
+        
+        // 检查是否只触发了 beforeScoring 但没有完成计分
+        const hasBaseScored = result.events.some((evt: SmashUpEvent) => evt.type === SU_EVENTS.BASE_SCORED);
+        const hasBeforeScoringTriggered = result.events.some((evt: SmashUpEvent) => 
+            evt.type === SU_EVENT_TYPES.BEFORE_SCORING_TRIGGERED
+        );
+        
+        // 如果只触发了 beforeScoring 但没有 BASE_SCORED，说明 beforeScoring 创建了交互并提前返回
+        // 交互已经被解决了（因为我们在 handler 中），所以需要重新调用 scoreOneBase 继续执行
+        if (hasBeforeScoringTriggered && !hasBaseScored && !currentState.sys.interaction?.current) {
+            
+            // ✅ 关键修复：将第一次调用的事件 reduce 到 currentState.core
+            // 问题：scoreOneBase 内部会将 BEFORE_SCORING_TRIGGERED 事件 reduce 到本地 core 副本，
+            // 但 handler 传入的 currentState.core 没有被更新，导致第二次调用时 alreadyTriggeredBeforeScoring 仍为 false
+            // 解决方案：在重新调用前，先将第一次的事件 reduce 到 currentState.core
+            let updatedCore = currentState.core;
+            for (const evt of events) {
+                updatedCore = reduce(updatedCore, evt as SmashUpEvent);
+            }
+            currentState = {
+                ...currentState,
+                core: updatedCore,
+            };
+            
+            // ⚠️ 注意：不需要清除 current，因为 SimpleChoiceSystem 已经在 beforeCommand 中调用了 resolveInteraction
+            // resolveInteraction 会弹出下一个交互，所以 current 已经是下一个交互了（如果有的话）
+            
+            // 重新调用 scoreOneBase（beforeScoring 已经触发过，不会重复触发）
+            result = scoreOneBase(currentState.core, baseIndex, currentBaseDeck, playerId, timestamp, random, currentState);
+            events.push(...result.events);
+            currentBaseDeck = result.newBaseDeck;
+            if (result.matchState) currentState = result.matchState;
+        }
 
         // 【关键修复】立即将基地标记为"已计分"，避免 onPhaseExit 重复计分
         // 这是多基地计分重复计分 bug 的根本原因：
@@ -582,6 +610,17 @@ export function registerMultiBaseScoringInteractionHandler(): void {
                         buildBaseTargetOptions(candidates, updatedCore) as any[],
                         { sourceId: 'multi_base_scoring', targetType: 'base' },
                     );
+                    
+                    // 【关键修复】传递延迟事件到下一个交互
+                    // 如果当前交互有延迟事件，需要传递给新创建的 multi_base_scoring 交互
+                    // 这样延迟事件会在所有基地计分完成后统一补发
+                    if (deferredEvents && deferredEvents.length > 0) {
+                        const iData = interaction.data as Record<string, unknown>;
+                        const ctx = (iData.continuationContext ?? {}) as Record<string, unknown>;
+                        ctx._deferredPostScoringEvents = deferredEvents;
+                        iData.continuationContext = ctx;
+                    }
+                    
                     currentState = queueInteraction(currentState, interaction);
                     
                     // 【关键修复】将剩余基地标记为"计分中"，避免 onPhaseExit 重复计分
@@ -639,6 +678,25 @@ export function registerMultiBaseScoringInteractionHandler(): void {
             if (r.matchState) currentState = r.matchState;
             // 基地能力创建了交互 → halt，剩余基地后续处理
             if (currentState.sys.interaction?.current) {
+                // 【关键修复】将延迟事件传递给新创建的交互
+                // 如果 scoreOneBase 创建了交互（如 beforeScoring/afterScoring），
+                // 需要将延迟事件传递给新交互，确保交互解决后能补发延迟事件
+                if (deferredEvents && deferredEvents.length > 0) {
+                    const newInteraction = currentState.sys.interaction.current;
+                    if (newInteraction?.data) {
+                        const iData = newInteraction.data as Record<string, unknown>;
+                        const ctx = (iData.continuationContext ?? {}) as Record<string, unknown>;
+                        // 合并延迟事件（可能已经有一些延迟事件了）
+                        const existingDeferred = (ctx._deferredPostScoringEvents ?? []) as { type: string; payload: unknown; timestamp: number }[];
+                        ctx._deferredPostScoringEvents = [...existingDeferred, ...deferredEvents];
+                        iData.continuationContext = ctx;
+                        console.log('[multi_base_scoring] 将延迟事件传递给新交互:', {
+                            interactionId: newInteraction.id,
+                            deferredEventsCount: deferredEvents.length,
+                            totalDeferredCount: ctx._deferredPostScoringEvents.length,
+                        });
+                    }
+                }
                 return { state: currentState, events };
             }
             // 更新本地 core 副本

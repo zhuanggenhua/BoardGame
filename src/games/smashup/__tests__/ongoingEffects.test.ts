@@ -458,6 +458,24 @@ describe('getBaseRestrictions', () => {
         });
     });
 
+    test('POD 版 Block the Path 也返回限制信息并保留真实来源 defId', () => {
+        const base = makeBase({
+            ongoingActions: [
+                { uid: 'bp-1', defId: 'trickster_block_the_path_pod', ownerId: '0', metadata: { blockedFaction: SMASHUP_FACTION_IDS.ROBOTS } },
+            ],
+        });
+        const state = makeState([base]);
+
+        const restrictions = getBaseRestrictions(state, 0);
+
+        expect(restrictions).toHaveLength(1);
+        expect(restrictions[0]).toEqual({
+            type: 'blocked_faction',
+            displayText: SMASHUP_FACTION_IDS.ROBOTS,
+            sourceDefId: 'trickster_block_the_path_pod',
+        });
+    });
+
     test('无限制时返回空数组', () => {
         const base = makeBase();
         const state = makeState([base]);

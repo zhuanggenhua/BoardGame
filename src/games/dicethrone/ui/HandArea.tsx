@@ -7,7 +7,7 @@ import { buildLocalizedImageSet, UI_Z_INDEX } from '../../../core';
 import { ENGINE_NOTIFICATION_EVENT, type EngineNotificationDetail } from '../../../engine/notifications';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { ASSETS } from './assets';
-import { getAbilitySlotId } from './AbilityOverlays';
+import { getAbilitySlotId } from './abilitySlotMapping';
 
 /** 飞出卡牌信息（成功使用后的动画） */
 type FlyingOutCard = {

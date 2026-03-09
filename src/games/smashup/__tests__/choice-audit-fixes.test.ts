@@ -171,6 +171,33 @@ describe('远古之物：消灭两个随从选择权', () => {
         const deckBottomEvents = result.events.filter((e: any) => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
         expect(deckBottomEvents).toHaveLength(1);
     });
+
+    it('选择"放牌库底"时若远古之物已离场，不应凭旧交互再次塞回牌库', () => {
+        const etMinion = makeMinion('et-1', 'elder_thing_elder_thing', '0', 5, { powerModifier: 0 });
+        const m1 = makeMinion('m-1', 'test_a', '0', 2, { powerModifier: 0 });
+        const base = makeBase({ minions: [etMinion, m1] });
+        const state = makeState({ bases: [base] });
+        const staleState = makeState({
+            bases: [makeBase({ minions: [m1] })],
+            players: {
+                '0': makePlayer('0', {
+                    discard: [{ uid: 'et-1', defId: 'elder_thing_elder_thing', type: 'minion', owner: '0' }],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+
+        const handler = getInteractionHandler('elder_thing_elder_thing_choice')!;
+        const iData = { continuationContext: { cardUid: 'et-1', defId: 'elder_thing_elder_thing', baseIndex: 0 } };
+        const liveResult = handler(ms, '0', { choice: 'deckbottom' }, iData, dummyRandom, 1)!;
+        const liveDeckBottomEvents = liveResult.events.filter((e: any) => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
+        expect(liveDeckBottomEvents).toHaveLength(1);
+
+        const staleResult = handler({ core: staleState, sys: ms.sys } as any, '0', { choice: 'deckbottom' }, iData, dummyRandom, 2)!;
+        const staleDeckBottomEvents = staleResult.events.filter((e: any) => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
+        expect(staleDeckBottomEvents).toHaveLength(0);
+    });
 });
 
 

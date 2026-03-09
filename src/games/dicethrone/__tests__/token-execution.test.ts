@@ -87,7 +87,7 @@ function createSetupAtPlayer1Upkeep(
 // ============================================================================
 
 describe('燃烧 (Burn) upkeep 执行', () => {
-    it('1 层燃烧：upkeep 造成 1 点伤害并移除 1 层', () => {
+    it('1 层燃烧：upkeep 造成固定 2 点伤害，状态持续不移除', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
             name: '1层燃烧upkeep',
@@ -100,11 +100,11 @@ describe('燃烧 (Burn) upkeep 执行', () => {
         });
 
         const core = result.finalState.core;
-        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 1);
-        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(0);
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2);
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1); // 持续效果，不移除
     });
 
-    it('3 层燃烧：upkeep 造成 3 点伤害并移除 1 层（剩余 2 层）', () => {
+    it('3 层燃烧：upkeep 造成固定 2 点伤害，状态持续不移除', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
             name: '3层燃烧upkeep',
@@ -116,8 +116,8 @@ describe('燃烧 (Burn) upkeep 执行', () => {
             ]),
         });
         const core = result.finalState.core;
-        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 3);
-        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(2);
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2); // 固定 2 点伤害
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(3); // 持续效果，不移除
     });
 });
 
@@ -166,7 +166,7 @@ describe('中毒 (Poison) upkeep 执行', () => {
 // ============================================================================
 
 describe('燃烧 + 中毒 同时 upkeep', () => {
-    it('1 层燃烧 + 1 层中毒：总共造成 2 点伤害', () => {
+    it('1 层燃烧 + 1 层中毒：总共造成 3 点伤害（燃烧 2 + 中毒 1）', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
             name: '燃烧+中毒同时',
@@ -179,9 +179,9 @@ describe('燃烧 + 中毒 同时 upkeep', () => {
             ]),
         });
         const core = result.finalState.core;
-        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2);
-        // 燃烧移除 1 层（变为 0），毒液持续（保持 1 层）
-        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(0);
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 3); // 燃烧 2 + 中毒 1
+        // 燃烧持续（保持 1 层），毒液持续（保持 1 层）
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1);
         expect(core.players['1'].statusEffects[STATUS_IDS.POISON] ?? 0).toBe(1);
     });
 });

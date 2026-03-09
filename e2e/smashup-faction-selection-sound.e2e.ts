@@ -15,7 +15,8 @@ test.describe('SmashUp 角色选择音效', () => {
     test('确认选择按钮应该播放音效', async ({ browser }) => {
         test.setTimeout(60000);
 
-        const baseURL = 'http://localhost:5173';
+        const baseURL = process.env.VITE_FRONTEND_URL
+            || `http://localhost:${process.env.PW_PORT || process.env.E2E_PORT || '6173'}`;
         const context = await browser.newContext({ baseURL });
         await initContext(context, { storageKey: '__smashup_sound_test' });
         const page = await context.newPage();

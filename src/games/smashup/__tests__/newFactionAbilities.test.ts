@@ -22,7 +22,7 @@ import type {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { fireTriggers } from '../domain/ongoingEffects';
 import { reduce } from '../domain/reduce';
 import { processDestroyTriggers } from '../domain/reducer';
@@ -37,6 +37,245 @@ beforeAll(() => {
     resetAbilityInit();
     clearInteractionHandlers();
     initAllAbilities();
+});
+
+describe('bear cavalry interaction regressions', () => {
+    it('bear_cavalry_bear_necessities resolves selected minion target', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'bear_cavalry_bear_necessities', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'base_a', minions: [
+                    makeMinion('m1', 'test', '1', 3, { powerModifier: 0 }),
+                    makeMinion('m2', 'test', '1', 5, { powerModifier: 0 }),
+                ], ongoingActions: [] },
+            ],
+        });
+        const playResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom
+        );
+
+        const prompt = getInteractionsFromMS(playResult.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('bear_cavalry_bear_necessities');
+
+        const targetOption = prompt?.data?.options?.find((option: any) => option?.value?.uid === 'm1');
+        expect(targetOption).toBeDefined();
+
+        const respondResult = runCommand(
+            playResult.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
+            defaultTestRandom
+        );
+
+        const destroyEvt = respondResult.events.find(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvt).toBeDefined();
+        expect((destroyEvt as any).payload.minionUid).toBe('m1');
+        expect(respondResult.finalState.core.bases[0].minions.some(m => m.uid === 'm1')).toBe(false);
+    });
+});
+
+describe('stale destroy regression: 交互提示能力', () => {
+    it('bear_cavalry_bear_necessities: 目标已离场时不再消灭', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'bear_cavalry_bear_necessities', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('m1', 'test', '1', 3, { powerModifier: 0 }),
+                        makeMinion('m2', 'test', '1', 5, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(playResult.finalState)[0] as any;
+        const targetOption = prompt?.data?.options?.find((option: any) => option?.value?.uid === 'm1');
+        const handler = getInteractionHandler('bear_cavalry_bear_necessities');
+        expect(prompt?.data?.sourceId).toBe('bear_cavalry_bear_necessities');
+        expect(targetOption).toBeDefined();
+        expect(handler).toBeDefined();
+
+        const staleCore = {
+            ...playResult.finalState.core,
+            players: {
+                ...playResult.finalState.core.players,
+                '1': {
+                    ...playResult.finalState.core.players['1'],
+                    discard: [
+                        ...playResult.finalState.core.players['1'].discard,
+                        makeCard('m1', 'test', 'minion', '1'),
+                    ],
+                },
+            },
+            bases: [
+                {
+                    ...playResult.finalState.core.bases[0],
+                    minions: playResult.finalState.core.bases[0].minions.filter(m => m.uid !== 'm1'),
+                },
+            ],
+        };
+
+        const resolved = handler!(
+            makeMatchState(staleCore),
+            '0',
+            targetOption.value,
+            prompt.data,
+            defaultTestRandom,
+            2001,
+        );
+        expect(resolved?.events ?? []).toHaveLength(0);
+    });
+
+    it('vampire_heavy_drinker: 目标已离场时不再消灭也不再加指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('c_hd', 'vampire_heavy_drinker', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('fod1', 'test_fodder', '0', 2, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'c_hd', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(playResult.finalState)[0] as any;
+        const option = prompt?.data?.options?.find((entry: any) => entry?.value?.minionUid === 'fod1');
+        const handler = getInteractionHandler('vampire_heavy_drinker');
+        expect(prompt?.data?.sourceId).toBe('vampire_heavy_drinker');
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+
+        const staleCore = {
+            ...playResult.finalState.core,
+            players: {
+                ...playResult.finalState.core.players,
+                '0': {
+                    ...playResult.finalState.core.players['0'],
+                    discard: [
+                        ...playResult.finalState.core.players['0'].discard,
+                        makeCard('fod1', 'test_fodder', 'minion', '0'),
+                    ],
+                },
+            },
+            bases: [
+                {
+                    ...playResult.finalState.core.bases[0],
+                    minions: playResult.finalState.core.bases[0].minions.filter(m => m.uid !== 'fod1'),
+                },
+            ],
+        };
+
+        const resolved = handler!(
+            makeMatchState(staleCore),
+            '0',
+            option.value,
+            prompt.data,
+            defaultTestRandom,
+            2002,
+        );
+
+        expect(resolved?.events ?? []).toHaveLength(0);
+        expect((resolved?.events ?? []).some(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(false);
+    });
+
+    it('werewolf_let_the_dog_out_targets: 目标已离场时不再消灭也不继续链式选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'werewolf_let_the_dog_out', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('w1', 'werewolf_howler', '0', 4, { powerModifier: 0 }),
+                        makeMinion('e1', 'enemy_a', '1', 1, { powerModifier: 0 }),
+                        makeMinion('e2', 'enemy_b', '1', 3, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(playResult.finalState)[0] as any;
+        const option = prompt?.data?.options?.find((entry: any) => entry?.value?.minionUid === 'e1');
+        const handler = getInteractionHandler('werewolf_let_the_dog_out_targets');
+        expect(prompt?.data?.sourceId).toBe('werewolf_let_the_dog_out_targets');
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+
+        const staleCore = {
+            ...playResult.finalState.core,
+            players: {
+                ...playResult.finalState.core.players,
+                '1': {
+                    ...playResult.finalState.core.players['1'],
+                    discard: [
+                        ...playResult.finalState.core.players['1'].discard,
+                        makeCard('e1', 'enemy_a', 'minion', '1'),
+                    ],
+                },
+            },
+            bases: [
+                {
+                    ...playResult.finalState.core.bases[0],
+                    minions: playResult.finalState.core.bases[0].minions.filter(m => m.uid !== 'e1'),
+                },
+            ],
+        };
+
+        const resolved = handler!(
+            makeMatchState(staleCore),
+            '0',
+            option.value,
+            prompt.data,
+            defaultTestRandom,
+            2003,
+        );
+
+        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved?.state.sys.interaction?.queue ?? []).toHaveLength(0);
+    });
 });
 
 // ============================================================================
@@ -567,7 +806,7 @@ describe('巨蚁派系能力', () => {
 
         const withPrompt = triggerResult.matchState ?? initialMs;
         const sourcePrompt = getInteractionsFromMS(withPrompt)[0];
-        expect(sourcePrompt?.data?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
+        expect(sourcePrompt?.data?.sourceId).toBe('giant_ant_we_are_the_champions_choose_snapshot_source');
         expect((sourcePrompt?.data as any)?.targetType).toBe('generic');
 
         // 模拟计分已结算（来源随从离场）后再响应交互
@@ -1309,6 +1548,71 @@ describe('科学怪人派系能力', () => {
             e => e.type === SU_EVENTS.LIMIT_MODIFIED && (e as any).payload.limitType === 'minion',
         );
         expect(limitEvt).toBeDefined();
+    });
+
+    it('愤怒的民众：若所选手牌已离开手牌，不应凭旧交互再塞回牌库', () => {
+        const handler = getInteractionHandler('frankenstein_angry_mob_choose_card');
+        expect(handler).toBeDefined();
+
+        const liveState = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('h1', 'test_action_a', 'action', '0'),
+                        makeCard('h2', 'test_action_b', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('monster1', 'frankenstein_the_monster', '0', 5, { powerCounters: 0 })],
+                ongoingActions: [],
+            }],
+        }));
+
+        const interactionData = {
+            continuationContext: {
+                minionUid: 'monster1',
+                baseIndex: 0,
+            },
+        };
+
+        const liveResult = handler!(
+            liveState,
+            '0',
+            { cardUid: 'h1', defId: 'test_action_a' },
+            interactionData as any,
+            defaultTestRandom,
+            1000,
+        );
+        expect(liveResult?.events.some(e => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(true);
+        expect(liveResult?.events.some(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
+
+        const staleState = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('h2', 'test_action_b', 'action', '0')],
+                    discard: [makeCard('h1', 'test_action_a', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('monster1', 'frankenstein_the_monster', '0', 5, { powerCounters: 0 })],
+                ongoingActions: [],
+            }],
+        }));
+
+        const staleResult = handler!(
+            staleState,
+            '0',
+            { cardUid: 'h1', defId: 'test_action_a' },
+            interactionData as any,
+            defaultTestRandom,
+            1001,
+        );
+        expect(staleResult?.events ?? []).toHaveLength(0);
     });
 });
 

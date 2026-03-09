@@ -635,7 +635,49 @@
   "abilityChoice": {
     "title": "Choose Ability",
     "description": "Multiple variants of this ability match your dice. Choose one to activate:",
-    "skip": "Skip (No Ability)"
+    "skip": "Skip (No Ability)",
+    "variantFallbackName": "{{abilityName}} ({{trigger}})",
+    "effectSeparator": "; ",
+    "faceLabel": {
+      "fist": "Fist",
+      "palm": "Palm",
+      "taiji": "Taiji",
+      "lotus": "Lotus",
+      "sword": "Sword",
+      "heart": "Heart",
+      "strength": "Strength",
+      "fire": "Fire",
+      "magma": "Magma",
+      "fiery_soul": "Fiery Soul",
+      "meteor": "Meteor",
+      "bow": "Bow",
+      "foot": "Foot",
+      "moon": "Moon",
+      "dagger": "Dagger",
+      "bag": "Bag",
+      "card": "Card",
+      "shadow": "Shadow",
+      "helm": "Helm",
+      "pray": "Pray"
+    },
+    "trigger": {
+      "generic": "variant condition",
+      "diceSetSeparator": " + ",
+      "faceSeparator": ", ",
+      "countFace": "{{count}} {{face}}",
+      "allSymbolsPresent": "Contains {{faces}}",
+      "smallStraight": "Small Straight",
+      "largeStraight": "Large Straight",
+      "phase": {
+        "setup": "Setup",
+        "income": "Income",
+        "main1": "Main Phase 1",
+        "offensiveRoll": "Offensive Roll",
+        "defensiveRoll": "Defensive Roll",
+        "main2": "Main Phase 2",
+        "discard": "Discard"
+      }
+    }
   },
   "choices": {
     "title": "Ability Resolution Choice",

@@ -50,22 +50,22 @@ export function getLayoutConfig(playerCount: number): LayoutConfig {
             // 三人局：适度缩放，缩小间距
             return {
                 baseCardWidth: 13,
-                baseGap: 8,
+                baseGap: 2,
                 minionCardWidth: 5,
                 minionStackOffset: -5,
-                playerColumnGap: 0.4,
+                playerColumnGap: 0.1,
                 ongoingCardWidth: 3.5,
                 ongoingTopOffset: 5.5,
                 handAreaHeight: 200,
             };
         case 4:
-            // 四人局：紧凑布局，增大随从卡片尺寸确保可读性
+            // 四人局：紧凑布局，无间距
             return {
                 baseCardWidth: 11,
-                baseGap: 5,
+                baseGap: 0,
                 minionCardWidth: 5,
                 minionStackOffset: -5,
-                playerColumnGap: 0.3,
+                playerColumnGap: 0,
                 ongoingCardWidth: 3,
                 ongoingTopOffset: 5,
                 handAreaHeight: 180,

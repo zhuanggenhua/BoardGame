@@ -149,6 +149,7 @@ function innsmouthReturnToTheSea(ctx: AbilityContext): AbilityResult {
             id: `minion-${i}`,
             label: name,
             value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner, baseIndex: ctx.baseIndex },
+            _source: 'field' as const,
             displayMode: 'card' as const,
         };
     });

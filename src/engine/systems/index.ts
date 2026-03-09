@@ -8,7 +8,7 @@ export * from './types';
 // 系统实现
 export { createFlowSystem, getCurrentPhase, setPhase, FLOW_COMMANDS, FLOW_EVENTS, type FlowHooks, type FlowSystemConfig, type PhaseChangedEvent, type PhaseExitResult, type PhaseEnterResult, type CanAdvanceResult } from './FlowSystem';
 export { createUndoSystem, getUndoSnapshotCount, UNDO_COMMANDS, type UndoSystemConfig } from './UndoSystem';
-export { createInteractionSystem, createSimpleChoice, createMultistepChoice, queueInteraction, resolveInteraction, asSimpleChoice, asMultistepChoice, INTERACTION_COMMANDS, INTERACTION_EVENTS, type InteractionDescriptor, type InteractionState, type SimpleChoiceData, type MultistepChoiceData, type InteractionSystemConfig } from './InteractionSystem';
+export { createInteractionSystem, createSimpleChoice, createMultistepChoice, queueInteraction, resolveInteraction, asSimpleChoice, asMultistepChoice, INTERACTION_COMMANDS, INTERACTION_EVENTS, type InteractionDescriptor, type InteractionState, type SimpleChoiceData, type MultistepChoiceData, type InteractionSystemConfig, type SimpleChoiceResponseValidationMode } from './InteractionSystem';
 export { createSimpleChoiceSystem, type SimpleChoiceSystemConfig } from './SimpleChoiceSystem';
 export { createMultistepChoiceSystem, type MultistepChoiceSystemConfig } from './MultistepChoiceSystem';
 export { useMultistepInteraction, type MultistepInteractionState } from './useMultistepInteraction';

@@ -13,6 +13,11 @@ import {
 } from './ongoingModifiers';
 import { canPlayFromDiscard } from './discardPlayability';
 import { isSpecialLimitBlocked } from './abilityHelpers';
+import {
+    getMaxRemainingGlobalPowerLimitedQuota,
+    mustUseBaseLimitedMinionQuota,
+    mustUseGlobalPowerLimitedMinionQuota,
+} from './utils';
 
 export function validate(
     state: MatchState<SmashUpCore>,
@@ -97,9 +102,12 @@ export function validate(
                 }
                 const minionDef = getMinionDef(discardCard.defId);
                 const basePower = minionDef?.power ?? 0;
+                const usesBaseLimitedMinionQuota = discardCheck.consumesNormalLimit
+                    && mustUseBaseLimitedMinionQuota(core, player, baseIndex, discardCard.defId, basePower);
                 if (isOperationRestricted(core, baseIndex, command.playerId, 'play_minion', {
                     minionDefId: discardCard.defId,
                     basePower,
+                    usesBaseLimitedMinionQuota,
                 })) {
                     return { valid: false, error: '该基地禁止打出该随从' };
                 }
@@ -116,6 +124,9 @@ export function validate(
             const card = player.hand.find(c => c.uid === command.payload.cardUid);
             if (!card) return { valid: false, error: '手牌中没有该卡牌' };
             if (card.type !== 'minion') return { valid: false, error: '该卡牌不是随从' };
+            const minionDef = getMinionDef(card.defId);
+            const basePower = minionDef?.power ?? 0;
+            const usesBaseLimitedMinionQuota = mustUseBaseLimitedMinionQuota(core, player, baseIndex, card.defId, basePower);
             // 同名额度检查：全局额度用完后，如果只剩同名额度，必须匹配已锁定的 defId
             if (globalQuotaRemaining <= 0 && sameNameRemaining > 0 && baseQuota <= 0) {
                 // 已锁定 defId 时，只能打出同名随从
@@ -124,7 +135,7 @@ export function validate(
                 }
             }
             // 基地限定同名额度检查：全局额度和全局同名额度都用完后，使用基地限定额度时检查同名约束
-            if (globalQuotaRemaining <= 0 && sameNameRemaining <= 0 && baseQuota > 0) {
+            if (usesBaseLimitedMinionQuota) {
                 if (player.baseLimitedSameNameRequired?.[baseIndex]) {
                     // 必须与触发能力时的随从同名
                     const requiredDefId = player.baseLimitedSameNameDefId?.[baseIndex];
@@ -136,19 +147,17 @@ export function validate(
                 }
             }
             // 全局力量限制检查：额外出牌机会可能有力量上限（如家园：力量≤2）
-            if (player.extraMinionPowerMax !== undefined && player.minionsPlayed >= 1) {
-                const minionDef = getMinionDef(card.defId);
-                const basePower = minionDef?.power ?? 0;
-                if (basePower > player.extraMinionPowerMax) {
-                    return { valid: false, error: `额外出牌只能打出力量≤${player.extraMinionPowerMax}的随从` };
+            if (mustUseGlobalPowerLimitedMinionQuota(core, player, baseIndex, card.defId, basePower)) {
+                const maxAllowedPower = getMaxRemainingGlobalPowerLimitedQuota(player);
+                if (maxAllowedPower !== undefined && basePower > maxAllowedPower) {
+                    return { valid: false, error: `额外出牌只能打出力量≤${maxAllowedPower}的随从` };
                 }
             }
             // 限制检查：是否禁止打出随从到此基地（包括基地效果和 ongoing 效果）
-            const minionDef = getMinionDef(card.defId);
-            const basePower = minionDef?.power ?? 0;
             if (isOperationRestricted(core, baseIndex, command.playerId, 'play_minion', {
                 minionDefId: card.defId,
                 basePower,
+                usesBaseLimitedMinionQuota,
             })) {
                 return { valid: false, error: '该基地禁止打出该随从' };
             }

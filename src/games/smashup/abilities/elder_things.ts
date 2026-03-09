@@ -16,6 +16,7 @@ import {
     addPowerCounter,
     revealHand,
     buildAbilityFeedback,
+    buildValidatedCardToDeckBottomEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import type {
@@ -26,12 +27,11 @@ import type {
     MinionCardDef,
     MinionOnBase,
 } from '../domain/types';
-import { drawCards } from '../domain/utils';
+import { drawCards, matchesDefId } from '../domain/utils';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { registerTrigger, registerProtection } from '../domain/ongoingEffects';
 import type { TriggerContext, ProtectionCheckContext } from '../domain/ongoingEffects';
 import { getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
-import type { CardToDeckBottomEvent } from '../domain/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 
@@ -93,12 +93,13 @@ function elderThingMiGo(ctx: AbilityContext): AbilityResult {
 
     // 链式处理：第一个对手选择
     const options = [
-        { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' } },
-        { id: 'decline', label: '拒绝（让对方抽一张牌）', value: { choice: 'decline' } },
+        { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
+        { id: 'decline', label: '拒绝（让对方抽一张牌）', value: { choice: 'decline' }, displayMode: 'button' as const },
     ];
     const interaction = createSimpleChoice(
         `elder_thing_mi_go_${opponents[0]}_${ctx.now}`, opponents[0],
-        '米-格：你可以抽一张疯狂卡，否则对方抽一张牌', options as any[], 'elder_thing_mi_go',
+        '米-格：你可以抽一张疯狂卡，否则对方抽一张牌', options as any[],
+        { sourceId: 'elder_thing_mi_go', targetType: 'button' },
     );
     (interaction.data as any).continuationContext = {
         casterPlayerId: ctx.playerId,
@@ -248,11 +249,12 @@ function elderThingBeginTheSummoning(ctx: AbilityContext): AbilityResult {
     const options = minionsInDiscard.map((c, i) => {
         const def = getCardDef(c.defId);
         const name = def?.name ?? c.defId;
-        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } , _source: 'discard' as const, displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `elder_thing_begin_the_summoning_${ctx.now}`, ctx.playerId,
-        '选择要放到牌库顶的随从', options as any[], 'elder_thing_begin_the_summoning',
+        '选择要放到牌库顶的随从', options as any[],
+        { sourceId: 'elder_thing_begin_the_summoning', targetType: 'generic' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -351,7 +353,7 @@ function unfathomableGoalsProcessNext(
 /** 远古之物保护检查：不收回受对手卡牌影响 */
 function elderThingProtectionChecker(ctx: ProtectionCheckContext): boolean {
     // 只保护?elder_thing_elder_thing 自身，且只拦截对手发起的效果
-    if (ctx.targetMinion.defId !== 'elder_thing_elder_thing') return false;
+    if (!matchesDefId(ctx.targetMinion.defId, 'elder_thing_elder_thing')) return false;
     return ctx.sourcePlayerId !== ctx.targetMinion.controller;
 }
 
@@ -390,7 +392,8 @@ function elderThingElderThingOnPlay(ctx: AbilityContext): AbilityResult {
     ];
     const interaction = createSimpleChoice(
         `elder_thing_elder_thing_choice_${ctx.now}`, ctx.playerId,
-        '选择远古之物的效果', options as any[], 'elder_thing_elder_thing_choice',
+        '选择远古之物的效果', options as any[],
+        { sourceId: 'elder_thing_elder_thing_choice', targetType: 'button' },
     );
     (interaction.data as any).continuationContext = { cardUid: ctx.cardUid, defId: ctx.defId, baseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -413,12 +416,13 @@ function elderThingShoggoth(ctx: AbilityContext): AbilityResult {
     if (opponents.length === 0) return { events: [] };
 
     const options = [
-        { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' } },
-        { id: 'decline', label: '拒绝（被消灭一个随从）', value: { choice: 'decline' } },
+        { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
+        { id: 'decline', label: '拒绝（被消灭一个随从）', value: { choice: 'decline' }, displayMode: 'button' as const },
     ];
     const interaction = createSimpleChoice(
         `elder_thing_shoggoth_opponent_${ctx.now}`, opponents[0],
-        '修格斯：你可以抽一张疯狂卡，否则你在此基地的一个随从将被消灭', options as any[], 'elder_thing_shoggoth_opponent',
+        '修格斯：你可以抽一张疯狂卡，否则你在此基地的一个随从将被消灭', options as any[],
+        { sourceId: 'elder_thing_shoggoth_opponent', targetType: 'button' },
     );
     (interaction.data as any).continuationContext = {
         casterPlayerId: ctx.playerId,
@@ -444,12 +448,13 @@ function shoggothContinueChain(
     if (nextIdx < ctx.opponents.length) {
         const nextPid = ctx.opponents[nextIdx];
         const options = [
-            { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' } },
-            { id: 'decline', label: '拒绝（被消灭一个随从）', value: { choice: 'decline' } },
+            { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
+            { id: 'decline', label: '拒绝（被消灭一个随从）', value: { choice: 'decline' }, displayMode: 'button' as const },
         ];
         const interaction = createSimpleChoice(
             `elder_thing_shoggoth_opponent_${nextIdx}_${timestamp}`, nextPid,
-            '修格斯：你可以抽一张疯狂卡，否则你在此基地的一个随从将被消灭', options as any[], 'elder_thing_shoggoth_opponent',
+            '修格斯：你可以抽一张疯狂卡，否则你在此基地的一个随从将被消灭', options as any[],
+            { sourceId: 'elder_thing_shoggoth_opponent', targetType: 'button' },
         );
         (interaction.data as any).continuationContext = {
             casterPlayerId: ctx.casterPlayerId,
@@ -494,12 +499,13 @@ export function registerElderThingInteractionHandlers(): void {
         if (nextIdx < ctx.opponents.length) {
             const nextPid = ctx.opponents[nextIdx];
             const options = [
-                { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' } },
-                { id: 'decline', label: '拒绝（让对方抽一张牌）', value: { choice: 'decline' } },
+                { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
+                { id: 'decline', label: '拒绝（让对方抽一张牌）', value: { choice: 'decline' }, displayMode: 'button' as const },
             ];
             const interaction = createSimpleChoice(
                 `elder_thing_mi_go_${nextPid}_${timestamp}`, nextPid,
-                '米-格：你可以抽一张疯狂卡，否则对方抽一张牌', options as any[], 'elder_thing_mi_go',
+                '米-格：你可以抽一张疯狂卡，否则对方抽一张牌', options as any[],
+                { sourceId: 'elder_thing_mi_go', targetType: 'button' },
             );
             (interaction.data as any).continuationContext = {
                 casterPlayerId: ctx.casterPlayerId,
@@ -529,11 +535,17 @@ export function registerElderThingInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
 
         if (choice === 'deckbottom') {
-            return { state, events: [{
-                type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-                payload: { cardUid: ctx.cardUid, defId: ctx.defId, ownerId: playerId, reason: 'elder_thing_elder_thing' },
-                timestamp,
-            }] };
+            return {
+                state,
+                events: buildValidatedCardToDeckBottomEvents(state, {
+                    cardUid: ctx.cardUid,
+                    defId: ctx.defId,
+                    ownerId: playerId,
+                    reason: 'elder_thing_elder_thing',
+                    now: timestamp,
+                    expectedLocation: 'bases',
+                }),
+            };
         }
 
         // choice === 'destroy' → 收集己方其他随从，让玩家点击消灭第一个
@@ -601,7 +613,7 @@ export function registerElderThingInteractionHandlers(): void {
         
         // 让玩家点击第二个要消灭的随从
         const options = remainingMinions
-            .filter(({ minion: m }) => m.defId !== 'elder_thing_elder_thing') // 排除远古之物自己
+            .filter(({ minion: m }) => !matchesDefId(m.defId, 'elder_thing_elder_thing')) // 排除远古之物自己
             .map(({ minion: m, baseIndex: bi }) => {
                 const def = getCardDef(m.defId) as MinionCardDef | undefined;
                 const name = def?.name ?? m.defId;
@@ -802,7 +814,7 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
-            if (!m.attachedActions.some(a => a.defId === 'elder_thing_dunwich_horror')) continue;
+            if (!m.attachedActions.some(a => matchesDefId(a.defId, 'elder_thing_dunwich_horror'))) continue;
             events.push(destroyMinion(m.uid, m.defId, i, m.owner, undefined, 'elder_thing_dunwich_horror', ctx.now));
         }
     }

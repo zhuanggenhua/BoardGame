@@ -38,8 +38,15 @@ import type {
 } from './types';
 import type { PlayerId } from '../../../engine/types';
 import { SU_EVENTS, SU_EVENT_TYPES, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
-import { getMinionDef, getCardDef } from '../data/cards';
+import { getBaseDef, getMinionDef, getCardDef } from '../data/cards';
 import { hasCthulhuExpansionFaction } from './abilityHelpers';
+import {
+    canUseBaseLimitedMinionQuota,
+    canUseSameNameMinionQuota,
+    getBestMatchingGlobalPowerLimitedQuota,
+    getRemainingGlobalPowerLimitedMinionQuotas,
+    getRemainingUnrestrictedGlobalMinionQuota,
+} from './utils';
 
 // ============================================================================
 // reduce：事件 → 新状态（确定性）
@@ -119,6 +126,12 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         case SU_EVENTS.MINION_PLAYED: {
             const { playerId, cardUid, defId, baseIndex, power, fromDiscard, fromDeck, discardPlaySourceId, consumesNormalLimit } = event.payload;
             const player = state.players[playerId];
+            const cardInHand = player.hand.some(card => card.uid === cardUid);
+            const cardInDiscard = player.discard.some(card => card.uid === cardUid);
+            const cardInDeck = player.deck.some(card => card.uid === cardUid);
+            if ((fromDiscard && !cardInDiscard) || (fromDeck && !cardInDeck) || (!fromDiscard && !fromDeck && !cardInHand)) {
+                return state;
+            }
             // 根据来源从手牌、弃牌堆或牌库移除卡牌
             const newHand = (fromDiscard || fromDeck) ? player.hand : player.hand.filter(c => c.uid !== cardUid);
             const newDiscard = fromDiscard ? player.discard.filter(c => c.uid !== cardUid) : player.discard;
@@ -146,44 +159,76 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 : player.usedDiscardPlayAbilities;
             // consumesNormalLimit=false 时不消耗正常额度（忍者 special 额外打出、弃牌堆额外出牌等）
             const shouldIncrementPlayed = consumesNormalLimit !== false;
+            const quotaResolution = (() => {
+                const baseQuota = player.baseLimitedMinionQuota?.[baseIndex] ?? 0;
+                const sameNameRemaining = player.sameNameMinionRemaining ?? 0;
+                const baseDef = getBaseDef(state.bases[baseIndex]?.defId);
+                const baseHasPowerRestrictedQuota = baseDef?.restrictions?.some(
+                    restriction => restriction.type === 'play_minion'
+                        && restriction.condition?.extraPlayMinionPowerMax !== undefined,
+                ) ?? false;
+                const canUseBaseQuota = shouldIncrementPlayed
+                    && canUseBaseLimitedMinionQuota(state, player, baseIndex, defId, power);
+                const canUseSameNameQuota = shouldIncrementPlayed
+                    && canUseSameNameMinionQuota(player, defId);
+                const matchingGlobalPowerQuota = shouldIncrementPlayed
+                    ? getBestMatchingGlobalPowerLimitedQuota(player, power)
+                    : undefined;
+                const useRestrictedBaseQuota = canUseBaseQuota
+                    && (player.baseLimitedSameNameRequired?.[baseIndex] === true || baseHasPowerRestrictedQuota);
+                const useSameNameQuota = !useRestrictedBaseQuota && canUseSameNameQuota;
+                const useGlobalPowerQuota = !useRestrictedBaseQuota
+                    && !useSameNameQuota
+                    && matchingGlobalPowerQuota !== undefined;
+                const useBaseQuota = !useRestrictedBaseQuota
+                    && !useSameNameQuota
+                    && !useGlobalPowerQuota
+                    && canUseBaseQuota;
+                const remainingGlobalPowerCaps = getRemainingGlobalPowerLimitedMinionQuotas(player);
+                const unrestrictedGlobalQuotaRemaining = shouldIncrementPlayed
+                    ? getRemainingUnrestrictedGlobalMinionQuota(player)
+                    : 0;
 
-            // 额度消耗优先级（从高到低）：
-            // 1. 基地限定额度（如果该基地有限定额度，优先消耗）
-            // 2. 同名额度（如果全局额度已用完且有同名额度剩余）
-            // 3. 全局额度（默认）
+                let newBaseLimitedMinionQuota = player.baseLimitedMinionQuota;
+                let newSameNameRemaining = player.sameNameMinionRemaining;
+                let newSameNameDefId = player.sameNameMinionDefId;
+                let newExtraMinionPowerCaps = remainingGlobalPowerCaps;
+                let finalMinionsPlayed = player.minionsPlayed;
 
-            // 1. 基地限定额度：如果该基地有限定额度，优先消耗
-            const baseQuota = player.baseLimitedMinionQuota?.[baseIndex] ?? 0;
-            const useBaseQuota = shouldIncrementPlayed && baseQuota > 0;
-            
-            // 2. 同名额度：全局额度已用完且有同名额度剩余时，消耗同名额度
-            const sameNameRemaining = player.sameNameMinionRemaining ?? 0;
-            const globalFull = player.minionsPlayed >= player.minionLimit;
-            const useSameNameQuota = shouldIncrementPlayed && !useBaseQuota && globalFull && sameNameRemaining > 0;
-
-            // 应用额度消耗
-            let newBaseLimitedMinionQuota = player.baseLimitedMinionQuota;
-            let newSameNameRemaining = player.sameNameMinionRemaining;
-            let newSameNameDefId = player.sameNameMinionDefId;
-            let finalMinionsPlayed = player.minionsPlayed;
-
-            if (useBaseQuota) {
-                // 消耗基地限定额度，不增加全局 minionsPlayed
-                newBaseLimitedMinionQuota = {
-                    ...player.baseLimitedMinionQuota,
-                    [baseIndex]: baseQuota - 1,
-                };
-            } else if (useSameNameQuota) {
-                // 消耗同名额度，不增加全局 minionsPlayed
-                newSameNameRemaining = sameNameRemaining - 1;
-                // 锁定 defId（首次使用时从 null 锁定为实际 defId）
-                if (newSameNameDefId === null || newSameNameDefId === undefined) {
-                    newSameNameDefId = defId;
+                if (useRestrictedBaseQuota || useBaseQuota) {
+                    newBaseLimitedMinionQuota = {
+                        ...player.baseLimitedMinionQuota,
+                        [baseIndex]: baseQuota - 1,
+                    };
+                } else if (useSameNameQuota) {
+                    newSameNameRemaining = sameNameRemaining - 1;
+                    if (newSameNameDefId === null || newSameNameDefId === undefined) {
+                        newSameNameDefId = defId;
+                    }
+                } else if (useGlobalPowerQuota) {
+                    finalMinionsPlayed = player.minionsPlayed + 1;
+                    const quotaIndex = newExtraMinionPowerCaps.findIndex(powerCap => powerCap === matchingGlobalPowerQuota);
+                    if (quotaIndex >= 0) {
+                        newExtraMinionPowerCaps = [
+                            ...newExtraMinionPowerCaps.slice(0, quotaIndex),
+                            ...newExtraMinionPowerCaps.slice(quotaIndex + 1),
+                        ];
+                    }
+                } else if (shouldIncrementPlayed && (unrestrictedGlobalQuotaRemaining > 0 || player.minionsPlayed < player.minionLimit)) {
+                    finalMinionsPlayed = player.minionsPlayed + 1;
                 }
-            } else if (shouldIncrementPlayed) {
-                // 消耗全局额度
-                finalMinionsPlayed = player.minionsPlayed + 1;
-            }
+
+                return {
+                    minionsPlayed: finalMinionsPlayed,
+                    baseLimitedMinionQuota: newBaseLimitedMinionQuota,
+                    sameNameMinionRemaining: newSameNameRemaining,
+                    sameNameMinionDefId: newSameNameDefId,
+                    extraMinionPowerCaps: newExtraMinionPowerCaps.length > 0 ? newExtraMinionPowerCaps : undefined,
+                    extraMinionPowerMax: newExtraMinionPowerCaps.length > 0
+                        ? Math.min(...newExtraMinionPowerCaps)
+                        : undefined,
+                };
+            })();
 
             return {
                 ...state,
@@ -194,15 +239,17 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         hand: newHand,
                         discard: newDiscard,
                         deck: newDeck,
-                        minionsPlayed: finalMinionsPlayed,
+                        minionsPlayed: quotaResolution.minionsPlayed,
                         minionsPlayedPerBase: {
                             ...(player.minionsPlayedPerBase ?? {}),
                             [baseIndex]: ((player.minionsPlayedPerBase ?? {})[baseIndex] ?? 0) + 1,
                         },
                         usedDiscardPlayAbilities: newUsedAbilities,
-                        baseLimitedMinionQuota: newBaseLimitedMinionQuota,
-                        sameNameMinionRemaining: newSameNameRemaining,
-                        sameNameMinionDefId: newSameNameDefId,
+                        baseLimitedMinionQuota: quotaResolution.baseLimitedMinionQuota,
+                        extraMinionPowerCaps: quotaResolution.extraMinionPowerCaps,
+                        extraMinionPowerMax: quotaResolution.extraMinionPowerMax,
+                        sameNameMinionRemaining: quotaResolution.sameNameMinionRemaining,
+                        sameNameMinionDefId: quotaResolution.sameNameMinionDefId,
                     },
                 },
                 bases: newBases,
@@ -415,6 +462,22 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             };
         }
 
+        case SU_EVENTS.CARD_REMOVED_FROM_DECK: {
+            const { playerId, cardUid } = event.payload;
+            const player = state.players[playerId];
+            if (!player.deck.some(card => card.uid === cardUid)) return state;
+            return {
+                ...state,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        deck: player.deck.filter(card => card.uid !== cardUid),
+                    },
+                },
+            };
+        }
+
         case SU_EVENTS.TURN_STARTED: {
             const { playerId, turnNumber } = event.payload;
             const player = state.players[playerId];
@@ -470,6 +533,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                             usedDiscardPlayAbilities: undefined,
                             baseLimitedMinionQuota: undefined,
                             baseLimitedSameNameRequired: undefined,
+                            extraMinionPowerCaps: undefined,
                             extraMinionPowerMax: undefined,
                             sameNameMinionRemaining: undefined,
                             sameNameMinionDefId: null,
@@ -497,6 +561,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         usedDiscardPlayAbilities: undefined,
                         baseLimitedMinionQuota: undefined,
                         baseLimitedSameNameRequired: undefined,
+                        extraMinionPowerCaps: undefined,
                         extraMinionPowerMax: undefined,
                         sameNameMinionRemaining: undefined,
                         sameNameMinionDefId: null,
@@ -521,6 +586,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 standingStonesDoubleTalentMinionUid: undefined,
                 // 清空计分后延迟 special 记录
                 pendingAfterScoringSpecials: undefined,
+                // 清空计分后等待基地替换完成的动作
+                pendingPostScoringActions: undefined,
                 // 清空计分阶段锁定的 eligible 基地列表
                 scoringEligibleBaseIndices: undefined,
                 sleepMarkedPlayers: newSleepMarked?.length ? newSleepMarked : undefined,
@@ -736,13 +803,25 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         players: { ...state.players, [playerId]: updatedPlayer },
                     };
                 }
-                // 全局额度（带力量限制时记录 extraMinionPowerMax）
+                // 全局额度（带力量限制时记录 extraMinionPowerCaps / extraMinionPowerMax）
                 const updatedPlayer = { ...player, minionLimit: player.minionLimit + delta };
                 if (powerMax !== undefined) {
-                    // 取最严格的限制（多个来源时取最小值）
-                    updatedPlayer.extraMinionPowerMax = player.extraMinionPowerMax !== undefined
-                        ? Math.min(player.extraMinionPowerMax, powerMax)
-                        : powerMax;
+                    const nextPowerCaps = getRemainingGlobalPowerLimitedMinionQuotas(player);
+                    if (delta > 0) {
+                        nextPowerCaps.push(...Array.from({ length: delta }, () => powerMax));
+                    } else if (delta < 0) {
+                        let remainingToRemove = Math.abs(delta);
+                        while (remainingToRemove > 0) {
+                            const removeIndex = nextPowerCaps.findIndex(cap => cap === powerMax);
+                            if (removeIndex < 0) break;
+                            nextPowerCaps.splice(removeIndex, 1);
+                            remainingToRemove -= 1;
+                        }
+                    }
+                    updatedPlayer.extraMinionPowerCaps = nextPowerCaps.length > 0 ? nextPowerCaps : undefined;
+                    updatedPlayer.extraMinionPowerMax = nextPowerCaps.length > 0
+                        ? Math.min(...nextPowerCaps)
+                        : undefined;
                 }
                 return {
                     ...state,
@@ -803,8 +882,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     }
                 }
             }
-            // 追踪本回合被消灭的随从（用于 furthering_the_cause 等触发器）
-            const destroyRecord = { defId: minionDefId, baseIndex: fromBaseIndex, owner: ownerId };
+            // 追踪本回合被消灭的随从（用于 furthering_the_cause 等触发器，并阻止过期移动把弃牌堆里的牌复活）
+            const destroyRecord = { uid: minionUid, defId: minionDefId, baseIndex: fromBaseIndex, owner: ownerId };
             const updatedDestroyList = [...(state.turnDestroyedMinions ?? []), destroyRecord];
             return { ...state, bases: newBases, players: newPlayers, turnDestroyedMinions: updatedDestroyList };
         }
@@ -820,8 +899,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 }
                 return base;
             });
-            // 回退：若基地上找不到（如 afterScoring 后随从已进弃牌堆），从弃牌堆恢复
-            if (!movedMinion) {
+            const wasDestroyedThisTurn = (state.turnDestroyedMinions ?? []).some(record => record.uid === minionUid);
+            // 回退：若基地上找不到（如 afterScoring 后随从已进弃牌堆），可从弃牌堆恢复；
+            // 但本回合刚被消灭的随从绝不能被过期移动“复活”。
+            if (!movedMinion && !wasDestroyedThisTurn) {
                 for (const [pid, player] of Object.entries(state.players)) {
                     const idx = player.discard.findIndex(c => c.uid === minionUid);
                     if (idx !== -1) {
@@ -1416,6 +1497,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             return {
                 ...state,
                 afterScoringTriggeredBases: undefined,
+                pendingPostScoringActions: undefined,
             };
         }
 

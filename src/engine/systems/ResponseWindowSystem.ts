@@ -628,10 +628,28 @@ export function createResponseWindowSystem<TCore>(
                 {
                     const currentWindow = newState.sys.responseWindow?.current;
                     if (currentWindow && currentWindow.pendingInteractionId && !newState.sys.interaction.current) {
-                        // 同批事件中有交互锁定请求（如 INTERACTION_REQUESTED），但更高优先级的系统
-                        // （如 DiceThroneEventSystem）尚未执行，sys.interaction.current 还是空的。
-                        // 此时不能解锁，等下一轮 afterEvents 再检查。
-                        if (hasInteractionLockRequest) {
+                        // 【修复】检查本轮事件中是否有 ABILITY_FEEDBACK（交互失败）
+                        // 交互失败时，解锁但不推进，当前响应者继续响应
+                        const hasAbilityFeedback = events.some(e => 
+                            e.type === 'su:ability_feedback' || 
+                            e.type === 'dt:ability_feedback' ||
+                            e.type === 'sw:ability_feedback'
+                        );
+                        
+                        if (hasAbilityFeedback) {
+                            // 交互失败，解锁但不推进（当前响应者继续响应）
+                            const unlockedWindow = { ...currentWindow, pendingInteractionId: undefined };
+                            newState = {
+                                ...newState,
+                                sys: {
+                                    ...newState.sys,
+                                    responseWindow: { current: unlockedWindow },
+                                },
+                            };
+                        } else if (hasInteractionLockRequest) {
+                            // 同批事件中有交互锁定请求（如 INTERACTION_REQUESTED），但更高优先级的系统
+                            // （如 DiceThroneEventSystem）尚未执行，sys.interaction.current 还是空的。
+                            // 此时不能解锁，等下一轮 afterEvents 再检查。
                             // 不做任何操作，等待交互被创建
                         } else if (hasInteractionResolved) {
                             // 本轮有 RESOLVED，推迟到下一轮检查（发出内部驱动事件）
@@ -641,6 +659,7 @@ export function createResponseWindowSystem<TCore>(
                                 timestamp: eventTimestamp,
                             });
                         } else {
+                            // 正常推进到下一个响应者
                             const unlockedWindow = { ...currentWindow, pendingInteractionId: undefined };
                             const currentResponderId = getCurrentResponderId(unlockedWindow);
                             
@@ -681,37 +700,57 @@ export function createResponseWindowSystem<TCore>(
                 if (event.type === RESPONSE_WINDOW_EVENTS._CHECK_UNLOCK) {
                     const currentWindow = newState.sys.responseWindow?.current;
                     if (currentWindow && currentWindow.pendingInteractionId && !newState.sys.interaction.current) {
-                        const unlockedWindow = { ...currentWindow, pendingInteractionId: undefined };
-                        const currentResponderId = getCurrentResponderId(unlockedWindow);
-                        
-                        const nextWindow = skipToNextRespondableResponder(
-                            newState,
-                            advanceToNextResponder(unlockedWindow, currentResponderId!, loopUntilAllPass),
-                            hasRespondableContent,
-                            loopUntilAllPass
+                        // 【修复】检查本轮事件中是否有 ABILITY_FEEDBACK（交互失败）
+                        const hasAbilityFeedback = events.some(e => 
+                            e.type === 'su:ability_feedback' || 
+                            e.type === 'dt:ability_feedback' ||
+                            e.type === 'sw:ability_feedback'
                         );
                         
-                        if (nextWindow) {
-                            newState = openResponseWindow(newState, nextWindow);
-                            additionalEvents.push({
-                                type: RESPONSE_WINDOW_EVENTS.RESPONDER_CHANGED,
-                                payload: {
-                                    windowId: currentWindow.id,
-                                    previousResponderId: currentResponderId,
-                                    nextResponderId: getCurrentResponderId(nextWindow),
+                        if (hasAbilityFeedback) {
+                            // 交互失败，解锁但不推进（当前响应者继续响应）
+                            const unlockedWindow = { ...currentWindow, pendingInteractionId: undefined };
+                            newState = {
+                                ...newState,
+                                sys: {
+                                    ...newState.sys,
+                                    responseWindow: { current: unlockedWindow },
                                 },
-                                timestamp: eventTimestamp,
-                            });
+                            };
                         } else {
-                            newState = closeResponseWindow(newState);
-                            additionalEvents.push({
-                                type: RESPONSE_WINDOW_EVENTS.CLOSED,
-                                payload: {
-                                    windowId: currentWindow.id,
-                                    allPassed: false,
-                                },
-                                timestamp: eventTimestamp,
-                            });
+                            // 正常推进到下一个响应者
+                            const unlockedWindow = { ...currentWindow, pendingInteractionId: undefined };
+                            const currentResponderId = getCurrentResponderId(unlockedWindow);
+                            
+                            const nextWindow = skipToNextRespondableResponder(
+                                newState,
+                                advanceToNextResponder(unlockedWindow, currentResponderId!, loopUntilAllPass),
+                                hasRespondableContent,
+                                loopUntilAllPass
+                            );
+                            
+                            if (nextWindow) {
+                                newState = openResponseWindow(newState, nextWindow);
+                                additionalEvents.push({
+                                    type: RESPONSE_WINDOW_EVENTS.RESPONDER_CHANGED,
+                                    payload: {
+                                        windowId: currentWindow.id,
+                                        previousResponderId: currentResponderId,
+                                        nextResponderId: getCurrentResponderId(nextWindow),
+                                    },
+                                    timestamp: eventTimestamp,
+                                });
+                            } else {
+                                newState = closeResponseWindow(newState);
+                                additionalEvents.push({
+                                    type: RESPONSE_WINDOW_EVENTS.CLOSED,
+                                    payload: {
+                                        windowId: currentWindow.id,
+                                        allPassed: false,
+                                    },
+                                    timestamp: eventTimestamp,
+                                });
+                            }
                         }
                     }
                 }

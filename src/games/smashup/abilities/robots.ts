@@ -13,7 +13,7 @@ import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
-import { drawCards, isDiscardMicrobot, MICROBOT_DEF_IDS } from '../domain/utils';
+import { drawCards, isDiscardMicrobot, matchesDefId, MICROBOT_DEF_IDS } from '../domain/utils';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 
 /** 注册机器人派系所有能力*/
@@ -87,7 +87,8 @@ function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
         return { 
             id: `microbot-${i}`, 
             label: `cards.${c.defId}.name`, 
-            value: { cardUid: c.uid, defId: c.defId , displayMode: 'card' as const },
+            value: { cardUid: c.uid, defId: c.defId },
+            _source: 'discard' as const,
             displayMode: 'card' as const,
         };
     });
@@ -95,7 +96,7 @@ function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice<{ cardUid: string; defId: string } | { skip: true }>(
         `robot_microbot_reclaimer_${ctx.now}`, ctx.playerId,
         '选择要洗回牌库的微型机（任意数量，可跳过）', [...options, skipOption],
-        { sourceId: 'robot_microbot_reclaimer', multi: { min: 0, max: microbotsInDiscard.length } },
+        { sourceId: 'robot_microbot_reclaimer', targetType: 'generic', multi: { min: 0, max: microbotsInDiscard.length } },
     );
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -131,7 +132,7 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
             { 
                 id: 'play', 
                 label: `打出 cards.${peek.card.defId}.name`, 
-                value: { cardUid: peek.card.uid, defId: peek.card.defId, power , displayMode: 'card' as const },
+                value: { cardUid: peek.card.uid, defId: peek.card.defId, power },
                 displayMode: 'card' as const,
                 _source: 'static' as const,  // ✅ 关键修复：显式声明为静态选项，防止框架层自动刷新时误判为手牌选项
             },
@@ -142,7 +143,7 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
             `robot_hoverbot_${robotHoverbotCounter++}`, ctx.playerId,
             `牌库顶是 cards.${peek.card.defId}.name（力量 ${power}），是否作为额外随从打出？`,
             initialOptions,
-            'robot_hoverbot',
+            { sourceId: 'robot_hoverbot', targetType: 'generic' },
         );
         
         // ⚠️ 关键：必须先设置 continuationContext，再设置 optionsGenerator
@@ -168,7 +169,7 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
                 { 
                     id: 'play', 
                     label: `打出 cards.${ctx.defId}.name`, 
-                    value: { cardUid: ctx.cardUid, defId: ctx.defId, power: ctx.power , displayMode: 'card' as const },
+                    value: { cardUid: ctx.cardUid, defId: ctx.defId, power: ctx.power },
                     displayMode: 'card' as const,
                     _source: 'static' as const,
                 },
@@ -355,7 +356,7 @@ export function registerRobotInteractionHandlers(): void {
 function registerRobotOngoingEffects(): void {
     // 战争机器人：不能被消灭
     registerProtection('robot_warbot', 'destroy', (ctx) => {
-        return ctx.targetMinion.defId === 'robot_warbot';
+        return matchesDefId(ctx.targetMinion.defId, 'robot_warbot');
     });
 
     // 微型机档案馆：微型机被消灭后控制者抽1张牌
@@ -366,12 +367,12 @@ function registerRobotOngoingEffects(): void {
         // trigCtx 中没有被消灭随从的完整信息，用 defId 判断原始微型机
         // alpha 联动需要知道控制者，但 onMinionDestroyed 触发时随从已移除
         // 保守实现：原始微型机 defId 始终触发
-        if (!MICROBOT_DEF_IDS.has(trigCtx.triggerMinionDefId)) return [];
+        if (!Array.from(MICROBOT_DEF_IDS).some(defId => matchesDefId(trigCtx.triggerMinionDefId, defId))) return [];
 
         // 找到 microbot_archive 的拥有者
         let archiveOwner: string | undefined;
         for (const base of trigCtx.state.bases) {
-            const archive = base.minions.find(m => m.defId === 'robot_microbot_archive');
+            const archive = base.minions.find(m => matchesDefId(m.defId, 'robot_microbot_archive'));
             if (archive) {
                 archiveOwner = archive.controller;
                 break;

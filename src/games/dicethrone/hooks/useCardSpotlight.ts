@@ -1,9 +1,9 @@
-/**
+﻿/**
  * useCardSpotlight Hook
  * 
- * 管理卡牌特写队列和额外骰子特写展示。
- * 通过 EventStream 消费 CARD_PLAYED / ABILITY_REPLACED / BONUS_DIE_ROLLED / BONUS_DIE_REROLLED 事件，
- * 不再从 core 读取 lastPlayedCard / lastBonusDieRoll。
+ * 绠＄悊鍗＄墝鐗瑰啓闃熷垪鍜岄澶栭瀛愮壒鍐欏睍绀恒€?
+ * 閫氳繃 EventStream 娑堣垂 CARD_PLAYED / ABILITY_REPLACED / BONUS_DIE_ROLLED / BONUS_DIE_REROLLED 浜嬩欢锛?
+ * 涓嶅啀浠?core 璇诲彇 lastPlayedCard / lastBonusDieRoll銆?
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -14,18 +14,18 @@ import { findHeroCard } from '../heroes';
 import { useEventStreamCursor } from '../../../engine/hooks';
 
 /**
- * 卡牌特写配置
+ * 鍗＄墝鐗瑰啓閰嶇疆
  */
 export interface CardSpotlightConfig {
-    /** EventStream entries（来自 getEventStreamEntries(rawG)） */
+    /** EventStream entries锛堟潵鑷?getEventStreamEntries(rawG)锛?*/
     eventStreamEntries: EventStreamEntry[];
-    /** 当前玩家 ID */
+    /** 褰撳墠鐜╁ ID */
     currentPlayerId: PlayerId;
-    /** 对手名称 */
+    /** 瀵规墜鍚嶇О */
     opponentName: string;
-    /** 是否为观战模式（观战显示全部特写） */
+    /** 鏄惁涓鸿鎴樻ā寮忥紙瑙傛垬鏄剧ず鍏ㄩ儴鐗瑰啓锛?*/
     isSpectator?: boolean;
-    /** 玩家选角映射（用于解析骰子图集） */
+    /** 鐜╁閫夎鏄犲皠锛堢敤浜庤В鏋愰瀛愬浘闆嗭級 */
     selectedCharacters?: Record<PlayerId, CharacterId>;
 }
 
@@ -37,38 +37,38 @@ const normalizePlayerId = (value: PlayerId | string | number | null | undefined)
 };
 
 /**
- * 卡牌特写状态
+ * 鍗＄墝鐗瑰啓鐘舵€?
  */
 export interface CardSpotlightState {
-    /** 卡牌特写队列 */
+    /** 鍗＄墝鐗瑰啓闃熷垪 */
     cardSpotlightQueue: CardSpotlightItem[];
-    /** 关闭卡牌特写 */
+    /** 鍏抽棴鍗＄墝鐗瑰啓 */
     handleCardSpotlightClose: (id: string) => void;
-    /** 额外骰子展示状态 */
+    /** 棰濆楠板瓙灞曠ず鐘舵€?*/
     bonusDie: {
         value?: number;
         face?: DieFace;
         effectKey?: string;
         effectParams?: Record<string, string | number>;
         show: boolean;
-        /** 骰子所属角色（用于图集选择） */
+        /** 楠板瓙鎵€灞炶鑹诧紙鐢ㄤ簬鍥鹃泦閫夋嫨锛?*/
         characterId?: string;
     };
-    /** 关闭额外骰子特写 */
+    /** 鍏抽棴棰濆楠板瓙鐗瑰啓 */
     handleBonusDieClose: () => void;
 }
 
-/** 事件 payload 类型（仅从 payload 提取需要的字段） */
+/** 浜嬩欢 payload 绫诲瀷锛堜粎浠?payload 鎻愬彇闇€瑕佺殑瀛楁锛?*/
 interface CardEventPayload { playerId: PlayerId; cardId: string }
 interface BonusDiePayload { value: number; face: DieFace; playerId: PlayerId; targetPlayerId?: PlayerId; effectKey?: string; effectParams?: Record<string, string | number> }
 interface BonusDieRerolledPayload { newValue: number; newFace: DieFace; playerId: PlayerId; targetPlayerId?: PlayerId; effectKey?: string; effectParams?: Record<string, string | number> }
 
-/** 卡牌特写相关的事件类型 */
+/** 鍗＄墝鐗瑰啓鐩稿叧鐨勪簨浠剁被鍨?*/
 const CARD_EVENT_TYPES = new Set(['CARD_PLAYED', 'ABILITY_REPLACED']);
 const BONUS_DIE_EVENT_TYPES = new Set(['BONUS_DIE_ROLLED', 'BONUS_DIE_REROLLED']);
 
 /**
- * 管理卡牌和额外骰子特写队列（EventStream 驱动）
+ * 绠＄悊鍗＄墝鍜岄澶栭瀛愮壒鍐欓槦鍒楋紙EventStream 椹卞姩锛?
  */
 export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightState {
     const {
@@ -79,11 +79,11 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
         selectedCharacters,
     } = config;
 
-    // 卡牌特写队列
+    // 鍗＄墝鐗瑰啓闃熷垪
     const [cardSpotlightQueue, setCardSpotlightQueue] = useState<CardSpotlightItem[]>([]);
     const cardSpotlightQueueRef = useRef<CardSpotlightItem[]>([]);
 
-    // 额外骰子状态
+    // 棰濆楠板瓙鐘舵€?
     const [bonusDieValue, setBonusDieValue] = useState<number | undefined>(undefined);
     const [bonusDieFace, setBonusDieFace] = useState<DieFace | undefined>(undefined);
     const [bonusDieEffectKey, setBonusDieEffectKey] = useState<string | undefined>(undefined);
@@ -91,40 +91,49 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
     const [bonusDieCharacterId, setBonusDieCharacterId] = useState<string | undefined>(undefined);
     const [showBonusDie, setShowBonusDie] = useState(false);
 
-    // 通用游标（自动处理首次挂载跳过 + Undo 重置）
+    // 閫氱敤娓告爣锛堣嚜鍔ㄥ鐞嗛娆℃寕杞借烦杩?+ Undo 閲嶇疆锛?
     const { consumeNew } = useEventStreamCursor({ entries: eventStreamEntries });
 
-    // 同步队列到 ref
+    // 鍚屾闃熷垪鍒?ref
     useEffect(() => {
         cardSpotlightQueueRef.current = cardSpotlightQueue;
     }, [cardSpotlightQueue]);
 
     /**
-     * 核心：消费 EventStream 中的新事件
+     * 鏍稿績锛氭秷璐?EventStream 涓殑鏂颁簨浠?
      */
     useEffect(() => {
         const { entries: newEntries } = consumeNew();
         if (newEntries.length === 0) return;
 
-        // 如果同一批事件中有 BONUS_DICE_REROLL_REQUESTED，
-        // 跳过 BONUS_DIE_ROLLED 的单骰特写（多骰面板已展示全部骰子）
+        // 濡傛灉鍚屼竴鎵逛簨浠朵腑鏈?BONUS_DICE_REROLL_REQUESTED锛?
+        // 璺宠繃鏃犳硶缁戝畾鍒板崱鐗岀壒鍐欑殑鐙珛 BONUS_DIE_ROLLED 鍗曢鐗瑰啓锛堝楠伴潰鏉垮凡灞曠ず鍏ㄩ儴楠板瓙锛?
         const hasBonusDiceSettlement = newEntries.some(e => e.event.type === 'BONUS_DICE_REROLL_REQUESTED');
 
         const selfId = normalizePlayerId(currentPlayerId);
+        const nextCardSpotlightQueue = [...cardSpotlightQueueRef.current];
+        let didUpdateCardSpotlightQueue = false;
+        let pendingStandaloneBonusDie: {
+            value: number;
+            face?: DieFace;
+            effectKey?: string;
+            effectParams?: Record<string, string | number>;
+            characterId?: string;
+        } | null = null;
 
         for (const entry of newEntries) {
             const { type, payload, timestamp } = entry.event;
             const eventTimestamp = typeof timestamp === 'number' ? timestamp : 0;
 
-            // ---- 卡牌特写：CARD_PLAYED / ABILITY_REPLACED ----
+            // ---- 鍗＄墝鐗瑰啓锛欳ARD_PLAYED / ABILITY_REPLACED ----
             if (CARD_EVENT_TYPES.has(type)) {
                 const p = payload as CardEventPayload;
                 const cardPlayerId = normalizePlayerId(p.playerId);
 
-                // 自己打的卡不显示特写（观战模式除外）
+                // 鑷繁鎵撶殑鍗′笉鏄剧ず鐗瑰啓锛堣鎴樻ā寮忛櫎澶栵級
                 if (!isSpectator && cardPlayerId === selfId) continue;
 
-                // 通过静态表解析 previewRef（替代原 reducer 中的 findHeroCard 调用）
+                // 閫氳繃闈欐€佽〃瑙ｆ瀽 previewRef锛堟浛浠ｅ師 reducer 涓殑 findHeroCard 璋冪敤锛?
                 const heroCard = findHeroCard(p.cardId);
 
                 const newItem: CardSpotlightItem = {
@@ -134,13 +143,12 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                     playerId: p.playerId,
                     playerName: opponentName,
                 };
-                setCardSpotlightQueue(prev => [...prev, newItem]);
+                nextCardSpotlightQueue.push(newItem);
+                didUpdateCardSpotlightQueue = true;
             }
 
-            // ---- 奖励骰特写：BONUS_DIE_ROLLED / BONUS_DIE_REROLLED ----
+            // ---- 濂栧姳楠扮壒鍐欙細BONUS_DIE_ROLLED / BONUS_DIE_REROLLED ----
             if (BONUS_DIE_EVENT_TYPES.has(type)) {
-                // 多骰面板（BonusDieOverlay reroll 模式）已展示全部骰子，跳过单骰特写
-                if (hasBonusDiceSettlement) continue;
                 let bonusValue: number;
                 let bonusFace: DieFace | undefined;
                 let bonusPlayerId: PlayerId;
@@ -157,7 +165,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                     bonusEffectKey = p.effectKey;
                     bonusEffectParams = p.effectParams;
                 } else {
-                    // BONUS_DIE_REROLLED：重掷事件不触发独立特写（用户已在 BonusDieOverlay 中看到）
+                    // BONUS_DIE_REROLLED锛氶噸鎺蜂簨浠朵笉瑙﹀彂鐙珛鐗瑰啓锛堢敤鎴峰凡鍦?BonusDieOverlay 涓湅鍒帮級
                     continue;
                 }
 
@@ -167,89 +175,102 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
 
                 if (!shouldShowBonusDie) continue;
 
-                // 从 selectedCharacters 解析骰子所属角色
+                // 浠?selectedCharacters 瑙ｆ瀽楠板瓙鎵€灞炶鑹?
                 const resolvedCharacterId = selectedCharacters?.[bonusPid as PlayerId]
                     ?? selectedCharacters?.[bonusPlayerId]
                     ?? undefined;
 
-                // 检测是否为汇总事件（effectKey 包含 .result）
+                // 妫€娴嬫槸鍚︿负姹囨€讳簨浠讹紙effectKey 鍖呭惈 .result锛?
                 const isSummaryEvent = bonusEffectKey?.includes('.result');
 
-                // 尝试绑定到卡牌队列（卡左骰右）
-                const cardQueue = cardSpotlightQueueRef.current;
+                // 灏濊瘯缁戝畾鍒板崱鐗岄槦鍒楋紙鍗″乏楠板彸锛?
                 const thresholdMs = 1500;
-                const cardCandidate = [...cardQueue]
-                    .reverse()
-                    .find((item) =>
+                let cardCandidateIndex = -1;
+                for (let index = nextCardSpotlightQueue.length - 1; index >= 0; index -= 1) {
+                    const item = nextCardSpotlightQueue[index];
+                    if (
                         normalizePlayerId(item.playerId) === bonusPid &&
                         Math.abs(item.timestamp - eventTimestamp) <= thresholdMs
-                    );
-
-                if (cardCandidate) {
-                    if (isSummaryEvent) {
-                        // 汇总事件：添加到 summaryText 字段
-                        setCardSpotlightQueue(prev =>
-                            prev.map(item =>
-                                item.id === cardCandidate.id
-                                    ? {
-                                        ...item,
-                                        summaryText: {
-                                            effectKey: bonusEffectKey!,
-                                            effectParams: bonusEffectParams!,
-                                        },
-                                    }
-                                    : item
-                            )
-                        );
-                    } else {
-                        // 普通骰子事件：添加到 bonusDice 数组
-                        setCardSpotlightQueue(prev =>
-                            prev.map(item =>
-                                item.id === cardCandidate.id
-                                    ? {
-                                        ...item,
-                                        bonusDice: [
-                                            ...(item.bonusDice || []),
-                                            {
-                                                value: bonusValue,
-                                                face: bonusFace,
-                                                timestamp: eventTimestamp,
-                                                effectKey: bonusEffectKey,
-                                                effectParams: bonusEffectParams,
-                                                characterId: resolvedCharacterId,
-                                            },
-                                        ],
-                                    }
-                                    : item
-                            )
-                        );
+                    ) {
+                        cardCandidateIndex = index;
+                        break;
                     }
+                }
+
+                if (cardCandidateIndex >= 0) {
+                    const cardCandidate = nextCardSpotlightQueue[cardCandidateIndex];
+                    if (isSummaryEvent) {
+                        // 姹囨€讳簨浠讹細娣诲姞鍒?summaryText 瀛楁
+                        nextCardSpotlightQueue[cardCandidateIndex] = {
+                            ...cardCandidate,
+                            summaryText: {
+                                effectKey: bonusEffectKey!,
+                                effectParams: bonusEffectParams!,
+                            },
+                        };
+                    } else {
+                        // 鏅€氶瀛愪簨浠讹細娣诲姞鍒?bonusDice 鏁扮粍
+                        nextCardSpotlightQueue[cardCandidateIndex] = {
+                            ...cardCandidate,
+                            bonusDice: [
+                                ...(cardCandidate.bonusDice || []),
+                                {
+                                    value: bonusValue,
+                                    face: bonusFace,
+                                    timestamp: eventTimestamp,
+                                    effectKey: bonusEffectKey,
+                                    effectParams: bonusEffectParams,
+                                    characterId: resolvedCharacterId,
+                                },
+                            ],
+                        };
+                    }
+                    didUpdateCardSpotlightQueue = true;
                 } else {
-                    // 独立骰子特写（不绑定到卡牌）
-                    setBonusDieValue(bonusValue);
-                    setBonusDieFace(bonusFace);
-                    setBonusDieEffectKey(bonusEffectKey);
-                    setBonusDieEffectParams(bonusEffectParams);
-                    setBonusDieCharacterId(resolvedCharacterId);
-                    setShowBonusDie(true);
+                    // 澶氶闈㈡澘锛圔onusDieOverlay reroll 妯″紡锛夊凡灞曠ず鍏ㄩ儴楠板瓙锛?
+                    // 娌℃湁鍗＄墝鐗瑰啓鍙壙杞芥椂锛屾墠璺宠繃鐙珛鍗曢鐗瑰啓
+                    if (hasBonusDiceSettlement) continue;
+                    // 鐙珛楠板瓙鐗瑰啓锛堜笉缁戝畾鍒板崱鐗岋級
+                    pendingStandaloneBonusDie = {
+                        value: bonusValue,
+                        face: bonusFace,
+                        effectKey: bonusEffectKey,
+                        effectParams: bonusEffectParams,
+                        characterId: resolvedCharacterId,
+                    };
                 }
             }
+        }
+
+        if (didUpdateCardSpotlightQueue) {
+            cardSpotlightQueueRef.current = nextCardSpotlightQueue;
+            setCardSpotlightQueue(nextCardSpotlightQueue);
+        }
+
+        if (pendingStandaloneBonusDie) {
+            setBonusDieValue(pendingStandaloneBonusDie.value);
+            setBonusDieFace(pendingStandaloneBonusDie.face);
+            setBonusDieEffectKey(pendingStandaloneBonusDie.effectKey);
+            setBonusDieEffectParams(pendingStandaloneBonusDie.effectParams);
+            setBonusDieCharacterId(pendingStandaloneBonusDie.characterId);
+            setShowBonusDie(true);
         }
     }, [eventStreamEntries, consumeNew, currentPlayerId, opponentName, isSpectator, selectedCharacters]);
 
     /**
-     * 关闭卡牌特写
+     * 鍏抽棴鍗＄墝鐗瑰啓
      */
     const handleCardSpotlightClose = useCallback((id: string) => {
         setCardSpotlightQueue(prev => prev.filter(item => item.id !== id));
     }, []);
 
     /**
-     * 关闭额外骰子特写
+     * 鍏抽棴棰濆楠板瓙鐗瑰啓
      */
     const handleBonusDieClose = useCallback(() => {
         setShowBonusDie(false);
     }, []);
+
 
     return {
         cardSpotlightQueue,

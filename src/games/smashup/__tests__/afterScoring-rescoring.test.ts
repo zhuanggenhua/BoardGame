@@ -154,7 +154,12 @@ describe('After Scoring 响应窗口 - 重新计分功能', () => {
             }));
         });
         console.log('===================');
-        
+        const initialScoringStep = result.steps[0];
+        expect(initialScoringStep?.events).toContain('su:before_scoring_triggered');
+        expect(initialScoringStep?.events).toContain(SU_EVENTS.BASE_SCORED);
+        expect(initialScoringStep?.events).toContain('su:after_scoring_triggered');
+        expect(initialScoringStep?.events).toContain('RESPONSE_WINDOW_OPENED');
+
         // 验证：应该有两次 BASE_SCORED 事件
         // 注意：由于测试框架的限制，第二次 BASE_SCORED 可能不会被记录
         // 因为基地已经被清除和替换了

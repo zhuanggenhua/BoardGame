@@ -11,6 +11,7 @@ import {
     grantExtraAction, buildMinionTargetOptions,
     resolveOrPrompt, findMinionOnBases, findMinionByAttachedCard, buildAbilityFeedback,
     modifyBreakpoint,
+    buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, CardsDrawnEvent, SmashUpCore } from '../domain/types';
@@ -20,7 +21,7 @@ import { getCardDef } from '../data/cards';
 import { getEffectivePower, getEffectiveBreakpoint } from '../domain/ongoingModifiers';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { drawCards } from '../domain/utils';
+import { drawCards, matchesDefId } from '../domain/utils';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 
 // ============================================================================
@@ -106,7 +107,9 @@ function werewolfChewToy(ctx: AbilityContext): AbilityResult {
 
     const options = ownMinions.map((c, i) => ({
         id: `minion-${i}`, label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex, defId: c.defId },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, defId: c.defId },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
 
     return resolveOrPrompt(ctx, options, {
@@ -136,7 +139,14 @@ function createChewToyTargetInteraction(ctx: AbilityContext, minionUid: string, 
         id: 'werewolf_chew_toy_target', title: '选择要消灭的随从',
         sourceId: 'werewolf_chew_toy_target', targetType: 'minion' as const,
     }, (val) => ({
-        events: [destroyMinion(val.minionUid, val.defId, val.baseIndex, ctx.state.bases[val.baseIndex]?.minions.find(m => m.uid === val.minionUid)?.owner ?? ctx.playerId, ctx.playerId, 'werewolf_chew_toy', ctx.now)],
+        events: buildValidatedDestroyEvents(ctx.state, {
+            minionUid: val.minionUid,
+            minionDefId: val.defId,
+            fromBaseIndex: val.baseIndex,
+            destroyerId: ctx.playerId,
+            reason: 'werewolf_chew_toy',
+            now: ctx.now,
+        }),
     }));
 }
 
@@ -156,7 +166,9 @@ function werewolfLetTheDogOut(ctx: AbilityContext): AbilityResult {
 
     const options = ownMinions.map((c, i) => ({
         id: `minion-${i}`, label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex, defId: c.defId },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, defId: c.defId },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
 
     return resolveOrPrompt(ctx, options, {
@@ -252,10 +264,16 @@ const handleChewToyChooseMinion: IH = (state, playerId, value, _data, _random, n
 const handleChewToyChooseTarget: IH = (state, playerId, value, _data, _random, now) => {
     const v = value as { minionUid: string; baseIndex: number; defId: string };
 
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
     return {
         state,
-        events: [destroyMinion(v.minionUid, v.defId, v.baseIndex, target?.owner ?? playerId, playerId, 'werewolf_chew_toy', now)],
+        events: buildValidatedDestroyEvents(state, {
+            minionUid: v.minionUid,
+            minionDefId: v.defId,
+            fromBaseIndex: v.baseIndex,
+            destroyerId: playerId,
+            reason: 'werewolf_chew_toy',
+            now,
+        }),
     };
 };
 
@@ -287,10 +305,18 @@ const handleLetTheDogOutChooseTarget: IH = (state, playerId, value, _data, _rand
     if (v.done) return { state, events: [] };
     if (!v.minionUid || !v.defId || v.baseIndex === undefined) return { state, events: [] };
     const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    const targetPower = target ? getEffectivePower(state.core, target, v.baseIndex) : 0;
-    const events: SmashUpEvent[] = [
-        destroyMinion(v.minionUid, v.defId, v.baseIndex, target?.owner ?? playerId, playerId, 'werewolf_let_the_dog_out', now),
-    ];
+    if (!target) return { state, events: [] };
+    const destroyEvents = buildValidatedDestroyEvents(state, {
+        minionUid: v.minionUid,
+        minionDefId: v.defId,
+        fromBaseIndex: v.baseIndex,
+        destroyerId: playerId,
+        reason: 'werewolf_let_the_dog_out',
+        now,
+    });
+    if (destroyEvents.length === 0) return { state, events: [] };
+    const targetPower = getEffectivePower(state.core, target, v.baseIndex);
+    const events: SmashUpEvent[] = [...destroyEvents];
     const newBudget = v.budget - targetPower;
     if (newBudget <= 0) return { state, events };
     // 检查是否还有可消灭目标
@@ -324,7 +350,7 @@ function registerWerewolfOngoingEffects(): void {
         if (baseIndex === undefined) return [];
         const events: SmashUpEvent[] = [];
         for (const m of state.bases[baseIndex].minions) {
-            if (m.defId === 'werewolf_loup_garou') {
+            if (matchesDefId(m.defId, 'werewolf_loup_garou')) {
                 events.push(addTempPower(m.uid, baseIndex, 2, 'werewolf_loup_garou', now));
             }
         }
@@ -337,7 +363,7 @@ function registerWerewolfOngoingEffects(): void {
         if (baseIndex === undefined) return [];
         const events: SmashUpEvent[] = [];
         for (const m of state.bases[baseIndex].minions) {
-            if (m.defId !== 'werewolf_pack_alpha') continue;
+            if (!matchesDefId(m.defId, 'werewolf_pack_alpha')) continue;
             const controller = m.controller;
             for (const ally of state.bases[baseIndex].minions) {
                 if (ally.controller === controller) {
@@ -353,7 +379,7 @@ function registerWerewolfOngoingEffects(): void {
         const { state, playerId, now } = ctx;
         for (let i = 0; i < state.bases.length; i++) {
             const base = state.bases[i];
-            const hasMT = base.ongoingActions.some(a => a.defId === 'werewolf_marking_territory' && a.ownerId === playerId);
+            const hasMT = base.ongoingActions.some(a => matchesDefId(a.defId, 'werewolf_marking_territory') && a.ownerId === playerId);
             if (!hasMT) continue;
             let myTotal = 0;
             let maxOther = 0;
@@ -385,7 +411,7 @@ function registerWerewolfOngoingEffects(): void {
 
     // 势不可挡 ongoing(minion)：本随从不可被消灭
     registerProtection('werewolf_unstoppable', 'destroy', (ctx) => {
-        return ctx.targetMinion.attachedActions.some(a => a.defId === 'werewolf_unstoppable');
+        return ctx.targetMinion.attachedActions.some(a => matchesDefId(a.defId, 'werewolf_unstoppable'));
     });
 
     // 狼群领袖 ongoing(minion)+talent：如果本随从力量最高，额外打出行动

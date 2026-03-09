@@ -10,6 +10,18 @@ export default defineConfig(({ mode }) => {
   const devPort = Number(env.VITE_DEV_PORT) || 5173
   const gameServerPort = Number(env.GAME_SERVER_PORT) || 18000
   const apiServerPort = Number(env.API_SERVER_PORT) || 18001
+  const suppressE2EProxyNoise = env.E2E_PROXY_QUIET === 'true'
+
+  const isIgnorableProxyError = (err: Error & NodeJS.ErrnoException) => {
+    if (err.code === 'ECONNABORTED') return true
+    if (!suppressE2EProxyNoise) return false
+    return err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET' || err.code === 'EPIPE'
+  }
+
+  const logProxyError = (label: string, err: Error & NodeJS.ErrnoException) => {
+    if (isIgnorableProxyError(err)) return
+    console.error(`[proxy ${label}]`, err.message)
+  }
 
   return {
     plugins: [
@@ -22,6 +34,18 @@ export default defineConfig(({ mode }) => {
           config.logger.warn = (msg, options) => {
             if (typeof msg === 'string' && msg.includes('Assets in public directory cannot be imported')) return;
             originalWarn(msg, options);
+          };
+        },
+      },
+      {
+        name: 'suppress-e2e-proxy-noise',
+        enforce: 'pre' as const,
+        configResolved(config) {
+          if (!suppressE2EProxyNoise) return
+          const originalError = config.logger.error;
+          config.logger.error = (msg, options) => {
+            if (typeof msg === 'string' && msg.includes('ws proxy error')) return;
+            originalError(msg, options);
           };
         },
       },
@@ -60,18 +84,36 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: devPort,
       strictPort: true,
-      // 排除测试产物目录，避免 Playwright 写入截图/报告时触发 HMR full-reload
+      // HMR 配置：使用轮询模式避免 WebSocket 不稳定
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: devPort,
+        clientPort: devPort,
+      },
+      // 排除测试产物、临时目录和配置文件，避免 E2E/脚本写盘触发开发页抖动。
       watch: {
+        // 使用轮询模式，避免 Windows 原生文件监听器崩溃
+        usePolling: true,
+        interval: 1000,  // 轮询间隔 1 秒
         ignored: [
           '**/test-results/**',
           '**/playwright-report/**',
           '**/.tmp/**',
+          '**/temp/**',
+          '**/tmp/**',
           '**/evidence/**',
           '**/logs/**',
           '**/node_modules/**',
           '**/*.test.*',
           '**/*.spec.*',
           '**/e2e/**',
+          '**/.tmp-*',
+          '**/.env',           // 禁止监听 .env 文件，避免环境变量变化触发重启崩溃
+          '**/.env.*',         // 禁止监听 .env.* 文件（.env.local, .env.production 等）
+          '**/playwright.config.*',  // 禁止监听 Playwright 配置文件
+          '**/vitest.config.*',      // 禁止监听 Vitest 配置文件
+          '**/vite.config.*',        // 禁止监听 Vite 配置文件（避免循环重启）
         ],
       },
       proxy: {
@@ -86,8 +128,7 @@ export default defineConfig(({ mode }) => {
           ws: true,
           configure: (proxy) => {
             proxy.on('error', (err) => {
-              if ((err as NodeJS.ErrnoException).code === 'ECONNABORTED') return
-              console.error('[proxy /socket.io]', err.message)
+              logProxyError('/socket.io', err)
             })
           },
         },
@@ -97,8 +138,7 @@ export default defineConfig(({ mode }) => {
           ws: true,
           configure: (proxy) => {
             proxy.on('error', (err) => {
-              if ((err as NodeJS.ErrnoException).code === 'ECONNABORTED') return
-              console.error('[proxy /lobby-socket]', err.message)
+              logProxyError('/lobby-socket', err)
             })
           },
         },
@@ -133,8 +173,7 @@ export default defineConfig(({ mode }) => {
           ws: true,
           configure: (proxy) => {
             proxy.on('error', (err) => {
-              if ((err as NodeJS.ErrnoException).code === 'ECONNABORTED') return
-              console.error('[proxy /social-socket]', err.message)
+              logProxyError('/social-socket', err)
             })
           },
         },

@@ -128,7 +128,7 @@ export const NINJA_ACTIONS: ActionCardDef[] = [
         name: '渗透',
         nameEn: 'Infiltrate',
         faction: 'ninjas',
-        abilityTags: ['ongoing'],
+        abilityTags: ['onPlay', 'ongoing'],
         ongoingTarget: 'base',
         count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 22 },

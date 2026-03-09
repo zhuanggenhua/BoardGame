@@ -224,6 +224,7 @@ describe('Bug: alien_probe（探究）效果错误', () => {
         expect(result.finalState.sys.interaction?.current).toBeDefined();
         const interaction = asSimpleChoice(result.finalState.sys.interaction?.current);
         expect(interaction?.sourceId).toBe('alien_probe_choose_target');
+        expect(interaction?.targetType).toBe('player');
         
         // 断言：应该有 2 个对手可选
         expect(interaction?.options.length).toBe(2);

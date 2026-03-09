@@ -570,10 +570,22 @@ await endPhaseBtn.click(); // 第二次点击：确认并推进阶段
    npm run test:e2e:ci
    ```
 
-3. **清理端口占用**（测试异常退出后）：
+3. **清理端口占用**（仅在测试异常退出，且确认没有其他 E2E 正在使用测试端口时）：
    ```bash
    npm run test:e2e:cleanup
    ```
+
+4. **WSL / 跨平台工作区注意事项**：
+   ```bash
+   # 如果同一份仓库之前在 Windows 下装过依赖，再切到 WSL 跑 E2E，
+   # 必须先重装一遍 Linux 依赖，否则可能缺少 rollup/esbuild 的 Linux 可选包。
+   rm -rf node_modules
+   npm ci
+   npx playwright install --with-deps chromium
+   ```
+   - 典型报错：`Cannot find module @rollup/rollup-linux-x64-gnu`
+   - 根因：同一份 `node_modules` 不能在 Windows 和 Linux 间直接复用，尤其是带原生二进制或 optional dependency 的工具链（如 `rollup`、`esbuild`、`playwright`）
+   - 最佳实践：长期使用 WSL 时，将仓库迁到 WSL 文件系统；若仍在 `/mnt/<disk>/...` 下复用同一仓库，则每次跨 Windows / WSL 切换后都要重装依赖
 
 #### 测试失败排查顺序
 
@@ -611,17 +623,32 @@ await endPhaseBtn.click(); // 第二次点击：确认并推进阶段
    # 清理测试遗留的端口占用和 WebSocket 连接
    npm run test:e2e:cleanup
    ```
+   - ⚠️ 默认不要把 `cleanup` 当成第一步；在隔离测试环境中，应先假设可能有其他 E2E 正在运行
+   - 只有在确认端口残留、上一次测试异常退出，或明确没有其他测试在跑时，才执行该命令
+
+6. **检查是否为跨平台依赖问题**
+   - 如果报错包含 `@rollup/rollup-linux-x64-gnu`、`esbuild-*-linux-*`、`playwright` 浏览器依赖缺失等，优先判断是否在 WSL 中直接复用了 Windows 安装出来的 `node_modules`
+   - 处理顺序：
+     ```bash
+     rm -rf node_modules
+     npm ci
+     npx playwright install --with-deps chromium
+     ```
 
 #### 端口冲突处理
 
 **如果端口被占用**：
 
-1. **优先清理测试遗留进程**：
+1. **先判断是否真的需要清理全部测试端口**：
+   - 默认假设隔离环境中可能有其他 E2E 正在运行
+   - 如果只是单个端口异常，优先定位并清理对应 PID，不要直接执行全量 cleanup
+
+2. **确认没有其他测试运行后，再清理测试遗留进程**：
    ```bash
    npm run test:e2e:cleanup
    ```
 
-2. **手动终止占用进程**（确认非关键进程后）：
+3. **手动终止占用进程**（确认非关键进程后）：
    ```powershell
    # 查找占用进程的 PID
    netstat -ano | findstr ":18000"
@@ -630,7 +657,7 @@ await endPhaseBtn.click(); // 第二次点击：确认并推进阶段
    taskkill /F /PID <PID>
    ```
 
-3. **⚠️ 危险操作警告**：
+4. **⚠️ 危险操作警告**：
    - ❌ **禁止**：`taskkill /F /IM node.exe`（会杀掉所有 Node.js 进程）
    - ❌ **禁止**：`killall node`、`pkill node`（同上）
    - ❌ **禁止**：`Get-Process node | Stop-Process -Force`（同上）
@@ -739,6 +766,7 @@ const cancelButton = banner.locator('button').filter({
 |------|------|------|
 | 骰子注入 | 精确控制骰子投掷结果 | 消除随机性，测试特定技能触发条件 |
 | 状态注入 | 直接设置游戏状态 | 快速构造测试场景，跳过冗长的准备步骤 |
+| **刷新语义** | **区分本地快照与联机权威状态** | **避免错误假设“setupScene 刷新后自动持久化”** |
 | 命令分发 | 直接执行游戏命令 | 绕过 UI 交互，快速推进游戏流程 |
 | 随机数控制 | 控制所有随机数生成 | 确保测试结果可预测、可重复 |
 
@@ -833,6 +861,17 @@ window.__BG_TEST_HARNESS__!.state.patch({
     }
 });
 ```
+
+**刷新行为（本地测试模式）**：
+- `/play/<gameId>` 下的 `TestHarness` 只修改当前页面持有的本地状态快照
+- 刷新页面后，会重新创建一个新的本地对局；此前通过 `setupScene()` / `state.set()` / `state.patch()` 注入的场景不会自动保留
+- 如果测试需要“刷新后仍保留状态”，必须改用联机页面 `/play/<gameId>/match/<matchId>`，并通过服务端 `/test/inject-state` 或 `/test/patch-state` 注入权威状态
+
+**工作原理**：
+- 在本地测试模式（`/play/<gameId>`）下，`state.set()` / `state.patch()` 直接修改当前页面持有的状态快照
+- 在联机页面（`/play/<gameId>/match/<matchId>`）下，客户端状态已经过 `playerView` 过滤，只允许读取，不允许直接写回
+- 需要为联机对局注入权威状态时，必须调用服务端 `/test/inject-state` 或 `/test/patch-state` 接口
+- 只有联机对局走服务端权威状态时，刷新页面才会重新拉取最新状态
 
 **命令分发**：
 ```typescript

@@ -1717,6 +1717,12 @@ startServer().catch((err) => {
 // ============================================================================
 
 process.on('uncaughtException', (err) => {
+    // EPIPE 错误（stdout 管道关闭）：静默忽略，避免无限循环
+    // 常见于 nodemon 重启时，stdout 管道被关闭但 logger 仍尝试写入
+    if ((err as NodeJS.ErrnoException).code === 'EPIPE') {
+        return;
+    }
+    
     logger.error('💥 [uncaughtException] 未捕获异常，进程继续运行:', {
         error: err.message,
         stack: err.stack,

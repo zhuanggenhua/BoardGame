@@ -9,15 +9,16 @@ import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter, removePowerCounter, destroyMinion,
     getMinionPower, grantExtraMinion, queueMinionPlayEffect, buildMinionTargetOptions,
-    resolveOrPrompt, findMinionOnBases, buildAbilityFeedback,
+    resolveOrPrompt, findMinionOnBases, buildAbilityFeedback, buildValidatedCardToDeckBottomEvents, buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionOnBase, SmashUpCore } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { matchesDefId } from '../domain/utils';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 
 // ============================================================================
@@ -102,7 +103,9 @@ function frankensteinLabAssistant(ctx: AbilityContext): AbilityResult {
     const options = candidates.map((c, i) => ({
         id: `minion-${i}`,
         label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
 
     return resolveOrPrompt(ctx, options, {
@@ -123,7 +126,9 @@ function frankensteinHerrDoktor(ctx: AbilityContext): AbilityResult {
     const options = candidates.map((c, i) => ({
         id: `minion-${i}`,
         label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
 
     return resolveOrPrompt(ctx, options, {
@@ -168,7 +173,9 @@ function frankensteinIgorOnDestroy(ctx: AbilityContext): AbilityResult {
     }
     const options = candidates.map((c, idx) => ({
         id: `minion-${idx}`, label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
     
     const interactionId = `frankenstein_igor_${ctx.playerId}_${ctx.now}`;
@@ -220,7 +227,9 @@ function frankensteinAngryMob(ctx: AbilityContext): AbilityResult {
     const options = candidates.map((c, i) => ({
         id: `minion-${i}`,
         label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
 
     return resolveOrPrompt(ctx, options, {
@@ -237,13 +246,16 @@ function frankensteinAngryMob(ctx: AbilityContext): AbilityResult {
 }
 
 interface AngryMobCardContext { minionUid: string; baseIndex: number }
+type AngryMobCardChoiceValue = { cardUid: string; defId: string };
+type AngryMobStopChoiceValue = { stop: true };
+type BlitzedRemoveChoiceValue = { minionUid: string; defId: string; baseIndex: number } | { done: true };
 
-function buildAngryMobCardOptions(core: SmashUpCore, playerId: string) {
+function buildAngryMobCardOptions(core: SmashUpCore, playerId: string): PromptOption<AngryMobCardChoiceValue | AngryMobStopChoiceValue>[] {
     const player = core.players[playerId];
     if (!player) return [];
     const cardOptions = player.hand.map((c, i) => {
         const def = getCardDef(c.defId);
-        return { id: `card-${i}`, label: `${def?.name ?? c.defId}`, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+        return { id: `card-${i}`, label: `${def?.name ?? c.defId}`, value: { cardUid: c.uid, defId: c.defId } , _source: 'hand' as const, displayMode: 'card' as const };
     });
     return [
         ...cardOptions,
@@ -255,7 +267,7 @@ function createAngryMobPickCardStep(
     ms: MatchState<SmashUpCore>, playerId: string, context: AngryMobCardContext, now: number,
 ): AbilityResult {
     const options = buildAngryMobCardOptions(ms.core, playerId);
-    const interaction = createSimpleChoice<any>(
+    const interaction = createSimpleChoice<AngryMobCardChoiceValue | AngryMobStopChoiceValue>(
         `frankenstein_angry_mob_choose_card_${now}`, playerId,
         '愤怒的民众：选择一张手牌放到牌库底（或完成放牌）',
         options,
@@ -268,9 +280,7 @@ function createAngryMobPickCardStep(
             data: {
                 ...interaction.data,
                 continuationContext: context,
-                optionsGenerator: (nextState: { core: SmashUpCore }, _data: any) => {
-                    return buildAngryMobCardOptions(nextState.core, playerId);
-                },
+                optionsGenerator: nextState => buildAngryMobCardOptions(nextState.core as SmashUpCore, playerId),
             },
         }),
     };
@@ -284,19 +294,24 @@ const handleAngryMobChooseCard: IH = (state, playerId, value, interactionData, _
     if (v.stop) return { state, events: [] };
     if (!v.cardUid) return undefined;
     // 放一张牌到牌库底 + 立即放一个指示物
+    const deckBottomEvents = buildValidatedCardToDeckBottomEvents(state, {
+        cardUid: v.cardUid,
+        defId: v.defId!,
+        ownerId: playerId,
+        reason: 'frankenstein_angry_mob',
+        now,
+        expectedLocation: 'hand',
+    });
+    if (deckBottomEvents.length === 0) return { state, events: [] };
     const events: SmashUpEvent[] = [
-        {
-            type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-            payload: { cardUid: v.cardUid, defId: v.defId!, ownerId: playerId, reason: 'frankenstein_angry_mob' },
-            timestamp: now,
-        } as SmashUpEvent,
+        ...deckBottomEvents,
         addPowerCounter(context.minionUid, context.baseIndex, 1, 'frankenstein_angry_mob', now),
     ];
     // 手牌还剩卡（当前放的那张还在 state 中未 reduce）
     const player = state.core.players[playerId];
     if (!player || player.hand.length <= 1) return { state, events };
     // 继续选下一张
-    const nextInteraction = createSimpleChoice<any>(
+    const nextInteraction = createSimpleChoice<AngryMobCardChoiceValue | AngryMobStopChoiceValue>(
         `frankenstein_angry_mob_choose_card_${now}`, playerId,
         '愤怒的民众：选择一张手牌放到牌库底（或完成放牌）',
         buildAngryMobCardOptions(state.core, playerId),
@@ -308,9 +323,7 @@ const handleAngryMobChooseCard: IH = (state, playerId, value, interactionData, _
             data: {
                 ...nextInteraction.data,
                 continuationContext: context,
-                optionsGenerator: (nextState: { core: SmashUpCore }, _data: any) => {
-                    return buildAngryMobCardOptions(nextState.core, playerId);
-                },
+                optionsGenerator: nextState => buildAngryMobCardOptions(nextState.core as SmashUpCore, playerId),
             },
         }),
         events,
@@ -325,7 +338,9 @@ function frankensteinBodyShop(ctx: AbilityContext): AbilityResult {
     const options = candidates.map((c, i) => ({
         id: `minion-${i}`,
         label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex, defId: c.defId },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, defId: c.defId },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
 
     return resolveOrPrompt(ctx, options, {
@@ -359,7 +374,9 @@ function createBodyShopDistributeInteraction(ctx: AbilityContext, totalCounters:
     const options = candidates.map((c, i) => ({
         id: `minion-${i}`,
         label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex, remaining: totalCounters },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, remaining: totalCounters },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
 
     const interaction = createSimpleChoice(
@@ -383,7 +400,7 @@ function frankensteinBlitzed(ctx: AbilityContext): AbilityResult {
 
 interface BlitzedRemoveContext { removedTotal: number }
 
-function buildBlitzedRemoveOptions(core: SmashUpCore, playerId: string, removedTotal: number): any[] {
+function buildBlitzedRemoveOptions(core: SmashUpCore, playerId: string, removedTotal: number): PromptOption<BlitzedRemoveChoiceValue>[] {
     const candidates: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < core.bases.length; i++) {
         for (const m of core.bases[i].minions) {
@@ -400,7 +417,7 @@ function buildBlitzedRemoveOptions(core: SmashUpCore, playerId: string, removedT
             id: 'done',
             label: removedTotal > 0 ? `完成移除（已移除 ${removedTotal} 个，消灭力量≤${removedTotal} 的随从）` : '跳过（不移除）',
             displayMode: 'button' as const,
-            value: { done: true , displayMode: 'button' as const },
+            value: { done: true },
         },
     ];
 }
@@ -409,7 +426,7 @@ function createBlitzedRemoveInteraction(
     ms: MatchState<SmashUpCore>, playerId: string, context: BlitzedRemoveContext, now: number,
 ) {
     const options = buildBlitzedRemoveOptions(ms.core, playerId, context.removedTotal);
-    const interaction = createSimpleChoice<any>(
+    const interaction = createSimpleChoice<BlitzedRemoveChoiceValue>(
         `frankenstein_blitzed_remove_${now}`, playerId,
         `闪电攻击：点击随从移除1个指示物（已移除 ${context.removedTotal}）`,
         options,
@@ -418,13 +435,13 @@ function createBlitzedRemoveInteraction(
     return {
         ...interaction,
         data: {
-            ...interaction.data,
-            continuationContext: context,
-            optionsGenerator: (nextState: { core: SmashUpCore }, data: any) => {
-                const cc = (data?.continuationContext as BlitzedRemoveContext | undefined) ?? context;
-                return buildBlitzedRemoveOptions(nextState.core, playerId, cc.removedTotal);
+                ...interaction.data,
+                continuationContext: context,
+                optionsGenerator: (nextState, data) => {
+                    const cc = ((data as typeof interaction.data & { continuationContext?: BlitzedRemoveContext }).continuationContext) ?? context;
+                    return buildBlitzedRemoveOptions(nextState.core, playerId, cc.removedTotal);
+                },
             },
-        },
     };
 }
 
@@ -457,7 +474,7 @@ const handleAngryMobChooseMinion: IH = (state, playerId, value, _data, _random, 
     if (!player || player.hand.length === 0) return { state, events: [] };
     const context: AngryMobCardContext = { minionUid: v.minionUid, baseIndex: v.baseIndex };
     const options = buildAngryMobCardOptions(state.core, playerId);
-    const interaction = createSimpleChoice<any>(
+    const interaction = createSimpleChoice<AngryMobCardChoiceValue | AngryMobStopChoiceValue>(
         `frankenstein_angry_mob_choose_card_${now}`, playerId,
         '愤怒的民众：选择一张手牌放到牌库底（或完成放牌）',
         options,
@@ -469,9 +486,7 @@ const handleAngryMobChooseMinion: IH = (state, playerId, value, _data, _random, 
             data: {
                 ...interaction.data,
                 continuationContext: context,
-                optionsGenerator: (nextState: { core: SmashUpCore }, _d: any) => {
-                    return buildAngryMobCardOptions(nextState.core, playerId);
-                },
+                optionsGenerator: nextState => buildAngryMobCardOptions(nextState.core as SmashUpCore, playerId),
             },
         }),
         events: [],
@@ -504,7 +519,9 @@ const handleBodyShopChooseMinion: IH = (state, playerId, value, _data, _random, 
     }
     const options = candidates.map((c, idx) => ({
         id: `minion-${idx}`, label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex, remaining: power },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, remaining: power },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
     const interaction = createSimpleChoice(
         `frankenstein_body_shop_distribute_${now}`, playerId,
@@ -536,7 +553,9 @@ const handleBodyShopDistribute: IH = (state, _pid, value, _data, _random, now) =
     }
     const options = candidates.map((c, idx) => ({
         id: `minion-${idx}`, label: c.label,
-        value: { minionUid: c.uid, baseIndex: c.baseIndex, remaining: newRemaining },
+        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, remaining: newRemaining },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
     }));
     const interaction = createSimpleChoice(
         `frankenstein_body_shop_distribute_${now}`, _pid,
@@ -596,10 +615,16 @@ const handleIgorChooseTarget: IH = (state, _pid, value, _data, _random, now) => 
 
 const handleBlitzedDestroy: IH = (state, playerId, value, _data, _random, now) => {
     const v = value as { minionUid: string; baseIndex: number; defId: string };
-    const target = state.core.bases[v.baseIndex]?.minions.find(mi => mi.uid === v.minionUid);
     return {
         state,
-        events: [destroyMinion(v.minionUid, v.defId, v.baseIndex, target?.owner ?? playerId, playerId, 'frankenstein_blitzed', now)],
+        events: buildValidatedDestroyEvents(state, {
+            minionUid: v.minionUid,
+            minionDefId: v.defId,
+            fromBaseIndex: v.baseIndex,
+            destroyerId: playerId,
+            reason: 'frankenstein_blitzed',
+            now,
+        }),
     };
 };
 
@@ -611,8 +636,10 @@ function registerFrankensteinOngoingEffects(): void {
     // 仅在被弃的随从是 Igor 自身时触发
     registerTrigger('frankenstein_igor', 'onMinionDiscardedFromBase', (ctx: TriggerContext) => {
         // 只在被弃的随从是 Igor 自身时触发
-        if (ctx.triggerMinionDefId !== 'frankenstein_igor') return [];
+        const isIgor = ctx.triggerMinionDefId === 'frankenstein_igor' || ctx.triggerMinionDefId === 'frankenstein_igor_pod';
+        if (!isIgor) return [];
         const { state, now, matchState } = ctx;
+        const sourceDefId = ctx.triggerMinionDefId;
         // 找到被弃 Igor 的控制者
         const base = state.bases[ctx.baseIndex!];
         const igor = base?.minions.find(m => m.uid === ctx.triggerMinionUid);
@@ -631,12 +658,14 @@ function registerFrankensteinOngoingEffects(): void {
         }
         if (candidates.length === 0) return [];
         if (candidates.length === 1) {
-            return [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, 1, 'frankenstein_igor', now)];
+            return [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, 1, sourceDefId, now)];
         }
-        if (!matchState) return [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, 1, 'frankenstein_igor', now)];
+        if (!matchState) return [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, 1, sourceDefId, now)];
         const options = candidates.map((c, idx) => ({
             id: `minion-${idx}`, label: c.label,
-            value: { minionUid: c.uid, baseIndex: c.baseIndex },
+            value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
+            _source: 'field' as const,
+            displayMode: 'card' as const,
         }));
         const interaction = createSimpleChoice(
             `frankenstein_igor_${controllerId}_${now}`, controllerId,
@@ -653,7 +682,7 @@ function registerFrankensteinOngoingEffects(): void {
         const base = state.bases[baseIndex];
         if (!base) return [];
         // 检查此基地是否有德国工程学 ongoing 卡且由该玩家拥有
-        const hasGE = base.ongoingActions.some(a => a.defId === 'frankenstein_german_engineering' && a.ownerId === playerId);
+        const hasGE = base.ongoingActions.some(a => matchesDefId(a.defId, 'frankenstein_german_engineering') && a.ownerId === playerId);
         if (!hasGE) return [];
         return [addPowerCounter(triggerMinionUid, baseIndex, 1, 'frankenstein_german_engineering', now)];
     });
@@ -662,11 +691,11 @@ function registerFrankensteinOngoingEffects(): void {
     // 注意：这需要 interceptor 而非 trigger，在随从被消灭时替换为回手牌
     // 简化实现：用 trigger 在消灭后恢复卡牌到手牌
     registerTrigger('frankenstein_grave_situation', 'onMinionDestroyed', (ctx: TriggerContext) => {
-        const { state, baseIndex, triggerMinionUid, triggerMinionDefId, playerId, now } = ctx;
+        const { state, baseIndex, triggerMinionUid, playerId, now } = ctx;
         if (baseIndex === undefined || !triggerMinionUid) return [];
         const base = state.bases[baseIndex];
         if (!base) return [];
-        const hasGS = base.ongoingActions.some(a => a.defId === 'frankenstein_grave_situation' && a.ownerId === playerId);
+        const hasGS = base.ongoingActions.some(a => matchesDefId(a.defId, 'frankenstein_grave_situation') && a.ownerId === playerId);
         if (!hasGS) return [];
         // 将被消灭的随从从弃牌堆恢复到手牌
         return [{
@@ -683,7 +712,7 @@ function registerFrankensteinOngoingEffects(): void {
         for (let i = 0; i < state.bases.length; i++) {
             for (const m of state.bases[i].minions) {
                 if (m.controller !== playerId) continue;
-                const hasUber = m.attachedActions.some(a => a.defId === 'frankenstein_uberserum');
+                const hasUber = m.attachedActions.some(a => matchesDefId(a.defId, 'frankenstein_uberserum'));
                 if (hasUber) {
                     events.push(addPowerCounter(m.uid, i, 1, 'frankenstein_uberserum', now));
                 }
@@ -695,7 +724,7 @@ function registerFrankensteinOngoingEffects(): void {
     // 身体改造 protection：不可被消灭
     registerProtection('frankenstein_uberserum', 'destroy', (ctx) => {
         const { targetMinion } = ctx;
-        return targetMinion.attachedActions.some(a => a.defId === 'frankenstein_uberserum');
+        return targetMinion.attachedActions.some(a => matchesDefId(a.defId, 'frankenstein_uberserum'));
     });
 
     // 它活过来了! 的 +1 指示物现在通过 queueMinionPlayEffect 在 fireMinionPlayedTriggers 中自动消费

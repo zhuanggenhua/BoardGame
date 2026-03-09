@@ -24,10 +24,12 @@ import type { SmashUpCore, MinionOnBase, BaseInPlay, CardInstance, FactionId } f
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
+import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { callHandler } from './helpers';
 import { registerGhostAbilities } from '../abilities/ghosts';
-import { registerSteampunkAbilities } from '../abilities/steampunks';
-import { registerKillerPlantAbilities } from '../abilities/killer_plants';
-import { registerInnsmouthAbilities } from '../abilities/innsmouth';
+import { registerSteampunkAbilities, registerSteampunkInteractionHandlers } from '../abilities/steampunks';
+import { registerKillerPlantAbilities, registerKillerPlantInteractionHandlers } from '../abilities/killer_plants';
+import { registerInnsmouthAbilities, registerInnsmouthInteractionHandlers } from '../abilities/innsmouth';
 import { registerMiskatonicAbilities } from '../abilities/miskatonic';
 
 // ============================================================================
@@ -135,6 +137,17 @@ describe('幽灵 ongoing 能力', () => {
             expect(isMinionProtected(state, minion, 0, '1', 'affect')).toBe(true);
         });
 
+        test('附着 ghost_incorporeal_pod 的随从也不受对手影响', () => {
+            const minion = makeMinion({
+                defId: 'ghost_a', uid: 'g-pod-1', controller: '0',
+                attachedActions: [{ uid: 'gi-pod-1', defId: 'ghost_incorporeal_pod', ownerId: '0' }],
+            });
+            const base = makeBase({ minions: [minion] });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, minion, 0, '1', 'affect')).toBe(true);
+        });
+
         test('无附着时不受保护', () => {
             const minion = makeMinion({ defId: 'ghost_a', uid: 'g-1', controller: '0' });
             const base = makeBase({ minions: [minion] });
@@ -206,7 +219,9 @@ describe('蒸汽朋克 ongoing 能力', () => {
     beforeEach(() => {
         clearOngoingEffectRegistry();
         clearRegistry();
+        clearInteractionHandlers();
         registerSteampunkAbilities();
+        registerSteampunkInteractionHandlers();
     });
 
     describe('steampunk_steam_queen: 蒸汽女王保护', () => {
@@ -396,6 +411,67 @@ describe('蒸汽朋克 ongoing 能力', () => {
             const hasCancelOption = options.some((opt: any) => opt.id === '__cancel__');
             expect(hasCancelOption).toBe(true);
         });
+
+        test('若所选行动已不在弃牌堆则不再恢复或打出', () => {
+            const handler = getInteractionHandler('steampunk_mechanic');
+            expect(handler).toBeDefined();
+
+            const base = makeBase();
+            const state = makeState([base]);
+            state.players['0'].discard = [];
+
+            const events = callHandler(handler!, {
+                state,
+                playerId: '0',
+                selectedValue: { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(0);
+        });
+
+        test('steampunk_mechanic_target: 若待附着的 ongoing 已不在手牌则不再附着到基地', () => {
+            const handler = getInteractionHandler('steampunk_mechanic_target');
+            expect(handler).toBeDefined();
+
+            const base = makeBase();
+            const state = makeState([base]);
+            state.players['0'].hand = [];
+
+            const events = callHandler(handler!, {
+                state,
+                playerId: '0',
+                selectedValue: { baseIndex: 0 },
+                data: { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(0);
+        });
+    });
+
+    describe('steampunk_change_of_venue: 换场', () => {
+        test('steampunk_change_of_venue_choose_base: 若待重打的 ongoing 已不在手牌则不再附着', () => {
+            const handler = getInteractionHandler('steampunk_change_of_venue_choose_base');
+            expect(handler).toBeDefined();
+
+            const base = makeBase();
+            const state = makeState([base]);
+            state.players['0'].hand = [];
+
+            const events = callHandler(handler!, {
+                state,
+                playerId: '0',
+                selectedValue: { baseIndex: 0 },
+                data: { cardUid: 'ongoing-1', defId: 'steampunk_escape_hatch' },
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(0);
+        });
     });
 
     describe('steampunk_captain_ahab: 亚哈船长', () => {
@@ -415,7 +491,9 @@ describe('食人花 ongoing 能力', () => {
     beforeEach(() => {
         clearOngoingEffectRegistry();
         clearRegistry();
+        clearInteractionHandlers();
         registerKillerPlantAbilities();
+        registerKillerPlantInteractionHandlers();
     });
 
     describe('killer_plant_deep_roots: 深根保护', () => {
@@ -442,6 +520,19 @@ describe('食人花 ongoing 能力', () => {
     describe('killer_plant_water_lily: 睡莲', () => {
         test('控制者回合开始时抽1牌', () => {
             const lily = makeMinion({ defId: 'killer_plant_water_lily', uid: 'wl-1', controller: '0' });
+            const base = makeBase({ minions: [lily] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onTurnStart', {
+                state, playerId: '0', random: dummyRandom, now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
+        });
+
+        test('POD 版控制者回合开始时也抽1牌', () => {
+            const lily = makeMinion({ defId: 'killer_plant_water_lily_pod', uid: 'wl-pod-1', controller: '0' });
             const base = makeBase({ minions: [lily] });
             const state = makeState([base]);
 
@@ -499,6 +590,95 @@ describe('食人花 ongoing 能力', () => {
                 expect([SU_EVENTS.CARDS_DRAWN, SU_EVENTS.DECK_REORDERED]).toContain(events[1].type);
             }
         });
+
+        test('POD 版控制者回合开始时也会消灭自身并搜索随从', () => {
+            const sprout = makeMinion({ defId: 'killer_plant_sprout_pod', uid: 'sp-pod-1', controller: '0', owner: '0' });
+            const base = makeBase({ minions: [sprout] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onTurnStart', {
+                state, playerId: '0', random: dummyRandom, now: 1000,
+            });
+
+            expect(events.length).toBeGreaterThanOrEqual(1);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+            expect((events[0] as any).payload.minionUid).toBe('sp-pod-1');
+        });
+
+        test('多个候选时创建 generic 牌库检索交互，避免 UI 被错误分流', () => {
+            const sprout = makeMinion({ defId: 'killer_plant_sprout', uid: 'sp-1', controller: '0', owner: '0' });
+            const base = makeBase({ minions: [sprout] });
+            const state = makeState([base]);
+            state.players['0'].deck = [
+                makeCard('d1', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+                makeCard('d2', 'wizard_neophyte', 'minion', '0', SMASHUP_FACTION_IDS.WIZARDS),
+            ];
+
+            const matchState = {
+                core: state,
+                sys: { phase: 'startTurn', interaction: { current: undefined, queue: [] } },
+            } as any;
+
+            const result = fireTriggers(state, 'onTurnStart', {
+                state,
+                matchState,
+                playerId: '0',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            const current = result.matchState?.sys?.interaction?.current as any;
+            expect(current).toBeDefined();
+            expect(current.data?.sourceId).toBe('killer_plant_sprout_search');
+            expect(current.data?.targetType).toBe('generic');
+            expect(current.data?.autoRefresh).toBe('deck');
+            expect(current.data?.responseValidationMode).toBe('live');
+            expect(current.data?.options?.some((opt: any) => opt.id === 'skip')).toBe(true);
+            expect(current.data?.options?.filter((opt: any) => opt.displayMode === 'card')).toHaveLength(2);
+        });
+
+        test('多个嫩芽共享唯一候选时不会重复打出同一 UID', () => {
+            const bases = [
+                makeBase({ minions: [makeMinion({ defId: 'killer_plant_sprout', uid: 'sp-1', controller: '0', owner: '0' })] }),
+                makeBase({ minions: [makeMinion({ defId: 'killer_plant_sprout', uid: 'sp-2', controller: '0', owner: '0' })] }),
+            ];
+            const state = makeState(bases);
+            state.players['0'].deck = [
+                makeCard('wl-1', 'killer_plant_water_lily', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+            ];
+
+            const { events } = fireTriggers(state, 'onTurnStart', {
+                state, playerId: '0', random: dummyRandom, now: 1000,
+            });
+
+            const playedEvents = events.filter(event => event.type === SU_EVENTS.MINION_PLAYED);
+            expect(playedEvents).toHaveLength(1);
+            expect((playedEvents[0] as any).payload.cardUid).toBe('wl-1');
+        });
+
+        test('嫩芽交互在卡已离开牌库后不会再次打出同一 UID', () => {
+            const handler = getInteractionHandler('killer_plant_sprout_search');
+            expect(handler).toBeDefined();
+
+            const state = makeState([makeBase()]);
+            state.players['0'].deck = [
+                makeCard('wl-2', 'killer_plant_water_lily', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+            ];
+
+            const events = callHandler(handler!, {
+                state,
+                playerId: '0',
+                selectedValue: { cardUid: 'wl-1', defId: 'killer_plant_water_lily' },
+                data: { baseIndex: 0 },
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+            expect(events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
+            expect(events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
+        });
+
     });
 
     describe('killer_plant_choking_vines: 窒息藤蔓', () => {
@@ -548,6 +728,55 @@ describe('食人花 ongoing 能力', () => {
             // 验证随从被打出到此基地（baseIndex=0）
             expect((result.events[2] as any).payload.baseIndex).toBe(0);
         });
+
+        test('venus man trap 交互响应会带上基地信息', () => {
+            const handler = getInteractionHandler('killer_plant_venus_man_trap_search');
+            expect(handler).toBeDefined();
+
+            const base = makeBase({ defId: 'base_crypt' });
+            const state = makeState([base]);
+            state.players['0'].deck = [
+                makeCard('sp-1', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+            ];
+
+            const events = callHandler(handler!, {
+                state,
+                playerId: '0',
+                selectedValue: { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
+                data: { baseIndex: 0 },
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            const playedEvent = events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+            expect(playedEvent).toBeDefined();
+            expect(playedEvent.payload.cardUid).toBe('sp-1');
+            expect(playedEvent.payload.baseIndex).toBe(0);
+            expect(playedEvent.payload.baseDefId).toBe('base_crypt');
+        });
+
+        test('venus man trap 交互目标已离开牌库时不会重复打出', () => {
+            const handler = getInteractionHandler('killer_plant_venus_man_trap_search');
+            expect(handler).toBeDefined();
+
+            const state = makeState([makeBase()]);
+            state.players['0'].deck = [
+                makeCard('sp-2', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+            ];
+
+            const events = callHandler(handler!, {
+                state,
+                playerId: '0',
+                selectedValue: { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
+                data: { baseIndex: 0 },
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+            expect(events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
+            expect(events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
+        });
     });
 
     describe('killer_plant_blossom: 绽放', () => {
@@ -579,7 +808,9 @@ describe('印斯茅斯 ongoing 能力', () => {
     beforeEach(() => {
         clearOngoingEffectRegistry();
         clearRegistry();
+        clearInteractionHandlers();
         registerInnsmouthAbilities();
+        registerInnsmouthInteractionHandlers();
     });
 
     describe('innsmouth_in_plain_sight: 众目睽睽', () => {
@@ -588,6 +819,17 @@ describe('印斯茅斯 ongoing 能力', () => {
             const base = makeBase({
                 minions: [weakMinion],
                 ongoingActions: [{ uid: 'ips-1', defId: 'innsmouth_in_plain_sight', ownerId: '0' }],
+            });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, weakMinion, 0, '1', 'affect')).toBe(true);
+        });
+
+        test('POD 版 in_plain_sight 也会保护力量≤2的己方随从', () => {
+            const weakMinion = makeMinion({ defId: 'inn_a', uid: 'ia-pod-1', controller: '0', basePower: 2 });
+            const base = makeBase({
+                minions: [weakMinion],
+                ongoingActions: [{ uid: 'ips-pod-1', defId: 'innsmouth_in_plain_sight_pod', ownerId: '0' }],
             });
             const state = makeState([base]);
 
@@ -621,6 +863,81 @@ describe('印斯茅斯 ongoing 能力', () => {
         test('special 能力已注册', () => {
             const executor = resolveAbility('innsmouth_return_to_the_sea', 'special');
             expect(executor).toBeDefined();
+        });
+
+        test('交互响应会保留原基地索引，且目标失效时不再重复回手', () => {
+            const executor = resolveAbility('innsmouth_return_to_the_sea', 'special')!;
+            const triggerMinion = makeMinion({
+                uid: 'inn-1',
+                defId: 'innsmouth_the_locals',
+                controller: '0',
+                owner: '0',
+            });
+            const sameNameMinion = makeMinion({
+                uid: 'inn-2',
+                defId: 'innsmouth_the_locals',
+                controller: '0',
+                owner: '0',
+            });
+            const otherMinion = makeMinion({
+                uid: 'other-1',
+                defId: 'wizard_neophyte',
+                controller: '1',
+                owner: '1',
+            });
+            const state = makeState([makeBase({ minions: [triggerMinion, sameNameMinion, otherMinion] })]);
+            const ms = { core: state, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } } as any;
+
+            const result = executor({
+                state,
+                matchState: ms,
+                playerId: '0',
+                cardUid: 'inn-1',
+                defId: 'innsmouth_return_to_the_sea',
+                baseIndex: 0,
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            const interaction = (result.matchState?.sys as any)?.interaction?.current;
+            expect(interaction?.data?.sourceId).toBe('innsmouth_return_to_the_sea');
+            const firstOption = interaction?.data?.options?.find((entry: any) => entry.value?.minionUid === 'inn-1');
+            expect(firstOption?.value?.baseIndex).toBe(0);
+
+            const handler = getInteractionHandler('innsmouth_return_to_the_sea');
+            expect(handler).toBeDefined();
+
+            const liveEvents = callHandler(handler!, {
+                state,
+                playerId: '0',
+                selectedValue: [firstOption.value],
+                random: dummyRandom,
+                now: 1001,
+            });
+            expect(liveEvents).toHaveLength(1);
+            expect(liveEvents[0].type).toBe(SU_EVENTS.MINION_RETURNED);
+            expect((liveEvents[0] as any).payload.fromBaseIndex).toBe(0);
+
+            const staleState = makeState([makeBase({ minions: [otherMinion] })], {
+                players: {
+                    ...state.players,
+                    '0': {
+                        ...state.players['0'],
+                        discard: [
+                            ...state.players['0'].discard,
+                            makeCard('inn-1', 'innsmouth_the_locals', 'minion', '0', SMASHUP_FACTION_IDS.INNSMOUTH),
+                        ],
+                    },
+                },
+            });
+            const staleEvents = callHandler(handler!, {
+                state: staleState,
+                playerId: '0',
+                selectedValue: [firstOption.value],
+                random: dummyRandom,
+                now: 1002,
+            });
+            expect(staleEvents).toHaveLength(0);
         });
     });
 });
@@ -660,6 +977,7 @@ describe('米斯卡塔尼克 新增能力', () => {
             const interaction = (result.matchState as any)?.sys?.interaction;
             expect(interaction?.current).toBeDefined();
             expect(interaction?.current?.data?.sourceId).toBe('miskatonic_researcher');
+            expect(interaction?.current?.data?.targetType).toBe('button');
         });
     });
 

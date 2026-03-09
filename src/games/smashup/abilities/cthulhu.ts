@@ -139,7 +139,7 @@ function cthulhuItBeginsAgain(ctx: AbilityContext): AbilityResult {
         const opts: PromptOption<CardChoiceValue | SkipChoiceValue>[] = actions.map((c, i) => {
             const def = getCardDef(c.defId);
             const name = def?.name ?? c.defId;
-            return { id: `action-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId } , displayMode: 'card' as const };
+            return { id: `action-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'discard' as const, displayMode: 'card' as const };
         });
         return [...opts, { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }];
     };
@@ -234,6 +234,7 @@ function cthulhuMadnessUnleashed(ctx: AbilityContext): AbilityResult {
         id: `madness-${i}`,
         label: `疑狂卡?${i + 1}`,
         value: { cardUid: c.uid, defId: c.defId },
+        _source: 'hand' as const,
         displayMode: 'card' as const,
     }));
     const promptOptions: PromptOption<CardChoiceValue | SkipChoiceValue>[] = [
@@ -243,7 +244,7 @@ function cthulhuMadnessUnleashed(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice<CardChoiceValue | SkipChoiceValue>(
         `cthulhu_madness_unleashed_${ctx.now}`, ctx.playerId,
         '选择要弃掉的疑狂卡（任意数量，可跳过）', promptOptions,
-        { sourceId: 'cthulhu_madness_unleashed', targetType: 'generic', multi: { min: 0, max: madnessInHand.length } },
+        { sourceId: 'cthulhu_madness_unleashed', targetType: 'hand', multi: { min: 0, max: madnessInHand.length } },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }

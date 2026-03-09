@@ -55,11 +55,11 @@ export const AbilityChoiceModal: React.FC<AbilityChoiceModalProps> = ({
                         onClick={() => onSelect(opt.abilityId)}
                     >
                         <div className="font-bold text-amber-300 group-hover:text-amber-200 text-base">
-                            {t(opt.name)}
+                            {opt.name}
                         </div>
                         {opt.description && (
                             <div className="text-xs text-slate-400 group-hover:text-slate-300 mt-1 line-clamp-2">
-                                {t(opt.description)}
+                                {opt.description}
                             </div>
                         )}
                     </button>
