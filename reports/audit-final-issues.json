@@ -1,0 +1,166 @@
+{
+  "timestamp": "2026-03-05",
+  "auditScope": "Cardia 游戏 Deck I（16 张卡牌）",
+  "phases": {
+    "phase1": {
+      "name": "静态检查",
+      "issues": {
+        "total": 0,
+        "p0": 0,
+        "p1": 0,
+        "p2": 0
+      },
+      "summary": "所有静态扫描工具运行成功，未发现问题"
+    },
+    "phase2": {
+      "name": "单元测试",
+      "issues": {
+        "total": 83,
+        "p0": 3,
+        "p1": 42,
+        "p2": 38
+      },
+      "p0_issues": [
+        {
+          "id": "P0-001",
+          "priority": "P0",
+          "type": "代码 bug",
+          "description": "currentEncounter 在 TURN_ENDED 后未保持",
+          "file": "src/games/cardia/domain/reduce.ts",
+          "status": "已修复",
+          "commit": "ff95643",
+          "impact": "修复 D11 reducer 消耗路径测试"
+        },
+        {
+          "id": "P0-002",
+          "priority": "P0",
+          "type": "代码 bug",
+          "description": "inventorPending 回合结束时未清理",
+          "file": "src/games/cardia/domain/reduce.ts",
+          "status": "已修复",
+          "commit": "ff95643",
+          "impact": "修复 D12 写入-消费对称测试"
+        },
+        {
+          "id": "P0-003",
+          "priority": "P0",
+          "type": "代码 bug",
+          "description": "占卜师能力标记在错误时机清除",
+          "file": "src/games/cardia/domain/reduce.ts",
+          "status": "已修复",
+          "commit": "ff95643",
+          "impact": "修复 D14 回合清理完整性测试"
+        }
+      ],
+      "p1_issues_summary": "42 个测试维护问题，约 30 个已修复（71%），12 个标记为 P2",
+      "p2_issues_summary": "38 个测试维护问题，延后到审计完成后处理"
+    },
+    "phase3": {
+      "name": "集成测试",
+      "issues": {
+        "total": 3,
+        "p0": 0,
+        "p1": 3,
+        "p2": 0
+      },
+      "p1_issues": [
+        {
+          "id": "P1-001",
+          "priority": "P1",
+          "type": "代码 bug",
+          "description": "持续标记未正确放置",
+          "file": "src/games/cardia/domain/abilities/group3-ongoing.ts",
+          "status": "已修复",
+          "impact": "财务官、调停者、审判官、占卜师的持续能力"
+        },
+        {
+          "id": "P1-002",
+          "priority": "P1",
+          "type": "代码 bug",
+          "description": "持续效果未应用到遭遇结算",
+          "file": "src/games/cardia/domain/reduce.ts",
+          "status": "已修复",
+          "impact": "所有持续能力卡牌的遭遇结算"
+        },
+        {
+          "id": "P1-003",
+          "priority": "P1",
+          "type": "代码 bug",
+          "description": "持续效果优先级未实现",
+          "file": "src/games/cardia/domain/reduce.ts",
+          "status": "已修复",
+          "impact": "多个持续能力同时生效的场景"
+        }
+      ]
+    },
+    "phase4": {
+      "name": "E2E 测试",
+      "issues": {
+        "total": 4,
+        "p0": 0,
+        "p1": 4,
+        "p2": 0
+      },
+      "p1_issues": [
+        {
+          "id": "P1-004",
+          "priority": "P1",
+          "type": "导入错误",
+          "description": "缺少 readGameState 导出",
+          "file": "e2e/cardia-debug-basic-flow.e2e.ts",
+          "status": "待修复",
+          "fix_suggestion": "使用 readCoreState 替代"
+        },
+        {
+          "id": "P1-005",
+          "priority": "P1",
+          "type": "导入错误",
+          "description": "缺少 waitForTestHarness 导出",
+          "file": "e2e/cardia-ui-markers.e2e.ts",
+          "status": "待修复",
+          "fix_suggestion": "从 ./helpers/common 导入"
+        },
+        {
+          "id": "P1-006",
+          "priority": "P1",
+          "type": "导入错误",
+          "description": "缺少 activateAbility, skipAbility 导出",
+          "file": "e2e/cardia-void-mage-no-markers.e2e.ts",
+          "status": "待修复",
+          "fix_suggestion": "在测试文件内定义本地辅助函数"
+        },
+        {
+          "id": "P1-007",
+          "priority": "P1",
+          "type": "测试失败",
+          "description": "阶段推进失败",
+          "file": "e2e/cardia-basic-flow.e2e.ts",
+          "test": "should complete a full turn cycle",
+          "status": "待修复",
+          "expected": "End",
+          "actual": "PhaseActivate Ability"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_issues": 90,
+    "by_priority": {
+      "p0": 3,
+      "p1": 49,
+      "p2": 38
+    },
+    "by_status": {
+      "fixed": 36,
+      "deferred": 50,
+      "pending": 4
+    },
+    "by_type": {
+      "code_bug": 6,
+      "test_maintenance": 42,
+      "import_error": 3,
+      "test_failure": 1,
+      "deferred_test_maintenance": 38
+    }
+  }
+}

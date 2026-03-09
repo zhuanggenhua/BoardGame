@@ -49,10 +49,17 @@ function wrapCardiaInteraction(
             ...Object.values(core.players).flatMap(p => p.hand),
         ];
         
+        console.log('[wrapCardiaInteraction] ========== CARD SELECTION ==========');
         console.log('[wrapCardiaInteraction] 卡牌查找调试:', {
             availableCards: cardiaInteraction.availableCards,
+            availableCardsCount: cardiaInteraction.availableCards.length,
             allCardsCount: allCards.length,
             allCardUids: allCards.map(c => c.uid),
+            playersKeys: Object.keys(core.players),
+            player0Hand: core.players['0']?.hand?.map((c: any) => ({ uid: c.uid, defId: c.defId })),
+            player1Hand: core.players['1']?.hand?.map((c: any) => ({ uid: c.uid, defId: c.defId })),
+            player0PlayedCards: core.players['0']?.playedCards?.map((c: any) => ({ uid: c.uid, defId: c.defId })),
+            player1PlayedCards: core.players['1']?.playedCards?.map((c: any) => ({ uid: c.uid, defId: c.defId })),
         });
         
         // 可选卡牌（availableCards）
@@ -60,9 +67,12 @@ function wrapCardiaInteraction(
             .map(uid => {
                 const card = allCards.find(c => c.uid === uid);
                 if (!card) {
-                    console.warn('[wrapCardiaInteraction] 未找到卡牌:', uid);
+                    console.warn('[wrapCardiaInteraction] ❌ 未找到卡牌:', uid);
+                    console.warn('[wrapCardiaInteraction] Available UIDs in allCards:', allCards.map(c => c.uid));
                     return null;
                 }
+                
+                console.log('[wrapCardiaInteraction] ✅ 找到卡牌:', { uid, defId: card.defId });
                 
                 // 计算当前影响力（基础影响力 + 所有修正标记）
                 const modifiers = getCardModifiers(core, card.uid);
@@ -76,6 +86,11 @@ function wrapCardiaInteraction(
                 };
             })
             .filter((card): card is NonNullable<typeof card> => card !== null);  // 类型守卫
+        
+        console.log('[wrapCardiaInteraction] 转换后的可选卡牌:', {
+            availableCardsCount: availableCards.length,
+            availableCards: availableCards.map(c => ({ uid: c.uid, defId: c.defId, optionId: c.optionId })),
+        });
         
         // 禁用的卡牌（disabledCards）
         let disabledCards = (cardiaInteraction.disabledCards || [])
@@ -165,6 +180,17 @@ function wrapCardiaInteraction(
             label: value > 0 ? `+${value}` : `${value}`,
             value: { modifierValue: value },
         }));
+    } else if (cardiaInteraction.type === 'choice') {
+        interactionType = 'choice';
+        
+        // 创建通用选择选项列表
+        const choiceOptions = (cardiaInteraction as any).options || [];
+        options = choiceOptions.map((opt: any) => ({
+            id: opt.id,
+            label: opt.label,
+            value: { option: opt.id },  // 包含 option 字段，供 handler 识别
+            description: opt.description,
+        }));
     } else {
         interactionType = 'unknown';
     }
@@ -178,6 +204,9 @@ function wrapCardiaInteraction(
             // 直接使用 abilityId 作为 sourceId（显式优于隐式）
             sourceId: cardiaInteraction.abilityId,
             targetType: 'generic',
+            displayMode: 'button' as const,
+            // ✅ 修复：禁止单候选自动执行，确保玩家始终看到交互界面
+            autoResolveIfSingle: false,
         }
     );
     
@@ -198,6 +227,8 @@ function wrapCardiaInteraction(
         // 添加玩家 ID（用于分组显示）
         myPlayerId: cardiaInteraction.playerId,
         opponentId: core.playerOrder.find(id => id !== cardiaInteraction.playerId),
+        // ✅ 传递 context 字段（用于多步交互）
+        context: (cardiaInteraction as any).context,
     };
     
     return interaction;
@@ -220,6 +251,12 @@ export function createGameOverSystem(): EngineSystem<CardiaCore> {
                 if (event.type === CARDIA_EVENTS.GAME_WON) {
                     const payload = event.payload as { winnerId: string; reason: string };
                     
+                    console.log('[GameOverSystem] GAME_WON event received:', {
+                        payload,
+                        hasReason: 'reason' in payload,
+                        reason: payload.reason,
+                    });
+                    
                     // 设置 sys.gameover
                     const newState = {
                         ...state,
@@ -227,9 +264,13 @@ export function createGameOverSystem(): EngineSystem<CardiaCore> {
                             ...state.sys,
                             gameover: {
                                 winner: payload.winnerId,
+                                reason: payload.reason, // ✅ 添加 reason 字段
                             },
                         },
                     };
+                    
+                    console.log('[GameOverSystem] Setting sys.gameover:', newState.sys.gameover);
+                    
                     return {
                         halt: false,
                         state: newState,
@@ -260,6 +301,25 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
         priority: 50, // 在 InteractionSystem(20) 之后执行
 
         afterEvents: ({ state, events }): HookResult<CardiaCore> | void => {
+            // 强制显示调试信息
+            if (events.some(e => e.type === INTERACTION_EVENTS.RESOLVED)) {
+                console.error('[CardiaEventSystem] ========== RESOLVED EVENT DETECTED ==========');
+                console.error('[CardiaEventSystem] CODE VERSION: 2026-03-07-19:50');
+                console.error('[CardiaEventSystem] Events:', events.map(e => e.type));
+                
+                // 立即输出 payload 信息
+                const resolvedEvent = events.find(e => e.type === INTERACTION_EVENTS.RESOLVED);
+                if (resolvedEvent) {
+                    const payload = resolvedEvent.payload as any;
+                    console.error('[CardiaEventSystem] Payload:', {
+                        sourceId: payload.sourceId,
+                        hasSourceId: !!payload.sourceId,
+                        sourceIdType: typeof payload.sourceId,
+                        playerId: payload.playerId,
+                    });
+                }
+            }
+            
             console.info('[CardiaEventSystem] afterEvents called', {
                 eventsCount: events.length,
                 eventTypes: events.map(e => e.type),
@@ -327,6 +387,8 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
 
                     console.info('[CardiaEventSystem] INTERACTION_RESOLVED', {
                         sourceId: payload.sourceId,
+                        hasSourceId: !!payload.sourceId,
+                        sourceIdType: typeof payload.sourceId,
                         playerId: payload.playerId,
                         optionId: payload.optionId,
                         optionIds: payload.optionIds,
@@ -335,36 +397,71 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
                         valueKeys: payload.value && typeof payload.value === 'object' ? Object.keys(payload.value) : undefined,
                     });
 
+                    console.error('[CardiaEventSystem] About to check payload.sourceId:', {
+                        sourceId: payload.sourceId,
+                        willEnterIfBlock: !!payload.sourceId,
+                    });
+
                     if (payload.sourceId) {
+                        console.error('[CardiaEventSystem] Inside sourceId check, about to get handler');
+                        console.error('[CardiaEventSystem] Calling getInteractionHandler with:', payload.sourceId);
                         const handler = getInteractionHandler(payload.sourceId);
+                        console.error('[CardiaEventSystem] getInteractionHandler returned:', {
+                            handler: handler ? 'function' : 'undefined',
+                            handlerType: typeof handler,
+                        });
                         
-                        console.info('[CardiaEventSystem] Handler lookup', {
+                        console.error('[CardiaEventSystem] Handler lookup', {
                             sourceId: payload.sourceId,
                             found: !!handler,
                         });
                         
+                        console.error('[CardiaEventSystem] About to check if handler exists');
                         if (handler) {
-                            const random: RandomFn = {
-                                random: () => Math.random(),
-                                d: (max: number) => Math.floor(Math.random() * max) + 1,
-                                range: (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min,
-                                shuffle: <T>(array: T[]) => {
-                                    const result = [...array];
-                                    for (let i = result.length - 1; i > 0; i--) {
-                                        const j = Math.floor(Math.random() * (i + 1));
-                                        [result[i], result[j]] = [result[j], result[i]];
-                                    }
-                                    return result;
-                                },
-                            };
-                            const result = handler(
-                                newState,
-                                payload.playerId,
-                                payload.value,
-                                payload.interactionData,
-                                random,
-                                eventTimestamp
-                            );
+                            console.error('[CardiaEventSystem] Handler exists, about to call it');
+                            let result: any;
+                            try {
+                                const random: RandomFn = {
+                                    random: () => Math.random(),
+                                    d: (max: number) => Math.floor(Math.random() * max) + 1,
+                                    range: (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min,
+                                    shuffle: <T>(array: T[]) => {
+                                        const result = [...array];
+                                        for (let i = result.length - 1; i > 0; i--) {
+                                            const j = Math.floor(Math.random() * (i + 1));
+                                            [result[i], result[j]] = [result[j], result[i]];
+                                        }
+                                        return result;
+                                    },
+                                };
+                                console.error('[CardiaEventSystem] About to call handler function');
+                                result = handler(
+                                    newState,
+                                    payload.playerId,
+                                    payload.value,
+                                    payload.interactionData,
+                                    random,
+                                    eventTimestamp
+                                );
+                                console.error('[CardiaEventSystem] Handler function returned');
+                                console.error('[CardiaEventSystem] Handler result:', {
+                                    hasResult: !!result,
+                                    resultType: typeof result,
+                                    resultKeys: result ? Object.keys(result) : [],
+                                    eventsCount: result?.events?.length || 0,
+                                    hasInteraction: !!(result as any)?.interaction,
+                                });
+                            } catch (error) {
+                                console.error('[CardiaEventSystem] ERROR calling handler:', error);
+                                console.error('[CardiaEventSystem] Error stack:', (error as Error).stack);
+                                throw error;
+                            }
+                            
+                            console.error('[CardiaEventSystem] After try-catch, about to process result');
+                            console.error('[CardiaEventSystem] Result value:', {
+                                result: result ? 'exists' : 'null/undefined',
+                                resultType: typeof result,
+                            });
                             
                             console.info('[CardiaEventSystem] Handler result', {
                                 hasResult: !!result,
@@ -374,7 +471,9 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
                                 interactionType: (result as any).interaction?.type,
                             });
                             
+                            console.error('[CardiaEventSystem] About to check if (result)');
                             if (result) {
+                                console.error('[CardiaEventSystem] Inside if (result) block');
                                 // 在本地应用事件到状态
                                 // 不要返回这些事件，因为我们已经应用了
                                 for (const evt of result.events) {
@@ -411,19 +510,66 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
                                 }
                                 
                                 // 处理交互处理器返回的新交互
+                                console.error('[CardiaEventSystem] About to check if result.interaction exists');
                                 if ((result as any).interaction) {
-                                    console.log('[CardiaEventSystem] Handler returned new interaction, queueing it');
+                                    console.error('[CardiaEventSystem] ========== Handler returned new interaction ==========');
+                                    console.error('[CardiaEventSystem] Interaction details:', {
+                                        type: (result as any).interaction.type,
+                                        interactionId: (result as any).interaction.interactionId,
+                                        playerId: (result as any).interaction.playerId,
+                                        abilityId: (result as any).interaction.abilityId,
+                                        hasContext: !!(result as any).interaction.context,
+                                        contextKeys: (result as any).interaction.context ? Object.keys((result as any).interaction.context) : [],
+                                    });
+                                    
                                     const cardiaInteraction = (result as any).interaction as CardiaInteraction;
+                                    
+                                    // ✅ 修复：从 interactionData 或 cardiaInteraction 中获取 cardId
+                                    const cardId = (payload.interactionData as any)?.cardId 
+                                        || (cardiaInteraction as any).cardId;
+                                    
+                                    console.error('[CardiaEventSystem] Creating interaction with cardId:', {
+                                        cardId,
+                                        fromInteractionData: !!(payload.interactionData as any)?.cardId,
+                                        fromCardiaInteraction: !!(cardiaInteraction as any).cardId,
+                                    });
+                                    
+                                    console.error('[CardiaEventSystem] About to call wrapCardiaInteraction');
                                     const engineInteraction = wrapCardiaInteraction(
                                         cardiaInteraction,
                                         newState.core,
-                                        payload.sourceId  // 使用原始 sourceId 作为 cardId
+                                        cardId  // 使用正确的 cardId
                                     );
                                     
+                                    console.error('[CardiaEventSystem] wrapCardiaInteraction result:', {
+                                        hasEngineInteraction: !!engineInteraction,
+                                        engineInteractionId: engineInteraction?.id,
+                                        engineInteractionPlayerId: engineInteraction?.playerId,
+                                    });
+                                    
                                     if (engineInteraction) {
+                                        console.error('[CardiaEventSystem] About to call queueInteraction');
+                                        console.error('[CardiaEventSystem] State before queueInteraction:', {
+                                            queueLength: newState.sys.interaction.queue.length,
+                                            hasCurrentInteraction: !!newState.sys.interaction.current,
+                                        });
+                                        
                                         newState = queueInteraction(newState, engineInteraction);
+                                        
+                                        console.error('[CardiaEventSystem] State after queueInteraction:', {
+                                            queueLength: newState.sys.interaction.queue.length,
+                                            hasCurrentInteraction: !!newState.sys.interaction.current,
+                                        });
+                                        console.error('[CardiaEventSystem] ========== Interaction queued successfully ==========');
+                                    } else {
+                                        console.error('[CardiaEventSystem] ❌ wrapCardiaInteraction returned null/undefined!');
                                     }
+                                } else {
+                                    console.error('[CardiaEventSystem] Handler did not return interaction field');
                                 }
+                                // ✅ 修复：移除自动推进回合逻辑
+                                // 回合推进应该由玩家主动触发（END_TURN 命令）或由 FlowHooks 管理
+                                // 在事件系统中自动推进会导致交互未完成就提前进入下一回合
                             }
                         }
                     }

@@ -1,0 +1,387 @@
+{
+  "metadata": {
+    "generatedAt": "2026-03-05",
+    "auditPhase": "Phase 3 - Integration Testing",
+    "auditScope": "Cardia Game Deck I (16 cards)",
+    "dimensions": ["D10", "D19", "D24", "D35", "D36", "D37"],
+    "totalIssues": 3,
+    "fixedIssues": 3,
+    "openIssues": 0
+  },
+  "summary": {
+    "byPriority": {
+      "P0": { "total": 0, "fixed": 0, "open": 0 },
+      "P1": { "total": 3, "fixed": 3, "open": 0 },
+      "P2": { "total": 0, "fixed": 0, "open": 0 }
+    },
+    "byDimension": {
+      "D10": { "total": 3, "fixed": 3, "open": 0 },
+      "D19": { "total": 3, "fixed": 3, "open": 0 }
+    },
+    "byCategory": {
+      "ongoingAbilities": { "total": 3, "fixed": 3, "open": 0 }
+    }
+  },
+  "issues": [
+    {
+      "id": "PHASE3-001",
+      "title": "持续标记未正确放置",
+      "description": "财务官持续标记未出现在 ongoingAbilities 数组中",
+      "priority": "P1",
+      "status": "fixed",
+      "category": "ongoingAbilities",
+      "dimensions": ["D10", "D19"],
+      "rootCause": "持续标记创建逻辑缺失",
+      "impact": "所有持续能力卡牌（财务官、调停者、审判官、占卜师）",
+      "affectedCards": [
+        "Card06 占卜师",
+        "Card08 审判官",
+        "Card11 调停者",
+        "Card12 财务官"
+      ],
+      "discoveredIn": {
+        "task": "Task 11",
+        "testFile": "integration-ongoing-abilities.test.ts",
+        "testCase": "应该正确放置财务官持续标记"
+      },
+      "fixedIn": {
+        "task": "Task 14.1",
+        "files": ["src/games/cardia/domain/abilities/group3-ongoing.ts"],
+        "description": "在能力执行器中添加持续标记创建逻辑"
+      },
+      "verifiedBy": {
+        "testFile": "integration-ongoing-abilities.test.ts",
+        "testCase": "应该正确放置财务官持续标记",
+        "result": "passed"
+      },
+      "relatedIssues": ["PHASE3-002", "PHASE3-003"]
+    },
+    {
+      "id": "PHASE3-002",
+      "title": "持续效果未应用到遭遇结算",
+      "description": "调停者和财务官的持续效果在遭遇结算时未生效",
+      "priority": "P1",
+      "status": "fixed",
+      "category": "ongoingAbilities",
+      "dimensions": ["D10", "D19"],
+      "rootCause": "reduceEncounterResolved 未检查 ongoingAbilities",
+      "impact": "所有持续能力卡牌",
+      "affectedCards": [
+        "Card08 审判官",
+        "Card11 调停者",
+        "Card12 财务官"
+      ],
+      "discoveredIn": {
+        "task": "Task 11",
+        "testFile": "integration-ongoing-abilities.test.ts",
+        "testCases": [
+          "应该在遭遇结算时应用调停者效果（强制平局）",
+          "应该在遭遇结算时应用财务官效果（额外印戒）"
+        ]
+      },
+      "fixedIn": {
+        "task": "Task 14.2",
+        "files": ["src/games/cardia/domain/reduce.ts"],
+        "description": "在遭遇结算逻辑中添加持续标记检查和效果应用"
+      },
+      "verifiedBy": {
+        "testFile": "integration-ongoing-abilities.test.ts",
+        "testCases": [
+          "应该在遭遇结算时应用调停者效果（强制平局）",
+          "应该在遭遇结算时应用财务官效果（额外印戒）"
+        ],
+        "result": "passed"
+      },
+      "relatedIssues": ["PHASE3-001", "PHASE3-003"]
+    },
+    {
+      "id": "PHASE3-003",
+      "title": "持续效果优先级未实现",
+      "description": "审判官和调停者的优先级关系未正确处理",
+      "priority": "P1",
+      "status": "fixed",
+      "category": "ongoingAbilities",
+      "dimensions": ["D10", "D19"],
+      "rootCause": "持续效果优先级系统缺失",
+      "impact": "多个持续能力同时生效的场景",
+      "affectedCards": [
+        "Card08 审判官",
+        "Card11 调停者"
+      ],
+      "discoveredIn": {
+        "task": "Task 11",
+        "testFile": "integration-ongoing-abilities.test.ts",
+        "testCase": "应该优先应用审判官效果而不是调停者效果"
+      },
+      "fixedIn": {
+        "task": "Task 14.3",
+        "files": ["src/games/cardia/domain/reduce.ts"],
+        "description": "定义持续效果的优先级规则，在遭遇结算时按优先级应用持续效果"
+      },
+      "verifiedBy": {
+        "testFile": "integration-ongoing-abilities.test.ts",
+        "testCase": "应该优先应用审判官效果而不是调停者效果",
+        "result": "passed"
+      },
+      "relatedIssues": ["PHASE3-001", "PHASE3-002"]
+    }
+  ],
+  "testCoverage": {
+    "testFiles": [
+      {
+        "name": "integration-ongoing-abilities.test.ts",
+        "path": "src/games/cardia/__tests__/",
+        "scenarios": 4,
+        "status": "passed",
+        "issues": ["PHASE3-001", "PHASE3-002", "PHASE3-003"]
+      },
+      {
+        "name": "integration-ability-copy.test.ts",
+        "path": "src/games/cardia/__tests__/",
+        "scenarios": "existing",
+        "status": "passed",
+        "issues": []
+      },
+      {
+        "name": "integration-ongoing-modifiers.test.ts",
+        "path": "src/games/cardia/__tests__/",
+        "scenarios": 4,
+        "status": "passed",
+        "issues": [],
+        "created": "Task 13.1"
+      },
+      {
+        "name": "integration-edge-cases.test.ts",
+        "path": "src/games/cardia/__tests__/",
+        "scenarios": 8,
+        "status": "passed",
+        "issues": [],
+        "created": "Task 13.3"
+      },
+      {
+        "name": "interaction.test.ts",
+        "path": "src/games/cardia/__tests__/",
+        "scenarios": 4,
+        "status": "passed",
+        "issues": [],
+        "supplemented": "Task 13.4"
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "D10",
+        "name": "持续能力组合",
+        "scenarios": 4,
+        "coverage": "100%"
+      },
+      {
+        "id": "D19",
+        "name": "组合场景测试",
+        "scenarios": 12,
+        "coverage": "100%"
+      },
+      {
+        "id": "D24",
+        "name": "Handler 共返状态一致性",
+        "scenarios": 1,
+        "coverage": "100%"
+      },
+      {
+        "id": "D35",
+        "name": "交互选项 UI 渲染模式正确性",
+        "scenarios": 1,
+        "coverage": "100%"
+      },
+      {
+        "id": "D36",
+        "name": "流程控制标志清除完整性",
+        "scenarios": 1,
+        "coverage": "100%"
+      },
+      {
+        "id": "D37",
+        "name": "后处理循环事件去重完整性",
+        "scenarios": 1,
+        "coverage": "100%"
+      }
+    ],
+    "cards": [
+      {
+        "id": "Card01",
+        "name": "雇佣剑士",
+        "scenarios": 2,
+        "abilities": ["弃牌能力"]
+      },
+      {
+        "id": "Card02",
+        "name": "图书管理员",
+        "scenarios": 2,
+        "abilities": ["修正标记添加"]
+      },
+      {
+        "id": "Card03",
+        "name": "精灵",
+        "scenarios": 1,
+        "abilities": ["抽牌能力"]
+      },
+      {
+        "id": "Card04",
+        "name": "伏击者",
+        "scenarios": 2,
+        "abilities": ["弃牌能力"]
+      },
+      {
+        "id": "Card05",
+        "name": "破坏者",
+        "scenarios": 2,
+        "abilities": ["弃牌能力"]
+      },
+      {
+        "id": "Card06",
+        "name": "占卜师",
+        "scenarios": 1,
+        "abilities": ["持续能力"]
+      },
+      {
+        "id": "Card07",
+        "name": "学者",
+        "scenarios": 1,
+        "abilities": ["抽牌能力"]
+      },
+      {
+        "id": "Card08",
+        "name": "审判官",
+        "scenarios": 3,
+        "abilities": ["持续能力"]
+      },
+      {
+        "id": "Card09",
+        "name": "女家庭教师",
+        "scenarios": 2,
+        "abilities": ["复制能力"]
+      },
+      {
+        "id": "Card11",
+        "name": "调停者",
+        "scenarios": 4,
+        "abilities": ["持续能力"]
+      },
+      {
+        "id": "Card12",
+        "name": "财务官",
+        "scenarios": 4,
+        "abilities": ["持续能力"]
+      },
+      {
+        "id": "Card13",
+        "name": "傀儡师",
+        "scenarios": 1,
+        "abilities": ["替换卡牌"]
+      },
+      {
+        "id": "Card15",
+        "name": "虚空法师",
+        "scenarios": 2,
+        "abilities": ["移除修正标记"]
+      }
+    ],
+    "cardCoverage": "81% (13/16 cards)"
+  },
+  "missingScenarios": {
+    "ongoingAbilityCombinations": {
+      "identified": 4,
+      "priority": {
+        "P1": 2,
+        "P2": 2
+      },
+      "supplemented": 4,
+      "status": "completed"
+    },
+    "abilityChainReactions": {
+      "identified": 3,
+      "priority": {
+        "P1": 0,
+        "P2": 3
+      },
+      "supplemented": 0,
+      "status": "not_needed_for_deck1",
+      "note": "Deck I 不存在链式触发器，等待 Deck II 功能"
+    },
+    "edgeCases": {
+      "identified": 8,
+      "priority": {
+        "P1": 6,
+        "P2": 2
+      },
+      "supplemented": 8,
+      "status": "completed"
+    }
+  },
+  "recommendations": [
+    {
+      "priority": "P1",
+      "category": "Deck II Features",
+      "title": "实现 Deck II 触发器",
+      "description": "补充"弃牌时"、"影响力变化时"、"印戒变化时"触发器",
+      "rationale": "为 Deck II 功能做准备，支持更复杂的能力链式反应"
+    },
+    {
+      "priority": "P1",
+      "category": "E2E Testing",
+      "title": "补充 E2E 测试",
+      "description": "验证 UI 交互和用户体验",
+      "rationale": "确保集成测试覆盖的功能在实际游戏中正常工作"
+    },
+    {
+      "priority": "P2",
+      "category": "Performance",
+      "title": "持续监控性能",
+      "description": "确保多层触发器不影响游戏性能",
+      "rationale": "防止事件风暴和无限递归导致的性能问题"
+    },
+    {
+      "priority": "P2",
+      "category": "Regression Testing",
+      "title": "定期回归测试",
+      "description": "边界条件容易在重构时被破坏，需要持续验证",
+      "rationale": "保持测试覆盖率和代码质量"
+    }
+  ],
+  "nextSteps": {
+    "phase4": {
+      "name": "E2E 测试与用户体验验证",
+      "tasks": [
+        {
+          "id": "Task 16",
+          "name": "创建关键路径 E2E 测试",
+          "priority": "P1"
+        },
+        {
+          "id": "Task 17",
+          "name": "验证 UI 交互和错误提示",
+          "priority": "P1"
+        },
+        {
+          "id": "Task 18",
+          "name": "测试多玩家场景",
+          "priority": "P1"
+        },
+        {
+          "id": "Task 19",
+          "name": "性能测试",
+          "priority": "P2"
+        },
+        {
+          "id": "Task 20",
+          "name": "文档更新",
+          "priority": "P2"
+        },
+        {
+          "id": "Task 21",
+          "name": "最终审计报告",
+          "priority": "P1"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,335 @@
+{
+  "description": "宫廷卫士（Card07）能力测试场景：P1 打出影响力7（宫廷卫士），P2 打出影响力10，P1 失败后激活宫廷卫士能力，选择派系，P2 选择不弃牌，P1 的牌获得+7影响力",
+  "players": {
+    "0": {
+      "id": "0",
+      "name": "Player 1",
+      "hand": [
+        {
+          "uid": "p1_hand_card01",
+          "defId": "deck_i_card_01",
+          "ownerId": "0",
+          "baseInfluence": 1,
+          "faction": "guild",
+          "abilityIds": ["ability_i_mercenary_swordsman"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/1"
+        }
+      ],
+      "deck": [
+        {
+          "uid": "p1_deck_card02",
+          "defId": "deck_i_card_02",
+          "ownerId": "0",
+          "baseInfluence": 2,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_void_mage"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/2"
+        },
+        {
+          "uid": "p1_deck_card03",
+          "defId": "deck_i_card_03",
+          "ownerId": "0",
+          "baseInfluence": 3,
+          "faction": "guild",
+          "abilityIds": ["ability_i_surgeon"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/3"
+        }
+      ],
+      "discard": [],
+      "playedCards": [
+        {
+          "uid": "p1_played_court_guard",
+          "defId": "deck_i_card_07",
+          "ownerId": "0",
+          "baseInfluence": 7,
+          "faction": "guild",
+          "abilityIds": ["ability_i_court_guard"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "encounterIndex": 1,
+          "imagePath": "cardia/cards/deck1/7"
+        }
+      ],
+      "signets": 0,
+      "tags": {
+        "tags": {}
+      },
+      "hasPlayed": true,
+      "cardRevealed": true,
+      "currentCard": null
+    },
+    "1": {
+      "id": "1",
+      "name": "Player 2",
+      "hand": [
+        {
+          "uid": "p2_hand_card05",
+          "defId": "deck_i_card_05",
+          "ownerId": "1",
+          "baseInfluence": 5,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_saboteur"],
+          "difficulty": 1,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/5"
+        },
+        {
+          "uid": "p2_hand_card08",
+          "defId": "deck_i_card_08",
+          "ownerId": "1",
+          "baseInfluence": 8,
+          "faction": "dynasty",
+          "abilityIds": ["ability_i_magistrate"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/8"
+        }
+      ],
+      "deck": [
+        {
+          "uid": "p2_deck_card11",
+          "defId": "deck_i_card_11",
+          "ownerId": "1",
+          "baseInfluence": 11,
+          "faction": "academy",
+          "abilityIds": ["ability_i_clockmaker"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/11"
+        },
+        {
+          "uid": "p2_deck_card12",
+          "defId": "deck_i_card_12",
+          "ownerId": "1",
+          "baseInfluence": 12,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_treasurer"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/12"
+        }
+      ],
+      "discard": [],
+      "playedCards": [
+        {
+          "uid": "p2_played_puppeteer",
+          "defId": "deck_i_card_10",
+          "ownerId": "1",
+          "baseInfluence": 10,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_puppeteer"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 1,
+          "ongoingMarkers": [],
+          "encounterIndex": 1,
+          "imagePath": "cardia/cards/deck1/10"
+        }
+      ],
+      "signets": 0,
+      "tags": {
+        "tags": {}
+      },
+      "hasPlayed": true,
+      "cardRevealed": true,
+      "currentCard": null
+    }
+  },
+  "playerOrder": ["0", "1"],
+  "currentPlayerId": "0",
+  "turnNumber": 1,
+  "phase": "ability",
+  "currentEncounter": {
+    "player1Card": {
+      "uid": "p1_played_court_guard",
+      "defId": "deck_i_card_07",
+      "ownerId": "0",
+      "baseInfluence": 7,
+      "faction": "guild",
+      "abilityIds": ["ability_i_court_guard"],
+      "difficulty": 2,
+      "modifiers": {
+        "entries": [],
+        "nextOrder": 0
+      },
+      "tags": {
+        "tags": {}
+      },
+      "signets": 0,
+      "ongoingMarkers": [],
+      "imagePath": "cardia/cards/deck1/7"
+    },
+    "player2Card": {
+      "uid": "p2_played_puppeteer",
+      "defId": "deck_i_card_10",
+      "ownerId": "1",
+      "baseInfluence": 10,
+      "faction": "swamp",
+      "abilityIds": ["ability_i_puppeteer"],
+      "difficulty": 2,
+      "modifiers": {
+        "entries": [],
+        "nextOrder": 0
+      },
+      "tags": {
+        "tags": {}
+      },
+      "signets": 0,
+      "ongoingMarkers": [],
+      "imagePath": "cardia/cards/deck1/10"
+    },
+    "player1Influence": 7,
+    "player2Influence": 10,
+    "winnerId": "1",
+    "loserId": "0"
+  },
+  "previousEncounter": null,
+  "encounterHistory": [
+    {
+      "player1Card": {
+        "uid": "p1_played_court_guard",
+        "defId": "deck_i_card_07",
+        "ownerId": "0",
+        "baseInfluence": 7,
+        "faction": "guild",
+        "abilityIds": ["ability_i_court_guard"],
+        "difficulty": 2,
+        "modifiers": {
+          "entries": [],
+          "nextOrder": 0
+        },
+        "tags": {
+          "tags": {}
+        },
+        "signets": 0,
+        "ongoingMarkers": [],
+        "imagePath": "cardia/cards/deck1/7"
+      },
+      "player2Card": {
+        "uid": "p2_played_puppeteer",
+        "defId": "deck_i_card_10",
+        "ownerId": "1",
+        "baseInfluence": 10,
+        "faction": "swamp",
+        "abilityIds": ["ability_i_puppeteer"],
+        "difficulty": 2,
+        "modifiers": {
+          "entries": [],
+          "nextOrder": 0
+        },
+        "tags": {
+          "tags": {}
+        },
+        "signets": 0,
+        "ongoingMarkers": [],
+        "imagePath": "cardia/cards/deck1/10"
+      },
+      "player1Influence": 7,
+      "player2Influence": 10,
+      "winnerId": "1",
+      "loserId": "0"
+    }
+  ],
+  "deckVariant": "deck_i",
+  "targetSignets": 5,
+  "ongoingAbilities": [],
+  "modifierTokens": [],
+  "delayedEffects": [],
+  "revealFirstNextEncounter": null,
+  "forcedPlayOrderNextEncounter": null,
+  "mechanicalSpiritActive": null,
+  "gameWonBy": null,
+  "inventorPending": null,
+  "testInstructions": {
+    "step1": "当前状态：P1（宫廷卫士，影响力7）vs P2（傀儡师，影响力10），P1 失败",
+    "step2": "P1 应该看到能力按钮，点击激活宫廷卫士能力",
+    "step3": "P1 看到派系选择弹窗，选择 'Swamp' 派系",
+    "step4": "由于 P2 手牌中没有 Swamp 派系的牌（只有 Swamp 和 Dynasty），系统应该直接添加 +7 修正标记到 P1 的牌上",
+    "step5": "验证：modifierTokens 数组中应该有一个 { cardId: 'p1_played_court_guard', value: 7, source: 'ability_i_court_guard' }",
+    "step6": "回合结束后，进入下一回合的 play 阶段",
+    "step7": "验证：P1 的宫廷卫士卡牌的当前影响力应该是 7 + 7 = 14",
+    "alternativeScenario": {
+      "description": "如果 P2 手牌中有 Swamp 派系的牌，P2 应该看到选择弹窗：'弃掉一张 Swamp 派系的手牌' 或 '不弃牌（对手获得 +7 影响力）'",
+      "step1": "P2 选择 '弃牌'，然后选择具体要弃掉的牌",
+      "step2": "验证：P2 的手牌减少 1 张，弃牌堆增加 1 张",
+      "step3": "验证：P1 的牌不应该获得 +7 修正标记",
+      "step4": "如果 P2 选择 '不弃牌'，则 P1 的牌获得 +7 修正标记"
+    }
+  }
+}

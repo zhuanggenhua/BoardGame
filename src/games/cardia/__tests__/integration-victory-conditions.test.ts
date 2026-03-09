@@ -165,12 +165,13 @@ describe('胜利条件集成测试', () => {
 
   describe('标准胜利条件', () => {
     it('应该在玩家印戒总和≥5时触发标准胜利', () => {
-      // 构造场景：p1 有 5 枚印戒
+      // 构造场景：p1 有 5 枚印戒，处于回合结束阶段
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...core,
+          phase: 'end', // ⚠️ 修复：标准印戒胜利条件只在阶段3（回合结束阶段）检查
           players: {
             ...core.players,
             p1: {
@@ -214,12 +215,13 @@ describe('胜利条件集成测试', () => {
     });
 
     it('应该在玩家印戒总和>5时触发标准胜利', () => {
-      // 构造场景：p1 有 6 枚印戒
+      // 构造场景：p1 有 6 枚印戒，处于回合结束阶段
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...core,
+          phase: 'end', // ⚠️ 修复：标准印戒胜利条件只在阶段3（回合结束阶段）检查
           players: {
             ...core.players,
             p1: {
@@ -263,12 +265,13 @@ describe('胜利条件集成测试', () => {
     });
 
     it('应该在玩家印戒总和<5时不触发胜利', () => {
-      // 构造场景：p1 有 4 枚印戒
+      // 构造场景：p1 有 4 枚印戒，处于回合结束阶段
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...core,
+          phase: 'end', // ⚠️ 修复：标准印戒胜利条件只在阶段3（回合结束阶段）检查
           players: {
             ...core.players,
             p1: {
@@ -305,12 +308,13 @@ describe('胜利条件集成测试', () => {
 
   describe('双方同时达到5枚印戒', () => {
     it('应该在双方同时达到5枚印戒时判定为平局', () => {
-      // 构造场景：p1 和 p2 都有 5 枚印戒
+      // 构造场景：p1 和 p2 都有 5 枚印戒，处于回合结束阶段
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...core,
+          phase: 'end', // ⚠️ 修复：标准印戒胜利条件只在阶段3（回合结束阶段）检查
           players: {
             ...core.players,
             p1: {
@@ -367,12 +371,13 @@ describe('胜利条件集成测试', () => {
     });
 
     it('应该在一方印戒更多时判定该方获胜', () => {
-      // 构造场景：p1 有 6 枚印戒，p2 有 5 枚印戒
+      // 构造场景：p1 有 6 枚印戒，p2 有 5 枚印戒，处于回合结束阶段
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...core,
+          phase: 'end', // ⚠️ 修复：标准印戒胜利条件只在阶段3（回合结束阶段）检查
           players: {
             ...core.players,
             p1: {
@@ -464,22 +469,25 @@ describe('胜利条件集成测试', () => {
       // 注意：机械精灵的条件胜利在遭遇结算时检查
       // 这个测试验证 isGameOver 逻辑是否正确识别机械精灵的条件胜利
       
-      // 构造场景：p1 有机械精灵持续标记，且已经赢得遭遇（印戒数达到5）
+      // 构造场景：p1 有机械精灵持续标记，且已经赢得遭遇（印戒数达到5），处于回合结束阶段
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...core,
-          ongoingAbilities: [
-            {
-              id: 'ongoing1',
-              abilityId: ABILITY_IDS.MECHANICAL_SPIRIT,
-              cardId: 'c1',
-              playerId: 'p1',
-              effectType: 'conditionalVictory',
-              encounterIndex: 0,
-            }
-          ],
+          phase: 'end', // ⚠️ 修复：标准印戒胜利条件只在阶段3（回合结束阶段）检查
+          mechanicalSpiritActive: {
+            playerId: 'p1',
+            cardId: 'c1',
+          },
+          previousEncounter: {
+            winnerId: 'p1',
+            loserId: 'p2',
+            p1Influence: 15,
+            p2Influence: 10,
+            p1CardUid: 'c1',
+            p2CardUid: 'c2',
+          },
           players: {
             ...core.players,
             p1: {
@@ -501,7 +509,7 @@ describe('胜利条件集成测试', () => {
       };
 
       // 检查胜利条件
-      // 机械精灵的条件胜利：如果有 conditionalVictory 标记且印戒>=5，则获胜
+      // 机械精灵的条件胜利：如果有 mechanicalSpiritActive 标记且在当前遭遇中获胜，则获胜
       const gameOver = CardiaDomain.isGameOver(state.core);
 
       expect(gameOver).toBeDefined();
@@ -522,12 +530,13 @@ describe('胜利条件集成测试', () => {
     });
 
     it('应该在精灵持续标记存在且印戒>=5时触发游戏胜利', () => {
-      // 构造场景：p1 有精灵持续标记，且印戒数达到5
+      // 构造场景：p1 有精灵持续标记，且印戒数达到5，处于能力阶段
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...core,
+          phase: 'ability', // ⚠️ 修复：特殊胜利条件只在阶段2（能力阶段）检查
           ongoingAbilities: [
             {
               id: 'ongoing1',
@@ -653,12 +662,13 @@ describe('胜利条件集成测试', () => {
 
   describe('游戏结束后状态', () => {
     it('应该在游戏结束后将结果写入 sys.gameover', () => {
-      // 构造场景：p1 有 5 枚印戒
+      // 构造场景：p1 有 5 枚印戒，处于回合结束阶段
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...core,
+          phase: 'end', // ⚠️ 修复：标准印戒胜利条件只在阶段3（回合结束阶段）检查
           players: {
             ...core.players,
             p1: {

@@ -1,0 +1,53 @@
+{
+  "phase": "phase1",
+  "timestamp": "2026-03-04T12:05:32.642Z",
+  "tools": [
+    {
+      "toolName": "check-ability-tags",
+      "timestamp": "2026-03-04T12:03:18.181Z",
+      "summary": {
+        "total": 0,
+        "p0": 0,
+        "p1": 0,
+        "p2": 0
+      }
+    },
+    {
+      "toolName": "check-displaymode",
+      "timestamp": "2026-03-04T12:03:10.431Z",
+      "summary": {
+        "total": 0,
+        "p0": 0,
+        "p1": 0,
+        "p2": 0
+      }
+    },
+    {
+      "toolName": "check-grant-extra-payload",
+      "timestamp": "2026-03-04T12:03:18.101Z",
+      "summary": {
+        "total": 0,
+        "p0": 0,
+        "p1": 0,
+        "p2": 0
+      }
+    },
+    {
+      "toolName": "check-play-constraint",
+      "timestamp": "2026-03-04T12:03:18.058Z",
+      "summary": {
+        "total": 0,
+        "p0": 0,
+        "p1": 0,
+        "p2": 0
+      }
+    }
+  ],
+  "issues": [],
+  "summary": {
+    "total": 0,
+    "p0": 0,
+    "p1": 0,
+    "p2": 0
+  }
+}

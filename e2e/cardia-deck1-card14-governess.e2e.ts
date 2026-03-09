@@ -120,9 +120,26 @@ test.describe('Cardia 一号牌组 - 女导师（新API）', () => {
             console.log('✅ 卡牌选择弹窗已显示（选择要复制的能力）');
             
             // 7. 选择发明家（影响力15，满足条件）
+            // 注意：需要找到第一个未禁用的按钮（其他卡牌可能因影响力不足而被禁用）
             const allButtons = modal.locator('button');
             const cardButtons = allButtons.filter({ hasNotText: /确认|Confirm|取消|Cancel/ });
-            await cardButtons.first().click();
+            const cardButtonCount = await cardButtons.count();
+            
+            let clickedButton = null;
+            for (let i = 0; i < cardButtonCount; i++) {
+                const button = cardButtons.nth(i);
+                const isDisabled = await button.isDisabled();
+                if (!isDisabled) {
+                    clickedButton = button;
+                    break;
+                }
+            }
+            
+            if (!clickedButton) {
+                throw new Error('No enabled card buttons found');
+            }
+            
+            await clickedButton.click();
             await setup.player1Page.waitForTimeout(500);
             console.log('✅ 已选择发明家');
             

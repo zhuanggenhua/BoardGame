@@ -1,0 +1,355 @@
+{
+  "toolName": "e2e-test-execution",
+  "timestamp": "2026-03-05T10:30:00Z",
+  "specPath": ".kiro/specs/cardia-full-audit/",
+  "phase": "Phase 4 - E2E Testing",
+  "task": "Task 17.3 - 记录所有失败的测试",
+  "dataSource": "reports/audit-phase4-e2e-results.md",
+  "issues": [
+    {
+      "id": "PHASE4-001",
+      "dimension": "D47",
+      "dimensionName": "E2E 测试覆盖完整性",
+      "priority": "P0",
+      "category": "import-error",
+      "title": "cardia-debug-basic-flow.e2e.ts - Missing readGameState export",
+      "file": "e2e/cardia-debug-basic-flow.e2e.ts",
+      "errorType": "TypeScript compilation error",
+      "errorMessage": "Module '\"./helpers/cardia\"' has no exported member 'readGameState'.",
+      "affectedLines": [37, 38, 61, 70, 78, 113],
+      "usageCount": 6,
+      "impact": "阻塞测试运行",
+      "rootCause": "e2e/helpers/cardia.ts 未导出 readGameState 函数，可能是重构时遗漏的导出",
+      "fixSuggestion": {
+        "approach": "使用现有的 readCoreState 替代",
+        "steps": [
+          "修改导入: import { readCoreState } from './helpers/cardia';",
+          "替换所有 6 处使用: readGameState -> readCoreState",
+          "运行 npx tsc --noEmit 确认无类型错误",
+          "运行测试: npm run test:e2e -- cardia-debug-basic-flow.e2e.ts"
+        ],
+        "estimatedTime": "5 分钟",
+        "alternativeApproach": "在 e2e/helpers/cardia.ts 中添加 export { readCoreState as readGameState };"
+      },
+      "verificationSteps": [
+        "修改导入和使用位置",
+        "运行 npx tsc --noEmit 确认无类型错误",
+        "运行测试确认可以正常执行"
+      ]
+    },
+    {
+      "id": "PHASE4-002",
+      "dimension": "D47",
+      "dimensionName": "E2E 测试覆盖完整性",
+      "priority": "P0",
+      "category": "import-error",
+      "title": "cardia-ui-markers.e2e.ts - Missing waitForTestHarness export",
+      "file": "e2e/cardia-ui-markers.e2e.ts",
+      "errorType": "TypeScript compilation error",
+      "errorMessage": "Module '\"./helpers/cardia\"' has no exported member 'waitForTestHarness'.",
+      "affectedLines": ["import statement"],
+      "usageCount": "unknown",
+      "impact": "阻塞测试运行",
+      "rootCause": "waitForTestHarness 从错误的模块导入，该函数实际存在于 e2e/helpers/common.ts",
+      "fixSuggestion": {
+        "approach": "从正确的模块导入",
+        "steps": [
+          "修改导入: import { setupOnlineMatch } from './helpers/cardia';",
+          "添加导入: import { waitForTestHarness } from './helpers/common';",
+          "运行 npx tsc --noEmit 确认无类型错误",
+          "运行测试: npm run test:e2e -- cardia-ui-markers.e2e.ts"
+        ],
+        "estimatedTime": "3 分钟"
+      },
+      "verificationSteps": [
+        "修改导入语句",
+        "运行 npx tsc --noEmit 确认无类型错误",
+        "运行测试确认可以正常执行"
+      ]
+    },
+    {
+      "id": "PHASE4-003",
+      "dimension": "D47",
+      "dimensionName": "E2E 测试覆盖完整性",
+      "priority": "P0",
+      "category": "import-error",
+      "title": "cardia-void-mage-no-markers.e2e.ts - Missing activateAbility/skipAbility exports",
+      "file": "e2e/cardia-void-mage-no-markers.e2e.ts",
+      "errorType": "TypeScript compilation error",
+      "errorMessage": "Module '\"./helpers/cardia\"' has no exported member 'activateAbility'. Module '\"./helpers/cardia\"' has no exported member 'skipAbility'.",
+      "affectedLines": [31, 52, 77, 125],
+      "usageCount": 4,
+      "impact": "阻塞测试运行",
+      "rootCause": "e2e/helpers/cardia.ts 未导出这两个辅助函数，可能是测试特定的辅助函数未被提取到公共 helpers",
+      "fixSuggestion": {
+        "approach": "在测试文件内定义本地辅助函数",
+        "steps": [
+          "在测试文件顶部添加 activateAbility 和 skipAbility 函数定义",
+          "参考 cardia-basic-flow.e2e.ts 的实现",
+          "移除导入中的这两个函数",
+          "运行 npx tsc --noEmit 确认无类型错误",
+          "运行测试: npm run test:e2e -- cardia-void-mage-no-markers.e2e.ts"
+        ],
+        "estimatedTime": "10 分钟",
+        "codeExample": "async function activateAbility(page: Page) {\n  await page.locator('[data-testid=\"cardia-activate-ability-btn\"]').click();\n  await page.waitForTimeout(500);\n}\n\nasync function skipAbility(page: Page) {\n  await page.locator('[data-testid=\"cardia-skip-ability-btn\"]').click();\n  await page.waitForTimeout(500);\n}",
+        "alternativeApproach": "将这些函数添加到 e2e/helpers/cardia.ts 并导出（如果多个测试需要）"
+      },
+      "verificationSteps": [
+        "在测试文件内定义辅助函数",
+        "修改导入语句",
+        "运行 npx tsc --noEmit 确认无类型错误",
+        "运行测试确认可以正常执行"
+      ]
+    },
+    {
+      "id": "PHASE4-004",
+      "dimension": "D47",
+      "dimensionName": "E2E 测试覆盖完整性",
+      "priority": "P0",
+      "category": "import-error",
+      "title": "cardia-deck1-card04-mediator-single-encounter.e2e.ts - Missing clickEndTurn export",
+      "file": "e2e/cardia-deck1-card04-mediator-single-encounter.e2e.ts",
+      "errorType": "TypeScript compilation error",
+      "errorMessage": "Module '\"./helpers/cardia\"' has no exported member 'clickEndTurn'.",
+      "affectedLines": ["import statement"],
+      "usageCount": "unknown",
+      "impact": "阻塞测试运行",
+      "rootCause": "e2e/helpers/cardia.ts 未导出 clickEndTurn 函数，可能是测试特定的辅助函数未被提取到公共 helpers",
+      "fixSuggestion": {
+        "approach": "在测试文件内定义本地辅助函数",
+        "steps": [
+          "在测试文件顶部添加 clickEndTurn 函数定义",
+          "移除导入中的 clickEndTurn",
+          "运行 npx tsc --noEmit 确认无类型错误",
+          "运行测试: npm run test:e2e -- cardia-deck1-card04-mediator-single-encounter.e2e.ts"
+        ],
+        "estimatedTime": "5 分钟",
+        "codeExample": "async function clickEndTurn(page: Page) {\n  await page.locator('[data-testid=\"cardia-end-turn-btn\"]').click();\n  await page.waitForTimeout(500);\n}",
+        "alternativeApproach": "将函数添加到 e2e/helpers/cardia.ts 并导出（如果多个测试需要）"
+      },
+      "verificationSteps": [
+        "在测试文件内定义辅助函数",
+        "修改导入语句",
+        "运行 npx tsc --noEmit 确认无类型错误",
+        "运行测试确认可以正常执行"
+      ]
+    },
+    {
+      "id": "PHASE4-005",
+      "dimension": "D8",
+      "dimensionName": "引擎批处理时序与 UI 交互对齐",
+      "priority": "P1",
+      "category": "test-failure",
+      "title": "cardia-basic-flow.e2e.ts - Phase advancement stuck in ability phase",
+      "file": "e2e/cardia-basic-flow.e2e.ts",
+      "testName": "should complete a full turn cycle",
+      "errorType": "Assertion failure",
+      "errorMessage": "expect(locator).toContainText(expected)\n\nLocator: locator('[data-testid=\"cardia-phase-indicator\"]')\nExpected substring: \"End\"\nReceived string:    \"PhaseActivate Ability\"",
+      "failureLocation": "e2e/cardia-basic-flow.e2e.ts:169:84",
+      "timeout": "10000ms",
+      "pageState": {
+        "phase": "ability",
+        "myPlayerId": "0",
+        "loserId": "0",
+        "hasCurrentCard": true,
+        "currentCardId": "deck_i_card_03",
+        "hasAbility": true,
+        "abilityId": "ability_i_surgeon",
+        "turnNumber": 1,
+        "playedCardsCount": 1
+      },
+      "screenshots": [
+        "test-results/cardia-basic-flow.e2e.ts-C-e6f3e--complete-a-full-turn-cycle-chromium/test-failed-1.png",
+        "test-results/cardia-basic-flow.e2e.ts-C-e6f3e--complete-a-full-turn-cycle-chromium/test-failed-2.png"
+      ],
+      "impact": "基础流程测试失败，可能表明阶段推进逻辑存在问题",
+      "rootCause": {
+        "primary": "游戏停留在 ability 阶段，未推进到 end 阶段",
+        "possibleReasons": [
+          "跳过能力按钮未正确点击（动画延迟、z-index 遮挡、disabled 状态）",
+          "ability 阶段的 onPhaseExit 未正确返回",
+          "FlowSystem 未正确处理阶段切换",
+          "游戏结束检测干扰了阶段推进（loserId: '0' 表明玩家已输）",
+          "外科医生能力有特殊的阶段推进要求"
+        ],
+        "keyObservations": [
+          "玩家 0 已经输了（loserId: '0'）",
+          "当前卡牌是外科医生（deck_i_card_03）",
+          "游戏卡在能力阶段，未推进到结束阶段"
+        ]
+      },
+      "fixSuggestion": {
+        "shortTerm": {
+          "approach": "测试层面修复",
+          "steps": [
+            "增加等待时间: await page.waitForTimeout(1000);",
+            "显式等待阶段切换: await page.waitForFunction(() => { ... });",
+            "添加调试日志: console.log('Before/After skip ability:', await readCoreState(page));"
+          ],
+          "estimatedTime": "30 分钟"
+        },
+        "longTerm": {
+          "approach": "代码层面修复",
+          "steps": [
+            "检查 FlowSystem 阶段推进逻辑",
+            "检查外科医生能力实现",
+            "检查游戏结束逻辑",
+            "添加单元测试覆盖外科医生能力",
+            "添加单元测试覆盖游戏结束时的阶段推进"
+          ],
+          "estimatedTime": "2-4 小时"
+        }
+      },
+      "verificationSteps": [
+        "修改测试代码（增加等待/日志）",
+        "重新运行测试: npm run test:e2e -- cardia-basic-flow.e2e.ts",
+        "查看截图和日志，确认问题是否解决",
+        "如果仍失败，查看调试日志定位具体问题",
+        "添加单元测试覆盖修复场景",
+        "运行所有测试确认无回归"
+      ],
+      "affectedTests": [
+        "cardia-basic-flow.e2e.ts (1/3 tests failed)"
+      ],
+      "potentialImpact": {
+        "tests": "其他涉及外科医生或能力跳过的测试可能也会失败",
+        "users": "如果是真实 bug，玩家可能在跳过外科医生能力后卡住，游戏无法正常推进"
+      }
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "p0": 4,
+    "p1": 1,
+    "p2": 0,
+    "byCategory": {
+      "import-error": 4,
+      "test-failure": 1
+    },
+    "byDimension": {
+      "D47": 4,
+      "D8": 1
+    },
+    "executionStats": {
+      "totalTestFiles": 41,
+      "executableTests": 38,
+      "blockedTests": 4,
+      "failedTests": 1,
+      "failureRate": "12.2%",
+      "coverageImpact": "9.8% of tests cannot execute"
+    }
+  },
+  "actionPlan": {
+    "immediate": [
+      {
+        "priority": "P0",
+        "action": "修复所有导入错误",
+        "issues": ["PHASE4-001", "PHASE4-002", "PHASE4-003", "PHASE4-004"],
+        "estimatedTime": "30 分钟",
+        "verification": "运行 npx tsc --noEmit 确认无类型错误"
+      },
+      {
+        "priority": "P0",
+        "action": "重新运行完整测试套件",
+        "command": "npm run test:e2e:ci",
+        "estimatedTime": "15 分钟",
+        "expectedResult": "41 个测试文件全部可执行"
+      }
+    ],
+    "soon": [
+      {
+        "priority": "P1",
+        "action": "调查并修复 PHASE4-005",
+        "issue": "PHASE4-005",
+        "estimatedTime": "2-4 小时",
+        "steps": [
+          "本地复现问题",
+          "添加调试日志",
+          "定位根因",
+          "实施修复",
+          "验证修复"
+        ]
+      }
+    ],
+    "later": [
+      {
+        "priority": "P2",
+        "action": "提取公共辅助函数",
+        "estimatedTime": "1 小时",
+        "description": "将 activateAbility、skipAbility、clickEndTurn 提取到 e2e/helpers/cardia.ts"
+      },
+      {
+        "priority": "P2",
+        "action": "改进测试稳定性",
+        "estimatedTime": "2 小时",
+        "description": "增加智能等待、添加重试机制、改进错误信息"
+      },
+      {
+        "priority": "P2",
+        "action": "补充测试覆盖",
+        "estimatedTime": "8 小时",
+        "description": "添加 Deck II/III/IV 测试、多回合复杂场景测试、错误处理测试"
+      }
+    ]
+  },
+  "qualityImprovements": [
+    {
+      "area": "辅助函数管理",
+      "problem": "多个测试文件重复定义相同的辅助函数",
+      "recommendation": "将通用辅助函数提取到 e2e/helpers/cardia.ts，为测试特定的辅助函数添加注释说明"
+    },
+    {
+      "area": "等待策略",
+      "problem": "使用固定时间等待（waitForTimeout）不稳定",
+      "recommendation": "优先使用 waitForFunction 等待状态变化，使用 waitForSelector 等待 UI 元素出现"
+    },
+    {
+      "area": "错误信息",
+      "problem": "测试失败时缺少足够的上下文信息",
+      "recommendation": "在关键步骤添加调试日志，失败时自动截图和保存状态，在断言中包含更多上下文信息"
+    },
+    {
+      "area": "测试隔离",
+      "problem": "测试之间可能存在状态污染",
+      "recommendation": "每个测试使用独立的对局，测试结束后清理状态，避免依赖测试执行顺序"
+    },
+    {
+      "area": "测试命名",
+      "problem": "部分测试名称不够描述性",
+      "recommendation": "使用 'should [expected behavior] when [condition]' 格式，包含测试的关键场景和预期结果"
+    }
+  ],
+  "riskAssessment": {
+    "high": [
+      {
+        "issue": "PHASE4-005",
+        "risk": "阶段推进问题可能影响实际游戏体验",
+        "impact": "玩家可能在跳过能力后卡住，游戏无法正常推进"
+      }
+    ],
+    "medium": [
+      {
+        "issues": ["PHASE4-001", "PHASE4-002", "PHASE4-003", "PHASE4-004"],
+        "risk": "导入错误阻塞测试运行，影响 CI/CD",
+        "impact": "无法运行完整测试套件，可能遗漏回归问题"
+      }
+    ],
+    "low": [
+      {
+        "area": "测试质量",
+        "risk": "测试质量问题，不影响功能但影响维护性",
+        "impact": "测试代码重复、不稳定、难以维护"
+      }
+    ]
+  },
+  "metadata": {
+    "generatedBy": "Task 17.3 - 记录所有失败的测试",
+    "specVersion": "1.0",
+    "reportVersion": "1.0",
+    "relatedReports": [
+      "reports/audit-phase4-e2e-results.md",
+      "reports/audit-phase4-e2e-coverage.md",
+      "reports/audit-phase4-test-failures.md"
+    ]
+  }
+}

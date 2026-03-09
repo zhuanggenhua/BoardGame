@@ -27,10 +27,10 @@ export function validate(
             return validatePlayCard(core, command);
         
         case CARDIA_COMMANDS.ACTIVATE_ABILITY:
-            return validateActivateAbility(core, command);
+            return validateActivateAbility(state, command);
         
         case CARDIA_COMMANDS.SKIP_ABILITY:
-            return validateSkipAbility(core, command);
+            return validateSkipAbility(state, command);
         
         case CARDIA_COMMANDS.CHOOSE_CARD:
             return validateChooseCard(core, command);
@@ -93,6 +93,22 @@ function validatePlayCard(
         return { valid: false, error: 'Already played a card this turn' };
     }
     
+    // 占卜师能力：检查强制出牌顺序
+    if (core.forcedPlayOrderNextEncounter) {
+        const forcedPlayer = core.forcedPlayOrderNextEncounter;
+        const forcedPlayerState = core.players[forcedPlayer];
+        
+        // 如果强制出牌的玩家还没有出牌，其他玩家不能出牌
+        if (!forcedPlayerState.hasPlayed && playerId !== forcedPlayer) {
+            console.warn('[Cardia] PLAY_CARD validation failed: Forced play order', {
+                playerId,
+                forcedPlayer,
+                forcedPlayerHasPlayed: forcedPlayerState.hasPlayed,
+            });
+            return { valid: false, error: 'validation.opponent_must_play_first' };
+        }
+    }
+    
     // 检查卡牌是否在手牌中
     const card = player.hand.find(c => c.uid === cardUid);
     if (!card) {
@@ -117,14 +133,15 @@ function validatePlayCard(
  * 验证激活能力命令
  */
 function validateActivateAbility(
-    core: CardiaCore,
+    state: MatchState<CardiaCore>,
     command: Extract<CardiaCommand, { type: typeof CARDIA_COMMANDS.ACTIVATE_ABILITY }>
 ): ValidationResult {
     const { playerId } = command;
     const { abilityId, sourceCardUid } = command.payload;
+    const core = state.core;
     
-    // 检查是否在能力阶段
-    if (core.phase !== 'ability') {
+    // 检查是否在能力阶段（从 sys.phase 读取，FlowSystem 管理的权威来源）
+    if (state.sys.phase !== 'ability') {
         return { valid: false, error: 'Not in ability phase' };
     }
     
@@ -169,13 +186,14 @@ function validateActivateAbility(
  * 验证跳过能力命令
  */
 function validateSkipAbility(
-    core: CardiaCore,
+    state: MatchState<CardiaCore>,
     command: Extract<CardiaCommand, { type: 'SKIP_ABILITY' }>
 ): ValidationResult {
+    const { core, sys } = state;
     const { playerId } = command;
     
-    // 检查是否在能力阶段
-    if (core.phase !== 'ability') {
+    // 检查是否在能力阶段（从 sys.phase 读取，FlowSystem 管理）
+    if (sys.phase !== 'ability') {
         return { valid: false, error: 'Not in ability phase' };
     }
     

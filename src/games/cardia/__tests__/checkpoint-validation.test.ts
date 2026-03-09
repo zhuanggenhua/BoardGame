@@ -102,6 +102,9 @@ describe('Checkpoint - 领域层实现完成', () => {
         it('应该在玩家达到目标印戒数时返回获胜者', () => {
             const state = CardiaDomain.setup(['player1', 'player2'], mockRandom);
             
+            // ⚠️ 修复：标准印戒胜利条件只在阶段3（回合结束阶段）检查
+            state.phase = 'end';
+            
             // 模拟玩家1获得5个印戒
             state.players['player1'].playedCards = [
                 { uid: 'card1', defId: 'test', baseInfluence: 5, signets: 5, slotIndex: 0 } as any,

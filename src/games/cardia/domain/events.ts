@@ -23,6 +23,7 @@ export const CARDIA_EVENTS = {
     ENCOUNTER_RESULT_CHANGED: 'cardia:encounter_result_changed',
     REVEAL_ORDER_CHANGED: 'cardia:reveal_order_changed',
     SIGNET_MOVED: 'cardia:signet_moved',
+    SIGNET_REMOVED: 'cardia:signet_removed',
     EXTRA_SIGNET_PLACED: 'cardia:extra_signet_placed',
     SIGNET_GRANTED: 'cardia:signet_granted',
     FACTION_SELECTED: 'cardia:faction_selected',
@@ -223,6 +224,17 @@ export interface SignetMovedEvent extends GameEvent<typeof CARDIA_EVENTS.SIGNET_
         fromCardId: string;
         toCardId: string;
         slotIndex: number;
+    };
+}
+
+/**
+ * 印戒移除事件
+ * 当遭遇结果从"有获胜方"变为"平局"时，移除获胜方卡牌上的印戒
+ */
+export interface SignetRemovedEvent extends GameEvent<typeof CARDIA_EVENTS.SIGNET_REMOVED> {
+    payload: {
+        cardId: string;
+        playerId: string;
     };
 }
 
@@ -435,6 +447,7 @@ export type CardiaEvent =
     | EncounterResultChangedEvent
     | RevealOrderChangedEvent
     | SignetMovedEvent
+    | SignetRemovedEvent
     | ExtraSignetPlacedEvent
     | SignetGrantedEvent
     | FactionSelectedEvent

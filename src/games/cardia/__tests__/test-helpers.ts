@@ -10,6 +10,7 @@ import type { CardInstance, CardiaCore, PlayerState } from '../domain/core-types
 import type { CardiaAbilityContext } from '../domain/abilityExecutor';
 import type { PlayerId } from '../../../engine/types';
 import type { FactionType } from '../domain/ids';
+import { createFixedRandom } from './helpers/testRandom';
 
 /**
  * 创建模拟卡牌实例
@@ -92,7 +93,7 @@ export function createMockContext(overrides: Partial<CardiaAbilityContext> = {})
         sourceId: 'test_source',
         ownerId: playerId,
         timestamp: Date.now(),
-        random: () => 0.5,
+        random: createFixedRandom(0.5),
         ...overrides,
     };
 }
@@ -297,3 +298,51 @@ export const TEST_CARDS = {
     AMBUSHER: 'deck_i_card_09',
     WITCH_KING: 'deck_ii_card_13',
 };
+
+/**
+ * 执行命令并自动解决所有交互
+ * 
+ * 用于测试中自动处理交互链，避免手动循环解决交互
+ * 
+ * @param state 当前状态
+ * @param command 要执行的命令
+ * @param random 随机函数
+ * @param domain 游戏领域对象
+ * @param autoConfirm 自动确认交互（默认 true）
+ * @returns 最终状态
+ */
+export function executeAndResolveInteraction<TCore, TCommand>(
+    state: any,
+    command: TCommand,
+    random: any,
+    domain: any,
+    autoConfirm: boolean = true
+): any {
+    // 执行命令
+    let events = domain.execute(state, command, random);
+    for (const event of events) {
+        state = { ...state, core: domain.reduce(state.core, event) };
+    }
+    
+    // 自动解决所有交互
+    while (state.sys.interaction.current) {
+        const interaction = state.sys.interaction.current;
+        
+        // 构造解决交互的命令
+        const resolveCommand: any = {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: interaction.playerId,
+            payload: {
+                interactionId: interaction.id,
+                response: autoConfirm ? { confirmed: true } : { confirmed: false }
+            }
+        };
+        
+        events = domain.execute(state, resolveCommand, random);
+        for (const event of events) {
+            state = { ...state, core: domain.reduce(state.core, event) };
+        }
+    }
+    
+    return state;
+}

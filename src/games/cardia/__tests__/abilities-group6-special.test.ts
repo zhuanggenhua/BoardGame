@@ -17,6 +17,7 @@ import { CARDIA_EVENTS } from '../domain/events';
 import type { CardiaAbilityContext } from '../domain/abilityExecutor';
 import { createModifierStack } from '../../../engine/primitives/modifier';
 import { createTagContainer } from '../../../engine/primitives/tags';
+import { createFixedRandom } from './helpers/testRandom';
 
 // 初始化所有能力执行器
 beforeAll(async () => {
@@ -136,7 +137,7 @@ describe('组 6：特殊机制能力', () => {
       ownerId: 'player1',
       opponentId: 'player2',
       timestamp: Date.now(),
-      random: () => 0.5,
+      random: createFixedRandom(0.5),
     };
   });
 
@@ -177,13 +178,13 @@ describe('组 6：特殊机制能力', () => {
 
     it('应该使用随机数选择对手手牌', () => {
       // 测试随机数为 0 时选择第一张手牌
-      mockContext.random = () => 0;
+      mockContext.random = createFixedRandom(0);
 
       const executor1 = abilityExecutorRegistry.resolve(ABILITY_IDS.PUPPETEER)!(mockContext);
       expect(executor1.events[0].payload.newCardId).toBe('opp_hand1');
 
       // 测试随机数为 0.9 时选择第二张手牌
-      mockContext.random = () => 0.9;
+      mockContext.random = createFixedRandom(0.9);
 
       const executor2 = abilityExecutorRegistry.resolve(ABILITY_IDS.PUPPETEER)!(mockContext);
       expect(executor2.events[0].payload.newCardId).toBe('opp_hand2');

@@ -121,6 +121,12 @@ test.describe('Cardia 一号牌组 - 沼泽守卫（新API）', () => {
                 return {
                     currentCard: state?.core?.players?.['0']?.playedCards?.find((c: any) => c.encounterIndex === state.core.turnNumber),
                     hasInteraction: !!state?.sys?.interaction?.current,
+                    currentInteractionSourceId: state?.sys?.interaction?.current?.data?.sourceId,
+                    queuedInteractions: state?.sys?.interaction?.queue?.map((i: any) => ({
+                        id: i.id,
+                        sourceId: i.data?.sourceId,
+                        playerId: i.playerId,
+                    })),
                 };
             });
             console.log('激活前状态:', stateBeforeActivate);
@@ -156,12 +162,27 @@ test.describe('Cardia 一号牌组 - 沼泽守卫（新API）', () => {
             console.log('交互数据结构:', JSON.stringify(interactionData, null, 2));
             
             // 7. 选择第一张已打出的牌（encounterIndex=0，雇佣剑士）
-            // 使用更可靠的选择器：排除确认按钮，选择第一个卡牌按钮
+            // 枚举所有按钮，找到第一个启用的卡牌按钮（排除确认/取消按钮）
             const allButtons = modal.locator('button');
-            const cardButtons = allButtons.filter({ hasNotText: /确认|Confirm|取消|Cancel/ });
-            await cardButtons.first().click();
-            await setup.player1Page.waitForTimeout(500);
-            console.log('✅ 已选择第一张已打出的牌');
+            const count = await allButtons.count();
+            
+            let cardButtonIndex = -1;
+            for (let i = 0; i < count; i++) {
+                const text = await allButtons.nth(i).textContent();
+                const isEnabled = await allButtons.nth(i).isEnabled();
+                if (text && !text.match(/确认|Confirm|取消|Cancel/) && isEnabled) {
+                    cardButtonIndex = i;
+                    break;
+                }
+            }
+            
+            if (cardButtonIndex >= 0) {
+                await allButtons.nth(cardButtonIndex).click();
+                await setup.player1Page.waitForTimeout(500);
+                console.log('✅ 已选择第一张已打出的牌');
+            } else {
+                throw new Error('未找到可用的卡牌按钮');
+            }
             
             // 8. 点击确认按钮
             const confirmButton = modal.locator('button').filter({ hasText: /Confirm|确认/ });

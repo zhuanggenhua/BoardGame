@@ -498,7 +498,23 @@ export const setupCardiaTestScenario = async (
         await applyCoreStateDirect(setup.player1Page, newState);
         await applyCoreStateDirect(setup.player2Page, newState);
         
-        // 4. 等待UI更新
+        // 4. 如果场景指定了阶段，需要同步设置 sys.phase
+        if (scenario.phase) {
+            await setup.player1Page.evaluate((phase) => {
+                const state = (window as any).__BG_STATE__;
+                if (state && state.sys) {
+                    state.sys.phase = phase;
+                }
+            }, scenario.phase);
+            await setup.player2Page.evaluate((phase) => {
+                const state = (window as any).__BG_STATE__;
+                if (state && state.sys) {
+                    state.sys.phase = phase;
+                }
+            }, scenario.phase);
+        }
+        
+        // 5. 等待UI更新
         await setup.player1Page.waitForTimeout(500);
         await setup.player2Page.waitForTimeout(500);
         
@@ -543,9 +559,25 @@ async function buildStateFromScenario(
         state.phase = scenario.phase;
     }
     
-    // 4. 设置修正标记
+    // 4. 设置修正标记（自动解析 cardId 引用）
     if (scenario.modifierTokens) {
-        state.modifierTokens = scenario.modifierTokens;
+        const resolvedModifierTokens = scenario.modifierTokens.map(token => {
+            // 如果 cardId 为空字符串，尝试从 playedCards 中查找第一张匹配的卡牌
+            if (token.cardId === '') {
+                // 优先从 P1 的 playedCards 查找
+                const p1Cards = player1State.playedCards as Array<Record<string, unknown>>;
+                if (p1Cards && p1Cards.length > 0) {
+                    return { ...token, cardId: p1Cards[0].uid as string };
+                }
+                // 如果 P1 没有卡牌，从 P2 查找
+                const p2Cards = player2State.playedCards as Array<Record<string, unknown>>;
+                if (p2Cards && p2Cards.length > 0) {
+                    return { ...token, cardId: p2Cards[0].uid as string };
+                }
+            }
+            return token;
+        });
+        state.modifierTokens = resolvedModifierTokens;
     }
     
     // 5. 设置持续能力（state 本身就是 core，不需要 .core）
@@ -613,7 +645,26 @@ async function buildStateFromScenario(
     
     // 7. 设置当前遭遇
     if (scenario.currentEncounter) {
-        state.currentEncounter = scenario.currentEncounter;
+        // 从 playedCards 中查找对应的卡牌实例
+        const p1Cards = player1State.playedCards as Array<Record<string, unknown>>;
+        const p2Cards = player2State.playedCards as Array<Record<string, unknown>>;
+        
+        const player1Card = p1Cards && p1Cards.length > 0 ? p1Cards[0] : null;
+        const player2Card = p2Cards && p2Cards.length > 0 ? p2Cards[0] : null;
+        
+        if (player1Card && player2Card) {
+            const winnerId = scenario.currentEncounter.winnerId;
+            const loserId = winnerId === '0' ? '1' : winnerId === '1' ? '0' : undefined;
+            
+            state.currentEncounter = {
+                player1Card,
+                player2Card,
+                player1Influence: scenario.currentEncounter.player1Influence,
+                player2Influence: scenario.currentEncounter.player2Influence,
+                winnerId,
+                loserId,
+            };
+        }
     }
     
     // 8. 自动计算 turnNumber（基于已打出牌的最大 encounterIndex）

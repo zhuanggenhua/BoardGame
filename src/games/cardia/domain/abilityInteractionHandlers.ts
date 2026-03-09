@@ -24,7 +24,11 @@ export type InteractionHandler = (
     interactionData: Record<string, unknown> | undefined,
     random: RandomFn,
     timestamp: number
-) => { state: MatchState<CardiaCore>; events: CardiaEvent[] } | undefined;
+) => { 
+    state: MatchState<CardiaCore>; 
+    events: CardiaEvent[];
+    interaction?: any;  // 可选的新交互（用于多步交互）
+} | undefined;
 
 // ============================================================================
 // 注册表

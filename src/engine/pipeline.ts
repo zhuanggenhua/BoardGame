@@ -320,14 +320,34 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
     const { domain, systems, ctx, allEvents, systemEventsToReduce, random, maxRounds } = params;
     let currentState = ctx.state;
 
+
+
+    // 辅助：检测游戏结束并写入 sys.gameover
+    const applyGameoverCheck = (s: MatchState<TCore>): MatchState<TCore> => {
+        if (!domain.isGameOver) return s;
+        const result = domain.isGameOver(s.core);
+        // 仅在状态变化时更新（避免无意义的对象创建）
+        if (result === s.sys.gameover) return s;
+        if (result && !s.sys.gameover) {
+            return { ...s, sys: { ...s.sys, gameover: result } };
+        }
+        if (!result && s.sys.gameover) {
+            return { ...s, sys: { ...s.sys, gameover: undefined } };
+        }
+        return { ...s, sys: { ...s.sys, gameover: result } };
+    };
+
     for (let round = 0; round < maxRounds; round++) {
         ctx.afterEventsRound = round;
         let hasNewEvents = false;
         const roundEvents: GameEvent[] = [];
 
+
+
         // 调用每个系统的 afterEvents hook
         for (const system of systems) {
             if (!system.afterEvents) continue;
+            
             const result = system.afterEvents(ctx);
             if (!result) continue;
             if (result.state) {
@@ -389,6 +409,11 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
             // 必须清空 ctx.events 防止下一轮系统重复处理上一轮的事件
             ctx.events = [];
         }
+
+        // ⚠️ 关键修复：每轮 afterEvents 结束后检测游戏结束
+        // 这样可以在阶段自动推进之前捕获胜利条件（如 end 阶段的印戒胜利）
+        currentState = applyGameoverCheck(currentState);
+        ctx.state = currentState;
 
         if (!hasNewEvents) break;
 

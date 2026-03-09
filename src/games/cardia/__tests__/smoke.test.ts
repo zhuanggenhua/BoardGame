@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { CardiaDomain } from '../domain';
+import { createFixedRandom } from './helpers/testRandom';
 
 describe('Cardia - Smoke Test', () => {
     it('should setup initial state without errors', () => {
         const playerIds = ['player1', 'player2'];
-        const random = { random: () => 0.5 };
+        const random = createFixedRandom(0.5);
         
         const initialState = CardiaDomain.setup(playerIds, random);
         
@@ -20,7 +21,7 @@ describe('Cardia - Smoke Test', () => {
     
     it('should have valid player states', () => {
         const playerIds = ['player1', 'player2'];
-        const random = { random: () => 0.5 };
+        const random = createFixedRandom(0.5);
         
         const initialState = CardiaDomain.setup(playerIds, random);
         
@@ -41,7 +42,7 @@ describe('Cardia - Smoke Test', () => {
     
     it('should not be game over initially', () => {
         const playerIds = ['player1', 'player2'];
-        const random = { random: () => 0.5 };
+        const random = createFixedRandom(0.5);
         
         const initialState = CardiaDomain.setup(playerIds, random);
         const gameOver = CardiaDomain.isGameOver(initialState);

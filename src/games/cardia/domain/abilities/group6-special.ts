@@ -47,7 +47,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.PUPPETEER, (ctx: CardiaAbilityConte
     }
     
     // 随机选择对手手牌中的一张
-    const randomIndex = Math.floor(ctx.random() * opponent.hand.length);
+    const randomIndex = Math.floor(ctx.random.random() * opponent.hand.length);
     const replacementCard = opponent.hand[randomIndex];
     
     console.log('[Puppeteer] 准备替换卡牌:', {
@@ -77,7 +77,9 @@ abilityExecutorRegistry.register(ABILITY_IDS.PUPPETEER, (ctx: CardiaAbilityConte
  * 占卜师（Diviner）- 影响力 6
  * 效果：下一次遭遇中，你的对手必须在你之前朝上打出牌
  * 
- * 实现：设置 revealFirstNextEncounter 标记，影响下次遭遇的揭示顺序
+ * 实现：
+ * 1. 设置 revealFirstNextEncounter 为对手ID（明牌）
+ * 2. 设置 forcedPlayOrderNextEncounter 为对手ID（强制先出牌）
  */
 abilityExecutorRegistry.register(ABILITY_IDS.DIVINER, (ctx: CardiaAbilityContext) => {
     return {
@@ -86,6 +88,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.DIVINER, (ctx: CardiaAbilityContext
                 type: CARDIA_EVENTS.REVEAL_ORDER_CHANGED,
                 payload: {
                     revealFirstPlayerId: ctx.opponentId,
+                    forcedPlayOrderPlayerId: ctx.opponentId,  // 新增：强制先出牌
                 },
                 timestamp: ctx.timestamp,
             }

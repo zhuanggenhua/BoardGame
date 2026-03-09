@@ -151,11 +151,13 @@ test.describe('Cardia - Basic Flow', () => {
                 await p1SkipButton.waitFor({ state: 'visible', timeout: 5000 });
                 console.log('[DEBUG] P1 是失败者，找到跳过按钮');
                 await p1SkipButton.click();
+                await p1Page.waitForTimeout(1000);  // 等待状态更新
             } catch {
                 try {
                     await p2SkipButton.waitFor({ state: 'visible', timeout: 5000 });
                     console.log('[DEBUG] P2 是失败者，找到跳过按钮');
                     await p2SkipButton.click();
+                    await p2Page.waitForTimeout(1000);  // 等待状态更新
                 } catch {
                     console.log('[DEBUG] 没有找到跳过能力按钮，可能双方都是赢家或平局');
                 }
@@ -165,9 +167,19 @@ test.describe('Cardia - Basic Flow', () => {
             // 结束阶段：结束回合
             // ============================================================
             
-            // 等待进入结束阶段
-            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('End', { timeout: 10000 });
-            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('End', { timeout: 10000 });
+            // 等待进入结束阶段（检查状态而不是UI文本）
+            await p1Page.waitForFunction(() => {
+                const state = (window as any).__BG_STATE__;
+                return state?.core?.phase === 'end';
+            }, { timeout: 10000 }).catch(async () => {
+                // 如果超时，打印当前状态用于调试
+                const currentPhase = await p1Page.evaluate(() => {
+                    const state = (window as any).__BG_STATE__;
+                    return state?.core?.phase;
+                });
+                console.log(`[DEBUG] 等待结束阶段超时，当前阶段: ${currentPhase}`);
+                throw new Error(`Expected phase 'end', but got '${currentPhase}'`);
+            });
             
             // 等待结束阶段 UI 就绪
             await p1Page.waitForTimeout(500);

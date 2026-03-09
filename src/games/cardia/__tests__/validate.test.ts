@@ -38,6 +38,7 @@ describe('Cardia - Command Validation', () => {
         
         it('should reject playing card in wrong phase', () => {
             matchState.core.phase = 'ability';
+            matchState.sys.phase = 'ability';
             const cardUid = matchState.core.players['0'].hand[0].uid;
             const result = CardiaDomain.validate(matchState, {
                 type: CARDIA_COMMANDS.PLAY_CARD,
@@ -90,6 +91,7 @@ describe('Cardia - Command Validation', () => {
         it('should allow activating ability in ability phase when loser', () => {
             // 设置遭遇战状态
             matchState.core.phase = 'ability';
+            matchState.sys.phase = 'ability';
             const player0Card = matchState.core.players['0'].hand[0];
             const player1Card = matchState.core.players['1'].hand[0];
             
@@ -125,6 +127,7 @@ describe('Cardia - Command Validation', () => {
         
         it('should reject activating ability in wrong phase', () => {
             matchState.core.phase = 'play';
+            matchState.sys.phase = 'play';
             const result = CardiaDomain.validate(matchState, {
                 type: CARDIA_COMMANDS.ACTIVATE_ABILITY,
                 playerId: '0',
@@ -140,6 +143,7 @@ describe('Cardia - Command Validation', () => {
         
         it('should reject activating ability when not loser', () => {
             matchState.core.phase = 'ability';
+            matchState.sys.phase = 'ability';
             const player0Card = matchState.core.players['0'].hand[0];
             const player1Card = matchState.core.players['1'].hand[0];
             
@@ -176,6 +180,7 @@ describe('Cardia - Command Validation', () => {
     describe('SKIP_ABILITY', () => {
         it('should allow skipping ability in ability phase when loser', () => {
             matchState.core.phase = 'ability';
+            matchState.sys.phase = 'ability';
             const player0Card = matchState.core.players['0'].hand[0];
             const player1Card = matchState.core.players['1'].hand[0];
             
@@ -199,6 +204,7 @@ describe('Cardia - Command Validation', () => {
         
         it('should reject skipping ability in wrong phase', () => {
             matchState.core.phase = 'play';
+            matchState.sys.phase = 'play';
             const result = CardiaDomain.validate(matchState, {
                 type: CARDIA_COMMANDS.SKIP_ABILITY,
                 playerId: '0',
@@ -213,6 +219,7 @@ describe('Cardia - Command Validation', () => {
     describe('END_TURN', () => {
         it('should allow ending turn in end phase', () => {
             matchState.core.phase = 'end';
+            matchState.sys.phase = 'end';
             const result = CardiaDomain.validate(matchState, {
                 type: CARDIA_COMMANDS.END_TURN,
                 playerId: '0',
@@ -224,6 +231,7 @@ describe('Cardia - Command Validation', () => {
         
         it('should reject ending turn in wrong phase', () => {
             matchState.core.phase = 'play';
+            matchState.sys.phase = 'play';
             const result = CardiaDomain.validate(matchState, {
                 type: CARDIA_COMMANDS.END_TURN,
                 playerId: '0',
@@ -236,6 +244,7 @@ describe('Cardia - Command Validation', () => {
         
         it('should reject ending turn when not current player', () => {
             matchState.core.phase = 'end';
+            matchState.sys.phase = 'end';
             const result = CardiaDomain.validate(matchState, {
                 type: CARDIA_COMMANDS.END_TURN,
                 playerId: '1',

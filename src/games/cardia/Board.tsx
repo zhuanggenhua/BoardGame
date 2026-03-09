@@ -17,6 +17,7 @@ import { CARDIA_COMMANDS } from './domain/commands';
 import { AbilityButton } from './ui/AbilityButton';
 import { CardSelectionModal } from './ui/CardSelectionModal';
 import { FactionSelectionModal } from './ui/FactionSelectionModal';
+import { ChoiceModal } from './ui/ChoiceModal';
 import { useAbilityAnimations, AbilityAnimationsLayer } from './ui/AbilityAnimations';
 import type { FactionId } from './domain/ids';
 import { CARDIA_EVENTS } from './domain/events';
@@ -27,7 +28,7 @@ type Props = GameBoardProps<CardiaCore>;
 
 export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, matchData, isMultiplayer }) => {
     const core = G.core;
-    const phase = core.phase;
+    const phase = G.sys.phase;  // 从 sys.phase 读取阶段（FlowSystem 管理）
     const isGameOver = G.sys.gameover;
     const gameMode = useGameMode();
     const isLocalMatch = gameMode ? !gameMode.isMultiplayer : !isMultiplayer;
@@ -37,6 +38,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     // 交互状态
     const [showCardSelection, setShowCardSelection] = useState(false);
     const [showFactionSelection, setShowFactionSelection] = useState(false);
+    const [showChoice, setShowChoice] = useState(false);
     const [currentInteraction, setCurrentInteraction] = useState<any>(null);
     
     // 动画状态
@@ -164,20 +166,41 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     // 监听交互状态变化
     useEffect(() => {
         const interaction = G.sys.interaction?.current;
+        console.log('[Board] Interaction state changed:', {
+            hasInteraction: !!interaction,
+            interactionId: interaction?.id,
+            interactionPlayerId: interaction?.playerId,
+            myPlayerId,
+            isMyInteraction: interaction?.playerId === myPlayerId,
+            interactionType: (interaction?.data as any)?.interactionType,
+            hasCardiaInteraction: !!(interaction?.data as any)?.cardiaInteraction,
+            cardiaInteractionType: (interaction?.data as any)?.cardiaInteraction?.type,
+        });
+        
         if (interaction && interaction.playerId === myPlayerId) {
             setCurrentInteraction(interaction);
             
             // 根据交互类型显示对应的弹窗
             const data = interaction.data as any;
+            console.log('[Board] Setting modal visibility:', {
+                interactionType: data.interactionType,
+                willShowCardSelection: data.interactionType === 'card-selection',
+                willShowFactionSelection: data.interactionType === 'faction-selection',
+                willShowChoice: data.interactionType === 'choice',
+            });
+            
             if (data.interactionType === 'card-selection') {
                 setShowCardSelection(true);
             } else if (data.interactionType === 'faction-selection') {
                 setShowFactionSelection(true);
+            } else if (data.interactionType === 'choice') {
+                setShowChoice(true);
             }
         } else {
             setCurrentInteraction(null);
             setShowCardSelection(false);
             setShowFactionSelection(false);
+            setShowChoice(false);
         }
     }, [G.sys.interaction, myPlayerId]);
     
@@ -195,7 +218,10 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         ? myPlayer.playedCards.find(card => card.encounterIndex === core.turnNumber)
         : myPlayer.currentCard;
     
-    const canActivateAbility = isAbilityPhase && core.currentEncounter?.loserId === myPlayerId;
+    const canActivateAbility = isAbilityPhase 
+        && core.currentEncounter?.loserId === myPlayerId
+        && !G.sys.interaction.current  // 没有我的交互
+        && !G.sys.interaction.isBlocked;  // ✅ 修复：对手有交互时也不显示能力按钮
     
     const handlePlayCard = (cardUid: string) => {
         if (phase !== 'play') {
@@ -222,7 +248,9 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     
     const handleSkipAbility = () => {
         if (!canActivateAbility) return;
-        dispatch(CARDIA_COMMANDS.SKIP_ABILITY, {});
+        dispatch(CARDIA_COMMANDS.SKIP_ABILITY, {
+            playerId: myPlayerId,
+        });
     };
     
     // 处理卡牌选择确认
@@ -312,6 +340,22 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     // 处理派系选择取消
     const handleFactionSelectionCancel = () => {
         setShowFactionSelection(false);
+        // 可选：dispatch SKIP_ABILITY 或其他取消命令
+    };
+    
+    // 处理通用选择确认
+    const handleChoiceConfirm = (optionId: string) => {
+        if (!currentInteraction) return;
+        
+        console.log('[Cardia] Choice selected, dispatching RESPOND:', { optionId });
+        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
+        
+        setShowChoice(false);
+    };
+    
+    // 处理通用选择取消
+    const handleChoiceCancel = () => {
+        setShowChoice(false);
         // 可选：dispatch SKIP_ABILITY 或其他取消命令
     };
     
@@ -424,6 +468,28 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                         onCancel={handleFactionSelectionCancel}
                     />
                 )}
+                
+                {/* 通用选择弹窗 */}
+                {showChoice && currentInteraction && (() => {
+                    const data = currentInteraction.data as any;
+                    console.log('[Board] Rendering ChoiceModal:', {
+                        showChoice,
+                        hasCurrentInteraction: !!currentInteraction,
+                        hasCardiaInteraction: !!data.cardiaInteraction,
+                        title: data.cardiaInteraction?.title,
+                        optionsCount: data.cardiaInteraction?.options?.length,
+                        options: data.cardiaInteraction?.options,
+                    });
+                    return (
+                        <ChoiceModal
+                            title={data.cardiaInteraction?.title || t('makeChoice')}
+                            description={data.cardiaInteraction?.description}
+                            options={data.cardiaInteraction?.options || []}
+                            onConfirm={handleChoiceConfirm}
+                            onCancel={handleChoiceCancel}
+                        />
+                    );
+                })()}
                 
                 {isGameOver && <EndgameOverlay {...endgameProps} />}
                 <GameDebugPanel G={G} dispatch={dispatch} playerID={myPlayerId} />

@@ -37,7 +37,7 @@ registerFactionInteractionHandlers();
 /**
  * 系统组装
  */
-const systems = [
+export const systems = [
     createFlowSystem<CardiaCore>({ hooks: cardiaFlowHooks }),
     ...createBaseSystems<CardiaCore>(),
     createCardiaEventSystem(),

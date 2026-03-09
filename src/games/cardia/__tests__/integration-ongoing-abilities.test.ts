@@ -13,7 +13,7 @@ import type { CardiaCore, CardiaCommand } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
 import { CARDIA_COMMANDS } from '../domain/commands';
 import { ABILITY_IDS } from '../domain/ids';
-import { createTestCard, createTestPlayedCard } from './test-helpers';
+import { createTestCard, createTestPlayedCard, executeAndResolveInteraction } from './test-helpers';
 
 // 导入所有能力组以注册执行器
 import '../domain/abilities/group1-resources';
@@ -90,7 +90,7 @@ describe('持续能力集成测试', () => {
         }
       };
 
-      // 执行调停者能力
+      // 执行调停者能力并自动解决所有交互
       const command: CardiaCommand = {
         type: CARDIA_COMMANDS.ACTIVATE_ABILITY,
         playerId: 'p1',
@@ -99,28 +99,14 @@ describe('持续能力集成测试', () => {
           sourceCardUid: 'c1',
         }
       };
-
-      let events = CardiaDomain.execute(state, command, { random: () => 0.5 });
-      for (const event of events) {
-        state = { ...state, core: CardiaDomain.reduce(state.core, event) };
-      }
-
-      // 如果有交互，解决它
-      while (state.sys.interaction.current) {
-        const interaction = state.sys.interaction.current;
-        const resolveCommand: CardiaCommand = {
-          type: CARDIA_COMMANDS.RESOLVE_INTERACTION,
-          playerId: interaction.playerId,
-          payload: {
-            interactionId: interaction.id,
-            response: { confirmed: true }
-          }
-        };
-        events = CardiaDomain.execute(state, resolveCommand, { random: () => 0.5 });
-        for (const event of events) {
-          state = { ...state, core: CardiaDomain.reduce(state.core, event) };
-        }
-      }
+      
+      state = executeAndResolveInteraction(
+        state,
+        command,
+        { random: () => 0.5 },
+        CardiaDomain,
+        true
+      );
       
       // 检查是否产生持续标记
       const ongoingAbility = state.core.ongoingAbilities.find(
@@ -176,7 +162,7 @@ describe('持续能力集成测试', () => {
         }
       };
 
-      // 执行审判官能力
+      // 执行审判官能力并自动解决所有交互
       const command: CardiaCommand = {
         type: CARDIA_COMMANDS.ACTIVATE_ABILITY,
         playerId: 'p1',
@@ -186,27 +172,13 @@ describe('持续能力集成测试', () => {
         }
       };
 
-      let events = CardiaDomain.execute(state, command, { random: () => 0.5 });
-      for (const event of events) {
-        state = { ...state, core: CardiaDomain.reduce(state.core, event) };
-      }
-
-      // 如果有交互，解决它
-      while (state.sys.interaction.current) {
-        const interaction = state.sys.interaction.current;
-        const resolveCommand: CardiaCommand = {
-          type: CARDIA_COMMANDS.RESOLVE_INTERACTION,
-          playerId: interaction.playerId,
-          payload: {
-            interactionId: interaction.id,
-            response: { confirmed: true }
-          }
-        };
-        events = CardiaDomain.execute(state, resolveCommand, { random: () => 0.5 });
-        for (const event of events) {
-          state = { ...state, core: CardiaDomain.reduce(state.core, event) };
-        }
-      }
+      state = executeAndResolveInteraction(
+        state,
+        command,
+        { random: () => 0.5 },
+        CardiaDomain,
+        true
+      );
       
       // 检查是否产生持续标记
       const ongoingAbility = state.core.ongoingAbilities.find(
@@ -262,7 +234,7 @@ describe('持续能力集成测试', () => {
         }
       };
 
-      // 执行财务官能力
+      // 执行财务官能力并自动解决所有交互
       const command: CardiaCommand = {
         type: CARDIA_COMMANDS.ACTIVATE_ABILITY,
         playerId: 'p1',
@@ -272,27 +244,13 @@ describe('持续能力集成测试', () => {
         }
       };
 
-      let events = CardiaDomain.execute(state, command, { random: () => 0.5 });
-      for (const event of events) {
-        state = { ...state, core: CardiaDomain.reduce(state.core, event) };
-      }
-
-      // 如果有交互，解决它
-      while (state.sys.interaction.current) {
-        const interaction = state.sys.interaction.current;
-        const resolveCommand: CardiaCommand = {
-          type: CARDIA_COMMANDS.RESOLVE_INTERACTION,
-          playerId: interaction.playerId,
-          payload: {
-            interactionId: interaction.id,
-            response: { confirmed: true }
-          }
-        };
-        events = CardiaDomain.execute(state, resolveCommand, { random: () => 0.5 });
-        for (const event of events) {
-          state = { ...state, core: CardiaDomain.reduce(state.core, event) };
-        }
-      }
+      state = executeAndResolveInteraction(
+        state,
+        command,
+        { random: () => 0.5 },
+        CardiaDomain,
+        true
+      );
       
       // 检查是否产生持续标记
       const ongoingAbility = state.core.ongoingAbilities.find(

@@ -1,0 +1,2271 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/gujiawei/KiroProjects/BoardGame[39m
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m[2m组 6：特殊机制能力[2m > [22m[2m傀儡师（Puppeteer）[2m > [22m[2m应该弃掉相对的牌，替换为从对手手牌随机抽取的一张牌
+[22m[39m[Puppeteer] 能力执行器被调用
+
+[90mstdout[2m | src/games/cardia/__tests__/ability-void-mage-interaction.test.ts[2m > [22m[2m虚空法师交互测试[2m > [22m[2m应该创建交互界面让玩家选择目标卡牌
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'0'[39m,
+  cardId: [32m'played1'[39m,
+  selectedCardId: [90mundefined[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'played2'[39m,
+      value: [33m5[39m,
+      source: [32m'test_source'[39m,
+      timestamp: [33m1772612507480[39m
+    }
+  ],
+  ongoingAbilities: []
+}
+[VoidMage] 检测到的标记: {
+  cardsWithModifiers: [ [32m'played2'[39m ],
+  cardsWithOngoing: [],
+  allCardsWithMarkers: [ [32m'played2'[39m ]
+}
+[VoidMage] 创建交互: {
+  type: [32m'card_selection'[39m,
+  interactionId: [32m'ability_i_void_mage_1772612507480'[39m,
+  playerId: [32m'0'[39m,
+  abilityId: [32m'ability_i_void_mage'[39m,
+  title: [32m'选择目标卡牌'[39m,
+  description: [32m'从任一张牌上弃掉所有修正标记和持续标记'[39m,
+  availableCards: [ [32m'played2'[39m ],
+  minSelect: [33m1[39m,
+  maxSelect: [33m1[39m
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/ability-void-mage-interaction.test.ts[2m > [22m[2m虚空法师交互测试[2m > [22m[2m选择目标卡牌后应该移除标记
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'0'[39m,
+  cardId: [32m'played1'[39m,
+  selectedCardId: [32m'played2'[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'played2'[39m,
+      value: [33m5[39m,
+      source: [32m'test_source'[39m,
+      timestamp: [33m1772612507485[39m
+    }
+  ],
+  ongoingAbilities: []
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/ability-void-mage-interaction.test.ts[2m > [22m[2m虚空法师交互测试[2m > [22m[2m没有标记时不应该创建交互
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'0'[39m,
+  cardId: [32m'played1'[39m,
+  selectedCardId: [90mundefined[39m,
+  modifierTokens: [],
+  ongoingAbilities: []
+}
+[VoidMage] 检测到的标记: {
+  cardsWithModifiers: [],
+  cardsWithOngoing: [],
+  allCardsWithMarkers: []
+}
+
+[90mstderr[2m | src/games/cardia/__tests__/ability-void-mage-interaction.test.ts[2m > [22m[2m虚空法师交互测试[2m > [22m[2m没有标记时不应该创建交互
+[22m[39m[VoidMage] 场上没有标记，返回 NO_VALID_TARGET
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m[2m组 6：特殊机制能力[2m > [22m[2m傀儡师（Puppeteer）[2m > [22m[2m替换的卡牌不应该触发能力
+[22m[39m[Puppeteer] 能力执行器被调用
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m[2m组 6：特殊机制能力[2m > [22m[2m傀儡师（Puppeteer）[2m > [22m[2m当对手没有相对的牌时，应该不产生事件
+[22m[39m[Puppeteer] 能力执行器被调用
+
+[90mstderr[2m | src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m[2m组 6：特殊机制能力[2m > [22m[2m傀儡师（Puppeteer）[2m > [22m[2m当对手没有相对的牌时，应该不产生事件
+[22m[39m[Puppeteer] 未找到相对的卡牌
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m[2m组 6：特殊机制能力[2m > [22m[2m傀儡师（Puppeteer）[2m > [22m[2m当对手手牌为空时，应该不产生事件
+[22m[39m[Puppeteer] 能力执行器被调用
+
+[90mstderr[2m | src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m[2m组 6：特殊机制能力[2m > [22m[2m傀儡师（Puppeteer）[2m > [22m[2m当对手手牌为空时，应该不产生事件
+[22m[39m[Puppeteer] 对手手牌为空
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m[2m组 6：特殊机制能力[2m > [22m[2m傀儡师（Puppeteer）[2m > [22m[2m应该使用随机数选择对手手牌
+[22m[39m[Puppeteer] 能力执行器被调用
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m[2m组 6：特殊机制能力[2m > [22m[2m傀儡师（Puppeteer）[2m > [22m[2m应该保持相同的遭遇序号
+[22m[39m[Puppeteer] 能力执行器被调用
+
+ [32m✓[39m src/games/cardia/__tests__/ability-void-mage-interaction.test.ts[2m > [22m虚空法师交互测试[2m > [22m应该创建交互界面让玩家选择目标卡牌[32m 5[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-void-mage-interaction.test.ts[2m > [22m虚空法师交互测试[2m > [22m选择目标卡牌后应该移除标记[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/ability-void-mage-interaction.test.ts[2m > [22m虚空法师交互测试[2m > [22m没有标记时不应该创建交互[32m 10[2mms[22m[39m
+[31m   → expected [ { …(3) } ] to deeply equal [][39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m调停者（Mediator）[2m > [22m应该放置持续标记，强制遭遇为平局[32m 9[2mms[22m[39m
+[31m   → expected [ { …(3) }, { …(3) } ] to have a length of 1 but got 2[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m调停者（Mediator）[2m > [22m持续标记应该是永久的（不自动移除）[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m审判官（Magistrate）[2m > [22m应该放置持续标记，赢得所有平局[32m 3[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m审判官（Magistrate）[2m > [22m持续标记应该是永久的（不自动移除）[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m财务官（Treasurer）[2m > [22m应该放置持续标记，下次遭遇获胜时额外获得1枚印戒[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m财务官（Treasurer）[2m > [22m持续标记应该是一次性的（触发后自动移除）[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m顾问（Advisor）[2m > [22m应该放置持续标记，下次遭遇获胜时额外获得1枚印戒[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m顾问（Advisor）[2m > [22m顾问和财务官的效果应该相同[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m机械精灵（Mechanical Spirit）[2m > [22m应该放置持续标记，下次遭遇获胜时直接赢得游戏[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m机械精灵（Mechanical Spirit）[2m > [22m持续标记应该是一次性的（触发后自动移除）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m持续能力优先级[2m > [22m审判官的优先级应该高于调停者[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m持续标记的生命周期[2m > [22m永久持续标记（调停者、审判官）不应该有移除条件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m持续标记的生命周期[2m > [22m一次性持续标记（财务官、顾问、机械精灵）应该在触发后移除[32m 0[2mms[22m[39m
+[90mstderr[2m | src/games/cardia/__tests__/execute.test.ts[2m > [22m[2mCardia - Command Execution[2m > [22m[2mACTIVATE_ABILITY[2m > [22m[2mshould emit ABILITY_ACTIVATED event
+[22m[39m[Cardia] No executor found for ability { abilityId: [32m'ability_i_mercenary_swordsman'[39m }
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m[2m组 6：特殊机制能力[2m > [22m[2m特殊机制的交互[2m > [22m[2m傀儡师替换的卡牌应该保持原有的遭遇序号
+[22m[39m[Puppeteer] 能力执行器被调用
+
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m外科医生（Surgeon）[2m > [22m应该注册延迟效果，为下一张打出的牌添加 -5 影响力[32m 3[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m税务官（Tax Collector）[2m > [22m应该为本牌添加 +4 修正标记[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m天才（Genius）[2m > [22m应该为己方一张影响力≤8的打出的牌添加 +3 修正标记[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m天才（Genius）[2m > [22m未选择卡牌时，应该创建卡牌选择交互（过滤影响力≤8）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m使者（Messenger）[2m > [22m应该为任一张场上牌添加 -3 修正标记[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m使者（Messenger）[2m > [22m选择"下一张牌"选项时，应该注册延迟效果[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m使者（Messenger）[2m > [22m未选择时，应该创建卡牌选择交互（包含"下一张牌"选项）[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m发明家（Inventor）[2m > [22m应该为己方两张打出的牌添加修正标记（第一张+3，第二张-3）[32m 8[2mms[22m[39m
+[31m   → expected [] to have a length of 2 but got +0[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m发明家（Inventor）[2m > [22m当己方只有 1 张场上卡牌时，应该只添加 +3 修正标记[32m 5[2mms[22m[39m
+[31m   → expected [] to have a length of 1 but got +0[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m钟表匠（Clockmaker）[2m > [22m应该为上一个遭遇的牌添加 +3 修正标记，并为下一张打出的牌注册延迟效果[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m钟表匠（Clockmaker）[2m > [22m当是第一张牌时，应该只注册延迟效果[32m 0[2mms[22m[39m
+[90mstderr[2m | src/games/cardia/__tests__/execute.test.ts[2m > [22m[2mCardia - Command Execution[2m > [22m[2mACTIVATE_ABILITY[2m > [22m[2mshould transition to end phase after ability
+[22m[39m[Cardia] No executor found for ability { abilityId: [32m'ability_i_mercenary_swordsman'[39m }
+
+ [31m×[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m宫廷卫士（Court Guard）[2m > [22m当对手有指定派系手牌时，应该弃掉该手牌[32m 2[2mms[22m[39m
+[31m   → expected [] to have a length of 1 but got +0[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m宫廷卫士（Court Guard）[2m > [22m当对手没有指定派系手牌时，应该为本牌添加 +7 修正标记[32m 1[2mms[22m[39m
+[31m   → expected [] to have a length of 1 but got +0[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m毒师（Poisoner）[2m > [22m应该降低相对的牌的影响力直到当前遭遇为平局[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m毒师（Poisoner）[2m > [22m当己方已经获胜时，应该不产生事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m图书管理员（Librarian）[2m > [22m选择修正值后，应该注册延迟效果[32m 1[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m图书管理员（Librarian）[2m > [22m未选择修正值时，应该创建修正标记选择交互[32m 1[2mms[22m[39m
+[31m   → the given combination of arguments (undefined and number) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a number[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m工程师（Engineer）[2m > [22m应该注册延迟效果，为下次遭遇的牌添加 +5 修正标记[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m念动力法师（Telekinetic Mage）[2m > [22m应该移动所有修正标记和持续标记到另一张牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m念动力法师（Telekinetic Mage）[2m > [22m当没有修正标记或持续标记时，应该不产生事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m雇佣剑士（Mercenary Swordsman）[2m > [22m应该弃掉本牌和相对的牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m雇佣剑士（Mercenary Swordsman）[2m > [22m当没有相对的牌时，应该只弃掉本牌[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m应该弃掉相对的牌，替换为从对手手牌随机抽取的一张牌[32m 9[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m替换的卡牌不应该触发能力[32m 1[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m当对手没有相对的牌时，应该不产生事件[32m 5[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m当对手手牌为空时，应该不产生事件[32m 1[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m应该使用随机数选择对手手牌[32m 1[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m应该保持相同的遭遇序号[32m 1[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m占卜师（Diviner）[2m > [22m应该改变下次遭遇的揭示顺序[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m占卜师（Diviner）[2m > [22m应该让对手在下次遭遇中先揭示卡牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m占卜师（Diviner）[2m > [22m揭示顺序改变应该只影响下一次遭遇[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m贵族（Aristocrat）[2m > [22m应该在本牌获胜时额外获得1枚印戒[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m贵族（Aristocrat）[2m > [22m额外印戒应该是条件性的（只在获胜时放置）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m贵族（Aristocrat）[2m > [22m应该在遭遇结算时检查本牌是否获胜[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m精灵（Elf）[2m > [22m应该直接赢得游戏[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m精灵（Elf）[2m > [22m精灵的胜利应该是无条件的[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m精灵（Elf）[2m > [22m精灵的胜利应该立即触发游戏结束[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m勒索者（Extortionist）[2m > [22m应该注册延迟效果，在对手下次打牌后检查派系[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m勒索者（Extortionist）[2m > [22m延迟效果应该包含派系和弃牌数量信息[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m勒索者（Extortionist）[2m > [22m应该在对手打出非指定派系的牌后触发弃牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m勒索者（Extortionist）[2m > [22m当对手打出指定派系的牌时，应该不触发弃牌[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m特殊机制的交互[2m > [22m傀儡师替换的卡牌应该保持原有的遭遇序号[32m 1[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m特殊机制的交互[2m > [22m占卜师的揭示顺序改变应该只影响下一次遭遇[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m特殊机制的交互[2m > [22m贵族的额外印戒应该只在本牌获胜时放置[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m特殊机制的交互[2m > [22m精灵的胜利应该优先于其他胜利条件[32m 0[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/execute.test.ts[2m > [22m[2mCardia - Command Execution[2m > [22m[2mADD_MODIFIER[2m > [22m[2mshould emit MODIFIER_ADDED event
+[22m[39m[recalculateEncounterState] Card not in any encounter, skipping recalculation: {
+  affectedCardUid: [32m'deck_i_card_01_1772612507526_gbhpcf36b'[39m,
+  encounterHistoryLength: [33m0[39m
+}
+
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m应该让对手弃掉所有指定派系的手牌[32m 6[2mms[22m[39m
+[31m   → expected 0 to be greater than or equal to 2[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m当对手没有指定派系手牌时，应该不产生弃牌事件[32m 7[2mms[22m[39m
+[31m   → expected [] to have a length of 1 but got +0[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m应该只弃掉指定派系的手牌，保留其他派系[32m 1[2mms[22m[39m
+[31m   → the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m应该发射派系选择事件[32m 5[2mms[22m[39m
+[31m   → expected undefined to be defined[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m当前简化实现自动选择沼泽派系[32m 1[2mms[22m[39m
+[31m   → expected undefined to be 'swamp' // Object.is equality[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m应该让对手从手牌和牌库弃掉所有指定派系的牌，然后混洗牌库[32m 1[2mms[22m[39m
+[31m   → expected 0 to be greater than or equal to 3[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m当对手手牌中没有指定派系时，应该只弃掉牌库中的牌[32m 0[2mms[22m[39m
+[31m   → expected 0 to be greater than or equal to 3[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m当对手牌库中没有指定派系时，应该只弃掉手牌中的牌[32m 1[2mms[22m[39m
+[31m   → expected 0 to be greater than or equal to 3[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m应该在弃牌后混洗牌库[32m 1[2mms[22m[39m
+[31m   → expected undefined to be defined[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m应该只弃掉指定派系的牌，保留其他派系[32m 1[2mms[22m[39m
+[31m   → the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m当前简化实现自动选择沼泽派系[32m 1[2mms[22m[39m
+[31m   → expected undefined to be 'swamp' // Object.is equality[39m
+ [32m✓[39m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mPLAY_CARD[2m > [22mshould emit CARD_PLAYED event[32m 4[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mPLAY_CARD[2m > [22mshould trigger encounter when both players have played[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mACTIVATE_ABILITY[2m > [22mshould emit ABILITY_ACTIVATED event[32m 4[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mACTIVATE_ABILITY[2m > [22mshould transition to end phase after ability[32m 19[2mms[22m[39m
+[31m   → expected 'play' to be 'end' // Object.is equality[39m
+ [31m×[39m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mSKIP_ABILITY[2m > [22mshould transition to end phase[32m 3[2mms[22m[39m
+[31m   → expected 4 to be 1 // Object.is equality[39m
+ [32m✓[39m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mEND_TURN[2m > [22mshould emit CARD_DRAWN and TURN_ENDED events[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mEND_TURN[2m > [22mshould transition to play phase[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mADD_MODIFIER[2m > [22mshould emit MODIFIER_ADDED event[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mREMOVE_MODIFIER[2m > [22mshould emit MODIFIER_REMOVED event[32m 3[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m派系选择交互[2m > [22m应该提供四个派系选项[32m 8[2mms[22m[39m
+[31m   → expected undefined to be defined[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m派系选择交互[2m > [22m玩家应该能够选择任意派系[32m 1[2mms[22m[39m
+[31m   → expected undefined to be defined[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m派系过滤逻辑[2m > [22m应该正确过滤指定派系的卡牌[32m 2[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m派系过滤逻辑[2m > [22m应该能够处理空派系（没有该派系的卡牌）[32m 2[2mms[22m[39m
+[31m   → expected [] to have a length of 1 but got +0[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m派系过滤逻辑[2m > [22m应该能够处理多个派系混合的情况[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续标记放置和移除[2m > [22m应该正确放置调停者持续标记[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续标记放置和移除[2m > [22m应该正确放置审判官持续标记[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续标记放置和移除[2m > [22m应该正确放置财务官持续标记[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续效果应用[2m > [22m应该在遭遇结算时应用调停者效果（强制平局）[32m 4[2mms[22m[39m
+[31m   → expected 'p2' to be undefined[39m
+ [31m×[39m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续效果应用[2m > [22m应该在遭遇结算时应用审判官效果（赢得平局）[32m 3[2mms[22m[39m
+[31m   → expected undefined to be defined[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续效果应用[2m > [22m应该在遭遇结算时应用财务官效果（额外印戒）[32m 1[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续效果优先级[2m > [22m应该优先应用审判官效果而不是调停者效果[32m 3[2mms[22m[39m
+[31m   → expected 'p2' to be 'p1' // Object.is equality[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m一次性持续标记自动移除[2m > [22m应该在财务官效果触发后自动移除持续标记[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m一次性持续标记自动移除[2m > [22m应该在机械精灵效果触发后自动移除持续标记[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/ability-heir.test.ts[2m > [22m继承者（Heir）[2m > [22m当对手手牌 > 2 张时，应该随机保留 2 张手牌，弃掉其余手牌和整个牌库[32m 6[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-heir.test.ts[2m > [22m继承者（Heir）[2m > [22m当对手手牌 = 2 张时，应该只弃掉整个牌库[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-heir.test.ts[2m > [22m继承者（Heir）[2m > [22m当对手手牌 < 2 张时，应该只弃掉整个牌库[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m破坏者（Saboteur）[2m > [22m应该生成 CARDS_DISCARDED_FROM_DECK 事件，弃掉对手牌库顶 2 张牌[32m 3[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m革命者（Revolutionary）[2m > [22m应该生成 CARDS_DISCARDED 和 CARD_DRAWN 事件，弃掉对手2张手牌然后抽2张牌[32m 5[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m革命者（Revolutionary）[2m > [22m对手没有手牌时，应该只生成 CARD_DRAWN 事件[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m伏击者（Ambusher）[2m > [22m应该生成 FACTION_SELECTED 和 CARDS_DISCARDED 事件，弃掉对手该派系的所有手牌[32m 6[2mms[22m[39m
+[31m   → expected [] to have a length of 2 but got +0[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m伏击者（Ambusher）[2m > [22m对手没有手牌时，应该只生成派系选择事件[32m 1[2mms[22m[39m
+[31m   → expected [] to have a length of 1 but got +0[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m巫王（Witch King）[2m > [22m应该生成 CARDS_DISCARDED、CARDS_DISCARDED_FROM_DECK 和 DECK_SHUFFLED 事件[32m 0[2mms[22m[39m
+[31m   → expected 0 to be greater than or equal to 1[39m
+ [31m×[39m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m继承者（Heir）[2m > [22m对手手牌 > 2 张时，应该弃掉部分手牌和整个牌库[32m 0[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m继承者（Heir）[2m > [22m对手手牌 ≤ 2 张时，应该只弃掉整个牌库[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m继承者（Heir）[2m > [22m对手手牌为空时，应该只弃掉整个牌库[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-trigger.test.ts[2m > [22m能力触发流程集成测试[2m > [22m基础能力触发流程[2m > [22m应该在遭遇失败后允许发动能力[32m 3[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-trigger.test.ts[2m > [22m能力触发流程集成测试[2m > [22m基础能力触发流程[2m > [22m应该在平局时跳过能力阶段[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-trigger.test.ts[2m > [22m能力触发流程集成测试[2m > [22m基础能力触发流程[2m > [22m应该在获胜方尝试发动能力时拒绝[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/integration-ability-trigger.test.ts[2m > [22m能力触发流程集成测试[2m > [22m能力执行和状态更新[2m > [22m应该执行破坏者能力并更新对手牌库[32m 8[2mms[22m[39m
+[31m   → expected 2 to be 3 // Object.is equality[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-trigger.test.ts[2m > [22m能力触发流程集成测试[2m > [22m能力触发时机[2m > [22m应该在遭遇结算完成后才允许发动能力[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/integration-ability-trigger.test.ts[2m > [22m能力触发流程集成测试[2m > [22m多能力触发时序[2m > [22m应该允许同一玩家依次触发多个能力且效果正确叠加[32m 1[2mms[22m[39m
+[31m   → expected 4 to be 5 // Object.is equality[39m
+ [31m×[39m src/games/cardia/__tests__/ability-revolutionary.test.ts[2m > [22m革命者（Revolutionary）[2m > [22m应该让对手弃掉 2 张手牌，然后抽取 2 张牌[32m 3[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [31m×[39m src/games/cardia/__tests__/ability-revolutionary.test.ts[2m > [22m革命者（Revolutionary）[2m > [22m当对手手牌少于 2 张时，应该弃掉所有手牌[32m 1[2mms[22m[39m
+[31m   → ctx.random.random is not a function[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-revolutionary.test.ts[2m > [22m革命者（Revolutionary）[2m > [22m当对手手牌为空时，应该只抽牌[32m 1[2mms[22m[39m
+[90mstderr[2m | src/games/cardia/__tests__/reduce.test.ts[2m > [22m[2mCardia - Event Reduction[2m > [22m[2mCARD_RECYCLED[2m > [22m[2mshould move card from discard to hand
+[22m[39m[reduceCardRecycled] Card not found on field: deck_i_card_01_1772612508590_8b9b5hl27
+
+ [32m✓[39m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mCARD_PLAYED[2m > [22mshould remove card from hand and set as current card[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mENCOUNTER_RESOLVED[2m > [22mshould set current encounter[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mSIGNET_GRANTED[2m > [22mshould add signet to card on board[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mCARD_DRAWN[2m > [22mshould move cards from deck to hand[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mMODIFIER_ADDED[2m > [22mshould add modifier to current card[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mTURN_ENDED[2m > [22mshould switch current player and increment turn number[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mPHASE_CHANGED[2m > [22mshould update game phase[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mCARDS_DISCARDED[2m > [22mshould move card from hand to discard[32m 0[2mms[22m[39m
+ [31m×[39m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mCARD_RECYCLED[2m > [22mshould move card from discard to hand[32m 8[2mms[22m[39m
+[31m   → expected 5 to be 6 // Object.is equality[39m
+[90mstdout[2m | src/games/cardia/__tests__/cardia-event-system.test.ts[2m > [22m[2mCardiaEventSystem.afterEvents - 伏击者交互[2m > [22m[2m应该调用交互处理器并返回 CARDS_DISCARDED 事件
+[22m[39m[CardiaEventSystem] System created { loadTime: [33m1772612508642[39m }
+
+=== 调用 CardiaEventSystem.afterEvents ===
+[CardiaEventSystem] afterEvents called {
+  eventsCount: [33m1[39m,
+  eventTypes: [ [32m'SYS_INTERACTION_RESOLVED'[39m ],
+  hasCurrentInteraction: [33mfalse[39m,
+  currentInteractionId: [90mundefined[39m,
+  queueLength: [33m0[39m
+}
+[CardiaEventSystem] INTERACTION_RESOLVED {
+  sourceId: [32m'ability_i_ambusher'[39m,
+  playerId: [32m'0'[39m,
+  optionId: [32m'faction_academy'[39m,
+  optionIds: [90mundefined[39m,
+  value: { faction: [32m'academy'[39m },
+  valueType: [32m'object'[39m,
+  valueKeys: [ [32m'faction'[39m ]
+}
+[CardiaEventSystem] Handler lookup { sourceId: [32m'ability_i_ambusher'[39m, found: [33mtrue[39m }
+[AMBUSHER] Handler called {
+  playerId: [32m'0'[39m,
+  value: { faction: [32m'academy'[39m },
+  valueType: [32m'object'[39m,
+  valueKeys: [ [32m'faction'[39m ]
+}
+[AMBUSHER] Selected faction { selectedFaction: [32m'academy'[39m }
+[AMBUSHER] Faction cards found {
+  opponentId: [32m'1'[39m,
+  faction: [32m'academy'[39m,
+  count: [33m2[39m,
+  cards: [
+    { uid: [32m'card_1'[39m, defId: [32m'deck_i_card_08'[39m, faction: [32m'academy'[39m },
+    { uid: [32m'card_2'[39m, defId: [32m'deck_i_card_14'[39m, faction: [32m'academy'[39m }
+  ]
+}
+[AMBUSHER] Returning events {
+  events: [
+    {
+      type: [32m'cardia:cards_discarded'[39m,
+      payload: [36m[Object][39m,
+      timestamp: [33m1772612508641[39m
+    }
+  ]
+}
+[CardiaEventSystem] Handler result {
+  hasResult: [33mtrue[39m,
+  eventsCount: [33m1[39m,
+  events: [ [32m'cardia:cards_discarded'[39m ],
+  hasInteraction: [33mfalse[39m,
+  interactionType: [90mundefined[39m
+}
+[CardiaEventSystem] Applying event {
+  type: [32m'cardia:cards_discarded'[39m,
+  payload: { playerId: [32m'1'[39m, cardIds: [ [32m'card_1'[39m, [32m'card_2'[39m ], from: [32m'hand'[39m }
+}
+[CardiaEventSystem] After event processing: { hasInventorPendingSet: [33mfalse[39m, hasPending: [33mfalse[39m, pending: [90mundefined[39m }
+[CardiaEventSystem] Returning modified state: {
+  appliedEventsCount: [33m1[39m,
+  appliedEventTypes: [ [32m'cardia:cards_discarded'[39m ],
+  hasCurrentInteraction: [33mfalse[39m,
+  currentInteractionId: [90mundefined[39m,
+  queueLength: [33m0[39m
+}
+
+=== 结果 ===
+result: {
+  hasResult: [33mtrue[39m,
+  hasState: [33mtrue[39m,
+  hasEvents: [33mtrue[39m,
+  eventsCount: [33m0[39m,
+  eventTypes: []
+}
+
+ [31m×[39m src/games/cardia/__tests__/cardia-event-system.test.ts[2m > [22mCardiaEventSystem.afterEvents - 伏击者交互[2m > [22m应该调用交互处理器并返回 CARDS_DISCARDED 事件[32m 9[2mms[22m[39m
+[31m   → expected +0 to be 1 // Object.is equality[39m
+ [31m×[39m src/games/cardia/__tests__/ability-witch-king.test.ts[2m > [22m巫王（Witch King）[2m > [22m应该让对手弃掉手牌和牌库中所有沼泽派系的卡牌，然后混洗牌库[32m 5[2mms[22m[39m
+[31m   → expected [] to have a length of 4 but got +0[39m
+ [31m×[39m src/games/cardia/__tests__/ability-witch-king.test.ts[2m > [22m巫王（Witch King）[2m > [22m当对手手牌和牌库中都没有沼泽派系卡牌时，应该只产生派系选择和混洗事件[32m 1[2mms[22m[39m
+[31m   → expected [] to have a length of 2 but got +0[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-ambusher.test.ts[2m > [22m伏击者（Ambusher）[2m > [22m第一次调用：应该创建派系选择交互[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-ambusher.test.ts[2m > [22m伏击者（Ambusher）[2m > [22m交互处理器：选择派系后应该弃掉对手该派系的手牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-ambusher.test.ts[2m > [22m伏击者（Ambusher）[2m > [22m当对手手牌中没有该派系卡牌时，交互处理器应该不产生弃牌事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-ambusher.test.ts[2m > [22m伏击者（Ambusher）[2m > [22m当对手手牌为空时，应该只产生派系选择交互[32m 0[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m[2m女导师能力复制逻辑[2m > [22m[2m步骤1: 女导师第一次调用应该返回交互
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'governess_card'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m4[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'inventor_card'[39m,
+  defId: [32m'deck_i_card_15'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_inventor'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_1'[39m,
+  defId: [32m'deck_i_card_13'[39m,
+  baseInfluence: [33m13[39m,
+  currentInfluence: [33m13[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_2'[39m,
+  defId: [32m'deck_i_card_12'[39m,
+  baseInfluence: [33m12[39m,
+  currentInfluence: [33m12[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: {
+  count: [33m1[39m,
+  cards: [ { uid: [32m'inventor_card'[39m, defId: [32m'deck_i_card_15'[39m } ]
+}
+[Test] 第一次调用结果: {
+  hasInteraction: [33mtrue[39m,
+  interactionType: [32m'card_selection'[39m,
+  availableCards: [ [32m'inventor_card'[39m ],
+  eventsCount: [33m0[39m
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m[2m女导师能力复制逻辑[2m > [22m[2m步骤2: 女导师第二次调用（选择发明家）应该返回发明家的交互
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'governess_card'[39m,
+  selectedCardId: [32m'inventor_card'[39m,
+  playedCardsCount: [33m4[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'inventor_card'[39m,
+  defId: [32m'deck_i_card_15'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_inventor'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_1'[39m,
+  defId: [32m'deck_i_card_13'[39m,
+  baseInfluence: [33m13[39m,
+  currentInfluence: [33m13[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_2'[39m,
+  defId: [32m'deck_i_card_12'[39m,
+  baseInfluence: [33m12[39m,
+  currentInfluence: [33m12[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: {
+  count: [33m1[39m,
+  cards: [ { uid: [32m'inventor_card'[39m, defId: [32m'deck_i_card_15'[39m } ]
+}
+[Governess] 复制能力: {
+  targetCardId: [32m'inventor_card'[39m,
+  targetCardDefId: [32m'deck_i_card_15'[39m,
+  targetAbilityId: [32m'ability_i_inventor'[39m,
+  governessCardId: [32m'governess_card'[39m,
+  governessAbilityId: [32m'ability_i_governess'[39m
+}
+[Governess] 执行被复制的能力: {
+  core: {
+    players: { player1: [36m[Object][39m, player2: [36m[Object][39m },
+    playerOrder: [ [32m'player1'[39m, [32m'player2'[39m ],
+    currentPlayerId: [32m'player1'[39m,
+    turnNumber: [33m1[39m,
+    phase: [32m'ability'[39m,
+    encounterHistory: [],
+    ongoingAbilities: [],
+    modifierTokens: [],
+    delayedEffects: [],
+    revealFirstNextEncounter: [1mnull[22m,
+    mechanicalSpiritActive: [1mnull[22m,
+    deckVariant: [32m'deck_i'[39m,
+    targetSignets: [33m5[39m
+  },
+  abilityId: [32m'ability_i_inventor'[39m,
+  cardId: [32m'governess_card'[39m,
+  sourceId: [32m'governess_card'[39m,
+  playerId: [32m'player1'[39m,
+  ownerId: [32m'player1'[39m,
+  opponentId: [32m'player2'[39m,
+  timestamp: [33m1772612509435[39m,
+  random: [36m[Function: random][39m,
+  selectedCardId: [32m'inventor_card'[39m
+}
+[Governess] 被复制能力的返回结果: {
+  eventsCount: [33m0[39m,
+  hasInteraction: [33mtrue[39m,
+  interaction: {
+    type: [32m'card_selection'[39m,
+    interactionId: [32m'ability_i_inventor_first_1772612509435'[39m,
+    abilityId: [32m'ability_i_inventor'[39m,
+    playerId: [32m'player1'[39m,
+    title: [32m'选择第一张卡牌'[39m,
+    description: [32m'为第一张卡牌添加+3影响力'[39m,
+    availableCards: [
+      [32m'inventor_card'[39m,
+      [32m'governess_card'[39m,
+      [32m'target_card_1'[39m,
+      [32m'target_card_2'[39m
+    ],
+    minSelect: [33m1[39m,
+    maxSelect: [33m1[39m,
+    filter: { location: [32m'field'[39m },
+    cardId: [32m'governess_card'[39m
+  }
+}
+[Governess] 最终返回: { eventsCount: [33m1[39m, hasInteraction: [33mtrue[39m }
+[Test] 第二次调用结果: {
+  eventsCount: [33m1[39m,
+  eventTypes: [ [32m'cardia:ability_copied'[39m ],
+  hasInteraction: [33mtrue[39m,
+  interactionType: [32m'card_selection'[39m,
+  interactionTitle: [32m'选择第一张卡牌'[39m
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m[2m女导师能力复制逻辑[2m > [22m[2m步骤3: 验证发明家能力本身返回交互
+[22m[39m[Test] 发明家能力直接调用结果: {
+  hasInteraction: [33mtrue[39m,
+  interactionType: [32m'card_selection'[39m,
+  availableCards: [
+    [32m'inventor_card'[39m,
+    [32m'governess_card'[39m,
+    [32m'target_card_1'[39m,
+    [32m'target_card_2'[39m
+  ],
+  eventsCount: [33m0[39m
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m[2m女导师能力复制逻辑[2m > [22m[2m步骤4: 完整流程 - 女导师复制发明家的两次交互
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'governess_card'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m4[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'inventor_card'[39m,
+  defId: [32m'deck_i_card_15'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_inventor'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_1'[39m,
+  defId: [32m'deck_i_card_13'[39m,
+  baseInfluence: [33m13[39m,
+  currentInfluence: [33m13[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_2'[39m,
+  defId: [32m'deck_i_card_12'[39m,
+  baseInfluence: [33m12[39m,
+  currentInfluence: [33m12[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: {
+  count: [33m1[39m,
+  cards: [ { uid: [32m'inventor_card'[39m, defId: [32m'deck_i_card_15'[39m } ]
+}
+[Test] 步骤1: 女导师返回交互 ✓
+[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'governess_card'[39m,
+  selectedCardId: [32m'inventor_card'[39m,
+  playedCardsCount: [33m4[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'inventor_card'[39m,
+  defId: [32m'deck_i_card_15'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_inventor'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_1'[39m,
+  defId: [32m'deck_i_card_13'[39m,
+  baseInfluence: [33m13[39m,
+  currentInfluence: [33m13[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_2'[39m,
+  defId: [32m'deck_i_card_12'[39m,
+  baseInfluence: [33m12[39m,
+  currentInfluence: [33m12[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: {
+  count: [33m1[39m,
+  cards: [ { uid: [32m'inventor_card'[39m, defId: [32m'deck_i_card_15'[39m } ]
+}
+[Governess] 复制能力: {
+  targetCardId: [32m'inventor_card'[39m,
+  targetCardDefId: [32m'deck_i_card_15'[39m,
+  targetAbilityId: [32m'ability_i_inventor'[39m,
+  governessCardId: [32m'governess_card'[39m,
+  governessAbilityId: [32m'ability_i_governess'[39m
+}
+[Governess] 执行被复制的能力: {
+  core: {
+    players: { player1: [36m[Object][39m, player2: [36m[Object][39m },
+    playerOrder: [ [32m'player1'[39m, [32m'player2'[39m ],
+    currentPlayerId: [32m'player1'[39m,
+    turnNumber: [33m1[39m,
+    phase: [32m'ability'[39m,
+    encounterHistory: [],
+    ongoingAbilities: [],
+    modifierTokens: [],
+    delayedEffects: [],
+    revealFirstNextEncounter: [1mnull[22m,
+    mechanicalSpiritActive: [1mnull[22m,
+    deckVariant: [32m'deck_i'[39m,
+    targetSignets: [33m5[39m
+  },
+  abilityId: [32m'ability_i_inventor'[39m,
+  cardId: [32m'governess_card'[39m,
+  sourceId: [32m'governess_card'[39m,
+  playerId: [32m'player1'[39m,
+  ownerId: [32m'player1'[39m,
+  opponentId: [32m'player2'[39m,
+  timestamp: [33m1772612509438[39m,
+  random: [36m[Function: random][39m,
+  selectedCardId: [32m'inventor_card'[39m
+}
+[Governess] 被复制能力的返回结果: {
+  eventsCount: [33m0[39m,
+  hasInteraction: [33mtrue[39m,
+  interaction: {
+    type: [32m'card_selection'[39m,
+    interactionId: [32m'ability_i_inventor_first_1772612509438'[39m,
+    abilityId: [32m'ability_i_inventor'[39m,
+    playerId: [32m'player1'[39m,
+    title: [32m'选择第一张卡牌'[39m,
+    description: [32m'为第一张卡牌添加+3影响力'[39m,
+    availableCards: [
+      [32m'inventor_card'[39m,
+      [32m'governess_card'[39m,
+      [32m'target_card_1'[39m,
+      [32m'target_card_2'[39m
+    ],
+    minSelect: [33m1[39m,
+    maxSelect: [33m1[39m,
+    filter: { location: [32m'field'[39m },
+    cardId: [32m'governess_card'[39m
+  }
+}
+[Governess] 最终返回: { eventsCount: [33m1[39m, hasInteraction: [33mtrue[39m }
+[Test] 步骤2: 女导师返回发明家的第一次交互 ✓
+[Test] 步骤3: 发明家第一次选择结果: { eventsCount: [33m0[39m, hasInteraction: [33mtrue[39m, hasPending: [33mfalse[39m }
+
+[90mstdout[2m | src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m[2m女导师能力复制逻辑[2m > [22m[2m边界情况: 女导师复制没有交互的能力（破坏者）
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'governess_card'[39m,
+  selectedCardId: [32m'saboteur_card'[39m,
+  playedCardsCount: [33m5[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'saboteur_card'[39m,
+  defId: [32m'deck_i_card_05'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_saboteur'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'inventor_card'[39m,
+  defId: [32m'deck_i_card_15'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_inventor'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_1'[39m,
+  defId: [32m'deck_i_card_13'[39m,
+  baseInfluence: [33m13[39m,
+  currentInfluence: [33m13[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'target_card_2'[39m,
+  defId: [32m'deck_i_card_12'[39m,
+  baseInfluence: [33m12[39m,
+  currentInfluence: [33m12[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: {
+  count: [33m2[39m,
+  cards: [
+    { uid: [32m'saboteur_card'[39m, defId: [32m'deck_i_card_05'[39m },
+    { uid: [32m'inventor_card'[39m, defId: [32m'deck_i_card_15'[39m }
+  ]
+}
+[Governess] 复制能力: {
+  targetCardId: [32m'saboteur_card'[39m,
+  targetCardDefId: [32m'deck_i_card_05'[39m,
+  targetAbilityId: [32m'ability_i_saboteur'[39m,
+  governessCardId: [32m'governess_card'[39m,
+  governessAbilityId: [32m'ability_i_governess'[39m
+}
+[Governess] 执行被复制的能力: {
+  core: {
+    players: { player1: [36m[Object][39m, player2: [36m[Object][39m },
+    playerOrder: [ [32m'player1'[39m, [32m'player2'[39m ],
+    currentPlayerId: [32m'player1'[39m,
+    turnNumber: [33m1[39m,
+    phase: [32m'ability'[39m,
+    encounterHistory: [],
+    ongoingAbilities: [],
+    modifierTokens: [],
+    delayedEffects: [],
+    revealFirstNextEncounter: [1mnull[22m,
+    mechanicalSpiritActive: [1mnull[22m,
+    deckVariant: [32m'deck_i'[39m,
+    targetSignets: [33m5[39m
+  },
+  abilityId: [32m'ability_i_saboteur'[39m,
+  cardId: [32m'governess_card'[39m,
+  sourceId: [32m'governess_card'[39m,
+  playerId: [32m'player1'[39m,
+  ownerId: [32m'player1'[39m,
+  opponentId: [32m'player2'[39m,
+  timestamp: [33m1772612509439[39m,
+  random: [36m[Function: random][39m,
+  selectedCardId: [32m'saboteur_card'[39m
+}
+[Governess] 被复制能力的返回结果: { eventsCount: [33m0[39m, hasInteraction: [33mfalse[39m, interaction: [90mundefined[39m }
+[Governess] 最终返回: { eventsCount: [33m1[39m, hasInteraction: [33mfalse[39m }
+[Test] 复制破坏者结果: {
+  eventsCount: [33m1[39m,
+  eventTypes: [ [32m'cardia:ability_copied'[39m ],
+  hasInteraction: [33mfalse[39m
+}
+
+ [32m✓[39m src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m女导师能力复制逻辑[2m > [22m步骤1: 女导师第一次调用应该返回交互[32m 8[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m女导师能力复制逻辑[2m > [22m步骤2: 女导师第二次调用（选择发明家）应该返回发明家的交互[32m 3[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m女导师能力复制逻辑[2m > [22m步骤3: 验证发明家能力本身返回交互[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m女导师能力复制逻辑[2m > [22m步骤4: 完整流程 - 女导师复制发明家的两次交互[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/governess-copy-logic.test.ts[2m > [22m女导师能力复制逻辑[2m > [22m边界情况: 女导师复制没有交互的能力（破坏者）[32m 1[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m[2m组 5：能力复制能力[2m > [22m[2m女导师（Governess）[2m > [22m[2m第一次调用：应该创建交互让玩家选择目标卡牌
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played1'[39m,
+  defId: [32m'test_played_1'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_saboteur'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m1[39m, cards: [ { uid: [32m'played1'[39m, defId: [32m'test_played_1'[39m } ] }
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m[2m组 5：能力复制能力[2m > [22m[2m女导师（Governess）[2m > [22m[2m第二次调用：选择卡牌后应该递归执行被复制的能力
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [32m'played1'[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played1'[39m,
+  defId: [32m'test_played_1'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_saboteur'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m1[39m, cards: [ { uid: [32m'played1'[39m, defId: [32m'test_played_1'[39m } ] }
+[Governess] 复制能力: {
+  targetCardId: [32m'played1'[39m,
+  targetCardDefId: [32m'test_played_1'[39m,
+  targetAbilityId: [32m'ability_i_saboteur'[39m,
+  governessCardId: [32m'played2'[39m,
+  governessAbilityId: [32m'ability_i_governess'[39m
+}
+[Governess] 执行被复制的能力: {
+  core: {
+    players: { player1: [36m[Object][39m, player2: [36m[Object][39m },
+    playerOrder: [ [32m'player1'[39m, [32m'player2'[39m ],
+    currentPlayerId: [32m'player1'[39m,
+    turnNumber: [33m1[39m,
+    phase: [32m'ability'[39m,
+    encounterHistory: [],
+    ongoingAbilities: [],
+    modifierTokens: [],
+    delayedEffects: [],
+    revealFirstNextEncounter: [1mnull[22m,
+    mechanicalSpiritActive: [1mnull[22m,
+    deckVariant: [32m'deck_i'[39m,
+    targetSignets: [33m5[39m
+  },
+  abilityId: [32m'ability_i_saboteur'[39m,
+  cardId: [32m'played2'[39m,
+  sourceId: [32m'played2'[39m,
+  playerId: [32m'player1'[39m,
+  ownerId: [32m'player1'[39m,
+  opponentId: [32m'player2'[39m,
+  timestamp: [33m1772612509478[39m,
+  random: [36m[Function: random][39m,
+  selectedCardId: [32m'played1'[39m
+}
+[Governess] 被复制能力的返回结果: { eventsCount: [33m0[39m, hasInteraction: [33mfalse[39m, interaction: [90mundefined[39m }
+[Governess] 最终返回: { eventsCount: [33m1[39m, hasInteraction: [33mfalse[39m }
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m[2m组 5：能力复制能力[2m > [22m[2m女导师（Governess）[2m > [22m[2m当己方没有影响力≥14的场上卡牌时，应该发射 ABILITY_NO_VALID_TARGET 事件
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played1'[39m,
+  defId: [32m'test_played_1'[39m,
+  baseInfluence: [33m10[39m,
+  currentInfluence: [33m10[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_saboteur'[39m ],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m0[39m, cards: [] }
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m[2m组 5：能力复制能力[2m > [22m[2m女导师（Governess）[2m > [22m[2m当己方场上卡牌没有即时能力时，应该发射 ABILITY_NO_VALID_TARGET 事件
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played1'[39m,
+  defId: [32m'test_played_1'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m0[39m, cards: [] }
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m[2m组 5：能力复制能力[2m > [22m[2m女导师（Governess）[2m > [22m[2m应该排除当前卡牌（不能复制自己）
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played1'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played2'[39m,
+  defId: [32m'test_played_2'[39m,
+  baseInfluence: [33m10[39m,
+  currentInfluence: [33m10[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m0[39m, cards: [] }
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m[2m组 5：能力复制能力[2m > [22m[2m女导师（Governess）[2m > [22m[2m应该考虑修正标记计算当前影响力
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played1'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played2'[39m,
+  defId: [32m'test_played_2'[39m,
+  baseInfluence: [33m10[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_surgeon'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m1[39m, cards: [ { uid: [32m'played2'[39m, defId: [32m'test_played_2'[39m } ] }
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m[2m组 5：能力复制能力[2m > [22m[2m能力复制的限制[2m > [22m[2m不能复制持续能力（🔄）
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played1'[39m,
+  defId: [32m'test_played_1'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_mediator'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m1[39m, cards: [ { uid: [32m'played1'[39m, defId: [32m'test_played_1'[39m } ] }
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m[2m组 5：能力复制能力[2m > [22m[2m能力复制的限制[2m > [22m[2m复制的能力应该使用原始能力的执行器
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played1'[39m,
+  defId: [32m'test_played_1'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_saboteur'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m1[39m, cards: [ { uid: [32m'played1'[39m, defId: [32m'test_played_1'[39m } ] }
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m[2m组 5：能力复制能力[2m > [22m[2m能力复制的交互处理[2m > [22m[2m当有多张符合条件的卡牌时，应该创建卡牌选择交互
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m3[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played1'[39m,
+  defId: [32m'test_played_1'[39m,
+  baseInfluence: [33m15[39m,
+  currentInfluence: [33m15[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_i_saboteur'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'played3'[39m,
+  defId: [32m'test_played_3'[39m,
+  baseInfluence: [33m16[39m,
+  currentInfluence: [33m16[39m,
+  hasInstantAbility: [33mtrue[39m,
+  abilityIds: [ [32m'ability_ii_revolutionary'[39m ],
+  eligible: [33mtrue[39m
+}
+[Governess] 符合条件的卡牌: {
+  count: [33m2[39m,
+  cards: [
+    { uid: [32m'played1'[39m, defId: [32m'test_played_1'[39m },
+    { uid: [32m'played3'[39m, defId: [32m'test_played_3'[39m }
+  ]
+}
+
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m女导师（Governess）[2m > [22m第一次调用：应该创建交互让玩家选择目标卡牌[32m 5[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m女导师（Governess）[2m > [22m第二次调用：选择卡牌后应该递归执行被复制的能力[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m女导师（Governess）[2m > [22m当己方没有影响力≥14的场上卡牌时，应该发射 ABILITY_NO_VALID_TARGET 事件[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m女导师（Governess）[2m > [22m当己方场上卡牌没有即时能力时，应该发射 ABILITY_NO_VALID_TARGET 事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m女导师（Governess）[2m > [22m应该排除当前卡牌（不能复制自己）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m女导师（Governess）[2m > [22m应该考虑修正标记计算当前影响力[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m幻术师（Illusionist）[2m > [22m第一次调用：应该创建交互让玩家选择目标卡牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m幻术师（Illusionist）[2m > [22m第二次调用：选择卡牌后应该递归执行被复制的能力[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m幻术师（Illusionist）[2m > [22m当对手场上卡牌没有即时能力时，应该发射 ABILITY_NO_VALID_TARGET 事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m幻术师（Illusionist）[2m > [22m当对手没有场上卡牌时，应该发射 ABILITY_NO_VALID_TARGET 事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m幻术师（Illusionist）[2m > [22m应该能够复制对手任意影响力的卡牌能力[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m元素师（Elementalist）[2m > [22m第一次调用：应该创建交互让玩家选择目标手牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m元素师（Elementalist）[2m > [22m第二次调用：弃掉手牌中一张有即时能力的卡牌，复制其能力，然后抽一张牌[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m元素师（Elementalist）[2m > [22m当手牌中没有即时能力的卡牌时，应该发射 ABILITY_NO_VALID_TARGET 事件[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m元素师（Elementalist）[2m > [22m当手牌为空时，应该发射 ABILITY_NO_VALID_TARGET 事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m元素师（Elementalist）[2m > [22m应该从手牌中选择卡牌（而非弃牌堆）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m能力复制的限制[2m > [22m不能复制持续能力（🔄）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m能力复制的限制[2m > [22m复制的能力应该使用原始能力的执行器[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group5-copy.test.ts[2m > [22m组 5：能力复制能力[2m > [22m能力复制的交互处理[2m > [22m当有多张符合条件的卡牌时，应该创建卡牌选择交互[32m 1[2mms[22m[39m
+[90mstderr[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m沼泽守卫（Swamp Guard）[2m > [22m[2m边界条件：选中的卡牌不存在时应该返回空事件
+[22m[39m[SwampGuard] Selected card not found: non_existent_card
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m第一次调用：应该创建交互让玩家选择目标卡牌
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [90mundefined[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m3[39m,
+      source: [32m'test_source_1'[39m,
+      timestamp: [33m1772612509502[39m
+    },
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m-2[39m,
+      source: [32m'test_source_2'[39m,
+      timestamp: [33m1772612509502[39m
+    }
+  ],
+  ongoingAbilities: [
+    {
+      abilityId: [32m'test_ability_1'[39m,
+      cardId: [32m'played2'[39m,
+      playerId: [32m'player1'[39m,
+      effectType: [32m'forceTie'[39m,
+      timestamp: [33m1772612509502[39m
+    },
+    {
+      abilityId: [32m'test_ability_2'[39m,
+      cardId: [32m'played2'[39m,
+      playerId: [32m'player1'[39m,
+      effectType: [32m'winTies'[39m,
+      timestamp: [33m1772612509502[39m
+    }
+  ]
+}
+[VoidMage] 检测到的标记: {
+  cardsWithModifiers: [ [32m'played1'[39m ],
+  cardsWithOngoing: [ [32m'played2'[39m ],
+  allCardsWithMarkers: [ [32m'played1'[39m, [32m'played2'[39m ]
+}
+[VoidMage] 创建交互: {
+  type: [32m'card_selection'[39m,
+  interactionId: [32m'test_ability_1772612509502'[39m,
+  playerId: [32m'player1'[39m,
+  abilityId: [32m'test_ability'[39m,
+  title: [32m'选择目标卡牌'[39m,
+  description: [32m'从任一张牌上弃掉所有修正标记和持续标记'[39m,
+  availableCards: [ [32m'played1'[39m, [32m'played2'[39m ],
+  minSelect: [33m1[39m,
+  maxSelect: [33m1[39m
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m第二次调用：选择卡牌后应该移除所有修正标记
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [32m'played1'[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m3[39m,
+      source: [32m'test_source_1'[39m,
+      timestamp: [33m1772612509505[39m
+    },
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m-2[39m,
+      source: [32m'test_source_2'[39m,
+      timestamp: [33m1772612509505[39m
+    }
+  ],
+  ongoingAbilities: [
+    {
+      abilityId: [32m'test_ability_1'[39m,
+      cardId: [32m'played2'[39m,
+      playerId: [32m'player1'[39m,
+      effectType: [32m'forceTie'[39m,
+      timestamp: [33m1772612509505[39m
+    },
+    {
+      abilityId: [32m'test_ability_2'[39m,
+      cardId: [32m'played2'[39m,
+      playerId: [32m'player1'[39m,
+      effectType: [32m'winTies'[39m,
+      timestamp: [33m1772612509505[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m第二次调用：选择卡牌后应该移除所有持续标记
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [32m'played2'[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m3[39m,
+      source: [32m'test_source_1'[39m,
+      timestamp: [33m1772612509505[39m
+    },
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m-2[39m,
+      source: [32m'test_source_2'[39m,
+      timestamp: [33m1772612509505[39m
+    }
+  ],
+  ongoingAbilities: [
+    {
+      abilityId: [32m'test_ability_1'[39m,
+      cardId: [32m'played2'[39m,
+      playerId: [32m'player1'[39m,
+      effectType: [32m'forceTie'[39m,
+      timestamp: [33m1772612509505[39m
+    },
+    {
+      abilityId: [32m'test_ability_2'[39m,
+      cardId: [32m'played2'[39m,
+      playerId: [32m'player1'[39m,
+      effectType: [32m'winTies'[39m,
+      timestamp: [33m1772612509505[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m当没有修正标记或持续标记时，应该发射 ABILITY_NO_VALID_TARGET 事件
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [90mundefined[39m,
+  modifierTokens: [],
+  ongoingAbilities: []
+}
+[VoidMage] 检测到的标记: {
+  cardsWithModifiers: [],
+  cardsWithOngoing: [],
+  allCardsWithMarkers: []
+}
+
+[90mstderr[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m当没有修正标记或持续标记时，应该发射 ABILITY_NO_VALID_TARGET 事件
+[22m[39m[VoidMage] 场上没有标记，返回 NO_VALID_TARGET
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m应该同时移除修正标记和持续标记
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [32m'played1'[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m5[39m,
+      source: [32m'test_source'[39m,
+      timestamp: [33m1772612509506[39m
+    }
+  ],
+  ongoingAbilities: [
+    {
+      abilityId: [32m'test_ability'[39m,
+      cardId: [32m'played1'[39m,
+      playerId: [32m'player1'[39m,
+      effectType: [32m'forceTie'[39m,
+      timestamp: [33m1772612509506[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m应该能够移除任意玩家卡牌上的标记
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [32m'opp_played1'[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'opp_played1'[39m,
+      value: [33m3[39m,
+      source: [32m'test_source'[39m,
+      timestamp: [33m1772612509506[39m
+    }
+  ],
+  ongoingAbilities: [
+    {
+      abilityId: [32m'test_ability'[39m,
+      cardId: [32m'opp_played1'[39m,
+      playerId: [32m'player2'[39m,
+      effectType: [32m'forceTie'[39m,
+      timestamp: [33m1772612509506[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m边界条件：选中的卡牌不存在时应该返回空事件
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [32m'non_existent_card'[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m3[39m,
+      source: [32m'test_source_1'[39m,
+      timestamp: [33m1772612509507[39m
+    },
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m-2[39m,
+      source: [32m'test_source_2'[39m,
+      timestamp: [33m1772612509507[39m
+    }
+  ],
+  ongoingAbilities: [
+    {
+      abilityId: [32m'test_ability_1'[39m,
+      cardId: [32m'played2'[39m,
+      playerId: [32m'player1'[39m,
+      effectType: [32m'forceTie'[39m,
+      timestamp: [33m1772612509507[39m
+    },
+    {
+      abilityId: [32m'test_ability_2'[39m,
+      cardId: [32m'played2'[39m,
+      playerId: [32m'player1'[39m,
+      effectType: [32m'winTies'[39m,
+      timestamp: [33m1772612509507[39m
+    }
+  ]
+}
+
+[90mstderr[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m边界条件：选中的卡牌不存在时应该返回空事件
+[22m[39m[VoidMage] Selected card not found: non_existent_card
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m边界条件：选中的卡牌没有标记时应该返回空事件
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [32m'played2'[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m5[39m,
+      source: [32m'test_source'[39m,
+      timestamp: [33m1772612509507[39m
+    }
+  ],
+  ongoingAbilities: []
+}
+
+[90mstderr[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m虚空法师（Void Mage）[2m > [22m[2m边界条件：选中的卡牌没有标记时应该返回空事件
+[22m[39m[VoidMage] Selected card has no markers, returning empty events
+
+[90mstdout[2m | src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m[2m组 4：卡牌操作能力[2m > [22m[2m状态回溯[2m > [22m[2m虚空法师移除标记后，应该触发影响力重新计算
+[22m[39m[VoidMage] 能力执行器被调用: {
+  playerId: [32m'player1'[39m,
+  cardId: [32m'played2'[39m,
+  selectedCardId: [32m'played1'[39m,
+  modifierTokens: [
+    {
+      cardId: [32m'played1'[39m,
+      value: [33m5[39m,
+      source: [32m'test_source'[39m,
+      timestamp: [33m1772612509509[39m
+    }
+  ],
+  ongoingAbilities: []
+}
+
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m沼泽守卫（Swamp Guard）[2m > [22m第一次调用：应该创建交互让玩家选择目标卡牌[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m沼泽守卫（Swamp Guard）[2m > [22m第二次调用：选择卡牌后应该回收己方卡牌到手牌，并弃掉相对的牌[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m沼泽守卫（Swamp Guard）[2m > [22m当己方没有其他场上卡牌时，应该发射 ABILITY_NO_VALID_TARGET 事件[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m沼泽守卫（Swamp Guard）[2m > [22m当对手没有相对的牌时，应该只回收己方卡牌[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m沼泽守卫（Swamp Guard）[2m > [22m应该排除当前卡牌（不能回收自己）[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m沼泽守卫（Swamp Guard）[2m > [22m应该弃掉相对的牌（相同遭遇序号）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m沼泽守卫（Swamp Guard）[2m > [22m边界条件：选中的卡牌不存在时应该返回空事件[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m虚空法师（Void Mage）[2m > [22m第一次调用：应该创建交互让玩家选择目标卡牌[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m虚空法师（Void Mage）[2m > [22m第二次调用：选择卡牌后应该移除所有修正标记[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m虚空法师（Void Mage）[2m > [22m第二次调用：选择卡牌后应该移除所有持续标记[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m虚空法师（Void Mage）[2m > [22m当没有修正标记或持续标记时，应该发射 ABILITY_NO_VALID_TARGET 事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m虚空法师（Void Mage）[2m > [22m应该同时移除修正标记和持续标记[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m虚空法师（Void Mage）[2m > [22m应该能够移除任意玩家卡牌上的标记[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m虚空法师（Void Mage）[2m > [22m边界条件：选中的卡牌不存在时应该返回空事件[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m虚空法师（Void Mage）[2m > [22m边界条件：选中的卡牌没有标记时应该返回空事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m状态回溯[2m > [22m沼泽守卫回收卡牌后，应该触发遭遇重新计算[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/abilities-group4-card-ops.test.ts[2m > [22m组 4：卡牌操作能力[2m > [22m状态回溯[2m > [22m虚空法师移除标记后，应该触发影响力重新计算[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_mercenary_swordsman 的元数据[32m 3[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_void_mage 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_surgeon 的元数据[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_mediator 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_saboteur 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_diviner 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_court_guard 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_magistrate 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_ambusher 的元数据[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_puppeteer 的元数据[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_clockmaker 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_treasurer 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_swamp_guard 的元数据[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_governess 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_inventor 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mI 牌组能力注册[2m > [22m应该注册 ability_i_elf 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_poisoner 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_telekinetic_mage 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_messenger 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_tax_collector 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_revolutionary 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_librarian 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_genius 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_aristocrat 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_extortionist 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_illusionist 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_engineer 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_advisor 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_witch_king 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_elementalist 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_mechanical_spirit 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22mII 牌组能力注册[2m > [22m应该注册 ability_ii_heir 的元数据[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22m能力类型标记[2m > [22m即时能力应该标记 isInstant=true[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22m能力类型标记[2m > [22m持续能力应该标记 isOngoing=true[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22m能力触发时机[2m > [22m失败时触发的能力应该有 trigger=onLose[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22m能力触发时机[2m > [22m胜利时触发的能力应该有 trigger=onWin[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-registry-completeness.test.ts[2m > [22mCardia - 能力注册表完整性[2m > [22m能力触发时机[2m > [22m持续能力应该有 trigger=ongoing[32m 0[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/integration-ability-copy.test.ts[2m > [22m[2m能力复制集成测试[2m > [22m[2m女导师能力复制[2m > [22m[2m应该正确复制己方场上卡牌的即时能力
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'p1'[39m,
+  cardId: [32m'c1'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'c2'[39m,
+  defId: [32m'test_card'[39m,
+  baseInfluence: [33m5[39m,
+  currentInfluence: [33m5[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m0[39m, cards: [] }
+
+[90mstdout[2m | src/games/cardia/__tests__/integration-ability-copy.test.ts[2m > [22m[2m能力复制集成测试[2m > [22m[2m复制能力的交互处理[2m > [22m[2m应该正确处理复制能力的延迟效果
+[22m[39m[Governess] 能力执行器被调用: {
+  playerId: [32m'p1'[39m,
+  cardId: [32m'c1'[39m,
+  selectedCardId: [90mundefined[39m,
+  playedCardsCount: [33m2[39m
+}
+[Governess] 检查卡牌: {
+  uid: [32m'c2'[39m,
+  defId: [32m'test_card'[39m,
+  baseInfluence: [33m5[39m,
+  currentInfluence: [33m5[39m,
+  hasInstantAbility: [33mfalse[39m,
+  abilityIds: [],
+  eligible: [33mfalse[39m
+}
+[Governess] 符合条件的卡牌: { count: [33m0[39m, cards: [] }
+
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-copy.test.ts[2m > [22m能力复制集成测试[2m > [22m女导师能力复制[2m > [22m应该正确复制己方场上卡牌的即时能力[32m 6[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-copy.test.ts[2m > [22m能力复制集成测试[2m > [22m幻术师能力复制[2m > [22m应该正确复制对手场上卡牌的即时能力[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-copy.test.ts[2m > [22m能力复制集成测试[2m > [22m元素师能力复制[2m > [22m应该正确复制弃牌堆中卡牌的即时能力[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-copy.test.ts[2m > [22m能力复制集成测试[2m > [22m能力复制递归执行[2m > [22m应该正确递归执行被复制的能力[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-copy.test.ts[2m > [22m能力复制集成测试[2m > [22m不可复制持续能力[2m > [22m应该拒绝复制持续能力[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-ability-copy.test.ts[2m > [22m能力复制集成测试[2m > [22m复制能力的交互处理[2m > [22m应该正确处理复制能力的延迟效果[32m 1[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/interaction.test.ts
+[22m[39m[Cardia] 资源已注册，共 [33m43[39m 张关键图片
+
+[90mstdout[2m | src/games/cardia/__tests__/interaction.test.ts
+[22m[39m[CardiaEventSystem] System created { loadTime: [33m1772612510273[39m }
+
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22mCHOOSE_CARD 命令验证[2m > [22m应该允许选择手牌中的卡牌[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22mCHOOSE_CARD 命令验证[2m > [22m应该拒绝选择不在手牌中的卡牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22mCHOOSE_CARD 命令验证[2m > [22m应该拒绝空选择[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22mCHOOSE_CARD 命令验证[2m > [22m应该允许选择多张卡牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22mCHOOSE_FACTION 命令验证[2m > [22m应该允许选择有效的派系[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22mCHOOSE_FACTION 命令验证[2m > [22m应该拒绝无效的派系[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22mCHOOSE_FACTION 命令验证[2m > [22m应该允许所有四个派系[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22m交互命令执行[2m > [22mCHOOSE_CARD 应该返回空事件数组（由 InteractionSystem 处理）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22m交互命令执行[2m > [22mCHOOSE_FACTION 应该返回空事件数组（由 InteractionSystem 处理）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/interaction.test.ts[2m > [22mCardia - 交互系统[2m > [22m交互事件处理[2m > [22mINTERACTION_CREATED 事件应该被正确处理[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m印戒统计[2m > [22m应该正确统计玩家场上所有卡牌的印戒总和[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m印戒统计[2m > [22m应该正确统计双方玩家的印戒总和[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m标准胜利条件[2m > [22m应该在玩家印戒总和≥5时触发标准胜利[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m标准胜利条件[2m > [22m应该在玩家印戒总和>5时触发标准胜利[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m标准胜利条件[2m > [22m应该在玩家印戒总和<5时不触发胜利[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m双方同时达到5枚印戒[2m > [22m应该在双方同时达到5枚印戒时判定为平局[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m双方同时达到5枚印戒[2m > [22m应该在一方印戒更多时判定该方获胜[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m特殊胜利条件 - 机械精灵[2m > [22m应该在机械精灵持续标记存在时验证标记正确放置[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m特殊胜利条件 - 机械精灵[2m > [22m应该在机械精灵持续标记存在且玩家遭遇获胜时触发游戏胜利[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m特殊胜利条件 - 精灵[2m > [22m应该在精灵能力激活时验证能力执行器已注册[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m特殊胜利条件 - 精灵[2m > [22m应该在精灵持续标记存在且印戒>=5时触发游戏胜利[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m对手无法出牌[2m > [22m应该在对手手牌和牌库都为空时触发胜利[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m对手无法出牌[2m > [22m应该在对手只有手牌为空但牌库不为空时不触发胜利[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m对手无法出牌[2m > [22m应该在对手只有牌库为空但手牌不为空时不触发胜利[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-victory-conditions.test.ts[2m > [22m胜利条件集成测试[2m > [22m游戏结束后状态[2m > [22m应该在游戏结束后将结果写入 sys.gameover[32m 1[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/validate.test.ts
+[22m[39m[Cardia] 资源已注册，共 [33m43[39m 张关键图片
+
+[90mstdout[2m | src/games/cardia/__tests__/validate.test.ts
+[22m[39m[CardiaEventSystem] System created { loadTime: [33m1772612510781[39m }
+
+[90mstdout[2m | src/games/cardia/__tests__/validate.test.ts[2m > [22m[2mCardia - Command Validation[2m > [22m[2mPLAY_CARD[2m > [22m[2mshould allow playing card in play phase
+[22m[39m[Cardia] PLAY_CARD validation passed {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'deck_i_card_01_1772612510795_3nelg71qp'[39m,
+  cardDefId: [32m'deck_i_card_01'[39m
+}
+
+[90mstderr[2m | src/games/cardia/__tests__/validate.test.ts[2m > [22m[2mCardia - Command Validation[2m > [22m[2mPLAY_CARD[2m > [22m[2mshould reject playing card in wrong phase
+[22m[39m[Cardia] PLAY_CARD validation failed: Not in play phase { playerId: [32m'0'[39m, currentPhase: [32m'ability'[39m }
+
+[90mstdout[2m | src/games/cardia/__tests__/validate.test.ts[2m > [22m[2mCardia - Command Validation[2m > [22m[2mPLAY_CARD[2m > [22m[2mshould allow any player to play card in play phase (simultaneous play)
+[22m[39m[Cardia] PLAY_CARD validation passed {
+  playerId: [32m'1'[39m,
+  cardUid: [32m'deck_i_card_01_1772612510802_keda4fhl3'[39m,
+  cardDefId: [32m'deck_i_card_01'[39m
+}
+
+[90mstderr[2m | src/games/cardia/__tests__/validate.test.ts[2m > [22m[2mCardia - Command Validation[2m > [22m[2mPLAY_CARD[2m > [22m[2mshould reject playing card not in hand
+[22m[39m[Cardia] PLAY_CARD validation failed: Card not in hand {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'nonexistent'[39m,
+  handCards: [
+    [32m'deck_i_card_01_1772612510803_kv4cn88i2'[39m,
+    [32m'deck_i_card_10_1772612510803_6loehc9pw'[39m,
+    [32m'deck_i_card_02_1772612510803_cn77ptmk0'[39m,
+    [32m'deck_i_card_14_1772612510803_ffp6jfu0q'[39m,
+    [32m'deck_i_card_03_1772612510803_pm62nn67r'[39m
+  ]
+}
+
+[90mstderr[2m | src/games/cardia/__tests__/validate.test.ts[2m > [22m[2mCardia - Command Validation[2m > [22m[2mPLAY_CARD[2m > [22m[2mshould reject playing card when already played
+[22m[39m[Cardia] PLAY_CARD validation failed: Already played { playerId: [32m'0'[39m, hasPlayed: [33mtrue[39m }
+
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22m能力执行器注册表[2m > [22m应该注册所有 32 个能力执行器[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22m能力执行器注册表[2m > [22m应该能够获取所有已注册的能力 ID[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22mCardiaDomain 核心功能[2m > [22m应该有正确的 gameId[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22mCardiaDomain 核心功能[2m > [22m应该能够初始化游戏状态[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22mCardiaDomain 核心功能[2m > [22m应该有 validate 函数[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22mCardiaDomain 核心功能[2m > [22m应该有 execute 函数[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22mCardiaDomain 核心功能[2m > [22m应该有 reduce 函数[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22mCardiaDomain 核心功能[2m > [22m应该有 isGameOver 函数[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22m胜利条件检测[2m > [22m应该在没有玩家获胜时返回 undefined[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22m胜利条件检测[2m > [22m应该在玩家达到目标印戒数时返回获胜者[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/checkpoint-validation.test.ts[2m > [22mCheckpoint - 领域层实现完成[2m > [22m胜利条件检测[2m > [22m应该在玩家无法出牌时返回对手获胜[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-influence-modifiers.test.ts[2m > [22m影响力修正集成测试[2m > [22m修正标记放置和影响力计算[2m > [22m应该注册延迟效果，为下一张打出的牌添加 -5 影响力[32m 3[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-influence-modifiers.test.ts[2m > [22m影响力修正集成测试[2m > [22m修正标记放置和影响力计算[2m > [22m应该正确放置 -3 修正标记并更新影响力[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-influence-modifiers.test.ts[2m > [22m影响力修正集成测试[2m > [22m多个修正标记叠加[2m > [22m应该正确计算多个修正标记的叠加效果[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-influence-modifiers.test.ts[2m > [22m影响力修正集成测试[2m > [22m遭遇结果改变和印戒移动[2m > [22m应该在影响力改变后重新判定遭遇结果[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-influence-modifiers.test.ts[2m > [22m影响力修正集成测试[2m > [22m遭遇结果改变和印戒移动[2m > [22m应该在遭遇结果改变时移动印戒[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/integration-influence-modifiers.test.ts[2m > [22m影响力修正集成测试[2m > [22m延迟效果[2m > [22m应该正确注册延迟效果（图书管理员）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mPLAY_CARD[2m > [22mshould allow playing card in play phase[32m 12[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mPLAY_CARD[2m > [22mshould reject playing card in wrong phase[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mPLAY_CARD[2m > [22mshould allow any player to play card in play phase (simultaneous play)[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mPLAY_CARD[2m > [22mshould reject playing card not in hand[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mPLAY_CARD[2m > [22mshould reject playing card when already played[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mACTIVATE_ABILITY[2m > [22mshould allow activating ability in ability phase when loser[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mACTIVATE_ABILITY[2m > [22mshould reject activating ability in wrong phase[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mACTIVATE_ABILITY[2m > [22mshould reject activating ability when not loser[32m 5[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mSKIP_ABILITY[2m > [22mshould allow skipping ability in ability phase when loser[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mSKIP_ABILITY[2m > [22mshould reject skipping ability in wrong phase[32m 4[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mEND_TURN[2m > [22mshould allow ending turn in end phase[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mEND_TURN[2m > [22mshould reject ending turn in wrong phase[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/validate.test.ts[2m > [22mCardia - Command Validation[2m > [22mEND_TURN[2m > [22mshould reject ending turn when not current player[32m 7[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/bug-activate-ability-current-card.test.ts[2m > [22mBug: Activate ability on currentCard[2m > [22m应该允许激活 currentCard 上的能力[32m 3[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/bug-activate-ability-current-card.test.ts[2m > [22mBug: Activate ability on currentCard[2m > [22m应该允许激活 playedCards 中的能力（向后兼容）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/bug-activate-ability-current-card.test.ts[2m > [22mBug: Activate ability on currentCard[2m > [22m应该拒绝不存在的卡牌[32m 0[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/game-flow.test.ts
+[22m[39m[Cardia] 资源已注册，共 [33m43[39m 张关键图片
+
+[90mstdout[2m | src/games/cardia/__tests__/game-flow.test.ts
+[22m[39m[CardiaEventSystem] System created { loadTime: [33m1772612511148[39m }
+
+[90mstderr[2m | src/games/cardia/__tests__/game-flow.test.ts[2m > [22m[2mCardia - 完整游戏流程[2m > [22m[2m基础游戏流程[2m > [22m[2m应该能完成一个完整回合
+[22m[39m[Cardia] PLAY_CARD validation failed: Card not in hand {
+  playerId: [32m'0'[39m,
+  cardUid: [32m'will_be_replaced'[39m,
+  handCards: [
+    [32m'deck_i_card_01_1772612511154_ldc3ebkvw'[39m,
+    [32m'deck_i_card_10_1772612511154_nbk3oxb67'[39m,
+    [32m'deck_i_card_02_1772612511154_mj3g0nph3'[39m,
+    [32m'deck_i_card_14_1772612511154_eh82nuwps'[39m,
+    [32m'deck_i_card_03_1772612511154_qkpejw71v'[39m
+  ]
+}
+[Pipeline] 命令验证失败: {
+  commandType: [32m'cardia:play_card'[39m,
+  playerId: [32m'0'[39m,
+  error: [32m'Card not in hand'[39m,
+  payload: { cardUid: [32m'will_be_replaced'[39m }
+}
+
+ [32m✓[39m src/games/cardia/__tests__/game-flow.test.ts[2m > [22mCardia - 完整游戏流程[2m > [22m基础游戏流程[2m > [22m应该能完成一个完整回合[32m 6[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/game-flow.test.ts[2m > [22mCardia - 完整游戏流程[2m > [22m遭遇战流程[2m > [22m应该正确解析遭遇战并授予印戒[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/game-flow.test.ts[2m > [22mCardia - 完整游戏流程[2m > [22m阶段转换[2m > [22m应该正确转换游戏阶段[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/game-flow.test.ts[2m > [22mCardia - 完整游戏流程[2m > [22m游戏结束条件[2m > [22m应该在玩家达到目标印戒数时结束游戏[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/utils.test.ts[2m > [22mCardia - 工具函数[2m > [22mgetOpponentId[2m > [22m应该返回对手ID[32m 4[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/utils.test.ts[2m > [22mCardia - 工具函数[2m > [22mcalculateCurrentInfluence[2m > [22m应该返回基础影响力（无修正）[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/utils.test.ts[2m > [22mCardia - 工具函数[2m > [22mcalculateCurrentInfluence[2m > [22m应该包含修正标记的影响[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/utils.test.ts[2m > [22mCardia - 工具函数[2m > [22mcalculateCurrentInfluence[2m > [22m应该正确处理多个修正[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/utils.test.ts[2m > [22mCardia - 工具函数[2m > [22mcalculateCurrentInfluence[2m > [22m应该正确处理负修正[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/utils.test.ts[2m > [22mCardia - 工具函数[2m > [22mgetTotalSignets[2m > [22m应该返回玩家场上所有印戒总和[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/utils.test.ts[2m > [22mCardia - 工具函数[2m > [22mgetTotalSignets[2m > [22m应该正确计算多张卡牌的印戒[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/utils.test.ts[2m > [22mCardia - 工具函数[2m > [22mcheckStandardVictoryCondition[2m > [22m应该在玩家达到目标印戒数时返回获胜者[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/utils.test.ts[2m > [22mCardia - 工具函数[2m > [22mcheckStandardVictoryCondition[2m > [22m应该在双方都未达到目标时返回null[32m 1[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/reduce-cards-discarded.test.ts[2m > [22m[2mreduceCardsDiscarded - 从手牌弃牌[2m > [22m[2m应该正确地从手牌弃掉指定的卡牌
+[22m[39mReduce 结果: {
+  oldHandSize: [33m3[39m,
+  newHandSize: [33m1[39m,
+  oldDiscardSize: [33m0[39m,
+  newDiscardSize: [33m2[39m
+}
+
+ [32m✓[39m src/games/cardia/__tests__/reduce-cards-discarded.test.ts[2m > [22mreduceCardsDiscarded - 从手牌弃牌[2m > [22m应该正确地从手牌弃掉指定的卡牌[32m 3[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/smoke.test.ts[2m > [22mCardia - Smoke Test[2m > [22mshould setup initial state without errors[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/smoke.test.ts[2m > [22mCardia - Smoke Test[2m > [22mshould have valid player states[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/smoke.test.ts[2m > [22mCardia - Smoke Test[2m > [22mshould not be game over initially[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/reduce-encounter-fix.test.ts[2m > [22mreduceEncounterResolved - 卡牌显示修复[2m > [22m应该正确设置 PlayedCard 的 encounterIndex 字段[32m 7[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/reduce-encounter-fix.test.ts[2m > [22mreduceEncounterResolved - 卡牌显示修复[2m > [22m应该在多次遭遇后正确设置不同的 encounterIndex[32m 0[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/ambusher-interaction-handler.test.ts[2m > [22m[2m伏击者交互处理器[2m > [22m[2m应该正确返回 CARDS_DISCARDED 事件
+[22m[39mHandler found: [33mtrue[39m
+[AMBUSHER] Handler called {
+  playerId: [32m'0'[39m,
+  value: { faction: [32m'academy'[39m },
+  valueType: [32m'object'[39m,
+  valueKeys: [ [32m'faction'[39m ]
+}
+[AMBUSHER] Selected faction { selectedFaction: [32m'academy'[39m }
+[AMBUSHER] Faction cards found {
+  opponentId: [32m'1'[39m,
+  faction: [32m'academy'[39m,
+  count: [33m2[39m,
+  cards: [
+    { uid: [32m'card_1'[39m, defId: [32m'deck_i_card_08'[39m, faction: [32m'academy'[39m },
+    { uid: [32m'card_2'[39m, defId: [32m'deck_i_card_14'[39m, faction: [32m'academy'[39m }
+  ]
+}
+[AMBUSHER] Returning events {
+  events: [
+    {
+      type: [32m'cardia:cards_discarded'[39m,
+      payload: [36m[Object][39m,
+      timestamp: [33m1772612511901[39m
+    }
+  ]
+}
+Handler result: {
+  hasResult: [33mtrue[39m,
+  eventsCount: [33m1[39m,
+  events: [ { type: [32m'cardia:cards_discarded'[39m, payload: [36m[Object][39m } ]
+}
+✅ 交互处理器正确返回 CARDS_DISCARDED 事件
+
+ [32m✓[39m src/games/cardia/__tests__/ambusher-interaction-handler.test.ts[2m > [22m伏击者交互处理器[2m > [22m应该正确返回 CARDS_DISCARDED 事件[32m 4[2mms[22m[39m
+[90mstdout[2m | src/games/cardia/__tests__/verify-executors.test.ts[2m > [22m[2mCardia - 能力执行器注册验证[2m > [22m[2m应该注册所有 32 个能力执行器
+[22m[39m总共有 32 个能力 ID
+注册表大小: 32
+
+ [32m✓[39m src/games/cardia/__tests__/verify-executors.test.ts[2m > [22mCardia - 能力执行器注册验证[2m > [22m应该注册所有 32 个能力执行器[32m 2[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/verify-executors.test.ts[2m > [22mCardia - 能力执行器注册验证[2m > [22m组 1 能力应该都有执行器[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/verify-executors.test.ts[2m > [22mCardia - 能力执行器注册验证[2m > [22m组 7 能力应该都有执行器[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-saboteur.test.ts[2m > [22m破坏者（Saboteur）[2m > [22m应该让对手弃掉牌库顶 2 张牌[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-saboteur.test.ts[2m > [22m破坏者（Saboteur）[2m > [22m当对手牌库少于 2 张时，应该弃掉所有牌[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/ability-saboteur.test.ts[2m > [22m破坏者（Saboteur）[2m > [22m当对手牌库为空时，应该不产生事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/fixed-abilities.test.ts[2m > [22mCardia - 已修复能力测试[2m > [22m能力 ID 定义[2m > [22m应该定义所有已修复的能力 ID[32m 1[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/fixed-abilities.test.ts[2m > [22mCardia - 已修复能力测试[2m > [22m事件类型定义[2m > [22m应该定义所有需要的事件类型[32m 0[2mms[22m[39m
+ [32m✓[39m src/games/cardia/__tests__/bug-fixes-card06-card08.test.ts[2m > [22mBug Fixes: Card06 (占卜师) and Card08 (审判官)[2m > [22mBug 2: Card06 (占卜师) - 能力应该生效[2m > [22m占卜师能力应该让对手先揭示卡牌[32m 1[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 45 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m革命者（Revolutionary）[2m > [22m应该生成 CARDS_DISCARDED 和 CARD_DRAWN 事件，弃掉对手2张手牌然后抽2张牌
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group1-resources.ts:[2m76:49[22m[39m
+    [90m 74| [39m    
+    [90m 75| [39m    [35mfor[39m ([35mlet[39m i [33m=[39m [34m0[39m[33m;[39m i [33m<[39m discardCount[33m;[39m i[33m++[39m) {
+    [90m 76| [39m        const randomIdx = Math.floor(ctx.random.random() * availableIn…
+    [90m   | [39m                                                [31m^[39m
+    [90m 77| [39m        [35mconst[39m cardIndex [33m=[39m availableIndices[33m.[39m[34msplice[39m(randomIdx[33m,[39m [34m1[39m)[[34m0[39m][33m;[39m
+    [90m 78| [39m        discardedCardIds[33m.[39m[34mpush[39m(opponentPlayer[33m.[39mhand[cardIndex][33m.[39muid)[33m;[39m
+[90m [2m❯[22m src/games/cardia/__tests__/abilities-group1.test.ts:[2m294:28[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m伏击者（Ambusher）[2m > [22m应该生成 FACTION_SELECTED 和 CARDS_DISCARDED 事件，弃掉对手该派系的所有手牌
+[31m[1mAssertionError[22m: expected [] to have a length of 2 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group1.test.ts:[2m338:35[22m[39m
+    [90m336| [39m            
+    [90m337| [39m            [90m// 应该产生 2 个事件：FACTION_SELECTED + CARDS_DISCARDED[39m
+    [90m338| [39m            [34mexpect[39m(result[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                                  [31m^[39m
+    [90m339| [39m            
+    [90m340| [39m            [90m// 第一个事件：派系选择[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m伏击者（Ambusher）[2m > [22m对手没有手牌时，应该只生成派系选择事件
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group1.test.ts:[2m369:35[22m[39m
+    [90m367| [39m            
+    [90m368| [39m            [90m// 应该产生 1 个事件：FACTION_SELECTED[39m
+    [90m369| [39m            [34mexpect[39m(result[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                                  [31m^[39m
+    [90m370| [39m            expect(result.events[0].type).toBe(CARDIA_EVENTS.FACTION_S…
+    [90m371| [39m        })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m巫王（Witch King）[2m > [22m应该生成 CARDS_DISCARDED、CARDS_DISCARDED_FROM_DECK 和 DECK_SHUFFLED 事件
+[31m[1mAssertionError[22m: expected 0 to be greater than or equal to 1[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group1.test.ts:[2m384:42[22m[39m
+    [90m382| [39m            
+    [90m383| [39m            [90m// 应该有 3 个事件：弃手牌、弃牌库、混洗[39m
+    [90m384| [39m            expect(result.events.length).toBeGreaterThanOrEqual(1); //…
+    [90m   | [39m                                         [31m^[39m
+    [90m385| [39m            
+    [90m386| [39m            [90m// 最后一个事件应该是混洗牌库[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group1.test.ts[2m > [22mCardia - 组 1：简单资源操作能力[2m > [22m继承者（Heir）[2m > [22m对手手牌 > 2 张时，应该弃掉部分手牌和整个牌库
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group1-resources.ts:[2m146:49[22m[39m
+    [90m144| [39m    
+    [90m145| [39m    [35mfor[39m ([35mlet[39m i [33m=[39m [34m0[39m[33m;[39m i [33m<[39m [34m2[39m[33m;[39m i[33m++[39m) {
+    [90m146| [39m        const randomIdx = Math.floor(ctx.random.random() * availableIn…
+    [90m   | [39m                                                [31m^[39m
+    [90m147| [39m        keptCardIndices[33m.[39m[34mpush[39m(availableIndices[randomIdx])[33m;[39m
+    [90m148| [39m        availableIndices[33m.[39m[34msplice[39m(randomIdx[33m,[39m [34m1[39m)[33m;[39m
+[90m [2m❯[22m src/games/cardia/__tests__/abilities-group1.test.ts:[2m419:28[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m发明家（Inventor）[2m > [22m应该为己方两张打出的牌添加修正标记（第一张+3，第二张-3）
+[31m[1mAssertionError[22m: expected [] to have a length of 2 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts:[2m237:29[22m[39m
+    [90m235| [39m      [35mconst[39m result [33m=[39m [34mexecutor[39m[33m![39m(mockContext)[33m;[39m
+    [90m236| [39m
+    [90m237| [39m      [34mexpect[39m(result[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                            [31m^[39m
+    [90m238| [39m      expect(result.events[0].type).toBe(CARDIA_EVENTS.MODIFIER_TOKEN_…
+    [90m239| [39m      [34mexpect[39m(result[33m.[39mevents[[34m0[39m][33m.[39mpayload[33m.[39mvalue)[33m.[39m[34mtoBe[39m([34m3[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m发明家（Inventor）[2m > [22m当己方只有 1 张场上卡牌时，应该只添加 +3 修正标记
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts:[2m250:29[22m[39m
+    [90m248| [39m      [35mconst[39m result [33m=[39m [34mexecutor[39m[33m![39m(mockContext)[33m;[39m
+    [90m249| [39m
+    [90m250| [39m      [34mexpect[39m(result[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                            [31m^[39m
+    [90m251| [39m      [34mexpect[39m(result[33m.[39mevents[[34m0[39m][33m.[39mpayload[33m.[39mvalue)[33m.[39m[34mtoBe[39m([34m3[39m)[33m;[39m
+    [90m252| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m宫廷卫士（Court Guard）[2m > [22m当对手有指定派系手牌时，应该弃掉该手牌
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts:[2m299:29[22m[39m
+    [90m297| [39m      [35mconst[39m result [33m=[39m [34mexecutor[39m[33m![39m(mockContext)[33m;[39m
+    [90m298| [39m
+    [90m299| [39m      [34mexpect[39m(result[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                            [31m^[39m
+    [90m300| [39m      expect(result.events[0].type).toBe(CARDIA_EVENTS.CARDS_DISCARDED…
+    [90m301| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m宫廷卫士（Court Guard）[2m > [22m当对手没有指定派系手牌时，应该为本牌添加 +7 修正标记
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts:[2m310:29[22m[39m
+    [90m308| [39m      [35mconst[39m result [33m=[39m [34mexecutor[39m[33m![39m(mockContext)[33m;[39m
+    [90m309| [39m
+    [90m310| [39m      [34mexpect[39m(result[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                            [31m^[39m
+    [90m311| [39m      expect(result.events[0].type).toBe(CARDIA_EVENTS.MODIFIER_TOKEN_…
+    [90m312| [39m      [34mexpect[39m(result[33m.[39mevents[[34m0[39m][33m.[39mpayload[33m.[39mvalue)[33m.[39m[34mtoBe[39m([34m7[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts[2m > [22m组 2：影响力修正能力[2m > [22m图书管理员（Librarian）[2m > [22m未选择修正值时，应该创建修正标记选择交互
+[31m[1mAssertionError[22m: the given combination of arguments (undefined and number) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a number[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group2-modifiers.test.ts:[2m361:55[22m[39m
+    [90m359| [39m      [34mexpect[39m(result[33m.[39minteraction[33m?.[39mtype)[33m.[39m[34mtoBe[39m([32m'modifier_selection'[39m)[33m;[39m
+    [90m360| [39m      [35mif[39m (result[33m.[39minteraction[33m?.[39mtype [33m===[39m [32m'modifier_selection'[39m) {
+    [90m361| [39m        [34mexpect[39m(result[33m.[39minteraction[33m.[39mavailableModifiers)[33m.[39m[34mtoContain[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                                                      [31m^[39m
+    [90m362| [39m        [34mexpect[39m(result[33m.[39minteraction[33m.[39mavailableModifiers)[33m.[39m[34mtoContain[39m([33m-[39m[34m2[39m)[33m;[39m
+    [90m363| [39m      }
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts[2m > [22m组 3：持续能力[2m > [22m调停者（Mediator）[2m > [22m应该放置持续标记，强制遭遇为平局
+[31m[1mAssertionError[22m: expected [ { …(3) }, { …(3) } ] to have a length of 1 but got 2[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group3-ongoing.test.ts:[2m89:31[22m[39m
+    [90m 87| [39m      const executor = abilityExecutorRegistry.resolve(ABILITY_IDS.MED…
+    [90m 88| [39m
+    [90m 89| [39m      [34mexpect[39m(executor[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                              [31m^[39m
+    [90m 90| [39m      expect(executor.events[0].type).toBe(CARDIA_EVENTS.ONGOING_ABILI…
+    [90m 91| [39m      expect(executor.events[0].payload.abilityId).toBe(mockContext.ab…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m应该弃掉相对的牌，替换为从对手手牌随机抽取的一张牌
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group6-special.ts:[2m50:47[22m[39m
+    [90m 48| [39m    
+    [90m 49| [39m    [90m// 随机选择对手手牌中的一张[39m
+    [90m 50| [39m    const randomIndex = Math.floor(ctx.random.random() * opponent.hand…
+    [90m   | [39m                                              [31m^[39m
+    [90m 51| [39m    [35mconst[39m replacementCard [33m=[39m opponent[33m.[39mhand[randomIndex][33m;[39m
+    [90m 52| [39m    
+[90m [2m❯[22m src/games/cardia/__tests__/abilities-group6-special.test.ts:[2m145:77[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m替换的卡牌不应该触发能力
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group6-special.ts:[2m50:47[22m[39m
+    [90m 48| [39m    
+    [90m 49| [39m    [90m// 随机选择对手手牌中的一张[39m
+    [90m 50| [39m    const randomIndex = Math.floor(ctx.random.random() * opponent.hand…
+    [90m   | [39m                                              [31m^[39m
+    [90m 51| [39m    [35mconst[39m replacementCard [33m=[39m opponent[33m.[39mhand[randomIndex][33m;[39m
+    [90m 52| [39m    
+[90m [2m❯[22m src/games/cardia/__tests__/abilities-group6-special.test.ts:[2m157:77[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m应该使用随机数选择对手手牌
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group6-special.ts:[2m50:47[22m[39m
+    [90m 48| [39m    
+    [90m 49| [39m    [90m// 随机选择对手手牌中的一张[39m
+    [90m 50| [39m    const randomIndex = Math.floor(ctx.random.random() * opponent.hand…
+    [90m   | [39m                                              [31m^[39m
+    [90m 51| [39m    [35mconst[39m replacementCard [33m=[39m opponent[33m.[39mhand[randomIndex][33m;[39m
+    [90m 52| [39m    
+[90m [2m❯[22m src/games/cardia/__tests__/abilities-group6-special.test.ts:[2m182:78[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m傀儡师（Puppeteer）[2m > [22m应该保持相同的遭遇序号
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group6-special.ts:[2m50:47[22m[39m
+    [90m 48| [39m    
+    [90m 49| [39m    [90m// 随机选择对手手牌中的一张[39m
+    [90m 50| [39m    const randomIndex = Math.floor(ctx.random.random() * opponent.hand…
+    [90m   | [39m                                              [31m^[39m
+    [90m 51| [39m    [35mconst[39m replacementCard [33m=[39m opponent[33m.[39mhand[randomIndex][33m;[39m
+    [90m 52| [39m    
+[90m [2m❯[22m src/games/cardia/__tests__/abilities-group6-special.test.ts:[2m193:77[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group6-special.test.ts[2m > [22m组 6：特殊机制能力[2m > [22m特殊机制的交互[2m > [22m傀儡师替换的卡牌应该保持原有的遭遇序号
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group6-special.ts:[2m50:47[22m[39m
+    [90m 48| [39m    
+    [90m 49| [39m    [90m// 随机选择对手手牌中的一张[39m
+    [90m 50| [39m    const randomIndex = Math.floor(ctx.random.random() * opponent.hand…
+    [90m   | [39m                                              [31m^[39m
+    [90m 51| [39m    [35mconst[39m replacementCard [33m=[39m opponent[33m.[39mhand[randomIndex][33m;[39m
+    [90m 52| [39m    
+[90m [2m❯[22m src/games/cardia/__tests__/abilities-group6-special.test.ts:[2m346:77[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m应该让对手弃掉所有指定派系的手牌
+[31m[1mAssertionError[22m: expected 0 to be greater than or equal to 2[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m170:38[22m[39m
+    [90m168| [39m      const executor = abilityExecutorRegistry.resolve(ABILITY_IDS.AMB…
+    [90m169| [39m
+    [90m170| [39m      [34mexpect[39m(executor[33m.[39mevents[33m.[39mlength)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                                     [31m^[39m
+    [90m171| [39m      
+    [90m172| [39m      [90m// 第一个事件：派系选择[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m当对手没有指定派系手牌时，应该不产生弃牌事件
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m195:31[22m[39m
+    [90m193| [39m
+    [90m194| [39m      [90m// 应该只有派系选择事件，没有弃牌事件[39m
+    [90m195| [39m      [34mexpect[39m(executor[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                              [31m^[39m
+    [90m196| [39m      expect(executor.events[0].type).toBe(CARDIA_EVENTS.FACTION_SELEC…
+    [90m197| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m应该只弃掉指定派系的手牌，保留其他派系
+[31m[1mAssertionError[22m: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m205:49[22m[39m
+    [90m203| [39m      
+    [90m204| [39m      [90m// 不应该弃掉学院派系的手牌[39m
+    [90m205| [39m      [34mexpect[39m(discardEvent[33m?.[39mpayload[33m.[39mcardIds)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m'opp_hand2'[39m)[33m;[39m
+    [90m   | [39m                                                [31m^[39m
+    [90m206| [39m    })[33m;[39m
+    [90m207| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m应该发射派系选择事件
+[31m[1mAssertionError[22m: expected undefined to be defined[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m212:28[22m[39m
+    [90m210| [39m
+    [90m211| [39m      const factionEvent = executor.events.find(e => e.type === CARDIA…
+    [90m212| [39m      [34mexpect[39m(factionEvent)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m213| [39m      [34mexpect[39m(factionEvent[33m?.[39mpayload[33m.[39mfaction)[33m.[39m[34mtoBe[39m([33mFACTION_IDS[39m[33m.[39m[33mSWAMP[39m)[33m;[39m
+    [90m214| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m伏击者（Ambusher）- 派系弃牌[2m > [22m当前简化实现自动选择沼泽派系
+[31m[1mAssertionError[22m: expected undefined to be 'swamp' // Object.is equality[39m
+
+[32m- Expected:[39m 
+"swamp"
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m220:45[22m[39m
+    [90m218| [39m
+    [90m219| [39m      const factionEvent = executor.events.find(e => e.type === CARDIA…
+    [90m220| [39m      [34mexpect[39m(factionEvent[33m?.[39mpayload[33m.[39mfaction)[33m.[39m[34mtoBe[39m([33mFACTION_IDS[39m[33m.[39m[33mSWAMP[39m)[33m;[39m
+    [90m   | [39m                                            [31m^[39m
+    [90m221| [39m      
+    [90m222| [39m      [90m// TODO: 在 Task 11 实现交互系统后，让玩家选择派系[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m应该让对手从手牌和牌库弃掉所有指定派系的牌，然后混洗牌库
+[31m[1mAssertionError[22m: expected 0 to be greater than or equal to 3[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m230:38[22m[39m
+    [90m228| [39m      const executor = abilityExecutorRegistry.resolve(ABILITY_IDS.WIT…
+    [90m229| [39m
+    [90m230| [39m      [34mexpect[39m(executor[33m.[39mevents[33m.[39mlength)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m3[39m)[33m;[39m
+    [90m   | [39m                                     [31m^[39m
+    [90m231| [39m      
+    [90m232| [39m      [90m// 第一个事件：派系选择[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m当对手手牌中没有指定派系时，应该只弃掉牌库中的牌
+[31m[1mAssertionError[22m: expected 0 to be greater than or equal to 3[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m267:38[22m[39m
+    [90m265| [39m
+    [90m266| [39m      [90m// 应该有派系选择、弃掉牌库、混洗牌库三个事件[39m
+    [90m267| [39m      [34mexpect[39m(executor[33m.[39mevents[33m.[39mlength)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m3[39m)[33m;[39m
+    [90m   | [39m                                     [31m^[39m
+    [90m268| [39m      
+    [90m269| [39m      [35mconst[39m discardHandEvent [33m=[39m executor[33m.[39mevents[33m.[39m[34mfind[39m(e [33m=>[39m 
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m当对手牌库中没有指定派系时，应该只弃掉手牌中的牌
+[31m[1mAssertionError[22m: expected 0 to be greater than or equal to 3[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m287:38[22m[39m
+    [90m285| [39m
+    [90m286| [39m      [90m// 应该有派系选择、弃掉手牌、混洗牌库三个事件[39m
+    [90m287| [39m      [34mexpect[39m(executor[33m.[39mevents[33m.[39mlength)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m3[39m)[33m;[39m
+    [90m   | [39m                                     [31m^[39m
+    [90m288| [39m      
+    [90m289| [39m      [35mconst[39m discardHandEvent [33m=[39m executor[33m.[39mevents[33m.[39m[34mfind[39m(e [33m=>[39m 
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m应该在弃牌后混洗牌库
+[31m[1mAssertionError[22m: expected undefined to be defined[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m304:28[22m[39m
+    [90m302| [39m
+    [90m303| [39m      const shuffleEvent = executor.events.find(e => e.type === CARDIA…
+    [90m304| [39m      [34mexpect[39m(shuffleEvent)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m305| [39m      [34mexpect[39m(shuffleEvent[33m?.[39mpayload[33m.[39mplayerId)[33m.[39m[34mtoBe[39m([32m'player2'[39m)[33m;[39m
+    [90m306| [39m      
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m应该只弃掉指定派系的牌，保留其他派系
+[31m[1mAssertionError[22m: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m326:53[22m[39m
+    [90m324| [39m      
+    [90m325| [39m      [90m// 不应该弃掉学院派系的手牌[39m
+    [90m326| [39m      expect(discardHandEvent?.payload.cardIds).not.toContain('opp_han…
+    [90m   | [39m                                                    [31m^[39m
+    [90m327| [39m      
+    [90m328| [39m      [90m// 牌库弃牌事件只有 count，无法验证具体卡牌[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m巫王（Witch King）- 派系弃牌[2m > [22m当前简化实现自动选择沼泽派系
+[31m[1mAssertionError[22m: expected undefined to be 'swamp' // Object.is equality[39m
+
+[32m- Expected:[39m 
+"swamp"
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m337:45[22m[39m
+    [90m335| [39m
+    [90m336| [39m      const factionEvent = executor.events.find(e => e.type === CARDIA…
+    [90m337| [39m      [34mexpect[39m(factionEvent[33m?.[39mpayload[33m.[39mfaction)[33m.[39m[34mtoBe[39m([33mFACTION_IDS[39m[33m.[39m[33mSWAMP[39m)[33m;[39m
+    [90m   | [39m                                            [31m^[39m
+    [90m338| [39m      
+    [90m339| [39m      [90m// TODO: 在 Task 11 实现交互系统后，让玩家选择派系[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m派系选择交互[2m > [22m应该提供四个派系选项
+[31m[1mAssertionError[22m: expected undefined to be defined[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m351:28[22m[39m
+    [90m349| [39m      
+    [90m350| [39m      const factionEvent = executor.events.find(e => e.type === CARDIA…
+    [90m351| [39m      [34mexpect[39m(factionEvent)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m352| [39m      
+    [90m353| [39m      [90m// 四个派系：沼泽、学院、公会、王朝[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m派系选择交互[2m > [22m玩家应该能够选择任意派系
+[31m[1mAssertionError[22m: expected undefined to be defined[39m
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m364:45[22m[39m
+    [90m362| [39m      
+    [90m363| [39m      const factionEvent = executor.events.find(e => e.type === CARDIA…
+    [90m364| [39m      [34mexpect[39m(factionEvent[33m?.[39mpayload[33m.[39mfaction)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m   | [39m                                            [31m^[39m
+    [90m365| [39m    })[33m;[39m
+    [90m366| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/abilities-group7-faction.test.ts[2m > [22m组 7：派系相关能力[2m > [22m派系过滤逻辑[2m > [22m应该能够处理空派系（没有该派系的卡牌）
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/abilities-group7-faction.test.ts:[2m390:31[22m[39m
+    [90m388| [39m
+    [90m389| [39m      [90m// 应该只有派系选择事件，没有弃牌事件[39m
+    [90m390| [39m      [34mexpect[39m(executor[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                              [31m^[39m
+    [90m391| [39m      expect(executor.events[0].type).toBe(CARDIA_EVENTS.FACTION_SELEC…
+    [90m392| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/ability-heir.test.ts[2m > [22m继承者（Heir）[2m > [22m当对手手牌 > 2 张时，应该随机保留 2 张手牌，弃掉其余手牌和整个牌库
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group1-resources.ts:[2m146:49[22m[39m
+    [90m144| [39m    
+    [90m145| [39m    [35mfor[39m ([35mlet[39m i [33m=[39m [34m0[39m[33m;[39m i [33m<[39m [34m2[39m[33m;[39m i[33m++[39m) {
+    [90m146| [39m        const randomIdx = Math.floor(ctx.random.random() * availableIn…
+    [90m   | [39m                                                [31m^[39m
+    [90m147| [39m        keptCardIndices[33m.[39m[34mpush[39m(availableIndices[randomIdx])[33m;[39m
+    [90m148| [39m        availableIndices[33m.[39m[34msplice[39m(randomIdx[33m,[39m [34m1[39m)[33m;[39m
+[90m [2m❯[22m src/games/cardia/__tests__/ability-heir.test.ts:[2m32:20[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/ability-revolutionary.test.ts[2m > [22m革命者（Revolutionary）[2m > [22m应该让对手弃掉 2 张手牌，然后抽取 2 张牌
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group1-resources.ts:[2m76:49[22m[39m
+    [90m 74| [39m    
+    [90m 75| [39m    [35mfor[39m ([35mlet[39m i [33m=[39m [34m0[39m[33m;[39m i [33m<[39m discardCount[33m;[39m i[33m++[39m) {
+    [90m 76| [39m        const randomIdx = Math.floor(ctx.random.random() * availableIn…
+    [90m   | [39m                                                [31m^[39m
+    [90m 77| [39m        [35mconst[39m cardIndex [33m=[39m availableIndices[33m.[39m[34msplice[39m(randomIdx[33m,[39m [34m1[39m)[[34m0[39m][33m;[39m
+    [90m 78| [39m        discardedCardIds[33m.[39m[34mpush[39m(opponentPlayer[33m.[39mhand[cardIndex][33m.[39muid)[33m;[39m
+[90m [2m❯[22m src/games/cardia/__tests__/ability-revolutionary.test.ts:[2m27:20[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/ability-revolutionary.test.ts[2m > [22m革命者（Revolutionary）[2m > [22m当对手手牌少于 2 张时，应该弃掉所有手牌
+[31m[1mTypeError[22m: ctx.random.random is not a function[39m
+[36m [2m❯[22m src/games/cardia/domain/abilities/group1-resources.ts:[2m76:49[22m[39m
+    [90m 74| [39m    
+    [90m 75| [39m    [35mfor[39m ([35mlet[39m i [33m=[39m [34m0[39m[33m;[39m i [33m<[39m discardCount[33m;[39m i[33m++[39m) {
+    [90m 76| [39m        const randomIdx = Math.floor(ctx.random.random() * availableIn…
+    [90m   | [39m                                                [31m^[39m
+    [90m 77| [39m        [35mconst[39m cardIndex [33m=[39m availableIndices[33m.[39m[34msplice[39m(randomIdx[33m,[39m [34m1[39m)[[34m0[39m][33m;[39m
+    [90m 78| [39m        discardedCardIds[33m.[39m[34mpush[39m(opponentPlayer[33m.[39mhand[cardIndex][33m.[39muid)[33m;[39m
+[90m [2m❯[22m src/games/cardia/__tests__/ability-revolutionary.test.ts:[2m48:20[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/ability-void-mage-interaction.test.ts[2m > [22m虚空法师交互测试[2m > [22m没有标记时不应该创建交互
+[31m[1mAssertionError[22m: expected [ { …(3) } ] to deeply equal [][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [][39m
+[31m+ [[39m
+[31m+   {[39m
+[31m+     "payload": {[39m
+[31m+       "abilityId": "ability_i_void_mage",[39m
+[31m+       "cardId": "played1",[39m
+[31m+       "playerId": "0",[39m
+[31m+       "reason": "no_markers",[39m
+[31m+     },[39m
+[31m+     "timestamp": 1772612507485,[39m
+[31m+     "type": "cardia:ability_no_valid_target",[39m
+[31m+   },[39m
+[31m+ ][39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/ability-void-mage-interaction.test.ts:[2m128:31[22m[39m
+    [90m126| [39m
+    [90m127| [39m        [90m// 验证没有交互也没有事件[39m
+    [90m128| [39m        [34mexpect[39m(result[33m.[39mevents)[33m.[39m[34mtoEqual[39m([])[33m;[39m
+    [90m   | [39m                              [31m^[39m
+    [90m129| [39m        [34mexpect[39m(result[33m.[39minteraction)[33m.[39m[34mtoBeUndefined[39m()[33m;[39m
+    [90m130| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/ability-witch-king.test.ts[2m > [22m巫王（Witch King）[2m > [22m应该让对手弃掉手牌和牌库中所有沼泽派系的卡牌，然后混洗牌库
+[31m[1mAssertionError[22m: expected [] to have a length of 4 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 4[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/ability-witch-king.test.ts:[2m34:27[22m[39m
+    [90m 32| [39m    [35mconst[39m result [33m=[39m [34mexecutor[39m[33m![39m(mockContext)[33m;[39m
+    [90m 33| [39m
+    [90m 34| [39m    [34mexpect[39m(result[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m4[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m 35| [39m    
+    [90m 36| [39m    [90m// 第一个事件：派系选择[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/ability-witch-king.test.ts[2m > [22m巫王（Witch King）[2m > [22m当对手手牌和牌库中都没有沼泽派系卡牌时，应该只产生派系选择和混洗事件
+[31m[1mAssertionError[22m: expected [] to have a length of 2 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/ability-witch-king.test.ts:[2m71:27[22m[39m
+    [90m 69| [39m    [35mconst[39m result [33m=[39m [34mexecutor[39m[33m![39m(mockContext)[33m;[39m
+    [90m 70| [39m
+    [90m 71| [39m    [34mexpect[39m(result[33m.[39mevents)[33m.[39m[34mtoHaveLength[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m 72| [39m    [34mexpect[39m(result[33m.[39mevents[[34m0[39m][33m.[39mtype)[33m.[39m[34mtoBe[39m([33mCARDIA_EVENTS[39m[33m.[39m[33mFACTION_SELECTED[39m)[33m;[39m
+    [90m 73| [39m    [34mexpect[39m(result[33m.[39mevents[[34m1[39m][33m.[39mtype)[33m.[39m[34mtoBe[39m([33mCARDIA_EVENTS[39m[33m.[39m[33mDECK_SHUFFLED[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/cardia-event-system.test.ts[2m > [22mCardiaEventSystem.afterEvents - 伏击者交互[2m > [22m应该调用交互处理器并返回 CARDS_DISCARDED 事件
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/cardia-event-system.test.ts:[2m174:40[22m[39m
+    [90m172| [39m        [34mexpect[39m(result[33m![39m[33m.[39mstate)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m173| [39m        [34mexpect[39m(result[33m![39m[33m.[39mevents)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m174| [39m        [34mexpect[39m(result[33m![39m[33m.[39mevents[33m![39m[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                                       [31m^[39m
+    [90m175| [39m        
+    [90m176| [39m        [90m// 验证事件类型[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mACTIVATE_ABILITY[2m > [22mshould transition to end phase after ability
+[31m[1mAssertionError[22m: expected 'play' to be 'end' // Object.is equality[39m
+
+Expected: [32m"end"[39m
+Received: [31m"play"[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/execute.test.ts:[2m140:56[22m[39m
+    [90m138| [39m            const phaseChangeEvent = events.find(e => e.type === CARDI…
+    [90m139| [39m            [34mexpect[39m(phaseChangeEvent)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m140| [39m            [34mexpect[39m(phaseChangeEvent[33m?.[39mpayload[33m.[39mnewPhase)[33m.[39m[34mtoBe[39m([32m'end'[39m)[33m;[39m
+    [90m   | [39m                                                       [31m^[39m
+    [90m141| [39m        })[33m;[39m
+    [90m142| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/execute.test.ts[2m > [22mCardia - Command Execution[2m > [22mSKIP_ABILITY[2m > [22mshould transition to end phase
+[31m[1mAssertionError[22m: expected 4 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 4[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/execute.test.ts:[2m165:35[22m[39m
+    [90m163| [39m            }[33m,[39m random)[33m;[39m
+    [90m164| [39m            
+    [90m165| [39m            [34mexpect[39m(events[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                                  [31m^[39m
+    [90m166| [39m            [34mexpect[39m(events[[34m0[39m][33m.[39mtype)[33m.[39m[34mtoBe[39m([33mCARDIA_EVENTS[39m[33m.[39m[33mPHASE_CHANGED[39m)[33m;[39m
+    [90m167| [39m            [34mexpect[39m(events[[34m0[39m][33m.[39mpayload[33m.[39mnewPhase)[33m.[39m[34mtoBe[39m([32m'end'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/integration-ability-trigger.test.ts[2m > [22m能力触发流程集成测试[2m > [22m能力执行和状态更新[2m > [22m应该执行破坏者能力并更新对手牌库
+[31m[1mAssertionError[22m: expected 2 to be 3 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 3[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/integration-ability-trigger.test.ts:[2m306:46[22m[39m
+    [90m304| [39m
+    [90m305| [39m      [90m// 对手牌库应该减少 2 张[39m
+    [90m306| [39m      [34mexpect[39m(newCore[33m.[39mplayers[33m.[39mp2[33m.[39mdeck[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m3[39m)[33m;[39m
+    [90m   | [39m                                             [31m^[39m
+    [90m307| [39m      [90m// 对手弃牌堆应该增加 2 张[39m
+    [90m308| [39m      [34mexpect[39m(newCore[33m.[39mplayers[33m.[39mp2[33m.[39mdiscard[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/integration-ability-trigger.test.ts[2m > [22m能力触发流程集成测试[2m > [22m多能力触发时序[2m > [22m应该允许同一玩家依次触发多个能力且效果正确叠加
+[31m[1mAssertionError[22m: expected 4 to be 5 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 5[39m
+[31m+ 4[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/integration-ability-trigger.test.ts:[2m436:46[22m[39m
+    [90m434| [39m
+    [90m435| [39m      [90m// 验证第一个能力的效果[39m
+    [90m436| [39m      [34mexpect[39m(newCore[33m.[39mplayers[33m.[39mp2[33m.[39mdeck[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m5[39m)[33m;[39m [90m// 7 - 2 = 5[39m
+    [90m   | [39m                                             [31m^[39m
+    [90m437| [39m      [34mexpect[39m(newCore[33m.[39mplayers[33m.[39mp2[33m.[39mdiscard[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m438| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续效果应用[2m > [22m应该在遭遇结算时应用调停者效果（强制平局）
+[31m[1mAssertionError[22m: expected 'p2' to be undefined[39m
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"p2"
+
+[36m [2m❯[22m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts:[2m339:50[22m[39m
+    [90m337| [39m      [90m// 3. 验证遭遇结果：应该是平局（调停者效果）[39m
+    [90m338| [39m      [34mexpect[39m(newCore[33m.[39mcurrentEncounter)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m339| [39m      [34mexpect[39m(newCore[33m.[39mcurrentEncounter[33m?.[39mwinnerId)[33m.[39m[34mtoBeUndefined[39m()[33m;[39m
+    [90m   | [39m                                                 [31m^[39m
+    [90m340| [39m      [34mexpect[39m(newCore[33m.[39mcurrentEncounter[33m?.[39mloserId)[33m.[39m[34mtoBeUndefined[39m()[33m;[39m
+    [90m341| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续效果应用[2m > [22m应该在遭遇结算时应用审判官效果（赢得平局）
+[31m[1mAssertionError[22m: expected undefined to be defined[39m
+[36m [2m❯[22m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts:[2m420:40[22m[39m
+    [90m418| [39m
+    [90m419| [39m      [90m// 3. 验证遭遇结果：p1 获胜（审判官效果赢得平局）[39m
+    [90m420| [39m      [34mexpect[39m(newCore[33m.[39mcurrentEncounter)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m   | [39m                                       [31m^[39m
+    [90m421| [39m      [34mexpect[39m(newCore[33m.[39mcurrentEncounter[33m?.[39mwinnerId)[33m.[39m[34mtoBe[39m([32m'p1'[39m)[33m;[39m
+    [90m422| [39m      [34mexpect[39m(newCore[33m.[39mcurrentEncounter[33m?.[39mloserId)[33m.[39m[34mtoBe[39m([32m'p2'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts[2m > [22m持续能力集成测试[2m > [22m持续效果优先级[2m > [22m应该优先应用审判官效果而不是调停者效果
+[31m[1mAssertionError[22m: expected 'p2' to be 'p1' // Object.is equality[39m
+
+Expected: [32m"p[7m1[27m"[39m
+Received: [31m"p[7m2[27m"[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/integration-ongoing-abilities.test.ts:[2m608:50[22m[39m
+    [90m606| [39m      [90m// 逻辑：p2 初始获胜（10 > 5）→ 调停者强制平局 → 审判官赢得平局（p1 获胜）[39m
+    [90m607| [39m      [34mexpect[39m(newCore[33m.[39mcurrentEncounter)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m608| [39m      [34mexpect[39m(newCore[33m.[39mcurrentEncounter[33m?.[39mwinnerId)[33m.[39m[34mtoBe[39m([32m'p1'[39m)[33m;[39m
+    [90m   | [39m                                                 [31m^[39m
+    [90m609| [39m      [34mexpect[39m(newCore[33m.[39mcurrentEncounter[33m?.[39mloserId)[33m.[39m[34mtoBe[39m([32m'p2'[39m)[33m;[39m
+    [90m610| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/45]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/games/cardia/__tests__/reduce.test.ts[2m > [22mCardia - Event Reduction[2m > [22mCARD_RECYCLED[2m > [22mshould move card from discard to hand
+[31m[1mAssertionError[22m: expected 5 to be 6 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 6[39m
+[31m+ 5[39m
+
+[36m [2m❯[22m src/games/cardia/__tests__/reduce.test.ts:[2m219:55[22m[39m
+    [90m217| [39m            })[33m;[39m
+    [90m218| [39m            
+    [90m219| [39m            expect(newState.players['0'].hand.length).toBe(initialHand…
+    [90m   | [39m                                                      [31m^[39m
+    [90m220| [39m            expect(newState.players['0'].discard.length).toBe(initialD…
+    [90m221| [39m        })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/45]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m14 failed[39m[22m[2m | [22m[1m[32m22 passed[39m[22m[90m (36)[39m
+[2m      Tests [22m [1m[31m45 failed[39m[22m[2m | [22m[1m[32m258 passed[39m[22m[90m (303)[39m
+[2m   Start at [22m 16:21:45
+[2m   Duration [22m 6.43s[2m (transform 2.93s, setup 4.70s, import 4.32s, tests 960ms, environment 25.81s)[22m
+

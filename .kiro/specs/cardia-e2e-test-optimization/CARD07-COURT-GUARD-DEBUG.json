@@ -1,0 +1,275 @@
+{
+  "description": "Court Guard 多张派系手牌调试场景",
+  "scenario": "P1 打出 Court Guard (影响力7)，P2 打出 Ambusher (影响力9)。P2 赢得遭遇，进入能力阶段。P1 激活 Court Guard 能力，选择 Guild 派系。P2 手牌中有 3 张 Guild 派系卡牌，选择弃牌后应该显示卡牌选择界面。",
+  "expectedBehavior": "P2 选择弃牌后，应该创建卡牌选择交互，让 P2 选择具体弃哪张 Guild 派系的牌。",
+  "players": {
+    "0": {
+      "id": "0",
+      "name": "Player 1",
+      "hand": [],
+      "deck": [
+        {
+          "uid": "p1_deck_card01",
+          "defId": "deck_i_card_01",
+          "ownerId": "0",
+          "baseInfluence": 1,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_mercenary_swordsman"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/1"
+        },
+        {
+          "uid": "p1_deck_card02",
+          "defId": "deck_i_card_02",
+          "ownerId": "0",
+          "baseInfluence": 2,
+          "faction": "guild",
+          "abilityIds": ["ability_i_void_mage"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/2"
+        }
+      ],
+      "discard": [],
+      "playedCards": [
+        {
+          "uid": "p1_played_court_guard",
+          "defId": "deck_i_card_07",
+          "ownerId": "0",
+          "baseInfluence": 7,
+          "faction": "guild",
+          "abilityIds": ["ability_i_court_guard"],
+          "difficulty": 1,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "encounterIndex": 1,
+          "imagePath": "cardia/cards/deck1/7"
+        }
+      ],
+      "signets": 0,
+      "tags": {
+        "tags": {}
+      },
+      "hasPlayed": true,
+      "cardRevealed": true,
+      "currentCard": null
+    },
+    "1": {
+      "id": "1",
+      "name": "Player 2",
+      "hand": [
+        {
+          "uid": "p2_hand_clockmaker",
+          "defId": "deck_i_card_11",
+          "ownerId": "1",
+          "baseInfluence": 11,
+          "faction": "guild",
+          "abilityIds": ["ability_i_clockmaker"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/11"
+        },
+        {
+          "uid": "p2_hand_surgeon",
+          "defId": "deck_i_card_03",
+          "ownerId": "1",
+          "baseInfluence": 3,
+          "faction": "guild",
+          "abilityIds": ["ability_i_surgeon"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/3"
+        },
+        {
+          "uid": "p2_hand_court_guard_copy",
+          "defId": "deck_i_card_07",
+          "ownerId": "1",
+          "baseInfluence": 7,
+          "faction": "guild",
+          "abilityIds": ["ability_i_court_guard"],
+          "difficulty": 1,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/7"
+        }
+      ],
+      "deck": [
+        {
+          "uid": "p2_deck_card01",
+          "defId": "deck_i_card_01",
+          "ownerId": "1",
+          "baseInfluence": 1,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_mercenary_swordsman"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/1"
+        },
+        {
+          "uid": "p2_deck_card02",
+          "defId": "deck_i_card_02",
+          "ownerId": "1",
+          "baseInfluence": 2,
+          "faction": "guild",
+          "abilityIds": ["ability_i_void_mage"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/2"
+        }
+      ],
+      "discard": [],
+      "playedCards": [
+        {
+          "uid": "p2_played_ambusher",
+          "defId": "deck_i_card_09",
+          "ownerId": "1",
+          "baseInfluence": 9,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_ambusher"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 1,
+          "ongoingMarkers": [],
+          "encounterIndex": 1,
+          "imagePath": "cardia/cards/deck1/9"
+        }
+      ],
+      "signets": 1,
+      "tags": {
+        "tags": {}
+      },
+      "hasPlayed": true,
+      "cardRevealed": true,
+      "currentCard": null
+    }
+  },
+  "playerOrder": ["0", "1"],
+  "currentPlayerId": "0",
+  "turnNumber": 1,
+  "phase": "ability",
+  "currentEncounter": {
+    "winnerId": "1",
+    "loserId": "0",
+    "winnerCardUid": "p2_played_ambusher",
+    "loserCardUid": "p1_played_court_guard",
+    "winnerInfluence": 9,
+    "loserInfluence": 7,
+    "timestamp": 1772878000000
+  },
+  "encounterHistory": [
+    {
+      "encounterIndex": 1,
+      "player1Influence": 7,
+      "player2Influence": 9,
+      "winnerId": "1",
+      "player1CardId": "p1_played_court_guard",
+      "player2CardId": "p2_played_ambusher"
+    }
+  ],
+  "deckVariant": "I",
+  "targetSignets": 5,
+  "ongoingAbilities": [],
+  "modifierTokens": [],
+  "delayedEffects": [],
+  "revealFirstNextEncounter": null,
+  "mechanicalSpiritActive": null,
+  "inventorPending": null,
+  "debugNotes": [
+    "状态说明：",
+    "1. P1 已打出 Court Guard (影响力7，Guild 派系)",
+    "2. P2 已打出 Ambusher (影响力9，Swamp 派系)",
+    "3. P2 赢得遭遇，获得 1 个印戒",
+    "4. 当前阶段：ability（能力阶段）",
+    "5. P2 手牌中有 3 张 Guild 派系卡牌：Clockmaker (11)、Surgeon (3)、Court Guard (7)",
+    "",
+    "测试步骤：",
+    "1. 注入此状态",
+    "2. P1 激活 Court Guard 能力",
+    "3. P1 选择 Guild 派系",
+    "4. 验证：P2 应该看到选择弹窗（是否弃牌）",
+    "5. P2 选择'弃掉一张手牌'",
+    "6. 验证：应该创建卡牌选择交互，显示 3 张 Guild 派系卡牌供选择",
+    "7. P2 选择一张卡牌（如 Clockmaker）",
+    "8. P2 确认选择",
+    "9. 验证：P2 手牌减少 1 张，弃牌堆增加 1 张，P1 的 Court Guard 没有获得 +7 修正",
+    "",
+    "预期问题：",
+    "- 第 6 步：卡牌选择交互没有被创建（hasInteraction: false）",
+    "- 第 9 步：P2 手牌数量没有变化（仍然是 3 张）",
+    "",
+    "调试重点：",
+    "- 检查 Court Guard 交互处理器是否被调用",
+    "- 检查 context.factionCards 是否正确传递",
+    "- 检查 availableCards 过滤逻辑是否正确",
+    "- 检查新交互是否被加入队列"
+  ]
+}

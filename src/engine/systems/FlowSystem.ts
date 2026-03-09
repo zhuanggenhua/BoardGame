@@ -247,12 +247,6 @@ function executePhaseAdvance<TCore>(params: PhaseAdvanceParams<TCore>): HookResu
     if (shouldHalt) {
         logDev(`[FlowSystem][${logLabel}] halt=true, not advancing`);
         const haltedState = updatedState ?? state;
-        console.log('🔥🔥🔥 [FlowSystem] halt 返回 updatedState:', {
-            hasUpdatedState: !!updatedState,
-            hasCurrent: !!haltedState.sys.interaction?.current,
-            currentId: haltedState.sys.interaction?.current?.id,
-            currentPlayerId: haltedState.sys.interaction?.current?.playerId,
-        });
         return {
             halt: haltOnExit ? true : undefined,
             state: {
@@ -312,7 +306,10 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
         id: SYSTEM_IDS.FLOW,
         name: '流程系统',
         // 必须晚于 ResponseWindow(15) / Prompt(20) 的拦截，避免绕过系统级阻塞
-        priority: 25,
+        // ✅ 修复：priority 从 25 改为 60，确保在 CardiaEventSystem (50) 之后执行
+        // 原因：CardiaEventSystem 在 afterEvents 中处理 INTERACTION_RESOLVED 事件，创建新交互并加入队列
+        // FlowSystem 需要在新交互加入队列后再检查 hasQueuedInteractions，否则会误判为"无交互"而自动推进
+        priority: 60,
 
         setup: (): Partial<{ phase: string }> => ({ phase: hooks.initialPhase }),
 
@@ -340,26 +337,29 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
             }
 
             // 检查是否需要自动继续流程
-            if (!hooks.onAutoContinueCheck) return;
+            if (!hooks.onAutoContinueCheck) {
+                return;
+            }
 
             const result = hooks.onAutoContinueCheck({ state, events, random });
-            
-            // 【生产日志】记录 onAutoContinueCheck 的结果，用于排查自动推进问题
-            const from = getCurrentPhase(state) || hooks.initialPhase;
-            if (result?.autoContinue) {
-                console.log('[FlowSystem][afterEvents] onAutoContinueCheck 返回 autoContinue=true, phase=' + from + ', playerId=' + result.playerId);
-            } else {
-                console.log('[FlowSystem][afterEvents] onAutoContinueCheck 返回 undefined 或 autoContinue=false, phase=' + from + ', 不自动推进');
-            }
-            
             if (!result?.autoContinue) return;
 
             if (!playerIds.includes(result.playerId)) {
                 return;
             }
 
+            // ⚠️ 关键修复：在自动推进之前，先检查游戏是否已经结束
+            // 如果游戏已经结束（如 end 阶段达到印戒胜利条件），不执行阶段推进
+            // 注意：这里不能直接调用 domain.isGameOver，因为 FlowSystem 不知道 domain
+            // 但是 pipeline 会在 runAfterEventsRounds 的每一轮后调用 applyGameoverCheck
+            // 所以我们只需要检查 state.sys.gameover 是否已经被设置
+            if (state.sys.gameover) {
+                return;
+            }
+
             // 自动继续：执行与 ADVANCE_PHASE 相同的逻辑
             const { playerId } = result;
+            const from = getCurrentPhase(state) || hooks.initialPhase;
             const syntheticCommand: Command = {
                 type: FLOW_COMMANDS.ADVANCE_PHASE,
                 playerId,

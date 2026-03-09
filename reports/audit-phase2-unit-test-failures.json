@@ -1,0 +1,218 @@
+{
+  "phase": "phase2",
+  "timestamp": "2026-03-04T12:08:43.000Z",
+  "testType": "unit",
+  "summary": {
+    "totalTests": 318,
+    "passed": 276,
+    "failed": 42,
+    "testFiles": {
+      "total": 44,
+      "passed": 31,
+      "failed": 13
+    }
+  },
+  "failedTestFiles": [
+    {
+      "file": "src/games/cardia/__tests__/treasurer-behavior.test.ts",
+      "error": "No test suite found in file",
+      "priority": "P2",
+      "category": "test-infrastructure"
+    },
+    {
+      "file": "src/games/cardia/__tests__/abilities-group1.test.ts",
+      "failedTests": 3,
+      "priority": "P0",
+      "category": "ability-execution",
+      "issues": [
+        "伏击者（Ambusher）应该生成 FACTION_SELECTED 和 CARDS_DISCARDED 事件",
+        "对手没有手牌时，应该只生成派系选择事件",
+        "巫王（Witch King）应该生成弃牌和混洗事件"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/abilities-group2-modifiers.test.ts",
+      "failedTests": 4,
+      "priority": "P0",
+      "category": "ability-execution",
+      "issues": [
+        "发明家（Inventor）应该为两张卡牌添加修正标记",
+        "发明家只有1张场上卡牌时应该只添加+3修正",
+        "宫廷卫士（Court Guard）弃牌逻辑",
+        "图书管理员（Librarian）修正值选择交互"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/abilities-group3-ongoing.test.ts",
+      "failedTests": 5,
+      "priority": "P0",
+      "category": "ongoing-abilities",
+      "issues": [
+        "调停者（Mediator）持续标记放置",
+        "财务官（Treasurer）持续标记放置",
+        "财务官持续标记一次性特性",
+        "顾问（Advisor）与财务官效果一致性",
+        "持续标记生命周期"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/abilities-group7-faction.test.ts",
+      "failedTests": 13,
+      "priority": "P0",
+      "category": "faction-abilities",
+      "issues": [
+        "伏击者派系弃牌逻辑（多个测试）",
+        "巫王派系弃牌逻辑（多个测试）",
+        "派系选择交互",
+        "派系过滤逻辑"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/ability-void-mage-interaction.test.ts",
+      "failedTests": 1,
+      "priority": "P1",
+      "category": "interaction",
+      "issues": [
+        "没有标记时不应该创建交互（实际产生了 ABILITY_NO_VALID_TARGET 事件）"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/ability-witch-king.test.ts",
+      "failedTests": 2,
+      "priority": "P0",
+      "category": "ability-execution",
+      "issues": [
+        "巫王弃牌和混洗逻辑",
+        "巫王空派系处理"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/cardia-event-system.test.ts",
+      "failedTests": 1,
+      "priority": "P0",
+      "category": "event-system",
+      "issues": [
+        "伏击者交互处理器应该返回 CARDS_DISCARDED 事件"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/court-guard-choice-interaction.test.ts",
+      "failedTests": 2,
+      "priority": "P1",
+      "category": "test-infrastructure",
+      "issues": [
+        "runner.start is not a function（测试框架问题）"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/court-guard-draw-timing.test.ts",
+      "failedTests": 1,
+      "priority": "P1",
+      "category": "interaction",
+      "issues": [
+        "P2弹窗时不应该抽牌（交互未创建）"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/execute.test.ts",
+      "failedTests": 2,
+      "priority": "P1",
+      "category": "command-execution",
+      "issues": [
+        "ACTIVATE_ABILITY 后应该转换到 end 阶段",
+        "SKIP_ABILITY 应该转换到 end 阶段"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/integration-ongoing-abilities.test.ts",
+      "failedTests": 5,
+      "priority": "P0",
+      "category": "ongoing-abilities-integration",
+      "issues": [
+        "财务官持续标记放置",
+        "调停者效果应用（强制平局）",
+        "审判官效果应用（赢得平局）",
+        "财务官效果应用（额外印戒）",
+        "审判官优先级高于调停者"
+      ]
+    },
+    {
+      "file": "src/games/cardia/__tests__/reduce.test.ts",
+      "failedTests": 1,
+      "priority": "P2",
+      "category": "reducer",
+      "issues": [
+        "CARD_RECYCLED 应该将卡牌从弃牌堆移到手牌"
+      ]
+    }
+  ],
+  "rootCauses": [
+    {
+      "category": "ability-execution",
+      "description": "能力执行器返回空事件数组，可能是交互系统重构后未更新执行器逻辑",
+      "affectedAbilities": [
+        "伏击者（Ambusher）",
+        "巫王（Witch King）",
+        "发明家（Inventor）",
+        "宫廷卫士（Court Guard）",
+        "财务官（Treasurer）",
+        "调停者（Mediator）"
+      ],
+      "priority": "P0",
+      "estimatedImpact": "high"
+    },
+    {
+      "category": "interaction-system",
+      "description": "交互系统重构后，能力执行器需要返回交互而非直接返回事件",
+      "affectedTests": 20,
+      "priority": "P0",
+      "estimatedImpact": "high"
+    },
+    {
+      "category": "test-infrastructure",
+      "description": "部分测试使用了旧的 GameTestRunner API（runner.start），需要更新",
+      "affectedTests": 3,
+      "priority": "P1",
+      "estimatedImpact": "medium"
+    },
+    {
+      "category": "ongoing-abilities",
+      "description": "持续能力系统可能存在问题，持续标记未正确放置或应用",
+      "affectedTests": 10,
+      "priority": "P0",
+      "estimatedImpact": "high"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "P0",
+      "action": "检查能力执行器是否正确返回交互（而非直接返回事件）",
+      "files": [
+        "src/games/cardia/domain/abilityResolver.ts",
+        "src/games/cardia/domain/abilityInteractionHandlers.ts"
+      ]
+    },
+    {
+      "priority": "P0",
+      "action": "验证交互系统重构后的事件流：能力执行器 → 交互 → 交互处理器 → 事件",
+      "files": [
+        "src/games/cardia/domain/systems.ts"
+      ]
+    },
+    {
+      "priority": "P1",
+      "action": "更新测试使用新的 GameTestRunner API",
+      "files": [
+        "src/games/cardia/__tests__/court-guard-choice-interaction.test.ts"
+      ]
+    },
+    {
+      "priority": "P0",
+      "action": "检查持续能力系统的事件发射和状态更新逻辑",
+      "files": [
+        "src/games/cardia/domain/execute.ts",
+        "src/games/cardia/domain/reduce.ts"
+      ]
+    }
+  ]
+}

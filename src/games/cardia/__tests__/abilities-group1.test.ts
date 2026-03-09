@@ -15,6 +15,7 @@ import { ABILITY_IDS, FACTION_IDS } from '../domain/ids';
 import { CARDIA_EVENTS } from '../domain/events';
 import type { CardiaCore } from '../domain/core-types';
 import type { CardiaAbilityContext } from '../domain/abilityExecutor';
+import { createFixedRandom } from './helpers/testRandom';
 
 // 直接导入能力执行器文件，不导入 game.ts（避免加载整个游戏引擎）
 import '../domain/abilities/group1-resources';
@@ -260,7 +261,7 @@ describe('Cardia - 组 1：简单资源操作能力', () => {
             playerId: 'player0',
             opponentId: 'player1',
             timestamp: Date.now(),
-            random: () => 0.5,  // 固定随机数用于测试
+            random: createFixedRandom(0.5),  // 固定随机数用于测试
             sourceId: 'test_card',
             ownerId: 'player0',
         };
@@ -326,7 +327,7 @@ describe('Cardia - 组 1：简单资源操作能力', () => {
     });
     
     describe('伏击者（Ambusher）', () => {
-        it('应该生成 FACTION_SELECTED 和 CARDS_DISCARDED 事件，弃掉对手该派系的所有手牌', () => {
+        it('第一次调用：应该创建派系选择交互', () => {
             mockContext.abilityId = ABILITY_IDS.AMBUSHER;
             const executor = abilityExecutorRegistry.resolve(ABILITY_IDS.AMBUSHER);
             
@@ -334,45 +335,28 @@ describe('Cardia - 组 1：简单资源操作能力', () => {
             
             const result = executor!(mockContext);
             
-            // 应该产生 2 个事件：FACTION_SELECTED + CARDS_DISCARDED
-            expect(result.events).toHaveLength(2);
-            
-            // 第一个事件：派系选择
-            expect(result.events[0].type).toBe(CARDIA_EVENTS.FACTION_SELECTED);
-            expect(result.events[0].payload.playerId).toBe('player0');
-            expect(result.events[0].payload.faction).toBe(FACTION_IDS.SWAMP);
-            
-            // 第二个事件：弃牌
-            expect(result.events[1].type).toBe(CARDIA_EVENTS.CARDS_DISCARDED);
-            expect(result.events[1].payload.playerId).toBe('player1');
-            expect(result.events[1].payload.from).toBe('hand');
-            
-            // 验证弃掉的是沼泽派系的所有手牌（当前简化版本自动选择沼泽）
-            const discardedCardIds = result.events[1].payload.cardIds;
-            expect(discardedCardIds.length).toBeGreaterThan(0);
-            
-            // 所有弃掉的卡牌都应该是对手手牌中的
-            const opponentHandIds = mockCore.players.player1.hand.map(c => c.uid);
-            discardedCardIds.forEach((cardId: string) => {
-                expect(opponentHandIds).toContain(cardId);
-            });
+            // 第一次调用应该返回交互
+            expect(result.interaction).toBeDefined();
+            expect((result.interaction as any).type).toBe('faction_selection');
+            expect(result.events).toHaveLength(0); // 第一次调用不产生事件
         });
         
-        it('对手没有手牌时，应该只生成派系选择事件', () => {
+        it('对手没有手牌时，应该只产生派系选择交互', () => {
             mockCore.players.player1.hand = [];
             mockContext.abilityId = ABILITY_IDS.AMBUSHER;
             const executor = abilityExecutorRegistry.resolve(ABILITY_IDS.AMBUSHER);
             
             const result = executor!(mockContext);
             
-            // 应该产生 1 个事件：FACTION_SELECTED
-            expect(result.events).toHaveLength(1);
-            expect(result.events[0].type).toBe(CARDIA_EVENTS.FACTION_SELECTED);
+            // 应该产生派系选择交互
+            expect(result.interaction).toBeDefined();
+            expect((result.interaction as any).type).toBe('faction_selection');
+            expect(result.events).toHaveLength(0);
         });
     });
     
     describe('巫王（Witch King）', () => {
-        it('应该生成 CARDS_DISCARDED、CARDS_DISCARDED_FROM_DECK 和 DECK_SHUFFLED 事件', () => {
+        it('第一次调用：应该创建派系选择交互', () => {
             mockContext.abilityId = ABILITY_IDS.WITCH_KING;
             const executor = abilityExecutorRegistry.resolve(ABILITY_IDS.WITCH_KING);
             
@@ -380,29 +364,10 @@ describe('Cardia - 组 1：简单资源操作能力', () => {
             
             const result = executor!(mockContext);
             
-            // 应该有 3 个事件：弃手牌、弃牌库、混洗
-            expect(result.events.length).toBeGreaterThanOrEqual(1); // 至少有混洗事件
-            
-            // 最后一个事件应该是混洗牌库
-            const lastEvent = result.events[result.events.length - 1];
-            expect(lastEvent.type).toBe(CARDIA_EVENTS.DECK_SHUFFLED);
-            expect(lastEvent.payload).toEqual({
-                playerId: 'player1',
-            });
-            
-            // 如果有弃手牌事件，应该是第一个
-            if (result.events.length >= 2 && result.events[0].type === CARDIA_EVENTS.CARDS_DISCARDED) {
-                expect(result.events[0].payload.playerId).toBe('player1');
-                expect(result.events[0].payload.from).toBe('hand');
-            }
-            
-            // 如果有弃牌库事件，应该在混洗之前
-            if (result.events.length >= 2) {
-                const deckDiscardEvent = result.events.find(e => e.type === CARDIA_EVENTS.CARDS_DISCARDED_FROM_DECK);
-                if (deckDiscardEvent) {
-                    expect(deckDiscardEvent.payload.playerId).toBe('player1');
-                }
-            }
+            // 第一次调用应该返回交互
+            expect(result.interaction).toBeDefined();
+            expect((result.interaction as any).type).toBe('faction_selection');
+            expect(result.events).toHaveLength(0); // 第一次调用不产生事件
         });
     });
     

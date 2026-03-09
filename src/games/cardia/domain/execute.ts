@@ -242,9 +242,9 @@ function resolveEncounter(
     // 审判官规则："平局不会触发能力"，即使审判官赢得平局，也不进入能力阶段
     const originalWinner = winner;
     
-    // 3.1 检查调停者（forceTie）- 强制平局（影响所有遭遇）
+    // 3.1 检查调停者（forceTie）- 强制平局（只影响当前遭遇）
     const mediatorAbility = core.ongoingAbilities.find(
-        a => a.effectType === 'forceTie'
+        a => a.effectType === 'forceTie' && a.encounterIndex === core.turnNumber
     );
     if (mediatorAbility) {
         winner = 'tie';
@@ -261,6 +261,15 @@ function resolveEncounter(
     }
     
     // 4. 发射遭遇战解析事件
+    console.log('[Cardia] resolveEncounter: emitting ENCOUNTER_RESOLVED event', {
+        slotIndex,
+        winner,
+        loser,
+        player1Influence,
+        player2Influence,
+        originalWinner,
+    });
+    
     events.push({
         type: CARDIA_EVENTS.ENCOUNTER_RESOLVED,
         timestamp,
@@ -287,33 +296,91 @@ function resolveEncounter(
         
         // 5.2 检查财务官和顾问（extraSignet）- 额外印戒（一次性）
         const extraSignetAbilities = core.ongoingAbilities.filter(
-            a => a.effectType === 'extraSignet' && 
-            (a.abilityId === ABILITY_IDS.ADVISOR || a.abilityId === ABILITY_IDS.TREASURER)
+            a => a.abilityId === ABILITY_IDS.ADVISOR || a.abilityId === ABILITY_IDS.TREASURER
         );
         
         for (const ability of extraSignetAbilities) {
-            // 财务官和顾问：只对放置标记的玩家生效
-            if (ability.playerId === winner) {
-                // 额外印戒
-                events.push({
-                    type: CARDIA_EVENTS.EXTRA_SIGNET_PLACED,
-                    timestamp: Date.now(),
-                    payload: {
-                        cardId: winnerCard.uid,
-                        playerId: winner,
-                    },
-                });
-                
-                // 财务官和顾问都是一次性效果，触发后移除
-                events.push({
-                    type: CARDIA_EVENTS.ONGOING_ABILITY_REMOVED,
-                    timestamp: Date.now(),
-                    payload: {
-                        abilityId: ability.abilityId,
-                        cardId: ability.cardId,
-                        playerId: ability.playerId,
-                    },
-                });
+            if (ability.abilityId === ABILITY_IDS.TREASURER) {
+                // 财务官：给上一个遭遇获胜的牌额外印戒
+                // 只对放置标记的玩家生效
+                if (ability.playerId === winner) {
+                    console.log('[Cardia] Treasurer ability check:', {
+                        abilityPlayerId: ability.playerId,
+                        currentWinner: winner,
+                        previousEncounter: core.previousEncounter ? {
+                            winnerId: core.previousEncounter.winnerId,
+                            player1CardUid: core.previousEncounter.player1Card?.uid,
+                            player2CardUid: core.previousEncounter.player2Card?.uid,
+                        } : null,
+                    });
+                    
+                    // 查找上一个遭遇的获胜卡牌
+                    const previousEncounter = core.previousEncounter;
+                    if (previousEncounter && previousEncounter.winnerId === ability.playerId) {
+                        const previousWinnerCard = previousEncounter.winnerId === previousEncounter.player1Card?.ownerId
+                            ? previousEncounter.player1Card
+                            : previousEncounter.player2Card;
+                        
+                        if (previousWinnerCard) {
+                            // 给上一个遭遇的获胜卡牌额外印戒
+                            events.push({
+                                type: CARDIA_EVENTS.EXTRA_SIGNET_PLACED,
+                                timestamp: Date.now(),
+                                payload: {
+                                    cardId: previousWinnerCard.uid,
+                                    playerId: ability.playerId,
+                                },
+                            });
+                            
+                            console.log('[Cardia] Treasurer ability triggered: extra signet to previous encounter winner', {
+                                previousWinnerCardId: previousWinnerCard.uid,
+                                playerId: ability.playerId,
+                            });
+                        }
+                    } else {
+                        console.log('[Cardia] Treasurer ability NOT triggered:', {
+                            hasPreviousEncounter: !!previousEncounter,
+                            previousWinnerId: previousEncounter?.winnerId,
+                            abilityPlayerId: ability.playerId,
+                            match: previousEncounter?.winnerId === ability.playerId,
+                        });
+                    }
+                    
+                    // 财务官是一次性效果，触发后移除
+                    events.push({
+                        type: CARDIA_EVENTS.ONGOING_ABILITY_REMOVED,
+                        timestamp: Date.now(),
+                        payload: {
+                            abilityId: ability.abilityId,
+                            cardId: ability.cardId,
+                            playerId: ability.playerId,
+                        },
+                    });
+                }
+            } else if (ability.abilityId === ABILITY_IDS.ADVISOR) {
+                // 顾问：只对放置标记的玩家生效
+                if (ability.playerId === winner) {
+                    // 给当前遭遇获胜的牌额外印戒
+                    events.push({
+                        type: CARDIA_EVENTS.EXTRA_SIGNET_PLACED,
+                        timestamp: Date.now(),
+                        payload: {
+                            cardId: winnerCard.uid,
+                            playerId: winner,
+                        },
+                    });
+                    
+                    // 顾问是一次性效果，触发后移除
+                    events.push({
+                        type: CARDIA_EVENTS.ONGOING_ABILITY_REMOVED,
+                        timestamp: Date.now(),
+                        payload: {
+                            abilityId: ability.abilityId,
+                            cardId: ability.cardId,
+                            playerId: ability.playerId,
+                        },
+                    });
+                }
             }
         }
         
@@ -346,25 +413,16 @@ function resolveEncounter(
         }
     }
     
-    // 6. 推进到 ability 阶段（如果有失败者）或直接结束回合（如果平局）
+    // 6. 平局时直接结束回合，有胜负时等待 FlowSystem 自动推进到 ability 阶段
     // 注意：审判官规则 - "平局不会触发能力"
     // 即使审判官通过 winTies 赢得平局，也不进入能力阶段（因为原本是平局）
     if (originalWinner === 'tie') {
         // 原本是平局时，跳过能力阶段，直接执行回合结束逻辑
         const endTurnEvents = executeAutoEndTurn(core, player1Id, random);
         events.push(...endTurnEvents);
-    } else {
-        // 原本有胜负时，推进到 ability 阶段
-        events.push({
-            type: CARDIA_EVENTS.PHASE_CHANGED,
-            timestamp: Date.now(),
-            payload: {
-                from: core.phase,
-                newPhase: 'ability',
-                playerId: player1Id,  // 使用第一个玩家的 ID
-            },
-        });
     }
+    // 原本有胜负时，FlowSystem 会自动检测 currentEncounter.loserId 并推进到 ability 阶段
+    // 不需要手动发射 PHASE_CHANGED 事件
     
     return events;
 }
@@ -489,7 +547,13 @@ function executeSkipAbility(
     const { playerId } = command.payload;
     const timestamp = Date.now();
     
-    // 发射能力跳过事件，触发 FlowSystem 自动推进
+    console.log('[Cardia] executeSkipAbility called', {
+        playerId,
+        phase: core.phase,
+        loserId: core.currentEncounter?.loserId,
+        cardId: core.players?.[playerId]?.currentCard?.uid,
+    });
+    
     const events: CardiaEvent[] = [
         {
             type: CARDIA_EVENTS.ABILITY_SKIPPED,
@@ -500,6 +564,11 @@ function executeSkipAbility(
             },
         }
     ];
+    
+    // FlowSystem 会自动检测 ABILITY_SKIPPED 事件并推进到 end 阶段
+    // 不需要手动发射 PHASE_CHANGED 事件
+    
+    console.log('[Cardia] executeSkipAbility returning events:', events.map(e => e.type));
     
     return events;
 }
@@ -591,16 +660,8 @@ function executeAutoEndTurn(
         },
     });
     
-    // 3. 推进到下一回合的 play 阶段
-    events.push({
-        type: CARDIA_EVENTS.PHASE_CHANGED,
-        timestamp,
-        payload: {
-            from: core.phase,
-            newPhase: 'play',
-            playerId,
-        },
-    });
+    // FlowSystem 会自动检测 TURN_ENDED 事件并推进到下一回合的 play 阶段
+    // 不需要手动发射 PHASE_CHANGED 事件
     
     return events;
 }

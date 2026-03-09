@@ -1,0 +1,310 @@
+{
+  "description": "占卜师（Card06）能力测试场景：P1 打出影响力6（占卜师），P2 打出影响力10，P1 失败后激活占卜师能力，下一回合 P2 必须先出牌且明牌",
+  "players": {
+    "0": {
+      "id": "0",
+      "name": "Player 1",
+      "hand": [
+        {
+          "uid": "p1_hand_card01",
+          "defId": "deck_i_card_01",
+          "ownerId": "0",
+          "baseInfluence": 1,
+          "faction": "guild",
+          "abilityIds": ["ability_i_mercenary_swordsman"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/1"
+        }
+      ],
+      "deck": [
+        {
+          "uid": "p1_deck_card02",
+          "defId": "deck_i_card_02",
+          "ownerId": "0",
+          "baseInfluence": 2,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_void_mage"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/2"
+        },
+        {
+          "uid": "p1_deck_card03",
+          "defId": "deck_i_card_03",
+          "ownerId": "0",
+          "baseInfluence": 3,
+          "faction": "guild",
+          "abilityIds": ["ability_i_surgeon"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/3"
+        }
+      ],
+      "discard": [],
+      "playedCards": [
+        {
+          "uid": "p1_played_diviner",
+          "defId": "deck_i_card_06",
+          "ownerId": "0",
+          "baseInfluence": 6,
+          "faction": "academy",
+          "abilityIds": ["ability_i_diviner"],
+          "difficulty": 1,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "encounterIndex": 1,
+          "imagePath": "cardia/cards/deck1/6"
+        }
+      ],
+      "signets": 0,
+      "tags": {
+        "tags": {}
+      },
+      "hasPlayed": true,
+      "cardRevealed": true,
+      "currentCard": null
+    },
+    "1": {
+      "id": "1",
+      "name": "Player 2",
+      "hand": [
+        {
+          "uid": "p2_hand_card05",
+          "defId": "deck_i_card_05",
+          "ownerId": "1",
+          "baseInfluence": 5,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_saboteur"],
+          "difficulty": 1,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/5"
+        }
+      ],
+      "deck": [
+        {
+          "uid": "p2_deck_card07",
+          "defId": "deck_i_card_07",
+          "ownerId": "1",
+          "baseInfluence": 7,
+          "faction": "dynasty",
+          "abilityIds": ["ability_i_court_guard"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/7"
+        },
+        {
+          "uid": "p2_deck_card08",
+          "defId": "deck_i_card_08",
+          "ownerId": "1",
+          "baseInfluence": 8,
+          "faction": "academy",
+          "abilityIds": ["ability_i_magistrate"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/8"
+        }
+      ],
+      "discard": [],
+      "playedCards": [
+        {
+          "uid": "p2_played_puppeteer",
+          "defId": "deck_i_card_10",
+          "ownerId": "1",
+          "baseInfluence": 10,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_puppeteer"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 1,
+          "ongoingMarkers": [],
+          "encounterIndex": 1,
+          "imagePath": "cardia/cards/deck1/10"
+        }
+      ],
+      "signets": 0,
+      "tags": {
+        "tags": {}
+      },
+      "hasPlayed": true,
+      "cardRevealed": true,
+      "currentCard": null
+    }
+  },
+  "playerOrder": ["0", "1"],
+  "currentPlayerId": "0",
+  "turnNumber": 1,
+  "phase": "ability",
+  "currentEncounter": {
+    "player1Card": {
+      "uid": "p1_played_diviner",
+      "defId": "deck_i_card_06",
+      "ownerId": "0",
+      "baseInfluence": 6,
+      "faction": "academy",
+      "abilityIds": ["ability_i_diviner"],
+      "difficulty": 1,
+      "modifiers": {
+        "entries": [],
+        "nextOrder": 0
+      },
+      "tags": {
+        "tags": {}
+      },
+      "signets": 0,
+      "ongoingMarkers": [],
+      "imagePath": "cardia/cards/deck1/6"
+    },
+    "player2Card": {
+      "uid": "p2_played_puppeteer",
+      "defId": "deck_i_card_10",
+      "ownerId": "1",
+      "baseInfluence": 10,
+      "faction": "swamp",
+      "abilityIds": ["ability_i_puppeteer"],
+      "difficulty": 2,
+      "modifiers": {
+        "entries": [],
+        "nextOrder": 0
+      },
+      "tags": {
+        "tags": {}
+      },
+      "signets": 0,
+      "ongoingMarkers": [],
+      "imagePath": "cardia/cards/deck1/10"
+    },
+    "player1Influence": 6,
+    "player2Influence": 10,
+    "winnerId": "1",
+    "loserId": "0"
+  },
+  "previousEncounter": null,
+  "encounterHistory": [
+    {
+      "player1Card": {
+        "uid": "p1_played_diviner",
+        "defId": "deck_i_card_06",
+        "ownerId": "0",
+        "baseInfluence": 6,
+        "faction": "academy",
+        "abilityIds": ["ability_i_diviner"],
+        "difficulty": 1,
+        "modifiers": {
+          "entries": [],
+          "nextOrder": 0
+        },
+        "tags": {
+          "tags": {}
+        },
+        "signets": 0,
+        "ongoingMarkers": [],
+        "imagePath": "cardia/cards/deck1/6"
+      },
+      "player2Card": {
+        "uid": "p2_played_puppeteer",
+        "defId": "deck_i_card_10",
+        "ownerId": "1",
+        "baseInfluence": 10,
+        "faction": "swamp",
+        "abilityIds": ["ability_i_puppeteer"],
+        "difficulty": 2,
+        "modifiers": {
+          "entries": [],
+          "nextOrder": 0
+        },
+        "tags": {
+          "tags": {}
+        },
+        "signets": 0,
+        "ongoingMarkers": [],
+        "imagePath": "cardia/cards/deck1/10"
+      },
+      "player1Influence": 6,
+      "player2Influence": 10,
+      "winnerId": "1",
+      "loserId": "0"
+    }
+  ],
+  "deckVariant": "deck_i",
+  "targetSignets": 5,
+  "ongoingAbilities": [],
+  "modifierTokens": [],
+  "delayedEffects": [],
+  "revealFirstNextEncounter": null,
+  "forcedPlayOrderNextEncounter": null,
+  "mechanicalSpiritActive": null,
+  "gameWonBy": null,
+  "inventorPending": null,
+  "testInstructions": {
+    "step1": "当前状态：P1（占卜师，影响力6）vs P2（傀儡师，影响力10），P1 失败",
+    "step2": "P1 应该看到能力按钮，点击激活占卜师能力",
+    "step3": "验证：revealFirstNextEncounter 和 forcedPlayOrderNextEncounter 都设置为 '1'（P2）",
+    "step4": "回合结束后，进入下一回合的 play 阶段",
+    "step5": "验证：P1 尝试出牌应该被阻止（显示错误提示：'Opponent must play first (Diviner ability)'）",
+    "step6": "P2 先出牌（应该立即明牌，cardRevealed = true）",
+    "step7": "P1 现在可以出牌了",
+    "step8": "遭遇解析后，验证：revealFirstNextEncounter 和 forcedPlayOrderNextEncounter 都重置为 null"
+  }
+}

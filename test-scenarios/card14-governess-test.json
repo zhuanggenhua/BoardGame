@@ -1,0 +1,335 @@
+{
+  "players": {
+    "0": {
+      "id": "0",
+      "name": "Player 1",
+      "hand": [
+        {
+          "uid": "p1_hand_governess",
+          "defId": "deck_i_card_14",
+          "ownerId": "0",
+          "baseInfluence": 14,
+          "faction": "academy",
+          "abilityIds": ["ability_i_governess"],
+          "difficulty": 3,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/14"
+        }
+      ],
+      "deck": [
+        {
+          "uid": "p1_deck_card01",
+          "defId": "deck_i_card_01",
+          "ownerId": "0",
+          "baseInfluence": 1,
+          "faction": "guild",
+          "abilityIds": ["ability_i_mercenary_swordsman"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/1"
+        },
+        {
+          "uid": "p1_deck_card02",
+          "defId": "deck_i_card_02",
+          "ownerId": "0",
+          "baseInfluence": 2,
+          "faction": "guild",
+          "abilityIds": ["ability_i_void_mage"],
+          "difficulty": 0,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/2"
+        }
+      ],
+      "discard": [],
+      "playedCards": [
+        {
+          "uid": "p1_played_inventor",
+          "defId": "deck_i_card_15",
+          "ownerId": "0",
+          "baseInfluence": 15,
+          "faction": "academy",
+          "abilityIds": ["ability_i_inventor"],
+          "difficulty": 3,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 1,
+          "ongoingMarkers": [],
+          "encounterIndex": 0,
+          "imagePath": "cardia/cards/deck1/15"
+        },
+        {
+          "uid": "p1_played_swamp_guard",
+          "defId": "deck_i_card_13",
+          "ownerId": "0",
+          "baseInfluence": 13,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_swamp_guard"],
+          "difficulty": 3,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 1,
+          "ongoingMarkers": [],
+          "encounterIndex": 1,
+          "imagePath": "cardia/cards/deck1/13"
+        }
+      ],
+      "signets": 1,
+      "tags": {
+        "tags": {}
+      },
+      "hasPlayed": false,
+      "cardRevealed": false,
+      "currentCard": null
+    },
+    "1": {
+      "id": "1",
+      "name": "Player 2",
+      "hand": [
+        {
+          "uid": "p2_hand_elf",
+          "defId": "deck_i_card_16",
+          "ownerId": "1",
+          "baseInfluence": 16,
+          "faction": "academy",
+          "abilityIds": ["ability_i_elf"],
+          "difficulty": 3,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/16"
+        }
+      ],
+      "deck": [
+        {
+          "uid": "p2_deck_card07",
+          "defId": "deck_i_card_07",
+          "ownerId": "1",
+          "baseInfluence": 7,
+          "faction": "dynasty",
+          "abilityIds": ["ability_i_court_guard"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/7"
+        },
+        {
+          "uid": "p2_deck_card11",
+          "defId": "deck_i_card_11",
+          "ownerId": "1",
+          "baseInfluence": 11,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_advisor"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "imagePath": "cardia/cards/deck1/11"
+        }
+      ],
+      "discard": [],
+      "playedCards": [
+        {
+          "uid": "p2_played_puppeteer",
+          "defId": "deck_i_card_10",
+          "ownerId": "1",
+          "baseInfluence": 10,
+          "faction": "swamp",
+          "abilityIds": ["ability_i_puppeteer"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "encounterIndex": 0,
+          "imagePath": "cardia/cards/deck1/10"
+        },
+        {
+          "uid": "p2_played_financier",
+          "defId": "deck_i_card_12",
+          "ownerId": "1",
+          "baseInfluence": 12,
+          "faction": "dynasty",
+          "abilityIds": ["ability_i_financier"],
+          "difficulty": 2,
+          "modifiers": {
+            "entries": [],
+            "nextOrder": 0
+          },
+          "tags": {
+            "tags": {}
+          },
+          "signets": 0,
+          "ongoingMarkers": [],
+          "encounterIndex": 1,
+          "imagePath": "cardia/cards/deck1/12"
+        }
+      ],
+      "signets": 1,
+      "tags": {
+        "tags": {}
+      },
+      "hasPlayed": false,
+      "cardRevealed": false,
+      "currentCard": null
+    }
+  },
+  "playerOrder": ["0", "1"],
+  "currentPlayerId": "0",
+  "turnNumber": 3,
+  "phase": "play",
+  "encounterHistory": [
+    {
+      "player1Card": {
+        "uid": "p1_played_inventor",
+        "defId": "deck_i_card_15",
+        "ownerId": "0",
+        "baseInfluence": 15,
+        "faction": "academy",
+        "abilityIds": ["ability_i_inventor"],
+        "difficulty": 3,
+        "modifiers": {
+          "entries": [],
+          "nextOrder": 0
+        },
+        "tags": {
+          "tags": {}
+        },
+        "signets": 1,
+        "ongoingMarkers": [],
+        "imagePath": "cardia/cards/deck1/15"
+      },
+      "player2Card": {
+        "uid": "p2_played_puppeteer",
+        "defId": "deck_i_card_10",
+        "ownerId": "1",
+        "baseInfluence": 10,
+        "faction": "swamp",
+        "abilityIds": ["ability_i_puppeteer"],
+        "difficulty": 2,
+        "modifiers": {
+          "entries": [],
+          "nextOrder": 0
+        },
+        "tags": {
+          "tags": {}
+        },
+        "signets": 0,
+        "ongoingMarkers": [],
+        "imagePath": "cardia/cards/deck1/10"
+      },
+      "player1Influence": 15,
+      "player2Influence": 10,
+      "winnerId": "0",
+      "loserId": "1"
+    },
+    {
+      "player1Card": {
+        "uid": "p1_played_swamp_guard",
+        "defId": "deck_i_card_13",
+        "ownerId": "0",
+        "baseInfluence": 13,
+        "faction": "swamp",
+        "abilityIds": ["ability_i_swamp_guard"],
+        "difficulty": 3,
+        "modifiers": {
+          "entries": [],
+          "nextOrder": 0
+        },
+        "tags": {
+          "tags": {}
+        },
+        "signets": 1,
+        "ongoingMarkers": [],
+        "imagePath": "cardia/cards/deck1/13"
+      },
+      "player2Card": {
+        "uid": "p2_played_financier",
+        "defId": "deck_i_card_12",
+        "ownerId": "1",
+        "baseInfluence": 12,
+        "faction": "dynasty",
+        "abilityIds": ["ability_i_financier"],
+        "difficulty": 2,
+        "modifiers": {
+          "entries": [],
+          "nextOrder": 0
+        },
+        "tags": {
+          "tags": {}
+        },
+        "signets": 0,
+        "ongoingMarkers": [],
+        "imagePath": "cardia/cards/deck1/12"
+      },
+      "player1Influence": 13,
+      "player2Influence": 12,
+      "winnerId": "0",
+      "loserId": "1"
+    }
+  ],
+  "deckVariant": "I",
+  "targetSignets": 5,
+  "ongoingAbilities": [],
+  "modifierTokens": [],
+  "delayedEffects": [],
+  "revealFirstNextEncounter": null,
+  "mechanicalSpiritActive": null
+}

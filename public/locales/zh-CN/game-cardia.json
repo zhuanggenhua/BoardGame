@@ -54,6 +54,10 @@
     }
   },
   
+  "validation": {
+    "opponent_must_play_first": "对手必须先出牌（占卜师能力）"
+  },
+  
   "abilities": {
     "mercenary_swordsman": {
       "name": "雇佣剑士",

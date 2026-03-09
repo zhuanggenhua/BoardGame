@@ -128,6 +128,8 @@ export interface OngoingAbility {
     effectType: string;     // 效果类型（从 abilityRegistry 获取）
     timestamp: number;      // 激活时间戳
     encounterIndex?: number; // 可选：影响的遭遇索引（调停者使用）
+    targetCardId?: string;   // 可选：目标卡牌 ID（财务官使用）
+    targetPlayerId?: PlayerId; // 可选：目标玩家 ID（财务官使用）
 }
 
 /**
@@ -168,6 +170,7 @@ export interface CardiaCore {
     
     // 特殊状态标记（影响规则判定）
     revealFirstNextEncounter: PlayerId | null;  // 下次遭遇先揭示的玩家（占卜师能力）
+    forcedPlayOrderNextEncounter: PlayerId | null;  // 下次遭遇强制先出牌的玩家（占卜师能力）
     mechanicalSpiritActive: {                   // 机械精灵状态（影响胜利条件）
         playerId: PlayerId;
         cardId: string;

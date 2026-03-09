@@ -73,7 +73,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.REVOLUTIONARY, (ctx: CardiaAbilityC
     const availableIndices = Array.from({ length: opponentPlayer.hand.length }, (_, i) => i);
     
     for (let i = 0; i < discardCount; i++) {
-        const randomIdx = Math.floor(ctx.random() * availableIndices.length);
+        const randomIdx = Math.floor(ctx.random.random() * availableIndices.length);
         const cardIndex = availableIndices.splice(randomIdx, 1)[0];
         discardedCardIds.push(opponentPlayer.hand[cardIndex].uid);
     }
@@ -143,7 +143,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.HEIR, (ctx: CardiaAbilityContext) =
     const keptCardIndices: number[] = [];
     
     for (let i = 0; i < 2; i++) {
-        const randomIdx = Math.floor(ctx.random() * availableIndices.length);
+        const randomIdx = Math.floor(ctx.random.random() * availableIndices.length);
         keptCardIndices.push(availableIndices[randomIdx]);
         availableIndices.splice(randomIdx, 1);
     }

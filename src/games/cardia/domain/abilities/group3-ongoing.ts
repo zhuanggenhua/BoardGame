@@ -17,15 +17,19 @@ import type { CardiaAbilityContext } from '../abilityExecutor';
  * 效果：这次遭遇为平局
  * 
  * 实现：
- * 1. 放置持续标记（用于标识能力已激活）
- * 2. 立即改变当前遭遇结果为平局
+ * 1. 放置持续标记，只影响当前遭遇（通过 encounterIndex 限定）
+ * 2. 遭遇结算时检查持续标记，强制平局
+ * 3. 如果当前遭遇已有获胜方（印戒已放置），移除获胜方卡牌上的印戒
  * 
- * 持续时间：永久（直到被虚空法师移除）
+ * 持续时间：一次性（只影响当前遭遇）
+ * 
+ * 注意：虽然标记是持续的（直到被虚空法师移除），但效果只影响当前遭遇。
+ * 这是通过 encounterIndex 字段实现的：只有当 encounterIndex 匹配时才应用效果。
  */
 abilityExecutorRegistry.register(ABILITY_IDS.MEDIATOR, (ctx: CardiaAbilityContext) => {
-    const events = [];
+    const events: any[] = [];
     
-    // 1. 放置持续标记
+    // 1. 放置持续标记（只影响当前遭遇）
     events.push({
         type: CARDIA_EVENTS.ONGOING_ABILITY_PLACED,
         payload: {
@@ -34,21 +38,40 @@ abilityExecutorRegistry.register(ABILITY_IDS.MEDIATOR, (ctx: CardiaAbilityContex
             playerId: ctx.playerId,
             effectType: 'forceTie',
             timestamp: ctx.timestamp,
-            encounterIndex: ctx.core.turnNumber, // 记录影响的遭遇索引
+            encounterIndex: ctx.core.turnNumber, // 记录当前遭遇索引，只影响这个遭遇
         },
         timestamp: ctx.timestamp,
     });
     
-    // 2. 立即改变当前遭遇结果为平局
-    // 注意：这里使用 turnNumber 作为 slotIndex，因为 encounterHistory 的索引就是 turnNumber
-    events.push({
-        type: CARDIA_EVENTS.ENCOUNTER_RESULT_CHANGED,
-        payload: {
-            slotIndex: ctx.core.encounterHistory.length - 1, // 最后一个遭遇（当前遭遇）
-            newWinner: 'tie',
-        },
-        timestamp: ctx.timestamp,
-    });
+    // 2. 检查当前遭遇是否有获胜方，如果有，移除获胜方卡牌上的印戒
+    const currentEncounter = ctx.core.currentEncounter;
+    if (currentEncounter && currentEncounter.winnerId && currentEncounter.winnerId !== 'tie') {
+        const winnerId = currentEncounter.winnerId;
+        const winnerPlayer = ctx.core.players[winnerId];
+        
+        // 查找当前遭遇中获胜方的卡牌（最后一张打出的卡牌）
+        if (winnerPlayer && winnerPlayer.playedCards.length > 0) {
+            const winnerCard = winnerPlayer.playedCards[winnerPlayer.playedCards.length - 1];
+            
+            // 如果获胜方卡牌有印戒，移除印戒
+            if (winnerCard && winnerCard.signets > 0) {
+                console.log('[Mediator] Removing signet from winner card', {
+                    winnerId,
+                    cardUid: winnerCard.uid,
+                    signets: winnerCard.signets,
+                });
+                
+                events.push({
+                    type: CARDIA_EVENTS.SIGNET_REMOVED,
+                    payload: {
+                        cardId: winnerCard.uid,
+                        playerId: winnerId,
+                    },
+                    timestamp: ctx.timestamp,
+                });
+            }
+        }
+    }
     
     return { events };
 });
@@ -81,13 +104,17 @@ abilityExecutorRegistry.register(ABILITY_IDS.MAGISTRATE, (ctx: CardiaAbilityCont
 
 /**
  * 财务官（Treasurer）- 影响力 12
- * 效果：🔄 上个遭遇获胜的牌额外获得1枚印戒
+ * 效果：🔄 上一个遭遇获胜的那张牌额外获得1枚印戒
  * 
- * 实现：放置持续标记，在之后的每次遭遇结算时，获胜的牌额外获得1枚印戒
- * 持续时间：永久（直到被虚空法师移除）
- * 不区分玩家：任何玩家获胜都会触发
+ * 实现：
+ * 1. 放置持续标记（在下次遭遇结算时应用）
+ * 2. 遭遇结算时检查持续标记，给获胜者额外印戒
+ * 3. 触发后自动移除（一次性效果）
+ * 
+ * 持续时间：一次性（下次遭遇结算后自动移除）
  */
 abilityExecutorRegistry.register(ABILITY_IDS.TREASURER, (ctx: CardiaAbilityContext) => {
+    // 只放置持续标记，效果在下次遭遇结算时应用
     return {
         events: [
             {
@@ -98,6 +125,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.TREASURER, (ctx: CardiaAbilityConte
                     playerId: ctx.playerId,
                     effectType: 'extraSignet',
                     timestamp: ctx.timestamp,
+                    encounterIndex: ctx.core.turnNumber, // 记录放置时的遭遇索引
                 },
                 timestamp: ctx.timestamp,
             }

@@ -8,6 +8,7 @@ import type { CardiaEvent } from './events';
 import { CARDIA_EVENTS } from './events';
 import { ABILITY_IDS } from './ids';
 import { updatePlayer, getOpponentId } from './utils';
+import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 
 /**
  * 归约事件到核心状态
@@ -61,6 +62,9 @@ export function reduce(core: CardiaCore, event: CardiaEvent): CardiaCore {
         case CARDIA_EVENTS.SIGNET_MOVED:
             return reduceSignetMoved(core, event);
         
+        case CARDIA_EVENTS.SIGNET_REMOVED:
+            return reduceSignetRemoved(core, event);
+        
         case CARDIA_EVENTS.EXTRA_SIGNET_PLACED:
             return reduceExtraSignetPlaced(core, event);
         
@@ -99,6 +103,9 @@ export function reduce(core: CardiaCore, event: CardiaEvent): CardiaCore {
         
         case CARDIA_EVENTS.PHASE_CHANGED:
             return reducePhaseChanged(core, event);
+        
+        case FLOW_EVENTS.PHASE_CHANGED:
+            return reducePhaseChanged(core, event as any);
         
         case CARDIA_EVENTS.REVEAL_ORDER_CHANGED:
             return reduceRevealOrderChanged(core, event);
@@ -239,6 +246,9 @@ function reduceEncounterResolved(
         previousEncounter: core.currentEncounter,
         currentEncounter: encounter,
         encounterHistory: [...core.encounterHistory, encounter],
+        // P0-003 修复：遭遇解析后清除占卜师能力标记（只影响一次遭遇）
+        revealFirstNextEncounter: null,
+        forcedPlayOrderNextEncounter: null,
     };
     
     // 更新 player1（卡牌已翻开）
@@ -450,6 +460,51 @@ function reduceOngoingAbilityRemoved(
                     newCore = updatePlayer(newCore, targetPlayerId, {
                         playedCards: newTargetPlayedCards,
                     });
+                }
+            }
+        }
+    }
+    
+    // 特殊处理：审判官能力移除时，收回历史平局遭遇获得的印戒
+    // 规则：一旦持续能力失效，立刻结算因此产生的变化（包括影响到的过去遭遇）
+    if (removedAbility && abilityId === ABILITY_IDS.MAGISTRATE) {
+        const magistratePlayerId = removedAbility.playerId;
+        
+        // 遍历遭遇历史，找到所有原本是平局的遭遇
+        // 这些遭遇中，审判官能力拥有者的卡牌获得了印戒
+        for (const encounter of newCore.encounterHistory) {
+            // 判断是否为平局：双方影响力相等
+            if (encounter.player1Influence === encounter.player2Influence) {
+                // 这是一个平局遭遇，审判官能力让其中一方获胜
+                // 找到审判官能力拥有者在这次遭遇中的卡牌
+                const magistrateCard = magistratePlayerId === newCore.playerOrder[0]
+                    ? encounter.player1Card
+                    : encounter.player2Card;
+                
+                // 在 playedCards 中找到这张卡牌，移除1枚印戒
+                const magistratePlayer = newCore.players[magistratePlayerId];
+                const cardIndex = magistratePlayer.playedCards.findIndex(c => c.uid === magistrateCard.uid);
+                
+                if (cardIndex !== -1) {
+                    const card = magistratePlayer.playedCards[cardIndex];
+                    
+                    // 只有当卡牌还有印戒时才减少
+                    if (card.signets > 0) {
+                        const updatedCard = {
+                            ...card,
+                            signets: card.signets - 1,
+                        };
+                        
+                        const newPlayedCards = [
+                            ...magistratePlayer.playedCards.slice(0, cardIndex),
+                            updatedCard,
+                            ...magistratePlayer.playedCards.slice(cardIndex + 1),
+                        ];
+                        
+                        newCore = updatePlayer(newCore, magistratePlayerId, {
+                            playedCards: newPlayedCards,
+                        });
+                    }
                 }
             }
         }
@@ -725,6 +780,48 @@ function reduceSignetMoved(
     }
     
     return newCore;
+}
+
+/**
+ * 归约印戒移除事件
+ * 当遭遇结果从"有获胜方"变为"平局"时，移除获胜方卡牌上的印戒
+ */
+function reduceSignetRemoved(
+    core: CardiaCore,
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.SIGNET_REMOVED }>
+): CardiaCore {
+    const { cardId, playerId } = event.payload;
+    
+    const player = core.players[playerId];
+    const cardIndex = player.playedCards.findIndex(c => c.uid === cardId);
+    
+    if (cardIndex === -1) {
+        console.warn('[Cardia] reduceSignetRemoved: card not found in playedCards', { cardId, playerId });
+        return core;
+    }
+    
+    const card = player.playedCards[cardIndex];
+    
+    // 确保印戒数量不会低于 0
+    if (card.signets <= 0) {
+        console.warn('[Cardia] reduceSignetRemoved: card has no signets to remove', { cardId, playerId, signets: card.signets });
+        return core;
+    }
+    
+    const updatedCard = {
+        ...card,
+        signets: card.signets - 1,
+    };
+    
+    const newPlayedCards = [
+        ...player.playedCards.slice(0, cardIndex),
+        updatedCard,
+        ...player.playedCards.slice(cardIndex + 1),
+    ];
+    
+    return updatePlayer(core, playerId, {
+        playedCards: newPlayedCards,
+    });
 }
 
 /**
@@ -1389,14 +1486,13 @@ function reduceTurnEnded(
         ...core,
         turnNumber: core.turnNumber + 1,
         currentPlayerId: opponentId,
-        // P0-001 修复：currentEncounter 应该保持当前遭遇，而不是设为 undefined
-        // currentEncounter 在下一次 ENCOUNTER_RESOLVED 时会被更新
+        // 回合结束时清理当前遭遇（防止下一回合 play 阶段误触发 auto-advance）
+        currentEncounter: undefined,
         previousEncounter: core.currentEncounter,
         // P0-002 修复：回合结束时清理发明家待续标记
         inventorPending: undefined,
-        // P0-003 修复：回合结束时清理占卜师能力标记
-        revealFirstNextEncounter: null,
-        forcedPlayOrderNextEncounter: null,
+        // P0-003 修复：占卜师能力标记在遭遇解析后清除，不在回合结束时清除
+        // revealFirstNextEncounter 和 forcedPlayOrderNextEncounter 保持不变
     };
     
     // 重置 player1 的回合状态
@@ -1421,9 +1517,12 @@ function reduceTurnEnded(
  */
 function reducePhaseChanged(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.PHASE_CHANGED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.PHASE_CHANGED }> | any
 ): CardiaCore {
-    const { newPhase } = event.payload;
+    // 兼容两种 payload 格式：
+    // - CARDIA_EVENTS.PHASE_CHANGED: { newPhase: string }
+    // - FLOW_EVENTS.PHASE_CHANGED: { from: string, to: string, activePlayerId: string }
+    const newPhase = (event.payload as any).newPhase || (event.payload as any).to;
     
     // 更新游戏阶段
     return {

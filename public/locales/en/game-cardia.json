@@ -54,6 +54,10 @@
     }
   },
   
+  "validation": {
+    "opponent_must_play_first": "Opponent must play first (Diviner ability)"
+  },
+  
   "abilities": {
     "mercenary_swordsman": {
       "name": "Mercenary Swordsman",

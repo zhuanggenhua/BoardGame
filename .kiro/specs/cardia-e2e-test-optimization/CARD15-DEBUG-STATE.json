@@ -1,0 +1,205 @@
+{
+  "description": "发明家（Inventor）手动调试状态",
+  "instructions": [
+    "1. 启动游戏服务器：npm run dev",
+    "2. 打开浏览器开发者工具（F12）",
+    "3. 创建一个在线对局（两个浏览器窗口或标签页）",
+    "4. 在 P1 的控制台中执行以下命令注入状态：",
+    "   window.__BG_TEST_HARNESS__.state.patch(STATE_JSON)",
+    "5. 观察发明家能力的两次交互",
+    "6. 在控制台中查看日志：",
+    "   - [Inventor] Interaction handler called",
+    "   - [CardiaEventSystem] 相关日志",
+    "7. 检查最终状态：",
+    "   window.__BG_TEST_HARNESS__.state.get().core.modifierTokens",
+    "   window.__BG_TEST_HARNESS__.state.get().core.inventorPending"
+  ],
+  "state": {
+    "core": {
+      "players": {
+        "0": {
+          "id": "0",
+          "name": "Player 1",
+          "hand": [
+            {
+              "uid": "p1_hand_1",
+              "defId": "deck_i_card_15",
+              "ownerId": "0",
+              "baseInfluence": 15,
+              "faction": "guild",
+              "abilityIds": ["ability_i_inventor"],
+              "difficulty": 3,
+              "signets": 0,
+              "ongoingMarkers": []
+            }
+          ],
+          "deck": [
+            {
+              "uid": "p1_deck_1",
+              "defId": "deck_i_card_01",
+              "ownerId": "0",
+              "baseInfluence": 1,
+              "faction": "swamp",
+              "abilityIds": ["ability_i_mercenary_swordsman"],
+              "difficulty": 1,
+              "signets": 0,
+              "ongoingMarkers": []
+            },
+            {
+              "uid": "p1_deck_2",
+              "defId": "deck_i_card_02",
+              "ownerId": "0",
+              "baseInfluence": 2,
+              "faction": "academy",
+              "abilityIds": ["ability_i_void_mage"],
+              "difficulty": 2,
+              "signets": 0,
+              "ongoingMarkers": []
+            }
+          ],
+          "discard": [],
+          "playedCards": [
+            {
+              "uid": "p1_played_1",
+              "defId": "deck_i_card_03",
+              "ownerId": "0",
+              "baseInfluence": 3,
+              "faction": "academy",
+              "abilityIds": ["ability_i_surgeon"],
+              "difficulty": 1,
+              "signets": 0,
+              "ongoingMarkers": [],
+              "encounterIndex": 1
+            }
+          ],
+          "signets": 0,
+          "hasPlayed": false,
+          "cardRevealed": false
+        },
+        "1": {
+          "id": "1",
+          "name": "Player 2",
+          "hand": [
+            {
+              "uid": "p2_hand_1",
+              "defId": "deck_i_card_16",
+              "ownerId": "1",
+              "baseInfluence": 16,
+              "faction": "dynasty",
+              "abilityIds": ["ability_i_elf"],
+              "difficulty": 4,
+              "signets": 0,
+              "ongoingMarkers": []
+            }
+          ],
+          "deck": [
+            {
+              "uid": "p2_deck_1",
+              "defId": "deck_i_card_07",
+              "ownerId": "1",
+              "baseInfluence": 7,
+              "faction": "dynasty",
+              "abilityIds": ["ability_i_court_guard"],
+              "difficulty": 3,
+              "signets": 0,
+              "ongoingMarkers": []
+            },
+            {
+              "uid": "p2_deck_2",
+              "defId": "deck_i_card_11",
+              "ownerId": "1",
+              "baseInfluence": 11,
+              "faction": "guild",
+              "abilityIds": ["ability_i_engineer"],
+              "difficulty": 2,
+              "signets": 0,
+              "ongoingMarkers": []
+            }
+          ],
+          "discard": [],
+          "playedCards": [
+            {
+              "uid": "p2_played_1",
+              "defId": "deck_i_card_10",
+              "ownerId": "1",
+              "baseInfluence": 10,
+              "faction": "swamp",
+              "abilityIds": ["ability_i_puppeteer"],
+              "difficulty": 3,
+              "signets": 1,
+              "ongoingMarkers": [],
+              "encounterIndex": 1
+            }
+          ],
+          "signets": 1,
+          "hasPlayed": false,
+          "cardRevealed": false
+        }
+      },
+      "playerOrder": ["0", "1"],
+      "currentPlayerId": "0",
+      "turnNumber": 2,
+      "phase": "play",
+      "encounterHistory": [
+        {
+          "player1Card": {
+            "uid": "p1_played_1",
+            "defId": "deck_i_card_03",
+            "ownerId": "0",
+            "baseInfluence": 3,
+            "faction": "academy",
+            "abilityIds": ["ability_i_surgeon"],
+            "difficulty": 1,
+            "signets": 0,
+            "ongoingMarkers": []
+          },
+          "player2Card": {
+            "uid": "p2_played_1",
+            "defId": "deck_i_card_10",
+            "ownerId": "1",
+            "baseInfluence": 10,
+            "faction": "swamp",
+            "abilityIds": ["ability_i_puppeteer"],
+            "difficulty": 3,
+            "signets": 1,
+            "ongoingMarkers": []
+          },
+          "player1Influence": 3,
+          "player2Influence": 10,
+          "winnerId": "1",
+          "loserId": "0"
+        }
+      ],
+      "ongoingAbilities": [],
+      "modifierTokens": [],
+      "delayedEffects": [],
+      "revealFirstNextEncounter": null,
+      "mechanicalSpiritActive": null,
+      "deckVariant": "deck_i",
+      "targetSignets": 5
+    }
+  },
+  "expectedBehavior": {
+    "step1": "P1 和 P2 各打出一张牌（发明家 vs 精灵）",
+    "step2": "P1 失败（15 < 16），可以激活发明家能力",
+    "step3": "第一次交互：选择一张卡牌，应该放置 +3 修正标记",
+    "step4": "第二次交互：选择另一张卡牌，应该放置 -3 修正标记",
+    "step5": "最终应该有 2 个修正标记：一个 +3，一个 -3"
+  },
+  "debugChecklist": [
+    "✓ 第一次交互后，检查 core.inventorPending 是否存在",
+    "✓ 第一次交互后，检查 core.modifierTokens 是否有 1 个 +3 标记",
+    "✓ 第二次交互是否正确显示",
+    "✓ 第二次交互后，检查 core.inventorPending 是否被清理",
+    "✓ 第二次交互后，检查 core.modifierTokens 是否有 2 个标记（+3 和 -3）",
+    "✓ 查看控制台日志，确认交互处理器被调用时的 hasPendingFlag 值"
+  ],
+  "consoleCommands": {
+    "注入状态": "window.__BG_TEST_HARNESS__.state.patch(STATE_JSON)",
+    "查看当前状态": "window.__BG_TEST_HARNESS__.state.get()",
+    "查看修正标记": "window.__BG_TEST_HARNESS__.state.get().core.modifierTokens",
+    "查看inventorPending": "window.__BG_TEST_HARNESS__.state.get().core.inventorPending",
+    "查看当前阶段": "window.__BG_TEST_HARNESS__.state.get().core.phase",
+    "查看交互队列": "window.__BG_TEST_HARNESS__.state.get().sys.interaction"
+  }
+}

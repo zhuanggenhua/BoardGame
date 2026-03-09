@@ -455,6 +455,12 @@ export function registerCopyInteractionHandlers(): void {
         
         const result = executor(ctx);
         
+        console.log('[Governess] Executor result:', {
+            eventsCount: result.events.length,
+            eventTypes: result.events.map(e => e.type),
+            events: result.events,
+        });
+        
         return {
             state,
             events: result.events,

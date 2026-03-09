@@ -725,6 +725,16 @@ export function registerModifierInteractionHandlers(): void {
     
     // 宫廷卫士：选择派系后，对手选择是否弃牌
     registerInteractionHandler(ABILITY_IDS.COURT_GUARD, (state, playerId, value, interactionData, _random, timestamp) => {
+        console.log('[CourtGuard] ========== INTERACTION HANDLER CALLED ==========');
+        console.log('[CourtGuard] Input parameters:', {
+            playerId,
+            value,
+            valueType: typeof value,
+            valueKeys: value && typeof value === 'object' ? Object.keys(value) : undefined,
+            hasInteractionData: !!interactionData,
+            interactionDataKeys: interactionData ? Object.keys(interactionData) : undefined,
+        });
+        
         const selectedFaction = (value as { faction?: string })?.faction;
         const selectedOption = (value as { option?: string })?.option;
         
@@ -733,14 +743,43 @@ export function registerModifierInteractionHandlers(): void {
             const opponentId = playerId === '0' ? '1' : '0';
             const opponentPlayer = state.core.players[opponentId];
             
+            console.log('[CourtGuard] Step 1: Faction selected', {
+                selectedFaction,
+                playerId,
+                opponentId,
+                opponentHandCount: opponentPlayer.hand.length,
+                opponentHand: opponentPlayer.hand.map(c => ({ uid: c.uid, faction: c.faction, defId: c.defId })),
+            });
+            
             // 查找对手该派系的手牌
             const factionCards = opponentPlayer.hand.filter(card => card.faction === selectedFaction);
+            
+            console.log('[CourtGuard] Faction cards found', {
+                selectedFaction,
+                factionCardsCount: factionCards.length,
+                factionCards: factionCards.map(c => ({ uid: c.uid, defId: c.defId, faction: c.faction })),
+                factionCardUids: factionCards.map(c => c.uid),
+            });
             
             // 获取当前卡牌 ID（从 interactionData 中）
             const cardId = (interactionData as any)?.cardId;
             
+            console.log('[CourtGuard] ========== SAVING CONTEXT ==========');
+            console.log('[CourtGuard] Context to save:', {
+                faction: selectedFaction,
+                cardId,
+                factionCards: factionCards.map(c => c.uid),
+            });
+            
+            console.log('[CourtGuard] CardId from interactionData', {
+                cardId,
+                hasInteractionData: !!interactionData,
+                interactionDataKeys: interactionData ? Object.keys(interactionData) : [],
+            });
+            
             if (factionCards.length === 0) {
                 // 对手没有该派系手牌，本牌添加+7影响力
+                console.log('[CourtGuard] No faction cards, adding +7 modifier');
                 return {
                     state,
                     events: [{
@@ -757,6 +796,7 @@ export function registerModifierInteractionHandlers(): void {
             }
             
             // 对手有该派系手牌，创建对手的选择交互
+            console.log('[CourtGuard] Creating opponent choice interaction');
             const opponentInteraction: any = {
                 type: 'choice',
                 interactionId: `${ABILITY_IDS.COURT_GUARD}_opponent_${timestamp}`,
@@ -784,11 +824,31 @@ export function registerModifierInteractionHandlers(): void {
                 },
             };
             
-            return {
+            console.log('[CourtGuard] Returning opponent interaction', {
+                interactionId: opponentInteraction.interactionId,
+                playerId: opponentInteraction.playerId,
+                optionsCount: opponentInteraction.options.length,
+                hasContext: !!opponentInteraction.context,
+                contextKeys: opponentInteraction.context ? Object.keys(opponentInteraction.context) : [],
+                factionCardsInContext: opponentInteraction.context?.factionCards,
+            });
+            
+            console.log('[CourtGuard] About to return object with interaction field');
+            
+            const returnValue = {
                 state,
                 events: [],
                 interaction: opponentInteraction,
             };
+            
+            console.log('[CourtGuard] Return value structure:', {
+                hasState: !!returnValue.state,
+                hasEvents: !!returnValue.events,
+                hasInteraction: !!returnValue.interaction,
+                interactionType: returnValue.interaction?.type,
+            });
+            
+            return returnValue;
         }
         
         // 第二步：对手选择是否弃牌
@@ -801,18 +861,37 @@ export function registerModifierInteractionHandlers(): void {
             
             const { faction, cardId, factionCards } = context;
             
+            console.log('[CourtGuard] Step 2: Option selected', {
+                selectedOption,
+                playerId,
+                faction,
+                cardId,
+                factionCardsFromContext: factionCards,
+            });
+            
             if (selectedOption === 'discard') {
                 // 对手选择弃牌，需要再选择具体哪张牌
                 const opponentPlayer = state.core.players[playerId];
                 const availableCards = opponentPlayer.hand.filter(c => factionCards.includes(c.uid));
                 
+                console.log('[CourtGuard] Filtering available cards', {
+                    opponentHandCount: opponentPlayer.hand.length,
+                    opponentHandCards: opponentPlayer.hand.map(c => ({ uid: c.uid, faction: c.faction })),
+                    factionCardsFromContext: factionCards,
+                    availableCardsCount: availableCards.length,
+                    availableCards: availableCards.map(c => ({ uid: c.uid, faction: c.faction })),
+                });
+                
                 if (availableCards.length === 0) {
-                    console.error('[CourtGuard] No faction cards found');
+                    console.error('[CourtGuard] No faction cards found in hand');
                     return { state, events: [] };
                 }
                 
                 // 如果只有一张牌，直接弃掉
                 if (availableCards.length === 1) {
+                    console.log('[CourtGuard] Only 1 card, auto-discarding', {
+                        cardUid: availableCards[0].uid,
+                    });
                     return {
                         state,
                         events: [{
@@ -828,6 +907,9 @@ export function registerModifierInteractionHandlers(): void {
                 }
                 
                 // 多张牌，创建选择交互
+                console.log('[CourtGuard] Multiple cards, creating card selection interaction', {
+                    availableCardsCount: availableCards.length,
+                });
                 const cardSelectionInteraction: any = {
                     type: 'card_selection',
                     interactionId: `${ABILITY_IDS.COURT_GUARD}_discard_${timestamp}`,
@@ -838,7 +920,20 @@ export function registerModifierInteractionHandlers(): void {
                     availableCards: availableCards.map(c => c.uid),
                     minSelect: 1,
                     maxSelect: 1,
+                    // ✅ 修复：保留 context，供第三步使用
+                    context: {
+                        faction,
+                        cardId,
+                        factionCards,
+                    },
                 };
+                
+                console.log('[CourtGuard] Returning card selection interaction', {
+                    interactionId: cardSelectionInteraction.interactionId,
+                    playerId: cardSelectionInteraction.playerId,
+                    availableCardsCount: cardSelectionInteraction.availableCards.length,
+                    hasContext: !!cardSelectionInteraction.context,
+                });
                 
                 return {
                     state,
