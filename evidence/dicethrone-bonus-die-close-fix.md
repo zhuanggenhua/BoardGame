@@ -62,7 +62,29 @@ const handleBonusDieClose = useCallback(() => {
 
 ## 修改文件
 
-- `src/games/dicethrone/hooks/useCardSpotlight.ts`：修改 `handleBonusDieClose` 函数
+- `src/games/dicethrone/hooks/useCardSpotlight.ts`：修改 `handleBonusDieClose` 函数，清除所有骰子状态
+- `src/games/dicethrone/ui/BonusDieOverlay.tsx`：添加 `closeOnContentClick={!isInteractive}` 到多骰模式的 SpotlightContainer
+
+## 问题扩展
+
+在测试过程中发现，不仅单个骰子特写无法关闭，**多骰模式在非交互状态下也无法点击内容关闭**。
+
+### 多骰模式问题
+
+多骰模式（如神佑 Divine Blessing）有三种状态：
+1. **可重掷**（`displayOnly=false`, `canReroll=true`）：需要玩家选择，禁用背景和内容点击 ✓
+2. **无资源重掷**（`displayOnly=false`, `canReroll=false`）：仅展示结果，应允许点击关闭 ❌
+3. **对手展示**（`displayOnly=true`）：仅展示结果，应允许点击关闭 ✓（自动关闭）
+
+问题在于状态 2：虽然 `disableBackdropClose=false`（允许点击背景），但 `closeOnContentClick` 默认为 `true`，导致点击骰子内容时会关闭，但这与 `disableBackdropClose=false` 的语义不一致。
+
+### 解决方案
+
+添加 `closeOnContentClick={!isInteractive}` 参数：
+- 当 `isInteractive=true`（可重掷）：禁用内容点击关闭
+- 当 `isInteractive=false`（无资源或展示）：允许内容点击关闭
+
+这样三种状态的行为都正确了。
 
 ## 验证方法
 

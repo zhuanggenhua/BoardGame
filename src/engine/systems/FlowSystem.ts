@@ -340,15 +340,27 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
             
             // 【生产日志】记录 onAutoContinueCheck 的结果，用于排查自动推进问题
             const from = getCurrentPhase(state) || hooks.initialPhase;
-            if (result?.autoContinue) {
-                console.log('[FlowSystem][afterEvents] onAutoContinueCheck 返回 autoContinue=true, phase=' + from + ', playerId=' + result.playerId);
-            } else {
-                console.log('[FlowSystem][afterEvents] onAutoContinueCheck 返回 undefined 或 autoContinue=false, phase=' + from + ', 不自动推进');
+            
+            // 服务器端和客户端都输出日志
+            console.log('[FlowSystem][afterEvents] phase=' + from + ', autoContinue=' + (result?.autoContinue || false) + ', eventsCount=' + events.length + ', eventTypes=' + events.map(e => e.type).join(','));
+            
+            // 客户端额外记录到 window 对象
+            if (typeof window !== 'undefined') {
+                (window as any).__BG_FLOW_LOG__ = (window as any).__BG_FLOW_LOG__ || [];
+                (window as any).__BG_FLOW_LOG__.push({
+                    time: Date.now(),
+                    phase: from,
+                    autoContinue: result?.autoContinue || false,
+                    playerId: result?.playerId,
+                    eventsCount: events.length,
+                    eventTypes: events.map(e => e.type),
+                });
             }
             
             if (!result?.autoContinue) return;
 
             if (!playerIds.includes(result.playerId)) {
+                console.log('[FlowSystem][afterEvents] playerId not in playerIds, skipping autoContinue');
                 return;
             }
 
@@ -359,7 +371,7 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
                 playerId,
                 payload: undefined,
             };
-            logDev(`[FlowSystem][afterEvents] autoContinue from=${from} playerId=${playerId}`);
+            console.log('[FlowSystem][afterEvents] executing autoContinue from=' + from + ' playerId=' + playerId);
 
             return executePhaseAdvance({
                 state,

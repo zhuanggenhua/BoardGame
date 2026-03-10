@@ -130,6 +130,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                 disableBackdropClose={isInteractive}
                 autoCloseDelay={displayOnly ? 5000 : 3000}
                 zIndex={UI_Z_INDEX.overlayRaised + 100}
+                closeOnContentClick={!isInteractive}
             >
                 <div className="flex flex-col items-center gap-[1.5vw]" data-testid="bonus-die-overlay">
                     {/* 提示文字 - DiceThrone 风格 */}

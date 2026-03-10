@@ -211,7 +211,7 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
             // 有 ATTACK_RESOLVED 事件：清空旧修正卡，收集 ATTACK_RESOLVED 之后的新修正卡
             const newModifiers: ActiveModifier[] = [];
             
-            console.log('[useActiveModifiers] 处理 ATTACK_RESOLVED，当前 modifiers 数量:', modifiers.length);
+            console.log('[useActiveModifiers] 处理 ATTACK_RESOLVED，清空旧修正卡');
             
             for (let i = attackResolvedIndex + 1; i < newEntries.length; i++) {
                 const entry = newEntries[i];
@@ -270,7 +270,7 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
                 setModifiers(prev => [...prev, ...newModifiers]);
             }
         }
-    }, [eventStreamEntries, modifiers]);
+    }, [eventStreamEntries]); // 移除 modifiers 依赖，避免无限循环
 
     return { activeModifiers: modifiers };
 }

@@ -476,40 +476,40 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         pendingDamage,
     });
 
-    // 响应窗口视角自动切换
-    const prevResponseWindowRef = React.useRef<boolean>(false);
-    React.useEffect(() => {
-        const wasOpen = prevResponseWindowRef.current;
-        const isOpen = isResponseWindowOpen;
-        prevResponseWindowRef.current = isOpen;
+    // 响应窗口视角自动切换（已禁用）
+    // const prevResponseWindowRef = React.useRef<boolean>(false);
+    // React.useEffect(() => {
+    //     const wasOpen = prevResponseWindowRef.current;
+    //     const isOpen = isResponseWindowOpen;
+    //     prevResponseWindowRef.current = isOpen;
 
-        console.log('[Board] Response window effect:', {
-            wasOpen,
-            isOpen,
-            isResponseAutoSwitch,
-            autoResponseEnabled,
-            currentResponderId,
-            rootPid,
-            logic: isResponseAutoSwitch ? 'Self is responder → switch to opponent view' : 'Opponent is responder → stay on self view',
-            currentPhase,
-            currentViewMode: viewMode,
-        });
+    //     console.log('[Board] Response window effect:', {
+    //         wasOpen,
+    //         isOpen,
+    //         isResponseAutoSwitch,
+    //         autoResponseEnabled,
+    //         currentResponderId,
+    //         rootPid,
+    //         logic: isResponseAutoSwitch ? 'Self is responder → switch to opponent view' : 'Opponent is responder → stay on self view',
+    //         currentPhase,
+    //         currentViewMode: viewMode,
+    //     });
 
-        // 只在显示响应窗口时才切换视角（自动跳过模式不切换）
-        if (!autoResponseEnabled) {
-            console.log('[Board] Auto-skip enabled, not switching view');
-            return;
-        }
+    //     // 只在显示响应窗口时才切换视角（自动跳过模式不切换）
+    //     if (!autoResponseEnabled) {
+    //         console.log('[Board] Auto-skip enabled, not switching view');
+    //         return;
+    //     }
 
-        // 自己响应时切换到对手视角（看对手的骰子/状态）
-        if (isOpen && isResponseAutoSwitch) {
-            console.log('[Board] Switching to opponent view (self is responder, need to see opponent dice)');
-            setViewMode('opponent');
-        }
-        // 注意：
-        // 1. 对手响应时（isOpen && !isResponseAutoSwitch）不做任何操作，保持当前视角（通常是自己视角）
-        // 2. 响应窗口关闭时也不做任何操作，避免干扰正常的视角切换
-    }, [isResponseWindowOpen, isResponseAutoSwitch, autoResponseEnabled, currentResponderId, rootPid, currentPhase, setViewMode, viewMode]);
+    //     // 自己响应时切换到对手视角（看对手的骰子/状态）
+    //     if (isOpen && isResponseAutoSwitch) {
+    //         console.log('[Board] Switching to opponent view (self is responder, need to see opponent dice)');
+    //         setViewMode('opponent');
+    //     }
+    //     // 注意：
+    //     // 1. 对手响应时（isOpen && !isResponseAutoSwitch）不做任何操作，保持当前视角（通常是自己视角）
+    //     // 2. 响应窗口关闭时也不做任何操作，避免干扰正常的视角切换
+    // }, [isResponseWindowOpen, isResponseAutoSwitch, autoResponseEnabled, currentResponderId, rootPid, currentPhase, setViewMode, viewMode]);
 
     const viewPid = isSelfView ? rootPid : otherPid;
     const viewPlayer = (isSelfView ? player : opponent) || player;

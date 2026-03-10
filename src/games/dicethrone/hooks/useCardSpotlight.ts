@@ -489,6 +489,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
      * 鍏抽棴棰濆楠板瓙鐗瑰啓
      */
     const handleBonusDieClose = useCallback(() => {
+            console.log('[handleBonusDieClose] 被调用');
             spotlightLogger.info('bonus-close', {
                 value: bonusDieValue,
                 face: bonusDieFace,
@@ -497,8 +498,10 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                 summaryEffectKey: bonusDieSummaryEffectKey,
                 characterId: bonusDieCharacterId,
             });
+            console.log('[handleBonusDieClose] 设置 showBonusDie=false');
             setShowBonusDie(false);
             // 清除所有骰子状态，防止 useEffect 重新触发时又弹出
+            console.log('[handleBonusDieClose] 清除所有骰子状态');
             setBonusDieValue(undefined);
             setBonusDieFace(undefined);
             setBonusDieEffectKey(undefined);
@@ -509,6 +512,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
             setBonusDieShowTotal(undefined);
             setBonusDieDisplayOnly(undefined);
             setBonusDieCharacterId(undefined);
+            console.log('[handleBonusDieClose] 完成');
         }, [bonusDiceList?.length, bonusDieCharacterId, bonusDieEffectKey, bonusDieFace, bonusDieSummaryEffectKey, bonusDieValue])
 
 
