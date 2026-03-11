@@ -45,6 +45,7 @@ bash deploy-image.sh
 
 ```bash
 bash deploy-image.sh update
+bash deploy-image.sh update v1.2.3  # 部署指定 tag
 ```
 
 ### 回滚 / 状态 / 日志
@@ -55,6 +56,17 @@ bash deploy-image.sh status             # 查看状态
 bash deploy-image.sh logs [service]     # 查看日志
 ```
 
+### 固定版本部署（推荐）
+
+```bash
+bash deploy-image.sh deploy v1.2.3  # 首次部署指定 tag
+bash deploy-image.sh update v1.2.3  # 更新到指定 tag
+```
+
+- 不传 tag 时默认部署 `latest`
+- 传入 tag 时，脚本会统一把 `game-server` 和 `web` 切到同一版本，便于排障与回滚
+- 这些 tag 来自 GitHub Actions 发布的镜像标签（例如推送 Git tag `v1.2.3` 后生成对应镜像）
+
 ### CI 配置说明
 
 镜像由 GitHub Actions 自动构建并推送到 GHCR（`.github/workflows/docker-publish.yml`）：
@@ -64,6 +76,8 @@ bash deploy-image.sh logs [service]     # 查看日志
   - `ghcr.io/zhuanggenhua/boardgame-game:latest`
   - `ghcr.io/zhuanggenhua/boardgame-web:latest`
 - **版本标签**：`latest`（main 分支）、`v1.2.3`（tag）、`sha-xxxxxx`（commit）
+
+> **当前自动部署脚本的真实入口**：`boardgame-web` 是基于 `docker/Dockerfile.monolith` 构建的单体镜像，负责静态资源、`/auth`、`/notifications`、`/social-socket` 等 API / WebSocket 入口；`deploy-image.sh` 不会部署独立的 `auth-server`，也不会使用 `docker/Dockerfile.web` / `docker/nginx.conf` 作为生产主链路。
 
 > **注意**：镜像构建由 GitHub Actions 自动完成，服务器脚本只负责拉取镜像。
 > 私有镜像需要登录（脚本会提示是否登录 ghcr.io）。
@@ -202,7 +216,7 @@ SMTP_PASS=xxx
 
 ## 部署后注意事项
 
-> **生产环境更新必须使用部署脚本**：`bash scripts/deploy/deploy-image.sh update`
+> **生产环境更新必须使用部署脚本**：`bash scripts/deploy/deploy-image.sh update [tag]`
 >
 > 禁止在生产服务器上直接运行 `docker compose up -d`，因为默认使用 `docker-compose.yml` 而非 `docker-compose.prod.yml`，两者的端口映射和环境变量配置不同。
 
@@ -218,7 +232,7 @@ SMTP_PASS=xxx
   - 镜像部署：`docker-compose.prod.yml`（服务器不需要源码，推荐生产环境）
   - 本地开发：`docker-compose.yml`（同样使用 ghcr 预构建镜像）
   - 对外仅暴露 `web`（单体），`game-server` 仅容器网络内通信
-  - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
+  - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
 
 ## 资源 /assets 与对象存储映射（官方）
 

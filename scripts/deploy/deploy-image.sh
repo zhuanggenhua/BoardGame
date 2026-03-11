@@ -5,7 +5,8 @@ set -euo pipefail
 #
 # 用法：
 #   首次部署：  bash deploy-image.sh
-#   更新版本：  bash deploy-image.sh update
+#   首次部署指定 tag：bash deploy-image.sh deploy v1.2.3
+#   更新版本：  bash deploy-image.sh update [tag]
 #   回滚版本：  bash deploy-image.sh rollback <tag>
 #   初始化管理员：bash deploy-image.sh init-admin
 #   查看状态：  bash deploy-image.sh status
@@ -132,6 +133,29 @@ ensure_compose_file() {
       rm -f "$tmp_file"
     fi
   fi
+}
+
+validate_tag() {
+  local tag="${1:-}"
+  if [ -z "$tag" ]; then
+    die "镜像 tag 不能为空"
+  fi
+
+  if [[ ! "$tag" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+    die "镜像 tag 格式无效：${tag}"
+  fi
+}
+
+set_compose_image_tag() {
+  local tag="${1:-latest}"
+  validate_tag "$tag"
+
+  # 统一由部署脚本覆盖 compose 中的镜像 tag，
+  # 保证 update / rollback / 首次部署 都走同一条版本切换链路。
+  sed -i.bak \
+    -e "s|ghcr.io/zhuanggenhua/boardgame-game:[^[:space:]]*|ghcr.io/zhuanggenhua/boardgame-game:${tag}|g" \
+    -e "s|ghcr.io/zhuanggenhua/boardgame-web:[^[:space:]]*|ghcr.io/zhuanggenhua/boardgame-web:${tag}|g" \
+    "$COMPOSE_FILE"
 }
 
 generate_jwt_secret() {
@@ -419,17 +443,19 @@ EOF
 # ============================================================
 
 deploy() {
+  local tag="${1:-latest}"
   ensure_compose_file
   ensure_env_file
   configure_docker_mirror
   ensure_port_available
+  set_compose_image_tag "$tag"
 
   # 清理旧镜像和构建缓存（在拉取新镜像之前）
   log "清理旧镜像和构建缓存"
   docker image prune -f > /dev/null 2>&1 || true
   docker builder prune -f > /dev/null 2>&1 || true
 
-  log "拉取最新镜像"
+  log "拉取镜像（tag: ${tag}）"
   docker compose -f "$COMPOSE_FILE" pull
 
   log "停止旧服务"
@@ -470,10 +496,7 @@ rollback() {
 
   log "回滚到版本 ${tag}"
 
-  sed -i.bak \
-    -e "s|ghcr.io/zhuanggenhua/boardgame-game:.*|ghcr.io/zhuanggenhua/boardgame-game:${tag}|g" \
-    -e "s|ghcr.io/zhuanggenhua/boardgame-web:.*|ghcr.io/zhuanggenhua/boardgame-web:${tag}|g" \
-    "$COMPOSE_FILE"
+  set_compose_image_tag "$tag"
 
   log "拉取指定版本镜像"
   docker compose -f "$COMPOSE_FILE" pull
@@ -501,7 +524,7 @@ logs() {
 
 case "${1:-deploy}" in
   deploy|update)
-    deploy
+    deploy "${2:-latest}"
     ;;
   rollback)
     rollback "${2:-}"
@@ -516,7 +539,7 @@ case "${1:-deploy}" in
     logs "${2:-}"
     ;;
   *)
-    echo "用法: $0 [deploy|update|rollback <tag>|init-admin|status|logs [service]]"
+    echo "用法: $0 [deploy [tag]|update [tag]|rollback <tag>|init-admin|status|logs [service]]"
     exit 1
     ;;
 esac
