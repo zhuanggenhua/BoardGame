@@ -1,7 +1,7 @@
 /**
  * 视角与自动观战计算工具
  * - 防御阶段仅在存在 pendingAttack 时强制切到防守方
- * - 响应窗口打开时自动切换到响应者视角
+ * - 响应窗口是否应自动引导切换，由 Board 层在窗口打开瞬间单次处理
  */
 import type { PlayerId } from '../../../engine/types';
 import type { PendingAttack, TurnPhase, PendingDamage } from '../domain/types';
@@ -27,9 +27,59 @@ export interface ViewModeResult {
     shouldAutoObserve: boolean;
     viewMode: ViewMode;
     isSelfView: boolean;
-    /** 是否因响应窗口自动切换视角 */
+    /** 是否满足“响应窗口建议切到对手视角”的条件 */
     isResponseAutoSwitch?: boolean;
 }
+
+export interface ResponseViewSuggestionParams {
+    previousSuggestionKey: string | null;
+    currentSuggestionKey: string | null;
+    autoResponseEnabled: boolean;
+}
+
+export interface ResponseViewSuggestionKeyParams {
+    rootPlayerId: PlayerId;
+    isResponseWindowOpen?: boolean;
+    currentResponderId?: PlayerId;
+    currentResponderIndex?: number;
+    pendingDamage?: PendingDamage;
+}
+
+export const getResponseViewSuggestionKey = (
+    params: ResponseViewSuggestionKeyParams,
+): string | null => {
+    const {
+        rootPlayerId,
+        isResponseWindowOpen,
+        currentResponderId,
+        currentResponderIndex,
+        pendingDamage,
+    } = params;
+
+    if (isResponseWindowOpen && currentResponderId === rootPlayerId) {
+        return `window:${currentResponderId}:${currentResponderIndex ?? 0}`;
+    }
+
+    if (pendingDamage?.responderId === rootPlayerId) {
+        return `token:${pendingDamage.id}`;
+    }
+
+    return null;
+};
+
+export const shouldSuggestOpponentViewOnResponseChange = (
+    params: ResponseViewSuggestionParams,
+): boolean => {
+    const {
+        previousSuggestionKey,
+        currentSuggestionKey,
+        autoResponseEnabled,
+    } = params;
+
+    return autoResponseEnabled
+        && currentSuggestionKey !== null
+        && currentSuggestionKey !== previousSuggestionKey;
+};
 
 export const computeViewModeState = (params: ViewModeParams): ViewModeResult => {
     const {
@@ -58,11 +108,10 @@ export const computeViewModeState = (params: ViewModeParams): ViewModeResult => 
         isResponseAutoSwitch = pendingDamage.responderId === rootPlayerId;
     }
 
-    // 优先级：防御阶段自动观战 > 响应窗口自动切换 > 手动视角
+    // 优先级：防御阶段自动观战 > 手动视角
+    // 响应窗口自动切换只做一次性引导，不在这里强制覆盖手动选择
     let viewMode = manualViewMode;
     if (shouldAutoObserve) {
-        viewMode = 'opponent';
-    } else if (isResponseAutoSwitch) {
         viewMode = 'opponent';
     }
 
