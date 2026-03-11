@@ -201,6 +201,10 @@ export const DiceTray = ({
                             <div className="relative flex flex-col items-center gap-[0.25vw]" data-testid="die">
                                 <div
                                     onClick={() => clickable && handleDieClick(d.id)}
+                                    data-testid={`die-button-${d.id}`}
+                                    data-selected={selected ? 'true' : 'false'}
+                                    data-clickable={clickable ? 'true' : 'false'}
+                                    data-display-value={displayValue}
                                     className={`
                                         relative flex-shrink-0 group transition-all duration-200
                                         ${!isInteractionMode && d.isKept ? 'opacity-80' : ''}
