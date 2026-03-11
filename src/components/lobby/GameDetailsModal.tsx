@@ -33,6 +33,13 @@ interface GameDetailsModalProps {
     onNavigate?: () => void;
 }
 
+type PendingRoomAction = {
+    matchID: string;
+    myPlayerID: string;
+    myCredentials: string | undefined;
+    isHost: boolean;
+};
+
 export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptionKey, thumbnail, closeOnBackdrop, onNavigate }: GameDetailsModalProps) => {
     const navigate = useNavigate();
     const modalRef = useRef<HTMLDivElement>(null);
@@ -51,16 +58,15 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const [rooms, setRooms] = useState<Room[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [localStorageTick, setLocalStorageTick] = useState(0);
-    const [pendingAction, setPendingAction] = useState<{
-        matchID: string;
-        myPlayerID: string;
-        myCredentials: string;
-        isHost: boolean;
-    } | null>(null);
+    const [pendingAction, setPendingAction] = useState<PendingRoomAction | null>(null);
+    const [isConfirmingAction, setIsConfirmingAction] = useState(false);
     const [pendingJoin, setPendingJoin] = useState<{
         matchID: string;
         gameName?: string;
     } | null>(null);
+    const pendingActionRef = useRef<PendingRoomAction | null>(null);
+    const isConfirmingActionRef = useRef(false);
+    const roomsRef = useRef<Room[]>([]);
 
     // 排行榜状态
     const [activeTab, setActiveTab] = useState<'lobby' | 'leaderboard' | 'reviews'>('lobby');
@@ -77,6 +83,18 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const getGuestName = () => resolveGuestName(t, getGuestId());
     const getOwnerKey = () => resolveOwnerKey(user?.id, getGuestId());
     const getOwnerType = () => resolveOwnerType(user?.id);
+
+    useEffect(() => {
+        pendingActionRef.current = pendingAction;
+    }, [pendingAction]);
+
+    useEffect(() => {
+        isConfirmingActionRef.current = isConfirmingAction;
+    }, [isConfirmingAction]);
+
+    useEffect(() => {
+        roomsRef.current = rooms;
+    }, [rooms]);
 
     useEffect(() => {
         if (isOpen && activeTab === 'leaderboard') {
@@ -532,59 +550,67 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     };
 
     const handleConfirmAction = async () => {
-        if (!pendingAction) return;
-        const { matchID, myPlayerID, myCredentials, isHost } = pendingAction;
+        const nextPendingAction = pendingActionRef.current;
+        if (!nextPendingAction || isConfirmingActionRef.current) return;
+        isConfirmingActionRef.current = true;
+        setIsConfirmingAction(true);
+        const { matchID, myPlayerID, myCredentials, isHost } = nextPendingAction;
         console.log('[LobbyModal] 确认执行', { matchID, myPlayerID, isHost });
 
-        // 尝试从本地存储或房间列表获取游戏名
-        const saved = localStorage.getItem(`match_creds_${matchID}`);
-        let gameName = gameId; // 默认使用当前模态框的游戏编号
-        if (saved) {
-            const data = JSON.parse(saved);
-            if (data.gameName) gameName = data.gameName;
-        } else {
-            // 如果本地没有，尝试从房间列表查找
-            const room = rooms.find(r => r.matchID === matchID);
-            if (room?.gameName) gameName = room.gameName;
-        }
-
-        let result = await exitMatch(gameName, matchID, myPlayerID, myCredentials, isHost);
-        console.log('[LobbyModal] 执行完成', { result });
-
-        // 403 forbidden 时尝试 claim-seat 刷新凭证后重试（凭证可能因其他会话被覆盖）
-        if (!result.success && result.error === 'forbidden' && isHost) {
-            console.log('[LobbyModal] 403 forbidden，尝试 claim-seat 刷新凭证');
-            let claimResult: { success: boolean; credentials?: string };
-            if (user?.id && token) {
-                claimResult = await claimSeat(gameName, matchID, myPlayerID, { token, playerName: user.username });
+        try {
+            // 尝试从本地存储或房间列表获取游戏名
+            const saved = localStorage.getItem(`match_creds_${matchID}`);
+            let gameName = gameId; // 默认使用当前模态框的游戏编号
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.gameName) gameName = data.gameName;
             } else {
-                const guestId = getGuestId();
-                const guestName = getGuestName();
-                claimResult = await claimSeat(gameName, matchID, myPlayerID, { guestId, playerName: guestName });
+                // 如果本地没有，尝试从房间列表查找
+                const room = roomsRef.current.find(r => r.matchID === matchID);
+                if (room?.gameName) gameName = room.gameName;
             }
-            if (claimResult.success && claimResult.credentials) {
-                console.log('[LobbyModal] claim-seat 成功，重试销毁');
-                result = await exitMatch(gameName, matchID, myPlayerID, claimResult.credentials, isHost);
-                console.log('[LobbyModal] 重试结果', { result });
+
+            let result = await exitMatch(gameName, matchID, myPlayerID, myCredentials, isHost);
+            console.log('[LobbyModal] 执行完成', { result });
+
+            // 403 forbidden 时尝试 claim-seat 刷新凭证后重试（凭证可能因其他会话被覆盖）
+            if (!result.success && result.error === 'forbidden' && isHost) {
+                console.log('[LobbyModal] 403 forbidden，尝试 claim-seat 刷新凭证');
+                let claimResult: { success: boolean; credentials?: string };
+                if (user?.id && token) {
+                    claimResult = await claimSeat(gameName, matchID, myPlayerID, { token, playerName: user.username });
+                } else {
+                    const guestId = getGuestId();
+                    const guestName = getGuestName();
+                    claimResult = await claimSeat(gameName, matchID, myPlayerID, { guestId, playerName: guestName });
+                }
+                if (claimResult.success && claimResult.credentials) {
+                    console.log('[LobbyModal] claim-seat 成功，重试销毁');
+                    result = await exitMatch(gameName, matchID, myPlayerID, claimResult.credentials, isHost);
+                    console.log('[LobbyModal] 重试结果', { result });
+                }
             }
-        }
 
-        if (!result.success) {
-            const errorKey = result.error === 'forbidden'
-                ? 'error.destroyForbidden'
-                : result.error === 'network'
-                    ? 'error.destroyNetwork'
-                    : 'error.actionFailed';
-            toast.error({ kind: 'i18n', key: errorKey, ns: 'lobby' });
-            return;
-        }
+            if (!result.success) {
+                const errorKey = result.error === 'forbidden'
+                    ? 'error.destroyForbidden'
+                    : result.error === 'network'
+                        ? 'error.destroyNetwork'
+                        : 'error.actionFailed';
+                toast.error({ kind: 'i18n', key: errorKey, ns: 'lobby' });
+                return;
+            }
 
-        if (result.cleanedLocal) {
-            toast.warning({ kind: 'i18n', key: 'error.destroyFailedLocalCleaned', ns: 'lobby' });
+            if (result.cleanedLocal) {
+                toast.warning({ kind: 'i18n', key: 'error.destroyFailedLocalCleaned', ns: 'lobby' });
+            }
+            setPendingAction(null);
+            setLocalStorageTick(t => t + 1);
+            lobbySocket.requestRefresh(normalizedGameId);
+        } finally {
+            isConfirmingActionRef.current = false;
+            setIsConfirmingAction(false);
         }
-        setPendingAction(null);
-        setLocalStorageTick(t => t + 1);
-        lobbySocket.requestRefresh(normalizedGameId);
     };
 
     const handleCancelAction = () => {
@@ -608,14 +634,13 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     <ConfirmModal
                         title={pendingAction.isHost ? t('confirm.destroy.title') : t('confirm.leave.title')}
                         description={pendingAction.isHost ? t('confirm.destroy.description') : t('confirm.leave.description')}
-                        onConfirm={() => {
-                            handleConfirmAction();
-                        }}
+                        onConfirm={handleConfirmAction}
                         onCancel={() => {
                             close();
                         }}
                         tone="cool"
                         closeOnBackdrop={stackCloseOnBackdrop}
+                        isLoading={isConfirmingAction}
                     />
                 ),
             });
@@ -625,7 +650,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             closeModal(confirmModalIdRef.current);
             confirmModalIdRef.current = null;
         }
-    }, [closeModal, handleCancelAction, handleConfirmAction, openModal, pendingAction]);
+    }, [closeModal, handleCancelAction, handleConfirmAction, openModal, pendingAction, isConfirmingAction]);
 
     useEffect(() => {
         if (pendingJoin && !confirmJoinModalIdRef.current) {
@@ -641,9 +666,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     <ConfirmModal
                         title={t('confirm.exitActiveMatch.title')}
                         description={t('confirm.exitActiveMatch.description')}
-                        onConfirm={() => {
-                            handleConfirmJoin();
-                        }}
+                        onConfirm={handleConfirmJoin}
                         onCancel={() => {
                             close();
                         }}

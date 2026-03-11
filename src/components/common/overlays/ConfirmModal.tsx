@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { useTranslation } from 'react-i18next';
 import { ModalBase } from './ModalBase';
@@ -22,8 +23,9 @@ interface ConfirmModalProps {
     confirmText?: string;
     cancelText?: string;
     showCancel?: boolean;
-    onConfirm: () => void;
+    onConfirm: () => void | Promise<void>;
     onCancel: () => void;
+    isLoading?: boolean;
     tone?: ConfirmTone;
     theme?: Partial<ConfirmModalTheme>;
     closeOnBackdrop?: boolean;
@@ -65,6 +67,7 @@ export const ConfirmModal = ({
     showCancel = true,
     onConfirm,
     onCancel,
+    isLoading = false,
     tone = 'warm',
     theme,
     closeOnBackdrop,
@@ -78,6 +81,12 @@ export const ConfirmModal = ({
     cancelClassName,
 }: ConfirmModalProps) => {
     const { t } = useTranslation('common');
+    const [isSubmitting, setIsSubmitting] = useState(isLoading);
+
+    useEffect(() => {
+        setIsSubmitting(isLoading);
+    }, [isLoading]);
+
     const mergedTheme = {
         ...themeByTone[tone],
         ...theme,
@@ -85,10 +94,25 @@ export const ConfirmModal = ({
     const resolvedConfirmText = confirmText ?? t('button.confirm');
     const resolvedCancelText = cancelText ?? t('button.cancel');
 
+    const handleCancel = () => {
+        if (isSubmitting) return;
+        onCancel();
+    };
+
+    const handleConfirm = async () => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            await onConfirm();
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <ModalBase
-            onClose={onCancel}
-            closeOnBackdrop={closeOnBackdrop}
+            onClose={handleCancel}
+            closeOnBackdrop={!isSubmitting && closeOnBackdrop}
             overlayClassName={twMerge(mergedTheme.overlay, overlayClassName)}
             overlayStyle={{ zIndex: UI_Z_INDEX.modalOverlay }}
             containerClassName={twMerge('p-4 sm:p-6', mergedTheme.container, containerClassName)}
@@ -113,9 +137,12 @@ export const ConfirmModal = ({
                 <div className={twMerge(mergedTheme.actions, actionsClassName)}>
                     {showCancel && (
                         <button
-                            onClick={onCancel}
+                            type="button"
+                            onClick={handleCancel}
+                            disabled={isSubmitting}
                             className={twMerge(
                                 mergedTheme.cancelButton,
+                                isSubmitting && 'cursor-not-allowed opacity-60 hover:bg-parchment-card-bg',
                                 cancelClassName
                             )}
                         >
@@ -123,9 +150,15 @@ export const ConfirmModal = ({
                         </button>
                     )}
                     <button
-                        onClick={onConfirm}
+                        type="button"
+                        onClick={() => {
+                            void handleConfirm();
+                        }}
+                        disabled={isSubmitting}
+                        aria-busy={isSubmitting}
                         className={twMerge(
                             mergedTheme.confirmButton,
+                            isSubmitting && 'cursor-not-allowed opacity-60 hover:bg-parchment-base-text',
                             confirmClassName
                         )}
                     >

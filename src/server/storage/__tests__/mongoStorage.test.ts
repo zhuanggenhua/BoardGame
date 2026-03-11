@@ -9,6 +9,134 @@ const buildState = (setupData: Record<string, unknown>): StoredMatchState => ({
     _stateID: 0,
 });
 
+describe('MongoStorage.cleanupCorruptMatches', () => {
+    let mongo: MongoMemoryServer;
+
+    beforeAll(async () => {
+        mongo = await MongoMemoryServer.create();
+        await mongoose.connect(mongo.getUri(), { dbName: 'boardgame-test-corrupt-cleanup' });
+        await mongoStorage.connect();
+    }, 60000);
+
+    beforeEach(async () => {
+        await mongoose.connection.db!.dropDatabase();
+    });
+
+    afterAll(async () => {
+        await mongoose.disconnect();
+        if (mongo) await mongo.stop();
+    });
+
+    it('仅清理超过阈值且无人占座的脏房间', async () => {
+        const Match = mongoose.model('Match');
+        const now = Date.now();
+        const staleUpdatedAt = new Date(now - 2 * 60 * 60 * 1000);
+
+        await Match.create({
+            matchID: 'corrupt-stale-empty',
+            gameName: 'tictactoe',
+            state: null,
+            metadata: {
+                gameName: 'tictactoe',
+                players: {
+                    0: {},
+                    1: {},
+                },
+                setupData: { ownerKey: { broken: true } },
+                createdAt: now,
+                updatedAt: now,
+            },
+            ttlSeconds: 0,
+        });
+        await Match.collection.updateOne(
+            { matchID: 'corrupt-stale-empty' },
+            { $set: { updatedAt: staleUpdatedAt } }
+        );
+
+        await Match.create({
+            matchID: 'corrupt-stale-occupied',
+            gameName: 'tictactoe',
+            state: null,
+            metadata: {
+                gameName: 'tictactoe',
+                players: {
+                    0: { name: 'P0' },
+                    1: {},
+                },
+                setupData: { ownerKey: { broken: true } },
+                createdAt: now,
+                updatedAt: now,
+            },
+            ttlSeconds: 0,
+        });
+        await Match.collection.updateOne(
+            { matchID: 'corrupt-stale-occupied' },
+            { $set: { updatedAt: staleUpdatedAt } }
+        );
+
+        await Match.create({
+            matchID: 'corrupt-fresh-empty',
+            gameName: 'tictactoe',
+            state: null,
+            metadata: {
+                gameName: 'tictactoe',
+                players: {
+                    0: {},
+                    1: {},
+                },
+                setupData: { ownerKey: { broken: true } },
+                createdAt: now,
+                updatedAt: now,
+            },
+            ttlSeconds: 0,
+        });
+
+        const cleaned = await mongoStorage.cleanupCorruptMatches(1);
+        expect(cleaned).toBe(1);
+
+        const remaining = await Match.find({
+            matchID: { $in: ['corrupt-stale-empty', 'corrupt-stale-occupied', 'corrupt-fresh-empty'] },
+        }).lean<Array<{ matchID: string }>>();
+        const remainingIds = remaining.map(doc => doc.matchID);
+
+        expect(remainingIds).not.toContain('corrupt-stale-empty');
+        expect(remainingIds).toContain('corrupt-stale-occupied');
+        expect(remainingIds).toContain('corrupt-fresh-empty');
+    });
+    it('keeps legacy rooms whose isConnected is null', async () => {
+        const Match = mongoose.model('Match');
+        const now = Date.now();
+        const staleUpdatedAt = new Date(now - 2 * 60 * 60 * 1000);
+
+        await Match.create({
+            matchID: 'legacy-null-isConnected',
+            gameName: 'tictactoe',
+            state: null,
+            metadata: {
+                gameName: 'tictactoe',
+                players: {
+                    0: { isConnected: null },
+                    1: {},
+                },
+                setupData: { ownerKey: 'legacy-owner' },
+                createdAt: now,
+                updatedAt: now,
+            },
+            ttlSeconds: 0,
+        });
+        await Match.collection.updateOne(
+            { matchID: 'legacy-null-isConnected' },
+            { $set: { updatedAt: staleUpdatedAt } }
+        );
+
+        const cleaned = await mongoStorage.cleanupCorruptMatches(1);
+        expect(cleaned).toBe(0);
+
+        const remaining = await Match.findOne({ matchID: 'legacy-null-isConnected' }).lean<{ matchID: string } | null>();
+        expect(remaining?.matchID).toBe('legacy-null-isConnected');
+    });
+});
+
 const buildMetadata = (
     setupData: Record<string, unknown> | undefined,
     gameover?: unknown

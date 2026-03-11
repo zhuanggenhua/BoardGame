@@ -9,6 +9,7 @@ import { useCardSpotlight } from '../hooks/useCardSpotlight';
 import { BonusDieOverlay } from '../ui/BonusDieOverlay';
 import { SpotlightContainer } from '../ui/SpotlightContainer';
 import { shouldSuppressPendingDisplayOnlyBonusOverlay } from '../ui/bonusDiceOverlayVisibility';
+import { shouldHighlightOpponentViewAbilities } from '../ui/abilityHighlightVisibility';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -453,6 +454,111 @@ describe('BonusDieOverlay', () => {
         ).toBe(false);
     });
 
+    it('对手打出自疗型多骰卡牌时，也应把奖励骰绑定到卡牌特写而不是走独立多骰面板', async () => {
+        const entries: EventStreamEntry[] = [
+            {
+                id: 1,
+                event: {
+                    type: 'CARD_PLAYED',
+                    payload: {
+                        playerId: '1',
+                        cardId: 'card-lucky',
+                    },
+                    timestamp: 1000,
+                },
+            },
+            {
+                id: 2,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 1,
+                        face: 'heart',
+                        effectParams: { value: 1, index: 0 },
+                    },
+                    timestamp: 1100,
+                },
+            },
+            {
+                id: 3,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 2,
+                        face: 'axe',
+                        effectParams: { value: 2, index: 1 },
+                    },
+                    timestamp: 1101,
+                },
+            },
+            {
+                id: 4,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 3,
+                        face: 'heart',
+                        effectParams: { value: 3, index: 2 },
+                    },
+                    timestamp: 1102,
+                },
+            },
+            {
+                id: 5,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 1,
+                        face: 'heart',
+                        effectKey: 'bonusDie.effect.luckyRoll.result',
+                        effectParams: { heartCount: 2, healAmount: 5 },
+                    },
+                    timestamp: 1103,
+                },
+            },
+        ];
+
+        function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
+            const state = useCardSpotlight({
+                eventStreamEntries: streamEntries,
+                currentPlayerId: '0',
+                opponentName: '对手',
+                selectedCharacters: {
+                    '0': 'moon_elf',
+                    '1': 'barbarian',
+                },
+            });
+
+            return (
+                <pre data-testid="opponent-lucky-state">
+                    {JSON.stringify({
+                        cardSpotlightQueue: state.cardSpotlightQueue,
+                        bonusDie: state.bonusDie,
+                    })}
+                </pre>
+            );
+        }
+
+        const { rerender } = render(<HookProbe streamEntries={[]} />);
+        rerender(<HookProbe streamEntries={entries} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('opponent-lucky-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].bonusDice).toHaveLength(3);
+            expect(state.cardSpotlightQueue[0].summaryText?.effectKey).toBe('bonusDie.effect.luckyRoll.result');
+            expect(state.bonusDie.show).toBe(false);
+        });
+    });
+
     it('自己打出的 Watch Out 单骰事件应显示独立骰子特写', async () => {
         const entries: EventStreamEntry[] = [
             {
@@ -601,5 +707,122 @@ describe('BonusDieOverlay', () => {
         vi.advanceTimersByTime(250);
         fireEvent.click(screen.getByTestId('spotlight-content'));
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('切到对方视角且处于对方进攻掷骰阶段时，应高亮对方可选技能', () => {
+        expect(shouldHighlightOpponentViewAbilities({
+            isSelfView: false,
+            isSpectator: false,
+            currentPhase: 'offensiveRoll',
+            isViewRolling: true,
+            hasRolled: true,
+        })).toBe(true);
+    });
+
+    it('切到对方视角但未进入对方进攻掷骰条件时，不应高亮对方技能', () => {
+        expect(shouldHighlightOpponentViewAbilities({
+            isSelfView: false,
+            isSpectator: false,
+            currentPhase: 'offensiveRoll',
+            isViewRolling: true,
+            hasRolled: false,
+        })).toBe(false);
+        expect(shouldHighlightOpponentViewAbilities({
+            isSelfView: false,
+            isSpectator: false,
+            currentPhase: 'defensiveRoll',
+            isViewRolling: true,
+            hasRolled: true,
+        })).toBe(false);
+    });
+    it('replaces the rerolled card spotlight die by dieIndex', async () => {
+        const entries: EventStreamEntry[] = [
+            {
+                id: 1,
+                event: {
+                    type: 'CARD_PLAYED',
+                    payload: {
+                        playerId: '1',
+                        cardId: 'thunder-strike',
+                    },
+                    timestamp: 1000,
+                },
+            },
+            {
+                id: 2,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '0',
+                        value: 4,
+                        face: 'taiji',
+                        effectParams: { index: 0 },
+                    },
+                    timestamp: 1100,
+                },
+            },
+            {
+                id: 3,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '0',
+                        value: 2,
+                        face: 'taiji',
+                        effectParams: { index: 1 },
+                    },
+                    timestamp: 1110,
+                },
+            },
+            {
+                id: 4,
+                event: {
+                    type: 'BONUS_DIE_REROLLED',
+                    payload: {
+                        dieIndex: 1,
+                        playerId: '1',
+                        targetPlayerId: '0',
+                        newValue: 6,
+                        newFace: 'taiji',
+                        effectParams: { index: 1 },
+                    },
+                    timestamp: 1200,
+                },
+            },
+        ];
+
+        function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
+            const state = useCardSpotlight({
+                eventStreamEntries: streamEntries,
+                currentPlayerId: '0',
+                opponentName: 'opponent',
+                selectedCharacters: {
+                    '0': 'monk',
+                    '1': 'monk',
+                },
+            });
+
+            return (
+                <pre data-testid="rerolled-card-spotlight-state">
+                    {JSON.stringify({
+                        cardSpotlightQueue: state.cardSpotlightQueue,
+                    })}
+                </pre>
+            );
+        }
+
+        const { rerender } = render(<HookProbe streamEntries={[]} />);
+        rerender(<HookProbe streamEntries={entries} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rerolled-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].bonusDice).toHaveLength(2);
+            expect(state.cardSpotlightQueue[0].bonusDice[0].value).toBe(4);
+            expect(state.cardSpotlightQueue[0].bonusDice[1].value).toBe(6);
+            expect(state.cardSpotlightQueue[0].bonusDice[1].index).toBe(1);
+        });
     });
 });

@@ -14,7 +14,7 @@ import type {
     FetchResult,
     ListMatchesOpts,
 } from '../../engine/transport/storage';
-import { hasOccupiedPlayers } from '../matchOccupancy';
+import { hasOccupiedPlayers, type PlayerSeat } from '../matchOccupancy';
 import logger from '../../../server/logger';
 
 // 房间文档接口
@@ -68,6 +68,64 @@ const getMatchModel = (): Model<IMatchDocument> => {
 const calculateExpiresAt = (ttlSeconds: number): Date | null => {
     if (ttlSeconds <= 0) return null;
     return new Date(Date.now() + ttlSeconds * 1000);
+};
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => (
+    Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const resolveCorruptMatchReason = (metadata: unknown): string | null => {
+    if (!isPlainRecord(metadata)) {
+        return 'metadata_not_object';
+    }
+
+    const players = metadata.players;
+    if (!isPlainRecord(players)) {
+        return 'players_not_object';
+    }
+
+    for (const [seatId, seat] of Object.entries(players)) {
+        if (!isPlainRecord(seat)) {
+            return `player_${seatId}_not_object`;
+        }
+        if (typeof seat.name !== 'undefined' && typeof seat.name !== 'string') {
+            return `player_${seatId}_name_not_string`;
+        }
+        if (typeof seat.credentials !== 'undefined' && typeof seat.credentials !== 'string') {
+            return `player_${seatId}_credentials_not_string`;
+        }
+        if (typeof seat.isConnected !== 'undefined' && seat.isConnected !== null && typeof seat.isConnected !== 'boolean') {
+            return `player_${seatId}_isConnected_not_boolean`;
+        }
+    }
+
+    const setupData = metadata.setupData;
+    if (typeof setupData !== 'undefined' && setupData !== null) {
+        if (!isPlainRecord(setupData)) {
+            return 'setupData_not_object';
+        }
+        if (typeof setupData.ownerKey !== 'undefined' && typeof setupData.ownerKey !== 'string') {
+            return 'ownerKey_not_string';
+        }
+        if (typeof setupData.ownerType !== 'undefined' && setupData.ownerType !== 'user' && setupData.ownerType !== 'guest') {
+            return 'ownerType_invalid';
+        }
+        if (typeof setupData.roomName !== 'undefined' && typeof setupData.roomName !== 'string') {
+            return 'roomName_not_string';
+        }
+        if (typeof setupData.password !== 'undefined' && typeof setupData.password !== 'string') {
+            return 'password_not_string';
+        }
+    }
+
+    return null;
+};
+
+const extractPlayersForOccupancy = (metadata: unknown): Record<string, PlayerSeat> | null => {
+    if (!isPlainRecord(metadata) || !isPlainRecord(metadata.players)) {
+        return null;
+    }
+    return metadata.players as Record<string, PlayerSeat>;
 };
 
 /**
@@ -502,6 +560,40 @@ export class MongoStorage implements MatchStorage {
         if (toDelete.length > 0) {
             await Match.deleteMany({ matchID: { $in: toDelete } });
             logger.info(`[MongoStorage] 清理遗留房间: ${toDelete.length} 个`);
+        }
+
+        return toDelete.length;
+    }
+
+    /**
+     * 清理结构损坏但未被其他清理流程覆盖的历史房间。
+     * 仅删除超过保留时长且无人占座的房间，避免误删仍在进行中的对局。
+     */
+    async cleanupCorruptMatches(hoursOld: number = 24): Promise<number> {
+        const Match = getMatchModel();
+        const cutoffTime = new Date(Date.now() - hoursOld * 60 * 60 * 1000);
+        const docs = await Match.find({
+            updatedAt: { $lt: cutoffTime },
+        }).select('matchID metadata updatedAt').lean();
+
+        const toDelete: string[] = [];
+        for (const doc of docs) {
+            const reason = resolveCorruptMatchReason(doc.metadata);
+            if (!reason) continue;
+
+            const players = extractPlayersForOccupancy(doc.metadata);
+            if (hasOccupiedPlayers(players)) {
+                logger.warn(`[Cleanup] skip corrupt match matchID=${doc.matchID} reason=${reason} occupied=true`);
+                continue;
+            }
+
+            toDelete.push(doc.matchID);
+            logger.info(`[Cleanup] delete corrupt match matchID=${doc.matchID} reason=${reason}`);
+        }
+
+        if (toDelete.length > 0) {
+            await Match.deleteMany({ matchID: { $in: toDelete } });
+            logger.info(`[MongoStorage] cleanupCorruptMatches deleted=${toDelete.length}`);
         }
 
         return toDelete.length;

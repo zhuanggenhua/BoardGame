@@ -54,6 +54,7 @@ export interface CardSpotlightItem {
     playerName?: string;
     /** 若该卡牌触发了额外骰子，附带骰子信息（支持多颗骰子） */
     bonusDice?: Array<{
+        index?: number;
         value: number;
         face?: DieFace;
         timestamp: number;
