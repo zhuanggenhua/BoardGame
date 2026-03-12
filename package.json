@@ -76,6 +76,17 @@
     "check:jwt": "node scripts/check-jwt-config.mjs",
     "diagnose:auth": "node scripts/diagnose-auth.mjs",
     "debug:token": "node scripts/debug-token.mjs",
+    "build:android:web": "vite build --mode android",
+    "mobile:android:doctor": "node scripts/mobile/android.mjs doctor",
+    "mobile:android:assets": "node scripts/mobile/android.mjs assets",
+    "mobile:android:prepare-release": "node scripts/mobile/android.mjs prepare-release",
+    "mobile:android:init": "node scripts/mobile/android.mjs init",
+    "mobile:android:sync": "node scripts/mobile/android.mjs sync",
+    "mobile:android:open": "node scripts/mobile/android.mjs open",
+    "mobile:android:run": "node scripts/mobile/android.mjs run",
+    "mobile:android:build:debug": "node scripts/mobile/android.mjs build-debug",
+    "mobile:android:build:release": "node scripts/mobile/android.mjs build-release",
+    "mobile:android:build:bundle": "node scripts/mobile/android.mjs build-bundle",
     "typecheck": "tsc --noEmit",
     "assets:download": "node scripts/assets/download-from-r2.js",
     "assets:upload": "node scripts/assets/upload-to-r2.js",
@@ -90,12 +101,12 @@
     "dev:game:lite": "cross-env NODE_ENV=development USE_PERSISTENT_STORAGE=false node scripts/infra/dev-bundle-runner.mjs --label game-lite --entry server.ts --outfile temp/dev-bundles/game-lite/server.mjs --tsconfig tsconfig.server.json"
   },
   "simple-git-hooks": {
-    "pre-commit": "npx lint-staged --concurrent 1",
+    "pre-commit": "npx lint-staged --concurrent 1 --no-stash",
     "pre-push": "npm run check:all && npm run build && npm run i18n:check && npm run test:games:core"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "cross-env NODE_OPTIONS=--max-old-space-size=4096 eslint --fix --max-warnings 999"
+      "cross-env NODE_OPTIONS=--max-old-space-size=4096 eslint --max-warnings 999"
     ]
   },
   "dependencies": {
