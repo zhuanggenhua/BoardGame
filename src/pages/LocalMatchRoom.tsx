@@ -4,11 +4,12 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { loadGameImplementation, getGameImplementation } from '../games/registry';
 import { GameModeProvider } from '../contexts/GameModeContext';
 import { getGameById } from '../config/games.config';
+import { getGamePageDataAttributes } from '../games/mobileSupport';
 import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import { LoadingScreen } from '../components/system/LoadingScreen';
 import { GameNamespaceLoadError } from '../components/system/GameNamespaceLoadError';
 import { usePerformanceMonitor } from '../hooks/ui/usePerformanceMonitor';
-import { CriticalImageGate } from '../components/game/framework';
+import { CriticalImageGate, MobileBoardShell } from '../components/game/framework';
 import { LocalGameProvider, BoardBridge } from '../engine/transport/react';
 import type { GameBoardProps } from '../engine/transport/protocol';
 import type { ComponentType } from 'react';
@@ -34,6 +35,7 @@ export const LocalMatchRoom = () => {
     } = useGameNamespaceReady(gameId, i18n);
 
     const gameConfig = gameId ? getGameById(gameId) : undefined;
+    const gamePageDataAttributes = getGamePageDataAttributes(gameId, gameConfig);
 
     // 异步加载游戏实现
     const [gameImplReady, setGameImplReady] = useState(false);
@@ -107,37 +109,39 @@ export const LocalMatchRoom = () => {
     }
 
     return (
-        <div className="relative w-full h-screen bg-black overflow-hidden font-sans" data-game-page>
+        <div className="relative w-full h-screen bg-black overflow-hidden font-sans" {...gamePageDataAttributes}>
             <GameHUD mode="local" />
-            <div
-                className="w-full h-full"
-                style={{
-                    '--font-game-display': gameConfig?.fontFamily?.display ? `'${gameConfig.fontFamily.display}', serif` : undefined,
-                } as React.CSSProperties}
-            >
-                <GameModeProvider mode="local">
-                    <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
-                    {engineConfig && WrappedBoard ? (
-                        <LocalGameProvider
-                            config={engineConfig}
-                            numPlayers={2}
-                            seed={gameSeed}
-                            onCommandRejected={handleCommandRejected}
-                            followCurrentTurnPlayer
-                        >
-                            <BoardBridge
-                                board={WrappedBoard}
-                                loading={<LoadingScreen title={t('matchRoom.title.local')} description={t('matchRoom.loadingResources')} />}
-                            />
-                        </LocalGameProvider>
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white/50">
-                            {t('matchRoom.noClient')}
-                        </div>
-                    )}
-                    </GameCursorProvider>
-                </GameModeProvider>
-            </div>
+            <MobileBoardShell>
+                <div
+                    className="w-full h-full"
+                    style={{
+                        '--font-game-display': gameConfig?.fontFamily?.display ? `'${gameConfig.fontFamily.display}', serif` : undefined,
+                    } as React.CSSProperties}
+                >
+                    <GameModeProvider mode="local">
+                        <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
+                            {engineConfig && WrappedBoard ? (
+                                <LocalGameProvider
+                                    config={engineConfig}
+                                    numPlayers={2}
+                                    seed={gameSeed}
+                                    onCommandRejected={handleCommandRejected}
+                                    followCurrentTurnPlayer
+                                >
+                                    <BoardBridge
+                                        board={WrappedBoard}
+                                        loading={<LoadingScreen title={t('matchRoom.title.local')} description={t('matchRoom.loadingResources')} />}
+                                    />
+                                </LocalGameProvider>
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-white/50">
+                                    {t('matchRoom.noClient')}
+                                </div>
+                            )}
+                        </GameCursorProvider>
+                    </GameModeProvider>
+                </div>
+            </MobileBoardShell>
         </div>
     );
 };

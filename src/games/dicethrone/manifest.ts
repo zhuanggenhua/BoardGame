@@ -16,6 +16,10 @@ const entry: GameManifestEntry = {
     bestPlayers: [2],
     cursorTheme: 'dicethrone-critical',
     fontFamily: { display: 'Cinzel' },
+    mobileProfile: 'landscape-adapted',
+    preferredOrientation: 'landscape',
+    mobileLayoutPreset: 'board-shell',
+    shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
 };
 
 export const DICETHRONE_MANIFEST: GameManifestEntry = entry;

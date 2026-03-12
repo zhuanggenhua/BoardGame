@@ -1,239 +1,127 @@
 # 移动端适配说明
 
-## 功能概述
+## 当前结论
 
-项目已实现移动端适配，主要特性：
+- 前端运行时仍然只有一套：`React + Vite + 现有 UI / 引擎框架`
+- 产品策略是 **PC 为主，移动端做适配**
+- 移动端优先支持 **手机横屏**
+- `WebView / App 壳 / 小程序 web-view` 只是分发容器，不是第二套 UI
 
-1. **主页自适应**：主页支持竖屏和横屏，自动适配不同屏幕尺寸
-2. **游戏页面横屏建议**：游戏页面（`/play/*`）在移动设备竖屏时显示顶部横幅建议旋转（可关闭）
-3. **用户可缩放**：允许用户双指缩放（0.5x - 3x）和拖拽平移，解决内容被截断问题
-4. **触摸优化**：增大按钮点击区域
+## manifest 契约
 
-## 技术实现
+每个启用中的 `manifest.ts` 必须显式声明移动端能力：
 
-### 1. 横屏建议组件
-
-**文件**：`src/components/common/MobileOrientationGuard.tsx`
-
-- 使用 `useLocation` 检测当前路由
-- 仅在游戏页面（`/play/*`）且移动设备（< 1024px）竖屏时显示顶部横幅建议
-- 建议横幅采用羊皮纸风格（`bg-parchment-brown`），与游戏整体风格一致
-- 使用 SVG 图标（竖屏手机 → 横屏手机）替代 emoji
-- 提供关闭按钮，用户可手动关闭建议
-- 切换到横屏后自动重置关闭状态（下次竖屏时再显示）
-- 不阻止用户访问，游戏内容仍然可见
-- 主页和其他页面不显示建议，支持竖屏访问
-
-### 2. 视口配置
-
-**文件**：`index.html`
-
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=3.0, user-scalable=yes, viewport-fit=cover">
+```ts
+mobileProfile: 'none' | 'landscape-adapted' | 'portrait-adapted' | 'tablet-only';
+preferredOrientation?: 'landscape' | 'portrait';
+mobileLayoutPreset?: 'board-shell' | 'portrait-simple';
+shellTargets?: Array<'pwa' | 'app-webview' | 'mini-program-webview'>;
 ```
 
-- `user-scalable=yes`：允许用户双指缩放
-- `minimum-scale=0.5, maximum-scale=3.0`：缩放范围 0.5x - 3x
-- `viewport-fit=cover`：支持刘海屏等异形屏幕
+字段含义：
 
-### 3. 自动缩放 CSS
+- `mobileProfile`
+  - `none`：暂不承诺手机可用
+  - `landscape-adapted`：手机横屏适配
+  - `portrait-adapted`：手机竖屏适配
+  - `tablet-only`：手机降级，平板/PC 优先
+- `preferredOrientation`
+  - 用于横竖屏提示策略
+- `mobileLayoutPreset`
+  - `board-shell`：复杂桌游的横屏外壳方案
+  - `portrait-simple`：轻量游戏的竖屏方案
+- `shellTargets`
+  - 标记允许进入哪些分发容器
 
-**文件**：`src/index.css`
+## 当前实现
 
-```css
-@media (max-width: 1023px) and (orientation: landscape) {
-    /* 移动设备横屏时，游戏页面基于设计宽度 1280px 进行缩放 */
-    /* 召唤师战争有自己的 MapContainer 缩放系统，不使用 CSS 自动缩放 */
-    body:has([data-game-page]):not(:has([data-game-id="summonerwars"])) #root {
-        transform-origin: top left;
-        transform: scale(calc(100vw / 1280));
-        width: 1280px;
-        height: calc(100vh / (100vw / 1280));
-        overflow: hidden;
-    }
-}
-```
+### 1. manifest 驱动
 
-**重要**：召唤师战争（Summoner Wars）有自己的 `MapContainer` 缩放系统（支持鼠标滚轮缩放和拖拽），不使用 CSS 自动缩放，避免双重缩放冲突。
+- `src/games/mobileSupport.ts` 负责归一化默认值和运行时判定
+- `src/config/games.config.tsx` 在注册表阶段就把 manifest 补成显式字段
+- `scripts/game/generate_game_manifests.js` 会校验启用中的 manifest 是否显式声明：
+  - `mobileProfile`
+  - `shellTargets`
+  - `preferredOrientation`（当 profile 不是 `none`）
+  - `mobileLayoutPreset`（当 profile 是 `landscape-adapted` / `portrait-adapted`）
 
-### 4. 游戏页面标记
+### 2. 页面根节点数据属性
 
-**文件**：`src/pages/MatchRoom.tsx`、`src/pages/LocalMatchRoom.tsx`
+对局页会输出：
 
-在根容器添加 `data-game-page` 属性：
+- `data-game-page`
+- `data-game-id`
+- `data-mobile-profile`
+- `data-preferred-orientation`
+- `data-mobile-layout-preset`
+- `data-shell-targets`
 
-```tsx
-<div className="..." data-game-page>
-```
+这些属性是移动壳、横屏提示和 CSS fallback 的统一消费入口。
 
-**文件**：`src/games/summonerwars/Board.tsx`
+### 3. 通用移动壳
 
-召唤师战争额外添加 `data-game-id="summonerwars"` 属性，排除 CSS 自动缩放：
+- `src/components/game/framework/MobileBoardShell.tsx`
 
-```tsx
-<div className="..." data-game-page data-game-id="summonerwars">
-```
+职责：
 
-### 5. 悬浮球缩小
+- 承接安全区 padding
+- 作为后续顶部 rail / 侧边 dock / 底部 action rail 的统一壳层
+- 不重写游戏 Board 本体
 
-**文件**：`src/components/system/FabMenu.tsx`
+### 4. 横竖屏提示
 
-移动端按钮从 48px 缩小到 36px，间距和边距也相应缩小：
+- `src/components/common/MobileOrientationGuard.tsx`
 
-```tsx
-const isMobile = window.innerWidth < 1024;
-const buttonSize = isMobile ? 36 : 48;
-const gap = isMobile ? 8 : 12;
-const margin = isMobile ? 16 : 32;
-```
+现在不再按 `/play/*` 一刀切，而是根据 manifest 判断：
 
-响应式尺寸，窗口变化时自动更新。
+- 横屏游戏在手机竖屏时提示旋转
+- 竖屏游戏在手机横屏时提示切回竖屏
+- `tablet-only` 游戏提示使用平板或 PC
+- `none` 游戏提示当前不推荐手机端
+- manifest 还没进入注册表时，不提前误报“当前不支持手机端”
 
-### 6. 触摸优化
+### 5. CSS fallback
 
-**文件**：`src/index.css`
+- `src/index.css`
 
-```css
-@media (max-width: 1023px) {
-    /* 增大按钮点击区域 */
-    button {
-        min-height: 44px;
-        min-width: 44px;
-    }
-}
-```
+现阶段仍保留横屏缩放兜底，但只对 manifest 声明为：
 
-## 测试方法
+- `mobileProfile="landscape-adapted"`
+- `mobileLayoutPreset="board-shell"`
 
-### 方法 1：浏览器开发者工具
+的页面生效，不再依赖路由硬编码或 `summonerwars` 特判。
 
-1. 打开 Chrome DevTools（F12）
-2. 点击设备工具栏图标（Ctrl+Shift+M）
-3. 选择移动设备（如 iPhone 12 Pro）
-4. 测试主页：
-   - 竖屏：应正常显示，支持滚动浏览，无旋转建议
-   - 横屏：应正常显示，自适应布局
-5. 测试游戏页面（访问 `/play/tictactoe/local`）：
-   - 竖屏：应显示顶部横幅"建议旋转至横屏以获得更佳体验"，带 SVG 图标和关闭按钮
-   - 点击关闭按钮：建议消失
-   - 横屏：不显示建议，正常显示游戏界面
-   - 双指缩放：可以放大/缩小查看内容（0.5x - 3x）
-   - 拖拽平移：缩放后可以拖拽查看被截断的内容
+## 已声明的首批 profile
 
-### 方法 2：真机测试
+- `dicethrone`
+  - `landscape-adapted`
+  - `board-shell`
+  - `shellTargets = ['pwa', 'app-webview', 'mini-program-webview']`
+- `tictactoe`
+  - `portrait-adapted`
+  - `portrait-simple`
+- `summonerwars`
+  - `tablet-only`
+- `smashup`
+  - `landscape-adapted`
+  - `board-shell`
 
-1. 在移动设备上访问开发服务器（如 `http://192.168.x.x:3000`）
-2. 测试主页：
-   - 竖屏访问：应正常显示游戏列表，无旋转建议
-   - 横屏访问：应正常显示，布局自适应
-3. 测试游戏页面：
-   - 竖屏访问游戏：应显示顶部横幅建议，带关闭按钮
-   - 点击关闭：建议消失，游戏内容仍可见
-   - 旋转至横屏：建议消失，显示游戏界面
-   - 双指缩放：测试放大/缩小功能
-   - 拖拽平移：测试查看被截断的内容
-4. 测试触摸交互：按钮点击、卡牌拖拽等
+## 新游戏接入要求
 
-### 方法 3：E2E 自动化测试
+新增游戏时必须做三件事：
 
-**文件**：`e2e/mobile-orientation.e2e.ts`
+1. 在 `manifest.ts` 里显式声明 `mobileProfile`
+2. 选择匹配的 `mobileLayoutPreset`
+3. 再决定是否允许投放到 `app-webview` / `mini-program-webview`
 
-```bash
-npm run test:e2e -- e2e/mobile-orientation.e2e.ts
-```
+不能再依赖：
 
-测试覆盖：
-- ✅ 主页竖屏时正常显示（不显示建议）
-- ✅ 游戏页面竖屏时显示旋转建议（可关闭）
-- ✅ 游戏页面横屏时不显示建议
-- ✅ PC 端不显示旋转建议
-- ✅ 游戏页面方向切换时动态更新建议显示（含关闭状态重置）
+- “响应式自动就能行”
+- “先靠浏览器缩放顶住”
+- “后面再猜这个游戏算不算支持手机”
 
-## 支持的设备
+## 后续实施顺序
 
-### 移动设备（< 1024px）
-
-- ✅ iPhone（所有型号）
-- ✅ iPad Mini（横屏模式）
-- ✅ Android 手机（所有尺寸）
-- ✅ Android 平板（小尺寸）
-
-### PC/平板（≥ 1024px）
-
-- ✅ iPad Pro（保持原始布局）
-- ✅ 笔记本电脑
-- ✅ 台式机
-
-## 已知限制
-
-1. **游戏页面竖屏体验受限**：游戏页面在移动设备竖屏时可访问但体验不佳（显示建议横幅）
-2. **主页支持竖屏**：主页和非游戏页面支持竖屏访问，自适应布局
-3. **需要手动缩放**：用户需要双指缩放和拖拽来查看被截断的内容
-4. **缩放状态不持久**：刷新页面后缩放和平移状态会重置
-
-## 后续优化方向
-
-### 短期（可选）
-
-- [ ] 优化旋转提示动画（更流畅的过渡效果）
-- [ ] 添加横屏锁定提示（提醒用户关闭屏幕旋转锁定）
-- [ ] 持久化缩放状态（记住用户的缩放和平移偏好）
-
-### 中期（可选）
-
-- [ ] 实现触摸手势（长按查看卡牌详情）
-- [ ] 优化拖拽交互（触摸反馈、拖拽预览）
-- [ ] 自适应布局（根据屏幕尺寸自动调整 UI 元素大小）
-
-### 长期（可选）
-
-- [ ] PWA 支持（添加到主屏幕、离线缓存）
-- [ ] 性能优化（移动端降低粒子特效密度）
-- [ ] 小游戏竖屏支持（为井字棋等简单游戏提供竖屏布局）
-- [ ] 响应式 UI（根据屏幕尺寸自动调整布局）
-
-## 设计决策
-
-### 为什么主页支持竖屏？
-
-1. **用户体验**：用户可能在任意方向打开网站，主页应该友好地展示游戏列表
-2. **SEO 友好**：搜索引擎爬虫可能以竖屏模式访问，主页需要正常渲染
-3. **渐进式引导**：用户在主页浏览后，进入游戏时才提示旋转设备
-
-### 为什么游戏页面不强制横屏？
-
-1. **用户体验**：强制全屏遮挡会让用户感到受限，顶部横幅建议更友好
-2. **可关闭**：用户可以手动关闭建议，尊重用户选择
-3. **可访问性**：某些场景下用户可能需要竖屏快速查看游戏状态
-4. **渐进增强**：建议而非强制，提供更好的用户体验
-
-### 为什么游戏页面建议横屏？
-
-1. **游戏设计**：桌游通常需要横向布局（手牌、棋盘、对手信息）
-2. **视野需求**：横屏提供更宽的视野，适合展示游戏状态
-3. **一致性**：所有游戏统一横屏体验，避免混乱
-
-## 维护注意事项
-
-1. **新增 UI 组件**：确保按钮最小尺寸 ≥ 44px（触摸友好）
-2. **布局调整**：避免依赖固定像素值，使用相对单位（rem/em/%）或允许用户缩放
-3. **测试覆盖**：新功能必须在移动端测试（Chrome DevTools 设备模式 + 真机测试）
-4. **性能监控**：移动设备性能较弱，避免过度使用动画和特效
-5. **缩放适配**：确保 UI 元素在 0.5x - 3x 缩放下仍然可用
-
-## 相关文件
-
-- `src/components/common/MobileOrientationGuard.tsx` - 横屏建议组件（路由感知，顶部横幅，可关闭）
-- `src/App.tsx` - 应用入口（包裹 MobileOrientationGuard）
-- `src/pages/MatchRoom.tsx` - 在线对局页面（添加 `data-game-page` 标记）
-- `src/pages/LocalMatchRoom.tsx` - 本地对局页面（添加 `data-game-page` 标记）
-- `index.html` - 视口配置（允许用户缩放 0.5x - 3x）
-- `src/index.css` - 触摸优化样式
-- `e2e/mobile-orientation.e2e.ts` - E2E 测试
-- `docs/mobile-adaptation.md` - 本文档
-
-## 参考资料
-
-- [MDN - Viewport meta tag](https://developer.mozilla.org/en-US/docs/Web/HTML/Viewport_meta_tag)
-- [CSS Tricks - Responsive Design](https://css-tricks.com/snippets/css/a-guide-to-flexbox/)
-- [Apple - Designing for iOS](https://developer.apple.com/design/human-interface-guidelines/ios)
+1. 先继续把 `board-shell` 框架能力补齐
+2. 以 `dicethrone` 作为首个完整 pilot
+3. 再把游戏层接入流程沉淀成独立 skill，供其他开发者复用

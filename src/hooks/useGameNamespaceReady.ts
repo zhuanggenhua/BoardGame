@@ -7,15 +7,26 @@ interface GameNamespaceState {
     error: string | null;
 }
 
+interface UseGameNamespaceReadyOptions {
+    required?: boolean;
+}
+
 /**
  * 管理游戏级 i18n namespace 的加载状态。
  * 加载失败时保留错误，避免页面继续渲染 raw key。
  */
-export function useGameNamespaceReady(gameId: string | undefined, i18n: I18nInstance) {
+export function useGameNamespaceReady(
+    gameId: string | undefined,
+    i18n: I18nInstance,
+    options: UseGameNamespaceReadyOptions = {},
+) {
     const [retryTick, setRetryTick] = useState(0);
     const languageKey = i18n.resolvedLanguage ?? i18n.language;
+    const required = options.required ?? true;
     const [state, setState] = useState<GameNamespaceState>(() => {
-        if (!gameId) return { isReady: true, error: null };
+        if (!gameId || !required) {
+            return { isReady: true, error: null };
+        }
         return {
             isReady: i18n.hasLoadedNamespace(`game-${gameId}`),
             error: null,
@@ -27,7 +38,7 @@ export function useGameNamespaceReady(gameId: string | undefined, i18n: I18nInst
     }, []);
 
     useEffect(() => {
-        if (!gameId) {
+        if (!gameId || !required) {
             setState({ isReady: true, error: null });
             return;
         }
@@ -62,7 +73,7 @@ export function useGameNamespaceReady(gameId: string | undefined, i18n: I18nInst
         return () => {
             isActive = false;
         };
-    }, [gameId, i18n, languageKey, retryTick]);
+    }, [gameId, i18n, languageKey, required, retryTick]);
 
     return {
         isGameNamespaceReady: state.isReady,

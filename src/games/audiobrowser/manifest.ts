@@ -9,6 +9,8 @@ const entry: GameManifestEntry = {
     category: 'tools',
     playersKey: 'games.audiobrowser.players',
     icon: '🔊',
+    mobileProfile: 'none',
+    shellTargets: ['pwa'],
 };
 
 export const AUDIO_BROWSER_MANIFEST: GameManifestEntry = entry;

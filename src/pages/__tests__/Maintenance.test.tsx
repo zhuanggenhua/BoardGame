@@ -241,6 +241,48 @@ describe('useGameNamespaceReady', () => {
         expect(i18n.loadNamespaces).toHaveBeenCalledTimes(2);
         expect(mockLoggerError).toHaveBeenCalledTimes(1);
     });
+
+    it('optional namespace ??????? UGC ????', async () => {
+        const { useGameNamespaceReady } = await import('../../hooks/useGameNamespaceReady');
+        const i18n = {
+            language: 'zh-CN',
+            resolvedLanguage: 'zh-CN',
+            hasLoadedNamespace: vi.fn(() => false),
+            loadNamespaces: vi.fn(async () => {
+                throw new Error('missing ugc namespace');
+            }),
+        };
+
+        const { result } = renderHook(
+            ({ gameId, instance }) => useGameNamespaceReady(gameId, instance as never, { required: false }),
+            {
+                initialProps: {
+                    gameId: 'ugc-package-1',
+                    instance: i18n,
+                },
+            },
+        );
+
+        expect(result.current.isGameNamespaceReady).toBe(true);
+        expect(result.current.gameNamespaceError).toBeNull();
+        expect(i18n.loadNamespaces).not.toHaveBeenCalled();
+        expect(mockLoggerError).not.toHaveBeenCalled();
+    });
+});
+
+describe('resolveFollowCurrentTurnPlayerId', () => {
+    it('?? currentPlayer/currentPlayerId ? turnOrder/currentPlayerIndex', async () => {
+        const { resolveFollowCurrentTurnPlayerId } = await import('../../engine/transport/followCurrentTurnPlayer');
+
+        expect(resolveFollowCurrentTurnPlayerId({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            currentPlayer: '0',
+        })).toBe('1');
+        expect(resolveFollowCurrentTurnPlayerId({ currentPlayer: '1' })).toBe('1');
+        expect(resolveFollowCurrentTurnPlayerId({ currentPlayerId: '2' })).toBe('2');
+        expect(resolveFollowCurrentTurnPlayerId({})).toBeNull();
+    });
 });
 
 describe('Home missing match confirmation', () => {

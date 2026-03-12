@@ -6,6 +6,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { getAllGames } from '../../../config/games.config';
+import { GAME_MANIFEST } from '../../../games/manifest';
 import { getCursorTheme, getDefaultThemePerGame } from '../themes';
 
 // 触发光标主题注册（测试环境需要手动导入）
@@ -79,5 +80,36 @@ describe('光标主题 manifest 配置一致性', () => {
         const gameIds = defaultThemes.map(t => t.gameId);
         const uniqueGameIds = new Set(gameIds);
         expect(gameIds.length).toBe(uniqueGameIds.size);
+    });
+
+    it('所有已启用 manifest 必须显式声明移动适配契约', () => {
+        const errors: string[] = [];
+
+        for (const manifest of GAME_MANIFEST.filter((entry) => entry.enabled)) {
+            if (!Object.prototype.hasOwnProperty.call(manifest, 'mobileProfile')) {
+                errors.push(`游戏 ${manifest.id} 未显式声明 mobileProfile`);
+            }
+            if (!Object.prototype.hasOwnProperty.call(manifest, 'shellTargets')) {
+                errors.push(`游戏 ${manifest.id} 未显式声明 shellTargets`);
+            }
+
+            const profile = manifest.mobileProfile;
+            if (!profile) continue;
+
+            if (profile !== 'none' && !manifest.preferredOrientation) {
+                errors.push(`游戏 ${manifest.id} 的 mobileProfile=${profile} 但未声明 preferredOrientation`);
+            }
+
+            if (
+                (profile === 'landscape-adapted' || profile === 'portrait-adapted')
+                && !manifest.mobileLayoutPreset
+            ) {
+                errors.push(`游戏 ${manifest.id} 的 mobileProfile=${profile} 但未声明 mobileLayoutPreset`);
+            }
+        }
+
+        if (errors.length > 0) {
+            throw new Error(`移动适配 manifest 配置错误：\n${errors.join('\n')}`);
+        }
     });
 });

@@ -9,6 +9,8 @@ const entry: GameManifestEntry = {
     category: 'tools',
     playersKey: 'games.assetslicer.players',
     icon: '✂️',
+    mobileProfile: 'none',
+    shellTargets: ['pwa'],
 };
 
 export const ASSET_SLICER_MANIFEST: GameManifestEntry = entry;

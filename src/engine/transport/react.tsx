@@ -47,6 +47,7 @@ import { TestHarness, isTestEnvironment } from '../testing';
 import { refreshInteractionOptions } from '../systems/InteractionSystem';
 import type { LatencyOptimizationConfig } from './latency/types';
 import { createOptimisticEngine, filterPlayedEvents, type OptimisticEngine as OptimisticEngineType } from './latency/optimisticEngine';
+import { resolveFollowCurrentTurnPlayerId } from './followCurrentTurnPlayer';
 
 import { createCommandBatcher, type CommandBatcher } from './latency/commandBatcher';
 import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../hooks/EventStreamRollbackContext';
@@ -764,9 +765,9 @@ export function LocalGameProvider({
 
     const localBoardPlayerId = useMemo(() => {
         if (followCurrentTurnPlayer) {
-            const core = state.core as { turnOrder?: string[]; currentPlayerIndex?: number };
-            if (Array.isArray(core.turnOrder) && typeof core.currentPlayerIndex === 'number') {
-                return core.turnOrder[core.currentPlayerIndex] ?? null;
+            const currentTurnPlayerId = resolveFollowCurrentTurnPlayerId(state.core);
+            if (currentTurnPlayerId) {
+                return currentTurnPlayerId;
             }
         }
         return localPlayerId ?? null;

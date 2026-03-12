@@ -17,6 +17,10 @@ const entry: GameManifestEntry = {
     allowLocalMode: false,
     cursorTheme: 'smashup-popart',
     fontFamily: { display: 'Bangers' },
+    mobileProfile: 'landscape-adapted',
+    preferredOrientation: 'landscape',
+    mobileLayoutPreset: 'board-shell',
+    shellTargets: ['pwa'],
 };
 
 export const SMASH_UP_MANIFEST: GameManifestEntry = entry;

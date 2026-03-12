@@ -32,13 +32,40 @@ const readManifestMeta = async (manifestPath) => {
     const idMatch = content.match(/id\s*:\s*['"`]([^'"`]+)['"`]/);
     const typeMatch = content.match(/type\s*:\s*['"`](game|tool)['"`]/);
     const enabledMatch = content.match(/enabled\s*:\s*(true|false)/);
+    const mobileProfileMatch = content.match(/mobileProfile\s*:\s*['"`](none|landscape-adapted|portrait-adapted|tablet-only)['"`]/);
+    const preferredOrientationMatch = content.match(/preferredOrientation\s*:\s*['"`](landscape|portrait)['"`]/);
+    const mobileLayoutPresetMatch = content.match(/mobileLayoutPreset\s*:\s*['"`](board-shell|portrait-simple)['"`]/);
+    const shellTargetsMatch = content.match(/shellTargets\s*:\s*\[[\s\S]*?\]/);
     if (!idMatch || !typeMatch || !enabledMatch) {
         throw new Error(`[Manifest] 无法解析 manifest: ${manifestPath}`);
+    }
+    const enabled = enabledMatch[1] === 'true';
+    if (enabled && !mobileProfileMatch) {
+        throw new Error(`[Manifest] enabled manifest 缺少 mobileProfile: ${manifestPath}`);
+    }
+    if (enabled && !shellTargetsMatch) {
+        throw new Error(`[Manifest] enabled manifest 缺少 shellTargets: ${manifestPath}`);
+    }
+    if (
+        enabled
+        && mobileProfileMatch
+        && mobileProfileMatch[1] !== 'none'
+        && !preferredOrientationMatch
+    ) {
+        throw new Error(`[Manifest] 非 none 的 mobileProfile 必须显式声明 preferredOrientation: ${manifestPath}`);
+    }
+    if (
+        enabled
+        && mobileProfileMatch
+        && ['landscape-adapted', 'portrait-adapted'].includes(mobileProfileMatch[1])
+        && !mobileLayoutPresetMatch
+    ) {
+        throw new Error(`[Manifest] 自适配 mobileProfile 必须显式声明 mobileLayoutPreset: ${manifestPath}`);
     }
     return {
         id: idMatch[1],
         type: typeMatch[1],
-        enabled: enabledMatch[1] === 'true',
+        enabled,
     };
 };
 
@@ -74,7 +101,6 @@ const collectGameEntries = async () => {
         const hasThumbnail = await fileExists(thumbnailPath);
         const hasLatencyConfig = await fileExists(latencyConfigPath);
 
-        // 读取 latencyConfig 导出名（如 diceThroneLatencyConfig）
         let latencyConfigExportName = null;
         if (hasLatencyConfig) {
             const content = await fs.readFile(latencyConfigPath, 'utf8');
@@ -97,7 +123,7 @@ const collectGameEntries = async () => {
             tutorialImport: hasTutorial ? toImportPath(path.relative(gamesRoot, tutorialPath)) : null,
             thumbnailImport: hasThumbnail ? toImportPath(path.relative(gamesRoot, thumbnailPath)) : null,
             latencyConfigImport: hasLatencyConfig && latencyConfigExportName ? toImportPath(path.relative(gamesRoot, latencyConfigPath)) : null,
-            latencyConfigExportName: latencyConfigExportName,
+            latencyConfigExportName,
         });
     }
 
@@ -136,7 +162,6 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
     lines.push(`import { ManifestGameThumbnail } from '../components/lobby/thumbnails';`);
     lines.push('');
 
-    // 只同步 import manifest 和 thumbnail（首页需要），游戏实现全部懒加载
     entries.forEach((entry, index) => {
         lines.push(`import manifest${index} from '${entry.manifestImport}';`);
         if (entry.thumbnailImport) {
@@ -145,7 +170,6 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
         lines.push('');
     });
 
-    // 为每个游戏生成 loadRuntime 懒加载函数
     entries.forEach((entry, index) => {
         if (entry.gameImport && entry.boardImport) {
             lines.push(`const loadRuntime${index} = async (): Promise<GameClientRuntimeModule> => {`);

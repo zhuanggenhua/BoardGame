@@ -18,7 +18,7 @@ import type { MatchStorage, StoredMatchState, MatchMetadata } from '../../../eng
 import { GameTransportServer } from '../../../engine/transport/server';
 import type { GameEngineConfig } from '../../../engine/transport/server';
 import { createTestRoutes, getConfiguredTestApiToken, isTestRoutesEnabledEnv } from '../test';
-import { ensureSharedTestApiToken } from '../../testApiToken';
+import { ensureSharedTestApiToken, resolveSharedTestApiToken } from '../../testApiToken';
 
 // Mock storage
 const createMockStorage = (): MatchStorage => {
@@ -116,6 +116,24 @@ describe('Test Route Guards', () => {
                     TEST_API_TOKEN_FILE: tokenFile,
                 } as NodeJS.ProcessEnv),
             ).toBe(ensured);
+        } finally {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+    });
+
+    it('should overwrite the shared token file when TEST_API_TOKEN is explicitly provided', () => {
+        const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bg-test-api-token-explicit-'));
+        const tokenFile = path.join(tempDir, 'token.txt');
+        fs.writeFileSync(tokenFile, 'old-token', 'utf-8');
+
+        try {
+            const resolved = resolveSharedTestApiToken({
+                TEST_API_TOKEN: 'new-token',
+                TEST_API_TOKEN_FILE: tokenFile,
+            } as NodeJS.ProcessEnv, tempDir);
+
+            expect(resolved).toBe('new-token');
+            expect(fs.readFileSync(tokenFile, 'utf-8')).toBe('new-token');
         } finally {
             fs.rmSync(tempDir, { recursive: true, force: true });
         }

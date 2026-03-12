@@ -9,6 +9,8 @@ const entry: GameManifestEntry = {
     category: 'tools',
     playersKey: 'games.fxpreview.players',
     icon: '🎬',
+    mobileProfile: 'none',
+    shellTargets: ['pwa'],
 };
 
 export const FX_PREVIEW_MANIFEST: GameManifestEntry = entry;

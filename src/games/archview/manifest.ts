@@ -9,6 +9,8 @@ const entry: GameManifestEntry = {
     category: 'tools',
     playersKey: 'games.archview.players',
     icon: '🏗️',
+    mobileProfile: 'none',
+    shellTargets: ['pwa'],
 };
 
 export default entry;

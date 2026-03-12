@@ -30,6 +30,11 @@ function writeTokenFileIfMissing(filePath: string, token: string): void {
     }
 }
 
+function writeTokenFile(filePath: string, token: string): void {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, token, { encoding: 'utf-8' });
+}
+
 function generateTestApiToken(): string {
     return `pw-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -54,7 +59,7 @@ export function resolveSharedTestApiToken(
     const filePath = getTestApiTokenFilePath(env, cwd);
     const envToken = normalizeToken(env.TEST_API_TOKEN);
     if (envToken) {
-        writeTokenFileIfMissing(filePath, envToken);
+        writeTokenFile(filePath, envToken);
         return envToken;
     }
     return readTokenFile(filePath);

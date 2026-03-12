@@ -79,16 +79,20 @@ export const getGamePageDataAttributes = (
         'mobileProfile' | 'preferredOrientation' | 'mobileLayoutPreset' | 'shellTargets'
     > | null,
 ) => {
-    const support = resolveGameMobileSupport(entry);
     const attributes: Record<string, string> = {
         'data-game-page': 'true',
-        'data-mobile-profile': support.mobileProfile,
-        'data-shell-targets': support.shellTargets.join(','),
     };
 
     if (gameId) {
         attributes['data-game-id'] = gameId;
     }
+    if (!entry) {
+        return attributes;
+    }
+
+    const support = resolveGameMobileSupport(entry);
+    attributes['data-mobile-profile'] = support.mobileProfile;
+    attributes['data-shell-targets'] = support.shellTargets.join(',');
     if (support.preferredOrientation) {
         attributes['data-preferred-orientation'] = support.preferredOrientation;
     }
@@ -107,6 +111,7 @@ export const getGameMobileBannerKind = (
     width = 0,
     height = 0,
 ): GameMobileBannerKind | null => {
+    if (!entry) return null;
     if (!isMobileViewport(width)) return null;
 
     const support = resolveGameMobileSupport(entry);

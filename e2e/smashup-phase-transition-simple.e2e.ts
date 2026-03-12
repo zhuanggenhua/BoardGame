@@ -51,6 +51,15 @@ async function waitForTurnTracker(page: Page, side: 'YOU' | 'OPP'): Promise<void
     ).toBeVisible({ timeout: 8000 });
 }
 
+async function getPlayerActionUid(page: Page, playerId: '0' | '1', defId: string): Promise<string | null> {
+    return page.evaluate(({ currentPlayerId, targetDefId }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        const hand = state?.core?.players?.[currentPlayerId]?.hand ?? [];
+        return hand.find((card: any) => card.defId === targetDefId)?.uid ?? null;
+    }, { currentPlayerId: playerId, targetDefId: defId });
+}
+
 const makeSmashUpCard = (uid: string, defId: string, type: 'action' | 'minion', owner: '0' | '1') => ({
     uid,
     defId,
@@ -168,16 +177,15 @@ test('在线模式对手打出行动卡时应显示特写', async ({ browser }, 
     test.setTimeout(120000);
 
     const baseURL = testInfo.project.use.baseURL as string | undefined;
-    const setup = await setupSmashUpMatchSkipSetup(browser, baseURL);
-    if (!setup) {
+    const firstSetup = await setupSmashUpMatchSkipSetup(browser, baseURL);
+    if (!firstSetup) {
         test.skip(true, 'SmashUp 联机房间创建失败');
         return;
     }
 
-    const { hostPage, guestPage, hostContext, guestContext } = setup;
-
     try {
-        await applyOnlineMatchState(setup.matchId, hostPage, (state) => buildActionSpotlightState(state, 0));
+        const { hostPage, guestPage } = firstSetup;
+        await applyOnlineMatchState(firstSetup.matchId, hostPage, (state) => buildActionSpotlightState(state, 0));
         await waitForSmashUpUI(hostPage);
         await waitForSmashUpUI(guestPage);
         await waitForTurnTracker(hostPage, 'YOU');
@@ -187,7 +195,9 @@ test('在线模式对手打出行动卡时应显示特写', async ({ browser }, 
         const guestSpotlightQueue = guestPage.getByTestId('card-spotlight-queue');
         const hostSpotlightQueue = hostPage.getByTestId('card-spotlight-queue');
 
-        await hostPage.locator('[data-card-uid="p0-action-1"]').click();
+        const hostActionUid = await getPlayerActionUid(hostPage, '0', 'wizard_mystic_studies');
+        expect(hostActionUid).toBeTruthy();
+        await hostPage.locator(`[data-card-uid="${hostActionUid}"]`).click();
         await expect(guestSpotlightCard).toBeVisible({ timeout: 8000 });
         await expect(guestSpotlightCard).toHaveAttribute('data-card-def-id', 'wizard_mystic_studies');
         await expect(hostSpotlightQueue).toHaveCount(0);
@@ -195,25 +205,41 @@ test('在线模式对手打出行动卡时应显示特写', async ({ browser }, 
 
         await guestSpotlightQueue.click({ force: true });
         await expect(guestSpotlightCard).toBeHidden({ timeout: 5000 });
+    } finally {
+        await firstSetup.guestContext.close();
+        await firstSetup.hostContext.close();
+    }
 
-        await applyOnlineMatchState(setup.matchId, hostPage, (state) => buildActionSpotlightState(state, 1));
+    const secondSetup = await setupSmashUpMatchSkipSetup(browser, baseURL);
+    if (!secondSetup) {
+        test.skip(true, 'SmashUp 联机房间创建失败（P1 场景）');
+        return;
+    }
+
+    try {
+        const { hostPage, guestPage } = secondSetup;
+        await applyOnlineMatchState(secondSetup.matchId, hostPage, (state) => buildActionSpotlightState(state, 1));
+        await waitForSmashUpUI(hostPage);
+        await waitForSmashUpUI(guestPage);
         await waitForTurnTracker(hostPage, 'OPP');
         await waitForTurnTracker(guestPage, 'YOU');
 
         const hostSpotlightCard = hostPage.getByTestId('smashup-action-spotlight-card');
-        const hostSpotlightQueueAfter = hostPage.getByTestId('card-spotlight-queue');
-        const guestSpotlightQueueAfter = guestPage.getByTestId('card-spotlight-queue');
+        const hostSpotlightQueue = hostPage.getByTestId('card-spotlight-queue');
+        const guestSpotlightQueue = guestPage.getByTestId('card-spotlight-queue');
 
-        await guestPage.locator('[data-card-uid="p1-action-1"]').click();
+        const guestActionUid = await getPlayerActionUid(guestPage, '1', 'wizard_mystic_studies');
+        expect(guestActionUid).toBeTruthy();
+        await guestPage.locator(`[data-card-uid="${guestActionUid}"]`).click();
         await expect(hostSpotlightCard).toBeVisible({ timeout: 8000 });
         await expect(hostSpotlightCard).toHaveAttribute('data-card-def-id', 'wizard_mystic_studies');
-        await expect(guestSpotlightQueueAfter).toHaveCount(0);
+        await expect(guestSpotlightQueue).toHaveCount(0);
         await saveEvidenceScreenshot(hostPage, testInfo, 'action-spotlight-online-p1');
 
-        await hostSpotlightQueueAfter.click({ force: true });
+        await hostSpotlightQueue.click({ force: true });
         await expect(hostSpotlightCard).toBeHidden({ timeout: 5000 });
     } finally {
-        await guestContext.close();
-        await hostContext.close();
+        await secondSetup.guestContext.close();
+        await secondSetup.hostContext.close();
     }
 });

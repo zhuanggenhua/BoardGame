@@ -10,6 +10,10 @@ const entry: GameManifestEntry = {
     playersKey: 'games.tictactoe.players',
     icon: '#',
     cursorTheme: 'tictactoe-neon',
+    mobileProfile: 'portrait-adapted',
+    preferredOrientation: 'portrait',
+    mobileLayoutPreset: 'portrait-simple',
+    shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
 };
 
 export const TIC_TAC_TOE_MANIFEST: GameManifestEntry = entry;

@@ -211,10 +211,50 @@
 }
 
 /* 移动端响应式缩放（仅游戏页面，排除召唤师战争） */
+.mobile-board-shell {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+}
+
+.mobile-board-shell__canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+}
+
+.mobile-board-shell__top-rail,
+.mobile-board-shell__side-dock,
+.mobile-board-shell__bottom-rail {
+    position: absolute;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.mobile-board-shell__top-rail > *,
+.mobile-board-shell__side-dock > *,
+.mobile-board-shell__bottom-rail > * {
+    pointer-events: auto;
+}
+
+@media (max-width: 1023px) {
+    [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell {
+        padding:
+            env(safe-area-inset-top)
+            env(safe-area-inset-right)
+            env(safe-area-inset-bottom)
+            env(safe-area-inset-left);
+    }
+}
+
 @media (max-width: 1023px) and (orientation: landscape) {
     /* 移动设备横屏时，游戏页面基于设计宽度 1280px 进行缩放 */
     /* 召唤师战争有自己的 MapContainer 缩放系统，不使用 CSS 自动缩放 */
-    body:has([data-game-page]):not(:has([data-game-id="summonerwars"])) #root {
+    body:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]) #root {
         transform-origin: top left;
         transform: scale(calc(100vw / 1280));
         width: 1280px;
