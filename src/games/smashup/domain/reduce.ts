@@ -552,6 +552,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 turnDestroyedMinions: [],
                 // 清空本回合移动追踪
                 minionsMovedToBaseThisTurn: undefined,
+                movedToBasesThisTurn: undefined,
                 // 清空临时临界点修正
                 tempBreakpointModifiers: undefined,
                 // 清空 special 能力限制组使用记录
@@ -940,9 +941,18 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     ...prevMoves,
                     [mover]: { ...playerMoves, [toBaseIndex]: (playerMoves[toBaseIndex] ?? 0) + 1 },
                 };
+
+                // 你们已经完蛋 POD：追踪“本回合是否把对手随从移动到该基地”
+                const currentPlayerId = state.turnOrder[state.currentPlayerIndex];
+                const movedOpponentMinion = movedMinion.controller !== currentPlayerId;
+                const updatedMovedOpp = movedOpponentMinion
+                    ? { ...(state.movedToBasesThisTurn ?? {}), [toBaseIndex]: true }
+                    : state.movedToBasesThisTurn;
+
                 return {
                     ...state,
                     minionsMovedToBaseThisTurn: updatedMoves,
+                    movedToBasesThisTurn: updatedMovedOpp,
                     bases: newBases.map((base, i) => {
                         if (i !== toBaseIndex) return base;
                         return { ...base, minions: [...base.minions, movedMinion!] };

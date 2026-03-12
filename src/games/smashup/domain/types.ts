@@ -375,6 +375,13 @@ export interface SmashUpCore {
     sleepMarkedPlayers?: PlayerId[];
     /** 本回合每位玩家移动随从到各基地的次数（用于牧场等"首次移动"触发） */
     minionsMovedToBaseThisTurn?: Record<string, Record<number, number>>;
+    /**
+     * 本回合是否曾把对手随从移动到各基地（你们已经完蛋 POD）
+     * key = baseIndex, value = true（本回合有“对手随从”被移动到该基地）
+     *
+     * 生命周期：在 TURN_STARTED 时清空
+     */
+    movedToBasesThisTurn?: Record<number, boolean>;
     /** 临时临界点修正（回合结束自动清零，baseIndex → delta） */
     tempBreakpointModifiers?: Record<number, number>;
     /**
