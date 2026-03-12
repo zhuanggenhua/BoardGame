@@ -29,7 +29,7 @@ export function validate(
 
     // 防御性检查：确保 command 和 type 存在
     if (!command || typeof command.type !== 'string') {
-        return { valid: false, reason: 'Invalid command: missing type' };
+        return { valid: false, error: 'Invalid command: missing type' };
     }
 
     // 系统命令（SYS_ 前缀）由引擎层处理，领域层直接放行
