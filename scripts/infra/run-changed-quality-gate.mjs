@@ -1,10 +1,19 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const repoRoot = process.cwd();
 const mode = process.argv[2] || 'local';
 const STABLE_VITEST_ARGS = ['--config', 'vitest.config.core.ts', '--pool', 'threads', '--no-file-parallelism', '--maxWorkers', '1'];
 const KNOWN_GAME_IDS = new Set(['smashup', 'dicethrone', 'summonerwars', 'tictactoe', 'cardia']);
+const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
+const UTF8_DECODER = new TextDecoder('utf-8', { fatal: true });
+const TEXT_LIKE_EXTENSIONS = new Set([
+  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
+  '.json', '.md', '.css', '.scss', '.html',
+  '.yml', '.yaml', '.xml', '.gradle', '.properties',
+  '.java', '.kt', '.ps1', '.bat', '.txt',
+]);
 
 function runGit(args, options = {}) {
   try {
@@ -22,6 +31,53 @@ function runGit(args, options = {}) {
 
 function normalizeFile(file) {
   return file.replace(/\\/g, '/').replace(/^\.?\//, '');
+}
+
+function isEncodingTarget(file) {
+  return TEXT_LIKE_EXTENSIONS.has(path.extname(file).toLowerCase())
+    || file === 'AGENTS.md'
+    || file === 'package.json'
+    || file.startsWith('.github/');
+}
+
+function hasUtf8Bom(buffer) {
+  return buffer.length >= 3
+    && buffer[0] === UTF8_BOM[0]
+    && buffer[1] === UTF8_BOM[1]
+    && buffer[2] === UTF8_BOM[2];
+}
+
+function runEncodingGuard(files) {
+  const targets = files.filter(isEncodingTarget);
+  if (targets.length === 0) return;
+
+  const failures = [];
+  for (const file of targets) {
+    const absolutePath = path.resolve(repoRoot, file);
+    if (!existsSync(absolutePath)) continue;
+
+    const buffer = readFileSync(absolutePath);
+    if (hasUtf8Bom(buffer)) {
+      failures.push(`${file}: contains UTF-8 BOM`);
+      continue;
+    }
+
+    try {
+      UTF8_DECODER.decode(buffer);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      failures.push(`${file}: invalid UTF-8 (${message})`);
+    }
+  }
+
+  console.log('\n[changed-quality-gate] Encoding');
+  console.log(`[changed-quality-gate] checked files: ${targets.length}`);
+  if (failures.length > 0) {
+    for (const failure of failures) {
+      console.error(`[changed-quality-gate] ${failure}`);
+    }
+    process.exit(1);
+  }
 }
 
 function resolveBaseRef() {
@@ -272,6 +328,8 @@ console.log('[changed-quality-gate] 改动文件:');
 for (const file of files) {
   console.log(`- ${file}`);
 }
+
+runEncodingGuard(files);
 
 const commands = collectCommands(files);
 if (commands.length === 0) {
