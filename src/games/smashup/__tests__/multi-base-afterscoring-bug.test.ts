@@ -322,6 +322,58 @@ describe('多基地同时计分 afterScoring 触发问题', () => {
         return state;
     }
 
+    function createPirateKingNoMoveAfterScoringResponseSetup(): MatchState<SmashUpCore> {
+        const state = createPirateKingFirstMateWithHandSpecialSetup();
+        state.core.players['1'].hand = [
+            makeCard('champ-1', 'giant_ant_we_are_the_champions', 'action', '1'),
+            makeCard('pressure-1', 'giant_ant_under_pressure', 'action', '1'),
+        ];
+        return state;
+    }
+
+    function createFourPlayerSixInteractionsSetup(): MatchState<SmashUpCore> {
+        const core: SmashUpCore = {
+            turnOrder: ['0', '1', '2', '3'],
+            currentPlayerIndex: 0,
+            turnNumber: 9,
+            players: {
+                '0': makePlayer('0', { factions: ['pirates', 'ninjas'] as [string, string] }),
+                '1': makePlayer('1', { factions: ['aliens', 'wizards'] as [string, string] }),
+                '2': makePlayer('2', { factions: ['robots', 'ghosts'] as [string, string] }),
+                '3': makePlayer('3', { factions: ['dinosaurs', 'zombies'] as [string, string] }),
+            },
+            bases: [
+                makeBase('base_tortuga', [
+                    makeMinion('mate-p0', 'pirate_first_mate', '0', 2),
+                    makeMinion('mate-p1', 'pirate_first_mate', '1', 2),
+                    makeMinion('mate-p2', 'pirate_first_mate', '2', 2),
+                    makeMinion('mate-p3', 'pirate_first_mate', '3', 2),
+                    makeMinion('pow-p0', 'test_minion', '0', 10),
+                    makeMinion('pow-p1', 'test_minion', '1', 9),
+                    makeMinion('pow-p2', 'test_minion', '2', 8),
+                    makeMinion('pow-p3', 'test_minion', '3', 7),
+                ]),
+                makeBase('base_the_jungle', [
+                    makeMinion('king-0', 'pirate_king', '0', 5),
+                ]),
+                makeBase('base_secret_garden', [
+                    makeMinion('reserve-p1', 'test_minion', '1', 2),
+                ]),
+            ],
+            baseDeck: ['base_central_brain'],
+            factionSelection: undefined,
+            scoringEligibleBases: undefined,
+        };
+
+        return {
+            core,
+            sys: {
+                ...createInitialSystemState(smashUpSystemsForTest, ['0', '1', '2', '3']),
+                phase: 'playCards',
+            },
+        };
+    }
+
     it('验证多基地选择交互被正确创建', () => {
         const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain,
@@ -513,5 +565,214 @@ describe('多基地同时计分 afterScoring 触发问题', () => {
             ]),
         );
         expect(resolveHiddenNinja.finalState.core.players['0'].hand).toHaveLength(0);
+    });
+
+    it('海盗王选择不移动时，afterScoring 窗口内打出无效特殊牌不应导致托尔图加重复计分', () => {
+        const initialState = createPirateKingNoMoveAfterScoringResponseSetup();
+
+        const advance = runCommandWithFullSystems(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+        });
+        expect(advance.success).toBe(true);
+        expect(advance.finalState.sys.responseWindow?.current?.windowType).toBe('meFirst');
+
+        const playHiddenNinja = runCommandWithFullSystems(advance.finalState, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'hidden-0', targetBaseIndex: 0 },
+        });
+        expect(playHiddenNinja.success).toBe(true);
+
+        const hiddenNinjaChoice = asSimpleChoice(playHiddenNinja.finalState.sys.interaction?.current)!;
+        expect(hiddenNinjaChoice).toBeTruthy();
+        expect(hiddenNinjaChoice.sourceId).toBe('ninja_hidden_ninja');
+        const chooseHandShinobi = findOption(
+            hiddenNinjaChoice,
+            (option: any) => option.value?.cardUid === 'shinobi-hand-0',
+        );
+        const resolveHiddenNinja = runCommandWithFullSystems(playHiddenNinja.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: chooseHandShinobi },
+        });
+        expect(resolveHiddenNinja.success).toBe(true);
+        expect(resolveHiddenNinja.finalState.sys.responseWindow?.current?.windowType).toBe('meFirst');
+
+        const playUnderPressureInMeFirst = runCommandWithFullSystems(resolveHiddenNinja.finalState, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '1',
+            payload: { cardUid: 'pressure-1', targetBaseIndex: 1 },
+        });
+        expect(playUnderPressureInMeFirst.success).toBe(true);
+        expect(playUnderPressureInMeFirst.events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.ACTION_PLAYED,
+                    payload: expect.objectContaining({
+                        cardUid: 'pressure-1',
+                        defId: 'giant_ant_under_pressure',
+                    }),
+                }),
+            ]),
+        );
+        expect(playUnderPressureInMeFirst.finalState.sys.responseWindow?.current).toBeFalsy();
+
+        const multiBaseChoice = asSimpleChoice(playUnderPressureInMeFirst.finalState.sys.interaction?.current)!;
+        expect(multiBaseChoice).toBeTruthy();
+        expect(multiBaseChoice.sourceId).toBe('multi_base_scoring');
+        const chooseTortuga = findOption(multiBaseChoice, (option: any) => option.value?.baseIndex === 0);
+        const chooseBase = runCommandWithFullSystems(playUnderPressureInMeFirst.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: chooseTortuga },
+        });
+        expect(chooseBase.success).toBe(true);
+
+        const pirateKingChoice = asSimpleChoice(chooseBase.finalState.sys.interaction?.current)!;
+        expect(pirateKingChoice).toBeTruthy();
+        expect(pirateKingChoice.sourceId).toBe('pirate_king_move');
+        const stayOption = findOption(pirateKingChoice, (option: any) => option.value?.move === false);
+        const resolvePirateKing = runCommandWithFullSystems(chooseBase.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: stayOption },
+        });
+        expect(resolvePirateKing.success).toBe(true);
+        expect(resolvePirateKing.finalState.sys.phase).toBe('scoreBases');
+        expect(resolvePirateKing.finalState.sys.responseWindow?.current?.windowType).toBe('afterScoring');
+
+        const tortugaAfterScoringChoice = asSimpleChoice(resolvePirateKing.finalState.sys.interaction?.current)!;
+        expect(tortugaAfterScoringChoice).toBeTruthy();
+        expect(tortugaAfterScoringChoice.sourceId).toBe('base_tortuga');
+        const skipTortugaMove = findOption(
+            tortugaAfterScoringChoice,
+            (option: any) => option.id === 'skip' || option.value?.skip === true,
+        );
+        const resolveTortugaAfterScoring = runCommandWithFullSystems(resolvePirateKing.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '1',
+            payload: { optionId: skipTortugaMove },
+        });
+        expect(resolveTortugaAfterScoring.success).toBe(true);
+
+        const firstMateAfterScoringChoice = asSimpleChoice(resolveTortugaAfterScoring.finalState.sys.interaction?.current)!;
+        expect(firstMateAfterScoringChoice).toBeTruthy();
+        expect(firstMateAfterScoringChoice.sourceId).toBe('pirate_first_mate_choose_base');
+        const skipFirstMateMove = findOption(
+            firstMateAfterScoringChoice,
+            (option: any) => option.id === 'skip' || option.value?.skip === true,
+        );
+        const resolveFirstMateAfterScoring = runCommandWithFullSystems(resolveTortugaAfterScoring.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: skipFirstMateMove },
+        });
+        expect(resolveFirstMateAfterScoring.success).toBe(true);
+        expect(resolveFirstMateAfterScoring.finalState.sys.interaction?.current).toBeFalsy();
+        expect(resolveFirstMateAfterScoring.finalState.sys.responseWindow?.current?.windowType).toBe('afterScoring');
+
+        const tortugaScoredEventsBeforeResponse = resolvePirateKing.events.filter(event =>
+            event.type === SU_EVENTS.BASE_SCORED
+            && (event.payload as { baseDefId?: string } | undefined)?.baseDefId === 'base_tortuga',
+        );
+        expect(tortugaScoredEventsBeforeResponse).toHaveLength(1);
+
+        const clearOrReplaceBeforeResponse = resolvePirateKing.events.filter(event => {
+            if (event.type !== SU_EVENTS.BASE_CLEARED && event.type !== SU_EVENTS.BASE_REPLACED) {
+                return false;
+            }
+            const payload = event.payload as { baseDefId?: string; oldBaseDefId?: string } | undefined;
+            return payload?.baseDefId === 'base_tortuga' || payload?.oldBaseDefId === 'base_tortuga';
+        });
+        expect(clearOrReplaceBeforeResponse).toHaveLength(0);
+
+        const playNoTargetSpecial = runCommandWithFullSystems(resolveFirstMateAfterScoring.finalState, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '1',
+            payload: { cardUid: 'champ-1', targetBaseIndex: 0 },
+        });
+        expect(playNoTargetSpecial.success).toBe(true);
+
+        const allEvents = [
+            ...advance.events,
+            ...playHiddenNinja.events,
+            ...resolveHiddenNinja.events,
+            ...playUnderPressureInMeFirst.events,
+            ...chooseBase.events,
+            ...resolvePirateKing.events,
+            ...resolveTortugaAfterScoring.events,
+            ...resolveFirstMateAfterScoring.events,
+            ...playNoTargetSpecial.events,
+        ] as SmashUpEvent[];
+
+        const tortugaScoredAll = allEvents.filter(event =>
+            event.type === SU_EVENTS.BASE_SCORED
+            && (event.payload as { baseDefId?: string } | undefined)?.baseDefId === 'base_tortuga',
+        );
+        expect(tortugaScoredAll).toHaveLength(1);
+    });
+
+    it('4人压力链：6个交互串行解决后，托尔图加仍只计分一次', () => {
+        const initialState = createFourPlayerSixInteractionsSetup();
+        const advance = runCommandWithFullSystems(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+        });
+        expect(advance.success).toBe(true);
+
+        let state = advance.finalState;
+        const allEvents: SmashUpEvent[] = [...advance.events] as SmashUpEvent[];
+        const sourceIds: string[] = [];
+
+        const firstChoice = asSimpleChoice(state.sys.interaction?.current)!;
+        expect(firstChoice).toBeTruthy();
+        expect(firstChoice.sourceId).toBe('pirate_king_move');
+        const stayPirateKing = findOption(firstChoice, (option: any) => option.value?.move === false);
+        const resolvePirateKing = runCommandWithFullSystems(state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: stayPirateKing },
+        });
+        expect(resolvePirateKing.success).toBe(true);
+        sourceIds.push('pirate_king_move');
+        allEvents.push(...(resolvePirateKing.events as SmashUpEvent[]));
+        state = resolvePirateKing.finalState;
+
+        while (state.sys.interaction?.current) {
+            const choice = asSimpleChoice(state.sys.interaction.current)!;
+            expect(choice).toBeTruthy();
+            sourceIds.push(choice.sourceId);
+
+            expect(['base_tortuga', 'pirate_first_mate_choose_base']).toContain(choice.sourceId);
+            const skipOptionId = findOption(
+                choice,
+                (option: any) => option.id === 'skip' || option.value?.skip === true,
+            );
+            const responderId = state.sys.interaction.current.playerId;
+            const resolved = runCommandWithFullSystems(state, {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: responderId,
+                payload: { optionId: skipOptionId },
+            });
+            expect(resolved.success).toBe(true);
+            allEvents.push(...(resolved.events as SmashUpEvent[]));
+            state = resolved.finalState;
+        }
+
+        expect(sourceIds.filter(id => id === 'base_tortuga')).toHaveLength(1);
+        expect(sourceIds.filter(id => id === 'pirate_first_mate_choose_base')).toHaveLength(4);
+        expect(sourceIds).toHaveLength(6);
+
+        const tortugaScoredEvents = allEvents.filter(event =>
+            event.type === SU_EVENTS.BASE_SCORED
+            && (event.payload as { baseDefId?: string } | undefined)?.baseDefId === 'base_tortuga',
+        );
+        expect(tortugaScoredEvents).toHaveLength(1);
+
+        expect(state.sys.phase).toBe('playCards');
+        expect(state.core.currentPlayerIndex).toBe(1);
     });
 });

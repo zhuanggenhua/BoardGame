@@ -11,6 +11,25 @@
 - `npm run mobile:android:build:release`
 - `npm run mobile:android:build:bundle`
 
+## Android 壳加载模式
+
+通过环境变量 `ANDROID_WEBVIEW_MODE` 控制 Android 壳加载哪一份 H5：
+
+- `embedded`：默认模式。继续把 `dist/` 同步到 `android/app/src/main/assets/public/`，APK 内直接加载本地资源。
+- `remote`：远程模式。通过 `Capacitor server.url` 直接加载线上 HTTPS 站点，不再要求当前前端版本打进 APK。
+
+`remote` 模式必须额外配置：
+
+```env
+ANDROID_WEBVIEW_MODE=remote
+ANDROID_REMOTE_WEB_URL=https://your-domain.com
+```
+
+选择建议：
+
+- 需要离线启动、稳定发版、避免线上误发布立即影响 App：用 `embedded`
+- 不上商店、希望 Web 一发布 App 就立刻跟着更新：用 `remote`
+
 默认内部发包命令是 `npm run mobile:android:build:release`，产物是可直接安装分发的签名 `APK`。
 
 只有要对接应用商店时，才使用 `npm run mobile:android:build:bundle` 产出 `AAB`。
@@ -26,6 +45,8 @@ npm run mobile:android:sync
 ```
 
 再去执行 Release 构建。
+
+如果当前是 `remote` 模式，则 Android 构建不再依赖 `assets/public` 与 `dist/` 同步；`npm run mobile:android:build:release` 会直接按远程模式生成 APK，但 `ANDROID_REMOTE_WEB_URL` 必须是绝对 HTTPS 地址。
 
 ## 图标与启动图
 

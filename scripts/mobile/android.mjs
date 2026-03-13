@@ -23,6 +23,8 @@ const gradleWrapper = process.platform === 'win32'
     : path.join(androidDir, 'gradlew');
 const defaultAppId = 'top.easyboardgame.app';
 const defaultAppName = 'EasyBoardGame';
+const defaultAndroidWebviewMode = 'embedded';
+const supportedAndroidWebviewModes = new Set(['embedded', 'remote']);
 const command = process.argv[2];
 const distDir = path.join(rootDir, 'dist');
 const androidPublicDir = path.join(androidDir, 'app', 'src', 'main', 'assets', 'public');
@@ -114,6 +116,19 @@ const parseAndroidBuildMeta = (filePath, rawText) => {
 };
 
 const getAndroidWebAssetsStatus = () => {
+    const shellStatus = getAndroidShellStatus();
+    if (!shellStatus.ok) {
+        return shellStatus;
+    }
+
+    if (getAndroidWebviewMode() === 'remote') {
+        return {
+            ok: true,
+            code: 'remote-mode',
+            message: `skipped(${shellStatus.message})`,
+        };
+    }
+
     const paths = getAndroidBuildMetaPaths();
     const currentBackendUrl = process.env.VITE_BACKEND_URL?.trim() || '';
 
@@ -257,7 +272,60 @@ const getAppConfig = () => ({
     appName: process.env.CAPACITOR_APP_NAME?.trim() || defaultAppName,
 });
 
-const ensureBackendUrl = () => {
+const getAndroidWebviewMode = () => {
+    const mode = (process.env.ANDROID_WEBVIEW_MODE?.trim().toLowerCase() || defaultAndroidWebviewMode);
+    if (!supportedAndroidWebviewModes.has(mode)) {
+        throw new Error(`ANDROID_WEBVIEW_MODE 只支持 embedded 或 remote，当前值为: ${mode}`);
+    }
+    return mode;
+};
+
+const getAndroidRemoteWebUrl = () => process.env.ANDROID_REMOTE_WEB_URL?.trim() || '';
+
+const ensureRemoteWebUrl = () => {
+    const remoteUrl = getAndroidRemoteWebUrl();
+    if (!remoteUrl) {
+        throw new Error('remote 模式必须配置 ANDROID_REMOTE_WEB_URL，且必须是绝对 HTTPS 地址。');
+    }
+    if (!/^https:\/\//i.test(remoteUrl)) {
+        throw new Error(`ANDROID_REMOTE_WEB_URL 必须是绝对 HTTPS 地址，当前值为: ${remoteUrl}`);
+    }
+    return remoteUrl;
+};
+
+const getAndroidShellStatus = () => {
+    const mode = getAndroidWebviewMode();
+    if (mode === 'remote') {
+        const remoteUrl = getAndroidRemoteWebUrl();
+        if (!remoteUrl) {
+            return {
+                ok: false,
+                code: 'remote-missing-url',
+                message: 'remote 模式缺少 ANDROID_REMOTE_WEB_URL。',
+            };
+        }
+        if (!/^https:\/\//i.test(remoteUrl)) {
+            return {
+                ok: false,
+                code: 'remote-invalid-url',
+                message: `ANDROID_REMOTE_WEB_URL 必须是绝对 HTTPS 地址，当前值为: ${remoteUrl}`,
+            };
+        }
+        return {
+            ok: true,
+            code: 'remote-ready',
+            message: `remote(${remoteUrl})`,
+        };
+    }
+
+    return {
+        ok: true,
+        code: 'embedded-ready',
+        message: 'embedded(dist -> android assets)',
+    };
+};
+
+const ensureEmbeddedBackendUrl = () => {
     const backendUrl = process.env.VITE_BACKEND_URL?.trim();
     if (!backendUrl) {
         throw new Error(
@@ -357,6 +425,10 @@ const updateAppBuildGradle = (appId) => {
             next = `import java.util.Properties\n\n${next}`;
         }
 
+        if (!next.includes('import groovy.json.JsonSlurper')) {
+            next = `import groovy.json.JsonSlurper\n${next}`;
+        }
+
         next = next
             .replace(/namespace\s*=\s*"[^"]+"/, `namespace = "${appId}"`)
             .replace(/applicationId\s+"[^"]+"/, `applicationId "${appId}"`);
@@ -411,25 +483,36 @@ const updateAppBuildGradle = (appId) => {
                 `}\n`;
         }
 
-        if (!next.includes('distAndroidBuildMetaFile')) {
-            next = `${next}\n` +
-                `def distAndroidBuildMetaFile = rootProject.file('../dist/android-build-meta.json')\n` +
-                `def syncedAndroidBuildMetaFile = file('src/main/assets/public/android-build-meta.json')\n` +
-                `def requiresSyncedWebAssets = gradle.startParameter.taskNames.any { taskName ->\n` +
-                `    def lowerTaskName = taskName.toLowerCase()\n` +
-                `    lowerTaskName.contains('assemble') || lowerTaskName.contains('bundle') || lowerTaskName.contains('install')\n` +
-                `}\n` +
-                `if (requiresSyncedWebAssets) {\n` +
-                `    if (!distAndroidBuildMetaFile.exists()) {\n` +
-                `        throw new GradleException('Missing dist/android-build-meta.json. Run npm run mobile:android:sync before building Android.')\n` +
-                `    }\n` +
-                `    if (!syncedAndroidBuildMetaFile.exists()) {\n` +
-                `        throw new GradleException('Missing synced Android web assets. Run npm run mobile:android:sync before building Android.')\n` +
-                `    }\n` +
-                `    if (distAndroidBuildMetaFile.getText('UTF-8') != syncedAndroidBuildMetaFile.getText('UTF-8')) {\n` +
-                `        throw new GradleException('Android web assets are out of sync with dist. Run npm run mobile:android:sync or npm run mobile:android:build:release.')\n` +
-                `    }\n` +
-                `}\n`;
+        const androidShellValidationBlock =
+            `def capacitorConfigFile = file('src/main/assets/capacitor.config.json')\n` +
+            `def capacitorConfig = capacitorConfigFile.exists() ? new JsonSlurper().parse(capacitorConfigFile) : [:]\n` +
+            `def androidServerConfig = capacitorConfig.server instanceof Map ? capacitorConfig.server : [:]\n` +
+            `def androidWebviewMode = androidServerConfig.url ? 'remote' : 'embedded'\n` +
+            `def distAndroidBuildMetaFile = rootProject.file('../dist/android-build-meta.json')\n` +
+            `def syncedAndroidBuildMetaFile = file('src/main/assets/public/android-build-meta.json')\n` +
+            `def requiresSyncedWebAssets = androidWebviewMode == 'embedded' && gradle.startParameter.taskNames.any { taskName ->\n` +
+            `    def lowerTaskName = taskName.toLowerCase()\n` +
+            `    lowerTaskName.contains('assemble') || lowerTaskName.contains('bundle') || lowerTaskName.contains('install')\n` +
+            `}\n` +
+            `if (requiresSyncedWebAssets) {\n` +
+            `    if (!distAndroidBuildMetaFile.exists()) {\n` +
+            `        throw new GradleException('Missing dist/android-build-meta.json. Run npm run mobile:android:sync before building Android.')\n` +
+            `    }\n` +
+            `    if (!syncedAndroidBuildMetaFile.exists()) {\n` +
+            `        throw new GradleException('Missing synced Android web assets. Run npm run mobile:android:sync before building Android.')\n` +
+            `    }\n` +
+            `    if (distAndroidBuildMetaFile.getText('UTF-8') != syncedAndroidBuildMetaFile.getText('UTF-8')) {\n` +
+            `        throw new GradleException('Android web assets are out of sync with dist. Run npm run mobile:android:sync or npm run mobile:android:build:release.')\n` +
+            `    }\n` +
+            `}\n`;
+
+        if (!next.includes('capacitorConfigFile = file(\'src/main/assets/capacitor.config.json\')')) {
+            next = `${next}\n${androidShellValidationBlock}`;
+        } else {
+            next = next.replace(
+                /def capacitorConfigFile = file\('src\/main\/assets\/capacitor\.config\.json'\)[\s\S]*?if \(requiresSyncedWebAssets\) \{[\s\S]*?\n\}/,
+                androidShellValidationBlock.trimEnd(),
+            );
         }
 
         return next;
@@ -504,14 +587,23 @@ const ensureBuildSupport = async () => {
 };
 
 const syncAndroid = async () => {
-    ensureBackendUrl();
+    const mode = getAndroidWebviewMode();
+    if (mode === 'embedded') {
+        ensureEmbeddedBackendUrl();
+    } else {
+        ensureRemoteWebUrl();
+    }
     await ensureBuildSupport();
-    await runAndroidWebBuild();
-    ensureAndroidDistBuildReady();
+    if (mode === 'embedded') {
+        await runAndroidWebBuild();
+        ensureAndroidDistBuildReady();
+    }
     await ensureAndroidProject();
     await runCapacitor(['sync', 'android']);
     await prepareAndroidProject();
-    ensureAndroidWebAssetsSynced();
+    if (mode === 'embedded') {
+        ensureAndroidWebAssetsSynced();
+    }
 };
 
 const prepareRelease = async ({ required }) => {
@@ -545,6 +637,7 @@ const printDoctor = async () => {
         androidDir,
         env: process.env,
     });
+    const androidShellStatus = getAndroidShellStatus();
     const androidWebAssetsStatus = getAndroidWebAssetsStatus();
 
     const lines = [
@@ -552,6 +645,8 @@ const printDoctor = async () => {
         `ANDROID_HOME=${process.env.ANDROID_HOME || '(未设置)'}`,
         `ANDROID_SDK_ROOT=${process.env.ANDROID_SDK_ROOT || '(未设置)'}`,
         `VITE_BACKEND_URL=${process.env.VITE_BACKEND_URL || '(未设置)'}`,
+        `ANDROID_WEBVIEW_MODE=${getAndroidWebviewMode()}`,
+        `ANDROID_REMOTE_WEB_URL=${getAndroidRemoteWebUrl() || '(未设置)'}`,
         `CAPACITOR_APP_ID=${appId}`,
         `CAPACITOR_APP_NAME=${appName}`,
         `ANDROID_PROJECT=${hasAndroidProject() ? 'ready' : 'missing'}`,
@@ -560,6 +655,7 @@ const printDoctor = async () => {
         `ANDROID_ICON_SOURCE=${path.relative(rootDir, assetConfig.iconSourcePath)}`,
         `ANDROID_SPLASH_SOURCE=${path.relative(rootDir, assetConfig.splashSourcePath)}`,
         `ANDROID_RELEASE_SIGNING=${signingState.configured ? `ready(${signingState.source})` : 'missing'}`,
+        `ANDROID_SHELL=${androidShellStatus.message}`,
         `ANDROID_WEB_ASSETS=${androidWebAssetsStatus.message}`,
         `CHILD_PROCESS_BUILD=${probe.ok ? 'ready' : `blocked(${probe.stage})`}`,
     ];

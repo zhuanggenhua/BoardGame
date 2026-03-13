@@ -267,6 +267,12 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 - 检查端口占用情况
 - 给出建议和警告
 
+**截图人工核对（强制）**：
+- UI 修复、样式修复、交互修复完成后，不能只看测试通过、断言通过或证据文档文字说明
+- 必须实际打开截图，确认界面上真的出现了目标元素，且没有出现“旧 UI 还在 / 入口缺失 / 文案缺失 / 数据区为空白”这类肉眼可见问题
+- 如果问题发生在线上或特定环境，必须额外保留该环境的现状截图，禁止只用本地 mock 截图宣布“已修复”
+- 汇报时必须同时说明：看的是哪张截图、截图对应哪个环境、你从截图里确认了什么
+
 #### 2. 服务器就绪检查
 
 **Vite 就绪检查插件**（`vite-plugins/ready-check.ts`）：
@@ -286,6 +292,23 @@ webServer: [
   // ...
 ]
 ```
+
+#### 2.1 Isolated 启动链 fail-fast（global-setup）
+
+为避免“子服务已崩溃但 global-setup 仍盲等 URL 超时”的问题，隔离模式启动链现在有以下基建保障：
+
+1. `global-setup` 启动 worker 服务时会将 stdout/stderr 重定向到 bootstrap 日志（不再忽略输出）
+2. 等待 `/games`、`/health`、`/__ready` 期间会持续检测启动进程存活
+3. 若进程提前退出，立即 fail-fast；错误信息会带上日志路径与日志尾部内容
+4. 子服务异常退出会返回非 0 退出码（`start-single-worker-servers.js` / `start-worker-servers.js`）
+
+Bootstrap 日志路径规则：
+
+- 单 worker：`F:\gongzuo\webgame\BoardGame\.tmp\playwright-bootstrap-<scope>-worker-0.log`
+- 多 worker：`F:\gongzuo\webgame\BoardGame\.tmp\playwright-bootstrap-<scope>-worker-<id>.log`
+- `<scope>` 来自 `PW_RUNTIME_SCOPE`（默认 `default`）
+
+当 `npm run test:e2e:ci` 报健康检查超时时，优先看报错中给出的 bootstrap 日志路径和日志尾部，再决定是端口冲突、子进程能力受限还是构建/启动异常。
 
 #### 3. 测试性能优化规范
 

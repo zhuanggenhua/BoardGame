@@ -146,6 +146,8 @@ export default defineConfig(({ mode }) => {
           '**/tmp/**',
           '**/evidence/**',
           '**/logs/**',
+          '**/android/app/**',
+          '**/android/build/**',
           '**/node_modules/**',
           '**/*.test.*',
           '**/*.spec.*',

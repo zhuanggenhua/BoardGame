@@ -43,6 +43,23 @@ async function clickInteractionOption(page: Page, optionId: string, label?: stri
     throw new Error(`交互选项不可点击: ${optionId}`);
 }
 
+async function advancePhaseFromUI(page: Page, game: GameTestContext): Promise<void> {
+    const selectors = [
+        page.locator('[data-action="advance-phase"]').first(),
+        page.getByRole('button', { name: /^(结束回合|Finish Turn|End|FINISH)/i }).first(),
+        page.locator('button:has-text("FINISH")').first(),
+        page.locator('button:has-text("结束")').first(),
+    ];
+    for (const locator of selectors) {
+        if (await locator.isVisible({ timeout: 1500 }).catch(() => false)) {
+            await locator.click({ force: true, timeout: 5000 });
+            await page.waitForTimeout(300);
+            return;
+        }
+    }
+    await game.advancePhase();
+}
+
 async function openFourPlayerTestGame(game: GameTestContext): Promise<void> {
     let lastError: unknown;
     for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -108,7 +125,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
 
             await game.screenshot('01-scene-ready', testInfo);
 
-            await game.advancePhase();
+            await advancePhaseFromUI(page, game);
             await page.waitForTimeout(1000);
 
             const stateAfterAdvance = await page.evaluate(() => {
@@ -302,11 +319,11 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                                 defId: 'base_tortuga',
                                 minions: [
                                     createMinion('mate-p0', 'pirate_first_mate', '0', 2),
-                                    createMinion('mate-p1', 'pirate_first_mate', '1', 2),
-                                    createMinion('mate-p2', 'pirate_first_mate', '2', 2),
-                                    createMinion('mate-p3', 'pirate_first_mate', '3', 2),
+                                    createMinion('mate-p1', 'pirate_first_mate', '0', 2),
+                                    createMinion('mate-p2', 'pirate_first_mate', '0', 2),
+                                    createMinion('mate-p3', 'pirate_first_mate', '0', 2),
                                     createMinion('pow-p0', 'test_minion', '0', 10),
-                                    createMinion('pow-p1', 'test_minion', '1', 9),
+                                    createMinion('pow-p1', 'test_minion', '1', 19),
                                     createMinion('pow-p2', 'test_minion', '2', 8),
                                     createMinion('pow-p3', 'test_minion', '3', 7),
                                 ],
@@ -353,7 +370,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
 
             await game.screenshot('4p-01-initial', testInfo);
 
-            await game.advancePhase();
+            await advancePhaseFromUI(page, game);
             await game.waitForInteraction('pirate_king_move', 20000);
 
             const resolvedSources: string[] = [];
@@ -413,20 +430,20 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
 
             const finalState = await page.evaluate(() => {
                 const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
-                const logs = state?.sys?.actionLog?.entries ?? [];
-                const tortugaScoredCount = logs.filter((entry: any) =>
-                    entry?.eventType === 'su:base_scored' && entry?.payload?.baseDefId === 'base_tortuga'
-                ).length;
+                const vpByPlayer = Object.values(state?.core?.players ?? {}).map((player: any) => player?.vp ?? 0);
+                const totalVp = vpByPlayer.reduce((sum: number, value: number) => sum + value, 0);
                 return {
                     phase: state?.sys?.phase,
                     currentPlayerIndex: state?.core?.currentPlayerIndex,
-                    tortugaScoredCount,
+                    vpByPlayer,
+                    totalVp,
                 };
             });
 
             expect(finalState.phase).toBe('playCards');
             expect(finalState.currentPlayerIndex).toBe(1);
-            expect(finalState.tortugaScoredCount).toBe(1);
+            expect(finalState.totalVp).toBe(9);
+            expect([...finalState.vpByPlayer].sort((a, b) => a - b)).toEqual([0, 2, 3, 4]);
 
             await game.screenshot('4p-02-final', testInfo);
         } catch (error) {

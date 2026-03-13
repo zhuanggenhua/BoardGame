@@ -17,9 +17,23 @@ export const DiscardPile = React.forwardRef<HTMLDivElement, {
     const showTouchInspectButton = useCoarsePointer();
     const topCard = cards[cards.length - 1];
     const overlayLabelClassName = 'px-[0.6vw] py-[0.3vw] bg-amber-600/90 rounded-[0.4vw] text-white text-[0.7vw] font-bold shadow-lg';
-    const inspectButtonClassName = 'absolute top-0 right-[-0.7vw] z-20 h-[3vw] w-[3vw] transition-opacity duration-300';
-    const inspectButtonVisualClassName = 'absolute top-[0.3vw] right-[1vw] flex h-[1.4vw] w-[1.4vw] items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl transition-[background-color] duration-300 hover:bg-amber-500/80';
-    const inspectIconClassName = 'w-[0.8vw] h-[0.8vw] fill-current';
+    const inspectButtonClassName = 'absolute z-20 flex items-center justify-center rounded-full border border-white/20 bg-black/60 p-0 text-white shadow-xl transition-[background-color,opacity] duration-300 hover:bg-amber-500/80';
+    const inspectButtonVisualClassName = 'flex h-full w-full items-center justify-center';
+    const inspectIconClassName = 'w-[0.52vw] h-[0.52vw] fill-current';
+    const inspectButtonStyle = {
+        top: '0.24vw',
+        right: '0.48vw',
+        width: '2vw',
+        height: '2vw',
+        minWidth: '0',
+        minHeight: '0',
+        maxWidth: '2vw',
+        maxHeight: '2vw',
+        appearance: 'none',
+        WebkitAppearance: 'none',
+        fontSize: '0',
+        lineHeight: '0',
+    } as const;
 
     const getPreviewCards = React.useCallback(() => {
         if (cards.length === 0) return [];
@@ -60,6 +74,7 @@ export const DiscardPile = React.forwardRef<HTMLDivElement, {
                 <button
                     type="button"
                     className={`${inspectButtonClassName} ${showTouchInspectButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                    style={inspectButtonStyle}
                     onClick={(e) => {
                         e.stopPropagation();
                         if (onInspectRecent) onInspectRecent(getPreviewCards());

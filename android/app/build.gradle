@@ -1,4 +1,5 @@
 import java.util.Properties
+import groovy.json.JsonSlurper
 
 apply plugin: 'com.android.application'
 
@@ -83,9 +84,13 @@ if (requiresReleaseSigning && !hasReleaseSigning) {
     throw new GradleException('Missing Android release signing. Run npm run mobile:android:prepare-release or set ANDROID_KEYSTORE_PATH / ANDROID_KEYSTORE_BASE64.')
 }
 
+def capacitorConfigFile = file('src/main/assets/capacitor.config.json')
+def capacitorConfig = capacitorConfigFile.exists() ? new JsonSlurper().parse(capacitorConfigFile) : [:]
+def androidServerConfig = capacitorConfig.server instanceof Map ? capacitorConfig.server : [:]
+def androidWebviewMode = androidServerConfig.url ? 'remote' : 'embedded'
 def distAndroidBuildMetaFile = rootProject.file('../dist/android-build-meta.json')
 def syncedAndroidBuildMetaFile = file('src/main/assets/public/android-build-meta.json')
-def requiresSyncedWebAssets = gradle.startParameter.taskNames.any { taskName ->
+def requiresSyncedWebAssets = androidWebviewMode == 'embedded' && gradle.startParameter.taskNames.any { taskName ->
     def lowerTaskName = taskName.toLowerCase()
     lowerTaskName.contains('assemble') || lowerTaskName.contains('bundle') || lowerTaskName.contains('install')
 }

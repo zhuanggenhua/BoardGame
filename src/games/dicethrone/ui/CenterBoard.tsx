@@ -52,9 +52,23 @@ export const CenterBoard = ({
     const showTouchMagnifyButton = useCoarsePointer();
     const shellFrameClassName = 'absolute left-[15vw] right-[15vw] top-[-6.5vw] bottom-0 flex items-center justify-center pointer-events-auto';
     const boardGapClassName = 'gap-[0.5vw]';
-    const overlayButtonIconClassName = 'w-[1.2vw] h-[1.2vw] fill-current';
-    const overlayButtonClassName = `absolute top-0 right-[-1vw] h-[4.2vw] w-[4.2vw] transition-opacity duration-300 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
-    const overlayButtonVisualClassName = 'absolute top-[1vw] right-[2vw] flex h-[2.2vw] w-[2.2vw] items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl transition-[background-color,border-color] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45';
+    const overlayButtonIconClassName = 'w-[0.72vw] h-[0.72vw] fill-current';
+    const overlayButtonClassName = `absolute flex items-center justify-center rounded-full border border-white/20 bg-black/60 p-0 text-white shadow-xl transition-[background-color,border-color,opacity] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
+    const overlayButtonVisualClassName = 'flex h-full w-full items-center justify-center';
+    const overlayButtonStyle = {
+        top: '0.48vw',
+        right: '0.9vw',
+        width: '2.6vw',
+        height: '2.6vw',
+        minWidth: '0',
+        minHeight: '0',
+        maxWidth: '2.6vw',
+        maxHeight: '2.6vw',
+        appearance: 'none',
+        WebkitAppearance: 'none',
+        fontSize: '0',
+        lineHeight: '0',
+    } as const;
     const tipToggleButtonOffsetClassName = isTipOpen ? 'right-[0.8vw]' : 'left-[0.1vw]';
     const tipToggleButtonClassName = `absolute top-[55%] z-50 flex p-[0.5vw] text-[inherit] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white/50 transition-[background-color,color,border-color] duration-500 border border-white/8 hover:bg-black/50 hover:text-white hover:border-white/16 ${tipToggleButtonOffsetClassName}`;
 
@@ -93,7 +107,7 @@ export const CenterBoard = ({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onMagnifyImage(playerBoardPath); }}
                         className={overlayButtonClassName}
-                        style={{ zIndex: UI_Z_INDEX.hud + 10 }}
+                        style={{ ...overlayButtonStyle, zIndex: UI_Z_INDEX.hud + 10 }}
                         data-testid="player-board-magnify-button"
                         aria-label="查看大图"
                     >
@@ -120,7 +134,7 @@ export const CenterBoard = ({
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); onMagnifyImage(tipBoardPath); }}
                                 className={overlayButtonClassName}
-                                style={{ zIndex: UI_Z_INDEX.hud + 10 }}
+                                style={{ ...overlayButtonStyle, zIndex: UI_Z_INDEX.hud + 10 }}
                                 data-testid="tip-board-magnify-button"
                                 aria-label="查看大图"
                             >

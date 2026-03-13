@@ -147,6 +147,9 @@ Cloudflare 控制台 → **Workers & Pages** → 选择你的 Pages 项目 → *
 - **环境变量**（非常重要）：
   - `VITE_BACKEND_URL` = `https://api.<你的域名>`
   - 例如：`VITE_BACKEND_URL=https://api.easyboardgame.top`
+- **如果 Android App 使用 remote WebView 模式**：
+  - `ANDROID_REMOTE_WEB_URL` 应指向实际对外可访问的前端页面入口，例如 `https://easyboardgame.top`
+  - 不要把 `ANDROID_REMOTE_WEB_URL` 指到纯 API 域名，例如 `https://api.easyboardgame.top`
 - **自定义域名**：
   - 点击「自定义域名」→ 添加你的根域（如 `easyboardgame.top`）
   - 系统会自动在 DNS 创建 CNAME 记录
@@ -190,6 +193,14 @@ SMTP_PASS=xxx
 > **WEB_ORIGINS** 必须包含所有可能访问后端的域名，否则会出现 CORS 错误。
 >
 > 提示：首次运行 `deploy-image.sh` 时会交互式引导生成 `.env`。
+
+### Android remote WebView 额外约束
+
+如果 Android 壳使用 `ANDROID_WEBVIEW_MODE=remote`，部署侧还需要满足以下条件：
+
+- `ANDROID_REMOTE_WEB_URL` 必须是绝对 HTTPS 地址，且应指向真实前端入口
+- 该前端入口加载出来的 H5 仍然会访问你的后端接口，因此 `WEB_ORIGINS` 必须包含这个前端域名
+- 远程模式下，Android App 会与线上 Web 同步更新；如果线上前端需要回滚，App 也会一起回滚，不再依赖重新发 APK
 
 ## Nginx 反向代理（自动管理）
 
@@ -326,6 +337,8 @@ WEB_ORIGINS=https://your-domain.com
 - `docker compose ps` 确认 web/game-server/mongodb 为 Running/Healthy
 - `ss -lntp | grep ':80'` 确认 80 端口已监听
 - `curl -I http://127.0.0.1/` 验证本机入口可达
+- `curl http://127.0.0.1/notifications` 应返回 JSON
+- `curl http://127.0.0.1/game-changelogs/dicethrone` 应返回 JSON（即使无数据也应是 `{"changelogs":[]}`，不能返回 HTML）
 
 - **健康检查**：
   - 后端：`http://<服务器IP>/health` 或 `https://api.<你的域名>/health`（若未实现则返回 404，属于正常）
