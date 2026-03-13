@@ -101,7 +101,7 @@ npm run test:games:core
 项目已配置 Git hooks，会在以下时机自动检查：
 
 - **pre-commit**：ESLint 检查（自动修复）
-- **pre-push**：TypeScript 检查 + 构建 + 测试
+- **pre-push**：按改动自动选择 TypeScript / 构建 / i18n / 测试校验
 
 如果检查失败，提交/推送会被阻止。
 

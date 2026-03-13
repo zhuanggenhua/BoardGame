@@ -40,6 +40,7 @@
     "atlas:scan": "node scripts/assets/atlas_grid_scan.js",
     "i18n:check": "npx tsx scripts/verify/i18n-check.ts",
     "check:all": "npm run typecheck && npm run lint",
+    "quality:changed": "node scripts/infra/run-changed-quality-gate.mjs",
     "check:full": "npm run check:all && npm run test:games:core",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -51,7 +52,7 @@
     "test:server": "vitest run src/server src/api",
     "test:ugc": "vitest run src/ugc",
     "test:games": "vitest run src/games",
-    "test:games:core": "vitest run src/games --config vitest.config.core.ts",
+    "test:games:core": "npx vitest run src/games --config vitest.config.core.ts --pool threads --no-file-parallelism --maxWorkers 1",
     "test:games:audit": "vitest run src/games --config vitest.config.audit.ts",
     "test:changed": "npx vitest run --changed origin/main -- src/games",
     "test:api": "vitest run apps/api",
@@ -104,7 +105,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --concurrent 1 --no-stash",
-    "pre-push": "npm run check:all && npm run build && npm run i18n:check && npm run test:games:core"
+    "pre-push": "npm run quality:changed"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

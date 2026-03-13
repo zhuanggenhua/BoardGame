@@ -31,6 +31,10 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
+        // 当前 Windows 环境下 forks worker 偶发启动超时，核心校验固定为单线程串行运行。
+        pool: 'threads',
+        fileParallelism: false,
+        maxWorkers: 1,
         include: [
             'src/games/**/__tests__/**/*.test.{ts,tsx}',
         ],
