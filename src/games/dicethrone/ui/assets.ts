@@ -1,12 +1,14 @@
 import type { CSSProperties } from 'react';
 import type { HeroState } from '../types';
 import type { TranslateFn } from './utils';
-import { buildLocalizedImageSet, getLocalizedImageUrls } from '../../../core';
+import { buildLocalizedImageSet, getAssetsBaseUrl, getLocalizedImageUrls } from '../../../core';
+import { createScopedLogger } from '../../../lib/logger';
 import { getDiceDefinition, getDieFaceByValue } from '../domain/diceRegistry';
 
 const getCharacterAssetBase = (charId: string = 'monk') => (
     `dicethrone/images/${charId}`
 );
+const diceAssetsLogger = createScopedLogger('dicethrone:dice-assets');
 
 /**
  * 扩展名处理：仅 barbarian 依然保留原生的 .png 格式（因为其暂未进行优化转换）
@@ -19,16 +21,16 @@ export const ASSETS = {
     PLAYER_BOARD: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/player-board`, charId),
     TIP_BOARD: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/tip`, charId),
     CARDS_ATLAS: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/ability-cards`, charId),
-    DICE_SPRITE: (charId: string = 'monk') => `${getCharacterAssetBase(charId)}/dice-sprite`,
+    DICE_SPRITE: (charId: string = 'monk') => `${getCharacterAssetBase(charId)}/dice`,
     EFFECT_ICONS: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/status-icons-atlas`, charId),
     CARD_BG: 'dicethrone/images/Common/card-background',
     AVATAR: 'dicethrone/images/Common/character-portraits',
 };
 
-const DIRECT_SPRITE_ASSET_RE = /^(?:https?:|data:|blob:|\/assets\/)/i;
+const DIRECT_SPRITE_ASSET_RE = /^(?:https?:|data:|blob:)/i;
 const GAME_DATA_DICE_SPRITE_RE = /^\/game-data\/dicethrone\/([^/]+)\/dice-sprite\.png$/i;
 const LOGICAL_DICE_SPRITE_RE =
-    /^(?:\/assets\/|https?:\/\/[^/]+\/official\/)?(?:i18n\/[^/]+\/)?dicethrone\/images\/([^/]+)\/(?:compressed\/)?dice(?:-sprite)?(?:\.(?:png|webp|avif))?$/i;
+    /^(?:\/assets\/|https?:\/\/[^/]+\/official\/)?(?:i18n\/[^/]+\/)?dicethrone\/images\/([^/]+)\/(?:compressed\/)?(dice(?:-sprite)?)(?:\.(?:png|webp|avif))?$/i;
 
 const normalizeDiceSpriteAssetPath = (assetPath?: string | null) => {
     if (!assetPath) return undefined;
@@ -38,28 +40,122 @@ const normalizeDiceSpriteAssetPath = (assetPath?: string | null) => {
 
     const gameDataMatch = trimmed.match(GAME_DATA_DICE_SPRITE_RE);
     if (gameDataMatch?.[1]) {
-        return `dicethrone/images/${gameDataMatch[1]}/dice-sprite`;
+        const normalized = `dicethrone/images/${gameDataMatch[1]}/dice`;
+        diceAssetsLogger.info('normalize-from-game-data', {
+            input: trimmed,
+            normalized,
+        });
+        return normalized;
     }
 
     const logicalMatch = trimmed
         .replace(/^\/+/, '')
         .match(LOGICAL_DICE_SPRITE_RE);
     if (logicalMatch?.[1]) {
-        return `dicethrone/images/${logicalMatch[1]}/dice-sprite`;
+        const normalized = `dicethrone/images/${logicalMatch[1]}/dice`;
+        diceAssetsLogger.debug('normalize-from-logical', {
+            input: trimmed,
+            normalized,
+        });
+        return normalized;
     }
 
+    diceAssetsLogger.debug('normalize-keep-input', {
+        input: trimmed,
+    });
     return trimmed;
+};
+
+const dedupeStringList = (list: Array<string | undefined>) => {
+    const unique: string[] = [];
+    const seen = new Set<string>();
+    for (const item of list) {
+        if (!item) continue;
+        if (seen.has(item)) continue;
+        seen.add(item);
+        unique.push(item);
+    }
+    return unique;
+};
+
+const getSpriteAssetPathCandidates = (assetPath?: string | null) => {
+    const normalized = normalizeDiceSpriteAssetPath(assetPath);
+    if (!normalized) return [];
+    if (isDirectSpriteAsset(normalized)) return [normalized];
+    return [normalized];
+};
+
+const getLogicalSpriteUrlCandidates = (assetPath: string, locale?: string) => {
+    const localized = getLocalizedImageUrls(assetPath, locale);
+    const unlocalized = getLocalizedImageUrls(assetPath);
+    const urls = dedupeStringList([
+        localized.primary.webp,
+        localized.fallback.webp,
+        unlocalized.primary.webp,
+    ]);
+    // DiceThrone 骰图强制不走本地 /assets 回退，统一转成 R2 绝对域名
+    const base = getAssetsBaseUrl().replace(/\/+$/, '');
+    const toR2AbsoluteUrl = (url: string) => {
+        if (url.startsWith('/assets/')) {
+            if (base.startsWith('http://') || base.startsWith('https://')) {
+                return `${base}/${url.replace(/^\/+assets\/+/, '')}`;
+            }
+            // base 若不是绝对域名（极端配置），至少保留非 /assets 的同源绝对路径
+            return `/${url.replace(/^\/+assets\/+/, '')}`;
+        }
+        if (url.startsWith('/')) {
+            if (base.startsWith('http://') || base.startsWith('https://')) {
+                return `${base}/${url.replace(/^\/+/, '')}`;
+            }
+            return url;
+        }
+        return url;
+    };
+
+    const candidates = dedupeStringList(urls.map(toR2AbsoluteUrl));
+    diceAssetsLogger.debug('logical-url-candidates', {
+        assetPath,
+        locale: locale ?? null,
+        base,
+        candidates,
+    });
+    return candidates;
 };
 
 export const isDirectSpriteAsset = (assetPath?: string | null) => (
     Boolean(assetPath && DIRECT_SPRITE_ASSET_RE.test(assetPath.trim()))
 );
 
+export const resolveSpriteAssetUrls = (assetPath?: string | null, locale?: string) => {
+    const paths = getSpriteAssetPathCandidates(assetPath);
+    const urls: string[] = [];
+    for (const path of paths) {
+        if (isDirectSpriteAsset(path)) {
+            diceAssetsLogger.debug('resolve-direct-url', {
+                locale: locale ?? null,
+                path,
+            });
+            urls.push(path);
+            continue;
+        }
+        diceAssetsLogger.debug('resolve-logical-path', {
+            locale: locale ?? null,
+            path,
+        });
+        urls.push(...getLogicalSpriteUrlCandidates(path, locale));
+    }
+    const deduped = dedupeStringList(urls);
+    diceAssetsLogger.debug('resolve-final-urls', {
+        input: assetPath ?? null,
+        locale: locale ?? null,
+        urls: deduped,
+    });
+    return deduped;
+};
+
 export const resolveSpriteAssetUrl = (assetPath?: string | null, locale?: string) => {
-    const normalized = normalizeDiceSpriteAssetPath(assetPath);
-    if (!normalized) return undefined;
-    if (isDirectSpriteAsset(normalized)) return normalized;
-    return getLocalizedImageUrls(normalized, locale).primary.webp;
+    const urls = resolveSpriteAssetUrls(assetPath, locale);
+    return urls[0];
 };
 
 export const buildSpriteBackgroundImage = (assetPath?: string | null, locale?: string) => {
@@ -76,6 +172,10 @@ export const getDiceSpriteAssetPath = (definitionId?: string, characterId: strin
 
 export const getDiceSpriteUrl = (definitionId?: string, characterId: string = 'monk', locale?: string) => (
     resolveSpriteAssetUrl(getDiceSpriteAssetPath(definitionId, characterId), locale)
+);
+
+export const getDiceSpriteUrls = (definitionId?: string, characterId: string = 'monk', locale?: string) => (
+    resolveSpriteAssetUrls(getDiceSpriteAssetPath(definitionId, characterId), locale)
 );
 
 export interface DiceFaceFallbackSkin {

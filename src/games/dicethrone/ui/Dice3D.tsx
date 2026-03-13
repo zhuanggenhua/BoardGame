@@ -1,9 +1,9 @@
 import React from 'react';
+import { createScopedLogger } from '../../../lib/logger';
 import {
     DICE_BG_SIZE,
-    getDiceFaceFallbackSkin,
     getDiceSpritePosition,
-    getDiceSpriteUrl,
+    getDiceSpriteUrls,
 } from './assets';
 
 export interface Dice3DProps {
@@ -26,6 +26,11 @@ export interface Dice3DProps {
 }
 
 type SpriteLoadState = 'loading' | 'ready' | 'error';
+interface SpriteState {
+    status: SpriteLoadState;
+    url?: string;
+}
+const dice3DLogger = createScopedLogger('dicethrone:dice3d');
 
 /** 3D 骰子组件 */
 export const Dice3D = ({
@@ -49,43 +54,106 @@ export const Dice3D = ({
         { id: 5, trans: `rotateX(-90deg) translateZ(${translateZ})` },
     ];
 
-    const spriteUrl = React.useMemo(
-        () => getDiceSpriteUrl(definitionId, characterId, locale),
+    const spriteUrls = React.useMemo(
+        () => getDiceSpriteUrls(definitionId, characterId, locale),
         [characterId, definitionId, locale],
     );
-    const [spriteLoadState, setSpriteLoadState] = React.useState<SpriteLoadState>(spriteUrl ? 'loading' : 'error');
+    const [spriteState, setSpriteState] = React.useState<SpriteState>(() => ({
+        status: spriteUrls.length > 0 ? 'loading' : 'error',
+        url: spriteUrls[0],
+    }));
 
     React.useEffect(() => {
-        if (!spriteUrl) {
-            setSpriteLoadState('error');
+        dice3DLogger.debug('sprite-candidates', {
+            definitionId: definitionId ?? null,
+            characterId,
+            locale: locale ?? null,
+            spriteUrls,
+        });
+    }, [characterId, definitionId, locale, spriteUrls]);
+
+    React.useEffect(() => {
+        if (!spriteUrls.length) {
+            dice3DLogger.warn('sprite-candidates-empty', {
+                definitionId: definitionId ?? null,
+                characterId,
+                locale: locale ?? null,
+            });
+            setSpriteState({ status: 'error', url: undefined });
             return undefined;
         }
 
         if (typeof Image === 'undefined') {
-            setSpriteLoadState('ready');
+            dice3DLogger.warn('image-constructor-unavailable', {
+                definitionId: definitionId ?? null,
+                characterId,
+                locale: locale ?? null,
+                selectedUrl: spriteUrls[0],
+            });
+            setSpriteState({ status: 'ready', url: spriteUrls[0] });
             return undefined;
         }
 
-        setSpriteLoadState('loading');
-        const image = new Image();
+        setSpriteState({ status: 'loading', url: undefined });
         let cancelled = false;
 
-        image.onload = () => {
-            if (!cancelled) {
-                setSpriteLoadState('ready');
+        const tryLoad = (index: number) => {
+            if (cancelled) return;
+            if (index >= spriteUrls.length) {
+                dice3DLogger.error('sprite-all-failed', {
+                    definitionId: definitionId ?? null,
+                    characterId,
+                    locale: locale ?? null,
+                    spriteUrls,
+                });
+                setSpriteState({ status: 'error', url: undefined });
+                return;
             }
+
+            const candidateUrl = spriteUrls[index];
+            dice3DLogger.debug('sprite-probe-start', {
+                index,
+                candidateUrl,
+            });
+            const image = new Image();
+            image.onload = () => {
+                if (!cancelled) {
+                    dice3DLogger.info('sprite-probe-success', {
+                        index,
+                        candidateUrl,
+                        naturalWidth: image.naturalWidth,
+                        naturalHeight: image.naturalHeight,
+                    });
+                    setSpriteState({ status: 'ready', url: candidateUrl });
+                }
+            };
+            image.onerror = () => {
+                if (!cancelled) {
+                    dice3DLogger.warn('sprite-probe-fail', {
+                        index,
+                        candidateUrl,
+                    });
+                    tryLoad(index + 1);
+                }
+            };
+            image.src = candidateUrl;
         };
-        image.onerror = () => {
-            if (!cancelled) {
-                setSpriteLoadState('error');
-            }
-        };
-        image.src = spriteUrl;
+        tryLoad(0);
 
         return () => {
             cancelled = true;
         };
-    }, [spriteUrl]);
+    }, [characterId, definitionId, locale, spriteUrls]);
+
+    React.useEffect(() => {
+        dice3DLogger.debug('sprite-render-state', {
+            definitionId: definitionId ?? null,
+            characterId,
+            locale: locale ?? null,
+            spriteLoadState: spriteState.status,
+            resolvedSpriteUrl: spriteState.url ?? null,
+        });
+    }, [characterId, definitionId, locale, spriteState.status, spriteState.url]);
 
     const getFinalTransform = (val: number) => {
         switch (val) {
@@ -100,7 +168,8 @@ export const Dice3D = ({
     };
 
     const isSpotlight = variant === 'spotlight';
-    const isSpriteReady = spriteLoadState === 'ready';
+    const resolvedSpriteUrl = spriteState.url;
+    const isSpriteReady = spriteState.status === 'ready' && Boolean(resolvedSpriteUrl);
     const animationClass = isSpotlight ? 'animate-dice3d-bonus-tumble' : 'animate-dice3d-tumble';
     const borderRadius = isSpotlight ? 'rounded-[1vw]' : 'rounded-[0.5vw]';
     const borderStyle = isSpotlight ? 'border-2 border-slate-600/50' : 'border border-slate-700/50';
@@ -114,6 +183,8 @@ export const Dice3D = ({
             data-testid="dice-3d"
             data-sprite-ready={isSpriteReady ? 'true' : 'false'}
             data-definition-id={definitionId ?? ''}
+            data-sprite-candidates={String(spriteUrls.length)}
+            data-sprite-url={resolvedSpriteUrl ?? ''}
         >
             <div
                 className={`relative w-full h-full dice3d-preserve-3d ${isRolling ? animationClass : ''}`}
@@ -128,7 +199,6 @@ export const Dice3D = ({
                     const { xPos, yPos } = getDiceSpritePosition(face.id);
                     const needsFlip = face.id === 1 || face.id === 6;
                     const faceTransform = needsFlip ? `${face.trans} rotateZ(180deg)` : face.trans;
-                    const fallbackSkin = getDiceFaceFallbackSkin(face.id, definitionId, characterId);
 
                     return (
                         <div
@@ -136,50 +206,14 @@ export const Dice3D = ({
                             className={`absolute inset-0 flex items-center justify-center bg-slate-900 ${borderRadius} dice3d-backface-hidden ${borderStyle} shadow-inner`}
                             style={{
                                 transform: faceTransform,
-                                backgroundImage: isSpriteReady ? `url("${spriteUrl}")` : undefined,
-                                background: isSpriteReady ? undefined : fallbackSkin.faceBackground,
+                                backgroundImage: isSpriteReady && resolvedSpriteUrl ? `url("${resolvedSpriteUrl}")` : undefined,
                                 backgroundSize: isSpriteReady ? DICE_BG_SIZE : undefined,
                                 backgroundPosition: isSpriteReady ? `${xPos}% ${yPos}%` : undefined,
-                                boxShadow: isSpriteReady ? boxShadow : `inset 0 0 1vw rgba(2,6,23,0.72), 0 0 0 1px ${fallbackSkin.faceBorder}`,
+                                boxShadow,
                                 imageRendering: 'auto',
-                                borderColor: isSpriteReady ? undefined : fallbackSkin.faceBorder,
                             }}
                             data-face-id={face.id}
-                            data-face-symbol={fallbackSkin.faceId ?? ''}
-                        >
-                            {!isSpriteReady && (
-                                <>
-                                    <div
-                                        className="pointer-events-none absolute inset-[14%] rounded-[24%] border"
-                                        style={{
-                                            background: fallbackSkin.badgeBackground,
-                                            borderColor: fallbackSkin.badgeBorder,
-                                            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 18px rgba(2,6,23,0.18)`,
-                                        }}
-                                    />
-                                    <span
-                                        className="relative z-[1] font-black tracking-tight"
-                                        style={{
-                                            fontSize: `calc(${size} * ${isSpotlight ? 0.3 : 0.34})`,
-                                            color: fallbackSkin.textColor,
-                                            textShadow: fallbackSkin.textShadow,
-                                        }}
-                                    >
-                                        {fallbackSkin.glyph}
-                                    </span>
-                                    <span
-                                        className="pointer-events-none absolute bottom-[11%] font-black uppercase tracking-[0.22em]"
-                                        style={{
-                                            fontSize: `calc(${size} * 0.1)`,
-                                            color: fallbackSkin.captionColor,
-                                            textShadow: '0 1px 0 rgba(2,6,23,0.45)',
-                                        }}
-                                    >
-                                        {fallbackSkin.label}
-                                    </span>
-                                </>
-                            )}
-                        </div>
+                        />
                     );
                 })}
             </div>
