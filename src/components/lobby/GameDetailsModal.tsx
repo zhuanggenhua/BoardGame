@@ -12,7 +12,7 @@ import { ConfirmModal } from '../common/overlays/ConfirmModal';
 import { ModalBase } from '../common/overlays/ModalBase';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { useToast } from '../../contexts/ToastContext';
-import { GAME_CHANGELOG_API_URL, GAME_SERVER_URL } from '../../config/server';
+import { GAME_SERVER_URL } from '../../config/server';
 import { getGameById } from '../../config/games.config';
 import { CreateRoomModal, type RoomConfig } from './CreateRoomModal';
 import { GameReviews } from '../review/GameReviewSection';
@@ -21,7 +21,7 @@ import { normalizeGameName, shouldPromptExitActiveMatch, resolveActiveMatchExitP
 import { RoomList } from './RoomList';
 import { LeaderboardTab } from './LeaderboardTab';
 import { GameChangelogPanel } from './GameChangelogPanel';
-import { resolveGameAuthorName, type GameChangelogItem } from './gameDetailsContent';
+import { resolveGameAuthorName } from './gameDetailsContent';
 import { logger } from '../../lib/logger';
 
 
@@ -81,9 +81,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         leaderboard: { name: string; wins: number; matches: number }[];
     } | null>(null);
     const [leaderboardError, setLeaderboardError] = useState(false);
-    const [changelogItems, setChangelogItems] = useState<GameChangelogItem[] | null>(null);
-    const [changelogError, setChangelogError] = useState(false);
-
     // 创建房间弹窗状态
     const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
     const [passwordModalConfig, setPasswordModalConfig] = useState<{ matchID: string; gameName: string } | null>(null);
@@ -131,26 +128,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 });
         }
 
-        if (isOpen && activeTab === 'changelog') {
-            setChangelogError(false);
-            setChangelogItems(null);
-            fetch(`${GAME_CHANGELOG_API_URL}/${encodeURIComponent(normalizedGameId)}`)
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json() as Promise<{ changelogs?: GameChangelogItem[] }>;
-                })
-                .then(data => {
-                    setChangelogItems(Array.isArray(data.changelogs) ? data.changelogs : []);
-                })
-                .catch(err => {
-                    logger.error('[GameDetailsModal] 获取更新日志失败', {
-                        gameId: normalizedGameId,
-                        error: err,
-                    });
-                    setChangelogError(true);
-                    setChangelogItems([]);
-                });
-        }
     }, [isOpen, activeTab, normalizedGameId]);
 
     useEffect(() => {
@@ -879,29 +856,45 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
                     {/* 左侧面板 - 游戏信息 */}
                     <div className="relative w-full md:w-2/5 shrink-0 overflow-hidden border-b border-parchment-card-border/30 bg-parchment-base-bg/50 transition-all md:border-b-0 md:border-r">
-                        <div className="flex h-full min-h-0 flex-col overflow-y-auto p-3 pb-16 text-left font-serif md:items-center md:p-8 md:pb-20 md:text-center">
+                        <div className="flex h-full min-h-0 flex-col overflow-y-auto p-3 text-left font-serif md:items-center md:p-8 md:text-center">
                             {/* 缩略图 - 移动端隐藏，桌面端显示 */}
                             <div className="hidden md:flex w-20 h-20 bg-parchment-card-bg border border-parchment-card-border/30 rounded-[4px] shadow-sm items-center justify-center text-4xl text-parchment-base-text font-bold mb-6 overflow-hidden shrink-0">
                                 {thumbnail}
                             </div>
 
                             {/* 标题 - 固定在顶部 */}
-                            <div className="shrink-0">
-                                <h2 className="text-lg md:text-2xl font-bold text-parchment-base-text mb-1 md:mb-2 tracking-wide leading-tight">
+                            <div className="relative mb-4 min-h-[2.5rem] w-full shrink-0 pr-20 md:mb-0 md:block md:min-h-0 md:pr-0">
+                                <h2 className="min-w-0 text-lg font-bold leading-tight tracking-wide text-parchment-base-text md:mb-2 md:text-2xl">
                                     {t(titleKey)}
                                 </h2>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAuthorInfoModal(true)}
+                                    className="absolute right-0 top-0 inline-flex items-center gap-1 rounded-full border border-parchment-card-border/35 bg-parchment-card-bg/90 px-2 py-1 text-[9px] font-medium leading-none tracking-[0.08em] text-parchment-light-text/85 shadow-[0_1px_0_rgba(255,255,255,0.45)_inset] transition-colors hover:border-parchment-base-text/25 hover:text-parchment-base-text cursor-pointer md:hidden"
+                                    title={gameAuthorButtonHint}
+                                    aria-label={gameAuthorButtonHint}
+                                >
+                                    <span>{t('authorInfo.mobileButton')}</span>
+                                    <Info size={10} strokeWidth={2.1} className="shrink-0" />
+                                </button>
                                 <div className="hidden md:block h-px w-12 bg-parchment-card-border/50 opacity-30 mb-4 mx-auto" />
                             </div>
 
                             {/* 描述区域 - 可滚动 */}
-                            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-parchment-card-border/30 scrollbar-track-transparent pr-1 mb-3 md:mb-6 min-h-0">
+                            <div
+                                data-testid="game-details-description"
+                                className="hidden md:block flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-parchment-card-border/30 scrollbar-track-transparent pr-1 mb-3 md:mb-6 min-h-0"
+                            >
                                 <p className="text-[11px] md:text-sm text-parchment-light-text leading-relaxed italic">
                                     {t(descriptionKey)}
                                 </p>
                             </div>
 
                             {/* 人数显示 - 固定在底部上方 */}
-                            <div className="shrink-0 mb-3">
+                            <div
+                                data-testid="game-details-player-recommendation"
+                                className="hidden md:block shrink-0 mb-3"
+                            >
                                 {(() => {
                                     const playerOptions = gameManifest?.playerOptions || [2];
                                     const bestPlayers = gameManifest?.bestPlayers || [];
@@ -938,7 +931,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                             </div>
 
                             {/* 操作按钮 - 固定在底部 */}
-                            <div className="shrink-0 w-full flex flex-row md:flex-col gap-2">
+                            <div className="mt-1 shrink-0 w-full flex flex-row gap-2 md:mt-0 md:flex-col">
                                 {allowLocalMode && (
                                     <button
                                         type="button"
@@ -956,19 +949,19 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                     {t('actions.tutorial')}
                                 </button>
                             </div>
-                        </div>
 
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center px-3 pb-1.5 md:px-8 md:pb-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowAuthorInfoModal(true)}
-                                className="pointer-events-auto inline-flex max-w-full items-center gap-3 rounded-full border border-parchment-card-border/40 bg-parchment-card-bg/95 px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] text-parchment-light-text shadow-sm transition-all hover:border-parchment-base-text/35 hover:bg-parchment-card-bg hover:text-parchment-base-text cursor-pointer"
-                                title={gameAuthorButtonHint}
-                                aria-label={gameAuthorButtonHint}
-                            >
-                                <span className="truncate">{gameAuthorLabel}</span>
-                                <Info size={14} strokeWidth={2.2} className="shrink-0 opacity-90" />
-                            </button>
+                            <div className="hidden shrink-0 w-full justify-center pt-2 md:flex md:pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAuthorInfoModal(true)}
+                                    className="inline-flex max-w-full items-center gap-3 rounded-full border border-parchment-card-border/40 bg-parchment-card-bg/95 px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] text-parchment-light-text shadow-sm transition-all hover:border-parchment-base-text/35 hover:bg-parchment-card-bg hover:text-parchment-base-text cursor-pointer"
+                                    title={gameAuthorButtonHint}
+                                    aria-label={gameAuthorButtonHint}
+                                >
+                                    <span className="truncate">{gameAuthorLabel}</span>
+                                    <Info size={14} strokeWidth={2.2} className="shrink-0 opacity-90" />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -985,6 +978,17 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                 >
                                     {t('tabs.lobby')}
                                     {activeTab === 'lobby' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
+                                </button>
+                                <div className="w-px bg-[#e5e0d0] h-4 sm:h-6 shrink-0" />
+                                <button
+                                    onClick={() => setActiveTab('changelog')}
+                                    className={clsx(
+                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
+                                        activeTab === 'changelog' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
+                                    )}
+                                >
+                                    {t('tabs.changelog')}
+                                    {activeTab === 'changelog' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
                                 </button>
                                 <div className="w-px bg-[#e5e0d0] h-4 sm:h-6 shrink-0" />
                                 <button
@@ -1007,17 +1011,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                 >
                                     {t('tabs.leaderboard')}
                                     {activeTab === 'leaderboard' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
-                                </button>
-                                <div className="w-px bg-[#e5e0d0] h-4 sm:h-6 shrink-0" />
-                                <button
-                                    onClick={() => setActiveTab('changelog')}
-                                    className={clsx(
-                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
-                                        activeTab === 'changelog' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
-                                    )}
-                                >
-                                    {t('tabs.changelog')}
-                                    {activeTab === 'changelog' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
                                 </button>
                             </div>
                             <button onClick={onClose} className="p-1.5 hover:bg-parchment-base-bg rounded-full text-parchment-light-text hover:text-parchment-base-text transition-colors cursor-pointer shrink-0">
@@ -1048,7 +1041,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         )}
                         {activeTab === 'changelog' && (
                             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                                <GameChangelogPanel items={changelogItems} error={changelogError} />
+                                <GameChangelogPanel gameId={normalizedGameId} />
                             </div>
                         )}
                         {activeTab === 'reviews' && (

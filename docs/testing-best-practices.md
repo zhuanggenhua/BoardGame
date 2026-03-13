@@ -636,6 +636,10 @@ test: {
 3. **同步等待优先**：UI 操作后先 `waitForTimeout(300)`，再按需异步等待
 4. **服务器就绪检查**：Playwright 配置使用 `/__ready` 端点
 5. **文件编码检查**：测试命令前运行 `npm run check:encoding`；发现 BOM 时执行 `npm run check:encoding:fix`；如果要把可疑乱码也视为失败，使用 `npm run check:encoding:strict`
+6. **截图目录单一真实来源**：失败自动产物只看 `test-results/playwright-artifacts/`；显式证据截图只写 `test-results/evidence-screenshots/`
+7. **按用例分目录**：`game.screenshot()` 默认按“测试文件/测试用例”建子目录，并在该用例首次截图前自动清理旧图
+8. **禁止一图多存**：不要把同一张截图同时复制到多个稳定目录
+9. **`evidence/` 放文档，不放自动截图池**：证据文档可以引用 `../test-results/evidence-screenshots/...`，但不要默认把自动化截图写进 `evidence/screenshots/`
 
 ### 代码示例
 

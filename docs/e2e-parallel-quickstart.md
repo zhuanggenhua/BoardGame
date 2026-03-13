@@ -95,8 +95,10 @@ PW_WORKERS=2 npm run test:e2e:parallel
 A: 使用 Playwright 的 `--grep` 选项：
 
 ```bash
-npx playwright test --config=playwright.config.parallel.ts --grep "测试用例名称"
+npm run test:e2e:parallel -- --grep "测试用例名称"
 ```
+
+- 优先走项目脚本，默认会强制无头运行，避免终端残留的 `PW_HEADED` / `PWDEBUG` 让并行测试一下子弹出很多窗口。
 
 ### Q: 并行测试比串行测试快多少？
 

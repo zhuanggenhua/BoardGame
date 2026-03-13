@@ -1063,20 +1063,28 @@ await page.evaluate(() => {
 ### 运行方式
 
 ```bash
-# 开发模式（默认）：使用已运行的服务器
-# 1. 先手动启动服务
+# 开发模式：先启动服务，再指定相关 E2E 文件或 grep
 npm run dev
+npm run test:e2e -- e2e/<相关文件>.e2e.ts
+# 或
+npm run test:e2e -- --grep "<相关用例名>"
 
-# 2. 在另一个终端运行测试
-npm run test:e2e
+# CI 模式：自动启动服务器并运行相关测试
+npm run test:e2e:ci -- e2e/<相关文件>.e2e.ts
 
-# CI 模式：自动启动服务器
-npm run test:e2e:ci
+# 明确需要全量时才使用
+npm run test:e2e:all
+
+# 明确需要全量 CI 时才使用
+npm run test:e2e:ci:all
 ```
 
 **环境变量控制**：
 - `PW_START_SERVERS=true` — 强制启动服务器（CI 模式）
 - 默认（不设置）— 使用已运行的服务器（开发模式）
+- 默认禁止“无目标直接全量跑”`Playwright`，避免本地误触完整 E2E 套件卡死机器
+- 常用项目脚本（如 `npm run test:e2e`、`npm run test:e2e:ci`、`npm run test:e2e:parallel`）会显式强制无头运行，避免终端里残留的 `PW_HEADED` / `PWDEBUG` 导致突然弹出一批浏览器窗口
+- 如需可见浏览器调试，请显式使用 `npx playwright test --headed` 或 `npx playwright test --debug`
 
 ### 端口配置与隔离（重要）
 
@@ -1197,14 +1205,24 @@ npm run clean:ports
 
 ### 截图与附件管理（强制）
 
-1. 使用 `testInfo.outputPath('filename.png')` 生成存放路径
-2. 禁止硬编码路径（如 `e2e/screenshots/...`）
-3. `test-results/` 目录已被 git 忽略，测试产物不应提交
-4. 按需截图，默认配置已开启 `screenshot: 'only-on-failure'`
+1. Playwright 自动产物目录固定为 `test-results/playwright-artifacts/`，仅保留失败用例附件（`preserveOutput: 'failures-only'`）
+2. 显式证据截图统一通过 `game.screenshot()` 或共享工具写入 `test-results/evidence-screenshots/`
+3. `game.screenshot()` 默认按“测试文件/测试用例”分目录，例如 `test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/触控窄视口下放大入口常显且可点击/10-mobile-main-board-state.png`
+4. 同一用例首次截图前会自动清理该用例旧截图，并顺带清理旧的平铺遗留文件，避免新旧图混在一起
+5. `testInfo.outputPath()` 只用于临时附件路径，不是长期证据目录
+6. 禁止把同一张图复制到多个稳定目录；禁止默认自动写入 `evidence/screenshots/`
+7. `test-results/` 目录已被 git 忽略，测试产物不应提交
+8. 在对话、证据说明或交接里汇报截图位置时，直接给工作区绝对路径，例如 `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\...`
 
 ```typescript
 test('Match started', async ({ page }, testInfo) => {
     await page.screenshot({ path: testInfo.outputPath('game-started.png') });
+});
+```
+
+```typescript
+test('Match started', async ({ game }, testInfo) => {
+    await game.screenshot('match-started', testInfo);
 });
 ```
 

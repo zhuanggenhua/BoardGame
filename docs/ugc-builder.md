@@ -176,7 +176,7 @@ npx vitest run src/ugc/builder/__tests__/UnifiedBuilder.test.ts
 
 端到端测试：
 ```bash
-npx playwright test e2e/ugc-builder.e2e.ts
+npm run test:e2e -- e2e/ugc-builder.e2e.ts
 ```
 
 测试覆盖：

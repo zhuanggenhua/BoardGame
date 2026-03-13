@@ -127,12 +127,12 @@ function setupWithBreakpointOnlyP1Special(ids: PlayerId[], random: RandomFn): Ma
     return state;
 }
 
-/** 蛇形选秀（多轮 afterEvents 自动推进到 playCards） */
+/** 顺序双选（多轮 afterEvents 自动推进到 playCards） */
 const DRAFT_COMMANDS = [
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
 ] as any[];
 
 /** 直接从 playCards 推进到 scoreBases（配合 setupWithBreakpoint） */

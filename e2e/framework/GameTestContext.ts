@@ -10,12 +10,13 @@
  * 4. 可组合 - 场景构建器 + 动作 + 断言
  */
 
-import { copyFile, mkdir } from 'node:fs/promises';
-import { dirname, join, parse } from 'node:path';
+import { mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { getCardDef as getSmashUpCardDef, getBaseDef } from '../../src/games/smashup/data/cards';
 import { CHARACTER_DATA_MAP, initHeroState } from '../../src/games/dicethrone/domain/characters';
 import type { AbilityCard, SelectableCharacterId } from '../../src/games/dicethrone/types';
+import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath, sanitizeEvidencePathSegment } from './evidenceScreenshots';
 
 type SceneQueryValue = string | number | boolean | null | undefined;
 
@@ -242,15 +243,33 @@ function normalizeSmashUpCardEntry(entry: string | SmashUpCardSceneConfig): Smas
 
 export class GameTestContext {
     constructor(private page: Page) {}
+    private clearedEvidenceTests = new Set<string>();
 
-    private static sanitizePathSegment(value: string): string {
-        return value
-            // eslint-disable-next-line no-control-regex
-            .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '')
-            .slice(0, 120);
+    private isRetryableNavigationError(error: unknown): boolean {
+        if (!(error instanceof Error)) {
+            return false;
+        }
+
+        return error.message.includes('ERR_ABORTED')
+            || error.message.includes('frame was detached');
+    }
+
+    private async gotoWithRetry(url: string, timeout: number): Promise<void> {
+        const maxAttempts = 3;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout });
+                return;
+            } catch (error) {
+                if (!this.isRetryableNavigationError(error) || attempt === maxAttempts) {
+                    throw error;
+                }
+
+                // 开发服务器热更新会短暂重建 frame，允许导航层做有限重试。
+                await this.page.waitForTimeout(800);
+            }
+        }
     }
 
     private async dismissRevealOverlayIfPresent(): Promise<void> {
@@ -296,7 +315,7 @@ export class GameTestContext {
         const search = params.toString();
         const url = `/play/${gameId}${search ? `?${search}` : ''}`;
 
-        await this.page.goto(url);
+        await this.gotoWithRetry(url, timeout);
         await this.waitForTestHarness(timeout);
         await this.page.waitForFunction(
             () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
@@ -1251,7 +1270,15 @@ export class GameTestContext {
      * ```
      */
     async screenshot(name: string, testInfo: TestInfo): Promise<void> {
-        const path = testInfo.outputPath(`${name}.png`);
+        const cleanupKey = `${testInfo.file}::${testInfo.title}`;
+        if (!this.clearedEvidenceTests.has(cleanupKey)) {
+            await clearEvidenceScreenshotsForTest(testInfo);
+            this.clearedEvidenceTests.add(cleanupKey);
+        }
+
+        const path = getEvidenceScreenshotPath(testInfo, name, {
+            filename: `${sanitizeEvidencePathSegment(name) || 'screenshot'}.png`,
+        });
         await mkdir(dirname(path), { recursive: true });
 
         const withFileRetry = async (operation: () => Promise<void>) => {
@@ -1273,22 +1300,5 @@ export class GameTestContext {
         };
 
         await withFileRetry(() => this.page.screenshot({ path, fullPage: true }).then(() => undefined));
-
-        const fileStem = GameTestContext.sanitizePathSegment(parse(testInfo.file).name || 'unknown-test');
-        const titleStem = GameTestContext.sanitizePathSegment(testInfo.title || 'unnamed');
-        const nameStem = GameTestContext.sanitizePathSegment(name);
-        const preservedDir = join(process.cwd(), 'test-results', 'preserved-screenshots', fileStem);
-        const preservedPath = join(preservedDir, `${titleStem}-${nameStem}.png`);
-        const flatDir = join(process.cwd(), 'test-results', 'preserved-screenshots-flat');
-        const flatPath = join(flatDir, `${fileStem}-${nameStem}.png`);
-        const evidenceDir = join(testInfo.config.rootDir, 'test-results', 'evidence-screenshots', fileStem);
-        const evidencePath = join(evidenceDir, `${titleStem}-${nameStem}.png`);
-
-        await mkdir(preservedDir, { recursive: true });
-        await mkdir(flatDir, { recursive: true });
-        await mkdir(evidenceDir, { recursive: true });
-        await withFileRetry(() => copyFile(path, preservedPath));
-        await withFileRetry(() => copyFile(path, flatPath));
-        await withFileRetry(() => copyFile(path, evidencePath));
     }
 }

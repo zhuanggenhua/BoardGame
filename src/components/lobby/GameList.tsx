@@ -12,7 +12,7 @@ interface GameListProps {
 export const GameList = ({ games, onGameClick, mostPopularGameId }: GameListProps) => {
     const { t, i18n } = useTranslation(['lobby', 'common']);
     return (
-        <div className="grid grid-cols-[repeat(auto-fill,180px)] justify-center gap-5 w-full max-w-full mx-auto">
+        <div className="grid w-full max-w-full grid-cols-2 gap-3 mx-auto sm:grid-cols-[repeat(auto-fill,180px)] sm:justify-center sm:gap-5">
             {games.map((game, index) => (
                 <motion.a
                     key={game.id}
@@ -29,7 +29,7 @@ export const GameList = ({ games, onGameClick, mostPopularGameId }: GameListProp
                         group relative cursor-pointer 
                         flex flex-col 
                         bg-parchment-card-bg 
-                        w-full max-w-[190px] mx-auto
+                        w-full max-w-none mx-auto sm:max-w-[190px]
                         p-2 sm:p-2.5
                         rounded-sm
                         shadow-parchment-card

@@ -22,6 +22,7 @@ import {
 import { createGameEngine } from '../../engine/adapter';
 import { buildDamageBreakdownSegment, type DamageSourceResolver } from '../../engine/primitives/actionLogHelpers';
 import { DiceThroneDomain } from './domain';
+import { getDiceDefinition } from './domain/diceRegistry';
 import { DICETHRONE_COMMANDS, TOKEN_IDS } from './domain/ids';
 import type {
     AbilityCard,
@@ -394,7 +395,8 @@ function formatDiceThroneActionEntry({
         const characterId = core.players[rollerId]?.characterId;
 
         if (characterId && characterId !== 'unselected' && activeDice.length > 0) {
-            const spriteAsset = ASSETS.DICE_SPRITE(characterId);
+            const spriteAsset = getDiceDefinition(activeDice[0]?.definitionId)?.assets?.spriteSheet
+                ?? ASSETS.DICE_SPRITE(characterId);
             const SPRITE_COLS = 3;
             const SPRITE_ROWS = 3;
             // 精灵图中骰面值→网格位置的映射

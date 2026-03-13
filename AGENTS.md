@@ -43,7 +43,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/ai-rules/testing-audit.md` — **审查实现完整性/新增功能补测试/修"没效果"类 bug/规划审计 spec 时必读**。含**通用实现缺陷检查维度（D1-D49 穷举框架）**、描述→实现全链路审查规范（唯一权威来源）、数据查询一致性审查、元数据语义一致性审计、引擎 API 调用契约审计（D3 子项）、交互模式语义匹配（D5 子项）、验证层有效性门控（D7 子项）、验证-执行前置条件对齐（D2 子项）、引擎批处理时序与 UI 交互对齐（D8 子项）、事件产生门控普适性检查（D8 子项）、多系统 afterEvents 优先级竞争（D8 子项）、Reducer 消耗路径审计（D11）、写入-消耗对称（D12）、多来源竞争（D13）、回合清理完整（D14）、UI 状态同步（D15）、条件优先级（D16）、隐式依赖（D17）、否定路径（D18）、组合场景（D19）、状态可观测性（D20）、触发频率门控（D21）、伤害计算管线配置（D22）、架构假设一致性（D23）、Handler 共返状态一致性（D24）、替代路径后处理对齐（D32）、交互选项 UI 渲染模式正确性（D34）、流程控制标志清除完整性（D39）、后处理循环事件去重完整性（D40）、系统职责重叠检测（D41）、事件流全链路审计（D42）、重构完整性检查（D43）、测试设计反模式检测（D44）、Pipeline 多阶段调用去重（D45）、交互选项 UI 渲染模式声明完整性（D46）、E2E 测试覆盖完整性（D47）、UI 交互渲染模式完整性（D48）、**abilityTags 与触发机制一致性（D49）**、效果语义一致性审查、审计反模式清单、测试策略与工具选型。**当用户说"审计"、"审查"、"审核"、"核对"、"对一下描述和代码"等词时，必须先阅读本文档。"检查"不算触发词，不自动启动审计流程。规划/设计审计类 spec（requirements/design/tasks）时也必须先阅读本文档，逐条对照 D1-D49 维度确认覆盖范围。**
 - `docs/testing-best-practices.md` — **编写测试或测试失败时必读**。含测试工具选择（GameTestRunner/runCommand/E2E）、状态对象类型（Core vs MatchState）、常见错误模式（传递裸 Core、期望错误返回值、不控制随机数）、测试辅助函数（helpers.ts 工具）、测试编写检查清单、迁移指南、**E2E 测试框架最佳实践（GameTestContext API、轮询间隔优化、同步等待+异步降级、服务器就绪检查、测试前自动检查、性能基准、稳定性保障）**。**补充 `docs/automated-testing.md`，专注于测试编写的常见陷阱和最佳实践。**
 
-- `docs/ai-rules/ui-ux.md` — **开发/修改 UI 组件、布局、样式、游戏界面时必读**。含审美准则、多端布局、游戏 UI 特化、设计系统引用。
+- `docs/ai-rules/ui-ux.md` — **任何 UI 改动都必读**（包括微调样式、布局、间距、文案层级、入口位置、空状态、弹窗、游戏界面）。含审美准则、多端布局、游戏 UI 特化、设计系统引用。
 - `docs/ai-rules/global-systems.md` — **使用/修改全局 Context（Toast/Modal/音频/教学/认证/光标）时必读**。含 Context 系统、实时服务层、**光标主题系统**（自注册流程、形态规范、偏好持久化、设置弹窗交互逻辑）。
 - `docs/ai-rules/doc-index.md` — **不确定该读哪个文档时必读**。按场景查找需要阅读的文档。
 - `docs/temp-files-management.md` — **创建临时文件或清理根目录时必读**。含临时文件分类规则、目录结构、.gitignore 规则、开发规范。
@@ -66,7 +66,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 #### E2E 测试强制要求（UI 交互必须用 E2E）
 1. **必须使用三板斧**：新框架 + 专用测试模式 + 状态注入（详见下文「E2E 测试三板斧」）
 2. **必须实际运行并通过**：AI 编写后立即运行 `npm run test:e2e:ci -- <测试文件名>`，禁止交给用户
-3. **必须自审截图**：用 `mcp_image_viewer_view_image` 查看所有测试截图，确认 UI 正确、交互完整
+3. **必须自审截图**：优先查看 `test-results/evidence-screenshots/` 下的显式证据截图；失败用例再补看 `test-results/playwright-artifacts/` 下的自动产物，确认 UI 正确、交互完整
 4. **必须创建证据文档**：`evidence/<功能名>-e2e-test.md`，嵌入截图并分析内容
 5. **绝对禁止用单元测试糊弄**：UI 交互/多玩家协作/动画特效 → 必须用 E2E 测试
 6. **测试失败处理**：加日志定位根因 → 审查调用链 → 修复代码或调整测试
@@ -134,6 +134,10 @@ Keep this managed block so 'openspec update' can refresh the instructions.
   - 第 100 个游戏的代码量和第 1 个一样少吗？
 
 ### 1. 沟通与开发原则
+- **需求意图校验（强制）**：处理需求、review comment、bug 反馈前，必须先判断三件事：1）用户真正想达到的结果；2）用户当前最反感、最不希望出现的结果；3）当前显式要求里哪些是手段，哪些才是目的。**禁止把最近一句显式表述机械放大为最终需求**，也禁止把 reviewer/spec 的局部要求脱离上下文直接执行。
+- **手段与目的分离（强制）**：位置、层级、入口、展示方式、是否并排/同屏这类要求，默认都是服务某个更高层目的的手段，不得自动视为最终业务目标。实施前必须先自检：如果按字面做完，用户仍可能合理地说“你只是照做了，但没解决我的问题”，则该方案不合格，必须重想。
+- **禁止机械折中（强制）**：当 reviewer、spec、历史行为、当前对话中的用户表达互相冲突时，禁止默认用“并存、折中、同屏平级、两边都沾一点”的方式糊过去，除非用户明确要求折中。若无法确认，应先向用户说明你推断出的真实目标和冲突点，再等待裁决。
+- **UI 交付后自检（强制）**：完成任何 UI 文案、布局、入口、按钮、空状态、提示语改动后，必须再做一次面向普通用户的自检，至少检查四件事：1）文案是否自然、简短、像真实产品会说的话；2）交互是否有足够暗示，用户能一眼看出哪里可点、点了会发生什么；3）信息层级是否真的服务用户目标，而不是把无关信息做大做重；4）贴边、贴底、悬浮、角落类元素是否仍被父级内边距、正常文档流或占位空间悄悄顶开。任一项答案是否定，都不能直接交付。
 - **中文优先（强制）**：所有交互、UI 文本、代码注释、设计文档必须使用中文。
 - **DRY 原则（强制）**：相同逻辑只实现一次，通过函数/组件/配置复用。禁止复制粘贴代码。发现重复代码必须立即提取为公共函数/组件/配置。
 - **禁止硬编码（强制）**：
@@ -205,7 +209,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **E2E 测试必须通过并自审截图（强制）**：
   - 绝对禁止用单元测试糊弄 UI 交互功能
   - 测试必须实际运行并通过：`npm run test:e2e:ci -- <测试文件名>`
-  - 必须用 MCP 查看测试截图：`mcp_image_viewer_view_image` 查看 `test-results/` 目录截图，分析游戏状态、UI 元素、交互结果
+  - 必须用 MCP 查看测试截图：优先看 `test-results/evidence-screenshots/`；如果是失败排障，再看 `test-results/playwright-artifacts/`
+  - 向用户汇报测试产物路径时，必须给出工作区绝对路径，例如 `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\...`，不要只写相对目录
   - 用户上传的截图直接从对话中查看（不用 MCP）
   - 测试失败必须修复：加日志、检查代码、审查调用链，可修改测试/增加游戏模式/重构框架
   - 证据文档必须包含截图分析：创建 `evidence/` 文档，嵌入截图并详细分析内容
@@ -228,7 +233,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **图片/资源类测试必须验证内容（强制）**：测试图集索引、卡牌图片、资源加载等视觉内容时，必须通过以下方式之一验证：① 读取实际渲染的图片 URL 并断言包含正确的索引/路径；② 使用视觉回归测试工具对比像素差异；③ 通过调试面板注入特定卡牌并验证 UI 显示的卡牌名称与预期一致。禁止只截图不验证。
 - **测试失败必须暴露问题（强制）**：当功能有 bug 时，测试必须失败并给出明确的错误信息。如果测试在有 bug 的情况下仍然通过，说明测试无效，必须重写。
 - **E2E 测试必须模拟真实用户操作（强制）**：E2E 测试必须通过 UI 交互验证功能，不得直接读取内部状态后就声称"测试通过"。状态读取只能用于辅助定位问题，不能替代 UI 验证。
-- **测试结果必须保留（强制）**：Playwright 配置必须设置 `preserveOutput: 'always'`，禁止自动清理测试结果。每次运行测试不应删除之前测试的截图和报告，以便回溯和对比。测试结果目录应该累积保存，由开发者手动清理。
+- **测试产物目录必须单一且分层（强制）**：Playwright 自动产物使用 `test-results/playwright-artifacts/`，配置为 `preserveOutput: 'failures-only'`；显式证据截图统一写入 `test-results/evidence-screenshots/`。禁止同一张图复制到多个稳定目录，禁止默认自动写入 `evidence/screenshots/`。
 
 ### 1.2 证据链与排查规范（修bug时强制）
 
@@ -728,11 +733,11 @@ console.log('修改完成');
 - **E2E 测试必须由 AI 自主运行（强制）**：
   - **禁止交给用户手动运行**：AI 完成 E2E 测试编写后，必须立即运行测试，不得交给用户手动运行
   - **运行命令**：使用 `npm run test:e2e:ci -- <测试文件名>` 或 `npm run test:e2e -- <测试文件名>`
-  - **测试证据必须保留**：测试运行后保存证据到 `evidence/` 目录（测试结果、错误信息、截图）
+  - **测试证据必须保留**：`evidence/` 目录用于证据文档；截图默认保存在 `test-results/evidence-screenshots/`，失败自动产物在 `test-results/playwright-artifacts/`
   - **证据文档必须包含截图**：
-    * AI 必须先用 MCP 验证测试截图存在（`mcp_image_viewer_list_images` 检查 `test-results/` 目录）
+    * AI 必须先用 MCP 验证测试截图存在（优先检查 `test-results/evidence-screenshots/`，失败排障时检查 `test-results/playwright-artifacts/`）
     * AI 必须先查看所有测试截图（`mcp_image_viewer_view_image`），确认内容正常、清晰、完整
-    * 在证据文档中嵌入截图（相对路径 `![描述](../test-results/...)`）并分析内容
+    * 在证据文档中嵌入截图时，优先引用 `../test-results/evidence-screenshots/...`，不要把自动化截图再复制到 `evidence/screenshots/`
     * 用户上传的截图直接从对话中查看（不用 MCP）
     * 只保留流程跑通的截图，边界测试不需要截图
   - **测试文件命名规范**：E2E 测试文件必须以 `.e2e.ts` 结尾
@@ -756,7 +761,7 @@ console.log('修改完成');
 
 ## 🎨 UI/UX 规范（核心规则）
 
-> **开发/修改 UI 组件或布局时必须先阅读 `docs/ai-rules/ui-ux.md`**
+> **任何 UI 改动前都必须先阅读 `docs/ai-rules/ui-ux.md`**
 
 - **PC-First**，移动端 Best-effort。
 - **移动端适配（已实现）**：

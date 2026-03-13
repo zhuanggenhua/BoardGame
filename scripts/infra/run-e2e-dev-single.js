@@ -59,6 +59,8 @@ if (!match) {
 
 const env = {
     ...process.env,
+    PW_HEADED: 'false',
+    PWDEBUG: '0',
     PW_USE_DEV_SERVERS: 'true',
     PW_WORKERS: '1',
     PW_TEST_MATCH: match,

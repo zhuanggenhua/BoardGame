@@ -1,4 +1,4 @@
-﻿M src/games/smashup/Board.tsx
+M src/games/smashup/Board.tsx
 M src/games/smashup/__tests__/alienAuditFixes.test.ts
 M src/games/smashup/__tests__/baseAbilitiesPrompt.test.ts
 M src/games/smashup/__tests__/baseAbilityIntegration.test.ts

@@ -443,7 +443,9 @@ A: 使用以下方法：
 1. 截图：`await page.screenshot({ path: 'debug.png' })`
 2. 打印状态：`console.log(await readFullState(page))`
 3. 慢速执行：`await page.waitForTimeout(2000)` 观察 UI 变化
-4. Headed 模式：`npx playwright test --headed` 看到浏览器
+4. 默认项目脚本（如 `npm run test:e2e`）会强制无头运行，不会因为终端残留的 `PW_HEADED` / `PWDEBUG` 突然弹出一批窗口
+5. 需要看浏览器时，显式使用 Headed 模式：`npx playwright test --headed`
+6. 默认禁止无目标全量跑；本地调试时必须指定相关文件或 `--grep`
 
 ### Q: 测试超时怎么办？
 

@@ -2,36 +2,19 @@
  * 大杀四方 - 阶段切换与行动卡特写回归
  */
 
-import { copyFile, mkdir } from 'node:fs/promises';
-import { dirname, join, parse } from 'node:path';
+import { mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { test, expect } from './framework';
+import { getEvidenceScreenshotPath } from './framework/evidenceScreenshots';
 import { waitForSmashUpUI } from './helpers/smashup';
 import { setupSmashUpMatchSkipSetup } from './helpers/smashup-skip-setup';
 import { getMatchState, injectMatchState } from './helpers/state-injection';
 
-const sanitizePathSegment = (value: string) =>
-    Array.from(value, (char) => (char.charCodeAt(0) < 32 ? '-' : char))
-        .join('')
-        .replace(/[<>:"/\\|?*]/g, '-')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
-        .slice(0, 120);
-
 async function saveEvidenceScreenshot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
-    const path = testInfo.outputPath(`${name}.png`);
+    const path = getEvidenceScreenshotPath(testInfo, name);
     await mkdir(dirname(path), { recursive: true });
     await page.screenshot({ path, fullPage: true });
-
-    const fileStem = sanitizePathSegment(parse(testInfo.file).name || 'unknown-test');
-    const titleStem = sanitizePathSegment(testInfo.title || 'unnamed');
-    const nameStem = sanitizePathSegment(name);
-    const evidenceDir = join(testInfo.config.rootDir, 'test-results', 'evidence-screenshots', fileStem);
-    const evidencePath = join(evidenceDir, `${titleStem}-${nameStem}.png`);
-
-    await mkdir(evidenceDir, { recursive: true });
-    await copyFile(path, evidencePath);
 }
 
 async function applyOnlineMatchState(

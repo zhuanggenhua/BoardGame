@@ -1,4 +1,4 @@
-﻿# Implementation Plan: 召唤师战争自定义牌组
+# Implementation Plan: 召唤师战争自定义牌组
 
 ## Overview
 

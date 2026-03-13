@@ -155,12 +155,12 @@ export const TestMatchRoom: React.FC = () => {
             
             console.log('[TestMatchRoom] 开始自动派系选择');
             
-            // 蛇形选秀顺序（SmashUp 规则）：P0 → P1 → P1 → P0
+            // 顺序双选：P0 → P0 → P1 → P1
             const selectionOrder: Array<{ playerId: string; factionIndex: number }> = [];
             selectionOrder.push({ playerId: '0', factionIndex: 0 });
+            selectionOrder.push({ playerId: '0', factionIndex: 1 });
             selectionOrder.push({ playerId: '1', factionIndex: 0 });
             selectionOrder.push({ playerId: '1', factionIndex: 1 });
-            selectionOrder.push({ playerId: '0', factionIndex: 1 });
             
             // 按顺序执行选择
             for (const { playerId, factionIndex } of selectionOrder) {

@@ -17,6 +17,7 @@ console.log('📳 E2E 测试环境检查...\n');
 
 const useDevServers = process.env.PW_USE_DEV_SERVERS === 'true';
 const forceStartServers = process.env.PW_START_SERVERS === 'true';
+const headedByEnv = process.env.PW_HEADED === 'true' || process.env.PWDEBUG === '1';
 
 const testModeLabel = useDevServers
   ? '⚠️ 使用开发服务器（不推荐）'
@@ -25,6 +26,17 @@ const testModeLabel = useDevServers
     : '✅ 独立测试环境（推荐）';
 
 console.log(`测试模式: ${testModeLabel}`);
+
+if (headedByEnv) {
+  console.log('\n⚠️ 警告：检测到可见浏览器模式环境变量');
+  console.log(`   PW_HEADED=${process.env.PW_HEADED ?? '<unset>'}`);
+  console.log(`   PWDEBUG=${process.env.PWDEBUG ?? '<unset>'}`);
+  console.log('   这会让 Playwright 打开可见浏览器窗口；多页或多 worker 用例会一次性弹出很多窗口。');
+  console.log('\n   清除方法：');
+  console.log('   - PowerShell: Remove-Item Env:PW_HEADED -ErrorAction SilentlyContinue; Remove-Item Env:PWDEBUG -ErrorAction SilentlyContinue');
+  console.log('   - Bash: unset PW_HEADED; unset PWDEBUG');
+  console.log('   - 或直接使用项目脚本：npm run test:e2e（默认会强制无头运行）\n');
+}
 
 if (useDevServers) {
   console.log('\n⚠️ 警告：检测到 PW_USE_DEV_SERVERS=true');

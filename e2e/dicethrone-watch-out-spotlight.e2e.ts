@@ -8,6 +8,7 @@
  */
 
 import { test, expect } from './framework';
+import type { Locator } from '@playwright/test';
 import { BARBARIAN_CARDS } from '../src/games/dicethrone/heroes/barbarian/cards';
 import {
     advanceToOffensiveRoll,
@@ -20,6 +21,13 @@ import {
     waitForGameBoard,
 } from './helpers/dicethrone';
 import { waitForTestHarness } from './helpers/common';
+
+async function expectMinBoundingBox(locator: Locator, label: string, minWidth: number, minHeight: number): Promise<void> {
+    const box = await locator.boundingBox();
+    expect(box, `${label} 应可见`).not.toBeNull();
+    expect(box!.width, `${label} 宽度过小`).toBeGreaterThanOrEqual(minWidth);
+    expect(box!.height, `${label} 高度过小`).toBeGreaterThanOrEqual(minHeight);
+}
 
 test('自己打出 Watch Out 应显示骰子特写', async ({ page, game }, testInfo) => {
     test.setTimeout(60000);
@@ -428,4 +436,108 @@ test('P1 打出大吉大利时，P0 只应看到卡牌特写，不应重复看�
         await guestContext.close();
         await hostContext.close();
     }
+});
+
+test('触控窄视口下放大入口常显且可点击', async ({ page, game }, testInfo) => {
+    test.setTimeout(60000);
+
+    await page.setViewportSize({ width: 812, height: 375 });
+    await page.addInitScript((query: string) => {
+        const originalMatchMedia = window.matchMedia.bind(window);
+        window.matchMedia = ((media: string) => {
+            if (media !== query) {
+                return originalMatchMedia(media);
+            }
+
+            return {
+                matches: true,
+                media,
+                onchange: null,
+                addListener: () => {},
+                removeListener: () => {},
+                addEventListener: () => {},
+                removeEventListener: () => {},
+                dispatchEvent: () => true,
+            } as MediaQueryList;
+        }) as typeof window.matchMedia;
+    }, '(pointer: coarse)');
+
+    await game.openTestGame('dicethrone', {}, 30000);
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            resources: { CP: 2, HP: 50 },
+            discard: ['watch-out'],
+        },
+        player1: {
+            resources: { HP: 50 },
+        },
+        currentPlayer: '0',
+        phase: 'offensiveRoll',
+        extra: {
+            selectedCharacters: { '0': 'moon_elf', '1': 'barbarian' },
+            hostStarted: true,
+            rollCount: 1,
+            rollConfirmed: false,
+            dice: [
+                { id: 0, value: 1, isKept: false },
+                { id: 1, value: 2, isKept: false },
+                { id: 2, value: 3, isKept: false },
+                { id: 3, value: 4, isKept: false },
+                { id: 4, value: 5, isKept: false },
+            ],
+        },
+    });
+
+    await page.waitForFunction(
+        () => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return window.innerWidth === 812
+                && window.matchMedia('(pointer: coarse)').matches
+                && state?.sys?.phase === 'offensiveRoll'
+                && (state?.core?.players?.['0']?.discard?.length ?? 0) === 1;
+        },
+        { timeout: 10000, polling: 200 },
+    );
+    await ensureDebugPanelClosed(page);
+    await page.evaluate(() => {
+        const debugToggleContainer = document.querySelector('[data-testid="debug-toggle-container"]') as HTMLElement | null;
+        if (!debugToggleContainer) return;
+        debugToggleContainer.style.pointerEvents = 'none';
+        debugToggleContainer.style.opacity = '0';
+    });
+
+    const playerBoardMagnifyButton = page.locator('[data-testid="player-board-magnify-button"]');
+    const discardPileInspectButton = page.locator('[data-testid="discard-pile-inspect-button"]');
+    const boardMagnifyOverlay = page.locator('[data-testid="board-magnify-overlay"]');
+    const diceTray = page.locator('[data-tutorial-id="dice-tray"]');
+    const diceFaces = page.locator('[data-testid="dice-3d"]');
+    const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
+    const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
+
+    await expect(playerBoardMagnifyButton).toHaveCSS('opacity', '1');
+    await expect(discardPileInspectButton).toHaveCSS('opacity', '1');
+    await expectMinBoundingBox(playerBoardMagnifyButton, '玩家面板放大按钮', 40, 40);
+    await expectMinBoundingBox(discardPileInspectButton, '弃牌堆查看按钮', 40, 40);
+    await expect(diceFaces).toHaveCount(5, { timeout: 5000 });
+    await expectMinBoundingBox(diceTray, '骰盘', 56, 140);
+    await expectMinBoundingBox(diceFaces.first(), '单个骰子', 24, 24);
+    await expectMinBoundingBox(rollButton, '投掷按钮', 44, 28);
+    await expectMinBoundingBox(confirmButton, '确认按钮', 44, 28);
+
+    await game.screenshot('10-mobile-main-board-state', testInfo);
+
+    await playerBoardMagnifyButton.click();
+    await expect(boardMagnifyOverlay).toBeVisible({ timeout: 5000 });
+    await game.screenshot('11-mobile-player-board-magnify-open', testInfo);
+
+    await boardMagnifyOverlay.click({ position: { x: 10, y: 10 } });
+    await expect(boardMagnifyOverlay).toBeHidden({ timeout: 5000 });
+
+    await discardPileInspectButton.click();
+    await expect(boardMagnifyOverlay).toBeVisible({ timeout: 5000 });
+    await expect(
+        boardMagnifyOverlay.locator('img[alt="Card Preview"], .atlas-shimmer, [style*="background-image"]').first(),
+    ).toBeVisible({ timeout: 5000 });
+    await game.screenshot('12-mobile-discard-pile-inspect-open', testInfo);
 });

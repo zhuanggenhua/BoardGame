@@ -45,7 +45,7 @@ npx playwright test e2e/framework-pilot-simple.e2e.ts --workers=1 --reporter=dot
 
 ### P0 出牌特写
 
-![P0 行动卡特写](../test-results/preserved-screenshots-flat/framework-pilot-simple.e2e-action-spotlight-p0.png)
+> 历史截图已清理。如需重新取证，请重跑 `e2e/framework-pilot-simple.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/`。
 
 审查结论：
 
@@ -56,7 +56,7 @@ npx playwright test e2e/framework-pilot-simple.e2e.ts --workers=1 --reporter=dot
 
 ### P1 出牌特写
 
-![P1 行动卡特写](../test-results/preserved-screenshots-flat/framework-pilot-simple.e2e-action-spotlight-p1.png)
+> 历史截图已清理。如需重新取证，请重跑 `e2e/framework-pilot-simple.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/`。
 
 审查结论：
 

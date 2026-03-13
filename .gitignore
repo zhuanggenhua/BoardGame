@@ -172,3 +172,14 @@ edge_check.txt
 scan_results.txt
 .codex-write-test.txt
 .learnings/
+.npm-cache/
+.android-user/
+.android-sdk/
+.gradle-user-home/
+android/.gradle/
+android/local.properties
+android/app/build/
+android/build/
+android/captures/
+android/keystore.properties
+android/keystores/

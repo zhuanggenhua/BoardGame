@@ -24,7 +24,7 @@ export const areDeveloperGameIdsEqual = (
 export const getDeveloperGameScopeLabel = (developerGameIds: string[] | undefined | null) => {
     const normalized = normalizeDeveloperGameIds(developerGameIds);
     if (normalized.length === 0) {
-        return '未分配';
+        return null;
     }
     return `${normalized.length} 个游戏`;
 };

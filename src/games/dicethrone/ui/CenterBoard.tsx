@@ -2,6 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { UI_Z_INDEX } from '../../../core';
+import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
+import { useMobileViewport } from '../../../hooks/ui/useMobileViewport';
 import { AbilityOverlays } from './AbilityOverlays';
 import type { AbilityOverlaysHandle } from './AbilityOverlays';
 import { ASSETS } from './assets';
@@ -23,9 +25,7 @@ export interface CenterBoardProps {
     characterId?: string;
     locale?: string;
     onMagnifyImage: (image: string) => void;
-    /** ref 转发给 AbilityOverlays，供调试面板调用保存布局 */
     abilityOverlaysRef?: React.Ref<AbilityOverlaysHandle>;
-    /** 玩家的 token 状态（用于显示被动能力激活状态） */
     playerTokens?: Record<string, number>;
 }
 
@@ -50,13 +50,31 @@ export const CenterBoard = ({
     playerTokens,
 }: CenterBoardProps) => {
     const { t } = useTranslation('game-dicethrone');
+    const showTouchMagnifyButton = useCoarsePointer();
+    const isMobileNarrowViewport = useMobileViewport();
+    const useTouchOverlaySizing = showTouchMagnifyButton || isMobileNarrowViewport;
+    const shellFrameClassName = isMobileNarrowViewport
+        ? 'absolute left-[13.4vw] right-[clamp(6.8rem,14.4vw,7.6rem)] top-[-6vw] bottom-0 flex items-center justify-center pointer-events-auto'
+        : 'absolute left-[15vw] right-[15vw] top-[-6.5vw] bottom-0 flex items-center justify-center pointer-events-auto';
+    const boardGapClassName = isMobileNarrowViewport ? 'gap-[0.35vw]' : 'gap-[0.5vw]';
+    const overlayButtonIconClassName = useTouchOverlaySizing
+        ? 'w-[clamp(1rem,1.8vw,1.15rem)] h-[clamp(1rem,1.8vw,1.15rem)] fill-current'
+        : 'w-[1.2vw] h-[1.2vw] fill-current';
+    const overlayButtonClassName = useTouchOverlaySizing
+        ? `absolute top-[-0.25rem] right-[-0.25rem] h-[2.75rem] w-[2.75rem] transition-opacity duration-300 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`
+        : `absolute top-0 right-[-1vw] h-[4.2vw] w-[4.2vw] transition-opacity duration-300 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
+    const overlayButtonVisualClassName = useTouchOverlaySizing
+        ? 'absolute top-[0.375rem] right-[0.375rem] flex h-[2rem] w-[2rem] items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl transition-[background-color,border-color] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45'
+        : 'absolute top-[1vw] right-[2vw] flex h-[2.2vw] w-[2.2vw] items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl transition-[background-color,border-color] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45';
+    const tipToggleButtonOffsetClassName = isTipOpen ? 'right-[0.8vw]' : 'left-[0.1vw]';
+    const tipToggleButtonClassName = `absolute top-[55%] z-50 flex p-[0.5vw] text-[inherit] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white/50 transition-[background-color,color,border-color] duration-500 border border-white/8 hover:bg-black/50 hover:text-white hover:border-white/16 ${tipToggleButtonOffsetClassName}`;
 
     const playerBoardPath = ASSETS.PLAYER_BOARD(characterId);
     const tipBoardPath = ASSETS.TIP_BOARD(characterId);
 
     return (
-        <div className="absolute left-[15vw] right-[15vw] top-[-6.5vw] bottom-0 flex items-center justify-center pointer-events-auto">
-            <div className="relative flex items-center justify-center gap-[0.5vw]">
+        <div className={shellFrameClassName}>
+            <div className={`relative flex items-center justify-center ${boardGapClassName}`}>
                 <div
                     className={`relative h-[35vw] w-auto shadow-2xl z-10 group transition-[outline] duration-300 rounded-[0.8vw] overflow-hidden ${coreAreaHighlighted ? 'outline outline-4 outline-dashed outline-amber-400 outline-offset-[0.1vw]' : ''}`}
                     data-tutorial-id="player-board"
@@ -83,20 +101,24 @@ export const CenterBoard = ({
                         playerTokens={playerTokens}
                     />
                     <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); onMagnifyImage(playerBoardPath); }}
-                        className="absolute top-[1vw] right-[1vw] w-[2.2vw] h-[2.2vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-300 shadow-xl border border-white/20"
+                        className={overlayButtonClassName}
                         style={{ zIndex: UI_Z_INDEX.hud + 10 }}
+                        data-testid="player-board-magnify-button"
+                        aria-label="查看大图"
                     >
-                        <svg className="w-[1.2vw] h-[1.2vw] fill-current" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                        </svg>
+                        <span className={overlayButtonVisualClassName}>
+                            <svg className={overlayButtonIconClassName} viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                            </svg>
+                        </span>
                     </button>
                 </div>
                 <div className="flex items-center relative h-[35vw]" data-tutorial-id="tip-board">
-                    <button
-                        onClick={onToggleTip}
-                        className={`absolute top-[55%] -translate-y-1/2 z-50 p-[0.5vw] bg-black/30 hover:bg-black/60 text-white/50 hover:text-white rounded-full transition-[background-color,color] duration-500 border border-white/10 ${isTipOpen ? 'right-[0.8vw]' : 'left-[0.1vw]'}`}
-                    >{isTipOpen ? '‹' : '›'}</button>
+                    <button type="button" onClick={onToggleTip} className={tipToggleButtonClassName}>
+                        {isTipOpen ? '<' : '>'}
+                    </button>
                     <div className={`relative h-full transition-[width,opacity,transform] duration-500 overflow-hidden rounded-[0.8vw] ${isTipOpen ? 'w-auto opacity-100 scale-100' : 'w-0 opacity-0 scale-95'}`}>
                         <div className="relative h-full w-auto aspect-[1311/2048] group">
                             <OptimizedImage
@@ -106,13 +128,18 @@ export const CenterBoard = ({
                                 alt={t('imageAlt.tipBoard')}
                             />
                             <button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); onMagnifyImage(tipBoardPath); }}
-                                className="absolute top-[1vw] right-[1vw] w-[2.2vw] h-[2.2vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-300 shadow-xl border border-white/20"
+                                className={overlayButtonClassName}
                                 style={{ zIndex: UI_Z_INDEX.hud + 10 }}
+                                data-testid="tip-board-magnify-button"
+                                aria-label="查看大图"
                             >
-                                <svg className="w-[1.2vw] h-[1.2vw] fill-current" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                                </svg>
+                                <span className={overlayButtonVisualClassName}>
+                                    <svg className={overlayButtonIconClassName} viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                    </svg>
+                                </span>
                             </button>
                         </div>
                     </div>

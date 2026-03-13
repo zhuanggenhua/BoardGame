@@ -228,6 +228,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         onClose={props.onCloseMagnify}
                         containerClassName={magnifyContainerClassName}
                         closeLabel={t('actions.closePreview')}
+                        overlayTestId="board-magnify-overlay"
                     >
                         {isMultiCardPreview ? (
                             <div ref={multiCardScrollRef} {...multiCardDragProps} className="flex flex-nowrap items-center justify-start gap-[2vw] p-[2vw] overflow-x-auto overflow-y-hidden" style={multiCardDragProps.style}>

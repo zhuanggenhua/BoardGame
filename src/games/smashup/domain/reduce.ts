@@ -65,17 +65,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 [playerId]: [...(selection.playerSelections[playerId] || []), factionId],
             };
 
-            // 蛇形选秀：第 1 轮按 turnOrder 正向选择，第 2 轮按 turnOrder 反向选择。
-            // 例如 2 人时顺序为 P0 → P1 → P1 → P0。
-            const totalPlayers = state.turnOrder.length;
-            const totalRequired = totalPlayers * 2;
-            const nextPickNumber = newTaken.length;
+            // 顺序双选：每位玩家连续选择 2 个派系后，才轮到下一位玩家。
+            // 例如 2 人时顺序为 P0 → P0 → P1 → P1。
+            const currentPlayerSelections = newPlayerSelections[playerId] || [];
             let nextPlayerIndex = state.currentPlayerIndex;
 
-            if (nextPickNumber < totalRequired) {
-                nextPlayerIndex = nextPickNumber < totalPlayers
-                    ? nextPickNumber
-                    : (totalRequired - 1 - nextPickNumber);
+            if (currentPlayerSelections.length >= 2) {
+                const currentIdx = state.turnOrder.indexOf(playerId);
+                nextPlayerIndex = (currentIdx + 1) % state.turnOrder.length;
             }
 
             return {

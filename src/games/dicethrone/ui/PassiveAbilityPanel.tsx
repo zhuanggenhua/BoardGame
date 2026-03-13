@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Dices, BookOpen } from 'lucide-react';
 import { GameButton } from './components/GameButton';
 import type { PassiveAbilityDef, PassiveActionDef } from '../domain/passiveAbility';
+import { useMobileViewport } from '../../../hooks/ui/useMobileViewport';
 
 export interface PassiveAbilityPanelProps {
     /** 当前玩家的被动能力列表 */
@@ -43,11 +44,15 @@ export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
     onCancelRerollSelect,
 }) => {
     const { t } = useTranslation('game-dicethrone');
+    const isMobileNarrowViewport = useMobileViewport();
+    const panelWidthClassName = isMobileNarrowViewport
+        ? 'w-[clamp(6rem,13vw,6.8rem)]'
+        : 'w-[10.2vw]';
 
     if (passives.length === 0) return null;
 
     return (
-        <div className="w-[10.2vw] flex flex-col gap-[0.3vw]">
+        <div className={`${panelWidthClassName} flex flex-col gap-[0.3vw]`}>
             {passives.map(passive => {
                 const usability = actionUsability.get(passive.id) ?? [];
                 return (

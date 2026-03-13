@@ -24,7 +24,7 @@ interface RuntimeRecord {
 const TMP_DIR = path.join(process.cwd(), '.tmp');
 const PROCESS_FILE = path.join(TMP_DIR, 'playwright-worker-runtime.json');
 const SERVICE_READY_TIMEOUT_MS = Number.parseInt(process.env.PW_SERVICE_READY_TIMEOUT_MS || '240000', 10);
-const PORT_CLEANUP_TIMEOUT_MS = Number.parseInt(process.env.PW_PORT_CLEANUP_TIMEOUT_MS || '10000', 10);
+const PORT_CLEANUP_TIMEOUT_MS = Number.parseInt(process.env.PW_PORT_CLEANUP_TIMEOUT_MS || '20000', 10);
 const useDevServers = process.env.PW_USE_DEV_SERVERS === 'true';
 const forceStartServers = process.env.PW_START_SERVERS === 'true';
 const shouldStartServers = forceStartServers || !useDevServers;

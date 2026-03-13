@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { context } from 'esbuild';
+import { build, context } from 'esbuild';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
 
 await assertChildProcessSupport('bundle-runner / esbuild watch', { probeEsbuild: true });
@@ -12,6 +12,7 @@ const label = args.label || 'bundle-runner';
 const entry = requireArg(args, 'entry');
 const outfile = requireArg(args, 'outfile');
 const tsconfig = requireArg(args, 'tsconfig');
+const onceMode = args.once === 'true';
 const absOutfile = path.resolve(repoRoot, outfile);
 
 let currentBuildStartedAt = 0;
@@ -61,35 +62,63 @@ function prefixOutput(prefix, stream, target) {
     });
 }
 
-function stopChildProcess(proc) {
-    return new Promise((resolve) => {
-        if (!proc || proc.killed || proc.exitCode !== null) {
-            resolve();
-            return;
-        }
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-        const finish = () => resolve();
-        proc.once('exit', finish);
-        try {
-            if (process.platform === 'win32') {
+function isProcessAlive(pid) {
+    if (!pid || pid <= 0) {
+        return false;
+    }
+
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+async function waitForProcessTermination(proc, timeoutMs) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        if (!proc || proc.exitCode !== null || !isProcessAlive(proc.pid)) {
+            return true;
+        }
+        await wait(100);
+    }
+
+    return !proc || proc.exitCode !== null || !isProcessAlive(proc.pid);
+}
+
+async function stopChildProcess(proc) {
+    if (!proc || proc.killed || proc.exitCode !== null) {
+        return;
+    }
+
+    try {
+        if (process.platform === 'win32') {
+            await new Promise((resolve, reject) => {
                 const killer = spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], {
                     stdio: 'ignore',
                 });
-                killer.once('exit', () => {
-                    setTimeout(finish, 50);
-                });
-            } else {
-                proc.kill('SIGTERM');
-                setTimeout(() => {
-                    if (proc.exitCode === null) {
-                        proc.kill('SIGKILL');
-                    }
-                }, 1000);
-            }
-        } catch {
-            finish();
+                killer.once('error', reject);
+                killer.once('exit', () => resolve());
+            });
+
+            // Windows 上 taskkill 返回不代表子进程已完全退出，端口也可能还没释放。
+            await waitForProcessTermination(proc, 5000);
+            await wait(200);
+            return;
         }
-    });
+
+        proc.kill('SIGTERM');
+        const terminated = await waitForProcessTermination(proc, 1000);
+        if (!terminated && proc.exitCode === null) {
+            proc.kill('SIGKILL');
+            await waitForProcessTermination(proc, 3000);
+        }
+    } catch {
+    }
 }
 
 async function restartRuntime(reason) {
@@ -118,6 +147,9 @@ async function restartRuntime(reason) {
         const detail = signal ? `signal=${signal}` : `code=${code ?? 0}`;
         console.error(`[bundle-runner] ${label} runtime exited (${detail})`);
         child = null;
+        if (onceMode) {
+            process.exit(code ?? 1);
+        }
     });
 }
 
@@ -170,7 +202,7 @@ const rebuildPlugin = {
     },
 };
 
-const buildContext = await context({
+const sharedBuildOptions = {
     absWorkingDir: repoRoot,
     entryPoints: [entry],
     outfile,
@@ -181,6 +213,32 @@ const buildContext = await context({
     sourcemap: true,
     logLevel: 'info',
     tsconfig,
+};
+
+if (onceMode) {
+    process.on('SIGINT', () => {
+        void shutdown(0, null);
+    });
+    process.on('SIGTERM', () => {
+        void shutdown(0, null);
+    });
+
+    currentBuildStartedAt = Date.now();
+    console.log(`[bundle-runner] ${label} building ${entry}`);
+    try {
+        await build(sharedBuildOptions);
+        console.log(`[bundle-runner] ${label} initial build ready in ${Date.now() - currentBuildStartedAt}ms`);
+        await restartRuntime('ready');
+    } catch (error) {
+        console.error(`[bundle-runner] ${label} build failed:`, error instanceof Error ? error.message : String(error));
+        await shutdown(1, null);
+    }
+
+    await new Promise(() => {});
+}
+
+const buildContext = await context({
+    ...sharedBuildOptions,
     plugins: [rebuildPlugin],
 });
 

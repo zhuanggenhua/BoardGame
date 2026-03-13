@@ -10,6 +10,7 @@ import {
     DamageFlash,
     type HitStopConfig,
 } from '../../../components/common/animations';
+import { useMobileViewport } from '../../../hooks/ui/useMobileViewport';
 import { StatusEffectsContainer, TokensContainer, type StatusAtlases } from './statusEffects';
 import { getPortraitStyle } from './assets';
 
@@ -62,10 +63,14 @@ export const OpponentHeader = ({
     overrideHp?: number;
 }) => {
     const { t } = useTranslation('game-dicethrone');
+    const isMobileNarrowViewport = useMobileViewport();
     const heroLabel = t(`hero.${opponent.characterId}`);
+    const containerClassName = isMobileNarrowViewport
+        ? 'absolute top-[0.2vw] left-0 right-0 z-50 flex flex-col items-center gap-[0.4vw] pointer-events-none scale-[0.88] origin-top'
+        : 'absolute top-3 left-0 right-0 z-50 flex flex-col items-center gap-1 pointer-events-none';
 
     return (
-        <div ref={containerRef} className="absolute top-3 left-0 right-0 z-50 flex flex-col items-center gap-1 pointer-events-none">
+        <div ref={containerRef} className={containerClassName}>
             {headerError && (
                 <div className="px-[1.5vw] py-[0.5vw] bg-red-600/90 text-white font-bold text-[0.9vw] rounded-full shadow-2xl border border-red-400/50 backdrop-blur-md animate-in slide-in-from-top-4 pointer-events-auto flex items-center gap-[0.4vw]">
                     <AlertTriangle className="w-[1.1vw] h-[1.1vw]" />
@@ -96,7 +101,7 @@ export const OpponentHeader = ({
                         <div className="relative flex items-center gap-[0.6vw] overflow-visible">
                             <div className="w-[2.8vw] h-[4vw] rounded-[0.4vw] border border-white/10 overflow-hidden relative bg-slate-950 shadow-inner">
                                 <div className="w-full h-full transform transition-transform duration-500 group-hover:scale-110" style={getPortraitStyle(opponent.characterId, locale)} />
-                                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px] transition-all duration-300 ${viewMode === 'opponent' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                <div className={`absolute inset-0 pointer-events-none bg-black/40 flex items-center justify-center backdrop-blur-[2px] transition-all duration-300 ${viewMode === 'opponent' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                     <svg viewBox="0 0 24 24" className="w-[1.6vw] h-[1.6vw] fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.9)]">
                                         <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                                     </svg>

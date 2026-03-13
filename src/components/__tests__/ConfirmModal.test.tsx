@@ -2,13 +2,15 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { ConfirmModal } from '../common/overlays/ConfirmModal';
+import { getDeveloperGameScopeLabel } from '../../lib/developerGameAccess';
+import { UserRoleModal } from '../../pages/admin/components/UserRoleModal';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string) => {
+        t: (key: string, options?: { defaultValue?: string }) => {
             if (key === 'button.confirm') return 'confirm';
             if (key === 'button.cancel') return 'cancel';
-            return key;
+            return options?.defaultValue ?? key;
         },
     }),
 }));
@@ -94,5 +96,46 @@ describe('ConfirmModal', () => {
             expect(confirmButton).not.toBeDisabled();
             expect(cancelButton).not.toBeDisabled();
         });
+    });
+});
+
+describe('developerGameAccess', () => {
+    it('空开发者范围不再返回未分配标签', () => {
+        expect(getDeveloperGameScopeLabel(undefined)).toBeNull();
+        expect(getDeveloperGameScopeLabel([])).toBeNull();
+        expect(getDeveloperGameScopeLabel(['smashup', 'dicethrone', 'smashup'])).toBe('2 个游戏');
+    });
+});
+
+describe('UserRoleModal', () => {
+    it('使用限高加内部滚动的紧凑布局', () => {
+        const html = renderToStaticMarkup(
+            <UserRoleModal
+                target={{
+                    id: 'user-1',
+                    username: '测试用户',
+                    email: 'user@example.com',
+                    role: 'developer',
+                }}
+                roleDraft="developer"
+                developerGameIdsDraft={[]}
+                gameOptions={[
+                    { id: 'smashup', titleKey: 'games.smashup' },
+                    { id: 'dicethrone', titleKey: 'games.dicethrone' },
+                ]}
+                saving={false}
+                saveDisabled={false}
+                roleLocked={false}
+                onClose={() => {}}
+                onSave={() => {}}
+                onRoleChange={() => {}}
+                onToggleGame={() => {}}
+            />
+        );
+
+        expect(html).toContain('max-h-[calc(100vh-2rem)]');
+        expect(html).toContain('flex-1 min-h-0 overflow-y-auto');
+        expect(html).toContain('可多选。开发者只能管理这里勾选游戏的更新日志。');
+        expect(html).not.toContain('主管理角色，拥有完整后台权限');
     });
 });

@@ -135,7 +135,7 @@ export function getPortPids(port) {
 export function killProcess(pid) {
   try {
     if (process.platform === 'win32') {
-      execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+      execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' });
     } else {
       execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
     }
@@ -202,7 +202,7 @@ export async function waitForPortFree(port, timeoutMs = 5000) {
   const start = Date.now();
 
   while (Date.now() - start < timeoutMs) {
-    if (!isPortInUse(port)) {
+    if (await canBindPort(Number(port))) {
       return true;
     }
 

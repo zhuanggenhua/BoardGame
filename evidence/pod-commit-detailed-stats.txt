@@ -1,4 +1,4 @@
-﻿commit 6ea1f9f069d2cbec322636f9cc0455bc21437ad8
+commit 6ea1f9f069d2cbec322636f9cc0455bc21437ad8
 Author: EasyBoardGame Developer <developer@easyboardgame.top>
 Date:   Sat Feb 28 14:11:43 2026 +0800
 

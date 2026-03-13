@@ -146,6 +146,10 @@ export default defineConfig(({ mode }) => {
           target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
         },
+        '/game-changelogs': {
+          target: `http://127.0.0.1:${apiServerPort}`,
+          changeOrigin: true,
+        },
         '/admin': {
           target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,

@@ -588,12 +588,12 @@ export function LocalGameProvider({
             );
             let currentState: MatchState<unknown> = { sys, core };
             
-            // 同步执行 4 个派系选择命令（蛇形选秀：P0 → P1 → P1 → P0）
+            // 同步执行 4 个派系选择命令（顺序双选：P0 → P0 → P1 → P1）
             const selectionOrder: Array<{ playerId: string; factionIndex: number }> = [
                 { playerId: '0', factionIndex: 0 },
+                { playerId: '0', factionIndex: 1 },
                 { playerId: '1', factionIndex: 0 },
                 { playerId: '1', factionIndex: 1 },
-                { playerId: '0', factionIndex: 1 },
             ];
             
             const pipelineConfig: PipelineConfig<unknown, Command, GameEvent> = {

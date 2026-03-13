@@ -1,4 +1,4 @@
-﻿node.exe : npm warn "鍩烘湰閲嶆柊璁″垎" is being parsed as a normal co
+node.exe : npm warn "鍩烘湰閲嶆柊璁″垎" is being parsed as a normal co
 mmand line argument.
 所在位置 C:\Program Files\nodejs\npm.ps1:29 字符: 3
 +   & $NODE_EXE $NPM_CLI_JS $args

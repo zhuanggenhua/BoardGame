@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 const DEFAULT_TEST_API_TOKEN_FILE = path.join('temp', 'e2e', 'shared-test-api-token.txt');
+const FILE_WRITE_RETRYABLE_CODES = new Set(['EBUSY', 'EPERM']);
 
 function normalizeToken(token: string | null | undefined): string | null {
     const trimmed = token?.trim();
@@ -32,7 +33,23 @@ function writeTokenFileIfMissing(filePath: string, token: string): void {
 
 function writeTokenFile(filePath: string, token: string): void {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, token, { encoding: 'utf-8' });
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+        try {
+            fs.writeFileSync(filePath, token, { encoding: 'utf-8' });
+            return;
+        } catch (error) {
+            const code = (error as NodeJS.ErrnoException).code;
+            if (!code || !FILE_WRITE_RETRYABLE_CODES.has(code)) {
+                throw error;
+            }
+            lastError = error;
+            Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100 * (attempt + 1));
+        }
+    }
+
+    throw lastError;
 }
 
 function generateTestApiToken(): string {
@@ -59,7 +76,9 @@ export function resolveSharedTestApiToken(
     const filePath = getTestApiTokenFilePath(env, cwd);
     const envToken = normalizeToken(env.TEST_API_TOKEN);
     if (envToken) {
-        writeTokenFile(filePath, envToken);
+        if (readTokenFile(filePath) !== envToken) {
+            writeTokenFile(filePath, envToken);
+        }
         return envToken;
     }
     return readTokenFile(filePath);

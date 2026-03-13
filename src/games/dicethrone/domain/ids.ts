@@ -151,6 +151,14 @@ export const MOON_ELF_DICE_FACE_IDS = {
 
 export type MoonElfDiceFaceId = (typeof MOON_ELF_DICE_FACE_IDS)[keyof typeof MOON_ELF_DICE_FACE_IDS];
 
+export const GUNSLINGER_DICE_FACE_IDS = {
+    BULLET: 'bullet',
+    DASH: 'dash',
+    BULLSEYE: 'bullseye',
+} as const;
+
+export type GunslingerDiceFaceId = (typeof GUNSLINGER_DICE_FACE_IDS)[keyof typeof GUNSLINGER_DICE_FACE_IDS];
+
 // ============================================================================
 // 骰面 ID（影贼）
 // ============================================================================

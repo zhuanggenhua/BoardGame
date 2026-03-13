@@ -4,7 +4,7 @@ import type { ActionLogSegment } from '../../../../engine/types';
 import { CardPreviewTooltip } from './CardPreviewTooltip';
 import { BreakdownTooltip } from '../../../common/overlays/BreakdownTooltip';
 import type { CardPreviewRef } from '../../../../core';
-import { buildLocalizedImageSet } from '../../../../core';
+import { buildSpriteBackgroundImage } from '../../../../games/dicethrone/ui/assets';
 
 interface ActionLogSegmentsProps {
     segments: ActionLogSegment[];
@@ -73,7 +73,7 @@ const DiceResultSegment: React.FC<{
     locale?: string;
 }> = ({ segment, locale }) => {
     const { spriteAsset, spriteCols, spriteRows, dice } = segment;
-    const bgImage = buildLocalizedImageSet(spriteAsset, locale);
+    const bgImage = buildSpriteBackgroundImage(spriteAsset, locale);
     const bgSize = `${spriteCols * 100}% ${spriteRows * 100}%`;
 
     return (

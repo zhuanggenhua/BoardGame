@@ -80,14 +80,14 @@ function createActionsFirstRandom(): RandomFn {
 
 const FIRST_THREE_COMMANDS = [
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
 ] as const;
 
 const FOURTH_COMMAND = {
     type: SU_COMMANDS.SELECT_FACTION,
-    playerId: '0',
-    payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS },
+    playerId: '1',
+    payload: { factionId: SMASHUP_FACTION_IDS.NINJAS },
     timestamp: 4,
 };
 

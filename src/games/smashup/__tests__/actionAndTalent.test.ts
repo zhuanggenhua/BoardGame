@@ -37,12 +37,12 @@ function createRunner() {
     });
 }
 
-/** 蛇形选秀 + 推进到 playCards */
+/** 顺序双选 + 推进到 playCards */
 const DRAFT_COMMANDS: SmashUpCommand[] = [
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
     { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
 ] as any[];
 

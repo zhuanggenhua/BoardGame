@@ -52,8 +52,9 @@
 
 1. **第一步：运行 E2E 测试获取错误日志**
    ```bash
-   npx playwright test e2e/<相关测试>.e2e.ts --reporter=list
+   npm run test:e2e -- e2e/<相关测试>.e2e.ts --reporter=list
    ```
+   - 优先使用项目脚本，避免终端残留的 `PW_HEADED` / `PWDEBUG` 把测试意外切成可见浏览器模式。
 2. **第二步：如果 E2E 无法捕获，请求用户提供浏览器控制台日志**
 3. **第三步：根据错误信息定位问题**，常见白屏原因：
    - React Hooks 顺序错误（"Rendered more hooks than during the previous render"）

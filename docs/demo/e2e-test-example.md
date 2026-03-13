@@ -201,6 +201,10 @@ npm run dev
 npm run test:e2e -- dicethrone-thunder-strike --headed
 ```
 
+说明：
+- 默认 `npm run test:e2e` 会强制无头运行。
+- 只有这里显式追加 `--headed` 时，才应该弹出可见浏览器用于调试。
+
 ### 方式 2：CI 模式
 
 ```bash

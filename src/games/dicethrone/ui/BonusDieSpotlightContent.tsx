@@ -94,6 +94,7 @@ export const BonusDieSpotlightContent: React.FC<BonusDieSpotlightContentProps> =
                     locale={locale}
                     variant="spotlight"
                     characterId={characterId}
+                    definitionId={characterId ? `${characterId}-dice` : undefined}
                 />
                 {!isRolling && (
                     <motion.div

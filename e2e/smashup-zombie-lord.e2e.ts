@@ -1,7 +1,8 @@
 import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { test, expect } from './framework';
+import { getEvidenceScreenshotPath } from './framework/evidenceScreenshots';
 
 const SMASHUP_TEST_QUERY = {
     p0: 'zombies,ghosts',
@@ -18,10 +19,8 @@ const NINJA_DIRECT_CLICK_QUERY = {
 };
 
 async function saveEvidenceScreenshot(page: Page, testInfo: TestInfo, subdir: string, filename: string): Promise<void> {
-    const dir = join(testInfo.config.rootDir, 'test-results', 'evidence-screenshots', subdir);
-    mkdirSync(dir, { recursive: true });
-    const path = join(dir, filename);
-    console.log(`[E2E screenshot] ${path}`);
+    const path = getEvidenceScreenshotPath(testInfo, filename, { subdir, filename });
+    mkdirSync(dirname(path), { recursive: true });
     await page.screenshot({ path, fullPage: true });
 }
 

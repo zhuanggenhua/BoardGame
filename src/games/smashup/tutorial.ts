@@ -85,7 +85,7 @@ const SMASH_UP_TUTORIAL: TutorialManifest = {
         // 第一部分：初始化
         // ================================================================
 
-        // 0: 初始化 — AI 蛇形选秀 + 作弊设置手牌
+        // 0: 初始化 — AI 顺序双选 + 作弊设置手牌
         {
             id: 'setup',
             content: 'game-smashup:tutorial.steps.setup',
@@ -93,11 +93,11 @@ const SMASH_UP_TUTORIAL: TutorialManifest = {
             requireAction: false,
             showMask: true,
             aiActions: [
-                // 蛇形选秀：P0 → P1 → P1 → P0
-                { commandType: SU_COMMANDS.SELECT_FACTION, payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
-                { commandType: SU_COMMANDS.SELECT_FACTION, payload: { factionId: SMASHUP_FACTION_IDS.ROBOTS }, playerId: '1' },
-                { commandType: SU_COMMANDS.SELECT_FACTION, payload: { factionId: SMASHUP_FACTION_IDS.WIZARDS }, playerId: '1' },
-                { commandType: SU_COMMANDS.SELECT_FACTION, payload: { factionId: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY } },
+                // 顺序双选：P0 → P0 → P1 → P1
+                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
+                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY } },
+                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.ROBOTS } },
+                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.WIZARDS } },
                 // 注意：不需要显式 ADVANCE_PHASE。
                 // ALL_FACTIONS_SELECTED 事件清除 factionSelection 后，
                 // FlowSystem.onAutoContinueCheck 会自动推进 factionSelect → startTurn → playCards。

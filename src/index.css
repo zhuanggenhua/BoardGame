@@ -272,7 +272,8 @@
     }
     
     /* 增大按钮点击区域 */
-    button {
+    button,
+    .touch-target-min {
         min-height: 44px;
         min-width: 44px;
     }

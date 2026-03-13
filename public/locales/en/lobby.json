@@ -72,7 +72,7 @@
     "lobby": "Lobby",
     "reviews": "Reviews",
     "leaderboard": "Leaderboard",
-    "changelog": "Changelog"
+    "changelog": "Updates"
   },
   "leaderboard": {
     "loading": "Loading...",
@@ -82,13 +82,14 @@
     "error": "Failed to load leaderboard",
     "changelogTitle": "Changelog",
     "changelogLoading": "Loading changelog...",
-    "changelogEmpty": "No changelog yet",
+    "changelogEmpty": "No updates yet",
     "changelogError": "Failed to load changelog",
     "changelogPublishedAt": "Latest update: {{date}}",
     "changelogPinned": "Pinned"
   },
   "authorInfo": {
     "button": "By {{author}}",
+    "mobileButton": "Author",
     "buttonHint": "Click to view author information",
     "title": "Author",
     "game": "Work: {{game}}",

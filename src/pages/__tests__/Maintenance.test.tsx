@@ -242,7 +242,7 @@ describe('useGameNamespaceReady', () => {
         expect(mockLoggerError).toHaveBeenCalledTimes(1);
     });
 
-    it('optional namespace ??????? UGC ????', async () => {
+    it('optional namespace 缺失时不阻塞 UGC 页面', async () => {
         const { useGameNamespaceReady } = await import('../../hooks/useGameNamespaceReady');
         const i18n = {
             language: 'zh-CN',
@@ -271,7 +271,7 @@ describe('useGameNamespaceReady', () => {
 });
 
 describe('resolveFollowCurrentTurnPlayerId', () => {
-    it('?? currentPlayer/currentPlayerId ? turnOrder/currentPlayerIndex', async () => {
+    it('优先使用 turnOrder/currentPlayerIndex，其次 currentPlayer/currentPlayerId', async () => {
         const { resolveFollowCurrentTurnPlayerId } = await import('../../engine/transport/followCurrentTurnPlayer');
 
         expect(resolveFollowCurrentTurnPlayerId({

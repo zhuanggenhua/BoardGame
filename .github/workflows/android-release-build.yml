@@ -1,0 +1,55 @@
+name: Android Release Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-release-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.1.0
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create Android env file
+        run: |
+          cat <<'EOF' > .env.android
+          VITE_BACKEND_URL=${{ secrets.ANDROID_VITE_BACKEND_URL }}
+          CAPACITOR_APP_ID=${{ vars.CAPACITOR_APP_ID || 'top.easyboardgame.app' }}
+          CAPACITOR_APP_NAME=${{ vars.CAPACITOR_APP_NAME || 'EasyBoardGame' }}
+          ANDROID_ICON_SOURCE=${{ vars.ANDROID_ICON_SOURCE || 'public/logos/logo_1_grid.png' }}
+          ANDROID_SPLASH_SOURCE=${{ vars.ANDROID_SPLASH_SOURCE || 'public/logos/logo_1_grid.png' }}
+          ANDROID_ICON_BACKGROUND=${{ vars.ANDROID_ICON_BACKGROUND || '#FFFFFF' }}
+          ANDROID_SPLASH_BACKGROUND=${{ vars.ANDROID_SPLASH_BACKGROUND || '#FFFFFF' }}
+          ANDROID_KEYSTORE_BASE64=${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Build signed release APK
+        run: npm run mobile:android:build:release
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: android/app/build/outputs/apk/release/*.apk

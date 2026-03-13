@@ -62,10 +62,11 @@ function renderRoleBadge(role: UserRole, developerGameIds?: string[]) {
     }
 
     if (role === 'developer') {
+        const scopeLabel = getDeveloperGameScopeLabel(developerGameIds);
         return (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                 <ScrollText size={12} className="opacity-80" />
-                开发者 ({getDeveloperGameScopeLabel(developerGameIds)})
+                开发者{scopeLabel ? ` (${scopeLabel})` : ''}
             </span>
         );
     }

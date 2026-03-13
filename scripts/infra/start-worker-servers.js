@@ -8,9 +8,11 @@
 import path from 'node:path';
 import { allocateAvailablePorts, loadWorkerPorts, saveWorkerPorts, isPortInUse } from './port-allocator.js';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
-import { registerExitGuard, spawnBundleRunner, spawnNodeScript } from './e2e-server-launcher.js';
+import { registerExitGuard, spawnBundleRunner, spawnNodeScript, spawnTsxEntry } from './e2e-server-launcher.js';
 
 const workerId = Number.parseInt(process.argv[2] ?? '', 10);
+const bundleWatchEnabled = process.env.PW_SERVER_WATCH !== 'false';
+const useTsxRuntime = process.env.PW_SERVER_RUNTIME === 'tsx';
 if (Number.isNaN(workerId)) {
   console.error('用法: node scripts/infra/start-worker-servers.js <workerId>');
   process.exit(1);
@@ -44,29 +46,47 @@ const frontend = spawnNodeScript('scripts/infra/vite-with-logging.js', {
   API_SERVER_PORT: String(ports.apiServer),
 });
 
-const gameServer = spawnBundleRunner({
-  label: `e2e-game-worker-${workerId}`,
-  entry: 'server.ts',
-  outfile: path.join('temp', 'dev-bundles', `e2e-worker-${workerId}`, 'game', 'server.mjs'),
-  tsconfig: 'tsconfig.server.json',
-  env: {
+const gameServerEnv = {
   ...process.env,
   NODE_ENV: 'test',
   GAME_SERVER_PORT: String(ports.gameServer),
   USE_PERSISTENT_STORAGE: 'false',
-  },
-});
+};
 
-const apiServer = spawnBundleRunner({
-  label: `e2e-api-worker-${workerId}`,
-  entry: 'apps/api/src/main.ts',
-  outfile: path.join('temp', 'dev-bundles', `e2e-worker-${workerId}`, 'api', 'main.mjs'),
-  tsconfig: 'apps/api/tsconfig.json',
-  env: {
+const gameServer = useTsxRuntime
+  ? spawnTsxEntry({
+    entry: 'server.ts',
+    tsconfig: 'tsconfig.server.json',
+    env: gameServerEnv,
+  })
+  : spawnBundleRunner({
+    label: `e2e-game-worker-${workerId}`,
+    entry: 'server.ts',
+    outfile: path.join('temp', 'dev-bundles', `e2e-worker-${workerId}`, 'game', 'server.mjs'),
+    tsconfig: 'tsconfig.server.json',
+    watch: bundleWatchEnabled,
+    env: gameServerEnv,
+  });
+
+const apiServerEnv = {
   ...process.env,
   API_SERVER_PORT: String(ports.apiServer),
-  },
-});
+};
+
+const apiServer = useTsxRuntime
+  ? spawnTsxEntry({
+    entry: 'apps/api/src/main.ts',
+    tsconfig: 'apps/api/tsconfig.json',
+    env: apiServerEnv,
+  })
+  : spawnBundleRunner({
+    label: `e2e-api-worker-${workerId}`,
+    entry: 'apps/api/src/main.ts',
+    outfile: path.join('temp', 'dev-bundles', `e2e-worker-${workerId}`, 'api', 'main.mjs'),
+    tsconfig: 'apps/api/tsconfig.json',
+    watch: bundleWatchEnabled,
+    env: apiServerEnv,
+  });
 
 const cleanup = () => {
   console.log(`\n🛑 停止 Worker ${workerId} 的 E2E 服务...`);

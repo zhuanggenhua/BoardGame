@@ -10,6 +10,7 @@ export const MagnifyOverlay = ({
     overlayClassName = '',
     closeLabel,
     closeButtonClassName = '',
+    overlayTestId,
 }: {
     isOpen: boolean;
     onClose: () => void;
@@ -18,6 +19,7 @@ export const MagnifyOverlay = ({
     overlayClassName?: string;
     closeLabel?: string;
     closeButtonClassName?: string;
+    overlayTestId?: string;
 }) => {
     const portalRoot = useMemo(() => {
         if (typeof document === 'undefined') return null;
@@ -37,6 +39,7 @@ export const MagnifyOverlay = ({
             }}
             onClick={onClose}
             data-interaction-allow
+            data-testid={overlayTestId}
         >
             {/* 外层 wrapper 不裁剪，让关闭按钮可见 */}
             <div

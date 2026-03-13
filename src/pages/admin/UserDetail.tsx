@@ -409,7 +409,9 @@ export default function UserDetailPage() {
                                         {user.role === 'admin'
                                             ? '管理员'
                                             : user.role === 'developer'
-                                                ? `开发者（${developerScopeLabel}）`
+                                                ? developerScopeLabel
+                                                    ? `开发者（${developerScopeLabel}）`
+                                                    : '开发者'
                                                 : '普通用户'}
                                     </span>
                                 </div>
@@ -450,7 +452,7 @@ export default function UserDetailPage() {
                                         </p>
                                         <div className="mt-3">
                                             <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                                                当前范围：{developerScopeLabel}
+                                                当前范围：{developerScopeLabel ?? '待分配'}
                                             </span>
                                         </div>
                                         <div className="mt-3 flex flex-wrap gap-2">

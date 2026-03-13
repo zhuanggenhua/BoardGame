@@ -72,7 +72,7 @@
     "lobby": "在线大厅",
     "reviews": "评价",
     "leaderboard": "排行榜",
-    "changelog": "更新日志"
+    "changelog": "更新"
   },
   "leaderboard": {
     "loading": "加载中...",
@@ -89,6 +89,7 @@
   },
   "authorInfo": {
     "button": "作者：{{author}}",
+    "mobileButton": "作者",
     "buttonHint": "点击查看作者信息",
     "title": "作者信息",
     "game": "作品：{{game}}",

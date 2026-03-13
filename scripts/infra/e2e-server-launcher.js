@@ -6,13 +6,32 @@ export function spawnNodeScript(scriptPath, env, args = []) {
   });
 }
 
-export function spawnBundleRunner({ label, entry, outfile, tsconfig, env }) {
-  return spawnNodeScript('scripts/infra/dev-bundle-runner.mjs', env, [
+export function spawnBundleRunner({ label, entry, outfile, tsconfig, env, watch = true }) {
+  const runnerArgs = [
     '--label', label,
     '--entry', entry,
     '--outfile', outfile,
     '--tsconfig', tsconfig,
+  ];
+  if (!watch) {
+    runnerArgs.push('--once', 'true');
+  }
+
+  return spawnNodeScript('scripts/infra/dev-bundle-runner.mjs', env, [
+    ...runnerArgs,
   ]);
+}
+
+export function spawnTsxEntry({ entry, tsconfig, env }) {
+  return spawn(process.execPath, [
+    'node_modules/tsx/dist/cli.mjs',
+    '--tsconfig',
+    tsconfig,
+    entry,
+  ], {
+    stdio: 'inherit',
+    env,
+  });
 }
 
 export function spawnNpxCommand(args, env) {
