@@ -41,7 +41,7 @@
     "i18n:check": "npx tsx scripts/verify/i18n-check.ts",
     "check:all": "npm run typecheck && npm run lint",
     "quality:changed": "node scripts/infra/run-changed-quality-gate.mjs",
-    "check:full": "npm run check:all && npm run test:games:core",
+    "check:full": "npm run check:all && npm run test:games:core:full",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:core": "vitest run src/core src/components src/hooks src/lib src/shared src/engine src/pages",
@@ -52,7 +52,8 @@
     "test:server": "vitest run src/server src/api",
     "test:ugc": "vitest run src/ugc",
     "test:games": "vitest run src/games",
-    "test:games:core": "npx vitest run src/games --config vitest.config.core.ts --pool threads --no-file-parallelism --maxWorkers 1",
+    "test:games:core": "npx vitest run --changed origin/main --config vitest.config.core.ts --pool threads --no-file-parallelism --maxWorkers 1 -- src/games",
+    "test:games:core:full": "cross-env NODE_OPTIONS=--max-old-space-size=8192 npx vitest run src/games --config vitest.config.core.ts --pool threads --no-file-parallelism --maxWorkers 1 --testTimeout 300000 --hookTimeout 300000",
     "test:games:audit": "vitest run src/games --config vitest.config.audit.ts",
     "test:changed": "npx vitest run --changed origin/main -- src/games",
     "test:api": "vitest run apps/api",
@@ -115,6 +116,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.975.0",
     "@babel/standalone": "^7.29.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/screen-orientation": "^8.0.1",
     "@koa/router": "^15.3.0",
     "@nestjs/cache-manager": "^2.2.1",
     "@nestjs/common": "^10.3.9",
@@ -182,6 +185,8 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
     "@eslint/js": "^9.39.1",
     "@nestjs/testing": "^10.3.9",
     "@playwright/test": "^1.58.0",

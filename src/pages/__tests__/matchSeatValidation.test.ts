@@ -1,8 +1,9 @@
 /* @vitest-environment happy-dom */
 import { createElement } from 'react';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isMatchNotFoundError, validateStoredMatchSeat, type StoredMatchCredentials } from '../../hooks/match/useMatchStatus';
+import * as matchApi from '../../services/matchApi';
+import { isMatchNotFoundError, useMatchStatus, validateStoredMatchSeat, type StoredMatchCredentials } from '../../hooks/match/useMatchStatus';
 
 type Player = { id: number; name?: string | null };
 
@@ -70,6 +71,57 @@ describe('isMatchNotFoundError', () => {
 
     it('忽略非 404 错误', () => {
         expect(isMatchNotFoundError(new Error('500: network error'))).toBe(false);
+    });
+});
+
+describe('useMatchStatus 竞态保护', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+        cleanup();
+    });
+
+    it('切换 matchID 后，旧请求 404 不会污染新房间状态', async () => {
+        let rejectOldRequest!: (reason?: unknown) => void;
+        const oldRequest = new Promise<never>((_, reject) => {
+            rejectOldRequest = reject;
+        });
+
+        const getMatchSpy = vi.spyOn(matchApi, 'getMatch').mockImplementation(async (_gameName, matchID) => {
+            if (matchID === 'old-match') {
+                return oldRequest as never;
+            }
+            return {
+                matchID: 'new-match',
+                gameName: 'dicethrone',
+                players: [{ id: 0, name: 'Alice', isConnected: true }],
+            };
+        });
+
+        const { result, rerender } = renderHook(
+            ({ id }) => useMatchStatus('dicethrone', id, '0'),
+            { initialProps: { id: 'old-match' as string | undefined } }
+        );
+
+        await waitFor(() => {
+            expect(getMatchSpy).toHaveBeenCalledWith('dicethrone', 'old-match');
+        });
+
+        rerender({ id: 'new-match' });
+
+        await waitFor(() => {
+            expect(getMatchSpy).toHaveBeenCalledWith('dicethrone', 'new-match');
+        });
+
+        await act(async () => {
+            rejectOldRequest(new Error('404: Match not found'));
+            await Promise.resolve();
+        });
+
+        await waitFor(() => {
+            expect(result.current.matchID).toBe('new-match');
+            expect(result.current.error).toBeNull();
+            expect(result.current.isLoading).toBe(false);
+        });
     });
 });
 

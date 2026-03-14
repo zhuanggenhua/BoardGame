@@ -926,7 +926,7 @@ export const MatchRoom = () => {
 
     if (shouldShowMatchError) {
         return (
-            <div className="w-full h-[100dvh] bg-black flex items-center justify-center">
+            <div className="w-full game-page-viewport bg-black flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-white/60 text-lg mb-4">{matchStatus.error}</div>
                     <div className="text-white/40 text-sm mb-6 animate-pulse">{t('matchRoom.redirecting')}</div>
@@ -941,7 +941,7 @@ export const MatchRoom = () => {
         );
     }
     return (
-        <div className="relative w-full h-[100dvh] bg-black overflow-hidden font-sans" {...gamePageDataAttributes}>
+        <div className="relative w-full game-page-viewport bg-black overflow-hidden font-sans" {...gamePageDataAttributes}>
             <SEO
                 title={isTutorialRoute
                     ? t('matchRoom.tutorialTitle', { game: gameId ? t(`common:game_names.${gameId}`, { ns: 'common' }) : '' })

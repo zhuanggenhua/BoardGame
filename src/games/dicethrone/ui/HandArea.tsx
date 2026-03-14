@@ -6,6 +6,7 @@ import type { AbilityCard, TurnPhase } from '../types';
 import { buildLocalizedImageSet, UI_Z_INDEX } from '../../../core';
 import { ENGINE_NOTIFICATION_EVENT, type EngineNotificationDetail } from '../../../engine/notifications';
 import { CardPreview } from '../../../components/common/media/CardPreview';
+import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
 import { ASSETS } from './assets';
 import { getAbilitySlotId } from './abilitySlotMapping';
 
@@ -35,6 +36,9 @@ const parseHandCardSequence = (cardKey: string, cardId: string) => {
 
 // 5. Hand Area - 拖拽交互（向上拖拽打出，拖到弃牌堆售卖）
 const DRAG_PLAY_THRESHOLD = -150; // 向上拖拽超过此距离触发打出
+const LONG_PRESS_DURATION_MS = 420;
+const LONG_PRESS_MOVE_CANCEL_PX = 14;
+const LONG_PRESS_CLICK_BLOCK_MS = 450;
 
 export const HandArea = ({
     hand,
@@ -54,6 +58,7 @@ export const HandArea = ({
     onSellButtonChange,
     isDiscardMode = false,
     onDiscardCard,
+    onMagnifyCard,
     respondableCardIds,
 }: {
     hand: AbilityCard[];
@@ -75,6 +80,7 @@ export const HandArea = ({
     isDiscardMode?: boolean;
     /** 弃牌模式下点击卡牌的回调 */
     onDiscardCard?: (cardId: string) => void;
+    onMagnifyCard?: (card: AbilityCard) => void;
     /** 响应窗口中可响应的卡牌 ID 集合（用于高亮） */
     respondableCardIds?: Set<string>;
 }) => {
@@ -116,6 +122,21 @@ export const HandArea = ({
     // 防止拖拽后触发点击：记录最近拖拽的卡牌和时间
     const lastDragEndRef = React.useRef<{ cardKey: string; timestamp: number } | null>(null);
     const DRAG_CLICK_DEBOUNCE = 300; // 拖拽后 300ms 内忽略点击
+    const {
+        clearLongPressState,
+        handlePointerDown: handleCardPointerDown,
+        handlePointerMove: handleCardPointerMove,
+        handlePointerUp: handleCardPointerUp,
+        shouldBlockClick: shouldBlockLongPressClick,
+    } = useTouchLongPress<string, AbilityCard>({
+        enabled: Boolean(onMagnifyCard) && canInteract && !isDiscardMode,
+        durationMs: LONG_PRESS_DURATION_MS,
+        moveCancelPx: LONG_PRESS_MOVE_CANCEL_PX,
+        clickBlockMs: LONG_PRESS_CLICK_BLOCK_MS,
+        onLongPress: (_cardKey, card) => {
+            onMagnifyCard?.(card);
+        },
+    });
 
     const handEntries = React.useMemo<HandCardEntry[]>(() => {
         const prevEntries = handEntriesRef.current;
@@ -476,6 +497,7 @@ export const HandArea = ({
     }, [discardPileRef, draggingCardKey]);
 
     const handleDragEnd = React.useCallback((entry: HandCardEntry, source: 'drag' | 'window' = 'drag') => {
+        clearLongPressState(entry.key);
         if (!canInteract) return;
         if (dragEndHandledRef.current && source === 'drag') return;
         dragEndHandledRef.current = true;
@@ -541,6 +563,7 @@ export const HandArea = ({
     }, [
         canInteract,
         canPlayCards,
+        clearLongPressState,
         currentPhase,
         hand,
         isOverDiscardPile,
@@ -642,8 +665,13 @@ export const HandArea = ({
                                 drag={canDrag}
                                 dragElastic={0.1}
                                 dragMomentum={false}
+                                onPointerDown={(event) => handleCardPointerDown(event, cardKey, card)}
+                                onPointerMove={(event) => handleCardPointerMove(event, cardKey)}
+                                onPointerUp={() => handleCardPointerUp(cardKey)}
+                                onPointerCancel={() => handleCardPointerUp(cardKey)}
                                 onDragStart={() => {
                                     if (!canDrag) return;
+                                    clearLongPressState(cardKey);
                                     dragEndHandledRef.current = false;
                                     draggingCardRef.current = entry;
                                     dragValues.x.set(0);
@@ -656,6 +684,8 @@ export const HandArea = ({
                                 onDragEnd={() => canDrag && handleDragEnd(entry, 'drag')}
                                 onClick={() => {
                                     // 防止拖拽后立即触发点击：检查是否刚完成拖拽
+                                    if (shouldBlockLongPressClick(cardKey)) return;
+
                                     const lastDrag = lastDragEndRef.current;
                                     if (lastDrag && lastDrag.cardKey === cardKey) {
                                         const timeSinceDrag = Date.now() - lastDrag.timestamp;

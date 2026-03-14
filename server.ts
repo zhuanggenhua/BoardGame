@@ -153,6 +153,14 @@ const GAME_SERVER_PORT = Number(process.env.GAME_SERVER_PORT) || 18000;
 
 let storage: MatchStorage;
 
+type OwnerMatchLookupStorage = {
+    findMatchesByOwnerKey: (ownerKey: string) => Promise<Array<{ matchID: string; gameName: string }>>;
+};
+
+const supportsOwnerMatchLookup = (value: MatchStorage): value is MatchStorage & OwnerMatchLookupStorage => {
+    return typeof (value as Partial<OwnerMatchLookupStorage>).findMatchesByOwnerKey === 'function';
+};
+
 const archiveMatchResult = async ({
     matchID,
     gameName,
@@ -553,20 +561,10 @@ router.post('/games/:name/create', async (ctx) => {
     // ✅ 单房间限制：同一 ownerKey 创建新房间时自动清理旧房间
     if (ownerKey) {
         try {
-            const allMatchIds = await storage.listMatches();
-            const ownerMatches: Array<{ matchID: string; gameName: string }> = [];
-            
-            // 查找该 ownerKey 的所有房间
-            for (const existingMatchID of allMatchIds) {
-                const { metadata: existingMetadata } = await storage.fetch(existingMatchID, { metadata: true });
-                if (existingMetadata?.setupData?.ownerKey === ownerKey) {
-                    ownerMatches.push({
-                        matchID: existingMatchID,
-                        gameName: existingMetadata.gameName,
-                    });
-                }
-            }
-            
+            const ownerMatches = supportsOwnerMatchLookup(storage)
+                ? await storage.findMatchesByOwnerKey(ownerKey)
+                : [];
+
             // 删除旧房间并发送 MATCH_ENDED 事件
             if (ownerMatches.length > 0) {
                 gameLogger.info('清理旧房间', {
@@ -575,11 +573,11 @@ router.post('/games/:name/create', async (ctx) => {
                     count: ownerMatches.length,
                     matchIds: ownerMatches.map(m => m.matchID),
                 });
-                
-                for (const match of ownerMatches) {
+
+                await Promise.all(ownerMatches.map(async (match) => {
                     await storage.wipe(match.matchID);
                     emitMatchEnded(match.gameName as SupportedGame, match.matchID);
-                }
+                }));
             }
         } catch (err) {
             // 清理失败不应阻止创建新房间，记录日志后继续

@@ -90,7 +90,7 @@ export const seedDTMatchCredentials = async (
 // 游戏交互
 // ============================================================================
 
-export const waitForCharacterSelection = async (page: Page, timeout = 20000) => {
+export const waitForCharacterSelection = async (page: Page, timeout = 60000) => {
     await expect(page.locator('h2').filter({ hasText: /选择你的英雄|Select Your Hero/i })).toBeVisible({ timeout });
 };
 

@@ -47,6 +47,9 @@ npm run mobile:android:sync
 再去执行 Release 构建。
 
 如果当前是 `remote` 模式，则 Android 构建不再依赖 `assets/public` 与 `dist/` 同步；`npm run mobile:android:build:release` 会直接按远程模式生成 APK，但 `ANDROID_REMOTE_WEB_URL` 必须是绝对 HTTPS 地址。
+另外，`remote` 模式下构建链会改用 `cap update android`（不再复制 `dist`），并在打包前清空 `android/app/src/main/assets/public/`，避免把整套前端静态资源继续打进 APK。
+
+当前 release 构建默认开启了 `minifyEnabled` 与 `shrinkResources`，用于进一步压缩壳体体积。
 
 ## 图标与启动图
 

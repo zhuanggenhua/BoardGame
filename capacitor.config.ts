@@ -12,7 +12,7 @@ for (const file of ['.env', '.env.android', '.env.android.local']) {
 }
 
 const appId = process.env.CAPACITOR_APP_ID?.trim() || 'top.easyboardgame.app';
-const appName = process.env.CAPACITOR_APP_NAME?.trim() || 'EasyBoardGame';
+const appName = process.env.CAPACITOR_APP_NAME?.trim() || '易桌游';
 const mode = (process.env.ANDROID_WEBVIEW_MODE?.trim().toLowerCase() || 'embedded');
 const remoteUrl = process.env.ANDROID_REMOTE_WEB_URL?.trim() || '';
 

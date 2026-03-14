@@ -22,7 +22,7 @@ const gradleWrapper = process.platform === 'win32'
     ? path.join(androidDir, 'gradlew.bat')
     : path.join(androidDir, 'gradlew');
 const defaultAppId = 'top.easyboardgame.app';
-const defaultAppName = 'EasyBoardGame';
+const defaultAppName = '易桌游';
 const defaultAndroidWebviewMode = 'embedded';
 const supportedAndroidWebviewModes = new Set(['embedded', 'remote']);
 const command = process.argv[2];
@@ -215,6 +215,13 @@ const ensureAndroidWebAssetsSynced = () => {
     if (!status.ok) {
         throw new Error(status.message);
     }
+};
+
+const clearBundledWebAssetsForRemote = () => {
+    if (!existsSync(androidPublicDir)) {
+        return;
+    }
+    rmSync(androidPublicDir, { recursive: true, force: true });
 };
 
 const writeText = (filePath, content) => {
@@ -431,7 +438,15 @@ const updateAppBuildGradle = (appId) => {
 
         next = next
             .replace(/namespace\s*=\s*"[^"]+"/, `namespace = "${appId}"`)
-            .replace(/applicationId\s+"[^"]+"/, `applicationId "${appId}"`);
+            .replace(/applicationId\s+"[^"]+"/, `applicationId "${appId}"`)
+            .replace(/minifyEnabled\s+false/g, 'minifyEnabled true');
+
+        if (!/shrinkResources\s+true/.test(next)) {
+            next = next.replace(
+                /(minifyEnabled\s+true\s*\n)/,
+                '$1            shrinkResources true\n',
+            );
+        }
 
         if (!next.includes('keystorePropertiesFile')) {
             next = next.replace(
@@ -599,10 +614,17 @@ const syncAndroid = async () => {
         ensureAndroidDistBuildReady();
     }
     await ensureAndroidProject();
-    await runCapacitor(['sync', 'android']);
+    if (mode === 'embedded') {
+        await runCapacitor(['sync', 'android']);
+    } else {
+        await runCapacitor(['update', 'android']);
+        await runCapacitor(['copy', 'android']);
+    }
     await prepareAndroidProject();
     if (mode === 'embedded') {
         ensureAndroidWebAssetsSynced();
+    } else {
+        clearBundledWebAssetsForRemote();
     }
 };
 

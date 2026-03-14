@@ -12,6 +12,20 @@ const outputFiles = {
     server: path.join(gamesRoot, 'manifest.server.generated.ts'),
 };
 
+const writeFileIfChanged = async (outputPath, content) => {
+    try {
+        const existing = await fs.readFile(outputPath, 'utf8');
+        if (existing === content) {
+            return false;
+        }
+    } catch {
+        // 文件不存在时直接写入
+    }
+
+    await fs.writeFile(outputPath, content, 'utf8');
+    return true;
+};
+
 const fileExists = async (filePath) => {
     try {
         await fs.access(filePath);
@@ -151,7 +165,7 @@ const buildDataManifestFile = ({ entries, outputPath }) => {
     lines.push(');');
     lines.push('');
 
-    return fs.writeFile(outputPath, lines.join('\n'), 'utf8');
+    return writeFileIfChanged(outputPath, lines.join('\n'));
 };
 
 const buildClientManifestFile = ({ entries, outputPath }) => {
@@ -224,7 +238,7 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
     lines.push(');');
     lines.push('');
 
-    return fs.writeFile(outputPath, lines.join('\n'), 'utf8');
+    return writeFileIfChanged(outputPath, lines.join('\n'));
 };
 
 const buildServerManifestFile = ({ entries, outputPath }) => {
@@ -259,21 +273,21 @@ const buildServerManifestFile = ({ entries, outputPath }) => {
     lines.push(');');
     lines.push('');
 
-    return fs.writeFile(outputPath, lines.join('\n'), 'utf8');
+    return writeFileIfChanged(outputPath, lines.join('\n'));
 };
 
 const run = async () => {
     const entries = await collectGameEntries();
     const serverEntries = entries.filter((entry) => entry.type === 'game' && entry.gameImport);
 
-    await buildDataManifestFile({ entries, outputPath: outputFiles.data });
-    await buildClientManifestFile({ entries, outputPath: outputFiles.client });
-    await buildServerManifestFile({ entries: serverEntries, outputPath: outputFiles.server });
+    const dataUpdated = await buildDataManifestFile({ entries, outputPath: outputFiles.data });
+    const clientUpdated = await buildClientManifestFile({ entries, outputPath: outputFiles.client });
+    const serverUpdated = await buildServerManifestFile({ entries: serverEntries, outputPath: outputFiles.server });
 
     console.log('[Manifest] Generated manifests:');
-    console.log(`- ${path.relative(process.cwd(), outputFiles.data)}`);
-    console.log(`- ${path.relative(process.cwd(), outputFiles.client)}`);
-    console.log(`- ${path.relative(process.cwd(), outputFiles.server)}`);
+    console.log(`- ${path.relative(process.cwd(), outputFiles.data)} ${dataUpdated ? '(updated)' : '(unchanged)'}`);
+    console.log(`- ${path.relative(process.cwd(), outputFiles.client)} ${clientUpdated ? '(updated)' : '(unchanged)'}`);
+    console.log(`- ${path.relative(process.cwd(), outputFiles.server)} ${serverUpdated ? '(updated)' : '(unchanged)'}`);
 };
 
 run().catch((error) => {

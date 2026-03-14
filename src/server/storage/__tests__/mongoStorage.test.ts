@@ -136,6 +136,56 @@ describe('MongoStorage.cleanupCorruptMatches', () => {
         const remaining = await Match.findOne({ matchID: 'legacy-null-isConnected' }).lean<{ matchID: string } | null>();
         expect(remaining?.matchID).toBe('legacy-null-isConnected');
     });
+
+    it('findMatchesByOwnerKey 只返回指定 owner 的房间', async () => {
+        const Match = mongoose.model('Match');
+        const now = Date.now();
+
+        await Match.create({
+            matchID: 'owner-1-a',
+            gameName: 'dicethrone',
+            state: null,
+            metadata: {
+                gameName: 'dicethrone',
+                players: { 0: {}, 1: {} },
+                setupData: { ownerKey: 'user:owner-1' },
+                createdAt: now,
+                updatedAt: now,
+            },
+            ttlSeconds: 0,
+        });
+        await Match.create({
+            matchID: 'owner-1-b',
+            gameName: 'tictactoe',
+            state: null,
+            metadata: {
+                gameName: 'tictactoe',
+                players: { 0: {}, 1: {} },
+                setupData: { ownerKey: 'user:owner-1' },
+                createdAt: now,
+                updatedAt: now,
+            },
+            ttlSeconds: 0,
+        });
+        await Match.create({
+            matchID: 'owner-2-a',
+            gameName: 'smashup',
+            state: null,
+            metadata: {
+                gameName: 'smashup',
+                players: { 0: {}, 1: {} },
+                setupData: { ownerKey: 'user:owner-2' },
+                createdAt: now,
+                updatedAt: now,
+            },
+            ttlSeconds: 0,
+        });
+
+        const matches = await mongoStorage.findMatchesByOwnerKey('user:owner-1');
+        expect(matches).toHaveLength(2);
+        expect(matches.map((match) => match.matchID).sort()).toEqual(['owner-1-a', 'owner-1-b']);
+        expect(matches.map((match) => match.gameName).sort()).toEqual(['dicethrone', 'tictactoe']);
+    });
 });
 
 const buildMetadata = (

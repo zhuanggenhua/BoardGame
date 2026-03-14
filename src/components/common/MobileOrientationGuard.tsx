@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { getGameById, subscribeGameRegistry } from '../../config/games.config';
 import {
     extractGameIdFromPlayPath,
@@ -11,6 +13,26 @@ const getViewport = () => ({
     width: typeof window === 'undefined' ? 0 : window.innerWidth,
     height: typeof window === 'undefined' ? 0 : window.innerHeight,
 });
+
+const isNativeAppShell = () => Capacitor.isNativePlatform();
+
+const lockScreenOrientationFallback = async (orientation: 'landscape' | 'portrait') => {
+    if (typeof window === 'undefined') return;
+    const orientationApi = window.screen?.orientation;
+    if (!orientationApi?.lock) return;
+    await orientationApi.lock(orientation).catch(() => undefined);
+};
+
+const lockScreenByRoute = async (isGameRoute: boolean) => {
+    const targetOrientation = isGameRoute ? 'landscape' : 'portrait';
+
+    try {
+        await ScreenOrientation.lock({ orientation: targetOrientation });
+        return;
+    } catch {
+        await lockScreenOrientationFallback(targetOrientation);
+    }
+};
 
 const renderBannerVisual = (bannerKind: GameMobileBannerKind) => {
     if (bannerKind === 'rotate-to-landscape' || bannerKind === 'rotate-to-portrait') {
@@ -74,12 +96,16 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     const [viewport, setViewport] = useState(getViewport);
     const [dismissedBannerKey, setDismissedBannerKey] = useState<string | null>(null);
     const [, forceRegistryVersion] = useState(0);
+    const nativeAppShell = isNativeAppShell();
 
     const gameId = extractGameIdFromPlayPath(location.pathname);
     const gameConfig = gameId ? getGameById(gameId) : undefined;
     const bannerKind = getGameMobileBannerKind(gameConfig, viewport.width, viewport.height);
     const bannerKey = bannerKind ? `${location.pathname}:${bannerKind}` : null;
-    const activeBannerKind = bannerKey && dismissedBannerKey !== bannerKey ? bannerKind : null;
+    const shouldSuppressBannerInAppShell = nativeAppShell && Boolean(gameId);
+    const activeBannerKind = !shouldSuppressBannerInAppShell && bannerKey && dismissedBannerKey !== bannerKey
+        ? bannerKind
+        : null;
 
     useEffect(() => {
         const updateViewport = () => {
@@ -107,6 +133,11 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
             setDismissedBannerKey(null);
         }
     }, [bannerKey]);
+
+    useEffect(() => {
+        if (!nativeAppShell) return;
+        void lockScreenByRoute(Boolean(gameId));
+    }, [nativeAppShell, gameId]);
 
     return (
         <>
