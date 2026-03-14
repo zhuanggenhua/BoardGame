@@ -7,6 +7,7 @@ const managedChildren = [];
 let shuttingDown = false;
 const repoRoot = process.cwd();
 const devBundleDir = process.env.DEV_BUNDLE_DIR || path.join('temp', 'dev-bundles');
+const devStartupTimeoutMs = Number(process.env.DEV_STARTUP_TIMEOUT_MS) || 300000;
 
 function getBundleOutfile(...segments) {
     return path.join(devBundleDir, ...segments);
@@ -71,7 +72,7 @@ function probePort(port, host = '127.0.0.1', timeoutMs = 1000) {
     });
 }
 
-async function waitForPort(port, label, timeoutMs = 120000) {
+async function waitForPort(port, label, timeoutMs = devStartupTimeoutMs) {
     const startedAt = Date.now();
     while (Date.now() - startedAt < timeoutMs) {
         if (await probePort(port)) {
@@ -127,6 +128,7 @@ async function main() {
         '--tsconfig', 'tsconfig.server.json',
     ]);
 
+    console.log(`[dev-orchestrator] waiting for ports (timeout=${Math.floor(devStartupTimeoutMs / 1000)}s)`);
     await Promise.all([
         waitForPort(Number(process.env.API_SERVER_PORT) || 18001, 'api'),
         waitForPort(Number(process.env.GAME_SERVER_PORT) || 18000, 'game'),

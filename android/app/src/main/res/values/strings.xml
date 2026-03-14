@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">EasyBoardGame</string>
-    <string name="title_activity_main">EasyBoardGame</string>
+    <string name="app_name">易桌游</string>
+    <string name="title_activity_main">易桌游</string>
     <string name="package_name">top.easyboardgame.app</string>
     <string name="custom_url_scheme">top.easyboardgame.app</string>
 </resources>

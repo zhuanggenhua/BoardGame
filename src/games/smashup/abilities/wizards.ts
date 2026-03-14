@@ -97,12 +97,12 @@ function wizardNeophyte(ctx: AbilityContext): AbilityResult {
     const cardName = def?.name ?? topCard.defId;
     const effectiveHandSize = getExternalActionEffectiveHandSize(ctx.matchState, ctx.playerId);
     const options = [
-        { id: 'to_hand', label: '鏀惧叆鎵嬬墝', value: { action: 'to_hand' }, displayMode: 'button' as const },
+        { id: 'to_hand', label: '放入手牌', value: { action: 'to_hand' }, displayMode: 'button' as const },
     ];
     if (canPlayExternalAction(ctx.matchState, ctx.playerId, topCard.defId, effectiveHandSize)) {
         options.push({
             id: 'play_extra',
-            label: '浣滀负棰濆琛屽姩鎵撳嚭',
+            label: '作为额外行动打出',
             value: { action: 'play_extra' },
             displayMode: 'button' as const,
         });
@@ -155,7 +155,7 @@ function getValidExternalActionBaseCandidates(
     return state.core.bases
         .map((base, i) => {
             const baseDef = getBaseDef(base.defId);
-            return { baseIndex: i, label: baseDef?.name ?? `鍩哄湴 ${i + 1}` };
+            return { baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` };
         })
         .filter(candidate => validateActionPlaySemantics(state.core, playerId, {
             defId,

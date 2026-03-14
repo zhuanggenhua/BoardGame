@@ -266,6 +266,25 @@ export class HybridStorage implements MatchStorage {
         return total;
     }
 
+    async findMatchesByOwnerKey(ownerKey: string): Promise<Array<{ matchID: string; gameName: string }>> {
+        if (!ownerKey) return [];
+
+        // 游客房间走内存索引，O(1) 命中；索引失效时自动清理脏映射
+        if (ownerKey.startsWith('guest:')) {
+            const matchID = this.guestOwnerIndex.get(ownerKey);
+            if (!matchID) return [];
+            const { metadata } = this.memory.fetch(matchID, { metadata: true });
+            if (!metadata?.gameName) {
+                this.guestOwnerIndex.delete(ownerKey);
+                this.guestMatchOwner.delete(matchID);
+                return [];
+            }
+            return [{ matchID, gameName: metadata.gameName }];
+        }
+
+        return this.mongo.findMatchesByOwnerKey(ownerKey);
+    }
+
     private async resolveStorageForMatch(matchID: string): Promise<StorageTarget | null> {
         const cached = this.matchStorage.get(matchID);
         if (cached) return cached;

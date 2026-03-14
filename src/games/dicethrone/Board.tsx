@@ -193,6 +193,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         magnify,
         isMagnifyOpen,
         setMagnifiedImage,
+        setMagnifiedCard,
         setMagnifiedCards,
         closeMagnify,
         modals,
@@ -990,7 +991,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 textClassName="text-[1.5vw] font-bold"
             >
                 <UndoProvider value={{ G: rawG, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
-                    <div className="relative w-full h-dvh bg-[#0a0a0c] overflow-hidden font-sans select-none">
+                    <div className="relative w-full h-full bg-[#0a0a0c] overflow-hidden font-sans select-none">
                         <DiceThroneCharacterSelection
                             isOpen={true}
                             currentPlayerId={rootPid}
@@ -1013,7 +1014,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // --- 游戏进行阶段：渲染完整棋盘 UI ---
     return (
         <UndoProvider value={{ G: rawG, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
-            <div className="relative w-full h-dvh bg-black overflow-hidden font-sans select-none text-slate-200">
+            <div className="relative w-full h-full bg-black overflow-hidden font-sans select-none text-slate-200">
                 {!isSpectator && (
                     <GameDebugPanel G={rawG} dispatch={dispatch} playerID={playerID}>
                         {/* DiceThrone 专属作弊工具 */}
@@ -1329,6 +1330,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                     engineMoves.sellCard(cardId);
                                     advanceTutorialIfNeeded('discard-pile');
                                 }}
+                                onMagnifyCard={(card) => setMagnifiedCard(card)}
                                 respondableCardIds={respondableCardIds}
                             />
                         </>

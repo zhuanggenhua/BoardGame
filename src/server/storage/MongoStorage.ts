@@ -50,6 +50,8 @@ const MatchSchema = new Schema<IMatchDocument>(
 // TTL 索引：当 expiresAt 到期时自动删除文档
 // 注意：MongoDB TTL 索引在后台每 60 秒检查一次
 MatchSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// ownerKey 查询索引：用于创建房间时快速定位并清理同 owner 的旧房间
+MatchSchema.index({ 'metadata.setupData.ownerKey': 1 }, { sparse: true });
 
 let MatchModel: Model<IMatchDocument> | null = null;
 
@@ -349,6 +351,18 @@ export class MongoStorage implements MatchStorage {
 
         const docs = await Match.find(query).select('matchID').lean();
         return docs.map(doc => doc.matchID);
+    }
+
+    async findMatchesByOwnerKey(ownerKey: string): Promise<Array<{ matchID: string; gameName: string }>> {
+        if (!ownerKey) return [];
+        const Match = getMatchModel();
+        const docs = await Match.find({
+            'metadata.setupData.ownerKey': ownerKey,
+        }).select('matchID gameName').lean();
+        return docs.map((doc) => ({
+            matchID: doc.matchID,
+            gameName: doc.gameName,
+        }));
     }
 
     /**

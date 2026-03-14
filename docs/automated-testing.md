@@ -19,7 +19,10 @@
 ## 快速开始
 
 ```bash
-# 运行所有测试
+# 默认先跑增量测试（基于 origin/main）
+npm run test:changed
+
+# 明确需要时再跑全量
 npm test
 
 # 运行特定游戏的测试（推荐开发时使用）
@@ -55,27 +58,32 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 
 ### 开发工作流建议
 
-1. **开发特定游戏时**：只运行该游戏的测试（快速反馈）
+1. **默认先跑增量测试**：只验证相对 `origin/main` 的改动（最快反馈）
+   ```bash
+   npm run test:changed
+   ```
+
+2. **开发特定游戏时**：只运行该游戏的测试（快速反馈）
    ```bash
    npm run test:smashup  # 2-3分钟
    ```
 
-2. **修改核心框架时**：先运行核心测试，再运行游戏测试
+3. **修改核心框架时**：先运行核心测试，再运行游戏测试
    ```bash
    npm run test:core     # 1-2分钟
    ```
 
-3. **提交前**：运行核心游戏测试（排除慢速测试）
+4. **特殊情况再扩大范围**（如引擎层改动、跨游戏联动、用户明确要求）
    ```bash
    npm run test:games:core  # 3-5分钟（排除 property/audit/E2E）
    ```
 
-4. **调试单个测试文件**：最快的方式
+5. **调试单个测试文件**：最快的方式
    ```bash
    npm run test -- myFeature.test.ts  # 10-60秒
    ```
 
-5. **CI/CD 中**：运行完整测试套件
+6. **仅在 CI/明确要求时**：运行完整测试套件
    ```bash
    npm test  # 10-15分钟
    ```
@@ -114,11 +122,11 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 
 ### 何时运行全量测试
 
-满足任一条件就扩大范围：
+默认先执行 `npm run test:changed`，满足任一条件再扩大范围：
 - 修改 `src/engine/`（含 `primitives/` 与 `systems/`）、`src/core/`、`src/components/game/framework/`
 - 涉及多人联机、状态同步、Undo/Rematch/Prompt 等系统性行为
 - 涉及公共类型/协议
-- 提交前/合并前
+- CI 回归或用户明确要求
 
 ---
 
@@ -1317,6 +1325,15 @@ npm run test:api
 ```
 
 > 未设置时使用 `mongodb-memory-server` 自动启动临时 MongoDB。
+
+---
+
+## E2E 截图核对补充规范（2026-03）
+
+1. 任何 E2E 结论（通过/失败/已修复）都必须基于“已实际查看截图”的事实，不允许只看日志或断言。
+2. 若用例失败且 `test-results/playwright-artifacts/` 没有截图，必须在结论中明确写出“无截图”并说明原因（如服务未启动、用例未进入页面）。
+3. UI 问题交付时必须同时给出你亲自核对过的截图绝对路径（`F:\...`），并写出从图里确认到的可见结果。
+4. 线上问题必须至少附一张线上环境现状截图；本地修复截图不能替代线上现状截图。
 
 ---
 

@@ -2,7 +2,7 @@
 @import "./fonts.css";
 
 @theme {
-    /* Fonts（字体文件自托管在 public/fonts/，@font-face 在 fonts.css） */
+    /* Fonts锛堝瓧浣撴枃浠惰嚜鎵樼鍦?public/fonts/锛孈font-face 鍦?fonts.css锛?*/
     --font-sans: 'Inter', system-ui, sans-serif;
     --font-serif: 'Crimson Text', serif;
     --font-heading: 'Inter', sans-serif;
@@ -78,6 +78,7 @@
         font-family: 'Crimson Text', serif;
         /* Default to Serif for that retro book feel */
         margin: 0;
+        min-height: 100vh;
         min-height: 100dvh;
     }
 
@@ -87,11 +88,20 @@
 }
 
 #root {
+    min-height: 100vh;
     min-height: 100dvh;
 }
 
-/* 游戏专属字体：manifest.fontFamily 通过 MatchRoom/LocalMatchRoom 注入为 CSS 变量，
-   自动应用到游戏容器内的标题元素，首页等非游戏页面不受影响 */
+/* 娓告垙椤甸潰瑙嗗彛楂樺害鍏滃簳锛氭棫 WebView 鍥為€€ 100vh锛屾柊娴忚鍣ㄤ紭鍏?100dvh */
+.game-page-viewport {
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+}
+
+/* 娓告垙涓撳睘瀛椾綋锛歮anifest.fontFamily 閫氳繃 MatchRoom/LocalMatchRoom 娉ㄥ叆涓?CSS 鍙橀噺锛?
+   鑷姩搴旂敤鍒版父鎴忓鍣ㄥ唴鐨勬爣棰樺厓绱狅紝棣栭〉绛夐潪娓告垙椤甸潰涓嶅彈褰卞搷 */
 [style*="--font-game-display:"] :is(h1, h2, h3, h4, h5, h6) {
     font-family: var(--font-game-display);
 }
@@ -108,7 +118,7 @@
         border-radius: 2px;
     }
 
-    /* 窄滚动条变体 */
+    /* 绐勬粴鍔ㄦ潯鍙樹綋 */
     .scrollbar-thin::-webkit-scrollbar {
         width: 4px;
         height: 4px;
@@ -136,7 +146,7 @@
         scrollbar-width: none;
     }
 
-    /* 横向细滚动条（卡牌展示区） */
+    /* 妯悜缁嗘粴鍔ㄦ潯锛堝崱鐗屽睍绀哄尯锛?*/
     .smashup-h-scrollbar {
         scrollbar-width: thin;
         scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
@@ -164,7 +174,7 @@
     }
 }
 
-/* 扫光动画 */
+/* 鎵厜鍔ㄧ敾 */
 @keyframes shimmer {
     0% {
         transform: translateX(-100%) skewX(-20deg);
@@ -179,7 +189,7 @@
     }
 }
 
-/* 图片占位 shimmer（水平扫光，用于 OptimizedImage / CardPreview） */
+/* 鍥剧墖鍗犱綅 shimmer锛堟按骞虫壂鍏夛紝鐢ㄤ簬 OptimizedImage / CardPreview锛?*/
 @keyframes img-shimmer {
     0% {
         background-position: 200% 0;
@@ -190,7 +200,7 @@
     }
 }
 
-/* Atlas 精灵图占位 shimmer（伪元素覆盖层，不影响 sprite backgroundImage） */
+/* Atlas 绮剧伒鍥惧崰浣?shimmer锛堜吉鍏冪礌瑕嗙洊灞傦紝涓嶅奖鍝?sprite backgroundImage锛?*/
 .atlas-shimmer {
     position: relative;
 }
@@ -208,20 +218,20 @@
     z-index: 1;
 }
 
-/* 钝帧冻结：暂停所有子元素的 CSS 动画和过渡 */
+/* 閽濆抚鍐荤粨锛氭殏鍋滄墍鏈夊瓙鍏冪礌鐨?CSS 鍔ㄧ敾鍜岃繃娓?*/
 .hitstop-frozen,
 .hitstop-frozen * {
     animation-play-state: paused !important;
     transition: none !important;
 }
 
-/* 首次发现提示气泡上下浮动动画 */
+/* 棣栨鍙戠幇鎻愮ず姘旀场涓婁笅娴姩鍔ㄧ敾 */
 @keyframes discovery-bob {
     0%, 100% { transform: translateY(0); }
     50%       { transform: translateY(-3px); }
 }
 
-/* 移动端响应式缩放（仅游戏页面，排除召唤师战争） */
+/* 绉诲姩绔搷搴斿紡缂╂斁锛堜粎娓告垙椤甸潰锛屾帓闄ゅ彫鍞ゅ笀鎴樹簤锛?*/
 .mobile-board-shell {
     position: relative;
     width: 100%;
@@ -264,26 +274,30 @@
 }
 
 @media (max-width: 1023px) and (orientation: landscape) {
-    /* 移动设备横屏时，游戏页面基于设计宽度 1280px 进行缩放 */
-    /* 召唤师战争有自己的 MapContainer 缩放系统，不使用 CSS 自动缩放 */
-    body:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]) #root {
+    [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell {
+        --mobile-board-shell-design-width: 1280px;
+        --mobile-board-shell-scale: calc(100vw / var(--mobile-board-shell-design-width));
         transform-origin: top left;
-        transform: scale(calc(100vw / 1280));
-        width: 1280px;
-        height: calc(100vh / (100vw / 1280));
-        overflow: hidden;
+        transform: scale(var(--mobile-board-shell-scale));
+        width: var(--mobile-board-shell-design-width);
+        height: calc(100vh / var(--mobile-board-shell-scale));
+        height: calc(100dvh / var(--mobile-board-shell-scale));
+        max-width: none;
+    }
+
+    [data-game-page][data-game-id="dicethrone"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell {
+        --mobile-board-shell-design-width: 940px;
     }
 }
-
-/* 移动端触摸优化 */
+/* 绉诲姩绔Е鎽镐紭鍖?*/
 @media (max-width: 1023px) {
-    /* 允许输入框选择文本 */
+    /* 鍏佽杈撳叆妗嗛€夋嫨鏂囨湰 */
     input, textarea {
         -webkit-user-select: text;
         user-select: text;
     }
     
-    /* 增大按钮点击区域 */
+    /* 澧炲ぇ鎸夐挳鐐瑰嚮鍖哄煙 */
     button,
     .touch-target-min {
         min-height: 44px;

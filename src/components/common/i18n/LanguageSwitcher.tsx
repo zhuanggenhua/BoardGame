@@ -39,11 +39,11 @@ export const LanguageSwitcher = ({ className = '' }: LanguageSwitcherProps) => {
     };
 
     return (
-        <div ref={containerRef} className={clsx('relative flex items-center', className)}>
+        <div ref={containerRef} className={clsx('relative flex h-8 items-center', className)}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={clsx(
-                    'group relative inline-flex h-8 items-center border-0 bg-transparent p-0 text-[11px] font-bold leading-none tracking-[0.08em] text-parchment-light-text transition-colors hover:text-[#2c2216] cursor-pointer md:text-sm'
+                    'group relative inline-flex h-8 items-center border-0 bg-transparent p-0 text-sm font-bold leading-none tracking-tight text-parchment-base-text transition-colors hover:text-parchment-brown cursor-pointer'
                 )}
                 title={currentOption.label}
             >

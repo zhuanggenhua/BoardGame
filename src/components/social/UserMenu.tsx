@@ -167,14 +167,14 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
     if (!user) return null;
 
     return (
-        <div className="relative flex items-center gap-1" ref={menuRef}>
+        <div className="relative flex h-8 items-center gap-1" ref={menuRef}>
             {/* 通知入口 */}
             <button
                 onClick={handleOpenNotifications}
                 className="group relative inline-flex h-8 items-center pl-1 pr-3 text-parchment-base-text hover:text-parchment-brown transition-colors cursor-pointer"
                 aria-label={t('social:menu.notifications')}
             >
-                <span className="font-bold text-sm tracking-tight">{t('social:menu.notifications')}</span>
+                <span className="font-bold text-sm leading-none tracking-tight">{t('social:menu.notifications')}</span>
                 <span className="underline-center" />
                 {hasBellBadge && (
                     <span className="absolute right-0 top-0.5 h-2 w-2 rounded-full bg-red-500" />
@@ -192,7 +192,7 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                         alt={user.username}
                     />
                 ) : (
-                    <div className="relative group-hover:text-parchment-brown text-parchment-base-text">
+                    <div className="relative inline-flex h-8 items-center text-parchment-base-text group-hover:text-parchment-brown">
                         <span className="font-bold text-sm tracking-tight">{user.username}</span>
                         <span className="underline-center" />
                     </div>
