@@ -36,7 +36,7 @@ describe('i18n 静态检查工具', () => {
         expect(byKey('error.roomFull')?.namespaces).toEqual(['lobby']);
     });
 
-    it('动态 key 会产生警告', () => {
+    it('动态 key 会产生告警', () => {
         const content = `
             import { useTranslation } from 'react-i18next';
             const { t } = useTranslation('lobby');
