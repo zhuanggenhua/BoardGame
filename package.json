@@ -41,6 +41,7 @@
     "i18n:check": "npx tsx scripts/verify/i18n-check.ts",
     "check:all": "npm run typecheck && npm run lint",
     "quality:changed": "node scripts/infra/run-changed-quality-gate.mjs",
+    "quality:changed:pre-push": "node scripts/infra/run-changed-quality-gate.mjs pre-push",
     "check:full": "npm run check:all && npm run test:games:core:full",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -106,7 +107,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --concurrent 1 --no-stash",
-    "pre-push": "npm run quality:changed"
+    "pre-push": "npm run quality:changed:pre-push"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
