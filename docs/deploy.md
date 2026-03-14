@@ -201,6 +201,10 @@ SMTP_PASS=xxx
 - `ANDROID_REMOTE_WEB_URL` 必须是绝对 HTTPS 地址，且应指向真实前端入口
 - 该前端入口加载出来的 H5 仍然会访问你的后端接口，因此 `WEB_ORIGINS` 必须包含这个前端域名
 - 远程模式下，Android App 会与线上 Web 同步更新；如果线上前端需要回滚，App 也会一起回滚，不再依赖重新发 APK
+- Android `remote` 打包应视为“纯壳模式”：不会执行 `vite build`，也不会把 `dist` 前端资源复制进 APK；打包只更新原生壳、Capacitor 配置和壳内静态资产（例如方向映射、图标、启动图）
+- Android `remote` 的 `build-debug / build-release / build-bundle` 不再自动执行 `capacitor sync/update`；如果你新增了 Capacitor 插件、修改了 Android 原生模板或首次初始化工程，先手动执行一次 `npm run mobile:android:sync`
+- 当前 Android 壳默认行为：游戏页按 `preferredOrientation` 自动切换横竖屏，并隐藏顶部状态栏；非游戏页恢复竖屏和系统状态栏
+- Android 壳进入后台、按 Home、锁屏或熄屏时，会主动通知 H5 停止当前 BGM；恢复前台后默认不自动续播
 
 ## Nginx 反向代理（自动管理）
 

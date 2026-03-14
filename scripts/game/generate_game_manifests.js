@@ -10,6 +10,7 @@ const outputFiles = {
     data: path.join(gamesRoot, 'manifest.generated.ts'),
     client: path.join(gamesRoot, 'manifest.client.generated.tsx'),
     server: path.join(gamesRoot, 'manifest.server.generated.ts'),
+    androidOrientationMap: path.resolve(__dirname, '../../android/app/src/main/assets/game-orientation-map.json'),
 };
 
 const writeFileIfChanged = async (outputPath, content) => {
@@ -80,6 +81,7 @@ const readManifestMeta = async (manifestPath) => {
         id: idMatch[1],
         type: typeMatch[1],
         enabled,
+        preferredOrientation: preferredOrientationMatch ? preferredOrientationMatch[1] : null,
     };
 };
 
@@ -130,6 +132,7 @@ const collectGameEntries = async () => {
             id: meta.id,
             type: meta.type,
             enabled: meta.enabled,
+            preferredOrientation: meta.preferredOrientation,
             dirName,
             manifestImport: toImportPath(path.relative(gamesRoot, manifestPath)),
             gameImport: hasGame ? toImportPath(path.relative(gamesRoot, gamePath)) : null,
@@ -276,6 +279,15 @@ const buildServerManifestFile = ({ entries, outputPath }) => {
     return writeFileIfChanged(outputPath, lines.join('\n'));
 };
 
+const buildAndroidOrientationMapFile = ({ entries, outputPath }) => {
+    const map = Object.fromEntries(
+        entries
+            .filter((entry) => entry.enabled)
+            .map((entry) => [entry.id, entry.preferredOrientation ?? 'portrait']),
+    );
+    return writeFileIfChanged(outputPath, `${JSON.stringify(map, null, 2)}\n`);
+};
+
 const run = async () => {
     const entries = await collectGameEntries();
     const serverEntries = entries.filter((entry) => entry.type === 'game' && entry.gameImport);
@@ -283,11 +295,13 @@ const run = async () => {
     const dataUpdated = await buildDataManifestFile({ entries, outputPath: outputFiles.data });
     const clientUpdated = await buildClientManifestFile({ entries, outputPath: outputFiles.client });
     const serverUpdated = await buildServerManifestFile({ entries: serverEntries, outputPath: outputFiles.server });
+    const androidOrientationMapUpdated = await buildAndroidOrientationMapFile({ entries, outputPath: outputFiles.androidOrientationMap });
 
     console.log('[Manifest] Generated manifests:');
     console.log(`- ${path.relative(process.cwd(), outputFiles.data)} ${dataUpdated ? '(updated)' : '(unchanged)'}`);
     console.log(`- ${path.relative(process.cwd(), outputFiles.client)} ${clientUpdated ? '(updated)' : '(unchanged)'}`);
     console.log(`- ${path.relative(process.cwd(), outputFiles.server)} ${serverUpdated ? '(updated)' : '(unchanged)'}`);
+    console.log(`- ${path.relative(process.cwd(), outputFiles.androidOrientationMap)} ${androidOrientationMapUpdated ? '(updated)' : '(unchanged)'}`);
 };
 
 run().catch((error) => {

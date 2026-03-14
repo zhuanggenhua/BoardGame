@@ -54,6 +54,7 @@ export const FabMenu = ({
     zIndex = UI_Z_INDEX.hud,
 }: FabMenuProps) => {
     // 响应式尺寸
+    const [isMobileViewport, setIsMobileViewport] = useState(false);
     const [buttonSize, setButtonSize] = useState(48);
     const [buttonGap, setButtonGap] = useState(12);
     const [edgePadding, setEdgePadding] = useState(32);
@@ -62,10 +63,11 @@ export const FabMenu = ({
     useEffect(() => {
         const updateSizes = () => {
             const mobile = window.innerWidth < 1024;
+            setIsMobileViewport(mobile);
             setSafeAreaInsets(getSafeAreaInsets());
-            setButtonSize(mobile ? 36 : 48);
-            setButtonGap(mobile ? 8 : 12);
-            setEdgePadding(mobile ? 16 : 32);
+            setButtonSize(mobile ? 44 : 48);
+            setButtonGap(mobile ? 10 : 12);
+            setEdgePadding(mobile ? 14 : 32);
         };
         updateSizes();
         window.addEventListener('resize', updateSizes);
@@ -117,7 +119,7 @@ export const FabMenu = ({
         const maxLeft = Math.max(minLeft, window.innerWidth - buttonSize - edgePadding - safeAreaInsets.right);
         const maxTop = Math.max(minTop, window.innerHeight - buttonSize - edgePadding - safeAreaInsets.bottom);
         // 默认位置往内偏移，不贴边
-        const DEFAULT_INSET = 48;
+        const DEFAULT_INSET = Math.max(buttonSize, 48);
         if (initialPosition === 'bottom-right') return { left: maxLeft - DEFAULT_INSET, top: maxTop - DEFAULT_INSET };
         if (initialPosition === 'bottom-left') return { left: minLeft + DEFAULT_INSET, top: maxTop - DEFAULT_INSET };
         if (initialPosition === 'top-right') return { left: maxLeft - DEFAULT_INSET, top: minTop + DEFAULT_INSET };
@@ -355,6 +357,9 @@ export const FabMenu = ({
                     isActive={activeItemId === items[0].id && isOpen}
                     alignment={alignment}
                     isDark={isDark}
+                    buttonSize={buttonSize}
+                    buttonGap={buttonGap}
+                    isMobileViewport={isMobileViewport}
                 />
                 <MenuButton
                     item={items[0]}
@@ -367,6 +372,8 @@ export const FabMenu = ({
                     tooltipPortalRoot={tooltipPortalRoot}
                     glowColor={glowColor}
                     isDragging={isDragging}
+                    buttonSize={buttonSize}
+                    isMobileViewport={isMobileViewport}
                 />
             </div>
 
@@ -382,22 +389,43 @@ export const FabMenu = ({
                 onExitComplete={handleListExitComplete}
                 glowColor={glowColor}
                 isDragging={isDragging}
+                buttonSize={buttonSize}
+                buttonGap={buttonGap}
+                isMobileViewport={isMobileViewport}
             />
         </motion.div>
     );
 };
 
-const SatelliteList = ({ isOpen, items, activeId, onItemClick, alignment, isDark, tooltipPortalRoot, onExitComplete, glowColor, isDragging }: any) => {
+const SatelliteList = ({
+    isOpen,
+    items,
+    activeId,
+    onItemClick,
+    alignment,
+    isDark,
+    tooltipPortalRoot,
+    onExitComplete,
+    glowColor,
+    isDragging,
+    buttonSize,
+    buttonGap,
+    isMobileViewport,
+}: any) => {
     const isButtonBottom = alignment.v === 'bottom';
-    const positionClass = isButtonBottom ? 'bottom-[calc(100%+12px)]' : 'top-[calc(100%+12px)]';
     const flexDirection = isButtonBottom ? 'flex-col-reverse' : 'flex-col';
     const alignItems = alignment.h === 'right' ? 'items-start' : 'items-end';
+    const offset = buttonSize + buttonGap;
 
     return (
         <AnimatePresence onExitComplete={onExitComplete}>
             {isOpen && (
                 <motion.div
-                    className={`absolute ${positionClass} left-0 flex ${flexDirection} ${alignItems} gap-3`}
+                    className={`absolute left-0 flex ${flexDirection} ${alignItems}`}
+                    style={{
+                        [isButtonBottom ? 'bottom' : 'top']: offset,
+                        gap: isMobileViewport ? buttonGap : Math.max(buttonGap, 12),
+                    }}
                     initial="hidden"
                     animate="visible"
                     exit="hidden"
@@ -413,6 +441,9 @@ const SatelliteList = ({ isOpen, items, activeId, onItemClick, alignment, isDark
                                 isActive={activeId === item.id}
                                 alignment={alignment}
                                 isDark={isDark}
+                                buttonSize={buttonSize}
+                                buttonGap={buttonGap}
+                                isMobileViewport={isMobileViewport}
                             />
                             <MenuButton
                                 item={item}
@@ -425,6 +456,8 @@ const SatelliteList = ({ isOpen, items, activeId, onItemClick, alignment, isDark
                                 tooltipPortalRoot={tooltipPortalRoot}
                                 glowColor={glowColor}
                                 isDragging={isDragging}
+                                buttonSize={buttonSize}
+                                isMobileViewport={isMobileViewport}
                             />
                         </div>
                     ))}
@@ -434,9 +467,13 @@ const SatelliteList = ({ isOpen, items, activeId, onItemClick, alignment, isDark
     );
 };
 
-const Panel = ({ item, isActive, alignment, isDark }: any) => {
+const Panel = ({ item, isActive, alignment, isDark, buttonSize, buttonGap, isMobileViewport }: any) => {
     const verticalClass = alignment.v === 'top' ? 'top-0' : 'bottom-0';
-    const horizontalClass = alignment.h === 'right' ? 'left-[60px]' : 'right-[60px]';
+    const panelOffset = buttonSize + buttonGap;
+    const panelWidth = isMobileViewport ? 228 : 300;
+    const panelMaxWidth = isMobileViewport
+        ? `min(${panelWidth}px, calc(82vw - ${panelOffset}px))`
+        : `min(${panelWidth}px, calc(90vw - ${panelOffset}px))`;
 
     return (
         <AnimatePresence>
@@ -447,18 +484,22 @@ const Panel = ({ item, isActive, alignment, isDark }: any) => {
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95, x: alignment.h === 'right' ? -10 : 10 }}
                     className={`
-                        absolute w-[300px] max-w-[calc(90vw-60px)] md:w-[300px] max-md:w-[260px] p-4 max-md:p-3 rounded-xl shadow-2xl backdrop-blur-xl border-l-[3px]
+                        absolute p-4 max-md:p-3 rounded-xl shadow-2xl backdrop-blur-xl border-l-[3px]
                         z-30
                         ${isDark ? "bg-black/95 border-white/20 border-l-neon-blue text-white" : "bg-[#fcfbf9]/95 border-[#d3ccba] border-l-[#8c7b64] text-[#433422]"}
 
                         ${verticalClass}
-                        ${horizontalClass}
 
                         max-h-[80vh] overflow-y-auto custom-scrollbar
                     `}
+                    style={{
+                        width: panelWidth,
+                        maxWidth: panelMaxWidth,
+                        [alignment.h === 'right' ? 'left' : 'right']: panelOffset,
+                    }}
                     onPointerDown={(e) => e.stopPropagation()}
                 >
-                    <div className="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-70 border-b border-white/10 pb-2">
+                    <div className="mb-2 truncate border-b border-white/10 pb-2 text-[10px] font-bold uppercase tracking-wider opacity-70">
                         {item.label}
                     </div>
                     {item.content}

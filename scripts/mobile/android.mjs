@@ -29,6 +29,7 @@ const command = process.argv[2];
 const distDir = path.join(rootDir, 'dist');
 const androidPublicDir = path.join(androidDir, 'app', 'src', 'main', 'assets', 'public');
 const androidBuildMetaFileName = 'android-build-meta.json';
+const gameManifestGeneratorPath = path.join(rootDir, 'scripts', 'game', 'generate_game_manifests.js');
 
 const envFiles = ['.env', '.env.android', '.env.android.local'];
 for (const file of envFiles) {
@@ -278,6 +279,39 @@ const getAppConfig = () => ({
     appId: process.env.CAPACITOR_APP_ID?.trim() || defaultAppId,
     appName: process.env.CAPACITOR_APP_NAME?.trim() || defaultAppName,
 });
+
+const writeCapacitorShellConfig = () => {
+    const { appId, appName } = getAppConfig();
+    const mode = getAndroidWebviewMode();
+    const server = {
+        androidScheme: 'https',
+    };
+
+    if (mode === 'remote') {
+        server.url = ensureRemoteWebUrl();
+    }
+
+    writeText(
+        path.join(androidDir, 'app', 'src', 'main', 'assets', 'capacitor.config.json'),
+        `${JSON.stringify(
+            {
+                appId,
+                appName,
+                webDir: 'dist',
+                server,
+            },
+            null,
+            2,
+        )}\n`,
+    );
+};
+
+const ensureRemoteShellAssetsReady = () => {
+    const pluginsFile = path.join(androidDir, 'app', 'src', 'main', 'assets', 'capacitor.plugins.json');
+    if (!existsSync(pluginsFile)) {
+        throw new Error('remote 纯壳构建缺少 android/app/src/main/assets/capacitor.plugins.json。首次初始化或插件变更后请先执行 npm run mobile:android:sync。');
+    }
+};
 
 const getAndroidWebviewMode = () => {
     const mode = (process.env.ANDROID_WEBVIEW_MODE?.trim().toLowerCase() || defaultAndroidWebviewMode);
@@ -564,6 +598,7 @@ const prepareAndroidProject = async () => {
 
     ensureGeneratedAndroidFiles();
     prepareCapacitorAndroidModule();
+    writeCapacitorShellConfig();
     await generateAndroidBrandAssets({
         rootDir,
         androidDir,
@@ -618,7 +653,7 @@ const syncAndroid = async () => {
         await runCapacitor(['sync', 'android']);
     } else {
         await runCapacitor(['update', 'android']);
-        await runCapacitor(['copy', 'android']);
+        clearBundledWebAssetsForRemote();
     }
     await prepareAndroidProject();
     if (mode === 'embedded') {
@@ -626,6 +661,15 @@ const syncAndroid = async () => {
     } else {
         clearBundledWebAssetsForRemote();
     }
+};
+
+const prepareRemoteShellBuild = async () => {
+    ensureRemoteWebUrl();
+    await ensureBuildSupport();
+    await runNodeScript(gameManifestGeneratorPath, []);
+    await ensureAndroidProject();
+    ensureRemoteShellAssetsReady();
+    clearBundledWebAssetsForRemote();
 };
 
 const prepareRelease = async ({ required }) => {
@@ -718,18 +762,30 @@ const run = async () => {
             await runCapacitor(['run', 'android']);
             return;
         case 'build-debug':
-            await syncAndroid();
+            if (getAndroidWebviewMode() === 'remote') {
+                await prepareRemoteShellBuild();
+            } else {
+                await syncAndroid();
+            }
             await runGradle(['assembleDebug']);
             console.log('Debug APK 输出目录: android/app/build/outputs/apk/debug/');
             return;
         case 'build-release':
-            await syncAndroid();
+            if (getAndroidWebviewMode() === 'remote') {
+                await prepareRemoteShellBuild();
+            } else {
+                await syncAndroid();
+            }
             await prepareRelease({ required: true });
             await runGradle(['assembleRelease']);
             console.log('Signed Release APK 输出目录: android/app/build/outputs/apk/release/');
             return;
         case 'build-bundle':
-            await syncAndroid();
+            if (getAndroidWebviewMode() === 'remote') {
+                await prepareRemoteShellBuild();
+            } else {
+                await syncAndroid();
+            }
             await prepareRelease({ required: true });
             await runGradle(['bundleRelease']);
             console.log('Signed Release AAB 输出目录: android/app/build/outputs/bundle/release/');

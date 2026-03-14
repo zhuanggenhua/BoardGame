@@ -101,6 +101,41 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, []);
 
     useEffect(() => {
+        if (typeof document === 'undefined' || typeof window === 'undefined') {
+            return;
+        }
+
+        let appHidden = false;
+        const stopBgmWhenHidden = () => {
+            if (appHidden) return;
+            appHidden = true;
+            AudioManager.stopBgm();
+        };
+        const markVisible = () => {
+            appHidden = false;
+        };
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                stopBgmWhenHidden();
+                return;
+            }
+            markVisible();
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('pagehide', stopBgmWhenHidden);
+        window.addEventListener('bg-shell-app-hidden', stopBgmWhenHidden as EventListener);
+        window.addEventListener('bg-shell-app-visible', markVisible as EventListener);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('pagehide', stopBgmWhenHidden);
+            window.removeEventListener('bg-shell-app-hidden', stopBgmWhenHidden as EventListener);
+            window.removeEventListener('bg-shell-app-visible', markVisible as EventListener);
+        };
+    }, []);
+
+    useEffect(() => {
         writeLocalBgmSelections(bgmSelections);
     }, [bgmSelections]);
 

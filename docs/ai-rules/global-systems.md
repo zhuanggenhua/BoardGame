@@ -18,6 +18,7 @@
 - **音频系统 (`useAudio` & `AudioManager`)**：
     - 统一管理 BGM 与 SFX。
     - **规范**：切换游戏时，必须通过 `stopBgm` 及 `playBgm` 重置音乐流。声音资源需经过 `compress_audio.js` 压缩。
+    - **生命周期要求**：应用进入后台、锁屏、熄屏或页面隐藏时，必须主动停止 BGM；恢复前台后默认不自动续播，避免后台持续播放。
 - **教学系统 (`useTutorial`)**：
     - 基于 Manifest 的分步引导。支持 `highlightTarget` (通过 `data-tutorial-id`) 与 `aiMove` 模拟。
 - **认证系统 (`useAuth`)**：

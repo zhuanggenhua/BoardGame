@@ -213,6 +213,22 @@ function isCoreSourceFile(file) {
   return affectsCoreArea(file) && !isTestFile(file);
 }
 
+function affectsPrePushGlobalVitest(file) {
+  if (isTestFile(file)) return false;
+  return file.startsWith('src/core/')
+    || file.startsWith('src/engine/')
+    || file.startsWith('src/shared/')
+    || file.startsWith('src/hooks/')
+    || file.startsWith('src/components/game/')
+    || file.startsWith('src/lib/')
+    || file === 'vitest.config.core.ts'
+    || file === 'vitest.config.ts';
+}
+
+function isNonGameTestFile(file) {
+  return isTestFile(file) && !isGameFile(file);
+}
+
 function collectGameIds(files, { sourceOnly = false } = {}) {
   const ids = new Set();
   for (const file of files) {
@@ -236,8 +252,11 @@ function buildVitestChangedArgs(baseRef, targets, options = {}) {
 function collectCommands(files, baseRef) {
   const commands = [];
   const lintFiles = files.filter(isLintTarget);
-  const coreSourceChanged = hasAny(files, isCoreSourceFile);
-  const coreTestFiles = files.filter((file) => affectsCoreArea(file) && isTestFile(file));
+  const coreSourceChanged = hasAny(
+    files,
+    isPrePushMode ? affectsPrePushGlobalVitest : isCoreSourceFile,
+  );
+  const coreTestFiles = files.filter(isNonGameTestFile);
   const gameSourceIds = collectGameIds(files, { sourceOnly: true });
   const gameTestFiles = files.filter((file) => isGameFile(file) && isTestFile(file));
 

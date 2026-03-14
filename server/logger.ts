@@ -13,6 +13,27 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 
 const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), 'logs');
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const isProduction = NODE_ENV === 'production';
+
+function parseBooleanEnv(value: string | undefined): boolean | undefined {
+  if (value == null) {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+
+  return undefined;
+}
+
+// 本地开发默认不写入磁盘，避免异常刷屏时快速堆积几十 GB 日志。
+const enableFileLogging = parseBooleanEnv(process.env.LOG_TO_FILE) ?? isProduction;
 
 // 日志格式
 const logFormat = winston.format.combine(
@@ -31,26 +52,20 @@ const consoleFormat = winston.format.combine(
   })
 );
 
-// 创建 logger
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: logFormat,
-  defaultMeta: {
-    service: 'boardgame-server',
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version,
-  },
-  transports: [
-    // 控制台输出
-    new winston.transports.Console({
-      format: consoleFormat,
-      level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
-      // 防止 EPIPE 错误导致无限循环（nodemon 重启时 stdout 管道会关闭）
-      handleExceptions: false,
-      handleRejections: false,
-      silent: false,
-    }),
+const transports: winston.transport[] = [
+  // 控制台输出
+  new winston.transports.Console({
+    format: consoleFormat,
+    level: isProduction ? 'warn' : 'debug',
+    // 防止 EPIPE 错误导致无限循环（nodemon 重启时 stdout 管道会关闭）
+    handleExceptions: false,
+    handleRejections: false,
+    silent: false,
+  }),
+];
 
+if (enableFileLogging) {
+  transports.push(
     // 所有日志（按日期轮转，保留 30 天，旧日志自动压缩）
     new DailyRotateFile({
       dirname: LOG_DIR,
@@ -72,8 +87,20 @@ const logger = winston.createLogger({
       maxFiles: '90d',
       zippedArchive: true,
       format: logFormat,
-    }),
-  ],
+    })
+  );
+}
+
+// 创建 logger
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: logFormat,
+  defaultMeta: {
+    service: 'boardgame-server',
+    environment: NODE_ENV,
+    version: process.env.npm_package_version,
+  },
+  transports,
 });
 
 // 游戏业务日志方法
