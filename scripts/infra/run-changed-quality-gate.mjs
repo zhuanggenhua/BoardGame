@@ -80,12 +80,33 @@ function runEncodingGuard(files) {
   }
 }
 
+function resolveRemoteSameBranchBase() {
+  const currentBranch = runGit(['rev-parse', '--abbrev-ref', 'HEAD'], { allowFailure: true });
+  if (!currentBranch || currentBranch === 'HEAD') return '';
+
+  // 优先使用已存在的远端跟踪分支（无需额外网络请求）
+  const trackingRef = `refs/remotes/origin/${currentBranch}`;
+  const tracked = runGit(['rev-parse', '--verify', trackingRef], { allowFailure: true });
+  if (tracked) return trackingRef;
+
+  // 兼容 remote.fetch 仅拉 main 的仓库：直接查询远端同名分支提交
+  const remoteHead = runGit(['ls-remote', '--heads', 'origin', currentBranch], { allowFailure: true });
+  if (!remoteHead) return '';
+
+  const firstLine = remoteHead.split(/\r?\n/).find(Boolean) || '';
+  const [sha] = firstLine.trim().split(/\s+/);
+  return sha || '';
+}
+
 function resolveBaseRef() {
   const envBase = process.env.QUALITY_GATE_BASE?.trim();
   if (envBase) return envBase;
 
   const upstream = runGit(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], { allowFailure: true });
   if (upstream) return upstream;
+
+  const sameBranchRemote = resolveRemoteSameBranchBase();
+  if (sameBranchRemote) return sameBranchRemote;
 
   const candidates = ['origin/main', 'origin/master', 'main', 'master', 'HEAD~1'];
   for (const candidate of candidates) {
