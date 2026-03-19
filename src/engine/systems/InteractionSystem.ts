@@ -19,6 +19,11 @@ import { resolveCommandTimestamp } from '../utils';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 
+function isSamePlayerId(a: unknown, b: unknown): boolean {
+    if (a === undefined || a === null || b === undefined || b === null) return false;
+    return String(a) === String(b);
+}
+
 // ============================================================================
 // 交互选项类型（原属 types.ts，逻辑上归属交互系统）
 // ============================================================================
@@ -863,7 +868,7 @@ export function createInteractionSystem<TCore>(
 
             // 如果交互有 optionsGenerator，先调用它生成选项，再序列化
             let processedCurrent = current;
-            if (current?.playerId === playerId && current.kind === 'simple-choice') {
+            if (isSamePlayerId(current?.playerId, playerId) && current.kind === 'simple-choice') {
                 const data = current.data as SimpleChoiceData;
                 if (data.optionsGenerator) {
                     console.log('[InteractionSystem playerView] Calling optionsGenerator for current:', {
@@ -884,7 +889,7 @@ export function createInteractionSystem<TCore>(
             }
 
             const filteredCurrent =
-                processedCurrent?.playerId === playerId ? stripNonSerializable(processedCurrent) : undefined;
+                isSamePlayerId(processedCurrent?.playerId, playerId) ? stripNonSerializable(processedCurrent) : undefined;
             
             console.log('[InteractionSystem playerView] After stripNonSerializable:', {
                 hasFilteredCurrent: !!filteredCurrent,
@@ -894,7 +899,7 @@ export function createInteractionSystem<TCore>(
             
             // 同样处理 queue 中的交互
             const processedQueue = queue
-                .filter((i) => i?.playerId === playerId)
+                .filter((i) => isSamePlayerId(i?.playerId, playerId))
                 .map((i) => {
                     if (i.kind === 'simple-choice') {
                         const data = i.data as SimpleChoiceData;
@@ -910,7 +915,7 @@ export function createInteractionSystem<TCore>(
                 });
             const filteredQueue = processedQueue.map(i => stripNonSerializable(i)!);
             // 当其他玩家有未完成交互时，通知当前玩家被阻塞（不暴露交互详情）
-            const isBlocked = !!current && current.playerId !== playerId;
+            const isBlocked = !!current && !isSamePlayerId(current.playerId, playerId);
 
             return {
                 interaction: { current: filteredCurrent, queue: filteredQueue, isBlocked },
@@ -932,7 +937,7 @@ function handleInteractionCancel<TCore>(
     if (!current) {
         return { halt: true, error: '没有待处理的交互' };
     }
-    if (current.playerId !== playerId) {
+    if (!isSamePlayerId(current.playerId, playerId)) {
         return { halt: true, error: '不是你的交互' };
     }
 

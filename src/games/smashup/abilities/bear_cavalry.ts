@@ -32,7 +32,6 @@ import type { ProtectionCheckContext, TriggerContext } from '../domain/ongoingEf
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { PlayerId } from '../../../engine/types';
-import type { SuperiorityPodProtectEnabledEvent } from '../domain/types';
 
 // 本文件中使用的 defId 匹配工具：基础版 + `_pod` 版本都视为同一张牌
 function matchesDefId(defId: string | undefined | null, baseDefId: string): boolean {
@@ -264,7 +263,7 @@ function bearCavalryGeneralIvanPodTrigger(ctx: TriggerContext): SmashUpEvent[] |
         if (found) { 
             movedMinion = found; 
             movedToBaseIndex = i;
-            break; 
+            break;
         }
     }
     if (!movedMinion || movedToBaseIndex === -1) return events;
@@ -409,6 +408,7 @@ function bearCavalrySuperiorityPodProtection(ctx: ProtectionCheckContext): boole
     return base.ongoingActions.some(
         a => a.defId === 'bear_cavalry_superiority_pod' &&
              a.ownerId === ctx.targetMinion.controller &&
+             a.talentUsed === true &&
              (a.metadata as any)?.superiorityProtect === true
     );
 }
@@ -873,11 +873,7 @@ function bearCavalryBearRidesYouPod(ctx: AbilityContext): AbilityResult {
 
 type BearRidesYouPodSuppressTarget =
     | { kind: 'skip' }
-    | { kind: 'base'; baseIndex: number }
-    | { kind: 'minion'; minionUid: string; baseIndex: number }
-    | { kind: 'ongoing'; cardUid: string; baseIndex: number }
-    | { kind: 'attached'; cardUid: string; baseIndex: number }
-    | { kind: 'titan'; titanUid: string; baseIndex: number; ownerId: PlayerId };
+    | { kind: 'base'; baseIndex: number };
 
 /** 你们都是美食 onPlay：选择有己方随从的基地→选择目标基地，移动所有对手随从*/
 function bearCavalryYourePrettyMuchBorscht(ctx: AbilityContext): AbilityResult {
@@ -987,22 +983,21 @@ function bearCavalryBearNecessitiesPodTurnStart(ctx: TriggerContext): SmashUpEve
     const events: SmashUpEvent[] = [];
     
     // 检查是否是卡牌拥有者的回合
-    if (ctx.state.currentPlayer !== ctx.ownerId) return events;
+    // onTurnStart 的 ctx.playerId 就是当前回合玩家
     
     // 找到黑熊口粮 POD 卡牌（必须已激活天赋）
     for (const base of ctx.state.bases) {
-        const card = base.ongoingActions.find(
-            a => a.defId === 'bear_cavalry_bear_necessities_pod' && 
-                 a.ownerId === ctx.ownerId && 
-                 a.talentUsed === true
+        const cards = base.ongoingActions.filter(
+            a => a.defId === 'bear_cavalry_bear_necessities_pod'
+                && a.ownerId === ctx.playerId
+                && a.talentUsed === true
         );
-        if (card) {
+        for (const card of cards) {
             events.push({
                 type: SU_EVENTS.ONGOING_DETACHED,
                 payload: { cardUid: card.uid, defId: card.defId, ownerId: card.ownerId, reason: 'bear_cavalry_bear_necessities_pod' },
                 timestamp: ctx.now
             } as OngoingDetachedEvent);
-            break;
         }
     }
     
@@ -1664,11 +1659,15 @@ export function registerBearCavalryInteractionHandlers(): void {
 
         suppressOptions.push({ id: 'skip', label: '跳过（不压制）', value: { kind: 'skip' } });
 
+        const visibleSuppressOptions = suppressOptions.filter(option =>
+            option.value.kind === 'base' || option.value.kind === 'skip'
+        );
+
         const next = createSimpleChoice(
             `bear_cavalry_bear_rides_you_pod_choose_suppress_${timestamp}`,
             playerId,
             '与熊同行：选择要压制能力的卡牌（到你下回合开始）',
-            suppressOptions as any[],
+            visibleSuppressOptions as any[],
             { sourceId: 'bear_cavalry_bear_rides_you_pod_choose_suppress', targetType: 'generic', autoCancelOption: true }
         );
         (next.data as any).continuationContext = { toBase };
@@ -1692,25 +1691,35 @@ export function registerBearCavalryInteractionHandlers(): void {
             };
         }
 
-        return {
-            state,
-            events: [{
-                type: SU_EVENTS.CARD_SUPPRESSED,
-                payload: {
-                    cardUid: chosen.kind === 'minion' ? chosen.minionUid : chosen.kind === 'titan' ? chosen.titanUid : chosen.cardUid,
-                    suppressedBy: playerId,
-                    cardType: chosen.kind === 'minion' || chosen.kind === 'titan' ? 'minion' : 'ongoing',
-                    baseIndex: chosen.baseIndex,
-                },
-                timestamp,
-            } as any],
-        };
+        return { state, events: [] };
     });
     
     // 全面优势 POD 天赋：摸牌或保护
     registerInteractionHandler('bear_cavalry_superiority_pod_talent', (state, playerId, value, iData, _random, timestamp) => {
         const action = (value as any) as 'draw' | 'protect';
         const events: SmashUpEvent[] = [];
+        const cardUid = (iData as any)?.cardUid as string | undefined;
+        const nextState = cardUid
+            ? {
+                ...state,
+                core: {
+                    ...state.core,
+                    bases: state.core.bases.map(base => ({
+                        ...base,
+                        ongoingActions: base.ongoingActions.map(ongoing => {
+                            if (ongoing.uid !== cardUid) return ongoing;
+                            return {
+                                ...ongoing,
+                                metadata: {
+                                    ...(ongoing.metadata ?? {}),
+                                    superiorityProtect: action === 'protect',
+                                },
+                            };
+                        }),
+                    })),
+                },
+            }
+            : state;
         
         if (action === 'draw') {
             // 摸一张牌（从牌库顶抽取）
@@ -1723,17 +1732,9 @@ export function registerBearCavalryInteractionHandlers(): void {
                     timestamp
                 });
             }
-        } else if (action === 'protect') {
-            const cardUid = (iData as any)?.cardUid as string | undefined;
-            if (!cardUid) return { state, events };
-            events.push({
-                type: SU_EVENTS.SUPERIORITY_POD_PROTECT_ENABLED,
-                payload: { playerId, cardUid, enabled: true },
-                timestamp,
-            } as unknown as SuperiorityPodProtectEnabledEvent);
         }
         
-        return { state, events };
+        return { state: nextState, events };
     });
     
     // 制高点 POD 触发器：消灭或摸牌打战术

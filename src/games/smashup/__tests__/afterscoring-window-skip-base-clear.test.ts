@@ -242,6 +242,87 @@ describe('afterScoring 延迟清场回归', () => {
         expect(finalCore?.bases[1].minions).toHaveLength(0);
     });
 
+    it('base_the_mothership should not flush deferred clear events when next interaction is in current', () => {
+        const system = createSmashUpEventSystem();
+        const state = wrapState(makeCore({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_mothership', {
+                    minions: [
+                        makeMinion('winner-minion', '1', 3),
+                        makeMinion('scout-minion', '0', 2, 'alien_scout'),
+                    ],
+                }),
+            ],
+            baseDeck: ['base_secret_garden'],
+        }));
+
+        // 模拟：当前交互（母舰）已被弹出，下一交互（侦察兵）已在 current，queue 为空。
+        state.sys.interaction.current = {
+            id: 'i-scout-next',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                sourceId: 'alien_scout_return',
+                options: [
+                    { id: 'yes', label: '返回手牌', value: { returnIt: true } },
+                    { id: 'no', label: '留在基地', value: { returnIt: false } },
+                ],
+            },
+        } as any;
+        state.sys.interaction.queue = [];
+
+        const result = system.afterEvents?.({
+            state,
+            random: undefined as any,
+            events: [{
+                type: INTERACTION_EVENTS.RESOLVED,
+                payload: {
+                    interactionId: 'i-mothership',
+                    playerId: '1',
+                    optionId: 'minion-0',
+                    value: { minionUid: 'winner-minion', minionDefId: 'd1', baseIndex: 0 },
+                    sourceId: 'base_the_mothership',
+                    interactionData: {
+                        sourceId: 'base_the_mothership',
+                        continuationContext: {
+                            baseIndex: 0,
+                            _deferredPostScoringEvents: [
+                                {
+                                    type: SU_EVENTS.BASE_CLEARED,
+                                    payload: { baseIndex: 0, baseDefId: 'base_the_mothership' },
+                                    timestamp: 2200,
+                                },
+                                {
+                                    type: SU_EVENTS.BASE_REPLACED,
+                                    payload: {
+                                        baseIndex: 0,
+                                        oldBaseDefId: 'base_the_mothership',
+                                        newBaseDefId: 'base_secret_garden',
+                                    },
+                                    timestamp: 2200,
+                                },
+                            ],
+                        },
+                    },
+                },
+                timestamp: 2200,
+            } as any],
+        });
+
+        const emittedEvents = result?.events as SmashUpEvent[] | undefined;
+        expect(emittedEvents?.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(true);
+        expect(emittedEvents?.some(event => event.type === SU_EVENTS.BASE_CLEARED)).toBe(false);
+        expect(emittedEvents?.some(event => event.type === SU_EVENTS.BASE_REPLACED)).toBe(false);
+
+        const nextCtx = (result?.state.sys.interaction.current?.data as any)?.continuationContext;
+        expect(nextCtx?._deferredPostScoringEvents).toBeDefined();
+        expect(nextCtx?._deferredPostScoringEvents).toHaveLength(2);
+    });
+
     it('最后一个 afterScoring 交互已补发延迟事件时，不应再次重复补发', () => {
         const system = createSmashUpEventSystem();
         const state = wrapState(makeCore({

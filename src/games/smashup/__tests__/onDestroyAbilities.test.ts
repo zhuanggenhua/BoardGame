@@ -31,6 +31,47 @@ beforeAll(() => {
     initAllAbilities();
 });
 
+describe('trickster_gremlin_pod onDestroy', () => {
+    it('被消灭时只结算一次抽牌与弃牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('c1', 'bear_cavalry_bear_necessities', 'action', '0'),
+                        makeCard('c2', 'test_extra', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('d1', 'test_draw', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('gremlin', 'trickster_gremlin_pod', '1', 2, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+        });
+
+        const events = execute(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'c1' },
+        }, defaultRandom);
+
+        const drawEvents = events.filter(
+            e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '1'
+        );
+        expect(drawEvents.length).toBe(1);
+        expect((drawEvents[0] as any).payload.count).toBe(1);
+
+        const discardEvents = events.filter(
+            e => e.type === SU_EVENTS.CARDS_DISCARDED && (e as any).payload.playerId === '0'
+        );
+        expect(discardEvents.length).toBe(1);
+        expect((discardEvents[0] as any).payload.cardUids.length).toBe(1);
+    });
+});
+
 // ============================================================================
 // 辅助函数
 // ============================================================================

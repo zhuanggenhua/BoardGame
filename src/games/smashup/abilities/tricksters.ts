@@ -226,6 +226,7 @@ function registerTricksterPodAbilities(): void {
     registerAbility('trickster_enshrouding_mist_pod', 'talent', tricksterEnshroudingMistPodTalent);
     registerAbility('trickster_hideout_pod', 'talent', tricksterHideoutPodTalent);
     registerAbility('trickster_gnome_pod', 'special', tricksterGnomePodSpecial);
+    registerAbility('trickster_gremlin_pod', 'onDestroy', () => ({ events: [] }));
     registerTricksterPodOngoingEffects();
 }
 
@@ -979,6 +980,9 @@ function registerTricksterOngoingEffects(): void {
 }
 
 function registerTricksterPodOngoingEffects(): void {
+    registerTrigger('trickster_brownie_pod', 'onMinionAffected', () => []);
+    registerTrigger('trickster_enshrouding_mist_pod', 'onTurnStart', () => []);
+    registerProtection('trickster_hideout_pod', 'action', () => false);
     // Hideout POD：其他玩家不能将随从移动到此基地（用事件拦截器阻止移动）
     registerInterceptor('trickster_hideout_pod', (state, event) => {
         if (event.type !== SU_EVENTS.MINION_MOVED) return undefined;

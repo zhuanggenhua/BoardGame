@@ -365,12 +365,25 @@ export function registerPodOngoingAliases(): void {
         if (alreadyRegistered) continue;
         
         // 添加到待注册列表
-        triggersToAdd.push({ sourceDefId: podDefId, timing, callback });
+        triggersToAdd.push({
+            sourceDefId: podDefId,
+            timing,
+            callback,
+            optional: entry.optional,
+            phase: entry.phase,
+            global: entry.global,
+        });
         mappedCount++;
     }
     
     // 批量添加（避免在遍历时修改数组）
-    triggerRegistry.push(...triggersToAdd);
+    for (const entry of triggersToAdd) {
+        registerTrigger(entry.sourceDefId, entry.timing, entry.callback, {
+            optional: entry.optional,
+            phase: entry.phase,
+            global: entry.global,
+        });
+    }
     
     // 2. 映射 Restriction
     const restrictionsToAdd: RestrictionEntry[] = [];

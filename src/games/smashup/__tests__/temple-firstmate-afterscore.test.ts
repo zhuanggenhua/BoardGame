@@ -1,27 +1,14 @@
-/**
- * Temple of Goju + First Mate 时序测试
- * 
- * 测试场景：寺庙基地能力（afterScoring）+ 大副触发器（afterScoring）
- * 
- * 关键点：
- * 1. 寺庙可以将随从放回牌库底
- * 2. 大副在 afterScoring 时可以移动到其他基地
- * 3. 如果寺庙把大副放回牌库底，大副不应再触发移动交互
- * 4. _deferredPostScoringEvents 必须正确传递
- * 
- * 这是多 afterScoring 交互链式传递的典型案例，与母舰+侦察兵类似，
- * 但寺庙会移除随从，测试覆盖了"移除后不应再触发"的场景。
- */
-
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry, triggerBaseAbility } from '../domain/baseAbilities';
-import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { SmashUpCore } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
-import { makePlayer, makeState, makeBase, makeMinion } from './helpers';
+import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
+import { reduce } from '../domain/reducer';
+import { fireTriggers } from '../domain/ongoingEffects';
 
 beforeAll(() => {
     clearRegistry();
@@ -32,7 +19,7 @@ beforeAll(() => {
 });
 
 describe('Temple of Goju + First Mate 时序测试', () => {
-    it('场景1: 寺庙移除大副后不再触发移动交互', () => {
+    it('场景1: 寺庙移除大副后不会再产生错误事件', () => {
         const core = makeState({
             currentPlayerIndex: 0,
             bases: [
@@ -74,22 +61,18 @@ describe('Temple of Goju + First Mate 时序测试', () => {
         };
 
         const result = triggerBaseAbility('base_temple_of_goju', 'afterScoring', ctx);
-        
-        // 验证：应该有事件（将随从放入牌库底）
         expect(result.events.length).toBeGreaterThan(0);
-        
-        // 验证：应该有 card_to_deck_bottom 事件
         const deckBottomEvents = result.events.filter((e: any) => e.type === 'su:card_to_deck_bottom');
         expect(deckBottomEvents.length).toBeGreaterThan(0);
     });
 
-    it('场景2: 寺庙上有多个大副，部分被移除', () => {
+    it('场景2: 多个大副时，寺庙会按规则移除目标', () => {
         const core = makeState({
             currentPlayerIndex: 0,
             bases: [
                 makeBase('base_temple_of_goju', [
-                    makeMinion('first_mate_1', 'pirate_first_mate', '0', 3), // 力量 3（最高）
-                    makeMinion('first_mate_2', 'pirate_first_mate', '0', 2), // 力量 2
+                    makeMinion('first_mate_1', 'pirate_first_mate', '0', 3),
+                    makeMinion('first_mate_2', 'pirate_first_mate', '0', 2),
                     makeMinion('m2', 'ninja_shinobi', '1', 5),
                     makeMinion('m3', 'ninja_shinobi', '1', 5),
                     makeMinion('m4', 'ninja_shinobi', '1', 5),
@@ -119,26 +102,19 @@ describe('Temple of Goju + First Mate 时序测试', () => {
             baseDefId: 'base_temple_of_goju',
             playerId: '0',
             rankings: [
-                { playerId: '0', power: 5, vp: 2 }, // 总力量 3+2=5
+                { playerId: '0', power: 5, vp: 2 },
                 { playerId: '1', power: 20, vp: 3 },
             ],
             now: 1000,
         };
 
         const result = triggerBaseAbility('base_temple_of_goju', 'afterScoring', ctx);
-        
-        // 验证：应该有事件（first_mate_1 力量最高，直接放牌库底）
-        expect(result.events.length).toBeGreaterThan(0);
-        
-        // 验证：应该有 card_to_deck_bottom 事件
         const deckBottomEvents = result.events.filter((e: any) => e.type === 'su:card_to_deck_bottom');
         expect(deckBottomEvents.length).toBeGreaterThan(0);
-        
-        // 验证：被移除的是 first_mate_1（力量 3）
         expect(deckBottomEvents[0].payload.cardUid).toBe('first_mate_1');
     });
 
-    it('场景3: _deferredPostScoringEvents 传递（寺庙跳过，大副触发）', () => {
+    it('场景3: 寺庙与 afterScoring 链式交互并存时，仍能产出延迟事件', () => {
         const core = makeState({
             currentPlayerIndex: 0,
             bases: [
@@ -180,12 +156,73 @@ describe('Temple of Goju + First Mate 时序测试', () => {
         };
 
         const result = triggerBaseAbility('base_temple_of_goju', 'afterScoring', ctx);
-        
-        // 验证：应该有事件
-        expect(result.events.length).toBeGreaterThan(0);
-        
-        // 验证：应该有 card_to_deck_bottom 事件
         const deckBottomEvents = result.events.filter((e: any) => e.type === 'su:card_to_deck_bottom');
         expect(deckBottomEvents.length).toBeGreaterThan(0);
+    });
+
+    it('场景4: BASE_CLEARED 后索引漂移时，大副仍可按 baseDefId 移动', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_left', []),
+                makeBase('base_target', []),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('first_mate_1', 'pirate_first_mate_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = makeMatchState(core);
+        const handler = getInteractionHandler('pirate_first_mate_choose_base');
+        expect(handler).toBeDefined();
+
+        const result = handler!(
+            ms,
+            '0',
+            { baseIndex: 2, baseDefId: 'base_target' },
+            {
+                continuationContext: {
+                    mateUid: 'first_mate_1',
+                    mateDefId: 'pirate_first_mate_pod',
+                    scoringBaseIndex: 0,
+                },
+            },
+            {} as any,
+            1000,
+        );
+
+        expect(result.events.length).toBe(1);
+        expect((result.events[0] as any).payload.toBaseIndex).toBe(1);
+
+        const nextCore = reduce(core, result.events[0] as any);
+        expect(nextCore.bases[1].minions.some(m => m.uid === 'first_mate_1')).toBe(true);
+        expect(nextCore.players['0'].discard.some(c => c.uid === 'first_mate_1')).toBe(false);
+    });
+
+    it('场景5: first_mate_pod 在 afterScoring 会创建移动交互', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_scoring', [makeMinion('mate_pod_1', 'pirate_first_mate_pod', '0', 2)]),
+                makeBase('base_other', []),
+            ],
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+        });
+        const ms = makeMatchState(core);
+
+        const result = fireTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: ms,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 2, vp: 1 }],
+            random: { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
+            now: 2000,
+        });
+
+        expect(result.events.length).toBe(0);
+        const interaction = result.matchState?.sys.interaction.current;
+        expect(interaction).toBeDefined();
+        expect((interaction?.data as any)?.sourceId).toBe('pirate_first_mate_choose_base');
     });
 });

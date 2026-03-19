@@ -158,6 +158,74 @@ function buildMandatoryReadingDrawInteraction(
     };
 }
 
+function buildThingsBestNotKnownPodDrawInteraction(
+    matchState: MatchState<SmashUpCore>,
+    playerId: string,
+    minionUid: string,
+    minionDefId: string,
+    baseIndex: number,
+    timestamp: number,
+): AbilityResult {
+    const madnessDeckSize = (matchState.core as any).madnessDeck?.length ?? 0;
+    const maxDraw = Math.min(3, madnessDeckSize);
+    if (maxDraw === 0) return { events: [] };
+    const drawOptions: any[] = [];
+    for (let i = 1; i <= maxDraw; i++) {
+        drawOptions.push({
+            id: `draw-${i}`,
+            label: `抽 ${i} 张疯狂卡（该随从直到回合结束 +${i * 2} 战斗力）`,
+            value: { count: i },
+            displayMode: 'button' as const,
+        });
+    }
+    drawOptions.push({ id: 'skip', label: '不抽', value: { skip: true }, displayMode: 'button' as const });
+    const interaction = createSimpleChoice(
+        `miskatonic_things_best_not_known_pod_draw_${timestamp}`,
+        playerId,
+        'Things Best Not Known：选择抽取疯狂卡数量',
+        drawOptions,
+        { sourceId: 'miskatonic_things_best_not_known_pod_draw', targetType: 'button' },
+    );
+    return {
+        events: [],
+        matchState: queueInteraction(matchState, {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                continuationContext: { minionUid, minionDefId, baseIndex },
+            },
+        }),
+    };
+}
+
+function miskatonicThingsBestNotKnownPod(ctx: AbilityContext): AbilityResult {
+    const baseIndex = ctx.baseIndex ?? 0;
+    const base = ctx.state.bases[baseIndex];
+    if (!base || base.minions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+
+    const options = base.minions.map(m => {
+        const def = getCardDef(m.defId) as MinionCardDef | undefined;
+        const name = def?.name ?? m.defId;
+        const power = getMinionPower(ctx.state, m, baseIndex);
+        return { uid: m.uid, defId: m.defId, baseIndex, label: `${name} (力量 ${power})` };
+    });
+    return resolveOrPrompt(ctx, buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'affect' }), {
+        id: 'miskatonic_things_best_not_known_pod',
+        title: 'Things Best Not Known：选择一个随从',
+        sourceId: 'miskatonic_things_best_not_known_pod',
+        targetType: 'minion',
+    }, (value) => {
+        return buildThingsBestNotKnownPodDrawInteraction(
+            ctx.matchState,
+            ctx.playerId,
+            value.minionUid,
+            value.minionDefId,
+            baseIndex,
+            ctx.now,
+        );
+    });
+}
+
 /**
  * 通往超凡的门 talent（ongoing 行动卡）：抽一张疯狂卡，你可以额外打出一个随从到这
  *
@@ -343,6 +411,27 @@ function miskatonicResearcherOnPlay(ctx: AbilityContext): AbilityResult {
             { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const },
         ],
         { sourceId: 'miskatonic_researcher', targetType: 'button' },
+    );
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function miskatonicResearcherPodOnPlay(ctx: AbilityContext): AbilityResult {
+    if (!ctx.state.madnessDeck || ctx.state.madnessDeck.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
+    }
+    const hasAnyMinion = ctx.state.bases.some(base => base.minions.length > 0);
+    if (!hasAnyMinion) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const interaction = createSimpleChoice(
+        `miskatonic_researcher_pod_${ctx.now}`,
+        ctx.playerId,
+        '研究员：你可以抽一张疯狂卡。若如此做，在一个随从上放置一个 +1 战斗力标记。',
+        [
+            { id: 'draw', label: '抽疯狂卡并放置 +1 标记', value: { draw: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'miskatonic_researcher_pod', targetType: 'button' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -533,6 +622,39 @@ function miskatonicFieldTrip(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+function miskatonicFieldTripPod(ctx: AbilityContext): AbilityResult {
+    const player = ctx.state.players[ctx.playerId];
+    const handCards = player.hand.filter(c => c.uid !== ctx.cardUid);
+
+    // POD: placing 0 cards still draws 1 card.
+    if (handCards.length === 0) {
+        const drawCount = Math.min(1, player.deck.length);
+        if (drawCount <= 0) return { events: [] };
+        const drawnUids = player.deck.slice(0, drawCount).map(c => c.uid);
+        return {
+            events: [{
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: ctx.playerId, count: drawCount, cardUids: drawnUids },
+                timestamp: ctx.now,
+            } as CardsDrawnEvent],
+        };
+    }
+
+    const options = handCards.map((c, i) => {
+        const def = getCardDef(c.defId);
+        const name = def?.name ?? c.defId;
+        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const, displayMode: 'card' as const };
+    });
+    const interaction = createSimpleChoice(
+        `miskatonic_field_trip_pod_${ctx.now}`,
+        ctx.playerId,
+        '选择要放到牌库底的卡牌（抽取所选数量 + 1）',
+        [...options, { id: 'skip', label: '不放置（仍抽 1）', value: { skip: true }, displayMode: 'button' as const }] as any[],
+        { sourceId: 'miskatonic_field_trip_pod', targetType: 'hand', multi: { min: 0, max: handCards.length } },
+    );
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
 /** 注册米斯卡塔尼克大学派系所有能力（放在所有函数定义之后，避免 Vite SSR 提升失效） */
 export function registerMiskatonicAbilities(): void {
     // === 行动卡 ===
@@ -544,7 +666,7 @@ export function registerMiskatonicAbilities(): void {
     registerAbility('miskatonic_thats_so_crazy_pod', 'onPlay', miskatonicPsychologicalProfiling);
     // 最好不知道的事：special，基地计分前选随从+抽疯狂卡+该随从+2力量/张
     registerAbility('miskatonic_mandatory_reading', 'special', miskatonicMandatoryReading);
-    registerAbility('miskatonic_things_best_not_known_pod', 'special', miskatonicMandatoryReading);
+    registerAbility('miskatonic_things_best_not_known_pod', 'special', miskatonicThingsBestNotKnownPod);
     // 失落的知识（通往超凡的门）：ongoing talent，抽疯狂卡+额外随从到此基地
     registerAbility('miskatonic_lost_knowledge', 'talent', miskatonicLostKnowledge);
     registerAbility('miskatonic_eldritch_gate_pod', 'talent', miskatonicLostKnowledge);
@@ -559,7 +681,7 @@ export function registerMiskatonicAbilities(): void {
     registerAbility('miskatonic_old_man_jenkins_pod', 'special', miskatonicThingOnTheDoorstep);
     // 实地考察：手牌放牌库底 + 抽等量牌
     registerAbility('miskatonic_field_trip', 'onPlay', miskatonicFieldTrip);
-    registerAbility('miskatonic_field_trip_pod', 'onPlay', miskatonicFieldTrip);
+    registerAbility('miskatonic_field_trip_pod', 'onPlay', miskatonicFieldTripPod);
 
     // === 随从 ===
     // 教授（power 5, talent）：弃1张疯狂卡 → 额外行动 + 额外随从
@@ -573,7 +695,7 @@ export function registerMiskatonicAbilities(): void {
     registerAbility('miskatonic_psychologist_pod', 'onPlay', miskatonicPsychologistPodOnPlay);
     // 研究员（power 2, onPlay）：抽1张疯狂卡
     registerAbility('miskatonic_researcher', 'onPlay', miskatonicResearcherOnPlay);
-    registerAbility('miskatonic_researcher_pod', 'onPlay', miskatonicResearcherOnPlay);
+    registerAbility('miskatonic_researcher_pod', 'onPlay', miskatonicResearcherPodOnPlay);
 }
 
 /** 注册米斯卡塔尼克大学的交互解决处理函数 */
@@ -674,9 +796,10 @@ export function registerMiskatonicInteractionHandlers(): void {
         return { state: result.matchState ?? state, events: result.events };
     });
 
-    registerInteractionHandler('miskatonic_things_best_not_known_pod', (state, playerId, value, iData, random, timestamp) => {
-        const handler = (getInteractionHandler('miskatonic_mandatory_reading') as any);
-        return handler ? handler(state, playerId, value, iData, random, timestamp) : { state, events: [] };
+    registerInteractionHandler('miskatonic_things_best_not_known_pod', (state, playerId, value, _iData, _random, timestamp) => {
+        const { minionUid, minionDefId, baseIndex } = value as { minionUid: string; minionDefId: string; baseIndex: number };
+        const result = buildThingsBestNotKnownPodDrawInteraction(state, playerId, minionUid, minionDefId, baseIndex, timestamp);
+        return { state: result.matchState ?? state, events: result.events };
     });
 
     // 最好不知道的事：选择抽取疯狂卡数量后，抽疯狂卡+给随从加力量
@@ -701,7 +824,24 @@ export function registerMiskatonicInteractionHandlers(): void {
         return { state, events };
     });
 
-    // NOTE: buildMandatoryReadingDrawInteraction uses sourceId 'miskatonic_mandatory_reading_draw' for both base and POD.
+    registerInteractionHandler('miskatonic_things_best_not_known_pod_draw', (state, playerId, value, _iData, _random, timestamp) => {
+        if (value && (value as any).skip) return { state, events: [] };
+        const { count, minionUid: legacyMinionUid, baseIndex: legacyBaseIndex } = value as {
+            count: number;
+            minionUid?: string;
+            baseIndex?: number;
+        };
+        const ctx = (_iData?.continuationContext as { minionUid: string; baseIndex: number } | undefined)
+            ?? (legacyMinionUid && legacyBaseIndex !== undefined
+                ? { minionUid: legacyMinionUid, baseIndex: legacyBaseIndex }
+                : undefined);
+        if (!ctx) return { state, events: [] };
+        const events: SmashUpEvent[] = [];
+        const madnessEvt = drawMadnessCards(playerId, count, state.core, 'miskatonic_things_best_not_known_pod', timestamp);
+        if (madnessEvt) events.push(madnessEvt);
+        events.push(addTempPower(ctx.minionUid, ctx.baseIndex, count * 2, 'miskatonic_things_best_not_known_pod', timestamp));
+        return { state, events };
+    });
 
     // 图书管理员 POD：抽疯狂卡 或 授予额外战术额度
     registerInteractionHandler('miskatonic_librarian_pod', (state, playerId, value, _iData, _random, timestamp) => {
@@ -711,9 +851,47 @@ export function registerMiskatonicInteractionHandlers(): void {
             return { state, events: evt ? [evt] : [] };
         }
         if (v.mode === 'extra') {
-            return { state, events: [grantExtraAction(playerId, 'miskatonic_librarian_pod', timestamp)] };
+            const player = state.core.players[playerId];
+            const madnessCards = player.hand.filter(c => c.defId === MADNESS_CARD_DEF_ID);
+            if (madnessCards.length === 0) return { state, events: [buildAbilityFeedback(playerId, 'feedback.hand_empty', timestamp)] };
+            const options = madnessCards.map((card, i) => {
+                const def = getCardDef(card.defId);
+                const name = def?.name ?? card.defId;
+                return {
+                    id: `madness-${i}`,
+                    label: name,
+                    value: { cardUid: card.uid, defId: card.defId },
+                    _source: 'hand' as const,
+                    displayMode: 'card' as const,
+                };
+            });
+            const next = createSimpleChoice(
+                `miskatonic_librarian_pod_play_madness_${timestamp}`,
+                playerId,
+                '图书管理员：选择一张疯狂卡，作为额外战术打出',
+                options as any[],
+                { sourceId: 'miskatonic_librarian_pod_play_madness', targetType: 'hand' },
+            );
+            return { state: queueInteraction(state, next), events: [] };
         }
         return { state, events: [] };
+    });
+
+    registerInteractionHandler('miskatonic_librarian_pod_play_madness', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = (Array.isArray(value) ? value[0] : value) as { cardUid?: string } | undefined;
+        const cardUid = selected?.cardUid;
+        if (!cardUid) return { state, events: [] };
+        const player = state.core.players[playerId];
+        const card = player.hand.find(c => c.uid === cardUid);
+        if (!card || card.defId !== MADNESS_CARD_DEF_ID) return { state, events: [] };
+        return {
+            state,
+            events: [{
+                type: SU_EVENTS.ACTION_PLAYED,
+                payload: { playerId, cardUid: card.uid, defId: card.defId, isExtraAction: true },
+                timestamp,
+            } as SmashUpEvent],
+        };
     });
 
     // Those Meddling Kids POD：模式选择
@@ -822,6 +1000,41 @@ export function registerMiskatonicInteractionHandlers(): void {
         return { state, events: madnessEvt ? [madnessEvt] : [] };
     });
 
+    registerInteractionHandler('miskatonic_researcher_pod', (state, playerId, value, _iData, _random, timestamp) => {
+        if (value && (value as any).skip) return { state, events: [] };
+        const allMinions: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
+        for (let i = 0; i < state.core.bases.length; i++) {
+            const base = state.core.bases[i];
+            for (const m of base.minions) {
+                const def = getCardDef(m.defId) as MinionCardDef | undefined;
+                const name = def?.name ?? m.defId;
+                const power = getMinionPower(state.core, m, i);
+                allMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${name} (力量 ${power})` });
+            }
+        }
+        if (allMinions.length === 0) return { state, events: [] };
+        const next = createSimpleChoice(
+            `miskatonic_researcher_pod_choose_minion_${timestamp}`,
+            playerId,
+            '研究员：选择一个随从放置 +1 战斗力标记',
+            buildMinionTargetOptions(allMinions, { state: state.core, sourcePlayerId: playerId, effectType: 'affect' }),
+            { sourceId: 'miskatonic_researcher_pod_choose_minion', targetType: 'minion' },
+        );
+        return { state: queueInteraction(state, next), events: [] };
+    });
+
+    registerInteractionHandler('miskatonic_researcher_pod_choose_minion', (state, playerId, value, _iData, _random, timestamp) => {
+        const { minionUid, baseIndex } = value as { minionUid?: string; baseIndex?: number };
+        if (!minionUid || baseIndex === undefined) return { state, events: [] };
+        const exists = state.core.bases[baseIndex]?.minions.some(m => m.uid === minionUid) ?? false;
+        if (!exists) return { state, events: [] };
+        const events: SmashUpEvent[] = [];
+        const madnessEvt = drawMadnessCards(playerId, 1, state.core, 'miskatonic_researcher_pod', timestamp);
+        if (madnessEvt) events.push(madnessEvt);
+        events.push(addPowerCounter(minionUid, baseIndex, 1, 'miskatonic_researcher_pod', timestamp));
+        return { state, events };
+    });
+
     // 实地考察：选择卡牌后放牌库底 + 抽等量牌
     registerInteractionHandler('miskatonic_field_trip', (state, playerId, value, _iData, _random, timestamp) => {
         const selectedCards = value as Array<{ cardUid?: string; defId?: string }>;
@@ -853,8 +1066,7 @@ export function registerMiskatonicInteractionHandlers(): void {
     });
 
     registerInteractionHandler('miskatonic_field_trip_pod', (state, playerId, value, iData, random, timestamp) => {
-        const selectedCards = value as Array<{ cardUid?: string; defId?: string }>;
-        if (!Array.isArray(selectedCards)) return { state, events: [] };
+        const selectedCards = (Array.isArray(value) ? value : []) as Array<{ cardUid?: string; defId?: string }>;
         const player = state.core.players[playerId];
         const events: SmashUpEvent[] = [];
         const cardUids = selectedCards.map(v => v.cardUid).filter(Boolean) as string[];

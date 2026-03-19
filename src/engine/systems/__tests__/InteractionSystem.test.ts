@@ -94,4 +94,30 @@ describe('InteractionSystem', () => {
         expect(result?.halt).toBe(true);
         expect(result?.error).toBe('不是你的交互');
     });
+
+    it('playerView should match player ids even when number/string types differ', () => {
+        const system = createInteractionSystem<TestCore>();
+        const state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current: createSimpleChoice(
+                        'interaction-target-1',
+                        '1',
+                        'target prompt',
+                        [{ id: 'a', label: 'A', value: 'a' }],
+                    ),
+                    queue: [],
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+
+        const viewForTarget = system.playerView?.(state, 1 as unknown as string) as any;
+        expect(viewForTarget?.interaction?.current?.id).toBe('interaction-target-1');
+        expect(viewForTarget?.interaction?.isBlocked).toBe(false);
+
+        const viewForOther = system.playerView?.(state, 0 as unknown as string) as any;
+        expect(viewForOther?.interaction?.current).toBeUndefined();
+        expect(viewForOther?.interaction?.isBlocked).toBe(true);
+    });
 });

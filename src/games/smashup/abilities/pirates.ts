@@ -281,13 +281,18 @@ function buccaneerMoveHandler(
         minionDefId: string;
         fromBaseIndex: number;
         toBaseIndex: number;
+        baseDefId?: string;
     };
+    const resolvedToBaseIndex = resolveLiveBaseIndex(state.core, selected.toBaseIndex, selected.baseDefId);
+    if (resolvedToBaseIndex === undefined) {
+        return { state, events: [] };
+    }
     const events: SmashUpEvent[] = [
         moveMinion(
             selected.minionUid,
             selected.minionDefId,
             selected.fromBaseIndex,
-            selected.toBaseIndex,
+            resolvedToBaseIndex,
             selected.minionDefId === 'pirate_buccaneer_pod' ? 'pirate_buccaneer_pod' : 'pirate_buccaneer',
             timestamp
         )
@@ -411,7 +416,7 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
         const baseOptions = otherBases.map(b => {
             const baseDef = getBaseDef(b.defId);
             const baseName = baseDef?.name ?? `基地 ${b.index + 1}`;
-            return { id: `base-${b.index}`, label: baseName, value: { baseIndex: b.index }, _source: 'base' as const };
+            return { id: `base-${b.index}`, label: baseName, value: { baseIndex: b.index, baseDefId: b.defId }, _source: 'base' as const };
         });
         const allOptions = [
             { id: 'skip', label: '跳过（不移动大副）', value: { skip: true }, displayMode: 'button' as const },
@@ -573,6 +578,21 @@ function buildMoveToBaseInteraction(
 }
 
 /** 注册海盗派系的交互解决处理函数 */
+function resolveLiveBaseIndex(
+    state: SmashUpCore,
+    baseIndex: number | undefined,
+    baseDefId?: string,
+): number | undefined {
+    if (baseDefId) {
+        const liveIndex = state.bases.findIndex(base => base.defId === baseDefId);
+        if (liveIndex >= 0) return liveIndex;
+    }
+    if (baseIndex !== undefined && state.bases[baseIndex]) {
+        return baseIndex;
+    }
+    return undefined;
+}
+
 export function registerPirateInteractionHandlers(): void {
     // 粗鲁少妇：选择目标后消灭（支持跳过）
     registerInteractionHandler('pirate_saucy_wench', (state, playerId, value, _iData, _random, timestamp) => {
@@ -924,13 +944,15 @@ export function registerPirateInteractionHandlers(): void {
     // 大副：选择目标基地后移动大副自身
     // 注意：BASE_CLEARED 可能已 reduce，计分基地已从 bases 数组移除，随从已进弃牌堆
     registerInteractionHandler('pirate_first_mate_choose_base', (state, _playerId, value, iData, _random, timestamp) => {
-        const selected = value as { skip?: boolean; baseIndex?: number };
+        const selected = value as { skip?: boolean; baseIndex?: number; baseDefId?: string };
         
         // 【通用修复】检查是否有延迟事件需要补发
         // 引擎层 resolveInteraction 已自动传递延迟事件，这里只需要在最后一个交互时补发
         const deferredEvents = (iData?.continuationContext as any)?._deferredPostScoringEvents as 
             { type: string; payload: unknown; timestamp: number }[] | undefined;
-        const hasNextInteraction = state.sys.interaction?.queue && state.sys.interaction.queue.length > 0;
+        const hasNextInteraction =
+            !!state.sys.interaction?.current
+            || (state.sys.interaction?.queue?.length ?? 0) > 0;
         
         if (selected.skip) {
             // 跳过时，如果这是最后一个交互，补发延迟事件
@@ -944,11 +966,18 @@ export function registerPirateInteractionHandlers(): void {
         if (destBase === undefined) return undefined;
         const ctx = iData?.continuationContext as { mateUid: string; mateDefId: string; scoringBaseIndex: number } | undefined;
         if (!ctx) return undefined;
+        const resolvedDestBase = resolveLiveBaseIndex(state.core, destBase, selected.baseDefId);
+        if (resolvedDestBase === undefined) {
+            if (deferredEvents && deferredEvents.length > 0 && !hasNextInteraction) {
+                return { state, events: deferredEvents as any[] };
+            }
+            return { state, events: [] };
+        }
         const events: SmashUpEvent[] = [moveMinion(
             ctx.mateUid,
             ctx.mateDefId,
             ctx.scoringBaseIndex,
-            destBase,
+            resolvedDestBase,
             ctx.mateDefId === 'pirate_first_mate_pod' ? 'pirate_first_mate_pod' : 'pirate_first_mate',
             timestamp
         )];

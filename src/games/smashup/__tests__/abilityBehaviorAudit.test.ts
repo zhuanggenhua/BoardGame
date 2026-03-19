@@ -166,6 +166,12 @@ describe('SmashUp 能力行为审计', () => {
             expect(enVisibleIds.has(SMASHUP_FACTION_IDS.PIRATES)).toBe(false);
             expect(enVisibleIds.has(SMASHUP_FACTION_IDS.PIRATES_POD)).toBe(true);
         });
+
+        it('tricksters_pod 牌组总数保持 20 张', () => {
+            const total = getFactionCards(SMASHUP_FACTION_IDS.TRICKSTERS_POD as any)
+                .reduce((sum, def) => sum + def.count, 0);
+            expect(total).toBe(20);
+        });
     });
 
     // ── 1. 关键词→行为映射 ──

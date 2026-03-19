@@ -75,7 +75,7 @@ export const TRICKSTER_POD_ACTIONS: ActionCardDef[] = [
         faction: 'tricksters_pod',
         abilityTags: ['ongoing', 'talent'],
         ongoingTarget: 'base',
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 28 },
     },
     {

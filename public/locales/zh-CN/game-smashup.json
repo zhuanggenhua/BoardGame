@@ -2022,15 +2022,15 @@
     },
     "miskatonic_librarian_pod": {
       "name": "图书馆管理员",
-      "abilityText": "天赋：抓一张疯狂卡，或从你的手牌中打出一张疯狂卡作为额外战术。"
+      "abilityText": "天赋：抽一张疯狂卡，或从你的手牌中打出一张疯狂卡作为额外战术。"
     },
     "miskatonic_psychologist_pod": {
       "name": "心理学家",
-      "abilityText": "将你手牌或弃牌堆中的一张疯狂卡返回疯狂牌库，或者从你的弃牌堆中抓一张疯狂卡。"
+      "abilityText": "将你手牌或弃牌堆中的一张疯狂卡返回疯狂牌库，或者从你的弃牌堆中抽一张疯狂卡。"
     },
     "miskatonic_researcher_pod": {
       "name": "研究员",
-      "abilityText": "你可以抓一张疯狂卡。"
+      "abilityText": "你可以抽一张疯狂卡来在一个随从上放置一个+1战斗力指示物。"
     },
     "miskatonic_book_of_iter_the_unseen_pod": {
       "name": "金克丝!",
@@ -2050,7 +2050,7 @@
     },
     "miskatonic_mandatory_reading_pod": {
       "name": "最好不知道的事",
-      "effectText": "特殊：在一个基地计分前，选择这里的一个随从。抽最多3张疯狂卡。每抽取一张疯狂卡这个随从都获得+2战斗力。"
+      "effectText": "特殊：在一个基地计分前，选择这里的一个随从。抽最多3张疯狂卡。每抽取一张疯狂卡，这个随从直到回合结束获得+2战斗力。"
     },
     "miskatonic_psychological_profiling_pod": {
       "name": "这太疯狂了...",
@@ -2058,11 +2058,11 @@
     },
     "miskatonic_those_meddling_kids_pod": {
       "name": "那些爱管闲事的孩子",
-      "effectText": "消灭一个基地上任意数量的战术，或者抓一张疯狂卡并额外打出一张战术。"
+      "effectText": "消灭一个基地上任意数量的战术，或者抽一张疯狂卡并额外打出一张战术。"
     },
     "miskatonic_field_trip_pod": {
       "name": "实地考察",
-      "effectText": "将你手牌中任意数量的卡牌放到你牌库底，并抓取相同数量加一的牌。"
+      "effectText": "将你手牌中任意数量的卡牌放到你牌库底，然后抽取该数量加一张牌。"
     },
     "ninja_master_pod": {
       "name": "忍者大师",
@@ -2509,7 +2509,7 @@
     },
     "miskatonic_eldritch_gate_pod": {
       "name": "怪异传送门",
-      "effectText": "打出到基地上。天赋：抓一张疯狂卡。你可以额外打出一个随从到这里。"
+      "effectText": "打出到基地上。天赋：抽一张疯狂卡。你可以额外打出一个随从到这里。"
     },
     "miskatonic_jinkies_pod": {
       "name": "金奇斯",
@@ -2517,11 +2517,11 @@
     },
     "miskatonic_thats_so_crazy_pod": {
       "name": "太疯狂了...",
-      "effectText": "抓一张疯狂卡。直到回合结束前，你的每个随从获得+1战斗力。你可以额外打出一张战术。"
+      "effectText": "抽一张疯狂卡。直到回合结束前，你的每个随从获得+1战斗力。你可以额外打出一张战术。"
     },
     "miskatonic_things_best_not_known_pod": {
       "name": "未知之事",
-      "effectText": "特殊：在基地计分前，抓至多三张疯狂卡。每抓一张疯狂卡，选择这里的一个随从，使其获得+2战斗力直到回合结束。"
+      "effectText": "特殊：在基地计分前，抽至多三张疯狂卡。选择这里的一个随从，每抽一张疯狂卡，该随从直到回合结束获得+2战斗力。"
     },
     "base_miskatonic_university_base_pod": {
       "name": "米斯卡塔尼克大学",

@@ -1430,7 +1430,10 @@ export function registerBaseInteractionHandlers(): void {
         }
 
         const deferredEvents = getDeferredPostScoringEvents(iData);
-        const isLastInteraction = !state.sys.interaction?.queue?.length;
+        const hasPendingInteraction =
+            !!state.sys.interaction?.current
+            || (state.sys.interaction?.queue?.length ?? 0) > 0;
+        const isLastInteraction = !hasPendingInteraction;
         if (deferredEvents && deferredEvents.length > 0 && isLastInteraction) {
             events.push(...deferredEvents as SmashUpEvent[]);
         }
@@ -1459,8 +1462,12 @@ export function registerBaseInteractionHandlers(): void {
         // InteractionSystem.resolveInteraction 会自动传递给下一个交互，最后一个交互解决时必须补发。
         const deferredEvents = getDeferredPostScoringEvents(iData);
         
-        // 检查是否是最后一个交互（队列为空）
-        const isLastInteraction = !state.sys.interaction?.queue?.length;
+        // 注意：RESOLVE_INTERACTION 进入 handler 前，当前交互已被弹出；
+        // 如果还有下一个交互，通常会出现在 interaction.current（queue 可能已空）。
+        const hasPendingInteraction =
+            !!state.sys.interaction?.current
+            || (state.sys.interaction?.queue?.length ?? 0) > 0;
+        const isLastInteraction = !hasPendingInteraction;
         
         if (deferredEvents && deferredEvents.length > 0 && isLastInteraction) {
             events.push(...deferredEvents as SmashUpEvent[]);

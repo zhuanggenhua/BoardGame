@@ -23,6 +23,11 @@ import {
     type PromptOption,
 } from './InteractionSystem';
 
+function isSamePlayerId(a: unknown, b: unknown): boolean {
+    if (a === undefined || a === null || b === undefined || b === null) return false;
+    return String(a) === String(b);
+}
+
 // ============================================================================
 // 系统配置
 // ============================================================================
@@ -68,7 +73,7 @@ export function createSimpleChoiceSystem<TCore>(
 
             // ---- simple-choice 阻塞：该玩家的非系统命令被阻塞 ----
             if (current?.kind === 'simple-choice') {
-                if (current.playerId === command.playerId && !command.type.startsWith('SYS_')) {
+                if (isSamePlayerId(current.playerId, command.playerId) && !command.type.startsWith('SYS_')) {
                     return { halt: true, error: '请先完成当前选择' };
                 }
             }
@@ -125,7 +130,7 @@ function handleSimpleChoiceRespond<TCore>(
     if (!current) {
         return { halt: true, error: '没有待处理的选择' };
     }
-    if (current.playerId !== playerId) {
+    if (!isSamePlayerId(current.playerId, playerId)) {
         return { halt: true, error: '不是你的选择回合' };
     }
     if (current.kind !== 'simple-choice') {

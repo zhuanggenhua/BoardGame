@@ -2030,7 +2030,7 @@
     },
     "miskatonic_researcher_pod": {
       "name": "Researcher",
-      "abilityText": "You may draw a Madness card."
+      "abilityText": "You may draw a Madness card to place a +1 power counter on a minion."
     },
     "miskatonic_old_man_jenkins_pod": {
       "name": "\"Old Man Jenkins?\"",

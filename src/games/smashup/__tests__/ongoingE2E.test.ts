@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { execute, reduce } from '../domain/reducer';
-import { postProcessSystemEvents } from '../domain';
+import { postProcessSystemEvents, scoreOneBase } from '../domain';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import type {
     SmashUpCore, SmashUpEvent, MinionOnBase,
@@ -605,5 +605,68 @@ describe('E2E: reduce 状态变更验证', () => {
 
         const newState = reduce(state, event);
         expect(newState.players['0'].actionLimit).toBe(2); // 1 + 1
+    });
+});
+
+describe('E2E: 海盗 POD 关键交互链路', () => {
+    it('buccaneer_pod 被消灭时会创建 replacement 移动交互', () => {
+        const buccaneerPod = makeMinion('bucc1', 'pirate_buccaneer_pod', '0', 4, { powerModifier: 0 });
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_tar_pits', [buccaneerPod]),
+                makeBase('base_the_jungle'),
+                makeBase('base_factory'),
+            ],
+        });
+
+        const ms = makeMatchState(state);
+        const destroyedEvt: SmashUpEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'bucc1',
+                minionDefId: 'pirate_buccaneer_pod',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'e2e_destroy',
+            },
+            timestamp: 3000,
+        } as any;
+
+        const post = postProcessSystemEvents(state, [destroyedEvt], defaultRandom, ms);
+        const interaction = (post.matchState?.sys as any)?.interaction?.current;
+        expect(interaction).toBeDefined();
+        expect(interaction?.data?.sourceId).toBe('pirate_buccaneer_move');
+
+        const hasDestroy = post.events.some(
+            e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload?.minionUid === 'bucc1',
+        );
+        expect(hasDestroy).toBe(false);
+    });
+
+    it('first_mate_pod 在计分后会创建 afterScoring 移动交互', () => {
+        const matePod = makeMinion('mate1', 'pirate_first_mate_pod', '0', 2, { powerModifier: 0 });
+        const opponent = makeMinion('enemy1', 'test_minion', '1', 5, { powerModifier: 0 });
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_tar_pits', [matePod, opponent]),
+                makeBase('base_the_jungle'),
+            ],
+            baseDeck: ['base_factory'],
+        });
+
+        const ms = makeMatchState(state);
+        const scored = scoreOneBase(state, 0, [...state.baseDeck], '0', 4000, defaultRandom, ms);
+        const interaction = (scored.matchState?.sys as any)?.interaction?.current;
+        expect(interaction).toBeDefined();
+        expect(interaction?.data?.sourceId).toBe('pirate_first_mate_choose_base');
     });
 });
