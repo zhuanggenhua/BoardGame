@@ -183,6 +183,42 @@ describe('私掠者 POD 每回合一次移动限制', () => {
         expect(nextCore.players['0'].discard.some(c => c.uid === 'bucc1')).toBe(false);
     });
 
+    it('baseDefId 已失效时，不应回退到旧索引上的错误基地', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_left'),
+                makeBase('base_wrong'),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('bucc1', 'pirate_buccaneer_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const ms = makeMatchState(core);
+        const handler = getInteractionHandler('pirate_buccaneer_move');
+        expect(handler).toBeDefined();
+
+        const result = handler!(
+            ms,
+            '0',
+            {
+                minionUid: 'bucc1',
+                minionDefId: 'pirate_buccaneer_pod',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                baseDefId: 'base_target',
+            },
+            undefined,
+            {} as any,
+            Date.now(),
+        );
+
+        expect(result.events.length).toBe(0);
+    });
+
     it('消灭 buccaneer_pod 时会进入 replacement 交互（而不是直接进墓地）', () => {
         const core = makeState({
             bases: [

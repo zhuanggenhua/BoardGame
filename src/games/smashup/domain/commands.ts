@@ -47,10 +47,13 @@ function isExtraMinionPlayAttempt(
 ): boolean {
     const player = core.players[playerId];
     if (!player) return false;
+    const globalQuotaRemaining = player.minionLimit - player.minionsPlayed;
     if (fromDiscard && consumesNormalLimit === false) return true;
     if (player.minionsPlayed >= 1) return true;
-    if (canUseBaseLimitedMinionQuota(core, player, baseIndex, cardDefId, basePower)) return true;
-    if (canUseSameNameMinionQuota(player, cardDefId)) return true;
+    if (globalQuotaRemaining <= 0) {
+        if (canUseBaseLimitedMinionQuota(core, player, baseIndex, cardDefId, basePower)) return true;
+        if (canUseSameNameMinionQuota(player, cardDefId)) return true;
+    }
     if (mustUseBaseLimitedMinionQuota(core, player, baseIndex, cardDefId, basePower)) return true;
     if (mustUseGlobalPowerLimitedMinionQuota(core, player, baseIndex, cardDefId, basePower)) return true;
     return false;

@@ -2235,6 +2235,37 @@ describe('bear_cavalry_bear_necessities_pod 限制', () => {
         expect(actionResult.error).toContain('额外牌');
     });
 
+    it('正常随从额度仍可用时，不应因基地额外额度可用而误判为额外出牌', () => {
+        const restrictedBase = makeBase({
+            minions: [makeMinion('enemy-on-base', 'test_minion', '1', 3, { powerModifier: 0 })],
+            ongoingActions: [{ uid: 'bn-1', defId: 'bear_cavalry_bear_necessities_pod', ownerId: '0', talentUsed: true } as any],
+        });
+        const state = makeState({
+            currentPlayerIndex: 1,
+            bases: [restrictedBase, makeBase()],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    baseLimitedMinionQuota: { 1: 1 },
+                    hand: [
+                        { uid: 'm-normal', defId: 'dino_war_raptor', type: 'minion', owner: '1' } as CardInstance,
+                    ],
+                }),
+            },
+        });
+        const matchState = { core: state, sys: { phase: 'playCards' } } as any;
+
+        const result = validate(matchState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'm-normal', baseIndex: 1 },
+        } as any);
+
+        expect(result.valid).toBe(true);
+    });
+
     it('拥有者下回合开始时会销毁已激活的口粮POD', () => {
         const state = makeState({
             bases: [makeBase({

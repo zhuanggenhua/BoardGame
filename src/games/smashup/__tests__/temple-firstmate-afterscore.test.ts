@@ -200,6 +200,41 @@ describe('Temple of Goju + First Mate 时序测试', () => {
         expect(nextCore.players['0'].discard.some(c => c.uid === 'first_mate_1')).toBe(false);
     });
 
+    it('场景4b: baseDefId 已失效时，大副不应回退到旧索引上的错误基地', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_left', []),
+                makeBase('base_wrong', []),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('first_mate_1', 'pirate_first_mate_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = makeMatchState(core);
+        const handler = getInteractionHandler('pirate_first_mate_choose_base');
+        expect(handler).toBeDefined();
+
+        const result = handler!(
+            ms,
+            '0',
+            { baseIndex: 1, baseDefId: 'base_target' },
+            {
+                continuationContext: {
+                    mateUid: 'first_mate_1',
+                    mateDefId: 'pirate_first_mate_pod',
+                    scoringBaseIndex: 0,
+                },
+            },
+            {} as any,
+            1000,
+        );
+
+        expect(result.events.length).toBe(0);
+    });
+
     it('场景5: first_mate_pod 在 afterScoring 会创建移动交互', () => {
         const core = makeState({
             bases: [
