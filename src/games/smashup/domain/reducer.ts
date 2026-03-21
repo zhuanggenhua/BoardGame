@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 大杀四方 (Smash Up) - 命令执行与事件归约
  *
  * execute: 命令 → 事件列表
@@ -61,7 +61,7 @@ import { maybeQueueStartingHandMulliganPrompt } from './mulliganHandlers';
 import { resolveOnPlay, resolveSpecial, resolveTalent, resolveOnDestroy } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
 import { triggerBaseAbility, triggerExtendedBaseAbility } from './baseAbilities';
-import { fireTriggers, collectTriggers, isMinionProtected, getConsumableProtectionSource } from './ongoingEffects';
+import { fireTriggers, collectTriggers, hasPlayerTurnRestriction, isMinionProtected, getConsumableProtectionSource } from './ongoingEffects';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import { canPlayFromDiscard } from './discardPlayability';
 import { reduce } from './reduce';
@@ -931,6 +931,9 @@ export function filterProtectedMoveEvents(
     for (const e of events) {
         if (e.type !== SU_EVENTS.MINION_MOVED) {
             result.push(e);
+            continue;
+        }
+        if (hasPlayerTurnRestriction(core, sourcePlayerId, 'move_minion')) {
             continue;
         }
         const me = e as MinionMovedEvent;

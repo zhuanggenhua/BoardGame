@@ -52,6 +52,11 @@ export type RestrictionType =
     | 'play_minion'   // 禁止打出随从到某基地
     | 'play_action';  // 禁止打出行动卡到某基地
 
+/** 玩家级持续限制（不依附基地） */
+export type PlayerTurnRestrictionType =
+    | 'play_action'
+    | 'move_minion';
+
 /** 限制检查上下文 */
 export interface RestrictionCheckContext {
     state: SmashUpCore;
@@ -717,6 +722,17 @@ export function isOperationRestricted(
     }
 
     return false;
+}
+
+/** 检查玩家是否处于持续中的全局限制（如睡眠印记 POD） */
+export function hasPlayerTurnRestriction(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    restrictionType: PlayerTurnRestrictionType,
+): boolean {
+    return state.playerRestrictionsUntilTurnStart?.some(
+        entry => entry.targetPlayerId === playerId && entry.restrictionType === restrictionType,
+    ) ?? false;
 }
 
 /**
