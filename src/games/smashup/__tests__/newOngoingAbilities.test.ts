@@ -1855,9 +1855,20 @@ describe('base_rlyeh 拉莱耶 onTurnStart', () => {
         expect(handler).toBeDefined();
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
         const result = handler!(ms, '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 0);
-        expect(result.events.length).toBe(2);
+        expect(result.events.length).toBe(1);
         expect(result.events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
-        expect(result.events[1].type).toBe(SU_EVENTS.VP_AWARDED);
+        const followup = triggerExtendedBaseAbility('base_rlyeh', 'onMinionDestroyed', {
+            state,
+            baseIndex: 0,
+            baseDefId: 'base_rlyeh',
+            playerId: '0',
+            destroyerId: '0',
+            controllerId: '0',
+            reason: 'base_rlyeh',
+            now: 1,
+        });
+        expect(followup.events).toHaveLength(1);
+        expect(followup.events[0].type).toBe(SU_EVENTS.VP_AWARDED);
     });
 
     it('handler 选择不消灭→不产生事件', () => {

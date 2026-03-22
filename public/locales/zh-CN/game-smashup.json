@@ -2602,6 +2602,115 @@
       "name": "工坊",
       "abilityText": "(20, VP 4-2-1) 每当有一名玩家将战术打出到该基地时，该玩家可以额外打出一个战术。"
     }
+    ,
+    "base_the_homeworld_pod": {
+      "name": "家园"
+    },
+    "base_the_mothership_pod": {
+      "name": "母舰"
+    },
+    "base_the_jungle_pod": {
+      "name": "绿洲丛林"
+    },
+    "base_tar_pits_pod": {
+      "name": "焦油坑"
+    },
+    "base_pirate_cove_pod": {
+      "name": "灰色猫眼石"
+    },
+    "base_dread_lookout_pod": {
+      "name": "恐怖眺望台"
+    },
+    "base_haunted_house_al9000_pod": {
+      "name": "鬼屋"
+    },
+    "base_the_field_of_honor_pod": {
+      "name": "荣誉之地"
+    },
+    "base_tsars_palace_pod": {
+      "name": "沙皇宫殿"
+    },
+    "base_greenhouse_pod": {
+      "name": "温室"
+    },
+    "base_secret_garden_pod": {
+      "name": "神秘花园"
+    },
+    "base_cat_fanciers_alley_pod": {
+      "name": "诡猫巷"
+    },
+    "base_house_of_nine_lives_pod": {
+      "name": "九命之家"
+    },
+    "base_enchanted_glade_pod": {
+      "name": "迷人峡谷"
+    },
+    "base_fairy_ring_pod": {
+      "name": "仙灵圈"
+    },
+    "base_beautiful_castle_pod": {
+      "name": "美丽城堡"
+    },
+    "base_castle_of_ice_pod": {
+      "name": "冰之城堡"
+    },
+    "base_land_of_balance_pod": {
+      "name": "平衡之地"
+    },
+    "base_pony_paradise_pod": {
+      "name": "小马乐园"
+    },
+    "base_north_pole_pod": {
+      "name": "北极基地"
+    },
+    "base_antarctic_base_pod": {
+      "name": "南极基地"
+    },
+    "base_ritual_site_pod": {
+      "name": "仪式场所"
+    },
+    "base_rlyeh_pod": {
+      "name": "拉莱耶"
+    },
+    "base_innsmouth_base_pod": {
+      "name": "印斯茅斯"
+    },
+    "base_mountains_of_madness_pod": {
+      "name": "疯狂山脉"
+    },
+    "base_plateau_of_leng_pod": {
+      "name": "伦格高原"
+    },
+    "base_the_pasture_pod": {
+      "name": "牧场"
+    },
+    "base_sheep_shrine_pod": {
+      "name": "绵羊神社"
+    },
+    "base_castle_blood_pod": {
+      "name": "血堡"
+    },
+    "base_crypt_pod": {
+      "name": "地窖"
+    },
+    "base_laboratorium_pod": {
+      "name": "实验工坊"
+    },
+    "base_golem_schloss_pod": {
+      "name": "魔像城堡"
+    },
+    "base_moot_site_pod": {
+      "name": "集会场"
+    },
+    "base_standing_stones_pod": {
+      "name": "巨石阵"
+    },
+    "base_egg_chamber_pod": {
+      "name": "卵室"
+    },
+    "base_the_hill_pod": {
+      "name": "蚁丘"
+    }
   },
   "endgame": {
     "victory": "胜利",
