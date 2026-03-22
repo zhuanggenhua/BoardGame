@@ -1168,7 +1168,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             const baseIndex = baseCandidates[0].baseIndex;
             const playedEvt: MinionPlayedEvent = {
                 type: SU_EVENTS.MINION_PLAYED,
-                payload: { playerId, cardUid, defId, baseIndex, baseDefId: state.core.bases[baseIndex].defId, power, consumesNormalLimit: false },
+                payload: { playerId, cardUid, defId, baseIndex, baseDefId: state.core.bases[baseIndex].defId, power },
                 timestamp,
             };
             // 检查该基地是否有对手随从可移动（保护检查在 buildMinionTargetOptions 中）
@@ -1230,7 +1230,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         if (!ctx) return undefined;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid: ctx.cardUid, defId: ctx.defId, baseIndex, baseDefId: state.core.bases[baseIndex].defId, power: ctx.power, consumesNormalLimit: false },
+            payload: { playerId, cardUid: ctx.cardUid, defId: ctx.defId, baseIndex, baseDefId: state.core.bases[baseIndex].defId, power: ctx.power },
             timestamp,
         };
         // 检查该基地是否有对手随从可移动（保护检查在 buildMinionTargetOptions 中）
