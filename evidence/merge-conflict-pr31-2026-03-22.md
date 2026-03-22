@@ -46,5 +46,5 @@
 - 验证结果：全部通过。
 
 ## 6. 结果
-- 提交：待生成
-- 推送：待推送到 `deathcats4/codex/smashup-pod-target-fixes-upstream`
+- 提交：`f938ed49 merge: resolve PR #31 trickster POD restrictions`
+- 推送：目标 `deathcats4/codex/smashup-pod-target-fixes-upstream`
