@@ -609,4 +609,34 @@ describe('天赋基础设施', () => {
         expect(result.valid).toBe(false);
         expect(result.error).toBe('本回合天赋已使用');
     });
+
+    it('被压制的随从不能发动天赋', () => {
+        const core = makeState({
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'm1',
+                baseIndex: 0,
+                suppressorPlayerId: '1',
+                cardType: 'minion',
+            }],
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('m1', 'miskatonic_librarian', '0', 4)],
+                    ongoingActions: [],
+                },
+            ],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'm1', baseIndex: 0 },
+        });
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('该卡牌能力已被压制');
+    });
 });

@@ -47,6 +47,67 @@ function makeMinion(uid: string, defId: string, controller: string, power: numbe
     };
 }
 
+describe('suppressed source triggers', () => {
+    it('suppressed bear_cavalry_cub_scout should not destroy moved minion', () => {
+        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 2, { powerModifier: 0 });
+        const destBase = makeBase({ minions: [scout] });
+        const srcBase = makeBase({ minions: [moved] });
+        const state = makeState({
+            bases: [destBase, srcBase],
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'scout',
+                baseIndex: 0,
+                suppressorPlayerId: '0',
+                cardType: 'minion',
+            }],
+        });
+
+        const { events } = fireTriggers(state, 'onMinionMoved', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'moved',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 0,
+        });
+
+        expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+    });
+
+    it('suppressed bear_cavalry_high_ground should not destroy moved minion', () => {
+        const myMinion = makeMinion('my', 'test_minion', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
+        const destBase = makeBase({
+            minions: [myMinion],
+            ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '0' }],
+        });
+        const srcBase = makeBase({ minions: [moved] });
+        const state = makeState({
+            bases: [destBase, srcBase],
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'hg-1',
+                baseIndex: 0,
+                suppressorPlayerId: '0',
+                cardType: 'ongoing',
+            }],
+        });
+
+        const { events } = fireTriggers(state, 'onMinionMoved', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'moved',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 0,
+        });
+
+        expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+    });
+});
+
 function makePlayer(id: string, overrides?: Partial<PlayerState>): PlayerState {
     return {
         id, vp: 0, hand: [], deck: [], discard: [],
