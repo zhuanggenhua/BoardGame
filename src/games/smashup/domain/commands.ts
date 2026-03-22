@@ -6,7 +6,7 @@ import type { MatchState, ValidationResult } from '../../../engine/types';
 import type { SmashUpCommand, SmashUpCore, ActionCardDef, FusionCardDef, PlayConstraint } from './types';
 import { SU_COMMANDS, getCurrentPlayerId, HAND_LIMIT } from './types';
 import { getCardDef, getFusionDef, getMinionDef, getMinionLikePower } from '../data/cards';
-import { isOperationRestricted } from './ongoingEffects';
+import { hasPlayerTurnRestriction, isOperationRestricted } from './ongoingEffects';
 import {
     getScoringEligibleBaseIndices,
     getPlayerEffectivePowerOnBase,
@@ -37,6 +37,10 @@ function hasActiveBearNecessitiesPodRestriction(core: SmashUpCore, playerId: str
         if (hasOpponentActivePod) return true;
     }
     return false;
+}
+
+function isCurrentTurnPlayer(core: SmashUpCore, playerId: string): boolean {
+    return core.turnOrder[core.currentPlayerIndex] === playerId;
 }
 
 function isExtraMinionPlayAttempt(
@@ -254,6 +258,13 @@ export function validate(
                 hasResponseWindow: !!state.sys.responseWindow?.current,
                 windowType: state.sys.responseWindow?.current?.windowType,
             });
+
+            if (
+                hasPlayerTurnRestriction(core, command.playerId, 'play_action')
+                || (isCurrentTurnPlayer(core, command.playerId) && core.sleepMarkedPlayers?.includes(command.playerId))
+            ) {
+                return { valid: false, error: '当前效果禁止你打出战术' };
+            }
             
             // 响应窗口期间：允许当前响应者打出特殊行动卡
             const responseWindow = state.sys.responseWindow?.current;

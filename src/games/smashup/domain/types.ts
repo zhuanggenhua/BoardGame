@@ -528,10 +528,13 @@ export interface SmashUpCore {
     // （保留扩展字段位于此处）
     /** 被沉睡印记标记的玩家（下回合不能打行动卡） */
     sleepMarkedPlayers?: PlayerId[];
-    /** POD 沉睡印记：被标记的玩家本回合不能移动随从（通过事件拦截器阻止移动） */
-    sleepMoveMarkedPlayers?: PlayerId[];
-    /** POD 沉睡印记：标记过期的 turnNumber（到施放者下回合开始时清空） */
-    sleepMarkExpiresOnTurnNumber?: number;
+    /**
+     * 持续到施加者下个回合开始的玩家限制（如睡眠印记 POD）
+     *
+     * - play_action: 目标玩家在效果持续期间不能打出战术/行动卡
+     * - move_minion: 目标玩家在效果持续期间不能移动随从
+     */
+    playerRestrictionsUntilTurnStart?: PlayerTurnRestriction[];
     /** 本回合每位玩家移动随从到各基地的次数（用于牧场等"首次移动"触发） */
     minionsMovedToBaseThisTurn?: Record<string, Record<number, number>>;
     /**
@@ -603,6 +606,14 @@ export interface FactionSelectionState {
     playerSelections: Record<PlayerId, string[]>;
     /** 选择完成的玩家 */
     completedPlayers: PlayerId[];
+}
+
+export type PlayerTurnRestrictionType = 'play_action' | 'move_minion';
+
+export interface PlayerTurnRestriction {
+    targetPlayerId: PlayerId;
+    sourcePlayerId: PlayerId;
+    restrictionType: PlayerTurnRestrictionType;
 }
 
 

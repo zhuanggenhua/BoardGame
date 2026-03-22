@@ -1,7 +1,7 @@
-/**
- * 大杀四方 - 诡术师派系能力
+﻿/**
+ * 澶ф潃鍥涙柟 - 璇℃湳甯堟淳绯昏兘鍔?
  *
- * 主题：陷阱、干扰对手、消灭随从
+ * 涓婚锛氶櫡闃便€佸共鎵板鎵嬨€佹秷鐏殢浠?
  */
 
 import { registerAbility } from '../domain/abilityRegistry';
@@ -25,16 +25,82 @@ import type {
     PowerCounterAddedEvent,
     BreakpointModifiedEvent,
 } from '../domain/types';
-import type { MinionCardDef } from '../domain/types';
+import type { MinionCardDef, PlayerTurnRestrictionType, SmashUpCore } from '../domain/types';
 import { matchesDefId } from '../domain/utils';
 import { registerInterceptor, registerProtection, registerRestriction, registerTrigger } from '../domain/ongoingEffects';
+import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import type { MatchState } from '../../../engine/types';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { getOpponentLabel } from '../domain/utils';
 
-/** 侏儒 onPlay：消灭力量低于己方随从数量的随从 */
+type PayThePiperChoiceValue = { cardUid: string; defId: string };
+type TricksterMarkOfSleepPodChoiceValue = { restrictionType: PlayerTurnRestrictionType };
+type TricksterMarkOfSleepPodContext = {
+    sourcePlayerId: string;
+    targetPlayerId: string;
+    remainingTargetPlayerIds: string[];
+};
+
+function buildPayThePiperDiscardOptions(core: SmashUpCore, playerId: string) {
+    const player = core.players[playerId];
+    if (!player) return [];
+    return player.hand.map((card) => {
+        const def = getCardDef(card.defId);
+        return {
+            id: `card-${card.uid}`,
+            label: def?.name ?? card.defId,
+            value: { cardUid: card.uid, defId: card.defId },
+            _source: 'hand' as const,
+            displayMode: 'card' as const,
+        };
+    });
+}
+
+function queuePayThePiperDiscardChoice(
+    matchState: MatchState<SmashUpCore>,
+    playerId: string,
+    now: number,
+): MatchState<SmashUpCore> {
+    const interaction = createSimpleChoice<PayThePiperChoiceValue>(
+        `trickster_pay_the_piper_${playerId}_${now}`,
+        playerId,
+        '留下买路财：选择 1 张手牌弃掉',
+        buildPayThePiperDiscardOptions(matchState.core, playerId),
+        { sourceId: 'trickster_pay_the_piper', targetType: 'hand' },
+    );
+    (interaction.data as any).optionsGenerator = (state: MatchState<SmashUpCore>) =>
+        buildPayThePiperDiscardOptions(state.core, playerId);
+    return queueInteraction(matchState, interaction);
+}
+
+function createTricksterMarkOfSleepPodInteraction(
+    sourcePlayerId: string,
+    targetPlayerId: string,
+    remainingTargetPlayerIds: string[],
+    now: number,
+) {
+    const interaction = createSimpleChoice<TricksterMarkOfSleepPodChoiceValue>(
+        `trickster_mark_of_sleep_pod_${targetPlayerId}_${now}`,
+        sourcePlayerId,
+        '睡眠印记：为' + getOpponentLabel(targetPlayerId) + '选择一项',
+        [
+            { id: 'no-action', label: '不能打出战术', value: { restrictionType: 'play_action' } },
+            { id: 'no-move', label: '不能移动随从', value: { restrictionType: 'move_minion' } },
+        ],
+        { sourceId: 'trickster_mark_of_sleep_pod', targetType: 'generic' },
+    );
+    (interaction.data as any).continuationContext = {
+        sourcePlayerId,
+        targetPlayerId,
+        remainingTargetPlayerIds,
+    } satisfies TricksterMarkOfSleepPodContext;
+    return interaction;
+}
+
+/** 渚忓剴 onPlay锛氭秷鐏姏閲忎綆浜庡繁鏂归殢浠庢暟閲忕殑闅忎粠 */
 function tricksterGnome(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
@@ -46,19 +112,19 @@ function tricksterGnome(ctx: AbilityContext): AbilityResult {
         const def = getCardDef(t.defId) as MinionCardDef | undefined;
         const name = def?.name ?? t.defId;
         const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
+        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: name + ' (力量 ' + power + ')' };
     });
-    // "你可以"效果：添加跳过选项
+    // "浣犲彲浠?鏁堟灉锛氭坊鍔犺烦杩囬€夐」
     const minionOptions = buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
     minionOptions.push(createSkipOption());
     return resolveOrPrompt(ctx, minionOptions, {
         id: 'trickster_gnome',
-        title: '选择要消灭的随从（力量低于己方随从数量），或跳过',
+        title: '閫夋嫨瑕佹秷鐏殑闅忎粠锛堝姏閲忎綆浜庡繁鏂归殢浠庢暟閲忥級锛屾垨璺宠繃',
         sourceId: 'trickster_gnome',
         targetType: 'minion',
         autoResolveIfSingle: false,
     }, (value) => {
-        // 检查 skip 标记
+        // 妫€鏌?skip 鏍囪
         if ((value as any).skip) return { events: [] };
         
         const { minionUid } = value as { minionUid?: string };
@@ -70,7 +136,134 @@ function tricksterGnome(ctx: AbilityContext): AbilityResult {
     });
 }
 
-/** 带走宝物 onPlay：每个其他玩家随机弃两张手牌 */
+type TricksterGnomePodPending = {
+    gnomeUid: string;
+    controller: string;
+    baseIndex: number;
+};
+
+function countTitansOnBase(state: SmashUpCore, baseIndex: number): number {
+    let titanCount = 0;
+    for (const pid of state.turnOrder) {
+        const titan = (state.players[pid] as any)?.activeTitan as { baseIndex?: number } | undefined;
+        if (titan?.baseIndex === baseIndex) titanCount += 1;
+    }
+    return titanCount;
+}
+
+function buildTricksterGnomePodOptions(
+    state: SmashUpCore,
+    baseIndex: number,
+    sourcePlayerId: string,
+) {
+    const base = state.bases[baseIndex];
+    if (!base) return [createSkipOption()];
+
+    const destroyThreshold = base.minions.length + countTitansOnBase(state, baseIndex);
+    const targets = base.minions.filter(m => getMinionPower(state, m, baseIndex) < destroyThreshold);
+    const options = targets.map(target => {
+        const def = getCardDef(target.defId) as MinionCardDef | undefined;
+        const power = getMinionPower(state, target, baseIndex);
+        return {
+            uid: target.uid,
+            defId: target.defId,
+            baseIndex,
+            label: (def?.name ?? target.defId) + ' (力量 ' + power + ')',
+        };
+    });
+
+    const minionOptions = buildMinionTargetOptions(options, {
+        state,
+        sourcePlayerId,
+        effectType: 'destroy',
+    });
+    minionOptions.push(createSkipOption());
+    return minionOptions;
+}
+
+function createTricksterGnomePodInteraction(
+    state: SmashUpCore,
+    pending: TricksterGnomePodPending,
+    remaining: TricksterGnomePodPending[],
+    now: number,
+) {
+    const base = state.bases[pending.baseIndex];
+    if (!base?.minions.some(m => m.uid === pending.gnomeUid && m.defId === 'trickster_gnome_pod')) {
+        return null;
+    }
+
+    const options = buildTricksterGnomePodOptions(state, pending.baseIndex, pending.controller);
+    if (options.length === 1 && (options[0].value as any)?.skip) {
+        return null;
+    }
+
+    const interaction = createSimpleChoice(
+        `trickster_gnome_pod_${pending.gnomeUid}_${now}`,
+        pending.controller,
+        '侏儒：你可以消灭此基地一个力量低于这里随从与泰坦总数的随从',
+        options as any[],
+        { sourceId: 'trickster_gnome_pod', targetType: 'minion', autoResolveIfSingle: false },
+    );
+    (interaction.data as any).continuationContext = {
+        baseIndex: pending.baseIndex,
+        gnomeUid: pending.gnomeUid,
+        controller: pending.controller,
+        remaining,
+    };
+    (interaction.data as any).optionsGenerator = (nextState: MatchState<SmashUpCore>, data: any) => {
+        const continuation = data?.continuationContext as TricksterGnomePodPending & { remaining?: TricksterGnomePodPending[] } | undefined;
+        if (!continuation) return [createSkipOption()];
+        const nextBase = nextState.core.bases[continuation.baseIndex];
+        if (!nextBase?.minions.some(m => m.uid === continuation.gnomeUid && m.defId === 'trickster_gnome_pod')) {
+            return [createSkipOption()];
+        }
+        return buildTricksterGnomePodOptions(nextState.core, continuation.baseIndex, continuation.controller);
+    };
+    return interaction;
+}
+
+function queueNextTricksterGnomePodInteraction(
+    matchState: MatchState<SmashUpCore>,
+    pendingList: TricksterGnomePodPending[],
+    now: number,
+): MatchState<SmashUpCore> | undefined {
+    for (let index = 0; index < pendingList.length; index++) {
+        const pending = pendingList[index];
+        const remaining = pendingList.slice(index + 1);
+        const interaction = createTricksterGnomePodInteraction(matchState.core, pending, remaining, now);
+        if (!interaction) continue;
+        return queueInteraction(matchState, interaction);
+    }
+    return undefined;
+}
+
+/**
+ * 渚忓剴 POD beforeScoring锛?
+ * 鍦ㄥ熀鍦拌鍒嗗墠锛屼綘鍙互娑堢伃姝ゅ熀鍦颁竴涓姏閲忎綆浜庤繖閲岄殢浠庡拰娉板潶鎬绘暟鐨勯殢浠庛€?
+ * 杩欐槸鍦轰笂鑷姩瑙﹀彂鐨?beforeScoring 浜や簰锛屼笉搴旂户鎵垮熀纭€鐗堢殑 onPlay 閫昏緫銆?
+ */
+function tricksterGnomePodBeforeScoring(ctx: TriggerContext): TriggerResult {
+    if (ctx.baseIndex === undefined || !ctx.matchState) return { events: [] };
+
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return { events: [] };
+
+    const pending = base.minions
+        .filter(m => m.defId === 'trickster_gnome_pod')
+        .map(m => ({ gnomeUid: m.uid, controller: m.controller, baseIndex: ctx.baseIndex! }));
+    if (pending.length === 0) return { events: [] };
+
+    const nextState = queueNextTricksterGnomePodInteraction(ctx.matchState, pending, ctx.now);
+    return nextState ? { events: [], matchState: nextState } : { events: [] };
+}
+
+function tricksterGnomePodOnPlay(): AbilityResult {
+    // POD 鐗堜緩鍎掔殑鐪熷疄鏁堟灉鍦?beforeScoring trigger 涓鐞嗐€?
+    // 杩欓噷鏄惧紡娉ㄥ唽绌?onPlay锛岄樆姝㈣嚜鍔ㄥ埆鍚嶆妸鍩虹鐗堝叆鍦烘晥鏋滈敊璇鍒惰繃鏉ャ€?
+    return { events: [] };
+}
+
+/** 甯﹁蛋瀹濈墿 onPlay锛氭瘡涓叾浠栫帺瀹堕殢鏈哄純涓ゅ紶鎵嬬墝 */
 function tricksterTakeTheShinies(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     for (const pid of ctx.state.turnOrder) {
@@ -78,7 +271,7 @@ function tricksterTakeTheShinies(ctx: AbilityContext): AbilityResult {
         const player = ctx.state.players[pid];
         if (player.hand.length === 0) continue;
 
-        // 随机选择至多2?
+        // 闅忔満閫夋嫨鑷冲2?
         const handCopy = [...player.hand];
         const discardUids: string[] = [];
         const count = Math.min(2, handCopy.length);
@@ -98,22 +291,22 @@ function tricksterTakeTheShinies(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 幻想破碎 onPlay：消灭一个已打出到随从或基地上的行动?*/
+/** 骞绘兂鐮寸 onPlay锛氭秷鐏竴涓凡鎵撳嚭鍒伴殢浠庢垨鍩哄湴涓婄殑琛屽姩?*/
 function tricksterDisenchant(ctx: AbilityContext): AbilityResult {
-    // 收集所有已打出的持续行动卡（描述无"对手"限定，包含自己的）
+    // 鏀堕泦鎵€鏈夊凡鎵撳嚭鐨勬寔缁鍔ㄥ崱锛堟弿杩版棤"瀵规墜"闄愬畾锛屽寘鍚嚜宸辩殑锛?
     const targets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
         for (const ongoing of base.ongoingActions) {
             const def = getCardDef(ongoing.defId);
             const name = def?.name ?? ongoing.defId;
-            targets.push({ uid: ongoing.uid, defId: ongoing.defId, ownerId: ongoing.ownerId, label: `${name} (基地行动)` });
+            targets.push({ uid: ongoing.uid, defId: ongoing.defId, ownerId: ongoing.ownerId, label: `${name} (鍩哄湴琛屽姩)` });
         }
         for (const m of base.minions) {
             for (const attached of m.attachedActions) {
                 const def = getCardDef(attached.defId);
                 const name = def?.name ?? attached.defId;
-                targets.push({ uid: attached.uid, defId: attached.defId, ownerId: attached.ownerId, label: `${name} (附着行动)` });
+                targets.push({ uid: attached.uid, defId: attached.defId, ownerId: attached.ownerId, label: `${name} (闄勭潃琛屽姩)` });
             }
         }
     }
@@ -130,9 +323,9 @@ function tricksterDisenchant(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** 隐蔽迷雾 onPlay：打出当回合给予额外随从（与大法师同理，ongoing 能力在进入场上时生效） */
+/** 闅愯斀杩烽浘 onPlay锛氭墦鍑哄綋鍥炲悎缁欎簣棰濆闅忎粠锛堜笌澶ф硶甯堝悓鐞嗭紝ongoing 鑳藉姏鍦ㄨ繘鍏ュ満涓婃椂鐢熸晥锛?*/
 function tricksterEnshroudingMistOnPlay(ctx: AbilityContext): AbilityResult {
-    // 打出当回合立即给予额外随从（限定到此基地）
+    // 鎵撳嚭褰撳洖鍚堢珛鍗崇粰浜堥澶栭殢浠庯紙闄愬畾鍒版鍩哄湴锛?
     return {
         events: [{
             type: SU_EVENTS.LIMIT_MODIFIED,
@@ -148,23 +341,25 @@ function tricksterEnshroudingMistOnPlay(ctx: AbilityContext): AbilityResult {
     };
 }
 
-/** 注册诡术师派系所有能力*/
+/** 注册诡术师派系所有能力 */
 export function registerTricksterAbilities(): void {
     registerAbility('trickster_gnome', 'onPlay', tricksterGnome);
-    // 带走宝物（行动卡）：每个对手随机弃两张手牌
+    registerAbility('trickster_gnome_pod', 'onPlay', tricksterGnomePodOnPlay);
+    // 甯﹁蛋瀹濈墿锛堣鍔ㄥ崱锛夛細姣忎釜瀵规墜闅忔満寮冧袱寮犳墜鐗?
     registerAbility('trickster_take_the_shinies', 'onPlay', tricksterTakeTheShinies);
-    // 幻想破碎（行动卡）：消灭一个已打出的行动卡
+    // 骞绘兂鐮寸锛堣鍔ㄥ崱锛夛細娑堢伃涓€涓凡鎵撳嚭鐨勮鍔ㄥ崱
     registerAbility('trickster_disenchant', 'onPlay', tricksterDisenchant);
-    // 小妖精?onDestroy：被消灭后抽1张牌 + 对手随机?张牌
+    // 灏忓绮?onDestroy锛氳娑堢伃鍚庢娊1寮犵墝 + 瀵规墜闅忔満?寮犵墝
     registerAbility('trickster_gremlin', 'onDestroy', tricksterGremlinOnDestroy);
-    // 沉睡印记（行动卡）：对手下回合不能打行动
+    // 娌夌潯鍗拌锛堣鍔ㄥ崱锛夛細瀵规墜涓嬪洖鍚堜笉鑳芥墦琛屽姩
     registerAbility('trickster_mark_of_sleep', 'onPlay', tricksterMarkOfSleep);
-    // 封路（ongoing）：打出时选择一个派系
+    registerAbility('trickster_mark_of_sleep_pod', 'onPlay', tricksterMarkOfSleepPod);
+    // 灏佽矾锛坥ngoing锛夛細鎵撳嚭鏃堕€夋嫨涓€涓淳绯?
     registerAbility('trickster_block_the_path', 'onPlay', tricksterBlockThePath);
-    // 隐蔽迷雾（ongoing）：打出当回合也给予额外随从（与大法师同理）
+    // 闅愯斀杩烽浘锛坥ngoing锛夛細鎵撳嚭褰撳洖鍚堜篃缁欎簣棰濆闅忎粠锛堜笌澶ф硶甯堝悓鐞嗭級
     registerAbility('trickster_enshrouding_mist', 'onPlay', tricksterEnshroudingMistOnPlay);
 
-    // 注册 ongoing 拦截?
+    // 娉ㄥ唽 ongoing 鎷︽埅?
     registerTricksterOngoingEffects();
     registerTricksterPodAbilities();
 }
@@ -198,14 +393,14 @@ function tricksterGnomePodSpecial(ctx: AbilityContext): AbilityResult {
         const def = getCardDef(t.defId) as MinionCardDef | undefined;
         const name = def?.name ?? t.defId;
         const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
+        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: name + ' (力量 ' + power + ')' };
     });
     const minionOptions = buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
     minionOptions.push(createSkipOption());
 
     return resolveOrPrompt(ctx, minionOptions, {
         id: 'trickster_gnome_pod',
-        title: '侏儒：你可以消灭这里一个力量低于你在此基地随从数量的随从（或跳过）',
+        title: '渚忓剴锛氫綘鍙互娑堢伃杩欓噷涓€涓姏閲忎綆浜庝綘鍦ㄦ鍩哄湴闅忎粠鏁伴噺鐨勯殢浠庯紙鎴栬烦杩囷級',
         sourceId: 'trickster_gnome_pod',
         targetType: 'minion',
         autoResolveIfSingle: false,
@@ -225,9 +420,10 @@ function registerTricksterPodAbilities(): void {
     registerAbility('trickster_pixie_pod', 'onPlay', tricksterPixiePodOnPlay);
     registerAbility('trickster_enshrouding_mist_pod', 'talent', tricksterEnshroudingMistPodTalent);
     registerAbility('trickster_hideout_pod', 'talent', tricksterHideoutPodTalent);
-    registerAbility('trickster_gnome_pod', 'special', tricksterGnomePodSpecial);
+    registerAbility('trickster_gnome_pod', 'onPlay', tricksterGnomePodOnPlay);
     registerAbility('trickster_gremlin_pod', 'onDestroy', () => ({ events: [] }));
     registerTricksterPodOngoingEffects();
+    registerTrigger('trickster_gnome_pod', 'beforeScoring', tricksterGnomePodBeforeScoring);
 }
 
 function tricksterHideoutPodTalent(ctx: AbilityContext): AbilityResult {
@@ -278,7 +474,7 @@ function tricksterHideoutPodTalent(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `trickster_hideout_pod_swap_${ctx.now}`,
         ctx.playerId,
-        '藏身处：选择要交换进来的“打出到基地上”的持续战术（或跳过）',
+        '藏身处：选择要交换进来的基地持续战术（或跳过）',
         options as any[],
         { sourceId: 'trickster_hideout_pod_swap', targetType: 'generic' },
     );
@@ -291,11 +487,11 @@ function tricksterHideoutPodTalent(ctx: AbilityContext): AbilityResult {
     };
 }
 
-/** 注册诡术师派系的交互解决处理函数 */
+/** 娉ㄥ唽璇℃湳甯堟淳绯荤殑浜や簰瑙ｅ喅澶勭悊鍑芥暟 */
 export function registerTricksterInteractionHandlers(): void {
-    // 侏儒：选择目标后消灭（支持跳过）
+    // 渚忓剴锛氶€夋嫨鐩爣鍚庢秷鐏紙鏀寔璺宠繃锛?
     registerInteractionHandler('trickster_gnome', (state, playerId, value, _iData, _random, timestamp) => {
-        // 统一检查 skip 标记
+        // 缁熶竴妫€鏌?skip 鏍囪
         if ((value as any).skip) return { state, events: [] };
         
         const { minionUid, baseIndex } = value as { minionUid?: string; baseIndex?: number };
@@ -308,19 +504,41 @@ export function registerTricksterInteractionHandlers(): void {
         return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'trickster_gnome', timestamp)] };
     });
 
-    // 幻想破碎：选择行动卡后消灭
+    registerInteractionHandler('trickster_gnome_pod', (state, playerId, value, iData, _random, timestamp) => {
+        const continuation = iData?.continuationContext as {
+            baseIndex?: number;
+            remaining?: TricksterGnomePodPending[];
+        } | undefined;
+        const baseIndex = (value as { baseIndex?: number } | undefined)?.baseIndex ?? continuation?.baseIndex;
+        const selectedUid = (value as { minionUid?: string } | undefined)?.minionUid;
+        const events: SmashUpEvent[] = [];
+
+        if (!(value as any)?.skip && selectedUid && baseIndex !== undefined) {
+            const base = state.core.bases[baseIndex];
+            const target = base?.minions.find(m => m.uid === selectedUid);
+            if (target) {
+                events.push(destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'trickster_gnome_pod', timestamp));
+            }
+        }
+
+        const remaining = (continuation?.remaining ?? []).filter(entry => entry.gnomeUid !== selectedUid);
+        const nextState = queueNextTricksterGnomePodInteraction(state, remaining, timestamp);
+        return { state: nextState ?? state, events };
+    });
+
+    // 骞绘兂鐮寸锛氶€夋嫨琛屽姩鍗″悗娑堢伃
     registerInteractionHandler('trickster_disenchant', (state, _playerId, value, _iData, _random, timestamp) => {
         const { cardUid: ongoingUid, defId, ownerId } = value as { cardUid: string; defId: string; ownerId: string };
         return { state, events: [{ type: SU_EVENTS.ONGOING_DETACHED, payload: { cardUid: ongoingUid, defId, ownerId, reason: 'trickster_disenchant' }, timestamp }] };
     });
 
-    // 沉睡印记：选择对手后标记（下回合生效）
+    // 娌夌潯鍗拌锛氶€夋嫨瀵规墜鍚庢爣璁帮紙涓嬪洖鍚堢敓鏁堬級
     registerInteractionHandler('trickster_mark_of_sleep', (state, _playerId, value, _iData, _random, _timestamp) => {
-        // 检查取消标记
+        // 妫€鏌ュ彇娑堟爣璁?
         if ((value as any).__cancel__) return { state, events: [] };
         
         const { pid } = value as { pid: string };
-        // 添加沉睡标记，在对手的下一个回合开始时生效
+        // 娣诲姞娌夌潯鏍囪锛屽湪瀵规墜鐨勪笅涓€涓洖鍚堝紑濮嬫椂鐢熸晥
         const currentMarked = state.core.sleepMarkedPlayers ?? [];
         if (currentMarked.includes(pid)) return { state, events: [] };
         return {
@@ -329,15 +547,59 @@ export function registerTricksterInteractionHandlers(): void {
         };
     });
 
-    // 封路：选择派系后，将派系信息存入 ongoing 的 metadata
+    registerInteractionHandler('trickster_mark_of_sleep_pod', (state, _playerId, value, iData, _random, timestamp) => {
+        const continuation = (iData as any)?.continuationContext as TricksterMarkOfSleepPodContext | undefined;
+        const restrictionType = (value as TricksterMarkOfSleepPodChoiceValue | undefined)?.restrictionType;
+        if (!continuation?.targetPlayerId || !continuation.sourcePlayerId || !restrictionType) {
+            return { state, events: [] };
+        }
+
+        const nextRestrictions = [
+            ...(state.core.playerRestrictionsUntilTurnStart ?? []).filter(entry => !(
+                entry.sourcePlayerId === continuation.sourcePlayerId
+                && entry.targetPlayerId === continuation.targetPlayerId
+                && entry.restrictionType === restrictionType
+            )),
+            {
+                sourcePlayerId: continuation.sourcePlayerId,
+                targetPlayerId: continuation.targetPlayerId,
+                restrictionType,
+            },
+        ];
+
+        let nextState: MatchState<SmashUpCore> = {
+            ...state,
+            core: {
+                ...state.core,
+                playerRestrictionsUntilTurnStart: nextRestrictions,
+            },
+        };
+
+        const [nextTargetPlayerId, ...remainingTargetPlayerIds] = continuation.remainingTargetPlayerIds;
+        if (nextTargetPlayerId) {
+            nextState = queueInteraction(
+                nextState,
+                createTricksterMarkOfSleepPodInteraction(
+                    continuation.sourcePlayerId,
+                    nextTargetPlayerId,
+                    remainingTargetPlayerIds,
+                    timestamp,
+                ),
+            );
+        }
+
+        return { state: nextState, events: [] };
+    });
+
+    // 灏佽矾锛氶€夋嫨娲剧郴鍚庯紝灏嗘淳绯讳俊鎭瓨鍏?ongoing 鐨?metadata
     registerInteractionHandler('trickster_block_the_path', (state, _playerId, value, iData, _random, _timestamp) => {
-        // 检查取消标记
+        // 妫€鏌ュ彇娑堟爣璁?
         if ((value as any).__cancel__) return { state, events: [] };
         
         const { factionId } = value as { factionId: string };
         const ctx = (iData as any)?.continuationContext as { cardUid: string; baseIndex: number };
         if (!ctx) return undefined;
-        // 找到刚附着的 ongoing 并更新 metadata
+        // 鎵惧埌鍒氶檮鐫€鐨?ongoing 骞舵洿鏂?metadata
         const newBases = state.core.bases.map((base, i) => {
             if (i !== ctx.baseIndex) return base;
             return {
@@ -349,26 +611,6 @@ export function registerTricksterInteractionHandlers(): void {
             };
         });
         return { state: { ...state, core: { ...state.core, bases: newBases } }, events: [] };
-    });
-
-    // POD 沉睡印记：一次性写入 noActions / noMove 标记，持续到施放者下回合开始
-    registerInteractionHandler('trickster_mark_of_sleep_pod', (state, playerId, value, _iData, _random, _timestamp) => {
-        if ((value as any).__cancel__) return { state, events: [] };
-        const { noActions, noMove } = value as { noActions: string[]; noMove: string[] };
-        const expiresOnTurnNumber = state.core.turnNumber + state.core.turnOrder.length;
-
-        return {
-            state: {
-                ...state,
-                core: {
-                    ...state.core,
-                    sleepMarkedPlayers: noActions.length ? noActions : undefined,
-                    sleepMoveMarkedPlayers: noMove.length ? noMove : undefined,
-                    sleepMarkExpiresOnTurnNumber: expiresOnTurnNumber,
-                } as any,
-            },
-            events: [],
-        };
     });
 
     // Pixie（战术）：先消灭一张已打出的战术，再选择 1-2 个己方随从分配两枚 +1 指示物
@@ -384,7 +626,7 @@ export function registerTricksterInteractionHandlers(): void {
                 const def = getCardDef(m.defId) as MinionCardDef | undefined;
                 const name = def?.name ?? m.defId;
                 const power = getMinionPower(state.core, m, bi);
-                myMinions.push({ uid: m.uid, defId: m.defId, baseIndex: bi, label: `${name} (力量 ${power})` });
+                myMinions.push({ uid: m.uid, defId: m.defId, baseIndex: bi, label: name + ' (力量 ' + power + ')' });
             }
         }
         if (myMinions.length === 0) {
@@ -467,7 +709,7 @@ export function registerTricksterInteractionHandlers(): void {
     registerInteractionHandler('trickster_flame_trap_pod_bp', (state, _playerId, value, _iData, _random, timestamp) => {
         const yes = (value as any)?.yes === true;
         if (!yes) return { state, events: [] };
-        // 选择窗口只会在拥有者回合开始时出现，因此直接定位该拥有者的第一张 trap
+        // 閫夋嫨绐楀彛鍙細鍦ㄦ嫢鏈夎€呭洖鍚堝紑濮嬫椂鍑虹幇锛屽洜姝ょ洿鎺ュ畾浣嶈鎷ユ湁鑰呯殑绗竴寮?trap
         const baseIndex = state.core.bases.findIndex(b => b.ongoingActions.some(o => o.defId === 'trickster_flame_trap_pod'));
         if (baseIndex < 0) return { state, events: [] };
         return {
@@ -513,14 +755,14 @@ export function registerTricksterInteractionHandlers(): void {
         const player = state.core.players[playerId];
         if (!player) return undefined;
 
-        // 1) 从手牌/牌库移除目标战术
+        // 1) 浠庢墜鐗?鐗屽簱绉婚櫎鐩爣鎴樻湳
         const fromHand = zone === 'hand' ? player.hand.filter(c => c.uid !== cardUid) : player.hand;
         const fromDeck = zone === 'deck' ? player.deck.filter(c => c.uid !== cardUid) : player.deck;
 
-        // 2) 藏身处从基地离场进手牌（swap 的另一半）
+        // 2) 钘忚韩澶勪粠鍩哄湴绂诲満杩涙墜鐗岋紙swap 鐨勫彟涓€鍗婏級
         const hideoutCard: CardInstance = { uid: hideout.uid, defId: hideout.defId, type: 'action', owner: hideout.ownerId };
 
-        // 3) 目标战术进入基地 ongoingActions（保持 cardUid）
+        // 3) 鐩爣鎴樻湳杩涘叆鍩哄湴 ongoingActions锛堜繚鎸?cardUid锛?
         const newOngoing = { uid: cardUid, defId, ownerId: playerId, talentUsed: false };
 
         const newBases = state.core.bases.map((b, i) => {
@@ -550,7 +792,7 @@ export function registerTricksterInteractionHandlers(): void {
             },
         };
 
-        // 4) 交换后：你可以消灭这里一个战斗力≤2的随从（可选）
+        // 4) 浜ゆ崲鍚庯細浣犲彲浠ユ秷鐏繖閲屼竴涓垬鏂楀姏鈮?鐨勯殢浠庯紙鍙€夛級
         const updatedBase = nextState.core.bases[ctx.baseIndex];
         const candidates = updatedBase.minions.filter(m => getMinionPower(nextState.core, m, ctx.baseIndex) <= 2);
         if (candidates.length === 0) return { state: nextState, events: [] };
@@ -558,14 +800,14 @@ export function registerTricksterInteractionHandlers(): void {
             const mDef = getCardDef(m.defId) as MinionCardDef | undefined;
             const name = mDef?.name ?? m.defId;
             const power = getMinionPower(nextState.core, m, ctx.baseIndex);
-            return { id: `m-${i}`, label: `${name} (战斗力 ${power})`, value: { minionUid: m.uid, minionDefId: m.defId, baseIndex: ctx.baseIndex }, _source: 'field' as const, displayMode: 'card' as const };
+            return { id: 'm-' + i, label: name + ' (战斗力 ' + power + ')', value: { minionUid: m.uid, minionDefId: m.defId, baseIndex: ctx.baseIndex }, _source: 'field' as const, displayMode: 'card' as const };
         });
         options.push(createSkipOption() as any);
 
         const prompt = createSimpleChoice(
             `trickster_hideout_pod_destroy_${timestamp}`,
             playerId,
-            '藏身处：你可以消灭这里一个战斗力≤2的随从（或跳过）',
+            '钘忚韩澶勶細浣犲彲浠ユ秷鐏繖閲屼竴涓垬鏂楀姏鈮?鐨勯殢浠庯紙鎴栬烦杩囷級',
             options as any[],
             { sourceId: 'trickster_hideout_pod_destroy', targetType: 'minion' },
         );
@@ -585,16 +827,31 @@ export function registerTricksterInteractionHandlers(): void {
             events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'trickster_hideout_pod', timestamp)],
         };
     });
+
+    registerInteractionHandler('trickster_pay_the_piper', (state, playerId, value, _iData, _random, timestamp) => {
+        const { cardUid } = value as Partial<PayThePiperChoiceValue>;
+        if (!cardUid) return { state, events: [] };
+        const player = state.core.players[playerId];
+        if (!player?.hand.some(card => card.uid === cardUid)) return { state, events: [] };
+        return {
+            state,
+            events: [{
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: { playerId, cardUids: [cardUid] },
+                timestamp,
+            }],
+        };
+    });
 }
 
-/** 小妖精?onDestroy：被消灭后抽1张牌 + 每个对手随机?张牌 */
+/** 灏忓绮?onDestroy锛氳娑堢伃鍚庢娊1寮犵墝 + 姣忎釜瀵规墜闅忔満?寮犵墝 */
 function tricksterGremlinOnDestroy(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
 
-    // ?张牌
+    // ?寮犵墝
     events.push(...buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now));
 
-    // 每个对手随机?张牌
+    // 姣忎釜瀵规墜闅忔満?寮犵墝
     for (const pid of ctx.state.turnOrder) {
         if (pid === ctx.playerId) continue;
         const opponent = ctx.state.players[pid];
@@ -611,9 +868,9 @@ function tricksterGremlinOnDestroy(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 封路 onPlay（ongoing）：选择一个派系，该派系随从不能被打出到此基地 */
+/** 灏佽矾 onPlay锛坥ngoing锛夛細閫夋嫨涓€涓淳绯伙紝璇ユ淳绯婚殢浠庝笉鑳借鎵撳嚭鍒版鍩哄湴 */
 function tricksterBlockThePath(ctx: AbilityContext): AbilityResult {
-    // 收集场上所有派系
+    // 鏀堕泦鍦轰笂鎵€鏈夋淳绯?
     const factionSet = new Set<string>();
     for (const base of ctx.state.bases) {
         for (const m of base.minions) {
@@ -621,7 +878,7 @@ function tricksterBlockThePath(ctx: AbilityContext): AbilityResult {
             if (def?.faction) factionSet.add(def.faction);
         }
     }
-    // 也从所有玩家手牌中收集派系
+    // 涔熶粠鎵€鏈夌帺瀹舵墜鐗屼腑鏀堕泦娲剧郴
     for (const pid of ctx.state.turnOrder) {
         const player = ctx.state.players[pid];
         for (const c of player.hand) {
@@ -641,9 +898,9 @@ function tricksterBlockThePath(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ctx.cardUid, baseIndex: ctx.baseIndex } } }) };
 }
 
-/** 沉睡印记 onPlay：选择一个对手，其下回合不能打行动卡 */
+/** 娌夌潯鍗拌 onPlay锛氶€夋嫨涓€涓鎵嬶紝鍏朵笅鍥炲悎涓嶈兘鎵撹鍔ㄥ崱 */
 function tricksterMarkOfSleep(ctx: AbilityContext): AbilityResult {
-    // 可以选择任何玩家（包括自己）
+    // 鍙互閫夋嫨浠讳綍鐜╁锛堝寘鎷嚜宸憋級
     const allPlayers = ctx.state.turnOrder;
     const options = allPlayers.map((pid, i) => ({
         id: `player-${i}`, 
@@ -658,55 +915,34 @@ function tricksterMarkOfSleep(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-/** POD 沉睡印记：对每个其他玩家分别选择“不能打出战术”或“不能移动随从”，持续到你下回合开始 */
+/** 睡眠印记 POD onPlay：为每个其他玩家分别选择“不能打出战术”或“不能移动随从” */
 function tricksterMarkOfSleepPod(ctx: AbilityContext): AbilityResult {
     const otherPlayers = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
-    if (otherPlayers.length === 0) return { events: [] };
-
-    // 组合选项：每位对手二选一（最多 3 位对手 → 8 种组合）
-    const combos: { noActions: string[]; noMove: string[]; label: string }[] = [];
-    const total = 1 << otherPlayers.length;
-    for (let mask = 0; mask < total; mask++) {
-        const noActions: string[] = [];
-        const noMove: string[] = [];
-        const parts: string[] = [];
-        for (let i = 0; i < otherPlayers.length; i++) {
-            const pid = otherPlayers[i];
-            const pickNoActions = ((mask >> i) & 1) === 1;
-            if (pickNoActions) {
-                noActions.push(pid);
-                parts.push(`${getOpponentLabel(pid)}：不能打战术`);
-            } else {
-                noMove.push(pid);
-                parts.push(`${getOpponentLabel(pid)}：不能移动随从`);
-            }
-        }
-        combos.push({ noActions, noMove, label: parts.join('；') });
+    if (otherPlayers.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    const options = combos.map((c, i) => ({
-        id: `combo-${i}`,
-        label: c.label,
-        value: { noActions: c.noActions, noMove: c.noMove },
-    }));
-    const interaction = createSimpleChoice(
-        `trickster_mark_of_sleep_pod_${ctx.now}`,
-        ctx.playerId,
-        '睡眠印记：为每个对手选择限制（持续到你下回合开始）',
-        options as any[],
-        { sourceId: 'trickster_mark_of_sleep_pod', targetType: 'player', autoCancelOption: true },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    const [firstTargetPlayerId, ...remainingTargetPlayerIds] = otherPlayers;
+    return {
+        events: [],
+        matchState: queueInteraction(
+            ctx.matchState,
+            createTricksterMarkOfSleepPodInteraction(
+                ctx.playerId,
+                firstTargetPlayerId,
+                remainingTargetPlayerIds,
+                ctx.now,
+            ),
+        ),
+    };
 }
 
 function tricksterPixiePodOnPlay(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
 
-    // 判定当前 pixie 是否作为随从在该基地上（融合卡：通过 uid 在 minions 中存在来区分）
     const isPixieMinion = base.minions.some(m => m.uid === ctx.cardUid);
     if (isPixieMinion) {
-        // 条件：手牌张数 > 至少一名其他玩家
         const me = ctx.state.players[ctx.playerId];
         if (!me) return { events: [] };
         const myHand = me.hand.length;
@@ -731,7 +967,6 @@ function tricksterPixiePodOnPlay(ctx: AbilityContext): AbilityResult {
                 displayMode: 'card' as const,
             };
         });
-        // any number（可 0 张）
         const interaction = createSimpleChoice(
             `trickster_pixie_pod_minion_${ctx.now}`,
             ctx.playerId,
@@ -744,7 +979,6 @@ function tricksterPixiePodOnPlay(ctx: AbilityContext): AbilityResult {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
 
-    // Pixie as action: choose an action in play to destroy, then distribute two +1 counters among your minions
     const targets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
     for (let bi = 0; bi < ctx.state.bases.length; bi++) {
         const b = ctx.state.bases[bi];
@@ -784,28 +1018,27 @@ function tricksterPixiePodOnPlay(ctx: AbilityContext): AbilityResult {
         }),
     };
 }
-
-// executeMarkOfSleep 已移除，沉睡印记改为标记模式（在对手回合开始时生效）
+// executeMarkOfSleep 宸茬Щ闄わ紝娌夌潯鍗拌鏀逛负鏍囪妯″紡锛堝湪瀵规墜鍥炲悎寮€濮嬫椂鐢熸晥锛?
 
 // ============================================================================
-// Ongoing 拦截器注册?
+// Ongoing 鎷︽埅鍣ㄦ敞鍐?
 // ============================================================================
 
-/** 注册诡术师派系的 ongoing 拦截?*/
+/** 娉ㄥ唽璇℃湳甯堟淳绯荤殑 ongoing 鎷︽埅?*/
 function registerTricksterOngoingEffects(): void {
-    // 小矮妖：其他玩家打出力量更低的随从到同基地时消灭该随从
+    // 灏忕煯濡栵細鍏朵粬鐜╁鎵撳嚭鍔涢噺鏇翠綆鐨勯殢浠庡埌鍚屽熀鍦版椂娑堢伃璇ラ殢浠?
     registerTrigger('trickster_leprechaun', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || !trigCtx.triggerMinionDefId || trigCtx.baseIndex === undefined) return [];
-        // 找到 leprechaun 所在基地
+        // 鎵惧埌 leprechaun 鎵€鍦ㄥ熀鍦?
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             const base = trigCtx.state.bases[i];
             const leprechaun = base.minions.find(m => matchesDefId(m.defId, 'trickster_leprechaun'));
             if (!leprechaun) continue;
-            // 只在同基地触?
+            // 鍙湪鍚屽熀鍦拌Е?
             if (i !== trigCtx.baseIndex) continue;
-            // 只对其他玩家触发
+            // 鍙鍏朵粬鐜╁瑙﹀彂
             if (leprechaun.controller === trigCtx.playerId) continue;
-            // 检查打出的随从力量是否低于 leprechaun
+            // 妫€鏌ユ墦鍑虹殑闅忎粠鍔涢噺鏄惁浣庝簬 leprechaun
             const lepPower = getMinionPower(trigCtx.state, leprechaun, i);
             const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
             if (!triggerMinion) continue;
@@ -827,13 +1060,13 @@ function registerTricksterOngoingEffects(): void {
         return [];
     });
 
-    // 布朗尼：被对手卡牌效果影响时，对手弃两张牌
-    // "影响"包含：消灭、移动、负力量修改、附着对手行动卡（规则术语映射）
+    // 甯冩湕灏硷細琚鎵嬪崱鐗屾晥鏋滃奖鍝嶆椂锛屽鎵嬪純涓ゅ紶鐗?
+    // "褰卞搷"鍖呭惈锛氭秷鐏€佺Щ鍔ㄣ€佽礋鍔涢噺淇敼銆侀檮鐫€瀵规墜琛屽姩鍗★紙瑙勫垯鏈鏄犲皠锛?
     registerTrigger('trickster_brownie', 'onMinionAffected', (trigCtx) => {
         if (trigCtx.triggerMinionDefId !== 'trickster_brownie') return [];
         const brownieOwner = trigCtx.triggerMinion?.controller;
         if (!brownieOwner || brownieOwner === trigCtx.playerId) return [];
-        // 对手（触发影响的玩家）弃两张牌
+        // 瀵规墜锛堣Е鍙戝奖鍝嶇殑鐜╁锛夊純涓ゅ紶鐗?
         const opponent = trigCtx.state.players[trigCtx.playerId];
         if (!opponent || opponent.hand.length === 0) return [];
         const discardCount = Math.min(2, opponent.hand.length);
@@ -851,13 +1084,13 @@ function registerTricksterOngoingEffects(): void {
         }];
     });
 
-    // 迷雾笼罩：此基地上可额外打出一个随从到此基地（回合开始时给基地限定额度）
+    // 杩烽浘绗肩僵锛氭鍩哄湴涓婂彲棰濆鎵撳嚭涓€涓殢浠庡埌姝ゅ熀鍦帮紙鍥炲悎寮€濮嬫椂缁欏熀鍦伴檺瀹氶搴︼級
     registerTrigger('trickster_enshrouding_mist', 'onTurnStart', (trigCtx) => {
         for (let bi = 0; bi < trigCtx.state.bases.length; bi++) {
             const base = trigCtx.state.bases[bi];
             const mist = base.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_enshrouding_mist'));
             if (!mist) continue;
-            // 只在拥有者的回合触发
+            // 鍙湪鎷ユ湁鑰呯殑鍥炲悎瑙﹀彂
             if (mist.ownerId !== trigCtx.playerId) continue;
             return [{
                 type: SU_EVENTS.LIMIT_MODIFIED,
@@ -874,35 +1107,35 @@ function registerTricksterOngoingEffects(): void {
         return [];
     });
 
-    // 藏身处：保护同基地己方随从不受对手行动卡影响（消耗型：触发后自毁）
+    // 钘忚韩澶勶細淇濇姢鍚屽熀鍦板繁鏂归殢浠庝笉鍙楀鎵嬭鍔ㄥ崱褰卞搷锛堟秷鑰楀瀷锛氳Е鍙戝悗鑷瘉锛?
     registerProtection('trickster_hideout', 'action', (ctx) => {
-        // 检查目标随从是否附着了 hideout（附着在随从上的情况）
+        // 妫€鏌ョ洰鏍囬殢浠庢槸鍚﹂檮鐫€浜?hideout锛堥檮鐫€鍦ㄩ殢浠庝笂鐨勬儏鍐碉級
         const attachedHideout = ctx.targetMinion.attachedActions.find(a => matchesDefId(a.defId, 'trickster_hideout'));
         if (attachedHideout) {
-            // 只保护 Hideout 拥有者的随从，且行动卡来自对手
+            // 鍙繚鎶?Hideout 鎷ユ湁鑰呯殑闅忎粠锛屼笖琛屽姩鍗℃潵鑷鎵?
             return ctx.targetMinion.controller === attachedHideout.ownerId && ctx.sourcePlayerId !== attachedHideout.ownerId;
         }
-        // 也检查基地上的 ongoing（打在基地上的情况）
+        // 涔熸鏌ュ熀鍦颁笂鐨?ongoing锛堟墦鍦ㄥ熀鍦颁笂鐨勬儏鍐碉級
         const base = ctx.state.bases[ctx.targetBaseIndex];
         const baseHideout = base?.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_hideout'));
         if (baseHideout) {
-            // 只保护 Hideout 拥有者的随从，且行动卡来自对手
+            // 鍙繚鎶?Hideout 鎷ユ湁鑰呯殑闅忎粠锛屼笖琛屽姩鍗℃潵鑷鎵?
             return ctx.targetMinion.controller === baseHideout.ownerId && ctx.sourcePlayerId !== baseHideout.ownerId;
         }
         return false;
     }, { consumable: true });
 
-    // 火焰陷阱：其他玩家打出随从到此基地时消灭该随从
+    // 鐏劙闄烽槺锛氬叾浠栫帺瀹舵墦鍑洪殢浠庡埌姝ゅ熀鍦版椂娑堢伃璇ラ殢浠?
     registerTrigger('trickster_flame_trap', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || !trigCtx.triggerMinionDefId || trigCtx.baseIndex === undefined) return [];
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             const base = trigCtx.state.bases[i];
             const trap = base.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_flame_trap'));
             if (!trap || i !== trigCtx.baseIndex) continue;
-            // 只对其他玩家触发
+            // 鍙鍏朵粬鐜╁瑙﹀彂
             if (trap.ownerId === trigCtx.playerId) continue;
             return [
-                // 消灭打出的随从
+                // 娑堢伃鎵撳嚭鐨勯殢浠?
                 {
                     type: SU_EVENTS.MINION_DESTROYED,
                     payload: {
@@ -914,7 +1147,7 @@ function registerTricksterOngoingEffects(): void {
                     },
                     timestamp: trigCtx.now,
                 },
-                // 消灭火焰陷阱本身
+                // 娑堢伃鐏劙闄烽槺鏈韩
                 {
                     type: SU_EVENTS.ONGOING_DETACHED,
                     payload: {
@@ -930,40 +1163,45 @@ function registerTricksterOngoingEffects(): void {
         return [];
     });
 
-    // 封路：指定派系不能打出随从到此基地（描述无"对手"限定，对所有玩家生效）
+    // 灏佽矾锛氭寚瀹氭淳绯讳笉鑳芥墦鍑洪殢浠庡埌姝ゅ熀鍦帮紙鎻忚堪鏃?瀵规墜"闄愬畾锛屽鎵€鏈夌帺瀹剁敓鏁堬級
     registerRestriction('trickster_block_the_path', 'play_minion', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return false;
         const blockAction = base.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_block_the_path'));
         if (!blockAction) return false;
-        // 检查被限制的派系
+        // 妫€鏌ヨ闄愬埗鐨勬淳绯?
         const blockedFaction = blockAction.metadata?.blockedFaction as string | undefined;
         if (!blockedFaction) return false;
-        // 检查打出的随从是否属于被限制的派系
+        // 妫€鏌ユ墦鍑虹殑闅忎粠鏄惁灞炰簬琚檺鍒剁殑娲剧郴
         const minionDefId = ctx.extra?.minionDefId as string | undefined;
         if (!minionDefId) return false;
         const def = getCardDef(minionDefId);
         return def?.faction === blockedFaction;
     });
 
-    // 付笛手的钱：对手打出随从后弃一张牌
+    // 浠樼瑳鎵嬬殑閽憋細瀵规墜鎵撳嚭闅忎粠鍚庡純涓€寮犵墝
     registerTrigger('trickster_pay_the_piper', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || trigCtx.baseIndex === undefined) return [];
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             const base = trigCtx.state.bases[i];
             const piper = base.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_pay_the_piper'));
             if (!piper || i !== trigCtx.baseIndex) continue;
-            // 只对其他玩家触发
+            // 鍙鍏朵粬鐜╁瑙﹀彂
             if (piper.ownerId === trigCtx.playerId) continue;
-            // 对手随机弃一张牌
+            // 瀵规墜鑷繁閫夋嫨寮冩帀 1 寮犳墜鐗?
             const opponent = trigCtx.state.players[trigCtx.playerId];
             if (!opponent || opponent.hand.length === 0) continue;
-            const idx = Math.floor(trigCtx.random.random() * opponent.hand.length);
-            return [{
-                type: SU_EVENTS.CARDS_DISCARDED,
-                payload: { playerId: trigCtx.playerId, cardUids: [opponent.hand[idx].uid] },
-                timestamp: trigCtx.now,
-            }];
+            if (!trigCtx.matchState) {
+                return [{
+                    type: SU_EVENTS.CARDS_DISCARDED,
+                    payload: { playerId: trigCtx.playerId, cardUids: [opponent.hand[0].uid] },
+                    timestamp: trigCtx.now,
+                }];
+            }
+            return {
+                events: [],
+                matchState: queuePayThePiperDiscardChoice(trigCtx.matchState, trigCtx.playerId, trigCtx.now),
+            };
         }
         return [];
     });
@@ -973,7 +1211,7 @@ function registerTricksterPodOngoingEffects(): void {
     registerTrigger('trickster_brownie_pod', 'onMinionAffected', () => []);
     registerTrigger('trickster_enshrouding_mist_pod', 'onTurnStart', () => []);
     registerProtection('trickster_hideout_pod', 'action', () => false);
-    // Hideout POD：其他玩家不能将随从移动到此基地（用事件拦截器阻止移动）
+    // Hideout POD锛氬叾浠栫帺瀹朵笉鑳藉皢闅忎粠绉诲姩鍒版鍩哄湴锛堢敤浜嬩欢鎷︽埅鍣ㄩ樆姝㈢Щ鍔級
     registerInterceptor('trickster_hideout_pod', (state, event) => {
         if (event.type !== SU_EVENTS.MINION_MOVED) return undefined;
         const { toBaseIndex, fromBaseIndex, minionUid } = (event as any).payload as { toBaseIndex: number; fromBaseIndex: number; minionUid: string };
@@ -984,29 +1222,29 @@ function registerTricksterPodOngoingEffects(): void {
         const fromBase = state.bases[fromBaseIndex];
         const moving = fromBase?.minions.find(m => m.uid === minionUid);
         if (!moving) return undefined;
-        // 近似规则：移动者通常是该随从的控制者
+        // 杩戜技瑙勫垯锛氱Щ鍔ㄨ€呴€氬父鏄闅忎粠鐨勬帶鍒惰€?
         if (moving.controller !== hideout.ownerId) return null;
         return undefined;
     });
 
-    // Leprechaun POD：每回合第一次“对手打出力量更低的随从到此基地（结算后仍在场）”时消灭之
+    // Leprechaun POD锛氭瘡鍥炲悎绗竴娆♀€滃鎵嬫墦鍑哄姏閲忔洿浣庣殑闅忎粠鍒版鍩哄湴锛堢粨绠楀悗浠嶅湪鍦猴級鈥濇椂娑堢伃涔?
     registerTrigger('trickster_leprechaun_pod', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || !trigCtx.triggerMinionDefId || trigCtx.baseIndex === undefined) return [];
         const baseIndex = trigCtx.baseIndex;
         const base = trigCtx.state.bases[baseIndex];
         if (!base) return [];
 
-        // 找到该基地上的 leprechaun（可能多个）
+        // 鎵惧埌璇ュ熀鍦颁笂鐨?leprechaun锛堝彲鑳藉涓級
         const leps = base.minions.filter(m => m.defId === 'trickster_leprechaun_pod');
         if (leps.length === 0) return [];
 
-        // 触发的随从必须仍在该基地（避免 Twister 等在结算中移动）
+        // 瑙﹀彂鐨勯殢浠庡繀椤讳粛鍦ㄨ鍩哄湴锛堥伩鍏?Twister 绛夊湪缁撶畻涓Щ鍔級
         const playedMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
         if (!playedMinion) return [];
 
         const events: SmashUpEvent[] = [];
         for (const lep of leps) {
-            // 只对其他玩家触发
+            // 鍙鍏朵粬鐜╁瑙﹀彂
             if (lep.controller === trigCtx.playerId) continue;
 
             const used = (lep as any).metadata?.leprechaunPodLastTurnTriggered as number | undefined;
@@ -1043,21 +1281,21 @@ function registerTricksterPodOngoingEffects(): void {
         return events;
     });
 
-    // Brownie POD：每回合一次，当对手在另一基地打出随从后，你抽 1 张牌
+    // Brownie POD锛氭瘡鍥炲悎涓€娆★紝褰撳鎵嬪湪鍙︿竴鍩哄湴鎵撳嚭闅忎粠鍚庯紝浣犳娊 1 寮犵墝
     registerTrigger('trickster_brownie_pod', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || trigCtx.baseIndex === undefined) return [];
-        // 对手打出的随从：playerId=打出者；需要找到所有 brownie_pod（可能多个）
+        // 瀵规墜鎵撳嚭鐨勯殢浠庯細playerId=鎵撳嚭鑰咃紱闇€瑕佹壘鍒版墍鏈?brownie_pod锛堝彲鑳藉涓級
         const events: SmashUpEvent[] = [];
         for (let bi = 0; bi < trigCtx.state.bases.length; bi++) {
             const base = trigCtx.state.bases[bi];
             for (const brownie of base.minions.filter(m => m.defId === 'trickster_brownie_pod')) {
                 if (brownie.controller === trigCtx.playerId) continue;
-                if (bi === trigCtx.baseIndex) continue; // 另一基地
+                if (bi === trigCtx.baseIndex) continue; // 鍙︿竴鍩哄湴
                 const ownerId = brownie.controller;
                 const used = (brownie as any).metadata?.browniePodLastTurnTriggered as number | undefined;
                 if (used === trigCtx.state.turnNumber) continue;
 
-                // 抽 1
+                // 鎶?1
                 const owner = trigCtx.state.players[ownerId];
                 if (!owner) continue;
                 const drawEvents = buildStandardDrawEvents(trigCtx.state, ownerId, 1, trigCtx.random, trigCtx.now);
@@ -1078,7 +1316,7 @@ function registerTricksterPodOngoingEffects(): void {
         return events;
     });
 
-    // Gremlin POD：被消灭进入弃牌堆后抽 1；若被消灭则每位对手随机弃 1
+    // Gremlin POD锛氳娑堢伃杩涘叆寮冪墝鍫嗗悗鎶?1锛涜嫢琚秷鐏垯姣忎綅瀵规墜闅忔満寮?1
     registerTrigger('trickster_gremlin_pod', 'onMinionDestroyed', (trigCtx) => {
         if (trigCtx.triggerMinionDefId !== 'trickster_gremlin_pod') return [];
         const ownerId = trigCtx.triggerMinion?.owner ?? trigCtx.playerId;
@@ -1100,7 +1338,7 @@ function registerTricksterPodOngoingEffects(): void {
         return events;
     });
 
-    // Gremlin POD：基地计分清场时进入弃牌堆（非消灭）也抽 1
+    // Gremlin POD锛氬熀鍦拌鍒嗘竻鍦烘椂杩涘叆寮冪墝鍫嗭紙闈炴秷鐏級涔熸娊 1
     registerTrigger('trickster_gremlin_pod', 'onMinionDiscardedFromBase', (trigCtx) => {
         if (trigCtx.triggerMinionDefId !== 'trickster_gremlin_pod') return [];
         const ownerId = trigCtx.triggerMinion?.owner ?? trigCtx.playerId;
@@ -1109,7 +1347,7 @@ function registerTricksterPodOngoingEffects(): void {
         return buildStandardDrawEvents(trigCtx.state, ownerId, 1, trigCtx.random, trigCtx.now);
     });
 
-    // Flame Trap POD：对手打出随从到此基地后，先自毁再尝试消灭该随从
+    // Flame Trap POD锛氬鎵嬫墦鍑洪殢浠庡埌姝ゅ熀鍦板悗锛屽厛鑷瘉鍐嶅皾璇曟秷鐏闅忎粠
     registerTrigger('trickster_flame_trap_pod', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || !trigCtx.triggerMinionDefId || trigCtx.baseIndex === undefined) return [];
         const bi = trigCtx.baseIndex;
@@ -1139,7 +1377,7 @@ function registerTricksterPodOngoingEffects(): void {
         ];
     });
 
-    // Flame Trap POD：你回合开始时，可以让此基地本回合 breakpoint -4
+    // Flame Trap POD锛氫綘鍥炲悎寮€濮嬫椂锛屽彲浠ヨ姝ゅ熀鍦版湰鍥炲悎 breakpoint -4
     registerTrigger('trickster_flame_trap_pod', 'onTurnStart', (trigCtx) => {
         for (let bi = 0; bi < trigCtx.state.bases.length; bi++) {
             const base = trigCtx.state.bases[bi];
@@ -1153,7 +1391,7 @@ function registerTricksterPodOngoingEffects(): void {
             const interaction = createSimpleChoice(
                 `trickster_flame_trap_pod_bp_${trigCtx.now}`,
                 trigCtx.playerId,
-                '火焰陷阱：是否降低此基地爆分线？',
+                '鐏劙闄烽槺锛氭槸鍚﹂檷浣庢鍩哄湴鐖嗗垎绾匡紵',
                 options as any[],
                 { sourceId: 'trickster_flame_trap_pod_bp', targetType: 'option', autoCancelOption: false },
             );
@@ -1162,7 +1400,7 @@ function registerTricksterPodOngoingEffects(): void {
         return [];
     });
 
-    // Pay the Piper POD：对手在此基地打出随从后，该玩家弃 1 张牌（先按随机实现，后续可升级为选择弃牌）
+    // Pay the Piper POD锛氬鎵嬪湪姝ゅ熀鍦版墦鍑洪殢浠庡悗锛岃鐜╁寮?1 寮犵墝锛堝厛鎸夐殢鏈哄疄鐜帮紝鍚庣画鍙崌绾т负閫夋嫨寮冪墝锛?
     registerTrigger('trickster_pay_the_piper_pod', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || trigCtx.baseIndex === undefined) return [];
         const bi = trigCtx.baseIndex;
@@ -1181,7 +1419,7 @@ function registerTricksterPodOngoingEffects(): void {
         } as CardsDiscardedEvent];
     });
 
-    // Block the Path POD：对每个对手指定其拥有的一个派系，阻止该对手派系随从打到此基地
+    // Block the Path POD锛氬姣忎釜瀵规墜鎸囧畾鍏舵嫢鏈夌殑涓€涓淳绯伙紝闃绘璇ュ鎵嬫淳绯婚殢浠庢墦鍒版鍩哄湴
     registerAbility('trickster_block_the_path_pod', 'onPlay', (ctx) => {
         const otherPlayers = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
         if (otherPlayers.length === 0) return { events: [] };
@@ -1193,7 +1431,7 @@ function registerTricksterPodOngoingEffects(): void {
             return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
         }
 
-        // 组合：每位对手在其两个派系中选一个（最多 3 位对手 → 2^3 = 8）
+        // 缁勫悎锛氭瘡浣嶅鎵嬪湪鍏朵袱涓淳绯讳腑閫変竴涓紙鏈€澶?3 浣嶅鎵?鈫?2^3 = 8锛?
         const combos: { blocked: Record<string, string>; label: string }[] = [];
         const total = 1 << otherPlayers.length;
         for (let mask = 0; mask < total; mask++) {
@@ -1220,7 +1458,7 @@ function registerTricksterPodOngoingEffects(): void {
             options as any[],
             { sourceId: 'trickster_block_the_path_pod', targetType: 'option', autoCancelOption: true },
         );
-        // continuationContext 由 Board.tsx/InteractionHandlers 需要存 cardUid/baseIndex
+        // continuationContext 鐢?Board.tsx/InteractionHandlers 闇€瑕佸瓨 cardUid/baseIndex
         return { events: [], matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ctx.cardUid, baseIndex: ctx.baseIndex } } as any }) };
     });
 
@@ -1238,18 +1476,4 @@ function registerTricksterPodOngoingEffects(): void {
         return def?.faction === blockedFaction;
     });
 
-    // Mark of Sleep POD：限制“被标记者”的移动（用事件拦截器实现）
-    registerInterceptor('trickster_mark_of_sleep_pod', (state, event) => {
-        if (event.type !== SU_EVENTS.MINION_MOVED) return undefined;
-        const marked = (state.sleepMoveMarkedPlayers ?? []) as string[];
-        if (marked.length === 0) return undefined;
-        const { fromBaseIndex, minionUid } = (event as any).payload as { fromBaseIndex: number; minionUid: string };
-        const fromBase = state.bases[fromBaseIndex];
-        const minion = fromBase?.minions.find(m => m.uid === minionUid);
-        if (!minion) return undefined;
-        const expires = (state.sleepMarkExpiresOnTurnNumber as number | undefined);
-        if (expires !== undefined && state.turnNumber >= expires) return undefined;
-        if (marked.includes(minion.controller)) return null;
-        return undefined;
-    });
 }

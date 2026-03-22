@@ -78,6 +78,49 @@ describe('bear cavalry interaction regressions', () => {
         expect((destroyEvt as any).payload.minionUid).toBe('m1');
         expect(respondResult.finalState.core.bases[0].minions.some(m => m.uid === 'm1')).toBe(false);
     });
+
+    it('bear_cavalry_polar_commando_pod talent 可以选择敌方低战力随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('pc1', 'bear_cavalry_polar_commando_pod', '0', 4, { powerModifier: 0 }),
+                        makeMinion('ally5', 'ally_big', '0', 5, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('enemy3', 'enemy_small', '1', 3, { powerModifier: 0 }),
+                        makeMinion('enemy4', 'enemy_equal', '1', 4, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const talentResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'pc1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        expect(talentResult.success).toBe(true);
+        const prompt = getInteractionsFromMS(talentResult.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('bear_cavalry_polar_commando_pod');
+
+        const optionValues = prompt?.data?.options?.map((option: any) => option?.value?.minionUid) ?? [];
+        expect(optionValues).toContain('pc1');
+        expect(optionValues).toContain('enemy3');
+        expect(optionValues).not.toContain('enemy4');
+        expect(optionValues).not.toContain('ally5');
+    });
 });
 
 describe('stale destroy regression: 交互提示能力', () => {

@@ -733,13 +733,15 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     talentUsed: o.ownerId === playerId ? false : o.talentUsed,
                 })),
             }));
-            // POD 沉睡印记：直到施放者下回合开始前，目标玩家 actionLimit = 0
-            const expires = state.sleepMarkExpiresOnTurnNumber;
-            const isExpired = typeof expires === 'number' && turnNumber >= expires;
-            const activeSleepMarked = isExpired ? undefined : state.sleepMarkedPlayers;
-            const activeSleepMoveMarked = isExpired ? undefined : state.sleepMoveMarkedPlayers;
-            const activeExpires = isExpired ? undefined : expires;
-            const newActionLimit = activeSleepMarked?.includes(playerId) ? 0 : 1;
+            const remainingPlayerRestrictions = state.playerRestrictionsUntilTurnStart?.filter(
+                entry => entry.sourcePlayerId !== playerId,
+            );
+            // 检查沉睡印记 / 睡眠印记 POD：被限制打出战术的玩家本回合 actionLimit 设为 0
+            const isSleepMarked = state.sleepMarkedPlayers?.includes(playerId);
+            const isActionRestricted = remainingPlayerRestrictions?.some(
+                entry => entry.targetPlayerId === playerId && entry.restrictionType === 'play_action',
+            ) ?? false;
+            const newActionLimit = (isSleepMarked || isActionRestricted) ? 0 : 1;
 
             // Smash Up 的 each turn 以“当前玩家回合”为单位。
             // 因此每个玩家回合开始时，都要清空全体玩家在各基地的本回合出牌计数，
@@ -816,16 +818,22 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 scoringEligibleBaseIndices: undefined,
                 // 清空本回合已使用的持续行动 UID 追踪
                 turnUsedOngoingUids: undefined,
-                sleepMarkedPlayers: activeSleepMarked?.length ? activeSleepMarked : undefined,
-                sleepMoveMarkedPlayers: activeSleepMoveMarked?.length ? activeSleepMoveMarked : undefined,
-                sleepMarkExpiresOnTurnNumber: activeExpires,
+                sleepMarkedPlayers: state.sleepMarkedPlayers,
+                playerRestrictionsUntilTurnStart: remainingPlayerRestrictions?.length
+                    ? remainingPlayerRestrictions
+                    : undefined,
                 players: newPlayers,
             };
         }
 
         case SU_EVENTS.TURN_ENDED: {
-            const { nextPlayerIndex } = event.payload;
-            return { ...state, currentPlayerIndex: nextPlayerIndex };
+            const { playerId, nextPlayerIndex } = event.payload;
+            const remainingSleepMarked = state.sleepMarkedPlayers?.filter(pid => pid !== playerId);
+            return {
+                ...state,
+                currentPlayerIndex: nextPlayerIndex,
+                sleepMarkedPlayers: remainingSleepMarked?.length ? remainingSleepMarked : undefined,
+            };
         }
 
         case SU_EVENTS.BASE_REPLACED: {

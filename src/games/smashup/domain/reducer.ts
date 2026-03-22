@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 大杀四方 (Smash Up) - 命令执行与事件归约
  *
  * execute: 命令 → 事件列表
@@ -47,6 +47,7 @@ import type {
     PowerCounterAddedEvent,
     PowerCounterRemovedEvent,
     TempPowerAddedEvent,
+    PermanentPowerAddedEvent,
     CardToDeckBottomEvent,
     SpecialAfterScoringArmedEvent,
 } from './types';
@@ -60,7 +61,7 @@ import { maybeQueueStartingHandMulliganPrompt } from './mulliganHandlers';
 import { resolveOnPlay, resolveSpecial, resolveTalent, resolveOnDestroy } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
 import { triggerBaseAbility, triggerExtendedBaseAbility } from './baseAbilities';
-import { fireTriggers, collectTriggers, isMinionProtected, getConsumableProtectionSource } from './ongoingEffects';
+import { fireTriggers, collectTriggers, hasPlayerTurnRestriction, isMinionProtected, getConsumableProtectionSource } from './ongoingEffects';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import { canPlayFromDiscard } from './discardPlayability';
 import { reduce } from './reduce';
@@ -315,7 +316,7 @@ function executeCommand(
                                 payload: {
                                     sourceDefId: card.defId,
                                     playerId: command.playerId,
-                                    baseIndex: command.payload.targetBaseIndex ?? 0,
+                                    baseIndex: command.payload.targetBaseIndex,
                                     cardUid: card.uid,
                                 },
                                 timestamp: now,
@@ -710,10 +711,6 @@ export function processDestroyTriggers(
         const currentMS_save = ms ?? state;
         const interactionCountBefore =
             (currentMS_save.sys.interaction.current ? 1 : 0) + currentMS_save.sys.interaction.queue.length;
-        const interactionIdsBefore = new Set<string>([
-            ...(currentMS_save.sys.interaction.current ? [currentMS_save.sys.interaction.current.id] : []),
-            ...currentMS_save.sys.interaction.queue.map(i => i.id),
-        ]);
 
         const saveEvents: SmashUpEvent[] = [];
 
@@ -806,26 +803,10 @@ export function processDestroyTriggers(
                     'giant_ant_drone_prevent_destroy',   // 雄蜂防止消灭
                     'pirate_buccaneer_move',             // 海盗：被消灭时移动到其他基地
                 ];
-
-                // 精确识别本次消灭新增的交互（可能插入到 queue 中、且不一定是 current/队尾）
-                const candidates = [
-                    ...(ms.sys.interaction.current ? [ms.sys.interaction.current] : []),
-                    ...ms.sys.interaction.queue,
-                ].filter(i => !interactionIdsBefore.has(i.id));
-
-                const isPreventDestroyInteraction = (interaction: any): boolean => {
-                    const sourceId = (interaction?.data as any)?.sourceId as string | undefined;
-                    if (!sourceId || !PREVENT_DESTROY_SOURCE_IDS.includes(sourceId)) return false;
-                    const cc = (interaction?.data as any)?.continuationContext;
-                    // 不同防止消灭交互的上下文形态不同，尽量覆盖常见字段
-                    const referencedUid =
-                        (cc?.targetMinionUid as string | undefined)
-                        ?? (cc?.minionUid as string | undefined)
-                        ?? (cc?.cardUid as string | undefined);
-                    return referencedUid ? referencedUid === minionUid : true;
-                };
-
-                if (candidates.some(isPreventDestroyInteraction)) {
+                const newInteraction = ms.sys.interaction.current ?? ms.sys.interaction.queue[ms.sys.interaction.queue.length - 1];
+                const sourceId = (newInteraction?.data as any)?.sourceId as string | undefined;
+                const isPreventDestroy = sourceId ? PREVENT_DESTROY_SOURCE_IDS.includes(sourceId) : false;
+                if (isPreventDestroy) {
                     isPendingSave = true;
                     pendingSaveMinionUids.add(minionUid);
                 }
@@ -959,6 +940,9 @@ export function filterProtectedMoveEvents(
         const minion = base?.minions.find(m => m.uid === minionUid);
         if (!minion) { result.push(e); continue; }
         const effectiveSource = me.payload.reason?.startsWith('base_') ? minion.controller : sourcePlayerId;
+        if (hasPlayerTurnRestriction(core, effectiveSource, 'move_minion')) {
+            continue;
+        }
         if (isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'move')) continue;
         // 检查 'action' 和 'affect' 两种广义保护类型（与 filterProtectedDestroyEvents 对齐）
         const actionProtected = isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'action');
@@ -1325,6 +1309,18 @@ export function processAffectTriggers(
                 if (te.payload.amount < 0) {
                     minionUid = te.payload.minionUid;
                     baseIndex = te.payload.baseIndex;
+                    affectType = 'power_change';
+                    const base = core.bases[baseIndex];
+                    const minion = base?.minions.find(m => m.uid === minionUid);
+                    minionDefId = minion?.defId;
+                }
+                break;
+            }
+            case SU_EVENTS.PERMANENT_POWER_ADDED: {
+                const pe = evt as PermanentPowerAddedEvent;
+                if (pe.payload.amount < 0) {
+                    minionUid = pe.payload.minionUid;
+                    baseIndex = pe.payload.baseIndex;
                     affectType = 'power_change';
                     const base = core.bases[baseIndex];
                     const minion = base?.minions.find(m => m.uid === minionUid);

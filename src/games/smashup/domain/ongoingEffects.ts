@@ -11,7 +11,14 @@
  */
 
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import type { SmashUpCore, SmashUpEvent, MinionOnBase, TriggerInstance, TriggerQueuedEvent } from './types';
+import type {
+    SmashUpCore,
+    SmashUpEvent,
+    MinionOnBase,
+    TriggerInstance,
+    TriggerQueuedEvent,
+    PlayerTurnRestrictionType,
+} from './types';
 import { SU_EVENTS } from './types';
 import { registerTriggerExecutor } from './triggerExecutors';
 import { getBaseDef } from '../data/cards';
@@ -717,6 +724,17 @@ export function isOperationRestricted(
     }
 
     return false;
+}
+
+/** 检查玩家是否处于持续中的全局限制（如睡眠印记 POD） */
+export function hasPlayerTurnRestriction(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    restrictionType: PlayerTurnRestrictionType,
+): boolean {
+    return state.playerRestrictionsUntilTurnStart?.some(
+        entry => entry.targetPlayerId === playerId && entry.restrictionType === restrictionType,
+    ) ?? false;
 }
 
 /**
