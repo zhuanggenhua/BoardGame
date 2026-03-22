@@ -117,7 +117,7 @@
 - **事件链**：
   - 打开：`abilityHelpers.openMeFirstWindow()` → `RESPONSE_WINDOW_EVENTS.OPENED(windowType='meFirst')`
   - 窗口允许命令：`game.ts` ResponseWindowSystem 配置（仅 `su:play_action/su:play_minion`）
-  - 领域校验二次约束：`commands.ts`（窗口中 `play_action` 只能 special 且 timing 匹配；`play_minion` 仅 beforeScoringPlayable）
+  - 领域校验二次约束：`commands.ts`（窗口中 `play_action` 只能 special 且 timing 匹配；`specialTiming='triggered'` 的牌不能进入通用计分响应窗口；`play_minion` 仅 beforeScoringPlayable）
 - **结论**：✅ 已实现
 
 ### 3.4 Step4：Award VPs（VP 结算按当前力量）

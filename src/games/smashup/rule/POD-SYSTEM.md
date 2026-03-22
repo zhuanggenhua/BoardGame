@@ -106,3 +106,15 @@ node scripts/audit-pod-data-consistency.mjs
 - `docs/refactor/pod-system-architecture.md` - POD 系统架构详细说明
 - `docs/refactor/pod-auto-mapping.md` - 能力自动映射系统设计
 - `docs/refactor/pod-system-summary.md` - POD 系统完整修复总结
+## POD 基地策略（骨架阶段）
+
+- 当选择 `*_pod` 阵营时，选基只使用 `base_*_pod` 变体，不混入基础版 `base_*`。
+- 当前采用“骨架先行”：由基础基地自动克隆 POD 基地骨架，复制 `breakpoint`、`vpAwards`、限制与能力相关字段，只把 `id/faction` 加 `_pod` 后缀。
+- 软过渡规则：如果某个 POD 阵营基地不足 2 张，补足时也只从 POD 变体池补，不回退基础版基地。
+- 后续手工录入正式 POD 基地后，可用同名 `base_*_pod` 定义覆盖骨架数据。
+> 2026-03-19 补充：`base_*_pod` 会自动复用 `base_*` 的基地能力注册，并同步支持 reaction queue 执行路径。
+
+> 2026-03-19 行为修正补充（POD 同步生效）：
+> - `Field of Honor`（含 `_pod`）：改为“每回合你第一次在此消灭另一位玩家的随从时”才得 1VP。
+> - `Tsar's Palace`（含 `_pod`）：仅当你在该基地“严格领先每位其他玩家”时，才可打出力量 `<=2` 的随从。
+> - `R'lyeh`（含 `_pod`）：交互只发起消灭；1VP 在“消灭实际成立”后结算，若被保护/替代导致未消灭则不加分。

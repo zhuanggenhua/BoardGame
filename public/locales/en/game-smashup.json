@@ -1209,6 +1209,45 @@
       "name": "Wizard Academy",
       "abilityText": "After this base scores, the winner looks at the top three cards of the base deck. They may choose one of those bases to replace this one, then place the other two on top of the base deck in any order."
     },
+    "base_central_brain_pod": {
+      "name": "The Central Brain",
+      "abilityText": "Each minion here has +1 power."
+    },
+    "base_the_factory_pod": {
+      "name": "Factory 436-1337",
+      "abilityText": "When this base scores, the winner gains 1 VP for every 5 power they have here."
+    },
+    "base_ninja_dojo_pod": {
+      "name": "Ninja Dojo"
+    },
+    "base_temple_of_goju_pod": {
+      "name": "Temple of Goju",
+      "abilityText": "After each time a minion is destroyed here, place it on the bottom of its owner's deck."
+    },
+    "base_cave_of_shinies_pod": {
+      "name": "Cave of Shinies",
+      "abilityText": "Once per turn, after a minion here you own is destroyed, gain 1 VP."
+    },
+    "base_mushroom_kingdom_pod": {
+      "name": "Mushroom Kingdom",
+      "abilityText": "At the start of your turn, if you have more cards in your hand than any other player, you may move a minion to or from this base."
+    },
+    "base_wizard_academy_pod": {
+      "name": "School of Wizardry",
+      "abilityText": "After this base scores, the winner looks at the top three cards of the base deck, chooses one to replace this base, and returns the others in any order."
+    },
+    "base_great_library_pod": {
+      "name": "The Great Library",
+      "abilityText": "After this base scores, all players with minions here may draw one card."
+    },
+    "base_haunted_house_pod": {
+      "name": "Evans City Cemetery",
+      "abilityText": "After this base scores, the winner discards their hand and draws five cards."
+    },
+    "base_rhodes_plaza_pod": {
+      "name": "Rhodes Plaza Mall",
+      "abilityText": "When this base scores, each player gains 1 VP for each minion that player has here."
+    },
     "base_dread_lookout": {
       "name": "Dread Lookout",
       "abilityText": "Actions cannot be played on this base."

@@ -72,6 +72,46 @@ function registerBases(bases: BaseCardDef[]): void {
 }
 
 // 初始化注册
+const POD_SUFFIX = '_pod';
+const BASES_PER_FACTION = 2;
+
+function isPodVariantId(id: string): boolean {
+    return id.endsWith(POD_SUFFIX);
+}
+
+function toPodId(id: string): string {
+    return isPodVariantId(id) ? id : `${id}${POD_SUFFIX}`;
+}
+
+function cloneBaseRestrictions(restrictions: BaseCardDef['restrictions']): BaseCardDef['restrictions'] {
+    if (!restrictions) return undefined;
+    return restrictions.map(restriction => ({
+        ...restriction,
+        condition: restriction.condition ? { ...restriction.condition } : undefined,
+    }));
+}
+
+function cloneBaseAsPodSkeleton(base: BaseCardDef): BaseCardDef | undefined {
+    if (!base.faction || isPodVariantId(base.id)) return undefined;
+    return {
+        ...base,
+        id: toPodId(base.id),
+        faction: toPodId(base.faction) as BaseCardDef['faction'],
+        restrictions: cloneBaseRestrictions(base.restrictions),
+    };
+}
+
+function registerPodBaseSkeletons(): void {
+    const podBaseSkeletons: BaseCardDef[] = [];
+    for (const base of _baseRegistry.values()) {
+        const podBase = cloneBaseAsPodSkeleton(base);
+        if (!podBase) continue;
+        if (_baseRegistry.has(podBase.id)) continue;
+        podBaseSkeletons.push(podBase);
+    }
+    registerBases(podBaseSkeletons);
+}
+
 registerCards(PIRATE_CARDS);
 registerCards(PIRATE_POD_CARDS);
 registerCards(NINJA_CARDS);
@@ -151,7 +191,7 @@ export const BASE_CARDS: BaseCardDef[] = [
     {
         id: 'base_the_jungle',
         name: '绿洲丛林',
-        nameEn: 'The Jungle',
+        nameEn: 'Jungle Oasis',
         breakpoint: 12,
         vpAwards: [2, 0, 0],
         faction: 'dinosaurs',
@@ -623,13 +663,373 @@ export const BASE_CARDS_MONSTER_SMASH: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_MONSTER_SMASH);
+registerPodBaseSkeletons();
+
+/**
+ * POD 基地正式覆盖（仅覆盖当前已确认条目）。
+ * 说明：先由基础基地克隆骨架，再用同 id 的 *_pod 定义覆盖具体数值/名称。
+ */
+const POD_BASE_OVERRIDES: BaseCardDef[] = [
+    {
+        id: 'base_ninja_dojo_pod',
+        name: '忍者道场',
+        nameEn: 'Ninja Dojo',
+        breakpoint: 18,
+        vpAwards: [2, 3, 2],
+        faction: 'ninjas_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 0 },
+    },
+    {
+        id: 'base_temple_of_goju_pod',
+        name: '刚柔流寺庙',
+        nameEn: 'Temple of Goju',
+        breakpoint: 16,
+        vpAwards: [4, 3, 2],
+        faction: 'ninjas_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 4 },
+    },
+    {
+        id: 'base_the_factory_pod',
+        name: '436-1337工厂',
+        nameEn: 'Factory 436-1337',
+        breakpoint: 25,
+        vpAwards: [2, 2, 1],
+        faction: 'robots_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 7 },
+    },
+    {
+        id: 'base_central_brain_pod',
+        name: '中央大脑',
+        nameEn: 'The Central Brain',
+        breakpoint: 19,
+        vpAwards: [4, 2, 1],
+        faction: 'robots_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 8 },
+        minionPowerBonus: 1,
+    },
+    {
+        id: 'base_cave_of_shinies_pod',
+        name: '闪光洞穴',
+        nameEn: 'Cave of Shinies',
+        breakpoint: 23,
+        vpAwards: [4, 2, 1],
+        faction: 'tricksters_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 11 },
+    },
+    {
+        id: 'base_mushroom_kingdom_pod',
+        name: '蘑菇王国',
+        nameEn: 'Mushroom Kingdom',
+        breakpoint: 19,
+        vpAwards: [4, 3, 2],
+        faction: 'tricksters_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 6 },
+    },
+    {
+        id: 'base_wizard_academy_pod',
+        name: '巫术学院',
+        nameEn: 'School of Wizardry',
+        breakpoint: 20,
+        vpAwards: [3, 2, 1],
+        faction: 'wizards_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 12 },
+    },
+    {
+        id: 'base_great_library_pod',
+        name: '大图书馆',
+        nameEn: 'The Great Library',
+        breakpoint: 22,
+        vpAwards: [4, 2, 1],
+        faction: 'wizards_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 10 },
+    },
+    {
+        id: 'base_haunted_house_pod',
+        name: '伊万斯城公墓',
+        nameEn: 'Evans City Cemetery',
+        breakpoint: 20,
+        vpAwards: [5, 3, 2],
+        faction: 'zombies_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 14 },
+    },
+    {
+        id: 'base_rhodes_plaza_pod',
+        name: '罗德百货商场',
+        nameEn: 'Rhodes Plaza Mall',
+        breakpoint: 24,
+        vpAwards: [0, 0, 0],
+        faction: 'zombies_pod',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE1, index: 2 },
+    },
+];
+registerBases(POD_BASE_OVERRIDES);
+
+function buildPodBaseOverrideFromRegistry(id: string, overrides: Partial<BaseCardDef>): BaseCardDef {
+    const podBase = _baseRegistry.get(id);
+    if (!podBase) {
+        throw new Error(`[smashup] missing pod base for override: ${id}`);
+    }
+    return {
+        ...podBase,
+        ...overrides,
+        id,
+    };
+}
+
+const POD_BASE_OVERRIDES_EXTENDED: BaseCardDef[] = [
+    // Keep previously confirmed base-set POD corrections
+    buildPodBaseOverrideFromRegistry('base_ninja_dojo_pod', {
+        nameEn: 'Ninja Dojo',
+        breakpoint: 18,
+        vpAwards: [2, 3, 2],
+        faction: SMASHUP_FACTION_IDS.NINJAS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_temple_of_goju_pod', {
+        nameEn: 'Temple of Goju',
+        breakpoint: 16,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.NINJAS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_the_factory_pod', {
+        nameEn: 'Factory 436-1337',
+        breakpoint: 25,
+        vpAwards: [2, 2, 1],
+        faction: SMASHUP_FACTION_IDS.ROBOTS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_central_brain_pod', {
+        nameEn: 'The Central Brain',
+        breakpoint: 19,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.ROBOTS_POD,
+        minionPowerBonus: 1,
+    }),
+    buildPodBaseOverrideFromRegistry('base_cave_of_shinies_pod', {
+        nameEn: 'Cave of Shinies',
+        breakpoint: 23,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.TRICKSTERS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_mushroom_kingdom_pod', {
+        nameEn: 'Mushroom Kingdom',
+        breakpoint: 19,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.TRICKSTERS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_wizard_academy_pod', {
+        nameEn: 'School of Wizardry',
+        breakpoint: 20,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.WIZARDS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_great_library_pod', {
+        nameEn: 'The Great Library',
+        breakpoint: 22,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.WIZARDS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_haunted_house_pod', {
+        nameEn: 'Evans City Cemetery',
+        breakpoint: 20,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.ZOMBIES_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_rhodes_plaza_pod', {
+        nameEn: 'Rhodes Plaza Mall',
+        breakpoint: 24,
+        vpAwards: [0, 0, 0],
+        faction: SMASHUP_FACTION_IDS.ZOMBIES_POD,
+    }),
+
+    // Bear Cavalry POD
+    buildPodBaseOverrideFromRegistry('base_the_field_of_honor_pod', {
+        nameEn: 'Field of Honor',
+        breakpoint: 16,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_tsars_palace_pod', {
+        nameEn: "Tsar's Palace",
+        breakpoint: 22,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD,
+    }),
+
+    // Elder Things POD
+    buildPodBaseOverrideFromRegistry('base_antarctic_base_pod', {
+        nameEn: 'Antarctic Base',
+        breakpoint: 24,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.ELDER_THINGS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_plateau_of_leng_pod', {
+        nameEn: 'Plateau of Leng',
+        breakpoint: 18,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.ELDER_THINGS_POD,
+    }),
+
+    // Ghosts POD
+    buildPodBaseOverrideFromRegistry('base_haunted_house_al9000_pod', {
+        nameEn: 'Haunted House',
+        breakpoint: 18,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.GHOSTS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_dread_lookout_pod', {
+        nameEn: 'The Dread Gazebo',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.GHOSTS_POD,
+    }),
+
+    // Giant Ants POD
+    buildPodBaseOverrideFromRegistry('base_the_hill_pod', {
+        nameEn: 'The Hill',
+        breakpoint: 23,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.GIANT_ANTS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_egg_chamber_pod', {
+        nameEn: 'Egg Chamber',
+        breakpoint: 17,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.GIANT_ANTS_POD,
+    }),
+
+    // Innsmouth POD
+    buildPodBaseOverrideFromRegistry('base_innsmouth_base_pod', {
+        nameEn: 'Innsmouth',
+        breakpoint: 23,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.INNSMOUTH_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_ritual_site_pod', {
+        nameEn: 'Ritual Site',
+        breakpoint: 20,
+        vpAwards: [4, 2, 2],
+        faction: SMASHUP_FACTION_IDS.INNSMOUTH_POD,
+    }),
+
+    // Killer Plants POD
+    buildPodBaseOverrideFromRegistry('base_secret_garden_pod', {
+        nameEn: 'Secret Grove',
+        breakpoint: 21,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.KILLER_PLANTS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_greenhouse_pod', {
+        nameEn: 'The Greenhouse',
+        breakpoint: 24,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.KILLER_PLANTS_POD,
+    }),
+
+    // Mad Scientists POD
+    buildPodBaseOverrideFromRegistry('base_golem_schloss_pod', {
+        nameEn: 'Golem Schloß',
+        breakpoint: 22,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.FRANKENSTEIN_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_laboratorium_pod', {
+        nameEn: 'Laboratorium',
+        breakpoint: 25,
+        vpAwards: [5, 3, 3],
+        faction: SMASHUP_FACTION_IDS.FRANKENSTEIN_POD,
+    }),
+
+    // Minions of Cthulhu POD
+    buildPodBaseOverrideFromRegistry('base_mountains_of_madness_pod', {
+        nameEn: 'Mountains of Madness',
+        breakpoint: 20,
+        vpAwards: [6, 4, 3],
+        faction: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_rlyeh_pod', {
+        nameEn: "R'lyeh",
+        breakpoint: 18,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD,
+    }),
+
+    // Miskatonic University POD
+    buildPodBaseOverrideFromRegistry('base_miskatonic_university_base_pod', {
+        nameEn: 'Arkham University',
+        breakpoint: 24,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_the_asylum_pod', {
+        nameEn: 'Asylum',
+        breakpoint: 16,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD,
+    }),
+
+    // Pirates POD
+    buildPodBaseOverrideFromRegistry('base_pirate_cove_pod', {
+        nameEn: 'The Grey Opal',
+        breakpoint: 17,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.PIRATES_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_tortuga_pod', {
+        nameEn: 'Tortuga',
+        breakpoint: 21,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.PIRATES_POD,
+    }),
+
+    // Steampunks POD
+    buildPodBaseOverrideFromRegistry('base_inventors_salon_pod', {
+        nameEn: "Inventor's Salon",
+        breakpoint: 22,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.STEAMPUNKS_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_the_workshop_pod', {
+        nameEn: 'Workshop',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.STEAMPUNKS_POD,
+    }),
+
+    // Werewolves POD
+    buildPodBaseOverrideFromRegistry('base_moot_site_pod', {
+        nameEn: 'Moot Site',
+        breakpoint: 15,
+        vpAwards: [2, 1, 0],
+        faction: SMASHUP_FACTION_IDS.WEREWOLVES_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_standing_stones_pod', {
+        nameEn: 'Standing Stones',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.WEREWOLVES_POD,
+    }),
+
+    // Vampires POD
+    buildPodBaseOverrideFromRegistry('base_castle_blood_pod', {
+        nameEn: 'Castle Blood',
+        breakpoint: 17,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.VAMPIRES_POD,
+    }),
+    buildPodBaseOverrideFromRegistry('base_crypt_pod', {
+        nameEn: 'Crypt',
+        breakpoint: 20,
+        vpAwards: [4, 2, 2],
+        faction: SMASHUP_FACTION_IDS.VAMPIRES_POD,
+    }),
+];
+registerBases(POD_BASE_OVERRIDES_EXTENDED);
 
 // ============================================================================
 // 基地选择：按所选派系过滤
 // ============================================================================
 
 /** 根据所选派系获取基地定义 ID（只使用所选派系的基地） */
-export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
+function getBaseDefIdsForFactionsLegacy(factionIds: string[]): string[] {
     const selected = new Set(factionIds);
     const matched = Array.from(_baseRegistry.values())
         .filter(base => base.faction && selected.has(base.faction))
@@ -664,6 +1064,58 @@ export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
 
 
 /** 查找卡牌定义 */
+/** 鏍规嵁鎵€閫夋淳绯昏幏鍙栧熀鍦板畾涔?ID锛堝悓鍙樹綋琛ュ厖锛欿OD 鍙ˉ POD锛屽熀纭€鍙ˉ鍩虹锛?*/
+export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
+    const selectedFactions = Array.from(new Set(factionIds));
+    if (selectedFactions.length === 0) {
+        return getBaseDefIdsForFactionsLegacy(factionIds);
+    }
+    const allBases = Array.from(_baseRegistry.values()).filter(base => !!base.faction);
+
+    const basesByFaction = new Map<string, string[]>();
+    for (const base of allBases) {
+        const faction = base.faction as string;
+        const existing = basesByFaction.get(faction);
+        if (existing) {
+            existing.push(base.id);
+        } else {
+            basesByFaction.set(faction, [base.id]);
+        }
+    }
+
+    const result: string[] = [];
+    const usedBaseIds = new Set<string>();
+    const appendBaseIds = (baseIds: string[]) => {
+        for (const baseId of baseIds) {
+            if (usedBaseIds.has(baseId)) continue;
+            usedBaseIds.add(baseId);
+            result.push(baseId);
+        }
+    };
+
+    // 1) 绮剧‘鍖归厤鎵€閫夋淳绯伙紙鍚?POD 锛?
+    for (const factionId of selectedFactions) {
+        appendBaseIds(basesByFaction.get(factionId) ?? []);
+    }
+
+    // 2) 杞繃娓★細姣忎釜娲剧郴涓嶈冻 2 寮犲熀鍦版椂锛屾寜鍚屽彉浣撹ˉ榻?
+    for (const factionId of selectedFactions) {
+        const exactCount = (basesByFaction.get(factionId) ?? []).length;
+        const needCount = Math.max(0, BASES_PER_FACTION - exactCount);
+        if (needCount === 0) continue;
+
+        const wantsPodVariant = isPodVariantId(factionId);
+        const supplementCandidates = allBases
+            .filter(base => isPodVariantId(base.id) === wantsPodVariant)
+            .map(base => base.id)
+            .filter(baseId => !usedBaseIds.has(baseId));
+
+        appendBaseIds(supplementCandidates.slice(0, needCount));
+    }
+
+    return result;
+}
+
 export function getCardDef(defId: string): CardDef | undefined {
     return _cardRegistry.get(defId);
 }

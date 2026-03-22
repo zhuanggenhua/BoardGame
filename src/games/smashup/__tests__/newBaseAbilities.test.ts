@@ -202,6 +202,55 @@ describe('base_the_field_of_honor: 消灭者获1VP', () => {
         expect(vpEvents[0].payload.playerId).toBe('0');
         expect(vpEvents[0].payload.amount).toBe(1);
     });
+
+    it('base_the_field_of_honor: destroy 自己的随从时不应得分', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{
+                    defId: 'base_the_field_of_honor',
+                    minions: [],
+                    ongoingActions: [],
+                }],
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_the_field_of_honor',
+            playerId: '0',
+            controllerId: '0',
+            destroyerId: '0',
+            now: 1000,
+        };
+
+        const { events } = triggerExtendedBaseAbility('base_the_field_of_honor', 'onMinionDestroyed', ctx);
+        expect(events).toHaveLength(0);
+    });
+
+    it('base_the_field_of_honor: 同回合同基地同一 destroyer 只触发一次', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{
+                    defId: 'base_the_field_of_honor',
+                    minions: [],
+                    ongoingActions: [],
+                }],
+                turnDestroyedMinions: [{
+                    uid: 'prev',
+                    defId: 'test_minion',
+                    baseIndex: 0,
+                    owner: '1',
+                    destroyer: '0',
+                }],
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_the_field_of_honor',
+            playerId: '1',
+            controllerId: '1',
+            destroyerId: '0',
+            now: 1001,
+        };
+
+        const { events } = triggerExtendedBaseAbility('base_the_field_of_honor', 'onMinionDestroyed', ctx);
+        expect(events).toHaveLength(0);
+    });
 });
 
 // ============================================================================
@@ -374,6 +423,7 @@ describe('base_tar_pits: 被消灭随从放入牌库底', () => {
         expect(next.bases[0].minions.length).toBe(0);
         expect((next.turnDestroyedMinions ?? []).some((r: any) => r.uid === 'm1')).toBe(true);
     });
+
 });
 
 // ============================================================================

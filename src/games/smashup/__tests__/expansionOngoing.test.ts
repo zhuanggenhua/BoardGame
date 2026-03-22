@@ -932,7 +932,7 @@ describe('印斯茅斯 ongoing 能力', () => {
             expect(executor).toBeDefined();
         });
 
-        test('交互响应会保留原基地索引，且目标失效时不再重复回手', () => {
+        test('真实行动牌触发路径会先选同名组，再返回所选随从', () => {
             const executor = resolveAbility('innsmouth_return_to_the_sea', 'special')!;
             const triggerMinion = makeMinion({
                 uid: 'inn-1',
@@ -959,25 +959,39 @@ describe('印斯茅斯 ongoing 能力', () => {
                 state,
                 matchState: ms,
                 playerId: '0',
-                cardUid: 'inn-1',
+                cardUid: 'return-action-1',
                 defId: 'innsmouth_return_to_the_sea',
                 baseIndex: 0,
                 random: dummyRandom,
                 now: 1000,
             });
 
-            const interaction = (result.matchState?.sys as any)?.interaction?.current;
-            expect(interaction?.data?.sourceId).toBe('innsmouth_return_to_the_sea');
-            const firstOption = interaction?.data?.options?.find((entry: any) => entry.value?.minionUid === 'inn-1');
-            expect(firstOption?.value?.baseIndex).toBe(0);
+            const chooseGroup = (result.matchState?.sys as any)?.interaction?.current;
+            expect(chooseGroup?.data?.sourceId).toBe('innsmouth_return_to_the_sea');
+            const firstGroup = chooseGroup?.data?.options?.find((entry: any) => entry.value?.minionDefId === 'innsmouth_the_locals');
+            expect(firstGroup?.value?.baseIndex).toBe(0);
 
             const handler = getInteractionHandler('innsmouth_return_to_the_sea');
             expect(handler).toBeDefined();
 
+            const chooseMinionResult = handler!(
+                result.matchState as any,
+                '0',
+                firstGroup.value,
+                undefined,
+                dummyRandom,
+                1001,
+            );
+            const chooseMinion = (chooseMinionResult?.state?.sys as any)?.interaction?.queue?.[0]
+                ?? (chooseMinionResult?.state?.sys as any)?.interaction?.current;
+            expect(chooseMinion?.data?.sourceId).toBe('innsmouth_return_to_the_sea');
+            const firstMinion = chooseMinion?.data?.options?.find((entry: any) => entry.value?.minionUid === 'inn-1');
+            expect(firstMinion?.value?.baseIndex).toBe(0);
+
             const liveEvents = callHandler(handler!, {
                 state,
                 playerId: '0',
-                selectedValue: [firstOption.value],
+                selectedValue: [firstMinion.value],
                 random: dummyRandom,
                 now: 1001,
             });
@@ -1000,7 +1014,7 @@ describe('印斯茅斯 ongoing 能力', () => {
             const staleEvents = callHandler(handler!, {
                 state: staleState,
                 playerId: '0',
-                selectedValue: [firstOption.value],
+                selectedValue: [firstMinion.value],
                 random: dummyRandom,
                 now: 1002,
             });

@@ -33,13 +33,25 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
                     minions: [
                         {
                             uid: 'm1',
-                            defId: 'alien_invader',
+                            defId: 'innsmouth_the_locals',
                             owner: '0',
                             controller: '0',
-                            basePower: 3,
+                            basePower: 2,
                             powerModifier: 0,
                             tempPowerModifier: 0,
-                            powerCounters: 20,  // 总力量 23 > 20
+                            powerCounters: 10,
+                            attachedActions: [],
+                            talentUsed: false,
+                        },
+                        {
+                            uid: 'm2',
+                            defId: 'innsmouth_the_locals',
+                            owner: '0',
+                            controller: '0',
+                            basePower: 2,
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                            powerCounters: 10,
                             attachedActions: [],
                             talentUsed: false,
                         },
@@ -88,11 +100,11 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
         const armedEvent = events.find(e => e.type === SU_EVENT_TYPES.SPECIAL_AFTER_SCORING_ARMED);
         expect(armedEvent).toBeUndefined();
 
-        // 验证：应该生成 ABILITY_FEEDBACK（没有同名随从可以返回）
-        // 注意：innsmouthReturnToTheSea 在没有同名随从时返回空事件，不生成 ABILITY_FEEDBACK
-        // 这是正确的行为，因为能力本身没有前置条件检查
-        const hasFeedback = events.some(e => e.type === SU_EVENT_TYPES.ABILITY_FEEDBACK);
-        expect(hasFeedback).toBe(false); // 修正：应该是 false
+        // 验证：应该立即创建交互，而不是静默无效果
+        const interactionState = (result.finalState?.sys as any)?.interaction;
+        const interaction = interactionState?.current ?? interactionState?.queue?.[0];
+        expect(interaction?.data?.sourceId).toBe('innsmouth_return_to_the_sea');
+        expect(interaction?.data?.options?.some((entry: any) => entry.value?.minionDefId === 'innsmouth_the_locals')).toBe(true);
     });
 
     it('在 afterScoring 响应窗口中打出"我们乃最强"应该立即执行能力', () => {

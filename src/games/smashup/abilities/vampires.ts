@@ -1154,11 +1154,7 @@ function vampireCullTheWeakPod(ctx: AbilityContext): AbilityResult {
         buildMinionTargetOptions(myMinions, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'affect' }) as any,
         { sourceId: 'vampire_cull_the_weak_pod', targetType: 'minion' },
     );
-    (interaction.data as any).continuationContext = {
-        discardedCount: picked.picked.length,
-        deckEvents: picked.events.filter(event => event.type !== SU_EVENTS.CARDS_DRAWN),
-        discardUids: picked.picked.map(c => c.uid),
-    };
+    (interaction.data as any).continuationContext = { discardedCount: picked.picked.length, deckEvents: picked.events, discardUids: picked.picked.map(c => c.uid) };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 

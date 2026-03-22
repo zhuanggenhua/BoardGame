@@ -1209,6 +1209,45 @@
       "name": "巫师学院",
       "abilityText": "在这个基地计分后，冠军查看基地牌库顶的3张牌。选择一张替换这个基地，然后以任意顺序将其余的放回。"
     },
+    "base_central_brain_pod": {
+      "name": "中央大脑",
+      "abilityText": "这里的每个随从都获得+1力量。"
+    },
+    "base_the_factory_pod": {
+      "name": "436-1337工厂",
+      "abilityText": "当该基地计分时，冠军在此每有5点力量便获得1VP。"
+    },
+    "base_ninja_dojo_pod": {
+      "name": "忍者道场"
+    },
+    "base_temple_of_goju_pod": {
+      "name": "刚柔流寺庙",
+      "abilityText": "每当有随从在这里被消灭后，将其置于其拥有者牌库底。"
+    },
+    "base_cave_of_shinies_pod": {
+      "name": "闪光洞穴",
+      "abilityText": "每回合一次：当一张你拥有的、在这里的随从被消灭后，获得1VP。"
+    },
+    "base_mushroom_kingdom_pod": {
+      "name": "蘑菇王国",
+      "abilityText": "在你的回合开始时，若你手牌数严格多于任意其他玩家，你可以将一个随从移入或移出该基地。"
+    },
+    "base_wizard_academy_pod": {
+      "name": "巫术学院",
+      "abilityText": "当该基地计分后，冠军查看基地牌库顶三张，选择一张替换该基地，其余按任意顺序放回。"
+    },
+    "base_great_library_pod": {
+      "name": "大图书馆",
+      "abilityText": "当该基地计分后，所有在此有随从的玩家各摸1张牌。"
+    },
+    "base_haunted_house_pod": {
+      "name": "伊万斯城公墓",
+      "abilityText": "当该基地计分后，冠军弃掉其手牌并摸五张牌。"
+    },
+    "base_rhodes_plaza_pod": {
+      "name": "罗德百货商场",
+      "abilityText": "当该基地计分时，每位玩家在此每有一个随从便获得1VP。"
+    },
     "base_dread_lookout": {
       "name": "恐怖眺望台",
       "abilityText": "玩家不能打出战术到这个基地上。"

@@ -1104,8 +1104,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 if (i !== fromBaseIndex) return b;
                 return { ...b, minions: b.minions.filter(m => m.uid !== minionUid) };
             });
-            // 焦油坑：被消灭后改去向（仍算消灭），放入拥有者牌库底而不是弃牌堆
-            const isTarPits = base?.defId === 'base_tar_pits';
+            const destroyedAtBaseThisTurnCount = (state.turnDestroyedMinions ?? [])
+                .filter(record => record.baseIndex === fromBaseIndex)
+                .length;
+            // POD 刚柔流寺庙：这里被消灭的随从始终改放拥有者牌库底。
+            // 焦油坑：只在同基地本回合第一次随从被消灭时改去向，后续照常进弃牌堆。
+            const shouldRedirectToDeckBottom =
+                base?.defId === 'base_temple_of_goju_pod'
+                || (base?.defId === 'base_tar_pits' && destroyedAtBaseThisTurnCount === 0);
             let newPlayers = { ...state.players };
             const owner = newPlayers[ownerId];
             const destroyedCard: CardInstance = {
@@ -1114,7 +1120,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 type: 'minion',
                 owner: ownerId,
             };
-            newPlayers = isTarPits
+            newPlayers = shouldRedirectToDeckBottom
                 ? {
                     ...newPlayers,
                     [ownerId]: { ...owner, deck: [...owner.deck, destroyedCard] },
