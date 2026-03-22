@@ -2404,9 +2404,9 @@ describe('bear_cavalry_bear_rides_you_pod 交互选项', () => {
             .filter((kind: unknown) => typeof kind === 'string');
 
         expect(kinds).toContain('base');
+        expect(kinds).toContain('minion');
+        expect(kinds).toContain('ongoing');
         expect(kinds).toContain('skip');
-        expect(kinds).not.toContain('minion');
-        expect(kinds).not.toContain('ongoing');
         expect(kinds).not.toContain('attached');
         expect(kinds).not.toContain('titan');
     });
