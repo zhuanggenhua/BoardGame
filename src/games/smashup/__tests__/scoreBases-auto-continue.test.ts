@@ -234,4 +234,33 @@ describe('scoreBases 阶段自动推进', () => {
         expect(result?.autoContinue).toBe(true);
         expect(result?.playerId).toBe('0');
     });
+
+    it('达标基地上有可激活的侏儒 POD special 时不应该自动推进', () => {
+        const core = makeMinimalCore({
+            bases: [makeBase('base_pirate_cove', [
+                makeMinion('0', 'trickster_gnome_pod', 3),
+                makeMinion('0', 'robot_hoverbot', 4),
+                makeMinion('1', 'robot_microbot_guard', 3),
+            ])],
+            scoringEligibleBaseIndices: [0],
+        });
+
+        const state: MatchState<SmashUpCore> = {
+            core,
+            sys: {
+                phase: 'scoreBases',
+                flowHalted: false,
+                interaction: { current: null, queue: [] },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        };
+
+        const result = smashUpFlowHooks.onAutoContinueCheck!({
+            state,
+            events: [],
+            random: { next: () => 0.5 },
+        });
+
+        expect(result).toBeUndefined();
+    });
 });

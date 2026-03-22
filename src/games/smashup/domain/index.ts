@@ -28,6 +28,7 @@ import {
     PHASE_ORDER,
     SU_EVENTS,
     SU_EVENT_TYPES,
+    SU_COMMANDS,
     DRAW_PER_TURN,
     HAND_LIMIT,
     VP_TO_WIN,
@@ -74,6 +75,27 @@ function collectQualifiedPlayerPowers(
     }
 
     return playerPowers;
+}
+
+function hasPendingScoreBasesSpecialActivation(state: MatchState<SmashUpCore>): boolean {
+    const playerId = getCurrentPlayerId(state.core);
+    if (!playerId) return false;
+
+    for (const baseIndex of getScoringEligibleBaseIndices(state.core)) {
+        const base = state.core.bases[baseIndex];
+        if (!base) continue;
+
+        for (const minion of base.minions) {
+            const result = validate(state, {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId,
+                payload: { minionUid: minion.uid, baseIndex },
+            });
+            if (result.valid) return true;
+        }
+    }
+
+    return false;
 }
 
 function buildBaseRankings(
@@ -1569,6 +1591,11 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             if (eligibleIndices.length === 0) {
                 console.log('[onAutoContinueCheck] scoreBases: 无 eligible 基地，自动推进');
                 return { autoContinue: true, playerId: pid };
+            }
+
+            if (hasPendingScoreBasesSpecialActivation(state)) {
+                console.log('[onAutoContinueCheck] scoreBases: 当前玩家还有可激活的 special，暂停自动推进');
+                return undefined;
             }
 
             console.log('[onAutoContinueCheck] scoreBases: 响应窗口已关闭，自动推进触发计分');
