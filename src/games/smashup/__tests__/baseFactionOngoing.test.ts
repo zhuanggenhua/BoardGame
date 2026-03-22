@@ -31,6 +31,7 @@ import { resolveAbility } from '../domain/abilityRegistry';
 import { reduce } from '../domain/reduce';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { getMinionDef } from '../data/cards';
+import { asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 
 // ============================================================================
 // 测试辅助
@@ -1334,9 +1335,11 @@ describe('诡术师 ongoing 能力', () => {
                 ongoingActions: [{ uid: 'pp-1', defId: 'trickster_pay_the_piper', ownerId: '0' }],
             });
             const state = makeState([base]);
+            const matchState = makeMatchState(state);
 
-            const { events } = fireTriggers(state, 'onMinionPlayed', {
+            const result = fireTriggers(state, 'onMinionPlayed', {
                 state,
+                matchState,
                 playerId: '1',
                 baseIndex: 0,
                 triggerMinionUid: 'new-m',
@@ -1345,9 +1348,12 @@ describe('诡术师 ongoing 能力', () => {
                 now: 1000,
             });
 
-            expect(events).toHaveLength(1);
-            expect(events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
-            expect((events[0] as any).payload.playerId).toBe('1');
+            expect(result.events).toHaveLength(0);
+            const choice = asSimpleChoice(result.matchState?.sys.interaction.current);
+            expect(choice).toBeDefined();
+            expect(choice?.playerId).toBe('1');
+            expect(choice?.options).toHaveLength(3);
+            expect(choice?.options.map((option: any) => option.value?.cardUid)).toEqual(['oh1', 'oh2', 'oh3']);
         });
     });
 

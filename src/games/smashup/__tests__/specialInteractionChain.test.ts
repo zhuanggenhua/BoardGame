@@ -620,10 +620,21 @@ describe('onMinionPlayed trigger: trickster_pay_the_piper', () => {
             payload: { cardUid: 'm1', baseIndex: 0 },
         }, 'pay_the_piper: 对手打出随从');
         expect(r1.steps[0]?.success).toBe(true);
+        const choice = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        expect(choice).toBeDefined();
+        expect(choice.playerId).toBe('0');
+        expect(choice.options).toHaveLength(2);
+
+        const discardH2 = findOption(choice, (option: any) => option.value?.cardUid === 'h2');
+        const r2 = respond(r1.finalState, '0', discardH2, 'pay_the_piper: 选择弃牌');
+        expect(r2.steps[0]?.success).toBe(true);
+
         // P0 手牌减少：打出1张 + 被迫弃1张 = 减少2张
-        const p0 = r1.finalState.core.players['0'];
+        const p0 = r2.finalState.core.players['0'];
         expect(p0.hand.length).toBe(handBefore - 2);
-        expect(p0.discard.length).toBeGreaterThan(0);
+        expect(p0.hand.some(card => card.uid === 'h1')).toBe(true);
+        expect(p0.hand.some(card => card.uid === 'h2')).toBe(false);
+        expect(p0.discard.some(card => card.uid === 'h2')).toBe(true);
     });
 });
 
