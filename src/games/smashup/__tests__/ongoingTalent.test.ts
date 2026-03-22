@@ -138,6 +138,30 @@ describe('ongoing 行动卡天赋 - 验证层', () => {
         } as any);
         expect(result.valid).toBe(false);
     });
+
+    it('被压制的持续行动卡不能发动天赋', () => {
+        const core = makeState({
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'oa1',
+                baseIndex: 0,
+                suppressorPlayerId: '1',
+                cardType: 'ongoing',
+            }],
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [makeOngoing('oa1', 'miskatonic_lost_knowledge', '0')],
+            }],
+        });
+        const ms = makeMatchState(core);
+        const result = validate(ms, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as any);
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('该卡牌能力已被压制');
+    });
 });
 
 // ============================================================================

@@ -24,7 +24,7 @@ import {
 } from '../domain/abilityHelpers';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, MinionOnBase, OngoingDetachedEvent, MinionPlayedEvent } from '../domain/types';
+import type { SmashUpEvent, MinionOnBase, OngoingDetachedEvent, MinionPlayedEvent, BaseInPlay } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { registerProtection, registerTrigger, isMinionProtected } from '../domain/ongoingEffects';
@@ -876,7 +876,86 @@ function bearCavalryBearRidesYouPod(ctx: AbilityContext): AbilityResult {
 
 type BearRidesYouPodSuppressTarget =
     | { kind: 'skip' }
-    | { kind: 'base'; baseIndex: number };
+    | { kind: 'base'; baseIndex: number; baseDefId: string }
+    | { kind: 'minion'; minionUid: string; baseIndex: number; minionDefId: string }
+    | { kind: 'ongoing'; cardUid: string; baseIndex: number; defId: string }
+    | { kind: 'attached'; cardUid: string; baseIndex: number; defId: string }
+    | { kind: 'titan'; titanUid: string; baseIndex: number; ownerId: PlayerId; minionDefId: string };
+
+type BearRidesYouPodSuppressOption = {
+    id: string;
+    label: string;
+    value: BearRidesYouPodSuppressTarget;
+    displayMode?: 'card' | 'button';
+};
+
+function buildBearRidesYouPodPostMoveBase(base: BaseInPlay, movedMinion: MinionOnBase): BaseInPlay {
+    return {
+        ...base,
+        minions: [...base.minions.filter(m => m.uid !== movedMinion.uid), movedMinion],
+    };
+}
+
+function buildBearRidesYouPodSuppressOptions(
+    turnOrder: PlayerId[],
+    players: Record<string, any>,
+    base: BaseInPlay,
+    baseIndex: number,
+): BearRidesYouPodSuppressOption[] {
+    const suppressOptions: BearRidesYouPodSuppressOption[] = [];
+    const baseDef = getBaseDef(base.defId);
+    suppressOptions.push({
+        id: 'base',
+        label: `[基地] ${baseDef?.name ?? base.defId}`,
+        value: { kind: 'base', baseIndex, baseDefId: base.defId },
+        displayMode: 'card',
+    });
+
+    for (const m of base.minions) {
+        const def = getCardDef(m.defId) as MinionCardDef | undefined;
+        suppressOptions.push({
+            id: `minion-${m.uid}`,
+            label: `[随从] ${def?.name ?? m.defId}`,
+            value: { kind: 'minion', minionUid: m.uid, baseIndex, minionDefId: m.defId },
+            displayMode: 'card',
+        });
+        for (const a of m.attachedActions ?? []) {
+            const aDef = getCardDef(a.defId);
+            suppressOptions.push({
+                id: `attached-${a.uid}`,
+                label: `[附着行动] ${aDef?.name ?? a.defId}`,
+                value: { kind: 'attached', cardUid: a.uid, baseIndex, defId: a.defId },
+                displayMode: 'card',
+            });
+        }
+    }
+
+    for (const oa of base.ongoingActions) {
+        const oDef = getCardDef(oa.defId);
+        suppressOptions.push({
+            id: `ongoing-${oa.uid}`,
+            label: `[持续行动] ${oDef?.name ?? oa.defId}`,
+            value: { kind: 'ongoing', cardUid: oa.uid, baseIndex, defId: oa.defId },
+            displayMode: 'card',
+        });
+    }
+
+    for (const pid of turnOrder) {
+        const p = players[pid];
+        const t = (p as any)?.activeTitan as { titanUid: string; baseIndex: number; defId: string } | undefined;
+        if (!t || t.baseIndex !== baseIndex) continue;
+        const tDef = getCardDef(t.defId);
+        suppressOptions.push({
+            id: `titan-${t.titanUid}`,
+            label: `[泰坦] ${tDef?.name ?? t.defId}`,
+            value: { kind: 'titan', titanUid: t.titanUid, baseIndex, ownerId: pid, minionDefId: t.defId },
+            displayMode: 'card',
+        });
+    }
+
+    suppressOptions.push({ id: 'skip', label: '跳过（不压制）', value: { kind: 'skip' }, displayMode: 'button' });
+    return suppressOptions;
+}
 
 /** 你们都是美食 onPlay：选择有己方随从的基地→选择目标基地，移动所有对手随从*/
 function bearCavalryYourePrettyMuchBorscht(ctx: AbilityContext): AbilityResult {
@@ -1603,7 +1682,10 @@ export function registerBearCavalryInteractionHandlers(): void {
         const { baseIndex: toBase } = value as { baseIndex: number };
         const ctx = (iData as any)?.continuationContext as { minionUid: string; minionDefId: string; fromBase: number; isMyMinion: boolean };
         if (!ctx) return undefined;
-        
+        const sourceBase = state.core.bases[ctx.fromBase];
+        const movedMinion = sourceBase?.minions.find(m => m.uid === ctx.minionUid);
+        if (!movedMinion) return { state, events: [] };
+
         const events: SmashUpEvent[] = [moveMinion(ctx.minionUid, ctx.minionDefId, ctx.fromBase, toBase, 'bear_cavalry_bear_rides_you_pod', timestamp)];
 
         // 如果移动的是己方随从：可选择压制新基地上一张卡牌能力（含基地本身）
@@ -1611,71 +1693,19 @@ export function registerBearCavalryInteractionHandlers(): void {
 
         const base = state.core.bases[toBase];
         if (!base) return { state, events };
-
-        const suppressOptions: Array<{ id: string; label: string; value: BearRidesYouPodSuppressTarget }> = [];
-        const baseDef = getBaseDef(base.defId);
-        suppressOptions.push({
-            id: 'base',
-            label: `[基地] ${baseDef?.name ?? base.defId}`,
-            value: { kind: 'base', baseIndex: toBase, baseDefId: base.defId },
-            displayMode: 'card' as const,
-        });
-
-        for (const m of base.minions) {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            suppressOptions.push({
-                id: `minion-${m.uid}`,
-                label: `[随从] ${def?.name ?? m.defId}`,
-                value: { kind: 'minion', minionUid: m.uid, minionDefId: m.defId, baseIndex: toBase },
-                displayMode: 'card' as const,
-            });
-            for (const a of m.attachedActions ?? []) {
-                const aDef = getCardDef(a.defId);
-                suppressOptions.push({
-                    id: `attached-${a.uid}`,
-                    label: `[附着行动] ${aDef?.name ?? a.defId}`,
-                    value: { kind: 'attached', cardUid: a.uid, defId: a.defId, baseIndex: toBase },
-                    displayMode: 'card' as const,
-                });
-            }
-        }
-
-        for (const oa of base.ongoingActions) {
-            const oDef = getCardDef(oa.defId);
-            suppressOptions.push({
-                id: `ongoing-${oa.uid}`,
-                label: `[持续行动] ${oDef?.name ?? oa.defId}`,
-                value: { kind: 'ongoing', cardUid: oa.uid, defId: oa.defId, baseIndex: toBase },
-                displayMode: 'card' as const,
-            });
-        }
-
-        // 泰坦：检查所有玩家的 activeTitan 是否在该基地
-        for (const pid of state.core.turnOrder) {
-            const p = state.core.players[pid];
-            const t = (p as any)?.activeTitan as { titanUid: string; baseIndex: number; defId: string } | undefined;
-            if (!t) continue;
-            if (t.baseIndex !== toBase) continue;
-            const tDef = getCardDef(t.defId);
-            suppressOptions.push({
-                id: `titan-${t.titanUid}`,
-                label: `[泰坦] ${tDef?.name ?? t.defId}`,
-                value: { kind: 'titan', titanUid: t.titanUid, defId: t.defId, baseIndex: toBase, ownerId: pid },
-                displayMode: 'card' as const,
-            });
-        }
-
-        suppressOptions.push({ id: 'skip', label: '跳过（不压制）', value: { kind: 'skip' }, displayMode: 'button' as const });
-
-        const visibleSuppressOptions = suppressOptions.filter(option =>
-            option.value.kind === 'base' || option.value.kind === 'skip'
+        const postMoveBase = buildBearRidesYouPodPostMoveBase(base, movedMinion);
+        const suppressOptions = buildBearRidesYouPodSuppressOptions(
+            state.core.turnOrder,
+            state.core.players,
+            postMoveBase,
+            toBase,
         );
 
         const next = createSimpleChoice(
             `bear_cavalry_bear_rides_you_pod_choose_suppress_${timestamp}`,
             playerId,
             '与熊同行：选择要压制能力的卡牌（到你下回合开始）',
-            visibleSuppressOptions as any[],
+            suppressOptions,
             { sourceId: 'bear_cavalry_bear_rides_you_pod_choose_suppress', targetType: 'generic', autoCancelOption: true }
         );
         (next.data as any).continuationContext = { toBase };
@@ -1699,7 +1729,20 @@ export function registerBearCavalryInteractionHandlers(): void {
             };
         }
 
-        return { state, events: [] };
+        return {
+            state,
+            events: [{
+                type: SU_EVENTS.CARD_SUPPRESSED,
+                payload: {
+                    cardUid: chosen.kind === 'minion' ? chosen.minionUid : chosen.kind === 'titan' ? chosen.titanUid : chosen.cardUid,
+                    suppressorPlayerId: playerId,
+                    cardType: chosen.kind,
+                    baseIndex: chosen.baseIndex,
+                    reason: 'bear_cavalry_bear_rides_you_pod',
+                },
+                timestamp,
+            } as any],
+        };
     });
     
     // 全面优势 POD 天赋：摸牌或保护

@@ -135,6 +135,26 @@ describe('base_central_brain: 持续被动 +1 力量', () => {
         expect(getEffectivePower(state, m1, 0)).toBe(6); // 5 + 0 + 1
         expect(getEffectivePower(state, m2, 0)).toBe(3); // 2 + 0 + 1
     });
+
+    it('中央大脑被压制时，持续 +1 力量失效', () => {
+        const minion = {
+            uid: 'm1', defId: 'd1', controller: '0', owner: '0',
+            basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
+        };
+        const state = {
+            bases: [{
+                defId: 'base_central_brain',
+                minions: [minion],
+                ongoingActions: [],
+            }],
+            suppressedBasesUntilTurnStart: [{ baseIndex: 0, suppressorPlayerId: '0' }],
+            players: { '0': { hand: [], deck: [], discard: [] } },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+        } as any;
+
+        expect(getEffectivePower(state, minion, 0)).toBe(3);
+    });
 });
 
 // ============================================================================

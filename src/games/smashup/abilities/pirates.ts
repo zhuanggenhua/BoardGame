@@ -601,22 +601,6 @@ function buildMoveToBaseInteraction(
     };
 }
 
-/** 注册海盗派系的交互解决处理函数 */
-function resolveLiveBaseIndex(
-    state: SmashUpCore,
-    baseIndex: number | undefined,
-    baseDefId?: string,
-): number | undefined {
-    if (baseDefId) {
-        const liveIndex = state.bases.findIndex(base => base.defId === baseDefId);
-        if (liveIndex >= 0) return liveIndex;
-    }
-    if (baseIndex !== undefined && state.bases[baseIndex]) {
-        return baseIndex;
-    }
-    return undefined;
-}
-
 export function registerPirateInteractionHandlers(): void {
     // 粗鲁少妇：选择目标后消灭（支持跳过）
     registerInteractionHandler('pirate_saucy_wench', (state, playerId, value, _iData, _random, timestamp) => {

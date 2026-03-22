@@ -25,6 +25,7 @@ import type {
     BaseReplacedEvent,
     TempPowerAddedEvent,
     PermanentPowerAddedEvent,
+    CardSuppressedEvent,
     BreakpointModifiedEvent,
     BaseDeckShuffledEvent,
     SpecialLimitUsedEvent,
@@ -803,6 +804,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 // 清理“直到本回合开始”的基地压制（仅清除由当前回合玩家施加的条目）
                 suppressedBasesUntilTurnStart: (() => {
                     const remaining = (state.suppressedBasesUntilTurnStart ?? [])
+                        .filter(s => s.suppressorPlayerId !== playerId);
+                    return remaining.length ? remaining : undefined;
+                })(),
+                suppressedCardsUntilTurnStart: (() => {
+                    const remaining = (state.suppressedCardsUntilTurnStart ?? [])
                         .filter(s => s.suppressorPlayerId !== playerId);
                     return remaining.length ? remaining : undefined;
                 })(),
@@ -1787,6 +1793,18 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             return {
                 ...state,
                 suppressedBasesUntilTurnStart: [...prev, { baseIndex, suppressorPlayerId }],
+            };
+        }
+
+        case SU_EVENTS.CARD_SUPPRESSED: {
+            const { cardUid, baseIndex, suppressorPlayerId, cardType } = (event as CardSuppressedEvent).payload;
+            const prev = state.suppressedCardsUntilTurnStart ?? [];
+            if (prev.some(s => s.cardUid === cardUid && s.suppressorPlayerId === suppressorPlayerId)) {
+                return state;
+            }
+            return {
+                ...state,
+                suppressedCardsUntilTurnStart: [...prev, { cardUid, baseIndex, suppressorPlayerId, cardType }],
             };
         }
 

@@ -13,6 +13,7 @@
 import type { PlayerId } from '../../../engine/types';
 import type { SmashUpCore, MinionOnBase, BaseInPlay } from './types';
 import { getBaseDef, getCardDef } from '../data/cards';
+import { getSuppressionFilteredStateForSource, isCardSuppressed } from './ongoingEffects';
 
 // ============================================================================
 // 类型定义
@@ -94,6 +95,42 @@ const breakpointModifierRegistry: BreakpointModifierEntry[] = [];
 /** 基地级别力量修正注册表 */
 const basePowerModifiers: Map<string, BasePowerModifierFn> = new Map();
 
+function getFilteredPowerModifierContext(
+    state: SmashUpCore,
+    minion: MinionOnBase,
+    baseIndex: number,
+    sourceDefId: string,
+    includePodAlias = false,
+): PowerModifierContext {
+    let filteredState = getSuppressionFilteredStateForSource(state, sourceDefId);
+    if (includePodAlias && !sourceDefId.endsWith('_pod')) {
+        filteredState = getSuppressionFilteredStateForSource(filteredState, `${sourceDefId}_pod`);
+    }
+    const filteredBase = filteredState.bases[baseIndex] ?? state.bases[baseIndex];
+    const filteredMinion = filteredBase?.minions.find(candidate => candidate.uid === minion.uid) ?? minion;
+    return {
+        state: filteredState,
+        minion: filteredMinion,
+        baseIndex,
+        base: filteredBase,
+    };
+}
+
+function getFilteredBreakpointModifierContext(
+    state: SmashUpCore,
+    baseIndex: number,
+    sourceDefId: string,
+    originalBreakpoint: number,
+): BreakpointModifierContext {
+    const filteredState = getSuppressionFilteredStateForSource(state, sourceDefId);
+    return {
+        state: filteredState,
+        baseIndex,
+        base: filteredState.bases[baseIndex] ?? state.bases[baseIndex],
+        originalBreakpoint,
+    };
+}
+
 /**
  * 注册一个持续力量修正
  * 
@@ -140,9 +177,17 @@ export function getBasePowerModifiers(
 
     // 遍历基地上的所有 ongoing 行动卡
     for (const ongoing of base.ongoingActions) {
+        if (isCardSuppressed(state, ongoing.uid)) continue;
         const modifier = basePowerModifiers.get(ongoing.defId);
         if (modifier) {
-            total += modifier({ state, baseIndex, base, playerId, ongoing });
+            const filteredState = getSuppressionFilteredStateForSource(state, ongoing.defId);
+            total += modifier({
+                state: filteredState,
+                baseIndex,
+                base: filteredState.bases[baseIndex] ?? base,
+                playerId,
+                ongoing,
+            });
         }
     }
 
@@ -381,7 +426,13 @@ export function getOngoingPowerModifierDetails(
 
     const details: PowerModifierDetail[] = [];
     for (const entry of modifierRegistry) {
-        const ctx: PowerModifierContext = { state, minion, baseIndex, base };
+        const ctx = getFilteredPowerModifierContext(
+            state,
+            minion,
+            baseIndex,
+            entry.sourceDefId,
+            entry.handlesPodInternally,
+        );
         const value = entry.modifier(ctx);
         if (value !== 0) {
             // 通过 getCardDef 获取 i18n 名称，fallback 到 defId
@@ -445,7 +496,13 @@ export function getOngoingPowerModifier(
 
     let total = 0;
     for (const entry of modifierRegistry) {
-        const ctx: PowerModifierContext = { state, minion, baseIndex, base };
+        const ctx = getFilteredPowerModifierContext(
+            state,
+            minion,
+            baseIndex,
+            entry.sourceDefId,
+            entry.handlesPodInternally,
+        );
         total += entry.modifier(ctx);
     }
     return total;
@@ -541,12 +598,12 @@ export function getEffectiveBreakpoint(
     let total = 0;
     if (breakpointModifierRegistry.length > 0) {
         for (const entry of breakpointModifierRegistry) {
-            const ctx: BreakpointModifierContext = {
+            const ctx = getFilteredBreakpointModifierContext(
                 state,
                 baseIndex,
-                base,
-                originalBreakpoint: baseDef.breakpoint,
-            };
+                entry.sourceDefId,
+                baseDef.breakpoint,
+            );
             total += entry.modifier(ctx);
         }
     }

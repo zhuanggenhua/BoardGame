@@ -517,10 +517,80 @@ export function isBaseAbilitySuppressed(
     // 2. 检查基于场上卡牌的持续压制
     if (baseAbilitySuppressionRegistry.length === 0) return false;
     for (const entry of baseAbilitySuppressionRegistry) {
-        if (!isSourceActiveOnBase(state, entry.sourceDefId, baseIndex)) continue;
-        if (entry.checker(state, baseIndex)) return true;
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
+        if (!isSourceActiveOnBase(filteredState, entry.sourceDefId, baseIndex)) continue;
+        if (entry.checker(filteredState, baseIndex)) return true;
     }
     return false;
+}
+
+/** 检查卡牌能力是否处于压制中 */
+export function isCardSuppressed(
+    state: SmashUpCore,
+    cardUid: string,
+): boolean {
+    return state.suppressedCardsUntilTurnStart?.some(entry => entry.cardUid === cardUid) ?? false;
+}
+
+export function getSuppressionFilteredStateForSource(
+    state: SmashUpCore,
+    sourceDefId: string,
+): SmashUpCore {
+    if (!state.suppressedCardsUntilTurnStart?.length) {
+        return state;
+    }
+
+    const suppressedUids = new Set(state.suppressedCardsUntilTurnStart.map(entry => entry.cardUid));
+    let changed = false;
+
+    const bases = state.bases.map(base => {
+        let baseChanged = false;
+
+        const ongoingActions = base.ongoingActions.filter(action => {
+            const keep = !(action.defId === sourceDefId && suppressedUids.has(action.uid));
+            if (!keep) baseChanged = true;
+            return keep;
+        });
+
+        const minions = base.minions.flatMap(minion => {
+            if (minion.defId === sourceDefId && suppressedUids.has(minion.uid)) {
+                baseChanged = true;
+                return [];
+            }
+
+            const attachedActions = (minion.attachedActions ?? []).filter(action => {
+                const keep = !(action.defId === sourceDefId && suppressedUids.has(action.uid));
+                if (!keep) baseChanged = true;
+                return keep;
+            });
+
+            if (attachedActions.length !== (minion.attachedActions ?? []).length) {
+                return [{ ...minion, attachedActions }];
+            }
+
+            return [minion];
+        });
+
+        if (!baseChanged) {
+            return base;
+        }
+
+        changed = true;
+        return {
+            ...base,
+            minions,
+            ongoingActions,
+        };
+    });
+
+    if (!changed) {
+        return state;
+    }
+
+    return {
+        ...state,
+        bases,
+    };
 }
 
 /**
@@ -549,8 +619,9 @@ export function isMinionProtected(
     for (const entry of protectionRegistry) {
         if (entry.protectionType !== protectionType) continue;
         // 检查场上是否有提供保护的来源（ongoing 卡或随从）
-        if (!isSourceActive(state, entry.sourceDefId)) continue;
-        if (entry.checker(ctx)) return true;
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
+        if (!isSourceActive(filteredState, entry.sourceDefId)) continue;
+        if (entry.checker({ ...ctx, state: filteredState })) return true;
     }
     return false;
 }
@@ -581,8 +652,9 @@ export function isMinionProtectedNonConsumable(
     for (const entry of protectionRegistry) {
         if (entry.protectionType !== protectionType) continue;
         if (entry.consumable) continue; // 跳过消耗型保护
-        if (!isSourceActive(state, entry.sourceDefId)) continue;
-        if (entry.checker(ctx)) return true;
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
+        if (!isSourceActive(filteredState, entry.sourceDefId)) continue;
+        if (entry.checker({ ...ctx, state: filteredState })) return true;
     }
     return false;
 }
@@ -614,13 +686,15 @@ export function getConsumableProtectionSource(
     for (const entry of protectionRegistry) {
         if (entry.protectionType !== protectionType) continue;
         if (!entry.consumable) continue;
-        if (!isSourceActive(state, entry.sourceDefId)) continue;
-        if (!entry.checker(ctx)) continue;
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
+        if (!isSourceActive(filteredState, entry.sourceDefId)) continue;
+        if (!entry.checker({ ...ctx, state: filteredState })) continue;
         // 找到消耗型保护来源，查找具体的 ongoing 卡牌实例
-        const base = state.bases[targetBaseIndex];
+        const base = filteredState.bases[targetBaseIndex];
         if (!base) continue;
         // 先检查随从附着
-        const attached = targetMinion.attachedActions.find(a => a.defId === entry.sourceDefId);
+        const filteredTargetMinion = base.minions.find(minion => minion.uid === targetMinion.uid) ?? targetMinion;
+        const attached = filteredTargetMinion.attachedActions.find(a => a.defId === entry.sourceDefId);
         if (attached) return { uid: attached.uid, defId: attached.defId, ownerId: attached.ownerId };
         // 再检查基地 ongoing
         const ongoing = base.ongoingActions.find(o => o.defId === entry.sourceDefId);
@@ -718,8 +792,9 @@ export function isOperationRestricted(
         };
         for (const entry of restrictionRegistry) {
             if (entry.restrictionType !== restrictionType) continue;
-            if (!isSourceActiveOnBase(state, entry.sourceDefId, baseIndex)) continue;
-            if (entry.checker(ctx)) return true;
+            const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
+            if (!isSourceActiveOnBase(filteredState, entry.sourceDefId, baseIndex)) continue;
+            if (entry.checker({ ...ctx, state: filteredState })) return true;
         }
     }
 
@@ -752,8 +827,9 @@ export function interceptEvent(
     if (interceptorRegistry.length === 0) return undefined;
 
     for (const entry of interceptorRegistry) {
-        if (!isSourceActive(state, entry.sourceDefId)) continue;
-        const result = entry.interceptor(state, event);
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
+        if (!isSourceActive(filteredState, entry.sourceDefId)) continue;
+        const result = entry.interceptor(filteredState, event);
         if (result !== undefined) return result;
     }
     return undefined;
@@ -782,10 +858,16 @@ export function fireTriggers(
         if (entry.timing !== timing) continue;
         if (options?.phase && (entry.phase ?? 'reaction') !== options.phase) continue;
         
-        const isActive = entry.global ? isSourceInHandOrDiscard(state, entry.sourceDefId) : isSourceActive(state, entry.sourceDefId);
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
+        const isActive = entry.global
+            ? isSourceInHandOrDiscard(state, entry.sourceDefId)
+            : isSourceActive(filteredState, entry.sourceDefId);
         if (!isActive) continue;
-        
-        const result = entry.callback({ ...fullCtx, matchState });
+
+        const filteredMatchState = matchState && matchState.core === state
+            ? { ...matchState, core: filteredState }
+            : matchState;
+        const result = entry.callback({ ...fullCtx, state: filteredState, matchState: filteredMatchState });
         const triggerEvents = Array.isArray(result) ? result : result.events;
         if (triggerEvents.length > 0) {
             events.push(...triggerEvents);
@@ -860,6 +942,11 @@ export function isSourceActiveOnBase(state: SmashUpCore, sourceDefId: string, ba
     if (base.ongoingActions.some(o => o.defId === sourceDefId)) return true;
     // 检查基地上的随从
     if (base.minions.some(m => m.defId === sourceDefId)) return true;
+    for (const minion of base.minions) {
+        if (minion.attachedActions?.some(action => action.defId === sourceDefId)) {
+            return true;
+        }
+    }
     return false;
 }
 

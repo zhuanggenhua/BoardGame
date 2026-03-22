@@ -586,6 +586,13 @@ export interface SmashUpCore {
      * 用于实现类似“渗透 POD 天赋”这种“即使牌已离场，压制仍持续到下回合开始”的规则。
      */
     suppressedBasesUntilTurnStart?: Array<{ baseIndex: number; suppressorPlayerId: PlayerId }>;
+    /** 临时卡牌能力压制（直到压制者的下个回合开始） */
+    suppressedCardsUntilTurnStart?: Array<{
+        cardUid: string;
+        baseIndex: number;
+        suppressorPlayerId: PlayerId;
+        cardType: 'minion' | 'ongoing' | 'attached' | 'titan';
+    }>;
 
     /**
      * 本回合已触发过“每回合一次”的持续行动卡 UID 列表。
@@ -1014,6 +1021,7 @@ export type SmashUpEvent =
     | AbilityFeedbackEvent
     | AbilityTriggeredEvent
     | BaseAbilitySuppressedEvent
+    | CardSuppressedEvent
     | BaseClearedEvent;
 
 // ============================================================================
@@ -1327,6 +1335,17 @@ export interface BaseAbilitySuppressedEvent extends GameEvent<typeof SU_EVENTS.B
     payload: {
         baseIndex: number;
         suppressorPlayerId: PlayerId;
+        reason: string;
+    };
+}
+
+/** 卡牌能力压制事件（直到压制者的下个回合开始） */
+export interface CardSuppressedEvent extends GameEvent<typeof SU_EVENTS.CARD_SUPPRESSED> {
+    payload: {
+        cardUid: string;
+        baseIndex: number;
+        suppressorPlayerId: PlayerId;
+        cardType: 'minion' | 'ongoing' | 'attached' | 'titan';
         reason: string;
     };
 }
