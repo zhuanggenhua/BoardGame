@@ -44,6 +44,15 @@ interface Props {
     };
 }
 
+function buildRendererPreviewRef(defId: string | undefined): CardPreviewRef | undefined {
+    if (!defId) return undefined;
+    return {
+        type: 'renderer',
+        rendererId: 'smashup-card-renderer',
+        payload: { defId },
+    };
+}
+
 /** 从选项 value 中提取 defId（卡牌/随从/基地） */
 function extractDefId(value: unknown): string | undefined {
     if (!value || typeof value !== 'object') return undefined;
@@ -75,8 +84,7 @@ function isCardOption(option: { value: unknown; displayMode?: 'card' | 'button' 
 function extractContextPreview(prompt: any): CardPreviewRef | undefined {
     const ctx = prompt?.continuationContext as Record<string, unknown> | undefined;
     if (!ctx || typeof ctx.defId !== 'string') return undefined;
-    const def = getCardDef(ctx.defId as string) ?? getBaseDef(ctx.defId as string);
-    return def?.previewRef;
+    return buildRendererPreviewRef(ctx.defId);
 }
 
 /** 解析文本中嵌入的 i18n key（如 cards.xxx.name / cards.xxx.abilityText） */
@@ -651,7 +659,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             {cardOptions.map((option, idx) => {
                                 const defId = extractDefId(option.value);
                                 const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
-                                const previewRef = def?.previewRef;
+                                const previewRef = buildRendererPreviewRef(defId);
                                 const name = def ? resolveCardName(def, t) : option.label;
                                 const isSelected = selectedIds.includes(option.id);
                                 const isBase = !!getBaseDef(defId ?? '');

@@ -25,7 +25,8 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { fireTriggers } from '../domain/ongoingEffects';
 import { reduce } from '../domain/reduce';
-import { processDestroyTriggers } from '../domain/reducer';
+import { execute, processDestroyTriggers } from '../domain/reducer';
+import { validate } from '../domain/commands';
 import { makeMinion, makeCard, makePlayer, makeState, makeMatchState, getInteractionsFromMS } from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import type { MatchState } from '../../../engine/types';
@@ -1645,6 +1646,60 @@ describe('科学怪人派系能力', () => {
             e => e.type === SU_EVENTS.LIMIT_MODIFIED && (e as any).payload.limitType === 'minion',
         );
         expect(limitEvt).toBeDefined();
+    });
+
+    it('怪物 POD：没有+1力量指示物时不能发动天赋', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('monster1', 'frankenstein_the_monster_pod', '0', 5, { powerCounters: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'monster1', baseIndex: 0 },
+        });
+
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('该随从当前无法发动天赋：没有+1力量指示物');
+    });
+
+    it('怪物 POD：没有+1力量指示物时 execute 不应误生成 TALENT_USED', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('monster1', 'frankenstein_the_monster_pod', '0', 5, { powerCounters: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const events = execute(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'monster1', baseIndex: 0 },
+        }, defaultTestRandom);
+
+        expect(events).toEqual([]);
+        expect(events.some(event => event.type === SU_EVENTS.TALENT_USED)).toBe(false);
     });
 
     it('愤怒的民众：若所选手牌已离开手牌，不应凭旧交互再塞回牌库', () => {

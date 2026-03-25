@@ -13,7 +13,7 @@ import { getBaseDef, getMinionDef, getCardDef, resolveCardName, resolveCardText 
 import { isSpecialLimitBlocked } from '../domain/abilityHelpers';
 import { getScoringEligibleBaseIndices } from '../domain/ongoingModifiers';
 import { getBaseRestrictions } from '../domain/ongoingEffects';
-import { matchesDefId } from '../domain/utils';
+import { getMinionTalentActivationError, matchesDefId } from '../domain/utils';
 import { getFactionMeta } from './factionMeta';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PLAYER_CONFIG } from './playerConfig';
@@ -549,10 +549,12 @@ const MinionCard: React.FC<{
     const canUseSecondTalentOnStandingStones =
         core.bases[baseIndex]?.defId === 'base_standing_stones' &&
         !core.standingStonesDoubleTalentMinionUid;
+    const hasTalentActivationPreconditionError = getMinionTalentActivationError(core, minion, baseIndex) !== null;
     const canUseTalent = hasTalent
         && isMyTurn
         && minion.controller === myPlayerId
         && tutorialAllowed
+        && !hasTalentActivationPreconditionError
         && (!minion.talentUsed || canUseSecondTalentOnStandingStones);
 
     // 场上随从 special 能力判定（如忍者侍从）
@@ -584,6 +586,7 @@ const MinionCard: React.FC<{
         : 'left-full flex-col pl-[0.6vw]';
     const minionActivationKey = `minion-${minion.uid}`;
     const isMinionActivationArmed = isActivationArmed(minionActivationKey);
+    const showTouchActivationHint = isCoarsePointer && isMinionActivationArmed && canActivate;
 
     const seed = minion.uid.charCodeAt(0) + index;
     const rotation = (seed % 6) - 3;
@@ -788,6 +791,11 @@ const MinionCard: React.FC<{
             )}
 
             {/* 附着的 ongoing 行动卡 - 角标 + hover 时弹出小卡片 */}
+            {showTouchActivationHint && (
+                <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-20 whitespace-nowrap pointer-events-none">
+                    {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
+                </div>
+            )}
             {hasAttachedActions && (
                 <>
                     <AttachedBadge count={minion.attachedActions.length} />

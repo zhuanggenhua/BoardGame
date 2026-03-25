@@ -774,13 +774,17 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
         );
     }, [t]);
 
-    // 能力反馈 toast（搜索失败等提示）
+    // 能力反馈 toast：失败提示，以及成功获得额外出牌额度的明确反馈。
     useEffect(() => {
         if (gameEvents.feedbacks.length === 0) return;
         for (const fb of gameEvents.feedbacks) {
-            // 只显示给当前玩家的反馈
             if (fb.playerId === playerID) {
-                toast(t(fb.messageKey, { defaultValue: '牌库中未找到符合条件的卡牌，已重洗牌库', ...fb.messageParams }));
+                const defaultMessage = fb.messageKey === 'ui.extra_minion_granted'
+                    ? '获得{{count}}次额外随从机会'
+                    : fb.messageKey === 'ui.extra_action_granted'
+                    ? '获得{{count}}次额外行动机会'
+                    : '牌库中未找到符合条件的卡牌，已重洗牌库';
+                toast(t(fb.messageKey, { defaultValue: defaultMessage, ...fb.messageParams }));
             }
             gameEvents.removeFeedback(fb.id);
         }

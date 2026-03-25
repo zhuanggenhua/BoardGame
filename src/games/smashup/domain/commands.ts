@@ -18,6 +18,7 @@ import {
     getActionLikeResponseWindowTiming,
     canUseBaseLimitedMinionQuota,
     canUseSameNameMinionQuota,
+    getMinionTalentActivationError,
     getMaxRemainingGlobalPowerLimitedQuota,
     mustUseBaseLimitedMinionQuota,
     mustUseGlobalPowerLimitedMinionQuota,
@@ -569,6 +570,10 @@ export function validate(
             const mDef = getCardDef(targetMinion.defId);
             if (!mDef || !('abilityTags' in mDef) || !mDef.abilityTags?.includes('talent')) {
                 return { valid: false, error: '该随从没有天赋能力' };
+            }
+            const talentActivationError = getMinionTalentActivationError(core, targetMinion, baseIndex);
+            if (talentActivationError) {
+                return { valid: false, error: talentActivationError };
             }
             return { valid: true };
         }
