@@ -21,7 +21,8 @@ import {
 } from '../domain/baseAbilities';
 import { processDestroyTriggers } from '../domain/reducer';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
-import type { SmashUpCore, MinionOnBase, CardInstance } from '../domain/types';
+import type { MatchState, RandomFn } from '../../../engine/types';
+import type { SmashUpCore, MinionOnBase, CardInstance, MinionDestroyedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { triggerBaseAbilityWithMS, getInteractionsFromResult, makeMatchState } from './helpers';
@@ -30,6 +31,13 @@ import { reduce } from '../domain/reduce';
 beforeAll(() => {
     initAllAbilities();
 });
+
+const dummyRandom: RandomFn = {
+    random: () => 0.5,
+    d: () => 1,
+    range: (min: number) => min,
+    shuffle: <T>(arr: T[]) => [...arr],
+};
 
 /** 构造最小测试状态 */
 function makeState(overrides: Partial<SmashUpCore> = {}): SmashUpCore {
@@ -201,6 +209,61 @@ describe('base_the_field_of_honor: 消灭者获1VP', () => {
         expect(vpEvents).toHaveLength(1);
         expect(vpEvents[0].payload.playerId).toBe('0');
         expect(vpEvents[0].payload.amount).toBe(1);
+    });
+
+    it('集成路径：destroyerId 缺失时，VP 仍应判给事件操作者而不是被消灭者', () => {
+        const victim = makeMinion('victim', '0', 3);
+        const core = makeState({
+            players: {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.BEAR_CAVALRY, SMASHUP_FACTION_IDS.NINJAS],
+                },
+                '1': {
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.BEAR_CAVALRY, SMASHUP_FACTION_IDS.NINJAS],
+                },
+            },
+            bases: [{
+                defId: 'base_the_field_of_honor',
+                minions: [victim],
+                ongoingActions: [],
+            }],
+        });
+        const ms: MatchState<SmashUpCore> = makeMatchState(core);
+        const destroyEvent: MinionDestroyedEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'victim',
+                minionDefId: victim.defId,
+                fromBaseIndex: 0,
+                ownerId: '0',
+                reason: 'integration_destroy',
+            },
+            timestamp: 1000,
+        };
+
+        const result = processDestroyTriggers([destroyEvent], ms, '1', dummyRandom, 1000);
+        const vpEvents = result.events.filter(e => e.type === SU_EVENTS.VP_AWARDED);
+        expect(vpEvents).toHaveLength(1);
+        expect((vpEvents[0] as any).payload.playerId).toBe('1');
+        expect((vpEvents[0] as any).payload.amount).toBe(1);
     });
 
     it('base_the_field_of_honor: destroy 自己的随从时不应得分', () => {

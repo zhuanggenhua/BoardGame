@@ -1070,7 +1070,7 @@ export interface MinionDestroyedEvent extends GameEvent<typeof SU_EVENTS.MINION_
         minionDefId: string;
         fromBaseIndex: number;
         ownerId: PlayerId;
-        destroyerId?: PlayerId;  // 消灭者（可选，如果没有则默认为 ownerId）
+        destroyerId?: PlayerId;  // 消灭者（可选，缺失时由事件处理流程按当前操作者推断）
         reason: string;
     };
 }

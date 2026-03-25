@@ -704,7 +704,9 @@ export function processDestroyTriggers(
         const minion = base?.minions.find(m => m.uid === minionUid);
         // ✅ 优先从 state 读取 owner（兜底修复：即使事件中的 ownerId 错了也能修复）
         const ownerId = minion?.owner ?? eventOwnerId;
-        const destroyerId = eventDestroyerId ?? minion?.controller ?? ownerId;
+        // destroyerId 缺失时，回退到当前事件链的操作者，而不是被消灭随从的控制者。
+        // 否则像“荣誉之地”这类奖励消灭者的基地，会错误把 VP 判给受害者。
+        const destroyerId = eventDestroyerId ?? playerId;
 
         // === Phase 1: 先检查防止消灭触发器（基地能力 + ongoing） ===
         // 在触发 onDestroy 之前，先确认消灭是否会被防止
