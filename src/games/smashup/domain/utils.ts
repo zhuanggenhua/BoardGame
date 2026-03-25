@@ -110,6 +110,27 @@ export function isActionLikeRespondableInWindow(
 }
 
 /**
+ * 获取随从天赋当前不可发动的原因。
+ *
+ * 这里只放“卡牌自身规则前置条件”，供命令校验、UI 高亮和 execute 兜底共用，
+ * 避免出现前端显示可点、点了却只吃掉一次天赋机会的分层不一致问题。
+ */
+export function getMinionTalentActivationError(
+    state: SmashUpCore,
+    minion: MinionOnBase,
+    baseIndex: number,
+): string | null {
+    void state;
+    void baseIndex;
+
+    if (matchesDefId(minion.defId, 'frankenstein_the_monster') && (minion.powerCounters ?? 0) < 1) {
+        return '该随从当前无法发动天赋：没有+1力量指示物';
+    }
+
+    return null;
+}
+
+/**
  * 判断同名额外随从额度对当前卡是否可用。
  *
  * - 没有同名额度 → false

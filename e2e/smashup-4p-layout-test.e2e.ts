@@ -218,6 +218,78 @@ function buildFourPlayerMobileScene() {
     };
 }
 
+function buildMonsterWithoutCountersMobileScene() {
+    return {
+        gameId: 'smashup',
+        currentPlayer: '0' as const,
+        phase: 'playCards',
+        bases: [
+            {
+                defId: 'base_the_jungle',
+                breakpoint: 12,
+                minions: [
+                    {
+                        uid: 'p0-monster-no-counter',
+                        defId: 'frankenstein_the_monster_pod',
+                        owner: '0',
+                        controller: '0',
+                        powerCounters: 0,
+                        talentUsed: false,
+                    },
+                ],
+            },
+        ],
+        extra: {
+            core: {
+                turnOrder: ['0', '1'],
+                turnNumber: 3,
+                nextUid: 3000,
+                baseDeck: [],
+                players: {
+                    '0': createPlayerState('0', 0, ['frankenstein', 'aliens']),
+                    '1': createPlayerState('1', 0, ['pirates', 'ninjas']),
+                },
+            },
+        },
+    };
+}
+
+function buildMonsterWithCounterMobileScene() {
+    return {
+        gameId: 'smashup',
+        currentPlayer: '0' as const,
+        phase: 'playCards',
+        bases: [
+            {
+                defId: 'base_the_jungle',
+                breakpoint: 12,
+                minions: [
+                    {
+                        uid: 'p0-monster-with-counter',
+                        defId: 'frankenstein_the_monster_pod',
+                        owner: '0',
+                        controller: '0',
+                        powerCounters: 1,
+                        talentUsed: false,
+                    },
+                ],
+            },
+        ],
+        extra: {
+            core: {
+                turnOrder: ['0', '1'],
+                turnNumber: 3,
+                nextUid: 3001,
+                baseDeck: [],
+                players: {
+                    '0': createPlayerState('0', 0, ['frankenstein', 'aliens']),
+                    '1': createPlayerState('1', 0, ['pirates', 'ninjas']),
+                },
+            },
+        },
+    };
+}
+
 async function expectLocatorInsideViewport(
     locator: any,
     name: string,
@@ -545,5 +617,134 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await expect(endTurnActionButton).toBeVisible({ timeout: 5000 });
         await expect(endTurnHints).toBeVisible({ timeout: 5000 });
         await game.screenshot('13-desktop-end-turn-restored', testInfo);
+    });
+
+    test('移动端不会把没有+1力量指示物的怪物当成可发动天赋', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 812, height: 375 });
+        await page.addInitScript(() => {
+            const query = '(pointer: coarse)';
+            const originalMatchMedia = window.matchMedia.bind(window);
+            window.matchMedia = ((media: string) => {
+                if (media !== query) {
+                    return originalMatchMedia(media);
+                }
+
+                return {
+                    matches: true,
+                    media,
+                    onchange: null,
+                    addListener: () => {},
+                    removeListener: () => {},
+                    addEventListener: () => {},
+                    removeEventListener: () => {},
+                    dispatchEvent: () => true,
+                } as MediaQueryList;
+            }) as typeof window.matchMedia;
+        });
+
+        await game.openTestGame('smashup', {
+            numPlayers: 2,
+            skipInitialization: true,
+        });
+        await game.setupScene(buildMonsterWithoutCountersMobileScene());
+
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return window.innerWidth === 812
+                && window.matchMedia('(pointer: coarse)').matches
+                && state?.sys?.phase === 'playCards'
+                && state?.core?.bases?.[0]?.minions?.[0]?.uid === 'p0-monster-no-counter';
+        }, { timeout: 10000, polling: 200 });
+
+        const monster = page.locator('[data-minion-uid="p0-monster-no-counter"]');
+
+        await expect(monster).toBeVisible({ timeout: 15000 });
+        await expect(monster).toHaveAttribute('data-expanded', 'false');
+        await expect(monster).toHaveAttribute('data-activation-armed', 'false');
+
+        await clickCenter(monster, page);
+
+        await expect(monster).toHaveAttribute('data-expanded', 'false');
+        await expect(monster).toHaveAttribute('data-activation-armed', 'false');
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-monster-no-counter')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(false);
+
+        await game.screenshot('12-monster-without-counter-does-not-arm-talent', testInfo);
+    });
+
+    test('移动端有+1力量指示物的怪物发动天赋后会移除指示物并提示额外随从机会', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 812, height: 375 });
+        await page.addInitScript(() => {
+            const query = '(pointer: coarse)';
+            const originalMatchMedia = window.matchMedia.bind(window);
+            window.matchMedia = ((media: string) => {
+                if (media !== query) {
+                    return originalMatchMedia(media);
+                }
+
+                return {
+                    matches: true,
+                    media,
+                    onchange: null,
+                    addListener: () => {},
+                    removeListener: () => {},
+                    addEventListener: () => {},
+                    removeEventListener: () => {},
+                    dispatchEvent: () => true,
+                } as MediaQueryList;
+            }) as typeof window.matchMedia;
+        });
+
+        await game.openTestGame('smashup', {
+            numPlayers: 2,
+            skipInitialization: true,
+        });
+        await game.setupScene(buildMonsterWithCounterMobileScene());
+
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return window.innerWidth === 812
+                && window.matchMedia('(pointer: coarse)').matches
+                && state?.sys?.phase === 'playCards'
+                && state?.core?.bases?.[0]?.minions?.[0]?.uid === 'p0-monster-with-counter';
+        }, { timeout: 10000, polling: 200 });
+
+        const monster = page.locator('[data-minion-uid="p0-monster-with-counter"]');
+
+        await expect(monster).toBeVisible({ timeout: 15000 });
+        await expect(monster).toContainText('+1');
+        await expect(monster).toHaveAttribute('data-activation-armed', 'false');
+
+        await clickCenter(monster, page);
+        await expect(monster).toHaveAttribute('data-expanded', 'true');
+        await expect(monster).toHaveAttribute('data-activation-armed', 'true');
+        await expect(page.getByText('再次点击发动')).toBeVisible({ timeout: 5000 });
+
+        await clickCenter(monster, page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const player = state.core.players['0'];
+            return {
+                powerCounters: state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-monster-with-counter')?.powerCounters ?? -1,
+                talentUsed: state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-monster-with-counter')?.talentUsed ?? false,
+                minionLimit: player.minionLimit,
+            };
+        }, { timeout: 5000 }).toEqual({
+            powerCounters: 0,
+            talentUsed: true,
+            minionLimit: 2,
+        });
+
+        await expect(page.getByText('获得1次额外随从机会')).toBeVisible({ timeout: 5000 });
+
+        await expect(monster).toHaveAttribute('data-activation-armed', 'false');
+        await game.screenshot('13-monster-with-counter-grants-extra-minion', testInfo);
     });
 });

@@ -55,7 +55,7 @@ import type { PlayerId } from '../../../engine/types';
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
 import { getMinionDef, getMinionLikePower, getCardDef, getBaseDefIdsForFactions, getFusionDef } from '../data/cards';
 import type { ActionCardDef, FusionCardDef } from './types';
-import { buildDeck, drawCards, isCardMinionLike } from './utils';
+import { buildDeck, drawCards, getMinionTalentActivationError, isCardMinionLike } from './utils';
 import { autoMulligan } from '../../../engine/primitives/mulligan';
 import { maybeQueueStartingHandMulliganPrompt } from './mulliganHandlers';
 import { resolveOnPlay, resolveSpecial, resolveTalent, resolveOnDestroy } from './abilityRegistry';
@@ -541,6 +541,9 @@ function executeCommand(
             // 随从天赋
             const minion = base?.minions.find(m => m.uid === minionUid);
             if (!minion) return { events: [] };
+            if (getMinionTalentActivationError(core, minion, baseIndex)) {
+                return { events: [] };
+            }
 
             const talentEvt: TalentUsedEvent = {
                 type: SU_EVENTS.TALENT_USED,

@@ -110,19 +110,26 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
     const { setSelectedFactions } = useSmashUpOverlay();
     
     const core = G?.core;
-    const phase = G?.sys.phase;
+    const system = G?.sys;
+    const phase = system?.phase;
+    // 进入房间和派系选择切到正式棋盘之间，G/core 可能会有短暂未就绪窗口。
+    const corePlayers = core?.players;
+    const coreBases = core?.bases;
+    const turnOrder = core?.turnOrder;
+    const eventEntries = system?.eventStream?.entries ?? [];
+    const tutorialState = system?.tutorial;
     const currentPid = core ? getCurrentPlayerId(core) : '0';
     const playerID = rawPlayerID;
     const isMyTurn = playerID === currentPid;
+    const myPlayer = playerID && corePlayers ? corePlayers[playerID] : corePlayers?.['0'];
     // 观战模式下默认显示玩家 0 的视角
-    const myPlayer = playerID && core ? core.players[playerID] : (core ? core.players['0'] : undefined);
-    const isGameOver = G?.sys.gameover;
+    const isGameOver = system?.gameover;
     const rootPid = playerID || '0';
     const isWinner = !!isGameOver && isGameOver.winner === rootPid;
     const isMobileViewport = useMobileViewport();
     
     // 响应式布局配置
-    const playerCount = core?.turnOrder.length || 2;
+    const playerCount = turnOrder?.length ?? 2;
     const layout = getLayoutConfig(playerCount, { isMobileViewport });
     const topHudScale = layout.topHudScale;
     const endTurnHudScale = layout.endTurnHudScale;
@@ -163,16 +170,15 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
     
     // 更新选择的派系到 Context（游戏开始后）
     useEffect(() => {
-        if (phase !== 'factionSelect') {
-            const allFactions: string[] = [];
-            for (const player of Object.values(core.players)) {
-                if (player.factions) {
-                    allFactions.push(...player.factions);
-                }
+        if (!corePlayers || phase === 'factionSelect') return;
+        const allFactions: string[] = [];
+        for (const player of Object.values(corePlayers)) {
+            if (player.factions) {
+                allFactions.push(...player.factions);
             }
-            setSelectedFactions(allFactions);
         }
-    }, [phase, core.players, setSelectedFactions]);
+        setSelectedFactions(allFactions);
+    }, [phase, corePlayers, setSelectedFactions]);
     
     // 对手视角切换状态（必须在使用前声明，避免 TDZ 错误）
     const [viewMode, setViewMode] = useState<'self' | 'opponent'>('self');
@@ -181,8 +187,8 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
     }, []);
     
     // 对手玩家数据
-    const opponentPid = core.turnOrder.find(pid => pid !== playerID) || '1';
-    const opponentPlayer = core.players[opponentPid];
+    const opponentPid = turnOrder?.find(pid => pid !== playerID) || '1';
+    const opponentPlayer = corePlayers?.[opponentPid];
     
     // 根据视角模式选择显示的玩家数据
     // 重赛系统（通用 hook）
@@ -264,7 +270,7 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
     }, [core, isMyTurn, phase, playerID, myPlayer]);
 
     // 手牌弃牌交互检测：当前 interaction 的所有选项都对应手牌时，用手牌区直接选择
-    const currentInteraction = G.sys.interaction?.current;
+    const currentInteraction = system?.interaction?.current;
     const currentPrompt = useMemo(() => asSimpleChoice(currentInteraction), [currentInteraction]);
 
     const isHandDiscardPrompt = useMemo(() => {
@@ -517,14 +523,14 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
         const opt = discardPlayOptions.find(o => o.card.uid === discardStripSelectedUid);
         if (!opt) return new Set();
         if (opt.allowedBaseIndices === 'all') {
-            return new Set(core.bases.map((_, i) => i));
+            return new Set((coreBases ?? []).map((_, i) => i));
         }
         return new Set(opt.allowedBaseIndices);
-    }, [discardStripSelectedUid, isDiscardMinionPrompt, discardMinionAllowedBases, discardPlayOptions, core.bases]);
+    }, [discardStripSelectedUid, isDiscardMinionPrompt, discardMinionAllowedBases, discardPlayOptions, coreBases]);
 
 
     // 响应窗口状态判断（meFirst 或 afterScoring）
-    const responseWindow = G.sys.responseWindow?.current;
+    const responseWindow = system?.responseWindow?.current;
     const isMeFirstResponse = useMemo(() => {
         if (!responseWindow || responseWindow.windowType !== 'meFirst') return false;
         const currentResponderId = responseWindow.responderQueue[responseWindow.currentResponderIndex];
@@ -774,13 +780,17 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
         );
     }, [t]);
 
-    // 能力反馈 toast（搜索失败等提示）
+    // 能力反馈 toast：失败提示，以及成功获得额外出牌额度的明确反馈。
     useEffect(() => {
         if (gameEvents.feedbacks.length === 0) return;
         for (const fb of gameEvents.feedbacks) {
-            // 只显示给当前玩家的反馈
             if (fb.playerId === playerID) {
-                toast(t(fb.messageKey, { defaultValue: '牌库中未找到符合条件的卡牌，已重洗牌库', ...fb.messageParams }));
+                const defaultMessage = fb.messageKey === 'ui.extra_minion_granted'
+                    ? '\u83b7\u5f97{{count}}\u6b21\u989d\u5916\u968f\u4ece\u673a\u4f1a'
+                    : fb.messageKey === 'ui.extra_action_granted'
+                    ? '\u83b7\u5f97{{count}}\u6b21\u989d\u5916\u884c\u52a8\u673a\u4f1a'
+                    : '\u724c\u5e93\u4e2d\u672a\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u5361\u724c\uff0c\u5df2\u91cd\u6d17\u724c\u5e93';
+                toast(t(fb.messageKey, { defaultValue: defaultMessage, ...fb.messageParams }));
             }
             gameEvents.removeFeedback(fb.id);
         }
@@ -790,7 +800,7 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
     useGameAudio({
         config: SMASHUP_AUDIO_CONFIG,
         gameId: SMASH_UP_MANIFEST.id,
-        G: G.core,
+        G: core,
         ctx: {
             currentPhase: phase,
             isGameOver: !!isGameOver,
@@ -799,11 +809,11 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
         meta: {
             currentPlayerId: currentPid,
         },
-        eventEntries: G.sys.eventStream.entries,
+        eventEntries,
     });
 
     // 教学系统集成
-    useTutorialBridge(G.sys.tutorial, dispatch);
+    useTutorialBridge(tutorialState, dispatch);
     const { isActive: isTutorialActive, currentStep: tutorialStep } = useTutorial();
     const isTutorialMode = isTutorialActive;
 
@@ -994,7 +1004,7 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                 handlePlayMinion(selectedCardUid, index);
             }
         }
-    }, [selectedCardUid, selectedCardMode, handlePlayMinion, handlePlayOngoingAction, core.bases, t, isBaseSelectPrompt, selectableBaseIndices, currentPrompt, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, responseWindow, playerID, myPlayer]);
+    }, [selectedCardUid, selectedCardMode, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, currentPrompt, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, responseWindow, playerID, myPlayer]);
 
     const handleCardClick = useCallback((card: CardInstance) => {
         // 手牌弃牌交互优先：直接响应 interaction
