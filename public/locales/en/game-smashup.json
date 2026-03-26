@@ -2027,7 +2027,7 @@
     },
     "killer_plant_weed_eater_pod": {
       "name": "Weed Eater",
-      "abilityText": "This minion has -2 power on the turn you play it."
+      "abilityText": "Ongoing: At the start of your turn, this minion gains +2 power until the start of your next turn."
     },
     "killer_plant_water_lily_pod": {
       "name": "Water Lily",

@@ -526,6 +526,28 @@ function registerWizardOngoingEffects(): void {
     // 大法师：回合开始时，控制者额外打出一个行动
     // 注意：根据官方 FAQ，打出当回合也能获得额外行动
     registerTrigger('wizard_archmage', 'onTurnStart', (trigCtx) => {
+        if (trigCtx.triggerMinionUid) {
+            for (const base of trigCtx.state.bases) {
+                const triggeredArchmage = base.minions.find(minion =>
+                    minion.uid === trigCtx.triggerMinionUid && minion.defId === 'wizard_archmage',
+                );
+                if (!triggeredArchmage) continue;
+                if (triggeredArchmage.controller !== trigCtx.playerId) return [];
+
+                return [{
+                    type: SU_EVENTS.LIMIT_MODIFIED,
+                    payload: {
+                        playerId: triggeredArchmage.controller,
+                        limitType: 'action' as const,
+                        delta: 1,
+                        reason: triggeredArchmage.defId,
+                    },
+                    timestamp: trigCtx.now,
+                }];
+            }
+            return [];
+        }
+
         // 找到 archmage 的控制者?
         let archmageController: string | undefined;
         let archmageDefId: string | undefined;

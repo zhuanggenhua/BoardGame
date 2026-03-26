@@ -44,6 +44,11 @@ function killerPlantWeedEater(ctx: AbilityContext): AbilityResult {
     return { events: [evt] };
 }
 
+/** Weed Eater POD onPlay：POD 版是持续能力，打出时没有原版的 -2 力量结算。 */
+function killerPlantWeedEaterPod(_ctx: AbilityContext): AbilityResult {
+    return { events: [] };
+}
+
 // killer_plant_sleep_spores (ongoing) ?已通过 ongoingModifiers 系统实现力量修正?1力量的
 // killer_plant_overgrowth (ongoing) ?已通过 ongoingModifiers 系统实现临界点修正
 // killer_plant_entangled (ongoing) ?已通过 ongoingEffects 保护 + 触发系统实现
@@ -70,6 +75,26 @@ function killerPlantDeepRootsChecker(ctx: ProtectionCheckContext): boolean {
  * water_lily 触发：回合开始时控制者抽1?
  */
 function killerPlantWaterLilyTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.triggerMinionUid) {
+        for (const base of ctx.state.bases) {
+            const triggeredWaterLily = base.minions.find(minion =>
+                minion.uid === ctx.triggerMinionUid && minion.defId.startsWith('killer_plant_water_lily'),
+            );
+            if (!triggeredWaterLily) continue;
+            if (triggeredWaterLily.controller !== ctx.playerId) return [];
+
+            const player = ctx.state.players[triggeredWaterLily.controller];
+            if (!player || player.deck.length === 0) return [];
+
+            return [{
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: triggeredWaterLily.controller, count: 1, cardUids: [player.deck[0].uid] },
+                timestamp: ctx.now,
+            } as CardsDrawnEvent];
+        }
+        return [];
+    }
+
     // 规则：每回合只能使用一次浇花睡莲的能力（多张在场也只触发一次）
     for (const base of ctx.state.bases) {
         for (const m of base.minions) {
@@ -99,6 +124,85 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
     const events: SmashUpEvent[] = [];
     let matchState = ctx.matchState;
     const simulatedDecks = new Map<string, CardInstance[]>();
+    if (ctx.triggerMinionUid) {
+        for (let i = 0; i < ctx.state.bases.length; i++) {
+            const targetSprout = ctx.state.bases[i].minions.find(minion =>
+                minion.uid === ctx.triggerMinionUid && minion.defId.startsWith('killer_plant_sprout'),
+            );
+            if (!targetSprout || targetSprout.controller !== ctx.playerId) continue;
+
+            const sproutBaseIndex = i;
+            events.push(destroyMinion(targetSprout.uid, targetSprout.defId, sproutBaseIndex, targetSprout.owner, undefined, 'killer_plant_sprout', ctx.now));
+            const player = ctx.state.players[targetSprout.controller];
+            if (!player) return { events, matchState };
+            const deck = simulatedDecks.get(targetSprout.controller) ?? [...player.deck];
+            simulatedDecks.set(targetSprout.controller, deck);
+            const eligible = deck.filter(c => {
+                if (c.type !== 'minion') return false;
+                const def = getMinionDef(c.defId);
+                return def !== undefined && def.power <= 3;
+            });
+            if (eligible.length === 0) {
+                events.push(buildDeckReshuffle(player, targetSprout.controller, [], ctx.now));
+                events.push(buildAbilityFeedback(targetSprout.controller, 'feedback.deck_search_no_match', ctx.now));
+                return { events, matchState };
+            }
+            if (eligible.length === 1) {
+                const card = eligible[0];
+                simulatedDecks.set(targetSprout.controller, deck.filter(c => c.uid !== card.uid));
+                const def = getMinionDef(card.defId);
+                const power = def?.power ?? 0;
+                events.push(
+                    { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId: targetSprout.controller, count: 1, cardUids: [card.uid] }, timestamp: ctx.now } as CardsDrawnEvent,
+                    grantExtraMinion(targetSprout.controller, 'killer_plant_sprout', ctx.now),
+                );
+                events.push({
+                    type: SU_EVENTS.MINION_PLAYED,
+                    payload: { playerId: targetSprout.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, baseDefId: ctx.state.bases[sproutBaseIndex].defId, power },
+                    timestamp: ctx.now,
+                } as MinionPlayedEvent);
+                events.push(buildDeckReshuffle(player, targetSprout.controller, [card.uid], ctx.now));
+                return { events, matchState };
+            }
+            if (matchState) {
+                const options = eligible.map((c, idx) => {
+                    const def = getMinionDef(c.defId);
+                    return {
+                        id: `minion-${idx}`,
+                        label: `${def?.name ?? c.defId} (鍔涢噺 ${def?.power ?? '?'})`,
+                        value: { cardUid: c.uid, defId: c.defId },
+                        displayMode: 'card' as const
+                    };
+                });
+                options.push({ id: 'skip', label: '璺宠繃', value: { skip: true }, displayMode: 'button' as const } as any);
+                const interaction = createSimpleChoice(
+                    `killer_plant_sprout_search_${targetSprout.uid}_${ctx.now}`, targetSprout.controller,
+                    '嫩芽：从牌库中选择一个力量3或更低的随从打出（可跳过）', options as any[], { sourceId: 'killer_plant_sprout_search', targetType: 'generic', autoRefresh: 'deck', responseValidationMode: 'live' },
+                );
+                (interaction.data as any).continuationContext = { baseIndex: sproutBaseIndex };
+                matchState = queueInteraction(matchState, interaction);
+                return { events, matchState };
+            }
+
+            const card = eligible[0];
+            simulatedDecks.set(targetSprout.controller, deck.filter(c => c.uid !== card.uid));
+            const def = getMinionDef(card.defId);
+            const power = def?.power ?? 0;
+            events.push(
+                { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId: targetSprout.controller, count: 1, cardUids: [card.uid] }, timestamp: ctx.now } as CardsDrawnEvent,
+                grantExtraMinion(targetSprout.controller, 'killer_plant_sprout', ctx.now),
+            );
+            events.push({
+                type: SU_EVENTS.MINION_PLAYED,
+                payload: { playerId: targetSprout.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, baseDefId: ctx.state.bases[sproutBaseIndex].defId, power },
+                timestamp: ctx.now,
+            } as MinionPlayedEvent);
+            events.push(buildDeckReshuffle(player, targetSprout.controller, [card.uid], ctx.now));
+            return { events, matchState };
+        }
+        return { events, matchState };
+    }
+
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
         for (const m of base.minions) {
@@ -314,6 +418,7 @@ export function registerKillerPlantAbilities(): void {
     registerAbility('killer_plant_budding', 'onPlay', killerPlantBudding);
     // 绽放（行动卡）：额外打出3个随从
     registerAbility('killer_plant_blossom', 'onPlay', killerPlantBlossom);
+    registerAbility('killer_plant_weed_eater_pod', 'onPlay', killerPlantWeedEaterPod);
 
     // === POD 专有逻辑 ===
     // 野生食人花 POD: 力量修正逻辑在 ongoingModifiers 中实现
@@ -349,6 +454,28 @@ export function registerKillerPlantAbilities(): void {
  */
 function killerPlantWeedEaterPodTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
+    if (ctx.triggerMinionUid) {
+        for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex++) {
+            const targetWeedEater = ctx.state.bases[baseIndex].minions.find(minion =>
+                minion.uid === ctx.triggerMinionUid && minion.defId === 'killer_plant_weed_eater_pod',
+            );
+            if (!targetWeedEater) continue;
+            if (targetWeedEater.controller !== ctx.playerId) return [];
+            if (targetWeedEater.metadata?.weedEaterEmpowered) return [];
+            return [{
+                type: SU_EVENTS.MINION_METADATA_UPDATED,
+                payload: {
+                    minionUid: targetWeedEater.uid,
+                    baseIndex,
+                    metadataUpdate: { weedEaterEmpowered: true },
+                    reason: 'killer_plant_weed_eater_pod',
+                },
+                timestamp: ctx.now,
+            } as any];
+        }
+        return [];
+    }
+
     for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex++) {
         const base = ctx.state.bases[baseIndex];
         for (const m of base.minions) {

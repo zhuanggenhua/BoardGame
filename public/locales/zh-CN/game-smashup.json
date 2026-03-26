@@ -2027,7 +2027,7 @@
     },
     "killer_plant_weed_eater_pod": {
       "name": "野生食人花",
-      "abilityText": "本随从在你打出它的回合中-2战斗力。"
+      "abilityText": "持续：在你的回合开始时，本随从获得+2力量，直到你的下个回合开始。"
     },
     "killer_plant_water_lily_pod": {
       "name": "浇花睡莲",
