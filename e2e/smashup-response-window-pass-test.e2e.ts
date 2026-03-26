@@ -120,4 +120,131 @@ test.describe('大杀四方 - 响应窗口 Pass 测试', () => {
         console.log('[TEST] 窗口状态 3:', windowState3);
         expect(windowState3.hasWindow).toBe(false);
     });
+
+    test('疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.goto('/play/smashup');
+        await page.waitForFunction(
+            () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered(),
+            { timeout: 15000 },
+        );
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [
+                    { uid: 'madness-unleashed', defId: 'cthulhu_madness_unleashed', type: 'action' },
+                    { uid: 'madness-1', defId: 'special_madness', type: 'action' },
+                    { uid: 'madness-2', defId: 'special_madness', type: 'action' },
+                    { uid: 'study-1', defId: 'wizard_mystic_studies', type: 'action' },
+                    { uid: 'study-2', defId: 'wizard_mystic_studies', type: 'action' },
+                ],
+                deck: [
+                    { uid: 'deck-1', defId: 'alien_invader', type: 'minion' },
+                    { uid: 'deck-2', defId: 'wizard_apprentice', type: 'minion' },
+                    { uid: 'deck-3', defId: 'pirate_first_mate', type: 'minion' },
+                    { uid: 'deck-4', defId: 'robot_microbot_alpha', type: 'minion' },
+                    { uid: 'deck-5', defId: 'zombie_walker', type: 'minion' },
+                    { uid: 'deck-6', defId: 'alien_scout', type: 'minion' },
+                ],
+                discard: [],
+                factions: ['minions_of_cthulhu', 'wizards'],
+                actionsPlayed: 0,
+                actionLimit: 1,
+                minionsPlayed: 0,
+                minionLimit: 1,
+            },
+            player1: {
+                hand: [],
+                deck: [],
+                discard: [],
+                factions: ['aliens', 'robots'],
+            },
+            bases: [
+                { defId: 'base_the_mothership', minions: [], ongoingActions: [] },
+                { defId: 'base_tortuga', minions: [], ongoingActions: [] },
+            ],
+            currentPlayer: '0',
+            phase: 'playCards',
+        });
+
+        await page.waitForTimeout(1200);
+
+        const waitForNoInteraction = async () => {
+            await expect.poll(async () => {
+                const state = await game.getState();
+                return state.sys.interaction?.current?.data?.sourceId ?? null;
+            }, { timeout: 10000 }).toBe(null);
+        };
+
+        const dismissSpotlightQueueIfPresent = async () => {
+            const spotlightQueue = page.getByTestId('card-spotlight-queue');
+            const isVisible = await spotlightQueue.isVisible({ timeout: 300 }).catch(() => false);
+            if (!isVisible) return;
+
+            await spotlightQueue.click({ force: true });
+            await expect(spotlightQueue).toBeHidden({ timeout: 5000 });
+        };
+
+        await game.playCard('cthulhu_madness_unleashed');
+        await game.waitForInteraction('cthulhu_madness_unleashed', 10000);
+
+        const promptState = await game.getState();
+        expect(promptState.sys.interaction.current.data.multi).toEqual({ min: 0, max: 2 });
+        const madnessOptions = (await game.getInteractionOptions()).filter((option: any) => option.value?.cardUid);
+        expect(madnessOptions).toHaveLength(2);
+        const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i });
+        const selectAllButton = page.getByRole('button', { name: /^(全选|Select All)$/i });
+
+        await game.screenshot('01-madness-unleashed-prompt', testInfo);
+
+        await selectAllButton.evaluate((button: HTMLButtonElement) => button.click());
+        await expect(confirmButton).toHaveText(/^(确认|Confirm)\s*\(2\)$/i);
+        await game.screenshot('01b-madness-unleashed-select-all', testInfo);
+
+        await confirmButton.evaluate((button: HTMLButtonElement) => button.click());
+        await waitForNoInteraction();
+
+        const actionQuota = page.locator('.group\\/action').first();
+        const actionQuotaText = await actionQuota.evaluate((node) => node.textContent?.replace(/\s+/g, '') ?? '');
+        expect(actionQuotaText).toMatch(/(战术|Action)2/i);
+        expect(actionQuotaText).toMatch(/(通用额度|GlobalQuota)2\/3/i);
+        expect(actionQuotaText).toMatch(/(含额外行动额度|Includesextraactionquota)\+2/i);
+        await game.screenshot('02-after-madness-unleashed-quota', testInfo);
+
+        await dismissSpotlightQueueIfPresent();
+        await game.playCard('wizard_mystic_studies');
+        await page.waitForTimeout(500);
+        await dismissSpotlightQueueIfPresent();
+        await game.playCard('wizard_mystic_studies');
+        await page.waitForTimeout(500);
+        await dismissSpotlightQueueIfPresent();
+
+        const finalState = await game.getState();
+        const player0 = finalState.core.players['0'];
+
+        expect(player0.actionsPlayed).toBe(3);
+        expect(player0.actionLimit).toBe(3);
+        expect(player0.discard.map((card: any) => card.uid).sort()).toEqual([
+            'madness-1',
+            'madness-2',
+            'madness-unleashed',
+            'study-1',
+            'study-2',
+        ]);
+        expect(player0.hand.map((card: any) => card.uid).sort()).toEqual([
+            'deck-1',
+            'deck-2',
+            'deck-3',
+            'deck-4',
+            'deck-5',
+            'deck-6',
+        ]);
+
+        const finalQuotaText = await actionQuota.evaluate((node) => node.textContent?.replace(/\s+/g, '') ?? '');
+        expect(finalQuotaText).toMatch(/(战术|Action)0/i);
+        expect(finalQuotaText).toMatch(/(通用额度|GlobalQuota)0\/3/i);
+        await game.screenshot('03-after-two-extra-actions', testInfo);
+    });
 });

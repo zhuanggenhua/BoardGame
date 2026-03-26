@@ -218,24 +218,24 @@ function cthulhuCorruption(ctx: AbilityContext): AbilityResult {
 }
 
 /**
- * 疑狂释放 onPlay：弃掉手中任意数量的疑狂卡，每张 = ?张牌 + 额外行动
- * 
- * - 无疑狂卡时无效果
- * - 只有1张疑狂卡时自动弃掉?
- * - 多张疑狂卡时创建 Prompt 让玩家选择弃几张（多选，最?张）
+ * 疯狂解放 onPlay：弃掉手中任意数量的疯狂卡；每弃 1 张，就可以抽 1 张牌并获得 1 个额外行动额度。
+ *
+ * 官方 FAQ 明确：
+ * 1. 必须先决定并弃掉所有要弃的疯狂卡，再开始抽牌
+ * 2. 每次选择结算该收益时，抽牌和额外行动是绑定的一组收益，不应拆成二次确认
  */
 function cthulhuMadnessUnleashed(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
-    // 排除当前打出的卡，找手中的疑狂卡
+    // 排除当前打出的卡，找手中的疯狂卡
     const madnessInHand = player.hand.filter(
         c => c.defId === MADNESS_CARD_DEF_ID && c.uid !== ctx.cardUid
     );
     if (madnessInHand.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.hand_empty', ctx.now)] };
 
-    // Prompt 选择弃几?
+    // 由玩家一次性选择要弃掉的疯狂卡数量（可为 0）
     const options = madnessInHand.map((c, i) => ({
         id: `madness-${i}`,
-        label: `疑狂卡?${i + 1}`,
+        label: `疯狂卡 ${i + 1}`,
         value: { cardUid: c.uid, defId: c.defId },
         _source: 'hand' as const,
         displayMode: 'card' as const,
@@ -246,7 +246,7 @@ function cthulhuMadnessUnleashed(ctx: AbilityContext): AbilityResult {
     ];
     const interaction = createSimpleChoice<CardChoiceValue | SkipChoiceValue>(
         `cthulhu_madness_unleashed_${ctx.now}`, ctx.playerId,
-        '选择要弃掉的疑狂卡（任意数量，可跳过）', promptOptions,
+        '选择要弃掉的疯狂卡（任意数量，可跳过）', promptOptions,
         { sourceId: 'cthulhu_madness_unleashed', targetType: 'hand', multi: { min: 0, max: madnessInHand.length } },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -726,48 +726,19 @@ export function registerCthulhuInteractionHandlers(): void {
         if (!Array.isArray(selectedCards) || selectedCards.length === 0) return { state, events: [] };
         const madnessUids = selectedCards.map(v => v.cardUid).filter(Boolean) as string[];
         if (madnessUids.length === 0) return { state, events: [] };
+        const player = state.core.players[playerId];
+        if (!player) return { state, events: [] };
         const events: SmashUpEvent[] = [];
 
-        // 1) 丢弃选中的疯狂卡到弃牌堆
+        // 1) 先一次性弃掉所有选中的疯狂卡
         events.push({
             type: SU_EVENTS.CARDS_DISCARDED,
             payload: { playerId, cardUids: madnessUids },
             timestamp,
         });
 
-        // 2) 让玩家选择要使用几次“抽牌+额外行动”的机会（0..N）
-        const maxOptions = madnessUids.length;
-        const options: PromptOption<{ count: number }>[] = [];
-        for (let k = 0; k <= maxOptions; k++) {
-            options.push({
-                id: `use-${k}`,
-                label: `使用 ${k} 次抽牌+额外行动`,
-                value: { count: k },
-                displayMode: 'button' as const,
-            });
-        }
-        const interaction = createSimpleChoice<{ count: number }>(
-            `cthulhu_madness_unleashed_apply_${timestamp}`,
-            playerId,
-            '选择要使用几次“抽牌+额外行动”的机会',
-            options,
-            { sourceId: 'cthulhu_madness_unleashed_apply', targetType: 'button' },
-        );
-
-        return { state, events, matchState: queueInteraction(state, interaction) };
-    });
-
-    // 疯狂释放：根据玩家选择的次数执行“抽 1 + 额外行动”
-    registerInteractionHandler('cthulhu_madness_unleashed_apply', (state, playerId, value, _iData, _random, timestamp) => {
-        const { count } = value as { count: number };
-        if (!count || count <= 0) return { state, events: [] };
-
-        const player = state.core.players[playerId];
-        if (!player) return { state, events: [] };
-
-        const drawCount = Math.min(count, player.deck.length);
-        const events: SmashUpEvent[] = [];
-
+        // 2) 按弃牌数直接结算“抽 1 + 额外行动”
+        const drawCount = Math.min(madnessUids.length, player.deck.length);
         if (drawCount > 0) {
             const drawnUids = player.deck.slice(0, drawCount).map(c => c.uid);
             events.push({
@@ -777,7 +748,7 @@ export function registerCthulhuInteractionHandlers(): void {
             } as CardsDrawnEvent);
         }
 
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < madnessUids.length; i++) {
             events.push(grantExtraAction(playerId, 'cthulhu_madness_unleashed', timestamp));
         }
 
