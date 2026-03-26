@@ -114,10 +114,10 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
     const currentPid = core ? getCurrentPlayerId(core) : '0';
     const playerID = rawPlayerID;
     const isMyTurn = playerID === currentPid;
-    // 观战模式下默认显示玩家 0 的视角
-    const myPlayer = playerID && core ? core.players[playerID] : (core ? core.players['0'] : undefined);
-    const isGameOver = G?.sys.gameover;
     const rootPid = playerID || '0';
+    // 观战模式下默认显示玩家 0 的视角
+    const myPlayer = core ? core.players[rootPid] : undefined;
+    const isGameOver = G?.sys.gameover;
     const isWinner = !!isGameOver && isGameOver.winner === rootPid;
     const isMobileViewport = useMobileViewport();
     
@@ -181,7 +181,7 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
     }, []);
     
     // 对手玩家数据
-    const opponentPid = core.turnOrder.find(pid => pid !== playerID) || '1';
+    const opponentPid = core.turnOrder.find(pid => pid !== rootPid) || '1';
     const opponentPlayer = core.players[opponentPid];
     
     // 根据视角模式选择显示的玩家数据

@@ -125,7 +125,8 @@
     "fusion_choose_playas": "Choose how to play",
     "fusion_choose_playas_desc": "Fusion cards can be played as a Minion or an Action. Choose the type for this play.",
     "play_as_minion": "Play as Minion",
-    "play_as_action": "Play as Action"
+    "play_as_action": "Play as Action",
+    "tap_again_to_activate": "Tap again to activate"
   },
   "feedback": {
     "deck_search_no_match": "No matching card found in deck. Deck reshuffled.",

@@ -163,7 +163,13 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs }: UseGameEventsP
 
         case SU_EVENTS.LIMIT_MODIFIED: {
           const payload = (event as LimitModifiedEvent).payload;
-          if (payload.delta > 0 && payload.playerId === myPlayerId) {
+          const isUnrestricted =
+            payload.restrictToBase === undefined &&
+            payload.powerMax === undefined &&
+            !payload.sameNameOnly &&
+            payload.sameNameDefId === undefined;
+
+          if (payload.delta > 0 && payload.playerId === myPlayerId && isUnrestricted) {
             setFeedbacks(prev => [...prev, {
               id: `fb-${uidCounter++}`,
               playerId: payload.playerId,

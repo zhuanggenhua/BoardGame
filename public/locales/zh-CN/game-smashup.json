@@ -125,7 +125,8 @@
     "fusion_choose_playas": "选择打出方式",
     "fusion_choose_playas_desc": "融合卡可以作为随从或战术打出。请选择本次打出的类型。",
     "play_as_minion": "作为随从",
-    "play_as_action": "作为战术"
+    "play_as_action": "作为战术",
+    "tap_again_to_activate": "再次点击发动"
   },
   "feedback": {
     "deck_search_no_match": "牌库中未找到符合条件的卡牌，已重洗牌库",
