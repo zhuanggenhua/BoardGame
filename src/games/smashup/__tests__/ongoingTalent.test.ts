@@ -520,6 +520,152 @@ describe('innsmouth_sacred_circle（宗教圆环 ongoing talent）', () => {
 });
 
 // ============================================================================
+// 藏身处 POD（trickster_hideout_pod）：换位 + 仅限基地持续战术
+// ============================================================================
+
+describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
+    it('只提供手牌或牌库中的基地持续战术作为交换目标', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('h-smoke', 'ninja_smoke_bomb', 'action', '0'),
+                        makeCard('h-mist', 'trickster_enshrouding_mist_pod', 'action', '0'),
+                    ],
+                    deck: [
+                        makeCard('d-flame', 'trickster_flame_trap_pod', 'action', '0'),
+                        makeCard('d-mark', 'trickster_mark_of_sleep_pod', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [makeOngoing('oa1', 'trickster_hideout_pod', '0')],
+            }],
+        });
+
+        const ms = makeMatchState(core);
+        execute(ms, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const interaction = getInteractionsFromMS(ms)[0];
+        expect(interaction?.data?.sourceId).toBe('trickster_hideout_pod_swap');
+
+        const candidateUids = (interaction?.data?.options ?? [])
+            .map((option: any) => option.value?.cardUid)
+            .filter((uid: string | undefined) => typeof uid === 'string');
+        expect(candidateUids).toEqual(['h-mist', 'd-flame']);
+    });
+
+    it('从手牌交换时把藏身处回到手牌，并继续给出消灭选项', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('h-flame', 'trickster_flame_trap_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('m-low', 'pirate_saucy_wench', '1', 2, { powerModifier: 0 })],
+                ongoingActions: [makeOngoing('oa1', 'trickster_hideout_pod', '0')],
+            }],
+        });
+
+        const ms = makeMatchState(core);
+        execute(ms, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const swapInteraction = getInteractionsFromMS(ms)[0];
+        const swapHandler = getInteractionHandler('trickster_hideout_pod_swap');
+        expect(swapHandler).toBeDefined();
+
+        const result = swapHandler!(
+            ms,
+            '0',
+            { zone: 'hand', cardUid: 'h-flame', defId: 'trickster_flame_trap_pod' },
+            swapInteraction?.data,
+            defaultRandom,
+            3000,
+        );
+
+        expect(result?.events ?? []).not.toContainEqual(expect.objectContaining({ type: SU_EVENTS.DECK_RESHUFFLED }));
+        expect(result?.state.core.players['0'].hand).toEqual([
+            expect.objectContaining({ uid: 'oa1', defId: 'trickster_hideout_pod', type: 'action' }),
+        ]);
+        expect(result?.state.core.bases[0].ongoingActions[0]).toEqual(
+            expect.objectContaining({ uid: 'h-flame', defId: 'trickster_flame_trap_pod', ownerId: '0' }),
+        );
+
+        const destroyInteraction = (result?.state.sys as any).interaction?.queue?.[0];
+        expect(destroyInteraction?.data?.sourceId).toBe('trickster_hideout_pod_destroy');
+        expect((destroyInteraction?.data?.options ?? []).some((option: any) => option.value?.minionUid === 'm-low')).toBe(true);
+    });
+
+    it('从牌库交换时把藏身处洗回牌库，而不是回手', () => {
+        const shuffleRandom: RandomFn = {
+            ...defaultRandom,
+            shuffle: (arr: any[]) => [...arr].reverse(),
+        };
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    deck: [
+                        makeCard('d-flame', 'trickster_flame_trap_pod', 'action', '0'),
+                        makeCard('d-extra', 'trickster_enshrouding_mist_pod', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [makeOngoing('oa1', 'trickster_hideout_pod', '0')],
+            }],
+        });
+
+        const ms = makeMatchState(core);
+        execute(ms, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const swapInteraction = getInteractionsFromMS(ms)[0];
+        const swapHandler = getInteractionHandler('trickster_hideout_pod_swap');
+        expect(swapHandler).toBeDefined();
+
+        const result = swapHandler!(
+            ms,
+            '0',
+            { zone: 'deck', cardUid: 'd-flame', defId: 'trickster_flame_trap_pod' },
+            swapInteraction?.data,
+            shuffleRandom,
+            3001,
+        );
+
+        expect(result?.state.core.players['0'].hand.some(card => card.uid === 'oa1')).toBe(false);
+        expect(result?.state.core.players['0'].deck.map(card => card.uid)).toEqual(['oa1', 'd-extra']);
+        expect(result?.state.core.bases[0].ongoingActions[0]).toEqual(
+            expect.objectContaining({ uid: 'd-flame', defId: 'trickster_flame_trap_pod', ownerId: '0' }),
+        );
+
+        const reshuffleEvent = (result?.events ?? []).find(event => event.type === SU_EVENTS.DECK_RESHUFFLED) as any;
+        expect(reshuffleEvent).toBeDefined();
+        expect(reshuffleEvent.payload.deckUids).toEqual(['oa1', 'd-extra']);
+    });
+});
+
+// ============================================================================
 // 随从天赋回归测试：确保原有随从天赋不受影响
 // ============================================================================
 

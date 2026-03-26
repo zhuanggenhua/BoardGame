@@ -17,7 +17,9 @@ import {
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type {
+    CardInstance,
     CardsDiscardedEvent,
+    DeckReshuffledEvent,
     OngoingDetachedEvent,
     SmashUpEvent,
     LimitModifiedEvent,
@@ -750,7 +752,7 @@ export function registerTricksterInteractionHandlers(): void {
         return { state: { ...state, core: { ...state.core, bases: newBases } }, events: [] };
     });
 
-    registerInteractionHandler('trickster_hideout_pod_swap', (state, playerId, value, iData, _random, timestamp) => {
+    registerInteractionHandler('trickster_hideout_pod_swap', (state, playerId, value, iData, random, timestamp) => {
         if ((value as any).skip) return { state, events: [] };
         if ((value as any).__cancel__) return { state, events: [] };
         const { zone, cardUid, defId } = value as { zone: 'hand' | 'deck'; cardUid: string; defId: string };
@@ -765,11 +767,24 @@ export function registerTricksterInteractionHandlers(): void {
         const player = state.core.players[playerId];
         if (!player) return undefined;
 
-        // 1) 浠庢墜鐗?鐗屽簱绉婚櫎鐩爣鎴樻湳
+        const selectedCard = (zone === 'hand' ? player.hand : player.deck)
+            .find(card => card.uid === cardUid && card.defId === defId);
+        const selectedDef = getCardDef(defId);
+        if (
+            !selectedCard
+            || selectedCard.type !== 'action'
+            || selectedDef?.type !== 'action'
+            || selectedDef.subtype !== 'ongoing'
+            || ((selectedDef.ongoingTarget ?? 'base') !== 'base')
+        ) {
+            return { state, events: [] };
+        }
+
+        // 1) 从手牌/牌库移除目标战术
         const fromHand = zone === 'hand' ? player.hand.filter(c => c.uid !== cardUid) : player.hand;
         const fromDeck = zone === 'deck' ? player.deck.filter(c => c.uid !== cardUid) : player.deck;
 
-        // 2) 钘忚韩澶勪粠鍩哄湴绂诲満杩涙墜鐗岋紙swap 鐨勫彟涓€鍗婏級
+        // 2) 藏身处离开基地；从手牌换出则回手，从牌库换出则洗回牌库
         const hideoutCard: CardInstance = { uid: hideout.uid, defId: hideout.defId, type: 'action', owner: hideout.ownerId };
 
         // 3) 鐩爣鎴樻湳杩涘叆鍩哄湴 ongoingActions锛堜繚鎸?cardUid锛?
@@ -786,6 +801,9 @@ export function registerTricksterInteractionHandlers(): void {
             };
         });
 
+        const nextHand = zone === 'hand' ? [...fromHand, hideoutCard] : fromHand;
+        const nextDeck = zone === 'deck' ? random.shuffle([...fromDeck, hideoutCard]) : fromDeck;
+
         let nextState = {
             ...state,
             core: {
@@ -795,17 +813,26 @@ export function registerTricksterInteractionHandlers(): void {
                     ...state.core.players,
                     [playerId]: {
                         ...player,
-                        hand: [...fromHand, hideoutCard],
-                        deck: fromDeck,
+                        hand: nextHand,
+                        deck: nextDeck,
                     },
                 },
             },
         };
 
+        const events: SmashUpEvent[] = [];
+        if (zone === 'deck') {
+            events.push({
+                type: SU_EVENTS.DECK_RESHUFFLED,
+                payload: { playerId, deckUids: nextDeck.map(card => card.uid) },
+                timestamp,
+            } as DeckReshuffledEvent);
+        }
+
         // 4) 浜ゆ崲鍚庯細浣犲彲浠ユ秷鐏繖閲屼竴涓垬鏂楀姏鈮?鐨勯殢浠庯紙鍙€夛級
         const updatedBase = nextState.core.bases[ctx.baseIndex];
         const candidates = updatedBase.minions.filter(m => getMinionPower(nextState.core, m, ctx.baseIndex) <= 2);
-        if (candidates.length === 0) return { state: nextState, events: [] };
+        if (candidates.length === 0) return { state: nextState, events };
         const options = candidates.map((m, i) => {
             const mDef = getCardDef(m.defId) as MinionCardDef | undefined;
             const name = mDef?.name ?? m.defId;
@@ -822,7 +849,7 @@ export function registerTricksterInteractionHandlers(): void {
             { sourceId: 'trickster_hideout_pod_destroy', targetType: 'minion' },
         );
         nextState = queueInteraction(nextState, prompt);
-        return { state: nextState, events: [] };
+        return { state: nextState, events };
     });
 
     registerInteractionHandler('trickster_hideout_pod_destroy', (state, playerId, value, _iData, _random, timestamp) => {
