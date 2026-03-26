@@ -6,7 +6,7 @@ import { SU_COMMANDS } from '../domain/types';
 import { killerPlantOvergrowthTrigger } from '../abilities/killer_plants';
 import { getMinionPower } from '../domain/abilityHelpers';
 import { getEffectiveBreakpoint } from '../domain/ongoingModifiers';
-import { getMinionDef } from '../data/cards';
+import { getCardDef, getMinionDef } from '../data/cards';
 import { runCommand } from './testRunner';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { reduce } from '../domain/reducer';
@@ -17,6 +17,14 @@ beforeAll(() => {
 });
 
 describe('Killer Plants POD Card Logic Verification', () => {
+    it('Killer Plants POD should use the POD action counts for Sleep Spores and Budding', () => {
+        const sleepSporesDef = getCardDef('killer_plant_sleep_spores_pod');
+        const buddingDef = getCardDef('killer_plant_budding_pod');
+
+        expect(sleepSporesDef?.count).toBe(2);
+        expect(buddingDef?.count).toBe(1);
+    });
+
     it('Overgrowth POD should reduce breakpoint to 0', () => {
         const overgrowth = { uid: 'og-1', defId: 'killer_plant_overgrowth_pod', ownerId: '0' };
         const base = {
