@@ -1236,7 +1236,7 @@ function registerTricksterPodOngoingEffects(): void {
         const options = combos.map((c, i) => ({
             id: `combo-${i}`,
             label: c.label,
-            value: { blocked },
+            value: { blocked: c.blocked },
         }));
         const interaction = createSimpleChoice(
             `trickster_block_the_path_pod_${ctx.now}`,

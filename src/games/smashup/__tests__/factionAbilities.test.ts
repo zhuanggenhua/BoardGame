@@ -70,6 +70,53 @@ describe('trickster interaction regressions', () => {
         expect((destroyEvent as any).payload.minionUid).toBe('e1');
         expect(respondResult.finalState.core.bases[0].minions.some(m => m.uid === 'e1')).toBe(false);
     });
+
+    it('trickster_block_the_path_pod stores the selected blocked faction combo', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a_block', 'trickster_block_the_path_pod', 'action', '0')],
+                    factions: ['tricksters_pod', 'test_b'] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    factions: ['robots', 'zombies'] as [string, string],
+                }),
+            },
+            bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
+        });
+
+        const playResult = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a_block', targetBaseIndex: 0 },
+        } as any, defaultRandom);
+
+        expect(playResult.success).toBe(true);
+
+        const prompt = playResult.finalState.sys.interaction?.current as any;
+        expect(prompt?.data?.sourceId).toBe('trickster_block_the_path_pod');
+
+        const options = prompt?.data?.options ?? [];
+        const blockedOptions = options.filter((option: any) => option?.value?.blocked?.['1']);
+        expect(blockedOptions).toHaveLength(2);
+        expect(blockedOptions.map((option: any) => option.value.blocked['1'])).toEqual(['robots', 'zombies']);
+
+        const robotsOption = blockedOptions.find((option: any) => option?.value?.blocked?.['1'] === 'robots');
+        expect(robotsOption).toBeDefined();
+
+        const respondResult = runCommand(playResult.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: robotsOption.id },
+        } as any, defaultRandom);
+
+        expect(respondResult.success).toBe(true);
+
+        const ongoing = respondResult.finalState.core.bases[0].ongoingActions.find(
+            action => action.defId === 'trickster_block_the_path_pod',
+        );
+        expect(ongoing?.metadata?.blockedFactionsByPlayer).toEqual({ '1': 'robots' });
+    });
 });
 
 // ============================================================================
