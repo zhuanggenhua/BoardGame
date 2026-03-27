@@ -831,6 +831,12 @@ function processImmediateStartTurnMinionTriggers(
             currentMatchState = { ...currentMatchState, core: simulatedCore };
         }
 
+        if (event.type === SU_EVENTS.MINION_RETURNED) {
+            const returnedEvent = event as MinionReturnedEvent;
+            processedPlayedUids.delete(returnedEvent.payload.minionUid);
+            continue;
+        }
+
         if (event.type !== SU_EVENTS.MINION_PLAYED) continue;
 
         const playedEvent = event as MinionPlayedEvent;
@@ -1965,16 +1971,33 @@ function postProcessSystemEvents(
 
     let combined = [...afterAffect.events, ...finalDerived];
 
+    // === Global reaction queue resolution (Wiki simultaneous ordering) ===
+    // Important: TRIGGER_QUEUED/CONSUMED are domain events; they are not reduced into ms.core yet at this stage.
+    // We must apply them to a temporary core view so the resolver can see the pending queue immediately.
+    let coreForQueue = ms.core;
+    for (const e of combined) {
+        if (e.type === SU_EVENTS.TRIGGER_QUEUED || e.type === SU_EVENTS.TRIGGER_CONSUMED) {
+            coreForQueue = reduce(coreForQueue, e);
+        }
+    }
+    const msForQueue = coreForQueue === ms.core ? ms : { ...ms, core: coreForQueue };
+
+    const rq = maybeResolveReactionQueue(msForQueue, random, now);
+    let finalEvents = rq ? [...combined, ...rq.events] : combined;
+    if (rq) {
+        ms = rq.state;
+    }
+
     const startTurnWindowActive = ms.sys.phase === 'startTurn' || Boolean((ms.sys as any)._smashupStartTurnWindowActive);
     if (!options?.skipImmediateStartTurnMinionTriggers && startTurnWindowActive) {
         const immediate = processImmediateStartTurnMinionTriggers(
             state,
-            combined,
+            finalEvents,
             pid,
             random,
             ms,
         );
-        combined = immediate.events;
+        finalEvents = immediate.events;
         if (immediate.matchState) {
             ms = immediate.matchState;
         }
@@ -1990,23 +2013,7 @@ function postProcessSystemEvents(
         };
     }
 
-    // === Global reaction queue resolution (Wiki simultaneous ordering) ===
-    // Important: TRIGGER_QUEUED/CONSUMED are domain events; they are not reduced into ms.core yet at this stage.
-    // We must apply them to a temporary core view so the resolver can see the pending queue immediately.
-    let coreForQueue = ms.core;
-    for (const e of combined) {
-        if (e.type === SU_EVENTS.TRIGGER_QUEUED || e.type === SU_EVENTS.TRIGGER_CONSUMED) {
-            coreForQueue = reduce(coreForQueue, e);
-        }
-    }
-    const msForQueue = coreForQueue === ms.core ? ms : { ...ms, core: coreForQueue };
-
-    const rq = maybeResolveReactionQueue(msForQueue, random, now);
-    if (rq) {
-        return { events: [...combined, ...rq.events], matchState: rq.state };
-    }
-
-    return { events: combined, matchState: ms };
+    return { events: finalEvents, matchState: ms };
 }
 
 // ============================================================================

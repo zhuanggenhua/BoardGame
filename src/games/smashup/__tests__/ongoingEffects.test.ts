@@ -444,7 +444,10 @@ describe('持续效果拦截框架', () => {
 
             const first = makeMinion({ uid: 'source-a', defId: 'test_source' });
             const second = makeMinion({ uid: 'source-b', defId: 'test_source' });
-            const state = makeState([makeBase({ minions: [first, second] })]);
+            const state = makeState([
+                makeBase({ minions: [first] }),
+                makeBase({ minions: [second] }),
+            ]);
 
             const result = fireTriggerForSource(state, 'test_source', 'onTurnStart', {
                 state,
@@ -457,7 +460,7 @@ describe('持续效果拦截框架', () => {
             expect(result.events).toHaveLength(1);
             expect((result.events[0] as any).payload).toEqual({
                 sourceCardUid: 'source-b',
-                sourceBaseIndex: 0,
+                sourceBaseIndex: 1,
             });
         });
     });
