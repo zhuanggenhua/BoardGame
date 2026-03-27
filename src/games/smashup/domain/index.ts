@@ -868,6 +868,7 @@ function processImmediateStartTurnMinionTriggers(
             immediateResult.events,
             random,
             currentMatchState,
+            { skipImmediateStartTurnMinionTriggers: true },
         );
         const processedImmediateMatchState = processedImmediate.matchState
             ? { ...processedImmediate.matchState, core: simulatedCore }
@@ -1443,6 +1444,14 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     nextTurnNumber = core.turnNumber + 1;
                 }
             }
+            currentMatchState = {
+                ...currentMatchState,
+                sys: {
+                    ...currentMatchState.sys,
+                    _smashupStartTurnWindowActive: true,
+                } as any,
+            };
+            hasSysUpdate = true;
             const turnStarted: TurnStartedEvent = {
                 type: SU_EVENTS.TURN_STARTED,
                 payload: {
@@ -1502,6 +1511,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     hasSysUpdate = hasSysUpdate || immediateStartTurn.matchState.sys !== currentMatchState.sys;
                     currentMatchState = immediateStartTurn.matchState;
                 }
+
                 events.push(...immediateStartTurn.events);
             }
 
@@ -1813,7 +1823,8 @@ function postProcessSystemEvents(
     state: SmashUpCore,
     events: SmashUpEvent[],
     random: RandomFn,
-    matchState?: MatchState<SmashUpCore>
+    matchState?: MatchState<SmashUpCore>,
+    options?: { skipImmediateStartTurnMinionTriggers?: boolean },
 ): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
     // 鎻愬彇鏃堕棿鎴筹紙鍙栫涓€涓簨浠剁殑 timestamp锛?
     const now = events.length > 0 && typeof events[0].timestamp === 'number' ? events[0].timestamp : 0;
@@ -1952,7 +1963,32 @@ function postProcessSystemEvents(
         finalDerived = afterDerivedAffect.events;
     }
 
-    const combined = [...afterAffect.events, ...finalDerived];
+    let combined = [...afterAffect.events, ...finalDerived];
+
+    const startTurnWindowActive = ms.sys.phase === 'startTurn' || Boolean((ms.sys as any)._smashupStartTurnWindowActive);
+    if (!options?.skipImmediateStartTurnMinionTriggers && startTurnWindowActive) {
+        const immediate = processImmediateStartTurnMinionTriggers(
+            state,
+            combined,
+            pid,
+            random,
+            ms,
+        );
+        combined = immediate.events;
+        if (immediate.matchState) {
+            ms = immediate.matchState;
+        }
+    }
+
+    if ((ms.sys as any)._smashupStartTurnWindowActive && ms.sys.phase !== 'startTurn' && !ms.sys.interaction?.current) {
+        ms = {
+            ...ms,
+            sys: {
+                ...ms.sys,
+                _smashupStartTurnWindowActive: undefined,
+            } as any,
+        };
+    }
 
     // === Global reaction queue resolution (Wiki simultaneous ordering) ===
     // Important: TRIGGER_QUEUED/CONSUMED are domain events; they are not reduced into ms.core yet at this stage.

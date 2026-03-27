@@ -203,4 +203,58 @@ describe('Killer Plants POD Card Logic Verification', () => {
         expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['bud-1']);
         expect(result.finalState.core.players['0'].deck).toHaveLength(0);
     });
+
+    it('Sprout 交互响应打出的 Water Lily 仍应在同一个 start-turn 窗口立即抽牌', () => {
+        const base = {
+            defId: 'base1',
+            minions: [makeMinion('sprout-1', 'killer_plant_sprout_pod', '0', 2)],
+            ongoingActions: [],
+        } as any;
+        const core = makeState({
+            bases: [base],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                    deck: [
+                        makeCard('wl-1', 'killer_plant_water_lily_pod', 'minion', '0'),
+                        makeCard('we-1', 'killer_plant_weed_eater_pod', 'minion', '0'),
+                        makeCard('bud-1', 'killer_plant_budding_pod', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'endTurn';
+
+        const result = runCommand(matchState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '1',
+            payload: undefined,
+            timestamp: 1004,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.finalState.sys.phase).toBe('startTurn');
+        const interaction = result.finalState.sys.interaction.current as any;
+        expect(interaction?.data?.sourceId).toBe('killer_plant_sprout_search');
+
+        const waterLilyOption = interaction.data.options.find((option: any) => option.value?.cardUid === 'wl-1');
+        expect(waterLilyOption).toBeDefined();
+
+        const respondResult = runCommand(result.finalState, {
+            type: 'SYS_INTERACTION_RESPOND' as any,
+            playerId: '0',
+            payload: { optionId: waterLilyOption.id },
+            timestamp: 1005,
+        });
+
+        expect(respondResult.success).toBe(true);
+        const drawEvents = respondResult.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
+        expect(drawEvents).toHaveLength(2);
+        expect((drawEvents[0] as any).payload.cardUids).toEqual(['wl-1']);
+        expect((drawEvents[1] as any).payload.cardUids).toEqual(['we-1']);
+        expect(respondResult.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['we-1']);
+    });
 });

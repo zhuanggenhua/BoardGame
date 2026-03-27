@@ -1002,7 +1002,9 @@ export function fireTriggers(
 
         const sourcesToExecute = entry.perInstance
             ? locatedSources.filter(located => isTriggerSourceEligible(entry, timing, located, ctx.baseIndex))
-            : [locatedSources[0]].filter(located => isTriggerSourceEligible(entry, timing, located, ctx.baseIndex));
+            : [selectSpecificSourceLocation(locatedSources, ctx)].filter(located => (
+                located !== undefined && isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+            ));
         if (sourcesToExecute.length === 0) continue;
 
         for (const located of sourcesToExecute) {
@@ -1023,8 +1025,22 @@ export function fireTriggers(
             }
         }
     }
-    
+
     return { events, matchState };
+}
+
+function selectSpecificSourceLocation(
+    locatedSources: TriggerSourceLocation[],
+    ctx: Omit<TriggerContext, 'timing'>,
+): TriggerSourceLocation | undefined {
+    const preferredUid = ctx.sourceCardUid ?? ctx.triggerMinionUid;
+    if (preferredUid) {
+        const matched = locatedSources.find(located => located.uid === preferredUid);
+        if (matched) {
+            return matched;
+        }
+    }
+    return locatedSources[0];
 }
 
 /**
@@ -1090,7 +1106,9 @@ export function fireTriggerForSource(
 
         const sourcesToExecute = entry.perInstance
             ? locatedSources.filter(located => isTriggerSourceEligible(entry, timing, located, ctx.baseIndex))
-            : [locatedSources[0]].filter(located => isTriggerSourceEligible(entry, timing, located, ctx.baseIndex));
+            : [selectSpecificSourceLocation(locatedSources, ctx)].filter(located => (
+                located !== undefined && isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+            ));
         if (sourcesToExecute.length === 0) continue;
 
         for (const located of sourcesToExecute) {
