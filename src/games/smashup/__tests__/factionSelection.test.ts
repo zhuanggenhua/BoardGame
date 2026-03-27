@@ -17,6 +17,7 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities } from '../abilities';
 import smashUpEnglishMap from '../data/englishAtlasMap.json';
 import { getAllBaseDefs, getBaseDefIdsForFactions } from '../data/cards';
+import { getSmashUpAtlasLookupKey } from '../ui/SmashUpCardRenderer';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -235,19 +236,31 @@ describe('派系选择系统', () => {
                 expect(allowed.has(id)).toBe(true);
             }
         });
-        it('POD factions reuse their original base pool', () => {
+        it('POD factions 使用对应的 POD 基地池', () => {
             const baseIds = getBaseDefIdsForFactions([
                 SMASHUP_FACTION_IDS.WIZARDS_POD,
                 SMASHUP_FACTION_IDS.GHOSTS_POD,
             ]);
 
             expect(baseIds).toEqual(expect.arrayContaining([
-                'base_great_library',
-                'base_wizard_academy',
-                'base_dread_lookout',
-                'base_haunted_house_al9000',
+                'base_great_library_pod',
+                'base_wizard_academy_pod',
+                'base_dread_lookout_pod',
+                'base_haunted_house_al9000_pod',
             ]));
             expect(baseIds).not.toContain('base_the_homeworld');
+        });
+
+        it('保留 POD 派系专属的基地池覆盖', () => {
+            const baseIds = getBaseDefIdsForFactions([
+                SMASHUP_FACTION_IDS.ELDER_THINGS_POD,
+                SMASHUP_FACTION_IDS.INNSMOUTH_POD,
+            ]);
+
+            expect(baseIds).toEqual(expect.arrayContaining([
+                'base_plateau_of_leng_pod',
+                'base_ritual_site_pod',
+            ]));
         });
 
         it('all POD-enabled bases have POD atlas mappings', () => {
@@ -264,6 +277,11 @@ describe('派系选择系统', () => {
                 .filter(key => !englishMap[key]);
 
             expect(missingPodBaseMappings).toEqual([]);
+        });
+
+        it('POD 基地图集 lookup key 不会重复追加后缀', () => {
+            expect(getSmashUpAtlasLookupKey('base_secret_garden_pod', true, true)).toBe('base_secret_garden_pod');
+            expect(getSmashUpAtlasLookupKey('base_secret_garden', true, true)).toBe('base_secret_garden_pod');
         });
     });
 });
