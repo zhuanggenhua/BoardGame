@@ -49,6 +49,7 @@ type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
             mode?: 'set' | 'adjust' | 'copy' | 'any';
             targetValue?: number;
         };
+        diceOwnerId?: PlayerId;
         targetOpponentDice?: boolean;
     };
 };

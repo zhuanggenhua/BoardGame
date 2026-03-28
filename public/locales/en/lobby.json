@@ -293,7 +293,12 @@
       "3days": "3 days",
       "7days": "7 days"
     },
-    "retentionHint": "Reconnect within retention period; auto-cleanup after expiry"
+    "retentionHint": "Reconnect within retention period; auto-cleanup after expiry",
+    "multiSelectPlaceholder": "Select expansions",
+    "multiSelectButton": "{{count}} selected",
+    "multiSelectSelected": "{{count}} enabled",
+    "multiSelectNone": "Disabled",
+    "removeSelectedOption": "Remove {{label}}"
   },
   "socket": {
     "invalidGameId": "Invalid gameId, subscription ignored: {{value}}",

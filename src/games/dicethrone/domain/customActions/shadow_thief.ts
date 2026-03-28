@@ -23,7 +23,7 @@ import type {
 } from '../types';
 import { registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
-import { resolveTargetOpponentDice } from './common';
+import { resolveDiceOwnerId, resolveTargetOpponentDice } from './common';
 
 const FACE = SHADOW_THIEF_DICE_FACE_IDS;
 
@@ -179,6 +179,7 @@ function handleShadowManipulation({ attackerId, sourceAbilityId, state, timestam
         selectCount,
         selected: [],
         dieModifyConfig: { mode: 'any' },
+        diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{

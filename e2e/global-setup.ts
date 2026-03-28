@@ -33,6 +33,7 @@ const forceStartServers = process.env.PW_START_SERVERS === 'true';
 const shouldStartServers = forceStartServers || !useDevServers;
 const shouldReuseExistingServers = process.env.PW_REUSE_EXISTING_SERVERS === 'true';
 const singleWorkerPorts = useDevServers ? DEV_SERVER_PORTS : E2E_SINGLE_WORKER_PORTS;
+const runtimeNode = process.env.PW_NODE_BINARY || process.execPath;
 
 function getRuntimeScope(): string {
     const normalized = (process.env.PW_RUNTIME_SCOPE || 'default').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -143,7 +144,7 @@ function spawnDetachedServer(script: string, args: string[] = [], portsOverride 
 
     let child;
     try {
-        child = spawn(process.execPath, [script, ...args], {
+        child = spawn(runtimeNode, [script, ...args], {
             cwd: process.cwd(),
             env: {
                 ...process.env,

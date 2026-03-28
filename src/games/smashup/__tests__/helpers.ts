@@ -130,8 +130,22 @@ export function makeCard(
 // ============================================================================
 
 /** 创建空基地 */
-export function makeBase(defId: string, minions: MinionOnBase[] = []): BaseInPlay {
-    return { defId, minions, ongoingActions: [] };
+export function makeBase(defId: string, minions?: MinionOnBase[]): BaseInPlay;
+export function makeBase(overrides: Partial<BaseInPlay>): BaseInPlay;
+export function makeBase(
+    defIdOrOverrides: string | Partial<BaseInPlay>,
+    minions: MinionOnBase[] = [],
+): BaseInPlay {
+    if (typeof defIdOrOverrides === 'string') {
+        return { defId: defIdOrOverrides, minions, ongoingActions: [] };
+    }
+
+    return {
+        defId: 'test_base',
+        minions: [],
+        ongoingActions: [],
+        ...defIdOrOverrides,
+    };
 }
 
 // ============================================================================

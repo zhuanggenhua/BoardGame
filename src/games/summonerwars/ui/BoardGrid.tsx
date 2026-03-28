@@ -766,14 +766,13 @@ export const BoardGrid: React.FC<BoardGridProps> = (props) => {
 
   // 追踪新出现的单位用于播放召唤动画
   const prevUnitIdsRef = React.useRef<Set<string>>(new Set());
-  const newUnitsMemo = React.useMemo(() => {
+  const newUnitIds = React.useMemo(() => {
     const current = new Set<string>();
     core.board.forEach(row => row.forEach(cell => {
       if (cell.unit) current.add(cell.unit.instanceId);
       if (cell.structure) current.add(cell.structure.cardId);
     }));
 
-    // 如果是初始状态（只有召唤师和初始城门），不显示动画
     if (prevUnitIdsRef.current.size === 0) {
       prevUnitIdsRef.current = current;
       return new Set<string>();
@@ -796,7 +795,7 @@ export const BoardGrid: React.FC<BoardGridProps> = (props) => {
         currentGrid={currentGrid}
         myPlayerId={myPlayerId}
         toViewCoord={toViewCoord}
-        props={{ ...props, newUnitIds: newUnitsMemo }}
+        props={{ ...props, newUnitIds }}
       />
     </>
   );

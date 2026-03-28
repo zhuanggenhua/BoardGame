@@ -228,6 +228,8 @@ describe('攻击修正指示器撤回测试', () => {
                 dispatch: vi.fn(),
                 activeModifiers,
                 attackModifierBonusDamage: 2,
+                rootPlayerId: '0',
+                teamIdByPlayerId: { '0': 'A', '1': 'B', '2': 'A', '3': 'B' },
             })
         );
 
@@ -238,6 +240,59 @@ describe('攻击修正指示器撤回测试', () => {
         expect(html).not.toContain('data-testid="attack-modifier-bonus-badge"');
         expect(html).not.toContain('-top-[2.2vw]');
         expect(html).not.toContain('-top-[3.8vw]');
+    });
+
+    it('RightSidebar 在 selectDie 交互中应根据 diceOwnerId 显示队友骰池提示', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [],
+                rollCount: 1,
+                rollLimit: 2,
+                rollConfirmed: true,
+                currentPhase: 'defensiveRoll',
+                canInteractDice: false,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                setRerollingDiceIds: vi.fn(),
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: false,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                rootPlayerId: '2',
+                teamIdByPlayerId: { '0': 'A', '1': 'B', '2': 'A', '3': 'B' },
+                interaction: {
+                    id: 'ally-select-die',
+                    kind: 'multistep-choice',
+                    playerId: '2',
+                    title: 'ally select',
+                    titleKey: 'interaction.selectDiceToReroll',
+                    description: null,
+                    options: [],
+                    data: {
+                        initialResult: { selectedDiceIds: [] },
+                        meta: {
+                            dtType: 'selectDie',
+                            selectCount: 1,
+                            diceOwnerId: '0',
+                            targetOpponentDice: false,
+                        },
+                    },
+                } as any,
+            })
+        );
+
+        expect(html).toContain('interaction.hint_select_ally:current=0,max=1');
     });
 });
 

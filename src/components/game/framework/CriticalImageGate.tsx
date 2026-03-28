@@ -9,6 +9,7 @@ import {
     signalCriticalImagesReady,
 } from '../../../core';
 import { resolveCriticalImages } from '../../../core/CriticalImageResolverRegistry';
+import { warmPreloadScheduler } from './warmPreloadScheduler';
 
 const criticalImageGateWindow = typeof window !== 'undefined'
     ? window as Window & {
@@ -59,6 +60,22 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     onReady,
     children,
 }) => {
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                warmPreloadScheduler.pause();
+            } else {
+                warmPreloadScheduler.resume();
+            }
+        };
+
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        onVisibilityChange();
+        return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    }, []);
+
+    // E2E 测试可通过 window.__E2E_SKIP_IMAGE_GATE__ 跳过图片预加载门禁
     const skipGate = typeof window !== 'undefined'
         && (window as Window & { __E2E_SKIP_IMAGE_GATE__?: boolean }).__E2E_SKIP_IMAGE_GATE__ === true;
     const effectiveEnabled = enabled && !skipGate;
@@ -192,7 +209,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
                 readyRunKeys.add(runKey);
                 setReady(true);
                 onReady?.();
-                preloadWarmImages(warmPaths, locale, gameId);
+                warmPreloadScheduler.enqueue(warmPaths, locale, gameId);
                 lastWarmRunKeyRef.current = runKey;
                 if (hasCriticalImages) {
                     signalCriticalImagesReady(epoch);

@@ -15,6 +15,16 @@ const entry: GameManifestEntry = {
     bestPlayers: [3],
     tags: ['card_driven', 'casual'],
     allowLocalMode: true,
+    setupOptions: {
+        expansions: {
+            type: 'multi-select',
+            labelKey: 'games.smashup.setup.expansions.label',
+            options: [
+                { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
+            ],
+            default: ['titans'],
+        },
+    },
     ai: {
         capture: true,
         localAi: true,

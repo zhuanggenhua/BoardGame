@@ -224,6 +224,15 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
             };
         }
 
+        const hasBgmRules = Array.isArray(config.bgmRules) && config.bgmRules.length > 0;
+        if (!hasBgmRules) {
+            return {
+                activeGroup: null as BgmGroupId | null,
+                playlist: allBgm,
+                targetKey: currentBgmKeyRef.current,
+            };
+        }
+
         const currentRuntimeContext = runtimeContextRef.current;
         const allKeys = allBgm.map((def) => def.key);
         const fallbackGroup = resolveFallbackGroup();

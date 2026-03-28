@@ -35,42 +35,50 @@ export const CardSprite: React.FC<CardSpriteProps> = ({
   style,
 }) => {
   const source = getSpriteAtlasSource(atlasId);
-  const [loaded, setLoaded] = useState(() => !!source && isImagePreloaded(source.image));
-  const imageUrlRef = useRef<string>('');
+  const imageUrl = source?.image ?? '';
+  const preloaded = !source || isImagePreloaded(imageUrl);
+  const [loadState, setLoadState] = useState<'loaded' | 'loading'>(preloaded ? 'loaded' : 'loading');
+  const imageUrlRef = useRef<string>(imageUrl);
+  const loaded = !source || (imageUrlRef.current === imageUrl && (preloaded || loadState === 'loaded'));
 
   // 预加载图片并监听加载状态
   useEffect(() => {
     if (!source) {
-      setLoaded(true);
-      return;
-    }
-
-    const imageUrl = source.image;
-
-    // 如果图片 URL 没变，不重新加载
-    if (imageUrlRef.current === imageUrl && loaded) {
+      imageUrlRef.current = '';
+      setLoadState('loaded');
       return;
     }
 
     imageUrlRef.current = imageUrl;
 
-    // 已预加载，直接标记完成
     if (isImagePreloaded(imageUrl)) {
-      setLoaded(true);
+      setLoadState('loaded');
       return;
     }
 
-    setLoaded(false);
+    setLoadState('loading');
 
     const img = new Image();
-    img.onload = () => setLoaded(true);
-    img.onerror = () => setLoaded(true);
+    img.onload = () => {
+      if (imageUrlRef.current === imageUrl) {
+        setLoadState('loaded');
+      }
+    };
+    img.onerror = () => {
+      if (imageUrlRef.current === imageUrl) {
+        setLoadState('loaded');
+      }
+    };
     img.src = imageUrl;
 
     if (img.complete) {
-      setLoaded(true);
+      queueMicrotask(() => {
+        if (imageUrlRef.current === imageUrl) {
+          setLoadState('loaded');
+        }
+      });
     }
-  }, [source, loaded]);
+  }, [imageUrl, source]);
 
   if (!source) {
     return <div className={`bg-slate-700 ${className}`} style={style} />;

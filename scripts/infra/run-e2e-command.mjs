@@ -9,6 +9,7 @@ import { cleanupTestConnections } from './cleanup_test_connections.js';
 import { allocateAvailablePorts } from './port-allocator.js';
 
 const playwrightCli = path.resolve(process.cwd(), 'node_modules', 'playwright', 'cli.js');
+const runtimeNode = process.env.PW_NODE_BINARY || process.execPath;
 
 function run(command, args, env) {
     const result = spawnSync(command, args, withWindowsHide({
@@ -170,7 +171,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {} } 
 
     playwrightArgs.push(...extraArgs);
 
-    run(process.execPath, [playwrightCli, ...playwrightArgs], modeEnv);
+    run(runtimeNode, [playwrightCli, ...playwrightArgs], modeEnv);
 }
 
 const isDirectExecution = process.argv[1]

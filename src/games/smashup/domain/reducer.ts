@@ -37,9 +37,13 @@ import type {
     AllFactionsSelectedEvent,
     MinionDestroyedEvent,
     MinionMovedEvent,
+    MinionControlChangedEvent,
     MinionReturnedEvent,
+    CardRecoveredFromDiscardEvent,
+    DeckInspectedEvent,
     OngoingAttachedEvent,
     OngoingDetachedEvent,
+    RevealDeckTopEvent,
     TalentUsedEvent,
     CardInstance,
     BaseInPlay,
@@ -58,7 +62,7 @@ import type { ActionCardDef, FusionCardDef } from './types';
 import { buildDeck, drawCards, getMinionTalentActivationError, isCardMinionLike } from './utils';
 import { autoMulligan } from '../../../engine/primitives/mulligan';
 import { maybeQueueStartingHandMulliganPrompt } from './mulliganHandlers';
-import { resolveOnPlay, resolveSpecial, resolveTalent, resolveOnDestroy } from './abilityRegistry';
+import { resolveOnPlay, resolveOngoingActivation, resolveSpecial, resolveTalent, resolveOnDestroy } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
 import { triggerBaseAbility, triggerExtendedBaseAbility } from './baseAbilities';
 import { fireTriggers, collectTriggers, hasPlayerTurnRestriction, isMinionProtected, getConsumableProtectionSource } from './ongoingEffects';
@@ -99,14 +103,22 @@ export function execute(
     }
     // 返回手牌保护过滤（deep_roots / entangled / ghost_incorporeal 等）
     const afterReturn = filterProtectedReturnEvents(afterDestroyMove.events, state.core, command.playerId);
+    const afterReturnTriggers = processReturnToHandTriggers(afterReturn, state, command.playerId, random, now);
+    if (afterReturnTriggers.matchState) {
+        state.sys = afterReturnTriggers.matchState.sys;
+    }
     // 放入牌库底保护过滤（bear_cavalry_superiority / ghost_incorporeal 等）
-    const afterDeckBottom = filterProtectedDeckBottomEvents(afterReturn, state.core, command.playerId);
+    const afterDeckBottom = filterProtectedDeckBottomEvents(afterReturnTriggers.events, state.core, command.playerId);
     const afterAffect = processAffectTriggers(afterDeckBottom, state, command.playerId, random, now);
     if (afterAffect.matchState) {
         state.sys = afterAffect.matchState.sys;
     }
+    const afterDeckInspection = processDeckInspectionTriggers(afterAffect.events, state, command.playerId, random, now);
+    if (afterDeckInspection.matchState) {
+        state.sys = afterDeckInspection.matchState.sys;
+    }
     
-    return afterAffect.events;
+    return afterDeckInspection.events;
 }
 
 /** 内部命令执行（不含后处理） */
@@ -243,6 +255,7 @@ function executeCommand(
                         defId: card.defId,
                         baseIndex: targetBase,
                         targetMinionUid: command.payload.targetMinionUid,
+                        handSizeAfterPlay: player.hand.length - 1,
                         random,
                         now,
                     };
@@ -274,6 +287,7 @@ function executeCommand(
                                 defId: card.defId,
                                 baseIndex: command.payload.targetBaseIndex,
                                 targetMinionUid: command.payload.targetMinionUid,
+                                handSizeAfterPlay: player.hand.length - 1,
                                 random,
                                 now,
                             };
@@ -300,6 +314,7 @@ function executeCommand(
                                     defId: card.defId,
                                     baseIndex: command.payload.targetBaseIndex,
                                     targetMinionUid: command.payload.targetMinionUid,
+                                    handSizeAfterPlay: player.hand.length - 1,
                                     random,
                                     now,
                                 };
@@ -336,6 +351,7 @@ function executeCommand(
                             defId: card.defId,
                             baseIndex: command.payload.targetBaseIndex,
                             targetMinionUid: command.payload.targetMinionUid,
+                            handSizeAfterPlay: player.hand.length - 1,
                             random,
                             now,
                         };
@@ -350,10 +366,11 @@ function executeCommand(
 
             // 基地能力触发：onActionPlayed（如工坊：额外打出一张战术）
             const targetBaseIdx = command.payload.targetBaseIndex;
+            const actionTargetType = command.payload.targetMinionUid ? 'minion' : 'base';
+            const currentActionMS = updatedState ?? state;
             if (targetBaseIdx !== undefined) {
                 const base = core.bases[targetBaseIdx];
                 if (base) {
-                    const currentActionMS = updatedState ?? state;
                     const baseCtx = {
                         state: core,
                         matchState: currentActionMS,
@@ -361,7 +378,7 @@ function executeCommand(
                         baseDefId: base.defId,
                         playerId: command.playerId,
                         actionTargetBaseIndex: targetBaseIdx,
-                        actionTargetType: command.payload.targetMinionUid ? 'minion' : 'base',
+                        actionTargetType,
                         actionTargetMinionUid: command.payload.targetMinionUid,
                         now,
                     };
@@ -370,6 +387,21 @@ function executeCommand(
                     if (bResult.matchState) {
                         updatedState = bResult.matchState;
                     }
+                }
+
+                const queuedOngoing = collectTriggers(core, 'onActionPlayed', {
+                    state: core,
+                    matchState: currentActionMS,
+                    playerId: command.playerId,
+                    baseIndex: targetBaseIdx,
+                    actionTargetBaseIndex: targetBaseIdx,
+                    actionTargetType,
+                    actionTargetMinionUid: command.payload.targetMinionUid,
+                    random,
+                    now,
+                });
+                if (queuedOngoing) {
+                    events.push(queuedOngoing);
                 }
             }
 
@@ -488,7 +520,7 @@ function executeCommand(
         }
 
         case SU_COMMANDS.USE_TALENT: {
-            const { minionUid, ongoingCardUid, baseIndex } = command.payload;
+            const { minionUid, ongoingCardUid, titanUid, baseIndex } = command.payload;
             const base = core.bases[baseIndex];
             const events: SmashUpEvent[] = [];
 
@@ -539,6 +571,44 @@ function executeCommand(
             }
 
             // 随从天赋
+            if (titanUid) {
+                const titan = (core.titans ?? []).find(candidate => candidate.uid === titanUid);
+                if (!titan) return { events: [] };
+
+                const talentEvt: TalentUsedEvent = {
+                    type: SU_EVENTS.TALENT_USED,
+                    payload: {
+                        playerId: command.playerId,
+                        titanUid,
+                        defId: titan.defId,
+                        baseIndex,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp: now,
+                };
+                events.push(talentEvt);
+
+                const executor = resolveTalent(titan.defId);
+                if (executor) {
+                    const ctx: AbilityContext = {
+                        state: core,
+                        matchState: state,
+                        playerId: command.playerId,
+                        cardUid: titanUid,
+                        defId: titan.defId,
+                        baseIndex,
+                        random,
+                        now,
+                    };
+                    const result = executor(ctx);
+                    events.push(...result.events);
+                    if (result.matchState) {
+                        return { events, updatedState: result.matchState };
+                    }
+                }
+                return { events };
+            }
+
             const minion = base?.minions.find(m => m.uid === minionUid);
             if (!minion) return { events: [] };
             if (getMinionTalentActivationError(core, minion, baseIndex)) {
@@ -582,8 +652,32 @@ function executeCommand(
         }
 
         case SU_COMMANDS.ACTIVATE_SPECIAL: {
-            const { minionUid: spUid, baseIndex: spIdx } = command.payload;
+            const { minionUid: spUid, titanUid, baseIndex: spIdx } = command.payload;
             const spBase = core.bases[spIdx];
+            if (titanUid) {
+                const titan = (core.titans ?? []).find(candidate => candidate.uid === titanUid);
+                if (!titan) return { events: [] };
+
+                const executor = resolveSpecial(titan.defId);
+                if (!executor) return { events: [] };
+
+                const ctx: AbilityContext = {
+                    state: core,
+                    matchState: state,
+                    playerId: command.playerId,
+                    cardUid: titanUid,
+                    defId: titan.defId,
+                    baseIndex: spIdx,
+                    random,
+                    now,
+                };
+                const result = executor(ctx);
+                if (result.matchState) {
+                    return { events: result.events, updatedState: result.matchState };
+                }
+                return { events: result.events };
+            }
+
             const spMinion = spBase?.minions.find(m => m.uid === spUid);
             if (!spMinion) return { events: [] };
 
@@ -597,6 +691,31 @@ function executeCommand(
                 cardUid: spUid,
                 defId: spMinion.defId,
                 baseIndex: spIdx,
+                random,
+                now,
+            };
+            const result = executor(ctx);
+            if (result.matchState) {
+                return { events: result.events, updatedState: result.matchState };
+            }
+            return { events: result.events };
+        }
+
+        case SU_COMMANDS.ACTIVATE_TITAN_ONGOING: {
+            const { titanUid, baseIndex } = command.payload;
+            const titan = (core.titans ?? []).find(candidate => candidate.uid === titanUid);
+            if (!titan) return { events: [] };
+
+            const executor = resolveOngoingActivation(titan.defId);
+            if (!executor) return { events: [] };
+
+            const ctx: AbilityContext = {
+                state: core,
+                matchState: state,
+                playerId: command.playerId,
+                cardUid: titanUid,
+                defId: titan.defId,
+                baseIndex,
                 random,
                 now,
             };
@@ -907,11 +1026,11 @@ export function processDestroyTriggers(
     const combined = [...cleanedEvents, ...extraEvents];
 
     // Attempt to auto-resolve reaction queue when possible (single trigger, no ordering prompt).
+    // The queued trigger may depend on other events from the same batch already having been
+    // reduced into core (for example ONGOING_ATTACHED before an onMinionAffected reaction).
     let coreForQueue = (ms ?? state).core;
     for (const e of combined) {
-        if (e.type === SU_EVENTS.TRIGGER_QUEUED || e.type === SU_EVENTS.TRIGGER_CONSUMED) {
-            coreForQueue = reduce(coreForQueue, e);
-        }
+        coreForQueue = reduce(coreForQueue, e);
     }
     const baseMS = ms ?? state;
     const msForQueue = coreForQueue === baseMS.core ? baseMS : { ...baseMS, core: coreForQueue };
@@ -1112,20 +1231,39 @@ export function processMoveTriggers(
     const extraEvents: SmashUpEvent[] = [];
     let ms: MatchState<SmashUpCore> | undefined;
     for (const me of moveEvents) {
-        const { minionUid, minionDefId, toBaseIndex } = me.payload;
+        const { minionUid, minionDefId, fromBaseIndex, toBaseIndex } = me.payload;
 
-        // 触发 ongoing 拦截器 onMinionMoved（改为入队，按 Wiki 同时触发排序解决）
+        // 触发“移入该基地”的 ongoing onMinionMoved。
         const queued = collectTriggers(core, 'onMinionMoved', {
             state: core,
             matchState: ms ?? state,
             playerId,
             baseIndex: toBaseIndex,
+            moveFromBaseIndex: fromBaseIndex,
+            moveToBaseIndex: toBaseIndex,
             triggerMinionUid: minionUid,
             triggerMinionDefId: minionDefId,
             random,
             now,
         });
         if (queued) extraEvents.push(queued);
+
+        // 触发“有随从从该基地移走”的 ongoing onMinionMoved（如硕大圆石）。
+        if (fromBaseIndex !== toBaseIndex) {
+            const queuedFromBase = collectTriggers(core, 'onMinionMoved', {
+                state: core,
+                matchState: ms ?? state,
+                playerId,
+                baseIndex: fromBaseIndex,
+                moveFromBaseIndex: fromBaseIndex,
+                moveToBaseIndex: toBaseIndex,
+                triggerMinionUid: minionUid,
+                triggerMinionDefId: minionDefId,
+                random,
+                now,
+            });
+            if (queuedFromBase) extraEvents.push(queuedFromBase);
+        }
 
         // 触发基地扩展时机 onMinionMoved（如牧场：首次移动触发额外移动）
         const targetBase = core.bases[toBaseIndex];
@@ -1149,6 +1287,101 @@ export function processMoveTriggers(
     }
 
     return { events: [...filteredEvents, ...extraEvents], matchState: ms };
+}
+
+/** 后处理：触发 onCardReturnedToHand 拦截器 */
+export function processReturnToHandTriggers(
+    events: SmashUpEvent[],
+    state: MatchState<SmashUpCore>,
+    _playerId: PlayerId,
+    random: RandomFn,
+    now: number,
+): PostProcessResult {
+    const core = state.core;
+    const extraEvents: SmashUpEvent[] = [];
+    let ms: MatchState<SmashUpCore> | undefined;
+
+    for (const event of events) {
+        if (event.type === SU_EVENTS.MINION_RETURNED) {
+            const payload = (event as MinionReturnedEvent).payload;
+            const queued = collectTriggers(core, 'onCardReturnedToHand', {
+                state: core,
+                matchState: ms ?? state,
+                playerId: payload.toPlayerId,
+                reason: payload.reason,
+                random,
+                now,
+            });
+            if (queued) extraEvents.push(queued);
+            continue;
+        }
+
+        if (event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD) {
+            const payload = (event as CardRecoveredFromDiscardEvent).payload;
+            if ((payload.cardUids?.length ?? 0) === 0) continue;
+            const queued = collectTriggers(core, 'onCardReturnedToHand', {
+                state: core,
+                matchState: ms ?? state,
+                playerId: payload.playerId,
+                reason: payload.reason,
+                random,
+                now,
+            });
+            if (queued) extraEvents.push(queued);
+        }
+    }
+
+    return extraEvents.length > 0
+        ? { events: [...events, ...extraEvents], matchState: ms }
+        : { events };
+}
+
+/** 后处理：触发 onDeckInspected 拦截器 */
+export function processDeckInspectionTriggers(
+    events: SmashUpEvent[],
+    state: MatchState<SmashUpCore>,
+    _playerId: PlayerId,
+    random: RandomFn,
+    now: number,
+): PostProcessResult {
+    const core = state.core;
+    const extraEvents: SmashUpEvent[] = [];
+    let ms: MatchState<SmashUpCore> | undefined;
+    const seenInspectionKeys = new Set<string>();
+
+    for (const event of events) {
+        let inspectorPlayerId: PlayerId | undefined;
+        let reason: string | undefined;
+
+        if (event.type === SU_EVENTS.DECK_INSPECTED) {
+            const payload = (event as DeckInspectedEvent).payload;
+            inspectorPlayerId = payload.inspectorPlayerId;
+            reason = payload.reason;
+        } else if (event.type === SU_EVENTS.REVEAL_DECK_TOP) {
+            const payload = (event as RevealDeckTopEvent).payload;
+            inspectorPlayerId = payload.sourcePlayerId ?? (payload.viewerPlayerId === 'all' ? undefined : payload.viewerPlayerId);
+            reason = payload.reason;
+        }
+
+        if (!inspectorPlayerId || !reason) continue;
+        const dedupeKey = `${inspectorPlayerId}:${reason}:${event.timestamp ?? now}`;
+        if (seenInspectionKeys.has(dedupeKey)) continue;
+        seenInspectionKeys.add(dedupeKey);
+
+        const queued = collectTriggers(core, 'onDeckInspected', {
+            state: core,
+            matchState: ms ?? state,
+            playerId: inspectorPlayerId,
+            reason,
+            random,
+            now,
+        });
+        if (queued) extraEvents.push(queued);
+    }
+
+    return extraEvents.length > 0
+        ? { events: [...events, ...extraEvents], matchState: ms }
+        : { events };
 }
 
 // ============================================================================
@@ -1264,6 +1497,7 @@ export function processAffectTriggers(
         let baseIndex: number | undefined;
         let affectType: import('./ongoingEffects').AffectType | undefined;
         let sourcePlayerId: PlayerId = playerId;
+        let controlChangeToControllerId: PlayerId | undefined;
 
         switch (evt.type) {
             case SU_EVENTS.MINION_DESTROYED: {
@@ -1347,6 +1581,16 @@ export function processAffectTriggers(
                 }
                 break;
             }
+            case SU_EVENTS.MINION_CONTROL_CHANGED: {
+                const ce = evt as MinionControlChangedEvent;
+                minionUid = ce.payload.minionUid;
+                minionDefId = ce.payload.minionDefId;
+                baseIndex = ce.payload.baseIndex;
+                affectType = 'control_change';
+                sourcePlayerId = ce.payload.sourcePlayerId;
+                controlChangeToControllerId = ce.payload.toControllerId;
+                break;
+            }
         }
 
         if (!minionUid || !minionDefId || baseIndex === undefined || !affectType) continue;
@@ -1355,6 +1599,9 @@ export function processAffectTriggers(
         const base = core.bases[baseIndex];
         const minion = base?.minions.find(m => m.uid === minionUid);
         if (!minion) continue;
+        const effectiveMinion = affectType === 'control_change' && controlChangeToControllerId
+            ? { ...minion, controller: controlChangeToControllerId }
+            : minion;
 
         const queued = collectTriggers(core, 'onMinionAffected', {
             state: core,
@@ -1363,7 +1610,7 @@ export function processAffectTriggers(
             baseIndex,
             triggerMinionUid: minionUid,
             triggerMinionDefId: minionDefId,
-            triggerMinion: minion,
+            triggerMinion: effectiveMinion,
             affectType,
             random,
             now,

@@ -1,5 +1,6 @@
-import type { CardDef, BaseCardDef, MinionCardDef, FusionCardDef } from '../domain/types';
+import type { CardDef, BaseCardDef, MinionCardDef, FusionCardDef, TitanCardDef } from '../domain/types';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import { TITAN_CARD_DEFS } from './titans';
 
 import { PIRATE_CARDS } from './factions/pirates';
 import { PIRATE_POD_CARDS } from './factions/pirates_pod';
@@ -154,6 +155,7 @@ registerCards(GIANT_ANT_CARDS);
 registerCards(GIANT_ANT_POD_CARDS);
 // POD 版本阵营（最新英文 POD 版本）
 registerCards(NINJA_POD_CARDS);
+registerCards(TITAN_CARD_DEFS);
 
 // ============================================================================
 // 基础基地卡（基础版）
@@ -1132,6 +1134,12 @@ export function getFusionDef(defId: string): FusionCardDef | undefined {
     return def?.type === 'fusion' ? def : undefined;
 }
 
+/** 查找泰坦卡定义 */
+export function getTitanDef(defId: string): TitanCardDef | undefined {
+    const def = _cardRegistry.get(defId);
+    return def?.type === 'titan' ? def : undefined;
+}
+
 /** 获取“作为随从”打出时的印制力量（随从或融合卡） */
 export function getMinionLikePower(defId: string): number | undefined {
     const def = _cardRegistry.get(defId);
@@ -1234,8 +1242,18 @@ export function registerFaction(cards: CardDef[], bases?: BaseCardDef[]): void {
 }
 
 /** 获取派系的所有卡牌定义 */
-export function getFactionCards(factionId: FactionId): CardDef[] {
-    return Array.from(_cardRegistry.values()).filter(c => c.faction === factionId);
+export function getFactionCards(factionId: FactionId): Array<MinionCardDef | ActionCardDef | FusionCardDef> {
+    return Array.from(_cardRegistry.values()).filter(
+        (card): card is MinionCardDef | ActionCardDef | FusionCardDef =>
+            card.faction === factionId && card.type !== 'titan',
+    );
+}
+
+/** 获取派系对应的官方泰坦（若有） */
+export function getFactionTitan(factionId: FactionId): TitanCardDef | undefined {
+    return Array.from(_cardRegistry.values()).find(
+        (card): card is TitanCardDef => card.faction === factionId && card.type === 'titan',
+    );
 }
 
 /** 获取所有卡牌定义 */

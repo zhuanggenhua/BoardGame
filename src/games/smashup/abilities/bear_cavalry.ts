@@ -21,6 +21,7 @@ import {
     grantExtraAction,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
+    getTitansOnBase,
 } from '../domain/abilityHelpers';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { SU_EVENTS } from '../domain/types';
@@ -897,10 +898,9 @@ function buildBearRidesYouPodPostMoveBase(base: BaseInPlay, movedMinion: MinionO
 }
 
 function buildBearRidesYouPodSuppressOptions(
-    turnOrder: PlayerId[],
-    players: Record<string, any>,
     base: BaseInPlay,
     baseIndex: number,
+    titansOnBase: Array<{ uid: string; defId: string; ownerId: PlayerId }>,
 ): BearRidesYouPodSuppressOption[] {
     const suppressOptions: BearRidesYouPodSuppressOption[] = [];
     const baseDef = getBaseDef(base.defId);
@@ -940,15 +940,12 @@ function buildBearRidesYouPodSuppressOptions(
         });
     }
 
-    for (const pid of turnOrder) {
-        const p = players[pid];
-        const t = (p as any)?.activeTitan as { titanUid: string; baseIndex: number; defId: string } | undefined;
-        if (!t || t.baseIndex !== baseIndex) continue;
-        const tDef = getCardDef(t.defId);
+    for (const titan of titansOnBase) {
+        const tDef = getCardDef(titan.defId);
         suppressOptions.push({
-            id: `titan-${t.titanUid}`,
-            label: `[泰坦] ${tDef?.name ?? t.defId}`,
-            value: { kind: 'titan', titanUid: t.titanUid, baseIndex, ownerId: pid, minionDefId: t.defId },
+            id: `titan-${titan.uid}`,
+            label: `[泰坦] ${tDef?.name ?? titan.defId}`,
+            value: { kind: 'titan', titanUid: titan.uid, baseIndex, ownerId: titan.ownerId, minionDefId: titan.defId },
             displayMode: 'card',
         });
     }
@@ -1695,10 +1692,13 @@ export function registerBearCavalryInteractionHandlers(): void {
         if (!base) return { state, events };
         const postMoveBase = buildBearRidesYouPodPostMoveBase(base, movedMinion);
         const suppressOptions = buildBearRidesYouPodSuppressOptions(
-            state.core.turnOrder,
-            state.core.players,
             postMoveBase,
             toBase,
+            getTitansOnBase(state.core, toBase).map(titan => ({
+                uid: titan.uid,
+                defId: titan.defId,
+                ownerId: titan.ownerId,
+            })),
         );
 
         const next = createSimpleChoice(

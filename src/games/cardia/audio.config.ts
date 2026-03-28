@@ -130,14 +130,9 @@ export const cardiaAudioConfig: GameAudioConfig = {
     
     /**
      * BGM 规则
+     * Cardia 默认不自动播放音乐，保留曲目供玩家在音频面板中手动切换。
      */
-    bgmRules: [
-        {
-            when: () => true,
-            key: BGM_NORMAL_KEY,
-            group: 'normal',
-        },
-    ],
+    bgmRules: [],
 };
 
 export default cardiaAudioConfig;

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { Check } from 'lucide-react';
 import { GameButton } from './components/GameButton';
-import type { Die, TurnPhase } from '../types';
+import type { Die, PlayerId, TurnPhase } from '../types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
@@ -21,12 +21,14 @@ interface DtDiceModifyMeta {
         adjustRange?: { min: number; max: number };
     };
     selectCount: number;
+    diceOwnerId?: PlayerId;
     targetOpponentDice: boolean;
 }
 
 interface DtDiceSelectMeta {
     dtType: 'selectDie';
     selectCount: number;
+    diceOwnerId?: PlayerId;
     targetOpponentDice: boolean;
 }
 

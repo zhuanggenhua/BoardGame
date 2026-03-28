@@ -102,19 +102,22 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
   // const [customDeckSelections, setCustomDeckSelections] = useState<Record<string, CustomDeckInfo>>({});
   
   // 已保存的自定义牌组列表
-  const [savedDecks, setSavedDecks] = useState<SavedDeckSummary[]>([]);
+  const [remoteSavedDecks, setRemoteSavedDecks] = useState<SavedDeckSummary[]>([]);
   
   // 当前选中的自定义牌组 ID（用于高亮显示，已废弃，改用游戏状态判断）
   // const [selectedCustomDeckId, setSelectedCustomDeckId] = useState<string | null>(null);
   
   // 编辑中的牌组 ID（用于传递给 DeckBuilderDrawer）
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
+  const injectedTestCustomDecks = import.meta.env.DEV && typeof window !== 'undefined'
+    ? (window as any).__TEST_CUSTOM_DECKS__ as SavedDeckSummary[] | undefined
+    : undefined;
+  const savedDecks = injectedTestCustomDecks ?? remoteSavedDecks;
   
   // 加载已保存的自定义牌组列表
   useEffect(() => {
     // 测试数据注入（仅用于 E2E 测试，仅在开发环境生效）
-    if (import.meta.env.DEV && typeof window !== 'undefined' && (window as any).__TEST_CUSTOM_DECKS__) {
-      setSavedDecks((window as any).__TEST_CUSTOM_DECKS__);
+    if (injectedTestCustomDecks) {
       return;
     }
     
@@ -126,7 +129,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
       try {
         const decks = await listCustomDecks(token);
         if (!cancelled) {
-          setSavedDecks(decks);
+          setRemoteSavedDecks(decks);
         }
       } catch (err) {
         console.warn('[FactionSelection] 加载自定义牌组列表失败:', err);
@@ -143,7 +146,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
     void fetchDecks();
     
     return () => { cancelled = true; };
-  }, [token, toast]);
+  }, [token, toast, injectedTestCustomDecks]);
   
   /**
    * 刷新自定义牌组列表

@@ -14,7 +14,7 @@ import type {
     MinionPlayedEvent,
     CardsMilledEvent,
 } from '../domain/types';
-import { recoverCardsFromDiscard, grantExtraMinion, buildBaseTargetOptions, buildAbilityFeedback } from '../domain/abilityHelpers';
+import { recoverCardsFromDiscard, grantExtraMinion, buildBaseTargetOptions, buildAbilityFeedback, peekDeckTop } from '../domain/abilityHelpers';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerRestriction, registerTrigger } from '../domain/ongoingEffects';
@@ -155,9 +155,16 @@ function zombieGraveDigger(ctx: AbilityContext): AbilityResult {
 
 /** 行尸 onPlay：查看牌库顶，选择弃掉或放回 */
 function zombieWalker(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    if (player.deck.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
-    const topCard = player.deck[0];
+    const peek = peekDeckTop(
+        ctx.state,
+        ctx.random,
+        ctx.playerId,
+        'none',
+        'zombie_walker',
+        ctx.now,
+    );
+    if (!peek) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+    const topCard = peek.card;
     const def = getCardDef(topCard.defId);
     const cardName = def?.name ?? topCard.defId;
     const interaction = createSimpleChoice(
@@ -174,7 +181,7 @@ function zombieWalker(ctx: AbilityContext): AbilityResult {
         data: { ...interaction.data, continuationContext: { cardUid: topCard.uid, defId: topCard.defId } },
     };
     // 私有查看，PromptOverlay 展示给操作者，不发 REVEAL_DECK_TOP
-    return { events: [], matchState: queueInteraction(ctx.matchState, extended) };
+    return { events: peek.events, matchState: queueInteraction(ctx.matchState, extended) };
 }
 
 /** 掘墓 onPlay：从弃牌堆取回一张卡到手牌 */

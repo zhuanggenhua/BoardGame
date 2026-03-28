@@ -322,6 +322,7 @@ export interface DiceThroneExpectation extends StateExpectation {
         selectCount?: number;
         playerId?: PlayerId;
         dieModifyMode?: 'set' | 'adjust' | 'copy' | 'any';
+        diceOwnerId?: PlayerId;
         targetOpponentDice?: boolean;
         adjustRange?: { min: number; max: number };
     } | null;
@@ -583,6 +584,7 @@ export function injectPendingInteraction(
                 dtType: 'modifyDie',
                 dieModifyConfig: config,
                 selectCount,
+                diceOwnerId: interaction.diceOwnerId,
                 targetOpponentDice: interaction.targetOpponentDice ?? false,
             },
         };
@@ -612,6 +614,7 @@ export function injectPendingInteraction(
         meta: {
             dtType: 'selectDie',
             selectCount,
+            diceOwnerId: interaction.diceOwnerId,
             targetOpponentDice: interaction.targetOpponentDice ?? false,
         },
     };

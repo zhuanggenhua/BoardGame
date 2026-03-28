@@ -320,10 +320,17 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const handleCreateRoom = async (config: RoomConfig) => {
         setIsLoading(true);
         try {
-            const { numPlayers, roomName, ttlSeconds, password } = config;
+            const { numPlayers, roomName, ttlSeconds, password, setupSelections } = config;
             const ownerKey = getOwnerKey();
             const ownerType = getOwnerType();
             const guestId = user?.id ? undefined : getGuestId();
+            const normalizedSetupSelections = Object.fromEntries(
+                Object.entries(setupSelections ?? {}).map(([key, value]) => [
+                    key,
+                    Array.isArray(value) ? [...value] : value,
+                ]),
+            );
+            const hasSetupSelections = Object.keys(normalizedSetupSelections).length > 0;
 
             // 使用传入的游戏编号传递房间名
             const setupData = {
@@ -333,6 +340,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 ownerType,
                 ...(guestId ? { guestId } : {}),
                 ...(password ? { password } : {}),
+                ...(hasSetupSelections ? normalizedSetupSelections : {}),
+                ...(hasSetupSelections ? { setupSelections: normalizedSetupSelections } : {}),
             };
             const result = await matchApi.createMatch(
                     gameId,

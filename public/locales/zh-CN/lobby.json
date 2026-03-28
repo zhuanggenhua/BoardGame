@@ -293,7 +293,12 @@
       "3days": "3 天",
       "7days": "7 天"
     },
-    "retentionHint": "保存期内可重连，过期自动清理"
+    "retentionHint": "保存期内可重连，过期自动清理",
+    "multiSelectPlaceholder": "选择扩展",
+    "multiSelectButton": "已选 {{count}} 项",
+    "multiSelectSelected": "已启用 {{count}} 项",
+    "multiSelectNone": "未启用",
+    "removeSelectedOption": "取消 {{label}}"
   },
   "socket": {
     "invalidGameId": "非法 gameId，已忽略订阅: {{value}}",

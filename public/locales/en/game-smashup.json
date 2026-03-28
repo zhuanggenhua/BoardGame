@@ -2,6 +2,12 @@
   "title": "Smash Up",
   "description": "Smash Up is a 2-4 player card battle game! Combine two different factions to compete for base control and victory points; the first to 15 points wins. The base game includes 8 distinct factions, enabling many strategic pairings and playstyles. (Year: 2012; Type: Competitive/Card; Rating: 7.2)",
   "players": "2-4 Players",
+  "setup": {
+    "expansions": {
+      "label": "Expansion Rules",
+      "titans": "Enable Titans"
+    }
+  },
   "phases": {
     "factionSelect": "Draft",
     "startTurn": "Start",
@@ -23,6 +29,7 @@
     "finish_turn": "Finish Turn",
     "deck": "Deck",
     "discard": "Discard",
+    "titan": "Titan",
     "viewing": "Viewing",
     "discard_pile": "Discard Pile",
     "empty_pile": "Empty Pile",
@@ -1160,6 +1167,80 @@
     "zombie_mall_crawl": {
       "name": "Mall Crawl",
       "effectText": "Search your deck for any number of cards of the same name and put them into your discard pile. Shuffle your deck."
+    },
+    "changerbots_mergacon": {
+      "name": "Mergacon",
+      "effectText": "Special: At the start of your turn, if you have two or more minions on a base, you may play this titan there. Ongoing: You have +3 power here. Talent: Move this titan to another base. It loses its ongoing ability until the end of the turn."
+    },
+    "explorers_very_large_boulder": {
+      "name": "Very Large Boulder",
+      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base that has no player's minions. Ongoing: Once per turn, after a minion moves from here, you may move this titan to the same base. Then destroy a minion at that base with less power than the number of +1 power counters on this titan. Ongoing: At the end of your turn, if this titan didn't move, place a +1 power counter on it."
+    },
+    "fairies_spirit_of_the_forest": {
+      "name": "Spirit of the Forest",
+      "effectText": "Special: Instead of your regular minion and action play, you may play this titan. Ongoing: Once per turn, when you use an ability that says OR, you may use both parts in any order. Ongoing: If this titan would be removed when it loses a clash of titans, you may move it to another base instead."
+    },
+    "ignobles_the_hill_that_strolls": {
+      "name": "The Hill that Strolls",
+      "effectText": "Special: On your turn, you may play this titan if two or more minions you own are controlled by other players. Ongoing: After you give control of one of your minions to another player, you may place a +1 power counter on it. Talent: Give control of one of your minions to another player to draw a card, or take control of a minion here you own."
+    },
+    "itty_critters_rainboroc": {
+      "name": "Rainboroc",
+      "effectText": "Special: After you win a base while this titan is not in play, you may play it on the base that replaces it. Ongoing: After the first time each turn you play a minion of power 2 or less here, place a +1 power counter on this titan. Talent: Shuffle a minion of power 2 or less from your discard pile into your deck. If you do, you may move this titan to another base."
+    },
+    "kaiju_gorgodzolla": {
+      "name": "Gorgodzolla",
+      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base where you have two or more actions. Ongoing: After you play an action or a minion on this base, place a +1 power counter on this titan. Ongoing: After you play an action on this base, you may draw a card."
+    },
+    "magical_girls_walking_castle": {
+      "name": "Walking Castle",
+      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base where you have at least two minions. Ongoing: Your minions here cannot be destroyed by other players' card effects. Talent: Move this titan and up to three of your minions from here to another base."
+    },
+    "mega_troopers_megabot": {
+      "name": "Megabot",
+      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base where you have at least three minions. Ongoing: You have +1 power here for each of your minions here. Special: Before another base scores, you may move this titan there."
+    },
+    "penguins_emperor_penguin": {
+      "name": "Emperor Penguin",
+      "effectText": "Special: At the start of your turn, you may play this titan on a base where you have three or more minions. Ongoing: You may play minions off the top of your deck here instead of your regular minion play. Talent: Reveal a minion of power 3 or less in your hand or discard pile and shuffle it into your deck to place a +1 power counter on this titan."
+    },
+    "super_spies_moon_zero_three": {
+      "name": "Moon Zero Three",
+      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base with no other players' minions. Ongoing: After the first time each turn an ability is used to reveal, look at, or search for one or more cards from a player's deck, place a +1 power counter on this titan. Talent: Look at the top card of any deck. Place it on the top or bottom of that deck."
+    },
+    "time_travelers_time_box": {
+      "name": "Time Box",
+      "effectText": "Special: At the start of your turn or when a card goes to your hand from play or the discard pile, place a counter on this titan if it is not in play. After you place the fifth or higher counter on it, you may remove all the counters and play this titan. Talent: Play an extra minion here of power 2 or less, and/or play an extra action."
+    },
+    "bear_cavalry_major_ursa": {
+      "name": "Major Ursa"
+    },
+    "ghosts_creampuff_man": {
+      "name": "Creampuff Man"
+    },
+    "giant_ants_death_on_six_legs": {
+      "name": "Death on Six Legs"
+    },
+    "innsmouth_dagon": {
+      "name": "Dagon"
+    },
+    "cthulhu_cthulhu_titan": {
+      "name": "Cthulhu"
+    },
+    "pirates_the_kraken": {
+      "name": "The Kraken"
+    },
+    "tricksters_big_funny_giant": {
+      "name": "Big Funny Giant"
+    },
+    "vampires_ancient_lord": {
+      "name": "Ancient Lord"
+    },
+    "werewolves_great_wolf_spirit": {
+      "name": "Great Wolf Spirit"
+    },
+    "wizards_arcane_protector": {
+      "name": "Arcane Protector"
     },
     "base_the_homeworld": {
       "name": "The Homeworld",

@@ -31,10 +31,14 @@ function prefixOutput(label, stream, target) {
     });
 }
 
-function startCommand(label, command, args = []) {
+function startCommand(label, command, args = [], extraEnv = {}, options = {}) {
+    const { optional = false } = options;
     const child = spawn(command, args, withWindowsHide({
         cwd: repoRoot,
-        env: process.env,
+        env: {
+            ...process.env,
+            ...extraEnv,
+        },
         stdio: ['ignore', 'pipe', 'pipe'],
     }));
 
@@ -47,11 +51,19 @@ function startCommand(label, command, args = []) {
             return;
         }
         const detail = signal ? `signal=${signal}` : `code=${code ?? 0}`;
+        if (optional) {
+            console.warn(`[dev-orchestrator] ${label} exited (${detail})，按可选服务处理`);
+            return;
+        }
         console.error(`[dev-orchestrator] ${label} exited unexpectedly (${detail})`);
         shutdown(typeof code === 'number' ? code : 1);
     });
 
     return child;
+}
+
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function probePort(port, host = '127.0.0.1', timeoutMs = 1000) {
@@ -111,31 +123,60 @@ function shutdown(code = 0) {
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
+function resolveLocalDevModeEnv() {
+    return process.env.MONGO_URI ? {} : { USE_PERSISTENT_STORAGE: 'false' };
+}
+
 async function main() {
     console.log('[dev-orchestrator] starting api and game in parallel');
-    startCommand('dev:api', process.execPath, [
+    const apiChild = startCommand('dev:api', process.execPath, [
         'scripts/infra/dev-bundle-runner.mjs',
         '--label', 'api',
         '--entry', 'apps/api/src/main.ts',
         '--outfile', getBundleOutfile('api', 'main.mjs'),
         '--tsconfig', 'apps/api/tsconfig.json',
-    ]);
+    ], {}, { optional: true });
+    const gameExtraEnv = resolveLocalDevModeEnv();
     startCommand('dev:game', process.execPath, [
         'scripts/infra/dev-bundle-runner.mjs',
         '--label', 'game',
         '--entry', 'server.ts',
         '--outfile', getBundleOutfile('game', 'server.mjs'),
         '--tsconfig', 'tsconfig.server.json',
-    ]);
+    ], gameExtraEnv);
 
     console.log(`[dev-orchestrator] waiting for ports (timeout=${Math.floor(devStartupTimeoutMs / 1000)}s)`);
-    await Promise.all([
-        waitForPort(Number(process.env.API_SERVER_PORT) || 18001, 'api'),
-        waitForPort(Number(process.env.GAME_SERVER_PORT) || 18000, 'game'),
-    ]);
+
+    const gamePort = Number(process.env.GAME_SERVER_PORT) || 18000;
+    const apiPort = Number(process.env.API_SERVER_PORT) || 18001;
+
+    await waitForPort(gamePort, 'game');
+
+    let apiReady = false;
+    try {
+        await waitForPort(apiPort, 'api', 15000);
+        apiReady = true;
+    } catch (error) {
+        console.warn(`[dev-orchestrator] api 未在 15s 内就绪，降级为前端 + game 模式: ${error instanceof Error ? error.message : String(error)}`);
+        if (!apiChild.killed) {
+            try {
+                if (process.platform === 'win32') {
+                    spawn('taskkill', ['/F', '/T', '/PID', String(apiChild.pid)], withWindowsHide({ stdio: 'ignore' }));
+                } else {
+                    apiChild.kill('SIGTERM');
+                }
+            } catch {
+            }
+        }
+        await wait(250);
+    }
 
     console.log('[dev-orchestrator] starting frontend');
     startCommand('dev:frontend', process.execPath, ['scripts/infra/vite-with-logging.js']);
+
+    if (!apiReady) {
+        console.log('[dev-orchestrator] frontend 已启动；API 因本地数据库不可用被跳过');
+    }
 }
 
 main().catch((error) => {

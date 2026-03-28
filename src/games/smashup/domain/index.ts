@@ -5,7 +5,7 @@
  */
 
 import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import { processDestroyMoveCycle, processAffectTriggers, filterProtectedReturnEvents, filterProtectedDeckBottomEvents } from './reducer';
+import { processDestroyMoveCycle, processAffectTriggers, processDeckInspectionTriggers, filterProtectedReturnEvents, filterProtectedDeckBottomEvents } from './reducer';
 import type { FlowHooks, PhaseEnterResult } from '../../../engine/systems/FlowSystem';
 import type {
     SmashUpCommand,
@@ -43,7 +43,14 @@ import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
 import { drawCards } from './utils';
-import { countMadnessCards, madnessVpPenalty, fireMinionPlayedTriggers } from './abilityHelpers';
+import {
+    countMadnessCards,
+    madnessVpPenalty,
+    fireMinionPlayedTriggers,
+    getTitanByUid,
+    getTitansOnBase,
+    removeTitanFromPlay,
+} from './abilityHelpers';
 import { triggerAllBaseAbilities, triggerBaseAbility, triggerExtendedBaseAbility, hasBaseAbility } from './baseAbilities';
 import { collectBaseAbilityTriggers, collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
 import { openMeFirstWindow, openAfterScoringWindow, buildBaseTargetOptions, isSpecialLimitBlocked } from './abilityHelpers';
@@ -907,8 +914,30 @@ function processImmediateStartTurnMinionTriggers(
 // Setup
 // ============================================================================
 
+const DEFAULT_SMASHUP_EXPANSIONS = ['titans'];
+
+function readEnabledExpansions(setupData?: Record<string, unknown>): string[] {
+    if (Array.isArray(setupData?.expansions)) {
+        return setupData.expansions.filter((value): value is string => typeof value === 'string');
+    }
+
+    const setupSelections = setupData?.setupSelections;
+    if (
+        setupSelections
+        && typeof setupSelections === 'object'
+        && !Array.isArray(setupSelections)
+        && Array.isArray((setupSelections as Record<string, unknown>).expansions)
+    ) {
+        return ((setupSelections as Record<string, unknown>).expansions as unknown[])
+            .filter((value): value is string => typeof value === 'string');
+    }
+
+    return [...DEFAULT_SMASHUP_EXPANSIONS];
+}
+
 function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {
     const nextUid = 1;
+    const enabledExpansions = readEnabledExpansions(setupData);
 
     const players: Record<PlayerId, PlayerState> = {};
     const playerSelections: Record<PlayerId, string[]> = {};
@@ -963,6 +992,8 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         turnOrder: initialTurnOrder,
         currentPlayerIndex: 0,
         bases: activeBases,
+        titans: [],
+        enabledExpansions,
         baseDeck,
         baseDiscard: [],
         triggerQueue: undefined,
@@ -973,7 +1004,9 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
             takenFactions: [],
             playerSelections,
             completedPlayers: [],
-        }
+        },
+        cardsPlayedThisTurn: 0,
+        powerCountersPlacedOnMinionsThisTurn: 0,
     };
 }
 
@@ -1831,6 +1864,43 @@ function domainInterceptEvent(
     return event; // 鏃犳嫤鎴櫒鍖归厤锛岃繑鍥炲師浜嬩欢
 }
 
+function resolveTitanClashEvents(
+    state: SmashUpCore,
+    event: SmashUpEvent,
+): SmashUpEvent[] {
+    if (event.type !== SU_EVENT_TYPES.TITAN_PLAYED && event.type !== SU_EVENT_TYPES.TITAN_MOVED) {
+        return [];
+    }
+
+    const baseIndex = event.type === SU_EVENT_TYPES.TITAN_PLAYED
+        ? event.payload.baseIndex
+        : event.payload.toBaseIndex;
+    const base = state.bases[baseIndex];
+    const baseDef = base ? getBaseDef(base.defId) : undefined;
+    if (!base || baseDef?.allowMultipleTitans) return [];
+
+    const titansOnBase = getTitansOnBase(state, baseIndex);
+    if (titansOnBase.length <= 1) return [];
+
+    const ranked = titansOnBase
+        .map(titan => ({
+            titan,
+            power: getPlayerEffectivePowerOnBase(state, base, baseIndex, titan.controllerId),
+            enteredAt: titan.location.zone === 'base' ? titan.location.enteredAt : Number.MAX_SAFE_INTEGER,
+        }))
+        .sort((a, b) => {
+            if (b.power !== a.power) return b.power - a.power;
+            return a.enteredAt - b.enteredAt;
+        });
+
+    const winner = ranked[0]?.titan;
+    if (!winner) return [];
+
+    return ranked
+        .slice(1)
+        .map(({ titan }) => removeTitanFromPlay(titan, 'titan_clash', event.timestamp ?? 0));
+}
+
 // ============================================================================
 // 绯荤粺浜嬩欢鍚庡鐞嗭細Prompt bridge 绛夌郴缁熶骇鐢熺殑棰嗗煙浜嬩欢闇€瑕佽Е鍙?ongoing trigger
 // ============================================================================
@@ -1848,6 +1918,16 @@ function postProcessSystemEvents(
     const pid = getCurrentPlayerId(state);
     // 浣跨敤 pipeline 浼犲叆鐨?matchState锛堝寘鍚湡瀹?sys锛夛紝鎴栨瀯閫犳渶灏忓寘瑁?
     let ms = matchState ?? { core: state, sys: { interaction: { current: undefined, queue: [] } } } as unknown as MatchState<SmashUpCore>;
+    const inputEventsAlreadyReduced = !!(ms.sys as any)?._ppseInputEventsReduced;
+    if (inputEventsAlreadyReduced) {
+        ms = {
+            ...ms,
+            sys: {
+                ...ms.sys,
+                _ppseInputEventsReduced: undefined,
+            } as typeof ms.sys,
+        };
+    }
 
     // 渚濇鎵ц淇濇姢杩囨护 + trigger 鍚庡鐞嗭紙閾惧紡浼犻€?matchState锛?
     // destroy 鈫?move 寰幆鐩村埌绋冲畾锛坢ove 瑙﹀彂鍣ㄥ彲鑳戒骇鐢熸柊鐨?MINION_DESTROYED锛?
@@ -1858,6 +1938,8 @@ function postProcessSystemEvents(
     const afterDeckBottom = filterProtectedDeckBottomEvents(afterReturn, ms.core, pid);
     const afterAffect = processAffectTriggers(afterDeckBottom, ms, pid, random, now);
     if (afterAffect.matchState) ms = afterAffect.matchState;
+    const afterDeckInspection = processDeckInspectionTriggers(afterAffect.events, ms, pid, random, now);
+    if (afterDeckInspection.matchState) ms = afterDeckInspection.matchState;
 
     // 妫€娴?MINION_PLAYED 浜嬩欢锛岃嚜鍔ㄨ拷鍔犺Е鍙戦摼锛坥nPlay + 鍩哄湴鑳藉姏 + ongoing锛?
     // 鍏抽敭锛氬繀椤诲厛鎶?MINION_PLAYED 涔嬪墠鐨勪簨浠?reduce 鍒?core 涓紝
@@ -1887,9 +1969,9 @@ function postProcessSystemEvents(
     }
     const processedSet = sysAny._processedPlayedEvents as Set<string>;
     
-    // 銆愪慨澶嶃€戞竻鐞嗚繑鍥炴墜鐗岀殑闅忎粠鐨勫幓閲嶆爣璁?
-    // 褰撻殢浠庤繑鍥炴墜鐗屽悗鍐嶆鎵撳嚭鏃讹紝搴旇閲嶆柊瑙﹀彂 onPlay 鑳藉姏
-    for (const event of afterAffect.events) {
+    // 【修复】清理返回手牌的随从的去重标记
+    // 当随从返回手牌后再次打出时，应该重新触发 onPlay 能力
+    for (const event of afterDeckInspection.events) {
         if (event.type === SU_EVENTS.MINION_RETURNED) {
             const returnedEvt = event as { type: string; payload: { minionUid: string; fromBaseIndex: number } };
             const eventKey = `MINION:${returnedEvt.payload.minionUid}@${returnedEvt.payload.fromBaseIndex}`;
@@ -1897,7 +1979,7 @@ function postProcessSystemEvents(
         }
     }
     
-    for (const event of afterAffect.events) {
+    for (const event of afterDeckInspection.events) {
         if (event.type === SU_EVENTS.MINION_PLAYED) {
             const playedEvt = event as MinionPlayedEvent;
             
@@ -1976,25 +2058,79 @@ function postProcessSystemEvents(
         const afterDerivedDeckBottom = filterProtectedDeckBottomEvents(afterDerivedReturn, ms.core, pid);
         const afterDerivedAffect = processAffectTriggers(afterDerivedDeckBottom, ms, pid, random, now);
         if (afterDerivedAffect.matchState) ms = afterDerivedAffect.matchState;
-        finalDerived = afterDerivedAffect.events;
+        const afterDerivedDeckInspection = processDeckInspectionTriggers(afterDerivedAffect.events, ms, pid, random, now);
+        if (afterDerivedDeckInspection.matchState) ms = afterDerivedDeckInspection.matchState;
+        finalDerived = afterDerivedDeckInspection.events;
     }
 
-    let combined = [...afterAffect.events, ...finalDerived];
+    const combined = [...afterDeckInspection.events, ...finalDerived];
+    const alreadyReducedEventCount = inputEventsAlreadyReduced ? afterDeckInspection.events.length : 0;
 
-    // === Global reaction queue resolution (Wiki simultaneous ordering) ===
-    // Important: TRIGGER_QUEUED/CONSUMED are domain events; they are not reduced into ms.core yet at this stage.
-    // We must apply them to a temporary core view so the resolver can see the pending queue immediately.
-    let coreForQueue = ms.core;
-    for (const e of combined) {
-        if (e.type === SU_EVENTS.TRIGGER_QUEUED || e.type === SU_EVENTS.TRIGGER_CONSUMED) {
-            coreForQueue = reduce(coreForQueue, e);
+    // 泰坦位置事件后处理：标准基地双泰坦自动 clash。
+    // 使用 sys 上的去重集合，避免 pipeline 多次调用 postProcessSystemEvents 时重复追加同一批 clash 结果。
+    const titanSysAny = ms.sys as any;
+    if (!titanSysAny._processedTitanPositionEvents || !(titanSysAny._processedTitanPositionEvents instanceof Set)) {
+        titanSysAny._processedTitanPositionEvents = new Set<string>();
+    }
+    const processedTitanPositionEvents = titanSysAny._processedTitanPositionEvents as Set<string>;
+
+    const titanDerived: SmashUpEvent[] = [];
+    let titanCore = state;
+    for (let eventIndex = 0; eventIndex < combined.length; eventIndex++) {
+        const event = combined[eventIndex];
+        // state 已经包含了本轮原始领域事件（afterDeckInspection.events）的 reduce 结果；
+        // 这里只需要把新增的派生事件继续 reduce 进临时 core，避免原始事件被重复结算。
+        if (eventIndex >= alreadyReducedEventCount) {
+            titanCore = reduce(titanCore, event);
+        }
+        if (event.type !== SU_EVENT_TYPES.TITAN_PLAYED && event.type !== SU_EVENT_TYPES.TITAN_MOVED) continue;
+
+        const eventBaseIndex = event.type === SU_EVENT_TYPES.TITAN_PLAYED
+            ? event.payload.baseIndex
+            : event.payload.toBaseIndex;
+        const eventKey = `${event.type}:${event.payload.titanUid}@${eventBaseIndex}`;
+        if (processedTitanPositionEvents.has(eventKey)) continue;
+        processedTitanPositionEvents.add(eventKey);
+
+        const clashEvents = resolveTitanClashEvents(titanCore, event);
+        if (clashEvents.length > 0) {
+            titanDerived.push(...clashEvents);
+            for (const clashEvent of clashEvents) {
+                titanCore = reduce(titanCore, clashEvent);
+            }
+        }
+
+        if (event.type === SU_EVENT_TYPES.TITAN_MOVED) {
+            const movedTitan = getTitanByUid(titanCore, event.payload.titanUid);
+            if (movedTitan?.location.zone === 'base' && movedTitan.location.baseIndex === event.payload.toBaseIndex) {
+                const queuedTitanMove = collectTriggers(titanCore, 'onTitanMoved', {
+                    state: titanCore,
+                    matchState: ms,
+                    playerId: movedTitan.controllerId,
+                    baseIndex: event.payload.toBaseIndex,
+                    reason: event.payload.reason,
+                    random,
+                    now,
+                });
+                if (queuedTitanMove) {
+                    titanDerived.push(queuedTitanMove);
+                    titanCore = reduce(titanCore, queuedTitanMove);
+                }
+            }
         }
     }
-    const msForQueue = coreForQueue === ms.core ? ms : { ...ms, core: coreForQueue };
+
+    // === Global reaction queue resolution (Wiki simultaneous ordering) ===
+    // Important: the resolver must see the latest temporary core, including
+    // movement/position events that happened in this post-process pass.
+    // Otherwise a queued trigger like onTitanMoved still executes against the
+    // old base position and silently fizzles.
+    const msForQueue = titanCore === ms.core ? ms : { ...ms, core: titanCore };
 
     const rq = maybeResolveReactionQueue(msForQueue, random, now);
-    let finalEvents = rq ? [...combined, ...rq.events] : combined;
+    let finalEvents = [...combined, ...titanDerived];
     if (rq) {
+        finalEvents = [...finalEvents, ...rq.events];
         ms = rq.state;
     }
 
@@ -2044,7 +2180,7 @@ export const SmashUpDomain: DomainCore<SmashUpCore, SmashUpCommand, SmashUpEvent
 
 export type { SmashUpCommand, SmashUpCore, SmashUpEvent } from './types';
 export { SU_COMMANDS, SU_EVENTS } from './types';
-export { registerAbility, resolveAbility, resolveOnPlay, resolveTalent, resolveSpecial, resolveOnDestroy, clearRegistry } from './abilityRegistry';
+export { registerAbility, resolveAbility, resolveOnPlay, resolveTalent, resolveSpecial, resolveOngoingActivation, resolveOnDestroy, clearRegistry } from './abilityRegistry';
 export type { AbilityContext, AbilityResult, AbilityExecutor } from './abilityRegistry';
 export {
     registerBaseAbility,

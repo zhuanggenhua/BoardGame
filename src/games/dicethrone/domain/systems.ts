@@ -263,6 +263,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                                 dtType: 'modifyDie',
                                 dieModifyConfig: config,
                                 selectCount,
+                                diceOwnerId: pendingInteraction.diceOwnerId,
                                 targetOpponentDice: pendingInteraction.targetOpponentDice ?? false,
                             },
                         };
@@ -291,6 +292,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             meta: {
                                 dtType: 'selectDie',
                                 selectCount,
+                                diceOwnerId: pendingInteraction.diceOwnerId,
                                 targetOpponentDice: pendingInteraction.targetOpponentDice ?? false,
                             },
                         };

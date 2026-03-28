@@ -6,6 +6,8 @@ import { __resetCriticalImageGateCacheForTests, CriticalImageGate } from '../Cri
 const {
     areAllCriticalImagesCached,
     cancelWarmPreload,
+    createWarmPreloadScheduler,
+    enqueueWarmPreload,
     getCriticalImagesEpoch,
     preloadCriticalImages,
     preloadWarmImages,
@@ -13,6 +15,12 @@ const {
 } = vi.hoisted(() => ({
     areAllCriticalImagesCached: vi.fn().mockReturnValue(false),
     cancelWarmPreload: vi.fn(),
+    enqueueWarmPreload: vi.fn(),
+    createWarmPreloadScheduler: vi.fn().mockReturnValue({
+        pause: vi.fn(),
+        resume: vi.fn(),
+        enqueue: vi.fn((...args) => enqueueWarmPreload(...args)),
+    }),
     getCriticalImagesEpoch: vi.fn().mockReturnValue(1),
     preloadCriticalImages: vi.fn().mockResolvedValue([]),
     preloadWarmImages: vi.fn(),
@@ -22,6 +30,7 @@ const {
 vi.mock('../../../../core', () => ({
     areAllCriticalImagesCached,
     cancelWarmPreload,
+    createWarmPreloadScheduler,
     getCriticalImagesEpoch,
     preloadCriticalImages,
     preloadWarmImages,
@@ -56,6 +65,7 @@ beforeEach(() => {
     vi.mocked(preloadWarmImages).mockImplementation(() => undefined);
     vi.mocked(signalCriticalImagesReady).mockImplementation(() => undefined);
     vi.mocked(resolveCriticalImages).mockReturnValue({ critical: [], warm: [], phaseKey: 'setup' });
+    vi.mocked(enqueueWarmPreload).mockImplementation(() => undefined);
 });
 
 describe('CriticalImageGate', () => {
@@ -266,7 +276,7 @@ describe('CriticalImageGate', () => {
 
         resolvePreload?.(['warm:image']);
         await waitFor(() => {
-            expect(preloadWarmImages).toHaveBeenCalledWith(['warm:image'], 'zh-CN', 'smashup');
+            expect(enqueueWarmPreload).toHaveBeenCalledWith(['warm:image'], 'zh-CN', 'smashup');
         });
     });
 });

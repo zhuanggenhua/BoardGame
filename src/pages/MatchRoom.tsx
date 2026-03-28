@@ -78,9 +78,15 @@ const TutorialDispatchBridge = ({ children }: { children: ReactNode }) => {
     const gameMode = useGameMode();
     const isTutorialMode = gameMode?.mode === 'tutorial';
     const dispatchRef = useRef(dispatch);
-    dispatchRef.current = dispatch;
     const contextRef = useRef({ bindDispatch, unbindDispatch, syncTutorialState });
-    contextRef.current = { bindDispatch, unbindDispatch, syncTutorialState };
+
+    useEffect(() => {
+        dispatchRef.current = dispatch;
+    }, [dispatch]);
+
+    useEffect(() => {
+        contextRef.current = { bindDispatch, unbindDispatch, syncTutorialState };
+    }, [bindDispatch, unbindDispatch, syncTutorialState]);
 
     // 提前 bindDispatch，不等 Board 渲染
     // 使用 useLayoutEffect 确保在 CriticalImageGate 的 useEffect 之前执行，

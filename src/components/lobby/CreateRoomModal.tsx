@@ -1,16 +1,23 @@
 /**
  * 创建房间配置弹窗
- * 
+ *
  * 支持配置：
  * - 房间名称
  * - 游戏人数（从 manifest.playerOptions 读取）
  * - 房间保存时间（TTL）
+ * - manifest 声明的 setupOptions（单选 / 多选）
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { GameManifestEntry } from '../../games/manifest.types';
+import { ChevronDown, X } from 'lucide-react';
+import type {
+    GameManifestEntry,
+    GameSetupField,
+    GameSetupMultiSelectField,
+    GameSetupSelectField,
+} from '../../games/manifest.types';
 import { UI_Z_INDEX } from '../../core';
 
 /** 保存时间选项（秒） */
@@ -21,11 +28,30 @@ const RETENTION_OPTIONS = [
     { value: 604800, key: '7days' },      // 7 天
 ] as const;
 
+export type RoomSetupValue = string | string[];
+export type RoomSetupSelections = Record<string, RoomSetupValue>;
+
+function getDefaultSetupSelections(gameManifest: GameManifestEntry): RoomSetupSelections {
+    const selections: RoomSetupSelections = {};
+    const fields = gameManifest.setupOptions ?? {};
+
+    for (const [fieldKey, field] of Object.entries(fields)) {
+        if (field.type === 'multi-select') {
+            selections[fieldKey] = [...(field.default ?? field.options.map((option) => option.value))];
+            continue;
+        }
+        selections[fieldKey] = field.default ?? field.options[0]?.value ?? '';
+    }
+
+    return selections;
+}
+
 export interface RoomConfig {
     roomName: string;
     numPlayers: number;
     ttlSeconds: number;
     password?: string;
+    setupSelections: RoomSetupSelections;
 }
 
 interface CreateRoomModalProps {
@@ -36,6 +62,14 @@ interface CreateRoomModalProps {
     isLoading?: boolean;
 }
 
+function isSelectField(field: GameSetupField): field is GameSetupSelectField {
+    return field.type === 'select';
+}
+
+function isMultiSelectField(field: GameSetupField): field is GameSetupMultiSelectField {
+    return field.type === 'multi-select';
+}
+
 export const CreateRoomModal = ({
     isOpen,
     onClose,
@@ -43,9 +77,10 @@ export const CreateRoomModal = ({
     gameManifest,
     isLoading = false,
 }: CreateRoomModalProps) => {
-    const { t } = useTranslation('lobby');
+    const gameNamespace = `game-${gameManifest.id}`;
+    const { t } = useTranslation(['lobby', gameNamespace]);
 
-    // 人数选项：从清单配置读取，默认 [2]
+    // 人数选项：从 manifest 配置读取，默认 [2]
     const playerOptions = gameManifest.playerOptions ?? [2];
     const hasPlayerOptions = playerOptions.length > 1;
 
@@ -54,15 +89,59 @@ export const CreateRoomModal = ({
     const [numPlayers, setNumPlayers] = useState(playerOptions[0]);
     const [ttlSeconds, setTtlSeconds] = useState(0);
     const [password, setPassword] = useState('');
+    const [setupSelections, setSetupSelections] = useState<RoomSetupSelections>(() => getDefaultSetupSelections(gameManifest));
+    const [openMultiSelectKey, setOpenMultiSelectKey] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setRoomName('');
+        setNumPlayers(playerOptions[0]);
+        setTtlSeconds(0);
+        setPassword('');
+        setSetupSelections(getDefaultSetupSelections(gameManifest));
+        setOpenMultiSelectKey(null);
+    }, [gameManifest, isOpen, playerOptions]);
+
+    const resolveSetupLabel = (labelKey: string): string => {
+        const setupPrefix = `games.${gameManifest.id}.setup.`;
+        if (labelKey.startsWith(setupPrefix)) {
+            return t(labelKey.slice(setupPrefix.length), {
+                ns: gameNamespace,
+                defaultValue: labelKey,
+            });
+        }
+        return t(labelKey, { defaultValue: labelKey });
+    };
 
     const handleConfirm = () => {
-        onConfirm({ roomName: roomName.trim(), numPlayers, ttlSeconds, password: password.trim() });
+        onConfirm({
+            roomName: roomName.trim(),
+            numPlayers,
+            ttlSeconds,
+            password: password.trim(),
+            setupSelections,
+        });
     };
 
     const handleBackdropClick = () => {
         if (!isLoading) {
             onClose();
         }
+    };
+
+    const updateSelectField = (fieldKey: string, value: string) => {
+        setSetupSelections((prev) => ({ ...prev, [fieldKey]: value }));
+    };
+
+    const toggleMultiSelectFieldValue = (fieldKey: string, optionValue: string) => {
+        setSetupSelections((prev) => {
+            const currentRaw = prev[fieldKey];
+            const current = Array.isArray(currentRaw) ? currentRaw : [];
+            const next = current.includes(optionValue)
+                ? current.filter((value) => value !== optionValue)
+                : [...current, optionValue];
+            return { ...prev, [fieldKey]: next };
+        });
     };
 
     return (
@@ -176,7 +255,7 @@ export const CreateRoomModal = ({
                                     </div>
                                 )}
 
-                                {/* 房间保存时间 - 下拉框 */}
+                                {/* 房间保存时间 */}
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
                                         <label className="text-sm font-bold text-parchment-base-text">
@@ -198,6 +277,140 @@ export const CreateRoomModal = ({
                                         ))}
                                     </select>
                                 </div>
+
+                                {gameManifest.setupOptions && Object.keys(gameManifest.setupOptions).length > 0 && (
+                                    <div className="space-y-4">
+                                        {Object.entries(gameManifest.setupOptions).map(([fieldKey, field]) => {
+                                            const fieldValue = setupSelections[fieldKey];
+
+                                            if (isSelectField(field)) {
+                                                const selectedValue = typeof fieldValue === 'string'
+                                                    ? fieldValue
+                                                    : (field.default ?? field.options[0]?.value ?? '');
+                                                return (
+                                                    <div key={fieldKey}>
+                                                        <label className="block text-sm font-bold text-parchment-base-text mb-2">
+                                                            {resolveSetupLabel(field.labelKey)}
+                                                        </label>
+                                                        <select
+                                                            value={selectedValue}
+                                                            onChange={(e) => updateSelectField(fieldKey, e.target.value)}
+                                                            className="w-full px-4 py-2.5 rounded-[4px] text-sm border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text focus:outline-none focus:border-parchment-base-text cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23433422%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_12px_center]"
+                                                        >
+                                                            {field.options.map((option) => (
+                                                                <option key={option.value} value={option.value}>
+                                                                    {resolveSetupLabel(option.labelKey)}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (!isMultiSelectField(field)) {
+                                                return null;
+                                            }
+
+                                            const selectedValues = Array.isArray(fieldValue)
+                                                ? fieldValue
+                                                : [...(field.default ?? field.options.map((option) => option.value))];
+                                            const isOpenField = openMultiSelectKey === fieldKey;
+                                            const selectedOptions = field.options.filter((option) => selectedValues.includes(option.value));
+
+                                            return (
+                                                <div key={fieldKey} className="relative">
+                                                    <div className="flex justify-between items-center mb-2 gap-3">
+                                                        <label className="text-sm font-bold text-parchment-base-text">
+                                                            {resolveSetupLabel(field.labelKey)}
+                                                        </label>
+                                                        <span className="text-xs text-parchment-light-text italic">
+                                                            {selectedValues.length > 0
+                                                                ? t('createRoom.multiSelectSelected', { count: selectedValues.length })
+                                                                : t('createRoom.multiSelectNone')}
+                                                        </span>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setOpenMultiSelectKey(isOpenField ? null : fieldKey)}
+                                                        className="w-full px-4 py-2.5 rounded-[4px] text-sm border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text hover:bg-parchment-base-bg transition-colors flex items-center justify-between cursor-pointer"
+                                                        aria-expanded={isOpenField}
+                                                        aria-controls={`setup-multi-${fieldKey}`}
+                                                    >
+                                                        <span>
+                                                            {selectedValues.length > 0
+                                                                ? t('createRoom.multiSelectButton', { count: selectedValues.length })
+                                                                : t('createRoom.multiSelectPlaceholder')}
+                                                        </span>
+                                                        <ChevronDown
+                                                            size={16}
+                                                            className={`transition-transform ${isOpenField ? 'rotate-180' : ''}`}
+                                                        />
+                                                    </button>
+
+                                                    {selectedOptions.length > 0 && (
+                                                        <div className="mt-3 flex flex-wrap gap-2">
+                                                            {selectedOptions.map((option) => (
+                                                                <span
+                                                                    key={option.value}
+                                                                    className="inline-flex items-center gap-1 rounded-full border border-parchment-card-border/40 bg-parchment-base-bg px-3 py-1 text-xs font-bold text-parchment-base-text"
+                                                                >
+                                                                    <span>{resolveSetupLabel(option.labelKey)}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => toggleMultiSelectFieldValue(fieldKey, option.value)}
+                                                                        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-parchment-base-text/70 hover:bg-parchment-card-border/20 hover:text-parchment-base-text transition-colors cursor-pointer"
+                                                                        aria-label={t('createRoom.removeSelectedOption', {
+                                                                            label: resolveSetupLabel(option.labelKey),
+                                                                        })}
+                                                                    >
+                                                                        <X size={12} />
+                                                                    </button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {isOpenField && (
+                                                        <div
+                                                            id={`setup-multi-${fieldKey}`}
+                                                            className="mt-3 rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg p-2 shadow-md"
+                                                        >
+                                                            <div className="flex flex-col gap-1">
+                                                                {field.options.map((option) => {
+                                                                    const checked = selectedValues.includes(option.value);
+                                                                    return (
+                                                                        <button
+                                                                            key={option.value}
+                                                                            type="button"
+                                                                            onClick={() => toggleMultiSelectFieldValue(fieldKey, option.value)}
+                                                                            className={`flex items-center justify-between rounded-[4px] px-3 py-2 text-sm transition-colors cursor-pointer ${
+                                                                                checked
+                                                                                    ? 'bg-parchment-base-bg text-parchment-base-text'
+                                                                                    : 'text-parchment-light-text hover:bg-parchment-base-bg/70'
+                                                                            }`}
+                                                                        >
+                                                                            <span>{resolveSetupLabel(option.labelKey)}</span>
+                                                                            <span
+                                                                                className={`inline-flex h-5 min-w-5 items-center justify-center rounded border text-[11px] font-black ${
+                                                                                    checked
+                                                                                        ? 'border-parchment-base-text bg-parchment-base-text text-parchment-card-bg'
+                                                                                        : 'border-parchment-card-border/40 text-parchment-light-text'
+                                                                                }`}
+                                                                            >
+                                                                                {checked ? '✓' : ''}
+                                                                            </span>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
 
                             {/* 按钮 */}

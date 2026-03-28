@@ -27,7 +27,10 @@ async function resolveTestApiBase(page?: Page): Promise<string> {
 
     if (page) {
         const forcedBase = await page.evaluate(() => {
-            return (window as Window & { __FORCE_GAME_SERVER_URL__?: string }).__FORCE_GAME_SERVER_URL__ ?? null;
+            return (window as Window & {
+                __FORCE_API_SERVER_URL__?: string;
+                __FORCE_GAME_SERVER_URL__?: string;
+            }).__FORCE_API_SERVER_URL__ ?? null;
         }).catch(() => null);
         if (forcedBase) {
             return forcedBase;

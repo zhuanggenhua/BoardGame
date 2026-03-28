@@ -58,6 +58,10 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
     ? PHASE_ORDER[0]
     : currentPhase;
 
+  useEffect(() => {
+    setSelectedPhaseId(null);
+  }, [currentPhase, isCoarsePointer]);
+
   const phasesBase: Omit<PhaseConfig, 'count' | 'maxCount'>[] = PHASE_ORDER.map((phaseId) => ({
     id: phaseId,
     label: t(`phase.${phaseId}`),
@@ -74,14 +78,6 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
     }
     return phase;
   });
-
-  useEffect(() => {
-    if (!isCoarsePointer) {
-      setSelectedPhaseId(null);
-      return;
-    }
-    setSelectedPhaseId(null);
-  }, [isCoarsePointer, currentPhase]);
 
   const detailPhaseId = isCoarsePointer ? selectedPhaseId : hoveredPhaseId;
   const detailPhase = detailPhaseId
@@ -117,6 +113,7 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
               }}
             >
               <div
+                key={`${String(isCoarsePointer)}-${phase.id}`}
                 role={isCoarsePointer ? 'button' : undefined}
                 tabIndex={isCoarsePointer ? 0 : undefined}
                 onClick={() => {

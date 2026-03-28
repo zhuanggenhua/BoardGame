@@ -14,6 +14,7 @@ import {
     buildAbilityFeedback,
     createSkipOption,
     buildStandardDrawEvents,
+    getTitansOnBase,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type {
@@ -145,12 +146,7 @@ type TricksterGnomePodPending = {
 };
 
 function countTitansOnBase(state: SmashUpCore, baseIndex: number): number {
-    let titanCount = 0;
-    for (const pid of state.turnOrder) {
-        const titan = (state.players[pid] as any)?.activeTitan as { baseIndex?: number } | undefined;
-        if (titan?.baseIndex === baseIndex) titanCount += 1;
-    }
-    return titanCount;
+    return getTitansOnBase(state, baseIndex).length;
 }
 
 function buildTricksterGnomePodOptions(

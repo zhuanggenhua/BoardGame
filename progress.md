@@ -1,56 +1,36 @@
 # Progress Log
 
-## Merge Note（2026-03-27）
-- 本文件在同步 `origin/main` 时继续以当前武士 / 枪手审计 worktree 的执行日志为主。
-- 主分支新增的历史进度条目已在合并冲突汇报中单独摘要保存，不与当前任务日志直接混写。
-
-## Session: 2026-03-27 武士跨角色 E2E / Masamune II 审计
+## Session: 2026-03-28 Smash Up Titans merge 收口
 - **Status:** in_progress
 - Actions taken:
-  - 对 `Masamune II` 继续执行“只做证据链、不硬改实现”的策略，复核了代码定义、OCR 图证与现有规则文档。
-  - 结论仍是：升级差异数字无法安全裁决，`Masamune II` 保持为显式 blocker。
-  - 在 `e2e/dicethrone-watch-out-spotlight.e2e.ts` 中补入两条武士跨角色 E2E，不新建测试文件。
-  - 重新定位 E2E 不稳定根因，确认问题不在武士业务逻辑，而在 `LocalGameProvider` 没有消费 `TestHarness.random/dice` 注入。
-  - 在 `src/engine/transport/react.tsx` 增加测试环境随机桥接，让 `TestHarness.dice.setValues()` 能真实控制 `executePipeline()` 中的 `random.d(6)`。
-  - 跑通两条 E2E：
-    - `npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "samurai righteousness should resolve a valid branch against monk"`
-    - `npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "samurai zanshin should settle 5 bonus dice and synchronize effects against paladin"`
-  - 人工审查两张显式证据截图，并补充证据文档 `evidence/dicethrone-samurai-cross-hero-attack-modifier-e2e.md`。
-- Next step:
-  - 结束当前 `origin/main` 合并流程，生成 merge commit。
-  - 按规范执行 `npm run merge:audit:strict -- HEAD`。
-  - 如无新增 blocker，再决定是否继续推进武士/枪手审计的下一轮实现变更。
-
-## Session: 2026-03-22 多线任务登记 / 新会话续跑入口
-- **Status:** in_progress
-- Actions taken:
-  - 读取项目根目录现有 `task_plan.md` / `findings.md` / `progress.md`，确认三件套已存在，但顶层标题仍停留在旧任务，需要补登记本轮多线收口状态。
-  - 读取并核对项目内主进度文件：`evidence/full-recovery-plan.md`、`evidence/p0-audit-progress.md`、`evidence/p1-restoration-progress.md`、`evidence/smashup-e2e-migration-progress.md`、`temp/feedback-main-branch-resume-plan.md`、`temp/ssh-codex-plan.md`。
-  - 已确认当前主线不止一个：静态资源 fallback 事故、房主被踢/房间被删链路、feedback 未关闭项、E2E 迁移、POD 审计/恢复文档。
-  - 已用 guarded task 启动并行 Codex：
-    - `codex-feedback-open-tracker` → 目标产物 `temp/open-feedback-tracker.md`
-    - `codex-e2e-migration` → 目标产物 `temp/e2e-next-batch-plan.md`
-    - `codex-find-planning-with-files` → 原用于精确定位 plan 技能；在用户给出 GitHub 后已人工确认并安装技能。
-  - 已从 `https://github.com/OthmanAdi/planning-with-files` 安装 `planning-with-files`，并整理到 OpenClaw 可识别目录；workspace commit：`1216e1e` (`skills: install planning-with-files`)。
-  - 已纠正规范：以后说 `plan` 默认指 `planning-with-files` 这套规划工作方式 / 效果；其正式文档唯一落点只能是根目录 `task_plan.md`，不得再在 `temp/` 或其他位置并行维护第二份正式 plan；多任务并行时，新增任务主动委派给 Codex。
-- Next step:
-  - 新会话恢复时，先读本三件套，再检查以下产物是否已落盘：`temp/open-feedback-tracker.md`、`temp/e2e-next-batch-plan.md`、`temp/codex-room-assets-findings.md`。
-  - 然后继续两条核心修复线：`apps/api/src/main.ts` 的 `/assets` SPA fallback 排除是否已真实落盘/验证；`server.ts` + 前端状态链路对“房间已删除”误判的根因与最小修复。
-
-## Session: 2026-03-10
-
-### Phase 1：读取规则与相关规范
-- **Status:** in_progress
-- Actions taken:
-  - 读取 `planning-with-files` 技能说明，按复杂任务流程建档。
-  - 检查项目内相关文档与规则文件位置。
-  - 读取 `docs/ai-rules/engine-systems.md` 与 `src/games/dicethrone/rule/王权骰铸规则.md`，准备进入实现链路排查。
-  - 追踪 `pendingBonusDamage` / `pendingAttack.bonusDamage` / `useActiveModifiers` 相关实现。
-  - 对照规则确认：攻击修正必须依附当前攻击，当前实现却允许无攻击时预存到未来攻击。
-- Files created/modified:
-  - `task_plan.md`
-  - `findings.md`
-  - `progress.md`
+  - 确认当前处于 `git merge origin/main` 冲突态，目标是把 `feat/smashup-titans` 收口、推送并完成 PR #43 合并。
+  - 解掉 Smash Up 关键代码冲突：
+    - `src/games/smashup/domain/ongoingEffects.ts`
+    - `src/games/smashup/domain/ongoingModifiers.ts`
+    - `src/games/smashup/domain/commands.ts`
+    - `src/games/smashup/domain/index.ts`
+    - `src/games/smashup/abilities/bear_cavalry.ts`
+    - `src/games/smashup/__tests__/smashup.smoke.test.ts`
+    - `src/games/smashup/manifest.ts`
+    - `src/games/smashup/ui/DeckDiscardZone.tsx`
+    - `scripts/infra/e2e-port-config.js`
+  - 关键融合点已经保留：
+    - `deck inspection` 见证链
+    - `onTitanMoved`
+    - `titan power modifier`
+    - `perInstance/sourceScope`
+    - `skipImmediateStartTurnMinionTriggers`
+    - `_ppseInputEventsReduced`
+  - 同步清理根规范与文档冲突：
+    - `AGENTS.md`
+    - `docs/ai-rules/data-entry.md`
+    - `docs/ai-rules/doc-index.md`
+    - `docs/testing-best-practices.md`
+    - 当前三件套文件
+  - 运行回归并通过：
+    - `npm run typecheck`
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/vampiresPod.test.ts --configLoader native -t "ongoing -2 不应在回合开始被清零"`
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native`
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |

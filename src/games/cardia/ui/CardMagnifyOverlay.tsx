@@ -16,37 +16,62 @@ import { resolveCardiaCardImagePath } from '../imagePaths';
 export interface CardMagnifyTarget {
     card: CardInstance;
     core: CardiaCore;
+    anchorRect?: DOMRect | null;
 }
 
 interface Props {
     target: CardMagnifyTarget | null;
     onClose: () => void;
+    interactive?: boolean;
 }
 
-export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
-    const { card } = target || {};
+export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose, interactive = true }) => {
+    const { card, anchorRect } = target || {};
     const imagePath = card ? resolveCardiaCardImagePath(card) : undefined;
 
     const widthForThreeQuarterHeight = 'calc(75vh * (106 / 160))';
+    const overlayPositionStyle = React.useMemo(() => {
+        if (typeof window === 'undefined') return undefined;
+
+        if (!anchorRect) return undefined;
+
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const gap = 20;
+        const overlayHeight = Math.min(viewportHeight * 0.75, viewportHeight - gap * 2);
+        const overlayWidth = overlayHeight * (106 / 160);
+        const left = anchorRect.left - overlayWidth - gap;
+
+        let top = anchorRect.top + anchorRect.height / 2 - overlayHeight / 2;
+        if (top < gap) top = gap;
+        if (top + overlayHeight > viewportHeight - gap) top = viewportHeight - gap - overlayHeight;
+
+        return {
+            position: 'fixed',
+            left: Math.max(gap, Math.min(left, viewportWidth - gap - overlayWidth)),
+            top: Math.max(gap, Math.min(top, viewportHeight - gap - overlayHeight)),
+            height: `${overlayHeight}px`,
+            width: `${overlayWidth}px`,
+        } as React.CSSProperties;
+    }, [anchorRect]);
 
     return (
-        <MagnifyOverlay isOpen={!!target} onClose={onClose} overlayClassName="p-3 sm:p-8">
+        <MagnifyOverlay
+            isOpen={!!target}
+            onClose={onClose}
+            interactive={interactive}
+            overlayClassName="pointer-events-none p-3 sm:p-8"
+            containerClassName="pointer-events-none"
+            overlayTestId="cardia-magnify-overlay"
+        >
             {target && (
                 <div
                     className="relative aspect-[106/160] bg-transparent"
-                    style={{
+                    style={overlayPositionStyle ?? {
                         height: '75vh',
                         width: `min(75vw, ${widthForThreeQuarterHeight})`,
                     }}
                 >
-                    {/* 关闭按钮 */}
-                    <button
-                        onClick={onClose}
-                        className="absolute -right-2 -top-2 z-50 h-8 w-8 rounded-full border-2 border-black bg-white font-black text-black shadow-lg transition-transform hover:scale-110 sm:-right-4 sm:-top-4 sm:h-10 sm:w-10"
-                    >
-                        ✕
-                    </button>
-
                     {/* 纯图片展示 */}
                     <div className="relative w-full h-full rounded-xl border-4 border-white/30 shadow-2xl overflow-hidden bg-gray-900">
                         {imagePath ? (

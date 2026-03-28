@@ -7,9 +7,9 @@
     "node": "24.1.0"
   },
   "scripts": {
-    "predev": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && docker compose up -d mongodb",
+    "predev": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && node scripts/infra/ensure-dev-mongo.mjs",
     "dev": "cross-env NODE_ENV=development node scripts/infra/dev-orchestrator.js",
-    "predev:un": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && docker compose up -d mongodb",
+    "predev:un": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && node scripts/infra/ensure-dev-mongo.mjs",
     "dev:un": "cross-env NODE_ENV=development concurrently \"npm:dev:game\" \"npm:dev:api\" \"npm:dev:frontend:wait\"",
     "predev:lite": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs",
     "dev:lite": "cross-env NODE_ENV=development concurrently \"npm:dev:game:lite\" \"npm:dev:api\" \"npm:dev:frontend:wait\"",

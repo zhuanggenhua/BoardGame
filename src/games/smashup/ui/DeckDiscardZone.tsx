@@ -2,11 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, Trash2 } from 'lucide-react';
-import type { CardInstance } from '../domain/types';
+import type { CardInstance, TitanState } from '../domain/types';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PromptOverlay } from './PromptOverlay';
 import { UI_Z_INDEX } from '../../../core';
 import { SMASHUP_CARD_BACK } from '../domain/ids';
+import { getTitanDef, resolveCardName } from '../data/cards';
 import { MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from '../domain/types';
 
 type Props = {
@@ -29,6 +30,11 @@ type Props = {
     selectHint?: string;
     /** 关闭弃牌堆面板的回调（含清理逻辑） */
     onClosePanel?: () => void;
+    setAsideTitans?: TitanState[];
+    activatableTitanUids?: Set<string>;
+    selectedTitanUid?: string | null;
+    onSelectTitan?: (titanUid: string) => void;
+    onViewTitan?: (defId: string) => void;
     dispatch: (type: string, payload?: unknown) => void;
     playerID: string | null;
 };
@@ -46,6 +52,11 @@ export const DeckDiscardZone: React.FC<Props> = ({
     onSelectCard,
     selectHint,
     onClosePanel,
+    setAsideTitans = [],
+    activatableTitanUids,
+    selectedTitanUid,
+    onSelectTitan,
+    onViewTitan,
     dispatch,
     playerID,
 }) => {
@@ -55,6 +66,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
         ? Math.max(0, Math.min(MADNESS_DECK_SIZE, madnessSupplyCount))
         : undefined;
     const stackWidth = compactLayout ? '8.6vw' : '7.5vw';
+    const titanWidth = compactLayout ? '5.6vw' : '4.8vw';
     const labelMinHeight = compactLayout ? '24px' : '20px';
     const labelFontSize = compactLayout ? '11px' : '10px';
 
@@ -74,8 +86,6 @@ export const DeckDiscardZone: React.FC<Props> = ({
     // 如果直接读取 discard[discard.length - 1]，在中间状态会得到 undefined
     const topCard = discard.length > 0 ? discard[discard.length - 1] : null;
 
-    // 弃牌堆卡牌列表（供 PromptOverlay displayCards 使用）
-    // 永远显示全部弃牌堆，可打出的卡牌通过 playableDefIds 高亮
     const handleCloseDiscard = useCallback(() => {
         setShowDiscard(false);
         onSelectCard?.(null);
@@ -122,52 +132,110 @@ export const DeckDiscardZone: React.FC<Props> = ({
         return () => document.removeEventListener('mousedown', handler);
     }, [showDiscard, autoOpenPanel]);
 
+    const handleTitanClick = useCallback((titan: TitanState) => {
+        if (activatableTitanUids?.has(titan.uid) && onSelectTitan) {
+            onSelectTitan(titan.uid);
+            return;
+        }
+        onViewTitan?.(titan.defId);
+    }, [activatableTitanUids, onSelectTitan, onViewTitan]);
+
     return (
         <div
             data-tutorial-id="su-deck-discard"
             className="absolute bottom-4 left-[2vw] right-[2vw] flex justify-between items-end pointer-events-none"
             style={{ zIndex: UI_Z_INDEX.hud }}
         >
-
-            {/* 牌库 - 左侧 */}
-            <div className="flex flex-col items-center pointer-events-auto group" data-testid="su-deck-stack">
-                <div className="relative aspect-[0.714]" style={{ width: stackWidth }}>
-                    {clampedMadnessSupplyCount !== undefined && (
-                        <div
-                            className="pointer-events-none absolute -top-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
-                            data-testid="su-madness-supply"
-                            title={`疯狂牌剩余 ${clampedMadnessSupplyCount}`}
-                        >
-                            <div className="h-8 w-[22px] overflow-hidden rounded-[3px]">
-                                <CardPreview
-                                    previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: MADNESS_CARD_DEF_ID, cardUid: 'madness-supply-preview' } }}
-                                    className="h-full w-full"
-                                />
-                            </div>
-                            <span
-                                className="whitespace-nowrap text-[11px] font-black tabular-nums text-fuchsia-100"
-                                data-testid="su-madness-supply-count"
+            <div className="flex items-end gap-3 pointer-events-auto">
+                {/* 牌库 - 左侧 */}
+                <div className="flex flex-col items-center group" data-testid="su-deck-stack">
+                    <div className="relative aspect-[0.714]" style={{ width: stackWidth }}>
+                        {clampedMadnessSupplyCount !== undefined && (
+                            <div
+                                className="pointer-events-none absolute -top-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+                                data-testid="su-madness-supply"
+                                title={`疯狂牌剩余 ${clampedMadnessSupplyCount}`}
                             >
-                                x {clampedMadnessSupplyCount}
-                            </span>
-                        </div>
-                    )}
-                    <div className="absolute inset-0 bg-slate-700 rounded-sm border border-slate-600 shadow-sm translate-x-1 -translate-y-1 rotate-1" />
-                    <div className="absolute inset-0 bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2">
-                        <CardPreview previewRef={SMASHUP_CARD_BACK} className="w-full h-full" />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                            <div className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg">
-                                <span className="text-white font-black font-mono text-base">{deckCount}</span>
+                                <div className="h-8 w-[22px] overflow-hidden rounded-[3px]">
+                                    <CardPreview
+                                        previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: MADNESS_CARD_DEF_ID, cardUid: 'madness-supply-preview' } }}
+                                        className="h-full w-full"
+                                    />
+                                </div>
+                                <span
+                                    className="whitespace-nowrap text-[11px] font-black tabular-nums text-fuchsia-100"
+                                    data-testid="su-madness-supply-count"
+                                >
+                                    x {clampedMadnessSupplyCount}
+                                </span>
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-slate-700 rounded-sm border border-slate-600 shadow-sm translate-x-1 -translate-y-1 rotate-1" />
+                        <div className="absolute inset-0 bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2">
+                            <CardPreview previewRef={SMASHUP_CARD_BACK} className="w-full h-full" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg">
+                                    <span className="text-white font-black font-mono text-base">{deckCount}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <div
+                        className="mt-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-white font-bold uppercase tracking-wider flex items-center gap-1"
+                        style={{ minHeight: labelMinHeight, fontSize: labelFontSize }}
+                    >
+                        <Library size={10} /> {t('ui.deck')}
+                    </div>
                 </div>
-                <div
-                    className="mt-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-white font-bold uppercase tracking-wider flex items-center gap-1"
-                    style={{ minHeight: labelMinHeight, fontSize: labelFontSize }}
-                >
-                    <Library size={10} /> {t('ui.deck')}
-                </div>
+
+                {setAsideTitans.length > 0 && (
+                    <div className="flex flex-col items-start pointer-events-auto" data-testid="su-titan-rail">
+                        <div className="flex items-end gap-2">
+                            {setAsideTitans.map((titan) => {
+                                const titanDef = getTitanDef(titan.defId);
+                                const titanName = titanDef ? resolveCardName(titanDef, t) || titan.defId : titan.defId;
+                                const isSelected = selectedTitanUid === titan.uid;
+                                const isActivatable = !!activatableTitanUids?.has(titan.uid) && isMyTurn;
+                                return (
+                                    <button
+                                        key={titan.uid}
+                                        type="button"
+                                        onClick={() => handleTitanClick(titan)}
+                                        className={`relative aspect-[0.714] rounded-sm overflow-hidden shadow-lg border transition-all cursor-pointer ${
+                                            isSelected
+                                                ? 'border-amber-300 ring-2 ring-amber-300 -translate-y-1 shadow-[0_0_18px_rgba(251,191,36,0.65)]'
+                                                : isActivatable
+                                                ? 'border-emerald-300 ring-1 ring-emerald-300 hover:-translate-y-1'
+                                                : 'border-slate-300 hover:-translate-y-1'
+                                        }`}
+                                        style={{ width: titanWidth }}
+                                        title={titanName}
+                                    >
+                                        <CardPreview
+                                            previewRef={titanDef?.previewRef
+                                                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: titan.defId, cardUid: titan.uid } }
+                                                : undefined}
+                                            className="h-full w-full"
+                                            title={titanName}
+                                        />
+                                        {isActivatable && (
+                                            <div className="absolute inset-x-0 top-0 h-1.5 bg-emerald-400/90" />
+                                        )}
+                                        {isSelected && (
+                                            <div className="absolute inset-0 border-2 border-amber-300 pointer-events-none" />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div
+                            className="mt-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-white font-bold uppercase tracking-wider"
+                            style={{ minHeight: labelMinHeight, fontSize: labelFontSize }}
+                        >
+                            {t('ui.titan', { defaultValue: '泰坦' })}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 弃牌堆 - 右侧 */}
@@ -188,9 +256,9 @@ export const DeckDiscardZone: React.FC<Props> = ({
                         <>
                             <div className="absolute inset-0 bg-white rounded-sm border border-slate-300 shadow-sm -translate-x-1 -translate-y-1 -rotate-1" />
                             <div className={`absolute inset-0 bg-white rounded-sm shadow-xl transition-transform group-hover:-translate-y-2 group-hover:rotate-1 border overflow-hidden z-10 ${hasPlayableFromDiscard ? 'border-amber-400 border-2' : 'border-slate-200'}`}>
-                                <CardPreview 
+                                <CardPreview
                                     previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: topCard!.defId, cardUid: topCard!.uid } }}
-                                    className="w-full h-full" 
+                                    className="w-full h-full"
                                 />
                             </div>
                         </>

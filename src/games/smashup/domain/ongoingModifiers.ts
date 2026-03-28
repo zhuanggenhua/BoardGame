@@ -11,7 +11,7 @@
  */
 
 import type { PlayerId } from '../../../engine/types';
-import type { SmashUpCore, MinionOnBase, BaseInPlay } from './types';
+import type { SmashUpCore, MinionOnBase, BaseInPlay, TitanState } from './types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getSuppressionFilteredStateForSource, isCardSuppressed } from './ongoingEffects';
 
@@ -95,6 +95,18 @@ const breakpointModifierRegistry: BreakpointModifierEntry[] = [];
 /** 基地级别力量修正注册表 */
 const basePowerModifiers: Map<string, BasePowerModifierFn> = new Map();
 
+export interface TitanPowerModifierContext {
+    state: SmashUpCore;
+    titan: TitanState;
+    baseIndex: number;
+    base: BaseInPlay;
+    playerId: PlayerId;
+}
+
+export type TitanPowerModifierFn = (ctx: TitanPowerModifierContext) => number;
+
+const titanPowerModifiers: Map<string, TitanPowerModifierFn> = new Map();
+
 function getFilteredPowerModifierContext(
     state: SmashUpCore,
     minion: MinionOnBase,
@@ -157,6 +169,10 @@ export function registerPowerModifier(
  */
 export function registerBasePowerModifier(defId: string, modifier: BasePowerModifierFn): void {
     basePowerModifiers.set(defId, modifier);
+}
+
+export function registerTitanPowerModifier(defId: string, modifier: TitanPowerModifierFn): void {
+    titanPowerModifiers.set(defId, modifier);
 }
 
 /**
@@ -305,6 +321,7 @@ export function clearPowerModifierRegistry(): void {
     modifierRegistry.length = 0;
     breakpointModifierRegistry.length = 0;
     basePowerModifiers.clear();
+    titanPowerModifiers.clear();
 }
 
 /**
@@ -386,6 +403,10 @@ export function getRegisteredModifierIds(): {
         if (!defId.endsWith('_pod')) {
             powerModifierIds.add(`${defId}_pod`);
         }
+    }
+
+    for (const defId of titanPowerModifiers.keys()) {
+        powerModifierIds.add(defId);
     }
 
     return {
@@ -544,6 +565,35 @@ export function getOngoingCardPowerContribution(
 }
 
 /**
+ * 获取玩家在基地上的泰坦力量贡献。
+ *
+ * 当前基础模型先只纳入泰坦上的力量指示物。
+ * 各泰坦自身的持续文字带来的额外力量，后续通过专门修正器接入统一查询。
+ */
+export function getTitanPowerContribution(
+    state: SmashUpCore,
+    baseIndex: number,
+    playerId: PlayerId,
+): number {
+    let total = 0;
+    const base = state.bases[baseIndex];
+    if (!base) return 0;
+    for (const titan of state.titans ?? []) {
+        if (titan.location.zone !== 'base' || titan.location.baseIndex !== baseIndex) continue;
+        if (titan.controllerId !== playerId) continue;
+        total += titan.powerCounters;
+        total += titanPowerModifiers.get(titan.defId)?.({
+            state,
+            titan,
+            baseIndex,
+            base,
+            playerId,
+        }) ?? 0;
+    }
+    return total;
+}
+
+/**
  * 获取玩家在基地上的总有效力量（含持续修正 + ongoing 卡力量贡献 + 基地级别力量修正）
  */
 export function getPlayerEffectivePowerOnBase(
@@ -556,8 +606,9 @@ export function getPlayerEffectivePowerOnBase(
         .filter(m => m.controller === playerId)
         .reduce((sum, m) => sum + getEffectivePower(state, m, baseIndex), 0);
     const ongoingCardPower = getOngoingCardPowerContribution(base, playerId);
+    const titanPower = getTitanPowerContribution(state, baseIndex, playerId);
     const basePowerBonus = getBasePowerModifiers(state, baseIndex, playerId);
-    return minionPower + ongoingCardPower + basePowerBonus;
+    return minionPower + ongoingCardPower + titanPower + basePowerBonus;
 }
 
 /**
@@ -573,12 +624,14 @@ export function getTotalEffectivePowerOnBase(
     // 累加所有玩家的 ongoing 卡力量贡献（不限于有随从的玩家）
     // 修复 Bug：只有 ongoing 卡但没有随从的玩家，其力量贡献也应该计入总力量
     let ongoingBonus = 0;
+    let titanBonus = 0;
     let basePowerBonus = 0;
     for (const pid of Object.keys(state.players)) {
         ongoingBonus += getOngoingCardPowerContribution(base, pid);
+        titanBonus += getTitanPowerContribution(state, baseIndex, pid);
         basePowerBonus += getBasePowerModifiers(state, baseIndex, pid);
     }
-    return minionPower + ongoingBonus + basePowerBonus;
+    return minionPower + ongoingBonus + titanBonus + basePowerBonus;
 }
 
 /**

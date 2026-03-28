@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import type { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MousePointerClick } from 'lucide-react';
-import type { AbilityCard, Die, TurnPhase } from '../types';
+import type { AbilityCard, Die, PlayerId, TurnPhase } from '../types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
 import { useMultistepInteraction } from '../../../engine/systems/useMultistepInteraction';
@@ -50,6 +50,8 @@ export const RightSidebar = ({
     activeModifiers,
     attackModifierBonusDamage,
     passiveAbilityProps,
+    rootPlayerId,
+    teamIdByPlayerId,
 }: {
     dice: Die[];
     rollCount: number;
@@ -81,6 +83,8 @@ export const RightSidebar = ({
     activeModifiers?: ActiveModifier[];
     attackModifierBonusDamage?: number;
     passiveAbilityProps?: Omit<PassiveAbilityPanelProps, never> | null;
+    rootPlayerId: PlayerId;
+    teamIdByPlayerId?: Record<PlayerId, string>;
 }) => {
     const isDiceMultistep = interaction?.kind === 'multistep-choice' &&
         ((interaction.data as any)?.meta?.dtType === 'modifyDie' ||
@@ -168,11 +172,22 @@ export const RightSidebar = ({
         }
         if (isSelectMode) {
             if (currentCount >= maxCount) return t('interaction.hint_done');
-            const key = dtMeta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';
+            let key = dtMeta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';
+            if (dtMeta.diceOwnerId) {
+                const ownerTeamId = teamIdByPlayerId?.[dtMeta.diceOwnerId];
+                const rootTeamId = teamIdByPlayerId?.[rootPlayerId];
+                if (dtMeta.diceOwnerId === rootPlayerId) {
+                    key = 'interaction.hint_select';
+                } else if (ownerTeamId && rootTeamId && ownerTeamId === rootTeamId) {
+                    key = 'interaction.hint_select_ally';
+                } else {
+                    key = 'interaction.hint_select_opponent';
+                }
+            }
             return t(key, { current: currentCount, max: maxCount });
         }
         return null;
-    }, [isDiceMultistep, interaction, multistepInteraction?.result, t]);
+    }, [isDiceMultistep, interaction, multistepInteraction?.result, rootPlayerId, t, teamIdByPlayerId]);
 
     return (
         <div

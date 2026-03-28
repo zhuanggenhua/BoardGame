@@ -44,14 +44,16 @@ export function useMovementTrails({ entries }: UseMovementTrailsParams) {
         // 只有路径长度 >= 3 才显示轨迹（跳过单格和两格移动）
         if (payload.path && payload.path.length >= 3) {
           const trailId = `trail-${payload.unitId}-${Date.now()}`;
-          setTrails((prev) => [
-            ...prev,
-            {
-              id: trailId,
-              path: payload.path!,
-              unitId: payload.unitId,
-            },
-          ]);
+          queueMicrotask(() => {
+            setTrails((prev) => [
+              ...prev,
+              {
+                id: trailId,
+                path: payload.path!,
+                unitId: payload.unitId,
+              },
+            ]);
+          });
         }
       }
     }

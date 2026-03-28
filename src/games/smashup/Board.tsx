@@ -14,7 +14,7 @@ import type { GameBoardProps } from '../../engine/transport/protocol';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import type { MatchState } from '../../engine/types';
-import type { SmashUpCore, CardInstance, ActionCardDef, FusionCardDef, MinionCardDef } from './domain/types';
+import type { SmashUpCore, CardInstance, ActionCardDef, FusionCardDef, MinionCardDef, CardOrTitanChoiceValue } from './domain/types';
 import { SU_COMMANDS, HAND_LIMIT, getCurrentPlayerId } from './domain/types';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { asSimpleChoice, INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
@@ -55,6 +55,7 @@ import {
     isCardActionLike,
     isCardMinionLike,
 } from './domain/utils';
+import { validate } from './domain/commands';
 import { SMASHUP_AUDIO_CONFIG } from './audio.config';
 import { useTutorialBridge, useTutorial } from '../../contexts/TutorialContext';
 import { UndoProvider } from '../../contexts/UndoContext';
@@ -196,6 +197,7 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
 
     const [selectedCardUid, setSelectedCardUid] = useState<string | null>(null);
     const [selectedCardMode, setSelectedCardMode] = useState<'minion' | 'ongoing' | 'ongoing-minion' | null>(null);
+    const [selectedSetAsideTitanUid, setSelectedSetAsideTitanUid] = useState<string | null>(null);
     const [pendingFusionChoiceUid, setPendingFusionChoiceUid] = useState<string | null>(null);
     const [discardSelection, setDiscardSelection] = useState<Set<string>>(new Set());
     const [meFirstPendingCard, setMeFirstPendingCard] = useState<MeFirstPendingCard | null>(null);
@@ -269,13 +271,12 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
 
     const isHandDiscardPrompt = useMemo(() => {
         if (!currentPrompt || currentPrompt.playerId !== playerID) return false;
-        if (!myPlayer || myPlayer.hand.length === 0) return false;
         // 多选交互（如疯狂解放）不走手牌直选，交给 PromptOverlay 处理
         if (currentPrompt.multi) return false;
 
         const data = currentInteraction?.data as Record<string, unknown> | undefined;
         return data?.targetType === 'hand';
-    }, [currentPrompt, playerID, myPlayer, currentInteraction]);
+    }, [currentPrompt, playerID, currentInteraction]);
 
     // 手牌交互中不可选的 uid 集合（置灰）
     // 框架层已支持通用刷新（所有交互自动刷新），此处只处理明确禁用的选项
@@ -294,6 +295,16 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
         return disabled.size > 0 ? disabled : undefined;
     }, [isHandDiscardPrompt, currentPrompt, myPlayer]);
 
+    const handPromptTitanUids = useMemo<Set<string>>(() => {
+        if (!isHandDiscardPrompt || !currentPrompt) return new Set();
+        const titanUids = new Set<string>();
+        for (const opt of currentPrompt.options) {
+            const val = opt.value as CardOrTitanChoiceValue | undefined;
+            if (val?.titanUid) titanUids.add(val.titanUid);
+        }
+        return titanUids;
+    }, [isHandDiscardPrompt, currentPrompt]);
+
     // 手牌选择中的非手牌选项（如"跳过"/"完成"），需要作为浮动按钮显示
     const handSelectExtraOptions = useMemo(() => {
         if (!isHandDiscardPrompt || !currentPrompt) return [];
@@ -301,7 +312,7 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
             const val = opt.value as Record<string, unknown> | undefined;
             if (!val) return false;
             // 非手牌选项：没有 cardUid 字段的选项（如 skip/done/confirm）
-            return !val.cardUid;
+            return !val.cardUid && !val.titanUid;
         });
     }, [isHandDiscardPrompt, currentPrompt]);
 
@@ -585,6 +596,113 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
         if (!meFirstPendingCard) return new Set();
         return new Set(getScoringEligibleBaseIndices(core));
     }, [meFirstPendingCard, core]);
+
+    const displayedDeckPlayerId = viewMode === 'opponent' ? opponentPid : (playerID ?? '0');
+    const setAsideTitansForDisplay = useMemo(() => {
+        return (core.titans ?? []).filter((titan) =>
+            titan.ownerId === displayedDeckPlayerId && titan.location.zone === 'setaside',
+        );
+    }, [core.titans, displayedDeckPlayerId]);
+
+    const setAsideTitanActivationState = useMemo(() => {
+        const result = new Map<string, { baseIndices: Set<number>; firstError: string | null }>();
+        if (!playerID) return result;
+
+        const ownedSetAsideTitans = (core.titans ?? []).filter((titan) =>
+            titan.ownerId === playerID && titan.location.zone === 'setaside',
+        );
+
+        for (const titan of ownedSetAsideTitans) {
+            const baseIndices = new Set<number>();
+            let firstError: string | null = null;
+
+            for (let i = 0; i < core.bases.length; i++) {
+                const validation = validate(G, {
+                    type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                    playerId: playerID,
+                    payload: { titanUid: titan.uid, baseIndex: i },
+                });
+                if (validation.valid) {
+                    baseIndices.add(i);
+                } else if (!firstError && validation.error) {
+                    firstError = validation.error;
+                }
+            }
+
+            result.set(titan.uid, { baseIndices, firstError });
+        }
+
+        return result;
+    }, [G, core.bases.length, core.titans, playerID]);
+
+    const activatableSetAsideTitanUids = useMemo(() => {
+        const next = new Set<string>();
+        if (displayedDeckPlayerId !== playerID) return next;
+        for (const [titanUid, activation] of setAsideTitanActivationState.entries()) {
+            if (activation.baseIndices.size > 0) {
+                next.add(titanUid);
+            }
+        }
+        return next;
+    }, [displayedDeckPlayerId, playerID, setAsideTitanActivationState]);
+
+    const selectableSetAsideTitanUids = useMemo(() => {
+        const next = new Set<string>(activatableSetAsideTitanUids);
+        if (displayedDeckPlayerId !== playerID) return next;
+        for (const titanUid of handPromptTitanUids) {
+            next.add(titanUid);
+        }
+        return next;
+    }, [activatableSetAsideTitanUids, displayedDeckPlayerId, handPromptTitanUids, playerID]);
+
+    const selectedTitanDeployableBaseIndices = useMemo(() => {
+        if (!selectedSetAsideTitanUid) return new Set<number>();
+        return new Set(setAsideTitanActivationState.get(selectedSetAsideTitanUid)?.baseIndices ?? []);
+    }, [selectedSetAsideTitanUid, setAsideTitanActivationState]);
+
+    const usableTitanTalentUids = useMemo(() => {
+        const next = new Set<string>();
+        if (!playerID) return next;
+
+        for (const titan of core.titans ?? []) {
+            if (titan.location.zone !== 'base' || titan.controllerId !== playerID) continue;
+            const validation = validate(G, {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: playerID,
+                payload: { titanUid: titan.uid, baseIndex: titan.location.baseIndex },
+            });
+            if (validation.valid) {
+                next.add(titan.uid);
+            }
+        }
+
+        return next;
+    }, [G, core.titans, playerID]);
+
+    const usableTitanOngoingUids = useMemo(() => {
+        const next = new Set<string>();
+        if (!playerID) return next;
+
+        for (const titan of core.titans ?? []) {
+            if (titan.location.zone !== 'base' || titan.controllerId !== playerID) continue;
+            const validation = validate(G, {
+                type: SU_COMMANDS.ACTIVATE_TITAN_ONGOING,
+                playerId: playerID,
+                payload: { titanUid: titan.uid, baseIndex: titan.location.baseIndex },
+            });
+            if (validation.valid) {
+                next.add(titan.uid);
+            }
+        }
+
+        return next;
+    }, [G, core.titans, playerID]);
+
+    useEffect(() => {
+        if (!selectedSetAsideTitanUid) return;
+        if (selectedTitanDeployableBaseIndices.size > 0) return;
+        setSelectedSetAsideTitanUid(null);
+    }, [selectedSetAsideTitanUid, selectedTitanDeployableBaseIndices]);
 
     // 手牌选中卡牌的有效部署基地集合（排除被 ongoing 限制的基地）
     // deployBlockReason: 当所有基地都不可选时的原因（用于 toast 提示）
@@ -948,6 +1066,15 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
             setDiscardStripSelectedUid(null);
             return;
         }
+        if (selectedSetAsideTitanUid && playerID) {
+            if (!selectedTitanDeployableBaseIndices.has(index)) {
+                toast(t('ui.invalid_base_target', { defaultValue: '该基地不可选择' }));
+                return;
+            }
+            dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { titanUid: selectedSetAsideTitanUid, baseIndex: index });
+            setSelectedSetAsideTitanUid(null);
+            return;
+        }
         // 基地选择交互模式：直接响应 interaction
         if (isBaseSelectPrompt && currentPrompt) {
             if (!selectableBaseIndices.has(index)) {
@@ -998,9 +1125,42 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                 handlePlayMinion(selectedCardUid, index);
             }
         }
-    }, [selectedCardUid, selectedCardMode, handlePlayMinion, handlePlayOngoingAction, core.bases, t, isBaseSelectPrompt, selectableBaseIndices, currentPrompt, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, responseWindow, playerID, myPlayer]);
+    }, [selectedCardUid, selectedCardMode, selectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, handlePlayMinion, handlePlayOngoingAction, core.bases, t, isBaseSelectPrompt, selectableBaseIndices, currentPrompt, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, responseWindow, playerID, myPlayer]);
+
+    const handleSetAsideTitanSelect = useCallback((titanUid: string) => {
+        if (!playerID) return;
+        if (isHandDiscardPrompt && currentPrompt && handPromptTitanUids.has(titanUid)) {
+            const option = currentPrompt.options.find(
+                opt => (opt.value as CardOrTitanChoiceValue | undefined)?.titanUid === titanUid,
+            );
+            if (option) {
+                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+            } else {
+                playDeniedSound();
+            }
+            return;
+        }
+        const activation = setAsideTitanActivationState.get(titanUid);
+        if (!activation || activation.baseIndices.size === 0) {
+            playDeniedSound();
+            if (activation?.firstError) {
+                toast(activation.firstError);
+            }
+            return;
+        }
+
+        setSelectedCardUid(null);
+        setSelectedCardMode(null);
+        setPendingFusionChoiceUid(null);
+        setDiscardStripSelectedUid(null);
+        setMeFirstPendingCard(null);
+        setSelectedSetAsideTitanUid((current) => current === titanUid ? null : titanUid);
+    }, [playerID, isHandDiscardPrompt, currentPrompt, handPromptTitanUids, dispatch, setAsideTitanActivationState, toast]);
 
     const handleCardClick = useCallback((card: CardInstance) => {
+        if (selectedSetAsideTitanUid) {
+            setSelectedSetAsideTitanUid(null);
+        }
         // 手牌弃牌交互优先：直接响应 interaction
         if (isHandDiscardPrompt && currentPrompt) {
             const option = currentPrompt.options.find(
@@ -1146,7 +1306,7 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                 setSelectedCardMode('minion');
             }
         }
-    }, [isMyTurn, phase, dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed, selectedCardUid, isHandDiscardPrompt, currentPrompt, myPlayer, t, needDiscard, discardCount, isMeFirstResponse, isAfterScoringResponse, responseWindow]);
+    }, [isMyTurn, phase, dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed, selectedCardUid, selectedSetAsideTitanUid, isHandDiscardPrompt, currentPrompt, myPlayer, t, needDiscard, discardCount, isMeFirstResponse, isAfterScoringResponse, responseWindow]);
 
     const confirmFusionPlayAs = useCallback((playAs: 'minion' | 'action') => {
         if (!pendingFusionChoiceUid || !myPlayer) return;
@@ -1820,7 +1980,9 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                                 turnOrder={core.turnOrder}
                                 isMobileViewport={isMobileViewport}
                                 isDeployMode={
-                                    (!!selectedCardUid && deployableBaseIndices.has(idx)) || (!!meFirstPendingCard && meFirstEligibleBaseIndices.has(idx))
+                                    (!!selectedCardUid && deployableBaseIndices.has(idx))
+                                    || (!!meFirstPendingCard && meFirstEligibleBaseIndices.has(idx))
+                                    || (!!selectedSetAsideTitanUid && selectedTitanDeployableBaseIndices.has(idx))
                                 }
                                 isMinionSelectMode={!isOngoingSelectPrompt && ((selectedCardMode === 'ongoing-minion' && ongoingMinionTargetUids.size > 0) || (isMinionSelectPrompt && selectableMinionUids.size > 0))}
                                 selectableMinionUids={isMinionSelectPrompt ? selectableMinionUids : selectedCardMode === 'ongoing-minion' ? ongoingMinionTargetUids : undefined}
@@ -1831,6 +1993,7 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                                     || (discardStripSelectedUid != null && !discardStripAllowedBases.has(idx))
                                     || (!!selectedCardUid && selectedCardMode !== 'ongoing-minion' && !deployableBaseIndices.has(idx))
                                     || (!!meFirstPendingCard && !meFirstEligibleBaseIndices.has(idx))
+                                    || (!!selectedSetAsideTitanUid && !selectedTitanDeployableBaseIndices.has(idx))
                                 }
                                 isMyTurn={isMyTurn}
                                 myPlayerId={playerID}
@@ -1842,6 +2005,9 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                                 onViewMinion={(defId) => setViewingCard({ defId, type: 'minion' })}
                                 onViewAction={handleViewAction}
                                 onViewBase={(defId) => setViewingCard({ defId, type: 'base' })}
+                                onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
+                                usableTitanTalentUids={usableTitanTalentUids}
+                                usableTitanOngoingUids={usableTitanOngoingUids}
                                 isTutorialTargetAllowed={isTutorialTargetAllowed}
                                 phase={phase as string}
                                 tokenRef={(el) => {
@@ -1968,6 +2134,11 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                                         : () => dispatch(INTERACTION_COMMANDS.CANCEL, {}))
                                     : () => { setDiscardStripSelectedUid(null); }
                                 }
+                                setAsideTitans={setAsideTitansForDisplay}
+                                activatableTitanUids={selectableSetAsideTitanUids}
+                                selectedTitanUid={selectedSetAsideTitanUid}
+                                onSelectTitan={handleSetAsideTitanSelect}
+                                onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
                                 dispatch={dispatch}
                                 playerID={playerID}
                             />

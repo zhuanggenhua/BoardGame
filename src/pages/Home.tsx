@@ -57,6 +57,7 @@ export const Home = () => {
     const [myMatchRole, setMyMatchRole] = useState<{ playerID: string; credentials?: string; gameName?: string } | null>(null);
     const [localStorageTick, setLocalStorageTick] = useState(0);
     const [missingMatchConfirmRetryTick, setMissingMatchConfirmRetryTick] = useState(0);
+    const [guestId, setGuestId] = useState<string | null>(null);
     const [pendingAction, setPendingAction] = useState<{
         matchID: string;
         playerID: string;
@@ -71,6 +72,8 @@ export const Home = () => {
     const { openModal, closeModal } = useModalStack();
     const { warning: toastWarning, error: toastError } = useToast();
     const { t, i18n } = useTranslation(['lobby', 'auth']);
+    const getGuestId = () => getOrCreateGuestId();
+    const getGuestName = () => resolveGuestName(t, guestId ?? undefined);
     const seoT = useMemo(() => {
         if (typeof i18n?.getFixedT === 'function') {
             return i18n.getFixedT('zh-CN', ['lobby', 'common']);
@@ -78,6 +81,63 @@ export const Home = () => {
         return t;
     }, [i18n, t]);
     const filteredGames = useMemo(() => getGamesByCategory(activeCategory), [activeCategory, registryVersion]);
+    useEffect(() => {
+        if (user?.id) return;
+        setGuestId((current) => current ?? getOrCreateGuestId());
+    }, [user?.id]);
+
+    const ownerActive = useMemo(() => getOwnerActiveMatch(), [localStorageTick]);
+    const ownerKey = useMemo(() => {
+        if (user?.id) return resolveOwnerKey(user.id);
+        if (!guestId) return null;
+        return resolveOwnerKey(undefined, guestId);
+    }, [guestId, user?.id]);
+    const suppressedOwnerMatchId = useMemo(() => {
+        if (!ownerActive?.matchID) return null;
+        return isOwnerActiveMatchSuppressed(ownerActive.matchID) ? ownerActive.matchID : null;
+    }, [ownerActive?.matchID, localStorageTick]);
+
+    useEffect(() => {
+        if (!suppressedOwnerMatchId) return;
+        clearOwnerActiveMatch(suppressedOwnerMatchId);
+    }, [suppressedOwnerMatchId]);
+
+    const storedLocalMatchRole = useMemo(() => {
+        const latestCreds = getLatestStoredMatchCredentials();
+        if (latestCreds?.matchID) {
+            const gameName = latestCreds.gameName || 'tictactoe';
+            return {
+                matchID: latestCreds.matchID,
+                playerID: latestCreds.playerID as string,
+                credentials: latestCreds.credentials as string | undefined,
+                gameName: gameName as string,
+            };
+        }
+
+        return null;
+    }, [localStorageTick]);
+
+    const ownerLocalMatchRole = useMemo(() => {
+        if (storedLocalMatchRole) {
+            return null;
+        }
+
+        if (suppressedOwnerMatchId) {
+            return null;
+        }
+
+        if (ownerActive?.matchID && (!ownerActive.ownerKey || (ownerKey && ownerActive.ownerKey === ownerKey))) {
+            return {
+                matchID: ownerActive.matchID,
+                playerID: '0',
+                credentials: undefined,
+                gameName: ownerActive.gameName,
+            };
+        }
+
+        return null;
+    }, [ownerActive, ownerKey, storedLocalMatchRole, suppressedOwnerMatchId]);
+    const localMatchRole = storedLocalMatchRole ?? ownerLocalMatchRole;
     const activePlayerCount = activeMatch?.players.filter(player => player.name).length ?? 0;
 
     const confirmModalIdRef = useRef<string | null>(null);
@@ -140,9 +200,6 @@ export const Home = () => {
         }
         setSearchParams({ game: id });
     };
-
-    const getGuestId = () => getOrCreateGuestId();
-    const getGuestName = () => resolveGuestName(t, getGuestId());
 
     const handleLogout = () => {
         logout();
@@ -212,65 +269,38 @@ export const Home = () => {
 
     useEffect(() => {
         let cancelled = false;
-
-        const findLocalMatch = () => {
-            const latestCreds = getLatestStoredMatchCredentials();
-            if (latestCreds?.matchID) {
-                const gameName = latestCreds.gameName || 'tictactoe';
-                return {
-                    matchID: latestCreds.matchID,
-                    playerID: latestCreds.playerID as string,
-                    credentials: latestCreds.credentials as string | undefined,
-                    gameName: gameName as string,
-                };
-            }
-            const ownerActive = getOwnerActiveMatch();
-            const ownerKey = resolveOwnerKey(user?.id, getGuestId());
-            if (ownerActive?.matchID && isOwnerActiveMatchSuppressed(ownerActive.matchID)) {
-                clearOwnerActiveMatch(ownerActive.matchID);
-                return null;
-            }
-            if (ownerActive?.matchID && (!ownerActive.ownerKey || ownerActive.ownerKey === ownerKey)) {
-                return {
-                    matchID: ownerActive.matchID,
-                    playerID: '0',
-                    credentials: undefined,
-                    gameName: ownerActive.gameName,
-                };
-            }
-            return null;
-        };
         pruneStoredMatchCredentials();
 
-        const local = findLocalMatch();
-        if (!local) {
+        if (!localMatchRole) {
             setActiveMatch(null);
             setMyMatchRole(null);
             return;
         }
 
-        setMyMatchRole({
-            playerID: local.playerID,
-            credentials: local.credentials,
-            gameName: local.gameName,
-        });
+        const resolvedRole = {
+            playerID: localMatchRole.playerID,
+            credentials: localMatchRole.credentials,
+            gameName: localMatchRole.gameName,
+        };
+        setMyMatchRole(resolvedRole);
 
-        void matchApi.getMatch(local.gameName, local.matchID)
+        void matchApi.getMatch(localMatchRole.gameName, localMatchRole.matchID)
             .then(match => {
                 if (cancelled) return;
-                const stored = readStoredMatchCredentials(local.matchID);
-                const validation = validateStoredMatchSeat(stored, match.players, local.playerID);
+                const stored = readStoredMatchCredentials(localMatchRole.matchID);
+                const validation = validateStoredMatchSeat(stored, match.players, localMatchRole.playerID);
                 if (validation.shouldClear) {
-                    clearMatchCredentials(local.matchID);
-                    clearOwnerActiveMatch(local.matchID);
+                    clearMatchCredentials(localMatchRole.matchID);
+                    clearOwnerActiveMatch(localMatchRole.matchID);
                     setActiveMatch(null);
                     setMyMatchRole(null);
                     setLocalStorageTick((t) => t + 1);
                     return;
                 }
+                setMyMatchRole(resolvedRole);
                 setActiveMatch({
-                    matchID: local.matchID,
-                    gameName: local.gameName,
+                    matchID: localMatchRole.matchID,
+                    gameName: localMatchRole.gameName,
                     players: match.players.map((p: MatchPlayer) => ({
                         id: p.id,
                         name: p.name,
@@ -282,9 +312,10 @@ export const Home = () => {
                 if (cancelled) return;
                 // 不在这里处理 404，交给 WebSocket 监听统一处理
                 // 只设置一个临时状态，等待 WebSocket 确认
+                setMyMatchRole(resolvedRole);
                 setActiveMatch({
-                    matchID: local.matchID,
-                    gameName: local.gameName,
+                    matchID: localMatchRole.matchID,
+                    gameName: localMatchRole.gameName,
                     players: [],
                 });
             });
@@ -292,7 +323,7 @@ export const Home = () => {
         return () => {
             cancelled = true;
         };
-    }, [localStorageTick, user]);
+    }, [localMatchRole]);
 
     const lobbyPresence = useLobbyMatchPresence({
         gameId: activeMatch?.gameName,
@@ -549,7 +580,13 @@ export const Home = () => {
         clearOwnerActiveMatch(pendingAction.matchID);
         setPendingAction(null);
         setLocalStorageTick(t => t + 1);
-    }, [activeMatch, myMatchRole, pendingAction]);
+    }, [
+        activeMatch,
+        myMatchRole,
+        pendingAction,
+        toastError,
+        toastWarning,
+    ]);
 
     const handleCancelAction = useCallback(() => {
         setPendingAction(null);

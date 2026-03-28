@@ -1161,6 +1161,19 @@ export class GameTestContext {
             };
         }, optionId);
 
+        const optionLabel = optionMeta?.label;
+        if (optionLabel) {
+            try {
+                const buttonOption = this.page.getByRole('button', { name: optionLabel }).first();
+                await buttonOption.waitFor({ state: 'visible', timeout: 2000 });
+                await buttonOption.click({ force: true });
+                await this.page.waitForTimeout(300);
+                return;
+            } catch {
+                // 按钮选项不可见，继续尝试其他方式
+            }
+        }
+
         const optionCardUid = optionMeta?.value?.cardUid;
         if (typeof optionCardUid === 'string') {
             const handCardOption = this.page.locator(`[data-card-uid="${optionCardUid}"]`);
@@ -1171,19 +1184,8 @@ export class GameTestContext {
             }
         }
 
-        const optionLabel = optionMeta?.label;
         if (!optionLabel) {
             throw new Error(`Interaction option ${optionId} not found`);
-        }
-
-        try {
-            const buttonOption = this.page.getByRole('button', { name: optionLabel }).first();
-            await buttonOption.waitFor({ state: 'visible', timeout: 2000 });
-            await buttonOption.click({ force: true });
-            await this.page.waitForTimeout(300);
-            return;
-        } catch {
-            // 按钮选项不可见，继续尝试其他方式
         }
 
         await this.page.evaluate((id) => {
@@ -1216,7 +1218,7 @@ export class GameTestContext {
      */
     async confirm(): Promise<void> {
         await this.dismissRevealOverlayIfPresent();
-        await this.page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).click({ force: true });
+        await this.page.getByRole('button', { name: /^(确认|Confirm|确认选择|Confirm Selection)(?:\s*\(\d+\))?$/i }).click({ force: true });
         await this.page.waitForTimeout(300);
     }
 

@@ -26,10 +26,11 @@ describe('cardiaCriticalImageResolver', () => {
         expect(result.critical).toContain(CARDIA_IMAGE_PATHS.DECK1_BACK);
         expect(result.critical).toContain('cardia/cards/deck1/1');
         expect(result.critical).toContain('cardia/cards/deck1/16');
-        expect(result.critical).toContain('cardia/cards/locations/1');
-        expect(result.critical).toContain('cardia/cards/locations/8');
         expect(result.critical).not.toContain('cardia/cards/deck2/1');
-        expect(result.critical).toHaveLength(25);
+        expect(result.warm).toContain('cardia/cards/locations/1');
+        expect(result.warm).toContain('cardia/cards/locations/8');
+        expect(result.critical).toHaveLength(17);
+        expect(result.warm).toHaveLength(8);
     });
 
     it('playing 阶段仅加载 II 牌组关键图', () => {
@@ -43,6 +44,9 @@ describe('cardiaCriticalImageResolver', () => {
         expect(result.critical).toContain('cardia/cards/deck2/1');
         expect(result.critical).toContain('cardia/cards/deck2/16');
         expect(result.critical).not.toContain('cardia/cards/deck1/1');
-        expect(result.critical).toHaveLength(25);
+        expect(result.warm).toContain('cardia/cards/locations/1');
+        expect(result.warm).toContain('cardia/cards/locations/8');
+        expect(result.critical).toHaveLength(17);
+        expect(result.warm).toHaveLength(8);
     });
 });

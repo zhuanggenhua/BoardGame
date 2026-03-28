@@ -6,6 +6,7 @@
 - 项目内现有 spec 已经明确 2v2 边界：
   - 队友可在合法掷骰窗口干预骰面；
   - 队友不进入同队响应队列；
+  - 但凡卡面或规则没有明确写“可改队友骰子”的 `self-only` 效果，仍只能改自己，不能自动扩张到队友骰池；
   - 因此 Batch 3 不能只看“队友是否在 responderQueue”，还要看队友合法改骰路径在共享交互层是否真实闭环。
 
 ## Goals
@@ -30,3 +31,6 @@
 - 如果审计证明共享语义已失真：
   - 优先在 `customActions/common.ts`、`systems.ts`、`Board.tsx`、`DiceTray.tsx`、`RightSidebar.tsx` 与文案层统一引入显式骰池归属/视角语义；
   - 再补规则回归与在线证据，禁止继续让 UI 依赖 `targetOpponentDice:boolean` 猜语义。
+- 已定裁决：
+  - `self-only` 骰子卡不因 4 人 / 2v2 / 共享响应窗口自动获得“可改队友骰子”的新语义；
+  - 只有原本就允许作用于当前骰池、对手骰池或任意骰池的效果，才可走合法 direct-dice 路径。

@@ -39,7 +39,7 @@ export const PHASE_ORDER: GamePhase[] = [
 // ============================================================================
 
 /** 卡牌类别 */
-export type CardType = 'minion' | 'action' | 'fusion';
+export type CardType = 'minion' | 'action' | 'fusion' | 'titan';
 
 /** 行动卡子类型 */
 export type ActionSubtype = 'standard' | 'ongoing' | 'special';
@@ -48,7 +48,7 @@ export type ActionSubtype = 'standard' | 'ongoing' | 'special';
 export type FactionId = string;
 
 /** 能力标签 */
-export type AbilityTag = 'onPlay' | 'ongoing' | 'special' | 'talent' | 'extra' | 'onDestroy';
+export type AbilityTag = 'onPlay' | 'ongoing' | 'special' | 'talent' | 'extra' | 'onDestroy' | 'ongoingActivation';
 
 /**
  * 卡牌打出约束（数据驱动）。
@@ -133,6 +133,38 @@ export interface FusionCardDef {
     actionResponseWindowNeedsBase?: boolean;
 }
 
+/** 泰坦打出模式 */
+export type TitanSummonMode =
+    | 'explicit'
+    | 'insteadOfRegularMinion'
+    | 'insteadOfRegularAction'
+    | 'insteadOfRegularMinionAndAction';
+export type TitanPlayAsKind = 'minion' | 'action';
+export type TitanActivatableAbilityKind = 'special' | 'talent' | 'ongoing';
+
+export interface CardOrTitanChoiceValue {
+    cardUid?: string;
+    titanUid?: string;
+    defId: string;
+    playKind?: TitanPlayAsKind;
+    skip?: boolean;
+}
+
+/** 泰坦卡定义 */
+export interface TitanCardDef {
+    id: string;
+    type: 'titan';
+    name: string;
+    faction: FactionId;
+    abilityTags?: AbilityTag[];
+    /** 显式声明哪些能力会作为玩家可点击入口暴露在 UI 上 */
+    activatableAbilityKinds?: TitanActivatableAbilityKind[];
+    previewRef?: CardPreviewRef;
+    summonMode: TitanSummonMode;
+    /** 仅影响“作为哪种牌被打出/选择”的语义，不改变真实牌种 */
+    playAsKinds?: TitanPlayAsKind[];
+}
+
 /** Special 技能触发时机 */
 export type SpecialTiming = 'beforeScoring' | 'afterScoring';
 
@@ -184,7 +216,7 @@ export interface ActionCardDef {
 }
 
 /** 卡牌定义联合类型 */
-export type CardDef = MinionCardDef | ActionCardDef | FusionCardDef;
+export type CardDef = MinionCardDef | ActionCardDef | FusionCardDef | TitanCardDef;
 
 /** 基地限制规则（数据驱动） */
 export interface BaseRestriction {
@@ -226,6 +258,8 @@ export interface BaseCardDef {
     minionPowerBonus?: number;
     /** 设置期间翻到此基地时，替换它并重洗基地牌库 */
     replaceOnSetup?: boolean;
+    /** 显式允许多个泰坦共存（如未来 Kaiju Island） */
+    allowMultipleTitans?: boolean;
 }
 
 // ============================================================================
@@ -307,6 +341,22 @@ export interface BaseInPlay {
     buriedCards?: BuriedCardOnBase[];
 }
 
+export type TitanLocation =
+    | { zone: 'setaside' }
+    | { zone: 'base'; baseIndex: number; enteredAt: number };
+
+export interface TitanState {
+    uid: string;
+    defId: string;
+    faction: FactionId;
+    ownerId: PlayerId;
+    controllerId: PlayerId;
+    powerCounters: number;
+    talentUsed: boolean;
+    location: TitanLocation;
+    metadata?: Record<string, unknown>;
+}
+
 // ============================================================================
 // 玩家状态
 // ============================================================================
@@ -336,6 +386,8 @@ export interface PlayerState {
     usedDiscardPlayAbilities?: string[];
     /** 基地限定额外随从额度（baseIndex → 额外额度），只能打到指定基地 */
     baseLimitedMinionQuota?: Record<number, number>;
+    /** 基地限定且带力量上限的额外随从额度集合（baseIndex → 每个元素代表 1 次受限额度） */
+    baseLimitedMinionPowerCaps?: Record<number, number[]>;
     /** 基地限定额度是否要求同名（baseIndex → true），与 baseLimitedMinionQuota 配合 */
     baseLimitedSameNameRequired?: Record<number, boolean>;
     /** 基地限定额度的同名 defId（baseIndex → defId），与 baseLimitedSameNameRequired 配合 */
@@ -350,6 +402,8 @@ export interface PlayerState {
     sameNameMinionDefId?: string | null;
     /** 待消费的随从打出后效果队列（如 crack_of_dusk/its_alive 的打出后+1指示物） */
     pendingMinionPlayEffects?: Array<{ effect: 'addPowerCounter'; amount: number }>;
+    /** 本回合已消耗的“额外第二次 talent”次数（如 Great Wolf Spirit） */
+    extraTalentUsesConsumed?: number;
     /** 选择的派系 */
     factions: [FactionId, FactionId];
 }
@@ -415,6 +469,16 @@ export type PendingPostScoringAction =
         toBaseIndex: number;
         targetBaseDefId: string;
         reason: string;
+    }
+    | {
+        kind: 'playTitanOnReplacementBase';
+        titanUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        controllerId: PlayerId;
+        baseIndex: number;
+        targetBaseDefId: string;
+        reason: string;
     };
 
 // ============================================================================
@@ -444,7 +508,7 @@ export interface BaseLkiSnapshot {
 export interface TriggerInstance {
     /** stable id for interaction selection */
     id: string;
-    timing: import('./ongoingEffects').TriggerTiming;
+    timing: import('./ongoingEffects').TitanAwareTriggerTiming;
     /** defId of the triggering source (minion/action/base) */
     sourceDefId: string;
     /** concrete source card uid when the trigger comes from an in-play card instance */
@@ -463,6 +527,8 @@ export interface TriggerInstance {
 
     /** minimal context */
     baseIndex?: number;
+    moveFromBaseIndex?: number;
+    moveToBaseIndex?: number;
     triggerMinionUid?: string;
     triggerMinionDefId?: string;
     triggerMinionPower?: number;
@@ -488,6 +554,10 @@ export interface SmashUpCore {
     currentPlayerIndex: number;
     /** 场上基地 */
     bases: BaseInPlay[];
+    /** 全局泰坦状态（牌库旁 / 在场） */
+    titans?: TitanState[];
+    /** 房间创建时启用的扩展集合 */
+    enabledExpansions?: string[];
     /** 基地牌库（defId 列表） */
     baseDeck: string[];
     /** 基地弃牌堆（defId 列表）。当基地牌库用尽时，会将弃牌堆洗回牌库继续补充。 */
@@ -504,6 +574,8 @@ export interface SmashUpCore {
     factionSelection?: FactionSelectionState;
     /** 疯狂牌库（克苏鲁扩展，defId 列表） */
     madnessDeck?: string[];
+    cardsPlayedThisTurn?: number;
+    powerCountersPlacedOnMinionsThisTurn?: number;
     /** 本回合被消灭的随从记录（用于 cthulhu_furthering_the_cause 等能力判定，并阻止过期移动把它们从弃牌堆拉回场上） */
     turnDestroyedMinions?: { uid: string; defId: string; baseIndex: number; owner: string }[];
     /** 本回合曾“消灭过随从”的玩家列表（用于 Nightstalker POD 等判定）。TURN_STARTED 时清空。 */
@@ -527,6 +599,31 @@ export interface SmashUpCore {
         expiresOnTurnNumber: number;
         reason: string;
     }>;
+    /**
+     * 本回合暂时失去持续能力的泰坦 UID 列表。
+     * 用于 Mergacon 这类“移动后直到回合结束失去 ongoing”效果。
+     */
+    titanOngoingSuppressedUntilTurnEnd?: string[];
+    /**
+     * 彩虹鸟本轮“首次低战力随从进场”触发记录。
+     * key = titanUid, value = 触发时的 turnNumber。
+     */
+    rainborocTriggeredTurnByTitan?: Record<string, number>;
+    /**
+     * 硕大圆石本轮“随从移离后触发”记录。
+     * key = titanUid, value = 触发时的 turnNumber。
+     */
+    veryLargeBoulderTriggeredTurnByTitan?: Record<string, number>;
+    /**
+     * 三号空间站本轮“首次查看/展示/检索牌库”触发记录。
+     * key = titanUid, value = 触发时的 turnNumber。
+     */
+    moonZeroThreeTriggeredTurnByTitan?: Record<string, number>;
+    /**
+     * 泰坦最近一次移动发生的 turnNumber。
+     * 用于“若此泰坦本回合未移动过”类判定。
+     */
+    titanMovedTurnByTitanUid?: Record<string, number>;
     // （保留扩展字段位于此处）
     /** 被沉睡印记标记的玩家（下回合不能打行动卡） */
     sleepMarkedPlayers?: PlayerId[];
@@ -665,6 +762,8 @@ export const SU_COMMANDS = {
     USE_TALENT: 'su:use_talent',
     /** 激活场上随从的 special 能力（如忍者侍从回手+额外随从） */
     ACTIVATE_SPECIAL: 'su:activate_special',
+    /** 激活在场泰坦的主动 ongoing 能力 */
+    ACTIVATE_TITAN_ONGOING: 'su:activate_titan_ongoing',
 } as const;
 
 /** 打出随从 */
@@ -707,6 +806,7 @@ export interface UseTalentCommand extends Command<typeof SU_COMMANDS.USE_TALENT>
         minionUid?: string;
         /** ongoing 行动卡天赋时必填 */
         ongoingCardUid?: string;
+        titanUid?: string;
         baseIndex: number;
     };
 }
@@ -714,7 +814,16 @@ export interface UseTalentCommand extends Command<typeof SU_COMMANDS.USE_TALENT>
 /** 激活场上随从的 special 能力（如忍者侍从回手+额外随从） */
 export interface ActivateSpecialCommand extends Command<typeof SU_COMMANDS.ACTIVATE_SPECIAL> {
     payload: {
-        minionUid: string;
+        minionUid?: string;
+        titanUid?: string;
+        baseIndex: number;
+    };
+}
+
+/** 激活在场泰坦的主动 ongoing 能力 */
+export interface ActivateTitanOngoingCommand extends Command<typeof SU_COMMANDS.ACTIVATE_TITAN_ONGOING> {
+    payload: {
+        titanUid: string;
         baseIndex: number;
     };
 }
@@ -725,7 +834,8 @@ export type SmashUpCommand =
     | DiscardToLimitCommand
     | SelectFactionCommand
     | UseTalentCommand
-    | ActivateSpecialCommand;
+    | ActivateSpecialCommand
+    | ActivateTitanOngoingCommand;
 
 // ============================================================================
 // 事件类型
@@ -781,6 +891,69 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         isExtraAction?: boolean;
         /** 从埋葬区打出（揭开时使用） */
         fromBuried?: boolean;
+    };
+}
+
+export interface TitanPlayedEvent extends GameEvent<typeof SU_EVENTS.TITAN_PLAYED> {
+    payload: {
+        titanUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        controllerId: PlayerId;
+        baseIndex: number;
+        /** 基地 defId（事件发生时的基地） */
+        baseDefId?: string;
+        /** 本次打出是否消耗常规随从/行动额度；仅用于额度结算，不改变泰坦真实牌种 */
+        consumesRegularPlayKind?: TitanPlayAsKind;
+        /** 同时消耗多个常规额度（如 Spirit of the Forest） */
+        consumesRegularPlayKinds?: TitanPlayAsKind[];
+        reason: string;
+    };
+}
+
+export interface TitanMovedEvent extends GameEvent<typeof SU_EVENTS.TITAN_MOVED> {
+    payload: {
+        titanUid: string;
+        defId: string;
+        fromBaseIndex: number;
+        toBaseIndex: number;
+        /** 目标基地 defId（可选） */
+        toBaseDefId?: string;
+        reason: string;
+    };
+}
+
+export interface TitanRemovedFromPlayEvent extends GameEvent<typeof SU_EVENTS.TITAN_REMOVED_FROM_PLAY> {
+    payload: {
+        titanUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        controllerId: PlayerId;
+        reason: string;
+        fromBaseIndex?: number;
+    };
+}
+
+export interface TitanPowerCounterAddedEvent extends GameEvent<typeof SU_EVENTS.TITAN_POWER_COUNTER_ADDED> {
+    payload: {
+        titanUid: string;
+        amount: number;
+        reason: string;
+    };
+}
+
+export interface TitanPowerCounterRemovedEvent extends GameEvent<typeof SU_EVENTS.TITAN_POWER_COUNTER_REMOVED> {
+    payload: {
+        titanUid: string;
+        amount: number;
+        reason: string;
+    };
+}
+
+export interface TitanOngoingSuppressedEvent extends GameEvent<typeof SU_EVENTS.TITAN_ONGOING_SUPPRESSED> {
+    payload: {
+        titanUid: string;
+        reason: string;
     };
 }
 
@@ -972,6 +1145,12 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
 export type SmashUpEvent =
     | MinionPlayedEvent
     | ActionPlayedEvent
+    | TitanPlayedEvent
+    | TitanMovedEvent
+    | TitanRemovedFromPlayEvent
+    | TitanPowerCounterAddedEvent
+    | TitanPowerCounterRemovedEvent
+    | TitanOngoingSuppressedEvent
     | CardBuriedEvent
     | BuriedCardUncoveredEvent
     | BuriedCardsDiscardedWithBaseEvent
@@ -993,12 +1172,14 @@ export type SmashUpEvent =
     | AllFactionsSelectedEvent
     | MinionDestroyedEvent
     | MinionMovedEvent
+    | MinionControlChangedEvent
     | MinionMetadataUpdatedEvent
     | PowerCounterAddedEvent
     | PowerCounterRemovedEvent
     | OngoingAttachedEvent
     | OngoingDetachedEvent
     | TalentUsedEvent
+    | TitanMetadataUpdatedEvent
     | CardRemovedFromDeckEvent
     | CardRemovedFromGameEvent
     | StakeoutPodBlockAddedEvent
@@ -1013,6 +1194,7 @@ export type SmashUpEvent =
     | BaseDeckReorderedEvent
     | RevealHandEvent
     | RevealDeckTopEvent
+    | DeckInspectedEvent
     | TempPowerAddedEvent
     | PermanentPowerAddedEvent
     | BreakpointModifiedEvent
@@ -1087,6 +1269,19 @@ export interface MinionMovedEvent extends GameEvent<typeof SU_EVENTS.MINION_MOVE
     };
 }
 
+export interface MinionControlChangedEvent extends GameEvent<typeof SU_EVENTS.MINION_CONTROL_CHANGED> {
+    payload: {
+        minionUid: string;
+        minionDefId: string;
+        baseIndex: number;
+        ownerId: PlayerId;
+        fromControllerId: PlayerId;
+        toControllerId: PlayerId;
+        sourcePlayerId: PlayerId;
+        reason: string;
+    };
+}
+
 /** 随从元数据更新事件（用于 POD 等复杂状态追踪） */
 export interface MinionMetadataUpdatedEvent extends GameEvent<typeof SU_EVENTS.MINION_METADATA_UPDATED> {
     payload: {
@@ -1148,6 +1343,14 @@ export interface OngoingCardCounterChangedEvent extends GameEvent<typeof SU_EVEN
     };
 }
 
+export interface TitanMetadataUpdatedEvent extends GameEvent<typeof SU_EVENTS.TITAN_METADATA_UPDATED> {
+    payload: {
+        titanUid: string;
+        metadataUpdate: Record<string, unknown>;
+        reason: string;
+    };
+}
+
 export interface TalentUsedEvent extends GameEvent<typeof SU_EVENTS.TALENT_USED> {
     payload: {
         playerId: PlayerId;
@@ -1155,6 +1358,7 @@ export interface TalentUsedEvent extends GameEvent<typeof SU_EVENTS.TALENT_USED>
         minionUid?: string;
         /** ongoing 行动卡天赋时为卡牌 uid */
         ongoingCardUid?: string;
+        titanUid?: string;
         defId: string;
         baseIndex: number;
     };
@@ -1298,6 +1502,20 @@ export interface RevealDeckTopEvent extends GameEvent<typeof SU_EVENTS.REVEAL_DE
         count: number;
         /** 触发展示的玩家（viewerPlayerId='all' 时由此玩家关闭展示） */
         sourcePlayerId?: string;
+        /** 触发原因 */
+        reason: string;
+    };
+}
+
+/** 见证牌库被查看 / 展示 / 检索事件（用于“每回合第一次检查牌库”类能力） */
+export interface DeckInspectedEvent extends GameEvent<typeof SU_EVENTS.DECK_INSPECTED> {
+    payload: {
+        /** 被查看的牌库拥有者 */
+        targetPlayerId: string | string[];
+        /** 实际进行查看/检索的玩家 */
+        inspectorPlayerId: PlayerId;
+        /** 本次见证到的牌数 */
+        count: number;
         /** 触发原因 */
         reason: string;
     };

@@ -123,8 +123,10 @@ export function useCellInteraction({
   // 离开魔力阶段时自动清空弃牌选中和事件卡选择模式
   useEffect(() => {
     if (currentPhase !== 'magic') {
-      setSelectedCardsForDiscard([]);
-      setMagicEventChoiceMode(null);
+      queueMicrotask(() => {
+        setSelectedCardsForDiscard([]);
+        setMagicEventChoiceMode(null);
+      });
     }
   }, [currentPhase]);
 
@@ -458,22 +460,22 @@ export function useCellInteraction({
   useEffect(() => {
     if (!pendingBeforeAttack) return;
     if (currentPhase !== 'attack') {
-      setPendingBeforeAttack(null);
+      queueMicrotask(() => setPendingBeforeAttack(null));
       return;
     }
     if (!core.selectedUnit) {
-      setPendingBeforeAttack(null);
+      queueMicrotask(() => setPendingBeforeAttack(null));
       return;
     }
     const unit = core.board[core.selectedUnit.row]?.[core.selectedUnit.col]?.unit;
     if (!unit || unit.instanceId !== pendingBeforeAttack.sourceUnitId) {
-      setPendingBeforeAttack(null);
+      queueMicrotask(() => setPendingBeforeAttack(null));
     }
   }, [currentPhase, core, pendingBeforeAttack]);
 
   // ---------- 格子点击 ----------
 
-  const handleCellClick = useCallback((row: number, col: number) => {
+  const handleCellClick = (row: number, col: number) => {
     const { row: gameRow, col: gameCol } = fromViewCoord({ row, col });
 
     // 任何格子交互都重置结束阶段确认状态
@@ -845,13 +847,7 @@ export function useCellInteraction({
 
     // 其他阶段：普通选择
     dispatch(SW_COMMANDS.SELECT_UNIT, { position: { row: gameRow, col: gameCol } });
-  }, [core, dispatch, currentPhase, selectedHandCardId, validSummonPositions, validBuildPositions,
-    validMovePositions, validAttackPositions, myPlayerId, fromViewCoord,
-    abilityMode, validAbilityPositions, validAbilityUnits,
-    fireSacrificeSummonMode,
-    eventCardModes.handleEventModeClick,
-    eventCardModes.setTelekinesisTargetMode,
-    activeBeforeAttack]);
+  };
 
   // ---------- 手牌交互 ----------
 
@@ -922,7 +918,7 @@ export function useCellInteraction({
   }, [abilityMode, core, currentPhase, isMyTurn, myHand, myPlayerId, setAbilityMode, setMagicEventChoiceMode, showToast, t]);
 
   // 手牌选中（召唤/建造阶段单选）
-  const handleCardSelect = useCallback((cardId: string | null) => {
+  const handleCardSelect = (cardId: string | null) => {
     setEndPhaseConfirmPending(false);
 
     // 血契召唤 selectCard 步骤：选中要召唤的单位卡
@@ -962,7 +958,7 @@ export function useCellInteraction({
 
     setFireSacrificeSummonMode(null);
     setSelectedHandCardId(cardId);
-  }, [eventCardModes.bloodSummonMode, myHand, eventCardModes.hasActiveEventMode, eventCardModes.clearAllEventModes, selectedHandCardId, currentPhase, isMyTurn, core, myPlayerId]);
+  };
 
   // 确认弃牌换魔力
   const handleConfirmDiscard = useCallback(() => {
@@ -974,12 +970,12 @@ export function useCellInteraction({
 
   // ---------- 阶段控制 ----------
 
-  useEffect(() => { setEndPhaseConfirmPending(false); }, [currentPhase]);
+  useEffect(() => { queueMicrotask(() => setEndPhaseConfirmPending(false)); }, [currentPhase]);
 
   // 强制技能模式：这些技能没有"跳过"选项，必须完成后才能推进阶段
   const isMandatoryAbilityActive = !!abilityMode && ['blood_rune', 'feed_beast'].includes(abilityMode.abilityId);
 
-  const handleEndPhase = useCallback(() => {
+  const handleEndPhase = () => {
     // 强制技能激活时禁止推进阶段（如鲜血符文必须二选一）
     if (isMandatoryAbilityActive) return;
     // 非自己回合时禁止操作（防止快速点击越过回合边界）
@@ -1000,9 +996,7 @@ export function useCellInteraction({
       return;
     }
     dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
-  }, [dispatch, currentPhase, actionableUnitPositions.length, endPhaseConfirmPending,
-    eventCardModes.hasActiveEventMode, eventCardModes.clearAllEventModes, magicEventChoiceMode,
-    isMandatoryAbilityActive, isMyTurn]);
+  };
 
   // ---------- 外部技能确认 ----------
 
@@ -1019,7 +1013,7 @@ export function useCellInteraction({
     setMindCaptureMode(null);
   }, [dispatch, mindCaptureMode, setMindCaptureMode]);
 
-  const handleConfirmBeforeAttackCards = useCallback(() => {
+  const handleConfirmBeforeAttackCards = () => {
     if (!abilityMode || abilityMode.step !== 'selectCards') return;
     const selected = abilityMode.selectedCardIds ?? [];
     
@@ -1080,9 +1074,9 @@ export function useCellInteraction({
     }
     
     setAbilityMode(null);
-  }, [abilityMode, core, dispatch, showToast, t]);
+  };
 
-  const handleCancelBeforeAttack = useCallback(() => {
+  const handleCancelBeforeAttack = () => {
     // ✅ 如果是被动触发模式（有 pendingAttackTarget），跳过能力并直接攻击
     if (abilityMode && abilityMode.pendingAttackTarget && core.selectedUnit) {
       dispatch(SW_COMMANDS.DECLARE_ATTACK, {
@@ -1096,7 +1090,7 @@ export function useCellInteraction({
     
     // 否则只是取消 pendingBeforeAttack
     setPendingBeforeAttack(null);
-  }, [abilityMode, core, dispatch]);
+  };
 
   // ---------- 自动跳过 ----------
 
@@ -1133,7 +1127,7 @@ export function useCellInteraction({
     if (!magicEventChoiceMode) return;
     eventCardModes.handlePlayEvent(magicEventChoiceMode.cardId);
     setMagicEventChoiceMode(null);
-  }, [magicEventChoiceMode, eventCardModes.handlePlayEvent]);
+  }, [magicEventChoiceMode, eventCardModes]);
 
   const handleDiscardMagicEvent = useCallback(() => {
     if (!magicEventChoiceMode) return;

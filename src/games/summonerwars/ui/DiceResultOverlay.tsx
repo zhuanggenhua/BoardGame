@@ -5,7 +5,7 @@
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Swords, Crosshair, Zap } from 'lucide-react';
 import type { DiceFaceResult, DiceMark } from '../config/dice';
@@ -161,20 +161,29 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation('game-summonerwars');
-  const [visible, setVisible] = useState(() => Boolean(results && results.length > 0));
+  const resultSignature = useMemo(() => JSON.stringify(results ?? []), [results]);
+  const hasResults = Boolean(results && results.length > 0);
+  const [dismissedSignature, setDismissedSignature] = useState<string | null>(null);
+  const dismissed = dismissedSignature === resultSignature;
+  const visible = hasResults && !dismissed;
   const timerRef = useRef<number | null>(null);
   const closeNow = useCallback(() => {
     if (timerRef.current) {
       window.clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    setVisible(false);
+    setDismissedSignature(resultSignature);
     onClose?.();
-  }, [onClose]);
+  }, [onClose, resultSignature]);
+
+  useEffect(() => {
+    if (!hasResults) {
+      setDismissedSignature(null);
+    }
+  }, [hasResults]);
 
   useEffect(() => {
     if (results && results.length > 0) {
-      setVisible(true);
       if (timerRef.current) {
         window.clearTimeout(timerRef.current);
       }
@@ -187,7 +196,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
       };
     }
     return undefined;
-  }, [results, duration, closeNow]);
+  }, [resultSignature, results, duration, closeNow]);
 
   if (!results || results.length === 0) return null;
 

@@ -85,14 +85,14 @@ test.describe('Cardia 测试场景API验证', () => {
             player1: {
                 hand: ['deck_i_card_01'],
                 playedCards: [
-                    { defId: 'deck_i_card_02', seals: 1 }, // 之前的牌，有1个印戒
-                    { defId: 'deck_i_card_03', seals: 2 }, // 之前的牌，有2个印戒
+                    { defId: 'deck_i_card_02', signets: 1 }, // 之前的牌，有1个印戒
+                    { defId: 'deck_i_card_03', signets: 2 }, // 之前的牌，有2个印戒
                 ],
             },
             player2: {
                 hand: ['deck_i_card_04'],
                 playedCards: [
-                    { defId: 'deck_i_card_05', seals: 1 },
+                    { defId: 'deck_i_card_05', signets: 1 },
                 ],
             },
             phase: 'play',
@@ -103,14 +103,14 @@ test.describe('Cardia 测试场景API验证', () => {
             
             // 验证已打出的牌
             const state = await readCoreState(setup.player1Page);
-            const p1PlayedCards = (state.players as Record<string, { playedCards: Array<{ seals: number }> }>)['0'].playedCards;
-            const p2PlayedCards = (state.players as Record<string, { playedCards: Array<{ seals: number }> }>)['1'].playedCards;
+            const p1PlayedCards = (state.players as Record<string, { playedCards: Array<{ signets?: number }> }>)['0'].playedCards;
+            const p2PlayedCards = (state.players as Record<string, { playedCards: Array<{ signets?: number }> }>)['1'].playedCards;
             
             console.log('已打出的牌:', {
                 p1Count: p1PlayedCards.length,
                 p2Count: p2PlayedCards.length,
-                p1Seals: p1PlayedCards.map(c => c.seals),
-                p2Seals: p2PlayedCards.map(c => c.seals),
+                p1Seals: p1PlayedCards.map(c => c.signets),
+                p2Seals: p2PlayedCards.map(c => c.signets),
             });
             
             // 验证场上牌数量
@@ -118,13 +118,13 @@ test.describe('Cardia 测试场景API验证', () => {
             expect(p2PlayedCards.length).toBe(1);
             
             // 验证印戒数量
-            expect(p1PlayedCards[0].seals).toBe(1);
-            expect(p1PlayedCards[1].seals).toBe(2);
-            expect(p2PlayedCards[0].seals).toBe(1);
+            expect(p1PlayedCards[0].signets).toBe(1);
+            expect(p1PlayedCards[1].signets).toBe(2);
+            expect(p2PlayedCards[0].signets).toBe(1);
             
             // 验证总印戒数
-            const p1TotalSeals = p1PlayedCards.reduce((sum, c) => sum + c.seals, 0);
-            const p2TotalSeals = p2PlayedCards.reduce((sum, c) => sum + c.seals, 0);
+            const p1TotalSeals = p1PlayedCards.reduce((sum, c) => sum + (c.signets ?? 0), 0);
+            const p2TotalSeals = p2PlayedCards.reduce((sum, c) => sum + (c.signets ?? 0), 0);
             expect(p1TotalSeals).toBe(3);
             expect(p2TotalSeals).toBe(1);
             
@@ -243,6 +243,153 @@ test.describe('Cardia 测试场景API验证', () => {
             expect(myCardBox!.width, '标准视口下卡牌宽度应保持原版').toBeLessThanOrEqual(108);
             expect(myCardBox!.height, '标准视口下卡牌高度应保持原版').toBeGreaterThanOrEqual(158);
             expect(myCardBox!.height, '标准视口下卡牌高度应保持原版').toBeLessThanOrEqual(162);
+        } finally {
+            await setup.player1Context.close();
+            await setup.player2Context.close();
+        }
+    });
+
+    test('紧凑横屏下长手牌与弃牌堆共存时不应挤出战场与手牌区', async ({ browser }, testInfo) => {
+        const setup = await setupCardiaTestScenario(browser, {
+            player1: {
+                hand: [
+                    'deck_i_card_01', 'deck_i_card_02', 'deck_i_card_03', 'deck_i_card_04',
+                    'deck_i_card_05', 'deck_i_card_06', 'deck_i_card_07', 'deck_i_card_08',
+                ],
+                deck: ['deck_i_card_09', 'deck_i_card_10'],
+                discard: ['deck_i_card_11', 'deck_i_card_12', 'deck_i_card_13', 'deck_i_card_14'],
+                playedCards: [
+                    { defId: 'deck_i_card_15', signets: 2, encounterIndex: 0 },
+                    { defId: 'deck_i_card_16', signets: 1, encounterIndex: 1 },
+                ],
+            },
+            player2: {
+                hand: ['deck_i_card_01', 'deck_i_card_02'],
+                deck: ['deck_i_card_03', 'deck_i_card_04'],
+                discard: ['deck_i_card_05', 'deck_i_card_06', 'deck_i_card_07'],
+                playedCards: [
+                    { defId: 'deck_i_card_08', signets: 1, encounterIndex: 0 },
+                    { defId: 'deck_i_card_09', signets: 2, encounterIndex: 1 },
+                ],
+            },
+            phase: 'play',
+        });
+
+        try {
+            const { player1Page } = setup;
+            await clearEvidenceScreenshotsForTest(testInfo);
+            await player1Page.setViewportSize({ width: 932, height: 412 });
+            await player1Page.waitForTimeout(1000);
+
+            const battlefield = player1Page.locator('[data-testid="cardia-battlefield"]');
+            const handArea = player1Page.locator('[data-testid="cardia-hand-area"]');
+            const playerArea = player1Page.locator('[data-testid="cardia-player-area-panel"]');
+            const discardLabels = player1Page.locator('text=/弃牌堆|discard/i');
+
+            await expect(battlefield).toBeVisible({ timeout: 10000 });
+            await expect(handArea).toBeVisible({ timeout: 10000 });
+            await expect(playerArea).toBeVisible({ timeout: 10000 });
+            await expect(handArea.locator('[data-testid^="card-"]').first()).toBeVisible({ timeout: 10000 });
+            await expect(battlefield.locator('[data-testid^="card-"]').first()).toBeVisible({ timeout: 10000 });
+            await expect(discardLabels.first()).toBeVisible({ timeout: 10000 });
+
+            const metrics = await player1Page.evaluate(() => {
+                const board = document.querySelector<HTMLElement>('[data-testid="cardia-board"]');
+                const battlefieldEl = document.querySelector<HTMLElement>('[data-testid="cardia-battlefield"]');
+                const handEl = document.querySelector<HTMLElement>('[data-testid="cardia-hand-area"]');
+                const playerPanel = document.querySelector<HTMLElement>('[data-testid="cardia-player-area-panel"]');
+                const boardRect = board?.getBoundingClientRect();
+                const battlefieldRect = battlefieldEl?.getBoundingClientRect();
+                const handRect = handEl?.getBoundingClientRect();
+                const playerRect = playerPanel?.getBoundingClientRect();
+                return {
+                    boardRect,
+                    battlefieldRect,
+                    handRect,
+                    playerRect,
+                    overflowY: document.documentElement.scrollHeight - window.innerHeight,
+                    overflowX: document.documentElement.scrollWidth - window.innerWidth,
+                };
+            });
+
+            expect(metrics.overflowX, '紧凑横屏不应出现整页横向溢出').toBeLessThanOrEqual(1);
+            expect(metrics.overflowY, '紧凑横屏不应出现明显整页纵向溢出').toBeLessThanOrEqual(8);
+            expect(metrics.battlefieldRect?.height ?? 0, '战场区仍应保留可用高度').toBeGreaterThan(120);
+            expect(metrics.handRect?.height ?? 0, '手牌区仍应保留可用高度').toBeGreaterThan(70);
+            expect(metrics.playerRect?.bottom ?? 0, '玩家区底部应留在棋盘内').toBeLessThanOrEqual((metrics.boardRect?.bottom ?? 0) + 1);
+
+            await player1Page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'cardia-tight-landscape-long-hand-discard'),
+                fullPage: true,
+            });
+        } finally {
+            await setup.player1Context.close();
+            await setup.player2Context.close();
+        }
+    });
+
+    test('紧凑横屏下调试开关存在时仍不应遮挡主要交互区域', async ({ browser }, testInfo) => {
+        const setup = await setupCardiaTestScenario(browser, {
+            player1: {
+                hand: ['deck_i_card_01', 'deck_i_card_02', 'deck_i_card_03', 'deck_i_card_04'],
+                deck: ['deck_i_card_05'],
+                discard: ['deck_i_card_06', 'deck_i_card_07'],
+                playedCards: [
+                    { defId: 'deck_i_card_08', signets: 1, encounterIndex: 0 },
+                ],
+            },
+            player2: {
+                hand: ['deck_i_card_09', 'deck_i_card_10'],
+                deck: ['deck_i_card_11'],
+                discard: ['deck_i_card_12'],
+                playedCards: [
+                    { defId: 'deck_i_card_13', signets: 2, encounterIndex: 0 },
+                ],
+            },
+            phase: 'play',
+        });
+
+        try {
+            const { player1Page } = setup;
+            await clearEvidenceScreenshotsForTest(testInfo);
+            await player1Page.setViewportSize({ width: 932, height: 412 });
+            await player1Page.waitForTimeout(1000);
+
+            const debugToggle = player1Page.locator('[data-testid="debug-toggle-container"]');
+            const handFirstCard = player1Page.locator('[data-testid="cardia-hand-area"] [data-testid^="card-"]').first();
+            const battlefieldFirstCard = player1Page.locator('[data-testid="cardia-battlefield"] [data-testid^="card-"]').first();
+
+            await expect(debugToggle).toBeVisible({ timeout: 10000 });
+            await expect(handFirstCard).toBeVisible({ timeout: 10000 });
+            await expect(battlefieldFirstCard).toBeVisible({ timeout: 10000 });
+
+            const overlap = await player1Page.evaluate(() => {
+                const toggle = document.querySelector<HTMLElement>('[data-testid="debug-toggle-container"]');
+                const handCard = document.querySelector<HTMLElement>('[data-testid="cardia-hand-area"] [data-testid^="card-"]');
+                const battlefieldCard = document.querySelector<HTMLElement>('[data-testid="cardia-battlefield"] [data-testid^="card-"]');
+                const t = toggle?.getBoundingClientRect();
+                const h = handCard?.getBoundingClientRect();
+                const b = battlefieldCard?.getBoundingClientRect();
+                const intersects = (a?: DOMRect, c?: DOMRect) => {
+                    if (!a || !c) return false;
+                    return !(a.right <= c.left || a.left >= c.right || a.bottom <= c.top || a.top >= c.bottom);
+                };
+                return {
+                    toggleRect: t,
+                    handRect: h,
+                    battlefieldRect: b,
+                    overlapsHand: intersects(t, h),
+                    overlapsBattlefield: intersects(t, b),
+                };
+            });
+
+            expect(overlap.overlapsHand, '调试开关不应遮挡首张手牌').toBe(false);
+            expect(overlap.overlapsBattlefield, '调试开关不应遮挡首张战场卡').toBe(false);
+
+            await player1Page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'cardia-tight-landscape-debug-toggle-safe-area'),
+                fullPage: true,
+            });
         } finally {
             await setup.player1Context.close();
             await setup.player2Context.close();

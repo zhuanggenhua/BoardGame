@@ -27,6 +27,7 @@ import { DICETHRONE_COMMANDS, TOKEN_IDS } from './domain/ids';
 import type {
     AbilityCard,
     DiceThroneCore,
+    DtResponseWindowType,
     TurnPhase,
     ChoiceResolvedEvent,
     DamageDealtEvent,
@@ -45,10 +46,12 @@ import type {
 } from './domain/types';
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
 import { createDiceThroneEventSystem } from './domain/systems';
-import { getNextPhase, getRollerId, getActiveDice } from './domain/rules';
+import { getNextPhase, getRollerId, getActiveDice, areTeammates } from './domain/rules';
 import { findPlayerAbility } from './domain/abilityLookup';
 import { diceThroneCheatModifier } from './domain/cheatModifier';
 import { diceThroneFlowHooks } from './domain/flowHooks';
+import { isCardPlayableInResponseWindow } from './domain/rules';
+import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { ASSETS } from './ui/assets';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { diceThroneAiRuntime } from './ai';
@@ -964,6 +967,35 @@ const systems = [
         ],
         
         responderExemptCommands: ['USE_TOKEN', 'SKIP_TOKEN_RESPONSE', 'USE_PASSIVE_ABILITY'],
+        allowNonResponderCommand: ({ state, command, currentWindow }) => {
+            if (command.type !== 'PLAY_CARD' || currentWindow.windowType !== 'afterRollConfirmed') {
+                return false;
+            }
+
+            const matchState = state as MatchState<DiceThroneCore>;
+            const cardId = (command.payload as { cardId?: string } | undefined)?.cardId;
+            if (!cardId) {
+                return false;
+            }
+
+            if (!isDirectDiceInterferenceActor(matchState.core, currentWindow, command.playerId)) {
+                return false;
+            }
+
+            const player = matchState.core.players[command.playerId];
+            const card = player?.hand.find((item) => item.id === cardId);
+            if (!card) {
+                return false;
+            }
+
+            return isCardPlayableInResponseWindow(
+                matchState.core,
+                command.playerId,
+                card,
+                currentWindow.windowType as DtResponseWindowType,
+                matchState.sys.phase as TurnPhase,
+            );
+        },
         responseAdvanceEvents: [
             { eventType: 'CARD_PLAYED' },
         ],

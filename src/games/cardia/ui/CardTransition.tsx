@@ -14,6 +14,8 @@ interface CardTransitionProps {
     type?: 'hand' | 'field' | 'discard';
     /** 是否启用布局动画（位置变化时的平滑过渡） */
     layoutAnimation?: boolean;
+    className?: string;
+    style?: React.CSSProperties;
 }
 
 /**
@@ -29,6 +31,8 @@ export const CardTransition: React.FC<CardTransitionProps> = ({
     cardUid,
     type = 'hand',
     layoutAnimation = true,
+    className,
+    style,
 }) => {
     // 根据类型定制动画参数
     const animationConfig = {
@@ -63,6 +67,8 @@ export const CardTransition: React.FC<CardTransitionProps> = ({
             exit={config.exit}
             transition={config.transition}
             layout={layoutAnimation}
+            className={className}
+            style={{ overflow: 'visible', ...style }}
         >
             {children}
         </motion.div>

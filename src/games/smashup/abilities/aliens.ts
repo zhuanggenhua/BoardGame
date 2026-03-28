@@ -14,10 +14,11 @@ import type {
     SmashUpCore,
     MinionPlayedEvent,
     CardsDiscardedEvent,
+    CardOrTitanChoiceValue,
 } from '../domain/types';
 import {
     buildBaseTargetOptions, buildMinionTargetOptions, getMinionPower,
-    grantExtraMinion, moveMinion, shuffleBaseDeck,
+    getSetAsideTitansPlayableAs, grantExtraMinion, moveMinion, playTitan, shuffleBaseDeck,
     resolveOrPrompt, buildAbilityFeedback,
 } from '../domain/abilityHelpers';
 import { getBaseDef, getCardDef, getMinionDef } from '../data/cards';
@@ -777,13 +778,24 @@ export function registerAlienInteractionHandlers(): void {
             return { state, events };
         }
 
+        const titanOptions = getSetAsideTitansPlayableAs(state.core, playerId, 'minion').map((titan, index) => {
+            const def = getCardDef(titan.defId);
+            return {
+                id: `setaside-titan-${index}`,
+                label: def?.name ?? titan.defId,
+                value: { titanUid: titan.uid, defId: titan.defId, playKind: 'minion' } satisfies CardOrTitanChoiceValue,
+                _source: 'hand' as const,
+                displayMode: 'card' as const,
+            };
+        });
+
         const options: Array<{
             id: string;
             label: string;
-            value: { skip: true } | { cardUid: string; defId: string };
+            value: CardOrTitanChoiceValue;
             displayMode: 'button' | 'card';
         }> = [
-                { id: 'skip', label: '跳过额外随从', value: { skip: true }, displayMode: 'button' as const },
+                { id: 'skip', label: '跳过额外随从', value: { skip: true, defId: '__skip__' }, displayMode: 'button' as const },
                 ...minionCards.map((card, index) => {
                     const def = getCardDef(card.defId) as MinionCardDef | undefined;
                     const power = def?.power ?? 0;
@@ -795,6 +807,7 @@ export function registerAlienInteractionHandlers(): void {
                         displayMode: 'card' as const,
                     };
                 }),
+                ...titanOptions,
             ];
 
         const interaction = createSimpleChoice(
@@ -819,13 +832,37 @@ export function registerAlienInteractionHandlers(): void {
 
     // 地形改造：第三步在“新基地”可选打出一个手牌随从（原子发放额度并立即消耗）
     registerInteractionHandler('alien_terraform_play_minion', (state, playerId, value, iData, _random, timestamp) => {
-        const selected = value as { skip?: boolean; cardUid?: string; defId?: string };
+        const selected = value as CardOrTitanChoiceValue;
         if (selected.skip) return { state, events: [] };
 
         const ctx = iData?.continuationContext as { newBaseIndex: number } | undefined;
         if (!ctx) return { state, events: [] };
         const targetBase = state.core.bases[ctx.newBaseIndex];
         if (!targetBase) return { state, events: [] };
+
+        if (selected.titanUid) {
+            const selectedTitan = state.core.titans?.find((titan) =>
+                titan.uid === selected.titanUid
+                && titan.defId === selected.defId
+                && titan.ownerId === playerId
+                && titan.location.zone === 'setaside',
+            );
+            if (!selectedTitan) return { state, events: [] };
+
+            return {
+                state,
+                events: [
+                    playTitan(
+                        selectedTitan,
+                        playerId,
+                        ctx.newBaseIndex,
+                        'alien_terraform',
+                        timestamp,
+                        targetBase.defId,
+                    ),
+                ],
+            };
+        }
 
         const player = state.core.players[playerId];
         const selectedCard = player.hand.find(card =>

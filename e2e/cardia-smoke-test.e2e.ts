@@ -88,7 +88,6 @@ async function waitForHomeReady(page: Page) {
   await expect(page.locator('body')).toBeVisible();
   await expect(page.locator('text=/cardia/i').first()).toBeVisible({ timeout: 10000 });
 }
-
 async function expectResponsiveLayoutStable(page: Page, options?: { requireBattlefieldCards?: boolean }) {
   const requireBattlefieldCards = options?.requireBattlefieldCards ?? true;
 

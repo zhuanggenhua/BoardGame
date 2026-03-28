@@ -27,6 +27,7 @@ import { CardFlip } from './ui/CardFlip';
 import { getInitialOpponentFlipState, getNextOpponentFlipState } from './ui/encounterFlipState';
 import type { FactionId } from './domain/ids';
 import { CARDIA_EVENTS } from './domain/events';
+import cardRegistry from './domain/cardRegistry';
 import { exposeDebugTools } from './debug';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { CARDIA_IMAGE_PATHS, resolveCardiaCardImagePath } from './imagePaths';
@@ -37,9 +38,25 @@ import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 type Props = GameBoardProps<CardiaCore>;
 
 const CARDIA_SAFE_AREA_BOTTOM = 'env(safe-area-inset-bottom, 0px)';
+const CARDIA_TIGHT_LANDSCAPE_SIDEBAR_WIDTH = '8.4rem';
+// PC 端放大预览交互约定：
+// - 鼠标稳定悬停 200ms 后才打开，避免快速扫过时频繁误触发；
+// - 鼠标离开目标后立即关闭，不做关闭延迟，保证反馈干脆。
+const CARDIA_PC_HOVER_MAGNIFY_DELAY_MS = 200;
 
 const CARD_SIZE_CLASSES = 'w-[var(--cardia-card-width)] aspect-[106/160]';
 const SMALL_CARD_SIZE_CLASSES = 'w-[var(--cardia-small-card-width)] aspect-[106/160]';
+
+const detectTouchLikeInput = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const hasAnyHover = window.matchMedia('(hover: hover)').matches
+        || window.matchMedia('(any-hover: hover)').matches;
+    if (hasAnyHover) return false;
+
+    const pointerCoarse = window.matchMedia('(hover: none), (pointer: coarse), (any-pointer: coarse)').matches;
+    const hasTouchPoints = (navigator.maxTouchPoints ?? 0) > 0;
+    return pointerCoarse || hasTouchPoints;
+};
 
 export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, matchData, isMultiplayer }) => {
     const core = G.core;
@@ -78,11 +95,105 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     
     // 卡牌放大状态
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
+    const [focusedHandCardUid, setFocusedHandCardUid] = useState<string | null>(null);
+
+    const viewportSize = useRuntimeViewport();
+    const isTouchLikeDevice = React.useMemo(() => detectTouchLikeInput(), [viewportSize.width, viewportSize.height]);
+
+    const openMagnify = React.useCallback((card: any) => {
+        const anchorRect = cardRefs.current.get(card.uid)?.getBoundingClientRect() ?? null;
+        setMagnifyTarget({ card, core, anchorRect });
+    }, [core]);
+
+    const hoverMagnifyOpenTimerRef = React.useRef<number | null>(null);
+    const hoveredBattlefieldCardUidRef = React.useRef<string | null>(null);
+    const hoverMagnifySequenceRef = React.useRef(0);
+
+    const clearHoverMagnifyOpenTimer = React.useCallback(() => {
+        if (hoverMagnifyOpenTimerRef.current === null || typeof window === 'undefined') return;
+        window.clearTimeout(hoverMagnifyOpenTimerRef.current);
+        hoverMagnifyOpenTimerRef.current = null;
+    }, []);
+
+    const closeMagnify = React.useCallback(() => {
+        hoveredBattlefieldCardUidRef.current = null;
+        hoverMagnifySequenceRef.current += 1;
+        clearHoverMagnifyOpenTimer();
+        setMagnifyTarget(null);
+    }, [clearHoverMagnifyOpenTimer]);
+
+    const handleBattlefieldCardEnter = React.useCallback((card: any) => {
+        if (isTouchLikeDevice || typeof window === 'undefined') return;
+
+        hoveredBattlefieldCardUidRef.current = card.uid;
+        hoverMagnifySequenceRef.current += 1;
+        clearHoverMagnifyOpenTimer();
+
+        const currentSequence = hoverMagnifySequenceRef.current;
+        hoverMagnifyOpenTimerRef.current = window.setTimeout(() => {
+            if (hoveredBattlefieldCardUidRef.current !== card.uid || hoverMagnifySequenceRef.current !== currentSequence) {
+                hoverMagnifyOpenTimerRef.current = null;
+                return;
+            }
+            const anchorRect = cardRefs.current.get(card.uid)?.getBoundingClientRect() ?? null;
+            setMagnifyTarget({ card, core, anchorRect });
+            hoverMagnifyOpenTimerRef.current = null;
+        }, CARDIA_PC_HOVER_MAGNIFY_DELAY_MS);
+    }, [clearHoverMagnifyOpenTimer, core, isTouchLikeDevice]);
+
+    const handleBattlefieldCardMove = React.useCallback((card: any) => {
+        if (isTouchLikeDevice || typeof window === 'undefined') return;
+        if (hoveredBattlefieldCardUidRef.current !== card.uid) return;
+        if (magnifyTarget?.card?.uid === card.uid) return;
+        handleBattlefieldCardEnter(card);
+    }, [handleBattlefieldCardEnter, isTouchLikeDevice, magnifyTarget]);
+
+    const handleBattlefieldCardLeave = React.useCallback((card?: any) => {
+        if (card?.uid && hoveredBattlefieldCardUidRef.current === card.uid) {
+            hoveredBattlefieldCardUidRef.current = null;
+        }
+        hoverMagnifySequenceRef.current += 1;
+        clearHoverMagnifyOpenTimer();
+        setMagnifyTarget((current) => {
+            if (card && current?.card.uid !== card.uid) return current;
+            return null;
+        });
+    }, [clearHoverMagnifyOpenTimer]);
+
+    const handleBattlefieldCardPress = React.useCallback((card: any) => {
+        if (!isTouchLikeDevice) return;
+        openMagnify(card);
+    }, [isTouchLikeDevice, openMagnify]);
+
+    const handleHandActivate = React.useCallback((cardUid: string) => {
+        closeMagnify();
+        setFocusedHandCardUid(cardUid);
+    }, [closeMagnify]);
+
+    const handleHandDeactivate = React.useCallback(() => {
+        if (isTouchLikeDevice) return;
+        setFocusedHandCardUid(null);
+    }, [isTouchLikeDevice]);
+
+    React.useEffect(() => {
+        return () => clearHoverMagnifyOpenTimer();
+    }, [clearHoverMagnifyOpenTimer]);
+
+    React.useEffect(() => {
+        if (!isTouchLikeDevice || !focusedHandCardUid) return;
+
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target as HTMLElement | null;
+            if (target?.closest('[data-hand-card-shell]')) return;
+            setFocusedHandCardUid(null);
+        };
+
+        window.addEventListener('pointerdown', handlePointerDown);
+        return () => window.removeEventListener('pointerdown', handlePointerDown);
+    }, [focusedHandCardUid, isTouchLikeDevice]);
     
     // 动画状态
     const animations = useAbilityAnimations();
-
-    const viewportSize = useRuntimeViewport();
 
     // 设备类型检测
     type DeviceType = 
@@ -195,11 +306,6 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     const playerZoneWrapperStyle = React.useMemo(() => {
         if (deviceType !== 'phone-portrait' && deviceType !== 'tablet-portrait') return undefined;
 
-        // PlayerZone 在竖屏下为 absolute，需要用 translateY 把 safe-area 让出来，
-        // 避免：
-        // - reservedBottom 把 safe-area 算进去后
-        // - PlayerZone 又额外 “抬高”
-        // 导致整体高度超出 viewport。
         return {
             height: 'var(--cardia-player-zone-height)',
             transform: `translateY(calc(-1 * ${CARDIA_SAFE_AREA_BOTTOM}))`,
@@ -552,6 +658,14 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
             : 'rounded-lg border border-white/10 bg-black/55 px-3 py-2 text-white backdrop-blur-md md:px-4';
 
     const compactPhaseLabel = t(`phases.${phase}`);
+    const focusedHandCard = myPlayer.hand.find((card: any) => card.uid === focusedHandCardUid) ?? null;
+    const tightLandscapeSidebarWidth = React.useMemo(() => {
+        if (deviceType !== 'tight-landscape') return CARDIA_TIGHT_LANDSCAPE_SIDEBAR_WIDTH;
+
+        const tightDiscardWidth = Math.max(0, myPlayer.discard.length - 1) * 30 + 88;
+        const minSidebarWidthPx = 8.4 * 16;
+        return `${Math.max(minSidebarWidthPx, tightDiscardWidth)}px`;
+    }, [deviceType, myPlayer.discard.length]);
 
     const compactInfoChipClass =
         'inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[11px] font-medium text-white/90';
@@ -560,7 +674,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: isLocalMatch }}>
             <div
                 data-testid="cardia-board"
-                className="relative w-full h-full overflow-hidden"
+                className={`relative w-full h-full ${focusedHandCardUid ? 'overflow-visible' : 'overflow-hidden'}`}
                 style={{
                     ...cardSizeStyle,
                     ...layoutStyle,
@@ -583,7 +697,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                 />
                 
                 <div
-                    className={`cardia-board-shell cardia-main-stack ${
+                className={`cardia-board-shell cardia-main-stack ${
                         deviceType === 'tight-landscape'
                             ? 'relative flex h-full min-h-0 w-full flex-row gap-1 p-1'
                             : deviceType === 'phone-portrait'
@@ -594,33 +708,43 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                                   ? 'relative flex h-full min-h-0 w-full flex-col gap-2 p-2 pb-[var(--cardia-reserved-bottom)] lg:gap-3 lg:p-3 lg:pb-3'
                                 : 'relative flex h-full min-h-0 w-full flex-col gap-4 p-4'
                     }`}
+                    style={deviceType === 'tight-landscape'
+                        ? ({ '--cardia-tight-sidebar-width': tightLandscapeSidebarWidth } as React.CSSProperties)
+                        : undefined}
                 >
                     {/* 对手区域（顶部 / 横屏左栏） */}
                     <div className={`cardia-top-row ${
                         deviceType === 'tight-landscape'
-                            ? 'flex w-[4.8rem] min-w-[4.8rem] flex-shrink-0 flex-col justify-between gap-2 py-1'
+                            ? 'relative z-10 flex w-[var(--cardia-tight-sidebar-width)] min-w-[var(--cardia-tight-sidebar-width)] flex-shrink-0 flex-col justify-between gap-2 py-1'
                             : 'flex flex-shrink-0 flex-wrap items-start gap-1.5 sm:gap-3 md:gap-4'
                     }`}>
                         {/* 对手弃牌堆 */}
-                        <div className="flex-shrink-0">
+                        <div className="flex flex-shrink-0 flex-col items-stretch self-start">
                             <div className="mb-0.5 text-center text-[10px] text-gray-400 sm:text-xs">{t('discard')}</div>
                             <DiscardPile
                                 cards={opponent.discard}
                                 isOpponent={true}
-                                onCardClick={(card) => setMagnifyTarget({ card, core })}
+                                onCardClick={handleBattlefieldCardPress}
+                                onCardHover={handleBattlefieldCardEnter}
+                                onCardHoverMove={handleBattlefieldCardMove}
+                                onCardLeave={handleBattlefieldCardLeave}
                             />
                         </div>
 
                         {deviceType === 'tight-landscape' && (
-                            <div className="flex-shrink-0">
-                                <div className="mb-0.5 text-center text-[10px] text-gray-400 sm:text-xs">{t('discard')}</div>
+                            <div className="flex flex-shrink-0 flex-col items-stretch self-end">
+                                <div className="mb-0.5 text-center text-[10px] text-gray-300">{t('discard')}</div>
                                 <DiscardPile
                                     cards={myPlayer.discard}
-                                    onCardClick={(card) => setMagnifyTarget({ card, core })}
+                                    onCardClick={handleBattlefieldCardPress}
+                                    onCardHover={handleBattlefieldCardEnter}
+                                    onCardHoverMove={handleBattlefieldCardMove}
+                                    onCardLeave={handleBattlefieldCardLeave}
+                                    setCardRef={setCardRef}
                                 />
                             </div>
                         )}
-                        
+
                         {deviceType !== 'tight-landscape' && (
                             <>
                                 <div className="min-w-0 flex-1 basis-[16rem]">
@@ -653,8 +777,9 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                     </div>
 
                     {deviceType === 'tight-landscape' ? (
-                        <div className="relative flex min-w-0 flex-1 overflow-visible">
-                            <div className="absolute left-2 right-[6.6rem] top-2 z-10 rounded-xl border border-white/10 bg-black/65 px-3 py-2.5 backdrop-blur-md shadow-lg shadow-black/30">
+                        <div className={`flex min-h-0 min-w-0 flex-1 gap-2 ${focusedHandCardUid ? 'overflow-visible' : 'overflow-hidden'}`}>
+                            <div className={`flex min-h-0 min-w-0 flex-1 flex-col ${focusedHandCardUid ? 'overflow-visible' : 'overflow-hidden'}`}>
+                                <div className="flex-shrink-0 rounded-xl border border-white/10 bg-black/65 px-3 py-2.5 backdrop-blur-md shadow-lg shadow-black/30">
                                 <div className="grid grid-cols-[auto_1fr] items-center gap-3 text-white">
                                     <div className="flex min-w-0 items-center gap-2.5 whitespace-nowrap">
                                         <div className="truncate text-[12px] font-bold text-white">{opponent.name}</div>
@@ -666,25 +791,10 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                                         <div>🗑️ {t('discard')}: {opponent.discard.length}</div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div className="absolute right-2 top-2 z-20 flex w-[5.6rem] flex-col gap-2">
-                                <div
-                                    className="rounded-xl border border-white/10 bg-black/72 px-3 py-2.5 text-white shadow-lg shadow-black/30 backdrop-blur-md"
-                                    data-testid="cardia-phase-indicator"
-                                    data-tutorial-id="cardia-phase-indicator"
-                                >
-                                    <div className="text-[10px] text-gray-300">{t('phase')}</div>
-                                    <div className="mt-1 text-[17px] font-bold leading-tight text-white">{compactPhaseLabel}</div>
                                 </div>
-                                <div className="rounded-xl border border-white/10 bg-black/72 px-3 py-2.5 text-white shadow-lg shadow-black/30 backdrop-blur-md">
-                                    <div className="text-[10px] text-gray-300">{t('turn')}</div>
-                                    <div data-testid="cardia-turn-number" className="mt-1 text-[18px] font-bold leading-tight text-white">{core.turnNumber}</div>
-                                </div>
-                            </div>
 
                             {isOnline && !opponentConnected && (
-                                <div className="absolute left-1/2 top-[4.4rem] z-20 -translate-x-1/2 rounded-lg border border-red-500/40 bg-red-900/75 px-3 py-1.5 text-[11px] font-semibold text-red-200 shadow-lg">
+                                <div className="mt-1 self-center rounded-lg border border-red-500/40 bg-red-900/75 px-3 py-1.5 text-[11px] font-semibold text-red-200 shadow-lg">
                                     {t('hud.offlineBanner.message', { name: opponent.name, time: '' }).trim()}
                                 </div>
                             )}
@@ -693,7 +803,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                             <div
                                 data-testid="cardia-battlefield"
                                 data-tutorial-id="cardia-battlefield"
-                                className="cardia-battlefield absolute inset-x-0 top-0 bottom-[var(--cardia-compact-player-zone-height)] flex items-center justify-start overflow-x-auto overflow-y-visible px-3 pt-[4.3rem]"
+                                className="cardia-battlefield mt-1 flex min-h-0 flex-1 items-center justify-start overflow-x-auto overflow-y-visible px-2 py-0.5"
                             >
                                 <EncounterSequence
                                     myPlayer={myPlayer}
@@ -702,7 +812,10 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                                     opponentId={opponentId}
                                     core={core}
                                     setCardRef={setCardRef}
-                                    onMagnifyCard={(card) => setMagnifyTarget({ card, core })}
+                                    onCardHover={handleBattlefieldCardEnter}
+                                    onCardHoverMove={handleBattlefieldCardMove}
+                                    onCardLeave={handleBattlefieldCardLeave}
+                                    onCardPress={handleBattlefieldCardPress}
                                     deviceType={deviceType}
                                 />
                             </div>
@@ -710,20 +823,27 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                             {/* 我的区域（横屏右侧下栏） */}
                             <div
                                 data-testid="cardia-player-zone"
-                                className="absolute left-2 right-2 bottom-0 flex h-[var(--cardia-compact-player-zone-height)] items-end overflow-hidden"
+                                className={`mt-0.5 flex h-[clamp(8.9rem,31dvh,10.6rem)] items-end gap-2 overflow-visible pb-1 ${focusedHandCardUid ? 'relative z-[260]' : ''}`}
+
                                 style={playerZoneWrapperStyle}
                             >
                                 <div className="min-w-0 flex-1">
                                     <PlayerArea
-                                        player={myPlayer}
-                                        core={core}
-                                        onPlayCard={handlePlayCard}
-                                        canPlay={phase === 'play' && !myPlayer.hasPlayed}
-                                        totalSignets={mySignets}
-                                        setCardRef={setCardRef}
-                                        onMagnifyCard={(card) => setMagnifyTarget({ card, core })}
-                                        deviceType={deviceType}
-                                    />
+                                    player={myPlayer}
+                                    core={core}
+                                    onPlayCard={handlePlayCard}
+                                    canPlay={phase === 'play' && !myPlayer.hasPlayed}
+                                    totalSignets={mySignets}
+                                    setCardRef={setCardRef}
+                                    onHandCardPress={openMagnify}
+                                    onClearMagnify={closeMagnify}
+                                    onHandActivate={handleHandActivate}
+                                    onHandDeactivate={handleHandDeactivate}
+                                    focusedHandCardUid={focusedHandCardUid}
+                                    focusedHandCard={focusedHandCard}
+                                    onFocusedHandCardChange={setFocusedHandCardUid}
+                                    deviceType={deviceType}
+                                />
                                 </div>
                             </div>
 
@@ -737,6 +857,22 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                                 padding-bottom: 0 !important;
                               }
                             `}</style>
+                            </div>
+
+                            <div className="flex min-h-0 w-[5.6rem] flex-shrink-0 flex-col gap-2">
+                                <div
+                                    className="flex-shrink-0 rounded-xl border border-white/10 bg-black/72 px-3 py-2.5 text-white shadow-lg shadow-black/30 backdrop-blur-md"
+                                    data-testid="cardia-phase-indicator"
+                                    data-tutorial-id="cardia-phase-indicator"
+                                >
+                                    <div className="text-[10px] text-gray-300">{t('phase')}</div>
+                                    <div className="mt-1 text-[17px] font-bold leading-tight text-white">{compactPhaseLabel}</div>
+                                </div>
+                                <div className="flex-shrink-0 rounded-xl border border-white/10 bg-black/72 px-3 py-2.5 text-white shadow-lg shadow-black/30 backdrop-blur-md">
+                                    <div className="text-[10px] text-gray-300">{t('turn')}</div>
+                                    <div data-testid="cardia-turn-number" className="mt-1 text-[18px] font-bold leading-tight text-white">{core.turnNumber}</div>
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -761,7 +897,10 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                                     opponentId={opponentId}
                                     core={core}
                                     setCardRef={setCardRef}
-                                    onMagnifyCard={(card) => setMagnifyTarget({ card, core })}
+                                    onCardHover={handleBattlefieldCardEnter}
+                                    onCardHoverMove={handleBattlefieldCardMove}
+                                    onCardLeave={handleBattlefieldCardLeave}
+                                    onCardPress={handleBattlefieldCardPress}
                                     deviceType={deviceType}
                                 />
 
@@ -781,21 +920,25 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                                 data-testid="cardia-player-zone"
                                 className={`cardia-bottom-row ${
                                     deviceType === 'phone-portrait'
-                                        ? 'absolute inset-x-1 bottom-1 z-10 flex items-end gap-1.5'
+                                        ? `absolute inset-x-1 bottom-1 ${focusedHandCardUid ? 'z-[260]' : 'z-10'} flex items-end gap-1.5`
                                         : deviceType === 'tablet-portrait'
-                                        ? 'absolute inset-x-2 bottom-2 z-10 flex items-end gap-3 lg:static lg:z-auto lg:flex-shrink-0 lg:gap-4'
+                                        ? `absolute inset-x-2 bottom-2 ${focusedHandCardUid ? 'z-[260]' : 'z-10'} flex items-end gap-3 lg:static lg:z-auto lg:flex-shrink-0 lg:gap-4`
                                         : deviceType === 'tablet-landscape'
-                                          ? 'flex flex-shrink-0 items-end gap-3 lg:gap-4'
-                                        : 'flex flex-shrink-0 items-end gap-4'
+                                          ? `${focusedHandCardUid ? 'relative z-[260]' : ''} flex flex-shrink-0 items-end gap-3 lg:gap-4`
+                                        : `${focusedHandCardUid ? 'relative z-[260]' : ''} flex flex-shrink-0 items-end gap-4`
                                 }`}
                                 style={playerZoneWrapperStyle}
                             >
                         {/* 我的弃牌堆 */}
-                        <div className="flex-shrink-0">
+                        <div className="relative z-20 flex flex-shrink-0 flex-col items-stretch self-end">
                             <div className="mb-1 text-center text-[11px] text-gray-300 sm:text-xs">{t('discard')}</div>
                             <DiscardPile
                                 cards={myPlayer.discard}
-                                onCardClick={(card) => setMagnifyTarget({ card, core })}
+                                onCardClick={handleBattlefieldCardPress}
+                                onCardHover={handleBattlefieldCardEnter}
+                                onCardHoverMove={handleBattlefieldCardMove}
+                                onCardLeave={handleBattlefieldCardLeave}
+                                setCardRef={setCardRef}
                             />
                         </div>
                         
@@ -808,7 +951,13 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                     canPlay={phase === 'play' && !myPlayer.hasPlayed}
                     totalSignets={mySignets}
                     setCardRef={setCardRef}
-                    onMagnifyCard={(card) => setMagnifyTarget({ card, core })}
+                    onHandCardPress={openMagnify}
+                    onClearMagnify={closeMagnify}
+                    onHandActivate={handleHandActivate}
+                    onHandDeactivate={handleHandDeactivate}
+                    focusedHandCardUid={focusedHandCardUid}
+                    focusedHandCard={focusedHandCard}
+                    onFocusedHandCardChange={setFocusedHandCardUid}
                     deviceType={deviceType}
                 />
             </div>
@@ -902,7 +1051,8 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                 {/* 卡牌放大预览 */}
                 <CardMagnifyOverlay
                     target={magnifyTarget}
-                    onClose={() => setMagnifyTarget(null)}
+                    onClose={closeMagnify}
+                    interactive={isTouchLikeDevice}
                 />
                 
                 {isGameOver && <EndgameOverlay {...endgameProps} />}
@@ -980,11 +1130,14 @@ interface EncounterSequenceProps {
     opponentId: string;
     core: CardiaCore;
     setCardRef: (cardUid: string, element: HTMLElement | null) => void;
-    onMagnifyCard?: (card: any) => void;
+    onCardHover?: (card: any) => void;
+    onCardHoverMove?: (card: any) => void;
+    onCardLeave?: (card?: any) => void;
+    onCardPress?: (card: any) => void;
     deviceType: 'phone-portrait' | 'tight-landscape' | 'phone-landscape' | 'tablet-portrait' | 'tablet-landscape' | 'desktop';
 }
 
-const EncounterSequence: React.FC<EncounterSequenceProps> = ({ myPlayer, opponent, myPlayerId, opponentId, core, setCardRef, onMagnifyCard, deviceType }) => {
+const EncounterSequence: React.FC<EncounterSequenceProps> = ({ myPlayer, opponent, myPlayerId, opponentId, core, setCardRef, onCardHover, onCardHoverMove, onCardLeave, onCardPress, deviceType }) => {
     const { t } = useTranslation('game-cardia');
     
     // 合并双方的场上卡牌，按遭遇序号排序
@@ -1043,7 +1196,10 @@ const EncounterSequence: React.FC<EncounterSequenceProps> = ({ myPlayer, opponen
                             opponentId={opponentId}
                             core={core}
                             setCardRef={setCardRef}
-                            onMagnifyCard={onMagnifyCard}
+                            onCardHover={onCardHover}
+                            onCardHoverMove={onCardHoverMove}
+                            onCardLeave={onCardLeave}
+                            onCardPress={onCardPress}
                             deviceType={deviceType}
                         />
                     </CardTransition>
@@ -1067,11 +1223,14 @@ interface EncounterPairProps {
     opponentId: string;
     core: CardiaCore;
     setCardRef: (cardUid: string, element: HTMLElement | null) => void;
-    onMagnifyCard?: (card: any) => void;
+    onCardHover?: (card: any) => void;
+    onCardHoverMove?: (card: any) => void;
+    onCardLeave?: (card?: any) => void;
+    onCardPress?: (card: any) => void;
     deviceType: 'phone-portrait' | 'tight-landscape' | 'phone-landscape' | 'tablet-portrait' | 'tablet-landscape' | 'desktop';
 }
 
-const EncounterPair: React.FC<EncounterPairProps> = ({ encounter, isLatest, myPlayerId, opponentId, core, setCardRef, onMagnifyCard, deviceType }) => {
+const EncounterPair: React.FC<EncounterPairProps> = ({ encounter, isLatest, myPlayerId, opponentId, core, setCardRef, onCardHover, onCardHoverMove, onCardLeave, onCardPress, deviceType }) => {
     const { t } = useTranslation('game-cardia');
     const { myCard, opponentCard } = encounter;
     
@@ -1125,7 +1284,10 @@ const EncounterPair: React.FC<EncounterPairProps> = ({ encounter, isLatest, myPl
                                 core={core}
                                 size={battlefieldCardSize}
                                 onRef={(el) => setCardRef(opponentCard.uid, el)}
-                                onMagnify={onMagnifyCard}
+                                onMagnify={onCardPress}
+                                onHoverStart={onCardHover}
+                                onHoverMove={onCardHoverMove}
+                                onHoverEnd={onCardLeave}
                             />
                         }
                         backContent={<CardBack size={battlefieldCardSize} />}
@@ -1151,7 +1313,10 @@ const EncounterPair: React.FC<EncounterPairProps> = ({ encounter, isLatest, myPl
                             core={core}
                             size={battlefieldCardSize}
                             onRef={(el) => setCardRef(myCard.uid, el)}
-                            onMagnify={onMagnifyCard}
+                            onMagnify={onCardPress}
+                            onHoverStart={onCardHover}
+                            onHoverMove={onCardHoverMove}
+                            onHoverEnd={onCardLeave}
                         />
                     ) : (
                         <CardBack size={battlefieldCardSize} />
@@ -1174,26 +1339,138 @@ interface PlayerAreaProps {
     canPlay: boolean;
     totalSignets: number;
     setCardRef: (cardUid: string, element: HTMLElement | null) => void;
-    onMagnifyCard?: (card: any) => void;
+    onHandCardPress?: (card: any) => void;
+    onClearMagnify?: () => void;
+    onHandActivate?: (cardUid: string) => void;
+    onHandDeactivate?: () => void;
+    focusedHandCardUid?: string | null;
+    focusedHandCard?: any;
+    onFocusedHandCardChange?: (cardUid: string | null) => void;
     deviceType: 'phone-portrait' | 'tight-landscape' | 'phone-landscape' | 'tablet-portrait' | 'tablet-landscape' | 'desktop';
 }
 
-const PlayerArea: React.FC<PlayerAreaProps> = ({ player, core, onPlayCard, canPlay, totalSignets, setCardRef, onMagnifyCard, deviceType }) => {
+const PlayerArea: React.FC<PlayerAreaProps> = ({ player, core, onPlayCard, canPlay, totalSignets, setCardRef, onHandCardPress, onClearMagnify, onHandActivate, onHandDeactivate, focusedHandCardUid = null, focusedHandCard, onFocusedHandCardChange, deviceType }) => {
     const { t } = useTranslation('game-cardia');
+    const [isTouchDevice, setIsTouchDevice] = React.useState(false);
+    const [isHandExpanded, setIsHandExpanded] = React.useState(false);
+    const handAreaRef = React.useRef<HTMLDivElement | null>(null);
+    const [lockedHandAreaHeight, setLockedHandAreaHeight] = React.useState<number | null>(null);
+
+    React.useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const mediaQuery = window.matchMedia('(hover: none), (pointer: coarse)');
+        const syncTouchCapability = () => setIsTouchDevice(detectTouchLikeInput());
+
+        syncTouchCapability();
+        mediaQuery.addEventListener?.('change', syncTouchCapability);
+        window.addEventListener('resize', syncTouchCapability);
+
+        return () => {
+            mediaQuery.removeEventListener?.('change', syncTouchCapability);
+            window.removeEventListener('resize', syncTouchCapability);
+        };
+    }, []);
+
+    const useTapToFocusHand = isTouchDevice;
+
+    const activateHandCard = React.useCallback((cardUid: string) => {
+        onClearMagnify?.();
+        onHandActivate?.(cardUid);
+    }, [onClearMagnify, onHandActivate]);
+
     const handleCardKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>, cardUid: string) => {
         if (!canPlay) return;
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
         onPlayCard(cardUid);
     }, [canPlay, onPlayCard]);
-    
-    const isCompact = deviceType === 'tight-landscape';
 
+    const handleHandCardClick = React.useCallback((cardUid: string) => {
+        // 交互约定：
+        // - PC: hover 负责聚焦预览，click 直接出牌
+        // - 移动端: 首次点击先聚焦，再次点击同一张牌才出牌
+        if (useTapToFocusHand) {
+            const isSameCardAsFocused = focusedHandCardUid === cardUid;
+            if (!isSameCardAsFocused) {
+                onClearMagnify?.();
+                onFocusedHandCardChange?.(cardUid);
+                return;
+            }
+        }
+
+        if (!canPlay) return;
+        onPlayCard(cardUid);
+    }, [canPlay, focusedHandCardUid, onFocusedHandCardChange, onPlayCard, useTapToFocusHand]);
+
+    React.useEffect(() => {
+        if (!useTapToFocusHand || !isHandExpanded) return;
+
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target as HTMLElement | null;
+            if (target?.closest('[data-testid="cardia-hand-area"]')) return;
+            setIsHandExpanded(false);
+        };
+        window.addEventListener('pointerdown', handlePointerDown);
+        return () => window.removeEventListener('pointerdown', handlePointerDown);
+    }, [isHandExpanded, useTapToFocusHand]);
+
+    const isCompact = deviceType === 'tight-landscape';
+    const totalHandCards = player.hand.length;
+    const showExpandedFan = false;
+    const cardGapPx = isCompact ? 8 : 10;
+    const handGroupScale = 1;
+    const getFanCardTransform = React.useCallback((_index: number) => '', []);
+
+    const renderExpandedCardCaption = React.useCallback((card: any) => {
+        const cardDef = cardRegistry.get(card.defId as any);
+        const fullDescription = cardDef ? t(cardDef.descriptionKey) : '';
+        const skillMatch = fullDescription.match(/技能[:：]\s*([\s\S]*)/);
+        const skillDescription = skillMatch?.[1]?.trim()
+            ?? fullDescription
+                .replace(/影响力[^|｜\n]*[|｜]\s*/g, '')
+                .replace(/阵营[^|｜\n]*[|｜]\s*/g, '')
+                .trim();
+        const description = skillDescription.includes('｜')
+            ? skillDescription.split('｜').pop()?.trim() ?? skillDescription
+            : (skillDescription.includes('|')
+                ? skillDescription.split('|').pop()?.trim() ?? skillDescription
+                : skillDescription);
+        return (
+            <div
+                className="pointer-events-none absolute bottom-0 left-0 z-[260] w-full rounded-b-md border-t border-slate-300 bg-white/96 px-2 py-1.5 text-slate-900 shadow-[0_-6px_16px_rgba(255,255,255,0.32)]"
+            >
+                <div
+                    className="text-[8px] leading-[1.15] text-slate-700 sm:text-[9px]"
+                >
+                    {description}
+                </div>
+            </div>
+        );
+    }, [t]);
+
+    const handleHandAreaMouseEnter = React.useCallback(() => {
+        if (useTapToFocusHand) return;
+        onClearMagnify?.();
+        if (!player.hand.length) return;
+        if (handAreaRef.current) {
+            setLockedHandAreaHeight(handAreaRef.current.getBoundingClientRect().height);
+        }
+        setIsHandExpanded(true);
+    }, [onClearMagnify, player.hand.length, useTapToFocusHand]);
+
+    const handleHandAreaMouseLeave = React.useCallback(() => {
+        if (useTapToFocusHand) return;
+        setIsHandExpanded(false);
+        setLockedHandAreaHeight(null);
+        onHandDeactivate?.();
+    }, [onHandDeactivate, useTapToFocusHand]);
+    
     if (isCompact) {
         return (
             <div
                 data-testid="cardia-player-area-panel"
-                className="flex h-full min-h-0 items-stretch gap-1.5 overflow-hidden rounded-[0.9rem] border border-white/10 bg-black/62 px-3 py-2 backdrop-blur-md"
+                className="flex h-full min-h-0 items-stretch gap-2 overflow-visible rounded-xl border border-white/10 bg-black/62 px-4 py-3 backdrop-blur-md"
             >
                 <div className="flex w-[7.5rem] flex-shrink-0 flex-col justify-between gap-1 overflow-hidden">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5">
@@ -1216,35 +1493,99 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ player, core, onPlayCard, canPl
                 <div
                     data-testid="cardia-hand-area"
                     data-tutorial-id="cardia-hand-area"
-                    className="flex min-h-0 flex-1 snap-x snap-mandatory items-end gap-1.5 overflow-x-auto overflow-y-hidden pr-0.5"
+                    ref={handAreaRef}
+                    className={`flex min-h-0 flex-1 items-end justify-start pr-1 transition-all ${focusedHandCardUid ? 'overflow-visible' : 'overflow-x-auto overflow-y-visible'}`}
+                    style={{
+                        minHeight: 'calc(var(--cardia-card-width) * 1.5095)',
+                        height: lockedHandAreaHeight ? `${lockedHandAreaHeight}px` : undefined,
+                    }}
+                    onMouseEnter={handleHandAreaMouseEnter}
                 >
-                    <CardListTransition>
-                        {player.hand.map((card: any) => (
-                            <CardTransition key={card.uid} cardUid={card.uid} type="hand">
-                                <div
-                                    data-testid={`card-${card.uid}`}
-                                    role={canPlay ? 'button' : undefined}
-                                    tabIndex={canPlay ? 0 : -1}
-                                    aria-disabled={!canPlay}
-                                    onClick={() => {
-                                        if (!canPlay) return;
-                                        onPlayCard(card.uid);
-                                    }}
-                                    onKeyDown={(event) => handleCardKeyDown(event, card.uid)}
-                                    className={`h-full flex-shrink-0 snap-center ${canPlay ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
-                                >
-                                    <CardDisplay
-                                        card={card}
-                                        core={core}
-                                        size="normal"
-                                        onRef={(el) => setCardRef(card.uid, el)}
-                                        onMagnify={onMagnifyCard}
-                                        showInfluenceBadge={false}
-                                    />
-                                </div>
-                            </CardTransition>
-                        ))}
-                    </CardListTransition>
+                    <div
+                        data-testid={showExpandedFan ? 'cardia-hand-center-overlay' : undefined}
+                        className={`flex min-h-0 flex-1 items-end justify-start overflow-visible ${showExpandedFan ? 'fixed inset-0 z-[520] items-center justify-center pointer-events-none' : ''}`}
+                    >
+                        {showExpandedFan && (
+                            <div
+                                className="fixed inset-0 z-[510] bg-black/40 backdrop-blur-[1px] pointer-events-auto"
+                                onClick={() => {
+                                    setIsHandExpanded(false);
+                                    setLockedHandAreaHeight(null);
+                                }}
+                            />
+                        )}
+                        <div
+                            className="relative z-[520] flex items-end justify-start overflow-visible pointer-events-auto"
+                            style={{ transform: `scale(${handGroupScale})`, transformOrigin: 'left bottom' }}
+                        >
+                            <CardListTransition>
+                                {player.hand.map((card: any, index: number) => (
+                                    <CardTransition key={card.uid} cardUid={card.uid} type="hand" layoutAnimation={false}>
+                                        <div
+                                            data-hand-card-shell={card.uid}
+                                            role={canPlay ? 'button' : undefined}
+                                            tabIndex={canPlay ? 0 : -1}
+                                            aria-disabled={!canPlay}
+                                            onMouseEnter={() => {
+                                                activateHandCard(card.uid);
+                                            }}
+                                            onMouseMove={() => {
+                                                activateHandCard(card.uid);
+                                            }}
+                                            onMouseLeave={(event) => {
+                                                if (useTapToFocusHand) return;
+                                                const nextTarget = event.relatedTarget;
+                                                if (nextTarget instanceof HTMLElement && nextTarget.closest(`[data-hand-card-shell="${card.uid}"]`)) {
+                                                    return;
+                                                }
+                                                onHandDeactivate?.();
+                                            }}
+                                            onClick={() => {
+                                                handleHandCardClick(card.uid);
+                                            }}
+                                            onKeyDown={(event) => handleCardKeyDown(event, card.uid)}
+                                            data-testid={focusedHandCardUid === card.uid ? `cardia-hand-magnify-${card.uid}` : undefined}
+                                            className={`relative h-full flex-shrink-0 transition-transform duration-200 ${canPlay ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                                            style={{
+                                                marginLeft: index === 0 ? 0 : `${cardGapPx}px`,
+                                                transform: focusedHandCardUid === card.uid
+                                                    ? `${getFanCardTransform(index) ? `${getFanCardTransform(index)} ` : ''}translateY(calc(var(--cardia-card-width) * -0.42)) scale(2)`
+                                                    : (getFanCardTransform(index) || 'none'),
+                                                transformOrigin: 'bottom center',
+                                                zIndex: focusedHandCardUid === card.uid
+                                                    ? 1200
+                                                    : (showExpandedFan && isTouchDevice
+                                                        ? 1000 + (totalHandCards - index)
+                                                        : (showExpandedFan ? 200 + index : index)),
+                                            }}
+                                        >
+                                            <CardDisplay
+                                                card={card}
+                                                core={core}
+                                                size="normal"
+                                                onRef={(el) => setCardRef(card.uid, el)}
+                                                onMagnify={onHandCardPress}
+                                                touchMagnifyMode="long-press"
+                                                showInfluenceBadge={false}
+                                                hideStatusBadges={showExpandedFan}
+                                                expanded={focusedHandCardUid === card.uid}
+                                                onHoverStart={useTapToFocusHand ? undefined : () => activateHandCard(card.uid)}
+                                                onHoverMove={useTapToFocusHand ? undefined : () => activateHandCard(card.uid)}
+                                                onHoverEnd={useTapToFocusHand ? undefined : (_hoverCard, event) => {
+                                                    const nextTarget = event?.relatedTarget;
+                                                    if (nextTarget instanceof HTMLElement && nextTarget.closest(`[data-hand-card-shell="${card.uid}"]`)) {
+                                                        return;
+                                                    }
+                                                    onHandDeactivate?.();
+                                                }}
+                                            />
+                                            {showExpandedFan && renderExpandedCardCaption(card)}
+                                        </div>
+                                    </CardTransition>
+                                ))}
+                            </CardListTransition>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -1255,7 +1596,7 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ player, core, onPlayCard, canPl
             data-testid="cardia-player-area-panel"
             className={`cardia-player-area ${isCompact
                 ? 'rounded-lg border border-white/10 bg-black/35 px-2 py-0.5 backdrop-blur-md'
-                : 'rounded-lg border border-white/10 bg-black/35 p-2 backdrop-blur-md sm:p-3 lg:p-4'}`}
+                : 'overflow-visible rounded-lg border border-white/10 bg-black/35 p-2 backdrop-blur-md sm:p-3 lg:p-4'}`}
         >
             <div className={`cardia-player-header ${isCompact
                 ? 'mb-0.5 flex items-center justify-between gap-2'
@@ -1287,37 +1628,99 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ player, core, onPlayCard, canPl
             <div
                 data-testid="cardia-hand-area"
                 data-tutorial-id="cardia-hand-area"
-                className={isCompact
-                    ? 'flex snap-x snap-mandatory gap-1 overflow-x-auto overflow-y-visible pb-0 pr-1'
-                    : 'flex snap-x snap-mandatory gap-2 overflow-x-auto overflow-y-visible pb-1 pr-1'}
-            >
-                <CardListTransition>
-                    {player.hand.map((card: any) => (
-                        <CardTransition key={card.uid} cardUid={card.uid} type="hand">
-                            <div
-                                data-testid={`card-${card.uid}`}
-                                role={canPlay ? 'button' : undefined}
-                                tabIndex={canPlay ? 0 : -1}
-                                aria-disabled={!canPlay}
-                                onClick={() => {
-                                    if (!canPlay) return;
-                                    onPlayCard(card.uid);
-                                }}
-                                onKeyDown={(event) => handleCardKeyDown(event, card.uid)}
-                                className={`flex-shrink-0 snap-center ${canPlay ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
-                            >
-                                <CardDisplay 
-                                    card={card} 
-                                    core={core}
-                                    size="small"
-                                    onRef={(el) => setCardRef(card.uid, el)}
-                                    onMagnify={onMagnifyCard}
-                                    showInfluenceBadge={false}
-                                />
-                            </div>
-                        </CardTransition>
-                    ))}
-                </CardListTransition>
+                ref={handAreaRef}
+                    className={`${isCompact ? 'pb-0' : 'pb-1'} flex items-end justify-start pr-1 transition-all ${focusedHandCardUid ? 'overflow-visible' : 'overflow-x-auto overflow-y-visible'}`}
+                    style={{
+                        minHeight: 'calc(var(--cardia-small-card-width) * 1.5095)',
+                        height: lockedHandAreaHeight ? `${lockedHandAreaHeight}px` : undefined,
+                    }}
+                    onMouseEnter={handleHandAreaMouseEnter}
+                >
+                <div
+                    data-testid={showExpandedFan ? 'cardia-hand-center-overlay' : undefined}
+                    className={`flex items-end justify-center overflow-visible ${showExpandedFan ? 'fixed inset-0 z-[520] items-center justify-center pointer-events-none' : ''}`}
+                >
+                    {showExpandedFan && (
+                        <div
+                            className="fixed inset-0 z-[510] bg-black/40 backdrop-blur-[1px] pointer-events-auto"
+                            onClick={() => {
+                                setIsHandExpanded(false);
+                                setLockedHandAreaHeight(null);
+                            }}
+                        />
+                    )}
+                    <div
+                        className="relative z-[520] flex items-end justify-center overflow-visible pointer-events-auto"
+                        style={{ transform: `scale(${handGroupScale})`, transformOrigin: 'center bottom' }}
+                    >
+                        <CardListTransition>
+                            {player.hand.map((card: any, index: number) => (
+                                <CardTransition key={card.uid} cardUid={card.uid} type="hand" layoutAnimation={false}>
+                                    <div
+                                        data-hand-card-shell={card.uid}
+                                        role={canPlay ? 'button' : undefined}
+                                        tabIndex={canPlay ? 0 : -1}
+                                        aria-disabled={!canPlay}
+                                        onMouseEnter={() => {
+                                            activateHandCard(card.uid);
+                                        }}
+                                        onMouseMove={() => {
+                                            activateHandCard(card.uid);
+                                        }}
+                                        onMouseLeave={(event) => {
+                                            if (useTapToFocusHand) return;
+                                            const nextTarget = event.relatedTarget;
+                                            if (nextTarget instanceof HTMLElement && nextTarget.closest(`[data-hand-card-shell="${card.uid}"]`)) {
+                                                return;
+                                            }
+                                            onHandDeactivate?.();
+                                        }}
+                                        onClick={() => {
+                                            handleHandCardClick(card.uid);
+                                        }}
+                                        onKeyDown={(event) => handleCardKeyDown(event, card.uid)}
+                                        data-testid={focusedHandCardUid === card.uid ? `cardia-hand-magnify-${card.uid}` : undefined}
+                                        className={`relative flex-shrink-0 transition-transform duration-200 ${canPlay ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                                        style={{
+                                            marginLeft: index === 0 ? 0 : `${cardGapPx}px`,
+                                            transform: focusedHandCardUid === card.uid
+                                                ? `${getFanCardTransform(index) ? `${getFanCardTransform(index)} ` : ''}translateY(calc(var(--cardia-small-card-width) * -0.42)) scale(2)`
+                                                : (getFanCardTransform(index) || 'none'),
+                                            transformOrigin: 'bottom center',
+                                            zIndex: focusedHandCardUid === card.uid
+                                                ? 1200
+                                                : (showExpandedFan && isTouchDevice
+                                                    ? 1000 + (totalHandCards - index)
+                                                    : (showExpandedFan ? 200 + index : index)),
+                                        }}
+                                    >
+                                        <CardDisplay 
+                                            card={card} 
+                                            core={core}
+                                            size="small"
+                                            onRef={(el) => setCardRef(card.uid, el)}
+                                            onMagnify={onHandCardPress}
+                                            touchMagnifyMode="long-press"
+                                            showInfluenceBadge={false}
+                                            hideStatusBadges={showExpandedFan}
+                                            expanded={focusedHandCardUid === card.uid}
+                                            onHoverStart={useTapToFocusHand ? undefined : () => activateHandCard(card.uid)}
+                                            onHoverMove={useTapToFocusHand ? undefined : () => activateHandCard(card.uid)}
+                                            onHoverEnd={useTapToFocusHand ? undefined : (_hoverCard, event) => {
+                                                const nextTarget = event?.relatedTarget;
+                                                if (nextTarget instanceof HTMLElement && nextTarget.closest(`[data-hand-card-shell="${card.uid}"]`)) {
+                                                    return;
+                                                }
+                                                onHandDeactivate?.();
+                                            }}
+                                        />
+                                        {showExpandedFan && renderExpandedCardCaption(card)}
+                                    </div>
+                                </CardTransition>
+                            ))}
+                        </CardListTransition>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -1332,7 +1735,13 @@ interface CardDisplayProps {
     size?: 'normal' | 'small';
     onRef?: (element: HTMLElement | null) => void;
     onMagnify?: (card: any) => void;
+    touchMagnifyMode?: 'long-press';
     showInfluenceBadge?: boolean;
+    hideStatusBadges?: boolean;
+    expanded?: boolean;
+    onHoverStart?: (card: any) => void;
+    onHoverMove?: (card: any) => void;
+    onHoverEnd?: (card: any, event?: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 const CardDisplay: React.FC<CardDisplayProps> = ({
@@ -1341,9 +1750,16 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
     size = 'normal',
     onRef,
     onMagnify,
+    touchMagnifyMode = 'long-press',
     showInfluenceBadge = true,
+    hideStatusBadges = false,
+    expanded = false,
+    onHoverStart,
+    onHoverMove,
+    onHoverEnd,
 }) => {
     const { t } = useTranslation('game-cardia');
+    const containerRef = React.useRef<HTMLDivElement | null>(null);
     const [imageError, setImageError] = React.useState(false);
     const [isTouchDevice, setIsTouchDevice] = React.useState(false);
     const longPressTimerRef = React.useRef<number | null>(null);
@@ -1374,7 +1790,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
         if (typeof window === 'undefined') return;
 
         const mediaQuery = window.matchMedia('(hover: none), (pointer: coarse)');
-        const syncTouchCapability = () => setIsTouchDevice(mediaQuery.matches || window.innerWidth < 1024);
+        const syncTouchCapability = () => setIsTouchDevice(detectTouchLikeInput());
 
         syncTouchCapability();
         mediaQuery.addEventListener?.('change', syncTouchCapability);
@@ -1393,9 +1809,8 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
     }, []);
 
     const handlePointerDown = React.useCallback(() => {
-        if (!isTouchDevice) return;
-        if (!onMagnify) return;
-
+        if (!isTouchDevice || !onMagnify) return;
+        if (touchMagnifyMode !== 'long-press') return;
         clearLongPressTimer();
         longPressTriggeredRef.current = false;
         longPressTimerRef.current = window.setTimeout(() => {
@@ -1403,7 +1818,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
             longPressTimerRef.current = null;
             onMagnify(card);
         }, 320);
-    }, [card, clearLongPressTimer, isTouchDevice, onMagnify]);
+    }, [card, clearLongPressTimer, isTouchDevice, onMagnify, touchMagnifyMode]);
 
     const handlePointerUpOrCancel = React.useCallback(() => {
         if (!isTouchDevice) return;
@@ -1419,32 +1834,46 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
         longPressTriggeredRef.current = false;
     }, [isTouchDevice]);
 
-    // 放大镜按钮尺寸与卡面等比例
-    // - 按钮大小约等于卡面宽度的 22.5%
-    // - 图标大小约等于卡面宽度的 12.6%
-    // 使用 clamp 做上下限，避免极端屏幕过大/过小
-    const magnifyButtonSize = size === 'small'
-        ? {
-            button: 'h-[clamp(18px,calc(var(--cardia-small-card-width)*0.225),26px)] w-[clamp(18px,calc(var(--cardia-small-card-width)*0.225),26px)]',
-            icon: 'h-[clamp(10px,calc(var(--cardia-small-card-width)*0.126),14px)] w-[clamp(10px,calc(var(--cardia-small-card-width)*0.126),14px)]',
-            position: 'right-[clamp(2px,calc(var(--cardia-small-card-width)*0.03),6px)] top-[clamp(2px,calc(var(--cardia-small-card-width)*0.03),6px)]',
-        }
-        : {
-            button: 'h-[clamp(22px,calc(var(--cardia-card-width)*0.225),36px)] w-[clamp(22px,calc(var(--cardia-card-width)*0.225),36px)]',
-            icon: 'h-[clamp(12px,calc(var(--cardia-card-width)*0.126),20px)] w-[clamp(12px,calc(var(--cardia-card-width)*0.126),20px)]',
-            position: 'right-[clamp(4px,calc(var(--cardia-card-width)*0.04),10px)] top-[clamp(4px,calc(var(--cardia-card-width)*0.04),10px)]',
-        };
-    
+    const handleContainerRef = React.useCallback((element: HTMLDivElement | null) => {
+        containerRef.current = element;
+        onRef?.(element);
+    }, [onRef]);
+
+    const handleMouseLeave = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+        const nextTarget = event.relatedTarget as Node | null;
+        if (nextTarget && containerRef.current?.contains(nextTarget)) return;
+        if (isTouchDevice) return;
+        onHoverEnd?.(card, event);
+    }, [card, isTouchDevice, onHoverEnd]);
+
+    const handleMouseEnter = React.useCallback(() => {
+        if (isTouchDevice) return;
+        onHoverStart?.(card);
+    }, [card, isTouchDevice, onHoverStart]);
+
+    const handleMouseMove = React.useCallback(() => {
+        if (isTouchDevice) return;
+        onHoverMove?.(card);
+    }, [card, isTouchDevice, onHoverMove]);
+
+    const modifierBadgePositionClass = 'top-1 right-1';
+    const ongoingBadgePositionClass = modifierTotal !== 0
+        ? (size === 'small' ? 'top-[3.25rem] right-1' : 'top-14 right-1')
+        : 'top-1 right-1';
+
     return (
         <div 
-            ref={onRef}
+            ref={handleContainerRef}
             data-testid={`card-${card.uid}`}
-            className={`group relative ${sizeClasses} overflow-hidden rounded-lg border-2 border-white/20 shadow-lg transition-transform duration-150 ease-out hover:z-30 hover:scale-110`}
+            className={`group relative ${sizeClasses} overflow-hidden rounded-lg border-2 border-white/20 shadow-lg ${expanded ? 'z-30' : ''}`}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUpOrCancel}
             onPointerCancel={handlePointerUpOrCancel}
             onPointerLeave={handlePointerUpOrCancel}
             onClickCapture={handleClickCapture}
+            onMouseEnter={handleMouseEnter}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
         >
             {imagePath && !imageError ? (
                 <OptimizedImage
@@ -1456,7 +1885,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
             ) : (
                 <div className={`absolute inset-0 bg-gradient-to-br ${bgColor}`} />
             )}
-            
+
             {/* 影响力显示（左上角） */}
             {showInfluenceBadge && (
                 <div className="cardia-card-badge absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 backdrop-blur-sm sm:h-9 sm:w-9">
@@ -1464,29 +1893,9 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
                 </div>
             )}
 
-            {/* 放大镜按钮（右上角，PC 端 hover 时显示） */}
-            {onMagnify && (
-                <button
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        event.preventDefault();
-                        onMagnify(card);
-                    }}
-                    className={`cardia-magnify-button absolute z-20 flex items-center justify-center rounded-full border border-white/20 bg-black/75 text-white shadow-lg transition-all duration-200 hover:bg-amber-500/80 ${magnifyButtonSize.position} ${magnifyButtonSize.button} ${
-                        isTouchDevice ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
-                    }`}
-                    title="查看大图"
-                    type="button"
-                >
-                    <svg className={`cardia-magnify-icon fill-current ${magnifyButtonSize.icon}`} viewBox="0 0 20 20">
-                        <path d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" />
-                    </svg>
-                </button>
-            )}
-            
             {/* 修正标记显示（右上角） */}
-            {modifierTotal !== 0 && (
-                <div className={`cardia-modifier-badge absolute top-1 right-1 ${
+            {!hideStatusBadges && modifierTotal !== 0 && (
+                <div className={`cardia-modifier-badge absolute ${modifierBadgePositionClass} ${
                     modifierTotal > 0 ? 'bg-green-500' : 'bg-red-500'
                 } rounded-full px-1 py-0.5 text-[10px] font-bold text-white shadow-lg sm:px-1.5 sm:text-xs`}>
                     {modifierTotal > 0 ? '+' : ''}{modifierTotal}
@@ -1494,8 +1903,8 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
             )}
             
             {/* 持续能力标记（右上角，如果没有修正标记则显示在这里） */}
-            {card.ongoingMarkers && card.ongoingMarkers.length > 0 && (
-                <div className={`absolute ${modifierTotal !== 0 ? 'cardia-ongoing-badge--offset top-10' : 'top-1'} right-1 flex items-center gap-0.5 rounded-full bg-purple-500 px-1 py-0.5 text-[10px] text-white shadow-lg sm:px-1.5 sm:text-xs`}>
+            {!hideStatusBadges && card.ongoingMarkers && card.ongoingMarkers.length > 0 && (
+                <div className={`absolute ${modifierTotal !== 0 ? 'cardia-ongoing-badge--offset' : ''} ${ongoingBadgePositionClass} flex items-center gap-0.5 rounded-full bg-purple-500 px-1 py-0.5 text-[10px] text-white shadow-lg sm:px-1.5 sm:text-xs`}>
                     <span>🔄</span>
                     {card.ongoingMarkers.length > 1 && (
                         <span className="font-bold">×{card.ongoingMarkers.length}</span>
@@ -1504,7 +1913,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
             )}
             
             {/* 印戒标记（底部） */}
-            {card.signets > 0 && (
+            {!hideStatusBadges && card.signets > 0 && (
                 <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-0.5">
                     {Array.from({ length: card.signets }).map((_, i) => (
                         <div key={i} className="cardia-signet-dot h-3 w-3 rounded-full border border-yellow-600 bg-yellow-400 shadow sm:h-4 sm:w-4" />

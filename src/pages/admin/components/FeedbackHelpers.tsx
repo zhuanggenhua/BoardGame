@@ -24,13 +24,16 @@ interface FeedbackItemLike {
 
 const EMBEDDED_IMG_RE = /!\[([^\]]*)\]\((data:image\/[^)]+)\)/g;
 
+function createEmbeddedImageRegExp(): RegExp {
+    return new RegExp(EMBEDDED_IMG_RE.source, EMBEDDED_IMG_RE.flags);
+}
+
 export function extractText(content: string, t: TFunction<'admin'>): string {
     return content.replace(EMBEDDED_IMG_RE, '').trim() || t('feedback.content.onlyImage');
 }
 
 export function hasEmbeddedImage(content: string): boolean {
-    EMBEDDED_IMG_RE.lastIndex = 0;
-    return EMBEDDED_IMG_RE.test(content);
+    return createEmbeddedImageRegExp().test(content);
 }
 
 export function FeedbackContent({
@@ -42,14 +45,14 @@ export function FeedbackContent({
     onImageClick: (src: string) => void;
     t: TFunction<'admin'>;
 }) {
-    EMBEDDED_IMG_RE.lastIndex = 0;
+    const embeddedImageRegExp = createEmbeddedImageRegExp();
 
     const parts: ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
     let key = 0;
 
-    while ((match = EMBEDDED_IMG_RE.exec(content)) !== null) {
+    while ((match = embeddedImageRegExp.exec(content)) !== null) {
         if (match.index > lastIndex) {
             const text = content.slice(lastIndex, match.index).trim();
             if (text) {

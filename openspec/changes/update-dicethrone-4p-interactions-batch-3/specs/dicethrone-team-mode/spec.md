@@ -20,6 +20,13 @@
 - **THEN** 系统允许该效果对当前骰池生效
 - **AND** 同队玩家默认仍不会被加入同队 `responderQueue`
 
+#### Scenario: self-only 骰子卡不会因 2v2 自动扩张到队友骰池
+- **GIVEN** 4 人 / 2v2 对局中存在共享掷骰干预窗口
+- **AND** 一张骰子卡的规则语义仅允许“修改自己的骰子”
+- **WHEN** 该卡的使用者尝试把它作用到队友当前正在操作的骰池
+- **THEN** 系统不得仅因 2v2 队友关系或共享响应窗口就允许该效果生效
+- **AND** 这类 `self-only` 效果仍只允许作用于使用者自己的骰池
+
 ### Requirement: Batch 3 代表性多步骰子入口兼容
 系统 SHALL 在 4 人 / 2v2 模式下，正确支持通用 `modifyDie/selectDie` 入口与 `shadow_thief-shadow-manipulation` 这类共享多步骰子交互；共享交互链、验证层与真实页面 MUST 对选择数量和确认语义保持一致。
 

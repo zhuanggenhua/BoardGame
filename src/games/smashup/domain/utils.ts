@@ -56,6 +56,11 @@ export function resolveLiveBaseIndex(
     baseIndex: number | undefined,
     baseDefId?: string,
 ): number | undefined {
+    if (baseIndex !== undefined && state.bases[baseIndex]) {
+        if (!baseDefId || state.bases[baseIndex].defId === baseDefId) {
+            return baseIndex;
+        }
+    }
     if (baseDefId) {
         const liveIndex = state.bases.findIndex(base => base.defId === baseDefId);
         if (liveIndex >= 0) return liveIndex;
@@ -179,6 +184,14 @@ export function canUseBaseLimitedMinionQuota(
     if (basePowerLimit !== undefined && basePower !== undefined && basePower > basePowerLimit) {
         return false;
     }
+    const restrictedCaps = getRemainingBaseLimitedPowerLimitedMinionQuotas(player, baseIndex);
+    if (restrictedCaps.length > 0) {
+        const unrestrictedQuotaRemaining = Math.max(0, quota - restrictedCaps.length);
+        if (unrestrictedQuotaRemaining <= 0) {
+            if (basePower === undefined) return false;
+            return restrictedCaps.some(powerCap => basePower <= powerCap);
+        }
+    }
     return true;
 }
 
@@ -204,6 +217,37 @@ export function mustUseBaseLimitedMinionQuota(
     if (canUseSameNameMinionQuota(player, cardDefId)) return false;
     const quota = player.baseLimitedMinionQuota?.[baseIndex] ?? 0;
     return quota > 0;
+}
+
+/** 获取当前剩余的基地限定受限额外随从额度列表。 */
+export function getRemainingBaseLimitedPowerLimitedMinionQuotas(
+    player: PlayerState | undefined,
+    baseIndex: number,
+): number[] {
+    if (!player) return [];
+    return [...(player.baseLimitedMinionPowerCaps?.[baseIndex] ?? [])];
+}
+
+/** 获取当前卡可用的最严格基地限定受限额度（用于优先消耗受限额度）。 */
+export function getBestMatchingBaseLimitedPowerQuota(
+    player: PlayerState | undefined,
+    baseIndex: number,
+    basePower: number,
+): number | undefined {
+    const candidates = getRemainingBaseLimitedPowerLimitedMinionQuotas(player, baseIndex)
+        .filter(powerCap => basePower <= powerCap)
+        .sort((a, b) => a - b);
+    return candidates[0];
+}
+
+/** 获取当前剩余基地限定受限额度中最宽松的力量上限（用于错误提示）。 */
+export function getMaxRemainingBaseLimitedPowerQuota(
+    player: PlayerState | undefined,
+    baseIndex: number,
+): number | undefined {
+    const quotas = getRemainingBaseLimitedPowerLimitedMinionQuotas(player, baseIndex);
+    if (quotas.length === 0) return undefined;
+    return Math.max(...quotas);
 }
 
 /** 获取当前剩余的全局受限额外随从额度列表。 */

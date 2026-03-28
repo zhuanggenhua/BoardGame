@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { execSync } from 'node:child_process';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
 import { cleanupPorts as cleanupBoundPorts } from './port-allocator.js';
+import { waitForPortsFree } from './port-allocator.js';
 
 await assertChildProcessSupport('开发端口清理');
 
@@ -131,7 +132,14 @@ function collectResidualDevProcessPids() {
         }
     }
 
-    const output = execSync('ps -axo pid=,command=', { encoding: 'utf8' });
+    let output = '';
+    try {
+        output = execSync('ps -axo pid=,command=', { encoding: 'utf8' });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`[Dev] 跳过残留进程扫描：无法执行 ps (${message})`);
+        return [];
+    }
     const pids = [];
 
     for (const line of output.split(/\r?\n/)) {
@@ -178,6 +186,15 @@ async function cleanPorts() {
     await sleep(500);
 
     cleanResidualDevProcesses();
+
+    const portsFreed = await waitForPortsFree(ports, 1500);
+    const strictPortCleanup = process.env.DEV_STRICT_PORT_CLEANUP === 'true';
+    if (!portsFreed && strictPortCleanup) {
+        throw new Error(`以下端口仍被占用且当前进程无权清理: ${ports.join(', ')}。请先手动结束占用进程后再启动。`);
+    }
+    if (!portsFreed) {
+        console.warn(`[Dev] 以下端口仍可能被占用，继续启动并交由后续启动流程自行报错: ${ports.join(', ')}`);
+    }
 }
 
 cleanPorts().catch((error) => {

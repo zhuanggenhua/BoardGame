@@ -804,6 +804,7 @@
     "hint_adjust": "Select die to adjust",
     "hint_any": "Select die to modify",
     "hint_select": "Select die ({{current}}/{{max}})",
+    "hint_select_ally": "Select ally die ({{current}}/{{max}})",
     "hint_select_opponent": "Select opponent's die ({{current}}/{{max}})"
   },
   "abilitySlots": {

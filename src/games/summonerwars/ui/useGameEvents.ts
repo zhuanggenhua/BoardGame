@@ -809,10 +809,10 @@ export function useGameEvents({
   }
 
   // 关闭骰子结果 → 播放攻击动画
-  const handleCloseDiceResult = useCallback(() => {
+  const handleCloseDiceResult = () => {
     setDiceResult(null);
     return pendingAttackRef.current;
-  }, []);
+  };
 
   // 清理待播放数据
   const clearPendingAttack = useCallback(() => {
@@ -838,7 +838,7 @@ export function useGameEvents({
     damageBuffer.clear();
     // 结束视觉序列，排空交互队列（感染/灵魂转移/念力等延迟到此刻触发）
     gateRef.current.endSequence();
-  }, []);
+  }, [damageBuffer]);
 
   // 释放视觉快照中指定格子的伤害（动画 impact 时调用）
   // 删除快照 key，让 UI 回退到 core 真实值，血条在 impact 瞬间变化

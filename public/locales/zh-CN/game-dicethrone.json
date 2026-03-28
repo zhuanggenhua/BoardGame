@@ -793,6 +793,7 @@
     "hint_adjust": "选择要调整的骰子",
     "hint_any": "选择要修改的骰子",
     "hint_select": "选择骰子 ({{current}}/{{max}})",
+    "hint_select_ally": "选择队友的骰子 ({{current}}/{{max}})",
     "hint_select_opponent": "选择对手的骰子 ({{current}}/{{max}})"
   },
   "abilitySlots": {

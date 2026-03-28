@@ -38,6 +38,7 @@ export const AbilityButtonsPanel: React.FC<Props> = ({
   dispatch, setAbilityMode, setWithdrawMode,
 }) => {
   const { t } = useTranslation('game-summonerwars');
+  const validationTimestamp = 0;
 
   // 前置条件：无其他模式激活、有选中单位、是自己的回合
   if (abilityMode || bloodSummonMode || eventTargetMode || !core.selectedUnit || !isMyTurn) return null;
@@ -94,7 +95,7 @@ export const AbilityButtonsPanel: React.FC<Props> = ({
     if (ui.useValidateForDisabled) {
       const result = SummonerWarsDomain.validate(
         { core, sys: {} as never },
-        { type: SW_COMMANDS.ACTIVATE_ABILITY, payload: { abilityId, sourceUnitId: unit.instanceId }, playerId: myPlayerId, timestamp: Date.now() },
+        { type: SW_COMMANDS.ACTIVATE_ABILITY, payload: { abilityId, sourceUnitId: unit.instanceId }, playerId: myPlayerId, timestamp: validationTimestamp },
       );
       disabled = !result.valid;
       title = result.valid ? undefined : result.error;

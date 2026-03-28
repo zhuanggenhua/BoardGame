@@ -1,53 +1,25 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect, vi } from 'vitest';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import type { MatchMetadata, StoredMatchState, CreateMatchData } from '../../../engine/transport/storage';
 import { mongoStorage } from '../MongoStorage';
 import { runStartupCleanupTasks, type StartupCleanupTask } from '../startupCleanup';
-
-const LOCAL_TEST_MONGO_URI = 'mongodb://127.0.0.1:27017';
+import { MONGO_TEST_HOOK_TIMEOUT_MS, resolvePreferredTestMongoUri } from '../../testUtils/mongoMemory';
+import type { MongoMemoryServer } from 'mongodb-memory-server';
 
 const buildState = (setupData: Record<string, unknown>): StoredMatchState => ({
     G: { __setupData: setupData },
     _stateID: 0,
 });
 
-async function resolveTestMongoUri(): Promise<{ mongo: MongoMemoryServer | null; mongoUri: string }> {
-    const externalMongoUri = process.env.MONGO_URI;
-    if (externalMongoUri) {
-        return { mongo: null, mongoUri: externalMongoUri };
-    }
-
-    const probeConnection = mongoose.createConnection(LOCAL_TEST_MONGO_URI, {
-        dbName: 'admin',
-        serverSelectionTimeoutMS: 1500,
-    });
-
-    try {
-        await probeConnection.asPromise();
-        await probeConnection.close();
-        return { mongo: null, mongoUri: LOCAL_TEST_MONGO_URI };
-    } catch {
-        try {
-            await probeConnection.close();
-        } catch {
-            // ignore probe cleanup failure
-        }
-    }
-
-    const mongo = await MongoMemoryServer.create();
-    return { mongo, mongoUri: mongo.getUri() };
-}
-
 describe('MongoStorage.cleanupCorruptMatches', () => {
     let mongo: MongoMemoryServer | null = null;
 
     beforeAll(async () => {
-        const resolved = await resolveTestMongoUri();
+        const resolved = await resolvePreferredTestMongoUri();
         mongo = resolved.mongo;
         await mongoose.connect(resolved.mongoUri, { dbName: 'boardgame-test-corrupt-cleanup' });
         await mongoStorage.connect();
-    }, 60000);
+    }, MONGO_TEST_HOOK_TIMEOUT_MS);
 
     beforeEach(async () => {
         await mongoose.connection.db!.dropDatabase();
@@ -260,11 +232,11 @@ describe('MongoStorage 行为', () => {
     let mongo: MongoMemoryServer | null = null;
 
     beforeAll(async () => {
-        const resolved = await resolveTestMongoUri();
+        const resolved = await resolvePreferredTestMongoUri();
         mongo = resolved.mongo;
         await mongoose.connect(resolved.mongoUri, { dbName: 'boardgame-test' });
         await mongoStorage.connect();
-    }, 60000); // 60 秒超时（MongoDB 内存服务器启动可能较慢）
+    }, MONGO_TEST_HOOK_TIMEOUT_MS);
 
     beforeEach(async () => {
         await mongoose.connection.db!.dropDatabase();

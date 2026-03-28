@@ -11,6 +11,7 @@ export const MagnifyOverlay = ({
     closeLabel,
     closeButtonClassName = '',
     overlayTestId,
+    interactive = true,
 }: {
     isOpen: boolean;
     onClose: () => void;
@@ -20,6 +21,7 @@ export const MagnifyOverlay = ({
     closeLabel?: string;
     closeButtonClassName?: string;
     overlayTestId?: string;
+    interactive?: boolean;
 }) => {
     const portalRoot = useMemo(() => {
         if (typeof document === 'undefined') return null;
@@ -35,7 +37,7 @@ export const MagnifyOverlay = ({
             style={{ 
                 zIndex: UI_Z_INDEX.magnify,
                 opacity: isOpen ? 1 : 0,
-                pointerEvents: isOpen ? 'auto' : 'none',
+                pointerEvents: isOpen && interactive ? 'auto' : 'none',
             }}
             onClick={onClose}
             data-interaction-allow

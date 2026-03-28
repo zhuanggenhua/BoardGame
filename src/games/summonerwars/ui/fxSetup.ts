@@ -12,7 +12,7 @@
  * - 委托底层动画组件（SummonEffect、VortexEffect 等）
  */
 
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useLayoutEffect } from 'react';
 import { FxRegistry, type FxRendererProps, type FeedbackPack } from '../../../engine/fx';
 import { SummonHybridEffect } from '../../../components/common/animations/SummonHybridEffect';
 import { VortexShaderEffect } from '../../../components/common/animations/VortexShaderEffect';
@@ -67,7 +67,9 @@ function scaledCellBox(
 
 function useStableComplete(onComplete: () => void): () => void {
   const ref = useRef(onComplete);
-  ref.current = onComplete;
+  useLayoutEffect(() => {
+    ref.current = onComplete;
+  }, [onComplete]);
   return useCallback(() => ref.current(), []);
 }
 

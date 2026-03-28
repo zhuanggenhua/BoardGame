@@ -14,6 +14,7 @@
 - 审计并收口 `modifyDie` / `selectDie` 在 4 人 / 2v2 下的共享语义，明确当前骰池归属、可操作视角和合法干预窗口。
 - 如审计确认存在语义缺口，将骰子交互从 `targetOpponentDice:boolean` 收紧为显式的当前骰池归属/观察视角模型，并同步 UI hint 与本地化文案。
 - 审计并收口“队友可合法干预骰面，但队友不进入同队响应队列”的边界，避免继续把 `afterRollConfirmed` 简化成单一对手响应视角。
+- 明确保留 `self-only` 骰子卡的原始边界：凡是规则或卡面未明确写“可改队友骰子”的效果，4 人 / 2v2 下仍只能改自己，不因共享响应窗口自动扩张到队友骰池。
 - 以通用骰子卡与 `shadow_thief-shadow-manipulation` 为代表性入口补齐规则/UI 回归，并补入至少 1 条 4 人在线 E2E 证据；旧 `dicethrone-die-modification.e2e.ts` / `dicethrone-die-reroll.e2e.ts` 不再作为现役证据口径。
 
 ## Impact
