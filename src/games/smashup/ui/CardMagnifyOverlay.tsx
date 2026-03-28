@@ -13,7 +13,7 @@ import { getCardDef, getBaseDef, resolveCardName, resolveCardText } from '../dat
 
 export interface CardMagnifyTarget {
     defId: string;
-    type: 'minion' | 'base' | 'action';
+    type: 'minion' | 'base' | 'action' | 'titan';
 }
 
 interface Props {

@@ -22,7 +22,14 @@ export interface GameSetupSelectField {
     default?: string;
 }
 
-export type GameSetupField = GameSetupSelectField;
+export interface GameSetupMultiSelectField {
+    type: 'multi-select';
+    labelKey: string;
+    options: GameSetupSelectOption[];
+    default?: string[];
+}
+
+export type GameSetupField = GameSetupSelectField | GameSetupMultiSelectField;
 
 export interface GamePreloadAssets {
     images?: string[];

@@ -25,6 +25,7 @@ import type {
     MinionReturnedEvent,
     MinionDestroyedEvent,
     MinionMovedEvent,
+    MinionControlChangedEvent,
     PowerCounterAddedEvent,
     PowerCounterRemovedEvent,
     CardRecoveredFromDiscardEvent,
@@ -35,6 +36,7 @@ import type {
     BaseDeckShuffledEvent,
     RevealHandEvent,
     RevealDeckTopEvent,
+    DeckInspectedEvent,
     CardInstance,
     SmashUpEvent,
     CardsDrawnEvent,
@@ -42,12 +44,19 @@ import type {
     AbilityFeedbackEvent,
     OngoingCardCounterChangedEvent,
     CardToDeckBottomEvent,
+    TitanState,
+    TitanPlayedEvent,
+    TitanMovedEvent,
+    TitanRemovedFromPlayEvent,
+    TitanPowerCounterAddedEvent,
+    TitanPowerCounterRemovedEvent,
+    TitanPlayAsKind,
 } from './types';
 import { SU_EVENT_TYPES as SU_EVENTS } from './events';
 import { getEffectivePower } from './ongoingModifiers';
 import { triggerAllBaseAbilities } from './baseAbilities';
 import { collectTriggers, fireTriggers } from './ongoingEffects';
-import { getMinionDef } from '../data/cards';
+import { getMinionDef, getTitanDef } from '../data/cards';
 import { drawCards } from './utils';
 
 // ============================================================================
@@ -135,6 +144,171 @@ export function moveMinion(
     return {
         type: SU_EVENTS.MINION_MOVED,
         payload: { minionUid, minionDefId, fromBaseIndex, toBaseIndex, ...(toBaseDefId ? { toBaseDefId } : {}), reason },
+        timestamp: now,
+    };
+}
+
+/** 生成随从控制权变更事件 */
+export function changeMinionController(
+    minionUid: string,
+    minionDefId: string,
+    baseIndex: number,
+    ownerId: PlayerId,
+    fromControllerId: PlayerId,
+    toControllerId: PlayerId,
+    sourcePlayerId: PlayerId,
+    reason: string,
+    now: number,
+): MinionControlChangedEvent {
+    return {
+        type: SU_EVENTS.MINION_CONTROL_CHANGED,
+        payload: {
+            minionUid,
+            minionDefId,
+            baseIndex,
+            ownerId,
+            fromControllerId,
+            toControllerId,
+            sourcePlayerId,
+            reason,
+        },
+        timestamp: now,
+    };
+}
+
+// ============================================================================
+// 泰坦
+// ============================================================================
+
+export function getAllTitans(state: SmashUpCore): TitanState[] {
+    return state.titans ?? [];
+}
+
+export function getTitansOnBase(state: SmashUpCore, baseIndex: number): TitanState[] {
+    return getAllTitans(state).filter(
+        titan => titan.location.zone === 'base' && titan.location.baseIndex === baseIndex,
+    );
+}
+
+export function getTitanByUid(state: SmashUpCore, titanUid: string): TitanState | undefined {
+    return getAllTitans(state).find(titan => titan.uid === titanUid);
+}
+
+export function getTitanByController(state: SmashUpCore, controllerId: PlayerId): TitanState | undefined {
+    return getAllTitans(state).find(
+        titan => titan.controllerId === controllerId && titan.location.zone === 'base',
+    );
+}
+
+export function getSetAsideTitansPlayableAs(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    playKind: TitanPlayAsKind,
+): TitanState[] {
+    if (getTitanByController(state, playerId)) return [];
+    return getAllTitans(state).filter((titan) => {
+        if (titan.ownerId !== playerId || titan.location.zone !== 'setaside') return false;
+        const titanDef = getTitanDef(titan.defId);
+        return !!titanDef?.playAsKinds?.includes(playKind);
+    });
+}
+
+export function playTitan(
+    titan: TitanState,
+    controllerId: PlayerId,
+    baseIndex: number,
+    reason: string,
+    now: number,
+    baseDefId?: string,
+    consumesRegularPlayKinds?: TitanPlayAsKind | TitanPlayAsKind[],
+): TitanPlayedEvent {
+    const normalizedKinds = Array.isArray(consumesRegularPlayKinds)
+        ? consumesRegularPlayKinds
+        : consumesRegularPlayKinds
+            ? [consumesRegularPlayKinds]
+            : [];
+
+    return {
+        type: SU_EVENTS.TITAN_PLAYED,
+        payload: {
+            titanUid: titan.uid,
+            defId: titan.defId,
+            ownerId: titan.ownerId,
+            controllerId,
+            baseIndex,
+            ...(baseDefId ? { baseDefId } : {}),
+            ...(normalizedKinds.length === 1 ? { consumesRegularPlayKind: normalizedKinds[0] } : {}),
+            ...(normalizedKinds.length > 1 ? { consumesRegularPlayKinds: normalizedKinds } : {}),
+            reason,
+        },
+        timestamp: now,
+    };
+}
+
+export function moveTitan(
+    titanUid: string,
+    defId: string,
+    fromBaseIndex: number,
+    toBaseIndex: number,
+    reason: string,
+    now: number,
+    toBaseDefId?: string,
+): TitanMovedEvent {
+    return {
+        type: SU_EVENTS.TITAN_MOVED,
+        payload: {
+            titanUid,
+            defId,
+            fromBaseIndex,
+            toBaseIndex,
+            ...(toBaseDefId ? { toBaseDefId } : {}),
+            reason,
+        },
+        timestamp: now,
+    };
+}
+
+export function removeTitanFromPlay(
+    titan: TitanState,
+    reason: string,
+    now: number,
+): TitanRemovedFromPlayEvent {
+    return {
+        type: SU_EVENTS.TITAN_REMOVED_FROM_PLAY,
+        payload: {
+            titanUid: titan.uid,
+            defId: titan.defId,
+            ownerId: titan.ownerId,
+            controllerId: titan.controllerId,
+            ...(titan.location.zone === 'base' ? { fromBaseIndex: titan.location.baseIndex } : {}),
+            reason,
+        },
+        timestamp: now,
+    };
+}
+
+export function addTitanPowerCounter(
+    titanUid: string,
+    amount: number,
+    reason: string,
+    now: number,
+): TitanPowerCounterAddedEvent {
+    return {
+        type: SU_EVENTS.TITAN_POWER_COUNTER_ADDED,
+        payload: { titanUid, amount, reason },
+        timestamp: now,
+    };
+}
+
+export function removeTitanPowerCounter(
+    titanUid: string,
+    amount: number,
+    reason: string,
+    now: number,
+): TitanPowerCounterRemovedEvent {
+    return {
+        type: SU_EVENTS.TITAN_POWER_COUNTER_REMOVED,
+        payload: { titanUid, amount, reason },
         timestamp: now,
     };
 }
@@ -448,6 +622,21 @@ export function revealDeckTop(
     };
 }
 
+/** 生成牌库被查看 / 展示 / 检索的统一见证事件 */
+export function inspectDeck(
+    targetPlayerId: PlayerId | PlayerId[],
+    inspectorPlayerId: PlayerId,
+    count: number,
+    reason: string,
+    now: number,
+): DeckInspectedEvent {
+    return {
+        type: SU_EVENTS.DECK_INSPECTED,
+        payload: { targetPlayerId, inspectorPlayerId, count, reason },
+        timestamp: now,
+    };
+}
+
 // ============================================================================
 // 牌库顶翻牌通用 helper
 // ============================================================================
@@ -533,14 +722,14 @@ export function revealAndPickFromDeck(params: {
         return { events: [], picked: [], missed: [] };
     }
 
-    const events: SmashUpEvent[] = [];
+    const events: SmashUpEvent[] = [inspectDeck(playerId, playerId, revealed.length, reason, now)];
 
     // 1. 展示事件（仅当 revealTo 不为 'none' 时生成）
     if (revealTo !== 'none') {
         const revealEvent = revealDeckTop(
             playerId, revealTo,
             revealed.map(c => ({ uid: c.uid, defId: c.defId })),
-            revealed.length, reason, now,
+            revealed.length, reason, now, playerId,
         );
         events.push(revealEvent);
     }
@@ -588,11 +777,12 @@ export function peekDeckTop(
     state: SmashUpCore,
     random: RandomFn,
     playerId: PlayerId,
-    /** 展示给谁：'all' = 所有玩家，playerId = 仅自己 */
-    revealTo: PlayerId | 'all',
+    /** 展示给谁：'all' = 所有玩家，playerId = 仅自己，'none' = 仅记私有查看 */
+    revealTo: PlayerId | 'all' | 'none',
     reason: string,
     now: number,
-): { card: CardInstance; revealEvent: RevealDeckTopEvent; events: SmashUpEvent[] } | undefined {
+    inspectorPlayerId: PlayerId = playerId,
+): { card: CardInstance; revealEvent?: RevealDeckTopEvent; events: SmashUpEvent[] } | undefined {
     const player = state.players[playerId];
     if (!player) return undefined;
 
@@ -614,20 +804,28 @@ export function peekDeckTop(
         // 才会在后续流程中体现为“弃牌堆洗回牌库”。
         // 为了本次 peek 能返回正确的 card，我们用模拟的 shuffled[0]。
         const card = shuffled[0];
+        events.push(inspectDeck(playerId, inspectorPlayerId, 1, reason, now));
+        if (revealTo === 'none') {
+            return { card, events };
+        }
         const revealEvent = revealDeckTop(
             playerId, revealTo,
             [{ uid: card.uid, defId: card.defId }],
-            1, reason, now,
+            1, reason, now, inspectorPlayerId,
         );
         events.push(revealEvent);
         return { card, revealEvent, events };
     }
 
     const card = player.deck[0];
+    events.push(inspectDeck(playerId, inspectorPlayerId, 1, reason, now));
+    if (revealTo === 'none') {
+        return { card, events };
+    }
     const revealEvent = revealDeckTop(
         playerId, revealTo,
         [{ uid: card.uid, defId: card.defId }],
-        1, reason, now,
+        1, reason, now, inspectorPlayerId,
     );
     events.push(revealEvent);
     return { card, revealEvent, events };

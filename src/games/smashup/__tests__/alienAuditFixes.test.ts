@@ -18,7 +18,7 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import type { BaseInPlay, CardInstance, MinionOnBase, PlayerState, SmashUpCore } from '../domain/types';
+import type { BaseInPlay, CardInstance, MinionOnBase, PlayerState, SmashUpCore, TitanState } from '../domain/types';
 import { makeMatchState as makeMatchStateFromHelpers } from './helpers';
 import { runCommand } from './testRunner';
 
@@ -210,6 +210,73 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       playerId: '0',
       limitType: 'minion',
       delta: 1,
+      reason: 'alien_terraform',
+    });
+  });
+
+  it('alien_terraform: 第三步允许选择可视作随从打出的 set-aside 泰坦', () => {
+    const tricksterTitan: TitanState = {
+      uid: 't1',
+      defId: 'tricksters_big_funny_giant',
+      faction: 'tricksters',
+      ownerId: '0',
+      controllerId: '0',
+      powerCounters: 0,
+      talentUsed: false,
+      location: { zone: 'setaside' },
+    };
+    const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('h1', 'alien_invader', 'minion', '0')] }),
+        '1': makePlayer('1'),
+      },
+      titans: [tricksterTitan],
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })])],
+      baseDeck: ['base_new', 'base_alt'],
+    });
+
+    const handler1 = getInteractionHandler('alien_terraform');
+    const handler2 = getInteractionHandler('alien_terraform_choose_replacement');
+    const handler3 = getInteractionHandler('alien_terraform_play_minion');
+    expect(handler1).toBeDefined();
+    expect(handler2).toBeDefined();
+    expect(handler3).toBeDefined();
+
+    const step1 = handler1!(makeMatchState(core), '0', { baseIndex: 0 }, undefined, dummyRandom, 3020);
+    const step1Current = (step1!.state.sys as any).interaction?.current;
+    const step2 = handler2!(
+      makeMatchState(core),
+      '0',
+      { newBaseDefId: 'base_new' },
+      step1Current?.data,
+      dummyRandom,
+      3021,
+    );
+    const step2Current = (step2!.state.sys as any).interaction?.current;
+    const titanOption = step2Current?.data?.options?.find((opt: any) => opt.value?.titanUid === 't1');
+    expect(titanOption).toBeDefined();
+    expect(titanOption.value).toMatchObject({
+      titanUid: 't1',
+      defId: 'tricksters_big_funny_giant',
+      playKind: 'minion',
+    });
+
+    const step3 = handler3!(
+      makeMatchState(core),
+      '0',
+      titanOption.value,
+      step2Current?.data,
+      dummyRandom,
+      3022,
+    );
+    const titanPlayed = step3!.events.find(e => e.type === SU_EVENTS.TITAN_PLAYED);
+    expect(titanPlayed).toBeDefined();
+    expect((titanPlayed as any).payload).toMatchObject({
+      titanUid: 't1',
+      defId: 'tricksters_big_funny_giant',
+      controllerId: '0',
+      baseIndex: 0,
+      baseDefId: 'base_old',
       reason: 'alien_terraform',
     });
   });

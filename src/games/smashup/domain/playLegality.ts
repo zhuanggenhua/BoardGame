@@ -51,6 +51,68 @@ export function validateDiscardMinionPlaySemantics(
     return { valid: true };
 }
 
+export function validateDeckTopRegularMinionPlaySemantics(
+    core: SmashUpCore,
+    playerId: string,
+    params: {
+        baseIndex: number;
+        cardUid?: string;
+        defId: string;
+    },
+): ValidationResult {
+    if (
+        hasPlayerTurnRestriction(core, playerId, 'play_minion')
+        || (isCurrentTurnPlayer(core, playerId) && core.sleepMarkedPlayers?.includes(playerId))
+    ) {
+        return { valid: false, error: '当前效果禁止你打出随从' };
+    }
+
+    const player = core.players[playerId];
+    if (!player) return { valid: false, error: '玩家不存在' };
+
+    const { baseIndex, cardUid, defId } = params;
+    if (baseIndex < 0 || baseIndex >= core.bases.length) {
+        return { valid: false, error: '无效的基地索引' };
+    }
+
+    if (player.minionsPlayed >= player.minionLimit) {
+        return { valid: false, error: '本回合随从额度已用完' };
+    }
+
+    const deckTopCard = player.deck[0];
+    if (!deckTopCard || !isCardMinionLike(deckTopCard)) {
+        return { valid: false, error: '牌库顶没有可打出的随从' };
+    }
+    if (cardUid && deckTopCard.uid !== cardUid) {
+        return { valid: false, error: '指定卡牌不在牌库顶' };
+    }
+    if (deckTopCard.defId !== defId) {
+        return { valid: false, error: '牌库顶卡牌与能力要求不一致' };
+    }
+
+    const minionDef = getMinionDef(deckTopCard.defId);
+    const fusionDef = getFusionDef(deckTopCard.defId);
+    const basePower = getMinionLikePower(deckTopCard.defId) ?? 0;
+
+    if (isOperationRestricted(core, baseIndex, playerId, 'play_minion', {
+        minionDefId: deckTopCard.defId,
+        basePower,
+        usesBaseLimitedMinionQuota: false,
+        cardUid: deckTopCard.uid,
+        fromDiscard: false,
+    })) {
+        return { valid: false, error: '该基地禁止打出该随从' };
+    }
+
+    const constraint = minionDef?.playConstraint ?? fusionDef?.minionPlayConstraint;
+    if (constraint) {
+        const constraintError = checkPlayConstraint(constraint, core, baseIndex, playerId);
+        if (constraintError) return { valid: false, error: constraintError };
+    }
+
+    return { valid: true };
+}
+
 export function validateActionPlaySemantics(
     core: SmashUpCore,
     playerId: string,

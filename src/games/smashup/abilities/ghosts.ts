@@ -122,8 +122,7 @@ function ghostGhost(ctx: AbilityContext): AbilityResult {
 /** 招魂 onPlay：手牌≤2时抽牌??*/
 function ghostSeance(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
-    // 打出行动卡后手牌会减1，所以用当前手牌堆?1判断
-    const handAfterPlay = player.hand.length - 1;
+    const handAfterPlay = ctx.handSizeAfterPlay ?? (player.hand.length - 1);
     if (handAfterPlay > 2) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
     const drawCount = Math.max(0, 5 - handAfterPlay);
     if (drawCount === 0) return { events: [] };
@@ -140,7 +139,7 @@ function ghostSeance(ctx: AbilityContext): AbilityResult {
 /** 阴暗交易 onPlay：手牌≤2时获得?VP */
 function ghostShadyDeal(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
-    const handAfterPlay = player.hand.length - 1;
+    const handAfterPlay = ctx.handSizeAfterPlay ?? (player.hand.length - 1);
     if (handAfterPlay > 2) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
     const evt: VpAwardedEvent = {
         type: SU_EVENTS.VP_AWARDED,
@@ -200,10 +199,8 @@ function ghostHauntingChecker(ctx: ProtectionCheckContext): boolean {
  * 无需再弹交互——只需验证前置条件即可。
  */
 function ghostMakeContact(ctx: AbilityContext): AbilityResult {
-    // 前置条件：本卡必须是唯一手牌（打出后手牌为空）
-    const player = ctx.state.players[ctx.playerId];
-    const otherHandCards = player.hand.filter(c => c.uid !== ctx.cardUid);
-    if (otherHandCards.length > 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
+    const handAfterPlay = ctx.handSizeAfterPlay ?? (ctx.state.players[ctx.playerId].hand.length - 1);
+    if (handAfterPlay > 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
     // 控制权转移已由 reducer 的 ONGOING_ATTACHED 处理，此处无需额外操作
     return { events: [] };
 }

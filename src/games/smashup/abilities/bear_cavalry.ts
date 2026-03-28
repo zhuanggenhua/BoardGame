@@ -21,6 +21,7 @@ import {
     grantExtraAction,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
+    getTitansOnBase,
 } from '../domain/abilityHelpers';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { SU_EVENTS } from '../domain/types';
@@ -1650,17 +1651,19 @@ export function registerBearCavalryInteractionHandlers(): void {
             });
         }
 
-        // 泰坦：检查所有玩家的 activeTitan 是否在该基地
-        for (const pid of state.core.turnOrder) {
-            const p = state.core.players[pid];
-            const t = (p as any)?.activeTitan as { titanUid: string; baseIndex: number; defId: string } | undefined;
-            if (!t) continue;
-            if (t.baseIndex !== toBase) continue;
-            const tDef = getCardDef(t.defId);
+        // 泰坦：显式读取全局泰坦状态
+        for (const titan of getTitansOnBase(state.core, toBase)) {
+            const tDef = getCardDef(titan.defId);
             suppressOptions.push({
-                id: `titan-${t.titanUid}`,
-                label: `[泰坦] ${tDef?.name ?? t.defId}`,
-                value: { kind: 'titan', titanUid: t.titanUid, defId: t.defId, baseIndex: toBase, ownerId: pid },
+                id: `titan-${titan.uid}`,
+                label: `[泰坦] ${tDef?.name ?? titan.defId}`,
+                value: {
+                    kind: 'titan',
+                    titanUid: titan.uid,
+                    defId: titan.defId,
+                    baseIndex: toBase,
+                    ownerId: titan.ownerId,
+                },
                 displayMode: 'card' as const,
             });
         }

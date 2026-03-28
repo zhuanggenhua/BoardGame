@@ -24,6 +24,8 @@ export interface AbilityContext {
     baseIndex: number;
     /** 行动卡目标随从 */
     targetMinionUid?: string;
+    /** 行动卡结算时，牌离手后的手牌数。外部来源打行动时由调用方显式传入。 */
+    handSizeAfterPlay?: number;
     random: RandomFn;
     now: number;
 }
@@ -85,6 +87,11 @@ export function resolveSpecial(defId: string): AbilityExecutor | undefined {
 /** 快捷：解析 onDestroy 能力 */
 export function resolveOnDestroy(defId: string): AbilityExecutor | undefined {
     return resolveAbility(defId, 'onDestroy');
+}
+
+/** 快捷：解析在场主动 ongoing 能力 */
+export function resolveOngoingActivation(defId: string): AbilityExecutor | undefined {
+    return resolveAbility(defId, 'ongoingActivation');
 }
 
 /** 检查某 defId 是否注册了指定 tag 的能力 */
