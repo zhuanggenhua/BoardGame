@@ -9,13 +9,17 @@
 
 import { describe, it, expect } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
+import { resolveNextLocalAiAction } from '../../../engine/ai';
 import { DiceThroneDomain } from '../domain';
+import { buildDiceThroneAiLegalActions } from '../ai';
+import { engineConfig } from '../game';
 import {
     testSystems,
     createQueuedRandom,
     createNoResponseSetup,
     assertState,
     cmd,
+    createSetupWithHand,
     fixedRandom,
     type CommandInput,
 } from './test-utils';
@@ -217,6 +221,90 @@ describe('TOGGLE_DIE_LOCK 锁定/解锁骰子', () => {
 
         const tryResult = tryCmd(result.finalState, cmd('TOGGLE_DIE_LOCK', '0', { dieId: 99 }));
         expect(tryResult.success).toBe(false);
+    });
+});
+
+describe('AI legal actions', () => {
+    it('setup 阶段应为本地 AI 生成选角动作', () => {
+        const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
+        const state: MatchState<DiceThroneCore> = {
+            core,
+            sys: {
+                phase: 'setup',
+                interaction: { queue: [] },
+            } as MatchState<DiceThroneCore>['sys'],
+        };
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+
+        expect(actions.some((action) =>
+            action.kind === 'setup-select-character'
+            && action.commands[0]?.type === 'SELECT_CHARACTER'
+        )).toBe(true);
+    });
+
+    it('主流程阶段应生成推进回合动作', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions.some((action) => action.kind === 'advance-phase')).toBe(true);
+    });
+
+    it('本地 AI runner 应在 setup 阶段选择角色', async () => {
+        const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
+        const state: MatchState<DiceThroneCore> = {
+            core,
+            sys: {
+                phase: 'setup',
+                interaction: { queue: [] },
+            } as MatchState<DiceThroneCore>['sys'],
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('setup-select-character');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'SELECT_CHARACTER',
+            payload: { characterId: 'monk' },
+        });
+    });
+
+    it('本地 AI 在 main1 应优先打出可用升级牌而不是直接推进阶段', async () => {
+        const state = createSetupWithHand(['card-storm-assault-2'], { cp: 1 })(['0', '1'], fixedRandom);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe('play-upgrade-card');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'PLAY_UPGRADE_CARD',
+            payload: {
+                cardId: 'card-storm-assault-2',
+                targetAbilityId: 'thunder-strike',
+            },
+        });
     });
 });
 

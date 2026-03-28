@@ -12,7 +12,7 @@
  * 使用在线双人对局模式，通过调试面板注入状态。
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './framework';
 import { STATUS_IDS, TOKEN_IDS } from '../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../src/games/dicethrone/domain/resources';
 import {

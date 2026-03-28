@@ -173,6 +173,11 @@ const buildUgcEntry = async (pkg: UgcPackageSummary): Promise<GameConfig | null>
         icon: '🧩',
         thumbnailPath: coverUrl,
         allowLocalMode: false,
+        ai: {
+            capture: false,
+            localAi: false,
+            remoteAi: false,
+        },
         tags: normalizeTags(pkg.tags),
         mobileProfile: 'none',
         shellTargets: ['pwa'],

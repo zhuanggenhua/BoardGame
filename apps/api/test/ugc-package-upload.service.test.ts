@@ -2,22 +2,22 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { join } from 'node:path';
 import { existsSync, rmSync } from 'node:fs';
 
-// 必须在导入 UgcModule 之前设置环境变量
+// 必须在导入 UgcModule 之前设置环境变量。
 const uploadDir = join(process.cwd(), 'uploads-test');
 process.env.UGC_STORAGE_MODE = 'local';
 process.env.UGC_LOCAL_PATH = uploadDir;
 process.env.UGC_PUBLIC_URL_BASE = '/assets';
 
 import { CacheModule } from '@nestjs/cache-manager';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { getModelToken } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
-import { strToU8, zipSync } from 'fflate';
 import { UgcModule } from '../src/modules/ugc/ugc.module';
 import { UgcService } from '../src/modules/ugc/ugc.service';
 import { UgcPackage, type UgcPackageDocument } from '../src/modules/ugc/schemas/ugc-package.schema';
+
+const VALID_PACKAGE_ZIP_BASE64 = 'UEsDBBQAAAAIALW+eVx0fVLnLwAAADoAAAAKAAAAaW5kZXguaHRtbLNRdPF3DokMcFXIKMnNsbOBkMXJRZkFJXYF+cUlvqnFxYnpqRqaNvpQURt9sCIAUEsDBBQAAAAIALW+eVzPzIVUFQAAABMAAAAHAAAAbWFpbi5qc0vOzyvOz0nVy8lP11DKTczMU9IEAFBLAwQUAAAACAC1vnlcbUMIY0wAAABYAAAACQAAAGRvbWFpbi5qc0vOzysuUUjJz03MzFOwVahWSE/MTfVMsVJQKk1P1i1JLS5R0lEoTi0pLdDQrK7VUShLzMlMSSxJhfBSK1KTS2GcotSU0mQwW6HWGgBQSwMEFAAAAAgAtb55XNYasMQoAAAAJgAAAAsAAAB0dXRvcmlhbC5qc0utKMgvKlFIzs8rLlEoKS3JL8pMzFGwVahWKC5JLSi2UoiOVai1BgBQSwMEFAAAAAgAtb55XFawCwyIAAAAxQAAAA0AAABtYW5pZmVzdC5qc29uXY5LDsIwDETv4nUblW1vwBkQC6txUkM+VeIgUNW74wgkJHbzxp7R7BBJ0KIgzDuwhRmaX0ahKjBAwkjqdBo3XO7oSd0Hlco56eFkJjOpI6+t/7kWgpLX1PmvCZusuXy7qMAxgONAFeYLcLL0NKvEHo7IydyqKpt/Wprkwhg+FDGx0x4lnXE93lBLAQIUABQAAAAIALW+eVx0fVLnLwAAADoAAAAKAAAAAAAAAAAAAAAAAAAAAABpbmRleC5odG1sUEsBAhQAFAAAAAgAtb55XM/MhVQVAAAAEwAAAAcAAAAAAAAAAAAAAAAAVwAAAG1haW4uanNQSwECFAAUAAAACAC1vnlcbUMIY0wAAABYAAAACQAAAAAAAAAAAAAAAACRAAAAZG9tYWluLmpzUEsBAhQAFAAAAAgAtb55XNYasMQoAAAAJgAAAAsAAAAAAAAAAAAAAAAABAEAAHR1dG9yaWFsLmpzUEsBAhQAFAAAAAgAtb55XFawCwyIAAAAxQAAAA0AAAAAAAAAAAAAAAAAVQEAAG1hbmlmZXN0Lmpzb25QSwUGAAAAAAUABQAYAQAACAIAAAAA';
 
 describe('UgcService.uploadPackageZip', () => {
     let mongo: MongoMemoryServer | null;
@@ -26,7 +26,6 @@ describe('UgcService.uploadPackageZip', () => {
     let packageModel: Model<UgcPackageDocument>;
 
     beforeAll(async () => {
-
         const externalMongoUri = process.env.MONGO_URI;
         mongo = externalMongoUri ? null : await MongoMemoryServer.create();
         const mongoUri = externalMongoUri ?? mongo?.getUri();
@@ -65,34 +64,14 @@ describe('UgcService.uploadPackageZip', () => {
     });
 
     const buildZipBuffer = () => {
-        const manifest = {
-            metadata: {
-                id: 'ugc-test',
-                name: '测试包',
-                version: '1.0.0',
-                type: 'full',
-                gameId: 'ugc-test',
-                author: 'tester',
-            },
-            files: ['index.html', 'main.js', 'domain.js', 'tutorial.js', 'manifest.json'],
-        };
-        
-        const zipData = zipSync({
-            'index.html': strToU8('<!DOCTYPE html><html><script>postMessage()</script></html>'),
-            'main.js': strToU8('console.log("main")'),
-            'domain.js': strToU8('const domain = { gameId: "ugc-test", setup(){}, validate(){}, execute(){}, reduce(){} };'),
-            'tutorial.js': strToU8('export const tutorial = { steps: [] };'),
-            'manifest.json': strToU8(JSON.stringify(manifest)),
-        });
-        
-        return Buffer.from(zipData);
+        return Buffer.from(VALID_PACKAGE_ZIP_BASE64, 'base64');
     };
 
-    it.skip('应上传 zip 并更新 manifest 与入口 (TODO: 修复 fflate unzipSync 问题)', async () => {
+    it('应上传 zip 并更新 manifest 与入口', async () => {
         await packageModel.create({
             packageId: 'ugc-test',
             ownerId: 'user-1',
-            name: '测试包',
+            name: 'test-package',
             status: 'draft',
         });
 
@@ -125,7 +104,7 @@ describe('UgcService.uploadPackageZip', () => {
         await packageModel.create({
             packageId: 'ugc-test',
             ownerId: 'user-1',
-            name: '测试包',
+            name: 'test-package',
             status: 'draft',
         });
 

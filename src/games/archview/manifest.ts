@@ -8,6 +8,11 @@ const entry: GameManifestEntry = {
     descriptionKey: 'games.archview.description',
     category: 'tools',
     playersKey: 'games.archview.players',
+    ai: {
+        capture: false,
+        localAi: false,
+        remoteAi: false,
+    },
     icon: '🏗️',
     mobileProfile: 'none',
     shellTargets: ['pwa'],

@@ -47,6 +47,9 @@ const readManifestMeta = async (manifestPath) => {
     const idMatch = content.match(/id\s*:\s*['"`]([^'"`]+)['"`]/);
     const typeMatch = content.match(/type\s*:\s*['"`](game|tool)['"`]/);
     const enabledMatch = content.match(/enabled\s*:\s*(true|false)/);
+    const aiCaptureMatch = content.match(/capture\s*:\s*(true|false)/);
+    const aiLocalMatch = content.match(/localAi\s*:\s*(true|false)/);
+    const aiRemoteMatch = content.match(/remoteAi\s*:\s*(true|false)/);
     const mobileProfileMatch = content.match(/mobileProfile\s*:\s*['"`](none|landscape-adapted|portrait-adapted|tablet-only)['"`]/);
     const preferredOrientationMatch = content.match(/preferredOrientation\s*:\s*['"`](landscape|portrait)['"`]/);
     const mobileLayoutPresetMatch = content.match(/mobileLayoutPreset\s*:\s*['"`](board-shell|portrait-simple|map-shell)['"`]/);
@@ -55,6 +58,9 @@ const readManifestMeta = async (manifestPath) => {
         throw new Error(`[Manifest] 无法解析 manifest: ${manifestPath}`);
     }
     const enabled = enabledMatch[1] === 'true';
+    if (enabled && (!aiCaptureMatch || !aiLocalMatch || !aiRemoteMatch)) {
+        throw new Error(`[Manifest] enabled manifest 缂哄皯 ai.capture/localAi/remoteAi: ${manifestPath}`);
+    }
     if (enabled && !mobileProfileMatch) {
         throw new Error(`[Manifest] enabled manifest 缺少 mobileProfile: ${manifestPath}`);
     }

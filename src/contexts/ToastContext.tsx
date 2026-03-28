@@ -79,6 +79,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, [toasts]);
 
     const dismiss = useCallback((id: string) => {
+        toastsRef.current = toastsRef.current.filter((t) => t.id !== id);
         setToasts((prev) => prev.filter((t) => t.id !== id));
     }, []);
 
@@ -107,6 +108,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ttlMs,
         };
 
+        // 立即同步 ref，避免同一事件循环内重复 show 时 dedupe 失效。
+        toastsRef.current = [...toastsRef.current, newToast];
         setToasts((prev) => [...prev, newToast]);
 
         if (ttlMs !== Infinity) {
@@ -130,7 +133,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const error = useCallback((message: string | ToastContent, title?: string | ToastContent, options?: ToastOptions) =>
         show({ tone: 'error', message: normalizeContent(message), title: title ? normalizeContent(title) : undefined, ...options }), [show]);
 
-    const clear = useCallback(() => setToasts([]), []);
+    const clear = useCallback(() => {
+        toastsRef.current = [];
+        setToasts([]);
+    }, []);
 
     // useMemo 包裹 Provider value，避免 toasts 变化时所有只调用 show/dismiss 的消费者也重渲染
     const value = useMemo(() => ({

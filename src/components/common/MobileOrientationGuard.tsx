@@ -7,11 +7,7 @@ import {
     resolveGameMobileSupport,
     type GameMobileBannerKind,
 } from '../../games/mobileSupport';
-
-const getViewport = () => ({
-    width: typeof window === 'undefined' ? 0 : window.innerWidth,
-    height: typeof window === 'undefined' ? 0 : window.innerHeight,
-});
+import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 
 const hasCapacitorRuntime = () => {
     if (typeof window === 'undefined') return false;
@@ -152,7 +148,7 @@ const getBannerMessage = (bannerKind: GameMobileBannerKind) => {
 
 export function MobileOrientationGuard({ children }: { children: React.ReactNode }) {
     const location = useLocation();
-    const [viewport, setViewport] = useState(getViewport);
+    const viewport = useRuntimeViewport({ syncCssVars: true });
     const [dismissedBannerKey, setDismissedBannerKey] = useState<string | null>(null);
     const [, forceRegistryVersion] = useState(0);
     const [nativeAppShell, setNativeAppShell] = useState(false);
@@ -171,21 +167,6 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     const activeBannerKind = !shouldSuppressBannerInAppShell && bannerKey && dismissedBannerKey !== bannerKey
         ? bannerKind
         : null;
-
-    useEffect(() => {
-        const updateViewport = () => {
-            setViewport(getViewport());
-        };
-
-        updateViewport();
-        window.addEventListener('resize', updateViewport);
-        window.addEventListener('orientationchange', updateViewport);
-
-        return () => {
-            window.removeEventListener('resize', updateViewport);
-            window.removeEventListener('orientationchange', updateViewport);
-        };
-    }, []);
 
     useEffect(() => {
         return subscribeGameRegistry(() => {

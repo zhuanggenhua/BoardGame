@@ -12,6 +12,14 @@ const SMASHUP_CROP_CIRCLES_QUERY = {
     seed: 12345,
 };
 
+const SMASHUP_BLOCK_THE_PATH_QUERY = {
+    p0: 'tricksters,innsmouth',
+    p1: 'killer_plants,aliens',
+    skipFactionSelect: true,
+    skipInitialization: false,
+    seed: 12345,
+};
+
 async function openCropCirclesScene(
     game: any,
     config: {
@@ -55,6 +63,35 @@ async function openCropCirclesScene(
             })),
             ongoingActions: [],
         })),
+        currentPlayer: '0',
+        phase: 'playCards',
+    });
+}
+
+async function openBlockThePathScene(game: any): Promise<void> {
+    await game.openTestGame('smashup', SMASHUP_BLOCK_THE_PATH_QUERY, 20000);
+    await game.setupScene({
+        gameId: 'smashup',
+        player0: {
+            hand: ['trickster_block_the_path_pod'],
+            deck: [],
+            discard: [],
+            factions: ['tricksters_pod', 'innsmouth_pod'],
+            actionsPlayed: 0,
+            actionLimit: 1,
+            minionsPlayed: 0,
+            minionLimit: 1,
+        },
+        player1: {
+            hand: [],
+            deck: [],
+            discard: [],
+            factions: ['killer_plants_pod', 'aliens_pod'],
+        },
+        bases: [
+            { defId: 'base_the_homeworld', minions: [], ongoingActions: [] },
+            { defId: 'base_the_jungle', minions: [], ongoingActions: [] },
+        ],
         currentPlayer: '0',
         phase: 'playCards',
     });
@@ -167,5 +204,40 @@ test.describe('SmashUp - 麦田怪圈', () => {
         expect(getPlayer(finalState, '0').hand).toHaveLength(0);
 
         await game.screenshot('crop-circles-no-targets', testInfo);
+    });
+});
+
+test.describe('SmashUp - 通路禁止 POD', () => {
+    test('打到基地后应弹出派系封锁选项，并把选择写入基地持续战术', async ({ game }, testInfo) => {
+        await openBlockThePathScene(game);
+
+        await game.playCard('trickster_block_the_path_pod', { targetBaseIndex: 0 });
+        await game.waitForInteraction('trickster_block_the_path_pod');
+
+        const options = await game.getInteractionOptions();
+        const comboOptions = options.filter((option: any) => option?.value?.blocked?.['1']);
+        expect(comboOptions).toHaveLength(2);
+
+        const blockedFactions = comboOptions
+            .map((option: any) => option?.value?.blocked?.['1'])
+            .filter(Boolean)
+            .sort();
+        expect(blockedFactions).toEqual(['aliens_pod', 'killer_plants_pod'].sort());
+
+        await game.screenshot('block-the-path-prompt', testInfo);
+
+        await game.selectOption(comboOptions[0].id);
+        await waitForNoInteraction(game);
+
+        const finalState = await game.getState();
+        const ongoing = finalState.core.bases[0].ongoingActions.find(
+            (action: any) => action.defId === 'trickster_block_the_path_pod',
+        );
+
+        expect(ongoing).toBeTruthy();
+        expect(ongoing.metadata?.blockedFactionsByPlayer).toEqual(comboOptions[0].value.blocked);
+
+        await (game as any).page.waitForTimeout(1500);
+        await game.screenshot('block-the-path-resolved', testInfo);
     });
 });

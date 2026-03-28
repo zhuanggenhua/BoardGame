@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameManifestEntry } from '../../games/manifest.types';
 import { OptimizedImage } from '../common/media/OptimizedImage';
+import { resolveGameDisplayName } from './gameDetailsContent';
 
 // 响应式缩略图组件：自适应父容器大小
 export const NeonTicTacToeThumbnail = () => (
@@ -44,13 +45,21 @@ export const NeonTicTacToeThumbnail = () => (
     </div>
 );
 
-export const DefaultGameThumbnail = ({ titleKey, icon }: DefaultGameThumbnailProps) => {
+interface DefaultGameThumbnailProps {
+    titleKey: string;
+    icon?: string;
+    fallbackId?: string;
+}
+
+export const DefaultGameThumbnail = ({ titleKey, icon, fallbackId }: DefaultGameThumbnailProps) => {
     const { t } = useTranslation('lobby');
+    const resolvedFallbackId = fallbackId ?? titleKey;
+    const title = resolveGameDisplayName({ id: resolvedFallbackId, titleKey }, t, resolvedFallbackId);
     return (
         <div className="w-full h-full bg-parchment-cream flex flex-col items-center justify-center gap-2">
             {icon && <span className="text-3xl">{icon}</span>}
             <span className="text-sm text-stone-600 font-medium px-2 text-center truncate max-w-full">
-                {t(titleKey, { defaultValue: titleKey })}
+                {title}
             </span>
         </div>
     );
@@ -63,11 +72,11 @@ type ManifestGameThumbnailProps = {
 export const ManifestGameThumbnail = ({ manifest }: ManifestGameThumbnailProps) => {
     const { t } = useTranslation('lobby');
     const [imgFailed, setImgFailed] = React.useState(false);
+    const title = resolveGameDisplayName(manifest, t, manifest.id);
 
     if (!manifest.thumbnailPath || imgFailed) {
-        return <DefaultGameThumbnail titleKey={manifest.titleKey} icon={manifest.icon} />;
+        return <DefaultGameThumbnail titleKey={manifest.titleKey} icon={manifest.icon} fallbackId={manifest.id} />;
     }
-    const title = t(manifest.titleKey);
     return (
         <div className="w-full h-full relative overflow-hidden bg-parchment-cream">
             <OptimizedImage

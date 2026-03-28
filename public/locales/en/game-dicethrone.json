@@ -226,6 +226,26 @@
       "description": [
         "When your HP drops to 0, remove this token and set HP to 1. This token cannot be removed, transferred, or stolen. Does not stack."
       ]
+    },
+    "honor": {
+      "name": "Honor",
+      "description": [
+        "Before your attack deals damage, spend 1 Honor to increase damage by 1."
+      ]
+    },
+    "shame": {
+      "name": "Shame",
+      "description": [
+        "When you calculate attack damage, remove 1 Shame to reduce that attack's damage by 1."
+      ]
+    },
+    "samurai_retribution": {
+      "name": "Back Strike",
+      "description": [
+        "When taking attack damage, spend 1 Back Strike and roll 1 die.",
+        "Deal half the result, rounded up, back to the attacker.",
+        "This does not reduce the damage you take."
+      ]
     }
   },
   "actionLog": {
@@ -259,7 +279,8 @@
       "ability": "{{abilityName}}",
       "unknown": "Unknown",
       "shieldReduction": "Shield reduction",
-      "attackModifier": "Attack Modifier"
+      "attackModifier": "Attack Modifier",
+      "backStrike": "Back Strike"
     },
     "damageOriginal": "(Original {{amount}})",
     "damageModifiers": "(Original {{original}}, {{modifiers}})",
@@ -294,7 +315,8 @@
     "offensiveRollEndTokenUsed": "Used {{tokenLabel}} ({{effectLabel}})",
     "offensiveRollEndTokenEffect": {
       "crit": "+4 damage",
-      "accuracy": "attack becomes undefendable"
+      "accuracy": "attack becomes undefendable",
+      "loaded": "bonus die adds damage"
     },
     "cpGained": "Gained {{amount}} CP ({{source}})",
     "cpGainedPlain": "Gained {{amount}} CP",
@@ -347,7 +369,9 @@
     "pyromancer": "Pyromancer",
     "shadow_thief": "Shadow Thief",
     "moon_elf": "Moon Elf",
-    "paladin": "Paladin"
+    "paladin": "Paladin",
+    "gunslinger": "Gunslinger",
+    "samurai": "Samurai"
   },
   "characters": {
     "monk": "Monk",
@@ -355,7 +379,9 @@
     "pyromancer": "Pyromancer",
     "shadow_thief": "Shadow Thief",
     "moon_elf": "Moon Elf",
-    "paladin": "Paladin"
+    "paladin": "Paladin",
+    "gunslinger": "Gunslinger",
+    "samurai": "Samurai"
   },
   "imageAlt": {
     "deck": "Deck",
@@ -410,7 +436,8 @@
   },
   "modifierActive": {
     "label": "Attack Modifier",
-    "tooltip": "Active attack modifier card, effect triggers during damage resolution"
+    "shortLabel": "Mod",
+    "tooltip": "Active attack modifier card. These cards must be played after selecting an attack ability, and their effects resolve during this attack's damage step"
   },
   "attackBonus": {
     "label": "+{{damage}} Damage"
@@ -438,7 +465,13 @@
       "dagger": "Dagger",
       "bag": "Bag",
       "card": "Card",
-      "shadow": "Shadow"
+      "shadow": "Shadow",
+      "bullet": "Bullet",
+      "dash": "Dash",
+      "bullseye": "Bullseye",
+      "katana": "Katana",
+      "helm": "Helm",
+      "rising_sun": "Rising Sun"
     }
   },
   "bonusDie": {
@@ -456,6 +489,12 @@
       "thunderStrikeReroll": "Rerolled to {{value}}",
       "thunderStrike2Die": "Thunder Strike Roll: {{value}}",
       "thunderStrike2Reroll": "Rerolled to {{value}}",
+      "gunslingerLoadedDie": "Reload Roll: {{value}}",
+      "gunslingerLoadedReroll": "Reload Reroll: {{value}}",
+      "gunslingerHighNoonBullet": "Bullet: deal 2 damage",
+      "gunslingerHighNoonDash": "Spur: inflict Knockdown",
+      "gunslingerHighNoonBullseye": "Bullseye: inflict Bounty",
+      "gunslingerEatMyLeadDie": "Eat My Lead! Roll: {{value}}",
       "barbarianSuppress": "Suppress Roll: {{value}}",
       "energeticStrength": "Strength! Heal 2 and inflict Concussion",
       "energeticOther": "Draw 1 card",
@@ -532,7 +571,11 @@
       "absolution.heart": "Heart: Shield 5",
       "absolution.pray": "Pray: Shield 2 + 2 CP",
       "godsGrace.pray": "Pray: Gain 4 CP",
-      "infernalEmbrace.fire": "Fire: Gain 2 Fire Mastery"
+      "infernalEmbrace.fire": "Fire: Gain 2 Fire Mastery",
+      "samuraiBackStrikeDie": "Back Strike Roll: {{value}}",
+      "samuraiRighteousnessKatana": "Katana: +2 damage",
+      "samuraiRighteousnessHelm": "Helm: inflict 2 Shame",
+      "samuraiRighteousnessRisingSun": "Rising Sun: gain 1 Back Strike"
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
@@ -567,6 +610,7 @@
     "ability_not_available": "This ability is not available",
     "die_not_found": "Die not found",
     "cannot_advance_phase": "Cannot advance phase",
+    "attackModifierRequiresSelectedAttack": "Select an attack ability before playing this attack modifier",
     "wrongPhaseForCard": "This card requires a specific phase",
     "requireOwnTurn": "This card can only be played on your turn",
     "requireOpponentTurn": "This card can only be played on opponent's turn",
@@ -585,6 +629,10 @@
     "defense_ability_not_selected": "Must select a defense ability before rolling",
     "invalid_character": "Invalid character selection",
     "character_not_selected": "Please select a character first",
+    "game_already_started": "The match has already started, so seating and ready state can no longer be changed",
+    "not_team_mode": "The current match is not in 2v2 mode",
+    "invalid_seat_target": "Invalid empty seat target",
+    "seat_not_changed": "Please choose a different empty slot",
     "roll_not_confirmed": "Please confirm the roll result first",
     "no_pending_attack": "No pending attack to defend against",
     "deck_empty": "Deck and discard pile are both empty",
@@ -666,7 +714,9 @@
       "card": "Card",
       "shadow": "Shadow",
       "helm": "Helm",
-      "pray": "Pray"
+      "pray": "Pray",
+      "katana": "Katana",
+      "rising_sun": "Rising Sun"
     },
     "trigger": {
       "generic": "variant condition",
@@ -705,13 +755,20 @@
       "sliderHint": "Spend {{value}} CP → Gain {{value}} Fire Mastery",
       "skip": "Skip"
     },
+    "gunslingerDuel": {
+      "title": "Duel won: choose the resolution",
+      "deal3": "Deal 3 undefendable damage",
+      "preventHalf": "Prevent half of the incoming damage"
+    },
     "critOrAccuracy": "Choose to gain Crit or Accuracy"
   },
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm",
     "self": "Self",
-    "opponent": "Opponent"
+    "opponent": "Opponent",
+    "ally": "Ally",
+    "enemy": "Enemy"
   },
   "interaction": {
     "waitingOpponent": "Waiting for opponent...",
@@ -738,6 +795,7 @@
     "selectPlayerToRemoveAllStatus": "Select a player to remove all status",
     "selectPlayerForRetribution": "Select a player to gain Retribution",
     "selectPlayerForConsecrate": "Select a player to consecrate",
+    "gunslingerTheLaw": "Select up to 2 target players",
     "selectStatusToTransfer": "Select a status effect to transfer",
     "hint_copy_step1": "Select source die to copy",
     "hint_copy_step2": "Select target die to set to {{value}}",
@@ -746,6 +804,7 @@
     "hint_adjust": "Select die to adjust",
     "hint_any": "Select die to modify",
     "hint_select": "Select die ({{current}}/{{max}})",
+    "hint_select_ally": "Select ally die ({{current}}/{{max}})",
     "hint_select_opponent": "Select opponent's die ({{current}}/{{max}})"
   },
   "abilitySlots": {
@@ -1444,10 +1503,10 @@
     },
     "soul-burn": {
       "name": "Soul Burn",
-      "description": "Gain Fire Mastery equal to 2× Fire Soul faces and deal 1× Fire Soul damage to all opponents.",
+      "description": "Gain Fire Mastery equal to 2× Fire Soul faces and deal 1× Fire Soul damage to the target player.",
       "effects": {
         "fm": "Gain 2 Fire Mastery",
-        "damage": "Deal damage equal to the number of Fire Soul faces to all opponents"
+        "damage": "Deal damage equal to the number of Fire Soul faces to the target player"
       }
     },
     "fiery-combo": {
@@ -1755,14 +1814,14 @@
       "description": "2 Fire Soul: Gain 2×[souls] FM, deal [souls] damage. 3 Fire Soul: also inflict Burn. Blazing Soul (2 Magma + 2 Fire Soul): FM cap +1, gain 5 FM, inflict Knockdown.",
       "effects": {
         "fm": "Gain Fire Mastery equal to 2× Fire Soul faces",
-        "damage": "Deal damage equal to Fire Soul face count to all opponents"
+        "damage": "Deal damage equal to Fire Soul face count to the target player"
       }
     },
     "soul-burn-3": {
       "effects": {
         "fm": "Gain Fire Mastery equal to 2× Fire Soul faces",
         "inflictBurn": "Inflict 1 Burn token",
-        "damage": "Deal damage equal to Fire Soul face count to all opponents"
+        "damage": "Deal damage equal to Fire Soul face count to the target player"
       }
     },
     "blazing-soul": {
@@ -1861,6 +1920,86 @@
       "description": "During Defensive Roll Phase, roll 5 dice. Gain Taiji tokens based on results, and may gain Evasive or Purify tokens. Deal 3 damage for each [Fist].",
       "taijiByResult": "Gain Taiji tokens based on results",
       "damageByFist": "Deal 3 damage for each [Fist]"
+    },
+    "katana-slice": {
+      "name": "Katana Slice",
+      "description": "3/4/5 Katana: deal 5/6/7 damage."
+    },
+    "katana-slice-2": {
+      "name": "Katana Slice II",
+      "description": "3/4/5 Katana: deal 6/7/8 damage. If at least 4 dice show the same pip value, inflict 1 Shame."
+    },
+    "katana-slice-3": {
+      "name": "Katana Slice III",
+      "description": "3/4/5 Katana: deal 6/7/8 damage. If at least 3 dice show the same pip value, inflict 1 Shame."
+    },
+    "wakizashi": {
+      "name": "Wakizashi",
+      "description": "2 Katana + 2 Rising Sun: gain 1 Back Strike and deal 3 undefendable damage."
+    },
+    "wakizashi-2": {
+      "name": "Wakizashi II",
+      "description": "2 Katana + 2 Rising Sun: gain 1 Back Strike and deal 4 undefendable damage."
+    },
+    "wakizashi-3": {
+      "name": "Wakizashi III",
+      "description": "2 Katana + 2 Rising Sun: gain 1 Back Strike, inflict 1 Shame, and deal 4 undefendable damage."
+    },
+    "bushido": {
+      "name": "Bushido",
+      "description": "Passive. If you are the starting player, gain 1 Honor. At end of turn, if you rolled fewer than 3 times during Offensive Roll, gain 1 Honor."
+    },
+    "solemnity": {
+      "name": "Solemnity",
+      "description": "2 Katana + 3 Helm: inflict 1 Shame and deal 7 damage."
+    },
+    "solemnity-2": {
+      "name": "Solemnity II",
+      "description": "2 Katana + 3 Helm: inflict 2 Shame and deal 8 damage."
+    },
+    "budo": {
+      "name": "Budo",
+      "description": "Small Straight: gain 1 Honor and deal 6 damage."
+    },
+    "budo-2": {
+      "name": "Budo II",
+      "description": "Small Straight: gain 1 Honor and deal 8 damage."
+    },
+    "samurai-slot-06": {
+      "name": "Heart of Hagakure",
+      "description": "4 Rising Sun: gain 1 Honor, gain 1 Back Strike, inflict 1 Shame, then deal 5 undefendable damage."
+    },
+    "samurai-slot-06-2": {
+      "name": "Heart of Hagakure II",
+      "description": "4 Rising Sun: gain 1 Honor, gain 1 Back Strike, inflict 2 Shame, then deal 7 undefendable damage."
+    },
+    "masamune": {
+      "name": "Masamune",
+      "description": "Large Straight: deal 7 damage, then roll 5 dice. Each Katana adds 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike."
+    },
+    "masamune-2": {
+      "name": "Masamune II",
+      "description": "Large Straight: deal 7 damage, then roll 6 dice. Each Katana adds 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike. Also, if your roll contains Katana, Helm, and Rising Sun, you may instead gain 1 Back Strike."
+    },
+    "masamune-2-large-straight": {
+      "name": "Masamune II",
+      "description": "Large Straight: deal 7 damage, then roll 6 dice. Each Katana adds 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike."
+    },
+    "masamune-2-power-up": {
+      "name": "Power Up",
+      "description": "Katana + Helm + Rising Sun: gain 1 Back Strike."
+    },
+    "stand-tall": {
+      "name": "Stand Tall",
+      "description": "Defensive Roll: roll 3 dice. Each Katana deals 1 undefendable damage, each Helm prevents 1 damage, each Rising Sun prevents 2 damage. If you roll no Helm or Rising Sun, gain 1 Shame."
+    },
+    "stand-tall-2": {
+      "name": "Stand Tall II",
+      "description": "Defensive Roll: roll 4 dice. Each Katana deals 1 undefendable damage, each Helm prevents 1 damage, each Rising Sun prevents 2 damage."
+    },
+    "samurai-ultimate": {
+      "name": "Shogun!",
+      "description": "Gain 1 Honor, inflict 2 Shame, then deal 13 undefendable damage."
     }
   },
   "cards": {
@@ -1891,6 +2030,74 @@
     "card-play-six": {
       "name": "Play Six!",
       "description": "Set 1 of your dice to 6."
+    },
+    "upgrade-revolver-2": {
+      "name": "Revolver II",
+      "description": "Upgrade your Revolver. 3/4/5 bullets deal 4/5/6 damage. If at least 4 dice show the same result, also inflict Knockdown."
+    },
+    "upgrade-bounty-hunter-2": {
+      "name": "Bounty Hunter II",
+      "description": "Upgrade your Bounty Hunter. Inflict 1 Bounty, then deal 2 undefendable damage."
+    },
+    "upgrade-showdown-2": {
+      "name": "Showdown II",
+      "description": "Upgrade your Showdown. Both players roll 1 die; if your result is not less than your opponent's, deal 8 damage. Otherwise, deal 6 damage."
+    },
+    "upgrade-showdown-3": {
+      "name": "Showdown III",
+      "description": "Upgrade your Showdown. Both players roll 1 die; if your result is not less than your opponent's, deal 9 damage. Otherwise, deal 6 damage."
+    },
+    "upgrade-fan-the-hammer-2": {
+      "name": "Fan the Hammer II",
+      "description": "Upgrade your Fan the Hammer. Gain 2 Evasive and deal 8 damage."
+    },
+    "card-pistol-whip": {
+      "name": "Pistol Whip",
+      "description": "Gain 1 Evasive. Inflict Knockdown on your opponent, then deal 1 damage."
+    },
+    "upgrade-take-cover-2": {
+      "name": "Take Cover II",
+      "description": "Upgrade your Take Cover. Gain 1 Evasive and deal 6 damage."
+    },
+    "card-mark-the-target": {
+      "name": "Mark the Target",
+      "description": "Gain 2 Evasive. Inflict 1 Bounty on your opponent."
+    },
+    "upgrade-deadeye-2": {
+      "name": "Deadeye II",
+      "description": "Upgrade your Deadeye. Inflict Knockdown, then deal 8 undefendable damage."
+    },
+    "card-the-law": {
+      "name": "The Law",
+      "description": "Gain 1 Evasive. Up to 2 target players gain Bounty and Knockdown. In current 1v1 play this resolves against the only opponent."
+    },
+    "upgrade-duel-2": {
+      "name": "Duel II",
+      "description": "Upgrade your Duel. Defensive roll 1 die. You and the attacker each roll 1 die; if your result is greater than or equal to the attacker's, choose to deal 3 undefendable damage or prevent half the incoming damage. Otherwise, deal 1 undefendable damage."
+    },
+    "upgrade-quick-draw": {
+      "name": "Quick Draw II",
+      "description": "Upgrade your Quick Draw. At the start of your upkeep, gain 1 Reload. Whenever you spend Reload, you may reroll that roll once."
+    },
+    "card-wanted": {
+      "name": "Wanted!",
+      "description": "Choose 1 player to gain 1 Bounty. In current 1v1 play this resolves against the only opponent."
+    },
+    "card-spin-the-chamber": {
+      "name": "Spin the Chamber!",
+      "description": "Gain 1 Reload."
+    },
+    "card-high-noon": {
+      "name": "High Noon!",
+      "description": "Roll 1 die: Bullet deals 2 damage; Spur inflicts Knockdown; Bullseye inflicts Bounty."
+    },
+    "card-wild-west": {
+      "name": "Wild West!",
+      "description": "Increase your total attack value by 1. The card's separate reload-reroll clause is still tracked as a follow-up gap."
+    },
+    "card-eat-my-lead": {
+      "name": "Eat My Lead!",
+      "description": "Roll 5 extra dice. Each Bullet adds 1 damage to this attack. If the added damage is greater than 4, also inflict Knockdown."
     },
     "card-meditation-2": {
       "name": "Meditation II",
@@ -2321,6 +2528,62 @@
     "card-tithes-2": {
       "name": "Tithes II",
       "description": "Upgrade Tithes: Draw cost reduced to 2CP. Gain 1CP when activating an ability with 🙏 during Offensive Roll."
+    },
+    "upgrade-katana-slice-2": {
+      "name": "Katana Slice II",
+      "description": "Upgrade Katana Slice to Level II."
+    },
+    "upgrade-katana-slice-3": {
+      "name": "Katana Slice III",
+      "description": "Upgrade Katana Slice to Level III."
+    },
+    "upgrade-wakizashi-2": {
+      "name": "Wakizashi II",
+      "description": "Upgrade Wakizashi to Level II."
+    },
+    "upgrade-wakizashi-3": {
+      "name": "Wakizashi III",
+      "description": "Upgrade Wakizashi to Level III."
+    },
+    "upgrade-solemnity-2": {
+      "name": "Solemnity II",
+      "description": "Upgrade Solemnity to Level II."
+    },
+    "upgrade-budo-2": {
+      "name": "Budo II",
+      "description": "Upgrade Budo to Level II."
+    },
+    "upgrade-masamune-2": {
+      "name": "Masamune II",
+      "description": "Upgrade Masamune to Level II."
+    },
+    "upgrade-slot-06-2": {
+      "name": "Heart of Hagakure II",
+      "description": "Upgrade Heart of Hagakure to Level II."
+    },
+    "upgrade-stand-tall-2": {
+      "name": "Stand Tall II",
+      "description": "Upgrade Stand Tall to Level II."
+    },
+    "card-samurai-honor": {
+      "name": "Samurai Honor!",
+      "description": "Gain 2 Honor."
+    },
+    "card-you-should-be-ashamed": {
+      "name": "You Should Be Ashamed!",
+      "description": "Choose an opponent. That opponent gains 2 Shame."
+    },
+    "card-no-retreat": {
+      "name": "No Retreat!",
+      "description": "Gain 1 Back Strike."
+    },
+    "card-righteousness": {
+      "name": "Righteousness!",
+      "description": "Roll 1 die and gain that face's effect: Katana adds 2 damage; Helm inflicts 2 Shame on your opponent; Rising Sun grants you 1 Back Strike."
+    },
+    "card-zanshin": {
+      "name": "Zanshin!",
+      "description": "Roll 5 additional dice. Each Katana adds 1 damage to this attack, each Helm inflicts 1 Shame, and each Rising Sun grants you 1 Back Strike."
     }
   },
   "passive": {
@@ -2363,7 +2626,21 @@
     "cancelReady": "Cancel Ready",
     "readyWaiting": "Waiting for other players...",
     "readyProgress": "Ready Progress",
-    "you": "You"
+    "you": "You",
+    "targetOptionDisabled": "Unavailable",
+    "seating": {
+      "title": "2v2 Seating",
+      "hostTip": "Click a player first, then click an empty slot to move them. Swapping seats is not allowed.",
+      "readOnly": "Only the host can edit seating. Other players can view it only.",
+      "moveHint": "{{player}} selected. Click an empty slot to finish the move.",
+      "occupied": "That position is already occupied. Seat swapping is not supported.",
+      "emptySlot": "Empty",
+      "currentSlot": "Current slot",
+      "cancel": "Cancel",
+      "seatNumber": "Seat {{seat}}",
+      "teamA": "Team A",
+      "teamB": "Team B"
+    }
   },
   "endgame": {
     "ariaHero": "Hero: {{hero}}",

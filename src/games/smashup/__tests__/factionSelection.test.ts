@@ -15,7 +15,9 @@ import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types'
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities } from '../abilities';
-import { getBaseDefIdsForFactions } from '../data/cards';
+import smashUpEnglishMap from '../data/englishAtlasMap.json';
+import { getAllBaseDefs, getBaseDefIdsForFactions } from '../data/cards';
+import { getSmashUpAtlasLookupKey } from '../ui/SmashUpCardRenderer';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -233,6 +235,53 @@ describe('派系选择系统', () => {
             for (const id of allBaseIds) {
                 expect(allowed.has(id)).toBe(true);
             }
+        });
+        it('POD factions 使用对应的 POD 基地池', () => {
+            const baseIds = getBaseDefIdsForFactions([
+                SMASHUP_FACTION_IDS.WIZARDS_POD,
+                SMASHUP_FACTION_IDS.GHOSTS_POD,
+            ]);
+
+            expect(baseIds).toEqual(expect.arrayContaining([
+                'base_great_library_pod',
+                'base_wizard_academy_pod',
+                'base_dread_lookout_pod',
+                'base_haunted_house_al9000_pod',
+            ]));
+            expect(baseIds).not.toContain('base_the_homeworld');
+        });
+
+        it('保留 POD 派系专属的基地池覆盖', () => {
+            const baseIds = getBaseDefIdsForFactions([
+                SMASHUP_FACTION_IDS.ELDER_THINGS_POD,
+                SMASHUP_FACTION_IDS.INNSMOUTH_POD,
+            ]);
+
+            expect(baseIds).toEqual(expect.arrayContaining([
+                'base_plateau_of_leng_pod',
+                'base_ritual_site_pod',
+            ]));
+        });
+
+        it('all POD-enabled bases have POD atlas mappings', () => {
+            const englishMap = smashUpEnglishMap as Record<string, { atlasId: string; index: number }>;
+            const podBaseFactions = new Set(
+                Object.values(SMASHUP_FACTION_IDS)
+                    .filter((factionId): factionId is string => typeof factionId === 'string' && factionId.endsWith('_pod'))
+                    .map(factionId => factionId.replace(/_pod$/, '')),
+            );
+
+            const missingPodBaseMappings = getAllBaseDefs()
+                .filter(base => base.faction && podBaseFactions.has(base.faction))
+                .map(base => `${base.id}_pod`)
+                .filter(key => !englishMap[key]);
+
+            expect(missingPodBaseMappings).toEqual([]);
+        });
+
+        it('POD 基地图集 lookup key 不会重复追加后缀', () => {
+            expect(getSmashUpAtlasLookupKey('base_secret_garden_pod', true, true)).toBe('base_secret_garden_pod');
+            expect(getSmashUpAtlasLookupKey('base_secret_garden', true, true)).toBe('base_secret_garden_pod');
         });
     });
 });

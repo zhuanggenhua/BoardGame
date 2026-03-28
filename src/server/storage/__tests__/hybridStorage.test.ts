@@ -38,7 +38,7 @@ const buildCreateData = (setupOverrides?: Record<string, unknown>): CreateMatchD
 
 // MongoDB 内存服务器在某些环境下启动很慢（>60s），暂时跳过测试
 // 如需运行这些测试，请移除下面的 .skip
-describe.skip('HybridStorage 行为', () => {
+describe('HybridStorage 行为', () => {
     let mongo: MongoMemoryServer;
     let hybrid: HybridStorage;
 
@@ -139,6 +139,66 @@ describe('HybridStorage 纯内存模式', () => {
         expect(mongoStub.fetch).not.toHaveBeenCalled();
         expect(mongoStub.listMatches).not.toHaveBeenCalled();
         expect(mongoStub.findMatchesByOwnerKey).not.toHaveBeenCalled();
+    });
+
+    it('active guest room must block duplicate create instead of silent wipe', async () => {
+        const mongoStub = buildMongoStub();
+        const hybrid = new HybridStorage(mongoStub as unknown as typeof mongoStorage, {
+            persistentEnabled: false,
+        });
+
+        await hybrid.createMatch('guest-room-1', buildCreateData({
+            ownerKey: 'guest:active-owner',
+            guestId: 'active-owner',
+            ownerType: 'guest',
+        }));
+        await hybrid.setMetadata('guest-room-1', {
+            ...buildMetadata(buildSetupData({ ownerKey: 'guest:active-owner', guestId: 'active-owner', ownerType: 'guest' })),
+            players: {
+                0: { name: 'Alice', credentials: 'cred-a', isConnected: true },
+                1: {},
+            },
+        });
+
+        await expect(hybrid.createMatch('guest-room-2', buildCreateData({
+            ownerKey: 'guest:active-owner',
+            guestId: 'active-owner',
+            ownerType: 'guest',
+        }))).rejects.toThrow('ACTIVE_MATCH_EXISTS:tictactoe:guest-room-1');
+
+        const matches = (await hybrid.listMatches()).sort();
+        expect(matches).toEqual(['guest-room-1']);
+        expect((await hybrid.fetch('guest-room-1', { metadata: true })).metadata?.players['0']?.name).toBe('Alice');
+    });
+
+    it('finished guest room can be replaced safely', async () => {
+        const mongoStub = buildMongoStub();
+        const hybrid = new HybridStorage(mongoStub as unknown as typeof mongoStorage, {
+            persistentEnabled: false,
+        });
+
+        const setupData = buildSetupData({ ownerKey: 'guest:finished-owner', guestId: 'finished-owner', ownerType: 'guest' });
+        await hybrid.createMatch('guest-room-old', {
+            initialState: buildState(setupData),
+            metadata: {
+                ...buildMetadata(setupData),
+                gameover: { winner: '0' },
+                players: {
+                    0: { name: 'Alice', credentials: 'cred-a', isConnected: false },
+                    1: { name: 'Bob', credentials: 'cred-b', isConnected: false },
+                },
+            },
+        });
+
+        await hybrid.createMatch('guest-room-new', buildCreateData({
+            ownerKey: 'guest:finished-owner',
+            guestId: 'finished-owner',
+            ownerType: 'guest',
+        }));
+
+        const matches = (await hybrid.listMatches()).sort();
+        expect(matches).toEqual(['guest-room-new']);
+        expect((await hybrid.fetch('guest-room-old', { metadata: true })).metadata).toBeUndefined();
     });
 
     it('persistent=false 时缺失房间查询不应回退到 Mongo', async () => {

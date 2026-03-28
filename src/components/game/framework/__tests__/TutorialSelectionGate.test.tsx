@@ -8,6 +8,29 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('../../../system/LoadingScreen', () => ({
+  LoadingScreen: ({
+    description,
+    anchor,
+    className,
+    descriptionClassName,
+  }: {
+    description?: string;
+    anchor?: string;
+    className?: string;
+    descriptionClassName?: string;
+  }) => (
+    <div
+      data-loading="true"
+      data-anchor={anchor ?? 'viewport'}
+      data-class={className ?? ''}
+      data-description-class={descriptionClassName ?? ''}
+    >
+      {description ?? 'loading'}
+    </div>
+  ),
+}));
+
 describe('TutorialSelectionGate', () => {
   it('教程模式下显示加载文案并屏蔽子内容', () => {
     const html = renderToStaticMarkup(
@@ -21,6 +44,7 @@ describe('TutorialSelectionGate', () => {
 
     expect(html).toContain('加载中');
     expect(html).not.toContain('子内容');
+    expect(html).toContain('data-anchor="container"');
   });
 
   it('非教程模式下渲染子内容', () => {

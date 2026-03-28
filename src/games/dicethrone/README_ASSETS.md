@@ -341,7 +341,7 @@ node scripts/assets/atlas_grid_scan.js public/assets/dicethrone/images/monk/abil
 | Ability/Card | Property / Sequence (Visual Interpretation from Image) | Code Status | Action/Reason |
 | :--- | :--- | :--- | :--- |
 | `fiery-combo` | 1. 触发: 小顺子<br>2. **获得 2 火焰精通**<br>3. **然后**造成 5 点伤害<br>4. **每有 1 火焰精通 + 1 点伤害** | **Fixed** | 修正了 FM 获得数，并将计算整合进 Custom Action 以确保计算包含新获得的精通。 |
-| `soul-burn` | 1. 触发: 2x [Soul 图标]<br>2. **获得 2x 火焰精通**<br>3. **所有对手**造成 1x [Soul 图标] 伤害 | **Fixed** | 修正 FM 获得数为 2；补全对“所有对手”的伤害结算。 |
+| `soul-burn` | 1. 触发: 2x [Soul 图标]<br>2. **获得 2x 火焰精通**<br>3. **对当前目标**造成 1x [Soul 图标] 伤害 | **Fixed** | 修正 FM 获得数为 2，并统一到当前目标伤害语义，避免多人模式错误广播。 |
 
 **注意**：此表格仅出现在对话回复中，作为 AI 与用户之间的“全量核对契约”，无需写入文件。
 

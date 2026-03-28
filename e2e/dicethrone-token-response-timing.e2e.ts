@@ -1,260 +1,189 @@
 /**
  * DiceThrone Token 响应时序测试
- * 
- * 验证：Token 响应请求后，伤害事件不应立即生成
- * 
- * 测试场景：
- * 1. 攻击方发起攻击（有伤害）
- * 2. 防御方有可用的闪避 Token
- * 3. 验证事件流：TOKEN_RESPONSE_REQUESTED 之后没有 DAMAGE_DEALT
- * 4. 防御方跳过 Token 响应
- * 5. 验证事件流：TOKEN_RESPONSE_CLOSED 之后才有 DAMAGE_DEALT
+ *
+ * 验证：
+ * 1. TOKEN_RESPONSE_REQUESTED 之后、关闭前，不应提前产生 DAMAGE_DEALT
+ * 2. TOKEN_RESPONSE_CLOSED 之后，才应该产生 DAMAGE_DEALT
  */
 
-import { test, expect } from './fixtures';
-import { 
+import type { Browser } from '@playwright/test';
+import { test, expect } from './framework';
+import {
     readCoreState,
     readEventStream,
     applyCoreStateDirect,
     selectCharacter,
     readyAndStartGame,
+    setupDTOnlineMatch,
     waitForGameBoard,
 } from './helpers/dicethrone';
 
-test.describe('DiceThrone Token Response Timing', () => {
-    test('Token 响应请求后不应立即生成伤害事件', async ({ dicethroneMatch }) => {
-        const { hostPage, guestPage } = dicethroneMatch;
+async function setupBarbarianVsMoonElfMatch(browser: Browser, baseURL: string | undefined) {
+    const setup = await setupDTOnlineMatch(browser, baseURL);
+    if (!setup) return null;
 
-        // 完成角色选择
-        await selectCharacter(hostPage, 'barbarian');
-        await selectCharacter(guestPage, 'moon_elf');
-        await readyAndStartGame(hostPage, guestPage);
+    const { hostPage, guestPage } = setup;
 
-        // 等待游戏开始
-        await waitForGameBoard(hostPage);
-        await waitForGameBoard(guestPage);
+    await selectCharacter(hostPage, 'barbarian');
+    await selectCharacter(guestPage, 'moon_elf');
+    await readyAndStartGame(hostPage, guestPage);
+    await waitForGameBoard(hostPage);
+    await waitForGameBoard(guestPage);
+    await hostPage.waitForSelector('[data-phase="offensiveRoll"]', { timeout: 15000 });
 
-        // 等待进入 offensiveRoll 阶段
-        await hostPage.waitForSelector('[data-phase="offensiveRoll"]', { timeout: 15000 });
+    return setup;
+}
 
-        // === 设置初始状态 ===
-        // 给防御方（Moon Elf）添加闪避 Token
-        const initialState = await readCoreState(hostPage);
-        initialState.players['1'].tokens = { evasive: 2 };
-        initialState.players['0'].resources.hp = 50;
-        initialState.players['1'].resources.hp = 50;
-        await applyCoreStateDirect(hostPage, initialState);
+async function driveAttackToTokenWindow(hostPage: import('@playwright/test').Page, guestPage: import('@playwright/test').Page) {
+    const rollButton = hostPage.locator('[data-tutorial-id="dice-roll-button"]');
+    await expect(rollButton).toBeEnabled({ timeout: 5000 });
+    await rollButton.click();
+    await hostPage.waitForTimeout(500);
+
+    const confirmButton = hostPage.locator('[data-tutorial-id="dice-confirm-button"]');
+    await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+    await confirmButton.click();
+    await hostPage.waitForTimeout(500);
+
+    const smashButton = hostPage.locator('[data-ability-id="smash"]').first();
+    if (await smashButton.isVisible({ timeout: 2000 })) {
+        await smashButton.click();
         await hostPage.waitForTimeout(500);
+    }
 
-        // === 攻击方回合：发起攻击 ===
-        // 投骰
-        const rollButton = hostPage.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(rollButton).toBeEnabled({ timeout: 5000 });
-        await rollButton.click();
-        await hostPage.waitForTimeout(500);
+    const advanceButton = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
+    await expect(advanceButton).toBeEnabled({ timeout: 5000 });
+    await advanceButton.click();
+    await hostPage.waitForTimeout(1000);
 
-        // 确认投骰
-        const confirmButton = hostPage.locator('[data-tutorial-id="dice-confirm-button"]');
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-        await hostPage.waitForTimeout(500);
+    await guestPage.waitForSelector('[data-phase="defensiveRoll"]', { timeout: 10000 });
 
-        // 选择有伤害的技能（Smash - 基础攻击）
-        const smashButton = hostPage.locator('[data-ability-id="smash"]').first();
-        if (await smashButton.isVisible({ timeout: 2000 })) {
-            await smashButton.click();
-            await hostPage.waitForTimeout(500);
-        }
+    const defenseRollButton = guestPage.locator('[data-tutorial-id="dice-roll-button"]');
+    await expect(defenseRollButton).toBeEnabled({ timeout: 5000 });
+    await defenseRollButton.click();
+    await guestPage.waitForTimeout(500);
 
-        // 推进到防御阶段
-        const advanceButton = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-        await expect(advanceButton).toBeEnabled({ timeout: 5000 });
-        await advanceButton.click();
-        await hostPage.waitForTimeout(1000);
+    const defenseConfirmButton = guestPage.locator('[data-tutorial-id="dice-confirm-button"]');
+    await expect(defenseConfirmButton).toBeEnabled({ timeout: 5000 });
+    await defenseConfirmButton.click();
+    await guestPage.waitForTimeout(500);
 
-        // 等待防御阶段
-        await guestPage.waitForSelector('[data-phase="defensiveRoll"]', { timeout: 10000 });
+    const defenseAdvanceButton = guestPage.locator('[data-tutorial-id="advance-phase-button"]');
+    await expect(defenseAdvanceButton).toBeEnabled({ timeout: 5000 });
+    await defenseAdvanceButton.click();
+    await guestPage.waitForTimeout(1500);
+}
 
-        // === 防御方回合：投骰并确认 ===
-        const defenseRollButton = guestPage.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(defenseRollButton).toBeEnabled({ timeout: 5000 });
-        await defenseRollButton.click();
-        await guestPage.waitForTimeout(500);
+async function skipTokenResponseIfVisible(guestPage: import('@playwright/test').Page) {
+    const skipButton = guestPage.locator('button').filter({
+        hasText: /跳过|Skip/i,
+    }).first();
 
-        const defenseConfirmButton = guestPage.locator('[data-tutorial-id="dice-confirm-button"]');
-        await expect(defenseConfirmButton).toBeEnabled({ timeout: 5000 });
-        await defenseConfirmButton.click();
-        await guestPage.waitForTimeout(500);
-
-        // 推进到攻击结算（触发 Token 响应）
-        const defenseAdvanceButton = guestPage.locator('[data-tutorial-id="advance-phase-button"]');
-        await expect(defenseAdvanceButton).toBeEnabled({ timeout: 5000 });
-        await defenseAdvanceButton.click();
+    if (await skipButton.isVisible({ timeout: 2000 })) {
+        await skipButton.click();
         await guestPage.waitForTimeout(1500);
+    }
+}
 
-        // === 验证 1：Token 响应请求后，事件流中不应有 DAMAGE_DEALT ===
-        const eventsAfterRequest = await readEventStream(guestPage);
-        
-        // 找到 TOKEN_RESPONSE_REQUESTED 事件的位置
-        const tokenRequestIndex = eventsAfterRequest.findIndex(
-            (e: any) => e.event.type === 'TOKEN_RESPONSE_REQUESTED'
-        );
-        
-        expect(tokenRequestIndex, 'Should have TOKEN_RESPONSE_REQUESTED event').toBeGreaterThanOrEqual(0);
+test.describe('DiceThrone Token Response Timing', () => {
+    test('Token 响应请求后不应立刻生成伤害事件', async ({ browser }, testInfo) => {
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupBarbarianVsMoonElfMatch(browser, baseURL);
 
-        // 检查 TOKEN_RESPONSE_REQUESTED 之后、TOKEN_RESPONSE_CLOSED 之前是否有 DAMAGE_DEALT
-        const tokenCloseIndex = eventsAfterRequest.findIndex(
-            (e: any) => e.event.type === 'TOKEN_RESPONSE_CLOSED'
-        );
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
 
-        if (tokenCloseIndex === -1) {
-            // Token 响应还未关闭，检查 TOKEN_RESPONSE_REQUESTED 之后是否有 DAMAGE_DEALT
-            const eventsAfterTokenRequest = eventsAfterRequest.slice(tokenRequestIndex + 1);
-            const hasDamageAfterRequest = eventsAfterTokenRequest.some(
-                (e: any) => e.event.type === 'DAMAGE_DEALT'
+        const { hostPage, guestPage, hostContext, guestContext } = setup;
+
+        try {
+            const initialState = await readCoreState(hostPage);
+            initialState.players['1'].tokens = { evasive: 2 };
+            initialState.players['0'].resources.hp = 50;
+            initialState.players['1'].resources.hp = 50;
+            await applyCoreStateDirect(hostPage, initialState);
+            await hostPage.waitForTimeout(500);
+
+            await driveAttackToTokenWindow(hostPage, guestPage);
+
+            const eventsAfterRequest = await readEventStream(guestPage);
+            const tokenRequestIndex = eventsAfterRequest.findIndex(
+                (entry: any) => entry.event.type === 'TOKEN_RESPONSE_REQUESTED',
             );
 
-            expect(hasDamageAfterRequest, 
-                'Should NOT have DAMAGE_DEALT after TOKEN_RESPONSE_REQUESTED (before response closed)'
-            ).toBe(false);
+            expect(tokenRequestIndex, 'Should have TOKEN_RESPONSE_REQUESTED event').toBeGreaterThanOrEqual(0);
 
-            console.log('✅ 验证通过：TOKEN_RESPONSE_REQUESTED 之后没有 DAMAGE_DEALT 事件');
-        }
-
-        // === 防御方跳过 Token 响应 ===
-        // 查找跳过按钮（可能是"跳过"或"Skip"）
-        const skipButton = guestPage.locator('button').filter({ 
-            hasText: /跳过|Skip/i 
-        }).first();
-        
-        if (await skipButton.isVisible({ timeout: 2000 })) {
-            await skipButton.click();
-            await guestPage.waitForTimeout(1500);
-        }
-
-        // === 验证 2：Token 响应关闭后，才应该有 DAMAGE_DEALT 事件 ===
-        const eventsAfterClose = await readEventStream(guestPage);
-        
-        // 找到 TOKEN_RESPONSE_CLOSED 事件的位置
-        const finalTokenCloseIndex = eventsAfterClose.findIndex(
-            (e: any) => e.event.type === 'TOKEN_RESPONSE_CLOSED'
-        );
-        
-        if (finalTokenCloseIndex >= 0) {
-            // 检查 TOKEN_RESPONSE_CLOSED 之后是否有 DAMAGE_DEALT
-            const eventsAfterTokenClose = eventsAfterClose.slice(finalTokenCloseIndex + 1);
-            const damageEvent = eventsAfterTokenClose.find(
-                (e: any) => e.event.type === 'DAMAGE_DEALT'
+            const tokenCloseIndex = eventsAfterRequest.findIndex(
+                (entry: any) => entry.event.type === 'TOKEN_RESPONSE_CLOSED',
             );
 
-            expect(damageEvent, 
-                'Should have DAMAGE_DEALT after TOKEN_RESPONSE_CLOSED'
-            ).toBeTruthy();
+            if (tokenCloseIndex === -1) {
+                const hasDamageAfterRequest = eventsAfterRequest
+                    .slice(tokenRequestIndex + 1)
+                    .some((entry: any) => entry.event.type === 'DAMAGE_DEALT');
 
-            console.log('✅ 验证通过：TOKEN_RESPONSE_CLOSED 之后才有 DAMAGE_DEALT 事件');
+                expect(
+                    hasDamageAfterRequest,
+                    'Should NOT have DAMAGE_DEALT after TOKEN_RESPONSE_REQUESTED (before response closed)',
+                ).toBe(false);
+            }
+
+            await skipTokenResponseIfVisible(guestPage);
+
+            const eventsAfterClose = await readEventStream(guestPage);
+            const finalTokenCloseIndex = eventsAfterClose.findIndex(
+                (entry: any) => entry.event.type === 'TOKEN_RESPONSE_CLOSED',
+            );
+
+            if (finalTokenCloseIndex >= 0) {
+                const damageEvent = eventsAfterClose
+                    .slice(finalTokenCloseIndex + 1)
+                    .find((entry: any) => entry.event.type === 'DAMAGE_DEALT');
+
+                expect(damageEvent, 'Should have DAMAGE_DEALT after TOKEN_RESPONSE_CLOSED').toBeTruthy();
+            }
+
+            const finalState = await readCoreState(guestPage);
+            expect(finalState.players['1'].resources.hp, 'Defender should take damage').toBeLessThan(50);
+        } finally {
+            await guestContext.close();
+            await hostContext.close();
         }
-
-        // === 验证 3：伤害应该正确应用 ===
-        const finalState = await readCoreState(guestPage);
-        const defenderHp = finalState.players['1'].resources.hp;
-        
-        // 防御方应该受到伤害（HP 减少）
-        expect(defenderHp, 'Defender should take damage').toBeLessThan(50);
-
-        console.log(`✅ 验证通过：防御方 HP 从 50 降到 ${defenderHp}`);
     });
 
-    test('事件流顺序验证：完整的 Token 响应流程', async ({ dicethroneMatch }) => {
-        const { hostPage, guestPage } = dicethroneMatch;
+    test('事件流顺序验证：完整的 Token 响应流程', async ({ browser }, testInfo) => {
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupBarbarianVsMoonElfMatch(browser, baseURL);
 
-        // 完成角色选择
-        await selectCharacter(hostPage, 'barbarian');
-        await selectCharacter(guestPage, 'moon_elf');
-        await readyAndStartGame(hostPage, guestPage);
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
 
-        // 等待游戏开始
-        await waitForGameBoard(hostPage);
-        await waitForGameBoard(guestPage);
+        const { hostPage, guestPage, hostContext, guestContext } = setup;
 
-        // 等待进入 offensiveRoll 阶段
-        await hostPage.waitForSelector('[data-phase="offensiveRoll"]', { timeout: 15000 });
-
-        // 给防御方添加闪避 Token
-        const initialState = await readCoreState(hostPage);
-        initialState.players['1'].tokens = { evasive: 2 };
-        await applyCoreStateDirect(hostPage, initialState);
-        await hostPage.waitForTimeout(500);
-
-        // 攻击方发起攻击
-        const rollButton = hostPage.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(rollButton).toBeEnabled({ timeout: 5000 });
-        await rollButton.click();
-        await hostPage.waitForTimeout(500);
-
-        const confirmButton = hostPage.locator('[data-tutorial-id="dice-confirm-button"]');
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-        await hostPage.waitForTimeout(500);
-
-        const smashButton = hostPage.locator('[data-ability-id="smash"]').first();
-        if (await smashButton.isVisible({ timeout: 2000 })) {
-            await smashButton.click();
+        try {
+            const initialState = await readCoreState(hostPage);
+            initialState.players['1'].tokens = { evasive: 2 };
+            await applyCoreStateDirect(hostPage, initialState);
             await hostPage.waitForTimeout(500);
+
+            await driveAttackToTokenWindow(hostPage, guestPage);
+            await skipTokenResponseIfVisible(guestPage);
+
+            const allEvents = await readEventStream(guestPage);
+            const eventTypes = allEvents.map((entry: any) => entry.event.type);
+            const tokenRequestIndex = eventTypes.indexOf('TOKEN_RESPONSE_REQUESTED');
+            const tokenCloseIndex = eventTypes.indexOf('TOKEN_RESPONSE_CLOSED');
+            const damageIndex = eventTypes.lastIndexOf('DAMAGE_DEALT');
+
+            expect(tokenRequestIndex, 'Should have TOKEN_RESPONSE_REQUESTED').toBeGreaterThanOrEqual(0);
+            expect(tokenCloseIndex, 'Should have TOKEN_RESPONSE_CLOSED').toBeGreaterThan(tokenRequestIndex);
+            expect(damageIndex, 'Should have DAMAGE_DEALT after TOKEN_RESPONSE_CLOSED').toBeGreaterThan(tokenCloseIndex);
+        } finally {
+            await guestContext.close();
+            await hostContext.close();
         }
-
-        const advanceButton = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-        await expect(advanceButton).toBeEnabled({ timeout: 5000 });
-        await advanceButton.click();
-        await hostPage.waitForTimeout(1000);
-
-        // 防御方投骰
-        await guestPage.waitForSelector('[data-phase="defensiveRoll"]', { timeout: 10000 });
-        
-        const defenseRollButton = guestPage.locator('[data-tutorial-id="dice-roll-button"]');
-        await expect(defenseRollButton).toBeEnabled({ timeout: 5000 });
-        await defenseRollButton.click();
-        await guestPage.waitForTimeout(500);
-
-        const defenseConfirmButton = guestPage.locator('[data-tutorial-id="dice-confirm-button"]');
-        await expect(defenseConfirmButton).toBeEnabled({ timeout: 5000 });
-        await defenseConfirmButton.click();
-        await guestPage.waitForTimeout(500);
-
-        // 推进到 Token 响应
-        const defenseAdvanceButton = guestPage.locator('[data-tutorial-id="advance-phase-button"]');
-        await expect(defenseAdvanceButton).toBeEnabled({ timeout: 5000 });
-        await defenseAdvanceButton.click();
-        await guestPage.waitForTimeout(1500);
-
-        // 跳过 Token 响应
-        const skipButton = guestPage.locator('button').filter({ 
-            hasText: /跳过|Skip/i 
-        }).first();
-        
-        if (await skipButton.isVisible({ timeout: 2000 })) {
-            await skipButton.click();
-            await guestPage.waitForTimeout(1500);
-        }
-
-        // 验证完整的事件流顺序
-        const allEvents = await readEventStream(guestPage);
-        const eventTypes = allEvents.map((e: any) => e.event.type);
-
-        // 找到关键事件的位置
-        const tokenRequestIdx = eventTypes.indexOf('TOKEN_RESPONSE_REQUESTED');
-        const tokenCloseIdx = eventTypes.indexOf('TOKEN_RESPONSE_CLOSED');
-        const damageIdx = eventTypes.lastIndexOf('DAMAGE_DEALT');
-
-        console.log('事件流顺序：');
-        console.log(`  TOKEN_RESPONSE_REQUESTED: ${tokenRequestIdx}`);
-        console.log(`  TOKEN_RESPONSE_CLOSED: ${tokenCloseIdx}`);
-        console.log(`  DAMAGE_DEALT (最后一个): ${damageIdx}`);
-
-        // 验证顺序：TOKEN_RESPONSE_REQUESTED < TOKEN_RESPONSE_CLOSED < DAMAGE_DEALT
-        expect(tokenRequestIdx, 'Should have TOKEN_RESPONSE_REQUESTED').toBeGreaterThanOrEqual(0);
-        expect(tokenCloseIdx, 'Should have TOKEN_RESPONSE_CLOSED').toBeGreaterThan(tokenRequestIdx);
-        expect(damageIdx, 'Should have DAMAGE_DEALT after TOKEN_RESPONSE_CLOSED').toBeGreaterThan(tokenCloseIdx);
-
-        console.log('✅ 验证通过：事件流顺序正确');
     });
 });

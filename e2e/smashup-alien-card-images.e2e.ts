@@ -1,91 +1,151 @@
-/**
- * SmashUp 外星人派系卡牌图片验证测试
- * 基于图集图片验证每张卡的索引是否正确
- */
+import type { Page } from '@playwright/test';
+import { test, expect, type GameTestContext } from './framework';
+import { computeSpriteStyle, generateUniformAtlasConfig } from '../src/engine/primitives/spriteAtlas';
+import { getCardDef } from '../src/games/smashup/data/cards';
+import { SMASHUP_ATLAS_DEFINITIONS } from '../src/games/smashup/domain/atlasCatalog';
+import { SMASHUP_ATLAS_IDS } from '../src/games/smashup/domain/ids';
 
-import { test, expect } from '@playwright/test';
-import {
-    setupTwoPlayerMatch,
-    completeFactionSelectionCustom,
-    waitForHandArea,
-    cleanupTwoPlayerMatch,
-    FACTION,
-} from './smashup-helpers';
+const ALIEN_CARD_IDS = ['alien_probe', 'alien_terraform', 'alien_crop_circles'] as const;
+const BASES = ['base_the_homeworld', 'base_the_mothership'] as const;
+const SMASHUP_OPEN_TIMEOUT_MS = 20_000;
+const HAND_VISIBLE_TIMEOUT_MS = 10_000;
+const CARD_VISIBLE_TIMEOUT_MS = 5_000;
+const STYLE_POLL_TIMEOUT_MS = 5_000;
 
-test.describe('SmashUp 外星人卡牌图片验证', () => {
-    test('验证关键卡牌的图片索引正确性', async ({ browser }, testInfo) => {
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
-        const setup = await setupTwoPlayerMatch(browser, baseURL);
-        if (!setup) {
-            console.log('[测试] 创建对局失败，跳过测试');
-            test.skip();
-            return;
+const cards1Atlas = SMASHUP_ATLAS_DEFINITIONS.find((atlas) => atlas.id === SMASHUP_ATLAS_IDS.CARDS1);
+if (!cards1Atlas) {
+    throw new Error('Missing SmashUp cards1 atlas definition');
+}
+
+const cards1UniformConfig = generateUniformAtlasConfig(
+    cards1Atlas.grid.cols,
+    cards1Atlas.grid.rows,
+    cards1Atlas.grid.rows,
+    cards1Atlas.grid.cols,
+);
+
+const ALIEN_CARDS = ALIEN_CARD_IDS.map((defId) => {
+    const def = getCardDef(defId);
+    if (!def) {
+        throw new Error(`Missing card definition: ${defId}`);
+    }
+    if (!def.previewRef || def.previewRef.type !== 'atlas') {
+        throw new Error(`Card ${defId} is missing an atlas previewRef`);
+    }
+
+    return {
+        defId,
+        name: def.name,
+        expectedStyle: computeSpriteStyle(def.previewRef.index, cards1UniformConfig),
+    };
+});
+
+function parsePercentPair(value: string): [number, number] {
+    const matches = value.match(/-?\d+(?:\.\d+)?/g);
+    if (!matches || matches.length < 2) {
+        throw new Error(`Unable to parse percent pair: ${value}`);
+    }
+    return [Number(matches[0]), Number(matches[1])];
+}
+
+function expectPercentPair(actual: string, expected: string, label: string): void {
+    const [actualX, actualY] = parsePercentPair(actual);
+    const [expectedX, expectedY] = parsePercentPair(expected);
+
+    expect(actualX, `${label} X mismatch`).toBeCloseTo(expectedX, 4);
+    expect(actualY, `${label} Y mismatch`).toBeCloseTo(expectedY, 4);
+}
+
+async function readRenderedAtlasStyle(page: Page, cardUid: string): Promise<{
+    backgroundImage: string;
+    backgroundPosition: string;
+    backgroundSize: string;
+} | null> {
+    return page.locator(`[data-card-uid="${cardUid}"]`).evaluate((root) => {
+        const atlasNode = root.querySelector('[style*="background-image"]') as HTMLElement | null;
+        if (!atlasNode) {
+            return null;
         }
 
-        const { hostPage, guestPage } = setup;
+        return {
+            backgroundImage: atlasNode.style.backgroundImage,
+            backgroundPosition: atlasNode.style.backgroundPosition,
+            backgroundSize: atlasNode.style.backgroundSize,
+        };
+    });
+}
 
-        // 选择外星人派系
-        await completeFactionSelectionCustom(
-            hostPage,
-            guestPage,
-            [FACTION.ALIENS, FACTION.ROBOTS],
-            [FACTION.NINJAS, FACTION.PIRATES]
-        );
+async function openAlienHandScene(game: GameTestContext, page: Page): Promise<void> {
+    await game.openTestGame('smashup', {}, SMASHUP_OPEN_TIMEOUT_MS);
+    await game.setupScene({
+        gameId: 'smashup',
+        player0: {
+            hand: [...ALIEN_CARD_IDS],
+            deck: [],
+            discard: [],
+            actionsPlayed: 0,
+            actionLimit: 1,
+            minionsPlayed: 0,
+            minionLimit: 1,
+        },
+        player1: {
+            hand: [],
+            deck: [],
+            discard: [],
+        },
+        bases: BASES.map((defId) => ({
+            defId,
+            minions: [],
+            ongoingActions: [],
+        })),
+        currentPlayer: '0',
+        phase: 'playCards',
+    });
 
-        await waitForHandArea(hostPage);
-        await waitForHandArea(guestPage);
+    await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: HAND_VISIBLE_TIMEOUT_MS });
+    await expect.poll(async () => {
+        const player = await game.getPlayerState('0');
+        return player?.hand?.map((card: { defId: string }) => card.defId) ?? [];
+    }).toEqual([...ALIEN_CARD_IDS]);
+}
 
-        // 打开调试面板
-        await hostPage.click('[data-testid="debug-toggle"]');
-        await hostPage.waitForSelector('[data-testid="su-debug-deal"]');
+test.describe('SmashUp alien card images', () => {
+    test('renders the expected atlas slices for key alien actions', async ({ page, game }, testInfo) => {
+        await openAlienHandScene(game, page);
 
-        // 测试关键卡牌：探究(Probe)、适居化(Terraforming)、麦田怪圈(Crop Circles)
-        const testCards = [
-            { name: '探究', nameEn: 'Probe', expectedIndex: 41 },
-            { name: '适居化', nameEn: 'Terraforming', expectedIndex: 42 },
-            { name: '麦田怪圈', nameEn: 'Crop Circles', expectedIndex: 43 },
-        ];
+        const player = await game.getPlayerState('0');
 
-        for (const card of testCards) {
-            // 查找卡牌在牌库中的位置
-            const deckItems = await hostPage.locator('[data-testid="su-debug-deal"] .space-y-1 > div').all();
-            
-            let cardIndex = -1;
-            for (let i = 0; i < deckItems.length; i++) {
-                const text = await deckItems[i].textContent();
-                if (text?.includes(card.name) || text?.includes(card.nameEn)) {
-                    cardIndex = i;
-                    console.log(`[测试] 找到 ${card.name}，牌库索引: ${i}`);
-                    break;
-                }
+        for (const card of ALIEN_CARDS) {
+            const handCard = player.hand.find((entry: { defId: string; uid: string }) => entry.defId === card.defId);
+            expect(handCard, `Card missing from hand: ${card.defId}`).toBeTruthy();
+            const cardLocator = page.locator(`[data-card-uid="${handCard.uid}"]`);
+            await expect(cardLocator).toBeVisible({ timeout: CARD_VISIBLE_TIMEOUT_MS });
+
+            await expect.poll(
+                () => readRenderedAtlasStyle(page, handCard.uid),
+                {
+                    timeout: STYLE_POLL_TIMEOUT_MS,
+                },
+            ).not.toBeNull();
+
+            const rendered = await readRenderedAtlasStyle(page, handCard.uid);
+            if (!rendered) {
+                throw new Error(`Atlas node missing for ${card.defId}`);
             }
+            expect(rendered.backgroundImage).toContain('cards1');
 
-            if (cardIndex === -1) {
-                console.log(`[测试] 未在牌库中找到 ${card.name}，跳过`);
-                continue;
-            }
-
-            // 记录发牌前的手牌数量
-            const beforeCount = await hostPage.locator('[data-testid="su-hand-area"] > div > div').count();
-
-            // 发这张牌
-            await hostPage.fill('input[type="number"]', cardIndex.toString());
-            await hostPage.click('[data-testid="su-debug-deal-apply"]');
-            await hostPage.waitForTimeout(1000);
-
-            // 验证手牌数量增加
-            const afterCount = await hostPage.locator('[data-testid="su-hand-area"] > div > div').count();
-            expect(afterCount).toBe(beforeCount + 1);
-
-            // 截图最后一张手牌（刚发的牌）
-            const lastCard = hostPage.locator('[data-testid="su-hand-area"] > div > div').last();
-            await lastCard.screenshot({ 
-                path: testInfo.outputPath(`${card.nameEn.toLowerCase().replace(/\s+/g, '-')}-card.png`) 
-            });
-
-            console.log(`[测试] ${card.name} 已发到手牌，截图已保存`);
+            expectPercentPair(
+                rendered.backgroundPosition,
+                String(card.expectedStyle.backgroundPosition),
+                `${card.name} backgroundPosition`,
+            );
+            expectPercentPair(
+                rendered.backgroundSize,
+                String(card.expectedStyle.backgroundSize),
+                `${card.name} backgroundSize`,
+            );
         }
 
-        await cleanupTwoPlayerMatch(setup);
+        await game.screenshot('alien-card-images-hand', testInfo);
     });
 });

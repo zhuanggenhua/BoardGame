@@ -41,8 +41,10 @@
     "reconnectEnter": "重连进入",
     "join": "加入",
     "spectate": "观战",
-    "localPlay": "👥 本地同屏",
-    "tutorial": "🎓 教程模式",
+    "localPlay": "单机模式",
+    "singleDevice": "单机模式",
+    "playAi": "对战AI",
+    "tutorial": "教程模式",
     "createRoom": "创建房间",
     "confirm": "确认",
     "cancel": "取消"
@@ -249,6 +251,30 @@
       "title": "服务目前不可用",
       "desc": "无法连接到后端服务。请检查网络或确认后端容器（MongoDB/Server）已启动。"
     }
+  },
+  "ai": {
+    "supportTitle": "AI 支持",
+    "unsupported": "暂不支持 AI",
+    "capture": "对局采集",
+    "local": "本地 AI",
+    "remote": "远程 AI",
+    "configureTitle": "本地对战设置",
+    "configureHint": "选择本机参与人数，并为每个座位指定真人、本地 AI 或远程 AI。",
+    "playerCount": "本地人数",
+    "seat": "座位 {{seat}}",
+    "primarySeat": "主座位",
+    "secondarySeat": "副座位",
+    "controllers": {
+      "human": "真人",
+      "local": "本地 AI",
+      "remote": "远程 AI"
+    },
+    "policyId": "策略 ID",
+    "policyPlaceholder": "留空则使用默认策略",
+    "providerId": "Provider ID",
+    "providerPlaceholder": "留空则使用 astrbot",
+    "quickStart": "默认快速开始：1 号位为真人，2 号位在支持时自动使用该游戏的本地 AI。",
+    "startLocal": "开始本地对战"
   },
   "createRoom": {
     "title": "创建房间",

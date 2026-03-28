@@ -116,10 +116,7 @@ const hasExplicitTarget = process.env.PW_HAS_EXPLICIT_TARGET === 'true'
     || hasExplicitPlaywrightTarget(process.argv.slice(2));
 
 const LEGACY_DISCOVERY_BROKEN_TESTS = [
-    '**/dicethrone-paladin-vengeance-select-player.e2e.ts',
     '**/dicethrone-toggle-die-lock-in-response-window.e2e.ts',
-    '**/dicethrone-status-interaction-cancel.e2e.ts',
-    '**/dicethrone-status-interaction-complete.e2e.ts',
     '**/ninja-hidden-ninja-skip-option.e2e.ts',
     '**/summonerwars-illusion-fix.e2e.ts',
 ];

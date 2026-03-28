@@ -7,7 +7,7 @@
  * - 喂养巨食兽（feed_beast）：吞噬相邻友方 或 自毁
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './framework';
 import {
   setupSWOnlineMatch,
   readCoreState,

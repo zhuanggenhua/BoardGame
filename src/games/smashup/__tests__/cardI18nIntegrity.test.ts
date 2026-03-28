@@ -9,6 +9,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { getAllCardDefs, getAllBaseDefs, getCardDef, resolveCardName, resolveCardText } from '../data/cards';
+import { resolveI18nKeys } from '../ui/PromptOverlay';
 
 describe('SmashUp 卡牌 i18n 完整性', () => {
   const zhCN = JSON.parse(
@@ -142,5 +143,15 @@ describe('SmashUp 卡牌 i18n 完整性', () => {
     expect(en.cards.dino_armor_stego_pod.abilityText).not.toBe(en.cards.dino_armor_stego.abilityText);
     expect(en.cards.dino_tooth_and_claw_pod.effectText).not.toBe(en.cards.dino_tooth_and_claw.effectText);
     expect(en.cards.ninja_infiltrate_pod.effectText).not.toBe(en.cards.ninja_infiltrate.effectText);
+  });
+
+  it('resolveI18nKeys 能解析反应队列中的卡名和时机 key', () => {
+    const zhTranslator = (key: string, opts?: { defaultValue?: string }) => {
+      const resolved = key.split('.').reduce<any>((value, segment) => value?.[segment], zhCN);
+      return typeof resolved === 'string' ? resolved : (opts?.defaultValue ?? key);
+    };
+
+    expect(resolveI18nKeys('cards.base_tortuga.name · ui.reaction_timing.afterScoring', zhTranslator)).toBe('托尔图加 · 计分后');
+    expect(resolveI18nKeys('cards.ninja_infiltrate_pod.name · ui.reaction_timing.onActionPlayed', zhTranslator)).toContain('· 行动打出后');
   });
 });

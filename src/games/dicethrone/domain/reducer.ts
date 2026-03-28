@@ -10,15 +10,15 @@ import type {
     HeroState,
 } from './types';
 import type { RandomFn } from '../../../engine/types';
-import { getDieFaceByDefinition, getTokenStackLimit, getRollerId } from './rules';
+import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getTokenStackLimit, getRollerId } from './rules';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { initHeroState, createCharacterDice } from './characters';
-import { getChoiceEffectHandler, registerChoiceEffectHandler } from './choiceEffects';
+import { registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
 import { removeCard } from './utils';
 import {
-    handlePreventDamage, handleAttackPreDefenseResolved, handleDamageDealt,
+    handlePreventDamage, handleAttackPreDefenseResolved, handleAttackDefenseResolved, handleDamageDealt,
     handleHealApplied, handleAttackInitiated, handleBonusDamageAdded, handleAttackResolved,
     handleAttackMadeUndefendable, handleExtraAttackTriggered,
     handleDamageShieldGranted, handleDamagePrevented,
@@ -132,6 +132,18 @@ const handleHostStarted: EventHandler<Extract<DiceThroneEvent, { type: 'HOST_STA
 ) => ({ ...state, hostStarted: true });
 
 /**
+ * 处理 2v2 站位移动事件
+ */
+const handleSeatingMoved: EventHandler<Extract<DiceThroneEvent, { type: 'SEATING_MOVED' }>> = (
+    state,
+    event
+) => ({
+    ...state,
+    seatingOrder: event.payload.seatingOrder,
+    teamIdByPlayerId: buildTeamIdByPlayerIdFromSeatingOrder(event.payload.seatingOrder),
+});
+
+/**
  * 处理玩家准备事件
  */
 const handlePlayerReady: EventHandler<Extract<DiceThroneEvent, { type: 'PLAYER_READY' }>> = (
@@ -140,6 +152,17 @@ const handlePlayerReady: EventHandler<Extract<DiceThroneEvent, { type: 'PLAYER_R
 ) => ({
     ...state,
     readyPlayers: { ...state.readyPlayers, [event.payload.playerId]: true },
+});
+
+/**
+ * 处理玩家取消准备事件
+ */
+const handlePlayerUnready: EventHandler<Extract<DiceThroneEvent, { type: 'PLAYER_UNREADY' }>> = (
+    state,
+    event
+) => ({
+    ...state,
+    readyPlayers: { ...state.readyPlayers, [event.payload.playerId]: false },
 });
 
 /**
@@ -153,8 +176,9 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
     event
 ) => {
     const isDisplayOnly = !!(event.payload as { displayOnly?: boolean })?.displayOnly;
-    // 非 displayOnly 时，标记 pendingAttack.bonusDiceResolved
-    const pendingAttack = !isDisplayOnly && state.pendingAttack
+    const isAttackBonusSettlement = state.pendingBonusDiceSettlement?.resolutionMode === 'attackBonus';
+    // 仅“独立伤害型”奖励骰才标记 bonusDiceResolved。
+    const pendingAttack = !isDisplayOnly && !isAttackBonusSettlement && state.pendingAttack
         ? { ...state.pendingAttack, bonusDiceResolved: true }
         : state.pendingAttack;
     return { ...state, pendingBonusDiceSettlement: undefined, pendingAttack };
@@ -403,8 +427,24 @@ const handleTokenLimitChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TO
  * 这里仅记录来源信息
  */
 const handleChoiceRequested: EventHandler<Extract<DiceThroneEvent, { type: 'CHOICE_REQUESTED' }>> = (
-    state
+    state,
+    event
 ) => {
+    const isTargetSelection = event.payload.options.some((option) => option.customId?.startsWith('select-target:'));
+    if (isTargetSelection && state.pendingAttack) {
+        if (state.pendingAttack.targetingSelectionResolved === true) {
+            return state;
+        }
+        return {
+            ...state,
+            pendingAttack: {
+                ...state.pendingAttack,
+                targetingSelectionPending: true,
+                targetingSelectionResolved: false,
+            },
+        };
+    }
+
     // 不修改核心状态，prompt 由系统层管理
     return state;
 };
@@ -422,7 +462,17 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
     const player = state.players[playerId];
     if (player) {
         let playerUpdates: Partial<HeroState> = {};
-        if (tokenId) {
+        const tokenActiveUseTiming = tokenId
+            ? state.tokenDefinitions.find(def => def.id === tokenId)?.activeUse?.timing
+            : undefined;
+        const shouldSkipGenericTokenDelta = tokenId
+            && customId?.startsWith('use-')
+            && (
+                tokenActiveUseTiming === 'onOffensiveRollEnd'
+                || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
+            );
+
+        if (tokenId && !shouldSkipGenericTokenDelta) {
             const maxStacks = getTokenStackLimit(state, playerId, tokenId);
             const currentAmount = player.tokens[tokenId] || 0;
             const nextAmount = Math.max(0, Math.min(currentAmount + value, maxStacks));
@@ -447,12 +497,9 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
 
     // 通过注册表处理特殊选择效果
     if (customId) {
-        const handler = getChoiceEffectHandler(customId);
-        if (handler) {
-            const result = handler({ state: resultState, playerId, customId, sourceAbilityId, value });
-            if (result) {
-                resultState = { ...resultState, ...result };
-            }
+        const result = resolveChoiceEffect({ state: resultState, playerId, customId, sourceAbilityId, value });
+        if (result) {
+            resultState = { ...resultState, ...result };
         }
     }
 
@@ -806,6 +853,8 @@ export const reduce = (
             return handleBonusDamageAdded(state, event);
         case 'ATTACK_PRE_DEFENSE_RESOLVED':
             return handleAttackPreDefenseResolved(state, event);
+        case 'ATTACK_DEFENSE_RESOLVED':
+            return handleAttackDefenseResolved(state, event);
         case 'ATTACK_RESOLVED':
             return handleAttackResolved(state, event);
         case 'ATTACK_MADE_UNDEFENDABLE':
@@ -856,8 +905,12 @@ export const reduce = (
             return handleHeroInitialized(state, event);
         case 'HOST_STARTED':
             return handleHostStarted(state, event);
+        case 'SEATING_MOVED':
+            return handleSeatingMoved(state, event);
         case 'PLAYER_READY':
             return handlePlayerReady(state, event);
+        case 'PLAYER_UNREADY':
+            return handlePlayerUnready(state, event);
         default: {
             // 处理系统层事件：SYS_PHASE_CHANGED 同步副作用到 core（阶段本身由 sys.phase 管理）
             if ((event as { type: string }).type === FLOW_EVENTS.PHASE_CHANGED) {
@@ -889,6 +942,19 @@ export const reduce = (
                         rollConfirmed: false,
                         rollDiceCount: 0,
                         dice: resetDiceArray(playerDice ?? state.dice, 0),
+                    };
+                }
+
+                if (to === 'targetingRoll') {
+                    const playerDice = createPlayerDice(state, activePlayerId);
+                    return {
+                        ...state,
+                        activePlayerId,
+                        rollCount: 0,
+                        rollLimit: 1,
+                        rollDiceCount: 1,
+                        rollConfirmed: false,
+                        dice: resetDiceArray(playerDice ?? state.dice, 1),
                     };
                 }
 

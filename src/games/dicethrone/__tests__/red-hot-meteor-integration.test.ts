@@ -57,7 +57,7 @@ describe('红热攻击修正出牌边界', () => {
         const result = checkPlayCard(makeRuleCheckCore(), '0', redHotCard, 'offensiveRoll');
 
         expect(result.ok).toBe(false);
-        expect((result as any).reason).toBe('wrongPhaseForCard');
+        expect((result as any).reason).toBe('attackModifierRequiresSelectedAttack');
     });
 
     it('已有当前攻击时攻击方可以在 offensiveRoll 打出攻击修正卡', () => {

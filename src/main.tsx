@@ -5,39 +5,7 @@ import './games/cursorRegistry';
 import { i18nInitPromise } from './lib/i18n';
 import App from './App.tsx';
 import { SENTRY_DSN } from './config/server';
-
-const STALE_CHUNK_RELOAD_KEY = 'bg_stale_chunk_reload_guard'
-
-const isStaleChunkError = (value: unknown): boolean => {
-  const message = value instanceof Error
-    ? `${value.name}: ${value.message}`
-    : String(value ?? '')
-
-  const normalized = message.toLowerCase()
-  return normalized.includes('failed to fetch dynamically imported module')
-    || normalized.includes('importing a module script failed')
-    || normalized.includes('expected a javascript module script')
-    || normalized.includes('chunkloaderror')
-    || normalized.includes('loading chunk')
-}
-
-const reloadForStaleChunkOnce = (reason: string) => {
-  if (typeof window === 'undefined') return
-
-  try {
-    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    const previous = sessionStorage.getItem(STALE_CHUNK_RELOAD_KEY)
-    if (previous === current) {
-      return
-    }
-    sessionStorage.setItem(STALE_CHUNK_RELOAD_KEY, current)
-  } catch {
-    // sessionStorage 不可用时降级为直接刷新一次
-  }
-
-  console.warn('[bootstrap] stale chunk detected, reloading page', { reason })
-  window.location.reload()
-}
+import { isStaleChunkError, reloadForStaleChunkOnce } from './lib/staleChunkReloadGuard';
 
 const captureParams = typeof window !== 'undefined'
   ? new URLSearchParams(window.location.search)

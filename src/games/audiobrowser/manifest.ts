@@ -8,6 +8,11 @@ const entry: GameManifestEntry = {
     descriptionKey: 'games.audiobrowser.description',
     category: 'tools',
     playersKey: 'games.audiobrowser.players',
+    ai: {
+        capture: false,
+        localAi: false,
+        remoteAi: false,
+    },
     icon: '🔊',
     mobileProfile: 'none',
     shellTargets: ['pwa'],

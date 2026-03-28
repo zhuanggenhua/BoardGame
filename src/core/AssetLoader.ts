@@ -2,7 +2,8 @@
  * 游戏资源加载器
  * 
  * 提供统一的资源路径解析、预加载和缓存管理。
- * 所有游戏资源路径相对于资源基址（默认 /assets/）。
+ * 所有游戏资源路径相对于资源基址（当前默认官方资源域名，
+ * 显式 /assets 路径与本地配置资源仍然受支持）。
  */
 
 import type { GameAssets, SpriteAtlasDefinition, CriticalImageResolverResult } from './types';
@@ -31,8 +32,8 @@ const normalizeAssetsBaseUrl = (value?: string) => {
 };
 
 /**
- * 资源基址（默认 /assets）。
- * 允许通过 setAssetsBaseUrl 进行覆盖，用于独立资源域名场景。
+ * 资源基址（当前默认官方资源域名）。
+ * 允许通过 setAssetsBaseUrl 进行覆盖，也兼容显式 /assets 本地路径场景。
  */
 let assetsBaseUrl = normalizeAssetsBaseUrl(import.meta.env?.VITE_ASSETS_BASE_URL) ?? DEFAULT_ASSETS_BASE_URL;
 let assetHashes: Record<string, string> = typeof __ASSET_HASHES__ !== 'undefined' ? __ASSET_HASHES__ : {};
@@ -863,7 +864,7 @@ const resolveVersionedAssetUrl = (value: string) => {
 };
 
 /**
- * 规范化资源路径，统一添加资源基址（默认 /assets）
+ * 规范化资源路径，统一添加当前资源基址
  * 支持相对路径转换
  */
 export function assetsPath(path: string): string {

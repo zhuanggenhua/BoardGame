@@ -1947,6 +1947,10 @@
     "atlasId": "tts_atlas_bd2112e526",
     "index": 10
   },
+  "base_antarctic_base_pod": {
+    "atlasId": "tts_atlas_bd2112e526",
+    "index": 10
+  },
   "base_the_asylum": {
     "atlasId": "tts_atlas_bd2112e526",
     "index": 3
@@ -2154,6 +2158,14 @@
   "base_greenhouse_pod": {
     "atlasId": "tts_atlas_8310911466",
     "index": 4
+  },
+  "base_secret_garden_pod": {
+    "atlasId": "tts_atlas_8310911466",
+    "index": 5
+  },
+  "base_dread_lookout_pod": {
+    "atlasId": "tts_atlas_8310911466",
+    "index": 6
   },
   "base_cat_fanciers_alley_pod": {
     "atlasId": "tts_atlas_52",

@@ -14,6 +14,7 @@ import {
     isMinionProtected,
     isOperationRestricted,
     fireTriggers,
+    fireTriggerForSource,
     getBaseRestrictions,
 } from '../domain/ongoingEffects';
 import type { SmashUpCore, MinionOnBase, BaseInPlay, SmashUpEvent } from '../domain/types';
@@ -430,6 +431,37 @@ describe('持续效果拦截框架', () => {
             // warbot 在基地 0，但保护检查的目标在基地 1
             // isSourceActive 检查全局，所以 warbot 算活跃
             expect(isMinionProtected(state, targetMinion, 1, '1', 'destroy')).toBe(true);
+        });
+        test('fireTriggerForSource 非 perInstance 来源应优先绑定 triggerMinionUid 对应的实例', () => {
+            registerTrigger('test_source', 'onTurnStart', (ctx) => [{
+                type: 'TEST_EVENT' as any,
+                payload: {
+                    sourceCardUid: ctx.sourceCardUid,
+                    sourceBaseIndex: ctx.sourceBaseIndex,
+                },
+                timestamp: ctx.now,
+            } as SmashUpEvent]);
+
+            const first = makeMinion({ uid: 'source-a', defId: 'test_source' });
+            const second = makeMinion({ uid: 'source-b', defId: 'test_source' });
+            const state = makeState([
+                makeBase({ minions: [first] }),
+                makeBase({ minions: [second] }),
+            ]);
+
+            const result = fireTriggerForSource(state, 'test_source', 'onTurnStart', {
+                state,
+                playerId: '0',
+                triggerMinionUid: 'source-b',
+                random: dummyRandom,
+                now: 1,
+            });
+
+            expect(result.events).toHaveLength(1);
+            expect((result.events[0] as any).payload).toEqual({
+                sourceCardUid: 'source-b',
+                sourceBaseIndex: 1,
+            });
         });
     });
 });

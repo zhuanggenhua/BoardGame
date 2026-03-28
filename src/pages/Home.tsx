@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import packageJson from '../../package.json';
 import { CategoryPills, type Category } from '../components/layout/CategoryPills';
 import { GameDetailsModal } from '../components/lobby/GameDetailsModal';
 import { GameList } from '../components/lobby/GameList';
@@ -42,6 +43,7 @@ import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
 import { useGlobalCursor } from '../core/cursor/useGlobalCursor';
 
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
+const APP_VERSION_LABEL = `v${packageJson.version}`;
 
 export const Home = () => {
     useGlobalCursor();
@@ -649,6 +651,13 @@ export const Home = () => {
             </main>
 
             {/* 活跃对局指示器 */}
+            <div
+                className="fixed right-[max(0.75rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 pointer-events-none select-none text-[0.7rem] md:text-[0.78rem] leading-none tracking-[0.08em] text-parchment-light-text/80"
+                aria-label={`Current version ${APP_VERSION_LABEL}`}
+            >
+                {APP_VERSION_LABEL}
+            </div>
+
             {activeMatch && (
                 <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-4 fade-in duration-300">
                     <div className="bg-parchment-base-text text-parchment-card-bg px-6 py-3 rounded shadow-xl border border-parchment-brown flex items-center gap-4">

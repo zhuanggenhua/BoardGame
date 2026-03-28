@@ -1,64 +1,82 @@
-/**
- * DiceThrone 调试面板测试
- * 验证调试面板的状态读取和注入功能
- */
+import { test, expect } from './framework';
 
-import { test, expect } from '@playwright/test';
-import { 
-    setupDTOnlineMatch, 
-    selectCharacter, 
-    waitForGameBoard, 
-    readyAndStartGame,
-    readCoreState,
-    setPlayerResource,
-    ensureDebugPanelOpen,
-} from './helpers/dicethrone';
+test.describe('DiceThrone 调试面板', () => {
+    test('状态页会反映注入后的生命值变更', async ({ page, game }) => {
+        await game.openTestGame('dicethrone');
 
-test.describe('DiceThrone Debug Panel', () => {
-    test('Can read and modify state through debug panel', async ({ browser }, testInfo) => {
-        test.setTimeout(60000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                resources: { CP: 0, HP: 50 },
+            },
+            player1: {
+                resources: { HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'main1',
+            extra: {
+                selectedCharacters: { '0': 'barbarian', '1': 'paladin' },
+                hostStarted: true,
+            },
+        });
 
-        const setup = await setupDTOnlineMatch(browser, baseURL);
-        if (!setup) {
-            test.skip(true, '游戏服务器不可用或创建房间失败');
-            return;
+        await page.getByTestId('debug-toggle').click();
+        await expect(page.getByTestId('debug-panel')).toBeVisible({ timeout: 5000 });
+
+        const stateTab = page.getByTestId('debug-tab-state');
+        if (await stateTab.isVisible().catch(() => false)) {
+            await stateTab.click();
         }
-        
-        const { hostPage, guestPage, hostContext, guestContext } = setup;
 
-        // 选择英雄
-        await selectCharacter(hostPage, 'barbarian');
-        await selectCharacter(guestPage, 'paladin');
-        
-        // 准备并开始游戏
-        await readyAndStartGame(hostPage, guestPage);
-        
-        // 等待游戏开始
-        await waitForGameBoard(hostPage);
-        await waitForGameBoard(guestPage);
+        await page.waitForFunction(
+            () => {
+                const raw = document.querySelector('[data-testid="debug-state-json"]')?.textContent;
+                if (!raw) return false;
+                try {
+                    const parsed = JSON.parse(raw);
+                    const core = parsed?.core ?? parsed?.G?.core ?? parsed;
+                    const hp = core?.players?.['0']?.resources?.HP ?? core?.players?.['0']?.resources?.hp;
+                    return hp === 50;
+                } catch {
+                    return false;
+                }
+            },
+            { timeout: 5000, polling: 200 },
+        );
 
-        // 打开调试面板
-        await ensureDebugPanelOpen(hostPage);
-        await hostPage.screenshot({ path: testInfo.outputPath('debug-panel-open.png'), fullPage: false });
+        await page.evaluate(() => {
+            (window as any).__BG_TEST_HARNESS__?.state?.patch?.({
+                core: {
+                    players: {
+                        '0': {
+                            resources: { HP: 10 },
+                        },
+                    },
+                },
+            });
+        });
 
-        // 读取初始状态
-        const initialState = await readCoreState(hostPage);
-        console.log('Initial HP:', initialState.players?.['0']?.resources?.hp);
-        expect(initialState.players?.['0']?.resources?.hp).toBeGreaterThan(0);
+        await page.waitForFunction(
+            () => {
+                const raw = document.querySelector('[data-testid="debug-state-json"]')?.textContent;
+                if (!raw) return false;
+                try {
+                    const parsed = JSON.parse(raw);
+                    const core = parsed?.core ?? parsed?.G?.core ?? parsed;
+                    const hp = core?.players?.['0']?.resources?.HP ?? core?.players?.['0']?.resources?.hp;
+                    return hp === 10;
+                } catch {
+                    return false;
+                }
+            },
+            { timeout: 5000, polling: 200 },
+        );
 
-        // 修改 HP
-        await setPlayerResource(hostPage, '0', 'hp', 10);
-        await hostPage.waitForTimeout(1000);
+        const rawState = await page.getByTestId('debug-state-json').innerText();
+        const parsed = JSON.parse(rawState);
+        const core = parsed?.core ?? parsed?.G?.core ?? parsed;
+        const hp = core?.players?.['0']?.resources?.HP ?? core?.players?.['0']?.resources?.hp;
 
-        // 验证修改成功
-        const modifiedState = await readCoreState(hostPage);
-        console.log('Modified HP:', modifiedState.players?.['0']?.resources?.hp);
-        expect(modifiedState.players?.['0']?.resources?.hp).toBe(10);
-
-        await hostPage.screenshot({ path: testInfo.outputPath('state-modified.png'), fullPage: false });
-
-        await guestContext.close();
-        await hostContext.close();
+        expect(hp).toBe(10);
     });
 });

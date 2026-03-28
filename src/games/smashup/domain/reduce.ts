@@ -26,6 +26,7 @@ import type {
     BaseReplacedEvent,
     TempPowerAddedEvent,
     PermanentPowerAddedEvent,
+    CardSuppressedEvent,
     BreakpointModifiedEvent,
     BaseDeckShuffledEvent,
     SpecialLimitUsedEvent,
@@ -830,9 +831,16 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const { triggers } = (event as TriggerQueuedEvent).payload;
             if (!Array.isArray(triggers) || triggers.length === 0) return state;
             const prev = state.triggerQueue ?? [];
+            const seenIds = new Set(prev.map(t => t.id));
+            const deduped = triggers.filter(trigger => {
+                if (!trigger?.id || seenIds.has(trigger.id)) return false;
+                seenIds.add(trigger.id);
+                return true;
+            });
+            if (deduped.length === 0) return state;
             return {
                 ...state,
-                triggerQueue: [...prev, ...triggers],
+                triggerQueue: [...prev, ...deduped],
             };
         }
 
@@ -1089,6 +1097,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         .filter(s => s.suppressorPlayerId !== playerId);
                     return remaining.length ? remaining : undefined;
                 })(),
+                suppressedCardsUntilTurnStart: (() => {
+                    const remaining = (state.suppressedCardsUntilTurnStart ?? [])
+                        .filter(s => s.suppressorPlayerId !== playerId);
+                    return remaining.length ? remaining : undefined;
+                })(),
                 // 清空 special 能力限制组使用记录
                 specialLimitUsed: undefined,
                 // 清空巨石阵双才能追踪
@@ -1188,23 +1201,26 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         case SU_EVENTS.DECK_RESHUFFLED: {
             const { playerId, deckUids } = event.payload;
             const player = state.players[playerId];
-            // 合并牌库和弃牌堆中的所有卡牌，按 deckUids 排序
+            // 兼容“先抽旧牌库顶部，再把弃牌堆洗回牌库”的同批次场景：
+            // deckUids 只描述被重洗进去的部分，旧牌库里尚未被后续 CARDS_DRAWN 消耗的牌必须暂时保留。
             const allCards = [...player.deck, ...player.discard];
             const cardMap = new Map(allCards.map(card => [card.uid, card]));
-            const reshuffledDeck = deckUids
+            const deckUidSet = new Set(deckUids);
+            const referencedCards = deckUids
                 .map(uid => cardMap.get(uid))
                 .filter((card): card is CardInstance => card !== undefined);
-            
-            // 检查 deckUids 是否包含弃牌堆的卡：如果包含，说明是合并洗牌，清空弃牌堆；否则保持弃牌堆不变
-            const deckUidSet = new Set(deckUids);
-            const discardMerged = player.discard.some(c => deckUidSet.has(c.uid));
-            const newDiscard = discardMerged ? [] : player.discard;
+            const preservedDeck = player.deck.filter(card => !deckUidSet.has(card.uid));
+            const newDiscard = player.discard.filter(card => !deckUidSet.has(card.uid));
             
             return {
                 ...state,
                 players: {
                     ...state.players,
-                    [playerId]: { ...player, deck: reshuffledDeck, discard: newDiscard },
+                    [playerId]: {
+                        ...player,
+                        deck: [...preservedDeck, ...referencedCards],
+                        discard: newDiscard,
+                    },
                 },
             };
         }
@@ -1410,8 +1426,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 if (i !== fromBaseIndex) return b;
                 return { ...b, minions: b.minions.filter(m => m.uid !== minionUid) };
             });
-            // 焦油坑：被消灭后改去向（仍算消灭），放入拥有者牌库底而不是弃牌堆
-            const isTarPits = base?.defId === 'base_tar_pits';
+            const destroyedAtBaseThisTurnCount = (state.turnDestroyedMinions ?? [])
+                .filter(record => record.baseIndex === fromBaseIndex)
+                .length;
+            // POD 刚柔流寺庙：这里被消灭的随从始终改放拥有者牌库底。
+            // 焦油坑：只在同基地本回合第一次随从被消灭时改去向，后续照常进弃牌堆。
+            const shouldRedirectToDeckBottom =
+                base?.defId === 'base_temple_of_goju_pod'
+                || (base?.defId === 'base_tar_pits' && destroyedAtBaseThisTurnCount === 0);
             let newPlayers = { ...state.players };
             const owner = newPlayers[ownerId];
             const destroyedCard: CardInstance = {
@@ -1420,7 +1442,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 type: 'minion',
                 owner: ownerId,
             };
-            newPlayers = isTarPits
+            newPlayers = shouldRedirectToDeckBottom
                 ? {
                     ...newPlayers,
                     [ownerId]: { ...owner, deck: [...owner.deck, destroyedCard] },
@@ -2084,7 +2106,6 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const newDiscard = player.discard.filter(c => c.uid !== cardUid);
             return {
                 ...state,
-                madnessDeck: [...state.madnessDeck, MADNESS_CARD_DEF_ID],
                 players: {
                     ...state.players,
                     [playerId]: { ...player, hand: newHand, discard: newDiscard },
@@ -2175,6 +2196,18 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             };
         }
 
+        case SU_EVENTS.CARD_SUPPRESSED: {
+            const { cardUid, baseIndex, suppressorPlayerId, cardType } = (event as CardSuppressedEvent).payload;
+            const prev = state.suppressedCardsUntilTurnStart ?? [];
+            if (prev.some(s => s.cardUid === cardUid && s.suppressorPlayerId === suppressorPlayerId)) {
+                return state;
+            }
+            return {
+                ...state,
+                suppressedCardsUntilTurnStart: [...prev, { cardUid, baseIndex, suppressorPlayerId, cardType }],
+            };
+        }
+
         // 基地牌库洗混
         case SU_EVENTS.BASE_DECK_SHUFFLED: {
             const { newBaseDeckDefIds, clearBaseDiscard } = (event as BaseDeckShuffledEvent).payload;
@@ -2204,9 +2237,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const payload = (event as SpecialAfterScoringArmedEvent).payload;
             const prev = state.pendingAfterScoringSpecials ?? [];
             const exists = prev.some(
-                p => p.sourceDefId === payload.sourceDefId
-                    && p.playerId === payload.playerId
-                    && p.baseIndex === payload.baseIndex,
+                p => payload.cardUid
+                    ? p.cardUid === payload.cardUid
+                    : p.sourceDefId === payload.sourceDefId
+                        && p.playerId === payload.playerId
+                        && p.baseIndex === payload.baseIndex,
             );
             if (exists) return state;
 
@@ -2231,9 +2266,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const payload = (event as SpecialAfterScoringConsumedEvent).payload;
             const prev = state.pendingAfterScoringSpecials ?? [];
             const next = prev.filter(
-                p => !(p.sourceDefId === payload.sourceDefId
-                    && p.playerId === payload.playerId
-                    && p.baseIndex === payload.baseIndex),
+                p => payload.cardUid
+                    ? p.cardUid !== payload.cardUid
+                    : !(p.sourceDefId === payload.sourceDefId
+                        && p.playerId === payload.playerId
+                        && p.baseIndex === payload.baseIndex),
             );
             return {
                 ...state,

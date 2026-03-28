@@ -1,0 +1,80 @@
+# smashup-feedback Specification
+
+## Purpose
+TBD - created by archiving change add-smashup-feedback-effects. Update Purpose after archive.
+## Requirements
+### Requirement: 随从入场动画
+当玩家打出随从到基地时，系统 SHALL 播放卡牌从手牌区飞向目标基地的动画，落地时有弹跳缩放效果（scale overshoot → settle），动画时长 300-500ms。
+
+#### Scenario: 随从打出到基地
+- **WHEN** 玩家选中手牌中的随从并点击目标基地
+- **THEN** 该随从卡牌从手牌位置飞向基地随从区域
+- **AND** 落地时有 scale 1.0 → 1.15 → 1.0 的弹跳效果
+- **AND** 落地时有轻微随机旋转（±3°）模拟纸牌拍桌
+
+### Requirement: 行动卡打出展示
+当玩家打出行动卡时，系统 SHALL 将卡牌居中放大展示 300-500ms，然后缩小淡出。
+
+#### Scenario: 标准行动卡打出
+- **WHEN** 玩家打出一张标准行动卡
+- **THEN** 卡牌从手牌飞到屏幕中央并放大展示
+- **AND** 停留 300-500ms 后缩小并向弃牌堆方向滑出消失
+
+### Requirement: 基地临界点逼近反馈
+当基地总力量达到临界点的 80% 时，系统 SHALL 增强力量 token 的视觉反馈；达到临界点时 SHALL 有更强烈的视觉提示。
+
+#### Scenario: 力量接近临界点
+- **WHEN** 基地总力量 >= 临界点 × 0.8 且 < 临界点
+- **THEN** 力量 token 显示脉冲抖动动画（scale 微幅振荡）
+- **AND** token 边框颜色变为警告色
+
+#### Scenario: 力量达到临界点
+- **WHEN** 基地总力量 >= 临界点
+- **THEN** 力量 token 放大并变为高亮色（如绿色/金色）
+- **AND** token 周围显示短暂光晕效果
+
+### Requirement: 基地记分动画
+当基地记分时，系统 SHALL 播放基地卡消失动画和 VP 飞行动画。
+
+#### Scenario: 基地记分完成
+- **WHEN** 一个基地完成记分流程
+- **THEN** 基地卡播放翻转或碎裂消失动画
+- **AND** 获得 VP 的玩家看到 VP 数字从基地位置飞向自己的计分板
+- **AND** 获得最高 VP 的玩家计分板短暂高亮
+
+### Requirement: 力量变化浮字
+当基地上的总力量发生变化时，系统 SHALL 在力量 token 旁显示变化量浮字。
+
+#### Scenario: 随从入场增加力量
+- **WHEN** 一个力量为 N 的随从被放置到基地
+- **THEN** 基地力量 token 旁弹出 "+N" 浮字
+- **AND** 浮字使用手写风格，向上飘动并淡出（持续约 800ms）
+
+### Requirement: 回合阶段切换提示
+当游戏阶段切换时，系统 SHALL 提供视觉提示让玩家注意到阶段变化。
+
+#### Scenario: 轮到玩家回合
+- **WHEN** 回合切换到当前玩家
+- **THEN** 显示"轮到你了"的短暂全局提示
+- **AND** 回合信息便签纸有翻页/弹跳动画
+
+#### Scenario: 阶段推进
+- **WHEN** 游戏阶段从一个阶段推进到下一个
+- **THEN** 阶段指示器有切换动画（如文字淡入淡出）
+
+### Requirement: 不可操作抖动反馈
+当玩家在非自己回合或不合法时机点击手牌时，系统 SHALL 提供抖动反馈。
+
+#### Scenario: 非自己回合点击手牌
+- **WHEN** 不是当前玩家的回合且玩家点击手牌
+- **THEN** 被点击的卡牌播放水平摇头抖动动画（持续约 300ms）
+- **AND** 不执行任何游戏操作
+
+### Requirement: 抽牌飞入动画
+当玩家抽牌时，系统 SHALL 播放卡牌从牌库飞入手牌区的动画。
+
+#### Scenario: 回合抽牌
+- **WHEN** 玩家在抽牌阶段抽取卡牌
+- **THEN** 卡牌从牌库位置飞入手牌区并融入手牌排列
+- **AND** 动画时长 200-400ms，使用 ease-out 缓动
+

@@ -21,7 +21,9 @@ export const MobileBoardShell = ({
         ) : null}
 
         <div className="mobile-board-shell__canvas">
-            {children}
+            <div className="mobile-board-shell__content">
+                {children}
+            </div>
         </div>
 
         {sideDock ? (

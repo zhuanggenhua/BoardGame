@@ -185,4 +185,118 @@ test.describe('Smash Up 牌库检索交互', () => {
         await game.screenshot('sprout-prompt-skipped', testInfo);
         await saveStableScreenshot(page, testInfo, 'sprout-prompt-skipped');
     });
+
+    test('疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.goto('/play/smashup');
+        await page.waitForFunction(
+            () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+            { timeout: 15000 },
+        );
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [],
+                deck: [],
+                factions: ['aliens', 'robots'],
+            },
+            player1: {
+                hand: [],
+                deck: [],
+                factions: ['pirates', 'dinosaurs'],
+            },
+            currentPlayer: '0',
+            phase: 'playCards',
+        });
+
+        await expect(page.locator('[data-testid="su-madness-supply"]')).toHaveCount(0);
+        await game.screenshot('madness-supply-hidden', testInfo);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: ['cthulhu_whispers_in_darkness'],
+                deck: ['alien_invader', 'robot_hoverbot'],
+                factions: ['minions_of_cthulhu', 'aliens'],
+            },
+            player1: {
+                hand: [],
+                deck: [],
+                factions: ['pirates', 'dinosaurs'],
+            },
+            currentPlayer: '0',
+            phase: 'playCards',
+            extra: {
+                core: {
+                    madnessDeck: Array.from({ length: 30 }, () => 'special_madness'),
+                },
+            },
+        });
+
+        await expect(page.getByTestId('su-madness-supply')).toBeVisible();
+        await expect(page.getByTestId('su-madness-supply-count')).toHaveText('x 30');
+        await game.screenshot('madness-supply-initial', testInfo);
+
+        await game.playCard('cthulhu_whispers_in_darkness');
+
+        await page.waitForFunction(
+            () => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.core?.madnessDeck?.length === 29
+                    && state?.core?.players?.['0']?.hand?.some((card: any) => card.defId === 'special_madness');
+            },
+            { timeout: 5000, polling: 200 },
+        );
+
+        await expect(page.getByTestId('su-madness-supply-count')).toHaveText('x 29');
+        await game.screenshot('madness-supply-after-draw', testInfo);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [{ uid: 'madness-hand-1', defId: 'special_madness', type: 'action' }],
+                deck: ['alien_invader'],
+                factions: ['minions_of_cthulhu', 'aliens'],
+            },
+            player1: {
+                hand: [],
+                deck: [],
+                factions: ['pirates', 'dinosaurs'],
+            },
+            currentPlayer: '0',
+            phase: 'playCards',
+            extra: {
+                core: {
+                    madnessDeck: Array.from({ length: 29 }, () => 'special_madness'),
+                },
+            },
+        });
+
+        await expect(page.getByTestId('su-madness-supply-count')).toHaveText('x 29');
+        const spotlightQueue = page.getByTestId('card-spotlight-queue');
+        if (await spotlightQueue.isVisible({ timeout: 200 }).catch(() => false)) {
+            await spotlightQueue.click({ force: true });
+        }
+
+        await game.playCard('special_madness');
+        await game.waitForInteraction('special_madness');
+        await game.selectOption('return');
+
+        await page.waitForFunction(
+            () => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                return !state?.sys?.interaction?.current
+                    && state?.core?.madnessDeck?.length === 29
+                    && !state?.core?.players?.['0']?.hand?.some((card: any) => card.uid === 'madness-hand-1')
+                    && !state?.core?.players?.['0']?.discard?.some((card: any) => card.uid === 'madness-hand-1');
+            },
+            { timeout: 5000, polling: 200 },
+        );
+
+        await expect(page.getByTestId('su-madness-supply-count')).toHaveText('x 29');
+        await page.waitForTimeout(1500);
+        await game.screenshot('madness-supply-after-consume', testInfo);
+    });
 });

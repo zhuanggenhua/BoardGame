@@ -195,7 +195,7 @@ export function registerExpansionBaseAbilities(): void {
         if (ctx.matchState) {
             const interaction = createSimpleChoice(
                 `base_miskatonic_university_base_${winnerId}_${ctx.now}`, winnerId,
-                `密大基地：你有 ${totalCount} 张疯狂卡可以返回到疯狂牌库`, options,
+                `密大基地：你有 ${totalCount} 张疯狂卡可以消耗`, options,
                 { sourceId: 'base_miskatonic_university_base', targetType: 'button' },
             );
             ctx.matchState = queueInteraction(ctx.matchState, interaction);
@@ -697,7 +697,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         const madnessCard = madnessCards.find(c => c.defId === MADNESS_CARD_DEF_ID);
         
         if (!madnessCard) return { state, events: [] };
-        return { state, events: [returnMadnessCard(playerId, madnessCard.uid, '疯人院：返回疯狂卡', timestamp)] };
+        return { state, events: [returnMadnessCard(playerId, madnessCard.uid, '疯人院：消耗疯狂卡', timestamp)] };
     });
 
     // 印斯茅斯基地第一步：选择玩家后，创建第二步交互（选择卡牌）
@@ -773,16 +773,16 @@ export function registerExpansionBaseInteractionHandlers(): void {
             const handMadness = player.hand.filter(c => c.defId === MADNESS_CARD_DEF_ID);
             const discardMadness = player.discard.filter(c => c.defId === MADNESS_CARD_DEF_ID);
             for (const card of handMadness) {
-                events.push(returnMadnessCard(playerId, card.uid, '密大基地：返回疯狂卡', timestamp));
+                events.push(returnMadnessCard(playerId, card.uid, '密大基地：消耗疯狂卡', timestamp));
             }
             for (const card of discardMadness) {
-                events.push(returnMadnessCard(playerId, card.uid, '密大基地：返回疯狂卡', timestamp));
+                events.push(returnMadnessCard(playerId, card.uid, '密大基地：消耗疯狂卡', timestamp));
             }
         } else {
             const madnessCards = selected.source === 'hand' ? player.hand : player.discard;
             const toReturn = madnessCards.filter(c => c.defId === MADNESS_CARD_DEF_ID).slice(0, selected.count);
             for (const card of toReturn) {
-                events.push(returnMadnessCard(playerId, card.uid, '密大基地：返回疯狂卡', timestamp));
+                events.push(returnMadnessCard(playerId, card.uid, '密大基地：消耗疯狂卡', timestamp));
             }
         }
         

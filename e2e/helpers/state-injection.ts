@@ -12,13 +12,32 @@ import { getGameServerBaseURL } from './common';
 /**
  * 测试环境配置
  */
-const TEST_API_BASE = process.env.TEST_API_BASE || getGameServerBaseURL();
 function getRequiredTestApiToken(): string {
     const token = resolveSharedTestApiToken(process.env);
     if (!token) {
         throw new Error('TEST_API_TOKEN 未配置，无法调用 /test/* 状态注入接口');
     }
     return token;
+}
+
+async function resolveTestApiBase(page?: Page): Promise<string> {
+    if (process.env.TEST_API_BASE) {
+        return process.env.TEST_API_BASE;
+    }
+
+    if (page) {
+        const forcedBase = await page.evaluate(() => {
+            return (window as Window & {
+                __FORCE_API_SERVER_URL__?: string;
+                __FORCE_GAME_SERVER_URL__?: string;
+            }).__FORCE_API_SERVER_URL__ ?? null;
+        }).catch(() => null);
+        if (forcedBase) {
+            return forcedBase;
+        }
+    }
+
+    return getGameServerBaseURL();
 }
 
 export interface TestMatchAccess {
@@ -97,7 +116,8 @@ export async function injectMatchState(
     access?: TestMatchAccess,
 ): Promise<void> {
     const resolvedAccess = await resolveTestMatchAccess(matchId, page, access);
-    const response = await fetch(`${TEST_API_BASE}/test/inject-state`, {
+    const testApiBase = await resolveTestApiBase(page);
+    const response = await fetch(`${testApiBase}/test/inject-state`, {
         method: 'POST',
         headers: buildTestHeaders(resolvedAccess),
         body: JSON.stringify({ matchId, state }),
@@ -130,7 +150,8 @@ export async function patchMatchState(
     access?: TestMatchAccess,
 ): Promise<void> {
     const resolvedAccess = await resolveTestMatchAccess(matchId, page, access);
-    const response = await fetch(`${TEST_API_BASE}/test/patch-state`, {
+    const testApiBase = await resolveTestApiBase(page);
+    const response = await fetch(`${testApiBase}/test/patch-state`, {
         method: 'PATCH',
         headers: buildTestHeaders(resolvedAccess),
         body: JSON.stringify({ matchId, patch }),
@@ -159,7 +180,8 @@ export async function getMatchState(
     access?: TestMatchAccess,
 ): Promise<MatchState<unknown>> {
     const resolvedAccess = await resolveTestMatchAccess(matchId, page, access);
-    const response = await fetch(`${TEST_API_BASE}/test/get-state/${matchId}`, {
+    const testApiBase = await resolveTestApiBase(page);
+    const response = await fetch(`${testApiBase}/test/get-state/${matchId}`, {
         headers: buildTestHeaders(resolvedAccess),
     });
 
@@ -205,7 +227,8 @@ export async function snapshotMatchState(
     access?: TestMatchAccess,
 ): Promise<string> {
     const resolvedAccess = await resolveTestMatchAccess(matchId, page, access);
-    const response = await fetch(`${TEST_API_BASE}/test/snapshot-state`, {
+    const testApiBase = await resolveTestApiBase(page);
+    const response = await fetch(`${testApiBase}/test/snapshot-state`, {
         method: 'POST',
         headers: buildTestHeaders(resolvedAccess),
         body: JSON.stringify({ matchId }),
@@ -234,7 +257,8 @@ export async function restoreMatchState(
     access?: TestMatchAccess,
 ): Promise<void> {
     const resolvedAccess = await resolveTestMatchAccess(matchId, page, access);
-    const response = await fetch(`${TEST_API_BASE}/test/restore-state`, {
+    const testApiBase = await resolveTestApiBase(page);
+    const response = await fetch(`${testApiBase}/test/restore-state`, {
         method: 'POST',
         headers: buildTestHeaders(resolvedAccess),
         body: JSON.stringify({ matchId, snapshotId }),

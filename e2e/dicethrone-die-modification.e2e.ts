@@ -1,226 +1,97 @@
-/**
- * DiceThrone - 选择骰子修改 E2E 测试
- * 
- * 覆盖范围：
- * - 修改1个骰子（modify-die-any-1）：选择骰子 + 选择目标值
- * - 修改2个骰子（modify-die-any-2）：多选骰子 + 选择目标值
- * - 修改骰子为6（modify-die-to-6）：选择骰子（自动改为6）
- * - 复制骰子（modify-die-copy）：选择源骰子 + 选择目标骰子
- * - 调整骰子±1（modify-die-adjust-1）：选择骰子 + 选择增减
- * 
- * 交互模式：选择骰子修改
- * - 点击技能按钮/打出卡牌
- * - 骰子高亮显示
- * - 点击选择骰子
- * - （可选）选择目标值/方向
- * - 确认
- * - 骰子值改变
- */
-
-import { test, expect } from '@playwright/test';
-import { setupDTOnlineMatch, selectCharacter, waitForGameBoard } from './helpers/dicethrone';
+import { test, expect } from './framework';
 
 test.describe('DiceThrone - 选择骰子修改', () => {
-  test('修改1个骰子：选择骰子并设置目标值', async ({ browser }, testInfo) => {
-    const baseURL = testInfo.project.use.baseURL as string | undefined;
-    const setup = await setupDTOnlineMatch(browser, baseURL);
-    
-    if (!setup) {
-      test.skip(true, '游戏服务器不可用或创建房间失败');
-      return;
-    }
-    
-    const { hostPage, guestPage } = setup;
+    test('card-play-six 应通过 framework 场景完成改骰到 6', async ({ page, game }) => {
+        await game.openTestGame('dicethrone');
 
-    // 1. 选择英雄并开始游戏
-    await selectCharacter(hostPage, 'paladin');
-    await selectCharacter(guestPage, 'shadow_thief');
-    
-    // 等待游戏开始
-    await waitForGameBoard(hostPage);
-    await waitForGameBoard(guestPage);
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                hand: ['card-play-six'],
+                resources: { CP: 2, HP: 50 },
+            },
+            player1: {
+                resources: { HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'offensiveRoll',
+            extra: {
+                selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+                hostStarted: true,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: false,
+                dice: [
+                    { id: 0, value: 2, isKept: false },
+                    { id: 1, value: 3, isKept: false },
+                    { id: 2, value: 4, isKept: false },
+                    { id: 3, value: 5, isKept: false },
+                    { id: 4, value: 1, isKept: false },
+                ],
+            },
+        });
 
-    // 2. 推进到主要阶段1（可以打出卡牌）
-    const advanceButton = page.getByRole('button', { name: /推进阶段|Advance Phase/i });
-    
-    // 跳过收入阶段
-    await expect(advanceButton).toBeEnabled({ timeout: 5000 });
-    await advanceButton.click();
-    await page.waitForTimeout(500);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                hasCard: !!state?.core?.players?.['0']?.hand?.some((card: any) => card.id === 'card-play-six'),
+                diceCount: state?.core?.dice?.length ?? 0,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'offensiveRoll',
+            hasCard: true,
+            diceCount: 5,
+        });
 
-    // 跳过进攻投掷阶段（如果需要）
-    const currentPhase = await page.getByTestId('dt-phase-banner').textContent();
-    if (currentPhase?.includes('进攻投掷') || currentPhase?.includes('Offensive Roll')) {
-      // 投掷骰子
-      const rollButton = page.getByRole('button', { name: /投掷骰子|Roll Dice/i });
-      if (await rollButton.isVisible().catch(() => false)) {
-        await rollButton.click();
-        await page.waitForTimeout(1000);
-        
-        // 确认骰面
-        const confirmButton = page.getByRole('button', { name: /确认骰面|Confirm Dice/i });
-        if (await confirmButton.isVisible().catch(() => false)) {
-          await confirmButton.click();
-          await page.waitForTimeout(500);
-        }
-      }
-      
-      // 推进到主要阶段1
-      await advanceButton.click();
-      await page.waitForTimeout(500);
-    }
+        const modifyCard = page
+            .locator('[data-card-id="card-play-six"], [data-card-key^="card-play-six-"]')
+            .first();
+        await expect(modifyCard).toBeVisible({ timeout: 5000 });
+        await modifyCard.click();
 
-    // 3. 查找并打出"惊喜"卡牌（card-surprise，效果：modify-die-any-1）
-    const handArea = page.getByTestId('dt-hand-area');
-    await expect(handArea).toBeVisible({ timeout: 5000 });
+        await expect.poll(async () => {
+            const interaction = (await game.getState())?.sys?.interaction?.current;
+            const meta = interaction?.data?.meta;
+            return {
+                dtType: meta?.dtType ?? null,
+                mode: meta?.dieModifyConfig?.mode ?? null,
+                targetValue: meta?.dieModifyConfig?.targetValue ?? null,
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            dtType: 'modifyDie',
+            mode: 'set',
+            targetValue: 6,
+        });
 
-    // 查找惊喜卡牌或任何有骰子修改效果的卡牌
-    const surpriseCard = handArea.locator('[data-card-id="card-surprise"]').or(
-      handArea.locator('[data-card-name*="惊喜"]').or(
-        handArea.locator('[data-card-name*="Surprise"]')
-      )
-    ).first();
+        const dieButton = page.locator('[data-testid="die-button-0"]');
+        await expect(dieButton).toBeVisible({ timeout: 5000 });
+        await dieButton.click();
 
-    // 如果手牌中没有目标卡牌，跳过测试
-    if (!await surpriseCard.isVisible().catch(() => false)) {
-      test.skip(true, '手牌中没有骰子修改卡牌');
-    }
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const lastEvents = (state?.sys?.eventStream?.entries ?? []).slice(-6);
+            return {
+                firstDie: state?.core?.dice?.[0]?.value ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                handIds: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
+                lastEventTypes: lastEvents.map((entry: any) => entry.event?.type),
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            firstDie: 6,
+            interactionKind: null,
+            handIds: [],
+        });
 
-    // 记录骰子初始值
-    const diceArea = page.getByTestId('dt-dice-area');
-    await expect(diceArea).toBeVisible({ timeout: 5000 });
-    
-    const firstDie = diceArea.locator('[data-testid^="die-"]').first();
-    await expect(firstDie).toBeVisible({ timeout: 3000 });
-    const initialValue = await firstDie.getAttribute('data-die-value');
+        const finalState = await game.getState();
+        const finalHandIds = (finalState?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id);
+        const finalEventTypes = (finalState?.sys?.eventStream?.entries ?? [])
+            .slice(-6)
+            .map((entry: any) => entry.event?.type);
 
-    // 打出卡牌
-    await surpriseCard.click();
-    await page.waitForTimeout(500);
-
-    // 4. 验证骰子选择界面出现
-    const dieSelector = page.locator('[data-testid="die-selector"]').or(
-      page.locator('[class*="die-select"]').or(
-        page.getByText(/选择骰子|Select Die/i)
-      )
-    );
-    await expect(dieSelector).toBeVisible({ timeout: 8000 });
-
-    // 5. 选择第一个骰子
-    const selectableDie = diceArea.locator('[data-testid^="die-"][data-selectable="true"]').or(
-      diceArea.locator('[data-testid^="die-"][class*="selectable"]')
-    ).first();
-    await expect(selectableDie).toBeVisible({ timeout: 3000 });
-    await selectableDie.click();
-    await page.waitForTimeout(500);
-
-    // 6. 验证目标值选择界面出现
-    const valueSelector = page.locator('[data-testid="value-selector"]').or(
-      page.locator('[class*="value-select"]').or(
-        page.getByText(/选择目标值|Select Target Value/i)
-      )
-    );
-    await expect(valueSelector).toBeVisible({ timeout: 5000 });
-
-    // 7. 选择目标值（例如：6）
-    const targetValueButton = valueSelector.locator('button').filter({ hasText: /^6$/ }).first();
-    await expect(targetValueButton).toBeVisible({ timeout: 3000 });
-    await targetValueButton.click();
-    await page.waitForTimeout(500);
-
-    // 8. 验证骰子值改变
-    await expect.poll(async () => {
-      const currentValue = await firstDie.getAttribute('data-die-value');
-      return currentValue !== initialValue;
-    }, { timeout: 5000 }).toBe(true);
-
-    // 验证骰子值变为6
-    const finalValue = await firstDie.getAttribute('data-die-value');
-    expect(finalValue).toBe('6');
-  });
-
-  test('修改骰子为6：选择骰子后自动改为6', async ({ page }) => {
-    // 1. 选择英雄并开始游戏
-    const heroCard = page.locator('[data-testid="hero-card"]').first();
-    await expect(heroCard).toBeVisible({ timeout: 10000 });
-    await heroCard.click();
-
-    const startButton = page.getByRole('button', { name: /开始游戏|Start Game/i });
-    await expect(startButton).toBeVisible({ timeout: 5000 });
-    await startButton.click();
-
-    await expect(page.getByTestId('dt-phase-banner')).toBeVisible({ timeout: 10000 });
-
-    // 2. 推进到可以使用技能的阶段
-    const advanceButton = page.getByRole('button', { name: /推进阶段|Advance Phase/i });
-    await expect(advanceButton).toBeEnabled({ timeout: 5000 });
-    await advanceButton.click();
-    await page.waitForTimeout(500);
-
-    // 跳过投掷阶段
-    const currentPhase = await page.getByTestId('dt-phase-banner').textContent();
-    if (currentPhase?.includes('进攻投掷') || currentPhase?.includes('Offensive Roll')) {
-      const rollButton = page.getByRole('button', { name: /投掷骰子|Roll Dice/i });
-      if (await rollButton.isVisible().catch(() => false)) {
-        await rollButton.click();
-        await page.waitForTimeout(1000);
-        
-        const confirmButton = page.getByRole('button', { name: /确认骰面|Confirm Dice/i });
-        if (await confirmButton.isVisible().catch(() => false)) {
-          await confirmButton.click();
-          await page.waitForTimeout(500);
-        }
-      }
-      
-      await advanceButton.click();
-      await page.waitForTimeout(500);
-    }
-
-    // 3. 查找并使用"修改骰子为6"的技能/卡牌
-    const handArea = page.getByTestId('dt-hand-area');
-    await expect(handArea).toBeVisible({ timeout: 5000 });
-
-    // 查找有 modify-die-to-6 效果的卡牌
-    const modifyCard = handArea.locator('[data-card-effect*="modify-die-to-6"]').or(
-      handArea.locator('[data-card-name*="改为6"]')
-    ).first();
-
-    if (!await modifyCard.isVisible().catch(() => false)) {
-      test.skip(true, '手牌中没有修改骰子为6的卡牌');
-    }
-
-    // 记录骰子初始值
-    const diceArea = page.getByTestId('dt-dice-area');
-    const firstDie = diceArea.locator('[data-testid^="die-"]').first();
-    const initialValue = await firstDie.getAttribute('data-die-value');
-
-    // 打出卡牌
-    await modifyCard.click();
-    await page.waitForTimeout(500);
-
-    // 4. 验证骰子选择界面出现
-    const dieSelector = page.locator('[data-testid="die-selector"]').or(
-      page.getByText(/选择骰子|Select Die/i)
-    );
-    await expect(dieSelector).toBeVisible({ timeout: 8000 });
-
-    // 5. 选择第一个骰子
-    const selectableDie = diceArea.locator('[data-testid^="die-"][data-selectable="true"]').first();
-    await expect(selectableDie).toBeVisible({ timeout: 3000 });
-    await selectableDie.click();
-    await page.waitForTimeout(500);
-
-    // 6. 验证骰子值直接变为6（不需要选择目标值）
-    await expect.poll(async () => {
-      const currentValue = await firstDie.getAttribute('data-die-value');
-      return currentValue === '6';
-    }, { timeout: 5000 }).toBe(true);
-
-    // 验证没有显示目标值选择界面
-    const valueSelector = page.locator('[data-testid="value-selector"]');
-    await expect(valueSelector).toBeHidden({ timeout: 2000 }).catch(() => {
-      // 如果元素不存在也算通过
-      return true;
+        expect(finalState?.core?.dice?.[0]?.value ?? null).toBe(6);
+        expect(finalHandIds).not.toContain('card-play-six');
+        expect(finalEventTypes).toContain('CARD_PLAYED');
+        expect(finalEventTypes).toContain('DIE_MODIFIED');
     });
-  });
 });

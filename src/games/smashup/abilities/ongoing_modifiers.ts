@@ -12,6 +12,7 @@ import { getBaseDef } from '../data/cards';
 import { isMicrobot } from '../domain/utils';
 import type { PlayerId } from '../../../engine/types';
 import { registerKillerPlantModifiers as registerKillerPlantAbilitiesModifiers } from './killer_plants';
+import { isBaseAbilitySuppressed } from '../domain/ongoingEffects';
 
 // ============================================================================
 // 辅助函数
@@ -252,6 +253,9 @@ function registerVampireModifiers(): void {
 function registerBaseModifiers(): void {
     // 通用基地持续力量加成：从 BaseCardDef.minionPowerBonus 数据驱动
     registerPowerModifier('base_minionPowerBonus', (ctx: PowerModifierContext) => {
+        if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) {
+            return 0;
+        }
         const baseDef = getBaseDef(ctx.base.defId);
         return baseDef?.minionPowerBonus ?? 0;
     }, { handlesPodInternally: true }); // 标记已处理 POD（通用修正器，不需要 POD 别名）

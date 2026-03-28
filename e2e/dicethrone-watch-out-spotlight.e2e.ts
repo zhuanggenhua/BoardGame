@@ -82,6 +82,613 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
     }
 }
 
+async function injectPyromancerAttackModifierScene(
+    page: Page,
+    options: { sourceAbilityId?: string | null },
+): Promise<void> {
+    await page.evaluate(async ({ sourceAbilityId }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!harness || !state) {
+            throw new Error('TestHarness state not ready');
+        }
+
+        const random = {
+            random: () => 0.5,
+            d: (max: number) => Math.min(max, 1),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array],
+        };
+        const [{ initHeroState }, { PYROMANCER_CARDS }] = await Promise.all([
+            import('/src/games/dicethrone/domain/characters.ts'),
+            import('/src/games/dicethrone/heroes/pyromancer/cards.ts'),
+        ]);
+        const pyromancerBase = initHeroState('0', 'pyromancer', random as any);
+        const barbarianBase = initHeroState('1', 'barbarian', random as any);
+        const redHot = PYROMANCER_CARDS.find((card: any) => card.id === 'card-red-hot');
+        if (!redHot) {
+            throw new Error('card-red-hot not found');
+        }
+
+        const nextState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                phase: 'offensiveRoll',
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                },
+            },
+            core: {
+                ...state.core,
+                activePlayerId: '0',
+                hostStarted: true,
+                selectedCharacters: {
+                    ...(state.core.selectedCharacters ?? {}),
+                    '0': 'pyromancer',
+                    '1': 'barbarian',
+                },
+                rollCount: 1,
+                rollConfirmed: true,
+                dice: [
+                    { id: 0, value: 2, isKept: false, playerId: '0' },
+                    { id: 1, value: 2, isKept: false, playerId: '0' },
+                    { id: 2, value: 3, isKept: false, playerId: '0' },
+                    { id: 3, value: 4, isKept: false, playerId: '0' },
+                    { id: 4, value: 5, isKept: false, playerId: '0' },
+                ],
+                players: {
+                    ...state.core.players,
+                    '0': {
+                        ...pyromancerBase,
+                        hand: [JSON.parse(JSON.stringify(redHot))],
+                        discard: [],
+                        resources: {
+                            ...pyromancerBase.resources,
+                            CP: 2,
+                            HP: 50,
+                        },
+                        tokens: {
+                            ...pyromancerBase.tokens,
+                            fire_mastery: 2,
+                        },
+                        pendingBonusDamage: undefined,
+                    },
+                    '1': {
+                        ...barbarianBase,
+                        resources: {
+                            ...barbarianBase.resources,
+                            HP: 50,
+                        },
+                    },
+                },
+                pendingAttack: sourceAbilityId
+                    ? {
+                        attackerId: '0',
+                        defenderId: '1',
+                        isDefendable: true,
+                        sourceAbilityId,
+                        damage: 5,
+                        bonusDamage: 0,
+                        attackModifierBonusDamage: 0,
+                        damageResolved: false,
+                        resolvedDamage: 0,
+                        preDefenseResolved: false,
+                        offensiveRollEndTokenResolved: false,
+                    }
+                    : null,
+            },
+        };
+
+        harness.state.set(nextState);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    }, options);
+}
+
+async function waitForPyromancerAttackModifierScene(
+    page: Page,
+    options: { sourceAbilityId?: string | null },
+): Promise<void> {
+    await page.waitForFunction(({ sourceAbilityId }) => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.sys?.phase === 'offensiveRoll'
+            && state?.core?.hostStarted === true
+            && state?.core?.selectedCharacters?.['0'] === 'pyromancer'
+            && state?.core?.selectedCharacters?.['1'] === 'barbarian'
+            && state?.core?.players?.['0']?.resources?.CP === 2
+            && state?.core?.players?.['0']?.hand?.length === 1
+            && state?.core?.players?.['0']?.hand?.[0]?.id === 'card-red-hot'
+            && (sourceAbilityId
+                ? state?.core?.pendingAttack?.sourceAbilityId === sourceAbilityId
+                : state?.core?.pendingAttack == null);
+    }, options, { timeout: 30000, polling: 200 });
+}
+
+async function injectSamuraiAttackModifierScene(
+    page: Page,
+    options: {
+        cardId: 'card-righteousness' | 'card-zanshin';
+        defenderCharacter: 'monk' | 'paladin';
+        sourceAbilityId?: string | null;
+        diceValues?: number[];
+    },
+): Promise<void> {
+    await page.evaluate(async ({ cardId, defenderCharacter, sourceAbilityId, diceValues }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!harness || !state) {
+            throw new Error('TestHarness state not ready');
+        }
+
+        if (Array.isArray(diceValues) && diceValues.length > 0) {
+            harness.dice.setValues(diceValues);
+        }
+
+        const random = {
+            random: () => 0.5,
+            d: (max: number) => Math.min(max, 1),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array],
+        };
+        const [{ initHeroState }, { SAMURAI_CARDS }] = await Promise.all([
+            import('/src/games/dicethrone/domain/characters.ts'),
+            import('/src/games/dicethrone/heroes/samurai/cards.ts'),
+        ]);
+        const samuraiBase = initHeroState('0', 'samurai', random as any);
+        const defenderBase = initHeroState('1', defenderCharacter, random as any);
+        const attackModifierCard = SAMURAI_CARDS.find((card: any) => card.id === cardId);
+        if (!attackModifierCard) {
+            throw new Error(`${cardId} not found`);
+        }
+
+        const nextState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                phase: 'offensiveRoll',
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                },
+            },
+            core: {
+                ...state.core,
+                activePlayerId: '0',
+                hostStarted: true,
+                selectedCharacters: {
+                    ...(state.core.selectedCharacters ?? {}),
+                    '0': 'samurai',
+                    '1': defenderCharacter,
+                },
+                rollCount: 1,
+                rollConfirmed: true,
+                dice: [
+                    { id: 0, value: 1, isKept: false, playerId: '0' },
+                    { id: 1, value: 1, isKept: false, playerId: '0' },
+                    { id: 2, value: 1, isKept: false, playerId: '0' },
+                    { id: 3, value: 4, isKept: false, playerId: '0' },
+                    { id: 4, value: 4, isKept: false, playerId: '0' },
+                ],
+                players: {
+                    ...state.core.players,
+                    '0': {
+                        ...samuraiBase,
+                        hand: [JSON.parse(JSON.stringify(attackModifierCard))],
+                        discard: [],
+                        resources: {
+                            ...samuraiBase.resources,
+                            CP: 2,
+                            HP: 50,
+                        },
+                    },
+                    '1': {
+                        ...defenderBase,
+                        resources: {
+                            ...defenderBase.resources,
+                            HP: 50,
+                        },
+                    },
+                },
+                pendingAttack: sourceAbilityId
+                    ? {
+                        attackerId: '0',
+                        defenderId: '1',
+                        isDefendable: true,
+                        sourceAbilityId,
+                        damage: 6,
+                        bonusDamage: 0,
+                        attackModifierBonusDamage: 0,
+                        damageResolved: false,
+                        resolvedDamage: 0,
+                        preDefenseResolved: false,
+                        offensiveRollEndTokenResolved: false,
+                    }
+                    : null,
+            },
+        };
+
+        harness.state.set(nextState);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    }, options);
+}
+
+async function waitForSamuraiAttackModifierScene(
+    page: Page,
+    options: {
+        cardId: 'card-righteousness' | 'card-zanshin';
+        defenderCharacter: 'monk' | 'paladin';
+        sourceAbilityId?: string | null;
+    },
+): Promise<void> {
+    await page.waitForFunction(({ cardId, defenderCharacter, sourceAbilityId }) => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.sys?.phase === 'offensiveRoll'
+            && state?.core?.hostStarted === true
+            && state?.core?.selectedCharacters?.['0'] === 'samurai'
+            && state?.core?.selectedCharacters?.['1'] === defenderCharacter
+            && state?.core?.players?.['0']?.resources?.CP === 2
+            && state?.core?.players?.['0']?.hand?.length === 1
+            && state?.core?.players?.['0']?.hand?.[0]?.id === cardId
+            && (sourceAbilityId
+                ? state?.core?.pendingAttack?.sourceAbilityId === sourceAbilityId
+                : state?.core?.pendingAttack == null);
+    }, options, { timeout: 30000, polling: 200 });
+}
+
+async function injectSamuraiTokenResponseScene(
+    page: Page,
+    options: {
+        mode: 'honor' | 'samurai-retribution';
+        incomingDamage?: number;
+        rollValues?: number[];
+    },
+): Promise<void> {
+    await page.evaluate(async ({ mode, incomingDamage, rollValues }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!harness || !state) {
+            throw new Error('TestHarness state not ready');
+        }
+
+        if (Array.isArray(rollValues) && rollValues.length > 0) {
+            harness.dice.setValues(rollValues);
+        }
+
+        const damage = incomingDamage ?? (mode === 'honor' ? 4 : 5);
+        const random = {
+            random: () => 0.5,
+            d: (max: number) => Math.min(max, 1),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array],
+        };
+
+        const [{ initHeroState, ALL_TOKEN_DEFINITIONS }, { TOKEN_IDS }] = await Promise.all([
+            import('/src/games/dicethrone/domain/characters.ts'),
+            import('/src/games/dicethrone/domain/ids.ts'),
+        ]);
+
+        const samuraiBase = initHeroState('0', 'samurai', random as any);
+        const opponentCharacter = mode === 'honor' ? 'monk' : 'paladin';
+        const opponentBase = initHeroState('1', opponentCharacter, random as any);
+        const samuraiTokens = {
+            ...samuraiBase.tokens,
+            [TOKEN_IDS.HONOR]: mode === 'honor' ? 3 : 0,
+            [TOKEN_IDS.SHAME]: 0,
+            [TOKEN_IDS.SAMURAI_RETRIBUTION]: mode === 'samurai-retribution' ? 1 : 0,
+        };
+
+        const nextState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                phase: 'main1',
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                },
+            },
+            core: {
+                ...state.core,
+                activePlayerId: mode === 'honor' ? '0' : '1',
+                hostStarted: true,
+                tokenDefinitions: ALL_TOKEN_DEFINITIONS,
+                selectedCharacters: {
+                    ...(state.core.selectedCharacters ?? {}),
+                    '0': 'samurai',
+                    '1': opponentCharacter,
+                },
+                rollCount: 1,
+                rollConfirmed: true,
+                dice: [
+                    { id: 0, value: 1, isKept: false, playerId: mode === 'honor' ? '0' : '1' },
+                    { id: 1, value: 2, isKept: false, playerId: mode === 'honor' ? '0' : '1' },
+                    { id: 2, value: 3, isKept: false, playerId: mode === 'honor' ? '0' : '1' },
+                    { id: 3, value: 4, isKept: false, playerId: mode === 'honor' ? '0' : '1' },
+                    { id: 4, value: 5, isKept: false, playerId: mode === 'honor' ? '0' : '1' },
+                ],
+                players: {
+                    ...state.core.players,
+                    '0': {
+                        ...samuraiBase,
+                        hand: [],
+                        discard: [],
+                        resources: {
+                            ...samuraiBase.resources,
+                            cp: 2,
+                            hp: 50,
+                        },
+                        tokens: samuraiTokens,
+                    },
+                    '1': {
+                        ...opponentBase,
+                        hand: [],
+                        discard: [],
+                        resources: {
+                            ...opponentBase.resources,
+                            cp: 2,
+                            hp: 50,
+                        },
+                    },
+                },
+                pendingAttack: {
+                    attackerId: mode === 'honor' ? '0' : '1',
+                    defenderId: mode === 'honor' ? '1' : '0',
+                    isDefendable: true,
+                    sourceAbilityId: mode === 'honor' ? 'katana-slice-3' : 'revolver',
+                    damage,
+                    bonusDamage: 0,
+                    attackModifierBonusDamage: 0,
+                    damageResolved: false,
+                    resolvedDamage: 0,
+                    preDefenseResolved: false,
+                    offensiveRollEndTokenResolved: false,
+                },
+                pendingDamage: {
+                    id: `samurai-${mode}-window`,
+                    sourcePlayerId: mode === 'honor' ? '0' : '1',
+                    targetPlayerId: mode === 'honor' ? '1' : '0',
+                    originalDamage: damage,
+                    currentDamage: damage,
+                    sourceAbilityId: mode === 'honor' ? 'katana-slice-3' : 'revolver',
+                    responseType: mode === 'honor' ? 'beforeDamageDealt' : 'beforeDamageReceived',
+                    responderId: '0',
+                    isFullyEvaded: false,
+                },
+            },
+        };
+
+        harness.state.set(nextState);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    }, options);
+}
+
+async function waitForSamuraiTokenResponseScene(
+    page: Page,
+    options: { mode: 'honor' | 'samurai-retribution' },
+): Promise<void> {
+    await page.waitForFunction(({ mode }) => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.core?.pendingDamage?.id === `samurai-${mode}-window`
+            && state?.core?.players?.['0']?.characterId === 'samurai'
+            && Array.isArray(state?.core?.tokenDefinitions)
+            && state.core.tokenDefinitions.length > 0;
+    }, options, { timeout: 30000, polling: 200 });
+}
+
+async function injectGunslingerTheLawInteractionScene(page: Page): Promise<void> {
+    await page.evaluate(async () => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!harness || !state) {
+            throw new Error('TestHarness state not ready');
+        }
+
+        const random = {
+            random: () => 0.5,
+            d: (max: number) => Math.min(max, 1),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array],
+        };
+
+        const [{ initHeroState }, { TOKEN_IDS, STATUS_IDS }] = await Promise.all([
+            import('/src/games/dicethrone/domain/characters.ts'),
+            import('/src/games/dicethrone/domain/ids.ts'),
+        ]);
+
+        const gunslinger = {
+            ...initHeroState('0', 'gunslinger', random as any),
+            nickname: '枪手',
+        };
+        const monk = {
+            ...initHeroState('1', 'monk', random as any),
+            nickname: '僧侣-A',
+        };
+        const paladin = {
+            ...initHeroState('2', 'paladin', random as any),
+            nickname: '圣骑士-B',
+        };
+
+        const currentInteraction = {
+            id: 'dt-interaction-card-the-law-scene',
+            kind: 'dt:card-interaction',
+            playerId: '0',
+            data: {
+                id: 'card-the-law-scene',
+                playerId: '0',
+                sourceCardId: 'card-the-law',
+                sourceId: 'card-the-law',
+                type: 'selectPlayer',
+                titleKey: 'interaction.gunslingerTheLaw',
+                selectCount: 2,
+                selected: [],
+                targetPlayerIds: ['1', '2'],
+                tokenGrantConfig: { tokenId: TOKEN_IDS.BOUNTY, amount: 1 },
+                statusGrantConfig: { statusId: STATUS_IDS.KNOCKDOWN, amount: 1 },
+            },
+        };
+
+        const nextState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                phase: 'main1',
+                interaction: {
+                    current: currentInteraction,
+                    queue: [],
+                },
+            },
+            core: {
+                ...state.core,
+                activePlayerId: '0',
+                hostStarted: true,
+                selectedCharacters: {
+                    ...(state.core.selectedCharacters ?? {}),
+                    '0': 'gunslinger',
+                    '1': 'monk',
+                    '2': 'paladin',
+                },
+                readyPlayers: {
+                    ...(state.core.readyPlayers ?? {}),
+                    '0': true,
+                    '1': true,
+                    '2': true,
+                },
+                players: {
+                    ...state.core.players,
+                    '0': gunslinger,
+                    '1': monk,
+                    '2': paladin,
+                },
+                pendingAttack: null,
+                rollCount: 0,
+                rollConfirmed: false,
+            },
+        };
+
+        harness.state.set(nextState);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    });
+}
+
+async function injectGunslingerTheLawPlayScene(
+    page: Page,
+    options: { multiplayer: boolean },
+): Promise<void> {
+    await page.evaluate(async ({ multiplayer }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!harness || !state) {
+            throw new Error('TestHarness state not ready');
+        }
+
+        const random = {
+            random: () => 0.5,
+            d: (max: number) => Math.min(max, 1),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array],
+        };
+
+        const [{ initHeroState }, { GUNSLINGER_CARDS }] = await Promise.all([
+            import('/src/games/dicethrone/domain/characters.ts'),
+            import('/src/games/dicethrone/heroes/gunslinger/cards.ts'),
+        ]);
+
+        const theLaw = GUNSLINGER_CARDS.find((card: any) => card.id === 'card-the-law');
+        if (!theLaw) {
+            throw new Error('card-the-law not found');
+        }
+
+        const gunslinger = {
+            ...initHeroState('0', 'gunslinger', random as any),
+            nickname: '枪手',
+            hand: [JSON.parse(JSON.stringify(theLaw))],
+            discard: [],
+            resources: {
+                cp: 2,
+                hp: 50,
+            },
+        };
+        const monk = {
+            ...initHeroState('1', 'monk', random as any),
+            nickname: multiplayer ? '僧侣-A' : '僧侣',
+            resources: {
+                cp: 2,
+                hp: 50,
+            },
+        };
+
+        const players: Record<string, any> = {
+            ...state.core.players,
+            '0': gunslinger,
+            '1': monk,
+        };
+        const selectedCharacters: Record<string, string> = {
+            ...(state.core.selectedCharacters ?? {}),
+            '0': 'gunslinger',
+            '1': 'monk',
+        };
+        const readyPlayers: Record<string, boolean> = {
+            ...(state.core.readyPlayers ?? {}),
+            '0': true,
+            '1': true,
+        };
+
+        if (multiplayer) {
+            players['2'] = {
+                ...initHeroState('2', 'paladin', random as any),
+                nickname: '圣骑士-B',
+                resources: {
+                    cp: 2,
+                    hp: 50,
+                },
+            };
+            selectedCharacters['2'] = 'paladin';
+            readyPlayers['2'] = true;
+        }
+
+        const nextState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                phase: 'main1',
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                },
+            },
+            core: {
+                ...state.core,
+                activePlayerId: '0',
+                hostStarted: true,
+                selectedCharacters,
+                readyPlayers,
+                players,
+                pendingAttack: null,
+                pendingDamage: undefined,
+            },
+        };
+
+        harness.state.set(nextState);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    }, options);
+}
+
+async function waitForGunslingerTheLawPlayScene(
+    page: Page,
+    options: { multiplayer: boolean },
+): Promise<void> {
+    await page.waitForFunction(({ multiplayer }) => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.sys?.phase === 'main1'
+            && state?.core?.activePlayerId === '0'
+            && state?.core?.players?.['0']?.hand?.some((card: any) => card.id === 'card-the-law')
+            && state?.core?.selectedCharacters?.['0'] === 'gunslinger'
+            && state?.core?.selectedCharacters?.['1'] === 'monk'
+            && (multiplayer ? state?.core?.selectedCharacters?.['2'] === 'paladin' : !state?.core?.players?.['2']);
+    }, options, { timeout: 30000, polling: 200 });
+}
+
 test('self watch out should show bonus die spotlight', async ({ page, game }, testInfo) => {
     test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
 
@@ -379,6 +986,464 @@ test('crit bonus damage should not show attack-modifier badge', async ({ page, g
     expect(uiState.badgeCount).toBe(0);
 
     await game.screenshot('06-crit-no-attack-modifier-badge', testInfo);
+});
+
+test('attack modifier should show the correct timing prompt after invalid play', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectPyromancerAttackModifierScene(page, { sourceAbilityId: null });
+    await waitForPyromancerAttackModifierScene(page, { sourceAbilityId: null });
+
+    await page.locator('[data-card-id="card-red-hot"]').first().click();
+
+    await page.waitForFunction(() => {
+        const reject = (window as any).__BG_LAST_COMMAND_REJECTED__;
+        return reject?.error === 'attackModifierRequiresSelectedAttack';
+    }, { timeout: 10000, polling: 200 });
+
+    const timingPrompt = page.getByText(/attackModifierRequiresSelectedAttack|select an attack ability before playing this attack modifier/i).first();
+    await expect(timingPrompt).toBeVisible({ timeout: 5000 });
+
+    const rejectState = await page.evaluate(() => ({
+        reject: (window as any).__BG_LAST_COMMAND_REJECTED__ ?? null,
+        hand: (window as any).__BG_TEST_HARNESS__?.state?.get()?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+    }));
+
+    expect(rejectState.reject).toMatchObject({
+        gameId: 'dicethrone',
+        error: 'attackModifierRequiresSelectedAttack',
+        commandType: 'PLAY_CARD',
+    });
+    expect(rejectState.hand).toContain('card-red-hot');
+
+    await game.screenshot('07-attack-modifier-timing-prompt', testInfo);
+});
+
+test('selected attack should show visible attack-modifier ui above the dice tray', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectPyromancerAttackModifierScene(page, { sourceAbilityId: 'meteor' });
+    await waitForPyromancerAttackModifierScene(page, { sourceAbilityId: 'meteor' });
+    await page.locator('[data-card-id="card-red-hot"]').first().click();
+
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        return state?.core?.pendingAttack?.attackModifierBonusDamage === 2;
+    }, { timeout: 10000, polling: 200 });
+
+    const activeBadge = page.locator('[data-testid="active-modifier-badge"]');
+
+    await expect(activeBadge).toBeVisible({ timeout: 5000 });
+    await expect(activeBadge).toContainText('+2', { timeout: 5000 });
+    await expect(page.locator('[data-testid="attack-modifier-bonus-badge"]')).toHaveCount(0);
+
+    const viewport = page.viewportSize();
+    expect(viewport).not.toBeNull();
+    await expectElementInsideViewport(activeBadge, 'active modifier badge', viewport!.width, viewport!.height);
+
+    await game.screenshot('08-attack-modifier-ui-visible', testInfo);
+    await activeBadge.hover();
+    await expect(page.getByText(/modifierActive\.tooltip|must be played after selecting an attack ability|attack modifier/i).first()).toBeVisible({
+        timeout: 5000,
+    });
+});
+
+test.skip('samurai righteousness should resolve a visible bonus-die branch against monk', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectSamuraiAttackModifierScene(page, {
+        cardId: 'card-righteousness',
+        defenderCharacter: 'monk',
+        sourceAbilityId: 'katana-slice-3',
+    });
+    await waitForSamuraiAttackModifierScene(page, {
+        cardId: 'card-righteousness',
+        defenderCharacter: 'monk',
+        sourceAbilityId: 'katana-slice-3',
+    });
+
+    await page.evaluate(() => {
+        (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([1]);
+    });
+    await page.locator('[data-card-id="card-righteousness"]').first().click();
+
+    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
+    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+    await expect(bonusDieOverlay).toContainText(/samuraiRighteousnessKatana|武士刀：\+2 伤害|\+2\s*伤害/i, { timeout: 5000 });
+
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        return state?.core?.pendingAttack?.sourceAbilityId === 'katana-slice-3'
+            && state?.core?.pendingAttack?.bonusDamage === 2
+            && state?.core?.pendingAttack?.attackModifierBonusDamage === 2;
+    }, { timeout: 10000, polling: 200 });
+
+    const activeBadge = page.locator('[data-testid="active-modifier-badge"]');
+    await expect(activeBadge).toBeVisible({ timeout: 5000 });
+    await expect(activeBadge).toContainText('+2', { timeout: 5000 });
+
+    const stateAfterPlay = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        const entries = state?.sys?.eventStream?.entries ?? [];
+        const latestBonusDieEvent = [...entries].reverse().find((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED');
+        return {
+            hand: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            eventTypes: entries.slice(-6).map((entry: any) => entry.event?.type),
+            effectKey: latestBonusDieEvent?.event?.payload?.effectKey ?? null,
+            shame: state?.core?.players?.['1']?.tokens?.shame ?? 0,
+        };
+    });
+
+    expect(stateAfterPlay.hand).not.toContain('card-righteousness');
+    expect(stateAfterPlay.eventTypes).toContain('CARD_PLAYED');
+    expect(stateAfterPlay.eventTypes).toContain('BONUS_DIE_ROLLED');
+    expect(stateAfterPlay.effectKey).toBe('bonusDie.effect.samuraiRighteousnessKatana');
+    expect(stateAfterPlay.shame).toBe(0);
+
+    await game.screenshot('09-samurai-righteousness-vs-monk', testInfo);
+});
+
+test.skip('samurai zanshin should show 5-die settlement and mixed samurai effects against paladin', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectSamuraiAttackModifierScene(page, {
+        cardId: 'card-zanshin',
+        defenderCharacter: 'paladin',
+        sourceAbilityId: 'katana-slice-3',
+        diceValues: [1, 4, 6, 6, 2],
+    });
+    await waitForSamuraiAttackModifierScene(page, {
+        cardId: 'card-zanshin',
+        defenderCharacter: 'paladin',
+        sourceAbilityId: 'katana-slice-3',
+    });
+
+    await page.locator('[data-card-id="card-zanshin"]').first().click();
+
+    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
+    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+
+    await page.waitForFunction(() => {
+        const settlement = (window as any).__BG_TEST_HARNESS__?.state?.get()?.core?.pendingBonusDiceSettlement;
+        return settlement?.displayOnly === true && settlement?.dice?.length === 5;
+    }, { timeout: 10000, polling: 200 });
+
+    await expect(bonusDieOverlay).toContainText(/Dice Results/i, { timeout: 5000 });
+
+    const activeBadge = page.locator('[data-testid="active-modifier-badge"]');
+    await expect(activeBadge).toBeVisible({ timeout: 5000 });
+    await expect(activeBadge).toContainText('+2', { timeout: 5000 });
+
+    const stateAfterPlay = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        const entries = state?.sys?.eventStream?.entries ?? [];
+        return {
+            hand: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            lastEventTypes: entries.slice(-10).map((entry: any) => entry.event?.type),
+            bonusDieEventCount: entries.filter((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED').length,
+            settlement: state?.core?.pendingBonusDiceSettlement
+                ? {
+                    diceCount: state.core.pendingBonusDiceSettlement.dice?.length ?? 0,
+                    displayOnly: state.core.pendingBonusDiceSettlement.displayOnly,
+                }
+                : null,
+            attackBonusDamage: state?.core?.pendingAttack?.attackModifierBonusDamage ?? 0,
+            totalBonusDamage: state?.core?.pendingAttack?.bonusDamage ?? 0,
+            paladinShame: state?.core?.players?.['1']?.tokens?.shame ?? 0,
+            samuraiRetribution: state?.core?.players?.['0']?.tokens?.samurai_retribution ?? 0,
+        };
+    });
+
+    expect(stateAfterPlay.hand).not.toContain('card-zanshin');
+    expect(stateAfterPlay.lastEventTypes).toContain('CARD_PLAYED');
+    expect(stateAfterPlay.lastEventTypes).toContain('BONUS_DIE_ROLLED');
+    expect(stateAfterPlay.bonusDieEventCount).toBeGreaterThanOrEqual(5);
+    expect(stateAfterPlay.settlement).toEqual({ diceCount: 5, displayOnly: true });
+    expect(stateAfterPlay.attackBonusDamage).toBe(2);
+    expect(stateAfterPlay.totalBonusDamage).toBe(2);
+    expect(stateAfterPlay.paladinShame).toBe(1);
+    expect(stateAfterPlay.samuraiRetribution).toBe(2);
+
+    await game.screenshot('10-samurai-zanshin-vs-paladin', testInfo);
+});
+
+test('samurai righteousness should resolve a valid branch against monk', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectSamuraiAttackModifierScene(page, {
+        cardId: 'card-righteousness',
+        defenderCharacter: 'monk',
+        sourceAbilityId: 'katana-slice-3',
+        diceValues: [1],
+    });
+    await waitForSamuraiAttackModifierScene(page, {
+        cardId: 'card-righteousness',
+        defenderCharacter: 'monk',
+        sourceAbilityId: 'katana-slice-3',
+    });
+
+    await page.evaluate(() => {
+        (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([1]);
+    });
+    await page.locator('[data-card-id="card-righteousness"]').first().click();
+
+    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
+    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        const entries = state?.sys?.eventStream?.entries ?? [];
+        const latestBonusDieEvent = [...entries].reverse().find((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED');
+        return state?.core?.pendingAttack?.sourceAbilityId === 'katana-slice-3'
+            && state?.core?.players?.['0']?.hand?.every((card: any) => card.id !== 'card-righteousness')
+            && latestBonusDieEvent?.event?.payload?.effectKey === 'bonusDie.effect.samuraiRighteousnessKatana';
+    }, { timeout: 10000, polling: 200 });
+
+    const stateAfterPlay = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        const entries = state?.sys?.eventStream?.entries ?? [];
+        const latestBonusDieEvent = [...entries].reverse().find((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED');
+        return {
+            hand: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            eventTypes: entries.slice(-6).map((entry: any) => entry.event?.type),
+            effectKey: latestBonusDieEvent?.event?.payload?.effectKey ?? null,
+            shame: state?.core?.players?.['1']?.tokens?.shame ?? 0,
+            samuraiRetribution: state?.core?.players?.['0']?.tokens?.samurai_retribution ?? 0,
+            attackModifierBonusDamage: state?.core?.pendingAttack?.attackModifierBonusDamage ?? 0,
+            totalBonusDamage: state?.core?.pendingAttack?.bonusDamage ?? 0,
+        };
+    });
+
+    expect(stateAfterPlay.hand).not.toContain('card-righteousness');
+    expect(stateAfterPlay.eventTypes).toContain('CARD_PLAYED');
+    expect(stateAfterPlay.eventTypes).toContain('BONUS_DIE_ROLLED');
+    expect(stateAfterPlay.effectKey).toBe('bonusDie.effect.samuraiRighteousnessKatana');
+
+    const activeBadge = page.locator('[data-testid="active-modifier-badge"]');
+    await expect(bonusDieOverlay).toContainText(/samuraiRighteousnessKatana|武士刀：\+2 伤害|Katana:\s*\+2 damage|\+2\s*(伤害|damage)/i, { timeout: 5000 });
+    await expect(activeBadge).toBeVisible({ timeout: 5000 });
+    await expect(activeBadge).toContainText('+2', { timeout: 5000 });
+    expect(stateAfterPlay.attackModifierBonusDamage).toBe(2);
+    expect(stateAfterPlay.totalBonusDamage).toBe(2);
+    expect(stateAfterPlay.shame).toBe(0);
+    expect(stateAfterPlay.samuraiRetribution).toBe(0);
+
+    await game.screenshot('09-samurai-righteousness-vs-monk', testInfo);
+});
+
+test('samurai zanshin should settle 5 bonus dice and synchronize effects against paladin', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectSamuraiAttackModifierScene(page, {
+        cardId: 'card-zanshin',
+        defenderCharacter: 'paladin',
+        sourceAbilityId: 'katana-slice-3',
+    });
+    await waitForSamuraiAttackModifierScene(page, {
+        cardId: 'card-zanshin',
+        defenderCharacter: 'paladin',
+        sourceAbilityId: 'katana-slice-3',
+    });
+
+    await page.evaluate(() => {
+        (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([1, 4, 6, 6, 1]);
+    });
+    await page.locator('[data-card-id="card-zanshin"]').first().click();
+
+    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
+    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+
+    await page.waitForFunction(() => {
+        const settlement = (window as any).__BG_TEST_HARNESS__?.state?.get()?.core?.pendingBonusDiceSettlement;
+        return settlement?.displayOnly === true && settlement?.dice?.length === 5;
+    }, { timeout: 10000, polling: 200 });
+
+    await expect(bonusDieOverlay).toContainText(/Dice Results/i, { timeout: 5000 });
+
+    const stateAfterPlay = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        const entries = state?.sys?.eventStream?.entries ?? [];
+        const settlementDice = state?.core?.pendingBonusDiceSettlement?.dice ?? [];
+        const faceCounts = settlementDice.reduce((acc: Record<string, number>, die: any) => {
+            const face = die?.face ?? 'unknown';
+            acc[face] = (acc[face] ?? 0) + 1;
+            return acc;
+        }, {});
+        return {
+            hand: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            lastEventTypes: entries.slice(-10).map((entry: any) => entry.event?.type),
+            bonusDieEventCount: entries.filter((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED').length,
+            settlement: state?.core?.pendingBonusDiceSettlement
+                ? {
+                    diceCount: state.core.pendingBonusDiceSettlement.dice?.length ?? 0,
+                    displayOnly: state.core.pendingBonusDiceSettlement.displayOnly,
+                    diceFaces: settlementDice.map((die: any) => die.face ?? null),
+                }
+                : null,
+            faceCounts,
+            attackBonusDamage: state?.core?.pendingAttack?.attackModifierBonusDamage ?? 0,
+            totalBonusDamage: state?.core?.pendingAttack?.bonusDamage ?? 0,
+            paladinShame: state?.core?.players?.['1']?.tokens?.shame ?? 0,
+            samuraiRetribution: state?.core?.players?.['0']?.tokens?.samurai_retribution ?? 0,
+        };
+    });
+
+    expect(stateAfterPlay.hand).not.toContain('card-zanshin');
+    expect(stateAfterPlay.lastEventTypes).toContain('CARD_PLAYED');
+    expect(stateAfterPlay.lastEventTypes).toContain('BONUS_DIE_ROLLED');
+    expect(stateAfterPlay.bonusDieEventCount).toBeGreaterThanOrEqual(5);
+    expect(stateAfterPlay.settlement?.diceCount).toBe(5);
+    expect(stateAfterPlay.settlement?.displayOnly).toBe(true);
+    expect(stateAfterPlay.settlement?.diceFaces).toEqual(['katana', 'helm', 'rising_sun', 'rising_sun', 'katana']);
+
+    const katanaCount = stateAfterPlay.faceCounts.katana ?? 0;
+    const helmCount = stateAfterPlay.faceCounts.helm ?? 0;
+    const risingSunCount = stateAfterPlay.faceCounts.rising_sun ?? 0;
+
+    expect(katanaCount).toBe(2);
+    expect(helmCount).toBe(1);
+    expect(risingSunCount).toBe(2);
+    expect(stateAfterPlay.attackBonusDamage).toBe(2);
+    expect(stateAfterPlay.totalBonusDamage).toBe(2);
+    expect(stateAfterPlay.paladinShame).toBe(1);
+    expect(stateAfterPlay.samuraiRetribution).toBe(2);
+
+    const activeBadge = page.locator('[data-testid="active-modifier-badge"]');
+    await expect(activeBadge).toBeVisible({ timeout: 5000 });
+    await expect(activeBadge).toContainText('+2', { timeout: 5000 });
+
+    await page.waitForTimeout(900);
+    await game.screenshot('10-samurai-zanshin-vs-paladin', testInfo);
+});
+
+test('samurai honor token should accumulate to +3 after two real clicks', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectSamuraiTokenResponseScene(page, {
+        mode: 'honor',
+        incomingDamage: 4,
+    });
+    await waitForSamuraiTokenResponseScene(page, { mode: 'honor' });
+
+    await ensureDebugPanelClosed(page);
+    await disableFabMenu(page);
+
+    const attackerTitle = page.getByText(/响应（攻击方）|attacker/i).first();
+    const honorLabel = page.getByText(/^Honor$/).first();
+    const useButton = page.getByRole('button', { name: /^(使用|Use|Use Token)(?: x\d+)?$/i }).first();
+
+    await expect(attackerTitle).toBeVisible({ timeout: 5000 });
+    await expect(honorLabel).toBeVisible({ timeout: 5000 });
+    await expect(useButton).toBeVisible({ timeout: 5000 });
+    await game.screenshot('17-samurai-honor-before-first-use', testInfo);
+
+    await useButton.click();
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.core?.pendingDamage?.currentDamage === 5
+            && state?.core?.pendingDamage?.tokenUsageTotals?.honor === 1
+            && state?.core?.players?.['0']?.tokens?.honor === 2;
+    }, undefined, { timeout: 10000, polling: 200 });
+
+    await expect(attackerTitle).toBeVisible({ timeout: 5000 });
+    await game.screenshot('18-samurai-honor-after-first-use', testInfo);
+
+    await useButton.click();
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.core?.players?.['1']?.resources?.hp === 43;
+    }, undefined, { timeout: 10000, polling: 200 });
+
+    const finalState = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const entries = state?.sys?.eventStream?.entries ?? [];
+        return {
+            pendingDamage: state?.core?.pendingDamage ?? null,
+            honor: state?.core?.players?.['0']?.tokens?.honor ?? 0,
+            opponentHp: state?.core?.players?.['1']?.resources?.hp ?? null,
+            lastEventTypes: entries.slice(-8).map((entry: any) => entry.event?.type),
+        };
+    });
+
+    expect(finalState.pendingDamage).toBeNull();
+    expect(finalState.honor).toBe(1);
+    expect(finalState.opponentHp).toBe(43);
+    expect(finalState.lastEventTypes.filter(type => type === 'TOKEN_USED')).toHaveLength(2);
+    expect(finalState.lastEventTypes).toContain('TOKEN_RESPONSE_CLOSED');
+    await expect(useButton).toBeHidden({ timeout: 5000 });
+    await game.screenshot('19-samurai-honor-finalized-after-second-use', testInfo);
+});
+
+test('samurai retribution token should retaliate through real click flow', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectSamuraiTokenResponseScene(page, {
+        mode: 'samurai-retribution',
+        incomingDamage: 5,
+        rollValues: [1],
+    });
+    await waitForSamuraiTokenResponseScene(page, { mode: 'samurai-retribution' });
+
+    await ensureDebugPanelClosed(page);
+    await disableFabMenu(page);
+
+    const defenderTitle = page.getByText(/响应（防御方）|defender/i).first();
+    const retributionLabel = page.getByText(/^Back Strike$|^Retribution$/).first();
+    const useButton = page.getByRole('button', { name: /^(使用|Use|Use Token)(?: x\d+)?$/i }).first();
+
+    await expect(defenderTitle).toBeVisible({ timeout: 5000 });
+    await expect(retributionLabel).toBeVisible({ timeout: 5000 });
+    await expect(useButton).toBeVisible({ timeout: 5000 });
+    await game.screenshot('20-samurai-retribution-before-use', testInfo);
+
+    await useButton.click();
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.core?.players?.['0']?.resources?.hp === 45
+            && state?.core?.players?.['1']?.resources?.hp === 49;
+    }, undefined, { timeout: 10000, polling: 200 });
+
+    const finalState = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const entries = state?.sys?.eventStream?.entries ?? [];
+        const latestBackStrike = [...entries]
+            .reverse()
+            .find((entry: any) => entry.event?.payload?.effectKey === 'bonusDie.effect.samuraiBackStrikeDie');
+        return {
+            pendingDamage: state?.core?.pendingDamage ?? null,
+            samuraiHp: state?.core?.players?.['0']?.resources?.hp ?? null,
+            attackerHp: state?.core?.players?.['1']?.resources?.hp ?? null,
+            retribution: state?.core?.players?.['0']?.tokens?.samurai_retribution ?? 0,
+            lastEventTypes: entries.slice(-10).map((entry: any) => entry.event?.type),
+            backStrikeRoll: latestBackStrike?.event?.payload?.value ?? null,
+        };
+    });
+
+    expect(finalState.pendingDamage).toBeNull();
+    expect(finalState.retribution).toBe(0);
+    expect(finalState.samuraiHp).toBe(45);
+    expect(finalState.attackerHp).toBe(49);
+    expect(finalState.backStrikeRoll).toBe(1);
+    expect(finalState.lastEventTypes).toContain('BONUS_DIE_ROLLED');
+    expect(finalState.lastEventTypes).toContain('DAMAGE_DEALT');
+    await expect(useButton).toBeHidden({ timeout: 5000 });
+    await game.screenshot('21-samurai-retribution-after-retaliation', testInfo);
 });
 
 test('me too copy mode should allow locked source and target dice', async ({ page, game }, testInfo) => {
@@ -802,4 +1867,178 @@ test('mobile long press hand card should open magnify without playing card', asy
         };
     });
     expect(stateAfterLongPress.handIds).toContain('watch-out');
+});
+
+test.describe('枪手 The Law 多目标交互', () => {
+    test('should allow confirming after selecting only one target', async ({ page, game }, testInfo) => {
+        test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+        await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+        await injectGunslingerTheLawInteractionScene(page);
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return state?.sys?.interaction?.current?.data?.sourceCardId === 'card-the-law'
+                && state?.core?.players?.['2']?.nickname === '圣骑士-B';
+        }, { timeout: 10000, polling: 200 });
+
+        await ensureDebugPanelClosed(page);
+        await disableFabMenu(page);
+
+        const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).last();
+        const targetOne = page.getByTestId('dt-player-target-1');
+        const targetTwo = page.getByTestId('dt-player-target-2');
+
+        await expect(targetOne).toBeVisible({ timeout: 5000 });
+        await expect(targetTwo).toBeVisible({ timeout: 5000 });
+        await expect(confirmButton).toBeDisabled();
+
+        await targetOne.click();
+        await expect(confirmButton).toBeEnabled();
+        await game.screenshot('14-the-law-single-target-selected', testInfo);
+
+        await confirmButton.click();
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current;
+        }, { timeout: 10000, polling: 200 });
+
+        const stateAfter = await game.getState();
+        expect(stateAfter.sys?.interaction?.current ?? null).toBeNull();
+        expect(stateAfter.core.players['1'].tokens.bounty).toBe(1);
+        expect(stateAfter.core.players['1'].statusEffects.knockdown).toBe(1);
+        expect(stateAfter.core.players['2'].tokens.bounty ?? 0).toBe(0);
+        expect(stateAfter.core.players['2'].statusEffects.knockdown ?? 0).toBe(0);
+    });
+
+    test('should resolve two selected targets in one confirmation', async ({ page, game }, testInfo) => {
+        test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+        await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+        await injectGunslingerTheLawInteractionScene(page);
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return state?.sys?.interaction?.current?.data?.sourceCardId === 'card-the-law'
+                && state?.core?.players?.['2']?.nickname === '圣骑士-B';
+        }, { timeout: 10000, polling: 200 });
+
+        await ensureDebugPanelClosed(page);
+        await disableFabMenu(page);
+
+        const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).last();
+        const targetOne = page.getByTestId('dt-player-target-1');
+        const targetTwo = page.getByTestId('dt-player-target-2');
+
+        await targetOne.click();
+        await targetTwo.click();
+        await expect(confirmButton).toBeEnabled();
+        await game.screenshot('15-the-law-two-targets-selected', testInfo);
+
+        await confirmButton.click();
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && state?.core?.players?.['1']?.tokens?.bounty === 1
+                && state?.core?.players?.['2']?.tokens?.bounty === 1;
+        }, { timeout: 10000, polling: 200 });
+
+        const stateAfter = await game.getState();
+        expect(stateAfter.sys?.interaction?.current ?? null).toBeNull();
+        expect(stateAfter.core.players['1'].tokens.bounty).toBe(1);
+        expect(stateAfter.core.players['2'].tokens.bounty).toBe(1);
+        expect(stateAfter.core.players['1'].statusEffects.knockdown).toBe(1);
+        expect(stateAfter.core.players['2'].statusEffects.knockdown).toBe(1);
+        await game.screenshot('16-the-law-two-targets-resolved', testInfo);
+    });
+});
+
+test.describe('枪手 The Law 从手牌真实打出', () => {
+    test('should resolve immediately in 1v1 after clicking the hand card', async ({ page, game }, testInfo) => {
+        test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+        await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+        await waitForTestHarness(page, 40000);
+        await injectGunslingerTheLawPlayScene(page, { multiplayer: false });
+        await waitForGunslingerTheLawPlayScene(page, { multiplayer: false });
+
+        await ensureDebugPanelClosed(page);
+        await disableFabMenu(page);
+
+        const theLawCard = page.locator('[data-card-id="card-the-law"]').first();
+        await expect(theLawCard).toBeVisible({ timeout: 5000 });
+        await game.screenshot('22-the-law-from-hand-1v1-before-play', testInfo);
+
+        await theLawCard.click();
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && state?.core?.players?.['0']?.hand?.every((card: any) => card.id !== 'card-the-law')
+                && (state?.core?.players?.['0']?.tokens?.evasive ?? 0) === 1
+                && (state?.core?.players?.['1']?.tokens?.bounty ?? 0) === 1
+                && (state?.core?.players?.['1']?.statusEffects?.knockdown ?? 0) === 1;
+        }, undefined, { timeout: 10000, polling: 200 });
+
+        const stateAfter = await game.getState();
+        expect(stateAfter.sys?.interaction?.current ?? null).toBeNull();
+        expect(stateAfter.core.players['0'].hand.map((card: any) => card.id)).not.toContain('card-the-law');
+        expect(stateAfter.core.players['0'].tokens.evasive).toBe(1);
+        expect(stateAfter.core.players['1'].tokens.bounty).toBe(1);
+        expect(stateAfter.core.players['1'].statusEffects.knockdown).toBe(1);
+        await game.screenshot('23-the-law-from-hand-1v1-after-play', testInfo);
+    });
+
+    test('should open multi-target interaction after playing from hand in 3-player scene', async ({ page, game }, testInfo) => {
+        test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+        await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+        await waitForTestHarness(page, 40000);
+        await injectGunslingerTheLawPlayScene(page, { multiplayer: true });
+        await waitForGunslingerTheLawPlayScene(page, { multiplayer: true });
+
+        await ensureDebugPanelClosed(page);
+        await disableFabMenu(page);
+
+        const theLawCard = page.locator('[data-card-id="card-the-law"]').first();
+        const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).last();
+        const targetOne = page.getByTestId('dt-player-target-1');
+        const targetTwo = page.getByTestId('dt-player-target-2');
+
+        await expect(theLawCard).toBeVisible({ timeout: 5000 });
+        await theLawCard.click();
+
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return state?.sys?.interaction?.current?.data?.sourceCardId === 'card-the-law'
+                && state?.core?.players?.['0']?.hand?.every((card: any) => card.id !== 'card-the-law')
+                && (state?.core?.players?.['0']?.tokens?.evasive ?? 0) === 1;
+        }, undefined, { timeout: 10000, polling: 200 });
+
+        await expect(targetOne).toBeVisible({ timeout: 5000 });
+        await expect(targetTwo).toBeVisible({ timeout: 5000 });
+        await expect(confirmButton).toBeDisabled();
+
+        await targetOne.click();
+        await targetTwo.click();
+        await expect(confirmButton).toBeEnabled();
+        await game.screenshot('24-the-law-from-hand-3p-selected-targets', testInfo);
+
+        await confirmButton.click();
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['1']?.tokens?.bounty ?? 0) === 1
+                && (state?.core?.players?.['2']?.tokens?.bounty ?? 0) === 1
+                && (state?.core?.players?.['1']?.statusEffects?.knockdown ?? 0) === 1
+                && (state?.core?.players?.['2']?.statusEffects?.knockdown ?? 0) === 1;
+        }, undefined, { timeout: 10000, polling: 200 });
+
+        const stateAfter = await game.getState();
+        expect(stateAfter.sys?.interaction?.current ?? null).toBeNull();
+        expect(stateAfter.core.players['0'].hand.map((card: any) => card.id)).not.toContain('card-the-law');
+        expect(stateAfter.core.players['0'].tokens.evasive).toBe(1);
+        expect(stateAfter.core.players['1'].tokens.bounty).toBe(1);
+        expect(stateAfter.core.players['2'].tokens.bounty).toBe(1);
+        expect(stateAfter.core.players['1'].statusEffects.knockdown).toBe(1);
+        expect(stateAfter.core.players['2'].statusEffects.knockdown).toBe(1);
+        await game.screenshot('25-the-law-from-hand-3p-resolved', testInfo);
+    });
 });

@@ -23,6 +23,7 @@ export type TurnPhase =
     | 'income'
     | 'main1'
     | 'offensiveRoll'
+    | 'targetingRoll'
     | 'defensiveRoll'
     | 'main2'
     | 'discard';
@@ -32,10 +33,12 @@ export type DieFace =
     | 'palm'
     | 'taiji'
     | 'lotus'
+    | 'katana'
     | 'sword'
     | 'helm'
     | 'heart'
     | 'pray'
+    | 'rising_sun'
     | 'strength'
     | 'fire'
     | 'fiery_soul'
@@ -47,7 +50,10 @@ export type DieFace =
     | 'dagger'
     | 'bag'
     | 'card'
-    | 'shadow';
+    | 'shadow'
+    | 'bullet'
+    | 'dash'
+    | 'bullseye';
 
 // ============================================================================
 // 角色编目
@@ -60,10 +66,13 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'shadow_thief',
     'moon_elf',
     'paladin',
+    'gunslinger',
+    'samurai',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
 export type CharacterId = 'unselected' | SelectableCharacterId;
+export type TeamId = 'A' | 'B';
 
 export interface CharacterDefinition {
     id: SelectableCharacterId;
@@ -77,6 +86,8 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'shadow_thief', nameKey: 'characters.shadow_thief' },
     { id: 'moon_elf', nameKey: 'characters.moon_elf' },
     { id: 'paladin', nameKey: 'characters.paladin' },
+    { id: 'gunslinger', nameKey: 'characters.gunslinger' },
+    { id: 'samurai', nameKey: 'characters.samurai' },
 ];
 
 /**
@@ -103,7 +114,7 @@ export interface Die {
  */
 export interface CardPlayCondition {
     /** 必须在指定阶段（更细粒度，区分进攻/防御） */
-    phase?: 'offensiveRoll' | 'defensiveRoll';
+    phase?: 'offensiveRoll' | 'targetingRoll' | 'defensiveRoll';
     /** 必须是自己的回合（activePlayer） */
     requireOwnTurn?: boolean;
     /** 必须是对手的回合（非 activePlayer） */
@@ -160,13 +171,17 @@ export interface AbilityCard {
 
 export interface PendingAttack {
     attackerId: PlayerId;
-    defenderId: PlayerId;
+    defenderId?: PlayerId;
+    /** 2v2 目标掷骰 5/6 分支等待玩家确认目标时为 true */
+    targetingSelectionPending?: boolean;
+    targetingSelectionResolved?: boolean;
     isDefendable: boolean;
     damage?: number;
     sourceAbilityId?: string;
     defenseAbilityId?: string;
     isUltimate?: boolean;
     preDefenseResolved?: boolean;
+    defenseResolved?: boolean;
     bonusDamage?: number;
     /** 仅来自攻击修正卡的额外伤害，用于右上角攻击修正 UI，避免混入暴击等其他来源 */
     attackModifierBonusDamage?: number;
@@ -227,6 +242,16 @@ export interface InteractionDescriptor {
         tokenId: string;
         amount: number;
     }>;
+    statusGrantConfig?: {
+        statusId: string;
+        amount: number;
+    };
+    statusGrantConfigs?: Array<{
+        statusId: string;
+        amount: number;
+    }>;
+    /** 当前被操作的骰池归属玩家 */
+    diceOwnerId?: PlayerId;
     targetOpponentDice?: boolean;
     /** 为 true 时，UI 只允许选择已有状态效果/token 的玩家（如"移除所有状态"） */
     requiresTargetWithStatus?: boolean;
@@ -287,6 +312,8 @@ export interface PendingDamage {
         sourceId?: string;
         sourceName?: string;
     }>;
+    /** 当前响应窗口内各 token 已累计消耗的数量 */
+    tokenUsageTotals?: Record<string, number>;
 }
 
 /**
@@ -349,6 +376,10 @@ export interface PendingBonusDiceSettlement {
     displayOnly?: boolean;
     /** 是否显示总伤害（默认重投模式下为 true，displayOnly 下为 false） */
     showTotal?: boolean;
+    /** 结算模式：默认直接造成伤害；attackBonus 表示把结果加入当前攻击的 bonusDamage */
+    resolutionMode?: 'damage' | 'attackBonus' | 'none';
+    /** attackBonus 模式下的换算规则 */
+    attackBonusScale?: 'raw' | 'halfUp';
 }
 
 export interface HeroState {
@@ -393,6 +424,12 @@ export interface HeroState {
  */
 export interface DiceThroneCore {
     players: Record<PlayerId, HeroState>;
+    /** 2v2 模式下的环桌座位顺序，用于分队与回合顺序推导 */
+    seatingOrder?: PlayerId[];
+    /** 2v2 模式下按座位推导后的队伍归属 */
+    teamIdByPlayerId?: Record<PlayerId, TeamId>;
+    /** 2v2 模式下的共享体力；同队成员 HP 需要与该值保持同步 */
+    teamHealth?: Record<TeamId, number>;
     /** 玩家选角状态（未选时为 unselected） */
     selectedCharacters: Record<PlayerId, CharacterId>;
     /** 玩家准备状态（选角后点击准备） */
@@ -468,6 +505,7 @@ export const PHASE_ORDER: TurnPhase[] = [
     'income',
     'main1',
     'offensiveRoll',
+    'targetingRoll',
     'defensiveRoll',
     'main2',
     'discard',

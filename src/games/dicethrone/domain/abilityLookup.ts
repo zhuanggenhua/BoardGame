@@ -8,6 +8,7 @@
 
 import type { PlayerId } from '../../../engine/types';
 import type { AbilityDef, AbilityEffect, AbilityTag, AbilityVariantDef } from './combat';
+import type { EffectAction } from './tokenTypes';
 import type { DiceThroneCore } from './types';
 import { getCustomActionMeta } from './effects';
 
@@ -89,6 +90,21 @@ export function playerAbilityHasDamage(
 }
 
 /**
+ * 判断该技能是否依赖“单一敌方目标”
+ *
+ * 用于 4 人 / 2v2 下判断是否真的需要进入 targetingRoll。
+ * 纯 self-target / 任意玩家选择类技能不应被误判成必须先选受击者。
+ */
+export function playerAbilityNeedsSingleOpponentTarget(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    abilityId: string
+): boolean {
+    const effects = getPlayerAbilityEffects(state, playerId, abilityId);
+    return effects.some((effect) => effect.action ? effectNeedsSingleOpponentTarget(effect.action) : false);
+}
+
+/**
  * 检查 effects 数组是否包含伤害效果
  */
 function hasEffectDamage(effects: AbilityEffect[]): boolean {
@@ -117,6 +133,10 @@ function hasEffectDamage(effects: AbilityEffect[]): boolean {
         
         return false;
     });
+}
+
+function effectNeedsSingleOpponentTarget(action: EffectAction): boolean {
+    return action.target === 'opponent' || action.target === 'select';
 }
 
 /**

@@ -194,7 +194,11 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         // 找不到时回退到通用打击音（按伤害量区分轻/重击）
         const abilitySfx = isDot ? undefined : findAbilitySfxKey(sourceId || undefined);
         const soundKey = abilitySfx ?? (isDot ? undefined : resolveDamageImpactKey(damage, targetId, currentPlayerId));
-        const targetPlayer = targetId === opponentId ? opponent : player;
+        const targetPlayer = targetId === currentPlayerId
+            ? player
+            : targetId === opponentId
+                ? opponent
+                : undefined;
         const bufferKey = `hp-${targetId}`;
 
         if (!targetPlayer) return null;
@@ -239,7 +243,11 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         // 移除 amount <= 0 过滤，允许 0 治疗量的动画（用于技能反馈）
         // if (amount <= 0) return null;
 
-        const targetPlayer = targetId === opponentId ? opponent : player;
+        const targetPlayer = targetId === currentPlayerId
+            ? player
+            : targetId === opponentId
+                ? opponent
+                : undefined;
         const bufferKey = `hp-${targetId}`;
 
         if (!targetPlayer) return null;
@@ -271,6 +279,11 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
      */
     const buildCpStep = useCallback((cpEvent: CpChangedEvent): AnimStep | null => {
         const { playerId, delta } = cpEvent.payload;
+        const isTrackedPlayer = playerId === currentPlayerId || playerId === opponentId;
+
+        if (!isTrackedPlayer) {
+            return null;
+        }
 
         if (delta > 0) {
             // CP 获得：只有技能/卡牌/被动触发的 CP 获得才播放动画

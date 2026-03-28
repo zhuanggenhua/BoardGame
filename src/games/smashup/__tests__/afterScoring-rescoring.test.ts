@@ -464,4 +464,61 @@ describe('After Scoring 响应窗口 - 重新计分功能', () => {
         });
         expect(playResult.success, playResult.error).toBe(true);
     });
+
+    it('innsmouth_return_to_the_sea_pod 在 afterScoring 窗口中打出后，应立即创建交互并锁定响应窗口', () => {
+        const runner = createRunner((ids, random) => {
+            const core = SmashUpDomain.setup(ids, random);
+            const sys = createInitialSystemState(ids, systems, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'scoreBases';
+
+            core.bases = [
+                {
+                    defId: 'base_the_mothership',
+                    minions: [
+                        makeMinion('locals-1', 'innsmouth_the_locals_pod', '0', '0', 2, 8),
+                        makeMinion('locals-2', 'innsmouth_the_locals_pod', '0', '0', 2, 0),
+                        makeMinion('enemy-1', 'ninja_shinobi', '1', '1', 2, 8),
+                    ],
+                    ongoingActions: [],
+                },
+            ];
+
+            core.players['0'].hand = [
+                { uid: 'return-sea', defId: 'innsmouth_return_to_the_sea_pod', type: 'action', owner: '0' },
+            ];
+            core.players['1'].hand = [];
+
+            sys.responseWindow = {
+                current: {
+                    id: 'after-scoring-window',
+                    responderQueue: ['0', '1'],
+                    currentResponderIndex: 0,
+                    passedPlayers: [],
+                    windowType: 'afterScoring',
+                    sourceId: 'score-base',
+                    actionTakenThisRound: false,
+                    consecutivePassRounds: 0,
+                },
+            } as any;
+
+            return { sys, core };
+        });
+
+        const playResult = runner.dispatch(SU_COMMANDS.PLAY_ACTION, {
+            playerId: '0',
+            cardUid: 'return-sea',
+            targetBaseIndex: 0,
+        });
+
+        expect(playResult.success, playResult.error).toBe(true);
+
+        const stateAfterPlay = runner.getState();
+        expect(stateAfterPlay.sys.interaction?.current?.data?.sourceId).toBe('innsmouth_return_to_the_sea');
+        expect(stateAfterPlay.sys.responseWindow?.current?.pendingInteractionId).toBe(
+            stateAfterPlay.sys.interaction?.current?.id,
+        );
+        expect(stateAfterPlay.sys.responseWindow?.current?.currentResponderIndex).toBe(0);
+    });
 });

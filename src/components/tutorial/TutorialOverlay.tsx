@@ -5,56 +5,45 @@ import { playSound } from '../../lib/audio/useGameAudio';
 import { AudioManager } from '../../lib/audio/AudioManager';
 import { UI_Z_INDEX } from '../../core';
 import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../games/mobileSupport';
+import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 
 const TUTORIAL_NEXT_SOUND_KEY = 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.buttons.tab_switching_button.uiclick_tab_switching_button_01_krst_none';
 
-interface SafeAreaInsets {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-}
+const clampNumber = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-interface ViewportMetrics {
-    width: number;
-    height: number;
-    safeArea: SafeAreaInsets;
-}
-
-function parseCssPixels(value: string): number {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function readSafeAreaInsets(): SafeAreaInsets {
-    if (typeof window === 'undefined') {
-        return { top: 0, right: 0, bottom: 0, left: 0 };
-    }
-
-    const rootStyles = window.getComputedStyle(document.documentElement);
-    return {
-        top: parseCssPixels(rootStyles.getPropertyValue('--safe-area-top')),
-        right: parseCssPixels(rootStyles.getPropertyValue('--safe-area-right')),
-        bottom: parseCssPixels(rootStyles.getPropertyValue('--safe-area-bottom')),
-        left: parseCssPixels(rootStyles.getPropertyValue('--safe-area-left')),
-    };
-}
-
-function readViewportMetrics(): ViewportMetrics {
-    if (typeof window === 'undefined') {
-        return {
-            width: 0,
-            height: 0,
-            safeArea: { top: 0, right: 0, bottom: 0, left: 0 },
-        };
-    }
+const getCompactTutorialPanelMetrics = (
+    viewportWidth: number,
+    viewportHeight: number,
+    safeArea: { top: number, right: number, bottom: number, left: number },
+) => {
+    const edgeInset = 12;
+    const safeWidth = Math.max(
+        220,
+        viewportWidth - safeArea.left - safeArea.right - edgeInset * 2,
+    );
+    const safeHeight = Math.max(
+        160,
+        viewportHeight - safeArea.top - safeArea.bottom - edgeInset * 2,
+    );
+    const panelScale = clampNumber(viewportHeight / 440, 0.82, 0.94);
+    const visualWidth = clampNumber(Math.round(viewportWidth * 0.36), 260, 300);
+    const visualMaxHeight = clampNumber(Math.round(viewportHeight * 0.62), 210, safeHeight - 8);
+    const panelWidth = Math.min(
+        Math.round(visualWidth / panelScale),
+        Math.floor(safeWidth / panelScale),
+    );
+    const panelMaxHeight = Math.min(
+        Math.round(visualMaxHeight / panelScale),
+        Math.floor(safeHeight / panelScale),
+    );
 
     return {
-        width: window.innerWidth,
-        height: window.innerHeight,
-        safeArea: readSafeAreaInsets(),
+        edgeInset,
+        panelScale,
+        panelWidth,
+        panelMaxHeight,
     };
-}
+};
 
 /** Check if an element is inside an overflow:hidden ancestor (before the viewport root). */
 function hasOverflowHiddenAncestor(el: Element): boolean {
@@ -79,7 +68,7 @@ export const TutorialOverlay: React.FC = () => {
     const hasAutoScrolledRef = useRef(false);
     const [positionedStepId, setPositionedStepId] = useState<string | null>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
-    const [viewport, setViewport] = useState<ViewportMetrics>(() => readViewportMetrics());
+    const viewport = useRuntimeViewport();
 
     const [tooltipStyles, setTooltipStyles] = useState<{
         style: React.CSSProperties,
@@ -88,33 +77,12 @@ export const TutorialOverlay: React.FC = () => {
     const isMobileViewport = viewport.width > 0 && viewport.width <= MOBILE_MAX_VIEWPORT_WIDTH;
     const isCompactTutorialLayout = isMobileViewport && viewport.width > viewport.height;
     const visibleTargetRect = positionedStepId === currentStep?.id ? targetRect : null;
-
-    // 响应窗口尺寸变化，确保遮罩与提示框重新计算
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const handleResize = () => {
-            setViewport((prev) => {
-                const next = readViewportMetrics();
-                if (
-                    prev.width === next.width
-                    && prev.height === next.height
-                    && prev.safeArea.top === next.safeArea.top
-                    && prev.safeArea.right === next.safeArea.right
-                    && prev.safeArea.bottom === next.safeArea.bottom
-                    && prev.safeArea.left === next.safeArea.left
-                ) {
-                    return prev;
-                }
-                return next;
-            });
-        };
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            window.removeEventListener('orientationchange', handleResize);
-        };
-    }, []);
+    const rootViewportWidth = viewport.width > 0
+        ? viewport.width
+        : (typeof document !== 'undefined' ? document.documentElement.clientWidth : 0);
+    const rootViewportHeight = viewport.height > 0
+        ? viewport.height
+        : (typeof document !== 'undefined' ? document.documentElement.clientHeight : 0);
 
     useEffect(() => {
         if (!isActive) return;
@@ -128,8 +96,8 @@ export const TutorialOverlay: React.FC = () => {
         const stepId = currentStep.id;
         const highlightTarget = currentStep.highlightTarget;
         const position = currentStep.position;
-        const viewportWidth = viewport.width || window.innerWidth;
-        const viewportHeight = viewport.height || window.innerHeight;
+        const viewportWidth = rootViewportWidth;
+        const viewportHeight = rootViewportHeight;
         const safeArea = viewport.safeArea;
 
         if (lastStepIdRef.current !== stepId) {
@@ -155,28 +123,23 @@ export const TutorialOverlay: React.FC = () => {
             // 2. 计算提示框位置
             const isCenterPosition = position === 'center';
             if (isCompactTutorialLayout) {
-                const compactPanelMargin = 12;
-                const availableHeight = Math.max(
-                    160,
-                    viewportHeight - safeArea.top - safeArea.bottom - compactPanelMargin * 2,
-                );
-                const compactMaxWidth = Math.min(
-                    360,
-                    Math.max(260, viewportWidth - safeArea.left - safeArea.right - compactPanelMargin * 2),
-                );
+                const compactPanel = getCompactTutorialPanelMetrics(viewportWidth, viewportHeight, safeArea);
                 const styles: React.CSSProperties = {
                     position: 'fixed',
                     left: '50%',
-                    transform: 'translateX(-50%)',
-                    maxWidth: compactMaxWidth,
+                    transform: `translateX(-50%) scale(${compactPanel.panelScale})`,
+                    width: compactPanel.panelWidth,
+                    maxWidth: compactPanel.panelWidth,
                     zIndex: UI_Z_INDEX.tutorial,
-                    maxHeight: availableHeight,
+                    maxHeight: compactPanel.panelMaxHeight,
                 };
 
                 if (rect && rect.top > viewportHeight * 0.45) {
-                    styles.top = safeArea.top + compactPanelMargin;
+                    styles.top = safeArea.top + compactPanel.edgeInset;
+                    styles.transformOrigin = 'top center';
                 } else {
-                    styles.bottom = safeArea.bottom + compactPanelMargin;
+                    styles.bottom = safeArea.bottom + compactPanel.edgeInset;
+                    styles.transformOrigin = 'bottom center';
                 }
 
                 setTooltipStyles({
@@ -347,8 +310,8 @@ export const TutorialOverlay: React.FC = () => {
     }
 
     // 矢量路径用于带孔洞的遮罩
-    const viewportWidth = viewport.width || window.innerWidth;
-    const viewportHeight = viewport.height || window.innerHeight;
+    const viewportWidth = rootViewportWidth;
+    const viewportHeight = rootViewportHeight;
     let maskPath = `M0 0 h${viewportWidth} v${viewportHeight} h-${viewportWidth} z`;
     if (visibleTargetRect) {
         // 逆时针矩形用于创建挖空效果（偶奇填充规则）
@@ -404,13 +367,13 @@ export const TutorialOverlay: React.FC = () => {
                 {/* 内容卡片 */}
                 <div
                     data-testid="tutorial-overlay-card"
-                    className={`bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0] animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${isCompactTutorialLayout ? 'w-72 max-w-[calc(100vw-24px)] rounded-xl p-4' : 'max-w-sm w-72 rounded-sm p-5'}`}
-                    style={{ maxHeight: 'inherit' }}
+                    className={`bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0] animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${isCompactTutorialLayout ? 'w-full max-w-full rounded-xl p-4' : 'max-w-sm w-72 rounded-sm p-5'}`}
+                    style={{ maxHeight: 'inherit', width: '100%' }}
                 >
                     {/* 装饰性边角（右上）*/}
                     <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t border-r border-[#c0a080] opacity-40" />
 
-                    <div className={`text-[#433422] font-bold leading-relaxed text-left overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${isCompactTutorialLayout ? 'text-base mb-3' : 'text-lg mb-4'}`}>
+                    <div className={`text-[#433422] font-bold text-left overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${isCompactTutorialLayout ? 'text-[15px] leading-[1.55] mb-2.5' : 'text-lg leading-relaxed mb-4'}`}>
                         {t(currentStep.content)}
                     </div>
 
@@ -421,7 +384,7 @@ export const TutorialOverlay: React.FC = () => {
                                 playSound(TUTORIAL_NEXT_SOUND_KEY);
                                 nextStep('manual');
                             }}
-                            className={`touch-target-min w-full bg-[#433422] hover:bg-[#2b2114] text-[#fcfbf9] font-bold uppercase transition-all cursor-pointer flex items-center justify-center text-center relative z-10 pointer-events-auto ${isCompactTutorialLayout ? 'py-2.5 text-[13px] tracking-[0.16em] rounded-lg' : 'py-2 text-sm tracking-widest'}`}
+                            className={`touch-target-min w-full bg-[#433422] hover:bg-[#2b2114] text-[#fcfbf9] font-bold uppercase transition-all cursor-pointer flex items-center justify-center text-center relative z-10 pointer-events-auto ${isCompactTutorialLayout ? 'py-2 text-[12px] tracking-[0.14em] rounded-lg' : 'py-2 text-sm tracking-widest'}`}
                         >
                             {isLastStep ? t('overlay.finish') : t('overlay.next')}
                         </button>
@@ -430,7 +393,7 @@ export const TutorialOverlay: React.FC = () => {
                     {currentStep.requireAction && (
                         <div
                             data-testid="tutorial-action-hint"
-                            className={`flex items-center gap-2 font-bold text-[#8c7b64] bg-[#f3f0e6]/50 border border-[#e5e0d0]/50 justify-center italic ${isCompactTutorialLayout ? 'text-xs rounded-lg p-2.5' : 'text-sm p-2'}`}
+                            className={`flex items-center gap-2 font-bold text-[#8c7b64] bg-[#f3f0e6]/50 border border-[#e5e0d0]/50 justify-center italic ${isCompactTutorialLayout ? 'text-[11px] rounded-lg p-2' : 'text-sm p-2'}`}
                         >
                             <span className="animate-pulse w-2 h-2 rounded-full bg-[#c0a080]"></span>
                             {t('overlay.clickToContinue')}

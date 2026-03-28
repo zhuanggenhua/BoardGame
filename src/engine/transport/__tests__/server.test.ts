@@ -8,6 +8,7 @@ import type {
     MatchStorage,
     StoredMatchState,
 } from '../storage';
+import type { TrainingDataRecorder, TrainingDecisionSample } from '../trainingData';
 
 type EventHandler = (...args: unknown[]) => void | Promise<void>;
 
@@ -218,6 +219,20 @@ const nextTick = async (): Promise<void> => {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 };
 
+class MockTrainingDataRecorder implements TrainingDataRecorder {
+    readonly samples: TrainingDecisionSample[] = [];
+
+    recordDecisionSample(sample: TrainingDecisionSample): void {
+        this.samples.push(sample);
+    }
+}
+
+class FailingTrainingDataRecorder implements TrainingDataRecorder {
+    recordDecisionSample(): Promise<void> {
+        return Promise.reject(new Error('disk-full'));
+    }
+}
+
 describe('GameTransportServer（离座与重连）', () => {
     it('setupMatch 应返回初始化后的随机游标', async () => {
         const io = new MockIO();
@@ -280,7 +295,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(receivedSetupData).toEqual(setupData);
     });
 
-    it('离线裁决在 dt:card-interaction 下应走领域取消命令', async () => {
+    it('offline adjudication should use domain cancel command for dt card interaction', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         let lastCommandType: string | undefined;
@@ -414,7 +429,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(lastCommandType).toBe(expectedCommand);
     });
 
-    it('sync 应使用存储层最新凭证，旧凭证在 metadata 更新后必须失效', async () => {
+    it('sync should reject stale credentials after metadata refresh', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const initialMetadata = createMetadata('old-cred');
@@ -558,4 +573,81 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(hasEvent(socket, 'test:injectState:success')).toBe(false);
         expect(hasEvent(socket, 'test:injectState:error')).toBe(false);
     });
+
+    it('成功命令后应采集训练决策样本', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const recorder = new MockTrainingDataRecorder();
+
+        await storage.createMatch('match-train-1', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            trainingDataRecorder: recorder,
+            rulesVersion: 'test-rules-v1',
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-train-1');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-train-1', '0', 'cred-0');
+        await socket.clientEmit('command', 'match-train-1', 'TEST_CMD', { foo: 'bar' }, 'cred-0');
+
+        expect(recorder.samples).toHaveLength(1);
+        expect(recorder.samples[0]).toMatchObject({
+            rulesVersion: 'test-rules-v1',
+            gameId: 'test-game',
+            matchId: 'match-train-1',
+            playerId: '0',
+            stateIdBefore: 0,
+            stateIdAfter: 1,
+            command: {
+                type: 'TEST_CMD',
+                payload: { foo: 'bar' },
+            },
+            legalActions: [],
+        });
+        expect(recorder.samples[0].preState).toBeTruthy();
+        expect(recorder.samples[0].postState).toBeTruthy();
+    });
+
+    it('training recorder 失败不应影响命令执行', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-train-fail', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            trainingDataRecorder: new FailingTrainingDataRecorder(),
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-train-fail');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-train-fail', '0', 'cred-0');
+        await socket.clientEmit('command', 'match-train-fail', 'TEST_CMD', { foo: 'bar' }, 'cred-0');
+        await nextTick();
+
+        const persisted = await storage.fetch('match-train-fail', { state: true });
+        expect(persisted.state?._stateID).toBe(1);
+        expect(hasEvent(socket, 'error')).toBe(false);
+    });
 });
+

@@ -9,8 +9,8 @@ import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { addTempPower, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback, buildValidatedReturnEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, DeckReorderedEvent, CardsDrawnEvent } from '../domain/types';
-import { registerProtection } from '../domain/ongoingEffects';
-import type { ProtectionCheckContext } from '../domain/ongoingEffects';
+import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
+import type { ProtectionCheckContext, TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
 import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
@@ -26,6 +26,7 @@ type ReturnToSeaChoiceValue = {
 };
 
 type ReturnToSeaNameChoiceValue = {
+    cardUid: string;
     baseIndex: number;
     baseDefId: string;
     minionDefId: string;
@@ -43,6 +44,10 @@ export function registerInnsmouthAbilities(): void {
     registerAbility('innsmouth_the_locals', 'onPlay', innsmouthTheLocals);
     // 回归大海（special）：计分后同名随从回手牌
     registerAbility('innsmouth_return_to_the_sea', 'special', innsmouthReturnToTheSea);
+    registerTrigger('innsmouth_return_to_the_sea', 'afterScoring', innsmouthReturnToTheSeaAfterScoring, {
+        perInstance: true,
+        sourceScope: 'triggerBase',
+    });
     // 深潜者的秘密（行动卡）：3+同名随从时抽牌，可选额外抽牌并获得疯狂卡牌
     registerAbility('innsmouth_mysteries_of_the_deep', 'onPlay', innsmouthMysteriesOfTheDeep);
     // 宗教圆环（ongoing talent）：额外打出同名随从到此基地
@@ -142,13 +147,19 @@ function innsmouthInPlainSightChecker(ctx: ProtectionCheckContext): boolean {
     return protectedByPower && ctx.sourcePlayerId !== sight.ownerId;
 }
 
+function buildReturnToSeaInteractionId(ctx: Pick<AbilityContext, 'cardUid' | 'now'>, suffix: 'choose' | 'choose_name' = 'choose'): string {
+    return `innsmouth_return_to_the_sea_${suffix}_${ctx.cardUid}_${ctx.now}`;
+}
+
 function buildReturnToSeaMinionPrompt(
     ctx: AbilityContext,
     baseIndex: number,
     minionDefId: string,
 ): AbilityResult {
     const base = ctx.state.bases[baseIndex];
-    if (!base) return { events: [] };
+    if (!base) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
 
     const sameDefMinions = base.minions.filter(
         m => m.controller === ctx.playerId && m.defId === minionDefId,
@@ -175,7 +186,7 @@ function buildReturnToSeaMinionPrompt(
     });
 
     const interaction = createSimpleChoice<ReturnToSeaChoiceValue>(
-        `innsmouth_return_to_the_sea_${ctx.now}`, ctx.playerId,
+        buildReturnToSeaInteractionId(ctx), ctx.playerId,
         '选择要返回的随从', options,
         { sourceId: 'innsmouth_return_to_the_sea', targetType: 'minion', multi: { min: 0, max: sameDefMinions.length } },
     );
@@ -193,7 +204,9 @@ function innsmouthReturnToTheSea(ctx: AbilityContext): AbilityResult {
 
     // 找触发随从（自身）
     const myMinions = base.minions.filter(m => m.controller === ctx.playerId);
-    if (myMinions.length === 0) return { events: [] };
+    if (myMinions.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
 
     // 找同基地上自己的同 defId 随从（包含触发随从自身）
     const grouped = new Map<string, typeof myMinions>();
@@ -219,6 +232,7 @@ function innsmouthReturnToTheSea(ctx: AbilityContext): AbilityResult {
             id: `name-${i}`,
             label: `${name} x${minions.length}`,
             value: {
+                cardUid: ctx.cardUid,
                 baseIndex,
                 baseDefId: base.defId,
                 minionDefId,
@@ -228,11 +242,50 @@ function innsmouthReturnToTheSea(ctx: AbilityContext): AbilityResult {
         };
     });
     const interaction = createSimpleChoice<ReturnToSeaNameChoiceValue>(
-        `innsmouth_return_to_the_sea_${ctx.now}`, ctx.playerId,
+        buildReturnToSeaInteractionId(ctx, 'choose_name'), ctx.playerId,
         '选择要返回手牌的同名随从', options,
         { sourceId: 'innsmouth_return_to_the_sea_choose_name', targetType: 'generic' },
     );
     return { events: [], matchState: ctx.matchState ? queueInteraction(ctx.matchState, interaction) : undefined };
+}
+
+function innsmouthReturnToTheSeaAfterScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
+    const { state, baseIndex, now, sourceCardUid } = ctx;
+    if (baseIndex === undefined || !sourceCardUid) return [];
+
+    const armedEntry = (state.pendingAfterScoringSpecials ?? []).find(
+        special => matchesDefId(special.sourceDefId, 'innsmouth_return_to_the_sea')
+            && special.baseIndex === baseIndex
+            && special.cardUid === sourceCardUid,
+    );
+    if (!armedEntry) return [];
+
+    const consumedEvent = {
+        type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED,
+        payload: {
+            sourceDefId: armedEntry.sourceDefId,
+            playerId: armedEntry.playerId,
+            baseIndex: armedEntry.baseIndex,
+            cardUid: armedEntry.cardUid,
+        },
+        timestamp: now,
+    } as SmashUpEvent;
+
+    const abilityResult = innsmouthReturnToTheSea({
+        state,
+        matchState: ctx.matchState,
+        playerId: armedEntry.playerId,
+        cardUid: armedEntry.cardUid ?? sourceCardUid,
+        defId: armedEntry.sourceDefId,
+        baseIndex: armedEntry.baseIndex,
+        random: ctx.random,
+        now,
+    });
+
+    return {
+        events: [consumedEvent, ...abilityResult.events],
+        matchState: abilityResult.matchState,
+    };
 }
 
 /**
@@ -467,7 +520,7 @@ export function registerInnsmouthInteractionHandlers(): void {
         });
 
         const interaction = createSimpleChoice<ReturnToSeaChoiceValue>(
-            `innsmouth_return_to_the_sea_${timestamp}`, playerId,
+            `innsmouth_return_to_the_sea_choose_${selected.cardUid}_${timestamp}`, playerId,
             '选择要返回手牌的同名随从', options,
             { sourceId: 'innsmouth_return_to_the_sea', targetType: 'minion', multi: { min: 0, max: sameDefMinions.length } },
         );

@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import Backend from 'i18next-http-backend';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
-import { DEFAULT_LANGUAGE, I18N_NAMESPACES, SUPPORTED_LANGUAGES } from './types';
+import { DEFAULT_LANGUAGE, I18N_NAMESPACES, SUPPORTED_LANGUAGES, normalizeI18nLanguage } from './types';
 import { zhCNBundled } from './zh-CN-bundled';
 
 // 构建时注入的 locale JSON content hash 映射
@@ -15,7 +15,7 @@ const localeHashes: Record<string, string> = __LOCALE_HASHES__;
  * 内容变了 → hash 变了 → 缓存自动失效
  */
 function getLoadPath(lngs: string[], namespaces: string[]): string {
-    const lng = lngs[0];
+    const lng = normalizeI18nLanguage(lngs[0]);
     const ns = namespaces[0];
     const key = `${lng}/${ns}.json`;
     const hash = localeHashes[key];
@@ -48,6 +48,7 @@ export const i18nInitPromise = i18n
         detection: {
             order: ['localStorage', 'navigator'],
             caches: ['localStorage'],
+            convertDetectedLanguage: (lng: string) => normalizeI18nLanguage(lng),
         },
         react: {
             useSuspense: false,

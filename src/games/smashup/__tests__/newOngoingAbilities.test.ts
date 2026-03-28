@@ -22,6 +22,7 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearPowerModifierRegistry, getEffectivePower, getEffectiveBreakpoint } from '../domain/ongoingModifiers';
 import {
     clearOngoingEffectRegistry,
+    collectTriggers,
     isMinionProtected,
     fireTriggers,
     interceptEvent,
@@ -46,6 +47,67 @@ function makeMinion(uid: string, defId: string, controller: string, power: numbe
         ...overrides,
     };
 }
+
+describe('suppressed source triggers', () => {
+    it('suppressed bear_cavalry_cub_scout should not destroy moved minion', () => {
+        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 2, { powerModifier: 0 });
+        const destBase = makeBase({ minions: [scout] });
+        const srcBase = makeBase({ minions: [moved] });
+        const state = makeState({
+            bases: [destBase, srcBase],
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'scout',
+                baseIndex: 0,
+                suppressorPlayerId: '0',
+                cardType: 'minion',
+            }],
+        });
+
+        const { events } = fireTriggers(state, 'onMinionMoved', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'moved',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 0,
+        });
+
+        expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+    });
+
+    it('suppressed bear_cavalry_high_ground should not destroy moved minion', () => {
+        const myMinion = makeMinion('my', 'test_minion', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
+        const destBase = makeBase({
+            minions: [myMinion],
+            ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '0' }],
+        });
+        const srcBase = makeBase({ minions: [moved] });
+        const state = makeState({
+            bases: [destBase, srcBase],
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'hg-1',
+                baseIndex: 0,
+                suppressorPlayerId: '0',
+                cardType: 'ongoing',
+            }],
+        });
+
+        const { events } = fireTriggers(state, 'onMinionMoved', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'moved',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 0,
+        });
+
+        expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+    });
+});
 
 function makePlayer(id: string, overrides?: Partial<PlayerState>): PlayerState {
     return {
@@ -83,6 +145,84 @@ beforeAll(() => {
     clearInteractionHandlers();
     resetAbilityInit();
     initAllAbilities();
+});
+
+describe('afterScoring special cardUid identity', () => {
+    it('同玩家同基地两张同名 afterScoring special 会按 cardUid 独立保留和消费', () => {
+        const armed1 = reduce(makeState(), {
+            type: SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED,
+            payload: { sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0, cardUid: 'buffet-1' },
+            timestamp: 1,
+        } as any);
+        const armed2 = reduce(armed1, {
+            type: SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED,
+            payload: { sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0, cardUid: 'buffet-2' },
+            timestamp: 2,
+        } as any);
+
+        expect(armed2.pendingAfterScoringSpecials?.map(s => s.cardUid)).toEqual(['buffet-1', 'buffet-2']);
+
+        const consumed1 = reduce(armed2, {
+            type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED,
+            payload: { sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0, cardUid: 'buffet-1' },
+            timestamp: 3,
+        } as any);
+
+        expect(consumed1.pendingAfterScoringSpecials?.map(s => s.cardUid)).toEqual(['buffet-2']);
+    });
+});
+
+describe('giant_ant_we_are_the_champions afterScoring per-instance', () => {
+    it('同一基地上的多个已 armed 实例会各自创建一个交互', () => {
+        const scoringBase = makeBase({
+            defId: 'base_a',
+            minions: [
+                makeMinion('source-a', 'giant_ant_worker', '0', 3, { powerCounters: 2 }),
+                makeMinion('source-b', 'giant_ant_soldier', '0', 4, { powerCounters: 1 }),
+            ],
+        });
+        const targetBase = makeBase({
+            defId: 'base_b',
+            minions: [makeMinion('target-1', 'test_other', '0', 2, { powerCounters: 0 })],
+        });
+        const state = makeState({
+            bases: [scoringBase, targetBase],
+            pendingAfterScoringSpecials: [
+                {
+                    sourceDefId: 'giant_ant_we_are_the_champions',
+                    playerId: '0',
+                    baseIndex: 0,
+                    cardUid: 'champ-1',
+                    minionSnapshots: [{ uid: 'source-a', defId: 'giant_ant_worker', baseIndex: 0, counterAmount: 2 }],
+                },
+                {
+                    sourceDefId: 'giant_ant_we_are_the_champions',
+                    playerId: '0',
+                    baseIndex: 0,
+                    cardUid: 'champ-2',
+                    minionSnapshots: [{ uid: 'source-b', defId: 'giant_ant_soldier', baseIndex: 0, counterAmount: 1 }],
+                },
+            ],
+        });
+        const matchState = { core: state, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } } as any;
+
+        const result = fireTriggers(state, 'afterScoring', {
+            state,
+            matchState,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 7, vp: 4 }],
+            random: dummyRandom,
+            now: 100,
+        });
+
+        const current = result.matchState?.sys.interaction?.current;
+        const queue = result.matchState?.sys.interaction?.queue ?? [];
+        expect(current?.data?.sourceId).toBe('giant_ant_we_are_the_champions_choose_snapshot_source');
+        expect(queue).toHaveLength(1);
+        expect(current?.id).not.toBe(queue[0]?.id);
+        expect(result.events.filter(e => e.type === SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED)).toHaveLength(2);
+    });
 });
 
 // ============================================================================
@@ -229,10 +369,11 @@ describe('bear_cavalry_cub_scout 触发', () => {
 });
 
 describe('bear_cavalry_high_ground 触发', () => {
-    it('有己方随从时消灭移入的对手随从', () => {
+    it('有己方随从时消灭移入的对手随从，并记录消灭者', () => {
         const myMinion = makeMinion('my', 'test_minion', '0', 3, { powerModifier: 0 });
         const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
         const destBase = makeBase({
+            defId: 'base_the_field_of_honor',
             minions: [myMinion],
             ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '0' }],
         });
@@ -244,7 +385,9 @@ describe('bear_cavalry_high_ground 触发', () => {
             triggerMinionUid: 'moved', triggerMinionDefId: 'test_minion',
             random: dummyRandom, now: 0,
         });
-        expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        const destroyEvent = events.find(e => e.type === SU_EVENTS.MINION_DESTROYED) as any;
+        expect(destroyEvent).toBeDefined();
+        expect(destroyEvent.payload.destroyerId).toBe('0');
     });
 
     it('POD 版高地也会消灭移入的对手随从', () => {
@@ -701,6 +844,46 @@ describe('pirate_first_mate afterScoring', () => {
     });
 });
 
+describe('pirate_first_mate afterScoring - 多实例交互', () => {
+    it('多个大副会按实例各自创建 afterScoring 交互', () => {
+        const state = makeState({
+            bases: [
+                makeBase({
+                    minions: [
+                        makeMinion('mate-a', 'pirate_first_mate', '0', 2, { powerModifier: 0 }),
+                        makeMinion('mate-b', 'pirate_first_mate_pod', '1', 2, { powerModifier: 0 }),
+                    ],
+                }),
+                makeBase({}),
+                makeBase({}),
+            ],
+        });
+        const ms = {
+            core: state,
+            sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } },
+        } as any;
+
+        const result = fireTriggers(state, 'afterScoring', {
+            state,
+            matchState: ms,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 4, vp: 1 }],
+            random: dummyRandom,
+            now: 0,
+        });
+
+        expect(result.events).toHaveLength(0);
+        const current = result.matchState?.sys.interaction.current as any;
+        const queue = result.matchState?.sys.interaction.queue as any[];
+        expect(current?.data?.sourceId).toBe('pirate_first_mate_choose_base');
+        expect(current?.data?.continuationContext?.mateUid).toBe('mate-a');
+        expect(queue).toHaveLength(1);
+        expect(queue[0]?.data?.sourceId).toBe('pirate_first_mate_choose_base');
+        expect(queue[0]?.data?.continuationContext?.mateUid).toBe('mate-b');
+    });
+});
+
 describe('cthulhu_chosen beforeScoring', () => {
     /** 包装为 MatchState */
     function makeMS(core: SmashUpCore) {
@@ -819,6 +1002,51 @@ describe('cthulhu_chosen beforeScoring', () => {
         expect(powerEvts.length).toBe(1);
         expect(powerEvts[0].payload.minionUid).toBe('ch1');
         expect(powerEvts[0].payload.baseIndex).toBe(1); // 力量加在天选之人所在的基地
+    });
+});
+
+describe('werewolf beforeScoring - 多实例触发', () => {
+    it('多个 loup_garou 会各自产生独立 beforeScoring trigger', () => {
+        const wolf1 = makeMinion('wolf1', 'werewolf_loup_garou', '0', 4, { powerModifier: 0 });
+        const wolf2 = makeMinion('wolf2', 'werewolf_loup_garou', '1', 4, { powerModifier: 0 });
+        const state = makeState({
+            bases: [makeBase({ minions: [wolf1, wolf2] })],
+        });
+
+        const queued = collectTriggers(state, 'beforeScoring', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            random: dummyRandom,
+            now: 100,
+        });
+
+        expect(queued).toBeDefined();
+        const triggers = (queued as any).payload.triggers;
+        expect(triggers).toHaveLength(2);
+        expect(triggers.map((t: any) => t.sourceCardUid)).toEqual(['wolf1', 'wolf2']);
+    });
+
+    it('多个 pack_alpha 会各自产生独立 beforeScoring trigger', () => {
+        const alpha1 = makeMinion('alpha1', 'werewolf_pack_alpha', '0', 3, { powerModifier: 0 });
+        const alpha2 = makeMinion('alpha2', 'werewolf_pack_alpha', '0', 3, { powerModifier: 0 });
+        const ally = makeMinion('ally1', 'werewolf_howler', '0', 2, { powerModifier: 0 });
+        const state = makeState({
+            bases: [makeBase({ minions: [alpha1, alpha2, ally] })],
+        });
+
+        const queued = collectTriggers(state, 'beforeScoring', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            random: dummyRandom,
+            now: 100,
+        });
+
+        expect(queued).toBeDefined();
+        const triggers = (queued as any).payload.triggers.filter((t: any) => t.sourceDefId === 'werewolf_pack_alpha');
+        expect(triggers).toHaveLength(2);
+        expect(triggers.map((t: any) => t.sourceCardUid)).toEqual(['alpha1', 'alpha2']);
     });
 });
 
@@ -1855,9 +2083,20 @@ describe('base_rlyeh 拉莱耶 onTurnStart', () => {
         expect(handler).toBeDefined();
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
         const result = handler!(ms, '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 0);
-        expect(result.events.length).toBe(2);
+        expect(result.events.length).toBe(1);
         expect(result.events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
-        expect(result.events[1].type).toBe(SU_EVENTS.VP_AWARDED);
+        const followup = triggerExtendedBaseAbility('base_rlyeh', 'onMinionDestroyed', {
+            state,
+            baseIndex: 0,
+            baseDefId: 'base_rlyeh',
+            playerId: '0',
+            destroyerId: '0',
+            controllerId: '0',
+            reason: 'base_rlyeh',
+            now: 1,
+        });
+        expect(followup.events).toHaveLength(1);
+        expect(followup.events[0].type).toBe(SU_EVENTS.VP_AWARDED);
     });
 
     it('handler 选择不消灭→不产生事件', () => {
@@ -2128,6 +2367,58 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
 // 吸血鬼 - 自助餐 afterScoring
 // ============================================================================
 
+describe('innsmouth_return_to_the_sea afterScoring per-instance', () => {
+    it('creates one interaction per armed cardUid without merging instances', () => {
+        const scoringBase = makeBase({
+            defId: 'base_crypt',
+            minions: [
+                makeMinion('locals-a', 'innsmouth_the_locals', '0', 2),
+                makeMinion('locals-b', 'innsmouth_the_locals', '0', 2),
+            ],
+        });
+        const state = makeState({
+            bases: [scoringBase, makeBase({ defId: 'base_other' })],
+            pendingAfterScoringSpecials: [
+                {
+                    sourceDefId: 'innsmouth_return_to_the_sea',
+                    playerId: '0',
+                    baseIndex: 0,
+                    cardUid: 'return-sea-1',
+                },
+                {
+                    sourceDefId: 'innsmouth_return_to_the_sea_pod',
+                    playerId: '0',
+                    baseIndex: 0,
+                    cardUid: 'return-sea-2',
+                },
+            ],
+        });
+        const matchState = { core: state, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } } as any;
+
+        const result = fireTriggers(state, 'afterScoring', {
+            state,
+            matchState,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 4, vp: 4 }],
+            random: dummyRandom,
+            now: 200,
+        });
+
+        const current = result.matchState?.sys.interaction?.current;
+        const queue = result.matchState?.sys.interaction?.queue ?? [];
+        const interactionIds = [current?.id, queue[0]?.id].filter((id): id is string => typeof id === 'string');
+
+        expect(current).toBeDefined();
+        expect(queue).toHaveLength(1);
+        expect(current?.id).not.toBe(queue[0]?.id);
+        expect(interactionIds).toHaveLength(2);
+        expect(interactionIds.some(id => id.includes('return-sea-1'))).toBe(true);
+        expect(interactionIds.some(id => id.includes('return-sea-2'))).toBe(true);
+        expect(result.events.filter(e => e.type === SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED)).toHaveLength(2);
+    });
+});
+
 describe('vampire_buffet afterScoring', () => {
     it('赢家拥有 buffet 时，所有己方随从获得+1指示物', () => {
         const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
@@ -2144,7 +2435,7 @@ describe('vampire_buffet afterScoring', () => {
         const state = makeState({
             bases: [scoringBase, otherBase],
             pendingAfterScoringSpecials: [
-                { sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0 },
+                { sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0, cardUid: 'buffet-1' },
             ],
         });
 
@@ -2175,7 +2466,7 @@ describe('vampire_buffet afterScoring', () => {
         const state = makeState({
             bases: [scoringBase],
             pendingAfterScoringSpecials: [
-                { sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0 },
+                { sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0, cardUid: 'buffet-1' },
             ],
         });
 
@@ -2343,9 +2634,9 @@ describe('bear_cavalry_bear_rides_you_pod 交互选项', () => {
             .filter((kind: unknown) => typeof kind === 'string');
 
         expect(kinds).toContain('base');
+        expect(kinds).toContain('minion');
+        expect(kinds).toContain('ongoing');
         expect(kinds).toContain('skip');
-        expect(kinds).not.toContain('minion');
-        expect(kinds).not.toContain('ongoing');
         expect(kinds).not.toContain('attached');
         expect(kinds).not.toContain('titan');
     });

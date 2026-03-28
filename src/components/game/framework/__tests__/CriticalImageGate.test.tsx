@@ -37,11 +37,11 @@ vi.mock('../../../../core/CriticalImageResolverRegistry', () => ({
 }));
 
 vi.mock('../../../system/LoadingScreen', () => ({
-    LoadingScreen: ({ description }: { description?: string }) => (
-        <div data-loading="true">{description ?? 'loading'}</div>
+    LoadingScreen: ({ description, anchor }: { description?: string; anchor?: string }) => (
+        <div data-loading="true" data-anchor={anchor ?? 'viewport'}>{description ?? 'loading'}</div>
     ),
-    default: ({ description }: { description?: string }) => (
-        <div data-loading="true">{description ?? 'loading'}</div>
+    default: ({ description, anchor }: { description?: string; anchor?: string }) => (
+        <div data-loading="true" data-anchor={anchor ?? 'viewport'}>{description ?? 'loading'}</div>
     ),
 }));
 
@@ -84,6 +84,21 @@ describe('CriticalImageGate', () => {
 
         expect(html).toContain('加载中');
         expect(html).not.toContain('子内容');
+    });
+
+    it('阻塞渲染时应使用容器锚定的加载层', () => {
+        const html = renderToStaticMarkup(
+            <CriticalImageGate
+                enabled={true}
+                gameId="smashup"
+                gameState={{}}
+                loadingDescription="加载中"
+            >
+                <div>子内容</div>
+            </CriticalImageGate>,
+        );
+
+        expect(html).toContain('data-anchor="container"');
     });
 
     it('空 critical 阶段会快速放行，不会卡在加载页', async () => {

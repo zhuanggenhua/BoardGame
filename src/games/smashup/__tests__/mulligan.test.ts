@@ -1,35 +1,32 @@
 /**
- * 大杀四方 - 重抽 (Mulligan) 集成测试
+ * 大杀四方 - 起手重抽集成测试
  *
  * 覆盖：
- * - 含随从手牌不触发重抽
- * - 全行动卡手牌自动重抽
- * - 重抽后仍无随从只重抽一次（必须保留第二次）
- * - 重抽后手牌/牌库总数守恒
- * - ALL_FACTIONS_SELECTED 事件包含 mulliganPlayers
+ * - 起手含随从时不触发重抽
+ * - 起手全是行动牌时记录可重抽玩家
+ * - 重抽交互入队后流程仍会离开 factionSelect
+ * - 重抽后手牌与牌库总数守恒
+ * - 最多只允许重抽一次
  */
 
-import { describe, expect, it, beforeAll } from 'vitest';
-import { GameTestRunner } from '../../../engine/testing';
-import { SmashUpDomain } from '../domain';
-import { smashUpFlowHooks } from '../domain/index';
-import { createFlowSystem, createBaseSystems } from '../../../engine';
-import type { SmashUpCore, SmashUpCommand, SmashUpEvent, AllFactionsSelectedEvent } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from '../domain/types';
-import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { initAllAbilities } from '../abilities';
-import { execute } from '../domain/reducer';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { createBaseSystems, createFlowSystem } from '../../../engine';
 import type { RandomFn } from '../../../engine/types';
+import { GameTestRunner } from '../../../engine/testing';
+import { initAllAbilities } from '../abilities';
+import { SmashUpDomain } from '../domain';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { smashUpFlowHooks } from '../domain/index';
+import { STARTING_HAND_MULLIGAN_SOURCE_ID } from '../domain/mulliganHandlers';
+import { execute } from '../domain/reducer';
+import type { AllFactionsSelectedEvent, SmashUpCommand, SmashUpCore, SmashUpEvent } from '../domain/types';
+import { STARTING_HAND_SIZE, SU_COMMANDS, SU_EVENTS } from '../domain/types';
 
 const PLAYER_IDS = ['0', '1'];
 
 beforeAll(() => {
     initAllAbilities();
 });
-
-// ============================================================================
-// 工具函数
-// ============================================================================
 
 function createRunner(random?: RandomFn) {
     return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
@@ -44,7 +41,6 @@ function createRunner(random?: RandomFn) {
     });
 }
 
-/** 确保前 5 张抽到的是随从（不触发重抽） */
 function createMinionsFirstRandom(): RandomFn {
     return {
         random: () => 0.5,
@@ -61,7 +57,6 @@ function createMinionsFirstRandom(): RandomFn {
     };
 }
 
-/** 确保前 5 张抽到的全是行动卡（触发重抽） */
 function createActionsFirstRandom(): RandomFn {
     return {
         random: () => 0.5,
@@ -93,85 +88,87 @@ const FOURTH_COMMAND = {
 
 const FULL_DRAFT_COMMANDS = [...FIRST_THREE_COMMANDS, FOURTH_COMMAND] as const;
 
-// ============================================================================
-// 测试
-// ============================================================================
-
-describe('SmashUp 重抽 (Mulligan)', () => {
-    describe('含随从手牌不触发重抽', () => {
-        it('起始手牌含随从时 mulliganPlayers 为空', () => {
+describe('SmashUp 起手重抽', () => {
+    describe('起手含随从时不触发重抽', () => {
+        it('ALL_FACTIONS_SELECTED 不会记录 mulliganPlayers', () => {
             const random = createMinionsFirstRandom();
             const runner = createRunner(random);
-            const midResult = runner.run({ name: '前3步', commands: [...FIRST_THREE_COMMANDS] });
+            const midResult = runner.run({ name: '前三步选阵营', commands: [...FIRST_THREE_COMMANDS] });
 
             const events = execute(midResult.finalState, FOURTH_COMMAND as any, random);
             const evt = events.find(e => e.type === SU_EVENTS.ALL_FACTIONS_SELECTED) as AllFactionsSelectedEvent;
 
             expect(evt).toBeDefined();
-            // 随从优先排序 → 首抽含随从 → 不触发重抽
             expect(evt.payload.mulliganPlayers).toBeUndefined();
         });
 
-        it('手牌中包含随从卡', () => {
+        it('最终起手牌中包含随从', () => {
             const runner = createRunner(createMinionsFirstRandom());
-            const result = runner.run({ name: '随从手牌', commands: [...FULL_DRAFT_COMMANDS] });
+            const result = runner.run({ name: '随从优先起手', commands: [...FULL_DRAFT_COMMANDS] });
+
             for (const pid of PLAYER_IDS) {
                 const hand = result.finalState.core.players[pid].hand;
-                expect(hand.some(c => c.type === 'minion')).toBe(true);
+                expect(hand.some(card => card.type === 'minion')).toBe(true);
             }
         });
     });
 
-    describe('全行动卡手牌自动重抽', () => {
-        it('mulliganPlayers 包含所有无随从的玩家', () => {
+    describe('起手全是行动牌时触发重抽', () => {
+        it('ALL_FACTIONS_SELECTED 会记录所有无随从玩家', () => {
             const random = createActionsFirstRandom();
             const runner = createRunner(random);
-            const midResult = runner.run({ name: '前3步', commands: [...FIRST_THREE_COMMANDS] });
+            const midResult = runner.run({ name: '前三步选阵营', commands: [...FIRST_THREE_COMMANDS] });
 
             const events = execute(midResult.finalState, FOURTH_COMMAND as any, random);
             const evt = events.find(e => e.type === SU_EVENTS.ALL_FACTIONS_SELECTED) as AllFactionsSelectedEvent;
 
             expect(evt).toBeDefined();
             expect(evt.payload.mulliganPlayers).toBeDefined();
-            // 行动卡优先排序 → 所有玩家首抽无随从 → 全员重抽
             expect(evt.payload.mulliganPlayers!.length).toBeGreaterThan(0);
             for (const pid of PLAYER_IDS) {
                 expect(evt.payload.mulliganPlayers).toContain(pid);
             }
         });
 
-        it('重抽后手牌+牌库总数仍为 40', () => {
+        it('重抽交互入队后仍会离开 factionSelect', () => {
             const runner = createRunner(createActionsFirstRandom());
-            const result = runner.run({ name: '重抽守恒', commands: [...FULL_DRAFT_COMMANDS] });
+            const result = runner.run({ name: '重抽后推进阶段', commands: [...FULL_DRAFT_COMMANDS] });
+
+            expect(result.finalState.core.factionSelection).toBeUndefined();
+            expect(result.finalState.sys.phase).toBe('startTurn');
+            expect(result.finalState.sys.interaction.current?.data?.sourceId).toBe(STARTING_HAND_MULLIGAN_SOURCE_ID);
+        });
+
+        it('重抽后手牌与牌库总数仍为 40', () => {
+            const runner = createRunner(createActionsFirstRandom());
+            const result = runner.run({ name: '重抽总数守恒', commands: [...FULL_DRAFT_COMMANDS] });
+
             for (const pid of PLAYER_IDS) {
                 const player = result.finalState.core.players[pid];
                 expect(player.hand.length + player.deck.length).toBe(40);
             }
         });
 
-        it('重抽后仍为 5 张手牌', () => {
+        it('重抽后仍然保持 5 张手牌', () => {
             const runner = createRunner(createActionsFirstRandom());
-            const result = runner.run({ name: '重抽手牌数', commands: [...FULL_DRAFT_COMMANDS] });
+            const result = runner.run({ name: '重抽后手牌数量', commands: [...FULL_DRAFT_COMMANDS] });
+
             for (const pid of PLAYER_IDS) {
                 expect(result.finalState.core.players[pid].hand.length).toBe(STARTING_HAND_SIZE);
             }
         });
     });
 
-    describe('重抽只执行一次（必须保留第二次）', () => {
-        it('行动卡优先随机下最多重抽一次', () => {
-            // actionsFirstRandom 让每次洗牌都把行动卡放前面，
-            // 重抽后手牌仍全是行动卡，但规则限制只重抽一次
+    describe('重抽最多只执行一次', () => {
+        it('即使再次洗到全行动牌，也只记录一次重抽资格', () => {
             const random = createActionsFirstRandom();
             const runner = createRunner(random);
-            const midResult = runner.run({ name: '前3步', commands: [...FIRST_THREE_COMMANDS] });
+            const midResult = runner.run({ name: '前三步选阵营', commands: [...FIRST_THREE_COMMANDS] });
 
             const events = execute(midResult.finalState, FOURTH_COMMAND as any, random);
             const evt = events.find(e => e.type === SU_EVENTS.ALL_FACTIONS_SELECTED) as AllFactionsSelectedEvent;
 
             expect(evt).toBeDefined();
-            // 虽然重抽后仍无随从，但只重抽了一次
-            // 验证每位玩家只出现一次
             const mulliganCounts = new Map<string, number>();
             for (const pid of evt.payload.mulliganPlayers ?? []) {
                 mulliganCounts.set(pid, (mulliganCounts.get(pid) ?? 0) + 1);

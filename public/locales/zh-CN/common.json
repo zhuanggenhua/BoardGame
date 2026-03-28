@@ -113,9 +113,16 @@
     "contextBrowser": "检测到旧版浏览器内核"
   },
   "game_names": {
+    "archview": "架构可视化",
+    "assetslicer": "素材切片机",
+    "audiobrowser": "音效浏览器",
+    "cardia": "卡迪亚",
     "tictactoe": "井字棋",
     "dicethrone": "王权骰铸",
-    "summonerwars": "召唤师战争"
+    "fxpreview": "特效预览",
+    "smashup": "大杀四方",
+    "summonerwars": "召唤师战争",
+    "ugcbuilder": "UGC 原型制作器"
   },
   "matchRoom": {
     "tutorialTitle": "{{game}} - 教学模式",

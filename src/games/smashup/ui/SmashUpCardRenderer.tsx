@@ -21,6 +21,18 @@ interface SmashUpRendererArgs {
     onMouseLeave?: () => void;
 }
 
+export function getSmashUpAtlasLookupKey(
+    defId: string | undefined,
+    isBase: boolean,
+    isPodVersion: boolean,
+): string {
+    if (!defId) return '';
+    if (isBase && isPodVersion) {
+        return defId.endsWith('_pod') ? defId : `${defId}_pod`;
+    }
+    return defId;
+}
+
 export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
   previewRef,
   locale,
@@ -94,7 +106,7 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
         let lookupKey = defId || '';
         if (isBase && isPodVersion && defId) {
             // POD 版本基地：使用 base_xxx_pod 映射
-            lookupKey = `${defId}_pod`;
+            lookupKey = getSmashUpAtlasLookupKey(defId, true, true);
         }
         // 否则使用原始 defId（基础版基地用 base_xxx，POD 卡牌用 xxx_pod）
         

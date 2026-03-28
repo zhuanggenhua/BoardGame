@@ -30,6 +30,8 @@ import { registerCardPreviewGetter } from '../../components/game/registry/cardPr
 import { getSmashUpCardPreviewRef } from './ui/cardPreviewHelper';
 import { registerCriticalImageResolver } from '../../core';
 import { smashUpCriticalImageResolver } from './criticalImageResolver';
+import { registerGameAiRuntime } from '../../engine/ai';
+import { smashUpAiRuntime } from './ai';
 import './ui/SmashUpCardRenderer'; // 注册卡牌渲染器
 
 // 注册所有派系能力
@@ -139,6 +141,7 @@ const adapterConfig = {
 
 // 引擎配置
 export const engineConfig = createGameEngine<SmashUpCore, SmashUpCommand, SmashUpEvent>(adapterConfig);
+registerGameAiRuntime(smashUpAiRuntime);
 
 export default engineConfig;
 

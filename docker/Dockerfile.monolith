@@ -53,6 +53,7 @@ COPY --from=builder /app/dist ./dist
 
 # 复制静态资源（用于内网部署或 CDN 降级）
 COPY public/assets ./public/assets
+COPY public/locales ./public/locales
 
 COPY --from=builder /app/temp/prod-bundles/api/main.mjs ./main.mjs
 COPY --from=builder /app/temp/prod-bundles/api/main.mjs.map ./main.mjs.map

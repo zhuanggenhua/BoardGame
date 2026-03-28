@@ -3,14 +3,14 @@
  * 验证重构后的角色选择功能是否正常工作
  */
 
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import {
-    initContext,
-    getGameServerBaseURL,
     ensureGameServerAvailable,
 } from './helpers/common';
 
-const selectionTitlePattern = /选择你的英雄|Choose your hero/i;
+const selectionTitlePattern = /选择你的英雄|Choose your hero|Select Your Hero/i;
 const readyButtonPattern = /准备|Ready/i;
 const closePreviewPattern = /关闭预览|Close Preview/i;
 const playerBoardAltPattern = /玩家面板|Player Board/i;
@@ -43,6 +43,7 @@ const ensureHostPlayerId = async (page: Page) => {
 };
 
 const waitForSelectionOverlay = async (page: Page) => {
+    await expect(page.locator('[data-testid="character-selection-overlay"]')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(selectionTitlePattern)).toBeVisible({ timeout: 15000 });
 };
 
@@ -121,6 +122,76 @@ test.describe('角色选择系统', () => {
         await overlay.click({ position: { x: 5, y: 5 } });
         await page.waitForTimeout(500);
         await expect(overlay).not.toBeVisible();
+    });
+
+    test('手机横屏下选角界面不应出现顶层横向滚动', async ({ page }, testInfo) => {
+        const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'mobile-character-selection');
+        mkdirSync(evidenceDir, { recursive: true });
+        const evidencePath = join(evidenceDir, 'character-selection-mobile-landscape.png');
+
+        await page.setViewportSize({ width: 800, height: 450 });
+        await prepareHostSelection(page);
+
+        const overlay = page.locator('[data-testid="character-selection-overlay"]');
+        await expect(overlay).toBeVisible({ timeout: 15000 });
+
+        const metrics = await page.evaluate(() => {
+            const gamePage = document.querySelector<HTMLElement>('[data-game-page="true"]');
+            const overlayEl = document.querySelector<HTMLElement>('[data-testid="character-selection-overlay"]');
+            const gamePageRect = gamePage?.getBoundingClientRect() ?? null;
+            const overlayRect = overlayEl?.getBoundingClientRect() ?? null;
+
+            return {
+                innerWidth: window.innerWidth,
+                innerHeight: window.innerHeight,
+                docScrollWidth: document.documentElement.scrollWidth,
+                bodyScrollWidth: document.body.scrollWidth,
+                rootScrollWidth: document.getElementById('root')?.scrollWidth ?? null,
+                gamePageRect: gamePageRect
+                    ? {
+                        left: gamePageRect.left,
+                        right: gamePageRect.right,
+                        top: gamePageRect.top,
+                        bottom: gamePageRect.bottom,
+                        width: gamePageRect.width,
+                        height: gamePageRect.height,
+                    }
+                    : null,
+                overlayRect: overlayRect
+                    ? {
+                        left: overlayRect.left,
+                        right: overlayRect.right,
+                        top: overlayRect.top,
+                        bottom: overlayRect.bottom,
+                        width: overlayRect.width,
+                        height: overlayRect.height,
+                    }
+                    : null,
+            };
+        });
+
+        const maxAllowedWidth = metrics.innerWidth + 1;
+        const maxAllowedHeight = metrics.innerHeight + 1;
+
+        expect(metrics.docScrollWidth, '手机横屏选角时 documentElement 不应横向溢出').toBeLessThanOrEqual(maxAllowedWidth);
+        expect(metrics.bodyScrollWidth, '手机横屏选角时 body 不应横向溢出').toBeLessThanOrEqual(maxAllowedWidth);
+        if (metrics.rootScrollWidth !== null) {
+            expect(metrics.rootScrollWidth, '手机横屏选角时 #root 不应横向溢出').toBeLessThanOrEqual(maxAllowedWidth);
+        }
+
+        expect(metrics.gamePageRect, '应找到游戏页容器').not.toBeNull();
+        expect(metrics.overlayRect, '应找到选角覆盖层').not.toBeNull();
+
+        expect(metrics.gamePageRect!.left, '游戏页左边界不应出视口').toBeGreaterThanOrEqual(-1);
+        expect(metrics.gamePageRect!.right, '游戏页右边界不应出视口').toBeLessThanOrEqual(maxAllowedWidth);
+        expect(metrics.gamePageRect!.bottom, '游戏页底边界不应出视口').toBeLessThanOrEqual(maxAllowedHeight);
+
+        expect(metrics.overlayRect!.left, '选角层左边界不应出视口').toBeGreaterThanOrEqual(-1);
+        expect(metrics.overlayRect!.right, '选角层右边界不应出视口').toBeLessThanOrEqual(maxAllowedWidth);
+        expect(metrics.overlayRect!.bottom, '选角层底边界不应出视口').toBeLessThanOrEqual(maxAllowedHeight);
+
+        await page.screenshot({ path: evidencePath, fullPage: false });
+        await page.screenshot({ path: testInfo.outputPath('character-selection-mobile-landscape.png'), fullPage: false });
     });
 
     test('选角后应该能够开始游戏', async ({ page }) => {

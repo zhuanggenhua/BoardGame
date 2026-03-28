@@ -106,6 +106,16 @@ export interface HostStartGameCommand extends Command<'HOST_START_GAME'> {
     payload: Record<string, never>;
 }
 
+/** 2v2 站位移动命令 */
+export interface MoveSeatCommand extends Command<'MOVE_SEAT'> {
+    payload: {
+        /** 被移动的玩家 */
+        playerId: PlayerId;
+        /** 移除该玩家后，插入到新的目标下标 */
+        targetSeatIndex: number;
+    };
+}
+
 /** 玩家准备命令 */
 export interface PlayerReadyCommand extends Command<'PLAYER_READY'> {
     payload: Record<string, never>;
@@ -167,6 +177,13 @@ export interface ConfirmInteractionCommand extends Command<'CONFIRM_INTERACTION'
         interactionId: string;
         selectedDiceIds?: number[];
         selectedPlayerId?: PlayerId;
+    };
+}
+
+/** 结算旧式卡牌交互命令（用于 selectPlayer 等直接点击交互） */
+export interface ResolveInteractionCommand extends Command<'RESOLVE_INTERACTION'> {
+    payload: {
+        selectedPlayerIds?: PlayerId[];
     };
 }
 
@@ -255,6 +272,7 @@ export type DiceThroneCommand =
     | AdvancePhaseCommand
     | SelectCharacterCommand
     | HostStartGameCommand
+    | MoveSeatCommand
     | PlayerReadyCommand
     | PlayerUnreadyCommand
     | ResponsePassCommand
@@ -262,6 +280,7 @@ export type DiceThroneCommand =
     | RerollDieCommand
     | RemoveStatusCommand
     | TransferStatusCommand
+    | ResolveInteractionCommand
     // | ConfirmInteractionCommand  // 已废弃 - 使用 InteractionSystem
     // | CancelInteractionCommand   // 已废弃 - 使用 InteractionSystem
     | UseTokenCommand

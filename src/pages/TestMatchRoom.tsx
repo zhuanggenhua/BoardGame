@@ -12,7 +12,8 @@
  * /play/smashup/test?p0=wizards,aliens&p1=zombies,pirates&seed=12345
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { loadGameImplementation, getGameImplementation } from '../games/registry';
 import { GameModeProvider } from '../contexts/GameModeContext';
@@ -21,15 +22,22 @@ import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import { GameCursorProvider } from '../core/cursor/GameCursorProvider';
 import { LocalGameProvider, BoardBridge } from '../engine/transport/react';
 import { LoadingScreen } from '../components/system/LoadingScreen';
+import { GameNamespaceLoadError } from '../components/system/GameNamespaceLoadError';
 import { SEO } from '../components/common/SEO';
 import { enableTestMode } from '../engine/testing/environment';
 import { getGamePageDataAttributes } from '../games/mobileSupport';
 import { MobileBoardShell } from '../components/game/framework';
+import { useToast } from '../contexts/ToastContext';
+import { resolveCommandError } from '../engine/transport/errorI18n';
+import { playDeniedSound } from '../lib/audio/useGameAudio';
+import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 
 // 闂備礁鎲￠崙褰掑垂閹惰棄鏋侀柕鍫濇偪閸︻厸鍋撻敐搴″箻婵℃彃鎲℃穱濠囶敍濡炶浜剧€规洖娲ㄩ、鍛存⒑閹稿海鈽夐柣妤€妫涢幑銏ゅ焵椤掆偓椤啴濡堕崼顐㈡濠电姭鍋撴い蹇撴绾惧ジ鏌涢弴銊ょ凹妞ゆ劘妫勯…鍧楁嚋閻㈤潧鈷岄梺绋块椤曨參骞忛锕€绀冩い蹇撴噺濞堛垽姊洪幐搴ｂ槈闁活剙銈搁崹鎯熼懡銈傛敵濠电娀娼уΛ娆撶叕椤掆偓闇夐柣妯硅閸炶櫣绱?Provider 婵犵數鍋為幐绋款嚕閸洘鍋傞悗锝庡枛缁€鍫⑩偓骞垮劚濞诧箓寮查幖浣圭厸濞达絽鎽滄晶宕囩磼?
 if (typeof window !== 'undefined') {
     enableTestMode();
 }
+
+const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
 
 export const TestMatchRoom: React.FC = () => {
     const { gameId } = useParams<{ gameId: string }>();
@@ -37,9 +45,31 @@ export const TestMatchRoom: React.FC = () => {
     const [engineConfig, setEngineConfig] = useState<any>(null);
     const [WrappedBoard, setWrappedBoard] = useState<React.ComponentType<any> | null>(null);
     const [loading, setLoading] = useState(true);
+    const { t, i18n } = useTranslation('lobby');
+    const toast = useToast();
+    const {
+        isGameNamespaceReady,
+        gameNamespaceError,
+        retryGameNamespaceLoad,
+    } = useGameNamespaceReady(gameId, i18n);
 
     const gameConfig = gameId ? getGameById(gameId) : null;
     const gamePageDataAttributes = getGamePageDataAttributes(gameId, gameConfig);
+
+    const handleCommandRejected = useCallback((commandType: string, error: string) => {
+        if (!gameId || TUTORIAL_SILENT_ERRORS.has(error)) return;
+
+        playDeniedSound();
+        if (typeof window !== 'undefined') {
+            (window as Window & {
+                __BG_LAST_COMMAND_REJECTED__?: { gameId: string; error: string; commandType: string };
+            }).__BG_LAST_COMMAND_REJECTED__ = { gameId, error, commandType };
+        }
+
+        toast.warning(resolveCommandError(i18n, error, gameId), undefined, {
+            dedupeKey: `test.rejected.${error}`,
+        });
+    }, [gameId, i18n, toast]);
 
     // 闂佽崵鍠愰悷杈╁緤妤ｅ啯鍊?URL 闂備礁鎲￠悷銉╁磹瑜版帒姹?
     const testConfig = useMemo(() => {
@@ -198,6 +228,20 @@ export const TestMatchRoom: React.FC = () => {
         );
     }
 
+    if (gameNamespaceError) {
+        return (
+            <GameNamespaceLoadError
+                gameId={gameId}
+                error={gameNamespaceError}
+                onRetry={retryGameNamespaceLoad}
+            />
+        );
+    }
+
+    if (!isGameNamespaceReady) {
+        return <LoadingScreen description={t('matchRoom.loadingResources')} />;
+    }
+
     if (loading) {
         return <LoadingScreen title={gameConfig ? `\u6b63\u5728\u52a0\u8f7d ${gameConfig.title}...` : '\u6b63\u5728\u52a0\u8f7d...'} />;
     }
@@ -239,16 +283,17 @@ export const TestMatchRoom: React.FC = () => {
                                     numPlayers={testConfig.numPlayers}
                                     seed={testConfig.randomSeed}
                                     playerId="0"
+                                    onCommandRejected={handleCommandRejected}
                                     followCurrentTurnPlayer
                                 >
                                     <GameHUD gameId={gameId} mode="test" />
                                     <BoardBridge
                                         board={WrappedBoard}
-                                        loading={<LoadingScreen title={gameConfig ? `\u6b63\u5728\u52a0\u8f7d ${gameConfig.title}...` : '\u6b63\u5728\u52a0\u8f7d...'} />}
+                                        loading={<LoadingScreen anchor="container" title={gameConfig ? `\u6b63\u5728\u52a0\u8f7d ${gameConfig.title}...` : '\u6b63\u5728\u52a0\u8f7d...'} />}
                                     />
                                 </LocalGameProvider>
                             ) : (
-                                <LoadingScreen title={gameConfig ? `\u6b63\u5728\u52a0\u8f7d ${gameConfig.title}...` : '\u6b63\u5728\u52a0\u8f7d...'} />
+                                <LoadingScreen anchor="container" title={gameConfig ? `\u6b63\u5728\u52a0\u8f7d ${gameConfig.title}...` : '\u6b63\u5728\u52a0\u8f7d...'} />
                             )}
                         </MobileBoardShell>
                     </GameCursorProvider>

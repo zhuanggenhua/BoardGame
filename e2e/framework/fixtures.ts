@@ -102,8 +102,39 @@ export const test = base.extend<FrameworkFixtures>({
      */
     workerPorts: [async ({ browserName: _browserName }, use, testInfo) => {
         const ports = getWorkerPorts(testInfo.parallelIndex);
-        await use(ports);
-    }, { scope: 'worker' }],
+        const previousEnv = {
+            PW_PORT: process.env.PW_PORT,
+            PW_GAME_SERVER_PORT: process.env.PW_GAME_SERVER_PORT,
+            PW_API_SERVER_PORT: process.env.PW_API_SERVER_PORT,
+            VITE_FRONTEND_URL: process.env.VITE_FRONTEND_URL,
+            PW_GAME_SERVER_URL: process.env.PW_GAME_SERVER_URL,
+        };
+
+        process.env.PW_PORT = String(ports.frontend);
+        process.env.PW_GAME_SERVER_PORT = String(ports.gameServer);
+        process.env.PW_API_SERVER_PORT = String(ports.apiServer);
+        process.env.VITE_FRONTEND_URL = `http://127.0.0.1:${ports.frontend}`;
+        process.env.PW_GAME_SERVER_URL = `http://127.0.0.1:${ports.gameServer}`;
+
+        try {
+            await use(ports);
+        } finally {
+            if (previousEnv.PW_PORT === undefined) delete process.env.PW_PORT;
+            else process.env.PW_PORT = previousEnv.PW_PORT;
+
+            if (previousEnv.PW_GAME_SERVER_PORT === undefined) delete process.env.PW_GAME_SERVER_PORT;
+            else process.env.PW_GAME_SERVER_PORT = previousEnv.PW_GAME_SERVER_PORT;
+
+            if (previousEnv.PW_API_SERVER_PORT === undefined) delete process.env.PW_API_SERVER_PORT;
+            else process.env.PW_API_SERVER_PORT = previousEnv.PW_API_SERVER_PORT;
+
+            if (previousEnv.VITE_FRONTEND_URL === undefined) delete process.env.VITE_FRONTEND_URL;
+            else process.env.VITE_FRONTEND_URL = previousEnv.VITE_FRONTEND_URL;
+
+            if (previousEnv.PW_GAME_SERVER_URL === undefined) delete process.env.PW_GAME_SERVER_URL;
+            else process.env.PW_GAME_SERVER_URL = previousEnv.PW_GAME_SERVER_URL;
+        }
+    }, { scope: 'worker', auto: true }],
     
     /**
      * game fixture

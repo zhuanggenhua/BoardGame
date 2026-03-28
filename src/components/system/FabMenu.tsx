@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 import { PulseGlow } from '../common/animations/PulseGlow';
 import { UI_Z_INDEX } from '../../core';
 import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../games/mobileSupport';
+import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
+import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { logger } from '../../lib/logger';
 
 export interface FabAction {
@@ -29,25 +31,12 @@ interface FabMenuProps {
 
 type FabAlignment = { v: 'top' | 'bottom'; h: 'left' | 'right' };
 type SafeAreaInsets = { top: number; right: number; bottom: number; left: number };
+const FAB_EDGE_PEEK_SIZE_MOBILE = 18;
+const FAB_EDGE_PEEK_SIZE_DESKTOP = 20;
 
-const parseCssPixels = (value: string) => {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const getSafeAreaInsets = (): SafeAreaInsets => {
-    if (typeof window === 'undefined') {
-        return { top: 0, right: 0, bottom: 0, left: 0 };
-    }
-
-    const styles = window.getComputedStyle(document.documentElement);
-    return {
-        top: parseCssPixels(styles.getPropertyValue('--safe-area-top')),
-        right: parseCssPixels(styles.getPropertyValue('--safe-area-right')),
-        bottom: parseCssPixels(styles.getPropertyValue('--safe-area-bottom')),
-        left: parseCssPixels(styles.getPropertyValue('--safe-area-left')),
-    };
-};
+export interface FabAction {
+    mobilePanelVariant?: 'popover' | 'sheet';
+}
 
 export const FabMenu = ({
     items,
@@ -56,25 +45,15 @@ export const FabMenu = ({
     zIndex = UI_Z_INDEX.hud,
 }: FabMenuProps) => {
     // 响应式尺寸
-    const [isMobileViewport, setIsMobileViewport] = useState(false);
-    const [buttonSize, setButtonSize] = useState(48);
-    const [buttonGap, setButtonGap] = useState(12);
-    const [edgePadding, setEdgePadding] = useState(32);
-    const [safeAreaInsets, setSafeAreaInsets] = useState<SafeAreaInsets>(() => getSafeAreaInsets());
-    
-    useEffect(() => {
-        const updateSizes = () => {
-            const mobile = window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH;
-            setIsMobileViewport(mobile);
-            setSafeAreaInsets(getSafeAreaInsets());
-            setButtonSize(mobile ? 44 : 48);
-            setButtonGap(mobile ? 8 : 12);
-            setEdgePadding(mobile ? 12 : 32);
-        };
-        updateSizes();
-        window.addEventListener('resize', updateSizes);
-        return () => window.removeEventListener('resize', updateSizes);
-    }, []);
+    const viewport = useRuntimeViewport();
+    const viewportWidth = viewport.width;
+    const viewportHeight = viewport.height;
+    const safeAreaInsets: SafeAreaInsets = viewport.safeArea;
+    const isMobileViewport = viewportWidth > 0 && viewportWidth <= MOBILE_MAX_VIEWPORT_WIDTH;
+    const buttonSize = isMobileViewport ? 44 : 48;
+    const buttonGap = isMobileViewport ? 8 : 12;
+    const edgePadding = isMobileViewport ? 12 : 32;
+    const edgePeekSize = isMobileViewport ? FAB_EDGE_PEEK_SIZE_MOBILE : FAB_EDGE_PEEK_SIZE_DESKTOP;
     
     const [isOpen, setIsOpen] = useState(false);
     const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -92,43 +71,69 @@ export const FabMenu = ({
         if (typeof document === 'undefined') return null;
         return document.getElementById('modal-root') ?? document.body;
     }, []);
+    const activeItem = useMemo(
+        () => items.find((item) => item.id === activeItemId) ?? null,
+        [activeItemId, items],
+    );
+    const shouldLockDocumentScroll = isOpen
+        && isMobileViewport
+        && activeItem?.mobilePanelVariant === 'sheet'
+        && Boolean(activeItem.content);
+    useDocumentScrollLock(shouldLockDocumentScroll);
 
-    const clampPosition = useCallback((target: { left: number; top: number }) => {
-        const minLeft = edgePadding + safeAreaInsets.left;
-        const minTop = edgePadding + safeAreaInsets.top;
-        const maxLeft = Math.max(minLeft, window.innerWidth - buttonSize - edgePadding - safeAreaInsets.right);
-        const maxTop = Math.max(minTop, window.innerHeight - buttonSize - edgePadding - safeAreaInsets.bottom);
+    const clampPosition = useCallback((target: { left: number; top: number }, allowOverflow = true) => {
+        if (viewportWidth <= 0 || viewportHeight <= 0) {
+            return target;
+        }
+        const minLeft = allowOverflow
+            ? edgePeekSize - buttonSize
+            : edgePadding + safeAreaInsets.left;
+        const minTop = allowOverflow
+            ? edgePeekSize - buttonSize
+            : edgePadding + safeAreaInsets.top;
+        const maxLeft = allowOverflow
+            ? Math.max(minLeft, viewportWidth - edgePeekSize)
+            : Math.max(minLeft, viewportWidth - buttonSize - edgePadding - safeAreaInsets.right);
+        const maxTop = allowOverflow
+            ? Math.max(minTop, viewportHeight - edgePeekSize)
+            : Math.max(minTop, viewportHeight - buttonSize - edgePadding - safeAreaInsets.bottom);
         return {
             left: Math.min(Math.max(target.left, minLeft), maxLeft),
             top: Math.min(Math.max(target.top, minTop), maxTop),
         };
-    }, [buttonSize, edgePadding, safeAreaInsets.bottom, safeAreaInsets.left, safeAreaInsets.right, safeAreaInsets.top]);
+    }, [buttonSize, edgePadding, edgePeekSize, safeAreaInsets.bottom, safeAreaInsets.left, safeAreaInsets.right, safeAreaInsets.top, viewportHeight, viewportWidth]);
 
     const getAlignmentForPosition = useCallback((target: { left: number; top: number }): FabAlignment => {
-        const centerY = window.innerHeight / 2;
-        const centerX = window.innerWidth / 2;
+        const centerY = viewportHeight / 2;
+        const centerX = viewportWidth / 2;
         const anchorX = target.left + buttonSize / 2;
         const anchorY = target.top + buttonSize / 2;
         const v: FabAlignment['v'] = anchorY < centerY ? 'top' : 'bottom';
         const h: FabAlignment['h'] = anchorX < centerX ? 'right' : 'left';
         return { v, h };
-    }, [buttonSize]);
+    }, [buttonSize, viewportHeight, viewportWidth]);
 
     const getInitialPosition = useCallback(() => {
+        if (viewportWidth <= 0 || viewportHeight <= 0) {
+            return { left: 0, top: 0 };
+        }
         const minLeft = edgePadding + safeAreaInsets.left;
         const minTop = edgePadding + safeAreaInsets.top;
-        const maxLeft = Math.max(minLeft, window.innerWidth - buttonSize - edgePadding - safeAreaInsets.right);
-        const maxTop = Math.max(minTop, window.innerHeight - buttonSize - edgePadding - safeAreaInsets.bottom);
+        const maxLeft = Math.max(minLeft, viewportWidth - buttonSize - edgePadding - safeAreaInsets.right);
+        const maxTop = Math.max(minTop, viewportHeight - buttonSize - edgePadding - safeAreaInsets.bottom);
         // 默认位置往内偏移，不贴边
         const DEFAULT_INSET = Math.max(buttonSize, 48);
         if (initialPosition === 'bottom-right') return { left: maxLeft - DEFAULT_INSET, top: maxTop - DEFAULT_INSET };
         if (initialPosition === 'bottom-left') return { left: minLeft + DEFAULT_INSET, top: maxTop - DEFAULT_INSET };
         if (initialPosition === 'top-right') return { left: maxLeft - DEFAULT_INSET, top: minTop + DEFAULT_INSET };
         return { left: minLeft + DEFAULT_INSET, top: minTop + DEFAULT_INSET };
-    }, [initialPosition, buttonSize, edgePadding, safeAreaInsets.bottom, safeAreaInsets.left, safeAreaInsets.right, safeAreaInsets.top]);
+    }, [buttonSize, edgePadding, initialPosition, safeAreaInsets.bottom, safeAreaInsets.left, safeAreaInsets.right, safeAreaInsets.top, viewportHeight, viewportWidth]);
 
     // 加载保存的位置（支持百分比格式，兼容旧绝对坐标）
     useEffect(() => {
+        if (viewportWidth <= 0 || viewportHeight <= 0) {
+            return undefined;
+        }
         const frameId = window.requestAnimationFrame(() => {
             try {
             const saved = localStorage.getItem('hud_fab_position');
@@ -139,20 +144,20 @@ export const FabMenu = ({
                 // 检测是否为百分比格式
                 if ('leftPercent' in parsed && 'topPercent' in parsed) {
                     next = {
-                        left: parsed.leftPercent * window.innerWidth,
-                        top: parsed.topPercent * window.innerHeight,
+                        left: parsed.leftPercent * viewportWidth,
+                        top: parsed.topPercent * viewportHeight,
                     };
                 } else {
                     // 旧格式：绝对坐标，转换为百分比后保存
                     next = parsed;
                     const percent = {
-                        leftPercent: next.left / window.innerWidth,
-                        topPercent: next.top / window.innerHeight,
+                        leftPercent: next.left / viewportWidth,
+                        topPercent: next.top / viewportHeight,
                     };
                     localStorage.setItem('hud_fab_position', JSON.stringify(percent));
                 }
                 
-                next = clampPosition(next);
+                next = clampPosition(next, true);
                 setFabPosition(next);
                 setAlignment(getAlignmentForPosition(next));
                 return;
@@ -165,10 +170,10 @@ export const FabMenu = ({
                 const next = clampPosition({
                     left: base.left + (parsed.x ?? 0),
                     top: base.top + (parsed.y ?? 0),
-                });
+                }, true);
                 const percent = {
-                    leftPercent: next.left / window.innerWidth,
-                    topPercent: next.top / window.innerHeight,
+                    leftPercent: next.left / viewportWidth,
+                    topPercent: next.top / viewportHeight,
                 };
                 localStorage.setItem('hud_fab_position', JSON.stringify(percent));
                 localStorage.removeItem('hud_fab_offset');
@@ -177,7 +182,7 @@ export const FabMenu = ({
                 return;
             }
 
-            const next = clampPosition(base);
+            const next = clampPosition(base, false);
             setFabPosition(next);
             setAlignment(getAlignmentForPosition(next));
         } catch (error) {
@@ -186,20 +191,20 @@ export const FabMenu = ({
         });
 
         return () => window.cancelAnimationFrame(frameId);
-    }, [clampPosition, getAlignmentForPosition, getInitialPosition]);
+    }, [clampPosition, getAlignmentForPosition, getInitialPosition, viewportHeight, viewportWidth]);
 
     const handleDragEnd = (_: any, info: any) => {
-        if (!fabPosition) return;
+        if (!fabPosition || viewportWidth <= 0 || viewportHeight <= 0) return;
         setIsDragging(false);
         const next = clampPosition({
             left: fabPosition.left + info.offset.x,
             top: fabPosition.top + info.offset.y,
-        });
+        }, true);
         setFabPosition(next);
         // 保存为百分比格式
         const percent = {
-            leftPercent: next.left / window.innerWidth,
-            topPercent: next.top / window.innerHeight,
+            leftPercent: next.left / viewportWidth,
+            topPercent: next.top / viewportHeight,
         };
         localStorage.setItem('hud_fab_position', JSON.stringify(percent));
         dragX.set(0);
@@ -273,7 +278,7 @@ export const FabMenu = ({
     }, [isOpen]);
 
     useEffect(() => {
-        if (!fabPosition) return;
+        if (!fabPosition || viewportWidth <= 0 || viewportHeight <= 0) return;
         const handleResize = () => {
             // 从 localStorage 读取百分比，按新尺寸重新计算
             try {
@@ -282,9 +287,9 @@ export const FabMenu = ({
                     const parsed = JSON.parse(saved);
                     if ('leftPercent' in parsed && 'topPercent' in parsed) {
                         const next = clampPosition({
-                            left: parsed.leftPercent * window.innerWidth,
-                            top: parsed.topPercent * window.innerHeight,
-                        });
+                            left: parsed.leftPercent * viewportWidth,
+                            top: parsed.topPercent * viewportHeight,
+                        }, true);
                         setFabPosition(next);
                         setAlignment(getAlignmentForPosition(next));
                         return;
@@ -294,13 +299,13 @@ export const FabMenu = ({
                 logger.error('FabMenu: 处理窗口缩放失败', { error });
             }
             // 降级：直接 clamp 当前位置
-            const next = clampPosition(fabPosition);
+            const next = clampPosition(fabPosition, true);
             setFabPosition(next);
             setAlignment(getAlignmentForPosition(next));
         };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [clampPosition, fabPosition, getAlignmentForPosition]);
+    }, [clampPosition, fabPosition, getAlignmentForPosition, viewportHeight, viewportWidth]);
 
     useEffect(() => {
         if (prevActiveItemIdRef.current === activeItemId) return;
@@ -317,7 +322,6 @@ export const FabMenu = ({
 
         prevActiveItemIdRef.current = activeItemId;
     }, [activeItemId, items]);
-
     // 列表顺序
     const isButtonBottom = alignment.v === 'bottom';
     const satellitesToRender = isButtonBottom ? [...items.slice(1)].reverse() : items.slice(1);
@@ -354,6 +358,13 @@ export const FabMenu = ({
                     edgePadding={edgePadding}
                     safeAreaInsets={safeAreaInsets}
                     isMobileViewport={isMobileViewport}
+                    viewportWidth={viewportWidth}
+                    viewportHeight={viewportHeight}
+                    tooltipPortalRoot={tooltipPortalRoot}
+                    onRequestClose={() => {
+                        setIsOpen(false);
+                        setActiveItemId(null);
+                    }}
                 />
                 <MenuButton
                     item={items[0]}
@@ -368,6 +379,7 @@ export const FabMenu = ({
                     isDragging={isDragging}
                     buttonSize={buttonSize}
                     isMobileViewport={isMobileViewport}
+                    viewportWidth={viewportWidth}
                 />
             </div>
 
@@ -388,6 +400,8 @@ export const FabMenu = ({
                 edgePadding={edgePadding}
                 safeAreaInsets={safeAreaInsets}
                 isMobileViewport={isMobileViewport}
+                viewportWidth={viewportWidth}
+                viewportHeight={viewportHeight}
             />
         </motion.div>
     );
@@ -409,6 +423,8 @@ const SatelliteList = ({
     edgePadding,
     safeAreaInsets,
     isMobileViewport,
+    viewportWidth,
+    viewportHeight,
 }: any) => {
     const isButtonBottom = alignment.v === 'bottom';
     const flexDirection = isButtonBottom ? 'flex-col-reverse' : 'flex-col';
@@ -445,6 +461,10 @@ const SatelliteList = ({
                                 edgePadding={edgePadding}
                                 safeAreaInsets={safeAreaInsets}
                                 isMobileViewport={isMobileViewport}
+                                viewportWidth={viewportWidth}
+                                viewportHeight={viewportHeight}
+                                tooltipPortalRoot={tooltipPortalRoot}
+                                onRequestClose={() => onItemClick(item)}
                             />
                             <MenuButton
                                 item={item}
@@ -459,6 +479,7 @@ const SatelliteList = ({
                                 isDragging={isDragging}
                                 buttonSize={buttonSize}
                                 isMobileViewport={isMobileViewport}
+                                viewportWidth={viewportWidth}
                             />
                         </div>
                     ))}
@@ -479,20 +500,118 @@ const Panel = ({
     edgePadding,
     safeAreaInsets,
     isMobileViewport,
+    viewportWidth,
+    viewportHeight,
+    tooltipPortalRoot,
+    onRequestClose,
 }: any) => {
-    const verticalClass = alignment.v === 'top' ? 'top-0' : 'bottom-0';
     const panelOffset = buttonSize + buttonGap;
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+    const isMobileSheetPanel = isMobileViewport && item.mobilePanelVariant === 'sheet';
     const panelWidth = isMobileViewport ? 260 : 300;
-    const availableWidth = alignment.h === 'right'
-        ? viewportWidth - (fabPosition?.left ?? 0) - panelOffset - safeAreaInsets.right - edgePadding
-        : (fabPosition?.left ?? 0) - buttonGap - safeAreaInsets.left - edgePadding;
-    const availableHeight = alignment.v === 'top'
-        ? viewportHeight - (fabPosition?.top ?? 0) - safeAreaInsets.bottom - edgePadding
-        : (fabPosition?.top ?? 0) + buttonSize - safeAreaInsets.top - edgePadding;
-    const panelMaxWidth = `${Math.max(132, Math.floor(availableWidth))}px`;
-    const panelMaxHeight = `${Math.max(144, Math.floor(availableHeight))}px`;
+    const spaceRight = Math.max(
+        0,
+        Math.floor(viewportWidth - (fabPosition?.left ?? 0) - panelOffset - safeAreaInsets.right - edgePadding),
+    );
+    const spaceLeft = Math.max(
+        0,
+        Math.floor((fabPosition?.left ?? 0) - buttonGap - safeAreaInsets.left - edgePadding),
+    );
+    const spaceBelow = Math.max(
+        0,
+        Math.floor(viewportHeight - (fabPosition?.top ?? 0) - safeAreaInsets.bottom - edgePadding),
+    );
+    const spaceAbove = Math.max(
+        0,
+        Math.floor((fabPosition?.top ?? 0) + buttonSize - safeAreaInsets.top - edgePadding),
+    );
+
+    const horizontalPlacement: FabAlignment['h'] = isMobileViewport
+        ? (spaceRight >= spaceLeft ? 'right' : 'left')
+        : alignment.h;
+    const verticalPlacement: FabAlignment['v'] = isMobileViewport
+        ? (spaceBelow >= spaceAbove ? 'top' : 'bottom')
+        : alignment.v;
+    const verticalClass = verticalPlacement === 'top' ? 'top-0' : 'bottom-0';
+    const safeAvailableWidth = horizontalPlacement === 'right' ? spaceRight : spaceLeft;
+    const safeAvailableHeight = verticalPlacement === 'top' ? spaceBelow : spaceAbove;
+    const resolvedPanelWidth = safeAvailableWidth > 0 ? Math.min(panelWidth, safeAvailableWidth) : panelWidth;
+    const panelMaxWidth = safeAvailableWidth > 0 ? `${safeAvailableWidth}px` : undefined;
+    const panelMaxHeight = safeAvailableHeight > 0 ? `${safeAvailableHeight}px` : undefined;
+    const panelHeading = (
+        <div className="mb-2 truncate border-b border-white/10 pb-2 text-[10px] font-bold uppercase tracking-wider opacity-70">
+            {item.label}
+        </div>
+    );
+
+    if (isMobileSheetPanel) {
+        const sheetHorizontalMargin = 12;
+        const sheetBottomOffset = safeAreaInsets.bottom + 4;
+        const availableSheetWidth = Math.max(
+            0,
+            viewportWidth - safeAreaInsets.left - safeAreaInsets.right - (sheetHorizontalMargin * 2),
+        );
+        const resolvedSheetWidth = Math.min(availableSheetWidth, 420);
+        const resolvedSheetLeft = Math.max(
+            safeAreaInsets.left + sheetHorizontalMargin,
+            (viewportWidth - resolvedSheetWidth) / 2,
+        );
+
+        if (!isActive || !item.content || !tooltipPortalRoot) {
+            return null;
+        }
+
+        return createPortal(
+            <>
+                <div
+                    className="fixed inset-0 bg-black/55 backdrop-blur-[2px]"
+                    style={{ zIndex: UI_Z_INDEX.modalOverlay }}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onRequestClose?.();
+                    }}
+                    data-testid={`fab-sheet-backdrop-${item.id}`}
+                />
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.16 }}
+                    className="fixed"
+                    style={{
+                        left: resolvedSheetLeft,
+                        bottom: sheetBottomOffset,
+                        width: resolvedSheetWidth > 0 ? resolvedSheetWidth : undefined,
+                        zIndex: UI_Z_INDEX.modalContent,
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={item.label}
+                    data-testid={`fab-sheet-${item.id}`}
+                >
+                    <div
+                        className={`
+                            overflow-hidden rounded-[22px] border shadow-2xl
+                            ${isDark
+                                ? 'border-white/10 bg-black/95 text-white shadow-black/70'
+                                : 'border-[#d3ccba] bg-[#fcfbf9]/98 text-[#433422] shadow-[#433422]/20'}
+                        `}
+                        data-testid={`fab-panel-${item.id}`}
+                    >
+                        <div className="px-4 pt-4">
+                            <div className="truncate border-b border-white/10 pb-2 text-[11px] font-bold uppercase tracking-[0.22em] opacity-70">
+                                {item.label}
+                            </div>
+                        </div>
+                        <div className="px-3 pb-3 pt-3">
+                            {item.content}
+                        </div>
+                    </div>
+                </motion.div>
+            </>,
+            tooltipPortalRoot,
+        );
+    }
 
     return (
         <AnimatePresence>
@@ -512,17 +631,16 @@ const Panel = ({
                         overflow-y-auto overflow-x-hidden custom-scrollbar
                     `}
                     style={{
-                        width: panelWidth,
+                        width: resolvedPanelWidth,
                         maxWidth: panelMaxWidth,
                         maxHeight: panelMaxHeight,
-                        [alignment.h === 'right' ? 'left' : 'right']: panelOffset,
+                        minWidth: 0,
+                        [horizontalPlacement === 'right' ? 'left' : 'right']: panelOffset,
                     }}
                     onPointerDown={(e) => e.stopPropagation()}
                     data-testid={`fab-panel-${item.id}`}
                 >
-                    <div className="mb-2 truncate border-b border-white/10 pb-2 text-[10px] font-bold uppercase tracking-wider opacity-70">
-                        {item.label}
-                    </div>
+                    {panelHeading}
                     {item.content}
                 </motion.div>
             )}
@@ -530,7 +648,7 @@ const Panel = ({
     );
 };
 
-const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, tooltipPortalRoot, showGlow, glowColor, isDragging, buttonSize, isMobileViewport }: any) => {
+const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, tooltipPortalRoot, showGlow, glowColor, isDragging, buttonSize, isMobileViewport, viewportWidth }: any) => {
     const [isHovered, setIsHovered] = useState(false);
     const showTooltip = !isMobileViewport && isHovered && !isDragging && !(isActive && item.content);
     const showPreview = !isMobileViewport && Boolean(item.preview) && !isDragging && !isActive;
@@ -635,7 +753,7 @@ const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, toolti
                                             ? tooltipRect.right + gap
                                             : undefined,
                                         right: tooltipSide === 'left'
-                                            ? window.innerWidth - tooltipRect.left + gap
+                                            ? viewportWidth - tooltipRect.left + gap
                                             : undefined,
                                         transform: `translate(${tooltipSide === 'right' ? '0' : '-100%'}, -50%)`,
                                         zIndex: UI_Z_INDEX.tooltip,
@@ -666,7 +784,7 @@ const MenuButton = ({ item, onClick, isActive, isMain, isDark, alignment, toolti
                                             ? tooltipRect.right + gap
                                             : undefined,
                                         right: previewSide === 'left'
-                                            ? window.innerWidth - tooltipRect.left + gap
+                                            ? viewportWidth - tooltipRect.left + gap
                                             : undefined,
                                         transform: `translate(${previewSide === 'right' ? '0' : '-100%'}, -50%)`,
                                         zIndex: UI_Z_INDEX.tooltip,

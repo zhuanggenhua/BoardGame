@@ -217,12 +217,16 @@ public class MainActivity extends BridgeActivity {
 
         WindowCompat.setDecorFitsSystemWindows(window, !isGamePage);
         if (isGamePage) {
+            // 游戏页必须进入真正的沉浸式全屏。
+            // 之前只隐藏了 status bar，底部 navigation/gesture bar 仍会占用 inset，
+            // WebView 读到的 viewport 高度被压缩，safe-area-bottom 也会继续生效，
+            // 最终表现为页面底部被“系统条”往上挤。
             controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            controller.hide(WindowInsetsCompat.Type.statusBars());
+            controller.hide(WindowInsetsCompat.Type.systemBars());
             return;
         }
 
-        controller.show(WindowInsetsCompat.Type.statusBars());
+        controller.show(WindowInsetsCompat.Type.systemBars());
     }
 
     private void dispatchLifecycleScript(String script) {

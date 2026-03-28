@@ -32,6 +32,7 @@ import {
     buildValidatedMoveEvents,
     buildValidatedDestroyEvents,
     buildValidatedReturnEvents,
+    buildStandardDrawEvents,
 } from './abilityHelpers';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
@@ -79,6 +80,8 @@ export interface BaseAbilityContext {
     destroyerId?: PlayerId;
     /** onMinionDestroyed 时：被消灭随从的控制者 */
     controllerId?: PlayerId;
+    /** onMinionDestroyed 时：本次消灭的来源 reason */
+    reason?: string;
     /** afterScoring 时：排名信息 */
     rankings?: { playerId: PlayerId; power: number; vp: number }[];
     /** onActionPlayed 时：行动卡目标基地 */
@@ -134,6 +137,15 @@ function getTurnMinionsPlayedAtBase(state: SmashUpCore, baseIndex: number): numb
 // ============================================================================
 
 type BaseAbilityEntry = { executor: BaseAbilityExecutor; options: Required<BaseAbilityRegistrationOptions> };
+const POD_SUFFIX = '_pod';
+
+function isPodDefId(defId: string): boolean {
+    return defId.endsWith(POD_SUFFIX);
+}
+
+function toPodDefId(defId: string): string {
+    return isPodDefId(defId) ? defId : `${defId}${POD_SUFFIX}`;
+}
 
 /** 内部存储：baseDefId 到 Map<BaseTriggerTiming, BaseAbilityEntry> */
 const baseAbilityRegistry = new Map<string, Map<BaseTriggerTiming, BaseAbilityEntry>>();
@@ -277,6 +289,49 @@ export function getExtendedBaseAbilityOptions(baseDefId: string, timing: string)
     return extendedRegistry.get(baseDefId)?.get(timing)?.options;
 }
 
+/**
+ * 为基地能力注册表补充 POD 别名。
+ *
+ * 说明：
+ * 1) 不覆盖已显式注册的 POD 能力（支持未来逐张覆写）。
+ * 2) 普通基地能力需要同步注册 reaction queue executor，确保触发队列可执行。
+ * 3) 扩展时机（extendedRegistry）只做映射，不在此处注册 queue executor（按现有收集路径动态注册）。
+ */
+export function registerPodBaseAbilityAliases(): void {
+    const baseEntries = Array.from(baseAbilityRegistry.entries());
+    for (const [baseDefId, timingMap] of baseEntries) {
+        if (isPodDefId(baseDefId)) continue;
+        const podDefId = toPodDefId(baseDefId);
+        const podTimingMap = baseAbilityRegistry.get(podDefId) ?? new Map<BaseTriggerTiming, BaseAbilityEntry>();
+
+        for (const [timing, entry] of timingMap.entries()) {
+            if (podTimingMap.has(timing)) continue;
+            podTimingMap.set(timing, entry);
+            registerBaseAbilityAsQueuedTrigger(podDefId, timing);
+        }
+
+        if (!baseAbilityRegistry.has(podDefId)) {
+            baseAbilityRegistry.set(podDefId, podTimingMap);
+        }
+    }
+
+    const extendedEntries = Array.from(extendedRegistry.entries());
+    for (const [baseDefId, timingMap] of extendedEntries) {
+        if (isPodDefId(baseDefId)) continue;
+        const podDefId = toPodDefId(baseDefId);
+        const podTimingMap = extendedRegistry.get(podDefId) ?? new Map<string, ExtendedBaseAbilityEntry>();
+
+        for (const [timing, entry] of timingMap.entries()) {
+            if (podTimingMap.has(timing)) continue;
+            podTimingMap.set(timing, entry);
+        }
+
+        if (!extendedRegistry.has(podDefId)) {
+            extendedRegistry.set(podDefId, podTimingMap);
+        }
+    }
+}
+
 // ============================================================================
 // 基地能力注册（所有可 Prompt 实现的基地）
 // ============================================================================
@@ -385,6 +440,25 @@ export function registerBaseAbilities(): void {
         };
     });
 
+    // base_cave_of_shinies_pod: 闪光洞穴（POD）
+    // "Once per turn, after a minion here you own is destroyed, gain 1 VP."
+    registerExtended('base_cave_of_shinies_pod', 'onMinionDestroyed', (ctx) => {
+        const alreadyTriggeredThisTurn = (ctx.state.turnDestroyedMinions ?? [])
+            .some(record => record.baseIndex === ctx.baseIndex);
+        if (alreadyTriggeredThisTurn) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.VP_AWARDED,
+                payload: {
+                    playerId: ctx.playerId,
+                    amount: 1,
+                    reason: '闪光洞穴（POD）：每回合一次，己方随从被消灭获得1VP',
+                },
+                timestamp: ctx.now,
+            } as VpAwardedEvent],
+        };
+    });
+
     // base_the_factory: 436-1337工厂
     // "当这个基地计分时，冠军在这里每有5力量就获得1VP"
     registerBaseAbility('base_the_factory', 'beforeScoring', (ctx) => {
@@ -442,19 +516,21 @@ export function registerBaseAbilities(): void {
                 timestamp: ctx.now,
             } as CardsDiscardedEvent);
         }
-        // 抽5张牌（从牌库顶取）
-        const drawCount = Math.min(5, winner.deck.length);
-        if (drawCount > 0) {
-            events.push({
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: {
-                    playerId: winnerId,
-                    count: drawCount,
-                    cardUids: winner.deck.slice(0, drawCount).map(c => c.uid),
+        // 抽5张牌：需基于“弃手牌后”的临时状态计算，确保牌库为空时可洗入刚弃的手牌
+        const drawState = winner.hand.length > 0
+            ? {
+                ...ctx.state,
+                players: {
+                    ...ctx.state.players,
+                    [winnerId]: {
+                        ...winner,
+                        hand: [],
+                        discard: [...winner.discard, ...winner.hand],
+                    },
                 },
-                timestamp: ctx.now,
-            } as CardsDrawnEvent);
-        }
+            }
+            : ctx.state;
+        events.push(...buildStandardDrawEvents(drawState, winnerId, 5, ctx.random, ctx.now));
         return { events };
     });
 
@@ -558,6 +634,10 @@ export function registerBaseAbilities(): void {
         return { events };
     }, { mandatory: true });
 
+    // base_temple_of_goju_pod: POD 版本为“随从被消灭后置牌库底”，
+    // 由 reducer 在 MINION_DESTROYED 阶段处理；因此 afterScoring 无效果。
+    registerBaseAbility('base_temple_of_goju_pod', 'afterScoring', () => ({ events: [] }));
+
     // base_great_library: 大图书馆
     // "在这个基地计分后，所有在这里有随从的玩家可以抽一张卡牌"
     registerBaseAbility('base_great_library', 'afterScoring', (ctx) => {
@@ -570,17 +650,7 @@ export function registerBaseAbilities(): void {
             playersWithMinions.add(m.controller);
         }
         for (const pid of playersWithMinions) {
-            const player = ctx.state.players[pid];
-            if (!player || player.deck.length === 0) continue;
-            events.push({
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: {
-                    playerId: pid,
-                    count: 1,
-                    cardUids: [player.deck[0].uid],
-                },
-                timestamp: ctx.now,
-            } as CardsDrawnEvent);
+            events.push(...buildStandardDrawEvents(ctx.state, pid, 1, ctx.random, ctx.now));
         }
         return { events };
     });
@@ -636,10 +706,19 @@ export function registerBaseAbilities(): void {
     });
 
     // base_the_field_of_honor: 荣誉之地
-    // "当一个或多个随从在这里被消灭，那个将它们消灭的玩家获得1VP"
+    // "每回合中，在你第一次消灭这里另一位玩家的随从后，获得 1 VP"
     registerExtended('base_the_field_of_honor', 'onMinionDestroyed', (ctx) => {
-        // ctx.destroyerId 是消灭者；reason 标识本次消灭的直接来源（卡牌/能力）
         if (!ctx.destroyerId) return { events: [] };
+        const destroyedControllerId = ctx.controllerId ?? ctx.playerId;
+        // 仅当“消灭了另一位玩家的随从”时触发
+        if (destroyedControllerId === ctx.destroyerId) return { events: [] };
+        // 每回合同一位玩家在同一荣誉之地仅首次触发
+        const alreadyTriggeredThisTurn = (ctx.state.turnDestroyedMinions ?? []).some(record =>
+            record.baseIndex === ctx.baseIndex
+            && record.owner !== ctx.destroyerId
+            && record.destroyer === ctx.destroyerId,
+        );
+        if (alreadyTriggeredThisTurn) return { events: [] };
         return {
             events: [{
                 type: SU_EVENTS.VP_AWARDED,
@@ -920,12 +999,28 @@ export function registerBaseAbilities(): void {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     });
 
+    // base_rlyeh: 仅当“本基地能力导致的消灭真正发生”时给予 1VP
+    registerExtended('base_rlyeh', 'onMinionDestroyed', (ctx) => {
+        if (ctx.reason !== 'base_rlyeh') return { events: [] };
+        if (!ctx.destroyerId) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.VP_AWARDED,
+                payload: { playerId: ctx.destroyerId, amount: 1, reason: '拉莱耶：消灭随从获得1VP' },
+                timestamp: ctx.now,
+            } as VpAwardedEvent],
+        };
+    });
+
     // === 基础版需要 Prompt 的基地 ===
 
     // base_the_homeworld: 母星
     // "每当有一个随从打出到这里后，它的拥有者可以额外打出一个力量为2或以下的随从"
     // 力量≤2 限制通过 LIMIT_MODIFIED 事件的 powerMax 字段全局生效
     registerBaseAbility('base_the_homeworld', 'onMinionPlayed', (ctx) => {
+        // POD 勘误：改为“每回合一次”。若统计缺失（如部分单测直接调用），按可触发处理。
+        const playedAtBaseThisTurn = getTurnMinionsPlayedAtBase(ctx.state, ctx.baseIndex);
+        if (playedAtBaseThisTurn >= 2) return { events: [] };
         return {
             events: [{
                 type: SU_EVENTS.LIMIT_MODIFIED,
@@ -1036,6 +1131,9 @@ export function registerBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, { mandatory: false });
+
+    // base_ninja_dojo_pod: POD 勘误为无基地能力。
+    registerBaseAbility('base_ninja_dojo_pod', 'afterScoring', () => ({ events: [] }));
 
     // === 基础版需要 Prompt 的基地（续） ===
 
@@ -1325,12 +1423,68 @@ export function registerBaseAbilities(): void {
         };
     });
 
+    // base_mushroom_kingdom_pod: 蘑菇王国（POD）
+    // "At the start of your turn, if you have more cards in your hand than any other player,
+    //  you may move a minion to or from this base."
+    registerBaseAbility('base_mushroom_kingdom_pod', 'onTurnStart', (ctx) => {
+        const mushroomBaseIndex = ctx.baseIndex;
+        const me = ctx.state.players[ctx.playerId];
+        if (!me) return { events: [] };
+        const myHandCount = me.hand.length;
+        const hasStrictlyMoreThanAnyOther = Object.entries(ctx.state.players)
+            .filter(([pid]) => pid !== ctx.playerId)
+            .every(([, player]) => myHandCount > player.hand.length);
+        if (!hasStrictlyMoreThanAnyOther) return { events: [] };
+
+        const allMinions: { uid: string; defId: string; fromBaseIndex: number; label: string }[] = [];
+        for (let i = 0; i < ctx.state.bases.length; i++) {
+            const base = ctx.state.bases[i];
+            const bDef = getBaseDef(base.defId);
+            for (const m of base.minions) {
+                const def = getCardDef(m.defId);
+                allMinions.push({
+                    uid: m.uid,
+                    defId: m.defId,
+                    fromBaseIndex: i,
+                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})`,
+                });
+            }
+        }
+        if (allMinions.length === 0) return { events: [] };
+
+        const minionOptions = allMinions.map((m, i) => ({
+            id: `minion-${i}`,
+            label: m.label,
+            value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.fromBaseIndex },
+            _source: 'field' as const,
+            displayMode: 'card' as const,
+        }));
+        const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; fromBaseIndex: number }>[] = [
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            ...minionOptions,
+        ];
+        if (!ctx.matchState) return { events: [] };
+        const interaction = createSimpleChoice(
+            `base_mushroom_kingdom_pod_${ctx.now}`, ctx.playerId,
+            '蘑菇王国（POD）：选择一个随从，移动到或移出该基地', options,
+            { sourceId: 'base_mushroom_kingdom_pod', targetType: 'minion' },
+        );
+        return {
+            events: [],
+            matchState: queueInteraction(ctx.matchState, {
+                ...interaction,
+                data: { ...interaction.data, continuationContext: { mushroomBaseIndex } },
+            }),
+        };
+    });
+
     // === 限制类基地已通过 BaseCardDef.restrictions 数据驱动，isOperationRestricted 自动解析 ===
 
     // === 被动保护类已在 baseAbilities_expansion.ts 中通过 registerProtection 注册 ===
 
     // === 扩展包基地能力（克苏鲁/AL9000/Pretty Pretty） ===
     registerExpansionBaseAbilities();
+    registerPodBaseAbilityAliases();
 }
 
 // ============================================================================
@@ -1357,14 +1511,12 @@ export function registerBaseInteractionHandlers(): void {
         if (!base) return { state, events: [] };
         const target = base.minions.find(m => m.uid === selected.minionUid);
         if (!target) return { state, events: [] };
-        return { state, events: [
-            destroyMinion(target.uid, target.defId, selected.baseIndex!, target.owner, undefined, 'base_rlyeh', timestamp),
-            {
-                type: SU_EVENTS.VP_AWARDED,
-                payload: { playerId, amount: 1, reason: '拉莱耶：消灭随从获得1VP' },
-                timestamp,
-            } as VpAwardedEvent,
-        ] };
+        return {
+            state,
+            events: [
+                destroyMinion(target.uid, target.defId, selected.baseIndex!, target.owner, playerId, 'base_rlyeh', timestamp),
+            ],
+        };
     });
 
     // 血堡：可选在刚打出的随从上放 +1 指示物
@@ -1657,6 +1809,89 @@ export function registerBaseInteractionHandlers(): void {
     });
 
     // 刚柔流寺庙：平局时拥有者选择放入牌库底的随从（链式处理多个玩家）
+    registerInteractionHandler('base_mushroom_kingdom_pod', (state, playerId, value, iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; minionUid?: string; minionDefId?: string; fromBaseIndex?: number };
+        if (selected.skip) return { state, events: [] };
+        if (!selected.minionUid || !selected.minionDefId || selected.fromBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const ctx = getContinuationContext<{ mushroomBaseIndex: number }>(iData);
+        if (!ctx) return { state, events: [] };
+
+        if (selected.fromBaseIndex !== ctx.mushroomBaseIndex) {
+            return {
+                state,
+                events: buildValidatedMoveEvents(state, {
+                    minionUid: selected.minionUid,
+                    minionDefId: selected.minionDefId,
+                    fromBaseIndex: selected.fromBaseIndex,
+                    toBaseIndex: ctx.mushroomBaseIndex,
+                    reason: 'base_mushroom_kingdom_pod',
+                    now: timestamp,
+                }),
+            };
+        }
+
+        const baseCandidates: { baseIndex: number; label: string }[] = [];
+        for (let i = 0; i < state.core.bases.length; i++) {
+            if (i === ctx.mushroomBaseIndex) continue;
+            const bDef = getBaseDef(state.core.bases[i].defId);
+            baseCandidates.push({ baseIndex: i, label: bDef?.name ?? `基地 ${i + 1}` });
+        }
+        if (baseCandidates.length === 0) return { state, events: [] };
+        if (baseCandidates.length === 1) {
+            return {
+                state,
+                events: buildValidatedMoveEvents(state, {
+                    minionUid: selected.minionUid,
+                    minionDefId: selected.minionDefId,
+                    fromBaseIndex: selected.fromBaseIndex,
+                    toBaseIndex: baseCandidates[0].baseIndex,
+                    reason: 'base_mushroom_kingdom_pod',
+                    now: timestamp,
+                }),
+            };
+        }
+
+        const interaction = createSimpleChoice(
+            `base_mushroom_kingdom_pod_choose_base_${timestamp}`, playerId,
+            '蘑菇王国（POD）：选择要移动到的基地',
+            buildBaseTargetOptions(baseCandidates, state.core),
+            { sourceId: 'base_mushroom_kingdom_pod_choose_base', targetType: 'base' },
+        );
+        return {
+            state: queueInteraction(state, {
+                ...interaction,
+                data: {
+                    ...interaction.data,
+                    continuationContext: {
+                        minionUid: selected.minionUid,
+                        minionDefId: selected.minionDefId,
+                        fromBaseIndex: selected.fromBaseIndex,
+                    },
+                },
+            }),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('base_mushroom_kingdom_pod_choose_base', (state, _playerId, value, iData, _random, timestamp) => {
+        const { baseIndex: toBaseIndex } = value as { baseIndex: number };
+        const ctx = getContinuationContext<{ minionUid: string; minionDefId: string; fromBaseIndex: number }>(iData);
+        if (!ctx) return { state, events: [] };
+        return {
+            state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: ctx.minionUid,
+                minionDefId: ctx.minionDefId,
+                fromBaseIndex: ctx.fromBaseIndex,
+                toBaseIndex,
+                reason: 'base_mushroom_kingdom_pod',
+                now: timestamp,
+            }),
+        };
+    });
+
     registerInteractionHandler('base_temple_of_goju_tiebreak', (state, playerId, value, iData, _random, timestamp) => {
         const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number; defId: string };
         const base = state.core.bases[baseIndex];

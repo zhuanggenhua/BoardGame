@@ -46,6 +46,8 @@
         --safe-area-right: env(safe-area-inset-right, 0px);
         --safe-area-bottom: env(safe-area-inset-bottom, 0px);
         --safe-area-left: env(safe-area-inset-left, 0px);
+        --runtime-viewport-width: 100vw;
+        --runtime-viewport-height: 100dvh;
     }
 
     /* Responsive Root Font Size System */
@@ -95,9 +97,17 @@
 /* 娓告垙椤甸潰瑙嗗彛楂樺害鍏滃簳锛氭棫 WebView 鍥為€€ 100vh锛屾柊娴忚鍣ㄤ紭鍏?100dvh */
 .game-page-viewport {
     min-height: 100vh;
-    min-height: 100dvh;
+    min-height: var(--runtime-viewport-height, 100dvh);
     height: 100vh;
-    height: 100dvh;
+    height: var(--runtime-viewport-height, 100dvh);
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+#modal-root {
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 /* 娓告垙涓撳睘瀛椾綋锛歮anifest.fontFamily 閫氳繃 MatchRoom/LocalMatchRoom 娉ㄥ叆涓?CSS 鍙橀噺锛?
@@ -233,6 +243,28 @@
 
 /* 移动端响应式缩放（旧方案，仅保留给未接入 board-shell/map-shell 的游戏） */
 @media (max-width: 1023px) and (orientation: landscape) {
+    .game-page-viewport {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        max-width: 100vw;
+        min-width: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    html:has([data-game-page]),
+    body:has([data-game-page]) {
+        overflow-x: hidden;
+        overscroll-behavior-x: none;
+    }
+
+    body:has([data-game-page]) #root,
+    body:has([data-game-page]) #modal-root,
+    body:has([data-game-page]) .game-page-viewport {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
     /* board-shell / map-shell 游戏已由各自框架容器接管布局，
        这里的旧 root 缩放只作用于尚未接入新框架的历史页面。 */
     body:has([data-game-page]):not(:has([data-mobile-layout-preset="board-shell"])):not(:has([data-mobile-layout-preset="map-shell"])) #root {
@@ -241,11 +273,11 @@
         position: fixed;
         inset: 0;
         transform-origin: top left;
-        transform: scale(calc(100vw / 1280));
+        transform: scale(calc(var(--runtime-viewport-width, 100vw) / 1280));
         width: 1280px;
         /* 关键：移动端横屏下用 dvh 避免 iOS/Chrome 地址栏导致的 100vh 误差。
            否则 root 会比真实可视区更矮，底部露出页面底色（常见为羊皮纸米色）。 */
-        height: calc(100dvh / (100vw / 1280));
+        height: calc(var(--runtime-viewport-height, 100dvh) / (var(--runtime-viewport-width, 100vw) / 1280));
         overflow: hidden;
     }
 
@@ -275,6 +307,16 @@
     height: 100%;
     min-width: 0;
     min-height: 0;
+    overflow: hidden;
+}
+
+.mobile-board-shell__content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .mobile-board-shell__top-rail,
@@ -306,16 +348,31 @@
 }
 
 @media (max-width: 1023px) and (orientation: landscape) {
+    html:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]),
+    body:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]) {
+        overflow: hidden;
+        overscroll-behavior: none;
+        background: #000;
+    }
+
+    body:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]) #root {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
     [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell {
         --mobile-board-shell-design-width: 1280px;
-        --mobile-board-shell-scale: calc(100vw / var(--mobile-board-shell-design-width));
+        --mobile-board-shell-scale: calc(var(--runtime-viewport-width, 100vw) / var(--mobile-board-shell-design-width));
         --mobile-board-shell-inverse-scale: calc(1 / var(--mobile-board-shell-scale));
+        position: absolute;
+        inset: 0 auto auto 0;
         transform-origin: top left;
         transform: scale(var(--mobile-board-shell-scale));
         width: var(--mobile-board-shell-design-width);
-        height: calc(100vh / var(--mobile-board-shell-scale));
-        height: calc(100dvh / var(--mobile-board-shell-scale));
+        height: calc(var(--runtime-viewport-height, 100dvh) / var(--mobile-board-shell-scale));
         max-width: none;
+        padding: 0;
     }
 
     [data-game-page][data-game-id="dicethrone"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell {

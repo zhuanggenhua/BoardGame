@@ -4,6 +4,44 @@
 
 验证 `TutorialOverlay` 在手机横屏下不会跑出视口，并确认这次改动只在移动端横屏条件下生效，不主动改写 PC 教程浮层布局路径。
 
+## 2026-03-28 最新复验
+
+### 本轮改动
+
+- 将 `TutorialOverlay` 的横屏紧凑分支进一步收敛为“等比例缩小 + 视口占比上限”的方案：
+  - 先按横屏高度计算整体缩放比例，当前缩放范围限制在 `0.82 ~ 0.94`
+  - 缩放前视觉宽度目标约为横屏视口 `36%`，缩放后最大实际宽度约 `292px`
+  - 缩放前视觉高度目标约为横屏视口 `62%`，超长文案继续在卡内滚动
+  - 仅在 `viewport.width <= MOBILE_MAX_VIEWPORT_WIDTH && viewport.width > viewport.height` 时生效
+- 在 `e2e/smashup-tutorial.e2e.ts` 里把原有“不能越界”断言继续收紧为：
+  - 浮层宽度占比 `<= 40%`
+  - 浮层高度占比 `<= 64%`
+
+### 本轮执行
+
+命令：
+
+```bash
+npm run typecheck
+npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+```
+
+结果：
+
+- 两条命令均通过
+- E2E 用例通过：`1 passed`
+
+### 本轮有效证据
+
+- 截图路径：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
+
+读图结论：
+
+- 教程卡片这次不是“只压高度”，而是整张卡等比例缩小；最大场景实际约为 `292.3 x 225.4`。
+- 在 `812x375` 横屏下，最大场景约占视口 `36%` 宽、`60%` 高，主棋盘和右侧操作区都明显比上一版露出更多。
+- 截图里没有出现横向滚动条，也没有出现按钮贴边或底部被截断的情况。
+
 ## 实现边界
 
 - 代码入口：[TutorialOverlay.tsx](/D:/gongzuo/webgame/BoardGame/src/components/tutorial/TutorialOverlay.tsx)
@@ -35,13 +73,11 @@ node scripts/infra/run-e2e-command.mjs ci e2e/smashup-tutorial.e2e.ts --grep "�
 
 ## 当前状态
 
-- 已补齐代码侧证据截图路径，后续在可运行 Playwright 子进程的环境里重跑时，会直接落到 `test-results/evidence-screenshots/`。
-- 当前沙箱执行 `npm run test:e2e:ci -- e2e/smashup-tutorial.e2e.ts` 会被 `spawn EPERM` 阻塞，因此这轮还不能在这里生成新版截图。
-- 现有仓库里没有这条专用用例的新截图，所以本轮不能把“教程浮层移动端横屏验收”宣告为完整收口。
-- 这里要明确区分：
-  - 代码与断言已经接好。
-  - 当前仓库还没有 `smashup-tutorial.e2e` 产出的新版有效截图。
-  - 因此本轮仍没有可直接读图验收的“新鲜主证据图”。
+- 最新状态已经不是“只有代码和断言”，而是“代码、断言、专用 E2E 截图三者都已补齐”。
+- 当前仓库已经有这条专用用例生成的新版有效截图：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
+- 因此这轮可以把“教程浮层移动端横屏验收”视为已完成收口。
+- 下方保留的旧段落仅作为历史排查记录，不再代表当前运行结论。
 
 ## 2026-03-15 本轮复查
 

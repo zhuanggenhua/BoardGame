@@ -14,6 +14,9 @@ import { getOrCreateGuestId, getGuestName as resolveGuestName } from '../../../.
 import { UI_Z_INDEX } from '../../../../core';
 import { useToast } from '../../../../contexts/ToastContext';
 import { copyToClipboard } from '../../../../lib/utils';
+import { getGameById } from '../../../../config/games.config';
+import { resolveSeatControllersFromSearchParams } from '../../../../engine/ai';
+import { useRuntimeViewport } from '../../../../hooks/ui/useRuntimeViewport';
 
 const DEBUG_BUTTON_SIZE = 48;
 const EDGE_PADDING = 16;
@@ -42,6 +45,11 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, dispatch, events,
     const [activeTab, setActiveTab] = React.useState<'state' | 'actions' | 'controls'>('controls');
     const [isCreatingRoom, setIsCreatingRoom] = React.useState(false);
     const { setPlayerID } = useDebug();
+    const gameManifest = gameId ? getGameById(gameId) : undefined;
+    const aiSupport = gameManifest?.ai;
+    const viewport = useRuntimeViewport();
+    const viewportWidth = viewport.width;
+    const viewportHeight = viewport.height;
 
     // 拖拽相关状态
     const [buttonPosition, setButtonPosition] = useState<{ left: number; top: number } | null>(null);
@@ -54,23 +62,29 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, dispatch, events,
 
     // 位置约束函数
     const clampPosition = useCallback((target: { left: number; top: number }) => {
-        const maxLeft = window.innerWidth - DEBUG_BUTTON_SIZE - EDGE_PADDING;
-        const maxTop = window.innerHeight - DEBUG_BUTTON_SIZE - EDGE_PADDING;
+        if (viewportWidth <= 0 || viewportHeight <= 0) {
+            return target;
+        }
+        const maxLeft = viewportWidth - DEBUG_BUTTON_SIZE - EDGE_PADDING;
+        const maxTop = viewportHeight - DEBUG_BUTTON_SIZE - EDGE_PADDING;
         return {
             left: Math.min(Math.max(target.left, EDGE_PADDING), maxLeft),
             top: Math.min(Math.max(target.top, EDGE_PADDING), maxTop),
         };
-    }, []);
+    }, [viewportHeight, viewportWidth]);
 
     // 获取默认位置（右下角偏上）
     const getDefaultPosition = useCallback(() => {
-        const maxLeft = window.innerWidth - DEBUG_BUTTON_SIZE - EDGE_PADDING;
-        const defaultTop = window.innerHeight * 0.65; // 65% 高度位置
+        const maxLeft = Math.max(EDGE_PADDING, viewportWidth - DEBUG_BUTTON_SIZE - EDGE_PADDING);
+        const defaultTop = Math.max(EDGE_PADDING, viewportHeight * 0.65); // 65% 高度位置
         return { left: maxLeft, top: defaultTop };
-    }, []);
+    }, [viewportHeight, viewportWidth]);
 
     // 加载保存的位置
     useEffect(() => {
+        if (viewportWidth <= 0 || viewportHeight <= 0) {
+            return;
+        }
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
@@ -85,18 +99,16 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, dispatch, events,
             console.error('[DebugPanel] 加载位置失败:', e);
             setButtonPosition(clampPosition(getDefaultPosition()));
         }
-    }, [clampPosition, getDefaultPosition]);
+    }, [clampPosition, getDefaultPosition, viewportHeight, viewportWidth]);
 
     // 窗口大小变化时重新约束位置
     useEffect(() => {
-        if (!buttonPosition) return;
-        const handleResize = () => {
-            const next = clampPosition(buttonPosition);
+        if (!buttonPosition || viewportWidth <= 0 || viewportHeight <= 0) return;
+        const next = clampPosition(buttonPosition);
+        if (next.left !== buttonPosition.left || next.top !== buttonPosition.top) {
             setButtonPosition(next);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [clampPosition, buttonPosition]);
+        }
+    }, [buttonPosition, clampPosition, viewportHeight, viewportWidth]);
 
     // 拖拽结束处理
     const handleDragEnd = (_: unknown, info: { offset: { x: number; y: number } }) => {
@@ -164,6 +176,40 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, dispatch, events,
     // 从领域内核读取当前玩家字段（G.core.currentPlayer）
     const coreCurrentPlayer = G?.core?.currentPlayer as string | undefined;
     const activePlayer = coreCurrentPlayer;
+    const aiSeatPlayerCount = React.useMemo(() => {
+        if (Array.isArray(G?.core?.turnOrder) && G.core.turnOrder.length > 0) {
+            return G.core.turnOrder.length;
+        }
+        return gameManifest?.playerOptions?.[0] ?? 2;
+    }, [G?.core?.turnOrder, gameManifest?.playerOptions]);
+    const aiSeatControllers = React.useMemo(() => {
+        if (gameMode?.mode !== 'local' || !aiSupport) return {};
+        return resolveSeatControllersFromSearchParams({
+            numPlayers: aiSeatPlayerCount,
+            searchParams,
+            aiSupport,
+        });
+    }, [aiSeatPlayerCount, aiSupport, gameMode?.mode, searchParams]);
+    const aiSupportItems = React.useMemo(() => ([
+        aiSupport?.capture ? t('lobby:ai.capture') : null,
+        aiSupport?.localAi ? t('lobby:ai.local') : null,
+        aiSupport?.remoteAi ? t('lobby:ai.remote') : null,
+    ].filter(Boolean) as string[]), [aiSupport?.capture, aiSupport?.localAi, aiSupport?.remoteAi, t]);
+    const formatSeatController = React.useCallback((controller: { type: string; policyId?: string; providerId?: string }) => {
+        if (controller.type === 'local-ai') {
+            const label = t('debug.ai.local');
+            return controller.policyId
+                ? `${label} · ${t('debug.ai.policy', { value: controller.policyId })}`
+                : label;
+        }
+        if (controller.type === 'remote-ai') {
+            const label = t('debug.ai.remote');
+            return controller.providerId
+                ? `${label} · ${t('debug.ai.provider', { value: controller.providerId })}`
+                : label;
+        }
+        return t('debug.ai.human');
+    }, [t]);
     useEffect(() => {
         if (!autoSwitch) return;
         if (activePlayer && activePlayer !== playerID) {
@@ -464,6 +510,63 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({ G, dispatch, events,
                                 {children && (
                                     <div className="space-y-3">
                                         {children}
+                                    </div>
+                                )}
+
+                                {aiSupport && (
+                                    <div
+                                        data-testid="debug-ai-support"
+                                        className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm space-y-3"
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-gray-700">
+                                                {t('debug.ai.section')}
+                                            </div>
+                                            <span className="rounded bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-600">
+                                                {t(
+                                                    gameMode?.mode === 'local'
+                                                        ? 'debug.ai.modes.local'
+                                                        : 'debug.ai.modes.online',
+                                                )}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                                {t('debug.ai.supportTitle')}
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {aiSupportItems.length > 0 ? aiSupportItems.map((label) => (
+                                                    <span
+                                                        key={label}
+                                                        className="rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-bold text-gray-700"
+                                                    >
+                                                        {label}
+                                                    </span>
+                                                )) : (
+                                                    <span className="text-xs text-gray-500">{t('lobby:ai.unsupported')}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {gameMode?.mode === 'local' && (
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                                    {t('debug.ai.seatControllers')}
+                                                </div>
+                                                {Object.entries(aiSeatControllers).map(([seatId, controller]) => (
+                                                    <div
+                                                        key={seatId}
+                                                        data-testid={`debug-ai-seat-controller-${seatId}`}
+                                                        className="flex items-center justify-between rounded border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-700"
+                                                    >
+                                                        <span className="font-bold text-gray-900">{`P${seatId}`}</span>
+                                                        <span>{formatSeatController(controller)}</span>
+                                                    </div>
+                                                ))}
+                                                {Object.keys(aiSeatControllers).length === 0 && (
+                                                    <p className="text-xs text-gray-500">{t('debug.ai.none')}</p>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

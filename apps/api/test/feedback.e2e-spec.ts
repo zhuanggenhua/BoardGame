@@ -311,6 +311,46 @@ describe('Feedback Module (e2e)', () => {
         expect(listRes.body.items[0].errorContext?.name).toBe('TypeError');
     });
 
+    it('admin 列表支持按时间正序排序', async () => {
+        const { adminToken, userToken } = await seedUsers();
+
+        const olderRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: 'older feedback',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+                actionLog: '[11:00] older',
+            })
+            .expect(201);
+
+        const newerRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: 'newer feedback',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+                actionLog: '[12:00] newer',
+            })
+            .expect(201);
+
+        await feedbackModel.findByIdAndUpdate(olderRes.body._id, { createdAt: new Date('2026-03-14T10:00:00.000Z') });
+        await feedbackModel.findByIdAndUpdate(newerRes.body._id, { createdAt: new Date('2026-03-14T11:00:00.000Z') });
+
+        const listRes = await request(app.getHttpServer())
+            .get('/admin/feedback?sort=oldest&limit=20')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(listRes.body.items).toHaveLength(2);
+        expect(listRes.body.items[0].content).toBe('older feedback');
+        expect(listRes.body.items[1].content).toBe('newer feedback');
+    });
+
     it('bug 类型必须附带 actionLog 或 stateSnapshot', async () => {
         const { userToken } = await seedUsers();
 
@@ -359,5 +399,86 @@ describe('Feedback Module (e2e)', () => {
         expect(accepted.body.actionLog).toContain('cast card');
         expect(accepted.body.clientContext?.matchId).toBe('abc');
         expect(accepted.body.errorContext?.name).toBe('TypeError');
+    });
+
+    it('admin 可删除单条反馈并批量删除命中的反馈', async () => {
+        const { adminToken, userToken } = await seedUsers();
+
+        const firstRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: 'delete-one',
+                type: 'other',
+                severity: 'low',
+                gameName: 'tictactoe',
+            })
+            .expect(201);
+        const secondRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: 'bulk-id-a',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+                actionLog: '[12:10] A',
+            })
+            .expect(201);
+        const thirdRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: 'bulk-id-b',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+                actionLog: '[12:11] B',
+            })
+            .expect(201);
+        const fourthRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: 'bulk-filter-target',
+                type: 'bug',
+                severity: 'high',
+                gameName: 'smashup',
+                actionLog: '[12:12] C',
+            })
+            .expect(201);
+
+        const deleteOneRes = await request(app.getHttpServer())
+            .delete(`/admin/feedback/${firstRes.body._id as string}`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(deleteOneRes.body.ok).toBe(true);
+        expect(await feedbackModel.countDocuments({ _id: firstRes.body._id })).toBe(0);
+
+        const bulkDeleteRes = await request(app.getHttpServer())
+            .post('/admin/feedback/bulk-delete')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ ids: [secondRes.body._id, thirdRes.body._id] })
+            .expect(201);
+
+        expect(bulkDeleteRes.body).toMatchObject({
+            requested: 2,
+            deleted: 2,
+        });
+        expect(await feedbackModel.countDocuments({ _id: { $in: [secondRes.body._id, thirdRes.body._id] } })).toBe(0);
+
+        const bulkFilterRes = await request(app.getHttpServer())
+            .post('/admin/feedback/bulk-delete-by-filter')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ severity: 'high' })
+            .expect(201);
+
+        expect(bulkFilterRes.body).toMatchObject({
+            requested: 1,
+            deleted: 1,
+        });
+        expect(await feedbackModel.countDocuments({ _id: fourthRes.body._id })).toBe(0);
+        expect(await feedbackModel.countDocuments({})).toBe(0);
     });
 });

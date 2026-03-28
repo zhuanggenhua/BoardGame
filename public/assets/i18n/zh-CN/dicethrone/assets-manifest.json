@@ -4,1140 +4,6 @@
   "id": "dicethrone",
   "basePrefix": "official/dicethrone/",
   "files": {
-    "audio/card/Card_Placing_001": {
-      "variants": {
-        "wav": {
-          "sha256": "fa948293ff4d0b4809b5427e781454ead08ee6014147841eab8e60f9028f619a",
-          "bytes": 126252,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/card/Card_Take_001": {
-      "variants": {
-        "wav": {
-          "sha256": "2ad165ab4e09f5c323c796f0a81317dd647371abe9c74b19822cc3ce5fd51303",
-          "bytes": 121832,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/card/Cards_Scrolling_001": {
-      "variants": {
-        "wav": {
-          "sha256": "e14830a5881b27b93823d4364ca3faea14a656e3fee4619b79532d686db80acf",
-          "bytes": 282488,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/card/Cards_Shuffle_Fast_001": {
-      "variants": {
-        "wav": {
-          "sha256": "a9e1037ca1f4e3e76032df079322abfa8b9fec7a506d8fa799a804a133bde043",
-          "bytes": 442012,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/card/compressed/Card_Placing_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "2c13b756cfdcb5b551533c1a49a9361266d399938f1aa25b4809e00481620a1c",
-          "bytes": 9807,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/compressed/Card_Take_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "802a839e0ae45b84f2e316dbe9d10a4d8bf160acaaa9cf79458847bb003f9ed6",
-          "bytes": 8608,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/compressed/Cards_Scrolling_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "53ef31d16a5e15ec62ae885fae5004c11d4e6bca265476a5eb1074e112f5045b",
-          "bytes": 26935,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/compressed/Cards_Shuffle_Fast_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "ff4ee737f996022b8182f90759c8242f4bd92fcb2dface61a6aa4bf1559dae90",
-          "bytes": 30022,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/compressed/FX_Discard_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "ffa85545d96ca97001905331ae8903e98e59a0c4bfb14a20d20e02e45ef169fe",
-          "bytes": 42954,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/compressed/SFX_Card_Deal_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "328ebe338ffaa4ebd7705ec7f9ebaba43303248e485186023fd911efe055606e",
-          "bytes": 4171,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/compressed/SFX_Card_Draw_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "ba53e446c951d3fa04bfea3525bef81bbdc3a23ee5a4429803c3949065627b18",
-          "bytes": 3993,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/compressed/SFX_Card_Play_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "27a8c1944fa6b6e3927aa31ca685740f99e95b0ad682b2ff77082b80e4c6159a",
-          "bytes": 3064,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/compressed/Small_Coin_Drop_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "288dec3a65d998a49412c613c833af96e4c0ca5f90cda00040bf0f6edcd4dbfb",
-          "bytes": 23845,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/compressed/Small_Reward_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "95b7ac64dd3d9af956b2674ead61a8b6a6e8ca3de246eda5ac4babf9eb839430",
-          "bytes": 20381,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/card/FX_Discard_001": {
-      "variants": {
-        "wav": {
-          "sha256": "c3dae74cdab20fe77c07fb7e1567aac9230df5e02b3feab531bf2e1b580ccbdb",
-          "bytes": 530222,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/card/SFX_Card_Deal_1": {
-      "variants": {
-        "wav": {
-          "sha256": "c64ae8c94f584fad600b16b3c183f2c1af356fc17ac138e0c53ff2a00cfcf8e9",
-          "bytes": 200720,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/card/SFX_Card_Draw_1": {
-      "variants": {
-        "wav": {
-          "sha256": "557d1c6961b75f2edf71fa16908d8e30def1a3afe9f1f62735fbefd011a01201",
-          "bytes": 193240,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/card/SFX_Card_Play_1": {
-      "variants": {
-        "wav": {
-          "sha256": "1977afb71e146c8189909d38be02cd6766b62f7c3dc06d01c98a9c730b199f52",
-          "bytes": 188556,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/card/Small_Coin_Drop_001": {
-      "variants": {
-        "wav": {
-          "sha256": "0a1b93343430c9689ced1212ece15dc8a253c1928a91716758d2d6b7a4a6ea72",
-          "bytes": 304138,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/card/Small_Reward_001": {
-      "variants": {
-        "wav": {
-          "sha256": "7ac891de5b5ab8818b027455222cf5d377b8420049ec677b2566cea2ec63ea6a",
-          "bytes": 243090,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/compressed/Dice_Handling_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "39c454ff8724b76513debd5cdfadeecc493921cdb2e9982aa509f297463745a0",
-          "bytes": 19706,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/compressed/Dice_Handling_002": {
-      "variants": {
-        "ogg": {
-          "sha256": "e2283d8fbe4d456a0b2faf4a0211dd529c1b68b8e3974f9e0bc1192749d5f63d",
-          "bytes": 27661,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/compressed/Dice_Roll_Velvet_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "f30da353bb8cf057b3e695a7b6c6132d5ca2b9bb500a197ccbbeda24f2214110",
-          "bytes": 8500,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/compressed/Dice_Roll_Velvet_002": {
-      "variants": {
-        "ogg": {
-          "sha256": "9e1a6f498dcde3a0813427dbcf15daefe61f4122510960dd9728fea231d65250",
-          "bytes": 10698,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/compressed/Few_Dice_Roll_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "f8e96e112910827fe1648d89a2cdaacb16bd0d24a736baddf82122d9fe579fdf",
-          "bytes": 7217,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/compressed/Many_Dice_Roll_Wood_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "c55d88199bb6a4ecf24ba16bfd4dee6a578468e897bdff5c8de9a4755a43ba58",
-          "bytes": 32729,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/compressed/SFX_Dice_Roll_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "d4ef19c6fc6b20f9c21ed04632486a5b081005f507870548d9ba37cdd5860133",
-          "bytes": 15641,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/compressed/SFX_Dice_Roll_2": {
-      "variants": {
-        "ogg": {
-          "sha256": "eb51ba5c6c2536021cf11d74d7a6992a452744c7891344baee90c96bdfb483f9",
-          "bytes": 12606,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/compressed/SFX_Dice_Roll_3": {
-      "variants": {
-        "ogg": {
-          "sha256": "21c7b17793a1bd5f4795870523e25874df20f78b82f72dfc7c1ccd788c48ec14",
-          "bytes": 17258,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/compressed/Single_Die_Roll_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "614b29d6f22b11455db142a1ca193f89f27859ef7edf99c0e6d26c0f4452ffe8",
-          "bytes": 7086,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/dice/Dice_Handling_001": {
-      "variants": {
-        "wav": {
-          "sha256": "e5c488a7ec6f14481736d28d8358abf69ef53c9ef008de79daf2ba6183f7e609",
-          "bytes": 233852,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/Dice_Handling_002": {
-      "variants": {
-        "wav": {
-          "sha256": "94e8e02bd96c40a91154566f1731788d16832f79f45a43e1f47edfdd599e5b4e",
-          "bytes": 290004,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/Dice_Roll_Velvet_001": {
-      "variants": {
-        "wav": {
-          "sha256": "0564821439eeac953e6ed739e7d06d13a2698a7c8ceb80d854f9e4fb36b411d3",
-          "bytes": 115596,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/Dice_Roll_Velvet_002": {
-      "variants": {
-        "wav": {
-          "sha256": "565a1109c3b6c8a067c2f9fa691b04d4d80c3aaaf5eae30deffe95848afea7bf",
-          "bytes": 132548,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/Few_Dice_Roll_001": {
-      "variants": {
-        "wav": {
-          "sha256": "fbbdfe89ec6c62a451b2a0264e41928b246f0175983cc8538c43b221799e1a5d",
-          "bytes": 86424,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/Many_Dice_Roll_Wood_001": {
-      "variants": {
-        "wav": {
-          "sha256": "22a9d0685e3208a6a61ab3514045d83297cda6f125db672b5cb0b346ed60baaf",
-          "bytes": 426324,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/SFX_Dice_Roll_1": {
-      "variants": {
-        "wav": {
-          "sha256": "694607fd63cbc583631ece00e6df47b4c5e264350cd9150306b43393ce8392ca",
-          "bytes": 256030,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/SFX_Dice_Roll_2": {
-      "variants": {
-        "wav": {
-          "sha256": "0b2a24d70faee914265e7d06f209c02e037e10c0aef5e9d2ac561f617f69f2d8",
-          "bytes": 235938,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/SFX_Dice_Roll_3": {
-      "variants": {
-        "wav": {
-          "sha256": "77bf5d505881a21040042057d7cdec167cc3c2cc68cec23898c60bce90ee4ece",
-          "bytes": 259974,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/dice/Single_Die_Roll_001": {
-      "variants": {
-        "wav": {
-          "sha256": "fb2583bcc74bced6bbb96d280348aaf61bd58bab7022cc605be6a4d84a7fd6ed",
-          "bytes": 72476,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/compressed/FGHTImpt_Special_Hit_01": {
-      "variants": {
-        "ogg": {
-          "sha256": "2d21419366bdbd794f8d3c659e9730c01ab77f490932e61e635ed980df184ded",
-          "bytes": 20609,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/FGHTImpt_Special_Hit_02": {
-      "variants": {
-        "ogg": {
-          "sha256": "36fccaea036ab480d567f806e4ee70c200a0e3c11d868177a1612768d2d44555",
-          "bytes": 22922,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/FGHTImpt_Versatile_Punch_Hit_01": {
-      "variants": {
-        "ogg": {
-          "sha256": "a409dbb933b4804734d8ef8cc32c530c23364d45c055ece6e752175564059034",
-          "bytes": 4331,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/SFX_Body_Hit_Generic_Medium_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "6f4c58afca6cfe181102ccc1c42f04f5f7762da6ca2deb74a7f8364f88c2917f",
-          "bytes": 3997,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/SFX_Body_Hit_Generic_Small_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "07a6c9990ee546b0f849b773ae6b2e3d8668eb2f762b90c28ef18b553817655e",
-          "bytes": 3539,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/SFX_Fight_Hit_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "8db10b9e157a1c79dd8b19ab2a1554fcffb2ff1a9895eff7008cfc0c1951f26e",
-          "bytes": 6186,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/SFX_Fight_Hit_v2_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "c40c36c2095033789a3db0ed5827f1e681661db0801f1bdec5178bd324dd1eb9",
-          "bytes": 3988,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/SFX_Fight_Kick_Swoosh_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "1b56692039de1c8bd69a30135d7deb9ab0f408d21b3790e67b8ea2d5e44b8fae",
-          "bytes": 4338,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/SFX_Fight_Punch_Swoosh_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "dbef0883549cf3ab3d25d09b0589290b1e2097bf507e842b0476663d5ae2bfab",
-          "bytes": 4284,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/SFX_Weapon_Melee_Swoosh_Small_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "7563429496851e08d1cb2b9ff9e83862a0411ac2a067ff16051e233a66db3d78",
-          "bytes": 3863,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/SFX_Weapon_Melee_Swoosh_Sword_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "5b57923f37311c2343d7c8c1c8189dddf5c8f207f6cab50421ca52048a863425",
-          "bytes": 7662,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/Shield_Impact_A": {
-      "variants": {
-        "ogg": {
-          "sha256": "2efb00ed4a9f387d5f7ea6bb3b80b4bdfa66b825292da390149a13b16f10daa3",
-          "bytes": 7662,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/compressed/WHSH_Punch_Whooosh_01": {
-      "variants": {
-        "ogg": {
-          "sha256": "7c1c7b0b03db0b6154f3bc0ae39bd9ae37154a160171498d30eef55a4e1d7c7b",
-          "bytes": 3530,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/fight/FGHTImpt_Special_Hit_01": {
-      "variants": {
-        "wav": {
-          "sha256": "e52fe46d588a45cc389c8c1b0cef4d7184b7461cb226a4691ea0fed1919ebc71",
-          "bytes": 3531620,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/FGHTImpt_Special_Hit_02": {
-      "variants": {
-        "wav": {
-          "sha256": "7caeac7a05d0e61bda2aa056634da493762735786a310f1d7e610a6c219e2421",
-          "bytes": 3425696,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/FGHTImpt_Versatile_Punch_Hit_01": {
-      "variants": {
-        "wav": {
-          "sha256": "1e06def5c6f52e42b391b760aa735a249bc4b64739e56e94b2a0ab2b01dd5b54",
-          "bytes": 1585306,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/SFX_Body_Hit_Generic_Medium_1": {
-      "variants": {
-        "wav": {
-          "sha256": "8b8e5cd6f3e572cfa64edecf5c9fc6a94b06248ca73bc522623ea9bb44803b62",
-          "bytes": 198170,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/SFX_Body_Hit_Generic_Small_1": {
-      "variants": {
-        "wav": {
-          "sha256": "1d8e8a02daeeaeb2add3da2760fb560e739b8765cde011f619d16db62dc80de9",
-          "bytes": 196568,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/SFX_Fight_Hit_1": {
-      "variants": {
-        "wav": {
-          "sha256": "641a23ce784a2bb0d1e0f5d9fee4e69d1711a724b91e6b6fd04329a9c776d79c",
-          "bytes": 212600,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/SFX_Fight_Hit_v2_1": {
-      "variants": {
-        "wav": {
-          "sha256": "e65c6e4ea5b868a5b4b1eb192f36b66d4407c9412ba300065c2646a3de403f9d",
-          "bytes": 195394,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/SFX_Fight_Kick_Swoosh_1": {
-      "variants": {
-        "wav": {
-          "sha256": "bf1a9340faf09494a249a5844cc2eb781d8d4c28d688b6dd8e2bf9b615ca3602",
-          "bytes": 223916,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/SFX_Fight_Punch_Swoosh_1": {
-      "variants": {
-        "wav": {
-          "sha256": "53c2b5076f85c073182fd533b58a8b79a10162f1f8a6fc117414710ea453cc81",
-          "bytes": 223926,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/SFX_Weapon_Melee_Swoosh_Small_1": {
-      "variants": {
-        "wav": {
-          "sha256": "60506d6343fe8e5afd790addc49bb9fd5a523d676f8e1e928e24873c13ce2895",
-          "bytes": 196044,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/SFX_Weapon_Melee_Swoosh_Sword_1": {
-      "variants": {
-        "wav": {
-          "sha256": "597198bb0565a83eb1ede18acb23f5cd3d52d3685637fff3927c9fbf4e438815",
-          "bytes": 223752,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/Shield_Impact_A": {
-      "variants": {
-        "wav": {
-          "sha256": "46855ce17fcd95470e11b9da9d7b6b12deb9fa54ead6908147c1ef5d4f1cde9d",
-          "bytes": 159410,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/fight/WHSH_Punch_Whooosh_01": {
-      "variants": {
-        "wav": {
-          "sha256": "17d201843777246360af7a1687bc18da41fb1526de40ef34c0c7bf0ec0a2ee36",
-          "bytes": 1445038,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/music/compressed/Fantasy Vol5 Dragon Dance Main": {
-      "variants": {
-        "ogg": {
-          "sha256": "eeba4d0492ba0048bf65ca8b71992ab7978a355cd17dbae67f7e727792c41fc7",
-          "bytes": 1137088,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/music/compressed/Fantasy Vol5 Shields and Spears Main": {
-      "variants": {
-        "ogg": {
-          "sha256": "30391f27c6e0f69500e3da5b92b42c43061ca50255cc7dc7c8214443cba389b2",
-          "bytes": 1192057,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/music/Fantasy Vol5 Dragon Dance Main": {
-      "variants": {
-        "wav": {
-          "sha256": "48ea4148f4a3eaa53e3e6ba699659de56ab32996031e05a0660c76053b9d1911",
-          "bytes": 26991696,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/music/Fantasy Vol5 Shields and Spears Main": {
-      "variants": {
-        "wav": {
-          "sha256": "1851120fedc242a15beb089da4ea2c6671de7bba19e49f0a4801f6ab93637a6b",
-          "bytes": 26677980,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/status/Charged_A": {
-      "variants": {
-        "wav": {
-          "sha256": "adcd79c90ca4c36bc6cfaa056e2237ddf2b5bf05b3b55db4200c771f37a2ba1b",
-          "bytes": 129058,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/status/compressed/Charged_A": {
-      "variants": {
-        "ogg": {
-          "sha256": "6f1c7722afabe11abaea6203a70cffa146bc8bf3bb85e2c39750af5a30f47e2e",
-          "bytes": 12286,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/status/compressed/Healed_A": {
-      "variants": {
-        "ogg": {
-          "sha256": "a1c5a5bf9f3c7165da70a17753e02083f9d163c6f8927dc137e950461ff5a37c",
-          "bytes": 10624,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/status/compressed/Purged_A": {
-      "variants": {
-        "ogg": {
-          "sha256": "cb16eff9cce1b1900bf2943a503f724c18fcf80bbb5b3c6e9d6af03992eabcb4",
-          "bytes": 13595,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/status/compressed/Ready_A": {
-      "variants": {
-        "ogg": {
-          "sha256": "c6b4ac9bc6da72782474b17a4663fa1256d68c90c8ab035fac8344b1d671175c",
-          "bytes": 11613,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/status/compressed/Water_Shield": {
-      "variants": {
-        "ogg": {
-          "sha256": "9a42fd0b59b8a533d4a1768096087131ba8b102ed1d84c40a5e4ac38a4c80b94",
-          "bytes": 10628,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/status/Healed_A": {
-      "variants": {
-        "wav": {
-          "sha256": "64048258337c0ccd46c6045d7156cdd4ddaec8eea9ad37a810f39457248dab3a",
-          "bytes": 170414,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/status/Purged_A": {
-      "variants": {
-        "wav": {
-          "sha256": "8b5f079929b875cf1c6826c3aa9e732645f49ebfda0e8a6eb9deaa5b69b0a8f4",
-          "bytes": 174546,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/status/Ready_A": {
-      "variants": {
-        "wav": {
-          "sha256": "e380afb3e0fd5e052a85c669759e93ae5e24fb0b011ee21d4ff6522cb7e936ae",
-          "bytes": 178158,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/status/Water_Shield": {
-      "variants": {
-        "wav": {
-          "sha256": "5c37a2c2960521a20875e46d7751642d9feeaa30a249ad7f047157229acfdf23",
-          "bytes": 173522,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/stinger/compressed/STGR_Action_Lose": {
-      "variants": {
-        "ogg": {
-          "sha256": "f9b8a22bcaaf89ea56b280c9e3315a48a1e909442c3eac5e3d49c5146aa17057",
-          "bytes": 64375,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/stinger/compressed/STGR_Action_Win": {
-      "variants": {
-        "ogg": {
-          "sha256": "8ad9e20d90fcae7afe470683f6d41490563d7c8888fb6ef1d4125a817f059bc5",
-          "bytes": 55060,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/stinger/STGR_Action_Lose": {
-      "variants": {
-        "wav": {
-          "sha256": "d116546e29f9c0d051d6aadbfaa9e740a110043fcbb2cc94c7750a72126e3db5",
-          "bytes": 1171264,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/stinger/STGR_Action_Win": {
-      "variants": {
-        "wav": {
-          "sha256": "b400854b61e07527b3798af83cd4988889ffaff665d3bf427c3127c42798272b",
-          "bytes": 995354,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/token/compressed/Token_Drop_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "7655121182890de33ef7d8c72c3005b40028f0c84d2685427ba1152e5fa80d1d",
-          "bytes": 16179,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/token/compressed/Tokens_Handling_001": {
-      "variants": {
-        "ogg": {
-          "sha256": "d2051c8b6ca1d207fad638e9419ba1d08caa40b0d534581c1a2480e76401f2c6",
-          "bytes": 11122,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/token/Token_Drop_001": {
-      "variants": {
-        "wav": {
-          "sha256": "44193470616b75c86b34f6b2331de9df087bbb9dccd55dbb588fed51c2ef121b",
-          "bytes": 177398,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/token/Tokens_Handling_001": {
-      "variants": {
-        "wav": {
-          "sha256": "f04828d9a620ce4cea60cbd4a14827b72a8fb29a5830dae99f5493245bd8bcd4",
-          "bytes": 130414,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/compressed/SFX_UI_Click_Buy": {
-      "variants": {
-        "ogg": {
-          "sha256": "70b3c779874a2b425198b91a7505a056d44216775dd4150ae27ef2046ac8132b",
-          "bytes": 29159,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/SFX_UI_Click_Close_Cute": {
-      "variants": {
-        "ogg": {
-          "sha256": "563940e482d908162c09f1982899d207ce93c70fa5d2798c727fb063306e5dc0",
-          "bytes": 3453,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/SFX_UI_Click_Generic_Cute": {
-      "variants": {
-        "ogg": {
-          "sha256": "46e7c8f59c595227268975b5b3c69b6e7e5c96080375bde33b21b0d67d6916c9",
-          "bytes": 3175,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/SFX_UI_Click_Generic_Retro": {
-      "variants": {
-        "ogg": {
-          "sha256": "57c09c031425fb41008828bb14fff252c1be3cd2960fae56585487d72ea22035",
-          "bytes": 5152,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/SFX_UI_Click_Open_Retro": {
-      "variants": {
-        "ogg": {
-          "sha256": "5d65d4baa6709b498a5ba1a210294748855da2992c3917995b91e194fb4f63d6",
-          "bytes": 4150,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/SFX_UI_Countdown_Retro_End": {
-      "variants": {
-        "ogg": {
-          "sha256": "de198b057ae8791da7d1f3712d6b1b7c730bc4f2ebc4b7140e80cec47b3a4fe5",
-          "bytes": 12995,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/SFX_UI_Fillup_Gem_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "10af591f46b7158668e3b6fdbf97abe9814bd68d7c826c71151c0029edc9e0ba",
-          "bytes": 11909,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/SFX_UI_Fillup_Gold_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "b9b3a237b195c534e382b3039f64d4bf8f391e3101246aff6fe1fa12e688bf34",
-          "bytes": 6600,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/SFX_UI_Fillup_Star_1": {
-      "variants": {
-        "ogg": {
-          "sha256": "18b8a72243b9b54dd8109b8982e5718a41d434e5db8885c4a3a1046ca78d0e00",
-          "bytes": 42025,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/Signal_Negative_Wood_Chimes_A": {
-      "variants": {
-        "ogg": {
-          "sha256": "e3dbdd66207549e61c2b6e7ed9c8b5c442b031f50f801d537ef5e8b6d40e9860",
-          "bytes": 21159,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/Signal_Positive_Spring_A": {
-      "variants": {
-        "ogg": {
-          "sha256": "fb8ebfcca33f36c85be3eff56b0b85c2bde21eb070b86b0c6fd43207f23cb58a",
-          "bytes": 18028,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/Signal_Positive_Wood_Chimes_A": {
-      "variants": {
-        "ogg": {
-          "sha256": "1b64c151dae8f638d4674d51a3a90d864b723fe3cba4d7b0ee64e37f81c2d615",
-          "bytes": 19963,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/UIAlert_Dialog_Screen_Appears_01": {
-      "variants": {
-        "ogg": {
-          "sha256": "62c2c953cd60f52d78cb4fcbbcf15e648ff3dac58fc63f4e9f97d0858ccaac9f",
-          "bytes": 22001,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/UIClick_Accept_Button_01": {
-      "variants": {
-        "ogg": {
-          "sha256": "b6bd14f91602b9be297df42f93170c012c55b156d32ed069727ce779b11d183f",
-          "bytes": 3896,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/UIClick_Mouseover_Dialog_Option_01": {
-      "variants": {
-        "ogg": {
-          "sha256": "d5442d7a4f22cbaca39c0d6881b108296003507abe4abf49714ae4c348d128b6",
-          "bytes": 2786,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/compressed/Update_Chime_A": {
-      "variants": {
-        "ogg": {
-          "sha256": "623cc42ce5e13a9b58602c0035e3b29d88ec562a701ef0addd4984da3f5368e8",
-          "bytes": 47332,
-          "mime": "audio/ogg"
-        }
-      }
-    },
-    "audio/ui/SFX_UI_Click_Buy": {
-      "variants": {
-        "wav": {
-          "sha256": "d00046334750be31869d5e2b00583d99e99b93a3fbaf17777d31d99fb009b53c",
-          "bytes": 512592,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/SFX_UI_Click_Close_Cute": {
-      "variants": {
-        "wav": {
-          "sha256": "31fd5441b0fd0f057e3fcd5205a9d8bdbfad63f93d40feb685a7df9c88f5ef9e",
-          "bytes": 192340,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/SFX_UI_Click_Generic_Cute": {
-      "variants": {
-        "wav": {
-          "sha256": "975f61a306fb55cfca15885a3efae57d9daa0c3fae50a6ce2955db99b804fb25",
-          "bytes": 188592,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/SFX_UI_Click_Generic_Retro": {
-      "variants": {
-        "wav": {
-          "sha256": "6fb991ec42b063952b785b7097b52a432ca1734a2e0e12d24ed940d20fbfafa9",
-          "bytes": 196958,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/SFX_UI_Click_Open_Retro": {
-      "variants": {
-        "wav": {
-          "sha256": "3540528dac0d551f811e35151eab9d472c4ced013a7b2c168a7d929d4ffc8ec0",
-          "bytes": 194108,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/SFX_UI_Countdown_Retro_End": {
-      "variants": {
-        "wav": {
-          "sha256": "e983dd92f1fdc633355ea4d75800bd451fb093abd2b718ba66ea3e6fc2b22a58",
-          "bytes": 260220,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/SFX_UI_Fillup_Gem_1": {
-      "variants": {
-        "wav": {
-          "sha256": "bc487d7e4d57b6d83e7dbeca3a4df2dec73ae2d970e08c71bb7c0188532ec522",
-          "bytes": 288936,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/SFX_UI_Fillup_Gold_1": {
-      "variants": {
-        "wav": {
-          "sha256": "ee7a9e02314281a8bada86310f943c8d78e3182f98ea3ba376fc285574557ec7",
-          "bytes": 249426,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/SFX_UI_Fillup_Star_1": {
-      "variants": {
-        "wav": {
-          "sha256": "c85a1738b4562635f2b453606175c9351b6190072f6345a522def506011e97ea",
-          "bytes": 531478,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/Signal_Negative_Wood_Chimes_A": {
-      "variants": {
-        "wav": {
-          "sha256": "357b527717ec5aa032e534ec51fa2abcdaccdfe357763c659b95c3ed24b42d50",
-          "bytes": 311054,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/Signal_Positive_Spring_A": {
-      "variants": {
-        "wav": {
-          "sha256": "e923070582d95adbdaef5201884fe6932415034df0c4f013faa7413ca3f766e2",
-          "bytes": 311048,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/Signal_Positive_Wood_Chimes_A": {
-      "variants": {
-        "wav": {
-          "sha256": "7925fea664d09852053954aaaf64085c6b15e3f1a12e991106e2bf9197f491be",
-          "bytes": 311048,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/UIAlert_Dialog_Screen_Appears_01": {
-      "variants": {
-        "wav": {
-          "sha256": "a20bee04227b623e556dc383cd6bd3a4552aa52d101e175249cd317103267aab",
-          "bytes": 2887938,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/UIClick_Accept_Button_01": {
-      "variants": {
-        "wav": {
-          "sha256": "7574c7422dcd6b631e5ec538ed09f8f547d325710989c909c95b15bd00d54e48",
-          "bytes": 638086,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/UIClick_Mouseover_Dialog_Option_01": {
-      "variants": {
-        "wav": {
-          "sha256": "92943e8387efd04c95a751d527e836396ef23e9901cca1b13819472df01e9c2d",
-          "bytes": 532152,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "audio/ui/Update_Chime_A": {
-      "variants": {
-        "wav": {
-          "sha256": "e16f014a1ddf221786e8e52aee13c3ef3c4c6ae345df9c3ce52c02152f7f3d9f",
-          "bytes": 487448,
-          "mime": "audio/wav"
-        }
-      }
-    },
-    "images/barbarian/barbarian-ability-cards": {
-      "variants": {
-        "png": {
-          "sha256": "f1e3833795692104eb1a187d37374a1a46a609d64682e288a91c2660e96363ad",
-          "bytes": 18429164,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/barbarian/barbarian-base-ability-cards": {
-      "variants": {
-        "png": {
-          "sha256": "79473e0b57166516922981325dfbd587697307a57e687a29b044c6e92e038699",
-          "bytes": 13393657,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/barbarian/barbarian-player-board": {
-      "variants": {
-        "png": {
-          "sha256": "f3f76e1083af8d2350670557230621afbaf1e41f1687937681e96b6181c618c2",
-          "bytes": 19846472,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/barbarian/barbarian-tip-board": {
-      "variants": {
-        "png": {
-          "sha256": "ef1aa6ae47a31e34f5ae08774f1ff31f7115474e4247b69bd8cd42d07a32884c",
-          "bytes": 17106459,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/barbarian/dice-sprite": {
-      "variants": {
-        "png": {
-          "sha256": "e851f535cca7943227abf86e3e9fde6bc6b1eaaf310132656ea83026ede70d1d",
-          "bytes": 43664,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/barbarian/status-icons-atlas": {
-      "variants": {
-        "png": {
-          "sha256": "2fd844ef7291cc164e6af5cfde909310ab32c66f25ac041ec2c8f6841f5fddfa",
-          "bytes": 46394,
-          "mime": "image/png"
-        }
-      }
-    },
     "images/barbarian/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -1147,265 +13,561 @@
         }
       }
     },
-    "images/barbarian/status-icons/stun": {
+    "images/gunslinger/compressed/ability-cards": {
       "variants": {
-        "png": {
-          "sha256": "250b8d7d4430b7d1b4c2c319356eeb7d3f9aacc8a6d09ad1758d4d63c30ad424",
-          "bytes": 47178,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/barbarian/status-icons/vulnerable": {
-      "variants": {
-        "png": {
-          "sha256": "baaccd1e52703eb14dd6ec986e020ed91ea2bd970ceba4c5a2b925e0294b46af",
-          "bytes": 28015,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/Common/background": {
-      "variants": {
-        "jpg": {
-          "sha256": "985774683fba508e6092afa59e74cbaf39556e153cd99df7e41a570287e3bf7e",
-          "bytes": 207649,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "images/Common/card-background": {
-      "variants": {
-        "jpg": {
-          "sha256": "790b7a92c8d38e75964ffe47e06bf7373bde0e07a4cadf39ce1343a13fb07f09",
-          "bytes": 180597,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "images/Common/character-portraits": {
-      "variants": {
-        "jpg": {
-          "sha256": "f472e4b082cf299ddb4399ce08937bd061ca643fa25a4e73a8ca4080c7144912",
-          "bytes": 10378152,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "images/Common/compressed/background": {
-      "variants": {
-        "avif": {
-          "sha256": "2e029c979b8d7121cda6a62bef22ca6c6247894ab693be68154cc2ed94720d7b",
-          "bytes": 43197,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "0aa554c2ea095db6762b954f0e98f020a74d87e460705511877af2594f3baef7",
-          "bytes": 98502,
+          "sha256": "5f169b3a7fd203df3d0da62a95a362fd374ce5ad81e8ddb7ab73eb6db9d45b08",
+          "bytes": 4818294,
           "mime": "image/webp"
         }
       }
     },
-    "images/Common/compressed/card-background": {
+    "images/gunslinger/compressed/dice": {
       "variants": {
-        "avif": {
-          "sha256": "2563e821008fa658c80481145ca28c79e3fd539856aba68b58c108b36bd1372e",
-          "bytes": 10685,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "d048889c409b984858de44dc0c1b866ca776f7a9b93ed9562e70345d9f575688",
-          "bytes": 21170,
+          "sha256": "dfcfe18518d3b2bcbb6e1bfd9dbf5ff48d65890190715cedc0aa03e8d95237b4",
+          "bytes": 18412,
           "mime": "image/webp"
         }
       }
     },
-    "images/Common/compressed/character-portraits": {
+    "images/gunslinger/compressed/player-board": {
       "variants": {
-        "avif": {
-          "sha256": "2ef23c2d8628efa3b2e84fad34103e4360531b1017ed4f54a84f7d802a90dce7",
-          "bytes": 86490,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "329ed4504c3bf59d31dce7b93be7af951f9277c89aa9931103a0d459bcd325ed",
-          "bytes": 165570,
+          "sha256": "9fd4d912e3ed300083c1141022c7ce82b280e7a2039391702d3986f3bd7ec5a7",
+          "bytes": 487964,
           "mime": "image/webp"
         }
       }
     },
-    "images/monk/compressed/dice-sprite": {
+    "images/gunslinger/compressed/status-icons-atlas": {
       "variants": {
-        "avif": {
-          "sha256": "c79dc960d1e1b0363d6214e839a869b975ed3396715ef23972a6e9db348d2683",
-          "bytes": 10924,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "617e1c0a94224abd0c980e84e1f6f3432d689b1bf9f8f9cbc6f02d0c989efbf8",
-          "bytes": 19554,
+          "sha256": "039a011da531c13f1cf97c402273cd1f448a393e435c131ab5a9500c097f9e48",
+          "bytes": 30220,
           "mime": "image/webp"
         }
       }
     },
-    "images/monk/compressed/dice-sprite copy": {
+    "images/gunslinger/compressed/tip": {
       "variants": {
-        "avif": {
-          "sha256": "744672419c29e2b262e6ae43a4d7a12643687443ef815f5e37c29f017f228e81",
-          "bytes": 5023,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "be0ab8eeef75b5addc1268065eeb98dc0a59b8501070e1e8f5ff5f7f00316e5d",
-          "bytes": 9500,
+          "sha256": "1340d446f03588692399c65e1c40e06224c2c0d583093d36ad12e666a2363b48",
+          "bytes": 503930,
           "mime": "image/webp"
         }
       }
     },
-    "images/monk/compressed/effect-icons": {
+    "images/gunslinger/crops/ability-cards/deadeye-2": {
       "variants": {
-        "avif": {
-          "sha256": "85f1c8392625b94d070869e438642ce30454338cc348c869a86e7f5679e59b96",
-          "bytes": 40541,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "f75625c46f8fdaeba6534db7c0cd499c1285ed3307e8107c8e2b9d8224216146",
-          "bytes": 69790,
+          "sha256": "d5a212a629ae56b51e50f094e53c11efa9623d0982eea21e470fbb07b59702ef",
+          "bytes": 149912,
           "mime": "image/webp"
         }
       }
     },
-    "images/monk/compressed/monk-ability-cards": {
+    "images/gunslinger/crops/ability-cards/fan-the-hammer-2": {
       "variants": {
-        "avif": {
-          "sha256": "dbab8bf144adf580ddc54b09cc54e7af1a9031b45a5a135c416837723dd7aa4f",
-          "bytes": 190501,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "51374975a8ebf5e7734144c6359c22ea8aa942259af73e1cda13a78205a817cb",
-          "bytes": 340144,
+          "sha256": "e4351243d79e3518ed665801ea4dd58a9d7e6a35b3aa0ebc09aa57a15f9efa67",
+          "bytes": 185676,
           "mime": "image/webp"
         }
       }
     },
-    "images/monk/compressed/monk-ability-cards.atlas.json": {
+    "images/gunslinger/crops/ability-cards/hero-portrait-extra": {
+      "variants": {
+        "webp": {
+          "sha256": "c0fa147752d68d70ad25058487673d709b53147ccce6bc1747da69a71ce5289e",
+          "bytes": 219400,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/mark-the-target": {
+      "variants": {
+        "webp": {
+          "sha256": "cb70159f40ce1c6af527878dca804eae94f9e76e0ddbc27e39bddeb5d5b9cc45",
+          "bytes": 184912,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/pistol-whip": {
+      "variants": {
+        "webp": {
+          "sha256": "3db1942531710ed7dbddec4c1a12a426bb45f18e2efd7a913276f9a772db5966",
+          "bytes": 175630,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-00": {
+      "variants": {
+        "webp": {
+          "sha256": "43db7b1b4763b12f2c9f00e4436bcd5f5303a3ee15c50306858085526a9068b5",
+          "bytes": 288544,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-01": {
+      "variants": {
+        "webp": {
+          "sha256": "38bfc8ca2342bf78c3889622f9f6faa0ba690ce76a7fd15251b3876bc781a0d1",
+          "bytes": 262710,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-02": {
+      "variants": {
+        "webp": {
+          "sha256": "e647c8d28e0321db138739412b56e8c8100f0c177fd39b82e6ca83837d1f31e9",
+          "bytes": 246722,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-03": {
+      "variants": {
+        "webp": {
+          "sha256": "8e8324faece9b05167c3d5a4363551d73658e853f6ed40e11614edadbdbe5b76",
+          "bytes": 283414,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-04": {
+      "variants": {
+        "webp": {
+          "sha256": "0955184be16dd9bd0cf0336ab8759672b52bae625097ed6cb103639a0e20fd87",
+          "bytes": 231518,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-05": {
+      "variants": {
+        "webp": {
+          "sha256": "4e85cca8236d83ab4f938e60040007eb0d10455e1c2ab431f51c732bbb174031",
+          "bytes": 280104,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-06": {
+      "variants": {
+        "webp": {
+          "sha256": "88188c7d955dbafc59252e330f37364f57ca36ab93ca351e5d6bf5d0dcc52caa",
+          "bytes": 282798,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-07": {
+      "variants": {
+        "webp": {
+          "sha256": "beb1b62da9ed5892ce868a109ea6fa300fefb274ed7ed0d26d9dbf974dc915f2",
+          "bytes": 294748,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-08": {
+      "variants": {
+        "webp": {
+          "sha256": "33277226f2df0be3d5c521e24401614073d0d74ec3b494b86ca8ae673c7a6204",
+          "bytes": 235352,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-09": {
+      "variants": {
+        "webp": {
+          "sha256": "66d090000ea89d69901b03e1b4d512a283f8e27b48b5305ab70164f0c4354aed",
+          "bytes": 291204,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-10": {
+      "variants": {
+        "webp": {
+          "sha256": "60db19a1e921237ad287cc38b251d537314232fa926c306cffa3ffcf76d8d8b2",
+          "bytes": 305716,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-11": {
+      "variants": {
+        "webp": {
+          "sha256": "ca77d95508ee0f4941a56083fb16194afb6ddca6ce675b7de3f220b59ac9ff17",
+          "bytes": 290338,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-12": {
+      "variants": {
+        "webp": {
+          "sha256": "039d53b06f30b228cc36b9049de8db8cb6cb8e642e66e3998dbbef095127b197",
+          "bytes": 298052,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-13": {
+      "variants": {
+        "webp": {
+          "sha256": "fe5ef9f0289263d85c1d35f5e5b6564180f4219dae31c07ed1cf53b31f1c1eb3",
+          "bytes": 320800,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-14": {
+      "variants": {
+        "webp": {
+          "sha256": "96702bc376058ea5bbdc3c27683551a28a654046cabf71e35a514a57abeb8a48",
+          "bytes": 270372,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-15": {
+      "variants": {
+        "webp": {
+          "sha256": "c09045ef945a3ed0112c2ff62b9529e96ff3f9ab0c91b5523eddda8ea63d2991",
+          "bytes": 310310,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-16": {
+      "variants": {
+        "webp": {
+          "sha256": "ad7371fb191891c9f9ae18fb8686f150eeff373de4562c5b85190b8b3527cd2c",
+          "bytes": 280096,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-17": {
+      "variants": {
+        "webp": {
+          "sha256": "289c1bb9075d65445ab1423b5c32486da560e843dc83aece7c9f515476af34b0",
+          "bytes": 276132,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-18": {
+      "variants": {
+        "webp": {
+          "sha256": "cf081b12214cd6cec359faffe07101d7b30e56729ddbe3ca308b5710484c7898",
+          "bytes": 309594,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-19": {
+      "variants": {
+        "webp": {
+          "sha256": "abe37c60d3a8c6d9be17664bbae2cf1f2992e419584ca9ab6913f87dd1eedd5b",
+          "bytes": 340960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-20": {
+      "variants": {
+        "webp": {
+          "sha256": "3bc5a78146531ea6326101dec42828ba6913af9631a749a010e5ea29893ae6ab",
+          "bytes": 301480,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-21": {
+      "variants": {
+        "webp": {
+          "sha256": "7545f88d348dba1c1b74a0118769f11bc9f9d098fb6ccb881adb63634deb98b3",
+          "bytes": 297116,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-22": {
+      "variants": {
+        "webp": {
+          "sha256": "854c1b24b9246f903dfaa6651631b491640fc44f762d3610f187cdcb162894ef",
+          "bytes": 293890,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-23": {
+      "variants": {
+        "webp": {
+          "sha256": "39f91f05bc5936a4c96e2382f8e917c9a87023bfd127b6b1cb13cb4800f7f36e",
+          "bytes": 317386,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-24": {
+      "variants": {
+        "webp": {
+          "sha256": "0f0736265c323a5593c4e42ce701ecf8c7687639d66f230688fe85760f2aa911",
+          "bytes": 313786,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-25": {
+      "variants": {
+        "webp": {
+          "sha256": "cd93d05c1199321771223f16bdf6ed0ab81cf6e5eda6c9ee93109d0ff2f311ef",
+          "bytes": 311768,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-26": {
+      "variants": {
+        "webp": {
+          "sha256": "154bf6e2b172482ab655b9777d2f4af6500ee68dec71cfe8b987178550d960af",
+          "bytes": 318980,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-27": {
+      "variants": {
+        "webp": {
+          "sha256": "403295e3d25a80078815e41a3bdf071a7bc82871a77b27fdb86d408e7fcd1995",
+          "bytes": 348754,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-28": {
+      "variants": {
+        "webp": {
+          "sha256": "8f65be3b0bcc94e9b72d6334fc026fc577139f289eaa7ac945799f3fcdc1defc",
+          "bytes": 315638,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-29": {
+      "variants": {
+        "webp": {
+          "sha256": "e926d899f98d0e5376bfec85a4c679a3b3fe702db64f6e62ef0a9c95239e0c04",
+          "bytes": 346610,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-30": {
+      "variants": {
+        "webp": {
+          "sha256": "3bfa258b472e4698860212014f21b2c039f327f8a17c7c8c66307eb21bba7294",
+          "bytes": 316052,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-31": {
+      "variants": {
+        "webp": {
+          "sha256": "d8888ae4c117d1c599e4739d099d818ecba466fda3e24ed66d77b0036eaa4daf",
+          "bytes": 310060,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/slot-32": {
+      "variants": {
+        "webp": {
+          "sha256": "d55db06b06ef613925ff78a7b39f897af8d6f1a1eaebf17a68a6c89fd3f876cf",
+          "bytes": 1100,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/take-cover-2": {
+      "variants": {
+        "webp": {
+          "sha256": "9ee4ac884541468a7d975261be43791565669bf8ba6ba84de071384054677a58",
+          "bytes": 172692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/ability-cards/the-law": {
+      "variants": {
+        "webp": {
+          "sha256": "5c9dba943eb2cba4e45b3c288b6e9aa56644705cfd99771f33d14bb7bf97cae1",
+          "bytes": 201684,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/player-board/bounty-hunter": {
+      "variants": {
+        "webp": {
+          "sha256": "519f146ccf50631cc63484515e29efa4e4a5aa34f24ee7620f545073f66e9006",
+          "bytes": 83962,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/player-board/deadeye": {
+      "variants": {
+        "webp": {
+          "sha256": "2d28c4b07edbdac6c4aa22e6a5a7dda51327abc0a24602568a430d365bd3e485",
+          "bytes": 74010,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/player-board/duel": {
+      "variants": {
+        "webp": {
+          "sha256": "f3592b21653ee6a950d08c5526788d5eeb24a6103a98b03cb6545993a25317c2",
+          "bytes": 87464,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/player-board/fan-the-hammer": {
+      "variants": {
+        "webp": {
+          "sha256": "1bf47be4cde6f747372d8e0a7b2d122842803b06a66fd21ea64aa5368b3c7ca5",
+          "bytes": 67910,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/player-board/fill-em-with-lead": {
+      "variants": {
+        "webp": {
+          "sha256": "63c747e4c9e37623804ca7b4ed31e28b5bc1b5133b8db431ccc254dcd3f8b3ca",
+          "bytes": 149000,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/player-board/quick-draw": {
+      "variants": {
+        "webp": {
+          "sha256": "778fb1f660903b1bc01cbd56043700ea30c45c9aedc334dca698a2a9c6baaebe",
+          "bytes": 73204,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/player-board/revolver": {
+      "variants": {
+        "webp": {
+          "sha256": "db1dd5cd79e91aeb8d8f5448553ca4fbe0088cc1e73a39eecf3903e1e2911201",
+          "bytes": 78464,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/player-board/showdown": {
+      "variants": {
+        "webp": {
+          "sha256": "68240d29436c97a1599b3208199e11240c18df57437c338af9ae180dd7aa4eae",
+          "bytes": 72484,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/player-board/take-cover": {
+      "variants": {
+        "webp": {
+          "sha256": "b9a779af0f3eff47494fd6e6ca1324540c24d3210c3cb52ae3b0e064c15ea692",
+          "bytes": 98900,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/tip/bounty": {
+      "variants": {
+        "webp": {
+          "sha256": "c84b71ed2f2dc45d36f19bf25ec8f3039b6e70d72aa02014ca589dab7fa37fa7",
+          "bytes": 222278,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/tip/dice-legend": {
+      "variants": {
+        "webp": {
+          "sha256": "64ab5a2e28a81d20079a85ceba55dc310a0c7083be8009cc1890503d966892db",
+          "bytes": 114362,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/tip/evasive": {
+      "variants": {
+        "webp": {
+          "sha256": "8e294552a46a040d51c6b7407c5f1e7ec885504d43d1737f928d9de70ba8dd97",
+          "bytes": 141954,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/tip/knockdown": {
+      "variants": {
+        "webp": {
+          "sha256": "6c61904af045b31f44bd7d268b13fa840e8f73977b8e2d7ad8ccdb02911b3474",
+          "bytes": 194332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/crops/tip/reload": {
+      "variants": {
+        "webp": {
+          "sha256": "31ba6cdf25156ea4c16f682d59756da41b25492ea98587d62fb80aa23787e63c",
+          "bytes": 202870,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/icons/compressed/弹药装填": {
+      "variants": {
+        "webp": {
+          "sha256": "19544424a6493cf822917f200bc5367d11e09fce98c070d72e12dcb77cb2b809",
+          "bytes": 5314,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/icons/compressed/赏金": {
+      "variants": {
+        "webp": {
+          "sha256": "ec7cdda227d6da6a6728cf4cbb32f08c17a4e8758def58e75d20fa26623fc560",
+          "bytes": 4956,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/gunslinger/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "010be06bfb7678d7e9b0de74694bff031223f0c86c7cb4e4eb9016aa5e79fb06",
-          "bytes": 664,
+          "sha256": "98476906a2f6f6de26740f75586292f6a7d431feebe8963e6922bf370010e5a1",
+          "bytes": 738,
           "mime": "application/json"
-        }
-      }
-    },
-    "images/monk/compressed/monk-base-ability-cards": {
-      "variants": {
-        "avif": {
-          "sha256": "63779365353a9d1bf1b092c205c6ecf06e41737425a7e6ebf31b0f16a3b28305",
-          "bytes": 126042,
-          "mime": "image/avif"
-        },
-        "webp": {
-          "sha256": "8f0c8d49fd6b189331e37fb4b7eed6a6302c602d4f2eb30ec903a9c84c0ce804",
-          "bytes": 409018,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "images/monk/compressed/monk-player-board": {
-      "variants": {
-        "avif": {
-          "sha256": "27951bce5270c961dfe4ae8a8a9d9bfc0d82254cac896d2f979cbb5a834b2648",
-          "bytes": 225536,
-          "mime": "image/avif"
-        },
-        "webp": {
-          "sha256": "f25a2ac98467af7e92fa083397d05bc12596ac4810785507858307571ece3ab3",
-          "bytes": 750176,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "images/monk/compressed/monk-tip-board": {
-      "variants": {
-        "avif": {
-          "sha256": "9a30f5f9ee1fc5b867b0cec9b0eeea7ce392606f4b7a5c91f215f9d8ca364ec6",
-          "bytes": 168996,
-          "mime": "image/avif"
-        },
-        "webp": {
-          "sha256": "78d1e6e12a607b50638a74d27586dcab689fd9c91ef98f1f926d53eacc0e89bf",
-          "bytes": 348536,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "images/monk/compressed/status-icons-atlas": {
-      "variants": {
-        "avif": {
-          "sha256": "e0a91a1d71d7c85d36f82413aff69389cea09932aae26365663468b043c04bad",
-          "bytes": 17003,
-          "mime": "image/avif"
-        },
-        "webp": {
-          "sha256": "00be51f8f3571eedd4a7cad6fbbc38d54157b7d6ad3c4a1d03a3dcf926897096",
-          "bytes": 32642,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "images/monk/dice-sprite": {
-      "variants": {
-        "png": {
-          "sha256": "89f5f9eb8001eae5a11ee9cd6d786cf745af46ea11fbb5c64c3186fa5f101af8",
-          "bytes": 60903,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/monk/monk-ability-cards": {
-      "variants": {
-        "png": {
-          "sha256": "fdd6500d0339ded2283db4e233a2663ba752f4aa44640e9bc9080962d9d48f4c",
-          "bytes": 18035396,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/monk/monk-base-ability-cards": {
-      "variants": {
-        "png": {
-          "sha256": "feacb9dfd43cc5eb9cdecf02ed0a4f2c746a41a0f698ca166150b2aa06e33000",
-          "bytes": 14493295,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/monk/monk-player-board": {
-      "variants": {
-        "png": {
-          "sha256": "a75486708fa2e77eb386f690ad2ea38d3448abeb6fafe3a411a22cc6d2c40d4f",
-          "bytes": 21417104,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/monk/monk-tip-board": {
-      "variants": {
-        "png": {
-          "sha256": "26a4f31af99b4318ec6a2937c84fe2a84c56719e4910c2aa6a5dfd240558f987",
-          "bytes": 20840062,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/monk/status-icons-atlas": {
-      "variants": {
-        "png": {
-          "sha256": "26814bbc2e275d3503eaa1f6f9cedd003e43a9992ad399758801503ec8362736",
-          "bytes": 235663,
-          "mime": "image/png"
         }
       }
     },
@@ -1418,118 +580,597 @@
         }
       }
     },
-    "images/monk/status-icons/compressed/dodge": {
+    "images/moon_elf/status-icons-atlas.json": {
       "variants": {
-        "avif": {
-          "sha256": "5139452861784dd1371500860c703459c89b4fbe6649100a4976c6aa4c8e541c",
-          "bytes": 16679,
-          "mime": "image/avif"
-        },
+        "json": {
+          "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
+          "bytes": 642,
+          "mime": "application/json"
+        }
+      }
+    },
+    "images/paladin/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
+          "bytes": 797,
+          "mime": "application/json"
+        }
+      }
+    },
+    "images/pyromancer/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
+          "bytes": 664,
+          "mime": "application/json"
+        }
+      }
+    },
+    "images/samurai/compressed/ability-cards": {
+      "variants": {
         "webp": {
-          "sha256": "59e96f64b27108cff4586579ffde75a754ec760b273957d855018f4750b6c71e",
-          "bytes": 4342,
+          "sha256": "33422fb0977edd134a229ddb134c219b5baefaf3516a78563a26774a0ee2cff9",
+          "bytes": 345654,
           "mime": "image/webp"
         }
       }
     },
-    "images/monk/status-icons/compressed/knockdown": {
+    "images/samurai/compressed/dice": {
       "variants": {
-        "avif": {
-          "sha256": "a2b1ec00e9f688b7b30718ce99c9dadb743df37a0e32709b0aacca1d41886e08",
-          "bytes": 18318,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "fa9c638717eec2fc6d9f958f2c1b772094185454d459da7cca1bb40e303d2afa",
-          "bytes": 6036,
+          "sha256": "0ccbe3652e69cab8aae748a895eca659f7565a8f507b4f49280070ba93faaf1e",
+          "bytes": 115678,
           "mime": "image/webp"
         }
       }
     },
-    "images/monk/status-icons/compressed/purify": {
+    "images/samurai/compressed/player-board": {
       "variants": {
-        "avif": {
-          "sha256": "2198789721a34ebe83b16302add55885bd130c75c2f8bda6d420eeef6a05aa8f",
-          "bytes": 6874,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "0636038c62fd8e7661db94f19d70d14d42497f39a1c9423a4d0fd912e16a9566",
-          "bytes": 10368,
+          "sha256": "a1c1c57c04160c4bdd475201d8de0bceba8cae5d0df002603e8315334983b917",
+          "bytes": 431352,
           "mime": "image/webp"
         }
       }
     },
-    "images/monk/status-icons/compressed/tai-chi": {
+    "images/samurai/compressed/status-icons-atlas": {
       "variants": {
-        "avif": {
-          "sha256": "54fb588b39324b18b64dfab48685d8535706d8722c8b68fb5fb10405e08366f7",
-          "bytes": 9490,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "c7b62a02049c9ac965c3486b7958b05436ff665d64158390c2c8f409552687cb",
-          "bytes": 11854,
+          "sha256": "3362498161cac08141fe3b9d84ed63f5e3407ac55deb50e901f44bc6a6595efd",
+          "bytes": 41390,
           "mime": "image/webp"
         }
       }
     },
-    "images/monk/status-icons/dodge": {
+    "images/samurai/compressed/tip": {
       "variants": {
-        "png": {
-          "sha256": "285608464ece041370db017501dfc4e8026168a63ac362cefa62411bff99f94a",
-          "bytes": 28457,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/monk/status-icons/knockdown": {
-      "variants": {
-        "png": {
-          "sha256": "b7cdd992482642906fc26925d81b9370d2fbb735bc785780b8aeb6fb7d1f599e",
-          "bytes": 32840,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/monk/status-icons/purify": {
-      "variants": {
-        "png": {
-          "sha256": "6d29aa0028f7203c378dda9849d3a00d357eb6a872626512d155e8d5efef79b8",
-          "bytes": 92107,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/monk/status-icons/tai-chi": {
-      "variants": {
-        "png": {
-          "sha256": "c4c4de66f36396efa1b469322fb975368d0009dd87c0c0ba0e4e01bc5e267e59",
-          "bytes": 103690,
-          "mime": "image/png"
-        }
-      }
-    },
-    "thumbnails/compressed/fengm": {
-      "variants": {
-        "avif": {
-          "sha256": "5f51977af8556532d9ca2b467a3121f0974aa55f586bd55075e5825b87e3caba",
-          "bytes": 7827,
-          "mime": "image/avif"
-        },
         "webp": {
-          "sha256": "94ee6fa631ea1e21bab79a031e3f1d9689dad4d23e5232017bbb6da7071ebb90",
-          "bytes": 9768,
+          "sha256": "bb9d82afbf65233f792bb8dd3a77bb76967a0fef38402c4ba53b27e405c90851",
+          "bytes": 473174,
           "mime": "image/webp"
         }
       }
     },
-    "thumbnails/fengm": {
+    "images/samurai/crops/ability-cards/slot-00": {
       "variants": {
-        "png": {
-          "sha256": "6327c0dadaf2ccacd86e1a9772f867943d6c7e3f9aa54ce19d06fa2a4f591dab",
-          "bytes": 106128,
-          "mime": "image/png"
+        "webp": {
+          "sha256": "a77aeb79544a7be0772bbeadc6d645b6de81c7c0271b7e59151926c7b6961499",
+          "bytes": 21024,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-01": {
+      "variants": {
+        "webp": {
+          "sha256": "b29f663901019f38f495873597d59014d8328b9b2393b5b19f418f6a2b506709",
+          "bytes": 22434,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-02": {
+      "variants": {
+        "webp": {
+          "sha256": "00a00823d5992c7144641ef2b2fc7b60ea8a294cb1dac7bb39e57cafc15e9b30",
+          "bytes": 20558,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-03": {
+      "variants": {
+        "webp": {
+          "sha256": "51095686a1963759a97784268a0af219fa60ab779c1020d528173210cfff60f0",
+          "bytes": 19394,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-04": {
+      "variants": {
+        "webp": {
+          "sha256": "21bf8fa44a4d1636d29195af05d3960b0b579249ec68d3f986d2d5325bbc37d6",
+          "bytes": 18848,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-05": {
+      "variants": {
+        "webp": {
+          "sha256": "ddc787b564d7abf6a094f2abd5e2c68a57d5b19d09a2b03a75ce45b20f5fe127",
+          "bytes": 17670,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-06": {
+      "variants": {
+        "webp": {
+          "sha256": "64e32be62c141970cfc2d0e3e29073b9a1d13436622f35e1ba1365e5ece037e3",
+          "bytes": 21426,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-07": {
+      "variants": {
+        "webp": {
+          "sha256": "60745ccde4c9afd31073c263d1519d6ccb92637a9ccde1a92788c6b68b9e28a2",
+          "bytes": 17800,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-08": {
+      "variants": {
+        "webp": {
+          "sha256": "894aa5e1218b1533bbbd5be87fa9ea14129db3ecb7d06a755489f54c350ece52",
+          "bytes": 18370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-09": {
+      "variants": {
+        "webp": {
+          "sha256": "7a2b91b229790d69160b1caf3d472f6542e4478f80d71b0ab47baac1ad524619",
+          "bytes": 21254,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-10": {
+      "variants": {
+        "webp": {
+          "sha256": "d169537cca06e50e87c68c8df7673ba4f100ac03eaf96532d17b193ea275b925",
+          "bytes": 24122,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-11": {
+      "variants": {
+        "webp": {
+          "sha256": "8c7e0a99d2887e8cb1bedfcecc835a873b28225c10998e3bfcda4a9dc774a5cf",
+          "bytes": 24174,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-12": {
+      "variants": {
+        "webp": {
+          "sha256": "35536b4706c9b544060e0fa01dc26c76c4e9866916e7d66e31577ecd3932f135",
+          "bytes": 22078,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-13": {
+      "variants": {
+        "webp": {
+          "sha256": "1dd56ca3b3cb9ecb3973105a799339780e2e0948f267110f8a6ca2672b2ec146",
+          "bytes": 24148,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-14": {
+      "variants": {
+        "webp": {
+          "sha256": "2691ffa3360e4c8e36b2102bc740baab4586092db2c0728c59210524bb871698",
+          "bytes": 24584,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-15": {
+      "variants": {
+        "webp": {
+          "sha256": "d70ab6374ae59334dfc73b219aaf8922d0f30df01b1cc58bc3b8c9c0fa5786cb",
+          "bytes": 22992,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-16": {
+      "variants": {
+        "webp": {
+          "sha256": "40ac6f32ec41e9045ef4913aff530e281b5f3cc32c00a2f50c72b7a7571e4836",
+          "bytes": 24284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-17": {
+      "variants": {
+        "webp": {
+          "sha256": "69f0d62ebbb5a6af7d9d99c7031a9ada2cf7fc15f72dc24d9c3494882195b135",
+          "bytes": 20760,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-18": {
+      "variants": {
+        "webp": {
+          "sha256": "9c551e0b9edfcc4fabbd8979c9076ae9e03f08e9667684996a882318044b6b69",
+          "bytes": 28666,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-19": {
+      "variants": {
+        "webp": {
+          "sha256": "72eda995e7129b8f5dd18c8b7412ce062e41e8d4bc825d0e0e82dca730b5d889",
+          "bytes": 28314,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-20": {
+      "variants": {
+        "webp": {
+          "sha256": "41ab0e1bdf7e40dbac9844ec5032112700d33048692cc9e7777377d3d1f3ca0d",
+          "bytes": 24696,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-21": {
+      "variants": {
+        "webp": {
+          "sha256": "8c8757b3ad70d51f9cceaefb2d0c8fe26f2c71a716a4357898b93c9917acfe28",
+          "bytes": 25710,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-22": {
+      "variants": {
+        "webp": {
+          "sha256": "ef21b1e1f5ad7a990ad046e7791779ed11a8ea814c07ade9954442d8ab21d7dc",
+          "bytes": 23630,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-23": {
+      "variants": {
+        "webp": {
+          "sha256": "cefb9b7644faac388475164e8e899bee36bc4f503abd0b10d7c7bf1fcddaed96",
+          "bytes": 20138,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-24": {
+      "variants": {
+        "webp": {
+          "sha256": "300b556a4b8e2b035e665e3e61bd1e10e09fe3b6fe08110c11668a3da9929067",
+          "bytes": 26070,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-25": {
+      "variants": {
+        "webp": {
+          "sha256": "8dca2f8c0850633741b74199eea226525e97ad4b7a0aadfca6b00f1fe6cf9237",
+          "bytes": 25164,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-26": {
+      "variants": {
+        "webp": {
+          "sha256": "c128275d43a0e0f1bf1ef4e7d9fac874be04e43df3b3a502d725969969a4e2dd",
+          "bytes": 25920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-27": {
+      "variants": {
+        "webp": {
+          "sha256": "329c705b7180b8d055694d418addb63078d63aafe1dfa9590c8d3967f0a547ad",
+          "bytes": 20198,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-28": {
+      "variants": {
+        "webp": {
+          "sha256": "33ffcde0398526fcc74fe6ecd9a5f40dcf8bde03fe4c174372c6999425eeb700",
+          "bytes": 23144,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-29": {
+      "variants": {
+        "webp": {
+          "sha256": "6ea294e365fcbbba2cdfa1bfa23b8562210c482f82bce4463cb3bff00b5fe0f1",
+          "bytes": 24472,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-30": {
+      "variants": {
+        "webp": {
+          "sha256": "67b3562193dc98d6e4c5d461f779a2dbbd0db6aed2c75bac14dcd90da2a3e767",
+          "bytes": 25442,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-31": {
+      "variants": {
+        "webp": {
+          "sha256": "0262e28d4db46293f6182cbf35e93bf7b063bff0b7d6b6403dbd409446fe3c9b",
+          "bytes": 26686,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-32": {
+      "variants": {
+        "webp": {
+          "sha256": "de127c318676575899bc5d6476c5697e028ebcd74945fc781f3a9944827da2da",
+          "bytes": 144,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-33": {
+      "variants": {
+        "webp": {
+          "sha256": "694188ac57b1e59f032629e2ebe00e22aa5fbf2ed7b1af19eae4850e75c25105",
+          "bytes": 136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-34": {
+      "variants": {
+        "webp": {
+          "sha256": "694188ac57b1e59f032629e2ebe00e22aa5fbf2ed7b1af19eae4850e75c25105",
+          "bytes": 136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-35": {
+      "variants": {
+        "webp": {
+          "sha256": "694188ac57b1e59f032629e2ebe00e22aa5fbf2ed7b1af19eae4850e75c25105",
+          "bytes": 136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-36": {
+      "variants": {
+        "webp": {
+          "sha256": "694188ac57b1e59f032629e2ebe00e22aa5fbf2ed7b1af19eae4850e75c25105",
+          "bytes": 136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-37": {
+      "variants": {
+        "webp": {
+          "sha256": "694188ac57b1e59f032629e2ebe00e22aa5fbf2ed7b1af19eae4850e75c25105",
+          "bytes": 136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-38": {
+      "variants": {
+        "webp": {
+          "sha256": "694188ac57b1e59f032629e2ebe00e22aa5fbf2ed7b1af19eae4850e75c25105",
+          "bytes": 136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/ability-cards/slot-39": {
+      "variants": {
+        "webp": {
+          "sha256": "694188ac57b1e59f032629e2ebe00e22aa5fbf2ed7b1af19eae4850e75c25105",
+          "bytes": 136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/player-board/slot-01": {
+      "variants": {
+        "webp": {
+          "sha256": "71362ead7ef02b672a2eacc3056be7cf524cc4818a5f3deffe66eb0d4dc1d01a",
+          "bytes": 73470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/player-board/slot-02": {
+      "variants": {
+        "webp": {
+          "sha256": "1ca3294f875e61ce9d646e8e456aff285570e3ad1bc20cd0eb0e8e391edd354d",
+          "bytes": 69988,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/player-board/slot-03": {
+      "variants": {
+        "webp": {
+          "sha256": "a8ca223a417b879f1ec403808c38f5057b29f236066b4604d3906dba99b5465b",
+          "bytes": 67624,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/player-board/slot-04": {
+      "variants": {
+        "webp": {
+          "sha256": "9d2103c122d6f55720ef2ebeb990987674544df717c229dae2fd7fb16940326d",
+          "bytes": 75040,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/player-board/slot-05": {
+      "variants": {
+        "webp": {
+          "sha256": "3b35c9d4e67c825e6e822c7b22dc290a5882c419bc62dda09d2f8ab9a553de40",
+          "bytes": 58830,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/player-board/slot-06": {
+      "variants": {
+        "webp": {
+          "sha256": "f117c0bb3ac4c68866df8a8df9e58d93b14941096c453ee14146ff6a7c070db2",
+          "bytes": 66428,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/player-board/slot-07": {
+      "variants": {
+        "webp": {
+          "sha256": "b333fa617f849d230db3c70e79b62df33baf1224cb56076211aca1c4a990f7dd",
+          "bytes": 69914,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/player-board/slot-08": {
+      "variants": {
+        "webp": {
+          "sha256": "7b89950411defef1b5437f3965064866faaf81c0e16d5f4e92ad6637cfd01229",
+          "bytes": 79650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/player-board/ultimate": {
+      "variants": {
+        "webp": {
+          "sha256": "c043793f1e4b730127d791820d239100bfb211b7f96cbf2bb9098471d3901b6d",
+          "bytes": 127644,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/tip/dice-legend": {
+      "variants": {
+        "webp": {
+          "sha256": "6650363a03ae29c93255d633b0b1ce383bfecad831a13596d934387363614d69",
+          "bytes": 105384,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/tip/honor": {
+      "variants": {
+        "webp": {
+          "sha256": "de1dcd67b281b66a46151d39a006e0dbfd2212a15a21416299a6cf5cc1d3d0c8",
+          "bytes": 195864,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/tip/retribution": {
+      "variants": {
+        "webp": {
+          "sha256": "4db556b91ea5067bd4a3e7dc6bd105359a26acbaf0f7e9567ceed60c92bba1cc",
+          "bytes": 188846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/crops/tip/shame": {
+      "variants": {
+        "webp": {
+          "sha256": "6018a8f1c6b46ed8ffc36da94b1668430f14f35bca9ccade748ec47bc2f17145",
+          "bytes": 143096,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/icons/compressed/耻辱": {
+      "variants": {
+        "webp": {
+          "sha256": "db44f98a983c0b719187825194dec6251c75ad071d170bb11f69dfb0acb7a6d9",
+          "bytes": 4010,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/icons/compressed/反击": {
+      "variants": {
+        "webp": {
+          "sha256": "5a718638ae7475abe32c4dd20db190040988f6b016c3f49e2dee1c5350323348",
+          "bytes": 3884,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/icons/compressed/荣誉": {
+      "variants": {
+        "webp": {
+          "sha256": "3fbad8c928a6fdab731aeea349957d1715ff652847a31fd150047cc176a83822",
+          "bytes": 10396,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "eb7afb963c6601bea23f0f5e827b578a34febd1d864eb67cdf8f16418a06aa31",
+          "bytes": 586,
+          "mime": "application/json"
+        }
+      }
+    },
+    "images/shadow_thief/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
+          "bytes": 521,
+          "mime": "application/json"
         }
       }
     }

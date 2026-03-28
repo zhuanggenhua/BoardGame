@@ -96,14 +96,12 @@ log(`内存限制: ${process.execArgv.join(' ')}`);
 
 const viteEntry = 'scripts/infra/vite-cli-safe.mjs';
 const viteArgs = createViteArgs();
-const shouldForceInline = process.env.BG_VITE_FORCE_INLINE === '1' || !process.stdin.isTTY;
+const shouldForceInline = process.env.BG_VITE_FORCE_INLINE === '1';
 log(`Vite 入口: ${viteEntry}`);
 log(`Vite 参数: ${viteArgs.join(' ')}`);
 
 if (shouldForceInline) {
-  const reason = process.env.BG_VITE_FORCE_INLINE === '1'
-    ? 'BG_VITE_FORCE_INLINE=1'
-    : 'stdin is not a TTY';
+  const reason = 'BG_VITE_FORCE_INLINE=1';
   await runViteInline(reason);
 } else {
   let inlineMode = false;
@@ -119,6 +117,8 @@ if (shouldForceInline) {
       env: {
         ...process.env,
         FORCE_COLOR: '1',
+        // 在 Playwright global-setup 的 detached 启动链里没有可交互 stdin；给 Vite 标记 CI，避免它因 stdin 结束而立刻退出。
+        CI: process.env.CI || '1',
       },
     }));
   } catch (error) {

@@ -72,6 +72,46 @@ describe('持续力量修正基础设施', () => {
     });
 });
 
+describe('suppressed source modifiers', () => {
+    it('suppressed steampunk_aggromotive should not grant base power bonus', () => {
+        const m1 = makeMinion('m1', 'test_a', '0', 2, { powerModifier: 0 });
+        const base = {
+            defId: 'base_a',
+            minions: [m1],
+            ongoingActions: [{ uid: 'ag1', defId: 'steampunk_aggromotive', ownerId: '0' }],
+        };
+        const state = makeState({
+            bases: [base],
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'ag1',
+                baseIndex: 0,
+                suppressorPlayerId: '0',
+                cardType: 'ongoing',
+            }],
+        } as any);
+
+        expect(getPlayerEffectivePowerOnBase(state, base, 0, '0')).toBe(2);
+    });
+
+    it('suppressed dino_upgrade should not grant attached +2 power', () => {
+        const minion = makeMinion('m1', 'test_minion', '0', 3, {
+            attachedActions: [{ uid: 'up-1', defId: 'dino_upgrade', ownerId: '0' }],
+        });
+        const base = { defId: 'base_a', minions: [minion], ongoingActions: [] };
+        const state = makeState({
+            bases: [base],
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'up-1',
+                baseIndex: 0,
+                suppressorPlayerId: '0',
+                cardType: 'attached',
+            }],
+        } as any);
+
+        expect(getEffectivePower(state, minion, 0)).toBe(3);
+    });
+});
+
 // ============================================================================
 // 恐龙：重装剑龙
 // ============================================================================

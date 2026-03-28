@@ -6,7 +6,7 @@ import type { MatchState, ValidationResult } from '../../../engine/types';
 import type { SmashUpCommand, SmashUpCore, ActionCardDef, FusionCardDef, PlayConstraint } from './types';
 import { SU_COMMANDS, getCurrentPlayerId, HAND_LIMIT } from './types';
 import { getCardDef, getFusionDef, getMinionDef, getMinionLikePower, getTitanDef } from '../data/cards';
-import { hasPlayerTurnRestriction, isOperationRestricted } from './ongoingEffects';
+import { hasPlayerTurnRestriction, isCardSuppressed, isOperationRestricted } from './ongoingEffects';
 import { validateTitanOngoingActivation, validateTitanSpecialActivation, validateTitanTalentUse } from './titanAbilityValidators';
 import {
     getScoringEligibleBaseIndices,
@@ -21,6 +21,7 @@ import {
     canUseBaseLimitedMinionQuota,
     canUseSameNameMinionQuota,
     getMaxRemainingBaseLimitedPowerQuota,
+    getMinionTalentActivationError,
     getMaxRemainingGlobalPowerLimitedQuota,
     mustUseBaseLimitedMinionQuota,
     mustUseGlobalPowerLimitedMinionQuota,
@@ -176,16 +177,17 @@ export function validate(
                     return { valid: false, error: '弃牌堆中没有该随从' };
                 }
                 const basePower = getMinionLikePower(discardCard.defId) ?? 0;
+                const isExtraMinionAttempt = isExtraMinionPlayAttempt(
+                    core,
+                    command.playerId,
+                    baseIndex,
+                    discardCard.defId,
+                    basePower,
+                    true,
+                    discardCheck.consumesNormalLimit,
+                );
                 const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
-                    && isExtraMinionPlayAttempt(
-                        core,
-                        command.playerId,
-                        baseIndex,
-                        discardCard.defId,
-                        basePower,
-                        true,
-                        discardCheck.consumesNormalLimit,
-                    );
+                    && isExtraMinionAttempt;
                 if (blockedByBearNecessitiesPod) {
                     return { valid: false, error: '受黑熊口粮POD限制：你不能打出额外牌' };
                 }
@@ -197,6 +199,7 @@ export function validate(
                     usesBaseLimitedMinionQuota,
                     cardUid: command.payload.cardUid,
                     fromDiscard: true,
+                    isExtraMinionPlayAttempt: isExtraMinionAttempt,
                 })) {
                     return { valid: false, error: '该基地禁止打出该随从' };
                 }
@@ -216,16 +219,17 @@ export function validate(
             const minionDef = getMinionDef(card.defId);
             const fusionDef = getFusionDef(card.defId);
             const basePower = (minionDef?.power ?? fusionDef?.minionPower) ?? 0;
+            const isExtraMinionAttempt = isExtraMinionPlayAttempt(
+                core,
+                command.playerId,
+                baseIndex,
+                card.defId,
+                basePower,
+                false,
+                true,
+            );
             const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
-                && isExtraMinionPlayAttempt(
-                    core,
-                    command.playerId,
-                    baseIndex,
-                    card.defId,
-                    basePower,
-                    false,
-                    true,
-                );
+                && isExtraMinionAttempt;
             if (blockedByBearNecessitiesPod) {
                 return { valid: false, error: '受黑熊口粮POD限制：你不能打出额外牌' };
             }
@@ -273,6 +277,7 @@ export function validate(
                 usesBaseLimitedMinionQuota,
                 cardUid: command.payload.cardUid,
                 fromDiscard: false,
+                isExtraMinionPlayAttempt: isExtraMinionAttempt,
             })) {
                 return { valid: false, error: '该基地禁止打出该随从' };
             }
@@ -300,7 +305,7 @@ export function validate(
             ) {
                 return { valid: false, error: '当前效果禁止你打出战术' };
             }
-            
+
             // 响应窗口期间：允许当前响应者打出特殊行动卡
             const responseWindow = state.sys.responseWindow?.current;
             if (responseWindow && (responseWindow.windowType === 'meFirst' || responseWindow.windowType === 'afterScoring')) {
@@ -574,6 +579,9 @@ export function validate(
                         return { valid: false, error: '本回合天赋已使用' };
                     }
                 }
+                if (isCardSuppressed(core, ongoingCardUid)) {
+                    return { valid: false, error: '该卡牌能力已被压制' };
+                }
                 const oDef = getCardDef(ongoing.defId);
                 if (!oDef || !('abilityTags' in oDef) || !oDef.abilityTags?.includes('talent')) {
                     return { valid: false, error: '该持续行动卡没有天赋能力' };
@@ -628,10 +636,17 @@ export function validate(
                     return { valid: false, error: '本回合天赋已使用' };
                 }
             }
+            if (isCardSuppressed(core, minionUid)) {
+                return { valid: false, error: '该卡牌能力已被压制' };
+            }
             // 检查是否有天赋能力
             const mDef = getCardDef(targetMinion.defId);
             if (!mDef || !('abilityTags' in mDef) || !mDef.abilityTags?.includes('talent')) {
                 return { valid: false, error: '该随从没有天赋能力' };
+            }
+            const talentActivationError = getMinionTalentActivationError(core, targetMinion, baseIndex);
+            if (talentActivationError) {
+                return { valid: false, error: talentActivationError };
             }
             return { valid: true };
         }
@@ -687,6 +702,9 @@ export function validate(
             const spDef = getCardDef(spMinion.defId);
             if (!spDef || !('abilityTags' in spDef) || !spDef.abilityTags?.includes('special')) {
                 return { valid: false, error: '该随从没有特殊能力' };
+            }
+            if (isCardSuppressed(core, spMinionUid)) {
+                return { valid: false, error: '该卡牌能力已被压制' };
             }
             // specialLimitGroup 检查
             if (isSpecialLimitBlocked(core, spMinion.defId, spBaseIndex)) {

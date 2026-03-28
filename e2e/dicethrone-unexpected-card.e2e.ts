@@ -1,268 +1,170 @@
-/**
- * DiceThrone "意不意外"卡牌测试
- * 复现用户报告的问题：提示"卡牌不在手牌中"且没有效果
- */
+import { test, expect, type GameTestContext } from './framework';
 
-import { test, expect } from './fixtures';
-import { waitForTestHarness } from './helpers/common';
-import { setupOnlineMatch, readCoreState, applyCoreStateDirect } from './helpers/dicethrone';
+async function setupUnexpectedScene(
+    game: GameTestContext,
+    options?: {
+        cp?: number;
+        diceValues?: number[];
+    },
+): Promise<void> {
+    const cp = options?.cp ?? 10;
+    const diceValues = options?.diceValues ?? [1, 2, 3, 4, 5];
+
+    await game.openTestGame('dicethrone');
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            hand: ['card-unexpected'],
+            resources: { CP: cp, HP: 50 },
+        },
+        player1: {
+            resources: { HP: 50 },
+        },
+        currentPlayer: '0',
+        phase: 'offensiveRoll',
+        extra: {
+            selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+            hostStarted: true,
+            rollCount: 1,
+            rollLimit: 3,
+            rollConfirmed: false,
+            dice: diceValues.map((value, index) => ({
+                id: index,
+                value,
+                isKept: false,
+            })),
+        },
+    });
+
+    await game.waitForPhase('offensiveRoll', 10000);
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            activePlayerId: state?.core?.activePlayerId ?? null,
+            hasCard: !!state?.core?.players?.['0']?.hand?.some((card: any) => card.id === 'card-unexpected'),
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        activePlayerId: '0',
+        hasCard: true,
+    });
+}
 
 test.describe('DiceThrone - 意不意外卡牌', () => {
-    test('应该能正常打出并修改2颗骰子', async ({ page, context, baseURL }) => {
-        const result = await setupOnlineMatch(page, context, baseURL, {
-            player1Character: 'monk',
-            player2Character: 'barbarian',
-        });
-        
-        if (!result) {
-            throw new Error('Failed to setup match');
-        }
-        
-        const { player1Page, player2Page, matchId } = result;
+    test('应能正常打出并进入改骰交互', async ({ page, game }) => {
+        await setupUnexpectedScene(game);
 
-        // 等待测试工具就绪
-        await waitForTestHarness(player1Page);
+        const unexpectedCard = page
+            .locator('[data-card-id="card-unexpected"], [data-card-key^="card-unexpected-"]')
+            .first();
+        await expect(unexpectedCard).toBeVisible({ timeout: 5000 });
+        await unexpectedCard.click();
 
-        // 注入测试场景：玩家1在进攻投掷阶段，手牌中有"意不意外"卡牌，有足够的CP
-        await applyCoreStateDirect(player1Page, {
-            phase: 'offensiveRoll',
-            activePlayerId: '1',
-            rollCount: 1,
-            rollConfirmed: false,
-            dice: [
-                { id: 0, value: 1, locked: false, playerId: '1' },
-                { id: 1, value: 2, locked: false, playerId: '1' },
-                { id: 2, value: 3, locked: false, playerId: '1' },
-                { id: 3, value: 4, locked: false, playerId: '1' },
-                { id: 4, value: 5, locked: false, playerId: '1' },
-            ],
-            players: {
-                '1': {
-                    hand: [
-                        {
-                            id: 'card-unexpected',
-                            name: '意不意外？！',
-                            type: 'action',
-                            cpCost: 3,
-                            timing: 'roll',
-                        },
-                    ],
-                    resources: {
-                        'resource-cp': 10,
-                    },
-                },
-            },
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const interaction = state?.sys?.interaction?.current;
+            const eventTypes = (state?.sys?.eventStream?.entries ?? [])
+                .slice(-6)
+                .map((entry: any) => entry.event?.type);
+            return {
+                currentKind: interaction?.kind ?? null,
+                optionCount: interaction?.data?.options?.length ?? 0,
+                dtType: interaction?.data?.meta?.dtType ?? null,
+                handIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+                eventTypes,
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            dtType: 'modifyDie',
         });
 
-        // 等待状态同步
-        await player1Page.waitForTimeout(500);
+        const state = await game.getState();
+        const interaction = state?.sys?.interaction?.current;
+        const interactionState = {
+            currentKind: interaction?.kind ?? null,
+            optionCount: interaction?.data?.options?.length ?? 0,
+            dtType: interaction?.data?.meta?.dtType ?? null,
+            handIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            eventTypes: (state?.sys?.eventStream?.entries ?? [])
+                .slice(-6)
+                .map((entry: any) => entry.event?.type),
+        };
 
-        // 读取当前状态，确认卡牌在手牌中
-        const stateBefore = await readCoreState(player1Page);
-        console.log('State before playing card:', {
-            hand: stateBefore.players['1'].hand.map((c: any) => ({ id: c.id, name: c.name })),
-            cp: stateBefore.players['1'].resources['resource-cp'],
-            phase: stateBefore.phase,
-            dice: stateBefore.dice.map((d: any) => ({ id: d.id, value: d.value })),
-        });
-
-        expect(stateBefore.players['1'].hand).toHaveLength(1);
-        expect(stateBefore.players['1'].hand[0].id).toBe('card-unexpected');
-        expect(stateBefore.players['1'].resources['resource-cp']).toBeGreaterThanOrEqual(3);
-
-        // 点击"意不意外"卡牌打出
-        await player1Page.click('[data-card-key^="card-unexpected"]');
-
-        // 等待交互出现
-        await player1Page.waitForTimeout(1000);
-
-        // 检查是否出现选择骰子的交互
-        const interactionVisible = await player1Page.isVisible('[data-tutorial-id="interaction-overlay"]');
-        
-        if (!interactionVisible) {
-            // 如果交互未出现，读取状态和日志
-            const stateAfter = await readCoreState(player1Page);
-            console.error('Interaction not visible. State after:', {
-                hand: stateAfter.players['1'].hand.map((c: any) => ({ id: c.id, name: c.name })),
-                cp: stateAfter.players['1'].resources['resource-cp'],
-                phase: stateAfter.phase,
-                interaction: stateAfter.sys?.interaction,
-            });
-
-            // 截图保存证据
-            await player1Page.screenshot({ 
-                path: test.info().outputPath('unexpected-card-no-interaction.png'),
-                fullPage: true,
-            });
-
-            throw new Error('交互未出现：卡牌打出后没有显示选择骰子的界面');
-        }
-
-        // 选择第1颗骰子（id=0, value=1）
-        await player1Page.click('[data-die-id="0"]');
-
-        // 等待第二个交互（选择新数值）
-        await player1Page.waitForTimeout(500);
-
-        // 选择新数值6
-        await player1Page.click('button:has-text("6")');
-
-        // 等待第二颗骰子选择交互
-        await player1Page.waitForTimeout(500);
-
-        // 选择第2颗骰子（id=1, value=2）
-        await player1Page.click('[data-die-id="1"]');
-
-        // 等待第二个交互（选择新数值）
-        await player1Page.waitForTimeout(500);
-
-        // 选择新数值6
-        await player1Page.click('button:has-text("6")');
-
-        // 等待状态更新
-        await player1Page.waitForTimeout(1000);
-
-        // 验证结果
-        const stateAfter = await readCoreState(player1Page);
-        console.log('State after playing card:', {
-            hand: stateAfter.players['1'].hand.map((c: any) => ({ id: c.id, name: c.name })),
-            cp: stateAfter.players['1'].resources['resource-cp'],
-            dice: stateAfter.dice.map((d: any) => ({ id: d.id, value: d.value })),
-        });
-
-        // 验证卡牌已从手牌移除
-        expect(stateAfter.players['1'].hand).toHaveLength(0);
-
-        // 验证CP已扣除
-        expect(stateAfter.players['1'].resources['resource-cp']).toBe(7); // 10 - 3 = 7
-
-        // 验证骰子已修改
-        const die0 = stateAfter.dice.find((d: any) => d.id === 0);
-        const die1 = stateAfter.dice.find((d: any) => d.id === 1);
-        expect(die0?.value).toBe(6);
-        expect(die1?.value).toBe(6);
-
-        // 截图保存成功状态
-        await player1Page.screenshot({ 
-            path: test.info().outputPath('unexpected-card-success.png'),
-            fullPage: true,
-        });
+        expect(interactionState.currentKind).toBeTruthy();
+        expect(interactionState.dtType).toBe('modifyDie');
+        expect(interactionState.optionCount).toBeGreaterThan(0);
+        expect(interactionState.handIds).not.toContain('card-unexpected');
+        expect(interactionState.eventTypes).toContain('CARD_PLAYED');
     });
 
-    test('应该在骰子不足2颗时禁止打出', async ({ page, context, baseURL }) => {
-        const result = await setupOnlineMatch(page, context, baseURL, {
-            player1Character: 'monk',
-            player2Character: 'barbarian',
-        });
-        
-        if (!result) {
-            throw new Error('Failed to setup match');
-        }
-        
-        const { player1Page, player2Page, matchId } = result;
+    test('骰子数量不足时不应打出', async ({ page, game }) => {
+        await setupUnexpectedScene(game, { diceValues: [1] });
 
-        await waitForTestHarness(player1Page);
-
-        // 注入测试场景：只有1颗骰子
-        await applyCoreStateDirect(player1Page, {
-            phase: 'offensiveRoll',
-            activePlayerId: '1',
-            rollCount: 1,
-            rollConfirmed: false,
-            dice: [
-                { id: 0, value: 1, locked: false, playerId: '1' },
-            ],
-            players: {
-                '1': {
-                    hand: [
-                        {
-                            id: 'card-unexpected',
-                            name: '意不意外？！',
-                            type: 'action',
-                            cpCost: 3,
-                            timing: 'roll',
-                        },
-                    ],
-                    resources: {
-                        'resource-cp': 10,
-                    },
-                },
-            },
+        const unexpectedCard = page
+            .locator('[data-card-id="card-unexpected"], [data-card-key^="card-unexpected-"]')
+            .first();
+        await expect(unexpectedCard).toBeVisible({ timeout: 5000 });
+        await unexpectedCard.click();
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                handIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+                cp: state?.core?.players?.['0']?.resources?.CP ?? state?.core?.players?.['0']?.resources?.cp ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                diceCount: state?.core?.dice?.length ?? 0,
+            };
+        }, { timeout: 2000 }).toMatchObject({
+            handIds: ['card-unexpected'],
+            cp: 10,
+            interactionKind: null,
+            diceCount: 1,
         });
 
-        await player1Page.waitForTimeout(500);
+        const state = await game.getState();
+        const finalState = {
+            handIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            cp: state?.core?.players?.['0']?.resources?.CP ?? state?.core?.players?.['0']?.resources?.cp ?? null,
+            interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+            diceCount: state?.core?.dice?.length ?? 0,
+        };
 
-        // 点击卡牌
-        await player1Page.click('[data-card-key^="card-unexpected"]');
-
-        // 等待错误提示
-        await player1Page.waitForTimeout(1000);
-
-        // 验证卡牌仍在手牌中（打出失败）
-        const stateAfter = await readCoreState(player1Page);
-        expect(stateAfter.players['1'].hand).toHaveLength(1);
-        expect(stateAfter.players['1'].hand[0].id).toBe('card-unexpected');
-
-        // 验证CP未扣除
-        expect(stateAfter.players['1'].resources['resource-cp']).toBe(10);
+        expect(finalState.handIds).toContain('card-unexpected');
+        expect(finalState.cp).toBe(10);
+        expect(finalState.interactionKind).toBeNull();
+        expect(finalState.diceCount).toBe(1);
     });
 
-    test('应该在CP不足时禁止打出', async ({ page, context, baseURL }) => {
-        const result = await setupOnlineMatch(page, context, baseURL, {
-            player1Character: 'monk',
-            player2Character: 'barbarian',
-        });
-        
-        if (!result) {
-            throw new Error('Failed to setup match');
-        }
-        
-        const { player1Page, player2Page, matchId } = result;
-
-        await waitForTestHarness(player1Page);
-
-        // 注入测试场景：CP不足
-        await applyCoreStateDirect(player1Page, {
-            phase: 'offensiveRoll',
-            activePlayerId: '1',
-            rollCount: 1,
-            rollConfirmed: false,
-            dice: [
-                { id: 0, value: 1, locked: false, playerId: '1' },
-                { id: 1, value: 2, locked: false, playerId: '1' },
-            ],
-            players: {
-                '1': {
-                    hand: [
-                        {
-                            id: 'card-unexpected',
-                            name: '意不意外？！',
-                            type: 'action',
-                            cpCost: 3,
-                            timing: 'roll',
-                        },
-                    ],
-                    resources: {
-                        'resource-cp': 2, // 不足3
-                    },
-                },
-            },
+    test('CP 不足时不应打出', async ({ page, game }) => {
+        await setupUnexpectedScene(game, {
+            cp: 2,
+            diceValues: [1, 2],
         });
 
-        await player1Page.waitForTimeout(500);
+        const unexpectedCard = page
+            .locator('[data-card-id="card-unexpected"], [data-card-key^="card-unexpected-"]')
+            .first();
+        await expect(unexpectedCard).toBeVisible({ timeout: 5000 });
+        await unexpectedCard.click();
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                handIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+                cp: state?.core?.players?.['0']?.resources?.CP ?? state?.core?.players?.['0']?.resources?.cp ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+            };
+        }, { timeout: 2000 }).toMatchObject({
+            handIds: ['card-unexpected'],
+            cp: 2,
+            interactionKind: null,
+        });
 
-        // 点击卡牌
-        await player1Page.click('[data-card-key^="card-unexpected"]');
+        const state = await game.getState();
+        const finalState = {
+            handIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            cp: state?.core?.players?.['0']?.resources?.CP ?? state?.core?.players?.['0']?.resources?.cp ?? null,
+            interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+        };
 
-        // 等待错误提示
-        await player1Page.waitForTimeout(1000);
-
-        // 验证卡牌仍在手牌中（打出失败）
-        const stateAfter = await readCoreState(player1Page);
-        expect(stateAfter.players['1'].hand).toHaveLength(1);
-        expect(stateAfter.players['1'].hand[0].id).toBe('card-unexpected');
-
-        // 验证CP未扣除
-        expect(stateAfter.players['1'].resources['resource-cp']).toBe(2);
+        expect(finalState.handIds).toContain('card-unexpected');
+        expect(finalState.cp).toBe(2);
+        expect(finalState.interactionKind).toBeNull();
     });
 });

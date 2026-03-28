@@ -1,314 +1,188 @@
-/**
- * DiceThrone 护盾清理机制 E2E 测试
- *
- * 测试刚修复的护盾持久化问题：
- * 1. 神圣防御的护盾在攻击结束后清理
- * 2. 攻击取消时护盾也应该清理
- * 3. 暗影防御的护盾在攻击结束后清理
- * 4. 多次攻击护盾不累积
- *
- * 使用在线双人对局模式，通过调试面板注入状态。
- */
-
-import { test, expect } from '@playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
+import { test, expect } from './framework';
+import type { GameTestContext } from './framework';
 import { RESOURCE_IDS } from '../src/games/dicethrone/domain/resources';
-import {
-    setupOnlineMatch,
-    readCoreState,
-    applyCoreStateDirect,
-    closeDebugPanelIfOpen,
-} from './helpers/dicethrone';
+
+type ScenePlayers = Record<'0' | '1', string>;
+
+type PlayerPatch = {
+    resources?: Record<string, number>;
+    damageShields?: Array<Record<string, unknown>>;
+};
+
+async function setupShieldScene(
+    game: GameTestContext,
+    players: ScenePlayers,
+    currentPlayer: '0' | '1' = '0',
+): Promise<void> {
+    await game.openTestGame('dicethrone');
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            resources: { CP: 0, HP: 50 },
+        },
+        player1: {
+            resources: { CP: 0, HP: 50 },
+        },
+        currentPlayer,
+        phase: 'main2',
+        extra: {
+            selectedCharacters: players,
+            hostStarted: true,
+        },
+    });
+
+    await game.waitForPhase('main2', 5000);
+}
+
+async function patchPlayer(
+    page: Page,
+    playerId: '0' | '1',
+    patch: PlayerPatch,
+): Promise<void> {
+    await page.evaluate(({ id, nextPatch }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        const player = state?.core?.players?.[id];
+
+        if (!player || typeof harness?.state?.patch !== 'function') {
+            throw new Error('TestHarness state.patch 不可用');
+        }
+
+        harness.state.patch({
+            core: {
+                players: {
+                    [id]: {
+                        ...player,
+                        ...nextPatch,
+                        resources: {
+                            ...(player.resources ?? {}),
+                            ...(nextPatch.resources ?? {}),
+                        },
+                    },
+                },
+            },
+        });
+    }, { id: playerId, nextPatch: patch });
+
+    await page.waitForTimeout(300);
+}
+
+async function readShieldState(game: GameTestContext, playerId: '0' | '1') {
+    const player = await game.getPlayerState(playerId);
+    const shields = player?.damageShields ?? [];
+
+    return {
+        hp: player?.resources?.[RESOURCE_IDS.HP] ?? player?.resources?.HP ?? 0,
+        shieldCount: shields.length,
+        shieldValue: shields[0]?.value ?? null,
+    };
+}
 
 test.describe('DiceThrone - 护盾清理机制', () => {
+    test('神圣防御护盾在攻击结束后清理', async ({ page, game }, testInfo: TestInfo) => {
+        await setupShieldScene(game, { '0': 'paladin', '1': 'barbarian' });
 
-    test('神圣防御护盾在攻击结束后清理', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        await patchPlayer(page, '1', {
+            damageShields: [{ value: 3, sourceId: 'divine-defense', preventStatus: false }],
+        });
 
-        const match = await setupOnlineMatch(browser, baseURL, 'paladin', 'barbarian');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        await expect.poll(() => readShieldState(game, '1'), { timeout: 5000 }).toMatchObject({
+            hp: 50,
+            shieldCount: 1,
+            shieldValue: 3,
+        });
 
-        try {
-            await hostPage.waitForTimeout(2000);
+        await patchPlayer(page, '1', {
+            damageShields: [],
+            resources: { [RESOURCE_IDS.HP]: 48 },
+        });
 
-            // 确定活跃玩家和防御方
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const attackerPage = hostIsActive ? hostPage : match.guestPage;
-            const defenderId = hostIsActive ? '1' : '0';
+        await expect.poll(() => readShieldState(game, '1'), { timeout: 5000 }).toMatchObject({
+            hp: 48,
+            shieldCount: 0,
+            shieldValue: null,
+        });
 
-            // 1. 读取当前状态
-            const coreBefore = await readCoreState(attackerPage) as Record<string, unknown>;
-            const players = coreBefore.players as Record<string, Record<string, unknown>>;
-            const defender = players[defenderId];
-            const defenderResources = defender.resources as Record<string, number>;
-            const hpBefore = defenderResources[RESOURCE_IDS.HP] ?? 0;
-
-            // 2. 注入神圣防御护盾（damageShields）
-            const injectedCore = {
-                ...coreBefore,
-                players: {
-                    ...players,
-                    [defenderId]: {
-                        ...defender,
-                        damageShields: [
-                            { value: 3, sourceId: 'divine-defense', preventStatus: false },
-                        ],
-                    },
-                },
-            };
-            await applyCoreStateDirect(attackerPage, injectedCore);
-            await attackerPage.waitForTimeout(500);
-
-            // 3. 验证护盾已注入
-            const coreWithShield = await readCoreState(attackerPage) as Record<string, unknown>;
-            const shieldsInjected = ((coreWithShield.players as Record<string, Record<string, unknown>>)[defenderId].damageShields as unknown[]) ?? [];
-            expect(shieldsInjected.length, '护盾注入失败').toBe(1);
-
-            // 4. 模拟攻击结算：清理护盾并扣血（护盾减伤 3）
-            const attackDamage = 5;
-            const shieldValue = 3;
-            const actualDamage = attackDamage - shieldValue;
-            const coreAfterAttack = {
-                ...coreWithShield,
-                players: {
-                    ...(coreWithShield.players as Record<string, Record<string, unknown>>),
-                    [defenderId]: {
-                        ...(coreWithShield.players as Record<string, Record<string, unknown>>)[defenderId],
-                        damageShields: [], // 攻击结算后护盾被清理
-                        resources: {
-                            ...((coreWithShield.players as Record<string, Record<string, unknown>>)[defenderId].resources as Record<string, number>),
-                            [RESOURCE_IDS.HP]: hpBefore - actualDamage,
-                        },
-                    },
-                },
-            };
-            await applyCoreStateDirect(attackerPage, coreAfterAttack);
-            await attackerPage.waitForTimeout(500);
-
-            // 5. 验证结果
-            const coreFinal = await readCoreState(attackerPage) as Record<string, unknown>;
-            const defenderFinal = (coreFinal.players as Record<string, Record<string, unknown>>)[defenderId];
-            const shieldsFinal = (defenderFinal.damageShields as unknown[]) ?? [];
-            const hpFinal = (defenderFinal.resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-
-            expect(shieldsFinal.length, '攻击结算后护盾未清理').toBe(0);
-            expect(hpFinal, '护盾应减伤').toBe(hpBefore - actualDamage);
-
-            await closeDebugPanelIfOpen(attackerPage);
-            await attackerPage.screenshot({ path: testInfo.outputPath('divine-shield-cleanup.png'), fullPage: false });
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await game.screenshot('divine-shield-cleanup', testInfo);
     });
 
-    test('攻击取消时护盾也应该清理', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('攻击取消时护盾也应该清理', async ({ page, game }) => {
+        await setupShieldScene(game, { '0': 'paladin', '1': 'barbarian' });
 
-        const match = await setupOnlineMatch(browser, baseURL, 'paladin', 'barbarian');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        await patchPlayer(page, '1', {
+            damageShields: [{ value: 2, sourceId: 'divine-defense', preventStatus: false }],
+        });
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const attackerPage = hostIsActive ? hostPage : match.guestPage;
-            const defenderId = hostIsActive ? '1' : '0';
+        await expect.poll(() => readShieldState(game, '1'), { timeout: 5000 }).toMatchObject({
+            hp: 50,
+            shieldCount: 1,
+            shieldValue: 2,
+        });
 
-            // 1. 注入护盾
-            const coreBefore = await readCoreState(attackerPage) as Record<string, unknown>;
-            const players = coreBefore.players as Record<string, Record<string, unknown>>;
-            const defender = players[defenderId];
-            const hpBefore = (defender.resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
+        await patchPlayer(page, '1', {
+            damageShields: [],
+        });
 
-            await applyCoreStateDirect(attackerPage, {
-                ...coreBefore,
-                players: {
-                    ...players,
-                    [defenderId]: {
-                        ...defender,
-                        damageShields: [
-                            { value: 2, sourceId: 'divine-defense', preventStatus: false },
-                        ],
-                    },
-                },
-            });
-            await attackerPage.waitForTimeout(500);
-
-            // 2. 模拟攻击取消：护盾清理但不扣血
-            const coreWithShield = await readCoreState(attackerPage) as Record<string, unknown>;
-            await applyCoreStateDirect(attackerPage, {
-                ...coreWithShield,
-                players: {
-                    ...(coreWithShield.players as Record<string, Record<string, unknown>>),
-                    [defenderId]: {
-                        ...(coreWithShield.players as Record<string, Record<string, unknown>>)[defenderId],
-                        damageShields: [], // 攻击取消也清理护盾
-                    },
-                },
-            });
-            await attackerPage.waitForTimeout(500);
-
-            // 3. 验证护盾清理且 HP 不变
-            const coreFinal = await readCoreState(attackerPage) as Record<string, unknown>;
-            const defenderFinal = (coreFinal.players as Record<string, Record<string, unknown>>)[defenderId];
-            const shieldsFinal = (defenderFinal.damageShields as unknown[]) ?? [];
-            const hpFinal = (defenderFinal.resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-
-            expect(shieldsFinal.length, '攻击取消后护盾未清理').toBe(0);
-            expect(hpFinal, '攻击取消不应扣血').toBe(hpBefore);
-
-            await closeDebugPanelIfOpen(attackerPage);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await expect.poll(() => readShieldState(game, '1'), { timeout: 5000 }).toMatchObject({
+            hp: 50,
+            shieldCount: 0,
+            shieldValue: null,
+        });
     });
 
-    test('暗影防御护盾在攻击结束后清理', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('暗影防御护盾在攻击结束后清理', async ({ page, game }) => {
+        await setupShieldScene(game, { '0': 'shadow_thief', '1': 'barbarian' });
 
-        const match = await setupOnlineMatch(browser, baseURL, 'shadow_thief', 'barbarian');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        await patchPlayer(page, '1', {
+            damageShields: [{ value: 2, sourceId: 'shadow-defense', preventStatus: false }],
+        });
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const attackerPage = hostIsActive ? hostPage : match.guestPage;
-            const defenderId = hostIsActive ? '1' : '0';
+        await expect.poll(() => readShieldState(game, '1'), { timeout: 5000 }).toMatchObject({
+            hp: 50,
+            shieldCount: 1,
+            shieldValue: 2,
+        });
 
-            const coreBefore = await readCoreState(attackerPage) as Record<string, unknown>;
-            const players = coreBefore.players as Record<string, Record<string, unknown>>;
-            const defender = players[defenderId];
-            const hpBefore = (defender.resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
+        await patchPlayer(page, '1', {
+            damageShields: [],
+            resources: { [RESOURCE_IDS.HP]: 48 },
+        });
 
-            // 注入暗影防御护盾
-            await applyCoreStateDirect(attackerPage, {
-                ...coreBefore,
-                players: {
-                    ...players,
-                    [defenderId]: {
-                        ...defender,
-                        damageShields: [
-                            { value: 2, sourceId: 'shadow-defense', preventStatus: false },
-                        ],
-                    },
-                },
-            });
-            await attackerPage.waitForTimeout(500);
-
-            // 模拟攻击结算
-            const coreWithShield = await readCoreState(attackerPage) as Record<string, unknown>;
-            const attackDamage = 4;
-            const shieldValue = 2;
-            await applyCoreStateDirect(attackerPage, {
-                ...coreWithShield,
-                players: {
-                    ...(coreWithShield.players as Record<string, Record<string, unknown>>),
-                    [defenderId]: {
-                        ...(coreWithShield.players as Record<string, Record<string, unknown>>)[defenderId],
-                        damageShields: [],
-                        resources: {
-                            ...((coreWithShield.players as Record<string, Record<string, unknown>>)[defenderId].resources as Record<string, number>),
-                            [RESOURCE_IDS.HP]: hpBefore - (attackDamage - shieldValue),
-                        },
-                    },
-                },
-            });
-            await attackerPage.waitForTimeout(500);
-
-            const coreFinal = await readCoreState(attackerPage) as Record<string, unknown>;
-            const defenderFinal = (coreFinal.players as Record<string, Record<string, unknown>>)[defenderId];
-            const shieldsFinal = (defenderFinal.damageShields as unknown[]) ?? [];
-            const hpFinal = (defenderFinal.resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-
-            expect(shieldsFinal.length, '暗影防御护盾未清理').toBe(0);
-            expect(hpFinal, '暗影防御护盾应减伤').toBe(hpBefore - (attackDamage - shieldValue));
-
-            await closeDebugPanelIfOpen(attackerPage);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await expect.poll(() => readShieldState(game, '1'), { timeout: 5000 }).toMatchObject({
+            hp: 48,
+            shieldCount: 0,
+            shieldValue: null,
+        });
     });
 
-    test('多次攻击护盾不累积', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('多次攻击护盾不累积', async ({ page, game }) => {
+        await setupShieldScene(game, { '0': 'paladin', '1': 'barbarian' });
 
-        const match = await setupOnlineMatch(browser, baseURL, 'paladin', 'barbarian');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        await patchPlayer(page, '1', {
+            damageShields: [{ value: 3, sourceId: 'divine-defense-1', preventStatus: false }],
+        });
+        await expect.poll(() => readShieldState(game, '1'), { timeout: 5000 }).toMatchObject({
+            shieldCount: 1,
+            shieldValue: 3,
+        });
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const attackerPage = hostIsActive ? hostPage : match.guestPage;
-            const defenderId = hostIsActive ? '1' : '0';
+        await patchPlayer(page, '1', {
+            damageShields: [],
+        });
+        await expect.poll(() => readShieldState(game, '1'), { timeout: 5000 }).toMatchObject({
+            shieldCount: 0,
+            shieldValue: null,
+        });
 
-            // 1. 第一次防御：注入 3 点护盾
-            const core1 = await readCoreState(attackerPage) as Record<string, unknown>;
-            const players1 = core1.players as Record<string, Record<string, unknown>>;
-            await applyCoreStateDirect(attackerPage, {
-                ...core1,
-                players: {
-                    ...players1,
-                    [defenderId]: {
-                        ...players1[defenderId],
-                        damageShields: [{ value: 3, sourceId: 'divine-defense-1', preventStatus: false }],
-                    },
-                },
-            });
-            await attackerPage.waitForTimeout(500);
+        await patchPlayer(page, '1', {
+            damageShields: [{ value: 2, sourceId: 'divine-defense-2', preventStatus: false }],
+        });
 
-            // 2. 第一次攻击结算：清理护盾
-            const core2 = await readCoreState(attackerPage) as Record<string, unknown>;
-            await applyCoreStateDirect(attackerPage, {
-                ...core2,
-                players: {
-                    ...(core2.players as Record<string, Record<string, unknown>>),
-                    [defenderId]: {
-                        ...(core2.players as Record<string, Record<string, unknown>>)[defenderId],
-                        damageShields: [],
-                    },
-                },
-            });
-            await attackerPage.waitForTimeout(500);
-
-            // 3. 第二次防御：注入 2 点护盾
-            const core3 = await readCoreState(attackerPage) as Record<string, unknown>;
-            await applyCoreStateDirect(attackerPage, {
-                ...core3,
-                players: {
-                    ...(core3.players as Record<string, Record<string, unknown>>),
-                    [defenderId]: {
-                        ...(core3.players as Record<string, Record<string, unknown>>)[defenderId],
-                        damageShields: [{ value: 2, sourceId: 'divine-defense-2', preventStatus: false }],
-                    },
-                },
-            });
-            await attackerPage.waitForTimeout(500);
-
-            // 4. 验证护盾值是 2 而不是 5（3+2）
-            const coreFinal = await readCoreState(attackerPage) as Record<string, unknown>;
-            const defenderFinal = (coreFinal.players as Record<string, Record<string, unknown>>)[defenderId];
-            const shieldsFinal = (defenderFinal.damageShields as Array<Record<string, unknown>>) ?? [];
-
-            expect(shieldsFinal.length, '应该只有一个护盾').toBe(1);
-            expect(shieldsFinal[0].value, '护盾值应该是 2 而不是累积值').toBe(2);
-
-            await closeDebugPanelIfOpen(attackerPage);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await expect.poll(() => readShieldState(game, '1'), { timeout: 5000 }).toMatchObject({
+            hp: 50,
+            shieldCount: 1,
+            shieldValue: 2,
+        });
     });
 });

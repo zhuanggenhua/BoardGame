@@ -12,6 +12,7 @@ import { AppModule } from './app.module';
 import { MsgpackIoAdapter } from './adapters/msgpack-io.adapter';
 import { GlobalHttpExceptionFilter } from './shared/filters/http-exception.filter';
 import logger from '../../../server/logger';
+import { isNoCacheSpaEntryPath, shouldServeSpaFallback } from './spa-fallback';
 
 const initSentryInBackground = async () => {
     const dsn = process.env.SENTRY_DSN?.trim();
@@ -104,13 +105,12 @@ async function bootstrap() {
             },
         }));
 
-        const spaExclude = /^\/(assets|auth|health|social-socket|games|default|lobby-socket|socket\.io|admin|ugc|layout|feedback|review|invite|message|friend|user-settings|sponsors|notifications|game-changelogs)(\/|$)/;
         expressApp.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
-            if (/^\/admin\/changelogs\/?$/.test(req.path)) {
+            if (isNoCacheSpaEntryPath(req.path)) {
                 res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
                 return res.sendFile(join(distPath, 'index.html'));
             }
-            if (spaExclude.test(req.path)) return next();
+            if (!shouldServeSpaFallback(req.path)) return next();
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             return res.sendFile(join(distPath, 'index.html'));
         });

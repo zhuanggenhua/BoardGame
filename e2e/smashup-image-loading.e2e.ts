@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { dismissViteOverlay, initContext } from './helpers/common';
 
 /**
  * SmashUp 图片加载测试
@@ -9,7 +12,7 @@ import { test, expect } from '@playwright/test';
 test.describe('SmashUp Image Loading', () => {
     test.use({ 
         baseURL: process.env.VITE_FRONTEND_URL
-            || `http://localhost:${process.env.PW_PORT || process.env.E2E_PORT || '6173'}`,
+            || `http://localhost:${process.env.PW_PORT || process.env.E2E_PORT || '6174'}`, 
         // 增加超时时间，因为图片加载可能较慢
         timeout: 60000
     });
@@ -156,5 +159,78 @@ test.describe('SmashUp Image Loading', () => {
         }
 
         expect(discardImages).toHaveLength(0);
+    });
+});
+
+test.describe('SmashUp Critical Image Gate', () => {
+    test.use({
+        baseURL: process.env.VITE_FRONTEND_URL
+            || `http://localhost:${process.env.PW_PORT || process.env.E2E_PORT || '6174'}`,
+        timeout: 60000,
+    });
+
+    test('进入本地对局时先显示 LoadingScreen，再进入派系选择界面', async ({ browser }, testInfo) => {
+        const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'add-critical-image-preloading');
+        mkdirSync(evidenceDir, { recursive: true });
+        const loadingShotPath = join(evidenceDir, 'critical-image-gate-loading.png');
+        const readyShotPath = join(evidenceDir, 'critical-image-gate-faction-selection.png');
+        const context = await browser.newContext({
+            baseURL: testInfo.project.use.baseURL as string | undefined,
+        });
+        const delayedPixelPng = Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAAA0lEQVQI12P4z8BQDwAEgAF/QualzQAAAABJRU5ErkJggg==',
+            'base64',
+        );
+
+        await initContext(context, {
+            storageKey: '__smashup_real_image_gate__',
+            skipImageGate: false,
+        });
+
+        await context.route(/assets\.easyboardgame\.top\/.*\.(png|jpg|jpeg|webp|avif|gif|svg)(\?.*)?$/i, async (route) => {
+            await new Promise((resolve) => setTimeout(resolve, 250));
+            await route.fulfill({
+                status: 200,
+                contentType: 'image/png',
+                body: delayedPixelPng,
+            });
+        });
+
+        const page = await context.newPage();
+
+        try {
+            await page.goto('/play/smashup/local', { waitUntil: 'domcontentloaded' });
+            await dismissViteOverlay(page);
+
+            const loadingText = page.getByText(/Loading match resources|正在加载对局资源/i).first();
+            await expect(loadingText).toBeVisible({ timeout: 10000 });
+            await page.screenshot({ path: loadingShotPath });
+
+            const factionHeading = page.locator('h1').filter({
+                hasText: /Draft Your Factions|选择你的派系/i,
+            });
+            await expect(factionHeading).toBeVisible({ timeout: 20000 });
+            await expect(loadingText).toBeHidden({ timeout: 10000 });
+
+            const visibleFactionNames = page.getByText(
+                /Aliens|Pirates|Ninjas|Dinosaurs|外星人|海盗|忍者|恐龙/i,
+            );
+            await expect(visibleFactionNames.first()).toBeVisible({ timeout: 5000 });
+
+            const brokenVisibleImages = await page.evaluate(() =>
+                Array.from(document.querySelectorAll('img'))
+                    .filter((img) => {
+                        const rect = img.getBoundingClientRect();
+                        const visible = rect.width > 0 && rect.height > 0;
+                        return visible && (!img.complete || img.naturalWidth === 0);
+                    })
+                    .map((img) => img.getAttribute('src') ?? ''),
+            );
+            expect(brokenVisibleImages).toEqual([]);
+
+            await page.screenshot({ path: readyShotPath });
+        } finally {
+            await context.close();
+        }
     });
 });

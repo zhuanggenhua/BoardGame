@@ -55,7 +55,7 @@ function normalizePortsInput(ports) {
   return [];
 }
 
-async function canBindPort(port, host = '0.0.0.0') {
+async function canBindPort(port, host = '127.0.0.1') {
   return await new Promise(resolve => {
     const server = createServer();
     let settled = false;

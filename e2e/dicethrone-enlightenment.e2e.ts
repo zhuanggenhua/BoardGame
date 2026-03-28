@@ -1,211 +1,145 @@
-/**
- * 王权骰铸 - 顿悟卡牌测试
- * 
- * 测试场景：
- * 1. 打出顿悟卡，投出莲花（6）→ 应该获得 2太极 + 1闪避 + 1净化
- * 2. 打出顿悟卡，投出非莲花 → 应该抽1张牌
- */
+import type { Page } from '@playwright/test';
+import { test, expect } from './framework';
+import type { GameTestContext } from './framework';
 
-import { test, expect } from './fixtures';
-import {
-    selectCharacter,
-    readyAndStartGame,
-    waitForGameBoard,
-    readCoreState,
-    applyCoreStateDirect,
-} from './helpers/dicethrone';
+async function setupEnlightenmentScene(
+    page: Page,
+    game: GameTestContext,
+    options?: {
+        dieValue?: number;
+        deck?: string[];
+    },
+): Promise<void> {
+    const dieValue = options?.dieValue ?? 6;
+    const deck = options?.deck ?? [];
 
-const GAME_NAME = 'dicethrone';
-
-test.describe('王权骰铸 - 顿悟卡牌', () => {
-    test('投出莲花 → 获得2太极+1闪避+1净化', async ({ dicethroneMatch }) => {
-        const { hostPage, guestPage, hostContext, guestContext } = dicethroneMatch;
-        const host = { page: hostPage, context: hostContext };
-        const guest = { page: guestPage, context: guestContext };
-
-        // 等待进入 main1 阶段
-        await hostPage.waitForSelector('[data-phase="main1"]', { timeout: 15000 });
-
-        // 读取初始状态
-        const initialState = await hostPage.evaluate(() => {
-            return (window as any).__BG_CORE_STATE__;
-        });
-
-        console.log('初始手牌:', initialState.players['0'].hand);
-        console.log('初始Token:', initialState.players['0'].tokens);
-
-        // 确保手牌中有顿悟卡，如果没有则注入
-        const hasEnlightenment = initialState.players['0'].hand.includes('card-enlightenment');
-        if (!hasEnlightenment) {
-            await hostPage.evaluate(() => {
-                const state = (window as any).__BG_CORE_STATE__;
-                state.players['0'].hand.push('card-enlightenment');
-                (window as any).__BG_APPLY_STATE__(state);
-            });
-            console.log('已注入顿悟卡到手牌');
-        }
-
-        // 注入骰子结果：确保投出莲花（6）
-        await hostPage.evaluate(() => {
-            (window as any).__BG_INJECT_DICE_VALUES__ = [6]; // 莲花
-        });
-
-        // 点击顿悟卡
-        const enlightenmentCard = hostPage.locator('[data-card-id="card-enlightenment"]').first();
-        await enlightenmentCard.waitFor({ state: 'visible', timeout: 5000 });
-        await enlightenmentCard.click();
-
-        // 等待卡牌效果执行完成（等待骰子动画）
-        await hostPage.waitForTimeout(2000);
-
-        // 读取打牌后的状态
-        const afterPlayState = await hostPage.evaluate(() => {
-            return (window as any).__BG_CORE_STATE__;
-        });
-
-        console.log('打牌后手牌:', afterPlayState.players['0'].hand);
-        console.log('打牌后Token:', afterPlayState.players['0'].tokens);
-
-        // 验证：应该获得 2太极 + 1闪避 + 1净化
-        const tokens = afterPlayState.players['0'].tokens;
-        expect(tokens.taiji || 0).toBeGreaterThanOrEqual(2);
-        expect(tokens.evasive || 0).toBeGreaterThanOrEqual(1);
-        expect(tokens.purify || 0).toBeGreaterThanOrEqual(1);
-
-        // 验证：顿悟卡应该从手牌移除
-        expect(afterPlayState.players['0'].hand).not.toContain('card-enlightenment');
+    await game.openTestGame('dicethrone');
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            hand: ['card-enlightenment'],
+            deck,
+            resources: { CP: 0, HP: 50 },
+            tokens: { taiji: 0, evasive: 0, purify: 0 },
+        },
+        player1: {
+            resources: { HP: 50 },
+        },
+        currentPlayer: '0',
+        phase: 'main1',
+        extra: {
+            selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+            hostStarted: true,
+        },
     });
 
-    test('投出非莲花 → 抽1张牌', async ({ dicethroneMatch }) => {
-        const { hostPage, guestPage, hostContext, guestContext } = dicethroneMatch;
-
-        // 完成角色选择
-        await selectCharacter(hostPage, 'monk');
-        await selectCharacter(guestPage, 'barbarian');
-        await readyAndStartGame(hostPage, guestPage);
-
-        // 等待游戏开始
-        await waitForGameBoard(hostPage);
-        await waitForGameBoard(guestPage);
-
-        // 等待进入 main1 阶段
-        await hostPage.waitForSelector('[data-phase="main1"]', { timeout: 15000 });
-
-        // 读取初始状态
-        const initialState = await hostPage.evaluate(() => {
-            return (window as any).__BG_CORE_STATE__;
-        });
-
-        const initialHandSize = initialState.players['0'].hand.length;
-
-        // 确保手牌中有顿悟卡
-        const hasEnlightenment = initialState.players['0'].hand.includes('card-enlightenment');
-        if (!hasEnlightenment) {
-            await hostPage.evaluate(() => {
-                const state = (window as any).__BG_CORE_STATE__;
-                state.players['0'].hand.push('card-enlightenment');
-                (window as any).__BG_APPLY_STATE__(state);
-            });
-        }
-
-        // 注入骰子结果：投出拳（1）
-        await hostPage.evaluate(() => {
-            (window as any).__BG_INJECT_DICE_VALUES__ = [1]; // 拳
-        });
-
-        // 点击顿悟卡
-        const enlightenmentCard = hostPage.locator('[data-card-id="card-enlightenment"]').first();
-        await enlightenmentCard.waitFor({ state: 'visible', timeout: 5000 });
-        await enlightenmentCard.click();
-
-        // 等待卡牌效果执行完成
-        await hostPage.waitForTimeout(2000);
-
-        // 读取打牌后的状态
-        const afterPlayState = await hostPage.evaluate(() => {
-            return (window as any).__BG_CORE_STATE__;
-        });
-
-        // 验证：手牌数量应该不变（打出1张，抽1张）
-        expect(afterPlayState.players['0'].hand.length).toBe(initialHandSize);
-
-        // 验证：顿悟卡应该从手牌移除
-        expect(afterPlayState.players['0'].hand).not.toContain('card-enlightenment');
+    await game.waitForPhase('main1', 10000);
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            activePlayerId: state?.core?.activePlayerId ?? null,
+            hasCard: !!state?.core?.players?.['0']?.hand?.some((card: any) => card.id === 'card-enlightenment'),
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        activePlayerId: '0',
+        hasCard: true,
     });
 
-    test('投出莲花 - 使用调试面板验证', async ({ dicethroneMatch }) => {
-        const { hostPage, guestPage, hostContext, guestContext } = dicethroneMatch;
+    await page.evaluate((value) => {
+        (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([value]);
+    }, dieValue);
+}
 
-        // 完成角色选择
-        await selectCharacter(hostPage, 'monk');
-        await selectCharacter(guestPage, 'barbarian');
-        await readyAndStartGame(hostPage, guestPage);
+test.describe('DiceThrone - 顿悟卡牌', () => {
+    test('掷出莲花时应获得 2 太极、1 闪避、1 净化', async ({ page, game }) => {
+        await setupEnlightenmentScene(page, game, { dieValue: 6 });
 
-        // 等待游戏开始
-        await waitForGameBoard(hostPage);
-        await waitForGameBoard(guestPage);
+        const enlightenmentCard = page
+            .locator('[data-card-id="card-enlightenment"], [data-card-key^="card-enlightenment-"]')
+            .first();
+        await expect(enlightenmentCard).toBeVisible({ timeout: 5000 });
+        await enlightenmentCard.click();
 
-        // 等待进入 main1 阶段
-        await hostPage.waitForSelector('[data-phase="main1"]', { timeout: 15000 });
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const player0 = state?.core?.players?.['0'];
+            const bonusDieEvent = [...(state?.sys?.eventStream?.entries ?? [])]
+                .reverse()
+                .find((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED');
+            return {
+                handIds: player0?.hand?.map((card: any) => card.id) ?? [],
+                tokens: player0?.tokens ?? {},
+                bonusDieEffectKey: bonusDieEvent?.event?.payload?.effectKey ?? null,
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            handIds: [],
+            tokens: {
+                taiji: 2,
+                evasive: 1,
+                purify: 1,
+            },
+            bonusDieEffectKey: 'bonusDie.effect.enlightenmentLotus',
+        });
 
-        // 使用调试面板注入状态：手牌中有顿悟卡
-        await hostPage.evaluate(() => {
-            const state = (window as any).__BG_CORE_STATE__;
-            // 清空手牌，只保留顿悟卡
-            state.players['0'].hand = ['card-enlightenment'];
-            // 清空Token
-            state.players['0'].tokens = {
+        const state = await game.getState();
+        const player0 = state?.core?.players?.['0'];
+        const bonusDieEvent = [...(state?.sys?.eventStream?.entries ?? [])]
+            .reverse()
+            .find((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED');
+        const finalState = {
+            handIds: player0?.hand?.map((card: any) => card.id) ?? [],
+            tokens: player0?.tokens ?? {},
+            bonusDieEffectKey: bonusDieEvent?.event?.payload?.effectKey ?? null,
+        };
+
+        expect(finalState.handIds).not.toContain('card-enlightenment');
+        expect(finalState.tokens.taiji ?? 0).toBe(2);
+        expect(finalState.tokens.evasive ?? 0).toBe(1);
+        expect(finalState.tokens.purify ?? 0).toBe(1);
+        expect(finalState.bonusDieEffectKey).toBe('bonusDie.effect.enlightenmentLotus');
+    });
+
+    test('掷出非莲花时应改为抽 1 张牌', async ({ page, game }) => {
+        await setupEnlightenmentScene(page, game, {
+            dieValue: 1,
+            deck: ['card-buddha-light'],
+        });
+
+        const enlightenmentCard = page
+            .locator('[data-card-id="card-enlightenment"], [data-card-key^="card-enlightenment-"]')
+            .first();
+        await expect(enlightenmentCard).toBeVisible({ timeout: 5000 });
+        await enlightenmentCard.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const player0 = state?.core?.players?.['0'];
+            return {
+                handIds: player0?.hand?.map((card: any) => card.id) ?? [],
+                deckIds: player0?.deck?.map((card: any) => card.id) ?? [],
+                tokens: player0?.tokens ?? {},
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            handIds: ['card-buddha-light'],
+            tokens: {
                 taiji: 0,
                 evasive: 0,
                 purify: 0,
-                knockdown: 0,
-            };
-            (window as any).__BG_APPLY_STATE__(state);
+            },
         });
 
-        // 注入骰子结果
-        await hostPage.evaluate(() => {
-            (window as any).__BG_INJECT_DICE_VALUES__ = [6]; // 莲花
-        });
+        const player0 = await game.getPlayerState('0');
+        const finalState = {
+            handIds: player0?.hand?.map((card: any) => card.id) ?? [],
+            deckIds: player0?.deck?.map((card: any) => card.id) ?? [],
+            tokens: player0?.tokens ?? {},
+        };
 
-        console.log('=== 打牌前状态 ===');
-        const beforeState = await hostPage.evaluate(() => {
-            const state = (window as any).__BG_CORE_STATE__;
-            return {
-                hand: state.players['0'].hand,
-                tokens: state.players['0'].tokens,
-            };
-        });
-        console.log('手牌:', beforeState.hand);
-        console.log('Token:', beforeState.tokens);
-
-        // 点击顿悟卡
-        const enlightenmentCard = hostPage.locator('[data-card-id="card-enlightenment"]').first();
-        await enlightenmentCard.click();
-
-        // 等待效果执行
-        await hostPage.waitForTimeout(2000);
-
-        console.log('=== 打牌后状态 ===');
-        const afterState = await hostPage.evaluate(() => {
-            const state = (window as any).__BG_CORE_STATE__;
-            return {
-                hand: state.players['0'].hand,
-                tokens: state.players['0'].tokens,
-                eventStream: state.sys?.eventStream?.entries?.slice(-10).map((e: any) => ({
-                    type: e.event.type,
-                    payload: e.event.payload,
-                })),
-            };
-        });
-        console.log('手牌:', afterState.hand);
-        console.log('Token:', afterState.tokens);
-        console.log('最近10个事件:', JSON.stringify(afterState.eventStream, null, 2));
-
-        // 验证
-        expect(afterState.tokens.taiji).toBe(2);
-        expect(afterState.tokens.evasive).toBe(1);
-        expect(afterState.tokens.purify).toBe(1);
-        expect(afterState.hand).toEqual([]);
+        expect(finalState.handIds).not.toContain('card-enlightenment');
+        expect(finalState.handIds).toContain('card-buddha-light');
+        expect(finalState.deckIds).not.toContain('card-buddha-light');
+        expect(finalState.tokens.taiji ?? 0).toBe(0);
+        expect(finalState.tokens.evasive ?? 0).toBe(0);
+        expect(finalState.tokens.purify ?? 0).toBe(0);
     });
 });

@@ -94,6 +94,7 @@ const DICETHRONE_ERROR_CODES = [
     'no_card_to_undo',
     'card_not_in_discard',
     'cannot_advance_phase',
+    'attackModifierRequiresSelectedAttack',
     'no_pending_interaction',
     'invalid_die_value',
     'no_pending_damage',

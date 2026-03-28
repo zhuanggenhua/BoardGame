@@ -24,6 +24,7 @@ export type DiceThroneMoveMap = {
     removeStatus: (targetPlayerId: string, statusId?: string) => void;
     transferStatus: (fromPlayerId: string, toPlayerId: string, statusId: string) => void;
     grantTokens: (targetPlayerId: string, tokens: Array<{ tokenId: string; amount: number }>) => void;
+    resolveInteraction: (selectedPlayerIds: string[]) => void;
     // confirmInteraction: (interactionId: string, selectedDiceIds?: number[], selectedPlayerId?: string) => void; // @deprecated - 使用 InteractionSystem
     // cancelInteraction: () => void; // @deprecated - 使用 InteractionSystem
     // Token 响应相关
@@ -40,7 +41,9 @@ export type DiceThroneMoveMap = {
     // 选角相关
     selectCharacter: (characterId: string) => void;
     hostStartGame: () => void;
+    moveSeat: (playerId: string, targetSeatIndex: number) => void;
     playerReady: () => void;
+    playerUnready: () => void;
 };
 
 /**
@@ -65,6 +68,7 @@ export const resolveMoves = (
     removeStatus: (targetPlayerId, statusId) => dispatch('REMOVE_STATUS', { targetPlayerId, statusId }),
     transferStatus: (fromPlayerId, toPlayerId, statusId) => dispatch('TRANSFER_STATUS', { fromPlayerId, toPlayerId, statusId }),
     grantTokens: (targetPlayerId, tokens) => dispatch('GRANT_TOKENS', { targetPlayerId, tokens }),
+    resolveInteraction: (selectedPlayerIds) => dispatch('RESOLVE_INTERACTION', { selectedPlayerIds }),
     // confirmInteraction: (interactionId, selectedDiceIds, selectedPlayerId) => dispatch('CONFIRM_INTERACTION', { interactionId, selectedDiceIds, selectedPlayerId }),
     // cancelInteraction: () => dispatch('CANCEL_INTERACTION', {}),
     // Token 响应
@@ -81,5 +85,7 @@ export const resolveMoves = (
         dispatch('USE_PASSIVE_ABILITY', { passiveId, actionIndex, targetDieId }),
     selectCharacter: (characterId) => dispatch('SELECT_CHARACTER', { characterId }),
     hostStartGame: () => dispatch('HOST_START_GAME', {}),
+    moveSeat: (playerId, targetSeatIndex) => dispatch('MOVE_SEAT', { playerId, targetSeatIndex }),
     playerReady: () => dispatch('PLAYER_READY', {}),
+    playerUnready: () => dispatch('PLAYER_UNREADY', {}),
 });

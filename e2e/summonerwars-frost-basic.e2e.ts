@@ -1,44 +1,43 @@
-/**
- * Frost 基础测试 - 验证阵营选择和游戏启动
- */
+import { test, expect } from './framework';
+import type { SummonerWarsCore } from '../src/games/summonerwars/domain/types';
+import { createInitializedCore, resetInstanceCounter } from '../src/games/summonerwars/__tests__/test-helpers';
 
-import { test, expect } from '@playwright/test';
-import { setupSWOnlineMatch } from './helpers/summonerwars';
+const deterministicRandom = {
+  shuffle: <T>(arr: T[]) => [...arr],
+  random: () => 0.5,
+  d: () => 1,
+  range: (min: number) => min,
+};
 
-test('Frost 阵营基础测试', async ({ browser }, testInfo) => {
-  test.setTimeout(90000);
-  const baseURL = testInfo.project.use.baseURL as string | undefined;
-  
-  console.log('[TEST] Creating frost vs necromancer match');
-  const match = await setupSWOnlineMatch(browser, baseURL, 'frost', 'necromancer');
-  
-  if (!match) {
-    test.skip(true, 'Game server unavailable');
-    return;
-  }
-  
-  console.log('[TEST] Match created successfully');
-  const { hostPage, hostContext, guestContext } = match;
+const buildFrostBasicCore = (): SummonerWarsCore => {
+  resetInstanceCounter();
+  const core = createInitializedCore(['0', '1'], deterministicRandom, {
+    faction0: 'frost',
+    faction1: 'necromancer',
+  });
 
-  try {
-    // 验证游戏界面已加载
-    const banner = hostPage.getByTestId('sw-action-banner');
-    await expect(banner).toBeVisible({ timeout: 10000 });
-    console.log('[TEST] Game UI loaded');
-    
-    // 验证当前阶段
-    const phase = await banner.getAttribute('data-phase');
-    console.log('[TEST] Current phase:', phase);
-    expect(phase).toBeTruthy();
-    
-    // 验证结束阶段按钮存在
-    const endPhaseBtn = hostPage.getByTestId('sw-end-phase');
-    await expect(endPhaseBtn).toBeVisible({ timeout: 5000 });
-    console.log('[TEST] End phase button visible');
-    
-    console.log('[TEST] Test passed');
-  } finally {
-    await hostContext.close();
-    await guestContext.close();
-  }
+  core.currentPlayer = '0';
+  core.phase = 'summon';
+  return core;
+};
+
+test('Frost 阵营基础测试', async ({ page, game }) => {
+  await game.openTestGame('summonerwars');
+
+  const core = buildFrostBasicCore();
+  await game.setupScene({
+    gameId: 'summonerwars',
+    currentPlayer: core.currentPlayer,
+    phase: core.phase,
+    extra: { core },
+  });
+
+  await expect(page.getByTestId('sw-action-banner')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId('sw-end-phase')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('sw-map-container')).toBeVisible({ timeout: 5000 });
+
+  await expect.poll(async () => {
+    const state = await game.getState();
+    return state?.core?.phase ?? null;
+  }, { timeout: 5000 }).toBe('summon');
 });

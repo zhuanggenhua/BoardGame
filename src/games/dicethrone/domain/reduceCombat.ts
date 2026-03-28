@@ -6,12 +6,58 @@
 import type { DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
-import { getFaceCounts, getActiveDice } from './rules';
+import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
 
 type EventHandler<E extends DiceThroneEvent> = (
     state: DiceThroneCore,
     event: E
 ) => DiceThroneCore;
+
+const buildPlayersWithSyncedHp = (
+    state: DiceThroneCore,
+    targetId: string,
+    newHp: number
+): DiceThroneCore['players'] => {
+    const target = state.players[targetId];
+    if (!target) return state.players;
+
+    if (!isTeamMode(state)) {
+        return {
+            ...state.players,
+            [targetId]: {
+                ...target,
+                resources: { ...target.resources, [RESOURCE_IDS.HP]: newHp },
+            },
+        };
+    }
+
+    const teamId = getTeamId(state, targetId);
+    if (!teamId) return state.players;
+
+    const nextPlayers = { ...state.players };
+    Object.entries(state.players).forEach(([playerId, player]) => {
+        if (getTeamId(state, playerId) !== teamId) return;
+        nextPlayers[playerId] = {
+            ...player,
+            resources: { ...player.resources, [RESOURCE_IDS.HP]: newHp },
+        };
+    });
+    return nextPlayers;
+};
+
+const buildNextTeamHealth = (
+    state: DiceThroneCore,
+    targetId: string,
+    newHp: number
+): DiceThroneCore['teamHealth'] => {
+    if (!isTeamMode(state)) return state.teamHealth;
+    const teamId = getTeamId(state, targetId);
+    if (!teamId) return state.teamHealth;
+    return {
+        A: teamId === 'A' ? newHp : (state.teamHealth?.A ?? newHp),
+        B: teamId === 'B' ? newHp : (state.teamHealth?.B ?? newHp),
+    };
+};
 
 /**
  * 处理伤害减免事件
@@ -75,6 +121,26 @@ export const handleAttackPreDefenseResolved: EventHandler<Extract<DiceThroneEven
 
     return matches
         ? { ...state, pendingAttack: { ...pa, preDefenseResolved: true } }
+        : state;
+};
+
+/**
+ * 处理防御方效果结算事件
+ */
+export const handleAttackDefenseResolved: EventHandler<Extract<DiceThroneEvent, { type: 'ATTACK_DEFENSE_RESOLVED' }>> = (
+    state,
+    event
+) => {
+    const { attackerId, defenderId, defenseAbilityId } = event.payload;
+    if (!state.pendingAttack) return state;
+
+    const pa = state.pendingAttack;
+    const matches = pa.attackerId === attackerId
+        && pa.defenderId === defenderId
+        && (!defenseAbilityId || pa.defenseAbilityId === defenseAbilityId);
+
+    return matches
+        ? { ...state, pendingAttack: { ...pa, defenseResolved: true } }
         : state;
 };
 
@@ -182,12 +248,16 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         };
     }
 
+    const syncedPlayers = buildPlayersWithSyncedHp(state, targetId, hpAfter);
+    const nextTarget = syncedPlayers[targetId];
+
     return {
         ...state,
         players: {
-            ...state.players,
-            [targetId]: { ...target, damageShields: newDamageShields, resources: newResources },
+            ...syncedPlayers,
+            [targetId]: { ...nextTarget, damageShields: newDamageShields, resources: newResources },
         },
+        teamHealth: buildNextTeamHealth(state, targetId, hpAfter),
         pendingAttack,
         lastEffectSourceByPlayerId: sourceAbilityId
             ? { ...(state.lastEffectSourceByPlayerId || {}), [targetId]: sourceAbilityId }
@@ -223,12 +293,12 @@ export const handleHealApplied: EventHandler<Extract<DiceThroneEvent, { type: 'H
         newResources = result.pool;
     }
 
+    const syncedPlayers = buildPlayersWithSyncedHp(state, targetId, newResources[RESOURCE_IDS.HP] ?? 0);
+
     return {
         ...state,
-        players: {
-            ...state.players,
-            [targetId]: { ...target, resources: newResources },
-        },
+        players: syncedPlayers,
+        teamHealth: buildNextTeamHealth(state, targetId, newResources[RESOURCE_IDS.HP] ?? 0),
         lastEffectSourceByPlayerId: sourceAbilityId
             ? { ...(state.lastEffectSourceByPlayerId || {}), [targetId]: sourceAbilityId }
             : state.lastEffectSourceByPlayerId,
@@ -329,12 +399,12 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
     event
 ) => {
     const { sourceAbilityId, defenseAbilityId, defenderId } = event.payload;
-    const defender = state.players[defenderId];
+    const defender = defenderId ? state.players[defenderId] : undefined;
     let players = state.players;
 
     // 攻击结算后清理所有护盾（包括 preventStatus 和普通护盾）
     // 规则：护盾只在单次攻击中生效，攻击结束后全部清理
-    if (defender?.damageShields?.length) {
+    if (defenderId && defender?.damageShields?.length) {
         players = {
             ...state.players,
             [defenderId]: { ...defender, damageShields: [] },
@@ -342,7 +412,7 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
     }
 
     // 同时结算收尾：将防御方 HP 钳制回上限
-    const currentDefender = players[defenderId];
+    const currentDefender = defenderId ? players[defenderId] : undefined;
     if (currentDefender) {
         const result = resourceSystem.setValue(
             currentDefender.resources,
@@ -350,9 +420,11 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
             currentDefender.resources[RESOURCE_IDS.HP] ?? 0
         );
         if (result.capped) {
+            const cappedHp = result.pool[RESOURCE_IDS.HP] ?? 0;
+            const syncedPlayers = buildPlayersWithSyncedHp({ ...state, players }, defenderId, cappedHp);
             players = {
-                ...players,
-                [defenderId]: { ...currentDefender, resources: result.pool },
+                ...syncedPlayers,
+                [defenderId]: { ...syncedPlayers[defenderId], resources: result.pool },
             };
         }
     }
@@ -361,6 +433,9 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
         ...state,
         activatingAbilityId: sourceAbilityId || defenseAbilityId,
         players,
+        teamHealth: currentDefender
+            ? buildNextTeamHealth(state, defenderId!, players[defenderId!]?.resources[RESOURCE_IDS.HP] ?? 0)
+            : state.teamHealth,
         pendingAttack: null,
         lastResolvedAttackDamage: state.pendingAttack?.resolvedDamage ?? event.payload.totalDamage,
     };
@@ -474,6 +549,10 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
         // 获取 Token 名称用于显示
         const tokenDef = state.tokenDefinitions?.find(t => t.id === tokenId);
         const tokenName = tokenDef?.name || tokenId;
+        const tokenUsageTotals = {
+            ...(state.pendingDamage.tokenUsageTotals ?? {}),
+            [tokenId]: (state.pendingDamage.tokenUsageTotals?.[tokenId] ?? 0) + amount,
+        };
         
         if (effectType === 'damageBoost' && damageModifier) {
             const modifiers = [...(state.pendingDamage.modifiers || [])];
@@ -487,6 +566,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
                 ...state.pendingDamage, 
                 currentDamage: state.pendingDamage.currentDamage + damageModifier,
                 modifiers,
+                tokenUsageTotals,
             };
         } else if (effectType === 'damageReduction' && damageModifier) {
             const modifiers = [...(state.pendingDamage.modifiers || [])];
@@ -500,14 +580,17 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
                 ...state.pendingDamage, 
                 currentDamage: Math.max(0, state.pendingDamage.currentDamage + damageModifier),
                 modifiers,
+                tokenUsageTotals,
             };
         } else if (effectType === 'evasionAttempt') {
             if (evasionRoll?.success) {
-                pendingDamage = { ...state.pendingDamage, currentDamage: 0, isFullyEvaded: true, lastEvasionRoll: evasionRoll };
+                pendingDamage = { ...state.pendingDamage, currentDamage: 0, isFullyEvaded: true, lastEvasionRoll: evasionRoll, tokenUsageTotals };
             } else if (evasionRoll) {
                 // 闪避失败：显式设置 isFullyEvaded: false
-                pendingDamage = { ...state.pendingDamage, isFullyEvaded: false, lastEvasionRoll: evasionRoll };
+                pendingDamage = { ...state.pendingDamage, isFullyEvaded: false, lastEvasionRoll: evasionRoll, tokenUsageTotals };
             }
+        } else {
+            pendingDamage = { ...state.pendingDamage, tokenUsageTotals };
         }
     }
 

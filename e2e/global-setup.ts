@@ -11,6 +11,7 @@ import {
     saveWorkerPorts,
     waitForPortsFree,
 } from '../scripts/infra/port-allocator.js';
+import { upsertRuntime } from '../scripts/infra/e2e-runtime-registry.js';
 
 interface RuntimeRecord {
     workerId: number;
@@ -134,7 +135,7 @@ async function cleanupSingleWorkerPorts(): Promise<void> {
     }
 }
 
-function spawnDetachedServer(script: string, args: string[] = []): RuntimeRecord {
+function spawnDetachedServer(script: string, args: string[] = [], portsOverride = singleWorkerPorts): RuntimeRecord {
     const workerId = args[0] ? Number.parseInt(args[0], 10) : 0;
     const logFile = getBootstrapLogFile(workerId);
     fs.mkdirSync(path.dirname(logFile), { recursive: true });
@@ -166,8 +167,22 @@ function spawnDetachedServer(script: string, args: string[] = []): RuntimeRecord
         workerId,
         pid: child.pid,
         logFile,
-        ports: singleWorkerPorts,
+        ports: portsOverride,
     };
+}
+
+function registerSingleWorkerRuntime(record: RuntimeRecord, mode: 'shared-single' | 'isolated-single', reusedExistingServers = false): void {
+    upsertRuntime({
+        scope: getRuntimeScope(),
+        active: true,
+        mode,
+        workers: 1,
+        target: process.env.PW_TEST_TARGET || '',
+        ports: record.ports,
+        pids: Number.isInteger(record.pid) && record.pid > 0 ? [record.pid] : [],
+        reusedExistingServers,
+        createdAt: new Date().toISOString(),
+    });
 }
 
 function killProcessTree(pid: number): void {
@@ -220,11 +235,18 @@ export default async function globalSetup() {
             `http://127.0.0.1:${singleWorkerPorts.apiServer}/health`,
             `http://127.0.0.1:${singleWorkerPorts.frontend}/__ready`,
         ];
+        const singleWorkerMode = process.env.PW_ISOLATE_PORTS === 'true' ? 'isolated-single' : 'shared-single';
 
         if (shouldReuseExistingServers) {
             const ready = await Promise.all(urls.map(isUrlReady));
             if (ready.every(Boolean)) {
                 console.log('\n♻️ 复用现有单 worker E2E 服务\n');
+                registerSingleWorkerRuntime({
+                    workerId: 0,
+                    pid: Number.NaN,
+                    logFile: '',
+                    ports: singleWorkerPorts,
+                }, singleWorkerMode, true);
                 return;
             }
         }
@@ -232,8 +254,9 @@ export default async function globalSetup() {
         cleanupRecordedRuntimes();
         await cleanupSingleWorkerPorts();
 
-        const runtime = spawnDetachedServer('scripts/infra/start-single-worker-servers.js');
+        const runtime = spawnDetachedServer('scripts/infra/start-single-worker-servers.js', [], singleWorkerPorts);
         fs.writeFileSync(getProcessFilePath(), JSON.stringify([runtime], null, 2));
+        registerSingleWorkerRuntime(runtime, singleWorkerMode);
 
         await Promise.all(urls.map(url => waitForUrl(runtime, url)));
         console.log('\n✅ 单 worker E2E 服务已就绪\n');
@@ -265,6 +288,16 @@ export default async function globalSetup() {
     }
 
     fs.writeFileSync(getProcessFilePath(), JSON.stringify(runtimes, null, 2));
+    upsertRuntime({
+        scope: getRuntimeScope(),
+        active: true,
+        mode: 'isolated-multi',
+        workers,
+        target: process.env.PW_TEST_TARGET || '',
+        ports: runtimes.map(runtime => runtime.ports),
+        pids: runtimes.map(runtime => runtime.pid),
+        createdAt: new Date().toISOString(),
+    });
 
     await Promise.all(runtimes.map(async (runtime) => {
         const { workerId, ports } = runtime;

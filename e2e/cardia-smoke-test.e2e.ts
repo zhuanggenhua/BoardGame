@@ -107,6 +107,10 @@ async function expectResponsiveLayoutStable(page: Page, options?: { requireBattl
     const playerAreaBottom = playerArea?.getBoundingClientRect().bottom ?? 0;
     const board = document.querySelector<HTMLElement>('[data-testid="cardia-board"]');
     const boardRect = board?.getBoundingClientRect();
+    const gamePage = document.querySelector<HTMLElement>('[data-game-page="true"]');
+    const gamePageRect = gamePage?.getBoundingClientRect();
+    const shell = document.querySelector<HTMLElement>('.mobile-board-shell');
+    const shellRect = shell?.getBoundingClientRect();
 
     const debugToggle = document.querySelector<HTMLElement>('[data-testid="debug-toggle-container"]');
     const debugToggleRect = debugToggle?.getBoundingClientRect();
@@ -126,6 +130,12 @@ async function expectResponsiveLayoutStable(page: Page, options?: { requireBattl
       scrollHeight: document.documentElement.scrollHeight,
       pageOverflowY: document.documentElement.scrollHeight - window.innerHeight,
       pageOverflowX: document.documentElement.scrollWidth - window.innerWidth,
+      gamePageRect: gamePageRect
+        ? { left: gamePageRect.left, right: gamePageRect.right, width: gamePageRect.width }
+        : null,
+      shellRect: shellRect
+        ? { left: shellRect.left, right: shellRect.right, width: shellRect.width }
+        : null,
       debugToggleRect: debugToggleRect
         ? { left: debugToggleRect.left, top: debugToggleRect.top, width: debugToggleRect.width, height: debugToggleRect.height }
         : null,
@@ -144,10 +154,14 @@ async function expectResponsiveLayoutStable(page: Page, options?: { requireBattl
   // bottom 可能会有轻微偏差；我们更关心是否出现明显的整页纵向滚动。
   // 竖屏/平板仍然保持更严格的 bottom 约束。
   const allowLooseBottom = viewportMetrics.viewportHeight <= 420 && viewportMetrics.viewportWidth >= 800;
-  const allowLooseOverflowX = allowLooseBottom;
-
-  if (!allowLooseOverflowX) {
-    expect(viewportMetrics.pageOverflowX).toBeLessThanOrEqual(1);
+  expect(viewportMetrics.pageOverflowX).toBeLessThanOrEqual(1);
+  if (viewportMetrics.gamePageRect) {
+    expect(viewportMetrics.gamePageRect.left).toBeGreaterThanOrEqual(-1);
+    expect(viewportMetrics.gamePageRect.right).toBeLessThanOrEqual(viewportMetrics.viewportWidth + 1);
+  }
+  if (viewportMetrics.shellRect) {
+    expect(viewportMetrics.shellRect.left).toBeGreaterThanOrEqual(-1);
+    expect(viewportMetrics.shellRect.right).toBeLessThanOrEqual(viewportMetrics.viewportWidth + 1);
   }
 
   // tight landscape（移动端横屏可视高度极限）下，Cardia 对局页允许内部纵向滚动承载更多信息。

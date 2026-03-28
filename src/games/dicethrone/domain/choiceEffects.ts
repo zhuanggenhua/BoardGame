@@ -44,6 +44,26 @@ export function getChoiceEffectHandler(customId: string): ChoiceEffectHandler | 
     return choiceEffectHandlers.get(customId);
 }
 
+export function resolveChoiceEffect(context: ChoiceEffectContext): Partial<DiceThroneCore> | undefined {
+    if (context.customId.startsWith('select-target:')) {
+        const defenderId = context.customId.slice('select-target:'.length);
+        if (!defenderId || !context.state.pendingAttack || !context.state.players[defenderId]) {
+            return undefined;
+        }
+        return {
+            pendingAttack: {
+                ...context.state.pendingAttack,
+                defenderId,
+                targetingSelectionPending: false,
+                targetingSelectionResolved: true,
+            },
+        };
+    }
+
+    const handler = getChoiceEffectHandler(context.customId);
+    return handler?.(context);
+}
+
 // ============================================================================
 // 攻击掷骰阶段结束时 Token 使用处理器
 // ============================================================================
@@ -98,6 +118,31 @@ registerChoiceEffectHandler('use-accuracy', ({ state, playerId }) => {
         pendingAttack: {
             ...state.pendingAttack,
             isDefendable: false,
+            offensiveRollEndTokenResolved: true,
+        },
+    };
+});
+
+/**
+ * 装填 (Loaded) — 攻击掷骰阶段结束时使用，消耗 1 个装填并进入奖励骰结算。
+ */
+registerChoiceEffectHandler('use-loaded', ({ state, playerId }) => {
+    const player = state.players[playerId];
+    if (!player || !state.pendingAttack) return undefined;
+
+    const currentLoaded = player.tokens[TOKEN_IDS.LOADED] ?? 0;
+    if (currentLoaded <= 0) return undefined;
+
+    return {
+        players: {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                tokens: { ...player.tokens, [TOKEN_IDS.LOADED]: currentLoaded - 1 },
+            },
+        },
+        pendingAttack: {
+            ...state.pendingAttack,
             offensiveRollEndTokenResolved: true,
         },
     };

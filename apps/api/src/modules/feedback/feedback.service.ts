@@ -39,16 +39,17 @@ export class FeedbackService {
         const manager = await this.assertActorCanManage(actorUserId);
         const page = Math.max(1, Number(query.page) || 1);
         const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
-        const { status, type, severity } = query;
+        const { status, type, severity, sort } = query;
         const filter = this.buildScopedFilter(manager);
         if (status) filter.status = status;
         if (type) filter.type = type;
         if (severity) filter.severity = severity;
+        const createdAtSort = sort === 'oldest' ? 1 : -1;
 
         const total = await this.feedbackModel.countDocuments(filter);
         const items = await this.feedbackModel
             .find(filter)
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: createdAtSort })
             .skip((page - 1) * limit)
             .limit(limit)
             .populate('userId', 'username avatar email')

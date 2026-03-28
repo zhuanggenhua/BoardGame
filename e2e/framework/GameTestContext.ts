@@ -309,7 +309,7 @@ export class GameTestContext {
     private async waitForTestHarness(timeout = 10000): Promise<void> {
         await this.page.waitForFunction(
             () => !!(window as any).__BG_TEST_HARNESS__,
-            { timeout }
+            { timeout, polling: 200 }
         );
     }
 
@@ -1075,7 +1075,36 @@ export class GameTestContext {
                 return current?.data?.sourceId === sid;
             },
             sourceId,
-            { timeout }
+            { timeout, polling: 200 }
+        );
+    }
+
+    /**
+     * 等待交互关闭，避免测试里到处手写轮询。
+     */
+    async waitForNoInteraction(timeout = 5000): Promise<void> {
+        await this.page.waitForFunction(
+            () => {
+                const harness = (window as any).__BG_TEST_HARNESS__;
+                const state = harness?.state?.get?.();
+                return !state?.sys?.interaction?.current;
+            },
+            { timeout, polling: 200 }
+        );
+    }
+
+    /**
+     * 等待进入指定响应窗口。
+     */
+    async waitForResponseWindow(windowType: string, timeout = 5000): Promise<void> {
+        await this.page.waitForFunction(
+            (expectedWindowType) => {
+                const harness = (window as any).__BG_TEST_HARNESS__;
+                const state = harness?.state?.get?.();
+                return state?.sys?.responseWindow?.current?.windowType === expectedWindowType;
+            },
+            windowType,
+            { timeout, polling: 200 }
         );
     }
 
@@ -1243,6 +1272,105 @@ export class GameTestContext {
             const harness = (window as any).__BG_TEST_HARNESS__;
             return harness.state.get();
         });
+    }
+
+    /**
+     * 读取当前回合玩家 id。
+     */
+    async getCurrentPlayerId(): Promise<string | undefined> {
+        const state = await this.getState();
+        const currentPlayerIndex = state?.core?.currentPlayerIndex;
+        const turnOrder = state?.core?.turnOrder;
+        if (!Array.isArray(turnOrder) || typeof currentPlayerIndex !== 'number') {
+            return undefined;
+        }
+        return turnOrder[currentPlayerIndex];
+    }
+
+    /**
+     * 读取指定玩家状态，减少测试里重复路径展开。
+     */
+    async getPlayerState(playerId: string): Promise<any> {
+        const state = await this.getState();
+        return state?.core?.players?.[playerId];
+    }
+
+    /**
+     * 等待轮到指定玩家。
+     */
+    async waitForCurrentPlayer(playerId: string, timeout = 5000): Promise<void> {
+        await this.page.waitForFunction(
+            (expectedPlayerId) => {
+                const harness = (window as any).__BG_TEST_HARNESS__;
+                const state = harness?.state?.get?.();
+                const turnOrder = state?.core?.turnOrder;
+                const currentPlayerIndex = state?.core?.currentPlayerIndex;
+                if (!Array.isArray(turnOrder) || typeof currentPlayerIndex !== 'number') {
+                    return false;
+                }
+                return turnOrder[currentPlayerIndex] === expectedPlayerId;
+            },
+            playerId,
+            { timeout, polling: 200 }
+        );
+    }
+
+    /**
+     * 等待阶段切换完成。
+     */
+    async waitForPhase(phase: string, timeout = 5000): Promise<void> {
+        await this.page.waitForFunction(
+            (expectedPhase) => {
+                const harness = (window as any).__BG_TEST_HARNESS__;
+                const state = harness?.state?.get?.();
+                return state?.sys?.phase === expectedPhase;
+            },
+            phase,
+            { timeout, polling: 200 }
+        );
+    }
+
+    /**
+     * 用稳定的 option matcher 选交互选项。
+     */
+    async selectInteractionOptionBy(
+        matcher: (option: any) => boolean,
+        description: string,
+    ): Promise<void> {
+        const options = await this.getInteractionOptions();
+        const option = options.find(matcher);
+        if (!option) {
+            throw new Error(`Interaction option not found: ${description}`);
+        }
+        await this.selectOption(option.id);
+    }
+
+    /**
+     * 在单页 TestHarness 场景里推进响应窗口。
+     * 多人 E2E 若只打开一个页面，可用它代替另一个玩家的 PASS。
+     */
+    async passResponseWindow(playerId?: string): Promise<void> {
+        await this.page.evaluate((explicitPlayerId) => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const state = harness?.state?.get?.();
+            const responseWindow = state?.sys?.responseWindow?.current;
+            if (!responseWindow) {
+                throw new Error('Response window not found');
+            }
+
+            const responderId = explicitPlayerId
+                ?? responseWindow.responderQueue?.[responseWindow.currentResponderIndex];
+            if (!responderId) {
+                throw new Error('Response window responder not found');
+            }
+
+            harness.command.dispatch({
+                type: 'RESPONSE_PASS',
+                playerId: responderId,
+                payload: undefined,
+            });
+        }, playerId);
+        await this.page.waitForTimeout(300);
     }
 
     /**

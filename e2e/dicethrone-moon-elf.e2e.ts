@@ -1,248 +1,118 @@
 /**
- * 月精灵 (Moon Elf) E2E 交互测试
+ * 月精灵（Moon Elf）E2E 测试
  *
- * 覆盖交互面：
- * - 角色选择：月精灵在选角界面可选
- * - 攻击流程：掷骰 → 确认 → 选择技能 → 结算攻击 → 防御阶段
- * - 技能高亮：关键技能触发
- * - 防御阶段：防御掷骰流程覆盖
- * - 状态效果：Targeted 伤害提升结算
+ * batch 1 只保留高价值的 Targeted 伤害语义链路。
+ * 低价值的“在线选角 + 基础攻击烟雾”已移出本文件，避免和通用在线/开局路径重复。
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect, type GameTestContext } from './framework';
 import { STATUS_IDS } from '../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../src/games/dicethrone/domain/resources';
-import { initContext } from './helpers/common';
-import {
-    setupOnlineMatch,
-    waitForMainPhase,
-    advanceToOffensiveRoll,
-    applyDiceValues,
-    getPlayerIdFromUrl,
-    readCoreState,
-    applyCoreStateDirect,
-    maybePassResponse,
-    getModalContainerByHeading,
-} from './helpers/dicethrone';
 
-test.describe('DiceThrone Moon Elf E2E', () => {
+async function openTargetedDamageScene(
+    page: Page,
+    game: GameTestContext,
+): Promise<void> {
+    await game.openTestGame('dicethrone');
 
-    // ========================================================================
-    // 1. 在线对局：月精灵角色选择 + 基础攻击流程
-    // ========================================================================
-    test('Online match: Moon Elf character selection and basic attack flow', async ({ browser }, testInfo) => {
-        test.setTimeout(90000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
-
-        const match = await setupOnlineMatch(browser, baseURL, 'moon_elf', 'barbarian');
-        if (!match) test.skip(true, '游戏服务器不可用或房间创建失败');
-        const { hostPage, guestPage, hostContext, guestContext, autoStarted } = match!;
-
-        try {
-            if (autoStarted) {
-                test.skip(true, '游戏自动开始，无法选择月精灵角色');
-            }
-
-            // 验证手牌区可见（4张初始手牌）
-            await hostPage.waitForTimeout(2000);
-            const hostHandArea = hostPage.locator('[data-tutorial-id="hand-area"]');
-            await expect(hostHandArea).toBeVisible();
-            const hostHandCards = hostHandArea.locator('[data-card-id]');
-            await expect(hostHandCards).toHaveCount(4, { timeout: 15000 });
-
-            // 确定攻击方
-            let attackerPage: Page;
-            let defenderPage: Page;
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            if (await hostNextPhase.isEnabled({ timeout: 3000 }).catch(() => false)) {
-                attackerPage = hostPage;
-                defenderPage = guestPage;
-            } else {
-                attackerPage = guestPage;
-                defenderPage = hostPage;
-            }
-
-            // 推进到攻击掷骰阶段
-            await advanceToOffensiveRoll(attackerPage);
-
-            // 掷骰
-            const rollButton = attackerPage.locator('[data-tutorial-id="dice-roll-button"]');
-            await expect(rollButton).toBeEnabled({ timeout: 5000 });
-            await rollButton.click();
-            await attackerPage.waitForTimeout(300);
-
-            // 设置骰面为 [1,1,1,1,1] = 5个弓(bow)，触发长弓 5-of-a-kind
-            await applyDiceValues(attackerPage, [1, 1, 1, 1, 1]);
-
-            // 确认掷骰
-            const confirmButton = attackerPage.locator('[data-tutorial-id="dice-confirm-button"]');
-            await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-            await confirmButton.click();
-
-            // 检查技能高亮
-            const highlightedSlots = attackerPage
-                .locator('[data-ability-slot]')
-                .filter({ has: attackerPage.locator('div.animate-pulse[class*="border-"]') });
-            const hasHighlight = await highlightedSlots.first().isVisible({ timeout: 5000 }).catch(() => false);
-
-            if (hasHighlight) {
-                await highlightedSlots.first().click();
-                const resolveAttackButton = attackerPage.getByRole('button', { name: /Resolve Attack|结算攻击/i });
-                await expect(resolveAttackButton).toBeVisible({ timeout: 10000 });
-                await resolveAttackButton.click();
-            } else {
-                const advanceButton = attackerPage.locator('[data-tutorial-id="advance-phase-button"]');
-                await advanceButton.click();
-                const confirmHeading = attackerPage.getByRole('heading', { name: /End offensive roll\?|确认结束攻击掷骰？/i });
-                if (await confirmHeading.isVisible({ timeout: 4000 }).catch(() => false)) {
-                    const confirmSkipModal = confirmHeading.locator('..').locator('..');
-                    await confirmSkipModal.getByRole('button', { name: /Confirm|确认/i }).click();
-                }
-            }
-
-            // 处理技能结算选择弹窗
-            for (let choiceAttempt = 0; choiceAttempt < 5; choiceAttempt++) {
-                let choiceModal: ReturnType<typeof attackerPage.locator> | null = null;
-                try {
-                    choiceModal = await getModalContainerByHeading(attackerPage, /Ability Resolution Choice|技能结算选择/i, 1500);
-                } catch { choiceModal = null; }
-                if (!choiceModal) break;
-                const choiceButton = choiceModal.getByRole('button').filter({ hasText: /\S+/ }).first();
-                if (await choiceButton.isVisible({ timeout: 500 }).catch(() => false)) {
-                    await choiceButton.click();
-                    await attackerPage.waitForTimeout(500);
-                }
-            }
-
-            // 等待防御阶段或 Main Phase 2
-            const defensePhaseStarted = await Promise.race([
-                defenderPage.getByRole('button', { name: /End Defense|结束防御/i }).isVisible({ timeout: 8000 }).then(() => true).catch(() => false),
-                attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/).isVisible({ timeout: 8000 }).then(() => false).catch(() => false),
-            ]);
-
-            if (defensePhaseStarted) {
-                const defenderRollButton = defenderPage.locator('[data-tutorial-id="dice-roll-button"]');
-                const defenderConfirmButton = defenderPage.locator('[data-tutorial-id="dice-confirm-button"]');
-                const endDefenseButton = defenderPage.getByRole('button', { name: /End Defense|结束防御/i });
-
-                const canRoll = await defenderRollButton.isEnabled({ timeout: 5000 }).catch(() => false);
-                if (canRoll) {
-                    await defenderRollButton.click();
-                    await defenderPage.waitForTimeout(300);
-                    await defenderConfirmButton.click();
-                    await endDefenseButton.click();
-                } else {
-                    const canEndDefense = await endDefenseButton.isEnabled({ timeout: 2000 }).catch(() => false);
-                    if (canEndDefense) await endDefenseButton.click();
-                }
-
-                for (let i = 0; i < 4; i += 1) {
-                    const hostPassed = await maybePassResponse(hostPage);
-                    const guestPassed = await maybePassResponse(guestPage);
-                    if (!hostPassed && !guestPassed) break;
-                }
-            }
-
-            await expect(attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/)).toBeVisible({ timeout: 15000 });
-            await hostPage.screenshot({ path: testInfo.outputPath('moon-elf-attack-flow.png'), fullPage: false });
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            resources: { CP: 2, HP: 50 },
+        },
+        player1: {
+            resources: { CP: 2, HP: 50 },
+        },
+        currentPlayer: '0',
+        phase: 'offensiveRoll',
+        extra: {
+            selectedCharacters: { '0': 'barbarian', '1': 'moon_elf' },
+            hostStarted: true,
+            rollCount: 1,
+            rollLimit: 3,
+            rollConfirmed: false,
+            dice: [
+                { id: 0, value: 6, isKept: false },
+                { id: 1, value: 6, isKept: false },
+                { id: 2, value: 6, isKept: false },
+                { id: 3, value: 6, isKept: false },
+                { id: 4, value: 1, isKept: false },
+            ],
+        },
     });
 
+    await page.evaluate((statusId) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!state) {
+            throw new Error('State not available');
+        }
 
-    // ========================================================================
-    // 2. 在线对局：Targeted 受伤 +2（伤害结算后移除）
-    // ========================================================================
-    test('Online match: Moon Elf Targeted increases damage by 2', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
-
-        // 这个测试需要 host=barbarian, guest=moon_elf 来构造 Targeted 场景
-        const match = await setupOnlineMatch(browser, baseURL, 'barbarian', 'moon_elf');
-        if (!match) test.skip(true, '游戏服务器不可用或房间创建失败');
-        const { hostPage, guestPage, hostContext, guestContext, autoStarted } = match!;
-
-        try {
-            if (autoStarted) {
-                test.skip(true, '游戏自动开始，无法选择角色');
-            }
-
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 3000 }).catch(() => false);
-            if (!hostIsActive) {
-                test.skip(true, '非预期起始玩家，无法构造 Targeted 受伤场景');
-            }
-
-            const attackerPage = hostPage;
-            const defenderPage = guestPage;
-            const defenderId = getPlayerIdFromUrl(defenderPage, '1');
-
-            // 读取当前状态并注入 Targeted
-            const coreState = await readCoreState(attackerPage) as Record<string, unknown>;
-            const players = coreState?.players as Record<string, Record<string, unknown>> | undefined;
-            const defenderState = players?.[defenderId];
-            if (!defenderState) {
-                test.skip(true, '无法读取防御方状态');
-            }
-
-            const resources = defenderState!.resources as Record<string, number> | undefined;
-            const hpBefore = resources?.[RESOURCE_IDS.HP] ?? 0;
-            const nextCoreState = {
-                ...coreState,
+        harness.state.patch({
+            core: {
+                ...state.core,
                 players: {
-                    ...players,
-                    [defenderId]: {
-                        ...defenderState,
+                    ...state.core.players,
+                    '1': {
+                        ...state.core.players['1'],
                         statusEffects: {
-                            ...((defenderState!.statusEffects as Record<string, unknown>) ?? {}),
-                            [STATUS_IDS.TARGETED]: 1,
+                            ...(state.core.players['1']?.statusEffects ?? {}),
+                            [statusId]: 1,
                         },
                     },
                 },
+            },
+        });
+    }, STATUS_IDS.TARGETED);
+
+    await game.waitForPhase('offensiveRoll', 10000);
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            activePlayerId: state?.core?.activePlayerId ?? null,
+            diceValues: (state?.core?.dice ?? []).map((die: any) => die.value).slice(0, 5),
+            targeted: state?.core?.players?.['1']?.statusEffects?.[STATUS_IDS.TARGETED] ?? 0,
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        activePlayerId: '0',
+        diceValues: [6, 6, 6, 6, 1],
+        targeted: 1,
+    });
+}
+
+test.describe('DiceThrone Moon Elf E2E', () => {
+    test('framework 场景下 Targeted 应额外增加 2 点伤害并在结算后移除', async ({ page, game }) => {
+        await openTargetedDamageScene(page, game);
+
+        const hpBefore = (await game.getPlayerState('1'))?.resources?.[RESOURCE_IDS.HP] ?? 0;
+
+        const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
+        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+        await confirmButton.click();
+
+        const highlightedSlots = page
+            .locator('[data-ability-slot]')
+            .filter({ has: page.locator('div.animate-pulse[class*="border-"]') });
+        await expect(highlightedSlots.first()).toBeVisible({ timeout: 8000 });
+        await highlightedSlots.first().click();
+
+        const resolveAttackButton = page.getByRole('button', { name: /Resolve Attack|结算攻击/i });
+        await expect(resolveAttackButton).toBeVisible({ timeout: 10000 });
+        await resolveAttackButton.click();
+
+        await expect.poll(async () => {
+            const defender = await game.getPlayerState('1');
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                defenderHp: defender?.resources?.[RESOURCE_IDS.HP] ?? null,
+                targeted: defender?.statusEffects?.[STATUS_IDS.TARGETED] ?? 0,
             };
-
-            await applyCoreStateDirect(attackerPage, nextCoreState);
-            await attackerPage.waitForTimeout(300);
-
-            // 狂战士进攻：4 Strength 触发不可防御攻击
-            await advanceToOffensiveRoll(attackerPage);
-            const rollButton = attackerPage.locator('[data-tutorial-id="dice-roll-button"]');
-            await expect(rollButton).toBeEnabled({ timeout: 5000 });
-            await rollButton.click();
-            await attackerPage.waitForTimeout(300);
-            await applyDiceValues(attackerPage, [6, 6, 6, 6, 1]);
-
-            const confirmButton = attackerPage.locator('[data-tutorial-id="dice-confirm-button"]');
-            await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-            await confirmButton.click();
-
-            const highlightedSlots = attackerPage
-                .locator('[data-ability-slot]')
-                .filter({ has: attackerPage.locator('div.animate-pulse[class*="border-"]') });
-            await expect(highlightedSlots.first()).toBeVisible({ timeout: 8000 });
-            await highlightedSlots.first().click();
-
-            const resolveAttackButton = attackerPage.getByRole('button', { name: /Resolve Attack|结算攻击/i });
-            await expect(resolveAttackButton).toBeVisible({ timeout: 10000 });
-            await resolveAttackButton.click();
-
-            await expect(attackerPage.getByText(/Main Phase \(2\)|主要阶段 \(2\)/)).toBeVisible({ timeout: 15000 });
-
-            const coreAfter = await readCoreState(attackerPage) as Record<string, unknown>;
-            const playersAfter = coreAfter?.players as Record<string, Record<string, unknown>> | undefined;
-            const defenderAfter = playersAfter?.[defenderId];
-            const resourcesAfter = defenderAfter?.resources as Record<string, number> | undefined;
-            const hpAfter = resourcesAfter?.[RESOURCE_IDS.HP] ?? 0;
-            expect(hpAfter).toBe(hpBefore - 7);
-            const statusAfter = defenderAfter?.statusEffects as Record<string, number> | undefined;
-            expect(statusAfter?.[STATUS_IDS.TARGETED] ?? 0).toBe(0);
-
-            await attackerPage.screenshot({ path: testInfo.outputPath('moon-elf-targeted-damage.png'), fullPage: false });
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'main2',
+            defenderHp: hpBefore - 7,
+            targeted: 0,
+        });
     });
 });

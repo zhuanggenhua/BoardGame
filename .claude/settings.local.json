@@ -8,7 +8,8 @@
       "Bash(echo:*)",
       "Bash(grep:*)",
       "Bash(gh pr list:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(git push:*)"
     ]
   }
 }

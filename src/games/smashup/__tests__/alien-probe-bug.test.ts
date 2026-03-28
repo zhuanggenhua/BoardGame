@@ -92,6 +92,45 @@ describe('Bug: alien_probe（探究）效果错误', () => {
         expect(player0.discard.find(c => c.uid === 'probe1')).toBeDefined();
     });
 
+    it('即使只有一张可选随从，也应创建交互而不是自动默认第一张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('probe1', 'alien_probe', 'action', '0')],
+                    factions: ['aliens', 'dinosaurs'] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    hand: [
+                        makeCard('h1-1', 'pirate_first_mate', 'minion', '1'),
+                        makeCard('h1-2', 'pirate_broadside', 'action', '1'),
+                        makeCard('h1-3', 'alien_crop_circles', 'action', '1'),
+                    ],
+                    factions: ['pirates', 'minions_of_cthulhu'] as [string, string],
+                }),
+            },
+            bases: [
+                makeBase('base_the_mothership'),
+            ],
+        });
+        const state = makeMatchState(core);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'probe1' },
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.events.some(e => e.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+        const interaction = asSimpleChoice(result.finalState.sys.interaction?.current);
+        expect(interaction).toBeDefined();
+        expect(interaction?.sourceId).toBe('alien_probe');
+        expect(interaction?.options.length).toBe(3);
+        expect(interaction?.options.find(opt => opt.id === 'h1-1')?.disabled).toBeFalsy();
+        expect(interaction?.options.find(opt => opt.id === 'h1-2')?.disabled).toBe(true);
+        expect(interaction?.options.find(opt => opt.id === 'h1-3')?.disabled).toBe(true);
+    });
+
     it('选择随从后，对手应该弃掉那张随从', () => {
         const core = makeState({
             players: {

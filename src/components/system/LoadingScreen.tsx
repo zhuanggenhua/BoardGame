@@ -14,6 +14,7 @@ interface LoadingScreenProps {
     title?: string;
     description?: string;
     fullScreen?: boolean;
+    anchor?: 'viewport' | 'container';
     className?: string;
     titleClassName?: string;
     descriptionClassName?: string;
@@ -29,6 +30,7 @@ export const LoadingScreen = ({
     title,
     description,
     fullScreen = true,
+    anchor = 'viewport',
     className,
     titleClassName,
     descriptionClassName
@@ -92,6 +94,12 @@ export const LoadingScreen = ({
     const decorVariants = shouldAnimate
         ? { initial: { scaleX: 0, opacity: 0 }, animate: { scaleX: 1, opacity: 0.3 } }
         : { initial: { scaleX: 1, opacity: 0.3 }, animate: { scaleX: 1, opacity: 0.3 } };
+    const isViewportAnchor = anchor === 'viewport';
+    const layoutClassName = fullScreen
+        ? (isViewportAnchor
+            ? 'fixed inset-0 h-[100dvh] w-screen'
+            : 'absolute inset-0 h-full w-full max-h-full max-w-full')
+        : 'relative h-full w-full min-h-0';
 
     return (
         <AnimatePresence>
@@ -99,10 +107,12 @@ export const LoadingScreen = ({
                 initial={containerVariants.initial}
                 animate={containerVariants.animate}
                 exit={containerVariants.exit}
+                data-testid="loading-screen"
+                data-loading-anchor={anchor}
                 className={clsx(
                     // 关键：不再用 flex-column 居中承载“动画 + 文本”，避免文本高度变化影响动画视觉中心
                     "relative bg-black overflow-hidden",
-                    fullScreen ? "fixed inset-0 w-screen h-[100dvh]" : "relative w-full h-full min-h-[400px]",
+                    layoutClassName,
                     className
                 )}
                 style={{ zIndex: UI_Z_INDEX.loading }}

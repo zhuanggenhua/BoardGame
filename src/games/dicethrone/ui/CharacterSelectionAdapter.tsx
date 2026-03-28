@@ -15,8 +15,11 @@ export interface DiceThroneCharacterSelectionProps {
     selectedCharacters: Record<PlayerId, CharacterId>;
     readyPlayers: Record<PlayerId, boolean>;
     playerNames: Record<PlayerId, string>;
+    seatingOrder?: PlayerId[];
     onSelect: (characterId: SelectableCharacterId) => void;
     onReady: () => void;
+    onUnready: () => void;
+    onMoveSeat: (playerId: PlayerId, targetSeatIndex: number) => void;
     onStart: () => void;
     locale: string;
 }
@@ -30,8 +33,11 @@ export const DiceThroneCharacterSelection: React.FC<DiceThroneCharacterSelection
             selectedCharacters={props.selectedCharacters}
             readyPlayers={props.readyPlayers}
             playerNames={props.playerNames}
+            seatingOrder={props.seatingOrder}
             onSelect={props.onSelect}
             onReady={props.onReady}
+            onUnready={props.onUnready}
+            onMoveSeat={props.onMoveSeat}
             onStart={props.onStart}
             locale={props.locale}
         />

@@ -20,6 +20,8 @@ const CHARACTER_DIR_MAP: Record<SelectableCharacterId, string> = {
     shadow_thief: 'shadow_thief',
     moon_elf: 'moon_elf',
     paladin: 'paladin',
+    gunslinger: 'gunslinger',
+    samurai: 'samurai',
 };
 
 const IMPLEMENTED_CHARACTERS: readonly SelectableCharacterId[] = IMPLEMENTED_DICETHRONE_CHARACTER_IDS;

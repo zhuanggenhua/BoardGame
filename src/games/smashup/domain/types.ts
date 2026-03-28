@@ -511,6 +511,8 @@ export interface TriggerInstance {
     timing: import('./ongoingEffects').TitanAwareTriggerTiming;
     /** defId of the triggering source (minion/action/base) */
     sourceDefId: string;
+    /** concrete source card uid when the trigger comes from an in-play card instance */
+    sourceCardUid?: string;
     /** who controls the source at trigger time (best-effort) */
     sourceControllerId?: PlayerId;
     /** base index where source is located at trigger time (best-effort) */
@@ -683,6 +685,13 @@ export interface SmashUpCore {
      * 用于实现类似“渗透 POD 天赋”这种“即使牌已离场，压制仍持续到下回合开始”的规则。
      */
     suppressedBasesUntilTurnStart?: Array<{ baseIndex: number; suppressorPlayerId: PlayerId }>;
+    /** 临时卡牌能力压制（直到压制者的下个回合开始） */
+    suppressedCardsUntilTurnStart?: Array<{
+        cardUid: string;
+        baseIndex: number;
+        suppressorPlayerId: PlayerId;
+        cardType: 'minion' | 'ongoing' | 'attached' | 'titan';
+    }>;
 
     /**
      * 本回合已触发过“每回合一次”的持续行动卡 UID 列表。
@@ -1196,6 +1205,7 @@ export type SmashUpEvent =
     | AbilityFeedbackEvent
     | AbilityTriggeredEvent
     | BaseAbilitySuppressedEvent
+    | CardSuppressedEvent
     | BaseClearedEvent;
 
 // ============================================================================
@@ -1242,7 +1252,7 @@ export interface MinionDestroyedEvent extends GameEvent<typeof SU_EVENTS.MINION_
         minionDefId: string;
         fromBaseIndex: number;
         ownerId: PlayerId;
-        destroyerId?: PlayerId;  // 消灭者（可选，如果没有则默认为 ownerId）
+        destroyerId?: PlayerId;  // 消灭者（可选，缺失时由事件处理流程按当前操作者推断）
         reason: string;
     };
 }
@@ -1549,6 +1559,17 @@ export interface BaseAbilitySuppressedEvent extends GameEvent<typeof SU_EVENTS.B
     };
 }
 
+/** 卡牌能力压制事件（直到压制者的下个回合开始） */
+export interface CardSuppressedEvent extends GameEvent<typeof SU_EVENTS.CARD_SUPPRESSED> {
+    payload: {
+        cardUid: string;
+        baseIndex: number;
+        suppressorPlayerId: PlayerId;
+        cardType: 'minion' | 'ongoing' | 'attached' | 'titan';
+        reason: string;
+    };
+}
+
 /** 基地牌库洗混事件 */
 export interface BaseDeckShuffledEvent extends GameEvent<typeof SU_EVENTS.BASE_DECK_SHUFFLED> {
     payload: {
@@ -1599,6 +1620,7 @@ export interface SpecialAfterScoringConsumedEvent extends GameEvent<typeof SU_EV
         sourceDefId: string;
         playerId: PlayerId;
         baseIndex: number;
+        cardUid?: string;
     };
 }
 

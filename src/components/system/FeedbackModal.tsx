@@ -10,6 +10,7 @@ import { FEEDBACK_API_URL as API_URL } from '../../config/server';
 import { UI_Z_INDEX } from '../../core';
 import { GAME_MANIFEST } from '../../games/manifest.generated';
 import { getLastErrorContext } from '../../lib/feedback/errorContext';
+import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 
 interface FeedbackRuntimeContext {
     mode?: 'online' | 'local' | 'tutorial';
@@ -233,7 +234,7 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                             {GAME_MANIFEST
                                 .filter(g => g.type === 'game' && g.enabled)
                                 .map(g => (
-                                    <option key={g.id} value={g.id}>{t(`common:game_names.${g.id}`, g.id)}</option>
+                                    <option key={g.id} value={g.id}>{resolveGameDisplayName(g, t, g.id)}</option>
                                 ))
                             }
                         </select>

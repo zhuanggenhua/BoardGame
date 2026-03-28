@@ -64,7 +64,9 @@ export const DT_EVENTS = defineEvents({
   // ========== UI 交互（本地播放）==========
   CHARACTER_SELECTED: 'ui',      // 选择角色（UI 层播放）
   PLAYER_READY: 'ui',            // 玩家准备（UI 层播放）
+  PLAYER_UNREADY: 'ui',          // 玩家取消准备（UI 层播放）
   HOST_STARTED: 'ui',            // 房主开始（UI 层播放）
+  SEATING_MOVED: 'ui',           // 站位调整（UI 层播放）
 
   // ========== 即时反馈（EventStream）==========
   DICE_ROLLED: { audio: 'immediate', sound: DICE_ROLL_SINGLE_KEY },
@@ -97,6 +99,7 @@ export const DT_EVENTS = defineEvents({
   ATTACK_INITIATED: { audio: 'immediate', sound: ATTACK_INITIATE_KEY },
   BONUS_DAMAGE_ADDED: 'silent',
   ATTACK_PRE_DEFENSE_RESOLVED: { audio: 'immediate', sound: ATTACK_PRE_DEFENSE_KEY },
+  ATTACK_DEFENSE_RESOLVED: { audio: 'immediate', sound: ATTACK_PRE_DEFENSE_KEY },
   ATTACK_MADE_UNDEFENDABLE: { audio: 'immediate', sound: ATTACK_UNDEFENDABLE_KEY },
   
   DAMAGE_SHIELD_GRANTED: { audio: 'immediate', sound: SHIELD_GRANT_KEY },
@@ -197,8 +200,25 @@ export interface HostStartedEvent extends GameEvent<'HOST_STARTED'> {
     };
 }
 
+/** 2v2 站位移动事件 */
+export interface SeatingMovedEvent extends GameEvent<'SEATING_MOVED'> {
+    payload: {
+        playerId: PlayerId;
+        sourceSeatIndex: number;
+        targetSeatIndex: number;
+        seatingOrder: PlayerId[];
+    };
+}
+
 /** 玩家准备事件 */
 export interface PlayerReadyEvent extends GameEvent<'PLAYER_READY'> {
+    payload: {
+        playerId: PlayerId;
+    };
+}
+
+/** 玩家取消准备事件 */
+export interface PlayerUnreadyEvent extends GameEvent<'PLAYER_UNREADY'> {
     payload: {
         playerId: PlayerId;
     };
@@ -472,7 +492,7 @@ export interface DeckShuffledEvent extends GameEvent<'DECK_SHUFFLED'> {
 export interface AttackInitiatedEvent extends GameEvent<'ATTACK_INITIATED'> {
     payload: {
         attackerId: PlayerId;
-        defenderId: PlayerId;
+        defenderId?: PlayerId;
         sourceAbilityId: string;
         isDefendable: boolean;
         /** 是否为终极技能（不可被干扰） */
@@ -493,8 +513,17 @@ export interface BonusDamageAddedEvent extends GameEvent<'BONUS_DAMAGE_ADDED'> {
 export interface AttackPreDefenseResolvedEvent extends GameEvent<'ATTACK_PRE_DEFENSE_RESOLVED'> {
     payload: {
         attackerId: PlayerId;
-        defenderId: PlayerId;
+        defenderId?: PlayerId;
         sourceAbilityId?: string;
+    };
+}
+
+/** 防御方效果结算事件 */
+export interface AttackDefenseResolvedEvent extends GameEvent<'ATTACK_DEFENSE_RESOLVED'> {
+    payload: {
+        attackerId: PlayerId;
+        defenderId: PlayerId;
+        defenseAbilityId?: string;
     };
 }
 
@@ -502,7 +531,7 @@ export interface AttackPreDefenseResolvedEvent extends GameEvent<'ATTACK_PRE_DEF
 export interface AttackResolvedEvent extends GameEvent<'ATTACK_RESOLVED'> {
     payload: {
         attackerId: PlayerId;
-        defenderId: PlayerId;
+        defenderId?: PlayerId;
         sourceAbilityId?: string;
         defenseAbilityId?: string;
         totalDamage: number;
@@ -546,6 +575,8 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
             customId?: string;
             /** 选项显示文案 key（i18n）。若不提供，将根据 statusId/tokenId 自动推导 */
             labelKey?: string;
+            /** true 时仅展示，不允许点击 */
+            disabled?: boolean;
         }>;
     };
 }
@@ -793,7 +824,9 @@ export type DiceThroneEvent =
     | CharacterSelectedEvent
     | HeroInitializedEvent
     | HostStartedEvent
+    | SeatingMovedEvent
     | PlayerReadyEvent
+    | PlayerUnreadyEvent
     | AbilityActivatedEvent
     | DamageDealtEvent
     | HealAppliedEvent
@@ -816,6 +849,7 @@ export type DiceThroneEvent =
     | AttackInitiatedEvent
     | BonusDamageAddedEvent
     | AttackPreDefenseResolvedEvent
+    | AttackDefenseResolvedEvent
     | AttackResolvedEvent
     | AttackMadeUndefendableEvent
     | ChoiceRequestedEvent

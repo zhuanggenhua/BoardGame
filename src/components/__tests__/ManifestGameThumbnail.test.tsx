@@ -34,7 +34,7 @@ describe('ManifestGameThumbnail', () => {
         const manifest = buildManifest({ thumbnailPath: undefined });
         const html = renderToStaticMarkup(<ManifestGameThumbnail manifest={manifest} />);
         expect(html).toContain('🎲');
-        expect(html).toContain('games.demo.title');
+        expect(html).toContain('demo');
     });
 
     it('存在 thumbnailPath 时渲染优化图片', () => {

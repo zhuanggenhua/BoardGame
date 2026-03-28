@@ -32,6 +32,7 @@ import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { CARDIA_IMAGE_PATHS, resolveCardiaCardImagePath } from './imagePaths';
 import './ui/compactLayout.css';
 import { logger } from '../../lib/logger';
+import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 
 type Props = GameBoardProps<CardiaCore>;
 
@@ -81,30 +82,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     // 动画状态
     const animations = useAbilityAnimations();
 
-    const [viewportSize, setViewportSize] = useState(() => ({
-        width: typeof window !== 'undefined' ? window.innerWidth : 0,
-        height: typeof window !== 'undefined' ? window.innerHeight : 0,
-    }));
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-
-        const syncViewportSize = () => {
-            setViewportSize({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
-        };
-
-        syncViewportSize();
-        window.addEventListener('resize', syncViewportSize);
-        window.addEventListener('orientationchange', syncViewportSize);
-
-        return () => {
-            window.removeEventListener('resize', syncViewportSize);
-            window.removeEventListener('orientationchange', syncViewportSize);
-        };
-    }, []);
+    const viewportSize = useRuntimeViewport();
 
     // 设备类型检测
     type DeviceType = 
@@ -157,8 +135,8 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
             case 'phone-landscape':
                 // 手机横屏：可视高度非常紧张，必须让卡牌“更扁平”才能完整展示两排（战场+手牌）。
                 // 这里进一步降低卡牌宽度（等比缩放），避免出现上下被裁切。
-                cardWidth = Math.max(54, Math.min(72, Math.round(height * 0.135)));
-                smallCardWidth = Math.max(36, Math.min(50, Math.round(height * 0.092)));
+                cardWidth = Math.max(50, Math.min(66, Math.round(height * 0.125)));
+                smallCardWidth = Math.max(34, Math.min(46, Math.round(height * 0.086)));
                 break;
                 
             case 'tablet-portrait':
@@ -197,6 +175,10 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                 : deviceType === 'tablet-portrait'
                   ? 'clamp(6.5rem, 14vw, 7.75rem)'
                   : 'auto';
+        const compactPlayerZoneHeight =
+            deviceType === 'tight-landscape'
+                ? 'clamp(4.8rem, 22dvh, 5.6rem)'
+                : 'auto';
 
         const reservedBottom =
             deviceType === 'phone-portrait' || deviceType === 'tablet-portrait'
@@ -205,6 +187,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
 
         return {
             '--cardia-player-zone-height': playerZoneHeight,
+            '--cardia-compact-player-zone-height': compactPlayerZoneHeight,
             '--cardia-reserved-bottom': reservedBottom,
         } as React.CSSProperties;
     }, [deviceType]);
@@ -710,7 +693,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                             <div
                                 data-testid="cardia-battlefield"
                                 data-tutorial-id="cardia-battlefield"
-                                className="cardia-battlefield absolute inset-x-0 top-0 bottom-[clamp(7.6rem,27dvh,9.2rem)] flex items-center justify-start overflow-x-auto overflow-y-visible px-3 pt-[4.6rem]"
+                                className="cardia-battlefield absolute inset-x-0 top-0 bottom-[var(--cardia-compact-player-zone-height)] flex items-center justify-start overflow-x-auto overflow-y-visible px-3 pt-[4.3rem]"
                             >
                                 <EncounterSequence
                                     myPlayer={myPlayer}
@@ -727,7 +710,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                             {/* 我的区域（横屏右侧下栏） */}
                             <div
                                 data-testid="cardia-player-zone"
-                                className="absolute left-2 right-2 bottom-0 flex h-[clamp(7.6rem,27dvh,9.2rem)] items-end overflow-hidden pb-2"
+                                className="absolute left-2 right-2 bottom-0 flex h-[var(--cardia-compact-player-zone-height)] items-end overflow-hidden"
                                 style={playerZoneWrapperStyle}
                             >
                                 <div className="min-w-0 flex-1">
@@ -1210,9 +1193,9 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ player, core, onPlayCard, canPl
         return (
             <div
                 data-testid="cardia-player-area-panel"
-                className="flex h-full min-h-0 items-stretch gap-2 overflow-hidden rounded-xl border border-white/10 bg-black/62 px-4 py-3 backdrop-blur-md"
+                className="flex h-full min-h-0 items-stretch gap-1.5 overflow-hidden rounded-[0.9rem] border border-white/10 bg-black/62 px-3 py-2 backdrop-blur-md"
             >
-                <div className="flex w-[10.5rem] flex-shrink-0 flex-col justify-between gap-1.5 overflow-hidden">
+                <div className="flex w-[7.5rem] flex-shrink-0 flex-col justify-between gap-1 overflow-hidden">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5">
                         <div className="truncate text-[14px] font-bold text-white">{player.name}</div>
                         <div
@@ -1233,7 +1216,7 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ player, core, onPlayCard, canPl
                 <div
                     data-testid="cardia-hand-area"
                     data-tutorial-id="cardia-hand-area"
-                    className="flex min-h-0 flex-1 snap-x snap-mandatory items-end gap-3 overflow-x-auto overflow-y-hidden pr-1"
+                    className="flex min-h-0 flex-1 snap-x snap-mandatory items-end gap-1.5 overflow-x-auto overflow-y-hidden pr-0.5"
                 >
                     <CardListTransition>
                         {player.hand.map((card: any) => (

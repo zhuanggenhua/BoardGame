@@ -2137,8 +2137,14 @@ function registerGiantAntProtections(): void {
     registerProtection('giant_ant_the_show_must_go_on_pod', 'destroy', checker as any);
 
     // 触发器
-    registerTrigger('giant_ant_we_are_the_champions', 'afterScoring', giantAntWeAreTheChampionsAfterScoring);
-    registerTrigger('giant_ant_we_are_the_champions_pod', 'afterScoring', giantAntWeAreTheChampionsAfterScoring);
+    registerTrigger('giant_ant_we_are_the_champions', 'afterScoring', giantAntWeAreTheChampionsAfterScoring, {
+        perInstance: true,
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('giant_ant_we_are_the_champions_pod', 'afterScoring', giantAntWeAreTheChampionsAfterScoring, {
+        perInstance: true,
+        sourceScope: 'triggerBase',
+    });
     registerTrigger('giant_ant_drone', 'onMinionDestroyed', giantAntDronePreventTrigger, { phase: 'replacement' });
     registerTrigger('giant_ant_drone_pod', 'onMinionDestroyed', giantAntDronePreventTrigger, { phase: 'replacement' }); // POD 版本复用基础版触发器
     // Worker POD：离场进入弃牌堆（消灭 / 基地计分弃置）且当时无指示物时，可从弃牌堆额外打出到另一基地
@@ -2149,35 +2155,38 @@ function registerGiantAntProtections(): void {
 function giantAntWeAreTheChampionsAfterScoring(
     ctx: TriggerContext,
 ): SmashUpEvent[] | { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
-    const { state, baseIndex, now } = ctx;
+    const { state, baseIndex, now, sourceCardUid } = ctx;
     if (baseIndex === undefined) return [];
 
-    const armed = (state.pendingAfterScoringSpecials ?? []).filter(
-        s => (s.sourceDefId === 'giant_ant_we_are_the_champions' || s.sourceDefId === 'giant_ant_we_are_the_champions_pod') && s.baseIndex === baseIndex,
+    const armedEntry = (state.pendingAfterScoringSpecials ?? []).find(
+        s => (s.sourceDefId === 'giant_ant_we_are_the_champions' || s.sourceDefId === 'giant_ant_we_are_the_champions_pod')
+            && s.baseIndex === baseIndex
+            && s.cardUid === sourceCardUid,
     );
-    if (armed.length === 0) return [];
+    if (!armedEntry) return [];
 
-    const events: SmashUpEvent[] = armed.map(s => ({
+    const events: SmashUpEvent[] = [{
         type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED,
         payload: {
-            sourceDefId: s.sourceDefId,
-            playerId: s.playerId,
-            baseIndex: s.baseIndex,
+            sourceDefId: armedEntry.sourceDefId,
+            playerId: armedEntry.playerId,
+            baseIndex: armedEntry.baseIndex,
+            cardUid: armedEntry.cardUid,
         },
         timestamp: now,
-    } as SmashUpEvent));
+    } as SmashUpEvent];
 
     if (!ctx.matchState) return { events };
 
     let matchState = ctx.matchState;
-    for (const armedEntry of armed) {
+    {
         // 检查是否有足够的随从进行转移（至少需要2个随从：来源+目标）
         const allMyMinions = collectOwnMinions(state, armedEntry.playerId);
-        if (allMyMinions.length < 2) continue;
+        if (allMyMinions.length < 2) return { events, matchState };
 
         // 使用快照中的随从（计分后随从已离场）
         const sources = armedEntry.minionSnapshots ?? [];
-        if (sources.length === 0) continue;
+        if (sources.length === 0) return { events, matchState };
 
         // 手动构建选项（使用快照数据）
         const sourceOptions = sources.map((s, i) => {
@@ -2199,7 +2208,7 @@ function giantAntWeAreTheChampionsAfterScoring(
         });
 
         const interaction = createSimpleChoice(
-            `giant_ant_we_are_the_champions_choose_source_${now}_${armedEntry.playerId}`,
+            `giant_ant_we_are_the_champions_choose_source_${now}_${armedEntry.cardUid}`,
             armedEntry.playerId,
             '我们乃最强：计分后选择转出力量指示物的随从',
             sourceOptions,

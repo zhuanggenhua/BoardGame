@@ -407,4 +407,73 @@ test.describe('后台管理 E2E', () => {
         await expect(page.locator('tr', { hasText: '对手甲' })).toBeVisible();
         await expect(page.locator('tr', { hasText: '对手甲' }).getByText('胜利')).toBeVisible();
     });
+
+    test('房间管理显示玩家在线状态与房间持续时间', async ({ page }) => {
+        await setStoredAuth(page, {
+            id: 'admin_1',
+            username: 'Admin',
+            role: 'admin',
+            banned: false,
+        });
+
+        const now = Date.now();
+        await page.route('**/auth/me', async (route) => {
+            await route.fulfill({
+                status: 200,
+                json: {
+                    user: {
+                        id: 'admin_1',
+                        username: 'Admin',
+                        role: 'admin',
+                        banned: false,
+                    },
+                },
+            });
+        });
+        await page.route('**/admin/rooms?*', async (route) => {
+            const request = route.request();
+            if (request.resourceType() === 'document') {
+                return route.continue();
+            }
+
+            return route.fulfill({
+                status: 200,
+                json: {
+                    items: [
+                        {
+                            matchID: 'room-alpha',
+                            gameName: 'smashup',
+                            roomName: 'Alpha 房',
+                            ownerType: 'user',
+                            ownerName: '房主甲',
+                            isLocked: false,
+                            players: [
+                                { id: 0, name: 'Alice', isConnected: true },
+                                { id: 1, name: 'Bob', isConnected: false },
+                            ],
+                            createdAt: new Date(now - 65 * 60 * 1000).toISOString(),
+                            updatedAt: new Date(now - 5 * 60 * 1000).toISOString(),
+                        },
+                    ],
+                    page: 1,
+                    limit: 10,
+                    total: 1,
+                },
+            });
+        });
+
+        await gotoFrontendRoute(page, '/admin/rooms');
+        await expect(page.getByRole('heading', { name: '房间管理' })).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
+        await expect(page.getByText('Alpha 房')).toBeVisible();
+        await expect(page.getByText('1/2 在线')).toBeVisible();
+        await expect(page.getByText('Alice')).toBeVisible();
+        await expect(page.getByText('Bob')).toBeVisible();
+        await expect(page.getByText('离线')).toBeVisible();
+        await expect(page.getByText(/小时|分/)).toBeVisible();
+
+        await page.screenshot({
+            path: 'test-results/evidence-screenshots/admin-rooms-status-duration.png',
+            fullPage: true,
+        });
+    });
 });

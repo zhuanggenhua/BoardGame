@@ -30,6 +30,27 @@ export function matchesDefId(defId: string | undefined | null, baseDefId: string
     return defId === baseDefId || defId === `${baseDefId}_pod`;
 }
 
+/**
+ * 获取随从天赋当前不可发动的原因。
+ *
+ * 这里只放“卡牌自身规则前置条件”，供命令校验、UI 高亮和 execute 兜底共用，
+ * 避免出现前端显示可点、点了却没有实际效果的分层不一致问题。
+ */
+export function getMinionTalentActivationError(
+    state: SmashUpCore,
+    minion: MinionOnBase,
+    baseIndex: number,
+): string | null {
+    void state;
+    void baseIndex;
+
+    if (matchesDefId(minion.defId, 'frankenstein_the_monster') && (minion.powerCounters ?? 0) < 1) {
+        return '该随从当前无法发动天赋：没有+1力量指示物';
+    }
+
+    return null;
+}
+
 export function resolveLiveBaseIndex(
     state: { bases: Array<{ defId: string }> },
     baseIndex: number | undefined,

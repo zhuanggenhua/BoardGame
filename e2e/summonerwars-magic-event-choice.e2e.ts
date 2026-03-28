@@ -1,82 +1,66 @@
-/**
- * 召唤师战争 E2E 测试 - 魔力阶段事件卡选择
- *
- * 测试场景：魔力阶段点击可打出的事件卡，应弹出选择横幅（打出/弃牌/取消）
- */
+import { test, expect } from './framework';
+import type { EventCard, SummonerWarsCore } from '../src/games/summonerwars/domain/types';
+import { createDeckByFactionId } from '../src/games/summonerwars/config/factions';
+import { createInitializedCore, resetInstanceCounter } from '../src/games/summonerwars/__tests__/test-helpers';
 
-import { test, expect } from '@playwright/test';
-import { setupSWOnlineMatch, advanceToPhase, readCoreState, applyCoreState } from './helpers/summonerwars';
+const deterministicRandom = {
+  shuffle: <T>(arr: T[]) => [...arr],
+  random: () => 0.5,
+  d: () => 1,
+  range: (min: number) => min,
+};
+
+const findGoblinFrenzy = (): EventCard => {
+  const card = createDeckByFactionId('goblin').deck.find(
+    (entry): entry is EventCard => entry.cardType === 'event' && entry.id === 'goblin-frenzy',
+  );
+  if (!card) {
+    throw new Error('未找到群情激愤事件卡');
+  }
+  return card;
+};
+
+const buildMagicEventChoiceCore = (): { core: SummonerWarsCore; cardId: string } => {
+  resetInstanceCounter();
+  const core = createInitializedCore(['0', '1'], deterministicRandom, {
+    faction0: 'goblin',
+    faction1: 'necromancer',
+  });
+
+  const cardId = 'test-goblin-frenzy';
+  core.currentPlayer = '0';
+  core.phase = 'magic';
+  core.players['0'].magic = 1;
+  core.players['0'].hand = [
+    {
+      ...findGoblinFrenzy(),
+      id: cardId,
+    },
+  ];
+
+  return { core, cardId };
+};
 
 test.describe('召唤师战争 - 魔力阶段事件卡选择', () => {
-  test('魔力阶段点击事件卡应弹出选择横幅', async ({ browser, baseURL }) => {
-    test.setTimeout(120000);
-    
-    let setup;
-    try {
-      setup = await setupSWOnlineMatch(browser, baseURL, 'goblin', 'necromancer');
-    } catch (error) {
-      test.skip();
-      return;
-    }
-    
-    if (!setup) {
-      test.skip();
-      return;
-    }
+  test('魔力阶段点击事件卡应弹出选择横幅', async ({ page, game }) => {
+    await game.openTestGame('summonerwars');
 
-    const { hostPage: player1Page, hostContext, guestContext } = setup;
+    const { core, cardId } = buildMagicEventChoiceCore();
+    await game.setupScene({
+      gameId: 'summonerwars',
+      currentPlayer: core.currentPlayer,
+      phase: core.phase,
+      extra: { core },
+    });
 
-    try {
-      // 推进到玩家1的魔力阶段
-      await advanceToPhase(player1Page, 'magic', 6);
+    await expect(page.getByTestId('sw-hand-area')).toBeVisible({ timeout: 10000 });
 
-      // 注入状态：给玩家1手牌中添加"群情激愤"事件卡，并设置魔力为1
-      const state = await readCoreState(player1Page);
-      state.players['0'].hand.push({
-        id: 'test-goblin-frenzy',
-        cardType: 'event',
-        name: '群情激愤',
-        faction: 'goblin',
-        eventType: 'legendary',
-        playPhase: 'magic',
-        cost: 1,
-        isActive: false,
-        effect: '指定所有费用为0点的友方单位为目标。每个目标可以进行一次额外的攻击。',
-        deckSymbols: [],
-        spriteIndex: 9,
-        spriteAtlas: 'cards',
-      });
-      state.players['0'].magic = 1;
-      await applyCoreState(player1Page, state);
-      
-      // 等待状态更新生效
-      await player1Page.waitForTimeout(1000);
+    const card = page.locator(`[data-card-id="${cardId}"]`);
+    await expect(card).toBeVisible({ timeout: 5000 });
+    await card.click();
 
-      // 点击"群情激愤"事件卡
-      const card = player1Page.locator('[data-card-id="test-goblin-frenzy"]');
-      await card.click();
-      
-      // 等待状态更新和组件重新渲染
-      await player1Page.waitForTimeout(1000);
-
-      // 应该弹出选择横幅（紫色背景）
-      const banner = player1Page.locator('.bg-purple-900\\/95').first();
-      await expect(banner).toBeVisible({ timeout: 10000 });
-      
-      // 验证横幅内容包含关键文字（支持中英文）
-      const bannerText = await banner.textContent();
-      expect(bannerText).toMatch(/Choose|选择/);
-      
-      // 应该有三个按钮：Play/打出、Discard/弃牌、Cancel/取消
-      const playButton = banner.locator('button').filter({ hasText: /Play|打出/ }).first();
-      const discardButton = banner.locator('button').filter({ hasText: /Discard|弃牌/ }).first();
-      const cancelButton = banner.locator('button').filter({ hasText: /Cancel|取消/ }).first();
-      await expect(playButton).toBeVisible();
-      await expect(discardButton).toBeVisible();
-      await expect(cancelButton).toBeVisible();
-    } finally {
-      await hostContext.close();
-      await guestContext.close();
-    }
+    await expect(page.getByRole('button', { name: /Play|打出/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: /Discard|弃牌/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: /Cancel|取消/i })).toBeVisible({ timeout: 5000 });
   });
 });

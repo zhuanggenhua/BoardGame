@@ -27,10 +27,13 @@ import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import { INITIAL_HEALTH, INITIAL_CP } from '../domain/types';
 import { getCustomActionHandler } from '../domain/effects';
-import { processTokenUsage, shouldOpenTokenResponse } from '../domain/tokenResponse';
+import { validateCommand } from '../domain/commandValidation';
+import { processTokenUsage, shouldOpenTokenResponse, getUsableTokensForTiming } from '../domain/tokenResponse';
 import { initializeCustomActions } from '../domain/customActions';
+import { reduce } from '../domain/reducer';
 import { BARBARIAN_TOKENS } from '../heroes/barbarian/tokens';
 import { PALADIN_TOKENS } from '../heroes/paladin/tokens';
+import { SAMURAI_TOKENS } from '../heroes/samurai/tokens';
 import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
 
 initializeCustomActions();
@@ -118,6 +121,76 @@ describe('燃烧 (Burn) upkeep 执行', () => {
         const core = result.finalState.core;
         expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2); // 固定 2 点伤害
         expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(3); // 持续效果，不移除
+    });
+});
+
+// ============================================================================
+// 武士反击 (Samurai Retribution) - custom action
+// ============================================================================
+
+describe('武士反击 (Samurai Retribution) custom action', () => {
+    it('samurai-back-strike-use handler 已注册', () => {
+        const handler = getCustomActionHandler('samurai-back-strike-use');
+        expect(handler).toBeDefined();
+    });
+
+    it('使用后会掷 1 颗骰并对攻击者造成向上取整的一半反伤', () => {
+        const handler = getCustomActionHandler('samurai-back-strike-use')!;
+        const state = {
+            players: {
+                '0': {
+                    characterId: 'monk',
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    tokens: {},
+                    statusEffects: {},
+                    damageShields: [],
+                },
+                '1': {
+                    characterId: 'samurai',
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    tokens: { [TOKEN_IDS.SAMURAI_RETRIBUTION]: 1 },
+                    statusEffects: {},
+                    damageShields: [],
+                },
+            },
+            tokenDefinitions: ALL_TOKEN_DEFINITIONS,
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                damage: 8,
+                isDefendable: true,
+                sourceAbilityId: 'fist-technique-5',
+            },
+            dice: [],
+            rollDiceCount: 5,
+        } as any;
+
+        const events = handler({
+            ctx: { attackerId: '0', defenderId: '1' } as any,
+            targetId: '1',
+            attackerId: '1',
+            sourceAbilityId: 'samurai-back-strike-use',
+            state,
+            timestamp: 1,
+            random: {
+                d: () => 5,
+                random: () => 0.5,
+                range: (min: number) => min,
+                shuffle: <T,>(arr: T[]) => [...arr],
+            } as any,
+            action: { type: 'custom', customActionId: 'samurai-back-strike-use' } as any,
+        });
+
+        const bonusEvents = events.filter((event: any) => event.type === 'BONUS_DIE_ROLLED');
+        const damageEvents = events.filter((event: any) => event.type === 'DAMAGE_DEALT');
+
+        expect(bonusEvents).toHaveLength(1);
+        expect((bonusEvents[0] as any).payload.value).toBe(5);
+        expect((bonusEvents[0] as any).payload.playerId).toBe('1');
+
+        expect(damageEvents).toHaveLength(1);
+        expect((damageEvents[0] as any).payload.targetId).toBe('0');
+        expect((damageEvents[0] as any).payload.amount).toBe(3);
     });
 });
 
@@ -802,11 +875,10 @@ describe('伏击 (Sneak Attack) 执行逻辑', () => {
             selectedCharacters: { '0': 'shadow_thief', '1': 'monk' },
         } as any;
 
-        let callCount = 0;
         const events = handler({
             ctx: { attackerId: '0', defenderId: '1', sourceAbilityId: 'test', state, damageDealt: 0, timestamp: 1 },
             targetId: '1', attackerId: '0', sourceAbilityId: 'test', state, timestamp: 1,
-            random: { d: () => { callCount++; return 4; }, random: () => 0.5 } as any,
+            random: { d: () => 4, random: () => 0.5 } as any,
             action: { type: 'custom', customActionId: 'shadow_thief-sneak-attack-use' },
         });
 
@@ -1102,6 +1174,33 @@ describe('Token 响应窗口判定', () => {
         const responseType = shouldOpenTokenResponse(state.core, '0', '1', 3);
         expect(responseType).toBeNull();
     });
+
+    it('攻击方有 honor Token 时也应打开 attackerBoost（不再限于 consumable）', () => {
+        const baseSetup = createNoResponseSetupWithEmptyHand();
+        const state = baseSetup(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.HONOR] = 1;
+
+        const responseType = shouldOpenTokenResponse(state.core, '0', '1', 4);
+        expect(responseType).toBe('attackerBoost');
+    });
+
+    it('攻击方有 shame Token 时也应打开 attackerBoost（负面 token 一样可响应）', () => {
+        const baseSetup = createNoResponseSetupWithEmptyHand();
+        const state = baseSetup(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.SHAME] = 1;
+
+        const responseType = shouldOpenTokenResponse(state.core, '0', '1', 4);
+        expect(responseType).toBe('attackerBoost');
+    });
+
+    it('防御方有 samurai_retribution Token 时应打开 defenderMitigation', () => {
+        const baseSetup = createNoResponseSetupWithEmptyHand();
+        const state = baseSetup(['0', '1'], fixedRandom);
+        state.core.players['1'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION] = 1;
+
+        const responseType = shouldOpenTokenResponse(state.core, '0', '1', 4);
+        expect(responseType).toBe('defenderMitigation');
+    });
 });
 
 // ============================================================================
@@ -1378,5 +1477,114 @@ describe('暴击 (Crit) 门控条件测试', () => {
         expect(critDef).toBeDefined();
         expect(critDef!.activeUse?.timing).toContain('onOffensiveRollEnd');
         expect(critDef!.activeUse?.timing).not.toContain('beforeDamageReceived');
+    });
+});
+
+describe('武士荣誉 (Honor) Token', () => {
+    it('一次消耗 2 层 honor 时应提供 +3 伤害', () => {
+        const honorDef = SAMURAI_TOKENS.find(token => token.id === TOKEN_IDS.HONOR);
+        expect(honorDef).toBeDefined();
+
+        const mockState = {
+            players: {
+                '0': {
+                    tokens: { [TOKEN_IDS.HONOR]: 2 },
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                },
+            },
+            pendingDamage: {
+                originalDamage: 4,
+                currentDamage: 4,
+                responseType: 'beforeDamageDealt',
+            },
+        };
+
+        const { result, newTokenAmount } = processTokenUsage(
+            mockState as any,
+            honorDef as any,
+            '0',
+            2,
+            undefined,
+            'beforeDamageDealt',
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.damageModifier).toBe(3);
+        expect(newTokenAmount).toBe(0);
+    });
+
+    it('连续两次各用 1 层 honor 时应累计为 +3，且第三次被窗口上限拒绝', () => {
+        const honorDef = SAMURAI_TOKENS.find(token => token.id === TOKEN_IDS.HONOR);
+        expect(honorDef).toBeDefined();
+
+        let core = {
+            players: {
+                '0': {
+                    tokens: { [TOKEN_IDS.HONOR]: 3 },
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    statusEffects: {},
+                    damageShields: [],
+                },
+                '1': {
+                    tokens: {},
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    statusEffects: {},
+                    damageShields: [],
+                },
+            },
+            tokenDefinitions: SAMURAI_TOKENS,
+            pendingDamage: {
+                id: 'honor-window',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                originalDamage: 4,
+                currentDamage: 4,
+                responseType: 'beforeDamageDealt',
+                responderId: '0',
+                isFullyEvaded: false,
+            },
+        } as any;
+
+        const firstUse = processTokenUsage(core, honorDef as any, '0', 1, undefined, 'beforeDamageDealt');
+        expect(firstUse.result.success).toBe(true);
+        expect(firstUse.result.damageModifier).toBe(1);
+        core = reduce(core, firstUse.events[0] as any) as any;
+
+        expect(core.pendingDamage.currentDamage).toBe(5);
+        expect(core.pendingDamage.tokenUsageTotals?.[TOKEN_IDS.HONOR]).toBe(1);
+        expect(getUsableTokensForTiming(core, '0', 'beforeDamageDealt').some(token => token.id === TOKEN_IDS.HONOR)).toBe(true);
+
+        const secondUseValidation = validateCommand(
+            core,
+            {
+                type: 'USE_TOKEN',
+                playerId: '0',
+                payload: { tokenId: TOKEN_IDS.HONOR, amount: 1 },
+            } as any,
+            'main1' as any,
+        );
+        expect(secondUseValidation.valid).toBe(true);
+
+        const secondUse = processTokenUsage(core, honorDef as any, '0', 1, undefined, 'beforeDamageDealt');
+        expect(secondUse.result.success).toBe(true);
+        expect(secondUse.result.damageModifier).toBe(2);
+        core = reduce(core, secondUse.events[0] as any) as any;
+
+        expect(core.pendingDamage.currentDamage).toBe(7);
+        expect(core.pendingDamage.tokenUsageTotals?.[TOKEN_IDS.HONOR]).toBe(2);
+        expect(core.players['0'].tokens[TOKEN_IDS.HONOR]).toBe(1);
+        expect(getUsableTokensForTiming(core, '0', 'beforeDamageDealt').some(token => token.id === TOKEN_IDS.HONOR)).toBe(false);
+
+        const thirdUseValidation = validateCommand(
+            core,
+            {
+                type: 'USE_TOKEN',
+                playerId: '0',
+                payload: { tokenId: TOKEN_IDS.HONOR, amount: 1 },
+            } as any,
+            'main1' as any,
+        );
+        expect(thirdUseValidation.valid).toBe(false);
+        expect(thirdUseValidation.error).toBe('invalid_amount');
     });
 });

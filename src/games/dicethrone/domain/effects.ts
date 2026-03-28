@@ -10,7 +10,7 @@ import type { EffectAction, RollDieConditionalEffect, RollDieDefaultEffect } fro
 export type { RollDieConditionalEffect, RollDieDefaultEffect };
 import type { AbilityEffect, EffectTiming, EffectResolutionContext } from './combat';
 import { combatAbilityManager } from './combatAbility';
-import { getActiveDice, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from './rules';
+import { getActiveDice, getFaceCounts, getOpponents, getPlayerDieFace, getTokenStackLimit } from './rules';
 import { RESOURCE_IDS } from './resources';
 import type {
     DiceThroneCore,
@@ -258,6 +258,10 @@ export interface BonusDiceRollConfig {
     showTotal?: boolean;
     /** 覆盖伤害/状态目标（默认使用 ctx.targetId） */
     damageTargetId?: PlayerId;
+    /** 奖励骰结算去向：直接伤害，或加入当前攻击伤害 */
+    resolutionMode?: 'damage' | 'attackBonus' | 'none';
+    /** attackBonus 模式下的换算规则 */
+    attackBonusScale?: 'raw' | 'halfUp';
 }
 
 /**
@@ -322,6 +326,8 @@ export function createBonusDiceWithReroll(
             threshold: config.threshold,
             thresholdEffect: config.thresholdEffect,
             readyToSettle: false,
+            resolutionMode: config.resolutionMode ?? 'damage',
+            attackBonusScale: config.attackBonusScale ?? 'raw',
         };
         events.push({
             type: 'BONUS_DICE_REROLL_REQUESTED',
@@ -444,11 +450,11 @@ function resolveEffectAction(
 
     switch (action.type) {
         case 'damage': {
-            // target: 'all' → 对所有玩家（含自己）; 'allOpponents' → 除自己外所有玩家
+            // target: 'all' → 对所有玩家（含自己）; 'allOpponents' → 当前玩家的真实敌方集合
             const damageTargets = action.target === 'all'
                 ? Object.keys(state.players)
                 : action.target === 'allOpponents'
-                    ? Object.keys(state.players).filter(id => id !== attackerId)
+                    ? getOpponents(state, attackerId)
                     : [targetId];
 
             for (const dmgTargetId of damageTargets) {
@@ -496,8 +502,9 @@ function resolveEffectAction(
                     sourceName: m.sourceName,
                 }));
 
-                // target: 'all'/'allOpponents' 的全体伤害不触发 Token 响应窗口
-                if (action.target !== 'all' && action.target !== 'allOpponents') {
+                // target: 'all'/'allOpponents' 的全体伤害不触发 Token 响应窗口；
+                // 明确标记为 unblockable 的动作伤害也不允许任何减伤/回避类 Token 响应。
+                if (!action.unblockable && action.target !== 'all' && action.target !== 'allOpponents') {
                     // 检查是否需要打开 Token 响应窗口
                     const tokenResponseType = shouldOpenTokenResponse(
                         state,

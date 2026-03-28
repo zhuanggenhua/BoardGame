@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import type { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MousePointerClick } from 'lucide-react';
-import type { AbilityCard, Die, TurnPhase } from '../types';
+import type { AbilityCard, Die, PlayerId, TurnPhase } from '../types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
 import { useMultistepInteraction } from '../../../engine/systems/useMultistepInteraction';
@@ -16,7 +16,6 @@ import { DiscardPile } from './DiscardPile';
 import { GameButton } from './components/GameButton';
 import { UI_Z_INDEX } from '../../../core';
 import { ActiveModifierBadge } from './ActiveModifierBadge';
-import { AttackBonusDamageDisplay } from './AttackBonusDamageDisplay';
 import type { ActiveModifier } from '../hooks/useActiveModifiers';
 import { PassiveAbilityPanel, type PassiveAbilityPanelProps } from './PassiveAbilityPanel';
 
@@ -51,6 +50,8 @@ export const RightSidebar = ({
     activeModifiers,
     attackModifierBonusDamage,
     passiveAbilityProps,
+    rootPlayerId,
+    teamIdByPlayerId,
 }: {
     dice: Die[];
     rollCount: number;
@@ -82,6 +83,8 @@ export const RightSidebar = ({
     activeModifiers?: ActiveModifier[];
     attackModifierBonusDamage?: number;
     passiveAbilityProps?: Omit<PassiveAbilityPanelProps, never> | null;
+    rootPlayerId: PlayerId;
+    teamIdByPlayerId?: Record<PlayerId, string>;
 }) => {
     const isDiceMultistep = interaction?.kind === 'multistep-choice' &&
         ((interaction.data as any)?.meta?.dtType === 'modifyDie' ||
@@ -128,8 +131,7 @@ export const RightSidebar = ({
     const sidebarFrameClassName = 'absolute right-[1.5vw] top-0 bottom-[1.5vw] w-[15vw] flex flex-col items-center pointer-events-auto';
     const advanceButtonSizeClassName = '!text-[0.75vw] !px-[0.5vw] !py-0 !min-h-0 h-[2.5vw] !rounded-[0.5vw]';
     const stackGapClassName = 'gap-[0.75vw]';
-    const modifierTopClassName = '-top-[2.2vw]';
-    const bonusTopClassName = '-top-[3.8vw]';
+    const modifierBadgeRowClassName = 'pointer-events-none absolute left-1/2 bottom-full mb-[0.55vw] flex -translate-x-1/2 items-center justify-center gap-[0.35vw] whitespace-nowrap';
     const hintOffsetClassName = 'mr-[0.6vw]';
     const hintBubbleClassName = 'flex max-w-[8.8vw] min-w-0 items-center gap-[0.4vw] overflow-hidden rounded-[0.5vw] border border-amber-500/50 bg-amber-950/95 px-[0.6vw] py-[0.4vw] shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-nowrap';
     const hintIconClassName = 'w-[1vw] h-[1vw] text-amber-400 shrink-0';
@@ -170,11 +172,22 @@ export const RightSidebar = ({
         }
         if (isSelectMode) {
             if (currentCount >= maxCount) return t('interaction.hint_done');
-            const key = dtMeta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';
+            let key = dtMeta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';
+            if (dtMeta.diceOwnerId) {
+                const ownerTeamId = teamIdByPlayerId?.[dtMeta.diceOwnerId];
+                const rootTeamId = teamIdByPlayerId?.[rootPlayerId];
+                if (dtMeta.diceOwnerId === rootPlayerId) {
+                    key = 'interaction.hint_select';
+                } else if (ownerTeamId && rootTeamId && ownerTeamId === rootTeamId) {
+                    key = 'interaction.hint_select_ally';
+                } else {
+                    key = 'interaction.hint_select_opponent';
+                }
+            }
             return t(key, { current: currentCount, max: maxCount });
         }
         return null;
-    }, [isDiceMultistep, interaction, multistepInteraction?.result, t]);
+    }, [isDiceMultistep, interaction, multistepInteraction?.result, rootPlayerId, t, teamIdByPlayerId]);
 
     return (
         <div
@@ -184,18 +197,19 @@ export const RightSidebar = ({
             <div className="flex-grow" />
             <div className={`relative w-full flex flex-col items-center ${stackGapClassName}`}>
                 <div className="relative">
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-0">
-                        {activeModifiers && activeModifiers.length > 0 && (
-                            <div className={`absolute ${modifierTopClassName} left-1/2 -translate-x-1/2 z-10 pointer-events-auto`}>
-                                <ActiveModifierBadge modifiers={activeModifiers} />
-                            </div>
-                        )}
-                        {attackModifierBonusDamage && attackModifierBonusDamage > 0 && (
-                            <div className={`absolute ${bonusTopClassName} left-1/2 -translate-x-1/2 z-10 pointer-events-auto`}>
-                                <AttackBonusDamageDisplay bonusDamage={attackModifierBonusDamage} />
-                            </div>
-                        )}
-                    </div>
+                    {(activeModifiers && activeModifiers.length > 0) || (attackModifierBonusDamage && attackModifierBonusDamage > 0) ? (
+                        <div
+                            className={modifierBadgeRowClassName}
+                            style={{ zIndex: UI_Z_INDEX.hint }}
+                        >
+                            {activeModifiers && activeModifiers.length > 0 && (
+                                <ActiveModifierBadge
+                                    modifiers={activeModifiers}
+                                    bonusDamage={attackModifierBonusDamage ?? 0}
+                                />
+                            )}
+                        </div>
+                    ) : null}
                     {isDiceMultistep && interactionHint && (
                         <div className={`absolute right-full top-1/2 -translate-y-1/2 ${hintOffsetClassName} z-10 pointer-events-none`}>
                             <div className={hintBubbleClassName}>

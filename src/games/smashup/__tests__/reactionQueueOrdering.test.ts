@@ -6,6 +6,7 @@ import { clearOngoingEffectRegistry, registerTrigger, collectTriggers } from '..
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { getInteractionHandler, clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
+import { reduce } from '../domain/reduce';
 
 // Minimal factories reused from other tests
 function baseCore(overrides?: Partial<SmashUpCore>): SmashUpCore {
@@ -102,6 +103,69 @@ describe('Reaction queue ordering (Wiki-style)', () => {
       now: 1,
     });
     expect(queued).toBeUndefined();
+  });
+
+  it('重复入队同一 triggerId 时只保留一份', () => {
+    const core = baseCore();
+    const trigger = {
+      id: 'afterScoring:pirate_first_mate_pod:0:1',
+      timing: 'afterScoring',
+      sourceDefId: 'pirate_first_mate_pod',
+      sourceControllerId: '0',
+      sourceBaseIndex: 0,
+      mandatory: true,
+      ownerPlayerId: '1',
+      witnessRequirement: 'inPlayAtTriggerTime',
+      witnessed: true,
+      baseIndex: 0,
+      rankings: [
+        { playerId: '0', power: 9, vp: 3 },
+        { playerId: '1', power: 9, vp: 3 },
+      ],
+    } as TriggerInstance;
+
+    const queuedEvent = {
+      type: SU_EVENTS.TRIGGER_QUEUED,
+      payload: { triggers: [trigger, trigger] },
+      timestamp: 0,
+    } as SmashUpEvent;
+
+    const next = reduce(core, queuedEvent);
+    expect(next.triggerQueue).toHaveLength(1);
+    expect(next.triggerQueue?.[0].id).toBe(trigger.id);
+  });
+  it('perInstance afterScoring 会为同名来源的每个实例单独入队', () => {
+    registerTrigger('test_source_a', 'afterScoring', () => [], {
+      perInstance: true,
+      sourceScope: 'triggerBase',
+    });
+
+    const core = baseCore({
+      bases: [
+        makeBase('test_base_1', [
+          makeMinion('a1', 'test_source_a', '0', 3),
+          makeMinion('a2', 'test_source_a', '1', 3),
+        ]),
+        makeBase('test_base_2', [makeMinion('a3', 'test_source_a', '0', 3)]),
+      ],
+    });
+
+    const queued = collectTriggers(core, 'afterScoring', {
+      state: core,
+      matchState: makeMatchState(core),
+      playerId: '0',
+      baseIndex: 0,
+      rankings: [{ playerId: '0', power: 6, vp: 1 }],
+      random: { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      now: 1,
+    });
+
+    expect(queued).toBeDefined();
+    const triggers = (queued as any).payload.triggers as TriggerInstance[];
+    expect(triggers).toHaveLength(2);
+    expect(triggers.map(t => t.sourceCardUid)).toEqual(['a1', 'a2']);
+    expect(new Set(triggers.map(t => t.id)).size).toBe(2);
+    expect(triggers.every(t => t.sourceBaseIndex === 0)).toBe(true);
   });
 });
 

@@ -83,13 +83,13 @@ export const VAMPIRE_POD_ACTIONS: ActionCardDef[] = [
     {
         id: 'vampire_buffet_pod',
         type: 'action',
-        subtype: 'special',
+        subtype: 'standard',
         name: '自助餐',
         nameEn: 'Buffet',
         faction: 'vampires_pod',
         // 注意：POD 自助餐是 onMinionDestroyed 触发后，从手牌创建交互并打出
         // 不是通用计分响应窗口中的可手动 special，因此不能有 abilityTags: ['special']
-        specialTiming: 'triggered',
+        abilityTags: ['onPlay'],
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS5, index: 30 },
     },

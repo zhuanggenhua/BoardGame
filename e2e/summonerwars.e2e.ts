@@ -1,8 +1,8 @@
 /**
  * 召唤师战争 E2E 测试
  * 
- * 注意：召唤师战争没有本地模式（allowLocalMode: false）
- * 完整游戏UI测试需要后端服务运行
+ * 当前文件同时覆盖在线房间与本地测试路由场景；
+ * 涉及真实多人流时仍需要后端服务运行。
  */
 
 import { test, expect } from './framework';
@@ -916,6 +916,49 @@ const longPressTouch = async (locator: Locator, durationMs = 620, pointerId = 1)
     isPrimary: true,
     buttons: 0,
   });
+};
+
+const getFabStoredPosition = async (page: Page) => (
+  page.evaluate(() => {
+    const raw = localStorage.getItem('hud_fab_position');
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw) as { leftPercent: number; topPercent: number };
+  })
+);
+
+const touchDragElement = async (
+  locator: Locator,
+  {
+    deltaX,
+    deltaY,
+    steps = 8,
+  }: {
+    deltaX: number;
+    deltaY: number;
+    steps?: number;
+  },
+) => {
+  const box = await locator.boundingBox();
+  if (!box) {
+    throw new Error('无法获取 FAB 按钮位置');
+  }
+
+  const startX = box.x + box.width / 2;
+  const startY = box.y + box.height / 2;
+  const page = locator.page();
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+
+  for (let step = 1; step <= steps; step += 1) {
+    const nextX = startX + (deltaX * step) / steps;
+    const nextY = startY + (deltaY * step) / steps;
+    await page.mouse.move(nextX, nextY);
+    await page.waitForTimeout(16);
+  }
+
+  await page.mouse.up();
 };
 
 const waitForOverlayState = async (page: Page, overlayTestId: string, expected: 'open' | 'closed') => {
@@ -2623,6 +2666,77 @@ test.describe('SummonerWars', () => {
     await hostPage.screenshot({
       path: getEvidenceScreenshotPath(testInfo, '20-tablet-landscape-board', {
         filename: '20-tablet-landscape-board.png',
+      }),
+      fullPage: false,
+    });
+
+    await hostContext.close();
+  });
+
+  test('移动横屏：悬浮球可拖出边界并让出结束阶段按钮', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    await clearEvidenceScreenshotsForTest(testInfo);
+
+    const hostContext = await browser.newContext({
+      baseURL,
+      viewport: { width: 812, height: 375 },
+      isMobile: true,
+      hasTouch: true,
+    });
+
+    await hostContext.addInitScript(() => {
+      (window as Window & { __E2E_SKIP_IMAGE_GATE__?: boolean }).__E2E_SKIP_IMAGE_GATE__ = true;
+      (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = true;
+      (window as Window & { __BG_HIDE_DEBUG_PANEL__?: boolean }).__BG_HIDE_DEBUG_PANEL__ = true;
+      localStorage.removeItem('hud_fab_position');
+      localStorage.removeItem('hud_fab_offset');
+    });
+    await blockAudioRequests(hostContext);
+    await mockSummonerWarsMapImage(hostContext);
+    await setEnglishLocale(hostContext);
+    await disableAudio(hostContext);
+
+    const hostPage = await hostContext.newPage();
+    await hostPage.setViewportSize({ width: 667, height: 375 });
+    await openSummonerWarsMobileEvidencePage(hostPage);
+    await waitForSummonerWarsVisualStable(hostPage);
+
+    const exitFab = hostPage.locator('[data-testid="fab-menu"] [data-fab-id="exit"]');
+    await expect(exitFab).toBeVisible({ timeout: 5000 });
+    await expect(hostPage.getByTestId('sw-end-phase')).toBeVisible({ timeout: 5000 });
+
+    const beforeBox = await exitFab.boundingBox();
+    expect(beforeBox).not.toBeNull();
+
+    await touchDragElement(exitFab, {
+      deltaX: -520,
+      deltaY: 120,
+    });
+    await hostPage.waitForTimeout(180);
+
+    const draggedBox = await exitFab.boundingBox();
+    const draggedStoredPosition = await getFabStoredPosition(hostPage);
+    expect(draggedBox).not.toBeNull();
+    expect(draggedStoredPosition).not.toBeNull();
+    expect((draggedStoredPosition?.leftPercent ?? 1)).toBeLessThan(0.08);
+    expect((draggedBox?.x ?? 999)).toBeLessThan(50);
+    expect(Math.abs((draggedBox?.x ?? 0) - (beforeBox?.x ?? 0))).toBeGreaterThan(120);
+
+    await hostPage.screenshot({
+      path: getEvidenceScreenshotPath(testInfo, 'mobile-fab-overflow-position', {
+        filename: '30-mobile-fab-overflow-position.png',
+      }),
+      fullPage: false,
+    });
+
+    const phaseBeforeAdvance = await getCurrentPhase(hostPage);
+    const phaseAfterAdvance = await advancePhase(hostPage, phaseBeforeAdvance);
+    expect(phaseAfterAdvance).not.toBe(phaseBeforeAdvance);
+
+    await hostPage.screenshot({
+      path: getEvidenceScreenshotPath(testInfo, 'mobile-fab-overflow-and-end-phase-clickable', {
+        filename: '31-mobile-fab-overflow-and-end-phase-clickable.png',
       }),
       fullPage: false,
     });

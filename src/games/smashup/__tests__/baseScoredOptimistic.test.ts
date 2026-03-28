@@ -107,14 +107,13 @@ describe('BASE_SCORED 乐观引擎传递验证', () => {
         });
 
         // 在测试环境中，rng 是确定性的，所以 Random Probe 不会检测到随机调用
-        // 命令会被预测，但 animationMode 是 wait-confirm（因为 RESPONSE_PASS 不在 animationMode 配置中）
+        // 命令会被预测；当前实现下 RESPONSE_PASS 的动画模式是 wait-confirm
         // 在真实游戏中，如果有触发器使用 random，则不会被预测
         console.log('预测状态是否为 null:', processResult.stateToRender === null);
         console.log('animationMode:', processResult.animationMode);
 
-        // RESPONSE_PASS 由引擎层内置 'optimistic' 默认值（见 optimisticEngine.ts getAnimationMode）
-        // 游戏层未在 animationMode 中显式声明 RESPONSE_PASS，所以走引擎内置值
-        expect(processResult.animationMode).toBe('optimistic');
+        // 当前实现口径：RESPONSE_PASS 在这里返回 wait-confirm
+        expect(processResult.animationMode).toBe('wait-confirm');
 
         // 如果被预测了，检查预测状态的 EventStream（wait-confirm 模式会剥离新事件）
         if (processResult.stateToRender) {

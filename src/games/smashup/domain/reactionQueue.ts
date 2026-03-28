@@ -5,6 +5,7 @@ import { createSimpleChoice, queueInteraction } from '../../../engine/systems/In
 import { getCurrentPlayerId } from './types';
 import { getTriggerExecutor } from './triggerExecutors';
 import { reduce } from './reduce';
+import { getBaseDef, getCardDef } from '../data/cards';
 
 function getClockwiseOrder(turnOrder: PlayerId[], startingPlayerId: PlayerId): PlayerId[] {
   const idx = turnOrder.indexOf(startingPlayerId);
@@ -29,6 +30,31 @@ function chooseNextTriggerOwner(core: SmashUpCore): PlayerId {
     if (pending.some(t => t.ownerPlayerId === pid)) return pid;
   }
   return current;
+}
+
+function getReactionTimingLabelKey(timing: TriggerInstance['timing']): string {
+  switch (timing) {
+    case 'onMinionPlayed':
+    case 'onActionPlayed':
+    case 'onBaseRevealed':
+    case 'onMinionDestroyed':
+    case 'onMinionMoved':
+    case 'onMinionAffected':
+    case 'onMinionDiscardedFromBase':
+    case 'onTurnEnd':
+    case 'onTurnStart':
+    case 'beforeScoring':
+    case 'afterScoring':
+      return `ui.reaction_timing.${timing}`;
+    default:
+      return 'ui.reaction_timing.unknown';
+  }
+}
+
+function buildReactionQueueOptionLabel(trigger: TriggerInstance): string {
+  const sourceDef = getCardDef(trigger.sourceDefId) ?? getBaseDef(trigger.sourceDefId);
+  const sourceLabel = sourceDef ? `cards.${trigger.sourceDefId}.name` : trigger.sourceDefId;
+  return `${sourceLabel} · ${getReactionTimingLabelKey(trigger.timing)}`;
 }
 
 export function maybeResolveReactionQueue(
@@ -56,6 +82,9 @@ export function maybeResolveReactionQueue(
         state: coreAfterConsume,
         matchState: { ...state, core: coreAfterConsume },
         timing: t.timing,
+        sourceCardUid: t.sourceCardUid,
+        sourceBaseIndex: t.sourceBaseIndex,
+        sourceControllerId: t.sourceControllerId,
         playerId: t.ownerPlayerId,
         baseIndex: t.baseIndex,
         moveFromBaseIndex: t.moveFromBaseIndex,
@@ -106,7 +135,7 @@ export function maybeResolveReactionQueue(
     .filter(t => t.mandatory ? decider === getCurrentPlayerId(core) : t.ownerPlayerId === decider)
     .map(t => ({
       id: t.id,
-      label: `${t.sourceDefId} @${t.timing}`,
+      label: buildReactionQueueOptionLabel(t),
       value: { triggerId: t.id },
       displayMode: 'button' as const,
     }));

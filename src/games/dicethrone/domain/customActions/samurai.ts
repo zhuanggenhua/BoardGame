@@ -1,0 +1,320 @@
+import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import type {
+    BonusDamageAddedEvent,
+    BonusDieRolledEvent,
+    DamageShieldGrantedEvent,
+    DiceThroneEvent,
+    TokenGrantedEvent,
+} from '../events';
+import { SAMURAI_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
+import { getActiveDice, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+
+const FACE = SAMURAI_DICE_FACE_IDS;
+
+function createGrantTokenEvent(
+    state: CustomActionContext['state'],
+    targetId: string,
+    tokenId: string,
+    amount: number,
+    sourceAbilityId: string,
+    timestamp: number,
+): TokenGrantedEvent | null {
+    if (amount <= 0) return null;
+
+    const current = state.players[targetId]?.tokens[tokenId] ?? 0;
+    const limit = getTokenStackLimit(state, targetId, tokenId);
+    const newTotal = Math.min(current + amount, limit);
+    const granted = newTotal - current;
+    if (granted <= 0) return null;
+
+    return {
+        type: 'TOKEN_GRANTED',
+        payload: {
+            targetId,
+            tokenId,
+            amount: granted,
+            newTotal,
+            sourceAbilityId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as TokenGrantedEvent;
+}
+
+function getMaxDuplicateValueCount(state: CustomActionContext['state']): number {
+    const counts = new Map<number, number>();
+    for (const die of getActiveDice(state)) {
+        counts.set(die.value, (counts.get(die.value) ?? 0) + 1);
+    }
+    return Math.max(0, ...counts.values());
+}
+
+function handleBackStrikeUse({ ctx, state, random, timestamp }: CustomActionContext): DiceThroneEvent[] {
+    if (!random) return [];
+
+    const ownerId = ctx.defenderId;
+    const originalAttackerId = ctx.attackerId;
+    if (!ownerId || !originalAttackerId) return [];
+
+    const roll = random.d(6);
+    const face = getPlayerDieFace(state, ownerId, roll) ?? FACE.KATANA;
+    const damage = Math.ceil(roll / 2);
+
+    const events: DiceThroneEvent[] = [{
+        type: 'BONUS_DIE_ROLLED',
+        payload: {
+            value: roll,
+            face,
+            playerId: ownerId,
+            targetPlayerId: originalAttackerId,
+            effectKey: 'bonusDie.effect.samuraiBackStrikeDie',
+            effectParams: { value: roll },
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as BonusDieRolledEvent];
+
+    const damageCalc = createDamageCalculation({
+        source: { playerId: ownerId, abilityId: 'samurai-back-strike-reflect' },
+        target: { playerId: originalAttackerId },
+        baseDamage: damage,
+        state,
+        timestamp: timestamp + 1,
+    });
+    events.push(...damageCalc.toEvents());
+    return events;
+}
+
+function handleStandTall({ targetId, ctx, sourceAbilityId, state, timestamp }: CustomActionContext, suppressSelfShame: boolean): DiceThroneEvent[] {
+    // defensiveRoll 会把“当前执行防御技的玩家”放到 ctx.attackerId，
+    // 因此这里要从 ctx.defenderId 取回原始进攻方。
+    const originalAttackerId = ctx.defenderId;
+    const faceCounts = getFaceCounts(getActiveDice(state));
+    const katanaCount = faceCounts[FACE.KATANA] ?? 0;
+    const helmCount = faceCounts[FACE.HELM] ?? 0;
+    const risingSunCount = faceCounts[FACE.RISING_SUN] ?? 0;
+    const events: DiceThroneEvent[] = [];
+
+    if (katanaCount > 0 && originalAttackerId) {
+        const damageCalc = createDamageCalculation({
+            source: { playerId: targetId, abilityId: sourceAbilityId },
+            target: { playerId: originalAttackerId },
+            baseDamage: katanaCount,
+            state,
+            timestamp: timestamp + 10,
+        });
+        events.push(...damageCalc.toEvents());
+    }
+
+    const preventAmount = helmCount + (risingSunCount * 2);
+    if (preventAmount > 0) {
+        events.push({
+            type: 'DAMAGE_SHIELD_GRANTED',
+            payload: {
+                targetId,
+                value: preventAmount,
+                sourceId: sourceAbilityId,
+                preventStatus: false,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 20,
+        } as DamageShieldGrantedEvent);
+    }
+
+    if (!suppressSelfShame && helmCount === 0 && risingSunCount === 0) {
+        const shameEvent = createGrantTokenEvent(state, targetId, TOKEN_IDS.SHAME, 1, sourceAbilityId, timestamp + 30);
+        if (shameEvent) {
+            events.push(shameEvent);
+        }
+    }
+
+    return events;
+}
+
+function handleStandTallBase(ctx: CustomActionContext): DiceThroneEvent[] {
+    return handleStandTall(ctx, false);
+}
+
+function handleStandTall2(ctx: CustomActionContext): DiceThroneEvent[] {
+    return handleStandTall(ctx, true);
+}
+
+function handleKatanaSliceThreshold(
+    { ctx, sourceAbilityId, state, timestamp }: CustomActionContext,
+    threshold: number,
+): DiceThroneEvent[] {
+    const defenderId = ctx.defenderId;
+    if (!defenderId) return [];
+    if (getMaxDuplicateValueCount(state) < threshold) return [];
+
+    const shameEvent = createGrantTokenEvent(state, defenderId, TOKEN_IDS.SHAME, 1, sourceAbilityId, timestamp);
+    return shameEvent ? [shameEvent] : [];
+}
+
+function handleKatanaSliceThreshold4(ctx: CustomActionContext): DiceThroneEvent[] {
+    return handleKatanaSliceThreshold(ctx, 4);
+}
+
+function handleKatanaSliceThreshold3(ctx: CustomActionContext): DiceThroneEvent[] {
+    return handleKatanaSliceThreshold(ctx, 3);
+}
+
+function handleMasamune({ attackerId, ctx, sourceAbilityId, state, timestamp, random, action }: CustomActionContext): DiceThroneEvent[] {
+    if (!random) return [];
+
+    const defenderId = ctx.defenderId;
+    if (!defenderId) return [];
+
+    const params = action.params as { diceCount?: number } | undefined;
+    const diceCount = Number.isInteger(params?.diceCount) && (params?.diceCount ?? 0) > 0
+        ? (params?.diceCount as number)
+        : 5;
+
+    const dice = Array.from({ length: diceCount }, (_, index) => {
+        const value = random.d(6);
+        const face = getPlayerDieFace(state, attackerId, value) ?? FACE.KATANA;
+        return { index, value, face };
+    });
+
+    const events: DiceThroneEvent[] = dice.map((die, index) => ({
+        type: 'BONUS_DIE_ROLLED',
+        payload: {
+            value: die.value,
+            face: die.face,
+            playerId: attackerId,
+            targetPlayerId: defenderId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: timestamp + index,
+    } as BonusDieRolledEvent));
+
+    events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, defenderId, dice, timestamp + 10));
+
+    const katanaCount = dice.filter(die => die.face === FACE.KATANA).length;
+    if (katanaCount > 0) {
+        events.push({
+            type: 'BONUS_DAMAGE_ADDED',
+            payload: {
+                playerId: attackerId,
+                amount: katanaCount,
+                sourceCardId: sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 11,
+        } as BonusDamageAddedEvent);
+    }
+
+    const shameCount = dice.filter(die => die.face === FACE.HELM).length;
+    const shameEvent = createGrantTokenEvent(state, defenderId, TOKEN_IDS.SHAME, shameCount, sourceAbilityId, timestamp + 12);
+    if (shameEvent) {
+        events.push(shameEvent);
+    }
+
+    const retributionCount = dice.filter(die => die.face === FACE.RISING_SUN).length;
+    const retributionEvent = createGrantTokenEvent(state, attackerId, TOKEN_IDS.SAMURAI_RETRIBUTION, retributionCount, sourceAbilityId, timestamp + 13);
+    if (retributionEvent) {
+        events.push(retributionEvent);
+    }
+
+    return events;
+}
+
+function handleRighteousness({ attackerId, ctx, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
+    if (!random) return [];
+
+    const defenderId = ctx.defenderId;
+    if (!defenderId) return [];
+
+    const value = random.d(6);
+    const face = getPlayerDieFace(state, attackerId, value) ?? FACE.KATANA;
+    const effectKeyMap: Record<string, string> = {
+        [FACE.KATANA]: 'bonusDie.effect.samuraiRighteousnessKatana',
+        [FACE.HELM]: 'bonusDie.effect.samuraiRighteousnessHelm',
+        [FACE.RISING_SUN]: 'bonusDie.effect.samuraiRighteousnessRisingSun',
+    };
+
+    const events: DiceThroneEvent[] = [{
+        type: 'BONUS_DIE_ROLLED',
+        payload: {
+            value,
+            face,
+            playerId: attackerId,
+            targetPlayerId: defenderId,
+            effectKey: effectKeyMap[face] ?? 'bonusDie.effect.default',
+            effectParams: { value },
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as BonusDieRolledEvent];
+
+    events.push(createDisplayOnlySettlement(
+        sourceAbilityId,
+        attackerId,
+        defenderId,
+        [{ index: 0, value, face, effectKey: effectKeyMap[face] ?? 'bonusDie.effect.default' }],
+        timestamp + 1,
+    ));
+
+    if (face === FACE.KATANA) {
+        events.push({
+            type: 'BONUS_DAMAGE_ADDED',
+            payload: {
+                playerId: attackerId,
+                amount: 2,
+                sourceCardId: sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 2,
+        } as BonusDamageAddedEvent);
+        return events;
+    }
+
+    if (face === FACE.HELM) {
+        const shameEvent = createGrantTokenEvent(state, defenderId, TOKEN_IDS.SHAME, 2, sourceAbilityId, timestamp + 2);
+        if (shameEvent) {
+            events.push(shameEvent);
+        }
+        return events;
+    }
+
+    const retributionEvent = createGrantTokenEvent(
+        state,
+        attackerId,
+        TOKEN_IDS.SAMURAI_RETRIBUTION,
+        1,
+        sourceAbilityId,
+        timestamp + 2,
+    );
+    if (retributionEvent) {
+        events.push(retributionEvent);
+    }
+
+    return events;
+}
+
+export function registerSamuraiCustomActions(): void {
+    registerCustomActionHandler('samurai-back-strike-use', handleBackStrikeUse, {
+        categories: ['token', 'damage', 'dice', 'defense'],
+    });
+    registerCustomActionHandler('samurai-stand-tall', handleStandTallBase, {
+        categories: ['defense', 'token'],
+        phases: ['defensiveRoll'],
+    });
+    registerCustomActionHandler('samurai-stand-tall-2', handleStandTall2, {
+        categories: ['defense', 'token'],
+        phases: ['defensiveRoll'],
+    });
+    registerCustomActionHandler('samurai-katana-slice-threshold-4', handleKatanaSliceThreshold4, {
+        categories: ['status', 'dice', 'token'],
+    });
+    registerCustomActionHandler('samurai-katana-slice-threshold-3', handleKatanaSliceThreshold3, {
+        categories: ['status', 'dice', 'token'],
+    });
+    registerCustomActionHandler('samurai-masamune', handleMasamune, {
+        categories: ['dice', 'token', 'status'],
+    });
+    registerCustomActionHandler('samurai-card-righteousness', handleRighteousness, {
+        categories: ['card', 'dice', 'token', 'status'],
+    });
+}

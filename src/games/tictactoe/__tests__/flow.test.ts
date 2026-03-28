@@ -3,10 +3,17 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { buildTicTacToeAiLegalActions } from '../ai';
+import { engineConfig } from '../game';
+import { createInitialSystemState } from '../../../engine/pipeline';
+import {
+    registerRemoteAiProvider,
+    resolveNextLocalAiAction,
+} from '../../../engine/ai';
 import { TicTacToeDomain } from '../domain';
 import type { TicTacToeCore } from '../domain/types';
 import { GameTestRunner, type TestCase, type StateExpectation } from '../../../engine/testing';
-import { createInitialSystemState } from '../../../engine/pipeline';
+import type { MatchState } from '../../../engine/types';
 
 // ============================================================================
 // 井字棋专用断言
@@ -183,5 +190,190 @@ describe('井字棋流程测试', () => {
     it.each(testCases)('$name', (testCase) => {
         const result = runner.run(testCase);
         expect(result.assertionErrors).toEqual([]);
+    });
+});
+
+const createAiTestState = (
+    core: TicTacToeCore,
+): MatchState<TicTacToeCore> => ({
+    core,
+    sys: {
+        ...createInitialSystemState(core.playerIds, []),
+        phase: 'main',
+        interaction: {
+            current: null,
+            queue: [],
+        },
+        responseWindow: {
+            current: null,
+        },
+    },
+});
+
+describe('井字棋 AI', () => {
+    it('应只为当前玩家生成可落子动作', () => {
+        const state = createAiTestState({
+            cells: ['0', '1', null, null, '0', null, null, null, '1'],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const actions = buildTicTacToeAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions.map((action) => action.metadata?.cellId)).toEqual([2, 3, 5, 6, 7]);
+        expect(buildTicTacToeAiLegalActions({
+            playerId: '1',
+            state,
+        })).toEqual([]);
+    });
+
+    it('本地 AI runner 应优先选择制胜格子', async () => {
+        const state = createAiTestState({
+            cells: ['0', '0', null, '1', '1', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-win',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
+        expect(resolution?.source).toBe('local-ai');
+    });
+
+    it('远程 AI 返回非法动作时应回退到本地策略', async () => {
+        registerRemoteAiProvider({
+            id: 'test-invalid',
+            decide: async () => ({ actionId: 'invalid:cell:9' }),
+        });
+
+        const state = createAiTestState({
+            cells: ['0', '0', null, '1', '1', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-remote-invalid',
+            seatControllers: {
+                '0': { type: 'remote-ai', providerId: 'test-invalid', fallbackPolicyId: 'baseline' },
+            },
+        });
+
+        expect(resolution?.source).toBe('remote-ai-fallback');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
+    });
+
+    it('远程 AI 抛错时应回退到本地策略', async () => {
+        registerRemoteAiProvider({
+            id: 'test-throws',
+            decide: async () => {
+                throw new Error('provider_failed');
+            },
+        });
+
+        const state = createAiTestState({
+            cells: ['1', '1', null, null, '0', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-remote-error',
+            seatControllers: {
+                '0': { type: 'remote-ai', providerId: 'test-throws', fallbackPolicyId: 'baseline', retryCount: 1 },
+            },
+        });
+
+        expect(resolution?.source).toBe('remote-ai-fallback');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
+    });
+
+    it('远程 AI 重试后返回合法动作时应直接采用远程结果', async () => {
+        let attemptCount = 0;
+
+        registerRemoteAiProvider({
+            id: 'test-retry-success',
+            decide: async () => {
+                attemptCount += 1;
+                if (attemptCount === 1) {
+                    throw new Error('provider_failed_once');
+                }
+                return { actionId: 'click-cell:2' };
+            },
+        });
+
+        const state = createAiTestState({
+            cells: ['0', '0', null, '1', '1', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-remote-retry-success',
+            seatControllers: {
+                '0': { type: 'remote-ai', providerId: 'test-retry-success', fallbackPolicyId: 'baseline', retryCount: 1 },
+            },
+        });
+
+        expect(attemptCount).toBe(2);
+        expect(resolution?.source).toBe('remote-ai');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
+    });
+
+    it('远程 AI 超时时应回退到本地策略', async () => {
+        registerRemoteAiProvider({
+            id: 'test-timeout',
+            decide: async () => new Promise(() => undefined),
+        });
+
+        const state = createAiTestState({
+            cells: ['1', '1', null, null, '0', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-remote-timeout',
+            seatControllers: {
+                '0': { type: 'remote-ai', providerId: 'test-timeout', fallbackPolicyId: 'baseline', timeoutMs: 10 },
+            },
+        });
+
+        expect(resolution?.source).toBe('remote-ai-fallback');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
     });
 });

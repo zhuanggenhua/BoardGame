@@ -1086,7 +1086,7 @@ describe('Property 19: 疯狂牌库生命周期', () => {
         };
         const s = reduce(state, event as any);
         expect(s.players['0'].hand.length).toBe(0);
-        expect(s.madnessDeck!.length).toBe(30);
+        expect(s.madnessDeck!.length).toBe(29);
     });
 
     test('疯狂卡 VP 惩罚：每 2 张扣 1 VP', () => {

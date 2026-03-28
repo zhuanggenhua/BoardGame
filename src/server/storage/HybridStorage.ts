@@ -9,6 +9,7 @@ import type {
 } from '../../engine/transport/storage';
 import { mongoStorage, MongoStorage } from './MongoStorage';
 import logger from '../../../server/logger';
+import { decideDuplicateOwnerRoomAction } from '../duplicateOwnerRooms';
 
 const DISCONNECT_GRACE_MS = 5 * 60 * 1000;
 
@@ -149,9 +150,15 @@ export class HybridStorage implements MatchStorage {
             if (ownerKey) {
                 const existingMatchID = this.memoryOwnerIndex.get(ownerKey);
                 if (existingMatchID) {
-                    this.memory.wipe(existingMatchID);
-                    this.matchStorage.delete(existingMatchID);
-                    this.memoryMatchOwner.delete(existingMatchID);
+                    const { metadata: existingMetadata } = this.memory.fetch(existingMatchID, { metadata: true });
+                    const decision = decideDuplicateOwnerRoomAction(existingMetadata);
+                    if (decision.action === 'cleanup') {
+                        this.wipeMemoryMatch(existingMatchID);
+                        this.matchStorage.delete(existingMatchID);
+                    } else {
+                        const existingGameName = existingMetadata?.gameName ?? data.metadata.gameName;
+                        throw new Error(`ACTIVE_MATCH_EXISTS:${existingGameName}:${existingMatchID}`);
+                    }
                 }
                 this.memoryOwnerIndex.set(ownerKey, matchID);
                 this.memoryMatchOwner.set(matchID, ownerKey);

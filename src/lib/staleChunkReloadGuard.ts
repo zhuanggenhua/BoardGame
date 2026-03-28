@@ -1,0 +1,46 @@
+export const STALE_CHUNK_RELOAD_KEY = 'bg_stale_chunk_reload_guard';
+
+export const isStaleChunkError = (value: unknown): boolean => {
+    const message = value instanceof Error
+        ? `${value.name}: ${value.message}`
+        : String(value ?? '');
+
+    const normalized = message.toLowerCase();
+    return normalized.includes('failed to fetch dynamically imported module')
+        || normalized.includes('importing a module script failed')
+        || normalized.includes('expected a javascript module script')
+        || normalized.includes('chunkloaderror')
+        || normalized.includes('loading chunk');
+};
+
+type ReloadOnceDeps = {
+    currentLocation: string;
+    getStoredLocation: () => string | null;
+    setStoredLocation: (value: string) => void;
+    reload: () => void;
+    warn?: (message: string, payload: { reason: string }) => void;
+};
+
+export const reloadForStaleChunkOnceWithDeps = (reason: string, deps: ReloadOnceDeps): boolean => {
+    try {
+        const previous = deps.getStoredLocation();
+        if (previous === deps.currentLocation) {
+            return false;
+        }
+        deps.setStoredLocation(deps.currentLocation);
+    } catch {
+        // sessionStorage 不可用时降级为直接刷新一次
+    }
+
+    deps.warn?.('[bootstrap] stale chunk detected, reloading page', { reason });
+    deps.reload();
+    return true;
+};
+
+export const reloadForStaleChunkOnce = (reason: string, win: Window = window): boolean => reloadForStaleChunkOnceWithDeps(reason, {
+    currentLocation: `${win.location.pathname}${win.location.search}${win.location.hash}`,
+    getStoredLocation: () => win.sessionStorage.getItem(STALE_CHUNK_RELOAD_KEY),
+    setStoredLocation: (value: string) => win.sessionStorage.setItem(STALE_CHUNK_RELOAD_KEY, value),
+    reload: () => win.location.reload(),
+    warn: (message, payload) => console.warn(message, payload),
+});

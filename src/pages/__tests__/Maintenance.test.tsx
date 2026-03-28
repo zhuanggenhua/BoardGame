@@ -1,5 +1,5 @@
 /* @vitest-environment happy-dom */
-import { cleanup, render, renderHook, waitFor } from '@testing-library/react';
+import { cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Home } from '../Home';
 import { MaintenancePage } from '../Maintenance';
@@ -34,6 +34,7 @@ const mockReadStoredMatchCredentials = vi.fn();
 const mockValidateStoredMatchSeat = vi.fn(() => ({ shouldClear: false }));
 const mockGetOwnerActiveMatch = vi.fn(() => null);
 const mockPruneStoredMatchCredentials = vi.fn();
+let mockAuthToken: string | null = null;
 
 let hasStoredMatch = true;
 let lobbyPresenceState = {
@@ -42,6 +43,11 @@ let lobbyPresenceState = {
     hasSeen: true,
     exists: true,
     isMissing: false,
+};
+let lobbyStatsValue = {
+    matches: [] as Array<{ matchID: string; gameName: string; roomName?: string; players: Array<{ id: number; name?: string; isConnected?: boolean }> }>,
+    mostPopularGameId: undefined as string | undefined,
+    hasSnapshot: true,
 };
 
 const storedMatch = {
@@ -88,7 +94,15 @@ vi.mock('../../config/games.config', () => ({
 vi.mock('../../contexts/AuthContext', () => ({
     useAuth: () => ({
         user: null,
-        token: null,
+        token: mockAuthToken,
+        logout: mockLogout,
+    }),
+}));
+
+vi.mock('@/contexts/AuthContext', () => ({
+    useAuth: () => ({
+        user: null,
+        token: mockAuthToken,
         logout: mockLogout,
     }),
 }));
@@ -140,7 +154,31 @@ vi.mock('../../components/common/SEO', () => ({
 }));
 
 vi.mock('../../hooks/useLobbyStats', () => ({
-    useLobbyStats: () => ({ mostPopularGameId: undefined }),
+    useLobbyStats: () => lobbyStatsValue,
+}));
+
+vi.mock('@/hooks/useLobbyStats', () => ({
+    useLobbyStats: () => lobbyStatsValue,
+}));
+
+vi.mock('@/services/lobbySocket', () => ({
+    lobbySocket: {
+        subscribeStatus: (callback: (status: { connected: boolean }) => void) => {
+            callback({ connected: true });
+            return () => undefined;
+        },
+        getConnectionStatus: () => ({ connected: true, reconnectAttempts: 0 }),
+    },
+}));
+
+vi.mock('../../services/lobbySocket', () => ({
+    lobbySocket: {
+        subscribeStatus: (callback: (status: { connected: boolean }) => void) => {
+            callback({ connected: true });
+            return () => undefined;
+        },
+        getConnectionStatus: () => ({ connected: true, reconnectAttempts: 0 }),
+    },
 }));
 
 vi.mock('../../hooks/useLobbyMatchPresence', () => ({
@@ -193,6 +231,83 @@ describe('Maintenance Page', () => {
 
     it('should keep the expected function name', () => {
         expect(MaintenancePage.name).toBe('MaintenancePage');
+    });
+});
+
+describe('SystemHealthPage', () => {
+    beforeEach(() => {
+        cleanup();
+        mockAuthToken = 'admin-token';
+        lobbyStatsValue = {
+            matches: [
+                {
+                    matchID: 'room-alpha',
+                    gameName: 'smashup',
+                    roomName: 'Alpha 房',
+                    players: [
+                        { id: 0, name: 'Alice', isConnected: true },
+                        { id: 1, name: 'Bob', isConnected: false },
+                    ],
+                },
+                {
+                    matchID: 'room-beta',
+                    gameName: 'smashup',
+                    roomName: 'Beta 房',
+                    players: [
+                        { id: 0, name: 'Carol', isConnected: true },
+                    ],
+                },
+            ],
+            mostPopularGameId: 'smashup',
+            hasSnapshot: true,
+        };
+
+        vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request) => {
+            const url = typeof input === 'string'
+                ? input
+                : input instanceof URL
+                    ? input.toString()
+                    : input.url;
+            if (url.includes('/admin/stats')) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        totalUsers: 99,
+                        totalMatches: 200,
+                        todayMatches: 12,
+                        bannedUsers: 3,
+                    }),
+                } as Response;
+            }
+            if (url.includes('/admin/rooms?page=1&limit=1')) {
+                return {
+                    ok: true,
+                    json: async () => ({ total: 7 }),
+                } as Response;
+            }
+            throw new Error(`unexpected fetch: ${url}`);
+        }));
+    });
+
+    afterEach(() => {
+        mockAuthToken = null;
+        vi.unstubAllGlobals();
+        cleanup();
+    });
+
+    it('renders realtime room player online states grouped by game', async () => {
+        const { default: SystemHealthPage } = await import('../admin/SystemHealth');
+
+        render(<SystemHealthPage />);
+
+        expect(await screen.findByText('系统健康监控')).toBeTruthy();
+        expect(await screen.findByText('Alpha 房')).toBeTruthy();
+        expect(screen.getByText('Beta 房')).toBeTruthy();
+        expect(screen.getByText('Alice')).toBeTruthy();
+        expect(screen.getByText('Bob')).toBeTruthy();
+        expect(screen.getAllByText('在线').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('离线').length).toBeGreaterThan(0);
+        expect(screen.getByText('持久化房间')).toBeTruthy();
     });
 });
 

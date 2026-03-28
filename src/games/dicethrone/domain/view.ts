@@ -5,6 +5,7 @@
 
 import type { PlayerId } from '../../../engine/types';
 import type { DiceThroneCore, HeroState, AbilityCard } from './types';
+import { areTeammates } from './rules';
 
 /**
  * 隐藏卡牌内容（只保留 id 用于数量统计）
@@ -29,12 +30,12 @@ const ensurePlayerFields = (player: HeroState): HeroState => ({
  */
 const filterPlayerView = (
     player: HeroState,
-    isOwner: boolean
+    isVisibleToViewer: boolean
 ): HeroState => {
     const normalized = ensurePlayerFields(player);
     
-    if (isOwner) {
-        // 自己的状态完全可见
+    if (isVisibleToViewer) {
+        // 自己与队友都展示完整信息
         return normalized;
     }
 
@@ -59,8 +60,9 @@ export const playerView = (
     const filteredPlayers: Record<PlayerId, HeroState> = {};
 
     for (const [playerId, player] of Object.entries(state.players)) {
-        const isOwner = playerId === viewingPlayerId;
-        filteredPlayers[playerId] = filterPlayerView(player, isOwner);
+        const isVisibleToViewer = playerId === viewingPlayerId
+            || areTeammates(state, playerId, viewingPlayerId);
+        filteredPlayers[playerId] = filterPlayerView(player, isVisibleToViewer);
     }
 
     return {

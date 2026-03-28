@@ -18,6 +18,7 @@ import { ToastViewport } from './components/system/ToastViewport';
 import { EngineNotificationListener } from './components/system/EngineNotificationListener';
 import { SocketCompatibilityToastListener } from './components/system/SocketCompatibilityToastListener';
 import { LoadingScreen } from './components/system/LoadingScreen';
+import { ViewportDebugProbe } from './components/system/ViewportDebugProbe';
 import { Toaster } from 'react-hot-toast';
 import { GlobalHUD } from './components/system/GlobalHUD';
 import { GlobalErrorBoundary } from './components/system/GlobalErrorBoundary';
@@ -174,6 +175,7 @@ const AppContent = () => {
                         <DevMobileEvidenceCaptureAgent />
                       </React.Suspense>
                     ) : null}
+                    <ViewportDebugProbe />
                     <GlobalHUD />
                     <ModalStackRoot />
                     <ToastViewport />

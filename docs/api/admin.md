@@ -831,6 +831,7 @@ Authorization: Bearer <admin_token>
 | status | string | 否 | 按状态筛选，支持 `open` / `in_progress` / `resolved` / `closed` |
 | type | string | 否 | 按类型筛选，支持 `bug` / `suggestion` / `other` |
 | severity | string | 否 | 按严重程度筛选，支持 `low` / `medium` / `high` / `critical` |
+| sort | string | 否 | 时间排序，支持 `newest`（默认） / `oldest` |
 
 **响应示例**:
 ```json

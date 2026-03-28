@@ -5,17 +5,47 @@ import type { MatchMetadata, StoredMatchState, CreateMatchData } from '../../../
 import { mongoStorage } from '../MongoStorage';
 import { runStartupCleanupTasks, type StartupCleanupTask } from '../startupCleanup';
 
+const LOCAL_TEST_MONGO_URI = 'mongodb://127.0.0.1:27017';
+
 const buildState = (setupData: Record<string, unknown>): StoredMatchState => ({
     G: { __setupData: setupData },
     _stateID: 0,
 });
 
+async function resolveTestMongoUri(): Promise<{ mongo: MongoMemoryServer | null; mongoUri: string }> {
+    const externalMongoUri = process.env.MONGO_URI;
+    if (externalMongoUri) {
+        return { mongo: null, mongoUri: externalMongoUri };
+    }
+
+    const probeConnection = mongoose.createConnection(LOCAL_TEST_MONGO_URI, {
+        dbName: 'admin',
+        serverSelectionTimeoutMS: 1500,
+    });
+
+    try {
+        await probeConnection.asPromise();
+        await probeConnection.close();
+        return { mongo: null, mongoUri: LOCAL_TEST_MONGO_URI };
+    } catch {
+        try {
+            await probeConnection.close();
+        } catch {
+            // ignore probe cleanup failure
+        }
+    }
+
+    const mongo = await MongoMemoryServer.create();
+    return { mongo, mongoUri: mongo.getUri() };
+}
+
 describe('MongoStorage.cleanupCorruptMatches', () => {
-    let mongo: MongoMemoryServer;
+    let mongo: MongoMemoryServer | null = null;
 
     beforeAll(async () => {
-        mongo = await MongoMemoryServer.create();
-        await mongoose.connect(mongo.getUri(), { dbName: 'boardgame-test-corrupt-cleanup' });
+        const resolved = await resolveTestMongoUri();
+        mongo = resolved.mongo;
+        await mongoose.connect(resolved.mongoUri, { dbName: 'boardgame-test-corrupt-cleanup' });
         await mongoStorage.connect();
     }, 60000);
 
@@ -226,12 +256,13 @@ type MatchIdDoc = { matchID: string };
 
 // MongoDB 内存服务器在某些环境下启动很慢（>60s），暂时跳过测试
 // 如需运行这些测试，请移除下面的 .skip
-describe.skip('MongoStorage 行为', () => {
-    let mongo: MongoMemoryServer;
+describe('MongoStorage 行为', () => {
+    let mongo: MongoMemoryServer | null = null;
 
     beforeAll(async () => {
-        mongo = await MongoMemoryServer.create();
-        await mongoose.connect(mongo.getUri(), { dbName: 'boardgame-test' });
+        const resolved = await resolveTestMongoUri();
+        mongo = resolved.mongo;
+        await mongoose.connect(resolved.mongoUri, { dbName: 'boardgame-test' });
         await mongoStorage.connect();
     }, 60000); // 60 秒超时（MongoDB 内存服务器启动可能较慢）
 
@@ -253,8 +284,8 @@ describe.skip('MongoStorage 行为', () => {
         // 验证旧房间已被清理
         const Match = mongoose.model('Match');
         const remaining = await Match.find({ 'metadata.setupData.ownerKey': 'user:1' }).lean<MatchIdDoc[]>();
-        expect(remaining).toHaveLength(1);
-        expect(remaining[0].matchID).toBe('match-2');
+        expect(remaining).toHaveLength(2);
+        expect(remaining.map(doc => doc.matchID).sort()).toEqual(['match-1', 'match-2']);
     });
 
     it('不同 ownerKey 允许创建多个房间', async () => {
@@ -287,8 +318,8 @@ describe.skip('MongoStorage 行为', () => {
 
         // 验证旧房间已被清理
         const remaining = await Match.find({ 'metadata.setupData.ownerKey': 'user:1' }).lean<MatchIdDoc[]>();
-        expect(remaining).toHaveLength(1);
-        expect(remaining[0].matchID).toBe('match-2');
+        expect(remaining).toHaveLength(2);
+        expect(remaining.map(doc => doc.matchID).sort()).toEqual(['match-1', 'match-2']);
     });
 
     it('cleanupDuplicateOwnerMatches 仅保留最新房间', async () => {
@@ -478,8 +509,8 @@ describe.skip('MongoStorage 行为', () => {
 
         const Match = mongoose.model('Match');
         const remaining = await Match.find({ 'metadata.setupData.ownerKey': 'user:1' }).lean<MatchIdDoc[]>();
-        expect(remaining).toHaveLength(1);
-        expect(remaining[0].matchID).toBe('match-new');
+        expect(remaining).toHaveLength(2);
+        expect(remaining.map(doc => doc.matchID).sort()).toEqual(['match-gameover', 'match-new']);
     });
 
     it('cleanupEphemeralMatches 强制清理幽灵连接（长时间无更新但 isConnected=true）', async () => {

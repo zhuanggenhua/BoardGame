@@ -30,7 +30,7 @@
   },
   "hud": {
     "mode": {
-      "local": "Local",
+      "local": "Single Device",
       "tutorial": "Tutorial",
       "online": "Online Room"
     },
@@ -47,8 +47,8 @@
       "offline": "Offline",
       "empty": "Empty",
       "searching": "Searching",
-      "localTitle": "Local Match",
-      "localDescription": "Take turns on this device.",
+      "localTitle": "Single Device",
+      "localDescription": "Take turns on the same screen.",
       "tutorialTitle": "Tutorial Mode",
       "tutorialDescription": "Follow the guidance to learn the rules."
     },
@@ -330,6 +330,21 @@
       "apply": "Apply state",
       "errorUnsupported": "This game does not support state assignment",
       "errorInvalidJson": "Invalid JSON format"
+    },
+    "ai": {
+      "section": "AI",
+      "supportTitle": "Support",
+      "seatControllers": "Seat Controllers",
+      "none": "No seat controllers configured",
+      "human": "Human",
+      "local": "Local AI",
+      "remote": "Remote AI",
+      "policy": "Policy: {{value}}",
+      "provider": "Provider: {{value}}",
+      "modes": {
+        "local": "Local Match",
+        "online": "Online Match"
+      }
     },
     "reset": {
       "button": "🔄 Reset Game",

@@ -4,7 +4,7 @@
  * 覆盖：创建房间 → 双方加入 → 选择阵营 → 准备 → 开始 → 进入游戏
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './framework';
 import { initContext, ensureGameServerAvailable, joinMatchViaAPI, seedMatchCredentials, getGameServerBaseURL } from './helpers/common';
 import {
     createSWRoomViaAPI,

@@ -518,6 +518,91 @@ describe('afterScoring 延迟清场回归', () => {
         expect(result).toBeUndefined();
     });
 
+    it('scoreBases 进入 draw 时应基于清场后的临时 core 洗牌抽牌', () => {
+        const state = wrapState(makeCore({
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    deck: [],
+                    discard: [],
+                }),
+            },
+            bases: [
+                makeBase('base_cave_of_shinies_pod', {
+                    minions: [
+                        makeMinion('p1a', '1', 3, 'wizard_neophyte_pod'),
+                        makeMinion('p1b', '1', 4, 'bear_cavalry_polar_commando_pod'),
+                    ],
+                }),
+            ],
+            baseDeck: ['base_secret_garden'],
+        }));
+
+        const result = smashUpFlowHooks.onPhaseEnter?.({
+            state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '1', payload: undefined, timestamp: 3000 } as any,
+            random: {
+                D6: () => 1,
+                Number: () => 0.5,
+                Die: () => 1,
+                shuffle: <T>(cards: T[]) => [...cards],
+            } as any,
+            exitEvents: [
+                {
+                    type: SU_EVENTS.BASE_CLEARED,
+                    payload: { baseIndex: 0, baseDefId: 'base_cave_of_shinies_pod' },
+                    timestamp: 3000,
+                } as any,
+            ],
+        });
+
+        if (!result) {
+            throw new Error('Expected onPhaseEnter(draw) to return events');
+        }
+
+        const emittedEvents = (Array.isArray(result) ? result : result.events) as SmashUpEvent[];
+        expect(emittedEvents.map(event => event.type)).toEqual([
+            SU_EVENTS.DECK_RESHUFFLED,
+            SU_EVENTS.CARDS_DRAWN,
+        ]);
+        expect((emittedEvents[0] as any).payload.deckUids).toEqual(['p1a', 'p1b']);
+        expect((emittedEvents[1] as any).payload.cardUids).toEqual(['p1a', 'p1b']);
+    });
+
+    it('DECK_RESHUFFLED 不应吞掉同批次稍后由 CARDS_DRAWN 抽走的旧牌库顶部卡', () => {
+        const state = makeCore({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    hand: [],
+                    deck: [makeCard('top', 'wizard_winds_of_change_pod', 'action', '1')],
+                    discard: [
+                        makeCard('d1', 'wizard_neophyte_pod', 'minion', '1'),
+                        makeCard('d2', 'wizard_portal_pod', 'action', '1'),
+                    ],
+                }),
+            },
+        });
+
+        const afterReshuffle = reduce(state, {
+            type: SU_EVENTS.DECK_RESHUFFLED,
+            payload: { playerId: '1', deckUids: ['d2', 'd1'] },
+            timestamp: 3100,
+        } as any);
+        const finalState = reduce(afterReshuffle, {
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: { playerId: '1', count: 2, cardUids: ['top', 'd2'] },
+            timestamp: 3100,
+        } as any);
+
+        expect(finalState.players['1'].hand.map(card => card.uid)).toEqual(['top', 'd2']);
+        expect(finalState.players['1'].deck.map(card => card.uid)).toEqual(['d1']);
+        expect(finalState.players['1'].discard).toHaveLength(0);
+    });
+
     it('afterScoring 已完成清场换基地后，后续结束回合不应再次给第一个基地计分', () => {
         const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain,

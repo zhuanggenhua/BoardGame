@@ -18,7 +18,11 @@ import type {
 import type {
     MatchPlayerInfo,
 } from './protocol';
+import type { TrainingDataRecorder } from './trainingData';
+import { buildTrainingDecisionSample } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
+import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
+import { applyPlayerViewToState, buildAiDecisionContext } from '../ai';
 import {
     executePipeline,
     createSeededRandom,
@@ -211,6 +215,8 @@ export interface GameTransportServerConfig {
     ) => boolean | Promise<boolean>;
     /** 游戏结束回调（可选） */
     onGameOver?: (matchID: string, gameName: string, gameover: unknown) => void;
+    trainingDataRecorder?: TrainingDataRecorder;
+    rulesVersion?: string | null;
 }
 
 export class GameTransportServer {
@@ -222,6 +228,8 @@ export class GameTransportServer {
     private readonly offlineGraceMs: number;
     private readonly authenticate?: GameTransportServerConfig['authenticate'];
     private readonly onGameOver?: GameTransportServerConfig['onGameOver'];
+    private readonly trainingDataRecorder?: TrainingDataRecorder;
+    private readonly rulesVersion: string | null;
 
     constructor(config: GameTransportServerConfig) {
         this.io = config.io;
@@ -232,6 +240,8 @@ export class GameTransportServer {
         this.offlineGraceMs = config.offlineGraceMs ?? 30000;
         this.authenticate = config.authenticate;
         this.onGameOver = config.onGameOver;
+        this.trainingDataRecorder = config.trainingDataRecorder;
+        this.rulesVersion = config.rulesVersion ?? null;
     }
 
     /** 启动传输层，监听 /game namespace */
@@ -265,8 +275,10 @@ export class GameTransportServer {
                 // 教程 AI 命令：payload 中携带 __tutorialPlayerId 时，以该 ID 作为执行者
                 // 仅在教程模式激活时生效，防止普通玩家伪造 playerId
                 const payloadRecord = payload && typeof payload === 'object' ? payload as Record<string, unknown> : null;
-                const tutorialOverrideId = typeof payloadRecord?.__tutorialPlayerId === 'string'
-                    ? payloadRecord.__tutorialPlayerId
+                const tutorialOverrideId = typeof payloadRecord?.__internalPlayerId === 'string'
+                    ? payloadRecord.__internalPlayerId
+                    : typeof payloadRecord?.__tutorialPlayerId === 'string'
+                        ? payloadRecord.__tutorialPlayerId
                     : undefined;
                 const match = this.activeMatches.get(matchID);
                 const isTutorialActive = !!(match?.state?.sys as Record<string, unknown> | undefined)
@@ -275,8 +287,22 @@ export class GameTransportServer {
                     ? tutorialOverrideId
                     : info.playerID;
                 // 清除 payload 中的 __tutorialPlayerId，避免传入领域层
-                const normalizedPayload = payloadRecord && '__tutorialPlayerId' in payloadRecord
-                    ? (() => { const { __tutorialPlayerId: _ignored, ...rest } = payloadRecord; return rest; })()
+                const normalizedPayload = payloadRecord && (
+                    '__internalPlayerId' in payloadRecord
+                    || '__internalAiCommand' in payloadRecord
+                    || '__tutorialPlayerId' in payloadRecord
+                    || '__tutorialAiCommand' in payloadRecord
+                )
+                    ? (() => {
+                        const {
+                            __internalPlayerId: _ignored0,
+                            __internalAiCommand: _ignored1,
+                            __tutorialPlayerId: _ignored2,
+                            __tutorialAiCommand: _ignored3,
+                            ...rest
+                        } = payloadRecord;
+                        return rest;
+                    })()
                     : payload;
                 await this.handleCommand(matchID, resolvedPlayerId, commandType, normalizedPayload);
             });
@@ -879,6 +905,91 @@ export class GameTransportServer {
         };
     }
 
+    private stripStateForTraining(viewState: unknown): unknown {
+        const stripped = this.stripStateForTransport(viewState, { stripEventStream: true }) as {
+            sys?: Record<string, unknown>;
+        };
+
+        if (!stripped?.sys) return stripped;
+
+        const sys = stripped.sys;
+        const patches: Record<string, unknown> = {};
+
+        const actionLog = sys.actionLog as { entries?: unknown[] } | undefined;
+        if (actionLog?.entries && actionLog.entries.length > 0) {
+            patches.actionLog = {
+                ...actionLog,
+                entries: [],
+                entryCount: actionLog.entries.length,
+            };
+        }
+
+        const log = sys.log as { entries?: unknown[] } | undefined;
+        if (log?.entries && log.entries.length > 0) {
+            patches.log = {
+                ...log,
+                entries: [],
+                entryCount: log.entries.length,
+            };
+        }
+
+        if (Object.keys(patches).length === 0) return stripped;
+
+        return {
+            ...stripped,
+            sys: { ...sys, ...patches },
+        };
+    }
+
+    private recordTrainingDecisionSample(args: {
+        match: ActiveMatch;
+        playerID: string;
+        commandType: string;
+        payload: unknown;
+        stateIdBefore: number;
+        stateIdAfter: number;
+        preState: unknown;
+        postState: unknown;
+        gameOver?: unknown;
+    }): void {
+        if (!this.trainingDataRecorder) return;
+        const manifest = GAME_MANIFEST_BY_ID[args.match.engineConfig.gameId];
+        if (manifest && manifest.ai.capture === false) return;
+
+        const sample = buildTrainingDecisionSample({
+            rulesVersion: this.rulesVersion,
+            gameId: args.match.engineConfig.gameId,
+            matchId: args.match.matchID,
+            playerId: args.playerID,
+            stateIdBefore: args.stateIdBefore,
+            stateIdAfter: args.stateIdAfter,
+            commandType: args.commandType,
+            payload: args.payload,
+            preState: args.preState,
+            postState: args.postState,
+            legalActions: buildAiDecisionContext({
+                gameId: args.match.engineConfig.gameId,
+                matchId: args.match.matchID,
+                playerId: args.playerID,
+                visibleState: args.preState as MatchState<unknown>,
+                rulesVersion: this.rulesVersion,
+                decisionBudgetMs: 250,
+                source: 'online',
+            }).legalActions,
+            gameOver: args.gameOver,
+        });
+
+        Promise.resolve(this.trainingDataRecorder.recordDecisionSample(sample)).catch((error) => {
+            logger.warn('[GameTransport] training data capture failed', {
+                matchID: args.match.matchID,
+                gameId: args.match.engineConfig.gameId,
+                commandType: args.commandType,
+                playerID: args.playerID,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+    }
+
     private async executeCommandInternal(
         match: ActiveMatch,
         playerID: string,
@@ -888,6 +999,8 @@ export class GameTransportServer {
     ): Promise<boolean> {
         const startTime = Date.now();
         const { engineConfig, state, random, playerIds } = match;
+        const stateIdBefore = match.stateID;
+        const preTrainingState = this.stripStateForTraining(this.applyPlayerView(match, playerID)) as MatchState<unknown>;
 
         const command: Command = {
             type: commandType,
@@ -1030,13 +1143,26 @@ export class GameTransportServer {
         };
         await this.storage.setState(match.matchID, storedState);
 
+        const gameOver = result.state.sys.gameover;
+        const postTrainingState = this.stripStateForTraining(this.applyPlayerView(match, playerID)) as MatchState<unknown>;
+        this.recordTrainingDecisionSample({
+            match,
+            playerID,
+            commandType,
+            payload,
+            stateIdBefore,
+            stateIdAfter: match.stateID,
+            preState: preTrainingState,
+            postState: postTrainingState,
+            gameOver,
+        });
+
         // 广播状态（批次执行期间抑制中间广播，仅在批次完成后统一广播）
         if (!options?.suppressBroadcast) {
             this.broadcastState(match);
         }
 
         // 检查游戏结束（管线已将结果写入 sys.gameover）
-        const gameOver = result.state.sys.gameover;
         if (gameOver && !match.metadata.gameover) {
             match.metadata.gameover = gameOver;
             await this.storage.setMetadata(match.matchID, match.metadata);
@@ -1247,24 +1373,7 @@ export class GameTransportServer {
     }
 
     private applyPlayerView(match: ActiveMatch, playerID: string | null): unknown {
-        const { engineConfig, state } = match;
-        let viewCore = state.core;
-        let viewSys: unknown = state.sys;
-
-        if (playerID !== null && engineConfig.domain.playerView) {
-            const partial = engineConfig.domain.playerView(state.core, playerID);
-            viewCore = partial !== undefined ? { ...(state.core as Record<string, unknown>), ...partial } : state.core;
-        }
-
-        if (playerID !== null) {
-            for (const system of engineConfig.systems as EngineSystem<unknown>[]) {
-                if (!system.playerView) continue;
-                const sysPartial = system.playerView(state as MatchState<unknown>, playerID);
-                viewSys = { ...(viewSys as Record<string, unknown>), ...sysPartial };
-            }
-        }
-
-        return { sys: viewSys, core: viewCore };
+        return applyPlayerViewToState(match.engineConfig, match.state, playerID);
     }
 
     private buildMatchPlayers(match: ActiveMatch): MatchPlayerInfo[] {

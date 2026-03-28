@@ -222,7 +222,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         const desc = loadingProgress
             ? (loadingDescription ? `${loadingDescription}（${loadingProgress}）` : `加载资源 ${loadingProgress}`)
             : loadingDescription;
-        return <LoadingScreen description={desc} />;
+        return <LoadingScreen anchor="container" description={desc} />;
     }
 
     return <>{children}</>;

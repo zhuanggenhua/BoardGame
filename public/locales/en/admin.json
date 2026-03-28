@@ -8,6 +8,10 @@
     "filters": {
       "status": "Status",
       "type": "Type",
+      "severity": "Severity",
+      "sort": "Sort",
+      "newest": "Newest first",
+      "oldest": "Oldest first",
       "all": "All"
     },
     "pagination": {
@@ -80,6 +84,9 @@
     },
     "actionLog": {
       "title": "Action Log"
+    },
+    "aiSummary": {
+      "title": "AI Summary"
     },
     "stateSnapshot": {
       "title": "State Snapshot (JSON)",

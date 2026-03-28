@@ -3,11 +3,14 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS, toPortArray } from '../scripts/infra/e2e-port-config.js';
 import {
+    allocatePorts,
     cleanupAllWorkerPortFiles,
     cleanupPorts,
     cleanupWorkerPorts,
+    loadWorkerPorts,
     waitForPortsFree,
 } from '../scripts/infra/port-allocator.js';
+import { removeRuntime } from '../scripts/infra/e2e-runtime-registry.js';
 
 interface RuntimeRecord {
     workerId: number;
@@ -71,6 +74,7 @@ export default async function globalTeardown() {
         cleanupPorts(singleWorkerPorts, 'Single Worker');
         await waitForPortsFree(toPortArray(singleWorkerPorts), PORT_CLEANUP_TIMEOUT_MS);
         cleanupAllWorkerPortFiles();
+        removeRuntime(getRuntimeScope());
         return;
     }
 
@@ -78,5 +82,14 @@ export default async function globalTeardown() {
         cleanupWorkerPorts(workerIndex);
     }
 
+    const multiWorkerPorts = Array.from({ length: workers }, (_, workerIndex) => (
+        loadWorkerPorts(workerIndex) ?? allocatePorts(workerIndex)
+    )).flatMap(ports => toPortArray(ports));
+    const released = await waitForPortsFree(multiWorkerPorts, PORT_CLEANUP_TIMEOUT_MS);
+    if (!released) {
+        console.warn(`⚠️ 多 worker E2E 端口释放超时: ${multiWorkerPorts.join(', ')}`);
+    }
+
     cleanupAllWorkerPortFiles();
+    removeRuntime(getRuntimeScope());
 }

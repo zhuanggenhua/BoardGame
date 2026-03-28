@@ -30,7 +30,7 @@
   },
   "hud": {
     "mode": {
-      "local": "本地同屏",
+      "local": "单机模式",
       "tutorial": "教学模式",
       "online": "联机房间"
     },
@@ -47,8 +47,8 @@
       "offline": "离线",
       "empty": "空位",
       "searching": "搜索中",
-      "localTitle": "同屏对战",
-      "localDescription": "在本机轮流操作或同屏竞技。",
+      "localTitle": "单机模式",
+      "localDescription": "在本机轮流操作，共享同一屏幕。",
       "tutorialTitle": "学习模式",
       "tutorialDescription": "按照指示学习游戏规则。"
     },
@@ -330,6 +330,21 @@
       "apply": "应用状态",
       "errorUnsupported": "此游戏不支持状态赋值",
       "errorInvalidJson": "JSON 格式错误"
+    },
+    "ai": {
+      "section": "AI",
+      "supportTitle": "支持能力",
+      "seatControllers": "座位控制器",
+      "none": "当前没有配置座位控制器",
+      "human": "真人",
+      "local": "本地 AI",
+      "remote": "远程 AI",
+      "policy": "策略：{{value}}",
+      "provider": "Provider：{{value}}",
+      "modes": {
+        "local": "本地对战",
+        "online": "联机对战"
+      }
     },
     "reset": {
       "button": "🔄 重置游戏",

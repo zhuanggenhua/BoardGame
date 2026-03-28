@@ -58,7 +58,7 @@ const resolveSoulBurn2FM = (ctx: CustomActionContext): DiceThroneEvent[] => {
 
 /**
  * 灵魂燃烧 (Soul Burn) — 伤害部分（withDamage 时机）
- * 所有对手造成 1x [灵魂/Fiery Soul] 伤害
+ * 对当前目标造成 1x [灵魂/Fiery Soul] 伤害
  * 注意：在 defensiveRoll exit 时执行，此时骰子已被防御方覆盖，
  * 必须从 pendingAttack.attackDiceFaceCounts 读取攻击方骰面快照
  * 
@@ -70,20 +70,19 @@ const resolveSoulBurnDamage = (ctx: CustomActionContext): DiceThroneEvent[] => {
     const faces = ctx.state.pendingAttack?.attackDiceFaceCounts
         ?? getFaceCounts(getActiveDice(ctx.state));
     const dmg = faces[PYROMANCER_DICE_FACE_IDS.FIERY_SOUL] || 0;
+    const defenderId = ctx.ctx.defenderId;
 
-    if (dmg > 0) {
-        const opponentIds = Object.keys(ctx.state.players).filter(id => id !== ctx.attackerId);
-        opponentIds.forEach((targetId, idx) => {
-            // 使用新伤害计算管线（基础伤害，自动收集所有修正）
-            const damageCalc = createDamageCalculation({
-                source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
-                target: { playerId: targetId },
-                baseDamage: dmg,
-                state: ctx.state,
-                timestamp: ctx.timestamp + 0.1 + (idx * 0.01),
-            });
-            events.push(...damageCalc.toEvents());
+    if (dmg > 0 && defenderId) {
+        // Soul Burn 的 ability 定义与升级变体都声明为 target='opponent'。
+        // 多人模式下这里必须沿用当前 defender，而不是额外广播到所有非自己玩家。
+        const damageCalc = createDamageCalculation({
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.ctx.damagePhase },
+            target: { playerId: defenderId },
+            baseDamage: dmg,
+            state: ctx.state,
+            timestamp: ctx.timestamp + 0.1,
         });
+        events.push(...damageCalc.toEvents());
     }
     return events;
 };

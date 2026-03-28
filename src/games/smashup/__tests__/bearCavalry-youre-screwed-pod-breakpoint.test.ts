@@ -42,5 +42,28 @@ describe('bear_cavalry_bearing_down_pod: 动态爆破点修正', () => {
 
         expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint - 4);
     });
+
+    it('被压制的 bearing_down_pod 不再修改爆破点', () => {
+        const base = makeBase('base_the_jungle', [
+            makeMinion('m0', 'test_minion', '0', 3),
+            makeMinion('m1', 'test_minion', '1', 3),
+        ]);
+        base.ongoingActions = [{ uid: 'oa1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' } as any];
+
+        const state = makeStateWithBases([base], {
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'oa1',
+                baseIndex: 0,
+                suppressorPlayerId: '0',
+                cardType: 'ongoing',
+            }],
+        } as any);
+        const baseBreakpoint = getEffectiveBreakpoint(
+            makeStateWithBases([makeBase('base_the_jungle')]),
+            0,
+        );
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint);
+    });
 });
 

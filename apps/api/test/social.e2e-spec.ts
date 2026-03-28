@@ -31,7 +31,7 @@ describe('Social Modules (e2e)', () => {
         mongo = externalMongoUri ? null : await MongoMemoryServer.create();
         const mongoUri = externalMongoUri ?? mongo?.getUri();
         if (!mongoUri) {
-            throw new Error('缺少 MongoDB 连接地址，请配置 MONGO_URI 或启用内存 MongoDB');
+            throw new Error('缂哄皯 MongoDB 杩炴帴鍦板潃锛岃閰嶇疆 MONGO_URI 鎴栧惎鐢ㄥ唴瀛?MongoDB');
         }
 
         const moduleRef = await Test.createTestingModule({
@@ -77,27 +77,43 @@ describe('Social Modules (e2e)', () => {
         }
     });
 
-    it('好友请求/消息/邀请流程', async () => {
-        const emailA = 'alice@example.com';
-        const codeA = '123456';
-        await authService.storeEmailCode(emailA, codeA);
-        const registerA = await request(app.getHttpServer())
+    const registerUser = async ({
+        username,
+        email,
+        code,
+    }: {
+        username: string;
+        email: string;
+        code: string;
+    }) => {
+        await authService.storeEmailCode(email, code);
+        const registerRes = await request(app.getHttpServer())
             .post('/auth/register')
-            .send({ username: 'alice', email: emailA, code: codeA, password: 'pass1234' })
+            .send({ username, email, code, password: 'pass1234' })
             .expect(201);
 
-        const emailB = 'bob@example.com';
-        const codeB = '654321';
-        await authService.storeEmailCode(emailB, codeB);
-        const registerB = await request(app.getHttpServer())
-            .post('/auth/register')
-            .send({ username: 'bob', email: emailB, code: codeB, password: 'pass1234' })
-            .expect(201);
+        return {
+            token: registerRes.body.token as string,
+            userId: registerRes.body.user.id as string,
+        };
+    };
 
-        const tokenA = registerA.body.token as string;
-        const tokenB = registerB.body.token as string;
-        const userAId = registerA.body.user.id as string;
-        const userBId = registerB.body.user.id as string;
+    it('好友请求、消息与邀请流程', async () => {
+        const registerA = await registerUser({
+            username: 'alice',
+            email: 'alice@example.com',
+            code: '123456',
+        });
+        const registerB = await registerUser({
+            username: 'bob',
+            email: 'bob@example.com',
+            code: '654321',
+        });
+
+        const tokenA = registerA.token;
+        const tokenB = registerB.token;
+        const userAId = registerA.userId;
+        const userBId = registerB.userId;
 
         const requestRes = await request(app.getHttpServer())
             .post('/auth/friends/request')
@@ -159,5 +175,133 @@ describe('Social Modules (e2e)', () => {
             .set('Authorization', `Bearer ${tokenA}`)
             .send({ toUserId: userBId, matchId: 'match-1', gameName: 'tictactoe' })
             .expect(201);
+    });
+
+    it('好友搜索可反映待处理、拒绝和删除好友状态', async () => {
+        const alice = await registerUser({
+            username: 'alice-search',
+            email: 'alice-search@example.com',
+            code: '111111',
+        });
+        const bob = await registerUser({
+            username: 'bob-search',
+            email: 'bob-search@example.com',
+            code: '222222',
+        });
+        await registerUser({
+            username: 'charlie-search',
+            email: 'charlie-search@example.com',
+            code: '333333',
+        });
+
+        const initialSearchRes = await request(app.getHttpServer())
+            .get('/auth/friends/search?q=bob')
+            .set('Authorization', `Bearer ${alice.token}`)
+            .expect(200);
+
+        expect(initialSearchRes.body.users).toEqual([
+            expect.objectContaining({
+                id: bob.userId,
+                username: 'bob-search',
+                status: 'none',
+            }),
+        ]);
+
+        await request(app.getHttpServer())
+            .post('/auth/friends/request')
+            .set('Authorization', `Bearer ${alice.token}`)
+            .send({ userId: bob.userId })
+            .expect(201);
+
+        const incomingSearchRes = await request(app.getHttpServer())
+            .get('/auth/friends/search?q=alice')
+            .set('Authorization', `Bearer ${bob.token}`)
+            .expect(200);
+
+        expect(incomingSearchRes.body.users).toEqual([
+            expect.objectContaining({
+                id: alice.userId,
+                username: 'alice-search',
+                status: 'incoming',
+            }),
+        ]);
+
+        const pendingBeforeReject = await request(app.getHttpServer())
+            .get('/auth/friends/requests')
+            .set('Authorization', `Bearer ${bob.token}`)
+            .expect(200);
+
+        expect(pendingBeforeReject.body.requests).toHaveLength(1);
+        const rejectedRequestId = pendingBeforeReject.body.requests[0].id as string;
+
+        await request(app.getHttpServer())
+            .post(`/auth/friends/reject/${rejectedRequestId}`)
+            .set('Authorization', `Bearer ${bob.token}`)
+            .expect(201);
+
+        const searchAfterReject = await request(app.getHttpServer())
+            .get('/auth/friends/search?q=bob')
+            .set('Authorization', `Bearer ${alice.token}`)
+            .expect(200);
+
+        expect(searchAfterReject.body.users).toEqual([
+            expect.objectContaining({
+                id: bob.userId,
+                status: 'none',
+            }),
+        ]);
+
+        await request(app.getHttpServer())
+            .post('/auth/friends/request')
+            .set('Authorization', `Bearer ${alice.token}`)
+            .send({ userId: bob.userId })
+            .expect(201);
+
+        const pendingBeforeAccept = await request(app.getHttpServer())
+            .get('/auth/friends/requests')
+            .set('Authorization', `Bearer ${bob.token}`)
+            .expect(200);
+
+        const acceptedRequestId = pendingBeforeAccept.body.requests[0].id as string;
+        await request(app.getHttpServer())
+            .post(`/auth/friends/accept/${acceptedRequestId}`)
+            .set('Authorization', `Bearer ${bob.token}`)
+            .expect(201);
+
+        const acceptedSearchRes = await request(app.getHttpServer())
+            .get('/auth/friends/search?q=bob')
+            .set('Authorization', `Bearer ${alice.token}`)
+            .expect(200);
+
+        expect(acceptedSearchRes.body.users).toEqual([
+            expect.objectContaining({
+                id: bob.userId,
+                status: 'accepted',
+            }),
+        ]);
+
+        await request(app.getHttpServer())
+            .delete(`/auth/friends/${bob.userId}`)
+            .set('Authorization', `Bearer ${alice.token}`)
+            .expect(200);
+
+        const friendListAfterDelete = await request(app.getHttpServer())
+            .get('/auth/friends')
+            .set('Authorization', `Bearer ${alice.token}`)
+            .expect(200);
+
+        expect(friendListAfterDelete.body.friends).toHaveLength(0);
+
+        const searchAfterDelete = await request(app.getHttpServer())
+            .get('/auth/friends/search?q=bob')
+            .set('Authorization', `Bearer ${alice.token}`)
+            .expect(200);
+
+        expect(searchAfterDelete.body.users).toEqual([
+            expect.objectContaining({
+                id: bob.userId,
+                status: 'none',
+            }),
+        ]);
     });
 });

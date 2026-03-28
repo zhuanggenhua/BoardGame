@@ -83,6 +83,20 @@
     "card_placeholder": "Card",
     "me_first_title": "⚡ Me First!",
     "after_scoring_title": "After Scoring Response",
+    "reaction_timing": {
+      "onMinionPlayed": "After minion play",
+      "onActionPlayed": "After action play",
+      "onBaseRevealed": "After base reveal",
+      "onMinionDestroyed": "After minion destruction",
+      "onMinionMoved": "After minion movement",
+      "onMinionAffected": "After minion is affected",
+      "onMinionDiscardedFromBase": "After minion is discarded from base",
+      "onTurnEnd": "At turn end",
+      "onTurnStart": "At turn start",
+      "beforeScoring": "Before scoring",
+      "afterScoring": "After scoring",
+      "unknown": "Triggered"
+    },
     "thinking": "Thinking...",
     "loading": "Loading...",
     "reveal_hand_title": "P{{player}}'s Hand",
@@ -118,7 +132,8 @@
     "fusion_choose_playas": "Choose how to play",
     "fusion_choose_playas_desc": "Fusion cards can be played as a Minion or an Action. Choose the type for this play.",
     "play_as_minion": "Play as Minion",
-    "play_as_action": "Play as Action"
+    "play_as_action": "Play as Action",
+    "tap_again_to_activate": "Tap again to activate"
   },
   "feedback": {
     "deck_search_no_match": "No matching card found in deck. Deck reshuffled.",
@@ -189,7 +204,7 @@
     "cardRecovered": "{{playerId}} recovers {{count}} cards",
     "handShuffledIntoDeck": "Shuffle {{playerId}} hand into deck",
     "madnessDrawn": "{{playerId}} draws {{count}} madness cards",
-    "madnessReturned": "{{playerId}} returns a madness card",
+    "madnessReturned": "{{playerId}} consumes a Madness card",
     "baseDeckReordered": "Base deck reordered",
     "onBase": " → {{base}}",
     "revealHand": "{{playerId}} reveals hand ({{count}} cards)",
@@ -775,7 +790,7 @@
     },
     "special_madness": {
       "name": "Madness",
-      "effectText": "Draw two cards OR return this card to the Madness deck."
+      "effectText": "Draw two cards OR consume this card."
     },
     "miskatonic_professor": {
       "name": "Professor",
@@ -787,7 +802,7 @@
     },
     "miskatonic_psychologist": {
       "name": "Psychologist",
-      "abilityText": "You may return a Madness card from your hand or discard pile to the Madness deck."
+      "abilityText": "You may consume a Madness card from your hand or discard pile."
     },
     "miskatonic_researcher": {
       "name": "Researcher",
@@ -1290,6 +1305,45 @@
       "name": "Wizard Academy",
       "abilityText": "After this base scores, the winner looks at the top three cards of the base deck. They may choose one of those bases to replace this one, then place the other two on top of the base deck in any order."
     },
+    "base_central_brain_pod": {
+      "name": "The Central Brain",
+      "abilityText": "Each minion here has +1 power."
+    },
+    "base_the_factory_pod": {
+      "name": "Factory 436-1337",
+      "abilityText": "When this base scores, the winner gains 1 VP for every 5 power they have here."
+    },
+    "base_ninja_dojo_pod": {
+      "name": "Ninja Dojo"
+    },
+    "base_temple_of_goju_pod": {
+      "name": "Temple of Goju",
+      "abilityText": "After each time a minion is destroyed here, place it on the bottom of its owner's deck."
+    },
+    "base_cave_of_shinies_pod": {
+      "name": "Cave of Shinies",
+      "abilityText": "Once per turn, after a minion here you own is destroyed, gain 1 VP."
+    },
+    "base_mushroom_kingdom_pod": {
+      "name": "Mushroom Kingdom",
+      "abilityText": "At the start of your turn, if you have more cards in your hand than any other player, you may move a minion to or from this base."
+    },
+    "base_wizard_academy_pod": {
+      "name": "School of Wizardry",
+      "abilityText": "After this base scores, the winner looks at the top three cards of the base deck, chooses one to replace this base, and returns the others in any order."
+    },
+    "base_great_library_pod": {
+      "name": "The Great Library",
+      "abilityText": "After this base scores, all players with minions here may draw one card."
+    },
+    "base_haunted_house_pod": {
+      "name": "Evans City Cemetery",
+      "abilityText": "After this base scores, the winner discards their hand and draws five cards."
+    },
+    "base_rhodes_plaza_pod": {
+      "name": "Rhodes Plaza Mall",
+      "abilityText": "When this base scores, each player gains 1 VP for each minion that player has here."
+    },
     "base_dread_lookout": {
       "name": "Dread Lookout",
       "abilityText": "Actions cannot be played on this base."
@@ -1372,7 +1426,7 @@
     },
     "base_the_asylum": {
       "name": "The Asylum",
-      "abilityText": "After each time a minion is played here, its owner may return a Madness card from their hand to the Madness deck."
+      "abilityText": "After each time a minion is played here, its owner may consume a Madness card from their hand."
     },
     "base_innsmouth_base": {
       "name": "Innsmouth",
@@ -1384,7 +1438,7 @@
     },
     "base_miskatonic_university_base": {
       "name": "Miskatonic University",
-      "abilityText": "After this base scores, the winner may search their hand and discard pile for any number of Madness cards and return them to the Madness deck."
+      "abilityText": "After this base scores, the winner may consume any number of Madness cards from their hand and discard pile."
     },
     "base_plateau_of_leng": {
       "name": "Plateau of Leng",
@@ -2055,7 +2109,7 @@
     },
     "killer_plant_weed_eater_pod": {
       "name": "Weed Eater",
-      "abilityText": "This minion has -2 power on the turn you play it."
+      "abilityText": "Ongoing: At the start of your turn, this minion gains +2 power until the start of your next turn."
     },
     "killer_plant_water_lily_pod": {
       "name": "Water Lily",
@@ -2107,7 +2161,7 @@
     },
     "miskatonic_psychologist_pod": {
       "name": "Psychologist",
-      "abilityText": "Return a Madness card from your hand or discard pile to the Madness deck OR draw a Madness card from your discard pile."
+      "abilityText": "Consume a Madness card from your hand or discard pile OR draw a Madness card from your discard pile."
     },
     "miskatonic_researcher_pod": {
       "name": "Researcher",
@@ -2127,7 +2181,7 @@
     },
     "miskatonic_jinkies_pod": {
       "name": "Jinkies!",
-      "effectText": "Return up to two Madness cards from your hand and/or discard pile to the Madness deck."
+      "effectText": "Consume up to two Madness cards from your hand and/or discard pile."
     },
     "miskatonic_thats_so_crazy_pod": {
       "name": "That's So Crazy...",

@@ -147,7 +147,7 @@ describe('神选者交互 displayMode 修复', () => {
         expect(yesValue.controller).toBe('1');
     });
 
-    it('链式交互的第二个神选者也应该有 displayMode', () => {
+    it('多实例触发时排队的第二个神选者也应该有 displayMode', () => {
         const ch1 = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const ch2 = makeMinion('ch2', 'cthulhu_chosen', '1', 3, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [ch1, ch2] });
@@ -173,10 +173,19 @@ describe('神选者交互 displayMode 修复', () => {
         const firstOptions = (firstInteraction?.data as any)?.options;
         expect(firstOptions[0].displayMode).toBe('button');
         expect(firstOptions[1].displayMode).toBe('button');
-        
-        // 验证 continuationContext 中有第二个神选者
-        const ctx = (firstInteraction?.data as any)?.continuationContext;
-        expect(ctx?.remaining).toHaveLength(1);
-        expect(ctx.remaining[0].uid).toBe('ch2');
+
+        // perInstance 触发器会把第二个神选者排进交互队列，而不是挂在 continuationContext 上
+        const queuedInteraction = result.matchState?.sys?.interaction?.queue?.[0];
+        expect(queuedInteraction).toBeDefined();
+        expect(queuedInteraction?.playerId).toBe('1');
+
+        const queuedOptions = (queuedInteraction?.data as any)?.options;
+        expect(queuedOptions).toBeDefined();
+        expect(queuedOptions[0].displayMode).toBe('button');
+        expect(queuedOptions[1].displayMode).toBe('button');
+
+        const yesValue = queuedOptions[0].value as any;
+        expect(yesValue.uid).toBe('ch2');
+        expect(yesValue.baseIndex).toBe(0);
     });
 });

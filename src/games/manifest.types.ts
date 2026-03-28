@@ -36,6 +36,12 @@ export interface GamePreloadAssets {
     audio?: string[];
 }
 
+export interface GameManifestAiSupport {
+    capture: boolean;
+    localAi: boolean;
+    remoteAi: boolean;
+}
+
 export interface GameManifestEntry {
     id: string;
     type: GameManifestType;
@@ -67,4 +73,5 @@ export interface GameManifestEntry {
     preferredOrientation?: GameOrientationPreference;
     mobileLayoutPreset?: GameMobileLayoutPreset;
     shellTargets?: GameShellTarget[];
+    ai?: GameManifestAiSupport;
 }

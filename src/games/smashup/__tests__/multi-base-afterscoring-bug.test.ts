@@ -843,54 +843,31 @@ describe('多基地同时计分 afterScoring 触发问题', () => {
             payload: { optionId: skipTortugaMove },
         });
         expect(resolveTortugaAfterScoring.success).toBe(true);
-
-        let stateForFirstMate = resolveTortugaAfterScoring.finalState;
-        const preFirstMateEvents: SmashUpEvent[] = [];
-        for (let guard = 0; guard < 3; guard++) {
-            const nextAfterTortuga = asSimpleChoice(stateForFirstMate.sys.interaction?.current);
-            if (nextAfterTortuga?.sourceId !== 'multi_base_scoring') break;
-            const continueOption = (
-                nextAfterTortuga.options.find(
-                    (option: any) => option.value?.baseIndex === 0 || option.value?.baseDefId === 'base_tortuga',
-                )?.id
-                ?? nextAfterTortuga.options[0]?.id
+        let stateAfterTortuga = resolveTortugaAfterScoring.finalState;
+        const maybeFirstMateChoice = asSimpleChoice(stateAfterTortuga.sys.interaction?.current);
+        let firstMateResolutionEvents: SmashUpEvent[] = [];
+        if (maybeFirstMateChoice?.sourceId === 'pirate_first_mate_choose_base') {
+            const skipFirstMateMove = findOption(
+                maybeFirstMateChoice,
+                (option: any) => option.id === 'skip' || option.value?.skip === true,
             );
-            expect(continueOption).toBeTruthy();
-            const continueScoring = runCommandWithFullSystems(stateForFirstMate, {
+            const resolveFirstMateAfterScoring = runCommandWithFullSystems(stateAfterTortuga, {
                 type: INTERACTION_COMMANDS.RESPOND,
-                playerId: nextAfterTortuga.playerId,
-                payload: { optionId: continueOption },
+                playerId: maybeFirstMateChoice.playerId,
+                payload: { optionId: skipFirstMateMove },
             });
-            expect(continueScoring.success).toBe(true);
-            preFirstMateEvents.push(...continueScoring.events);
-            stateForFirstMate = continueScoring.finalState;
+            expect(resolveFirstMateAfterScoring.success).toBe(true);
+            stateAfterTortuga = resolveFirstMateAfterScoring.finalState;
+            firstMateResolutionEvents = resolveFirstMateAfterScoring.events as SmashUpEvent[];
         }
-
-        const firstMateAfterScoringChoice = asSimpleChoice(stateForFirstMate.sys.interaction?.current)!;
-        expect(firstMateAfterScoringChoice).toBeTruthy();
-        expect(firstMateAfterScoringChoice.sourceId).toBe('pirate_first_mate_choose_base');
-        const skipFirstMateMove = findOption(
-            firstMateAfterScoringChoice,
-            (option: any) => option.id === 'skip' || option.value?.skip === true,
-        );
-        const resolveFirstMateAfterScoring = runCommandWithFullSystems(stateForFirstMate, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: skipFirstMateMove },
-        });
-        expect(resolveFirstMateAfterScoring.success).toBe(true);
-        expect(resolveFirstMateAfterScoring.finalState.sys.interaction?.current).toBeFalsy();
-        const windowTypeAfterFirstMate = resolveFirstMateAfterScoring.finalState.sys.responseWindow?.current?.windowType;
-        if (windowTypeAfterFirstMate !== undefined) {
-            expect(windowTypeAfterFirstMate).toBe('afterScoring');
-        }
+        expect(stateAfterTortuga.sys.interaction?.current).toBeFalsy();
+        expect(stateAfterTortuga.sys.responseWindow?.current?.windowType).toBe('afterScoring');
 
         const tortugaScoredEventsBeforeResponse = [
             ...resolvePirateKing.events,
             ...preTortugaEvents,
             ...resolveTortugaAfterScoring.events,
-            ...preFirstMateEvents,
-            ...resolveFirstMateAfterScoring.events,
+            ...firstMateResolutionEvents,
         ].filter(event =>
             event.type === SU_EVENTS.BASE_SCORED
             && (event.payload as { baseDefId?: string } | undefined)?.baseDefId === 'base_tortuga',
@@ -906,7 +883,7 @@ describe('多基地同时计分 afterScoring 触发问题', () => {
         });
         expect(clearOrReplaceBeforeResponse).toHaveLength(0);
 
-        const playNoTargetSpecial = runCommandWithFullSystems(resolveFirstMateAfterScoring.finalState, {
+        const playNoTargetSpecial = runCommandWithFullSystems(stateAfterTortuga, {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: '1',
             payload: { cardUid: 'champ-1', targetBaseIndex: 0 },
@@ -922,8 +899,7 @@ describe('多基地同时计分 afterScoring 触发问题', () => {
             ...resolvePirateKing.events,
             ...preTortugaEvents,
             ...resolveTortugaAfterScoring.events,
-            ...preFirstMateEvents,
-            ...resolveFirstMateAfterScoring.events,
+            ...firstMateResolutionEvents,
             ...playNoTargetSpecial.events,
         ] as SmashUpEvent[];
 

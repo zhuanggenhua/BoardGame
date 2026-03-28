@@ -7,7 +7,7 @@
  * - 结构变换（structure_shift）：移动后推拉友方建筑
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './framework';
 import {
   setupSWOnlineMatch,
   readCoreState,

@@ -252,10 +252,11 @@ SMTP_PASS=xxx
 ## 资源 /assets 与对象存储映射（官方）
 
 - **开发**：直接使用 `public/assets`（不配置 R2 也能跑通）。
-- **生产**：`/assets/*` 反代到对象存储（如 Cloudflare R2）。
+- **生产默认**：前端资源基址为官方资源域名 `https://assets.easyboardgame.top/official`。
+- **生产兼容方案**：也可将 `/assets/*` 反代到对象存储（如 Cloudflare R2）。
 - **对象存储 key 前缀**：`official/<gameId>/...`
   - 路径对应：`/assets/<gameId>/...` ⇄ `official/<gameId>/...`
-- **可选独立资源域名**：前端可配置 `VITE_ASSETS_BASE_URL`（默认 `/assets`）。
+- **资源基址配置**：前端可通过 `VITE_ASSETS_BASE_URL` 覆盖；当前代码内置默认值为 `https://assets.easyboardgame.top/official`。
 - **缓存失效机制**：构建时会扫描 `public/assets`，为资源 URL 自动追加 `?v=<content-hash>`。资源内容变化后 URL 会自动变化，因此 R2 上的图片/音频/SVG 可以安全使用长期缓存。
 - **本地 JSON / 图集配置**：仍走本地 `/assets`，但同样会追加 `?v=<content-hash>`，避免本地回退路径拿到旧配置。
 

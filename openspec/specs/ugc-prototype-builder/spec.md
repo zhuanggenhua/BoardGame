@@ -128,3 +128,89 @@ TBD - created by archiving change add-ugc-prototype-builder. Update Purpose afte
 - **WHEN** 用户尝试访问他人的草稿项目
 - **THEN** 系统 MUST 拒绝并返回权限错误
 
+### Requirement: 需求持久化
+系统 SHALL 在 UGC Builder 状态中持久化需求描述（包含编辑器内填写的测试流程），并在保存/导入/导出时保持一致。
+
+#### Scenario: 保存需求
+- **WHEN** 用户在 Builder 中录入需求
+- **THEN** 系统 MUST 将需求写入存储并随保存动作一并持久化
+
+#### Scenario: 导入需求
+- **WHEN** 用户导入 UGC 配置
+- **THEN** 系统 MUST 恢复需求描述与结构化拆解
+
+### Requirement: 需求输入面板
+系统 SHALL 提供需求输入面板，用于承载用户原始需求文本及结构化拆解。
+
+#### Scenario: 录入需求
+- **WHEN** 用户填写需求文本
+- **THEN** 系统 MUST 保存原始文本并允许结构化编辑
+
+### Requirement: 区域级背面渲染模式
+系统 SHALL 支持区域组件配置 `renderFaceMode`，用于控制正/背面渲染策略。
+
+#### Scenario: 背面渲染区域
+- **WHEN** 用户将区域设置为 `renderFaceMode=back`
+- **THEN** 系统 MUST 强制该区域使用背面渲染
+
+### Requirement: 手牌区动作钩子
+系统 SHALL 支持手牌区配置通用动作钩子，并允许限制为“仅当前玩家生效”。
+
+#### Scenario: 当前玩家按钮
+- **WHEN** 动作钩子 scope 为 `current-player`
+- **THEN** 系统 MUST 仅在当前玩家可见/可用
+
+### Requirement: 出牌区钩子禁用
+系统 SHALL 支持出牌区禁用动作钩子或规则钩子。
+
+#### Scenario: 禁止钩子
+- **WHEN** 出牌区设置 allowActionHooks=false
+- **THEN** 系统 MUST 不显示动作钩子入口
+
+### Requirement: 玩家数量推导
+系统 SHALL 根据玩家信息组件数量推导玩家数量并注入上下文（+1 自己）。
+
+#### Scenario: 推导玩家数
+- **WHEN** 画布包含 N 个玩家信息组件
+- **THEN** 系统 MUST 推导玩家数为 N+1 并写入上下文
+
+### Requirement: 需求驱动数据生成
+系统 SHALL 支持基于需求输入生成结构化数据集（非游戏特化字段）。
+
+#### Scenario: 数据生成
+- **WHEN** 用户触发数据生成并提供需求
+- **THEN** 系统 MUST 生成结构化实例数据并写入实例列表
+
+### Requirement: Builder 使用锚点布局模型
+系统 SHALL 在 UGC Builder 中以 `anchor/pivot/offset` 作为布局组件的当前编辑模型，并在加载遗留草稿时把旧 `x/y` 布局迁移到该模型后再进入编辑态。
+
+#### Scenario: 加载旧草稿时迁移布局
+- **WHEN** Builder 读取仅包含旧 `x/y` 定位字段的布局组件
+- **THEN** 系统 MUST 在进入编辑流程前补齐 `anchor/pivot/offset` 并继续以锚点模型工作
+
+#### Scenario: 编辑操作回写锚点模型
+- **WHEN** 用户在画布中创建、拖拽、缩放或调整布局组件
+- **THEN** 系统 MUST 回写 `anchor/pivot/offset` 与尺寸字段，而不是依赖独立的绝对坐标状态
+
+### Requirement: Builder 提供对齐与分布工具
+系统 SHALL 为 UGC Builder 提供多选布局组件的对齐与分布能力。
+
+#### Scenario: 对齐选中组件
+- **WHEN** 用户对当前选中组件执行左/中/右或上/中/下对齐
+- **THEN** 系统 MUST 依据当前选择范围或画布边界更新组件位置
+
+#### Scenario: 等距分布选中组件
+- **WHEN** 用户对三个及以上选中组件执行水平或垂直分布
+- **THEN** 系统 MUST 保持组件顺序并重新计算等距间隔
+
+### Requirement: Builder 提供吸附与参考线
+系统 SHALL 在 UGC Builder 画布中提供网格吸附、边缘吸附、中心吸附和参考线提示，并将相关编辑器偏好持久化。
+
+#### Scenario: 网格与吸附偏好持久化
+- **WHEN** 用户调整网格显示、网格大小、吸附开关或吸附阈值
+- **THEN** 系统 MUST 将这些偏好保存到编辑器 `uiLayout` 配置
+
+#### Scenario: 拖拽或缩放时显示参考线
+- **WHEN** 用户拖拽或缩放组件并触发边缘或中心吸附
+- **THEN** 系统 MUST 显示对应参考线并把吸附后的结果写回布局模型
+

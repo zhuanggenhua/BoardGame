@@ -108,6 +108,47 @@ function buildActionSpotlightState(baseState: any, currentPlayerIndex: 0 | 1) {
     return nextState;
 }
 
+function buildFactionSelectStuckState(baseState: any) {
+    const nextState = JSON.parse(JSON.stringify(baseState));
+
+    nextState.core.currentPlayerIndex = 0;
+    nextState.core.turnNumber = 1;
+    nextState.core.factionSelection = undefined;
+    nextState.core.players['0'] = {
+        ...nextState.core.players['0'],
+        factions: ['tricksters_pod', 'steampunks_pod'],
+    };
+    nextState.core.players['1'] = {
+        ...nextState.core.players['1'],
+        factions: ['vampires_pod', 'bear_cavalry_pod'],
+    };
+
+    nextState.sys = {
+        ...nextState.sys,
+        phase: 'factionSelect',
+        interaction: {
+            current: {
+                id: 'starting_hand_mulligan_0_test',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                    title: '起手无随从：是否重抽一次？（只能重抽一次）',
+                    options: [
+                        { id: 'keep', label: '保留手牌', value: { choice: 'keep' }, displayMode: 'button' },
+                        { id: 'mulligan', label: '重抽一次', value: { choice: 'mulligan' }, displayMode: 'button' },
+                    ],
+                    sourceId: 'starting_hand_mulligan',
+                    targetType: 'generic',
+                },
+            },
+            queue: [],
+            isBlocked: false,
+        },
+    };
+
+    return nextState;
+}
+
 test('简单阶段转换 - 点击结束回合', async ({ page, game }, testInfo) => {
     test.setTimeout(60000);
 
@@ -225,4 +266,36 @@ test('在线模式对手打出行动卡时应显示特写', async ({ browser }, 
         await secondSetup.guestContext.close();
         await secondSetup.hostContext.close();
     }
+});
+
+test('阵营选择已清空但 phase 残留时，仍应显示起手重抽交互', async ({ page, game }, testInfo) => {
+    test.setTimeout(60000);
+
+    await page.goto('/play/smashup');
+    await page.waitForFunction(
+        () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+        { timeout: 15000, polling: 200 },
+    );
+
+    await game.setupScene({
+        gameId: 'smashup',
+        player0: { factions: ['tricksters_pod', 'steampunks_pod'] },
+        player1: { factions: ['vampires_pod', 'bear_cavalry_pod'] },
+        currentPlayer: '0',
+        phase: 'playCards',
+    });
+
+    await page.evaluate((updaterSource) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness.state.get();
+        const updater = new Function('state', `${updaterSource}`) as (state: any) => any;
+        harness.state.set(updater(state));
+    }, `return (${buildFactionSelectStuckState.toString()})(state);`);
+
+    await page.waitForTimeout(500);
+    await expect(page.locator('[data-tutorial-id="su-faction-select"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '保留手牌' })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('button', { name: '重抽一次' })).toBeVisible({ timeout: 8000 });
+
+    await saveEvidenceScreenshot(page, testInfo, 'stuck-faction-select-mulligan-visible');
 });

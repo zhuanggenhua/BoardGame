@@ -68,6 +68,7 @@ import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
 import { SUMMONER_WARS_AUDIO_CONFIG, resolveDiceRollSound, resolveAttackSoundKey, resolveDamageSoundKey } from './audio.config';
 import { SUMMONER_WARS_MANIFEST } from './manifest';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
+import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 
 type Props = GameBoardProps<SummonerWarsCore>;
 
@@ -90,10 +91,11 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const isTutorialMode = gameMode?.mode === 'tutorial';
   const effectiveLocale = locale || 'zh-CN';
   const { t } = useTranslation('game-summonerwars');
-  const isLandscapeViewport = typeof window !== 'undefined' && window.innerWidth > window.innerHeight;
+  const viewport = useRuntimeViewport();
+  const isLandscapeRuntimeViewport = viewport.width > viewport.height;
   // 手机横屏高度过短，默认完整塞入整张地图会让主战区比 PC 明显更瘦。
   // 这里仅调整移动横屏的默认 framing，地图本身仍保持等比，且保留拖拽/双指缩放。
-  const shouldUseMobileLandscapeMapFraming = isMobileViewport && isLandscapeViewport;
+  const shouldUseMobileLandscapeMapFraming = isMobileViewport && isLandscapeRuntimeViewport;
   const mapInitialScale = shouldUseMobileLandscapeMapFraming ? MOBILE_LANDSCAPE_MAP_INITIAL_SCALE : 1;
   const mapContainerPadding = `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.1)`;
   const mapContainerPaddingBlock = '0px';

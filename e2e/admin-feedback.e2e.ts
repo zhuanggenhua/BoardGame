@@ -111,7 +111,7 @@ test.describe('后台反馈管理 E2E', () => {
         });
     });
 
-    test('反馈页可展示分诊上下文并复制完整分诊包', async ({ page }) => {
+    test('反馈页可展示分诊上下文并复制压缩 AI 摘要', async ({ page }) => {
         await setStoredAuth(page, {
             id: 'admin_1',
             username: 'Admin',
@@ -193,29 +193,24 @@ test.describe('后台反馈管理 E2E', () => {
 
         const viewer = page.getByTestId('feedback-ai-payload-viewer');
         await expect(viewer).toBeVisible();
+        await expect(viewer).toHaveAttribute('wrap', 'off');
 
         const payloadText = await viewer.inputValue();
-        const payload = JSON.parse(payloadText) as {
-            feedbackId: string;
-            content: string;
-            reporterEmail: string | null;
-            clientContext: { matchId?: string } | null;
-            errorContext: { name?: string } | null;
-            operationLogs: unknown[];
-            stateSnapshot: { gameId?: string } | null;
-        };
+        const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
 
-        expect(payload.feedbackId).toBe('feedback_001');
-        expect(payload.content).toContain('这张卡效果不对');
-        expect(payload.reporterEmail).toBe('tester@example.com');
-        expect(payload.clientContext?.matchId).toBe('abc');
-        expect(payload.errorContext?.name).toBe('TypeError');
-        expect(Array.isArray(payload.operationLogs)).toBeTruthy();
-        expect(payload.operationLogs).toHaveLength(2);
-        expect(payload.stateSnapshot?.gameId).toBe('smashup');
+        expect(payloadText).toBe(clipboardText);
+        expect(payloadText.startsWith('{')).toBeFalsy();
+        expect(payloadText.includes('\n')).toBeFalsy();
+        expect(payloadText).toContain('反馈ID=feedback_001');
+        expect(payloadText).toContain('游戏=大杀四方(smashup)');
+        expect(payloadText).toContain('内容=这张卡效果不对，会把弃牌堆单位放回手牌。');
+        expect(payloadText).toContain('客户端=route=/play/smashup/match/abc, match=abc, player=0, game=smashup, mode=online');
+        expect(payloadText).toContain('错误=react.error_boundary | TypeError | Cannot read properties of undefined');
+        expect(payloadText).toContain('操作=1.step=play-card, cardId=card-001; 2.step=select-target, targetId=minion-77');
+        expect(payloadText).toContain('状态=game=smashup, turn=3, player=P1, field=1(minion-77@P1)');
 
         await page.screenshot({
-            path: 'test-results/admin-feedback-ai-payload.png',
+            path: 'test-results/evidence-screenshots/admin-feedback-ai-summary-copy.png',
             fullPage: true,
         });
     });
@@ -298,7 +293,110 @@ test.describe('后台反馈管理 E2E', () => {
         });
     });
 
-    test('developer 可以进入反馈页但只读', async ({ page }) => {
+    test('反馈列表固定控制区支持分类筛选和时间排序，只有内容区滚动', async ({ page }) => {
+        await setStoredAuth(page, {
+            id: 'admin_1',
+            username: 'Admin',
+            role: 'admin',
+            banned: false,
+        });
+
+        const requests: string[] = [];
+        const feedbackItems = [
+            ...Array.from({ length: 21 }, (_, index) => ({
+                _id: `feedback_bug_${index + 1}`,
+                content: index === 0 ? '最早的严重 Bug' : `严重 Bug ${index + 1}`,
+                type: 'bug' as const,
+                severity: 'critical' as const,
+                status: 'open' as const,
+                createdAt: new Date(Date.UTC(2026, 2, 1 + index, 10, 0, 0)).toISOString(),
+            })),
+            {
+                _id: 'feedback_suggestion_1',
+                content: '建议反馈',
+                type: 'suggestion' as const,
+                severity: 'low' as const,
+                status: 'open' as const,
+                createdAt: new Date(Date.UTC(2026, 2, 30, 10, 0, 0)).toISOString(),
+            },
+        ];
+
+        await page.route('**/admin/feedback?*', async (route) => {
+            if (route.request().method() !== 'GET') return route.fallback();
+
+            const url = new URL(route.request().url());
+            requests.push(url.search);
+
+            const pageParam = Number(url.searchParams.get('page') ?? '1');
+            const limitParam = Number(url.searchParams.get('limit') ?? '20');
+            const statusParam = url.searchParams.get('status');
+            const typeParam = url.searchParams.get('type');
+            const severityParam = url.searchParams.get('severity');
+            const sortParam = url.searchParams.get('sort') ?? 'newest';
+
+            let items = [...feedbackItems];
+            if (statusParam) items = items.filter((item) => item.status === statusParam);
+            if (typeParam) items = items.filter((item) => item.type === typeParam);
+            if (severityParam) items = items.filter((item) => item.severity === severityParam);
+            items.sort((left, right) => (
+                sortParam === 'oldest'
+                    ? left.createdAt.localeCompare(right.createdAt)
+                    : right.createdAt.localeCompare(left.createdAt)
+            ));
+
+            const start = (pageParam - 1) * limitParam;
+            const pagedItems = items.slice(start, start + limitParam);
+
+            return route.fulfill({
+                status: 200,
+                json: {
+                    items: pagedItems,
+                    total: items.length,
+                    limit: limitParam,
+                    page: pageParam,
+                },
+            });
+        });
+
+        await gotoFrontendRoute(page, '/admin/feedback');
+
+        const controls = page.getByTestId('feedback-list-controls');
+        await expect(controls).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
+        await controls.getByRole('button', { name: 'Bug' }).click();
+        await controls.getByRole('button', { name: '严重' }).click();
+        await controls.getByRole('button', { name: '最早优先' }).click();
+
+        await expect(page.locator('[data-testid="feedback-row"][data-feedback-id="feedback_bug_1"]')).toBeVisible({
+            timeout: ADMIN_PAGE_READY_TIMEOUT_MS,
+        });
+        await expect(page.locator('[data-testid="feedback-row"]').first()).toContainText('最早的严重 Bug');
+        await expect(page.getByTestId('feedback-pagination-indicator')).toHaveText('1 / 2');
+        expect(requests.some((entry) => entry.includes('type=bug'))).toBeTruthy();
+        expect(requests.some((entry) => entry.includes('severity=critical'))).toBeTruthy();
+        expect(requests.some((entry) => entry.includes('sort=oldest'))).toBeTruthy();
+
+        const listScroll = page.getByTestId('feedback-list-scroll');
+        const scrollState = await listScroll.evaluate((element) => {
+            element.scrollTop = element.scrollHeight;
+            return {
+                scrollTop: element.scrollTop,
+                clientHeight: element.clientHeight,
+                scrollHeight: element.scrollHeight,
+            };
+        });
+
+        expect(scrollState.scrollHeight).toBeGreaterThan(scrollState.clientHeight);
+        expect(scrollState.scrollTop).toBeGreaterThan(0);
+        await expect(page.getByTestId('feedback-list-controls')).toBeVisible();
+        await expect(page.getByTestId('feedback-pagination-indicator')).toBeVisible();
+
+        await page.screenshot({
+            path: 'test-results/evidence-screenshots/admin-feedback-controls-sticky.png',
+            fullPage: true,
+        });
+    });
+
+    test('developer 可以进入反馈页并复制反馈摘要', async ({ page }) => {
         await setStoredAuth(page, {
             id: 'developer_1',
             username: 'Developer',
@@ -328,15 +426,12 @@ test.describe('后台反馈管理 E2E', () => {
 
         await gotoFrontendRoute(page, '/admin/feedback');
 
-        await expect(page.getByText('只读')).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
-        await expect(page.getByText('开发者可以查看与复制反馈分诊包，但状态更新和删除仍然只有管理员可用。')).toBeVisible({
-            timeout: ADMIN_PAGE_READY_TIMEOUT_MS,
-        });
         await expect(page.locator('input[type="checkbox"]')).toHaveCount(0);
 
         const row = page.locator('[data-testid="feedback-row"][data-feedback-id="feedback_readonly_001"]');
         await expect(row).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
         await row.click();
+        await expect(page.getByRole('heading', { name: '反馈管理' })).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
         await expect(page.getByTestId('feedback-copy-ai-payload')).toBeVisible();
 
         await page.screenshot({

@@ -320,6 +320,105 @@ describe('克苏鲁之仆 - cthulhu_madness_unleashed（疯狂释放）', () => 
         // 疯狂卡仍在手牌（未弃）
         expect(state.players['0'].hand.some(c => c.uid === 'm1')).toBe(true);
     });
+
+    it('选2张疯狂卡后：立即弃牌、抽2张并获得2个额外行动额度', () => {
+        const state = makeStateWithMadness({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('a1', 'cthulhu_madness_unleashed', 'action', '0'),
+                        makeCard('m1', MADNESS_CARD_DEF_ID, 'action', '0'),
+                        makeCard('m2', MADNESS_CARD_DEF_ID, 'action', '0'),
+                    ],
+                    deck: [
+                        makeCard('d1', 'test_minion_a', 'minion', '0'),
+                        makeCard('d2', 'test_action_a', 'action', '0'),
+                        makeCard('d3', 'test_minion_b', 'minion', '0'),
+                    ],
+                    actionLimit: 1,
+                    actionsPlayed: 0,
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const playEvents = execPlayAction(state, '0', 'a1');
+        const afterPlay = applyEvents(state, playEvents);
+
+        const handler = getInteractionHandler('cthulhu_madness_unleashed');
+        expect(handler).toBeDefined();
+        const result = handler!(
+            makeMatchState(afterPlay),
+            '0',
+            [{ cardUid: 'm1' }, { cardUid: 'm2' }],
+            undefined,
+            defaultRandom,
+            1000,
+        );
+
+        expect((result as any).matchState).toBeUndefined();
+
+        const discardEvts = result.events.filter(e => e.type === SU_EVENTS.CARDS_DISCARDED);
+        expect(discardEvts.length).toBe(1);
+        expect((discardEvts[0] as any).payload.cardUids).toEqual(['m1', 'm2']);
+
+        const drawEvts = result.events.filter(e => e.type === SU_EVENTS.CARDS_DRAWN);
+        expect(drawEvts.length).toBe(1);
+        expect((drawEvts[0] as any).payload.count).toBe(2);
+        expect((drawEvts[0] as any).payload.cardUids).toEqual(['d1', 'd2']);
+
+        const limitEvts = result.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
+        expect(limitEvts.length).toBe(2);
+        expect(limitEvts.every((e: any) => e.payload.limitType === 'action')).toBe(true);
+
+        const finalState = applyEvents(afterPlay, result.events);
+        expect(finalState.players['0'].actionLimit).toBe(3);
+        expect(finalState.players['0'].actionsPlayed).toBe(1);
+        expect(finalState.players['0'].hand.map(c => c.uid).sort()).toEqual(['d1', 'd2']);
+        expect(finalState.players['0'].discard.map(c => c.uid).sort()).toEqual(['a1', 'm1', 'm2']);
+        expect(finalState.players['0'].actionLimit - finalState.players['0'].actionsPlayed).toBe(2);
+    });
+
+    it('POD 版同样会按弃掉的疯狂卡数量立即给予额外行动额度', () => {
+        const state = makeStateWithMadness({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('a1', 'cthulhu_madness_unleashed_pod', 'action', '0'),
+                        makeCard('m1', MADNESS_CARD_DEF_ID, 'action', '0'),
+                    ],
+                    deck: [
+                        makeCard('d1', 'test_minion_a', 'minion', '0'),
+                        makeCard('d2', 'test_action_a', 'action', '0'),
+                    ],
+                    actionLimit: 1,
+                    actionsPlayed: 0,
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const playEvents = execPlayAction(state, '0', 'a1');
+        const afterPlay = applyEvents(state, playEvents);
+
+        const handler = getInteractionHandler('cthulhu_madness_unleashed');
+        expect(handler).toBeDefined();
+        const result = handler!(
+            makeMatchState(afterPlay),
+            '0',
+            [{ cardUid: 'm1' }],
+            undefined,
+            defaultRandom,
+            1000,
+        );
+
+        const finalState = applyEvents(afterPlay, result.events);
+        expect(finalState.players['0'].actionLimit).toBe(2);
+        expect(finalState.players['0'].actionsPlayed).toBe(1);
+        expect(finalState.players['0'].hand.map(c => c.uid)).toEqual(['d1']);
+        expect(finalState.players['0'].discard.map(c => c.uid).sort()).toEqual(['a1', 'm1']);
+        expect(finalState.players['0'].actionLimit - finalState.players['0'].actionsPlayed).toBe(1);
+    });
 });
 
 
@@ -531,7 +630,7 @@ describe('米斯卡塔尼克大学 - miskatonic_book_of_iter_the_unseen（金克
         // 手牌中的疯狂卡应被移除
         expect(finalState.players['0'].hand.some(c => c.uid === 'm1')).toBe(false);
         // 疯狂牌库应增加1张
-        expect(finalState.madnessDeck!.length).toBe(MADNESS_DECK_SIZE + 1);
+        expect(finalState.madnessDeck!.length).toBe(MADNESS_DECK_SIZE);
     });
 
     it('选择跳过时不产生事件', () => {

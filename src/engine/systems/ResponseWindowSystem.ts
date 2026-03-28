@@ -55,6 +55,17 @@ export interface ResponseWindowSystemConfig {
     /** 不受"当前响应者"约束的命令（如 USE_TOKEN 由自身 responderId 校验） */
     responderExemptCommands?: string[];
 
+    /**
+     * 针对特定窗口的额外放行规则。
+     * 用于像“同队直接干预骰面”这类不进入 responderQueue、但仍需在响应窗口内合法执行的命令。
+     */
+    allowNonResponderCommand?: (args: {
+        state: MatchState<unknown>;
+        command: { type: string; playerId: PlayerId; payload?: unknown };
+        currentWindow: NonNullable<ResponseWindowState['current']>;
+        currentResponderId?: PlayerId;
+    }) => boolean;
+
     /** 命令的窗口类型限制：只在指定窗口类型下才允许执行 */
     commandWindowTypeConstraints?: Record<string, ResponseWindowType[]>;
 
@@ -393,6 +404,7 @@ export function createResponseWindowSystem<TCore>(
     const allowedCategories = new Set(config.allowedCommandCategories ?? []);
     
     const responderExempt = new Set(config.responderExemptCommands ?? []);
+    const allowNonResponderCommand = config.allowNonResponderCommand;
     const windowTypeConstraints = config.commandWindowTypeConstraints ?? {};
     const advanceEvents = config.responseAdvanceEvents ?? [];
     const interactionLock = config.interactionLock;
@@ -520,6 +532,14 @@ export function createResponseWindowSystem<TCore>(
                 // 非豁免命令需检查是否为当前响应者
                 if (!responderExempt.has(command.type)) {
                     if (command.playerId !== currentResponderId) {
+                        if (allowNonResponderCommand?.({
+                            state: state as MatchState<unknown>,
+                            command,
+                            currentWindow,
+                            currentResponderId,
+                        })) {
+                            return;
+                        }
                         return { halt: true, error: '等待对方响应' };
                     }
                 }

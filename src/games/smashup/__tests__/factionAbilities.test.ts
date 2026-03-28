@@ -18,6 +18,8 @@ import type {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
+import { scoreOneBase } from '../domain';
+import { fireTriggers } from '../domain/ongoingEffects';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { makeMatchState } from './helpers';
@@ -69,6 +71,98 @@ describe('trickster interaction regressions', () => {
         expect(destroyEvent).toBeDefined();
         expect((destroyEvent as any).payload.minionUid).toBe('e1');
         expect(respondResult.finalState.core.bases[0].minions.some(m => m.uid === 'e1')).toBe(false);
+    });
+
+    it('trickster_gnome_pod beforeScoring options exclude the source gnome itself', () => {
+        const state = makeState({
+            bases: [{
+                defId: 'base_the_homeworld',
+                minions: [
+                    makeMinion('gnome-1', 'trickster_gnome_pod', '0', 3),
+                    makeMinion('ally-1', 'test_ally', '0', 5),
+                    makeMinion('enemy-1', 'test_enemy', '1', 1),
+                    makeMinion('enemy-2', 'test_enemy', '1', 2),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const result = fireTriggers(state, 'beforeScoring', {
+            state,
+            matchState: makeMatchState(state),
+            playerId: '0',
+            baseIndex: 0,
+            random: defaultRandom,
+            now: 1000,
+        });
+
+        const interaction = result.matchState?.sys.interaction?.current as any;
+        expect(interaction?.data?.sourceId).toBe('trickster_gnome_pod');
+
+        const targetUids = ((interaction?.data?.options ?? []) as any[])
+            .map(option => option?.value?.minionUid)
+            .filter(Boolean);
+
+        expect(targetUids).not.toContain('gnome-1');
+        expect(targetUids).toContain('enemy-1');
+        expect(targetUids).toContain('enemy-2');
+    });
+
+    it('trickster_gnome_pod resolves only once for the same gnome during one scoring', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_the_homeworld',
+                minions: [
+                    makeMinion('gnome-1', 'trickster_gnome_pod', '0', 3),
+                    makeMinion('ally-1', 'test_ally', '0', 5),
+                    makeMinion('ally-2', 'test_ally', '0', 5),
+                    makeMinion('enemy-1', 'test_enemy', '1', 1),
+                ],
+                ongoingActions: [],
+            }],
+            baseDeck: ['base_the_mothership'],
+        });
+        const initialMatchState = {
+            ...makeMatchState(core),
+            sys: {
+                ...makeMatchState(core).sys,
+                phase: 'scoreBases',
+            },
+        } as MatchState<SmashUpCore>;
+
+        const scoringResult = scoreOneBase(
+            core,
+            0,
+            core.baseDeck,
+            '0',
+            1000,
+            defaultRandom,
+            initialMatchState,
+        );
+        expect(scoringResult.matchState?.sys.interaction?.current).toBeDefined();
+
+        const scoringState = {
+            ...scoringResult.matchState!,
+            core: applyEventsLocal(scoringResult.matchState!.core, scoringResult.events),
+        };
+        const interaction = scoringState.sys.interaction?.current as any;
+        expect(interaction?.data?.sourceId).toBe('trickster_gnome_pod');
+
+        const targetOption = interaction?.data?.options?.find((option: any) => option?.value?.minionUid === 'enemy-1');
+        expect(targetOption).toBeDefined();
+
+        const respondResult = runCommand(scoringState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: targetOption.id },
+            timestamp: 1001,
+        } as any, defaultRandom);
+
+        const destroyEvents = respondResult.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(1);
+        expect((destroyEvents[0] as any).payload.minionUid).toBe('enemy-1');
+        expect(respondResult.finalState.sys.interaction?.current).toBeUndefined();
+        expect(respondResult.finalState.sys.interaction?.queue ?? []).toHaveLength(0);
     });
 });
 

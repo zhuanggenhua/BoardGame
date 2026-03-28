@@ -9,6 +9,12 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
+import {
+    collectOptionObjectLiterals,
+    extractSimpleChoiceConfig,
+    getChoiceOptionsArg,
+    isCreateSimpleChoiceCall,
+} from './helpers/simpleChoiceAst';
 
 describe('SmashUp Interaction defId 审计', () => {
     it('所有 createSimpleChoice 的卡牌选项必须包含 defId', () => {
@@ -49,6 +55,66 @@ describe('SmashUp Interaction defId 审计', () => {
         }
 
         expect(violations, '以下 Interaction 选项缺少 defId/minionDefId/baseDefId').toEqual([]);
+    });
+
+    it('所有 createSimpleChoice 的 value shorthand 字段都必须引用已定义变量', () => {
+        const configPath = path.resolve(__dirname, '../../../../tsconfig.app.json');
+        const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+        const parsedConfig = ts.parseJsonConfigFileContent(configFile.config, ts.sys, path.dirname(configPath));
+        const program = ts.createProgram({
+            rootNames: parsedConfig.fileNames,
+            options: parsedConfig.options,
+        });
+        const checker = program.getTypeChecker();
+        const violations: string[] = [];
+
+        for (const sourceFile of program.getSourceFiles()) {
+            const normalizedPath = sourceFile.fileName.replace(/\\/g, '/');
+            if (sourceFile.isDeclarationFile) continue;
+            if (!normalizedPath.includes('/src/games/smashup/abilities/') && !normalizedPath.includes('/src/games/smashup/domain/')) {
+                continue;
+            }
+
+            const visit = (node: ts.Node) => {
+                if (isCreateSimpleChoiceCall(node)) {
+                    const config = extractSimpleChoiceConfig(node);
+                    const optionObjects = collectOptionObjectLiterals(sourceFile, getChoiceOptionsArg(node), node);
+
+                    for (const optionObject of optionObjects) {
+                        const valueProp = optionObject.properties.find((prop) =>
+                            ts.isPropertyAssignment(prop)
+                            && (
+                                (ts.isIdentifier(prop.name) && prop.name.text === 'value')
+                                || (ts.isStringLiteral(prop.name) && prop.name.text === 'value')
+                            ),
+                        ) as ts.PropertyAssignment | undefined;
+
+                        if (!valueProp || !ts.isObjectLiteralExpression(valueProp.initializer)) continue;
+
+                        for (const valueChild of valueProp.initializer.properties) {
+                            if (!ts.isShorthandPropertyAssignment(valueChild)) continue;
+                            const symbol = checker.getSymbolAtLocation(valueChild.name);
+                            if (symbol) continue;
+
+                            const line = sourceFile.getLineAndCharacterOfPosition(valueChild.name.getStart(sourceFile)).line + 1;
+                            violations.push(
+                                `${path.basename(sourceFile.fileName)}:${line} [${config.sourceId}] value shorthand "${valueChild.name.text}" 未解析到已定义变量`,
+                            );
+                        }
+                    }
+                }
+                ts.forEachChild(node, visit);
+            };
+
+            visit(sourceFile);
+        }
+
+        if (violations.length > 0) {
+            console.log('\n=== Interaction value shorthand 未定义变量清单 ===\n');
+            violations.forEach(v => console.log(v));
+        }
+
+        expect(violations, '以下 createSimpleChoice 选项 value shorthand 指向了未定义变量').toEqual([]);
     });
 });
 

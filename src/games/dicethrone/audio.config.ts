@@ -215,7 +215,7 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
         {
             when: (context) => {
                 const { currentPhase } = context.ctx as { currentPhase?: TurnPhase };
-                return currentPhase === 'offensiveRoll' || currentPhase === 'defensiveRoll';
+                return currentPhase === 'offensiveRoll' || currentPhase === 'targetingRoll' || currentPhase === 'defensiveRoll';
             },
             key: BGM_DRAGON_DANCE_KEY,
             group: 'battle',

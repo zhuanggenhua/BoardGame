@@ -83,6 +83,20 @@
     "card_placeholder": "卡牌",
     "me_first_title": "⚡ 先手响应！",
     "after_scoring_title": "计分后响应",
+    "reaction_timing": {
+      "onMinionPlayed": "随从打出后",
+      "onActionPlayed": "行动打出后",
+      "onBaseRevealed": "基地翻开后",
+      "onMinionDestroyed": "随从被消灭后",
+      "onMinionMoved": "随从移动后",
+      "onMinionAffected": "随从受影响后",
+      "onMinionDiscardedFromBase": "随从因基地结算弃置后",
+      "onTurnEnd": "回合结束时",
+      "onTurnStart": "回合开始时",
+      "beforeScoring": "计分前",
+      "afterScoring": "计分后",
+      "unknown": "触发"
+    },
     "thinking": "思考中...",
     "loading": "加载中...",
     "reveal_hand_title": "P{{player}} 的手牌",
@@ -118,7 +132,8 @@
     "fusion_choose_playas": "选择打出方式",
     "fusion_choose_playas_desc": "融合卡可以作为随从或战术打出。请选择本次打出的类型。",
     "play_as_minion": "作为随从",
-    "play_as_action": "作为战术"
+    "play_as_action": "作为战术",
+    "tap_again_to_activate": "再次点击发动"
   },
   "feedback": {
     "deck_search_no_match": "牌库中未找到符合条件的卡牌，已重洗牌库",
@@ -189,7 +204,7 @@
     "cardRecovered": "{{playerId}} 从弃牌堆取回{{count}}张卡",
     "handShuffledIntoDeck": "将{{playerId}}手牌洗入牌库",
     "madnessDrawn": "{{playerId}} 抽取{{count}}张疯狂卡",
-    "madnessReturned": "{{playerId}} 归还疯狂卡",
+    "madnessReturned": "{{playerId}} 消耗疯狂卡",
     "baseDeckReordered": "基地牌库重排",
     "onBase": " → {{base}}",
     "revealHand": "{{playerId}} 展示手牌（{{count}}张）",
@@ -775,7 +790,7 @@
     },
     "special_madness": {
       "name": "疯狂",
-      "effectText": "抽两张卡或将本卡返回疯狂牌堆。"
+      "effectText": "抽两张卡或消耗本卡。"
     },
     "miskatonic_professor": {
       "name": "教授",
@@ -787,7 +802,7 @@
     },
     "miskatonic_psychologist": {
       "name": "心理学家",
-      "abilityText": "你可以将手牌或弃牌堆中的一张疯狂卡返回疯狂牌库。"
+      "abilityText": "你可以消耗你手牌或弃牌堆中的一张疯狂卡。"
     },
     "miskatonic_researcher": {
       "name": "研究员",
@@ -795,7 +810,7 @@
     },
     "miskatonic_book_of_iter_the_unseen": {
       "name": "金克丝!",
-      "effectText": "从你的手牌和弃牌堆返回至多两张疯狂卡到疯狂卡牌堆。"
+      "effectText": "消耗你手牌和弃牌堆中的至多两张疯狂卡。"
     },
     "miskatonic_mandatory_reading": {
       "name": "最好不知道的事",
@@ -1289,6 +1304,45 @@
     "base_wizard_academy": {
       "name": "巫师学院",
       "abilityText": "在这个基地计分后，冠军查看基地牌库顶的3张牌。选择一张替换这个基地，然后以任意顺序将其余的放回。"
+    },
+    "base_central_brain_pod": {
+      "name": "中央大脑",
+      "abilityText": "这里的每个随从都获得+1力量。"
+    },
+    "base_the_factory_pod": {
+      "name": "436-1337工厂",
+      "abilityText": "当该基地计分时，冠军在此每有5点力量便获得1VP。"
+    },
+    "base_ninja_dojo_pod": {
+      "name": "忍者道场"
+    },
+    "base_temple_of_goju_pod": {
+      "name": "刚柔流寺庙",
+      "abilityText": "每当有随从在这里被消灭后，将其置于其拥有者牌库底。"
+    },
+    "base_cave_of_shinies_pod": {
+      "name": "闪光洞穴",
+      "abilityText": "每回合一次：当一张你拥有的、在这里的随从被消灭后，获得1VP。"
+    },
+    "base_mushroom_kingdom_pod": {
+      "name": "蘑菇王国",
+      "abilityText": "在你的回合开始时，若你手牌数严格多于任意其他玩家，你可以将一个随从移入或移出该基地。"
+    },
+    "base_wizard_academy_pod": {
+      "name": "巫术学院",
+      "abilityText": "当该基地计分后，冠军查看基地牌库顶三张，选择一张替换该基地，其余按任意顺序放回。"
+    },
+    "base_great_library_pod": {
+      "name": "大图书馆",
+      "abilityText": "当该基地计分后，所有在此有随从的玩家各摸1张牌。"
+    },
+    "base_haunted_house_pod": {
+      "name": "伊万斯城公墓",
+      "abilityText": "当该基地计分后，冠军弃掉其手牌并摸五张牌。"
+    },
+    "base_rhodes_plaza_pod": {
+      "name": "罗德百货商场",
+      "abilityText": "当该基地计分时，每位玩家在此每有一个随从便获得1VP。"
     },
     "base_dread_lookout": {
       "name": "恐怖眺望台",
@@ -2055,7 +2109,7 @@
     },
     "killer_plant_weed_eater_pod": {
       "name": "野生食人花",
-      "abilityText": "本随从在你打出它的回合中-2战斗力。"
+      "abilityText": "持续：在你的回合开始时，本随从获得+2力量，直到你的下个回合开始。"
     },
     "killer_plant_water_lily_pod": {
       "name": "浇花睡莲",
@@ -2107,7 +2161,7 @@
     },
     "miskatonic_psychologist_pod": {
       "name": "心理学家",
-      "abilityText": "将你手牌或弃牌堆中的一张疯狂卡返回疯狂牌库，或者从你的弃牌堆中抽一张疯狂卡。"
+      "abilityText": "消耗你手牌或弃牌堆中的一张疯狂卡，或者从你的弃牌堆中抽一张疯狂卡。"
     },
     "miskatonic_researcher_pod": {
       "name": "研究员",
@@ -2115,7 +2169,7 @@
     },
     "miskatonic_book_of_iter_the_unseen_pod": {
       "name": "金克丝!",
-      "effectText": "从你的手牌和弃牌堆返回至多两张疯狂卡到疯狂卡牌堆。"
+      "effectText": "消耗你手牌和弃牌堆中的至多两张疯狂卡。"
     },
     "miskatonic_it_just_might_work_pod": {
       "name": "...没准能行",
@@ -2594,7 +2648,7 @@
     },
     "miskatonic_jinkies_pod": {
       "name": "金奇斯",
-      "effectText": "将你手牌或弃牌堆中至多两张疯狂卡返回疯狂牌库。"
+      "effectText": "消耗你手牌或弃牌堆中的至多两张疯狂卡。"
     },
     "miskatonic_thats_so_crazy_pod": {
       "name": "太疯狂了...",
@@ -2643,6 +2697,115 @@
     "base_the_workshop_pod": {
       "name": "工坊",
       "abilityText": "(20, VP 4-2-1) 每当有一名玩家将战术打出到该基地时，该玩家可以额外打出一个战术。"
+    }
+    ,
+    "base_the_homeworld_pod": {
+      "name": "家园"
+    },
+    "base_the_mothership_pod": {
+      "name": "母舰"
+    },
+    "base_the_jungle_pod": {
+      "name": "绿洲丛林"
+    },
+    "base_tar_pits_pod": {
+      "name": "焦油坑"
+    },
+    "base_pirate_cove_pod": {
+      "name": "灰色猫眼石"
+    },
+    "base_dread_lookout_pod": {
+      "name": "恐怖眺望台"
+    },
+    "base_haunted_house_al9000_pod": {
+      "name": "鬼屋"
+    },
+    "base_the_field_of_honor_pod": {
+      "name": "荣誉之地"
+    },
+    "base_tsars_palace_pod": {
+      "name": "沙皇宫殿"
+    },
+    "base_greenhouse_pod": {
+      "name": "温室"
+    },
+    "base_secret_garden_pod": {
+      "name": "神秘花园"
+    },
+    "base_cat_fanciers_alley_pod": {
+      "name": "诡猫巷"
+    },
+    "base_house_of_nine_lives_pod": {
+      "name": "九命之家"
+    },
+    "base_enchanted_glade_pod": {
+      "name": "迷人峡谷"
+    },
+    "base_fairy_ring_pod": {
+      "name": "仙灵圈"
+    },
+    "base_beautiful_castle_pod": {
+      "name": "美丽城堡"
+    },
+    "base_castle_of_ice_pod": {
+      "name": "冰之城堡"
+    },
+    "base_land_of_balance_pod": {
+      "name": "平衡之地"
+    },
+    "base_pony_paradise_pod": {
+      "name": "小马乐园"
+    },
+    "base_north_pole_pod": {
+      "name": "北极基地"
+    },
+    "base_antarctic_base_pod": {
+      "name": "南极基地"
+    },
+    "base_ritual_site_pod": {
+      "name": "仪式场所"
+    },
+    "base_rlyeh_pod": {
+      "name": "拉莱耶"
+    },
+    "base_innsmouth_base_pod": {
+      "name": "印斯茅斯"
+    },
+    "base_mountains_of_madness_pod": {
+      "name": "疯狂山脉"
+    },
+    "base_plateau_of_leng_pod": {
+      "name": "伦格高原"
+    },
+    "base_the_pasture_pod": {
+      "name": "牧场"
+    },
+    "base_sheep_shrine_pod": {
+      "name": "绵羊神社"
+    },
+    "base_castle_blood_pod": {
+      "name": "血堡"
+    },
+    "base_crypt_pod": {
+      "name": "地窖"
+    },
+    "base_laboratorium_pod": {
+      "name": "实验工坊"
+    },
+    "base_golem_schloss_pod": {
+      "name": "魔像城堡"
+    },
+    "base_moot_site_pod": {
+      "name": "集会场"
+    },
+    "base_standing_stones_pod": {
+      "name": "巨石阵"
+    },
+    "base_egg_chamber_pod": {
+      "name": "卵室"
+    },
+    "base_the_hill_pod": {
+      "name": "蚁丘"
     }
   },
   "endgame": {

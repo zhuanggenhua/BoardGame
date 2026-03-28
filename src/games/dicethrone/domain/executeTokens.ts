@@ -361,6 +361,27 @@ export function executeTokenCommand(
                 break;
             }
 
+            if (settlement.resolutionMode === 'attackBonus') {
+                const attackBonus = settlement.attackBonusScale === 'halfUp'
+                    ? Math.ceil(totalDamage / 2)
+                    : totalDamage;
+                events.push({
+                    type: 'BONUS_DAMAGE_ADDED',
+                    payload: {
+                        playerId: settlement.attackerId,
+                        amount: attackBonus,
+                        sourceCardId: settlement.sourceAbilityId,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as DiceThroneEvent);
+                break;
+            }
+
+            if (settlement.resolutionMode === 'none') {
+                break;
+            }
+
             // 应用伤害
             const target = state.players[settlement.targetId];
             const targetHp = target?.resources[RESOURCE_IDS.HP] ?? 0;

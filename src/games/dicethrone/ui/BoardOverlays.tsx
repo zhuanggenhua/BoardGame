@@ -65,6 +65,9 @@ export interface BoardOverlaysProps {
     pendingInteraction?: InteractionDescriptor;
     players: Record<PlayerId, HeroState>;
     currentPlayerId: PlayerId;
+    playerNames: Record<PlayerId, string>;
+    seatingOrder?: PlayerId[];
+    teamIdByPlayerId?: Record<PlayerId, string>;
     onSelectStatus: (playerId: PlayerId, statusId: string) => void;
     onSelectPlayer: (playerId: PlayerId) => void;
     onConfirmStatusInteraction: () => void;
@@ -74,7 +77,8 @@ export interface BoardOverlaysProps {
     choice: {
         hasChoice: boolean;
         title?: string;
-        options: Array<{ id: string; label: string; statusId?: string; tokenId?: string; customId?: string; value?: number }>;
+        options: Array<{ id: string; label: string; statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean }>;
+        sourceAbilityId?: string;
         /** slider 模式配置（存在时渲染滑动条） */
         slider?: { confirmLabelKey: string; hintKey?: string; skipLabelKey?: string };
     };
@@ -140,7 +144,6 @@ export interface BoardOverlaysProps {
 
     // 选角相关
     selectedCharacters: Record<PlayerId, CharacterId>;
-    playerNames: Record<PlayerId, string>;
     hostPlayerId: PlayerId;
 }
 
@@ -330,6 +333,9 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         interaction={props.pendingInteraction}
                         players={props.players}
                         currentPlayerId={props.currentPlayerId}
+                        playerNames={props.playerNames}
+                        seatingOrder={props.seatingOrder}
+                        teamIdByPlayerId={props.teamIdByPlayerId}
                         onSelectStatus={props.onSelectStatus}
                         onSelectPlayer={props.onSelectPlayer}
                         onConfirm={props.onConfirmStatusInteraction}
@@ -343,7 +349,14 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                 {props.choice.hasChoice && (
                     <ChoiceModal
                         key="choice"
-                        choice={props.choice.hasChoice ? { title: props.choice.title ?? '', options: props.choice.options, slider: props.choice.slider } : null}
+                        choice={props.choice.hasChoice
+                            ? {
+                                title: props.choice.title ?? '',
+                                options: props.choice.options,
+                                slider: props.choice.slider,
+                                sourceAbilityId: props.choice.sourceAbilityId,
+                            }
+                            : null}
                         canResolve={props.canResolveChoice}
                     onResolve={(optionId) => {
                             props.dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
@@ -353,6 +366,10 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         }}
                         locale={props.locale}
                         statusIconAtlas={props.statusIconAtlas}
+                        currentPlayerId={props.currentPlayerId}
+                        players={props.players}
+                        playerNames={props.playerNames}
+                        teamIdByPlayerId={props.teamIdByPlayerId}
                     />
                 )}{/* 额外骰子特写 / 重掷交互 */}
                 {(props.bonusDie.show || props.pendingBonusDiceSettlement) && (

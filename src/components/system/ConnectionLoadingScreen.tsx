@@ -12,6 +12,7 @@ interface ConnectionLoadingScreenProps {
     description?: string;
     gameId?: string;
     onRetry?: () => void;
+    anchor?: 'viewport' | 'container';
 }
 
 /**
@@ -26,6 +27,7 @@ export const ConnectionLoadingScreen = ({
     description,
     gameId,
     onRetry,
+    anchor = 'viewport',
 }: ConnectionLoadingScreenProps) => {
     const { t } = useTranslation('lobby');
     const navigate = useNavigate();
@@ -59,10 +61,15 @@ export const ConnectionLoadingScreen = ({
             <LoadingScreen
                 title={timedOut ? t('matchRoom.connectionTimeout.title') : title}
                 description={timedOut ? t('matchRoom.connectionTimeout.description') : description}
+                anchor={anchor}
             />
             {timedOut && (
                 <div
-                    className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+11rem)] flex items-center justify-center gap-4"
+                    className={
+                        anchor === 'viewport'
+                            ? 'fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+11rem)] flex items-center justify-center gap-4'
+                            : 'absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+11rem)] flex items-center justify-center gap-4'
+                    }
                     style={{ zIndex: UI_Z_INDEX.loading + 1 }}
                 >
                     <button

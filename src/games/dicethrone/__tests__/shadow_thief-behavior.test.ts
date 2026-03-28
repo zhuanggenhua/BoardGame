@@ -119,6 +119,65 @@ function eventsOfType(events: DiceThroneEvent[], type: string) {
     return events.filter(e => e.type === type);
 }
 
+function createFourPlayerShadowManipulationState(): DiceThroneCore {
+    const state = createState({});
+    state.players['0'] = {
+        ...(state.players['0'] as HeroState),
+        id: '0',
+        characterId: 'monk',
+        tokens: {},
+        tokenStackLimits: {},
+    };
+    state.players['1'] = {
+        ...(state.players['1'] as HeroState),
+        id: '1',
+        characterId: 'barbarian',
+        tokens: {},
+        tokenStackLimits: {},
+    };
+    state.players['2'] = {
+        ...(state.players['0'] as HeroState),
+        id: '2',
+        characterId: 'shadow_thief',
+        resources: {
+            [RESOURCE_IDS.HP]: 50,
+            [RESOURCE_IDS.CP]: 10,
+        },
+        hand: [],
+        deck: [],
+        discard: [],
+        tokens: {
+            [TOKEN_IDS.SNEAK]: 1,
+            [TOKEN_IDS.SNEAK_ATTACK]: 0,
+        },
+        tokenStackLimits: { [TOKEN_IDS.SNEAK]: 3, [TOKEN_IDS.SNEAK_ATTACK]: 3 },
+    };
+    state.players['3'] = {
+        ...(state.players['1'] as HeroState),
+        id: '3',
+        characterId: 'monk',
+        hand: [],
+        deck: [],
+        discard: [],
+        tokens: {},
+        tokenStackLimits: {},
+    };
+    state.selectedCharacters = {
+        '0': 'monk',
+        '1': 'barbarian',
+        '2': 'shadow_thief',
+        '3': 'monk',
+    };
+    state.activePlayerId = '0';
+    state.pendingAttack = {
+        attackerId: '0',
+        defenderId: '3',
+        defenseAbilityId: 'defense-test',
+        isDefendable: true,
+    };
+    return state;
+}
+
 // ============================================================================
 // 测试套件
 // ============================================================================
@@ -249,6 +308,41 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             const cpEvents = eventsOfType(events, 'CP_CHANGED');
             expect(cpEvents).toHaveLength(1);
             expect((cpEvents[0] as any).payload.delta).toBe(2);
+        });
+    });
+
+    describe('shadow_thief-shadow-manipulation (暗影操控)', () => {
+        it('4 人 / 2v2 下由攻击方队友触发时，交互仍显式指向当前 defender 的骰池', () => {
+            const state = createFourPlayerShadowManipulationState();
+            const handler = getCustomActionHandler('shadow_thief-shadow-manipulation')!;
+            const events = handler({
+                ctx: {
+                    attackerId: '2' as any,
+                    defenderId: '3' as any,
+                    sourceAbilityId: 'shadow_thief-shadow-manipulation',
+                    state,
+                    damageDealt: 0,
+                    timestamp: 1000,
+                },
+                targetId: '2' as any,
+                attackerId: '2' as any,
+                sourceAbilityId: 'shadow_thief-shadow-manipulation',
+                state,
+                timestamp: 1000,
+                action: {
+                    type: 'custom',
+                    target: 'self',
+                    customActionId: 'shadow_thief-shadow-manipulation',
+                },
+            } as CustomActionContext);
+
+            const interaction = (eventsOfType(events, 'INTERACTION_REQUESTED')[0] as any)?.payload?.interaction;
+            expect(interaction).toBeDefined();
+            expect(interaction.playerId).toBe('2');
+            expect(interaction.type).toBe('modifyDie');
+            expect(interaction.selectCount).toBe(2);
+            expect(interaction.diceOwnerId).toBe('3');
+            expect(interaction.targetOpponentDice).toBe(false);
         });
     });
 

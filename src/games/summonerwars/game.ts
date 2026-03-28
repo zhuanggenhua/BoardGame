@@ -28,6 +28,8 @@ import { registerCriticalImageResolver } from '../../core';
 import { getSummonerWarsCardPreviewRef } from './ui/cardPreviewHelper';
 import { ACTION_ALLOWLIST, UNDO_ALLOWLIST, formatSummonerWarsActionEntry } from './actionLog';
 import { summonerWarsCriticalImageResolver } from './criticalImageResolver';
+import { registerGameAiRuntime } from '../../engine/ai';
+import { summonerWarsAiRuntime } from './ai';
 
 // Summoner Wars 作弊系统配置
 const normalizePlayerId = (playerId: string): PlayerId | null => {
@@ -181,6 +183,7 @@ const adapterConfig = {
 
 // 引擎配置
 export const engineConfig = createGameEngine(adapterConfig);
+registerGameAiRuntime(summonerWarsAiRuntime);
 
 export default engineConfig;
 

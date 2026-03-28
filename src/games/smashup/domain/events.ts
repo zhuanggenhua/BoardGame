@@ -80,6 +80,7 @@ export const SU_EVENTS = defineEvents({
   'su:minion_control_changed': { audio: 'immediate', sound: CARD_SCROLL_KEY },
   'su:minion_metadata_updated': 'silent',
   'su:base_ability_suppressed': 'silent',
+  'su:card_suppressed': 'silent',
   
   'su:power_counter_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:power_counter_removed': { audio: 'immediate', sound: POWER_LOSE_KEY },
@@ -165,6 +166,7 @@ export const SU_EVENT_TYPES = {
   MINION_CONTROL_CHANGED: SU_EVENTS['su:minion_control_changed'].type,
   MINION_METADATA_UPDATED: SU_EVENTS['su:minion_metadata_updated'].type,
   BASE_ABILITY_SUPPRESSED: SU_EVENTS['su:base_ability_suppressed'].type,
+  CARD_SUPPRESSED: SU_EVENTS['su:card_suppressed'].type,
   POWER_COUNTER_ADDED: SU_EVENTS['su:power_counter_added'].type,
   POWER_COUNTER_REMOVED: SU_EVENTS['su:power_counter_removed'].type,
   PERMANENT_POWER_ADDED: SU_EVENTS['su:permanent_power_added'].type,

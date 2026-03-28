@@ -24,6 +24,7 @@ import type {
     TokenEffectResult,
     TokenEffectProcessor,
 } from './tokenTypes';
+import { getMaxTokenUseAmount, getTokenEffectValue } from './tokenTypes';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 
@@ -44,7 +45,6 @@ export function getUsableTokensForTiming(
     if (!player) return [];
 
     return (state.tokenDefinitions ?? []).filter(def => {
-        if (def.category !== 'consumable') return false;
         if (!def.activeUse?.timing?.includes(timing)) return false;
         const amount = player.tokens[def.id] ?? 0;
         if (amount <= 0) return false;
@@ -54,6 +54,10 @@ export function getUsableTokensForTiming(
             const gainedThisTurn = state.taijiGainedThisTurn?.[playerId] ?? 0;
             if (amount - gainedThisTurn <= 0) return false;
         }
+
+        const maxWindowUsage = getMaxTokenUseAmount(def);
+        const usedInWindow = state.pendingDamage?.tokenUsageTotals?.[def.id] ?? 0;
+        if (usedInWindow >= maxWindowUsage) return false;
 
         return true;
     });
@@ -74,7 +78,6 @@ export function getUsableTokensForOffensiveRollEnd(
     const isAlreadyUnblockable = state.pendingAttack ? !state.pendingAttack.isDefendable : false;
 
     return (state.tokenDefinitions ?? []).filter(def => {
-        if (def.category !== 'consumable') return false;
         if (!def.activeUse?.timing?.includes('onOffensiveRollEnd')) return false;
         if ((player.tokens[def.id] ?? 0) <= 0) return false;
         
@@ -195,6 +198,25 @@ export function createTokenResponseRequestedEvent(
  * 键为 TokenUseEffectType，值为处理器函数
  * 新增效果类型只需在此注册处理器
  */
+function getIncrementalMappedModifier(
+    ctx: TokenEffectContext<DiceThroneCore>,
+    fallbackValue: number,
+): number | null {
+    const effect = ctx.tokenDef.activeUse?.effect;
+    if (!effect?.valueByAmount) return null;
+
+    const usedInWindow = ((ctx.extra?.tokenUsageTotals as Record<string, number> | undefined)?.[ctx.tokenDef.id]) ?? 0;
+    const nextTotal = usedInWindow + ctx.amount;
+    const nextValue = effect.valueByAmount[nextTotal];
+    if (typeof nextValue !== 'number') return null;
+
+    const previousValue = usedInWindow > 0
+        ? getTokenEffectValue(effect, usedInWindow, fallbackValue)
+        : 0;
+
+    return nextValue - previousValue;
+}
+
 const effectProcessors: Record<TokenUseEffectType, TokenEffectProcessor<DiceThroneCore>> = {
     /**
      * 修改造成的伤害（加伤）
@@ -215,13 +237,21 @@ const effectProcessors: Record<TokenUseEffectType, TokenEffectProcessor<DiceThro
             // TODO: 溅射伤害限制需要在 validate 层检查（当前无溅射机制）
             return {
                 success: true,
-                damageModifier: (effect?.value ?? 4) * amount,
+                damageModifier: getTokenEffectValue(effect, amount, 4),
             };
         }
 
         // 精准 (accuracy)：value=0 且 tokenId 为 accuracy → 使攻击不可防御
+        const mappedModifier = getIncrementalMappedModifier(ctx, 1);
+        if (mappedModifier !== null) {
+            return {
+                success: true,
+                damageModifier: mappedModifier,
+            };
+        }
+
         const isAccuracy = tokenDef.id === TOKEN_IDS.ACCURACY;
-        const modifier = (effect?.value ?? 0) * amount;
+        const modifier = getTokenEffectValue(effect, amount, 0);
         return {
             success: true,
             damageModifier: modifier,
@@ -239,7 +269,7 @@ const effectProcessors: Record<TokenUseEffectType, TokenEffectProcessor<DiceThro
     modifyDamageReceived: (ctx) => {
         const { tokenDef, amount, pendingDamage } = ctx;
         const effect = tokenDef.activeUse?.effect;
-        const rawValue = effect?.value ?? -1;
+        const rawValue = getTokenEffectValue(effect, amount, -1);
 
         // 守护 (protect)：伤害减半（向上取整）
         const isProtect = tokenDef.id === TOKEN_IDS.PROTECT;
@@ -266,8 +296,19 @@ const effectProcessors: Record<TokenUseEffectType, TokenEffectProcessor<DiceThro
         }
 
         // 太极等双时机 token：在 beforeDamageDealt 时反转 modifier（减伤值变加伤值）
+        const mappedModifier = getIncrementalMappedModifier(ctx, -1);
+        if (mappedModifier !== null) {
+            const modifier = pendingDamage?.responseType === 'beforeDamageDealt'
+                ? Math.abs(mappedModifier)
+                : mappedModifier;
+            return {
+                success: true,
+                damageModifier: modifier,
+            };
+        }
+
         const isOffensiveUse = pendingDamage?.responseType === 'beforeDamageDealt';
-        const modifier = isOffensiveUse ? Math.abs(rawValue) * amount : rawValue * amount;
+        const modifier = isOffensiveUse ? Math.abs(rawValue) : rawValue;
 
         return {
             success: true,
@@ -349,9 +390,15 @@ export function processTokenUsage(
     const events: DiceThroneEvent[] = [];
     const player = state.players[playerId];
     const currentAmount = player?.tokens[tokenDef.id] ?? 0;
-    const actualAmount = Math.min(amount, currentAmount);
-    
-    if (actualAmount <= 0) {
+    const usedInWindow = state.pendingDamage?.tokenUsageTotals?.[tokenDef.id] ?? 0;
+    const maxWindowUsage = getMaxTokenUseAmount(tokenDef);
+    const hasExplicitWindowCap = (tokenDef.activeUse?.allowedConsumeAmounts?.length ?? 0) > 0;
+    const remainingWindowUsage = hasExplicitWindowCap
+        ? Math.max(0, maxWindowUsage - usedInWindow)
+        : currentAmount;
+    const actualAmount = Math.min(amount, currentAmount, remainingWindowUsage);
+
+    if (amount <= 0 || actualAmount <= 0) {
         return {
             events,
             result: { success: false },
@@ -371,6 +418,9 @@ export function processTokenUsage(
             currentDamage: state.pendingDamage.currentDamage,
             responseType: state.pendingDamage.responseType,
         } : undefined,
+        extra: {
+            tokenUsageTotals: state.pendingDamage?.tokenUsageTotals,
+        },
     };
     
     // 调用对应处理器
@@ -387,7 +437,12 @@ export function processTokenUsage(
     const newTokenAmount = currentAmount - actualAmount;
     
     // 生成 TOKEN_USED 事件
-    const effectType = responseType === 'beforeDamageDealt' ? 'damageBoost' : 'damageReduction';
+    const resolvedResponseType = responseType ?? state.pendingDamage?.responseType;
+    const effectType = resolvedResponseType === 'beforeDamageDealt'
+        ? 'damageBoost'
+        : effect.type === 'modifyDamageDealt'
+            ? 'damageBoost'
+            : 'damageReduction';
     const resolvedEffectType = result.rollResult
         ? 'evasionAttempt'
         : effect.type === 'removeDebuff'

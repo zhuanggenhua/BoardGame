@@ -16,8 +16,13 @@ import type { SelectableCharacterId, DiceThroneCore, TurnPhase } from '../domain
 import { PHASE_ORDER, INITIAL_HEALTH, INITIAL_CP, CP_MAX } from '../domain/types';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
-import { getNextPhase, canAdvancePhase, getTokenStackLimit } from '../domain/rules';
+import { getNextPhase, canAdvancePhase, getPlayerOrder, getNextPlayerId, getTokenStackLimit } from '../domain/rules';
+import { validateCommand } from '../domain/commandValidation';
+import { resolveEffectsToEvents, type EffectContext } from '../domain/effects';
+import { resolveOffensivePreDefenseEffects } from '../domain/attack';
 import { shouldOpenTokenResponse } from '../domain/tokenResponse';
+import { VENGEANCE_2 } from '../heroes/paladin/abilities';
+import { METEOR_2, PYROMANCER_ABILITIES } from '../heroes/pyromancer/abilities';
 import {
     createRunner,
     fixedRandom,
@@ -138,7 +143,7 @@ describe('Property 6: 阶段流转正确性', () => {
 
     it('PHASE_ORDER 包含所有预期阶段', () => {
         const expected: TurnPhase[] = [
-            'setup', 'upkeep', 'income', 'main1', 'offensiveRoll', 'defensiveRoll', 'main2', 'discard',
+            'setup', 'upkeep', 'income', 'main1', 'offensiveRoll', 'targetingRoll', 'defensiveRoll', 'main2', 'discard',
         ];
         expect(PHASE_ORDER).toEqual(expected);
     });
@@ -180,6 +185,58 @@ describe('Property 6: 阶段流转正确性', () => {
         expect(next).toBe('defensiveRoll');
     });
 
+    it('4 人模式 offensiveRoll 有待结算攻击 → targetingRoll', () => {
+        const core = createMockCore({
+            players: {
+                '0': { abilities: CHARACTER_DATA_MAP.monk.abilities } as any,
+                '1': {} as any,
+                '2': {} as any,
+                '3': {} as any,
+            },
+            seatingOrder: ['0', '1', '2', '3'],
+            teamIdByPlayerId: {
+                '0': 'A',
+                '1': 'B',
+                '2': 'A',
+                '3': 'B',
+            },
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: undefined,
+                sourceAbilityId: 'fist-technique-5',
+                isDefendable: true,
+            } as any,
+        });
+        const next = getNextPhase(core, 'offensiveRoll');
+        expect(next).toBe('targetingRoll');
+    });
+
+    it('4 人模式无单一敌方目标的无伤害技能不进入 targetingRoll', () => {
+        const core = createMockCore({
+            players: {
+                '0': { abilities: [structuredClone(VENGEANCE_2)] } as any,
+                '1': {} as any,
+                '2': {} as any,
+                '3': {} as any,
+            },
+            seatingOrder: ['0', '1', '2', '3'],
+            teamIdByPlayerId: {
+                '0': 'A',
+                '1': 'B',
+                '2': 'A',
+                '3': 'B',
+            },
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: undefined,
+                sourceAbilityId: 'vengeance-2-main',
+                isDefendable: false,
+            } as any,
+        });
+        const next = getNextPhase(core, 'offensiveRoll');
+        expect(next).toBe('main2');
+    });
+
     it('offensiveRoll 有不可防御攻击 → main2', () => {
         const core = createMockCore({
             pendingAttack: {
@@ -201,6 +258,29 @@ describe('Property 6: 阶段流转正确性', () => {
         const core = createMockCore();
         const next = getNextPhase(core, 'discard');
         expect(next).toBe('upkeep');
+    });
+
+    it('4 人模式起始玩家为 1 号位时按同队连走后再切换敌队', () => {
+        const core = createMockCore({
+            players: {
+                '0': {} as any,
+                '1': {} as any,
+                '2': {} as any,
+                '3': {} as any,
+            },
+            seatingOrder: ['0', '1', '2', '3'],
+            teamIdByPlayerId: {
+                '0': 'A',
+                '1': 'B',
+                '2': 'A',
+                '3': 'B',
+            },
+            startingPlayerId: '1',
+            activePlayerId: '1',
+        });
+
+        expect(getPlayerOrder(core)).toEqual(['1', '3', '0', '2']);
+        expect(getNextPlayerId(core)).toBe('3');
     });
 
     it('击倒跳过 offensiveRoll（通过 GameTestRunner 验证）', () => {
@@ -359,5 +439,402 @@ describe('Property 8: 状态效果叠加', () => {
         expect(INITIAL_HEALTH).toBe(50);
         expect(INITIAL_CP).toBe(2);
         expect(CP_MAX).toBe(15);
+    });
+});
+
+describe('Property 9: 4 人玩家目标交互验证', () => {
+    const createFourPlayerCore = (overrides: Partial<DiceThroneCore> = {}): DiceThroneCore => ({
+        players: {
+            '0': { statusEffects: {}, tokens: {}, hand: [], resources: {} } as any,
+            '1': { statusEffects: { poison: 1 }, tokens: {}, hand: [], resources: {} } as any,
+            '2': { statusEffects: {}, tokens: { crit: 1 }, hand: [], resources: {} } as any,
+            '3': { statusEffects: {}, tokens: {}, hand: [], resources: {} } as any,
+        },
+        activePlayerId: '0',
+        startingPlayerId: '0',
+        turnNumber: 2,
+        pendingAttack: null,
+        selectedCharacters: { '0': 'paladin', '1': 'barbarian', '2': 'monk', '3': 'pyromancer' },
+        readyPlayers: {},
+        hostPlayerId: '0',
+        hostStarted: true,
+        dice: [],
+        rollCount: 0,
+        rollLimit: 3,
+        rollDiceCount: 5,
+        rollConfirmed: false,
+        tokenDefinitions: ALL_TOKEN_DEFINITIONS,
+        seatingOrder: ['0', '1', '2', '3'],
+        teamIdByPlayerId: { '0': 'A', '1': 'B', '2': 'A', '3': 'B' },
+        ...overrides,
+    } as DiceThroneCore);
+
+    const createFourPlayerEffectContext = (
+        state: DiceThroneCore,
+        overrides: Partial<EffectContext> = {}
+    ): EffectContext => ({
+        attackerId: '0',
+        defenderId: '1',
+        sourceAbilityId: 'batch2-test',
+        state,
+        damageDealt: 0,
+        timestamp: 123,
+        ...overrides,
+    });
+
+    it('GRANT_TOKENS 只允许命中交互候选集中的玩家', () => {
+        const core = createFourPlayerCore();
+        const result = validateCommand(
+            core,
+            {
+                type: 'GRANT_TOKENS',
+                playerId: '0',
+                payload: {
+                    targetPlayerId: '3',
+                    tokens: [{ tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 }],
+                },
+            } as any,
+            'main2',
+            {
+                id: 'grant-retribution',
+                playerId: '0',
+                sourceCardId: 'vengeance',
+                type: 'selectPlayer',
+                titleKey: 'interaction.selectPlayerForRetribution',
+                selectCount: 1,
+                selected: [],
+                targetPlayerIds: ['0', '2'],
+                tokenGrantConfig: { tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 },
+            },
+        );
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('invalid_target_player');
+    });
+
+    it('REMOVE_STATUS 在 self-only selectStatus 交互下拒绝其他玩家', () => {
+        const core = createFourPlayerCore({
+            players: {
+                '0': { resources: {}, statusEffects: { poison: 1 }, tokens: {} } as any,
+                '1': { resources: {}, statusEffects: { burn: 1 }, tokens: {} } as any,
+                '2': { resources: {}, statusEffects: {}, tokens: {} } as any,
+                '3': { resources: {}, statusEffects: {}, tokens: {} } as any,
+            },
+        });
+        const result = validateCommand(
+            core,
+            {
+                type: 'REMOVE_STATUS',
+                playerId: '0',
+                payload: {
+                    targetPlayerId: '1',
+                    statusId: STATUS_IDS.BURN,
+                },
+            } as any,
+            'main2',
+            {
+                id: 'remove-status-self',
+                playerId: '0',
+                sourceCardId: 'steadfast-2',
+                type: 'selectStatus',
+                titleKey: 'interaction.selectStatusToRemove',
+                selectCount: 1,
+                selected: [],
+                targetPlayerIds: ['0'],
+            },
+        );
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('invalid_target_player');
+    });
+
+    it('GRANT_TOKENS 在 4 人模式下允许多 token 配置授予给合法队友目标', () => {
+        const core = createFourPlayerCore();
+        const result = validateCommand(
+            core,
+            {
+                type: 'GRANT_TOKENS',
+                playerId: '0',
+                payload: {
+                    targetPlayerId: '2',
+                    tokens: [
+                        { tokenId: TOKEN_IDS.PROTECT, amount: 1 },
+                        { tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 },
+                        { tokenId: TOKEN_IDS.CRIT, amount: 1 },
+                        { tokenId: TOKEN_IDS.ACCURACY, amount: 1 },
+                    ],
+                },
+            } as any,
+            'main2',
+            {
+                id: 'consecrate',
+                playerId: '0',
+                sourceCardId: 'card-consecrate',
+                type: 'selectPlayer',
+                titleKey: 'interaction.selectPlayerForConsecrate',
+                selectCount: 1,
+                selected: [],
+                targetPlayerIds: ['0', '1', '2', '3'],
+                tokenGrantConfigs: [
+                    { tokenId: TOKEN_IDS.PROTECT, amount: 1 },
+                    { tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 },
+                    { tokenId: TOKEN_IDS.CRIT, amount: 1 },
+                    { tokenId: TOKEN_IDS.ACCURACY, amount: 1 },
+                ],
+            },
+        );
+        expect(result.valid).toBe(true);
+    });
+
+    it('GRANT_TOKENS 在 4 人模式下允许单 token 配置授予给合法队友目标', () => {
+        const core = createFourPlayerCore();
+        const result = validateCommand(
+            core,
+            {
+                type: 'GRANT_TOKENS',
+                playerId: '0',
+                payload: {
+                    targetPlayerId: '2',
+                    tokens: [{ tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 }],
+                },
+            } as any,
+            'offensiveRoll',
+            {
+                id: 'vengeance',
+                playerId: '0',
+                sourceCardId: 'vengeance',
+                type: 'selectPlayer',
+                titleKey: 'interaction.selectPlayerForRetribution',
+                selectCount: 1,
+                selected: [],
+                targetPlayerIds: ['0', '1', '2', '3'],
+                tokenGrantConfig: { tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 },
+            },
+        );
+        expect(result.valid).toBe(true);
+    });
+
+    it('无默认 defender 的 4 人无伤害技能仍会执行 preDefense 交互效果', () => {
+        const core = createFourPlayerCore({
+            players: {
+                '0': {
+                    statusEffects: {},
+                    tokens: {},
+                    hand: [],
+                    resources: {},
+                    abilities: [structuredClone(VENGEANCE_2)],
+                } as any,
+                '1': { statusEffects: {}, tokens: {}, hand: [], resources: {} } as any,
+                '2': { statusEffects: {}, tokens: {}, hand: [], resources: {} } as any,
+                '3': { statusEffects: {}, tokens: {}, hand: [], resources: {} } as any,
+            },
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: undefined,
+                sourceAbilityId: 'vengeance-2-main',
+                preDefenseResolved: false,
+                isDefendable: false,
+            } as any,
+        });
+
+        const events = resolveOffensivePreDefenseEffects(core, 123);
+        const interactionEvent = events.find((event) => event.type === 'INTERACTION_REQUESTED') as any;
+        const resolvedEvent = events.find((event) => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED') as any;
+
+        expect(interactionEvent).toBeTruthy();
+        expect(interactionEvent.payload.interaction.type).toBe('selectPlayer');
+        expect(interactionEvent.payload.interaction.targetPlayerIds).toEqual(['0', '1', '2', '3']);
+        expect(interactionEvent.payload.interaction.tokenGrantConfig).toEqual({
+            tokenId: TOKEN_IDS.RETRIBUTION,
+            amount: 1,
+        });
+        expect(resolvedEvent).toBeTruthy();
+        expect(resolvedEvent.payload.defenderId).toBeUndefined();
+    });
+
+    it('TRANSFER_STATUS 禁止把状态或 token 转移回来源玩家自己', () => {
+        const core = createFourPlayerCore();
+        const result = validateCommand(
+            core,
+            {
+                type: 'TRANSFER_STATUS',
+                playerId: '0',
+                payload: {
+                    fromPlayerId: '2',
+                    toPlayerId: '2',
+                    statusId: TOKEN_IDS.CRIT,
+                },
+            } as any,
+            'main2',
+            {
+                id: 'transfer-status',
+                playerId: '0',
+                sourceCardId: 'card-transfer-status',
+                type: 'selectTargetStatus',
+                titleKey: 'interaction.selectStatusToTransfer',
+                selectCount: 1,
+                selected: [],
+                targetPlayerIds: ['0', '1', '2', '3'],
+                transferConfig: {
+                    sourcePlayerId: '2',
+                    statusId: TOKEN_IDS.CRIT,
+                },
+            },
+        );
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('invalid_target_player');
+    });
+
+    it('TRANSFER_STATUS 在在线双阶段 UI 的 selectStatus 权威态下仍允许合法 4 人 token 转移', () => {
+        const core = createFourPlayerCore({
+            players: {
+                '0': { resources: {}, statusEffects: {}, tokens: {} } as any,
+                '1': { resources: {}, statusEffects: {}, tokens: { [TOKEN_IDS.CRIT]: 1 } } as any,
+                '2': { resources: {}, statusEffects: {}, tokens: {} } as any,
+                '3': { resources: {}, statusEffects: {}, tokens: {} } as any,
+            },
+        });
+        const result = validateCommand(
+            core,
+            {
+                type: 'TRANSFER_STATUS',
+                playerId: '0',
+                payload: {
+                    fromPlayerId: '1',
+                    toPlayerId: '2',
+                    statusId: TOKEN_IDS.CRIT,
+                },
+            } as any,
+            'main2',
+            {
+                id: 'transfer-status-live',
+                playerId: '0',
+                sourceCardId: 'card-transfer-status',
+                type: 'selectStatus',
+                titleKey: 'interaction.selectStatusToTransfer',
+                selectCount: 1,
+                selected: [],
+                targetPlayerIds: ['0', '1', '2', '3'],
+                transferConfig: {},
+            },
+        );
+        expect(result.valid).toBe(true);
+    });
+
+    it('Meteor 的 collateral 在 4 人 / 2v2 下只命中敌方集合', () => {
+        const core = createFourPlayerCore();
+        const meteor = PYROMANCER_ABILITIES.find((ability) => ability.id === 'meteor');
+        const collateralEffect = meteor?.effects[2];
+        expect(collateralEffect).toBeDefined();
+
+        const events = resolveEffectsToEvents(
+            [collateralEffect!],
+            'withDamage',
+            createFourPlayerEffectContext(core, { sourceAbilityId: 'meteor' }),
+        );
+
+        const damageTargets = events
+            .filter((event) => event.type === 'DAMAGE_DEALT')
+            .map((event: any) => event.payload.targetId);
+
+        expect(damageTargets).toEqual(['1', '3']);
+        expect(damageTargets).not.toContain('2');
+    });
+
+    it('Meteor II 的 collateral 在 4 人 / 2v2 下只命中敌方集合', () => {
+        const core = createFourPlayerCore();
+        const collateralEffect = METEOR_2.variants?.find((variant) => variant.id === 'meteor-2')?.effects[2];
+        expect(collateralEffect).toBeDefined();
+
+        const events = resolveEffectsToEvents(
+            [collateralEffect!],
+            'withDamage',
+            createFourPlayerEffectContext(core, { sourceAbilityId: 'meteor-2' }),
+        );
+
+        const damageTargets = events
+            .filter((event) => event.type === 'DAMAGE_DEALT')
+            .map((event: any) => event.payload.targetId);
+
+        expect(damageTargets).toEqual(['1', '3']);
+        expect(damageTargets).not.toContain('2');
+    });
+
+    it('Ultimate Inferno 的 collateral 在 4 人 / 2v2 下只命中敌方集合', () => {
+        const core = createFourPlayerCore();
+        const ultimateInferno = PYROMANCER_ABILITIES.find((ability) => ability.id === 'ultimate-inferno');
+        const collateralEffect = ultimateInferno?.effects[4];
+        expect(collateralEffect).toBeDefined();
+
+        const events = resolveEffectsToEvents(
+            [collateralEffect!],
+            'withDamage',
+            createFourPlayerEffectContext(core, { sourceAbilityId: 'ultimate-inferno' }),
+        );
+
+        const damageTargets = events
+            .filter((event) => event.type === 'DAMAGE_DEALT')
+            .map((event: any) => event.payload.targetId);
+
+        expect(damageTargets).toEqual(['1', '3']);
+        expect(damageTargets).not.toContain('2');
+    });
+
+    it('Soul Burn 在 4 人 / 2v2 下只命中当前 defender', () => {
+        const core = createFourPlayerCore({
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'soul-burn',
+                attackDiceFaceCounts: {
+                    [TOKEN_IDS.FIRE_MASTERY]: 0,
+                    [STATUS_IDS.BURN]: 0,
+                    fiery_soul: 2,
+                } as any,
+            } as any,
+        });
+        const soulBurn = PYROMANCER_ABILITIES.find((ability) => ability.id === 'soul-burn');
+        const damageEffect = soulBurn?.effects[1];
+        expect(damageEffect).toBeDefined();
+
+        const events = resolveEffectsToEvents(
+            [damageEffect!],
+            'withDamage',
+            createFourPlayerEffectContext(core, { sourceAbilityId: 'soul-burn' }),
+        );
+
+        const damageTargets = events
+            .filter((event) => event.type === 'DAMAGE_DEALT')
+            .map((event: any) => event.payload.targetId);
+
+        expect(damageTargets).toEqual(['1']);
+        expect(damageTargets).not.toContain('2');
+        expect(damageTargets).not.toContain('3');
+    });
+
+    it('REMOVE_STATUS 在 requiresTargetWithStatus=true 时拒绝空目标', () => {
+        const core = createFourPlayerCore();
+        const result = validateCommand(
+            core,
+            {
+                type: 'REMOVE_STATUS',
+                playerId: '0',
+                payload: {
+                    targetPlayerId: '3',
+                },
+            } as any,
+            'main2',
+            {
+                id: 'remove-all-status',
+                playerId: '0',
+                sourceCardId: 'card-what-status',
+                type: 'selectPlayer',
+                titleKey: 'interaction.selectPlayerToRemoveAllStatus',
+                selectCount: 1,
+                selected: [],
+                targetPlayerIds: ['0', '1', '2', '3'],
+                requiresTargetWithStatus: true,
+            },
+        );
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('target_has_no_status');
     });
 });

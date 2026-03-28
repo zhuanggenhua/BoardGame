@@ -1,107 +1,92 @@
 /**
- * DiceThrone "意不意外" 卡牌简单 E2E 测试
- * 
- * 目的：验证卡牌是否能正常打出并产生交互
+ * DiceThrone "意不意外" 卡牌简化 E2E 测试
+ *
+ * 目标：验证卡牌能正常打出并创建修改骰子交互。
  */
 
-import { test, expect } from '@playwright/test';
-import { waitForTestHarness } from './helpers/common';
-import { setupOnlineMatch, readCoreState, applyCoreStateDirect, waitForMainPhase } from './helpers/dicethrone';
+import { test, expect } from './framework';
 
 test.describe('DiceThrone 意不意外卡牌', () => {
-    test('验证卡牌能正常打出', async ({ page }) => {
-        // 1. 创建对局
-        const { roomId, player1Page, player2Page } = await setupOnlineMatch(page, 'dicethrone', {
-            player1Character: 'monk',
-            player2Character: 'monk',
+    test('验证卡牌能正常打出', async ({ page, game }) => {
+        await game.openTestGame('dicethrone');
+
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                hand: ['card-unexpected'],
+                resources: { CP: 10, HP: 50 },
+            },
+            player1: {
+                resources: { HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'offensiveRoll',
+            extra: {
+                selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+                hostStarted: true,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: false,
+                dice: [
+                    { id: 0, value: 1, isKept: false },
+                    { id: 1, value: 2, isKept: false },
+                    { id: 2, value: 3, isKept: false },
+                    { id: 3, value: 4, isKept: false },
+                    { id: 4, value: 5, isKept: false },
+                ],
+            },
         });
 
-        // 2. 等待测试工具就绪
-        await waitForTestHarness(player1Page);
-
-        // 3. 注入初始状态
-        await applyCoreStateDirect(player1Page, (core) => {
-            core.players['0'].hand = [
-                {
-                    uid: 'test-card-unexpected',
-                    defId: 'card-unexpected',
-                    atlasId: 'card-unexpected',
-                }
-            ];
-            core.players['0'].resources.cp = 10;
-        });
-
-        // 4. 等待进入主要阶段
-        await waitForMainPhase(player1Page);
-        
-        // 推进到进攻掷骰阶段
-        await player1Page.evaluate(() => {
-            window.__BG_TEST_HARNESS__!.command.dispatch({
-                type: 'ADVANCE_PHASE',
-                playerId: '0',
-                payload: {},
-            });
-        });
-        await player1Page.waitForTimeout(500);
-
-        // 5. 掷骰
-        await player1Page.evaluate(() => {
-            window.__BG_TEST_HARNESS__!.dice.setValues([1, 2, 3, 4, 5]);
-        });
-        
-        await player1Page.evaluate(() => {
-            window.__BG_TEST_HARNESS__!.command.dispatch({
-                type: 'ROLL_DICE',
-                playerId: '0',
-                payload: {},
-            });
-        });
-        await player1Page.waitForTimeout(2500);
-
-        await player1Page.evaluate(() => {
-            window.__BG_TEST_HARNESS__!.command.dispatch({
-                type: 'CONFIRM_ROLL',
-                playerId: '0',
-                payload: {},
-            });
-        });
-        await player1Page.waitForTimeout(500);
-
-        // 6. 打出卡牌
-        const playCardResult = await player1Page.evaluate(() => {
-            return window.__BG_TEST_HARNESS__!.command.dispatch({
-                type: 'PLAY_CARD',
-                playerId: '0',
-                payload: { cardId: 'test-card-unexpected' },
-            });
-        });
-        
-        console.log('打出卡牌结果:', playCardResult);
-        await player1Page.waitForTimeout(1000);
-
-        // 7. 检查交互状态
-        const interaction = await player1Page.evaluate(() => {
-            const state = window.__BG_TEST_HARNESS__!.state.get();
+        await game.waitForPhase('offensiveRoll', 10000);
+        await expect.poll(async () => {
+            const state = await game.getState();
             return {
-                current: state.sys.interaction.current,
-                queue: state.sys.interaction.queue,
+                activePlayerId: state?.core?.activePlayerId ?? null,
+                hasCard: !!state?.core?.players?.['0']?.hand?.some((card: any) => card.id === 'card-unexpected'),
+                diceCount: state?.core?.dice?.length ?? 0,
             };
+        }, { timeout: 10000 }).toMatchObject({
+            activePlayerId: '0',
+            hasCard: true,
+            diceCount: 5,
         });
 
-        console.log('交互状态:', JSON.stringify(interaction, null, 2));
+        const unexpectedCard = page
+            .locator('[data-card-id="card-unexpected"], [data-card-key^="card-unexpected-"]')
+            .first();
+        await expect(unexpectedCard).toBeVisible({ timeout: 5000 });
+        await unexpectedCard.click();
 
-        // 8. 验证交互已创建
-        expect(interaction.current).toBeTruthy();
-        
-        // 9. 如果是 simple-choice，打印选项
-        if (interaction.current && interaction.current.kind === 'simple-choice') {
-            const data = interaction.current.data as any;
-            console.log('选项数量:', data.options?.length);
-            console.log('选项:', data.options);
-        }
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const interaction = state?.sys?.interaction?.current;
+            return {
+                currentKind: interaction?.kind ?? null,
+                optionCount: interaction?.data?.options?.length ?? 0,
+                dtType: interaction?.data?.meta?.dtType ?? null,
+                hasCard: !!state?.core?.players?.['0']?.hand?.some((card: any) => card.id === 'card-unexpected'),
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            dtType: 'modifyDie',
+            hasCard: false,
+        });
 
-        // 清理
-        await player1Page.close();
-        await player2Page.close();
+        const state = await game.getState();
+        const interaction = state?.sys?.interaction?.current;
+        const interactionState = {
+            handIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            currentKind: interaction?.kind ?? null,
+            optionCount: interaction?.data?.options?.length ?? 0,
+            dtType: interaction?.data?.meta?.dtType ?? null,
+            eventTypes: (state?.sys?.eventStream?.entries ?? [])
+                .slice(-6)
+                .map((entry: any) => entry.event?.type),
+        };
+
+        expect(interactionState.currentKind).toBeTruthy();
+        expect(interactionState.dtType).toBe('modifyDie');
+        expect(interactionState.optionCount).toBeGreaterThan(0);
+        expect(interactionState.handIds).not.toContain('card-unexpected');
+        expect(interactionState.eventTypes).toContain('CARD_PLAYED');
     });
 });

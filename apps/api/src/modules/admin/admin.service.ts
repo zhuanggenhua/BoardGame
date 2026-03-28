@@ -18,19 +18,18 @@ import type { QueryUgcPackagesDto } from './dtos/query-ugc-packages.dto';
 import type { RoomFilterDto } from './dtos/room-filter.dto';
 import { MatchRecord, type MatchRecordDocument, type MatchRecordPlayer } from './schemas/match-record.schema';
 import { ROOM_MATCH_MODEL_NAME, type RoomMatchDocument } from './schemas/room-match.schema';
-import { HYBRID_STORAGE } from '../../shared/providers/hybrid-storage.provider';
-import type { MatchStorage } from '../../../../../src/engine/transport/storage';
 import logger from '../../../../../server/logger';
 
 const ADMIN_STATS_CACHE_KEY = 'admin:stats';
 const ADMIN_STATS_TREND_CACHE_PREFIX = 'admin:stats:trend:';
-const ADMIN_STATS_TTL_SECONDS = 300; // cache-manager-redis-store 使用 Redis SETEX，单位为秒
+const ADMIN_STATS_TTL_SECONDS = 300; // cache-manager-redis-store ä½¿ç¨ Redis SETEXï¼åä½ä¸ºç§?
 const RECENT_MATCH_LIMIT = 10;
 const DEFAULT_TREND_DAYS = 7;
 const ONLINE_KEY_PREFIX = 'social:online:';
 const UNREAD_KEY_PREFIX = 'social:unread:';
 const UNREAD_TOTAL_KEY_PREFIX = 'social:unread:total:';
-const DELETED_USER_PLACEHOLDER = '[已删除用户]';
+const GAME_SERVER_INTERNAL_TIMEOUT_MS = 3000;
+const DELETED_USER_PLACEHOLDER = '[å·²å é¤ç¨æ·]';
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -235,6 +234,20 @@ type RoomListItem = {
     updatedAt: Date;
 };
 
+type RoomMatchListProjection = Pick<RoomMatchLean, 'matchID' | 'gameName' | 'state' | 'metadata' | 'createdAt' | 'updatedAt'>;
+
+type LobbyRoomSnapshot = {
+    matchID: string;
+    gameName?: string;
+    players?: Array<{ id?: number; name?: string; isConnected?: boolean }>;
+    createdAt?: number | string | Date;
+    updatedAt?: number | string | Date;
+    roomName?: string;
+    ownerKey?: string;
+    ownerType?: 'user' | 'guest';
+    isLocked?: boolean;
+};
+
 type UgcPackageListItem = {
     packageId: string;
     name: string;
@@ -345,10 +358,9 @@ export class AdminService implements OnModuleInit {
         @InjectModel(UgcPackage.name) private readonly ugcPackageModel: Model<UgcPackageDocument>,
         @InjectModel(UgcAsset.name) private readonly ugcAssetModel: Model<UgcAssetDocument>,
         @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-        @Inject(HYBRID_STORAGE) private readonly hybridStorage: MatchStorage,
     ) { }
 
-    /** 启动时清除 admin stats 缓存，防止 Redis 中残留永不过期的旧数据 */
+    /** ???????????????????????? */
     async onModuleInit() {
         await this.invalidateAdminStatsCache();
     }
@@ -424,6 +436,7 @@ export class AdminService implements OnModuleInit {
 
         const dailyUsers = this.buildDailySeries(rangeDays, startDate, userDailyRaw);
         const dailyMatches = this.buildDailySeries(rangeDays, startDate, matchDailyRaw);
+        const normalizedGameStats = Array.isArray(gameStats) ? gameStats : [];
 
         const trend: AdminStatsTrend = {
             days: rangeDays,
@@ -431,7 +444,7 @@ export class AdminService implements OnModuleInit {
             endDate: endDate.toISOString(),
             dailyUsers,
             dailyMatches,
-            games: gameStats.map(item => ({
+            games: normalizedGameStats.map(item => ({
                 name: String(item._id),
                 count: Number(item.count || 0),
             })),
@@ -444,64 +457,20 @@ export class AdminService implements OnModuleInit {
     async getRooms(query: QueryRoomsDto) {
         const page = query.page || 1;
         const limit = query.limit || 20;
-        
-        // 1. 通过 HybridStorage 获取所有房间 ID（包括内存中的游客房间）
         const gameName = query.gameName?.trim();
-        const allMatchIds = await this.hybridStorage.listMatches(
-            gameName ? { gameName } : undefined
+        const allItems = this.filterRoomItems(
+            await this.loadMergedRoomItems(gameName),
+            query.search,
         );
 
-        // 2. 获取每个房间的 metadata 并构建房间列表
-        const allItems: RoomListItem[] = [];
-        for (const matchID of allMatchIds) {
-            try {
-                const { metadata } = await this.hybridStorage.fetch(matchID, { metadata: true });
-                if (!metadata) continue;
-
-            // 构建房间信息（从 metadata 中提取）
-                const item = this.buildRoomListItemFromMetadata(matchID, metadata);
-            
-            // 应用搜索过滤
-                if (query.search) {
-                    const search = query.search.trim().toLowerCase();
-                    const matchesSearch = 
-                        matchID.toLowerCase().includes(search) ||
-                        (item.roomName && item.roomName.toLowerCase().includes(search));
-                    if (!matchesSearch) continue;
-                }
-
-                allItems.push(item);
-            } catch (error) {
-                logger.warn(`[AdminService] 跳过异常房间 metadata matchID=${matchID} error=${error instanceof Error ? error.message : String(error)}`);
-            }
-        }
-
-        // 3. 按更新时间降序排序
         allItems.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
-        // 4. 分页
         const total = allItems.length;
         const startIndex = (page - 1) * limit;
         const endIndex = startIndex + limit;
         const items = allItems.slice(startIndex, endIndex);
 
-        // 5. 获取房主用户名
-        const ownerUserIds = Array.from(
-            new Set(items.map(item => resolveOwnerUserId(item.ownerKey)).filter(Boolean) as string[])
-        );
-        if (ownerUserIds.length > 0) {
-            const owners = await this.userModel
-                .find({ _id: { $in: ownerUserIds } })
-                .select('_id username')
-                .lean<Pick<LeanUser, '_id' | 'username'>[]>();
-            const ownerMap = new Map(owners.map(owner => [owner._id.toString(), owner.username]));
-            items.forEach(item => {
-                const ownerId = resolveOwnerUserId(item.ownerKey);
-                if (ownerId) {
-                    item.ownerName = ownerMap.get(ownerId);
-                }
-            });
-        }
+        await this.attachRoomOwnerNames(items);
 
         return {
             items,
@@ -633,7 +602,7 @@ export class AdminService implements OnModuleInit {
             this.messageModel.deleteMany({ $or: [{ from: { $in: deletableIds } }, { to: { $in: deletableIds } }] }),
             this.reviewModel.deleteMany({ user: { $in: deletableIds } }),
             this.userModel.deleteMany({ _id: { $in: deletableIds } }),
-            // 脱敏：同时匹配 ownerKey 和 name，覆盖新旧数据
+            // ??????? ownerKey ? name????????
             (usernames.length || ownerKeys.length)
                 ? this.matchRecordModel.updateMany(
                     { $or: [{ 'players.ownerKey': { $in: ownerKeys } }, { 'players.name': { $in: usernames } }] },
@@ -658,9 +627,15 @@ export class AdminService implements OnModuleInit {
     }
 
     async destroyRoom(matchID: string): Promise<boolean> {
-        // 尝试从 HybridStorage 删除（会同时处理 MongoDB 和内存）
-        await this.hybridStorage.wipe(matchID);
-        return true;
+            // ??????? ownerKey ? name????????
+        // ??????????????????????
+        const trimmed = matchID.trim();
+        if (!trimmed) {
+            return false;
+        }
+
+        const result = await this.bulkDestroyRooms([trimmed]);
+        return result.deleted > 0;
     }
 
     async bulkDestroyRooms(matchIDs: string[]) {
@@ -668,63 +643,30 @@ export class AdminService implements OnModuleInit {
         if (!uniqueIds.length) {
             return { requested: 0, deleted: 0 };
         }
-        
-        // 通过 HybridStorage 删除每个房间
-        let deleted = 0;
+
+        const remote = await this.bulkDestroyRoomsViaGameServer(uniqueIds);
+        let deleted = remote?.deleted ?? 0;
+
         for (const matchID of uniqueIds) {
-            try {
-                await this.hybridStorage.wipe(matchID);
+            const result = await this.roomMatchModel.deleteOne({ matchID });
+            if ((result.deletedCount ?? 0) > 0) {
                 deleted++;
-            } catch (err) {
-                // 忽略不存在的房间
             }
         }
-        
-        return { requested: uniqueIds.length, deleted };
+
+        return { requested: uniqueIds.length, deleted: Math.min(uniqueIds.length, deleted) };
     }
 
     async bulkDestroyRoomsByFilter(filterDto: RoomFilterDto) {
-        // 1. 获取所有匹配的房间 ID
         const gameName = filterDto.gameName?.trim();
-        const search = filterDto.search?.trim();
-        
-        const allMatchIds = await this.hybridStorage.listMatches(
-            gameName ? { gameName } : undefined
-        );
+        const matchingIds = this.filterRoomItems(
+            await this.loadMergedRoomItems(gameName),
+            filterDto.search?.trim(),
+        ).map(item => item.matchID);
 
-        // 2. 过滤匹配搜索条件的房间
-        const matchingIds: string[] = [];
-        for (const matchID of allMatchIds) {
-            if (search) {
-                const { metadata } = await this.hybridStorage.fetch(matchID, { metadata: true });
-                if (!metadata) continue;
-                
-                const meta = metadata as { setupData?: { roomName?: string } };
-                const roomName = meta.setupData?.roomName ?? '';
-                
-                const searchLower = search.toLowerCase();
-                const matchesSearch = 
-                    matchID.toLowerCase().includes(searchLower) ||
-                    roomName.toLowerCase().includes(searchLower);
-                
-                if (!matchesSearch) continue;
-            }
-            matchingIds.push(matchID);
-        }
-
-        // 3. 删除所有匹配的房间
-        let deleted = 0;
-        for (const matchID of matchingIds) {
-            try {
-                await this.hybridStorage.wipe(matchID);
-                deleted++;
-            } catch (err) {
-                // 忽略删除失败的房间
-            }
-        }
-
-        return { requested: matchingIds.length, deleted };
+        return this.bulkDestroyRooms(matchingIds);
     }
+
 
     async getUsers(query: QueryUsersDto) {
         const page = query.page || 1;
@@ -831,7 +773,7 @@ export class AdminService implements OnModuleInit {
             this.messageModel.deleteMany({ $or: [{ from: userId }, { to: userId }] }),
             this.reviewModel.deleteMany({ user: userId }),
             this.userModel.deleteOne({ _id: userId }),
-            // 脱敏：同时匹配 ownerKey 和 name，覆盖新旧数据
+            // Match both ownerKey and name so old records are also anonymized.
             this.matchRecordModel.updateMany(
                 { $or: [{ 'players.ownerKey': ownerKey }, { 'players.name': username }] },
                 {
@@ -1006,9 +948,8 @@ export class AdminService implements OnModuleInit {
     }
 
     /**
-     * 构建用户对局数映射。
-     * 优先用 ownerKey 查询（新数据），兼容旧数据 fallback 到 name。
-     * @param users - { userId, username } 列表
+     * Build a user-to-match-count map.
+     * Prefer ownerKey and fall back to legacy name matching.
      */
     private async buildMatchCountMap(users: Array<{ userId: string; username: string }>) {
         if (!users.length) return new Map<string, number>();
@@ -1016,7 +957,8 @@ export class AdminService implements OnModuleInit {
         const ownerKeys = users.map(u => `user:${u.userId}`);
         const usernames = users.map(u => u.username).filter(Boolean);
 
-        // 用 ownerKey 查（新数据）+ name 查（旧数据），合并去重
+        // Aggregate ownerKey and legacy name together for compatibility.
+        // ???? ownerKey ? name????????
         const results = await this.matchRecordModel.aggregate<AggregateCount>([
             {
                 $match: {
@@ -1046,14 +988,14 @@ export class AdminService implements OnModuleInit {
             },
         ]);
 
-        // 建立 ownerKey/name → userId 的反向映射
+        // å»ºç« ownerKey/name â?userId çååæ å°?
         const keyToUserId = new Map<string, string>();
         for (const u of users) {
             keyToUserId.set(`user:${u.userId}`, u.userId);
             if (u.username) keyToUserId.set(u.username, u.userId);
         }
 
-        // 按 userId 聚合
+        // æ?userId èå
         const countMap = new Map<string, number>();
         for (const item of results) {
             const uid = keyToUserId.get(String(item._id));
@@ -1064,7 +1006,7 @@ export class AdminService implements OnModuleInit {
     }
 
     /**
-     * 获取用户战绩统计。优先 ownerKey，兼容旧数据 fallback 到 name。
+     * Get user record stats, preferring ownerKey over legacy name matching.
      */
     private async getUserStats(userId: string, username: string) {
         const ownerKey = `user:${userId}`;
@@ -1118,7 +1060,7 @@ export class AdminService implements OnModuleInit {
     }
 
     /**
-     * 获取用户最近对局。优先 ownerKey，兼容旧数据 fallback 到 name。
+     * Get recent matches for a user, preferring ownerKey over legacy name matching.
      */
     private async getRecentMatches(userId: string, username: string) {
         const ownerKey = `user:${userId}`;
@@ -1135,7 +1077,7 @@ export class AdminService implements OnModuleInit {
             .lean<LeanMatchRecord[]>();
 
         return records.map(record => {
-            // 用 ownerKey 或 name 匹配当前用户
+            // Match the current player using ownerKey first, then legacy name.
             const current = record.players.find(p => p.ownerKey === ownerKey)
                 ?? record.players.find(p => p.name === username);
             const opponent = record.players.find(p => p !== current);
@@ -1143,7 +1085,7 @@ export class AdminService implements OnModuleInit {
                 matchID: record.matchID,
                 gameName: record.gameName,
                 result: current?.result ?? 'draw',
-                opponent: opponent?.name ?? '未知',
+                opponent: opponent?.name ?? 'æªç¥',
                 endedAt: record.endedAt,
             };
         });
@@ -1167,13 +1109,15 @@ export class AdminService implements OnModuleInit {
             ]),
         ]);
 
+        const normalizedGameStats = Array.isArray(gameStats) ? gameStats : [];
+
         const stats: AdminStatsBase = {
             totalUsers,
             todayUsers,
             bannedUsers,
             totalMatches,
             todayMatches,
-            games: gameStats.map(item => ({
+            games: normalizedGameStats.map(item => ({
                 name: String(item._id),
                 count: Number(item.count || 0),
             })),
@@ -1212,32 +1156,210 @@ export class AdminService implements OnModuleInit {
     }
 
     /**
-     * 从 MatchMetadata 构建房间列表项（用于 HybridStorage 查询）
+     * ä»?MatchMetadata æå»ºæ¿é´åè¡¨é¡¹ï¼ç¨äº HybridStorage æ¥è¯¢ï¼?
      */
-    private buildRoomListItemFromMetadata(matchID: string, metadata: unknown): RoomListItem {
-        const meta = (isRecord(metadata) ? metadata : {}) as {
-            gameName?: string;
-            players?: Record<string, { name?: string; isConnected?: boolean }>;
-            setupData?: RoomMatchSetupData;
-            createdAt?: number | string | Date;
-            updatedAt?: number | string | Date;
-        };
-
-        const setupData = normalizeRoomSetupData(meta.setupData);
-        const players = normalizeRoomPlayers(meta.players);
-        const isLocked = Boolean(setupData.password && String(setupData.password).length > 0);
+    private buildRoomListItemFromLobbySnapshot(room: LobbyRoomSnapshot): RoomListItem {
+        const ownerType = room.ownerType === 'user' || room.ownerType === 'guest'
+            ? room.ownerType
+            : undefined;
+        const players: RoomPlayerItem[] = Array.isArray(room.players)
+            ? room.players
+                .map((player, index) => {
+                    const playerId = Number(player?.id ?? index);
+                    return {
+                        id: playerId,
+                        name: typeof player?.name === 'string' ? player.name : undefined,
+                        isConnected: typeof player?.isConnected === 'boolean' ? player.isConnected : undefined,
+                    };
+                })
+                .filter(player => Number.isFinite(player.id))
+            : [];
 
         return {
-            matchID,
-            gameName: typeof meta.gameName === 'string' && meta.gameName.trim() ? meta.gameName : 'unknown',
-            roomName: setupData.roomName,
-            ownerKey: setupData.ownerKey,
-            ownerType: setupData.ownerType,
-            isLocked,
+            matchID: room.matchID,
+            gameName: typeof room.gameName === 'string' && room.gameName.trim() ? room.gameName : 'unknown',
+            roomName: typeof room.roomName === 'string' ? room.roomName : undefined,
+            ownerKey: typeof room.ownerKey === 'string' ? room.ownerKey : undefined,
+            ownerType,
+            isLocked: Boolean(room.isLocked),
             players,
-            createdAt: normalizeRoomDate(meta.createdAt),
-            updatedAt: normalizeRoomDate(meta.updatedAt),
+            createdAt: normalizeRoomDate(room.createdAt),
+            updatedAt: normalizeRoomDate(room.updatedAt),
         };
+    }
+
+    private mergeRoomItems(persistedItems: RoomListItem[], liveItems: RoomListItem[]): RoomListItem[] {
+        const merged = new Map<string, RoomListItem>();
+
+        persistedItems.forEach((item) => {
+            merged.set(item.matchID, { ...item });
+        });
+
+        liveItems.forEach((liveItem) => {
+            const existing = merged.get(liveItem.matchID);
+            if (!existing) {
+                merged.set(liveItem.matchID, { ...liveItem });
+                return;
+            }
+
+            merged.set(liveItem.matchID, {
+                ...existing,
+                ...liveItem,
+                gameName: liveItem.gameName || existing.gameName,
+                roomName: liveItem.roomName ?? existing.roomName,
+                ownerKey: liveItem.ownerKey ?? existing.ownerKey,
+                ownerType: liveItem.ownerType ?? existing.ownerType,
+                ownerName: existing.ownerName,
+                players: liveItem.players,
+            });
+        });
+
+        return Array.from(merged.values());
+    }
+
+    private filterRoomItems(items: RoomListItem[], search?: string): RoomListItem[] {
+        const keyword = search?.trim().toLowerCase();
+        if (!keyword) {
+            return items;
+        }
+
+        return items.filter((item) => {
+            const fields = [
+                item.matchID,
+                item.gameName,
+                item.roomName,
+                item.ownerKey,
+                item.ownerName,
+                ...item.players.map(player => player.name),
+            ];
+
+            return fields.some(value => typeof value === 'string' && value.toLowerCase().includes(keyword));
+        });
+    }
+
+    private getGameServerTarget(): string {
+        const target =
+            process.env.GAME_SERVER_PROXY_TARGET?.trim()
+            || process.env.GAME_SERVER_URL?.trim()
+            || 'http://127.0.0.1:18000';
+
+        return target.replace(/\/+$/, '');
+    }
+
+    private async requestGameServerJson<T>(path: string, init?: RequestInit): Promise<T | null> {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), GAME_SERVER_INTERNAL_TIMEOUT_MS);
+        const headers = new Headers(init?.headers);
+        headers.set('Accept', 'application/json');
+        if (init?.body && !headers.has('Content-Type')) {
+            headers.set('Content-Type', 'application/json');
+        }
+
+        try {
+            const url = new URL(path, `${this.getGameServerTarget()}/`).toString();
+            const response = await fetch(url, {
+                ...init,
+                headers,
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                logger.warn(`[AdminService] game-server request failed path=${path} status=${response.status}`);
+                return null;
+            }
+
+            return await response.json() as T;
+        } catch (error) {
+            logger.warn(`[AdminService] game-server request failed path=${path}: ${error instanceof Error ? error.message : String(error)}`);
+            return null;
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    private async fetchLiveRoomSnapshots(gameName?: string): Promise<LobbyRoomSnapshot[]> {
+        const query = gameName ? `?gameName=${encodeURIComponent(gameName)}` : '';
+        const response = await this.requestGameServerJson<{ items?: LobbyRoomSnapshot[] }>(`/internal/rooms${query}`);
+        return Array.isArray(response?.items) ? response.items : [];
+    }
+
+    private async loadPersistedRoomItems(gameName?: string): Promise<RoomListItem[]> {
+        try {
+            const filter: Record<string, unknown> = {};
+            if (gameName) {
+                filter.gameName = gameName;
+            }
+
+            const docs = await this.roomMatchModel
+                .find(filter)
+                .select('matchID gameName state metadata createdAt updatedAt')
+                .lean<RoomMatchListProjection[]>();
+
+            return docs.map(doc => this.buildRoomListItem(doc));
+        } catch (error) {
+            logger.warn(`[AdminService] roomMatchModel list failed: ${error instanceof Error ? error.message : String(error)}`);
+            return [];
+        }
+    }
+
+    private async loadMergedRoomItems(gameName?: string): Promise<RoomListItem[]> {
+        const [persistedItems, liveSnapshots] = await Promise.all([
+            this.loadPersistedRoomItems(gameName),
+            this.fetchLiveRoomSnapshots(gameName),
+        ]);
+
+        const liveItems = liveSnapshots
+            .filter((room): room is LobbyRoomSnapshot & { matchID: string } => typeof room?.matchID === 'string' && room.matchID.trim().length > 0)
+            .map(room => this.buildRoomListItemFromLobbySnapshot({
+                ...room,
+                matchID: room.matchID.trim(),
+            }));
+
+        return this.mergeRoomItems(persistedItems, liveItems);
+    }
+
+    private async bulkDestroyRoomsViaGameServer(matchIDs: string[]): Promise<{ requested: number; deleted: number } | null> {
+        const response = await this.requestGameServerJson<{ requested?: number; deleted?: number }>(
+            '/internal/rooms/bulk-delete',
+            {
+                method: 'POST',
+                body: JSON.stringify({ ids: matchIDs }),
+            },
+        );
+
+        if (!response) {
+            return null;
+        }
+
+        return {
+            requested: typeof response.requested === 'number' ? response.requested : matchIDs.length,
+            deleted: typeof response.deleted === 'number' ? response.deleted : 0,
+        };
+    }
+
+    private async attachRoomOwnerNames(items: RoomListItem[]) {
+        const ownerUserIds = Array.from(
+            new Set(items.map(item => resolveOwnerUserId(item.ownerKey)).filter(Boolean) as string[])
+        );
+        if (ownerUserIds.length === 0) {
+            return;
+        }
+
+        try {
+            const owners = await this.userModel
+                .find({ _id: { $in: ownerUserIds } })
+                .select('_id username')
+                .lean<Pick<LeanUser, '_id' | 'username'>[]>();
+            const ownerMap = new Map(owners.map(owner => [owner._id.toString(), owner.username]));
+            items.forEach(item => {
+                const ownerId = resolveOwnerUserId(item.ownerKey);
+                if (ownerId) {
+                    item.ownerName = ownerMap.get(ownerId);
+                }
+            });
+        } catch (error) {
+            logger.warn(`[AdminService] attachRoomOwnerNames failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     private toUgcPackageListItem(pkg: UgcPackageDocument): UgcPackageListItem {
@@ -1255,29 +1377,6 @@ export class AdminService implements OnModuleInit {
             createdAt: pkg.createdAt,
             updatedAt: pkg.updatedAt,
         };
-    }
-
-    private buildRoomFilter(query: RoomFilterDto) {
-        const filter: Record<string, unknown> = {};
-        const gameName = query.gameName?.trim();
-        const search = query.search?.trim();
-
-        if (gameName) {
-            const escaped = escapeRegExp(gameName);
-            filter.gameName = { $regex: `^${escaped}$`, $options: 'i' };
-        }
-
-        if (search) {
-            const escaped = escapeRegExp(search);
-            filter.$or = [
-                { matchID: { $regex: escaped, $options: 'i' } },
-                { 'metadata.setupData.roomName': { $regex: escaped, $options: 'i' } },
-                { 'metadata.roomName': { $regex: escaped, $options: 'i' } },
-                { 'state.G.__setupData.roomName': { $regex: escaped, $options: 'i' } },
-            ];
-        }
-
-        return filter;
     }
 
     private async getOnlineUserIds(): Promise<string[]> {
@@ -1458,7 +1557,7 @@ export class AdminService implements OnModuleInit {
         await this.removeCacheByPattern(`${ADMIN_STATS_TREND_CACHE_PREFIX}*`);
     }
 
-    // ─── 留存分析 ───────────────────────────────────────────────
+    // âââ çå­åæ âââââââââââââââââââââââââââââââââââââââââââââââ
     async getRetention(): Promise<RetentionData> {
         const cacheKey = 'admin:retention';
         const cached = await this.cacheManager.get<RetentionData>(cacheKey);
@@ -1466,14 +1565,15 @@ export class AdminService implements OnModuleInit {
 
         const now = new Date();
         const periods = [
-            { label: '次日留存', offsetDays: 1 },
-            { label: '3日留存', offsetDays: 3 },
-            { label: '7日留存', offsetDays: 7 },
-            { label: '14日留存', offsetDays: 14 },
-            { label: '30日留存', offsetDays: 30 },
+            { label: '\u6b21\u65e5\u7559\u5b58', offsetDays: 1 },
+            { label: '\u0033\u65e5\u7559\u5b58', offsetDays: 3 },
+            { label: '\u0037\u65e5\u7559\u5b58', offsetDays: 7 },
+            { label: '\u0031\u0034\u65e5\u7559\u5b58', offsetDays: 14 },
+            { label: '\u0033\u0030\u65e5\u7559\u5b58', offsetDays: 30 },
         ];
 
-        // 计算每个留存周期：取注册日期在 [offsetDays+7, offsetDays] 天前的用户（一周窗口，样本更稳定）
+        // è®¡ç®æ¯ä¸ªçå­å¨æï¼åæ³¨åæ¥æå?[offsetDays+7, offsetDays] å¤©åçç¨æ·ï¼ä¸å¨çªå£ï¼æ ·æ¬æ´ç¨³å®ï¼
+        // Calculate retention over a rolling weekly cohort window.
         const items: RetentionItem[] = await Promise.all(
             periods.map(async ({ label, offsetDays }) => {
                 const windowEnd = new Date(now);
@@ -1507,7 +1607,7 @@ export class AdminService implements OnModuleInit {
         return result;
     }
 
-    // ─── 用户活跃度分层 ─────────────────────────────────────────
+    // âââ ç¨æ·æ´»è·åº¦åå±?âââââââââââââââââââââââââââââââââââââââââ
     async getUserActivityTiers(): Promise<ActivityTierData> {
         const cacheKey = 'admin:activity-tiers';
         const cached = await this.cacheManager.get<ActivityTierData>(cacheKey);
@@ -1525,7 +1625,7 @@ export class AdminService implements OnModuleInit {
         const [totalUsers, bannedUsers, activeCount, silentCount] = await Promise.all([
             this.userModel.countDocuments(),
             this.userModel.countDocuments({ banned: true }),
-            // 活跃：7 天内有 lastOnline 或当前在线
+            // Active: lastOnline within 7 days or currently online.
             this.userModel.countDocuments({
                 banned: { $ne: true },
                 $or: [
@@ -1533,7 +1633,7 @@ export class AdminService implements OnModuleInit {
                     ...(onlineObjectIds.length > 0 ? [{ _id: { $in: onlineObjectIds } }] : []),
                 ],
             }),
-            // 沉默：lastOnline 在 7-30 天之间
+            // æ²é»ï¼lastOnline å?7-30 å¤©ä¹é?
             this.userModel.countDocuments({
                 banned: { $ne: true },
                 lastOnline: { $gte: d30, $lt: d7 },
@@ -1541,14 +1641,14 @@ export class AdminService implements OnModuleInit {
             }),
         ]);
 
-        // 流失 = 总数 - 活跃 - 沉默 - 封禁
+        // æµå¤± = æ»æ° - æ´»è· - æ²é» - å°ç¦
         const churned = Math.max(0, totalUsers - activeCount - silentCount - bannedUsers);
 
         const tiers: ActivityTier[] = [
-            { label: '活跃', count: activeCount, color: '#10b981', description: '7 天内活跃' },
-            { label: '沉默', count: silentCount, color: '#f59e0b', description: '7-30 天未活跃' },
-            { label: '流失', count: churned, color: '#94a3b8', description: '30 天以上未活跃' },
-            { label: '封禁', count: bannedUsers, color: '#f43f5e', description: '已封禁' },
+            { label: '\u6d3b\u8dc3', count: activeCount, color: '#10b981', description: '\u0037 \u5929\u5185\u6d3b\u8dc3' },
+            { label: '\u6c89\u9ed8', count: silentCount, color: '#f59e0b', description: '\u0037-\u0033\u0030 \u5929\u672a\u6d3b\u8dc3' },
+            { label: '\u6d41\u5931', count: churned, color: '#94a3b8', description: '\u0033\u0030 \u5929\u4ee5\u4e0a\u672a\u6d3b\u8dc3' },
+            { label: '\u5c01\u7981', count: bannedUsers, color: '#f43f5e', description: '\u5df2\u5c01\u7981\u7528\u6237' },
         ];
 
         const result: ActivityTierData = { tiers, totalUsers };

@@ -18,7 +18,9 @@ import {
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type {
+    CardInstance,
     CardsDiscardedEvent,
+    DeckReshuffledEvent,
     OngoingDetachedEvent,
     SmashUpEvent,
     LimitModifiedEvent,
@@ -151,12 +153,15 @@ function buildTricksterGnomePodOptions(
     state: SmashUpCore,
     baseIndex: number,
     sourcePlayerId: string,
+    gnomeUid: string,
 ) {
     const base = state.bases[baseIndex];
     if (!base) return [createSkipOption()];
 
     const destroyThreshold = base.minions.length + countTitansOnBase(state, baseIndex);
-    const targets = base.minions.filter(m => getMinionPower(state, m, baseIndex) < destroyThreshold);
+    const targets = base.minions.filter(
+        m => m.uid !== gnomeUid && getMinionPower(state, m, baseIndex) < destroyThreshold,
+    );
     const options = targets.map(target => {
         const def = getCardDef(target.defId) as MinionCardDef | undefined;
         const power = getMinionPower(state, target, baseIndex);
@@ -188,7 +193,7 @@ function createTricksterGnomePodInteraction(
         return null;
     }
 
-    const options = buildTricksterGnomePodOptions(state, pending.baseIndex, pending.controller);
+    const options = buildTricksterGnomePodOptions(state, pending.baseIndex, pending.controller, pending.gnomeUid);
     if (options.length === 1 && (options[0].value as any)?.skip) {
         return null;
     }
@@ -213,7 +218,12 @@ function createTricksterGnomePodInteraction(
         if (!nextBase?.minions.some(m => m.uid === continuation.gnomeUid && m.defId === 'trickster_gnome_pod')) {
             return [createSkipOption()];
         }
-        return buildTricksterGnomePodOptions(nextState.core, continuation.baseIndex, continuation.controller);
+        return buildTricksterGnomePodOptions(
+            nextState.core,
+            continuation.baseIndex,
+            continuation.controller,
+            continuation.gnomeUid,
+        );
     };
     return interaction;
 }
@@ -503,10 +513,12 @@ export function registerTricksterInteractionHandlers(): void {
     registerInteractionHandler('trickster_gnome_pod', (state, playerId, value, iData, _random, timestamp) => {
         const continuation = iData?.continuationContext as {
             baseIndex?: number;
+            gnomeUid?: string;
             remaining?: TricksterGnomePodPending[];
         } | undefined;
         const baseIndex = (value as { baseIndex?: number } | undefined)?.baseIndex ?? continuation?.baseIndex;
         const selectedUid = (value as { minionUid?: string } | undefined)?.minionUid;
+        const currentGnomeUid = continuation?.gnomeUid;
         const events: SmashUpEvent[] = [];
 
         if (!(value as any)?.skip && selectedUid && baseIndex !== undefined) {
@@ -517,7 +529,7 @@ export function registerTricksterInteractionHandlers(): void {
             }
         }
 
-        const remaining = (continuation?.remaining ?? []).filter(entry => entry.gnomeUid !== selectedUid);
+        const remaining = (continuation?.remaining ?? []).filter(entry => entry.gnomeUid !== currentGnomeUid);
         const nextState = queueNextTricksterGnomePodInteraction(state, remaining, timestamp);
         return { state: nextState ?? state, events };
     });
@@ -736,7 +748,7 @@ export function registerTricksterInteractionHandlers(): void {
         return { state: { ...state, core: { ...state.core, bases: newBases } }, events: [] };
     });
 
-    registerInteractionHandler('trickster_hideout_pod_swap', (state, playerId, value, iData, _random, timestamp) => {
+    registerInteractionHandler('trickster_hideout_pod_swap', (state, playerId, value, iData, random, timestamp) => {
         if ((value as any).skip) return { state, events: [] };
         if ((value as any).__cancel__) return { state, events: [] };
         const { zone, cardUid, defId } = value as { zone: 'hand' | 'deck'; cardUid: string; defId: string };
@@ -751,11 +763,24 @@ export function registerTricksterInteractionHandlers(): void {
         const player = state.core.players[playerId];
         if (!player) return undefined;
 
-        // 1) 浠庢墜鐗?鐗屽簱绉婚櫎鐩爣鎴樻湳
+        const selectedCard = (zone === 'hand' ? player.hand : player.deck)
+            .find(card => card.uid === cardUid && card.defId === defId);
+        const selectedDef = getCardDef(defId);
+        if (
+            !selectedCard
+            || selectedCard.type !== 'action'
+            || selectedDef?.type !== 'action'
+            || selectedDef.subtype !== 'ongoing'
+            || ((selectedDef.ongoingTarget ?? 'base') !== 'base')
+        ) {
+            return { state, events: [] };
+        }
+
+        // 1) 从手牌/牌库移除目标战术
         const fromHand = zone === 'hand' ? player.hand.filter(c => c.uid !== cardUid) : player.hand;
         const fromDeck = zone === 'deck' ? player.deck.filter(c => c.uid !== cardUid) : player.deck;
 
-        // 2) 钘忚韩澶勪粠鍩哄湴绂诲満杩涙墜鐗岋紙swap 鐨勫彟涓€鍗婏級
+        // 2) 藏身处离开基地；从手牌换出则回手，从牌库换出则洗回牌库
         const hideoutCard: CardInstance = { uid: hideout.uid, defId: hideout.defId, type: 'action', owner: hideout.ownerId };
 
         // 3) 鐩爣鎴樻湳杩涘叆鍩哄湴 ongoingActions锛堜繚鎸?cardUid锛?
@@ -772,6 +797,9 @@ export function registerTricksterInteractionHandlers(): void {
             };
         });
 
+        const nextHand = zone === 'hand' ? [...fromHand, hideoutCard] : fromHand;
+        const nextDeck = zone === 'deck' ? random.shuffle([...fromDeck, hideoutCard]) : fromDeck;
+
         let nextState = {
             ...state,
             core: {
@@ -781,17 +809,26 @@ export function registerTricksterInteractionHandlers(): void {
                     ...state.core.players,
                     [playerId]: {
                         ...player,
-                        hand: [...fromHand, hideoutCard],
-                        deck: fromDeck,
+                        hand: nextHand,
+                        deck: nextDeck,
                     },
                 },
             },
         };
 
+        const events: SmashUpEvent[] = [];
+        if (zone === 'deck') {
+            events.push({
+                type: SU_EVENTS.DECK_RESHUFFLED,
+                payload: { playerId, deckUids: nextDeck.map(card => card.uid) },
+                timestamp,
+            } as DeckReshuffledEvent);
+        }
+
         // 4) 浜ゆ崲鍚庯細浣犲彲浠ユ秷鐏繖閲屼竴涓垬鏂楀姏鈮?鐨勯殢浠庯紙鍙€夛級
         const updatedBase = nextState.core.bases[ctx.baseIndex];
         const candidates = updatedBase.minions.filter(m => getMinionPower(nextState.core, m, ctx.baseIndex) <= 2);
-        if (candidates.length === 0) return { state: nextState, events: [] };
+        if (candidates.length === 0) return { state: nextState, events };
         const options = candidates.map((m, i) => {
             const mDef = getCardDef(m.defId) as MinionCardDef | undefined;
             const name = mDef?.name ?? m.defId;
@@ -808,7 +845,7 @@ export function registerTricksterInteractionHandlers(): void {
             { sourceId: 'trickster_hideout_pod_destroy', targetType: 'minion' },
         );
         nextState = queueInteraction(nextState, prompt);
-        return { state: nextState, events: [] };
+        return { state: nextState, events };
     });
 
     registerInteractionHandler('trickster_hideout_pod_destroy', (state, playerId, value, _iData, _random, timestamp) => {
@@ -1445,7 +1482,7 @@ function registerTricksterPodOngoingEffects(): void {
         const options = combos.map((c, i) => ({
             id: `combo-${i}`,
             label: c.label,
-            value: { blocked },
+            value: { blocked: c.blocked },
         }));
         const interaction = createSimpleChoice(
             `trickster_block_the_path_pod_${ctx.now}`,

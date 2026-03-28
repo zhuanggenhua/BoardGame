@@ -53,7 +53,8 @@ const waitForActionPrompt = async (page: Page, timeout = 15000) => {
 
 const navigateToTutorial = async (page: Page) => {
     await page.goto('/play/smashup/tutorial', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('[data-game-page][data-game-id="smashup"]', { timeout: 15000 });
+    // 冷启动时教程页会串行加载较长的前端模块链，15 秒在 E2E 环境下会偶发误杀。
+    await page.waitForSelector('[data-game-page][data-game-id="smashup"]', { timeout: 30000 });
 };
 
 const readTutorialViewportMetrics = async (page: Page) => page.evaluate(() => {
@@ -62,14 +63,22 @@ const readTutorialViewportMetrics = async (page: Page) => page.evaluate(() => {
     const shell = document.querySelector('.mobile-board-shell') as HTMLElement | null;
     const overlay = document.querySelector('[data-testid="tutorial-overlay-card"]') as HTMLElement | null;
     const nextButton = document.querySelector('[data-testid="tutorial-next-button"]') as HTMLElement | null;
+    const overlayRect = overlay?.getBoundingClientRect() ?? null;
+    const nextButtonRect = nextButton?.getBoundingClientRect() ?? null;
+    const innerWidth = window.innerWidth;
+    const innerHeight = window.innerHeight;
     return {
-        innerWidth: window.innerWidth,
-        innerHeight: window.innerHeight,
+        innerWidth,
+        innerHeight,
         rootScrollWidth: root.scrollWidth,
         bodyScrollWidth: body.scrollWidth,
+        runtimeViewportWidth: getComputedStyle(root).getPropertyValue('--runtime-viewport-width').trim(),
+        runtimeViewportHeight: getComputedStyle(root).getPropertyValue('--runtime-viewport-height').trim(),
         shellRect: shell?.getBoundingClientRect() ?? null,
-        overlayRect: overlay?.getBoundingClientRect() ?? null,
-        nextButtonRect: nextButton?.getBoundingClientRect() ?? null,
+        overlayRect,
+        nextButtonRect,
+        overlayWidthRatio: overlayRect ? overlayRect.width / innerWidth : null,
+        overlayHeightRatio: overlayRect ? overlayRect.height / innerHeight : null,
     };
 });
 
@@ -121,6 +130,20 @@ const doPlayAction = async (page: Page) => {
             break;
         }
     }
+};
+
+const doUseTalent = async (page: Page) => {
+    await waitForTutorialStep(page, 'useTalent', 15000);
+    await waitForActionPrompt(page);
+    await page.waitForTimeout(500);
+
+    // 基地区随从容器本身负责 onClick -> dispatch USE_TALENT
+    const baseArea = page.locator('[data-tutorial-id="su-base-area"]');
+    await expect(baseArea).toBeVisible({ timeout: 5000 });
+    const librarianMinion = baseArea.locator('[data-minion-def-id="miskatonic_librarian"]');
+    await expect(librarianMinion.first()).toBeVisible({ timeout: 10000 });
+    await librarianMinion.first().click({ force: true });
+    await page.waitForTimeout(800);
 };
 
 const doEndPlayCards = async (page: Page) => {
@@ -183,6 +206,7 @@ test.describe('Smash Up Tutorial E2E', () => {
         await skipIntroSteps(page);
         await doPlayMinion(page);
         await doPlayAction(page);
+        await doUseTalent(page);
         await doEndPlayCards(page);
         await waitForTutorialStep(page, 'baseScoring', 15000);
     });
@@ -203,6 +227,7 @@ test.describe('Smash Up Tutorial E2E', () => {
 
         await doPlayMinion(page);
         await doPlayAction(page);
+        await doUseTalent(page);
         await doEndPlayCards(page);
 
         await waitForTutorialStep(page, 'baseScoring', 15000);
@@ -225,10 +250,8 @@ test.describe('Smash Up Tutorial E2E', () => {
         await waitForTutorialStep(page, 'endDraw', 10000);
         await clickNext(page);
 
-        await waitForTutorialStep(page, 'talentIntro', 40000);
-        await clickNext(page);
-
-        await waitForTutorialStep(page, 'turnCycle', 10000);
+        // opponentTurn 含 aiActions，TutorialOverlay 在该步不会渲染；直接等待自动推进后的 turnCycle
+        await waitForTutorialStep(page, 'turnCycle', 40000);
         await clickNext(page);
 
         await waitForTutorialStep(page, 'summary', 10000);
@@ -265,7 +288,7 @@ test.describe('Smash Up Tutorial E2E', () => {
         await expect(card.first()).toBeVisible({ timeout: 15000 });
         await card.first().click();
 
-        const tutorialBtn = page.getByRole('button', { name: /^Tutorial$/i });
+        const tutorialBtn = page.getByRole('button', { name: /Tutorial/i });
         await expect(tutorialBtn).toBeVisible({ timeout: 10000 });
         await tutorialBtn.click();
 
@@ -318,6 +341,8 @@ test.describe('Smash Up Tutorial E2E', () => {
         expect(metrics.overlayRect?.left ?? -1).toBeGreaterThanOrEqual(0);
         expect(metrics.overlayRect?.right ?? 99999).toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.overlayRect?.bottom ?? 99999).toBeLessThanOrEqual(metrics.innerHeight + 1);
+        expect(metrics.overlayWidthRatio ?? 99999).toBeLessThanOrEqual(0.4);
+        expect(metrics.overlayHeightRatio ?? 99999).toBeLessThanOrEqual(0.64);
         expect(metrics.nextButtonRect?.left ?? -1).toBeGreaterThanOrEqual(0);
         expect(metrics.nextButtonRect?.right ?? 99999).toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.nextButtonRect?.bottom ?? 99999).toBeLessThanOrEqual(metrics.innerHeight + 1);
@@ -325,6 +350,41 @@ test.describe('Smash Up Tutorial E2E', () => {
         await page.screenshot({
             path: getEvidenceScreenshotPath(testInfo, 'tutorial-mobile-landscape', {
                 filename: 'tutorial-mobile-landscape.png',
+            }),
+            fullPage: false,
+        });
+    });
+
+    test('手机从竖屏旋转到横屏后教程画布不应塌成黑屏', async ({ page }, testInfo) => {
+        test.setTimeout(60000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await page.setViewportSize({ width: 375, height: 812 });
+        await setEnglishLocale(page);
+        await disableAudio(page);
+        await navigateToTutorial(page);
+
+        await waitForTutorialStep(page, 'welcome', 40000);
+        await expect(page.getByRole('button', { name: /^Next$/i })).toBeVisible({ timeout: 10000 });
+
+        await page.setViewportSize({ width: 812, height: 375 });
+        await page.waitForTimeout(800);
+
+        const metrics = await readTutorialViewportMetrics(page);
+        expect(metrics.runtimeViewportWidth).toBeTruthy();
+        expect(metrics.runtimeViewportHeight).toBeTruthy();
+        expect(metrics.shellRect?.width ?? 0).toBeGreaterThan(300);
+        expect(metrics.shellRect?.height ?? 0).toBeGreaterThan(200);
+        expect(metrics.overlayRect?.width ?? 0).toBeGreaterThan(120);
+        expect(metrics.overlayRect?.height ?? 0).toBeGreaterThan(80);
+        expect(metrics.nextButtonRect?.width ?? 0).toBeGreaterThan(60);
+        expect(metrics.nextButtonRect?.height ?? 0).toBeGreaterThan(24);
+        expect(metrics.overlayRect?.bottom ?? 99999).toBeLessThanOrEqual(metrics.innerHeight + 1);
+        await expect(page.locator('.mobile-board-shell')).toBeVisible();
+        await expect(page.getByRole('button', { name: /^Next$/i })).toBeVisible();
+
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'tutorial-rotate-to-landscape', {
+                filename: 'tutorial-rotate-to-landscape.png',
             }),
             fullPage: false,
         });

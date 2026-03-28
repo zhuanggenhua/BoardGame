@@ -16,6 +16,10 @@ import type { ComponentType } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { playDeniedSound } from '../lib/audio/useGameAudio';
 import { resolveCommandError } from '../engine/transport/errorI18n';
+import {
+    resolveLocalMatchPlayerCount,
+    resolveSeatControllersFromSearchParams,
+} from '../engine/ai';
 import { GameCursorProvider } from '../core/cursor';
 import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 
@@ -54,6 +58,19 @@ export const LocalMatchRoom = () => {
     // 从地址参数获取种子，如果没有则生成新的
     const seedFromUrl = searchParams.get('seed');
     const gameSeed = seedFromUrl || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const localPlayerCount = resolveLocalMatchPlayerCount(searchParams.get('players'), gameConfig?.playerOptions);
+    const seatControllers = useMemo(
+        () => resolveSeatControllersFromSearchParams({
+            numPlayers: localPlayerCount,
+            searchParams,
+            aiSupport: gameConfig?.ai,
+        }),
+        [gameConfig?.ai, localPlayerCount, searchParams],
+    );
+    const hasAiSeat = useMemo(
+        () => Object.values(seatControllers).some((controller) => controller.type !== 'human'),
+        [seatControllers],
+    );
 
     // 从游戏实现中获取引擎配置
     const engineConfig = useMemo(() => {
@@ -110,7 +127,7 @@ export const LocalMatchRoom = () => {
 
     return (
         <div className="relative w-full game-page-viewport bg-black overflow-hidden font-sans" {...gamePageDataAttributes}>
-            <GameHUD mode="local" />
+            <GameHUD mode="local" localModeLabel={hasAiSeat ? t('actions.playAi') : t('actions.singleDevice')} />
             <MobileBoardShell>
                 <div
                     className="w-full h-full"
@@ -123,14 +140,15 @@ export const LocalMatchRoom = () => {
                             {engineConfig && WrappedBoard ? (
                                 <LocalGameProvider
                                     config={engineConfig}
-                                    numPlayers={2}
+                                    numPlayers={localPlayerCount}
                                     seed={gameSeed}
                                     onCommandRejected={handleCommandRejected}
+                                    seatControllers={seatControllers}
                                     followCurrentTurnPlayer
                                 >
                                     <BoardBridge
                                         board={WrappedBoard}
-                                        loading={<LoadingScreen title={t('matchRoom.title.local')} description={t('matchRoom.loadingResources')} />}
+                                        loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.loadingResources')} />}
                                     />
                                 </LocalGameProvider>
                             ) : (

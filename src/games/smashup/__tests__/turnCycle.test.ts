@@ -76,6 +76,58 @@ describe('完整回合循环', () => {
         expect(p0.hand.length).toBe(7);
     });
 
+    it('draw phase reshuffles after drawing the last card in deck', () => {
+        const runner = createRunner();
+        const draftResult = runner.run({
+            name: 'draft',
+            commands: DRAFT_COMMANDS,
+        });
+
+        const p0 = draftResult.finalState.core.players['0'];
+        const deckCard = p0.deck[0];
+        const discardCards = p0.deck.slice(1, 3);
+
+        expect(deckCard).toBeDefined();
+        expect(discardCards).toHaveLength(2);
+        if (!deckCard) {
+            throw new Error('expected one card left in deck for reshuffle test');
+        }
+
+        const modifiedState: MatchState<SmashUpCore> = {
+            ...draftResult.finalState,
+            core: {
+                ...draftResult.finalState.core,
+                players: {
+                    ...draftResult.finalState.core.players,
+                    ['0']: {
+                        ...p0,
+                        hand: [],
+                        deck: [deckCard],
+                        discard: discardCards,
+                    },
+                },
+            },
+        };
+
+        const runner2 = createRunner(() => modifiedState);
+        const result = runner2.run({
+            name: 'draw 1 then reshuffle then draw 1',
+            commands: [
+                { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
+            ] as any[],
+        });
+
+        const p0After = result.finalState.core.players['0'];
+        const handUids = p0After.hand.map(card => card.uid);
+        const discardUids = new Set(discardCards.map(card => card.uid));
+
+        expect(p0After.hand).toHaveLength(2);
+        expect(handUids).toContain(deckCard.uid);
+        expect(handUids.some(uid => discardUids.has(uid))).toBe(true);
+        expect(p0After.deck).toHaveLength(1);
+        expect(p0After.discard).toHaveLength(0);
+    });
+
     it('两个完整回合后回到 P0', () => {
         const runner = createRunner();
         const result = runner.run({

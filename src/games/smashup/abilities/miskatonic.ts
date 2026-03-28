@@ -407,7 +407,7 @@ function miskatonicPsychologistOnPlay(ctx: AbilityContext): AbilityResult {
     
     const interaction = createSimpleChoice(
         `miskatonic_psychologist_${ctx.now}`, ctx.playerId,
-        '选择要返回疯狂牌库的疯狂卡（可跳过）', options,
+        '选择要消耗的疯狂卡（可跳过）', options,
         { sourceId: 'miskatonic_psychologist', targetType: 'button' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -421,10 +421,10 @@ function miskatonicPsychologistPodOnPlay(ctx: AbilityContext): AbilityResult {
 
     const options: any[] = [];
     if (handMadness.length > 0) {
-        options.push({ id: 'hand', label: '将手牌中的一张疯狂卡返回疯狂牌库', value: { source: 'hand' }, displayMode: 'button' as const });
+        options.push({ id: 'hand', label: '消耗手牌中的一张疯狂卡', value: { source: 'hand' }, displayMode: 'button' as const });
     }
     if (discardMadness.length > 0) {
-        options.push({ id: 'discard', label: '将弃牌堆中的一张疯狂卡返回疯狂牌库', value: { source: 'discard' }, displayMode: 'button' as const });
+        options.push({ id: 'discard', label: '消耗弃牌堆中的一张疯狂卡', value: { source: 'discard' }, displayMode: 'button' as const });
         options.push({ id: 'draw_discard', label: '从弃牌堆抓一张疯狂卡', value: { source: 'draw_discard' }, displayMode: 'button' as const });
     }
     options.push({ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const });
@@ -583,7 +583,7 @@ function miskatonicBookOfIterTheUnseen(ctx: AbilityContext): AbilityResult {
 
     const interaction = createSimpleChoice(
         `miskatonic_book_of_iter_${ctx.now}`, ctx.playerId,
-        '金克丝!：选择要返回疯狂卡牌堆的疯狂卡', buildOptions(handMadness.length, discardMadness.length),
+        '金克丝!：选择要消耗的疯狂卡', buildOptions(handMadness.length, discardMadness.length),
         { sourceId: 'miskatonic_book_of_iter_the_unseen', targetType: 'generic' },
     );
 

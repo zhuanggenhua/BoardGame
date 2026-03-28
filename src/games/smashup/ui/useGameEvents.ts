@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import type { MatchState } from '../../../engine/types';
-import type { SmashUpCore } from '../domain/types';
+import type { SmashUpCore, LimitModifiedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import type { AbilityFeedbackEvent } from '../domain/types';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
@@ -50,7 +50,7 @@ interface UseGameEventsParams {
   baseRefs: React.RefObject<Map<number, HTMLElement>>;
 }
 
-export function useGameEvents({ G, fxBus, baseRefs }: UseGameEventsParams) {
+export function useGameEvents({ G, myPlayerId, fxBus, baseRefs }: UseGameEventsParams) {
   const entries = getEventStreamEntries(G);
   const { consumeNew } = useEventStreamCursor({ entries });
 
@@ -160,9 +160,29 @@ export function useGameEvents({ G, fxBus, baseRefs }: UseGameEventsParams) {
           }]);
           break;
         }
+
+        case SU_EVENTS.LIMIT_MODIFIED: {
+          const payload = (event as LimitModifiedEvent).payload;
+          const isUnrestricted =
+            payload.restrictToBase === undefined &&
+            payload.powerMax === undefined &&
+            !payload.sameNameOnly &&
+            payload.sameNameDefId === undefined;
+
+          if (payload.delta > 0 && payload.playerId === myPlayerId && isUnrestricted) {
+            setFeedbacks(prev => [...prev, {
+              id: `fb-${uidCounter++}`,
+              playerId: payload.playerId,
+              messageKey: payload.limitType === 'minion' ? 'ui.extra_minion_granted' : 'ui.extra_action_granted',
+              messageParams: { count: payload.delta },
+              tone: 'info',
+            }]);
+          }
+          break;
+        }
       }
     }
-  }, [G, consumeNew, fxBus, baseRefs, triggerDefIds, TRIGGER_CARRIER_EVENTS]);
+  }, [G, consumeNew, myPlayerId, fxBus, baseRefs, triggerDefIds, TRIGGER_CARRIER_EVENTS]);
 
   // 清除已完成的反馈
   const removeFeedback = useCallback((id: string) => {

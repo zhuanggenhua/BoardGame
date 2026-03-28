@@ -1,15 +1,49 @@
 /**
  * 攻击修正指示器撤回测试
- * 
+ *
  * 验证 scanActiveModifiers 函数的逻辑：
  * 1. 能正确扫描未结算的修正卡
  * 2. 撤回后能正确恢复剩余的修正卡
  * 3. 攻击结算后清空所有修正卡
  */
 
-import { describe, it, expect } from 'vitest';
+import React, { createRef } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, it, expect, vi } from 'vitest';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { findHeroCard } from '../heroes';
+import { RightSidebar } from '../ui/RightSidebar';
+import type { ActiveModifier } from '../hooks/useActiveModifiers';
+
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string, options?: Record<string, string | number>) => {
+            if (!options) return key;
+            const params = Object.entries(options)
+                .map(([paramKey, value]) => `${paramKey}=${value}`)
+                .join(',');
+            return `${key}:${params}`;
+        },
+    }),
+    initReactI18next: { type: '3rdParty', init: () => {} },
+}));
+
+vi.mock('framer-motion', () => {
+    const motion = new Proxy({}, {
+        get: (_target, tag) => {
+            return ({ children, whileHover: _whileHover, whileTap: _whileTap, ...rest }: { children?: React.ReactNode; whileHover?: unknown; whileTap?: unknown }) => (
+                React.createElement(tag as string, rest, children)
+            );
+        },
+    });
+
+    return {
+        motion,
+        AnimatePresence: ({ children }: { children: React.ReactNode }) => (
+            React.createElement(React.Fragment, null, children)
+        ),
+    };
+});
 
 // 从 useActiveModifiers 中提取的扫描函数
 function isModifierResetEvent(entry: any) {
@@ -155,6 +189,110 @@ describe('攻击修正指示器撤回测试', () => {
         const modifiers = scanActiveModifiers(entries);
 
         expect(modifiers).toHaveLength(0);
+    });
+
+    it('右侧栏应把伤害加成徽章与攻击修正徽章渲染到同一个上浮层栈', () => {
+        const activeModifiers: ActiveModifier[] = [{
+            cardId: 'card-red-hot',
+            nameKey: 'cards.card-red-hot.name',
+            descriptionKey: 'cards.card-red-hot.description',
+            timestamp: 1,
+            eventId: 101,
+        }];
+
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [],
+                rollCount: 1,
+                rollLimit: 2,
+                rollConfirmed: true,
+                currentPhase: 'offensiveRoll',
+                canInteractDice: false,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                setRerollingDiceIds: vi.fn(),
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: false,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                activeModifiers,
+                attackModifierBonusDamage: 2,
+                rootPlayerId: '0',
+                teamIdByPlayerId: { '0': 'A', '1': 'B', '2': 'A', '3': 'B' },
+            })
+        );
+
+        expect(html).toContain('data-testid="active-modifier-badge"');
+        expect(html).toContain('data-bonus-damage="2"');
+        expect(html).toContain('bottom-full');
+        expect(html).toContain('items-center justify-center gap-[0.35vw]');
+        expect(html).not.toContain('data-testid="attack-modifier-bonus-badge"');
+        expect(html).not.toContain('-top-[2.2vw]');
+        expect(html).not.toContain('-top-[3.8vw]');
+    });
+
+    it('RightSidebar 在 selectDie 交互中应根据 diceOwnerId 显示队友骰池提示', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [],
+                rollCount: 1,
+                rollLimit: 2,
+                rollConfirmed: true,
+                currentPhase: 'defensiveRoll',
+                canInteractDice: false,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                setRerollingDiceIds: vi.fn(),
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: false,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                rootPlayerId: '2',
+                teamIdByPlayerId: { '0': 'A', '1': 'B', '2': 'A', '3': 'B' },
+                interaction: {
+                    id: 'ally-select-die',
+                    kind: 'multistep-choice',
+                    playerId: '2',
+                    title: 'ally select',
+                    titleKey: 'interaction.selectDiceToReroll',
+                    description: null,
+                    options: [],
+                    data: {
+                        initialResult: { selectedDiceIds: [] },
+                        meta: {
+                            dtType: 'selectDie',
+                            selectCount: 1,
+                            diceOwnerId: '0',
+                            targetOpponentDice: false,
+                        },
+                    },
+                } as any,
+            })
+        );
+
+        expect(html).toContain('interaction.hint_select_ally:current=0,max=1');
     });
 });
 

@@ -3,6 +3,7 @@ import { getAllGames, getGameById } from '../../config/games.config';
 import {
     getGameMobileBannerKind,
     getGamePageDataAttributes,
+    resolveStableViewportSize,
     resolveGameMobileSupport,
     shouldUseBoardShellScale,
 } from '../mobileSupport';
@@ -139,5 +140,34 @@ describe('mobile support helpers', () => {
                 500,
             ),
         ).toBe(false);
+    });
+
+    it('keeps the last stable viewport when orientation switching reports zero height', () => {
+        expect(
+            resolveStableViewportSize(
+                { width: 375, height: 812 },
+                { width: 812, height: 0 },
+                { width: 0, height: 0 },
+            ),
+        ).toEqual({ width: 812, height: 812 });
+    });
+
+    it('prefers the first usable viewport candidate and falls back per dimension', () => {
+        expect(
+            resolveStableViewportSize(
+                { width: 375, height: 812 },
+                { width: 844, height: 390 },
+                { width: 812, height: 375 },
+                { width: 0, height: 0 },
+            ),
+        ).toEqual({ width: 844, height: 390 });
+
+        expect(
+            resolveStableViewportSize(
+                { width: 375, height: 812 },
+                { width: undefined, height: 390 },
+                { width: 844, height: undefined },
+            ),
+        ).toEqual({ width: 844, height: 390 });
     });
 });

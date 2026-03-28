@@ -1,11 +1,10 @@
 import { afterAll, describe, expect, it, vi } from 'vitest';
+import logger from '../../../server/logger';
 import { resolveUgcEntryPath, resolveUgcFilePath, resolvePlayerRange, loadUgcDomainCode } from '../ugcRegistration';
 
 const originalEnv = { ...process.env };
 
-// UGC 功能暂时跳过测试
-// 如需运行这些测试，请移除下面的 .skip
-describe.skip('UGC 注册辅助函数', () => {
+describe('UGC 注册辅助函数', () => {
     it('resolveUgcEntryPath: 优先使用 entryPoints.rules', () => {
         const manifest = {
             entryPoints: { rules: 'ugc/u1/p1/domain.js' },
@@ -42,7 +41,7 @@ describe.skip('UGC 注册辅助函数', () => {
     });
 
     it('loadUgcDomainCode: 路径无效时返回 null', async () => {
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => logger);
         process.env.UGC_LOCAL_PATH = 'C:/ugc-test';
         process.env.UGC_PUBLIC_URL_BASE = '/assets';
         const result = await loadUgcDomainCode('http://example.com/no-ugc', 'pkg-1');
@@ -52,7 +51,7 @@ describe.skip('UGC 注册辅助函数', () => {
     });
 
     it('loadUgcDomainCode: 读取失败时返回 null', async () => {
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => logger);
         process.env.UGC_LOCAL_PATH = 'C:/ugc-test';
         process.env.UGC_PUBLIC_URL_BASE = '/assets';
         const result = await loadUgcDomainCode('/assets/ugc/u1/p1/missing.js', 'pkg-1');

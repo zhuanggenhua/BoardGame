@@ -15,8 +15,10 @@ import {
     createTutorialSystem,
     createUndoSystem,
 } from '../../engine';
+import { registerGameAiRuntime } from '../../engine/ai';
 import { createGameEngine } from '../../engine/adapter';
 import { TicTacToeDomain } from './domain';
+import { ticTacToeAiRuntime } from './ai';
 
 // ============================================================================
 // ActionLog 共享白名单 + 格式化
@@ -92,3 +94,5 @@ export const engineConfig = createGameEngine(adapterConfig);
 
 export default engineConfig;
 export type { TicTacToeCore as TicTacToeState } from './domain';
+
+registerGameAiRuntime(ticTacToeAiRuntime);

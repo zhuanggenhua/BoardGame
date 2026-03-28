@@ -50,24 +50,6 @@ export interface FeedbackItem {
     createdAt: string;
 }
 
-export interface FeedbackAiPayload {
-    feedbackId: string;
-    createdAt: string;
-    type: FeedbackItem['type'];
-    severity: FeedbackItem['severity'];
-    status: FeedbackItem['status'];
-    reporter: string;
-    reporterEmail: string | null;
-    contactInfo: string | null;
-    content: string;
-    gameId: string | null;
-    screenshotCount: number;
-    clientContext: FeedbackClientContext | null;
-    errorContext: FeedbackErrorContext | null;
-    operationLogs: unknown[];
-    stateSnapshot: unknown | null;
-}
-
 const EMBEDDED_IMG_RE = /!\[([^\]]*)\]\((data:image\/[^)]+)\)/g;
 
 export function extractEmbeddedImages(content: string) {
@@ -121,26 +103,185 @@ function inferGameId(stateSnapshot: unknown, fallbackGameId?: string, fallbackGa
     return null;
 }
 
-export function buildFeedbackAiPayload(item: FeedbackItem, t: TFunction<'admin'>): FeedbackAiPayload {
-    const parsedSnapshot = parseStateSnapshot(item.stateSnapshot);
+function normalizeInlineText(value: string): string {
+    return value.replace(/\s+/g, ' ').trim();
+}
 
-    return {
-        feedbackId: item._id,
-        createdAt: item.createdAt,
-        type: item.type,
-        severity: item.severity,
-        status: item.status,
-        reporter: item.userId?.username || t('feedback.anonymous'),
-        reporterEmail: item.userId?.email ?? null,
-        contactInfo: item.contactInfo ?? null,
-        content: extractText(item.content, t),
-        gameId: inferGameId(parsedSnapshot, item.clientContext?.gameId, item.gameName),
-        screenshotCount: extractEmbeddedImages(item.content).length,
-        clientContext: item.clientContext ?? null,
-        errorContext: item.errorContext ?? null,
-        operationLogs: parseOperationLogs(item.actionLog),
-        stateSnapshot: parsedSnapshot,
-    };
+function truncateInlineText(value: string, maxLength = 160): string {
+    const normalized = normalizeInlineText(value);
+    if (normalized.length <= maxLength) return normalized;
+    return `${normalized.slice(0, Math.max(0, maxLength - 1))}…`;
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    return value as Record<string, unknown>;
+}
+
+function formatInlineValue(value: unknown, depth = 0): string {
+    if (value == null) return '';
+    if (typeof value === 'string') return truncateInlineText(value, depth === 0 ? 120 : 48);
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value);
+    if (Array.isArray(value)) {
+        const items = value
+            .slice(0, depth === 0 ? 4 : 2)
+            .map((entry) => formatInlineValue(entry, depth + 1))
+            .filter(Boolean);
+        if (items.length === 0) return `items=${value.length}`;
+        const suffix = value.length > items.length ? ` +${value.length - items.length}` : '';
+        return `${items.join('/')}${suffix}`;
+    }
+
+    const record = toRecord(value);
+    if (!record) return '';
+
+    const keys = Object.keys(record);
+    const entries = keys
+        .filter((key) => record[key] != null)
+        .slice(0, depth === 0 ? 4 : 2)
+        .map((key) => {
+            const formatted = formatInlineValue(record[key], depth + 1);
+            return formatted ? `${key}=${formatted}` : '';
+        })
+        .filter(Boolean);
+
+    if (entries.length === 0) return '';
+    const suffix = keys.length > entries.length ? `, +${keys.length - entries.length}` : '';
+    return `${entries.join(', ')}${suffix}`;
+}
+
+function summarizeClientContext(context: FeedbackClientContext | null | undefined): string | null {
+    if (!context) return null;
+
+    const parts = [
+        context.route ? `route=${truncateInlineText(context.route, 80)}` : '',
+        context.matchId ? `match=${context.matchId}` : '',
+        context.playerId ? `player=${context.playerId}` : '',
+        context.gameId ? `game=${context.gameId}` : '',
+        context.mode ? `mode=${context.mode}` : '',
+        context.appVersion ? `app=${context.appVersion}` : '',
+        context.viewport ? `viewport=${context.viewport.width}x${context.viewport.height}` : '',
+        context.language ? `lang=${context.language}` : '',
+        context.timezone ? `tz=${context.timezone}` : '',
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(', ') : null;
+}
+
+function summarizeErrorContext(context: FeedbackErrorContext | null | undefined): string | null {
+    if (!context) return null;
+
+    const parts = [
+        context.source ? truncateInlineText(context.source, 48) : '',
+        context.name ? truncateInlineText(context.name, 48) : '',
+        context.message ? truncateInlineText(context.message, 120) : '',
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(' | ') : null;
+}
+
+function summarizeOperationLogs(actionLog?: string): string | null {
+    const logs = parseOperationLogs(actionLog);
+    if (logs.length === 0) return null;
+
+    const preview = logs.slice(0, 4).map((entry, index) => {
+        const formatted = formatInlineValue(entry);
+        return `${index + 1}.${formatted || 'unknown'}`;
+    });
+    const suffix = logs.length > preview.length ? `; +${logs.length - preview.length}条` : '';
+    return `${preview.join('; ')}${suffix}`;
+}
+
+function summarizeStateSnapshot(stateSnapshot: unknown): string | null {
+    const snapshot = toRecord(stateSnapshot);
+    if (!snapshot) return formatInlineValue(stateSnapshot) || null;
+
+    if (snapshot.parseError === true && typeof snapshot.raw === 'string') {
+        return `parseError=${truncateInlineText(snapshot.raw, 120)}`;
+    }
+
+    const core = toRecord(snapshot.core);
+    const sys = toRecord(snapshot.sys);
+    const interaction = toRecord(toRecord(sys?.interaction)?.current);
+    const responseWindow = toRecord(toRecord(sys?.responseWindow)?.current);
+    const topField = Array.isArray(snapshot.field) ? snapshot.field : null;
+    const coreField = Array.isArray(core?.field) ? core.field : null;
+    const field = topField ?? coreField;
+
+    const gameId = inferGameId(stateSnapshot)
+        ?? (typeof core?.gameId === 'string' ? core.gameId : null);
+    const turn = snapshot.turn ?? core?.turn ?? snapshot.round ?? core?.round;
+    const currentPlayer = snapshot.currentPlayer ?? core?.currentPlayer;
+    const phase = snapshot.phase ?? core?.phase;
+    const players = toRecord(snapshot.players) ?? toRecord(core?.players);
+    const parts = [
+        gameId ? `game=${gameId}` : '',
+        turn != null ? `turn=${String(turn)}` : '',
+        currentPlayer != null ? `player=${String(currentPlayer)}` : '',
+        phase != null ? `phase=${String(phase)}` : '',
+        players ? `players=${Object.keys(players).length}` : '',
+    ].filter(Boolean);
+
+    if (field) {
+        const fieldPreview = field.slice(0, 3).map((entry) => {
+            const unit = toRecord(entry);
+            if (!unit) return formatInlineValue(entry);
+            const card = toRecord(unit.card);
+            const unitId = typeof unit.id === 'string'
+                ? unit.id
+                : typeof card?.defId === 'string'
+                    ? card.defId
+                    : 'unknown';
+            const owner = unit.owner != null ? `@${String(unit.owner)}` : '';
+            return `${unitId}${owner}`;
+        }).filter(Boolean);
+        const suffix = field.length > fieldPreview.length ? ', ...' : '';
+        parts.push(`field=${field.length}${fieldPreview.length > 0 ? `(${fieldPreview.join(', ')}${suffix})` : ''}`);
+    }
+
+    if (interaction) {
+        const interactionType = typeof interaction.type === 'string' ? interaction.type : 'unknown';
+        const interactionPlayer = interaction.playerId != null ? `@${String(interaction.playerId)}` : '';
+        parts.push(`interaction=${interactionType}${interactionPlayer}`);
+    }
+
+    if (responseWindow) {
+        const triggerEvent = toRecord(responseWindow.triggerEvent);
+        if (typeof triggerEvent?.type === 'string') {
+            parts.push(`response=${triggerEvent.type}`);
+        }
+    }
+
+    if (parts.length > 0) return parts.join(', ');
+
+    const keys = Object.keys(snapshot).slice(0, 8);
+    return keys.length > 0 ? `keys=${keys.join(', ')}` : null;
+}
+
+export function buildFeedbackAiSummary(item: FeedbackItem, t: TFunction<'admin'>): string {
+    const parsedSnapshot = parseStateSnapshot(item.stateSnapshot);
+    const inferredGameId = inferGameId(parsedSnapshot, item.clientContext?.gameId, item.gameName);
+    const gameLabel = item.gameName && inferredGameId && item.gameName !== inferredGameId
+        ? `${item.gameName}(${inferredGameId})`
+        : item.gameName ?? inferredGameId;
+    const reporter = item.userId?.username || t('feedback.anonymous');
+    const clientSummary = summarizeClientContext(item.clientContext);
+    const errorSummary = summarizeErrorContext(item.errorContext);
+    const operationSummary = summarizeOperationLogs(item.actionLog);
+    const stateSummary = summarizeStateSnapshot(parsedSnapshot);
+
+    return [
+        `反馈ID=${item._id}`,
+        `时间=${formatAbsoluteTime(item.createdAt)}`,
+        `类型=${t(`feedback.type.${item.type}`)}/${t(`feedback.severity.${item.severity}`)}/${t(`feedback.status.${item.status}`)}`,
+        gameLabel ? `游戏=${gameLabel}` : '',
+        `提交人=${reporter}`,
+        `内容=${truncateInlineText(extractText(item.content, t), 220)}`,
+        clientSummary ? `客户端=${clientSummary}` : '',
+        errorSummary ? `错误=${errorSummary}` : '',
+        operationSummary ? `操作=${operationSummary}` : '',
+        stateSummary ? `状态=${stateSummary}` : '',
+    ].filter(Boolean).join(' | ');
 }
 
 export function CopyFeedbackButton({
@@ -157,7 +298,7 @@ export function CopyFeedbackButton({
 
     const handleCopy = (event: React.MouseEvent) => {
         event.stopPropagation();
-        const payloadText = JSON.stringify(buildFeedbackAiPayload(item, t), null, 2);
+        const payloadText = buildFeedbackAiSummary(item, t);
         navigator.clipboard.writeText(payloadText).then(() => {
             onAiPayloadCopy(payloadText);
             setCopied(true);

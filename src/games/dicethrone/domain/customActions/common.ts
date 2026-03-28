@@ -55,6 +55,11 @@ export function resolveTargetOpponentDice(action: CustomActionContext['action'],
     return false;
 }
 
+export function resolveDiceOwnerId(state?: DiceThroneCore): PlayerId | undefined {
+    if (!state) return undefined;
+    return getRollerId(state);
+}
+
 // ============================================================================
 // 骰子修改处理器
 // ============================================================================
@@ -70,6 +75,7 @@ function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp, action, st
         selectCount: 1,
         selected: [],
         dieModifyConfig: { mode: 'set', targetValue: 6 },
+        diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
@@ -101,6 +107,7 @@ function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp, action, s
         selectCount: 2,
         selected: [],
         dieModifyConfig: { mode: 'copy' },
+        diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
@@ -117,6 +124,7 @@ function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp, action, s
         selectCount: 1,
         selected: [],
         dieModifyConfig: { mode: 'any' },
+        diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
@@ -133,6 +141,7 @@ function handleModifyDieAny2({ attackerId, sourceAbilityId, timestamp, action, s
         selectCount: 2,
         selected: [],
         dieModifyConfig: { mode: 'any' },
+        diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
@@ -149,6 +158,7 @@ function handleModifyDieAdjust1({ attackerId, sourceAbilityId, timestamp, action
         selectCount: 1,
         selected: [],
         dieModifyConfig: { mode: 'adjust', adjustRange: { min: -1, max: 1 } },
+        diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
@@ -168,6 +178,7 @@ function handleRerollOpponentDie1({ attackerId, sourceAbilityId, timestamp, acti
         titleKey: 'interaction.selectOpponentDieToReroll',
         selectCount: 1,
         selected: [],
+        diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
@@ -183,6 +194,7 @@ function handleRerollDie2({ attackerId, sourceAbilityId, timestamp, action, stat
         titleKey: 'interaction.selectDiceToReroll',
         selectCount: 2,
         selected: [],
+        diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
@@ -198,6 +210,7 @@ function handleRerollDie5({ attackerId, sourceAbilityId, timestamp, action, stat
         titleKey: 'interaction.selectDiceToReroll',
         selectCount: 5,
         selected: [],
+        diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];

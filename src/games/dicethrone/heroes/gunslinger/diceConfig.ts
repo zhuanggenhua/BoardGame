@@ -32,7 +32,7 @@ export const gunslingerDiceDefinition: DiceDefinition = {
         { value: 6, symbols: [GUNSLINGER_DICE_FACE_IDS.BULLSEYE] },
     ],
     assets: {
-        spriteSheet: '/game-data/dicethrone/gunslinger/dice-sprite.png',
+        spriteSheet: 'dicethrone/images/gunslinger/dice',
     },
 };
 

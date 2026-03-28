@@ -4,15 +4,19 @@ import type {
     DiceThroneEvent,
     AttackResolvedEvent,
     AttackPreDefenseResolvedEvent,
+    AttackDefenseResolvedEvent,
     TokenGrantedEvent,
 } from './types';
 import { resolveEffectsToEvents, type EffectContext } from './effects';
 import { getPlayerAbilityEffects } from './abilityLookup';
 import { getPendingAttackExpectedDamage } from './utils';
 
+const isBlockingInteractionEvent = (event: DiceThroneEvent): boolean =>
+    event.type === 'CHOICE_REQUESTED' || event.type === 'INTERACTION_REQUESTED';
+
 const createPreDefenseResolvedEvent = (
     attackerId: string,
-    defenderId: string,
+    defenderId: string | undefined,
     sourceAbilityId: string | undefined,
     timestamp: number
 ): AttackPreDefenseResolvedEvent => ({
@@ -26,6 +30,22 @@ const createPreDefenseResolvedEvent = (
     timestamp,
 });
 
+const createDefenseResolvedEvent = (
+    attackerId: string,
+    defenderId: string,
+    defenseAbilityId: string | undefined,
+    timestamp: number
+): AttackDefenseResolvedEvent => ({
+    type: 'ATTACK_DEFENSE_RESOLVED',
+    payload: {
+        attackerId,
+        defenderId,
+        defenseAbilityId,
+    },
+    sourceCommandType: 'ABILITY_EFFECT',
+    timestamp,
+});
+
 export const resolveOffensivePreDefenseEffects = (
     state: DiceThroneCore,
     timestamp: number = 0
@@ -34,6 +54,7 @@ export const resolveOffensivePreDefenseEffects = (
     if (!pending || pending.preDefenseResolved) return [];
 
     const { attackerId, defenderId, sourceAbilityId } = pending;
+    const effectDefenderId = defenderId ?? attackerId;
     if (!sourceAbilityId) {
         return [createPreDefenseResolvedEvent(attackerId, defenderId, sourceAbilityId, timestamp)];
     }
@@ -41,7 +62,9 @@ export const resolveOffensivePreDefenseEffects = (
     const effects = getPlayerAbilityEffects(state, attackerId, sourceAbilityId);
     const ctx: EffectContext = {
         attackerId,
-        defenderId,
+        // 4 人 / 2v2 下存在“无伤害、无默认 defender”的进攻技能；
+        // 这类技能的 self-target preDefense 效果仍必须执行，不能因为 defenderId 缺失被整段跳过。
+        defenderId: effectDefenderId,
         sourceAbilityId,
         state,
         damageDealt: 0,
@@ -60,7 +83,7 @@ const resolveDefenseEffects = (
     timestamp: number
 ): { defenseEvents: DiceThroneEvent[]; stateAfterDefense: DiceThroneCore } => {
     const pending = state.pendingAttack;
-    if (!pending?.defenseAbilityId) {
+    if (!pending?.defenseAbilityId || !pending.defenderId || pending.defenseResolved) {
         return { defenseEvents: [], stateAfterDefense: state };
     }
 
@@ -79,6 +102,7 @@ const resolveDefenseEffects = (
     const defenseEvents: DiceThroneEvent[] = [];
     defenseEvents.push(...resolveEffectsToEvents(defenseEffects, 'withDamage', defenseCtx, { random }));
     defenseEvents.push(...resolveEffectsToEvents(defenseEffects, 'postDamage', defenseCtx, { random }));
+    defenseEvents.push(createDefenseResolvedEvent(attackerId, defenderId, defenseAbilityId, timestamp));
 
     const tokenGrantedEvents = defenseEvents.filter((e): e is TokenGrantedEvent => e.type === 'TOKEN_GRANTED');
     if (tokenGrantedEvents.length === 0) {
@@ -117,12 +141,50 @@ export const resolveAttack = (
         return [];
     }
 
+    if (!pending.defenderId) {
+        const { attackerId, sourceAbilityId, defenseAbilityId } = pending;
+        const events: DiceThroneEvent[] = [];
+
+        if (sourceAbilityId) {
+            const effects = getPlayerAbilityEffects(state, attackerId, sourceAbilityId);
+            const attackCtx: EffectContext = {
+                attackerId,
+                defenderId: attackerId,
+                sourceAbilityId,
+                state,
+                damageDealt: 0,
+                timestamp,
+            };
+            events.push(...resolveEffectsToEvents(effects, 'withDamage', attackCtx, {
+                bonusDamage: pending.bonusDamage ?? 0,
+                bonusDamageOnce: true,
+                random,
+                skipDamage: true,
+            }));
+            events.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
+        }
+
+        events.push({
+            type: 'ATTACK_RESOLVED',
+            payload: {
+                attackerId,
+                defenderId: undefined,
+                sourceAbilityId,
+                defenseAbilityId,
+                totalDamage: 0,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as AttackResolvedEvent);
+        return events;
+    }
+
     const events: DiceThroneEvent[] = [];
     if (options?.includePreDefense) {
         const preDefenseEvents = resolveOffensivePreDefenseEffects(state, timestamp);
         events.push(...preDefenseEvents);
 
-        const hasChoice = preDefenseEvents.some((event) => event.type === 'CHOICE_REQUESTED');
+        const hasChoice = preDefenseEvents.some(isBlockingInteractionEvent);
         if (hasChoice) return events;
     }
 
@@ -130,6 +192,15 @@ export const resolveAttack = (
     const bonusDamage = pending.bonusDamage ?? 0;
     const { defenseEvents, stateAfterDefense } = resolveDefenseEffects(state, random, timestamp);
     events.push(...defenseEvents);
+    const hasDefenseChoice = defenseEvents.some(e => e.type === 'CHOICE_REQUESTED');
+    const hasDefenseTokenResponse = defenseEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
+    const hasDefenseInteractiveBonusDiceReroll = defenseEvents.some(e =>
+        e.type === 'BONUS_DICE_REROLL_REQUESTED'
+        && !(e as any).payload?.settlement?.displayOnly
+    );
+    if (hasDefenseChoice || hasDefenseTokenResponse || hasDefenseInteractiveBonusDiceReroll) {
+        return events;
+    }
 
     const attackEvents: DiceThroneEvent[] = [];
     let totalDamage = 0;
@@ -155,7 +226,7 @@ export const resolveAttack = (
             e.type === 'BONUS_DICE_REROLL_REQUESTED'
             && !(e as any).payload?.settlement?.displayOnly
         );
-        const hasChoiceInWithDamage = withDamageEvents.some(e => e.type === 'CHOICE_REQUESTED');
+        const hasChoiceInWithDamage = withDamageEvents.some(isBlockingInteractionEvent);
         if (hasTokenResponse || hasInteractiveBonusDiceReroll || hasChoiceInWithDamage) {
             attackEvents.push(...withDamageEvents);
             events.push(...attackEvents);
@@ -166,7 +237,7 @@ export const resolveAttack = (
         attackEvents.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
 
         const postDamageEvents = attackEvents.slice(withDamageEvents.length);
-        const hasChoiceInPostDamage = postDamageEvents.some(e => e.type === 'CHOICE_REQUESTED');
+        const hasChoiceInPostDamage = postDamageEvents.some(isBlockingInteractionEvent);
         const hasTokenResponseInPostDamage = postDamageEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
         const hasBonusDiceRerollInPostDamage = postDamageEvents.some(e =>
             e.type === 'BONUS_DICE_REROLL_REQUESTED'
@@ -204,7 +275,7 @@ export const resolveAttackWithSneakImmunityAfterDefense = (
     timestamp: number = 0
 ): DiceThroneEvent[] => {
     const pending = state.pendingAttack;
-    if (!pending) {
+    if (!pending || !pending.defenderId) {
         return [];
     }
 
@@ -271,7 +342,7 @@ export const resolvePostDamageEffects = (
         const effects = getPlayerAbilityEffects(state, attackerId, sourceAbilityId);
         const attackCtx: EffectContext = {
             attackerId,
-            defenderId,
+            defenderId: defenderId ?? attackerId,
             sourceAbilityId,
             state,
             damageDealt,

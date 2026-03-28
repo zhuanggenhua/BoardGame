@@ -448,6 +448,7 @@ export const SelectableStatusBadge = ({
     isSelected,
     isHighlighted,
     onSelect,
+    dataTestId,
     size = 'normal',
     locale,
     atlas,
@@ -458,6 +459,7 @@ export const SelectableStatusBadge = ({
     isSelected?: boolean;
     isHighlighted?: boolean;
     onSelect?: () => void;
+    dataTestId?: string;
     size?: 'normal' | 'small';
     locale?: string;
     atlas?: StatusAtlases | null;
@@ -493,6 +495,7 @@ export const SelectableStatusBadge = ({
 
     return (
         <div
+            data-testid={dataTestId}
             className={`relative group ${clickable ? 'cursor-pointer' : ''
                 }`}
             onMouseEnter={() => setIsHovered(true)}
@@ -541,6 +544,7 @@ export const SelectableEffectsContainer = ({
     selectedId,
     highlightAll,
     onSelectEffect,
+    getItemTestId,
     maxPerRow = 3,
     size = 'normal',
     className = '',
@@ -552,6 +556,7 @@ export const SelectableEffectsContainer = ({
     selectedId?: string;
     highlightAll?: boolean;
     onSelectEffect?: (effectId: string) => void;
+    getItemTestId?: (effectId: string) => string | undefined;
     maxPerRow?: number;
     size?: 'normal' | 'small';
     className?: string;
@@ -574,6 +579,7 @@ export const SelectableEffectsContainer = ({
                     isSelected={selectedId === id}
                     isHighlighted={highlightAll}
                     onSelect={() => onSelectEffect?.(id)}
+                    dataTestId={getItemTestId?.(id)}
                     size={size}
                     locale={locale}
                     atlas={atlas}

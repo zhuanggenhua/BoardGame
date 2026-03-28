@@ -23,6 +23,7 @@ import { RESOURCE_IDS } from './resources';
 import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS } from './ids';
 import { getDieFaceByValue } from './diceRegistry';
 import { CHARACTER_DATA_MAP } from './characters';
+import { playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
 
 import { getGameMode } from './utils';
 
@@ -124,7 +125,6 @@ export const getTokenStackLimit = (state: DiceThroneCore, playerId: PlayerId, to
 // ============================================================================
 
 const TEAM_MODE_PLAYER_COUNT = 4;
-const DEFAULT_TEAM_HEALTH_MAX = 60;
 
 export const isTeamMode = (state: DiceThroneCore): boolean => {
     return Object.keys(state.players).length === TEAM_MODE_PLAYER_COUNT;
@@ -140,6 +140,15 @@ const deriveTeamIdFromSeatIndex = (seatIndex: number): TeamId => {
     return seatIndex % 2 === 0 ? 'A' : 'B';
 };
 
+export const buildTeamIdByPlayerIdFromSeatingOrder = (
+    seatingOrder: PlayerId[]
+): Record<PlayerId, TeamId> => {
+    return seatingOrder.reduce((acc, pid, seatIndex) => {
+        acc[pid] = deriveTeamIdFromSeatIndex(seatIndex);
+        return acc;
+    }, {} as Record<PlayerId, TeamId>);
+};
+
 export const getTeamIdByPlayerIdMap = (state: DiceThroneCore): Record<PlayerId, TeamId> => {
     const playerIds = Object.keys(state.players) as PlayerId[];
     const explicitMap = state.teamIdByPlayerId;
@@ -148,10 +157,7 @@ export const getTeamIdByPlayerIdMap = (state: DiceThroneCore): Record<PlayerId, 
     }
 
     const seatingOrder = getSeatingOrder(state);
-    const derivedMap = {} as Record<PlayerId, TeamId>;
-    seatingOrder.forEach((pid, seatIndex) => {
-        derivedMap[pid] = deriveTeamIdFromSeatIndex(seatIndex);
-    });
+    const derivedMap = buildTeamIdByPlayerIdFromSeatingOrder(seatingOrder);
 
     // 防御性兜底：任何缺失映射的玩家默认归 A（不会影响 1v1）
     for (const pid of playerIds) {
@@ -181,12 +187,12 @@ export const getTeammateId = (state: DiceThroneCore, playerId: PlayerId): Player
     if (!isTeamMode(state)) return undefined;
     const teamId = getTeamId(state, playerId);
     if (!teamId) return undefined;
-    const playerIds = Object.keys(state.players) as PlayerId[];
+    const playerIds = getSeatingOrder(state);
     return playerIds.find((pid) => pid !== playerId && getTeamId(state, pid) === teamId);
 };
 
 export const getOpponents = (state: DiceThroneCore, playerId: PlayerId): PlayerId[] => {
-    const playerIds = Object.keys(state.players) as PlayerId[];
+    const playerIds = getSeatingOrder(state);
     if (!state.players[playerId]) return [];
     if (!isTeamMode(state)) {
         return playerIds.filter((pid) => pid !== playerId);
@@ -206,6 +212,36 @@ export const getDefaultOpponentId = (state: DiceThroneCore, playerId: PlayerId):
     return getLeftOpponentId(state, playerId)
         ?? getRightOpponentId(state, playerId)
         ?? getOpponents(state, playerId)[0];
+};
+
+/**
+ * 获取当前战斗上下文里的实际对手。
+ * 用于 2v2 下在响应窗口/打牌阶段跟随当前 pendingAttack，而不是重新按默认对手推断。
+ */
+export const getCombatOpponentId = (
+    state: DiceThroneCore,
+    playerId: PlayerId
+): PlayerId | undefined => {
+    const pendingAttack = state.pendingAttack;
+    if (!pendingAttack) return undefined;
+    if (pendingAttack.attackerId === playerId) {
+        return pendingAttack.defenderId;
+    }
+    if (pendingAttack.defenderId === playerId) {
+        return pendingAttack.attackerId;
+    }
+    return undefined;
+};
+
+/**
+ * 获取当前命令/效果应使用的对手。
+ * 优先跟随当前战斗上下文，其次才回退到默认对手。
+ */
+export const getContextualOpponentId = (
+    state: DiceThroneCore,
+    playerId: PlayerId
+): PlayerId | undefined => {
+    return getCombatOpponentId(state, playerId) ?? getDefaultOpponentId(state, playerId);
 };
 
 const findOpponentByDirection = (
@@ -235,15 +271,100 @@ export const getRightOpponentId = (state: DiceThroneCore, playerId: PlayerId): P
     return findOpponentByDirection(state, playerId, 1);
 };
 
+export const getTargetingRollAutoDefenderId = (
+    state: DiceThroneCore,
+    attackerId: PlayerId,
+    rollValue: number
+): PlayerId | undefined => {
+    if (rollValue === 1 || rollValue === 2) {
+        return getLeftOpponentId(state, attackerId);
+    }
+    if (rollValue === 3 || rollValue === 4) {
+        return getRightOpponentId(state, attackerId);
+    }
+    return undefined;
+};
+
+export const getTargetingRollChoiceOwnerId = (
+    state: DiceThroneCore,
+    attackerId: PlayerId,
+    rollValue: number
+): PlayerId | undefined => {
+    if (rollValue === 5) {
+        return getDefaultOpponentId(state, attackerId);
+    }
+    if (rollValue === 6) {
+        return attackerId;
+    }
+    return undefined;
+};
+
+export const getTargetingRollChoiceOptions = (
+    state: DiceThroneCore,
+    attackerId: PlayerId
+): Array<{
+    customId: string;
+    value: number;
+    labelKey: string;
+    disabled?: boolean;
+}> => {
+    const seatingOrder = getSeatingOrder(state);
+    return seatingOrder
+        .filter((pid) => pid !== attackerId)
+        .map((pid) => ({
+            customId: `select-target:${pid}`,
+            value: 1,
+            labelKey: `玩家 ${Number(pid) + 1}`,
+            disabled: areTeammates(state, attackerId, pid),
+        }));
+};
+
 // ============================================================================
 // 玩家顺序规则
 // ============================================================================
+
+const rotateOrderToStart = (order: PlayerId[], startPlayerId: PlayerId): PlayerId[] => {
+    const startIndex = order.indexOf(startPlayerId);
+    if (startIndex <= 0) return order;
+    return [...order.slice(startIndex), ...order.slice(0, startIndex)];
+};
+
+const buildTeamTurnOrder = (state: DiceThroneCore): PlayerId[] => {
+    const seatingOrder = getSeatingOrder(state);
+    if (!isTeamMode(state)) {
+        return seatingOrder;
+    }
+
+    const startingPlayerId = state.players[state.startingPlayerId]
+        ? state.startingPlayerId
+        : seatingOrder[0];
+    if (!startingPlayerId) {
+        return seatingOrder;
+    }
+
+    const startingTeamId = getTeamId(state, startingPlayerId);
+    if (!startingTeamId) {
+        return seatingOrder;
+    }
+
+    const sameTeamPlayers = rotateOrderToStart(
+        seatingOrder.filter((pid) => getTeamId(state, pid) === startingTeamId),
+        startingPlayerId
+    );
+    const opposingTeamPlayers = seatingOrder.filter((pid) => getTeamId(state, pid) !== startingTeamId);
+
+    if (sameTeamPlayers.length !== 2 || opposingTeamPlayers.length !== 2) {
+        return seatingOrder;
+    }
+
+    return [...sameTeamPlayers, ...opposingTeamPlayers];
+};
 
 /**
  * 获取玩家顺序列表
  */
 export const getPlayerOrder = (state: DiceThroneCore): PlayerId[] => {
-    return Object.keys(state.players);
+    return buildTeamTurnOrder(state);
 };
 
 /**
@@ -263,12 +384,12 @@ export const getRollerId = (state: DiceThroneCore, phase?: TurnPhase): PlayerId 
     if (phase === 'defensiveRoll') {
         return state.pendingAttack?.defenderId ?? state.activePlayerId;
     }
-    if (phase === 'offensiveRoll') {
+    if (phase === 'offensiveRoll' || phase === 'targetingRoll') {
         return state.activePlayerId;
     }
     // 未显式传入 phase 时，基于防御技能是否已选中推断掷骰者
     if (state.pendingAttack?.defenseAbilityId) {
-        return state.pendingAttack.defenderId;
+        return state.pendingAttack.defenderId ?? state.activePlayerId;
     }
     return state.activePlayerId;
 };
@@ -322,6 +443,10 @@ export const canAdvancePhase = (state: DiceThroneCore, phase: TurnPhase): boolea
             return false;
         }
     }
+
+    if (phase === 'targetingRoll') {
+        return state.rollCount > 0 && state.rollConfirmed;
+    }
     
     return true;
 };
@@ -344,6 +469,29 @@ export const getNextPhase = (state: DiceThroneCore, phase: TurnPhase): TurnPhase
     
     // 进攻阶段结束后的分支
     if (phase === 'offensiveRoll') {
+        const sourceAbilityId = state.pendingAttack?.sourceAbilityId;
+        const needsTargetingRoll = Boolean(
+            isTeamMode(state)
+            && state.pendingAttack
+            && sourceAbilityId
+            && state.pendingAttack.defenderId === undefined
+            && (
+                playerAbilityHasDamage(state, state.pendingAttack.attackerId, sourceAbilityId)
+                || playerAbilityNeedsSingleOpponentTarget(state, state.pendingAttack.attackerId, sourceAbilityId)
+            )
+        );
+        if (needsTargetingRoll) {
+            nextPhase = 'targetingRoll';
+            return nextPhase;
+        }
+        if (state.pendingAttack && state.pendingAttack.isDefendable) {
+            nextPhase = 'defensiveRoll';
+        } else {
+            nextPhase = 'main2';
+        }
+    }
+
+    if (phase === 'targetingRoll') {
         if (state.pendingAttack && state.pendingAttack.isDefendable) {
             nextPhase = 'defensiveRoll';
         } else {
@@ -476,6 +624,7 @@ export type CardPlayFailReason =
     | 'notEnoughCp'                // CP 不足
     | 'unknownCardTiming'          // 未知卡牌时机
     | 'wrongPhaseForCard'          // 卡牌需要特定阶段（进攻/防御）
+    | 'attackModifierRequiresSelectedAttack' // 攻击修正牌需要先选定攻击技能
     | 'requireOwnTurn'             // 卡牌需要在自己回合打出
     | 'requireOpponentTurn'        // 卡牌需要在对手回合打出
     | 'requireIsRoller'            // 卡牌需要是当前投掷方
@@ -489,14 +638,20 @@ export type CardPlayFailReason =
     | 'requireMinDamageDealt'      // 本回合未造成足够伤害
     | 'noStatusOnBoard';           // 场上没有任何状态效果或 token
 
-const isAttackModifierPlayableForCurrentAttack = (
+const getAttackModifierPlayFailureReason = (
     state: DiceThroneCore,
     playerId: PlayerId,
     card: AbilityCard
-): boolean => {
-    if (!card.isAttackModifier) return true;
+): CardPlayFailReason | null => {
+    if (!card.isAttackModifier) return null;
     const pendingAttack = state.pendingAttack;
-    return Boolean(pendingAttack && pendingAttack.attackerId === playerId);
+    if (!pendingAttack?.sourceAbilityId) {
+        return 'attackModifierRequiresSelectedAttack';
+    }
+    if (pendingAttack.attackerId !== playerId) {
+        return 'wrongPhaseForCard';
+    }
+    return null;
 };
 
 /**
@@ -584,7 +739,7 @@ export const checkPlayCard = (
             return { ok: false, reason: 'wrongPhaseForMain' };
         }
     } else if (card.timing === 'roll') {
-        if (phase !== 'offensiveRoll' && phase !== 'defensiveRoll') {
+        if (phase !== 'offensiveRoll' && phase !== 'targetingRoll' && phase !== 'defensiveRoll') {
             return { ok: false, reason: 'wrongPhaseForRoll' };
         }
     } else if (card.timing !== 'instant') {
@@ -596,8 +751,9 @@ export const checkPlayCard = (
         return { ok: false, reason: 'notEnoughCp' };
     }
 
-    if (!isAttackModifierPlayableForCurrentAttack(state, playerId, card)) {
-        return { ok: false, reason: 'wrongPhaseForCard' };
+    const attackModifierFailureReason = getAttackModifierPlayFailureReason(state, playerId, card);
+    if (attackModifierFailureReason) {
+        return { ok: false, reason: attackModifierFailureReason };
     }
     
     // 检查卡牌的额外打出条件
@@ -830,12 +986,12 @@ export const isCardPlayableInResponseWindow = (
     
     if (card.timing === 'roll') {
         // 投掷阶段卡只能在投掷阶段的响应窗口打出
-        if (phase !== 'offensiveRoll' && phase !== 'defensiveRoll') {
+        if (phase !== 'offensiveRoll' && phase !== 'targetingRoll' && phase !== 'defensiveRoll') {
             return false;
         }
     }
 
-    if (!isAttackModifierPlayableForCurrentAttack(state, playerId, card)) {
+    if (getAttackModifierPlayFailureReason(state, playerId, card)) {
         return false;
     }
     
@@ -1117,8 +1273,14 @@ export const getResponderQueue = (
         return [];
     }
     
-    const allPlayers = Object.keys(state.players) as PlayerId[];
+    const allPlayers = getPlayerOrder(state);
     const queue: PlayerId[] = [];
+    const shouldExcludeSameTeam = isTeamMode(state);
+    const isBlockedByTeamRule = (playerId: PlayerId): boolean => (
+        shouldExcludeSameTeam
+        && playerId !== triggerId
+        && areTeammates(state, playerId, triggerId)
+    );
     
     // 触发者优先（如果有可响应内容且未被排除）
     if (triggerId !== excludeId && hasRespondableContent(state, triggerId, windowType, sourceId, phase)) {
@@ -1129,6 +1291,7 @@ export const getResponderQueue = (
     for (const pid of allPlayers) {
         if (pid === triggerId) continue;
         if (pid === excludeId) continue;
+        if (isBlockedByTeamRule(pid)) continue;
         if (hasRespondableContent(state, pid, windowType, sourceId, phase)) {
             queue.push(pid);
         }

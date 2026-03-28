@@ -218,6 +218,105 @@ function buildFourPlayerMobileScene() {
     };
 }
 
+function buildMonsterWithoutCountersMobileScene() {
+    return {
+        gameId: 'smashup',
+        currentPlayer: '0' as const,
+        phase: 'playCards',
+        bases: [
+            {
+                defId: 'base_the_jungle',
+                breakpoint: 12,
+                minions: [
+                    {
+                        uid: 'p0-monster-no-counter',
+                        defId: 'frankenstein_the_monster_pod',
+                        owner: '0',
+                        controller: '0',
+                        powerCounters: 0,
+                        talentUsed: false,
+                    },
+                ],
+            },
+        ],
+        extra: {
+            core: {
+                turnOrder: ['0', '1'],
+                turnNumber: 3,
+                nextUid: 3000,
+                baseDeck: [],
+                players: {
+                    '0': createPlayerState('0', 0, ['frankenstein', 'aliens']),
+                    '1': createPlayerState('1', 0, ['pirates', 'ninjas']),
+                },
+            },
+        },
+    };
+}
+
+function buildMonsterWithCounterMobileScene() {
+    return {
+        gameId: 'smashup',
+        currentPlayer: '0' as const,
+        phase: 'playCards',
+        bases: [
+            {
+                defId: 'base_the_jungle',
+                breakpoint: 12,
+                minions: [
+                    {
+                        uid: 'p0-monster-with-counter',
+                        defId: 'frankenstein_the_monster_pod',
+                        owner: '0',
+                        controller: '0',
+                        powerCounters: 1,
+                        talentUsed: false,
+                    },
+                ],
+            },
+        ],
+        extra: {
+            core: {
+                turnOrder: ['0', '1'],
+                turnNumber: 3,
+                nextUid: 3001,
+                baseDeck: [],
+                players: {
+                    '0': createPlayerState('0', 0, ['frankenstein', 'aliens']),
+                    '1': createPlayerState('1', 0, ['pirates', 'ninjas']),
+                },
+            },
+        },
+    };
+}
+
+function buildFactionSelectionMobileScene() {
+    return {
+        gameId: 'smashup',
+        currentPlayer: '0' as const,
+        phase: 'factionSelect' as const,
+        extra: {
+            core: {
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+                turnNumber: 1,
+                nextUid: 1000,
+                players: {
+                    '0': createPlayerState('0', 0, ['aliens', 'pirates']),
+                    '1': createPlayerState('1', 0, ['ninjas', 'dinosaurs']),
+                },
+                factionSelection: {
+                    takenFactions: [],
+                    playerSelections: {
+                        '0': [],
+                        '1': [],
+                    },
+                },
+            },
+        },
+    };
+}
+
 async function expectLocatorInsideViewport(
     locator: any,
     name: string,
@@ -380,6 +479,8 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         const exitFabButton = page.locator('[data-fab-id="exit"]').first();
         const exitFabVisual = page.locator('[data-fab-visual-id="exit"]').first();
         const exitFabPanel = page.locator('[data-testid="fab-panel-exit"]');
+        const exitFabSheet = page.locator('[data-testid="fab-sheet-exit"]');
+        const exitFabSheetBackdrop = page.locator('[data-testid="fab-sheet-backdrop-exit"]');
         const exitFabTooltip = page.locator('[data-testid="fab-tooltip-exit"]');
 
         await expect(scoreBoard).toBeVisible({ timeout: 15000 });
@@ -420,6 +521,26 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await expectLocatorInsideViewport(endTurnHints, '缁撴潫鍥炲悎鎻愮ず瀹瑰櫒', viewport!.width, viewport!.height);
         await expectLocatorInsideViewport(endTurnMinionQuota, '闅忎粠棰濆害鎻愮ず', viewport!.width, viewport!.height);
         await expectLocatorInsideViewport(endTurnActionQuota, '鎴樻湳棰濆害鎻愮ず', viewport!.width, viewport!.height);
+        const mobileLandscapeDocumentMetrics = await page.evaluate(() => ({
+            viewportWidth: window.innerWidth,
+            documentClientWidth: document.documentElement.clientWidth,
+            documentScrollWidth: document.documentElement.scrollWidth,
+            bodyClientWidth: document.body.clientWidth,
+            bodyScrollWidth: document.body.scrollWidth,
+            htmlOverflowX: window.getComputedStyle(document.documentElement).overflowX,
+            bodyOverflowX: window.getComputedStyle(document.body).overflowX,
+            rootOverflowX: window.getComputedStyle(document.getElementById('root')!).overflowX,
+        }));
+        expect(
+            mobileLandscapeDocumentMetrics.documentScrollWidth,
+            '手机横屏时 documentElement 不应出现全局横向溢出',
+        ).toBeLessThanOrEqual(mobileLandscapeDocumentMetrics.documentClientWidth + 1);
+        expect(
+            mobileLandscapeDocumentMetrics.bodyScrollWidth,
+            '手机横屏时 body 不应出现全局横向溢出',
+        ).toBeLessThanOrEqual(mobileLandscapeDocumentMetrics.bodyClientWidth + 1);
+        expect(mobileLandscapeDocumentMetrics.htmlOverflowX, '手机横屏时 html 应禁用横向滚动').toBe('hidden');
+        expect(mobileLandscapeDocumentMetrics.bodyOverflowX, '手机横屏时 body 应禁用横向滚动').toBe('hidden');
 
         const handCardBox = await handCard.boundingBox();
         expect(handCardBox, '手牌卡牌应提供尺寸').not.toBeNull();
@@ -450,10 +571,39 @@ test.describe('大杀四方四人局三基地同时计分', () => {
 
         await exitFabButton.click();
         await expect(exitFabPanel).toBeVisible({ timeout: 5000 });
+        await expect(exitFabSheet).toBeVisible({ timeout: 5000 });
         await expectLocatorInsideViewport(exitFabPanel, 'exit fab panel', viewport!.width, viewport!.height);
+        const exitFabDocumentMetrics = await page.evaluate(() => ({
+            htmlOverflowY: window.getComputedStyle(document.documentElement).overflowY,
+            bodyOverflowY: window.getComputedStyle(document.body).overflowY,
+            htmlOverscrollBehaviorY: window.getComputedStyle(document.documentElement).overscrollBehaviorY,
+            bodyOverscrollBehaviorY: window.getComputedStyle(document.body).overscrollBehaviorY,
+        }));
+        expect(exitFabDocumentMetrics.htmlOverflowY, 'exit fab sheet 打开时 html 不应继续可滚动').toBe('hidden');
+        expect(exitFabDocumentMetrics.bodyOverflowY, 'exit fab sheet 打开时 body 不应继续可滚动').toBe('hidden');
+        expect(exitFabDocumentMetrics.htmlOverscrollBehaviorY, 'exit fab sheet 打开时 html 不应继续透传滚动').toBe('none');
+        expect(exitFabDocumentMetrics.bodyOverscrollBehaviorY, 'exit fab sheet 打开时 body 不应继续透传滚动').toBe('none');
+        const exitFabPanelMetrics = await exitFabPanel.evaluate((element) => ({
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+        }));
+        expect(exitFabPanelMetrics.scrollWidth, 'exit fab panel 不应出现横向内容溢出').toBeLessThanOrEqual(exitFabPanelMetrics.clientWidth + 1);
+        expect(exitFabPanelMetrics.scrollHeight, 'exit fab panel should not rely on internal scrolling').toBeLessThanOrEqual(exitFabPanelMetrics.clientHeight + 1);
+        const exitFabPanelButtons = exitFabPanel.locator('button');
+        const exitFabPanelButtonCount = await exitFabPanelButtons.count();
+        expect(exitFabPanelButtonCount, 'exit fab panel should expose at least one action button').toBeGreaterThan(0);
+        for (let index = 0; index < exitFabPanelButtonCount; index += 1) {
+            const panelButton = exitFabPanelButtons.nth(index);
+            await expect(panelButton).toBeVisible();
+            await expect(panelButton).toBeEnabled();
+            await expectLocatorInsideViewport(panelButton, `exit fab panel button ${index + 1}`, viewport!.width, viewport!.height);
+        }
         await game.screenshot('04a-mobile-exit-fab-panel', testInfo);
-        await exitFabButton.click();
+        await exitFabSheetBackdrop.click();
         await expect(exitFabPanel).toHaveCount(0);
+        await expect(exitFabSheet).toHaveCount(0);
         await expect(exitFabTooltip).toHaveCount(0);
         await page.mouse.move(12, 12);
         await expect(exitFabTooltip).toHaveCount(0);
@@ -545,5 +695,197 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await expect(endTurnActionButton).toBeVisible({ timeout: 5000 });
         await expect(endTurnHints).toBeVisible({ timeout: 5000 });
         await game.screenshot('13-desktop-end-turn-restored', testInfo);
+    });
+
+    test('移动端不会把没有+1力量指示物的怪物当成可发动天赋', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 812, height: 375 });
+        await page.addInitScript(() => {
+            const query = '(pointer: coarse)';
+            const originalMatchMedia = window.matchMedia.bind(window);
+            window.matchMedia = ((media: string) => {
+                if (media !== query) {
+                    return originalMatchMedia(media);
+                }
+
+                return {
+                    matches: true,
+                    media,
+                    onchange: null,
+                    addListener: () => {},
+                    removeListener: () => {},
+                    addEventListener: () => {},
+                    removeEventListener: () => {},
+                    dispatchEvent: () => true,
+                } as MediaQueryList;
+            }) as typeof window.matchMedia;
+        });
+
+        await game.openTestGame('smashup', {
+            numPlayers: 2,
+            skipInitialization: true,
+        });
+        await game.setupScene(buildMonsterWithoutCountersMobileScene());
+
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return window.innerWidth === 812
+                && window.matchMedia('(pointer: coarse)').matches
+                && state?.sys?.phase === 'playCards'
+                && state?.core?.bases?.[0]?.minions?.[0]?.uid === 'p0-monster-no-counter';
+        }, { timeout: 10000, polling: 200 });
+
+        const monster = page.locator('[data-minion-uid="p0-monster-no-counter"]');
+
+        await expect(monster).toBeVisible({ timeout: 15000 });
+        await expect(monster).toHaveAttribute('data-expanded', 'false');
+        await expect(monster).toHaveAttribute('data-activation-armed', 'false');
+
+        await clickCenter(monster, page);
+
+        await expect(monster).toHaveAttribute('data-expanded', 'false');
+        await expect(monster).toHaveAttribute('data-activation-armed', 'false');
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-monster-no-counter')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(false);
+
+        await game.screenshot('12-monster-without-counter-does-not-arm-talent', testInfo);
+    });
+
+    test('移动端有+1力量指示物的怪物发动天赋后会移除指示物并提示额外随从机会', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 812, height: 375 });
+        await page.addInitScript(() => {
+            const query = '(pointer: coarse)';
+            const originalMatchMedia = window.matchMedia.bind(window);
+            window.matchMedia = ((media: string) => {
+                if (media !== query) {
+                    return originalMatchMedia(media);
+                }
+
+                return {
+                    matches: true,
+                    media,
+                    onchange: null,
+                    addListener: () => {},
+                    removeListener: () => {},
+                    addEventListener: () => {},
+                    removeEventListener: () => {},
+                    dispatchEvent: () => true,
+                } as MediaQueryList;
+            }) as typeof window.matchMedia;
+        });
+
+        await game.openTestGame('smashup', {
+            numPlayers: 2,
+            skipInitialization: true,
+        });
+        await game.setupScene(buildMonsterWithCounterMobileScene());
+
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return window.innerWidth === 812
+                && window.matchMedia('(pointer: coarse)').matches
+                && state?.sys?.phase === 'playCards'
+                && state?.core?.bases?.[0]?.minions?.[0]?.uid === 'p0-monster-with-counter';
+        }, { timeout: 10000, polling: 200 });
+
+        const monster = page.locator('[data-minion-uid="p0-monster-with-counter"]');
+
+        await expect(monster).toBeVisible({ timeout: 15000 });
+        await expect(monster).toContainText('+1');
+        await expect(monster).toHaveAttribute('data-activation-armed', 'false');
+
+        await clickCenter(monster, page);
+        await expect(monster).toHaveAttribute('data-expanded', 'true');
+        await expect(monster).toHaveAttribute('data-activation-armed', 'true');
+        await expect(page.getByText('再次点击发动')).toBeVisible({ timeout: 5000 });
+
+        await clickCenter(monster, page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const player = state.core.players['0'];
+            return {
+                powerCounters: state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-monster-with-counter')?.powerCounters ?? -1,
+                talentUsed: state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-monster-with-counter')?.talentUsed ?? false,
+                minionLimit: player.minionLimit,
+            };
+        }, { timeout: 5000 }).toEqual({
+            powerCounters: 0,
+            talentUsed: true,
+            minionLimit: 2,
+        });
+
+        await expect(page.getByText('获得1次额外随从机会')).toBeVisible({ timeout: 5000 });
+
+        await expect(monster).toHaveAttribute('data-activation-armed', 'false');
+        await game.screenshot('13-monster-with-counter-grants-extra-minion', testInfo);
+    });
+});
+
+test.describe('大杀四方移动端派系选择布局', () => {
+    test('横屏移动端打开派系详情时应完整显示并可滚动查看全部卡牌', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 852, height: 393 });
+        await page.addInitScript(() => {
+            const query = '(pointer: coarse)';
+            const originalMatchMedia = window.matchMedia.bind(window);
+            window.matchMedia = ((media: string) => {
+                if (media !== query) {
+                    return originalMatchMedia(media);
+                }
+
+                return {
+                    matches: true,
+                    media,
+                    onchange: null,
+                    addListener: () => { },
+                    removeListener: () => { },
+                    addEventListener: () => { },
+                    removeEventListener: () => { },
+                    dispatchEvent: () => true,
+                } as MediaQueryList;
+            }) as typeof window.matchMedia;
+        });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildFactionSelectionMobileScene());
+
+        const factionSelect = page.locator('[data-tutorial-id="su-faction-select"]');
+        const factionHeading = page.getByText(/Draft Your Factions|选择你的派系/i);
+        const aliensCard = factionSelect.getByText(/Aliens|外星人/i).first();
+        const rotateBanner = page.getByText(/建议旋转至横屏|建议切换为竖屏/i);
+
+        await expect(factionHeading).toBeVisible({ timeout: 15000 });
+        await expect(rotateBanner).toHaveCount(0);
+        await expect(aliensCard).toBeVisible({ timeout: 10000 });
+        await aliensCard.click();
+
+        const confirmButton = page.getByRole('button', { name: /Confirm Selection|确认选择/i });
+        const previewCards = factionSelect.locator('.cursor-zoom-in');
+        const previewSection = previewCards.first().locator('xpath=ancestor::div[contains(@class,"overflow-y-auto")][1]');
+
+        await expect(confirmButton).toBeVisible({ timeout: 10000 });
+        const previewCardCount = await previewCards.count();
+        expect(previewCardCount).toBeGreaterThan(8);
+        await expect(previewSection).toBeVisible({ timeout: 10000 });
+
+        const scrollMetrics = await previewSection.evaluate((node) => ({
+            scrollHeight: node.scrollHeight,
+            clientHeight: node.clientHeight,
+        }));
+        expect(scrollMetrics.scrollHeight).toBeGreaterThan(scrollMetrics.clientHeight);
+
+        await page.waitForTimeout(250);
+        await game.screenshot('11-mobile-landscape-faction-detail-top', testInfo);
+
+        await previewCards.last().scrollIntoViewIfNeeded();
+        await expect(previewCards.last()).toBeVisible({ timeout: 5000 });
+
+        await game.screenshot('12-mobile-landscape-faction-detail-bottom', testInfo);
     });
 });

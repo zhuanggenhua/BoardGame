@@ -20,6 +20,7 @@ import type {
 } from './types';
 import { getPlayerPassiveAbilities } from './passiveAbility';
 import { findPlayerAbility } from './abilityLookup';
+import { getChoiceResolvedEventHandler } from './choiceResolvedEvents';
 import { RESOURCE_IDS } from './resources';
 import { CP_MAX } from './core-types';
 
@@ -179,7 +180,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
         name: 'DiceThrone 事件处理',
         priority: 22, // 在 InteractionSystem(20) 之后、FlowSystem(25) 之前，确保 interaction 状态对 autoContinue 可见
 
-        afterEvents: ({ state, events }): HookResult<DiceThroneCore> | void => {
+        afterEvents: ({ state, events, random }): HookResult<DiceThroneCore> | void => {
             let newState = state;
             const nextEvents: GameEvent[] = [];
             // 防止同一批事件中多个 STATUS_REMOVED 重复 resolve
@@ -192,6 +193,11 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 if (dtEvent.type === 'CHOICE_REQUESTED') {
                     const payload = (dtEvent as ChoiceRequestedEvent).payload;
                     const eventTimestamp = typeof dtEvent.timestamp === 'number' ? dtEvent.timestamp : 0;
+                    const isResolvedTargetingChoice = payload.sourceAbilityId === 'targeting-roll'
+                        && newState.core.pendingAttack?.targetingSelectionResolved === true;
+                    if (isResolvedTargetingChoice) {
+                        continue;
+                    }
                     
                     // 将 DiceThrone 的选择选项转换为 PromptOption
                     const promptOptions: PromptOption<{
@@ -200,6 +206,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         value: number;
                         customId?: string;
                         labelKey?: string;
+                        disabled?: boolean;
                     }>[] = payload.options.map((opt, index) => {
                         const label = opt.labelKey
                             ?? (opt.tokenId ? `tokens.${opt.tokenId}.name`
@@ -209,6 +216,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             id: `option-${index}`,
                             label,
                             value: opt,
+                            disabled: opt.disabled,
                         };
                     });
                     
@@ -255,6 +263,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                                 dtType: 'modifyDie',
                                 dieModifyConfig: config,
                                 selectCount,
+                                diceOwnerId: pendingInteraction.diceOwnerId,
                                 targetOpponentDice: pendingInteraction.targetOpponentDice ?? false,
                             },
                         };
@@ -283,6 +292,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             meta: {
                                 dtType: 'selectDie',
                                 selectCount,
+                                diceOwnerId: pendingInteraction.diceOwnerId,
                                 targetOpponentDice: pendingInteraction.targetOpponentDice ?? false,
                             },
                         };
@@ -470,6 +480,21 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 const resolvedEvent = handlePromptResolved(event);
                 if (resolvedEvent) {
                     nextEvents.push(resolvedEvent);
+                    const customId = resolvedEvent.payload.customId;
+                    if (customId) {
+                        const followupHandler = getChoiceResolvedEventHandler(customId);
+                        if (followupHandler) {
+                            nextEvents.push(...followupHandler({
+                                state: newState.core,
+                                playerId: resolvedEvent.payload.playerId,
+                                customId,
+                                sourceAbilityId: resolvedEvent.payload.sourceAbilityId,
+                                value: resolvedEvent.payload.value,
+                                timestamp: resolvedEvent.timestamp,
+                                random,
+                            }));
+                        }
+                    }
                 }
 
                 // ---- 被动能力触发器：ABILITY_ACTIVATED + pray 面 → 获得 CP ----

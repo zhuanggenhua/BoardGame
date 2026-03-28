@@ -109,6 +109,8 @@ export interface FlowHooks<TCore = unknown> {
         to: string;
         command: Command;
         random: RandomFn;
+        /** onPhaseExit 产生的事件（尚未 reduce 进 core） */
+        exitEvents?: GameEvent[];
     }): GameEvent[] | PhaseEnterResult | void;
 
     /** 用于 SYS_PHASE_CHANGED 事件的 activePlayerId（可选） */
@@ -257,7 +259,8 @@ function executePhaseAdvance<TCore>(params: PhaseAdvanceParams<TCore>): HookResu
         };
     }
 
-    const nextState = setPhase(state, to);
+    const exitState = updatedState ?? state;
+    const nextState = setPhase(exitState, to);
     // 阶段成功推进，清除 halt 标记
     nextState.sys = { ...nextState.sys, flowHalted: false };
     logDev(`[FlowSystem][${logLabel}] phase updated from=${from} to=${to}`);
@@ -269,7 +272,7 @@ function executePhaseAdvance<TCore>(params: PhaseAdvanceParams<TCore>): HookResu
         timestamp,
     };
 
-    const enter = hooks.onPhaseEnter?.({ state: nextState, from, to, command, random });
+    const enter = hooks.onPhaseEnter?.({ state: nextState, from, to, command, random, exitEvents });
     let enterEvents: GameEvent[] = [];
     let enterUpdatedState: MatchState<TCore> | undefined;
 
@@ -284,9 +287,11 @@ function executePhaseAdvance<TCore>(params: PhaseAdvanceParams<TCore>): HookResu
 
     // 如果 onPhaseEnter 返回了 updatedState（如基地能力创建了 Interaction），
     // 合并 sys 到 nextState，确保 Interaction 等 sys 变更不丢失
-    const finalState = enterUpdatedState
-        ? { ...nextState, sys: { ...enterUpdatedState.sys, phase: to, flowHalted: false } }
-        : nextState;
+    const enterState = enterUpdatedState ?? nextState;
+    const finalState = {
+        ...enterState,
+        sys: { ...enterState.sys, phase: to, flowHalted: false },
+    };
 
     return {
         halt: haltOnExit ? true : undefined,

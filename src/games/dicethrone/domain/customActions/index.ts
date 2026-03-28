@@ -1,54 +1,43 @@
-import { registerMonkCustomActions } from './monk';
 import { registerBarbarianCustomActions } from './barbarian';
-import { registerPyromancerCustomActions } from './pyromancer';
-import { registerMoonElfCustomActions } from './moon_elf';
 import { registerCommonCustomActions } from './common';
-import { registerShadowThiefCustomActions } from './shadow_thief';
+import { registerGunslingerCustomActions } from './gunslinger';
+import { registerMonkCustomActions } from './monk';
+import { registerMoonElfCustomActions } from './moon_elf';
 import { registerPaladinCustomActions } from './paladin';
+import { registerPyromancerCustomActions } from './pyromancer';
+import { registerSamuraiCustomActions } from './samurai';
+import { registerShadowThiefCustomActions } from './shadow_thief';
 
 let initialized = false;
 
 /**
- * 初始化所有 Custom Action 处理器
- * 确保只调用一次
+ * 初始化所有 Custom Action 处理器。
+ * 保证只注册一次，避免测试和热更新时重复覆盖。
  */
 export function initializeCustomActions(): void {
     if (initialized) {
         return;
     }
 
-    // 注册通用处理器（骰子修改、状态操作等）
     registerCommonCustomActions();
-
-    // 注册僧侣处理器
     registerMonkCustomActions();
-
-    // 注册野蛮人处理器
     registerBarbarianCustomActions();
-
-    // 注册烈火术士处理器
     registerPyromancerCustomActions();
-
-
-    // 注册月精灵处理器
     registerMoonElfCustomActions();
-
-    // 注册影子盗贼处理器
     registerShadowThiefCustomActions();
-
-    // 注册圣骑士处理器
     registerPaladinCustomActions();
+    registerGunslingerCustomActions();
+    registerSamuraiCustomActions();
 
     initialized = true;
 }
 
-// 导出各英雄的注册函数，供需要单独注册时使用
+export { registerCommonCustomActions } from './common';
 export { registerMonkCustomActions } from './monk';
 export { registerBarbarianCustomActions } from './barbarian';
 export { registerPyromancerCustomActions } from './pyromancer';
 export { registerMoonElfCustomActions } from './moon_elf';
 export { registerShadowThiefCustomActions } from './shadow_thief';
 export { registerPaladinCustomActions } from './paladin';
-export { registerCommonCustomActions } from './common';
-
-
+export { registerGunslingerCustomActions } from './gunslinger';
+export { registerSamuraiCustomActions } from './samurai';

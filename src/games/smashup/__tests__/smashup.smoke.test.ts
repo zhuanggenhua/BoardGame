@@ -27,6 +27,7 @@ import { createSmashUpEventSystem } from '../domain/systems';
 import { getInteractionsFromMS, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
 import { runCommand } from './testRunner';
 import type { TitanState } from '../domain/types';
+import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
 
 const PLAYER_IDS = ['0', '1'];
 const FIXED_RANDOM = {
@@ -40,7 +41,12 @@ beforeAll(() => {
     initAllAbilities();
 });
 
-function createRunner(setupData?: Record<string, unknown>) {
+function createRunner(
+    playerIdsOrSetupData: string[] | Record<string, unknown> = PLAYER_IDS,
+    maybeSetupData?: Record<string, unknown>,
+) {
+    const playerIds = Array.isArray(playerIdsOrSetupData) ? playerIdsOrSetupData : PLAYER_IDS;
+    const setupData = Array.isArray(playerIdsOrSetupData) ? maybeSetupData : playerIdsOrSetupData;
     const systems = [
         createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
         ...createBaseSystems<SmashUpCore>(),
@@ -909,6 +915,79 @@ describe('smashup', () => {
         // ADVANCE_PHASE 步骤成功
         const advanceStep = result.steps[DRAFT_COMMANDS.length];
         expect(advanceStep?.success).toBe(true);
+    });
+
+    it('AI legal actions 支持四人局派系选择', () => {
+        const runner = createRunner(['0', '1', '2', '3']);
+        const result = runner.run({ name: '四人 setup', commands: [] });
+
+        const currentPlayerActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: result.finalState,
+        });
+        const waitingPlayerActions = buildSmashUpAiLegalActions({
+            playerId: '1',
+            state: result.finalState,
+        });
+
+        expect(currentPlayerActions.length).toBeGreaterThan(10);
+        expect(currentPlayerActions.every((action) => action.kind === 'select-faction')).toBe(true);
+        expect(waitingPlayerActions).toHaveLength(0);
+    });
+
+    it('Smash Up baseline AI 在基础出牌阶段优先打随从', async () => {
+        const runner = createRunner();
+        const drafted = runner.run({
+            name: '选秀供 AI 使用',
+            commands: DRAFT_COMMANDS,
+        });
+
+        const pid = getCurrentPlayerId(drafted.finalState.core);
+        const player = drafted.finalState.core.players[pid];
+        const fallbackCards = [...player.hand, ...player.deck];
+        const minionCard = fallbackCards.find((card) => card.type === 'minion' || card.type === 'fusion');
+        const actionCard = fallbackCards.find((card) => card.type === 'action' || card.type === 'fusion');
+
+        if (!minionCard) {
+            throw new Error('测试缺少可用随从，无法验证 baseline AI');
+        }
+
+        const stateForAi = {
+            ...drafted.finalState,
+            core: {
+                ...drafted.finalState.core,
+                players: {
+                    ...drafted.finalState.core.players,
+                    [pid]: {
+                        ...player,
+                        hand: actionCard ? [minionCard, actionCard] : [minionCard],
+                        minionsPlayed: 0,
+                        actionsPlayed: 0,
+                    },
+                },
+            },
+        };
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: pid,
+            state: stateForAi,
+        });
+        const decision = await smashUpAiRuntime.localPolicies!.baseline.decide({
+            gameId: 'smashup',
+            matchId: 'test-smashup-ai',
+            playerId: pid,
+            visibleState: stateForAi,
+            interaction: null,
+            responseWindow: null,
+            legalActions,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+        });
+        const chosenAction = legalActions.find((action) => action.actionId === decision?.actionId);
+
+        expect(legalActions.some((action) => action.kind === 'play-minion')).toBe(true);
+        expect(chosenAction?.kind).toBe('play-minion');
     });
 
     it('domain 注册表加载正确', () => {

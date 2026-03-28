@@ -6,6 +6,7 @@ import { assertChildProcessSupport } from './assert-child-process-support.mjs';
 import { runEncodingCheck } from './check-file-encoding.mjs';
 import { runE2ESafetyCheck } from './check-e2e-safety.js';
 import { cleanupTestConnections } from './cleanup_test_connections.js';
+import { allocateAvailablePorts } from './port-allocator.js';
 
 const playwrightCli = path.resolve(process.cwd(), 'node_modules', 'playwright', 'cli.js');
 
@@ -96,6 +97,16 @@ function createModeEnv(mode) {
     }
 }
 
+function getExplicitTargetPath(args) {
+    for (const arg of args) {
+        if (typeof arg === 'string' && !arg.startsWith('-') && /\.e2e\.[cm]?tsx?$/i.test(arg)) {
+            return arg;
+        }
+    }
+
+    return '';
+}
+
 export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {} } = {}) {
     if (!mode) {
         console.error('用法: node scripts/infra/run-e2e-command.mjs <default|dev|isolated|ci|critical|parallel> [...playwrightArgs]');
@@ -107,8 +118,32 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {} } 
         ...envOverrides,
     };
 
+    const explicitTargetPath = getExplicitTargetPath(extraArgs);
     if (hasExplicitPlaywrightTarget(extraArgs)) {
         modeEnv.PW_HAS_EXPLICIT_TARGET = 'true';
+    }
+    if (explicitTargetPath) {
+        modeEnv.PW_TEST_TARGET = explicitTargetPath;
+    }
+
+    const shouldPreferIsolatedPorts = (
+        mode !== 'dev'
+        && mode !== 'parallel'
+        && modeEnv.PW_HAS_EXPLICIT_TARGET === 'true'
+        && !process.env.PW_WORKERS
+        && !envOverrides.PW_WORKERS
+        && !process.env.PW_USE_DEV_SERVERS
+    );
+
+    if (shouldPreferIsolatedPorts) {
+        const ports = await allocateAvailablePorts(0);
+        modeEnv.PW_ISOLATE_PORTS = 'true';
+        modeEnv.PW_PORT = String(ports.frontend);
+        modeEnv.PW_GAME_SERVER_PORT = String(ports.gameServer);
+        modeEnv.GAME_SERVER_PORT = String(ports.gameServer);
+        modeEnv.PW_API_SERVER_PORT = String(ports.apiServer);
+        modeEnv.API_SERVER_PORT = String(ports.apiServer);
+        console.log(`🧭 Explicit target detected; using isolated single-run ports: frontend=${ports.frontend}, game=${ports.gameServer}, api=${ports.apiServer}`);
     }
 
     await assertChildProcessSupport('E2E', { probeFork: true, probeEsbuild: true });

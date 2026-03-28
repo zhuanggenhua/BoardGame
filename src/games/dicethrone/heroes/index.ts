@@ -10,6 +10,10 @@ import { SHADOW_THIEF_CARDS, getShadowThiefStartingDeck } from './shadow_thief/c
 import { SHADOW_THIEF_ABILITIES } from './shadow_thief/abilities';
 import { PALADIN_CARDS, getPaladinStartingDeck } from './paladin/cards';
 import { PALADIN_ABILITIES } from './paladin/abilities';
+import { GUNSLINGER_CARDS, getGunslingerStartingDeck } from './gunslinger/cards';
+import { GUNSLINGER_ABILITIES } from './gunslinger/abilities';
+import { SAMURAI_CARDS, getSamuraiStartingDeck } from './samurai/cards';
+import { SAMURAI_ABILITIES } from './samurai/abilities';
 import type { AbilityCard } from '../types';
 import type { AbilityDef } from '../domain/combat';
 import type { RandomFn } from '../../../engine/types';
@@ -50,6 +54,16 @@ export const HEROES_DATA: Record<string, HeroData> = {
         cards: PALADIN_CARDS,
         abilities: PALADIN_ABILITIES,
         getStartingDeck: getPaladinStartingDeck,
+    },
+    gunslinger: {
+        cards: GUNSLINGER_CARDS,
+        abilities: GUNSLINGER_ABILITIES,
+        getStartingDeck: getGunslingerStartingDeck,
+    },
+    samurai: {
+        cards: SAMURAI_CARDS,
+        abilities: SAMURAI_ABILITIES,
+        getStartingDeck: getSamuraiStartingDeck,
     },
 };
 

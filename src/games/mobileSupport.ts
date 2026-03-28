@@ -21,7 +21,15 @@ export interface ResolvedGameMobileSupport {
     shellTargets: GameShellTarget[];
 }
 
+export interface RuntimeViewportSize {
+    width: number;
+    height: number;
+}
+
 const DEFAULT_SHELL_TARGETS: GameShellTarget[] = ['pwa'];
+
+const isUsableViewportDimension = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0;
 
 export const isMobileViewport = (width: number) => width <= MOBILE_MAX_VIEWPORT_WIDTH;
 
@@ -143,4 +151,24 @@ export const shouldUseBoardShellScale = (
         && !isPortraitViewport(width, height)
         && support.mobileProfile === 'landscape-adapted'
         && support.mobileLayoutPreset === 'board-shell';
+};
+
+export const resolveStableViewportSize = (
+    previous: RuntimeViewportSize,
+    ...candidates: Array<Partial<RuntimeViewportSize> | null | undefined>
+): RuntimeViewportSize => {
+    const pickDimension = (key: keyof RuntimeViewportSize) => {
+        for (const candidate of candidates) {
+            const value = candidate?.[key];
+            if (isUsableViewportDimension(value)) {
+                return value;
+            }
+        }
+        return previous[key];
+    };
+
+    return {
+        width: pickDimension('width'),
+        height: pickDimension('height'),
+    };
 };

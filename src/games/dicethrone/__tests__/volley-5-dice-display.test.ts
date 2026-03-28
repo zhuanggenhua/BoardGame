@@ -63,6 +63,7 @@ function createVolleyState(playerIds: PlayerId[], random: RandomFn): MatchState<
         attackerId: '0',
         defenderId: '1',
         isDefendable: true,
+        sourceAbilityId: 'longbow',
         damage: 5,
         bonusDamage: 0,
     };

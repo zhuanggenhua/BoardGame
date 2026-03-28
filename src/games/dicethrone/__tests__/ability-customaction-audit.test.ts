@@ -30,16 +30,18 @@ import { PYROMANCER_CARDS } from '../heroes/pyromancer/cards';
 import { SHADOW_THIEF_CARDS } from '../heroes/shadow_thief/cards';
 import { MOON_ELF_CARDS } from '../heroes/moon_elf/cards';
 import { PALADIN_CARDS } from '../heroes/paladin/cards';
+import { GUNSLINGER_CARDS } from '../heroes/gunslinger/cards';
+import { SAMURAI_CARDS } from '../heroes/samurai/cards';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
 
 const HEROES: SelectableCharacterId[] = [
-    'monk', 'barbarian', 'paladin', 'pyromancer', 'moon_elf', 'shadow_thief',
+    'monk', 'barbarian', 'paladin', 'pyromancer', 'moon_elf', 'shadow_thief', 'gunslinger', 'samurai',
 ];
 
 const ALL_CARDS: AbilityCard[] = [
     ...MONK_CARDS, ...BARBARIAN_CARDS, ...PYROMANCER_CARDS,
-    ...SHADOW_THIEF_CARDS, ...MOON_ELF_CARDS, ...PALADIN_CARDS,
+    ...SHADOW_THIEF_CARDS, ...MOON_ELF_CARDS, ...PALADIN_CARDS, ...GUNSLINGER_CARDS, ...SAMURAI_CARDS,
     ...COMMON_CARDS,
 ];
 

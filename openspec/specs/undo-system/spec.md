@@ -1,10 +1,8 @@
 # undo-system Specification
 
 ## Purpose
-提供跨游戏统一的撤销能力，支持自动快照、多人撤销握手、历史回溯。
-
+定义跨游戏统一的撤销系统能力，覆盖自动快照、历史恢复、多人审批握手与系统层集成约束，确保不同游戏都能复用一致的撤销协议与状态存储模型。
 ## Requirements
-
 ### Requirement: 自动快照
 系统 SHALL 在 Command 执行前自动保存状态快照，无需游戏手动调用。
 
@@ -60,7 +58,12 @@
 - **THEN** `G.sys.undo` 包含 `history: []` 和 `request: null`
 
 ### Requirement: 历史记录限制
-系统 SHALL 支持配置历史记录的最大数量。
+系统 SHALL 支持配置历史记录的最大数量，且默认仅保留 1 条快照（单步撤回）。
+
+#### Scenario: 默认单步撤回
+- **GIVEN** 游戏未配置 `maxSnapshots`
+- **WHEN** 连续执行多次可撤回命令
+- **THEN** 系统仅保留最近 1 条快照
 
 #### Scenario: 超出历史限制
 - **GIVEN** 配置的历史上限为 N

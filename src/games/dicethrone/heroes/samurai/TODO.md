@@ -32,3 +32,14 @@
 待生成：
 - [ ] status-icons-atlas.json（状态图标图集配置）
 - [ ] dice-sprite.png（骰子精灵图）
+
+---
+
+## Addendum（2026-03-27）
+
+- 本文件为早期占位 TODO，已不再代表当前武士接入状态。
+- 当前真实进度以 `task_plan.md`、`progress.md` 以及 `src/games/dicethrone/rule/武士真相源表.md` 为准。
+- 已完成事实：
+  - 角色中文名、骰面配置、`honor / shame / samurai_retribution` token、主要技能与卡牌、`status-icons-atlas.json` 已接入。
+  - `Masamune II` 升级差异已核定并落入代码、locale、回归。
+  - 武士图片资源已登记进 `public/assets/i18n/zh-CN/dicethrone/assets-manifest.json`。

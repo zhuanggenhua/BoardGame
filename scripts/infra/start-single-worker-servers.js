@@ -38,6 +38,8 @@ const busyPorts = Object.entries(ports)
 
 if (busyPorts.length > 0) {
   console.error(`以下端口已被占用: ${busyPorts.join(', ')}`);
+  console.error('single-worker E2E 使用共享固定端口；在多 AI / 多 worktree 并行时，这通常意味着另一条测试正在运行。');
+  console.error('请优先改用隔离 worker / 分配端口，或在确认独占后再显式执行共享端口清理。');
   process.exit(1);
 }
 

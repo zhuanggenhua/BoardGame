@@ -1,6 +1,7 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMobileGestures } from '../../hooks/ui/useMobileGestures';
+import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 
 interface MobileGestureWrapperProps {
   children: ReactNode;
@@ -13,7 +14,7 @@ interface MobileGestureWrapperProps {
 export function MobileGestureWrapper({ children }: MobileGestureWrapperProps) {
   const location = useLocation();
   const isGamePage = location.pathname.startsWith('/play/');
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+  const isMobile = useMobileViewport();
   
   const { gesture, reset, transform } = useMobileGestures({
     minScale: 0.5,

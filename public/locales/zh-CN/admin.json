@@ -8,6 +8,10 @@
     "filters": {
       "status": "状态",
       "type": "类型",
+      "severity": "严重度",
+      "sort": "时间排序",
+      "newest": "最新优先",
+      "oldest": "最早优先",
       "all": "全部"
     },
     "pagination": {
@@ -80,6 +84,9 @@
     },
     "actionLog": {
       "title": "操作日志"
+    },
+    "aiSummary": {
+      "title": "AI 摘要"
     },
     "stateSnapshot": {
       "title": "状态快照（JSON）",

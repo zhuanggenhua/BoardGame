@@ -19,7 +19,8 @@ export const KILLER_PLANT_POD_MINIONS: MinionCardDef[] = [
         name: '野生食人花',
         nameEn: 'Weed Eater',
         faction: 'killer_plants_pod',
-        power: 5,
+        power: 3,
+        abilityTags: ['ongoing'],
         count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 45 },
     },
@@ -55,7 +56,7 @@ export const KILLER_PLANT_POD_ACTIONS: ActionCardDef[] = [
         name: '出芽生殖',
         nameEn: 'Budding',
         faction: 'killer_plants_pod',
-        count: 2,
+        count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 36 },
     },
     {
@@ -111,7 +112,7 @@ export const KILLER_PLANT_POD_ACTIONS: ActionCardDef[] = [
         nameEn: 'Sleep Spores',
         faction: 'killer_plants_pod',
         abilityTags: ['ongoing'],
-        count: 1,
+        count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 42 },
     },
     {

@@ -26,9 +26,107 @@ import { GameChangelogModule } from '../src/modules/game-changelog/game-changelo
 import { GameChangelog, type GameChangelogDocument } from '../src/modules/game-changelog/game-changelog.schema';
 import { GlobalHttpExceptionFilter } from '../src/shared/filters/http-exception.filter';
 
+describe('AdminService stats aggregation', () => {
+    it('应正确构建统计数据而不是把聚合结果错位到 todayMatches', async () => {
+        const userModel = {
+            countDocuments: vi
+                .fn()
+                .mockResolvedValueOnce(2)
+                .mockResolvedValueOnce(2)
+                .mockResolvedValueOnce(1),
+        };
+        const matchRecordModel = {
+            countDocuments: vi
+                .fn()
+                .mockResolvedValueOnce(5)
+                .mockResolvedValueOnce(2),
+            aggregate: vi.fn().mockResolvedValue([{ _id: 'tictactoe', count: 5 }]),
+        };
+        const cacheManager = {
+            get: vi.fn().mockResolvedValue(null),
+            set: vi.fn().mockResolvedValue(undefined),
+            del: vi.fn().mockResolvedValue(undefined),
+            store: {},
+        };
+
+        const service = new AdminService(
+            userModel as never,
+            {} as never,
+            {} as never,
+            {} as never,
+            matchRecordModel as never,
+            {} as never,
+            {} as never,
+            {} as never,
+            cacheManager as never,
+        );
+
+        vi.spyOn(service as never, 'getOnlineUserIds').mockResolvedValue([]);
+        vi.spyOn(service as never, 'countActiveUsers24h').mockResolvedValue(0);
+        vi.spyOn(service as never, 'getGamePlayStats').mockResolvedValue([]);
+
+        const stats = await service.getStats();
+
+        expect(stats.totalUsers).toBe(2);
+        expect(stats.todayUsers).toBe(2);
+        expect(stats.bannedUsers).toBe(1);
+        expect(stats.totalMatches).toBe(5);
+        expect(stats.todayMatches).toBe(2);
+        expect(stats.games).toEqual([{ name: 'tictactoe', count: 5 }]);
+    });
+
+    it('当游戏聚合结果异常为 undefined 时不应因 map 崩溃', async () => {
+        const userModel = {
+            countDocuments: vi
+                .fn()
+                .mockResolvedValueOnce(2)
+                .mockResolvedValueOnce(1)
+                .mockResolvedValueOnce(0),
+        };
+        const matchRecordModel = {
+            countDocuments: vi
+                .fn()
+                .mockResolvedValueOnce(3)
+                .mockResolvedValueOnce(1),
+            aggregate: vi.fn().mockResolvedValue(undefined),
+        };
+        const cacheManager = {
+            get: vi.fn().mockResolvedValue(null),
+            set: vi.fn().mockResolvedValue(undefined),
+            del: vi.fn().mockResolvedValue(undefined),
+            store: {},
+        };
+
+        const service = new AdminService(
+            userModel as never,
+            {} as never,
+            {} as never,
+            {} as never,
+            matchRecordModel as never,
+            {} as never,
+            {} as never,
+            {} as never,
+            cacheManager as never,
+        );
+
+        vi.spyOn(service as never, 'getOnlineUserIds').mockResolvedValue([]);
+        vi.spyOn(service as never, 'countActiveUsers24h').mockResolvedValue(0);
+        vi.spyOn(service as never, 'getGamePlayStats').mockResolvedValue([]);
+
+        const stats = await service.getStats();
+
+        expect(stats.totalUsers).toBe(2);
+        expect(stats.todayUsers).toBe(1);
+        expect(stats.bannedUsers).toBe(0);
+        expect(stats.totalMatches).toBe(3);
+        expect(stats.todayMatches).toBe(1);
+        expect(stats.games).toEqual([]);
+    });
+});
+
 // MongoDB 内存服务器在某些环境下启动很慢或超时，暂时跳过测试
 // 如需运行这些测试，请移除下面的 .skip
-describe.skip('Admin Module (e2e)', () => {
+describe('Admin Module (e2e)', () => {
     let mongo: MongoMemoryServer | null;
     let app: import('@nestjs/common').INestApplication;
     let userModel: Model<UserDocument>;
@@ -113,31 +211,54 @@ describe.skip('Admin Module (e2e)', () => {
         }
     });
 
+    const registerUser = async ({
+        username,
+        email,
+        code,
+        role = 'user',
+    }: {
+        username: string;
+        email: string;
+        code: string;
+        role?: 'user' | 'admin';
+    }) => {
+        await authService.storeEmailCode(email, code);
+        const registerRes = await request(app.getHttpServer())
+            .post('/auth/register')
+            .send({ username, email, code, password: 'pass1234' })
+            .expect(201);
+
+        const token = registerRes.body.token as string;
+        const userId = registerRes.body.user.id as string;
+
+        if (role !== 'user') {
+            await userModel.updateOne({ _id: userId }, { role });
+        }
+
+        return { token, userId, email };
+    };
+
     const seedUsers = async () => {
-        const adminEmail = 'admin-user@example.com';
-        const adminCode = '123456';
-        await authService.storeEmailCode(adminEmail, adminCode);
-        const adminRegister = await request(app.getHttpServer())
-            .post('/auth/register')
-            .send({ username: 'admin-user', email: adminEmail, code: adminCode, password: 'pass1234' })
-            .expect(201);
+        const admin = await registerUser({
+            username: 'admin-user',
+            email: 'admin-user@example.com',
+            code: '123456',
+            role: 'admin',
+        });
+        const user = await registerUser({
+            username: 'player-a',
+            email: 'player-a@example.com',
+            code: '654321',
+        });
 
-        const adminToken = adminRegister.body.token as string;
-        const adminId = adminRegister.body.user.id as string;
-        await userModel.updateOne({ _id: adminId }, { role: 'admin' });
-
-        const userEmail = 'player-a@example.com';
-        const userCode = '654321';
-        await authService.storeEmailCode(userEmail, userCode);
-        const userRegister = await request(app.getHttpServer())
-            .post('/auth/register')
-            .send({ username: 'player-a', email: userEmail, code: userCode, password: 'pass1234' })
-            .expect(201);
-
-        const userToken = userRegister.body.token as string;
-        const userId = userRegister.body.user.id as string;
-
-        return { adminToken, adminId, adminEmail, userToken, userId, userEmail };
+        return {
+            adminToken: admin.token,
+            adminId: admin.userId,
+            adminEmail: admin.email,
+            userToken: user.token,
+            userId: user.userId,
+            userEmail: user.email,
+        };
     };
 
     const seedMatch = async () => {
@@ -268,6 +389,86 @@ describe.skip('Admin Module (e2e)', () => {
             .expect(200);
 
         expect(matchDetailRes.body.matchID).toBe(matchID);
+    });
+
+    it('绠＄悊鍛樺彲浠ヨ幏鍙栫暀瀛樹笌娲昏穬鍒嗗眰缁熻', async () => {
+        const now = Date.now();
+        const { adminToken, adminId, userId } = await seedUsers();
+        const retainedUser = await registerUser({
+            username: 'retained-player',
+            email: 'retained-player@example.com',
+            code: '111111',
+        });
+        const silentUser = await registerUser({
+            username: 'silent-player',
+            email: 'silent-player@example.com',
+            code: '222222',
+        });
+        const churnedUser = await registerUser({
+            username: 'churned-player',
+            email: 'churned-player@example.com',
+            code: '333333',
+        });
+        const bannedUser = await registerUser({
+            username: 'banned-player',
+            email: 'banned-player@example.com',
+            code: '444444',
+        });
+
+        await Promise.all([
+            userModel.collection.updateOne({ _id: new Types.ObjectId(adminId) }, { $set: { lastOnline: new Date(now - 60 * 60 * 1000) } }),
+            userModel.collection.updateOne({ _id: new Types.ObjectId(userId) }, { $set: { lastOnline: new Date(now - 24 * 60 * 60 * 1000) } }),
+            userModel.collection.updateOne(
+                { _id: new Types.ObjectId(retainedUser.userId) },
+                {
+                    $set: {
+                        createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000),
+                        lastOnline: new Date(now - 24 * 60 * 60 * 1000),
+                    },
+                },
+            ),
+            userModel.collection.updateOne(
+                { _id: new Types.ObjectId(silentUser.userId) },
+                { $set: { lastOnline: new Date(now - 10 * 24 * 60 * 60 * 1000) } },
+            ),
+            userModel.collection.updateOne(
+                { _id: new Types.ObjectId(churnedUser.userId) },
+                { $set: { lastOnline: new Date(now - 40 * 24 * 60 * 60 * 1000) } },
+            ),
+            userModel.collection.updateOne(
+                { _id: new Types.ObjectId(bannedUser.userId) },
+                { $set: { banned: true, bannedAt: new Date(now - 2 * 60 * 60 * 1000) } },
+            ),
+        ]);
+
+        const retentionRes = await request(app.getHttpServer())
+            .get('/admin/stats/retention')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(retentionRes.body.items).toHaveLength(5);
+        const retentionMap = new Map(
+            retentionRes.body.items.map((item: { label: string; total: number; retained: number; rate: number }) => [item.label, item])
+        );
+        expect(retentionMap.get('次日留存')).toMatchObject({
+            total: 1,
+            retained: 1,
+            rate: 1,
+        });
+
+        const activityRes = await request(app.getHttpServer())
+            .get('/admin/stats/activity-tiers')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(activityRes.body.totalUsers).toBe(6);
+        const tierMap = new Map(
+            activityRes.body.tiers.map((item: { label: string; count: number }) => [item.label, item.count])
+        );
+        expect(tierMap.get('活跃')).toBe(3);
+        expect(tierMap.get('沉默')).toBe(1);
+        expect(tierMap.get('流失')).toBe(1);
+        expect(tierMap.get('封禁')).toBe(1);
     });
 
     it('管理员可以更新用户角色并写入审计日志', async () => {
@@ -539,7 +740,9 @@ describe.skip('Admin Module (e2e)', () => {
         expect(friendCount).toBe(0);
         expect(messageCount).toBe(0);
         expect(reviewCount).toBe(0);
-        expect(match?.players?.some(player => player.name === '[已删除用户]')).toBe(true);
+        expect(
+            match?.players?.some(player => player.ownerKey === `deleted:${userId}` && player.name !== 'player-a')
+        ).toBe(true);
 
         await request(app.getHttpServer())
             .delete(`/admin/users/${adminId}`)
@@ -958,76 +1161,140 @@ describe('Game changelog access (e2e)', () => {
     });
 });
 
-describe('AdminService.getRooms 容错', () => {
-    it('跳过异常房间并容忍旧 ownerKey 脏数据', async () => {
+describe('AdminService.getRooms compatibility', () => {
+    it('merges live room snapshots with persisted fallback data', async () => {
         const validOwnerId = new Types.ObjectId().toString();
         const ownerLean = vi.fn().mockResolvedValue([
             { _id: new Types.ObjectId(validOwnerId), username: 'owner-user' },
         ]);
         const ownerSelect = vi.fn().mockReturnValue({ lean: ownerLean });
         const userFind = vi.fn().mockReturnValue({ select: ownerSelect });
+        const roomMatchLean = vi.fn().mockResolvedValue([
+            {
+                matchID: 'legacy-room',
+                gameName: 'tictactoe',
+                metadata: {
+                    players: { '0': { name: 'legacy-player' } },
+                    setupData: {
+                        roomName: 'legacy-room',
+                        ownerKey: { legacy: true } as unknown as string,
+                    },
+                },
+                state: null,
+                createdAt: new Date('2026-03-20T10:00:00.000Z'),
+                updatedAt: new Date('2026-03-20T10:30:00.000Z'),
+            },
+        ]);
+        const roomMatchSelect = vi.fn().mockReturnValue({ lean: roomMatchLean });
+        const roomMatchFind = vi.fn().mockReturnValue({ select: roomMatchSelect });
         const cacheManager = {
             get: vi.fn(),
             set: vi.fn(),
             del: vi.fn(),
         };
         const now = Date.now();
-        const hybridStorage = {
-            listMatches: vi.fn().mockResolvedValue(['boom-room', 'legacy-room', 'good-room']),
-            fetch: vi.fn().mockImplementation(async (matchID: string) => {
-                if (matchID === 'boom-room') {
-                    throw new Error('broken metadata');
-                }
-                if (matchID === 'legacy-room') {
-                    return {
-                        metadata: {
+        const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    items: [
+                        {
+                            matchID: 'good-room',
                             gameName: 'tictactoe',
-                            players: { '0': { name: 'legacy-player' } },
-                            setupData: {
-                                roomName: 'legacy-room',
-                                ownerKey: { legacy: true } as unknown as string,
-                            },
-                            createdAt: now - 2000,
-                            updatedAt: now - 1000,
-                        },
-                    };
-                }
-                return {
-                    metadata: {
-                        gameName: 'tictactoe',
-                        players: { '0': { name: 'good-player', isConnected: true } },
-                        setupData: {
+                            players: [{ id: 0, name: 'good-player', isConnected: true }],
                             roomName: 'good-room',
                             ownerKey: `user:${validOwnerId}`,
                             ownerType: 'user',
+                            isLocked: false,
+                            createdAt: now - 5000,
+                            updatedAt: now,
                         },
-                        createdAt: now - 5000,
-                        updatedAt: now,
-                    },
-                };
-            }),
-        };
-
-        const service = new AdminService(
-            { find: userFind } as unknown as Model<UserDocument>,
-            {} as Model<FriendDocument>,
-            {} as Model<MessageDocument>,
-            {} as Model<ReviewDocument>,
-            {} as Model<MatchRecordDocument>,
-            {} as Model<RoomMatchDocument>,
-            {} as Model<UgcPackageDocument>,
-            {} as Model<UgcAssetDocument>,
-            cacheManager as unknown as Cache,
-            hybridStorage as never,
+                    ],
+                }),
+                {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                },
+            ),
         );
 
-        const result = await service.getRooms({ page: 1, limit: 10 } as never);
+        try {
+            const service = new AdminService(
+                { find: userFind } as unknown as Model<UserDocument>,
+                {} as Model<FriendDocument>,
+                {} as Model<MessageDocument>,
+                {} as Model<ReviewDocument>,
+                {} as Model<MatchRecordDocument>,
+                { find: roomMatchFind } as unknown as Model<RoomMatchDocument>,
+                {} as Model<UgcPackageDocument>,
+                {} as Model<UgcAssetDocument>,
+                cacheManager as unknown as Cache,
+            );
 
-        expect(result.total).toBe(2);
-        expect(result.items.map(item => item.matchID)).toEqual(['good-room', 'legacy-room']);
-        expect(result.items[0].ownerName).toBe('owner-user');
-        expect(result.items[1].ownerName).toBeUndefined();
-        expect(userFind).toHaveBeenCalledTimes(1);
-        expect(hybridStorage.fetch).toHaveBeenCalledTimes(3);
+            const result = await service.getRooms({ page: 1, limit: 10 } as never);
+
+            expect(result.total).toBe(2);
+            expect(result.items.map(item => item.matchID)).toEqual(['good-room', 'legacy-room']);
+            expect(result.items[0].ownerName).toBe('owner-user');
+            expect(result.items[1].ownerName).toBeUndefined();
+            expect(userFind).toHaveBeenCalledTimes(1);
+            expect(roomMatchFind).toHaveBeenCalledWith({});
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+            expect(String(fetchSpy.mock.calls[0]?.[0] ?? '')).toContain('/internal/rooms');
+        } finally {
+            fetchSpy.mockRestore();
+        }
+    });
+
+    it('falls back to persisted room records when game-server is unavailable', async () => {
+        const cacheManager = {
+            get: vi.fn(),
+            set: vi.fn(),
+            del: vi.fn(),
+        };
+        const roomMatchLean = vi.fn().mockResolvedValue([
+            {
+                matchID: 'mongo-room',
+                gameName: 'smashup',
+                metadata: {
+                    players: {
+                        '0': { name: 'mongo-player', isConnected: false },
+                    },
+                    setupData: {
+                        roomName: 'mongo fallback room',
+                    },
+                },
+                state: null,
+                createdAt: new Date('2026-03-20T10:00:00.000Z'),
+                updatedAt: new Date('2026-03-20T11:00:00.000Z'),
+            },
+        ]);
+        const roomMatchSelect = vi.fn().mockReturnValue({ lean: roomMatchLean });
+        const roomMatchFind = vi.fn().mockReturnValue({ select: roomMatchSelect });
+        const userLean = vi.fn().mockResolvedValue([]);
+        const userSelect = vi.fn().mockReturnValue({ lean: userLean });
+        const userFind = vi.fn().mockReturnValue({ select: userSelect });
+        const fetchSpy = vi.spyOn(global, 'fetch').mockRejectedValue(new Error('connect ECONNREFUSED'));
+
+        try {
+            const service = new AdminService(
+                { find: userFind } as unknown as Model<UserDocument>,
+                {} as Model<FriendDocument>,
+                {} as Model<MessageDocument>,
+                {} as Model<ReviewDocument>,
+                {} as Model<MatchRecordDocument>,
+                { find: roomMatchFind } as unknown as Model<RoomMatchDocument>,
+                {} as Model<UgcPackageDocument>,
+                {} as Model<UgcAssetDocument>,
+                cacheManager as unknown as Cache,
+            );
+
+            const result = await service.getRooms({ page: 1, limit: 10 } as never);
+
+            expect(result.total).toBe(1);
+            expect(result.items.map(item => item.matchID)).toEqual(['mongo-room']);
+            expect(roomMatchFind).toHaveBeenCalledWith({});
+        } finally {
+            fetchSpy.mockRestore();
+        }
     });
 });

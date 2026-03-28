@@ -168,7 +168,7 @@ describe('Property 19: 疯狂牌库生命周期', () => {
             const cardUid = afterDraw.players['0'].hand[0].uid;
             const returnEvt = returnMadnessCard('0', cardUid, 'test', 2000);
             const afterReturn = reduce(afterDraw, returnEvt);
-            expect(afterReturn.madnessDeck!.length).toBe(30);
+            expect(afterReturn.madnessDeck!.length).toBe(29);
             expect(afterReturn.players['0'].hand.length).toBe(0);
         });
     });

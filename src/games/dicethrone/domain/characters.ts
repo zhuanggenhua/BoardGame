@@ -14,6 +14,8 @@ import { MOON_ELF_ABILITIES, MOON_ELF_TOKENS, MOON_ELF_INITIAL_TOKENS, getMoonEl
 import { SHADOW_THIEF_ABILITIES, SHADOW_THIEF_TOKENS, SHADOW_THIEF_INITIAL_TOKENS, getShadowThiefStartingDeck } from '../heroes/shadow_thief';
 import { PALADIN_ABILITIES, PALADIN_TOKENS, PALADIN_INITIAL_TOKENS, getPaladinStartingDeck } from '../heroes/paladin';
 import { PALADIN_TITHES_BASE } from '../heroes/paladin/abilities';
+import { GUNSLINGER_ABILITIES, GUNSLINGER_TOKENS, GUNSLINGER_INITIAL_TOKENS, getGunslingerStartingDeck } from '../heroes/gunslinger';
+import { SAMURAI_ABILITIES, SAMURAI_TOKENS, SAMURAI_INITIAL_TOKENS, getSamuraiStartingDeck } from '../heroes/samurai';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
@@ -164,6 +166,46 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.PALADIN,
         statusAtlasPath: 'dicethrone/images/paladin/status-icons-atlas.json',
         passiveAbilities: [PALADIN_TITHES_BASE],
+    },
+    gunslinger: {
+        id: 'gunslinger',
+        abilities: GUNSLINGER_ABILITIES,
+        tokens: GUNSLINGER_TOKENS,
+        initialTokens: GUNSLINGER_INITIAL_TOKENS,
+        diceDefinitionId: 'gunslinger-dice',
+        getStartingDeck: getGunslingerStartingDeck,
+        initialAbilityLevels: {
+            'revolver': 1,
+            'bounty-hunter': 1,
+            'quick-draw': 1,
+            'take-cover': 1,
+            'showdown': 1,
+            'deadeye': 1,
+            'fan-the-hammer': 1,
+            'duel': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER,
+        statusAtlasPath: 'dicethrone/images/gunslinger/status-icons-atlas.json',
+    },
+    samurai: {
+        id: 'samurai',
+        abilities: SAMURAI_ABILITIES,
+        tokens: SAMURAI_TOKENS,
+        initialTokens: SAMURAI_INITIAL_TOKENS,
+        diceDefinitionId: 'samurai-dice',
+        getStartingDeck: getSamuraiStartingDeck,
+        initialAbilityLevels: {
+            'katana-slice': 1,
+            'wakizashi': 1,
+            'bushido': 1,
+            'solemnity': 1,
+            'budo': 1,
+            'samurai-slot-06': 1,
+            'masamune': 1,
+            'stand-tall': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.SAMURAI,
+        statusAtlasPath: 'dicethrone/images/samurai/status-icons-atlas.json',
     },
 };
 

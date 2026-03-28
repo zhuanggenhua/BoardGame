@@ -43,7 +43,7 @@ function resolveCardiaFrontendBaseURL(page?: Page): string {
         return process.env.VITE_FRONTEND_URL;
     }
 
-    const frontendPort = process.env.PW_PORT || process.env.E2E_PORT || '6173';
+    const frontendPort = process.env.PW_PORT || process.env.E2E_PORT || '6174';
     return `http://127.0.0.1:${frontendPort}`;
 }
 

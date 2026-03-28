@@ -41,8 +41,10 @@
     "reconnect": "Reconnect",
     "reconnectEnter": "Rejoin",
     "join": "Join",
-    "localPlay": "👥 Local",
-    "tutorial": "🎓 Tutorial",
+    "localPlay": "Single Device",
+    "singleDevice": "Single Device",
+    "playAi": "Play AI",
+    "tutorial": "Tutorial",
     "createRoom": "Create Room",
     "confirm": "Confirm",
     "cancel": "Cancel"
@@ -249,6 +251,30 @@
       "title": "Service Unavailable",
       "desc": "Unable to connect to backend services. Please check your connection and ensure the backend containers (MongoDB/Server) are running."
     }
+  },
+  "ai": {
+    "supportTitle": "AI Support",
+    "unsupported": "No AI support",
+    "capture": "Data Capture",
+    "local": "Local AI",
+    "remote": "Remote AI",
+    "configureTitle": "Local Match Setup",
+    "configureHint": "Choose how many players join this device and which seats should be controlled by AI.",
+    "playerCount": "Local Players",
+    "seat": "Seat {{seat}}",
+    "primarySeat": "Primary",
+    "secondarySeat": "Secondary",
+    "controllers": {
+      "human": "Human",
+      "local": "Local AI",
+      "remote": "Remote AI"
+    },
+    "policyId": "Policy ID",
+    "policyPlaceholder": "Leave blank for default policy",
+    "providerId": "Provider ID",
+    "providerPlaceholder": "Leave blank to use astrbot",
+    "quickStart": "Default quick start: the first seat stays human, and the second seat will use the game's local AI when available.",
+    "startLocal": "Start Local Match"
   },
   "createRoom": {
     "title": "Create Room",

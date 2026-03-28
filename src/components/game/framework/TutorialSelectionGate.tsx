@@ -31,6 +31,7 @@ export const TutorialSelectionGate: React.FC<TutorialSelectionGateProps> = ({
     if (isTutorialMode || isTutorialActive) {
         return (
             <LoadingScreen
+                anchor="container"
                 description={loadingText}
                 className={containerClassName}
                 descriptionClassName={textClassName}

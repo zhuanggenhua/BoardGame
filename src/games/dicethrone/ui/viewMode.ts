@@ -18,6 +18,8 @@ export interface ViewModeParams {
     isResponseWindowOpen?: boolean;
     /** 当前响应者 ID */
     currentResponderId?: PlayerId;
+    /** 是否属于当前响应侧的同队直接干预者 */
+    isTeamDirectActor?: boolean;
     /** 待处理的伤害（Token 响应） */
     pendingDamage?: PendingDamage;
 }
@@ -42,6 +44,7 @@ export interface ResponseViewSuggestionKeyParams {
     isResponseWindowOpen?: boolean;
     currentResponderId?: PlayerId;
     currentResponderIndex?: number;
+    isTeamDirectActor?: boolean;
     pendingDamage?: PendingDamage;
 }
 
@@ -53,10 +56,11 @@ export const getResponseViewSuggestionKey = (
         isResponseWindowOpen,
         currentResponderId,
         currentResponderIndex,
+        isTeamDirectActor,
         pendingDamage,
     } = params;
 
-    if (isResponseWindowOpen && currentResponderId === rootPlayerId) {
+    if (isResponseWindowOpen && (currentResponderId === rootPlayerId || isTeamDirectActor)) {
         return `window:${currentResponderId}:${currentResponderIndex ?? 0}`;
     }
 
@@ -90,6 +94,7 @@ export const computeViewModeState = (params: ViewModeParams): ViewModeResult => 
         manualViewMode,
         isResponseWindowOpen,
         currentResponderId,
+        isTeamDirectActor,
         pendingDamage,
     } = params;
 
@@ -101,8 +106,7 @@ export const computeViewModeState = (params: ViewModeParams): ViewModeResult => 
     // 响应窗口自动切换逻辑
     let isResponseAutoSwitch = false;
     if (isResponseWindowOpen && currentResponderId) {
-        // 当前响应者是自己 → 切换到对手视角（看对手的骰子/状态来决定如何响应）
-        isResponseAutoSwitch = currentResponderId === rootPlayerId;
+        isResponseAutoSwitch = currentResponderId === rootPlayerId || Boolean(isTeamDirectActor);
     } else if (pendingDamage) {
         // Token 响应窗口：响应者是自己 → 切换到对手视角
         isResponseAutoSwitch = pendingDamage.responderId === rootPlayerId;

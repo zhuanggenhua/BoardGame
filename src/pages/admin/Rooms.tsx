@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
+import { Calendar, DoorOpen, Filter, Lock, Timer, Unlock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import DataTable, { type Column } from './components/DataTable';
-import { ADMIN_API_URL } from '../../config/server';
 import { useToast } from '../../contexts/ToastContext';
-import { Calendar, DoorOpen, Filter, Lock, Unlock } from 'lucide-react';
+import { ADMIN_API_URL } from '../../config/server';
 import { cn } from '../../lib/utils';
+import DataTable, { type Column } from './components/DataTable';
+import RoomPlayerStatusList from './components/RoomPlayerStatusList';
 import CustomSelect, { type Option } from './components/ui/CustomSelect';
 import SearchInput from './components/ui/SearchInput';
+import { summarizeRoomPlayers } from './utils/roomPresence';
+import { formatDateTime, formatDurationMs, getElapsedDurationMs } from './utils/roomTime';
 
 interface RoomPlayer {
     id: number;
@@ -28,12 +31,24 @@ interface RoomItem {
     updatedAt: string;
 }
 
+const PAGE_LIMIT = 10;
+
 const GAME_OPTIONS: Option[] = [
     { label: 'Dice Throne', value: 'dicethrone', icon: <DoorOpen size={14} /> },
     { label: 'Tic Tac Toe', value: 'tictactoe', icon: <DoorOpen size={14} /> },
     { label: 'Smash Up', value: 'smashup', icon: <DoorOpen size={14} /> },
     { label: 'Summoner Wars', value: 'summonerwars', icon: <DoorOpen size={14} /> },
 ];
+
+const resolveOwnerLabel = (room: RoomItem) => {
+    if (room.ownerName) return room.ownerName;
+    if (room.ownerType === 'guest' && room.ownerKey) {
+        return room.ownerKey.replace('guest:', '游客#');
+    }
+    return room.ownerKey || '未知';
+};
+
+const resolveRoomTitle = (room: RoomItem) => room.roomName?.trim() || '未命名房间';
 
 export default function RoomsPage() {
     const { token } = useAuth();
@@ -49,26 +64,41 @@ export default function RoomsPage() {
     const [selectAllFiltered, setSelectAllFiltered] = useState(false);
 
     const fetchRooms = async () => {
+        if (!token) {
+            setRooms([]);
+            setTotalPages(1);
+            setTotalItems(0);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const query = new URLSearchParams({
                 page: page.toString(),
-                limit: '10',
+                limit: String(PAGE_LIMIT),
                 gameName: gameFilter,
-                search
+                search,
             });
-            const res = await fetch(`${ADMIN_API_URL}/rooms?${query}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const res = await fetch(`${ADMIN_API_URL}/rooms?${query.toString()}`, {
+                headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch rooms');
+            if (!res.ok) {
+                const payload = await res.json().catch(() => null);
+                throw new Error(payload?.error || '获取房间列表失败');
+            }
+
             const data = await res.json();
-            const items = data.items.map((room: RoomItem) => ({ ...room, id: room.matchID }));
+            const items = Array.isArray(data.items)
+                ? data.items.map((room: RoomItem) => ({ ...room, id: room.matchID }))
+                : [];
             setRooms(items);
-            setTotalPages(Math.ceil(data.total / data.limit));
-            setTotalItems(data.total);
+            const nextTotal = Number(data.total ?? 0);
+            const nextLimit = Math.max(1, Number(data.limit ?? PAGE_LIMIT));
+            setTotalPages(Math.max(1, Math.ceil(nextTotal / nextLimit)));
+            setTotalItems(nextTotal);
         } catch (err) {
-            console.error(err);
-            toastError('获取房间列表失败');
+            toastError(err instanceof Error ? err.message : '获取房间列表失败');
         } finally {
             setLoading(false);
         }
@@ -116,7 +146,7 @@ export default function RoomsPage() {
         try {
             const res = await fetch(`${ADMIN_API_URL}/rooms/${matchID}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) {
                 const payload = await res.json().catch(() => null);
@@ -125,7 +155,6 @@ export default function RoomsPage() {
             success('房间已删除');
             fetchRooms();
         } catch (err) {
-            console.error(err);
             toastError(err instanceof Error ? err.message : '删除失败');
         }
     };
@@ -134,6 +163,7 @@ export default function RoomsPage() {
         if (!selectAllFiltered && selectedIds.length === 0) return;
         const label = selectAllFiltered ? `当前筛选的 ${totalItems} 个房间` : `选中的 ${selectedIds.length} 个房间`;
         if (!confirm(`确定要删除${label}吗？`)) return;
+
         try {
             const url = selectAllFiltered
                 ? `${ADMIN_API_URL}/rooms/bulk-delete-by-filter`
@@ -145,9 +175,9 @@ export default function RoomsPage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => null);
@@ -158,17 +188,8 @@ export default function RoomsPage() {
             setSelectAllFiltered(false);
             fetchRooms();
         } catch (err) {
-            console.error(err);
             toastError(err instanceof Error ? err.message : '批量删除失败');
         }
-    };
-
-    const resolveOwnerLabel = (room: RoomItem) => {
-        if (room.ownerName) return room.ownerName;
-        if (room.ownerType === 'guest' && room.ownerKey) {
-            return room.ownerKey.replace('guest:', '游客#');
-        }
-        return room.ownerKey || '未知';
     };
 
     const columns: Column<RoomItem>[] = [
@@ -192,72 +213,83 @@ export default function RoomsPage() {
                         aria-label={`选择房间 ${room.matchID}`}
                     />
                 </div>
-            )
+            ),
         },
         {
             header: '房间',
             cell: (room) => (
-                <div>
-                    <div className="font-semibold text-zinc-900">{room.roomName || '未命名房间'}</div>
-                    <div className="text-xs font-mono text-zinc-400">{room.matchID.substring(0, 8)}</div>
+                <div className="space-y-1">
+                    <div className="font-semibold text-zinc-900">{resolveRoomTitle(room)}</div>
+                    <div className="font-mono text-xs text-zinc-400">{room.matchID}</div>
                 </div>
-            )
+            ),
         },
         {
             header: '游戏',
             accessorKey: 'gameName',
             cell: (room) => (
-                <span className="capitalize text-zinc-700 font-medium">{room.gameName}</span>
-            )
+                <span className="font-medium capitalize text-zinc-700">{room.gameName}</span>
+            ),
         },
         {
             header: '房主',
             cell: (room) => (
-                <div className="text-xs text-zinc-500">
+                <div className="space-y-1 text-xs">
                     <div className="font-medium text-zinc-700">{resolveOwnerLabel(room)}</div>
-                    <div className="uppercase text-[10px] text-zinc-400">{room.ownerType || 'guest'}</div>
+                    <div className="uppercase tracking-[0.08em] text-zinc-400">{room.ownerType || 'guest'}</div>
                 </div>
-            )
+            ),
         },
         {
             header: '状态',
             cell: (room) => (
                 <span className={cn(
-                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border",
+                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold',
                     room.isLocked
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        ? 'border-amber-200 bg-amber-50 text-amber-700'
+                        : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                 )}>
                     {room.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
                     {room.isLocked ? '有密码' : '公开'}
                 </span>
-            )
+            ),
         },
         {
-            header: '玩家',
+            header: '玩家在线状态',
+            width: '320px',
             cell: (room) => {
-                const total = room.players.length;
-                const connected = room.players.filter((p) => p.isConnected).length;
+                const summary = summarizeRoomPlayers(room.players);
                 return (
-                    <div className="text-xs text-zinc-500">
-                        <div className="font-medium text-zinc-700">{connected}/{total || 0} 在线</div>
-                        <div className="text-[10px] text-zinc-400">{total} 人在席</div>
+                    <div className="space-y-2">
+                        <div className="text-xs font-medium text-zinc-700">
+                            {summary.connected}/{summary.total} 在线
+                        </div>
+                        <RoomPlayerStatusList players={room.players} emptyLabel="暂无玩家入座" />
                     </div>
                 );
-            }
+            },
         },
         {
-            header: '更新时间',
+            header: '持续时间',
+            cell: (room) => (
+                <div className="space-y-1 text-xs text-zinc-500">
+                    <div className="inline-flex items-center gap-1.5 font-medium text-zinc-700">
+                        <Timer size={12} className="opacity-70" />
+                        {formatDurationMs(getElapsedDurationMs(room.createdAt))}
+                    </div>
+                    <div>开始于 {formatDateTime(room.createdAt)}</div>
+                </div>
+            ),
+        },
+        {
+            header: '最近更新',
             accessorKey: 'updatedAt',
             cell: (room) => (
-                <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-mono">
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-500">
                     <Calendar size={12} className="opacity-70" />
-                    {new Date(room.updatedAt).toLocaleString(undefined, {
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit'
-                    })}
+                    {formatDateTime(room.updatedAt)}
                 </div>
-            )
+            ),
         },
         {
             header: '操作',
@@ -266,28 +298,28 @@ export default function RoomsPage() {
                 <div className="flex justify-end">
                     <button
                         onClick={() => handleDelete(room.matchID)}
-                        className="text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
+                        className="text-xs font-medium text-red-500 transition-colors hover:text-red-600"
                     >
                         删除
                     </button>
                 </div>
-            )
-        }
+            ),
+        },
     ];
 
     return (
-        <div className="h-full flex flex-col p-8 w-full max-w-[1600px] mx-auto min-h-0 bg-zinc-50/50">
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 flex-none mb-8">
+        <div className="mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-col bg-zinc-50/50 p-8">
+            <div className="mb-8 flex flex-none flex-col justify-between gap-6 xl:flex-row xl:items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">房间管理</h1>
-                    <p className="text-sm text-zinc-500 mt-1">查看所有房间状态并支持清理</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-zinc-900">房间管理</h1>
+                    <p className="mt-1 text-sm text-zinc-500">查看房间在线状态、持续时间，并支持按条件清理</p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="flex flex-col items-center gap-3 sm:flex-row">
                     <SearchInput
-                        placeholder="搜索房间ID或名称..."
-                        onSearch={(val) => {
-                            setSearch(val);
+                        placeholder="搜索房间 ID 或房间名..."
+                        onSearch={(value) => {
+                            setSearch(value);
                             setPage(1);
                             setSelectedIds([]);
                             setSelectAllFiltered(false);
@@ -296,8 +328,8 @@ export default function RoomsPage() {
                     />
                     <CustomSelect
                         value={gameFilter}
-                        onChange={(val) => {
-                            setGameFilter(val);
+                        onChange={(value) => {
+                            setGameFilter(value);
                             setPage(1);
                             setSelectedIds([]);
                             setSelectAllFiltered(false);
@@ -311,7 +343,7 @@ export default function RoomsPage() {
                     <button
                         onClick={handleBulkDelete}
                         disabled={!selectAllFiltered && selectedIds.length === 0}
-                        className="px-4 py-2 text-xs font-semibold rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="rounded-lg border border-red-200 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         删除选中 {selectAllFiltered ? `(共 ${totalItems})` : selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
                     </button>
@@ -319,12 +351,12 @@ export default function RoomsPage() {
             </div>
 
             {selectAllFiltered && (
-                <div className="flex items-center gap-2 mb-4 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-600">
                     已全选当前筛选结果（{totalItems} 条）。如需取消，请点击表头的全选框。
                 </div>
             )}
 
-            <div className="flex-1 min-h-0 bg-white rounded-2xl border border-zinc-200/60 shadow-sm overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-0 overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-sm">
                 <DataTable
                     className="h-full border-none"
                     columns={columns}
@@ -334,7 +366,7 @@ export default function RoomsPage() {
                         currentPage: page,
                         totalPages,
                         onPageChange: setPage,
-                        totalItems
+                        totalItems,
                     }}
                 />
             </div>

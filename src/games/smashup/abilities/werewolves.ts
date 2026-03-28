@@ -346,32 +346,37 @@ const handleLetTheDogOutChooseTarget: IH = (state, playerId, value, _data, _rand
 function registerWerewolfOngoingEffects(): void {
     // 狼人 异能（Special）：基地计分前自身+2力量直到回合结束
     registerTrigger('werewolf_loup_garou', 'beforeScoring', (ctx: TriggerContext) => {
-        const { state, baseIndex, now } = ctx;
+        const { state, baseIndex, sourceCardUid, now } = ctx;
         if (baseIndex === undefined) return [];
-        const events: SmashUpEvent[] = [];
-        for (const m of state.bases[baseIndex].minions) {
-            if (matchesDefId(m.defId, 'werewolf_loup_garou')) {
-                events.push(addTempPower(m.uid, baseIndex, 2, 'werewolf_loup_garou', now));
-            }
-        }
-        return events;
+        const source = sourceCardUid
+            ? state.bases[baseIndex].minions.find(m => m.uid === sourceCardUid)
+            : state.bases[baseIndex].minions.find(m => matchesDefId(m.defId, 'werewolf_loup_garou'));
+        if (!source || !matchesDefId(source.defId, 'werewolf_loup_garou')) return [];
+        return [addTempPower(source.uid, baseIndex, 2, 'werewolf_loup_garou', now)];
+    }, {
+        perInstance: true,
+        sourceScope: 'triggerBase',
     });
 
     // 阿尔法狼群 异能（Special）：基地计分前同基地己方所有随从+1力量直到回合结束
     registerTrigger('werewolf_pack_alpha', 'beforeScoring', (ctx: TriggerContext) => {
-        const { state, baseIndex, now } = ctx;
+        const { state, baseIndex, sourceCardUid, now } = ctx;
         if (baseIndex === undefined) return [];
+        const source = sourceCardUid
+            ? state.bases[baseIndex].minions.find(m => m.uid === sourceCardUid)
+            : state.bases[baseIndex].minions.find(m => matchesDefId(m.defId, 'werewolf_pack_alpha'));
+        if (!source || !matchesDefId(source.defId, 'werewolf_pack_alpha')) return [];
+        const controller = source.controller;
         const events: SmashUpEvent[] = [];
-        for (const m of state.bases[baseIndex].minions) {
-            if (!matchesDefId(m.defId, 'werewolf_pack_alpha')) continue;
-            const controller = m.controller;
-            for (const ally of state.bases[baseIndex].minions) {
-                if (ally.controller === controller) {
-                    events.push(addTempPower(ally.uid, baseIndex, 1, 'werewolf_pack_alpha', now));
-                }
+        for (const ally of state.bases[baseIndex].minions) {
+            if (ally.controller === controller) {
+                events.push(addTempPower(ally.uid, baseIndex, 1, 'werewolf_pack_alpha', now));
             }
         }
         return events;
+    }, {
+        perInstance: true,
+        sourceScope: 'triggerBase',
     });
 
     // 制造恐慌 ongoing：回合开始时若你力量最高，爆破点降到0

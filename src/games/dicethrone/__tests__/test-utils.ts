@@ -80,12 +80,22 @@ export const cmd = (type: string, playerId: PlayerId, payload: Record<string, un
 // Setup 函数
 // ============================================================================
 
-export const setupCommands: CommandInput[] = [
-    { type: 'SELECT_CHARACTER', playerId: '0', payload: { characterId: 'monk' } },
-    { type: 'SELECT_CHARACTER', playerId: '1', payload: { characterId: 'monk' } },
-    { type: 'PLAYER_READY', playerId: '1', payload: {} },
-    { type: 'HOST_START_GAME', playerId: '0', payload: {} },
-];
+export const buildSetupCommands = (playerIds: PlayerId[]): CommandInput[] => {
+    const hostPlayerId = playerIds[0];
+    const commands: CommandInput[] = playerIds.map((playerId) => ({
+        type: 'SELECT_CHARACTER',
+        playerId,
+        payload: { characterId: 'monk' },
+    }));
+
+    playerIds.forEach((playerId) => {
+        if (playerId === hostPlayerId) return;
+        commands.push({ type: 'PLAYER_READY', playerId, payload: {} });
+    });
+
+    commands.push({ type: 'HOST_START_GAME', playerId: hostPlayerId, payload: {} });
+    return commands;
+};
 
 export function applySetupCommands(
     state: MatchState<DiceThroneCore>,
@@ -98,7 +108,7 @@ export function applySetupCommands(
     };
 
     let current = state;
-    for (const cmd of setupCommands) {
+    for (const cmd of buildSetupCommands(playerIds)) {
         const command = {
             type: cmd.type,
             playerId: cmd.playerId,
@@ -312,6 +322,7 @@ export interface DiceThroneExpectation extends StateExpectation {
         selectCount?: number;
         playerId?: PlayerId;
         dieModifyMode?: 'set' | 'adjust' | 'copy' | 'any';
+        diceOwnerId?: PlayerId;
         targetOpponentDice?: boolean;
         adjustRange?: { min: number; max: number };
     } | null;
@@ -573,6 +584,7 @@ export function injectPendingInteraction(
                 dtType: 'modifyDie',
                 dieModifyConfig: config,
                 selectCount,
+                diceOwnerId: interaction.diceOwnerId,
                 targetOpponentDice: interaction.targetOpponentDice ?? false,
             },
         };
@@ -602,6 +614,7 @@ export function injectPendingInteraction(
         meta: {
             dtType: 'selectDie',
             selectCount,
+            diceOwnerId: interaction.diceOwnerId,
             targetOpponentDice: interaction.targetOpponentDice ?? false,
         },
     };

@@ -26,7 +26,9 @@ import type {
     AdvancePhaseCommand,
     SelectCharacterCommand,
     HostStartGameCommand,
+    MoveSeatCommand,
     PlayerReadyCommand,
+    PlayerUnreadyCommand,
     ResponsePassCommand,
     ModifyDieCommand,
     RerollDieCommand,
@@ -51,7 +53,10 @@ import {
     checkPlayUpgradeCard,
     getAvailableAbilityIds,
     isCardPlayableInResponseWindow,
+    getSeatingOrder,
+    isTeamMode,
 } from './rules';
+import { getMaxTokenUseAmount, getTokenUseOptions } from './tokenTypes';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
 import { DICETHRONE_CHARACTER_CATALOG } from './core-types';
@@ -97,6 +102,36 @@ const getMultistepInteractionData = (
     return (pendingInteraction.data ?? {}) as MultistepInteractionData;
 };
 
+const getLegacyDiceInteraction = (
+    pendingInteraction: PendingInteractionLike | undefined
+): InteractionDescriptor | null => {
+    if (!pendingInteraction || isEngineInteractionDescriptor(pendingInteraction)) {
+        return null;
+    }
+    return pendingInteraction;
+};
+
+const hasStatusOrToken = (
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    statusId?: string
+): boolean => {
+    const player = state.players[playerId];
+    if (!player) return false;
+    if (!statusId) {
+        return Object.values(player.statusEffects ?? {}).some(value => value > 0)
+            || Object.values(player.tokens ?? {}).some(value => value > 0);
+    }
+    return (player.statusEffects?.[statusId] ?? 0) > 0
+        || (player.tokens?.[statusId] ?? 0) > 0;
+};
+
+const normalizeTokenPayload = (
+    tokens: Array<{ tokenId: string; amount: number }>
+): string[] => tokens
+    .map(({ tokenId, amount }) => `${tokenId}:${amount}`)
+    .sort();
+
 /**
  * 验证掷骰命令
  */
@@ -106,7 +141,7 @@ const validateRollDice = (
     playerId: PlayerId,
     phase: TurnPhase
 ): ValidationResult => {
-    if (phase !== 'offensiveRoll' && phase !== 'defensiveRoll') {
+    if (phase !== 'offensiveRoll' && phase !== 'targetingRoll' && phase !== 'defensiveRoll') {
         return fail('invalid_phase');
     }
 
@@ -183,6 +218,54 @@ const validateHostStartGame = (
 };
 
 /**
+ * 验证 2v2 站位移动命令
+ */
+const validateMoveSeat = (
+    state: DiceThroneCore,
+    cmd: MoveSeatCommand,
+    playerId: PlayerId,
+    phase: TurnPhase
+): ValidationResult => {
+    if (phase !== 'setup') {
+        return fail('invalid_phase');
+    }
+
+    if (!isTeamMode(state)) {
+        return fail('not_team_mode');
+    }
+
+    if (state.hostStarted) {
+        return fail('game_already_started');
+    }
+
+    if (!isMoveAllowed(playerId, state.hostPlayerId)) {
+        return fail('player_mismatch');
+    }
+
+    const movingPlayerId = cmd.payload.playerId;
+    if (!state.players[movingPlayerId]) {
+        return fail('player_not_found');
+    }
+
+    const seatingOrder = getSeatingOrder(state);
+    const currentSeatIndex = seatingOrder.indexOf(movingPlayerId);
+    if (currentSeatIndex === -1) {
+        return fail('invalid_seat_target');
+    }
+
+    const { targetSeatIndex } = cmd.payload;
+    if (!Number.isInteger(targetSeatIndex) || targetSeatIndex < 0 || targetSeatIndex >= seatingOrder.length) {
+        return fail('invalid_seat_target');
+    }
+
+    if (targetSeatIndex === currentSeatIndex) {
+        return fail('seat_not_changed');
+    }
+
+    return ok();
+};
+
+/**
  * 验证玩家准备命令
  */
 const validatePlayerReady = (
@@ -199,6 +282,30 @@ const validatePlayerReady = (
     const char = state.selectedCharacters[playerId];
     if (!char || char === 'unselected') {
         return fail('character_not_selected');
+    }
+
+    return ok();
+};
+
+/**
+ * 验证玩家取消准备命令
+ */
+const validatePlayerUnready = (
+    state: DiceThroneCore,
+    _cmd: PlayerUnreadyCommand,
+    playerId: PlayerId,
+    phase: TurnPhase
+): ValidationResult => {
+    if (phase !== 'setup') {
+        return fail('invalid_phase');
+    }
+
+    if (state.hostStarted) {
+        return fail('game_already_started');
+    }
+
+    if (!state.players[playerId]) {
+        return fail('player_not_found');
     }
 
     return ok();
@@ -243,7 +350,7 @@ const validateConfirmRoll = (
     playerId: PlayerId,
     phase: TurnPhase
 ): ValidationResult => {
-    if (phase !== 'offensiveRoll' && phase !== 'defensiveRoll') {
+    if (phase !== 'offensiveRoll' && phase !== 'targetingRoll' && phase !== 'defensiveRoll') {
         return fail('invalid_phase');
     }
     
@@ -775,34 +882,92 @@ const validateRerollDieStrict = (
 };
 
 const validateRemoveStatus = (
-    _state: DiceThroneCore,
-    _cmd: RemoveStatusCommand,
+    state: DiceThroneCore,
+    cmd: RemoveStatusCommand,
     playerId: PlayerId,
-    pendingInteraction?: InteractionDescriptor
+    pendingInteraction?: PendingInteractionLike
 ): ValidationResult => {
-    if (!pendingInteraction) {
+    const interaction = getLegacyDiceInteraction(pendingInteraction);
+    if (!interaction) {
         return fail('no_pending_interaction');
     }
-    if (pendingInteraction.playerId !== playerId) {
+    if (interaction.playerId !== playerId) {
         return fail('player_mismatch');
     }
-    return ok();
+
+    const { targetPlayerId, statusId } = cmd.payload;
+    if (!interaction.targetPlayerIds?.includes(targetPlayerId)) {
+        return fail('invalid_target_player');
+    }
+
+    if (interaction.type === 'selectPlayer') {
+        if (statusId !== undefined) {
+            return fail('invalid_remove_status_interaction');
+        }
+        if (interaction.requiresTargetWithStatus && !hasStatusOrToken(state, targetPlayerId)) {
+            return fail('target_has_no_status');
+        }
+        return ok();
+    }
+
+    if (interaction.type === 'selectStatus') {
+        if (!statusId) {
+            return fail('status_id_required');
+        }
+        if (!hasStatusOrToken(state, targetPlayerId, statusId)) {
+            return fail('status_not_found');
+        }
+        return ok();
+    }
+
+    return fail('invalid_remove_status_interaction');
 };
 
 /**
  * 验证转移状态效果命令
  */
 const validateTransferStatus = (
-    _state: DiceThroneCore,
-    _cmd: TransferStatusCommand,
+    state: DiceThroneCore,
+    cmd: TransferStatusCommand,
     playerId: PlayerId,
-    pendingInteraction?: InteractionDescriptor
+    pendingInteraction?: PendingInteractionLike
 ): ValidationResult => {
-    if (!pendingInteraction) {
+    const interaction = getLegacyDiceInteraction(pendingInteraction);
+    if (!interaction) {
         return fail('no_pending_interaction');
     }
-    if (pendingInteraction.playerId !== playerId) {
+    if (interaction.playerId !== playerId) {
         return fail('player_mismatch');
+    }
+
+    const isRealtimeTransferFlow =
+        interaction.type === 'selectStatus' && interaction.transferConfig !== undefined;
+    if (interaction.type !== 'selectTargetStatus' && !isRealtimeTransferFlow) {
+        return fail('invalid_transfer_status_interaction');
+    }
+
+    const sourcePlayerId = interaction.transferConfig?.sourcePlayerId ?? cmd.payload.fromPlayerId;
+    const statusId = interaction.transferConfig?.statusId ?? cmd.payload.statusId;
+    if (!sourcePlayerId || !statusId) {
+        return fail('invalid_transfer_status_interaction');
+    }
+    if (!interaction.targetPlayerIds?.includes(sourcePlayerId)) {
+        return fail('invalid_target_player');
+    }
+    if (!hasStatusOrToken(state, sourcePlayerId, statusId)) {
+        return fail('status_not_found');
+    }
+    if (
+        interaction.type === 'selectTargetStatus'
+        && (cmd.payload.fromPlayerId !== sourcePlayerId || cmd.payload.statusId !== statusId)
+    ) {
+        return fail('interaction_payload_mismatch');
+    }
+    if (cmd.payload.toPlayerId === sourcePlayerId) {
+        return fail('invalid_target_player');
+    }
+    if (!interaction.targetPlayerIds?.includes(cmd.payload.toPlayerId)) {
+        return fail('invalid_target_player');
     }
     return ok();
 };
@@ -881,6 +1046,21 @@ const validateUseToken = (
     }
 
     if (cmd.payload.amount <= 0) {
+        return fail('invalid_amount');
+    }
+
+    if (cmd.payload.amount > currentAmount) {
+        return fail('not_enough_token');
+    }
+
+    const allowedAmounts = getTokenUseOptions(tokenDef, currentAmount);
+    if (!allowedAmounts.includes(cmd.payload.amount)) {
+        return fail('invalid_amount');
+    }
+
+    const maxWindowUsage = getMaxTokenUseAmount(tokenDef);
+    const usedInWindow = state.pendingDamage.tokenUsageTotals?.[cmd.payload.tokenId] ?? 0;
+    if (usedInWindow + cmd.payload.amount > maxWindowUsage) {
         return fail('invalid_amount');
     }
 
@@ -1079,7 +1259,48 @@ const validateUsePassiveAbility = (
  */
 const validateGrantTokens = (
     _state: DiceThroneCore,
-    _cmd: GrantTokensCommand,
+    cmd: GrantTokensCommand,
+    playerId: PlayerId,
+    pendingInteraction?: PendingInteractionLike
+): ValidationResult => {
+    const interaction = getLegacyDiceInteraction(pendingInteraction);
+    if (!interaction) {
+        return fail('no_pending_interaction');
+    }
+    if (interaction.playerId !== playerId) {
+        return fail('player_mismatch');
+    }
+
+    if (interaction.type !== 'selectPlayer') {
+        return fail('invalid_grant_tokens_interaction');
+    }
+    if (!interaction.targetPlayerIds?.includes(cmd.payload.targetPlayerId)) {
+        return fail('invalid_target_player');
+    }
+
+    const expectedTokens = interaction.tokenGrantConfigs ?? (
+        interaction.tokenGrantConfig ? [interaction.tokenGrantConfig] : []
+    );
+    if (expectedTokens.length === 0) {
+        return fail('invalid_grant_tokens_interaction');
+    }
+
+    const expectedPayload = normalizeTokenPayload(expectedTokens);
+    const actualPayload = normalizeTokenPayload(cmd.payload.tokens ?? []);
+    if (expectedPayload.length !== actualPayload.length) {
+        return fail('interaction_payload_mismatch');
+    }
+    for (let index = 0; index < expectedPayload.length; index++) {
+        if (expectedPayload[index] !== actualPayload[index]) {
+            return fail('interaction_payload_mismatch');
+        }
+    }
+    return ok();
+};
+
+const validateResolveInteraction = (
+    _state: DiceThroneCore,
+    cmd: DiceThroneCommand,
     playerId: PlayerId,
     pendingInteraction?: InteractionDescriptor
 ): ValidationResult => {
@@ -1089,6 +1310,26 @@ const validateGrantTokens = (
     if (pendingInteraction.playerId !== playerId) {
         return fail('player_mismatch');
     }
+    if (pendingInteraction.type !== 'selectPlayer') {
+        return fail('interaction_type_mismatch');
+    }
+
+    const { selectedPlayerIds = [] } = cmd.payload as { selectedPlayerIds?: PlayerId[] };
+    if (selectedPlayerIds.length === 0) {
+        return fail('no_selected_player');
+    }
+
+    const uniqueSelectedPlayerIds = Array.from(new Set(selectedPlayerIds));
+    if (uniqueSelectedPlayerIds.length > (pendingInteraction.selectCount ?? 1)) {
+        return fail('too_many_selected_players');
+    }
+
+    const targetPlayerIds = pendingInteraction.targetPlayerIds ?? [];
+    const hasInvalidTarget = uniqueSelectedPlayerIds.some(targetId => !targetPlayerIds.includes(targetId));
+    if (hasInvalidTarget) {
+        return fail('invalid_target_player');
+    }
+
     return ok();
 };
 
@@ -1126,12 +1367,15 @@ export const validateCommand = (
     if (isCommandType(command, 'ADVANCE_PHASE')) return validateAdvancePhase(state, command, playerId, phase);
     if (isCommandType(command, 'SELECT_CHARACTER')) return validateSelectCharacter(state, command, playerId, phase);
     if (isCommandType(command, 'HOST_START_GAME')) return validateHostStartGame(state, command, playerId, phase);
+    if (isCommandType(command, 'MOVE_SEAT')) return validateMoveSeat(state, command, playerId, phase);
     if (isCommandType(command, 'PLAYER_READY')) return validatePlayerReady(state, command, playerId, phase);
+    if (isCommandType(command, 'PLAYER_UNREADY')) return validatePlayerUnready(state, command, playerId, phase);
     if (isCommandType(command, 'RESPONSE_PASS')) return validateResponsePass(state, command, playerId);
     if (isCommandType(command, 'MODIFY_DIE')) return validateModifyDieStrict(state, command, playerId, pendingInteraction);
     if (isCommandType(command, 'REROLL_DIE')) return validateRerollDieStrict(state, command, playerId, pendingInteraction);
     if (isCommandType(command, 'REMOVE_STATUS')) return validateRemoveStatus(state, command, playerId, pendingInteraction);
     if (isCommandType(command, 'TRANSFER_STATUS')) return validateTransferStatus(state, command, playerId, pendingInteraction);
+    if (isCommandType(command, 'RESOLVE_INTERACTION')) return validateResolveInteraction(state, command, playerId, pendingInteraction);
     // if (isCommandType(command, 'CONFIRM_INTERACTION')) return validateConfirmInteraction(state, command, playerId, pendingInteraction);
     // if (isCommandType(command, 'CANCEL_INTERACTION')) return validateCancelInteraction(state, command, playerId, pendingInteraction);
     if (isCommandType(command, 'USE_TOKEN')) return validateUseToken(state, command, playerId);

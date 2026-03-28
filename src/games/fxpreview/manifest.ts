@@ -8,6 +8,11 @@ const entry: GameManifestEntry = {
     descriptionKey: 'games.fxpreview.description',
     category: 'tools',
     playersKey: 'games.fxpreview.players',
+    ai: {
+        capture: false,
+        localAi: false,
+        remoteAi: false,
+    },
     icon: '🎬',
     mobileProfile: 'none',
     shellTargets: ['pwa'],

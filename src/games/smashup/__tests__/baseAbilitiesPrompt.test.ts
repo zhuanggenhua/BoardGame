@@ -127,6 +127,43 @@ describe('base_the_homeworld: 随从入场额外随从额度', () => {
         expect(payload.limitType).toBe('minion');
         expect(payload.delta).toBe(1);
     });
+
+    it('每回合只触发一次：当回合第二次及之后不再给额外额度', () => {
+        const { events } = triggerBaseAbility('base_the_homeworld', 'onMinionPlayed', makeCtx({
+            state: makeState({
+                players: {
+                    '0': makePlayer('0', { minionsPlayedPerBase: { 0: 2 } }),
+                    '1': makePlayer('1'),
+                },
+                bases: [makeBase('base_the_homeworld')],
+            }),
+            baseDefId: 'base_the_homeworld',
+            minionUid: 'm1',
+            minionDefId: 'alien_collector',
+            minionPower: 2,
+        }));
+
+        expect(events).toHaveLength(0);
+    });
+
+    it('POD 版本母星应复用同一能力', () => {
+        const { events } = triggerBaseAbility('base_the_homeworld_pod', 'onMinionPlayed', makeCtx({
+            state: makeState({
+                players: {
+                    '0': makePlayer('0', { minionsPlayedPerBase: { 0: 1 } }),
+                    '1': makePlayer('1'),
+                },
+                bases: [makeBase('base_the_homeworld_pod')],
+            }),
+            baseDefId: 'base_the_homeworld_pod',
+            minionUid: 'm1',
+            minionDefId: 'alien_collector_pod',
+            minionPower: 2,
+        }));
+
+        expect(events).toHaveLength(1);
+        expect(events[0].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
+    });
 });
 
 // ============================================================================
@@ -184,6 +221,22 @@ describe('base_the_mothership: 计分后冠军收回随从', () => {
         }));
 
         expect(events).toHaveLength(0);
+    });
+
+    it('POD 版本母舰也应生成收回交互', () => {
+        const result = triggerBaseAbilityWithMS('base_the_mothership_pod', 'afterScoring', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_the_mothership_pod', {
+                    minions: [makeMinion('m1', '0', 2)],
+                })],
+            }),
+            baseDefId: 'base_the_mothership_pod',
+            rankings: [{ playerId: '0', power: 2, vp: 4 }],
+        }));
+
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        expect(interactions[0].playerId).toBe('0');
     });
 });
 

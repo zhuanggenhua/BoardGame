@@ -20,6 +20,7 @@ import type {
 import {
     getUpgradeTargetAbilityId,
     hasOpponentTargetEffect,
+    getContextualOpponentId,
     getResponderQueue,
 } from './rules';
 import { reduce } from './reducer';
@@ -166,7 +167,7 @@ export function executeCardCommand(
                 events.push(cardPlayedEvent);
                 
                 // 执行升级卡效果（replaceAbility）
-                const opponentId = Object.keys(state.players).find(id => id !== actingPlayerId) || actingPlayerId;
+                const opponentId = getContextualOpponentId(state, actingPlayerId) ?? actingPlayerId;
                 const effectCtx: EffectContext = {
                     attackerId: actingPlayerId,
                     defenderId: opponentId,
@@ -194,7 +195,7 @@ export function executeCardCommand(
             events.push(event);
             
             // 通过效果系统执行卡牌效果（数据驱动）
-            const opponentId = Object.keys(state.players).find(id => id !== actingPlayerId) || actingPlayerId;
+            const opponentId = getContextualOpponentId(state, actingPlayerId) ?? actingPlayerId;
             if (card.effects && card.effects.length > 0) {
                 const effectCtx: EffectContext = {
                     attackerId: actingPlayerId,
@@ -285,7 +286,7 @@ export function executeCardCommand(
                     break;
                 }
 
-                const opponentId = Object.keys(state.players).find(id => id !== state.activePlayerId) || state.activePlayerId;
+                const opponentId = getContextualOpponentId(state, state.activePlayerId) ?? state.activePlayerId;
                 const effectCtx: EffectContext = {
                     attackerId: state.activePlayerId,
                     defenderId: opponentId,

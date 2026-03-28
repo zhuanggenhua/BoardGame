@@ -113,9 +113,16 @@
     "contextBrowser": "Older browser engine detected"
   },
   "game_names": {
+    "archview": "Architecture View",
+    "assetslicer": "Asset Slicer",
+    "audiobrowser": "Audio Browser",
+    "cardia": "Cardia",
     "tictactoe": "Tic-Tac-Toe",
     "dicethrone": "Dice Throne",
-    "summonerwars": "Summoner Wars"
+    "fxpreview": "Effect Preview",
+    "smashup": "Smash Up",
+    "summonerwars": "Summoner Wars",
+    "ugcbuilder": "UGC Prototype Builder"
   },
   "matchRoom": {
     "tutorialTitle": "{{game}} - Tutorial",

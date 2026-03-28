@@ -41,7 +41,7 @@ export const SocketCompatibilityToastListener = () => {
         const handleEnableCompatibilityMode = () => {
             setSocketCompatibilityModeEnabled(true);
             reconnectSockets();
-            info(
+            warning(
                 { kind: 'i18n', ns: 'common', key: 'socketCompatibility.enabledDescription' },
                 { kind: 'i18n', ns: 'common', key: 'socketCompatibility.enabledTitle' },
                 {

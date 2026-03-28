@@ -113,4 +113,20 @@ describe('ToastContext - Deduplication', () => {
     expect(result.current.toasts).toHaveLength(1);
     expect(result.current.toasts[0].id).not.toBe(firstId);
   });
+
+  it('should deduplicate repeated toasts in the same act batch', () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <ToastProvider>{children}</ToastProvider>
+    );
+
+    const { result } = renderHook(() => useToast(), { wrapper });
+
+    act(() => {
+      result.current.warning('Test message', undefined, { dedupeKey: 'batch.key' });
+      result.current.warning('Test message', undefined, { dedupeKey: 'batch.key' });
+    });
+
+    expect(result.current.toasts).toHaveLength(1);
+    expect(result.current.toasts[0].dedupeKey).toBe('batch.key');
+  });
 });

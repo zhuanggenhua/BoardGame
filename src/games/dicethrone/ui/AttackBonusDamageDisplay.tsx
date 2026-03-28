@@ -2,7 +2,7 @@
  * AttackBonusDamageDisplay 组件
  *
  * 在攻击阶段显示当前攻击或待发起攻击的伤害加成
- * 位置：右上角骰子区域上方，ActiveModifierBadge 下方
+ * 位置：骰子区域正上方，与 ActiveModifierBadge 同排显示
  */
 
 import React from 'react';
@@ -29,9 +29,9 @@ export const AttackBonusDamageDisplay: React.FC<AttackBonusDamageDisplayProps> =
                 className="pointer-events-auto"
                 data-testid="attack-modifier-bonus-badge"
             >
-                <div className="flex items-center justify-center gap-[0.4vw] px-[0.8vw] py-[0.3vw] rounded-full bg-gradient-to-r from-red-900/90 to-orange-900/90 border border-red-500/50 shadow-[0_0_1vw_rgba(239,68,68,0.4)] backdrop-blur-sm">
+                <div className="flex h-[1.65vw] items-center justify-center gap-[0.4vw] px-[0.8vw] rounded-full bg-gradient-to-r from-red-900/90 to-orange-900/90 border border-red-500/50 shadow-[0_0_1vw_rgba(239,68,68,0.4)] backdrop-blur-sm">
                     <Swords className="w-[0.9vw] h-[0.9vw] text-red-400" />
-                    <span className="text-red-200 text-[0.8vw] font-bold tracking-wide whitespace-nowrap">
+                    <span className="text-red-200 text-[0.72vw] font-bold tracking-wide whitespace-nowrap leading-none">
                         {t('attackBonus.label', { damage: bonusDamage })}
                     </span>
                 </div>

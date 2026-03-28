@@ -310,9 +310,11 @@ export class DamageCalculation {
       if (def.passiveTrigger?.timing !== 'onDamageReceived') continue;
       
       // 根据 category 决定从 statusEffects 还是 tokens 取层数
+      const statusStacks = targetPlayer.statusEffects?.[def.id] ?? 0;
+      const tokenStacks = targetPlayer.tokens?.[def.id] ?? 0;
       const stacks = def.category === 'debuff'
-        ? (targetPlayer.statusEffects?.[def.id] ?? 0)
-        : (targetPlayer.tokens?.[def.id] ?? 0);
+        ? Math.max(statusStacks, tokenStacks)
+        : tokenStacks;
       
       if (typeof stacks !== 'number' || stacks <= 0) continue;
       

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createScopedLogger } from '../logger';
+import { normalizeI18nLanguage } from '../i18n/types';
 import { parseNamespaceLiteral, collectReferencesFromContent } from '../../../scripts/verify/i18n-check';
 import {
     collectImplicitCandidateFiles,
@@ -8,6 +9,17 @@ import {
 
 afterEach(() => {
     vi.restoreAllMocks();
+});
+
+describe('i18n language normalization', () => {
+    it('maps browser variants to supported locales', () => {
+        expect(normalizeI18nLanguage('en-US')).toBe('en');
+        expect(normalizeI18nLanguage('en-GB')).toBe('en');
+        expect(normalizeI18nLanguage('zh')).toBe('zh-CN');
+        expect(normalizeI18nLanguage('zh-TW')).toBe('zh-CN');
+        expect(normalizeI18nLanguage(undefined)).toBe('zh-CN');
+        expect(normalizeI18nLanguage('fr-FR')).toBe('zh-CN');
+    });
 });
 
 describe('i18n 静态检查工具', () => {

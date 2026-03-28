@@ -77,7 +77,7 @@ describe('弹一手在响应窗口中的行为', () => {
         expect(result2.finalState.sys.responseWindow?.current).toBeUndefined();
     });
 
-    it('弹一手 target=select 应正确设置 targetOpponentDice=true', () => {
+    it('弹一手 target=select 应正确设置骰池归属与 targetOpponentDice=true', () => {
         const random = createQueuedRandom([3, 3, 3, 3, 3]);
         const runner = createRunner(random, false);
 
@@ -103,10 +103,11 @@ describe('弹一手在响应窗口中的行为', () => {
         const interaction = result.finalState.sys.interaction?.current;
         expect(interaction).toBeDefined();
         const meta = (interaction?.data as any)?.meta;
+        expect(meta?.diceOwnerId).toBe('0');
         expect(meta?.targetOpponentDice).toBe(true);
     });
 
-    it('自用骰子修改卡（如"出六"）应设置 targetOpponentDice=false', () => {
+    it('自用骰子修改卡（如"出六"）应设置骰池归属与 targetOpponentDice=false', () => {
         const random = createQueuedRandom([3, 3, 3, 3, 3]);
         const runner = createRunner(random, false);
 
@@ -131,6 +132,7 @@ describe('弹一手在响应窗口中的行为', () => {
         const interaction = result.finalState.sys.interaction?.current;
         expect(interaction).toBeDefined();
         const meta = (interaction?.data as any)?.meta;
+        expect(meta?.diceOwnerId).toBe('0');
         expect(meta?.targetOpponentDice).toBe(false);
     });
 });

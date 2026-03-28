@@ -565,17 +565,17 @@ function vampireBigGulp(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const options = buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
     if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.all_protected', ctx.now)] };
-    
+
     // 添加"跳过"选项
     const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
-    
+
     return resolveOrPrompt(ctx, [...options, skipOption], {
         id: 'vampire_big_gulp', title: '选择要消灭的力量≤4随从（可跳过）',
         sourceId: 'vampire_big_gulp', targetType: 'minion' as const,
     }, (val) => {
         // 跳过时不消灭随从
         if ((val as any).skip) return { events: [] };
-        
+
         const minion = ctx.state.bases[val.baseIndex]?.minions.find(m => m.uid === val.minionUid);
         if (!minion) {
             return { events: [] };
@@ -1094,7 +1094,6 @@ function vampireNightstalkerPodTalent(ctx: AbilityContext): AbilityResult {
     events.push(addTempPower(ctx.cardUid, ctx.baseIndex, 2, 'vampire_nightstalker_pod', ctx.now));
     return { events };
 }
-
 const handleNightstalkerPodTalent: IH = (state) => ({ state, events: [] });
 
 function vampireBigGulpPod(ctx: AbilityContext): AbilityResult {
@@ -1233,7 +1232,6 @@ function vampireDinnerDatePod(ctx: AbilityContext): AbilityResult {
     (interaction.data as any).continuationContext = { attachedMinionUid: ctx.targetMinionUid, attachedBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
-
 const handleDinnerDatePodChooseMinion: IH = (state, playerId, value, interactionData, _random, now) => {
     const ctx = interactionData?.continuationContext as any;
     if (!ctx) return { state, events: [] };
@@ -1435,33 +1433,41 @@ function registerVampireOngoingEffects(): void {
     // 自助餐 special：基地计分后如果打出者是赢家（排名第一），己方所有随从+1指示物
     // 使用 ARMED → afterScoring 延迟触发机制
     registerTrigger('vampire_buffet', 'afterScoring', (ctx: TriggerContext) => {
-        const { state, baseIndex, rankings, now } = ctx;
+        const { state, baseIndex, rankings, now, sourceCardUid } = ctx;
         if (baseIndex === undefined || !rankings || rankings.length === 0) return [];
 
-        const armed = (state.pendingAfterScoringSpecials ?? []).filter(
-            s => s.sourceDefId === 'vampire_buffet' && s.baseIndex === baseIndex,
+        const armedEntry = (state.pendingAfterScoringSpecials ?? []).find(
+            s => s.sourceDefId === 'vampire_buffet'
+                && s.baseIndex === baseIndex
+                && s.cardUid === sourceCardUid,
         );
-        if (armed.length === 0) return [];
+        if (!armedEntry) return [];
 
-        const events: SmashUpEvent[] = armed.map(s => ({
+        const events: SmashUpEvent[] = [{
             type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED,
-            payload: { sourceDefId: s.sourceDefId, playerId: s.playerId, baseIndex: s.baseIndex, baseDefId: ctx.state.bases[s.baseIndex].defId  },
+            payload: {
+                sourceDefId: armedEntry.sourceDefId,
+                playerId: armedEntry.playerId,
+                baseIndex: armedEntry.baseIndex,
+                cardUid: armedEntry.cardUid,
+            },
             timestamp: now,
-        } as SmashUpEvent));
+        } as SmashUpEvent];
 
-        for (const entry of armed) {
+        if (rankings[0].playerId !== armedEntry.playerId) {
             // 只有排名第一（赢家）才触发效果
-            if (rankings[0].playerId !== entry.playerId) continue;
-            
-            // 给所有基地上的己方随从加指示物（包括计分基地）
-            for (let i = 0; i < state.bases.length; i++) {
-                for (const m of state.bases[i].minions) {
-                    if (m.controller === entry.playerId) {
-                        events.push(addPowerCounter(m.uid, i, 1, 'vampire_buffet', now));
-                    }
+            return events;
+        }
+        for (let i = 0; i < state.bases.length; i++) {
+            for (const m of state.bases[i].minions) {
+                if (m.controller === armedEntry.playerId) {
+                    events.push(addPowerCounter(m.uid, i, 1, 'vampire_buffet', now));
                 }
             }
         }
         return events;
+    }, {
+        perInstance: true,
+        sourceScope: 'triggerBase',
     });
 }
