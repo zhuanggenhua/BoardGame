@@ -1021,11 +1021,11 @@ export function processDestroyTriggers(
     const combined = [...cleanedEvents, ...extraEvents];
 
     // Attempt to auto-resolve reaction queue when possible (single trigger, no ordering prompt).
+    // The queued trigger may depend on other events from the same batch already having been
+    // reduced into core (for example ONGOING_ATTACHED before an onMinionAffected reaction).
     let coreForQueue = (ms ?? state).core;
     for (const e of combined) {
-        if (e.type === SU_EVENTS.TRIGGER_QUEUED || e.type === SU_EVENTS.TRIGGER_CONSUMED) {
-            coreForQueue = reduce(coreForQueue, e);
-        }
+        coreForQueue = reduce(coreForQueue, e);
     }
     const baseMS = ms ?? state;
     const msForQueue = coreForQueue === baseMS.core ? baseMS : { ...baseMS, core: coreForQueue };

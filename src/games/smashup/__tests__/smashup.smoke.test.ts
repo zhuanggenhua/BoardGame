@@ -2247,45 +2247,24 @@ describe('smashup', () => {
 
         expect(result.success).toBe(true);
         expect(result.events.map(event => event.type)).toContain(SU_EVENTS.TRIGGER_QUEUED);
-        expect(result.finalState.sys.interaction?.current?.data?.sourceId).toBe('reaction_queue_choose_next');
-
-        const reactionHandler = getInteractionHandler('reaction_queue_choose_next');
         const drawHandler = getInteractionHandler('titan_kaiju_gorgodzolla_draw');
-        expect(reactionHandler).toBeDefined();
         expect(drawHandler).toBeDefined();
+        expect(result.finalState.sys.interaction?.current?.data?.sourceId).toBe('titan_kaiju_gorgodzolla_draw');
+        expect(result.finalState.core.titans?.find(candidate => candidate.uid === 't-gorgodzolla')?.powerCounters).toBe(1);
 
-        const reactionResult = reactionHandler!(
+        const drawResult = drawHandler!(
             result.finalState,
             '0',
-            { triggerId: result.finalState.core.triggerQueue?.[0]?.id },
+            { draw: true },
             result.finalState.sys.interaction?.current?.data as any,
             FIXED_RANDOM,
             95,
-        );
-        expect(reactionResult.events.map(event => event.type)).toEqual([
-            SU_EVENTS.TRIGGER_CONSUMED,
-            SU_EVENTS.TITAN_POWER_COUNTER_ADDED,
-        ]);
-        const afterTriggerCore = reactionResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            result.finalState.core,
-        );
-        expect(afterTriggerCore.titans?.find(candidate => candidate.uid === 't-gorgodzolla')?.powerCounters).toBe(1);
-        expect(reactionResult.state.sys.interaction?.queue?.[0]?.data?.sourceId).toBe('titan_kaiju_gorgodzolla_draw');
-
-        const drawResult = drawHandler!(
-            reactionResult.state,
-            '0',
-            { draw: true },
-            reactionResult.state.sys.interaction?.queue?.[0]?.data as any,
-            FIXED_RANDOM,
-            96,
         );
 
         expect(drawResult.events.map(event => event.type)).toEqual([SU_EVENTS.CARDS_DRAWN]);
         const resolved = drawResult.events.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            afterTriggerCore,
+            result.finalState.core,
         );
         expect(resolved.players['0'].hand.map(card => card.uid)).toContain('gorg-draw-card');
     });

@@ -1793,6 +1793,16 @@ function postProcessSystemEvents(
     const pid = getCurrentPlayerId(state);
     // 使用 pipeline 传入的 matchState（包含真实 sys），或构造最小包装
     let ms = matchState ?? { core: state, sys: { interaction: { current: undefined, queue: [] } } } as unknown as MatchState<SmashUpCore>;
+    const inputEventsAlreadyReduced = !!(ms.sys as any)?._ppseInputEventsReduced;
+    if (inputEventsAlreadyReduced) {
+        ms = {
+            ...ms,
+            sys: {
+                ...ms.sys,
+                _ppseInputEventsReduced: undefined,
+            } as typeof ms.sys,
+        };
+    }
 
     // 依次执行保护过滤 + trigger 后处理（链式传递 matchState）
     // destroy ↔ move 循环直到稳定（move 触发器可能产生新的 MINION_DESTROYED）
@@ -1929,6 +1939,7 @@ function postProcessSystemEvents(
     }
 
     const combined = [...afterDeckInspection.events, ...finalDerived];
+    const alreadyReducedEventCount = inputEventsAlreadyReduced ? afterDeckInspection.events.length : 0;
 
     // 泰坦位置事件后处理：标准基地双泰坦自动 clash。
     // 使用 sys 上的去重集合，避免 pipeline 多次调用 postProcessSystemEvents 时重复追加同一批 clash 结果。
@@ -1937,8 +1948,13 @@ function postProcessSystemEvents(
 
     const titanDerived: SmashUpEvent[] = [];
     let titanCore = state;
-    for (const event of combined) {
-        titanCore = reduce(titanCore, event);
+    for (let eventIndex = 0; eventIndex < combined.length; eventIndex++) {
+        const event = combined[eventIndex];
+        // state 已经包含了本轮原始领域事件（afterDeckInspection.events）的 reduce 结果；
+        // 这里只需要把新增的派生事件继续 reduce 进临时 core，避免原始事件被重复结算。
+        if (eventIndex >= alreadyReducedEventCount) {
+            titanCore = reduce(titanCore, event);
+        }
         if (event.type !== SU_EVENT_TYPES.TITAN_PLAYED && event.type !== SU_EVENT_TYPES.TITAN_MOVED) continue;
 
         const eventBaseIndex = event.type === SU_EVENT_TYPES.TITAN_PLAYED
