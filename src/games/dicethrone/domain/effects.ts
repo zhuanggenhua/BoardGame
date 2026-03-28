@@ -563,6 +563,7 @@ function resolveEffectAction(
                         sourceAbilityId,
                         ...(passiveModifiers.length > 0 ? { modifiers: passiveModifiers } : {}),
                         breakdown: result.breakdown,
+                        ...(action.unblockable ? { unblockable: true } : {}),
                     },
                     sourceCommandType: 'ABILITY_EFFECT',
                     timestamp,
@@ -777,9 +778,10 @@ function resolveEffectAction(
                         const dmgPayload = (handledEvent as DamageDealtEvent).payload;
                         const dmgAmount = dmgPayload.amount ?? 0;
                         const dmgTargetId = dmgPayload.targetId;
+                        const isUnblockable = dmgPayload.unblockable === true;
 
                         // 检查是否需要打开 Token 响应窗口
-                        if (shouldCheckTokenResponse && dmgAmount > 0) {
+                        if (shouldCheckTokenResponse && dmgAmount > 0 && !isUnblockable) {
                             const tokenResponseType = shouldOpenTokenResponse(
                                 state,
                                 attackerId,

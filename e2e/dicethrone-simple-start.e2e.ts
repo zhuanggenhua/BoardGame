@@ -18,6 +18,7 @@ import { registerDiceThroneConditions } from '../src/games/dicethrone/conditions
 import { GUNSLINGER_CARDS } from '../src/games/dicethrone/heroes/gunslinger/cards';
 import { VENGEANCE_2 } from '../src/games/dicethrone/heroes/paladin/abilities';
 import { PALADIN_CARDS } from '../src/games/dicethrone/heroes/paladin/cards';
+import { SAMURAI_CARDS } from '../src/games/dicethrone/heroes/samurai/cards';
 import {
     cleanupDTMatch,
     readyAndStartGame,
@@ -42,10 +43,18 @@ const TRANSFER_STATUS_CARD_ID = 'card-transfer-status';
 const TRANSFER_STATUS_CARD = COMMON_CARDS.find((card) => card.id === TRANSFER_STATUS_CARD_ID);
 const THE_LAW_CARD_ID = 'card-the-law';
 const THE_LAW_CARD = GUNSLINGER_CARDS.find((card) => card.id === THE_LAW_CARD_ID);
+const PISTOL_WHIP_CARD_ID = 'card-pistol-whip';
+const PISTOL_WHIP_CARD = GUNSLINGER_CARDS.find((card) => card.id === PISTOL_WHIP_CARD_ID);
+const WANTED_CARD_ID = 'card-wanted';
+const WANTED_CARD = GUNSLINGER_CARDS.find((card) => card.id === WANTED_CARD_ID);
+const HIGH_NOON_CARD_ID = 'card-high-noon';
+const HIGH_NOON_CARD = GUNSLINGER_CARDS.find((card) => card.id === HIGH_NOON_CARD_ID);
 const CONSECRATE_CARD_ID = 'card-consecrate';
 const CONSECRATE_CARD = PALADIN_CARDS.find((card) => card.id === CONSECRATE_CARD_ID);
 const PALADIN_VENGEANCE_2_CARD_ID = 'card-vengeance-2';
 const PALADIN_VENGEANCE_2_CARD = PALADIN_CARDS.find((card) => card.id === PALADIN_VENGEANCE_2_CARD_ID);
+const SAMURAI_ASHAMED_CARD_ID = 'card-you-should-be-ashamed';
+const SAMURAI_ASHAMED_CARD = SAMURAI_CARDS.find((card) => card.id === SAMURAI_ASHAMED_CARD_ID);
 
 const saveEvidenceScreenshot = async (
     page: Page,
@@ -385,6 +394,133 @@ const buildFourPlayerTheLawState = (state: any) => {
             knockdown: 0,
         };
     }
+
+    return next;
+};
+
+const buildFourPlayerWantedState = (state: any) => {
+    const next = buildFourPlayerNoResponseState(state);
+    const wantedCard = WANTED_CARD;
+    if (!wantedCard) {
+        throw new Error(`未找到稳定枪手卡 ${WANTED_CARD_ID}，无法构造 4 人 Wanted 场景`);
+    }
+
+    next.core.activePlayerId = '0';
+    next.sys.phase = 'main1';
+    next.sys.flowHalted = false;
+    next.core.pendingAttack = null;
+    next.core.selectedAbilityId = undefined;
+    next.core.rollConfirmed = false;
+    next.core.players['0'].hand = [{ ...structuredClone(wantedCard) }];
+    next.core.players['0'].resources.cp = Math.max(next.core.players['0'].resources.cp ?? 0, 5);
+    next.core.players['1'].tokens = {
+        ...(next.core.players['1'].tokens ?? {}),
+        [TOKEN_IDS.BOUNTY]: 0,
+    };
+    next.core.players['2'].tokens = {
+        ...(next.core.players['2'].tokens ?? {}),
+        [TOKEN_IDS.BOUNTY]: 0,
+    };
+    next.core.players['3'].tokens = {
+        ...(next.core.players['3'].tokens ?? {}),
+        [TOKEN_IDS.BOUNTY]: 0,
+    };
+
+    return next;
+};
+
+const buildFourPlayerPistolWhipState = (state: any) => {
+    const next = buildFourPlayerNoResponseState(state);
+    const pistolWhipCard = PISTOL_WHIP_CARD;
+    if (!pistolWhipCard) {
+        throw new Error(`未找到稳定枪手卡 ${PISTOL_WHIP_CARD_ID}，无法构造 4 人 Pistol Whip 场景`);
+    }
+
+    next.core.activePlayerId = '0';
+    next.sys.phase = 'main1';
+    next.sys.flowHalted = false;
+    next.core.pendingAttack = null;
+    next.core.selectedAbilityId = undefined;
+    next.core.rollConfirmed = false;
+    next.core.players['0'].hand = [{ ...structuredClone(pistolWhipCard) }];
+    next.core.players['0'].resources.cp = Math.max(next.core.players['0'].resources.cp ?? 0, 5);
+    next.core.players['0'].tokens = {
+        ...(next.core.players['0'].tokens ?? {}),
+        [TOKEN_IDS.EVASIVE]: 0,
+    };
+
+    for (const pid of ['1', '2', '3']) {
+        next.core.players[pid].tokens = {
+            ...(next.core.players[pid].tokens ?? {}),
+            protect: 0,
+        };
+        next.core.players[pid].statusEffects = {
+            ...(next.core.players[pid].statusEffects ?? {}),
+            knockdown: 0,
+        };
+    }
+
+    return next;
+};
+
+const buildFourPlayerHighNoonState = (state: any) => {
+    const next = buildFourPlayerNoResponseState(state);
+    const highNoonCard = HIGH_NOON_CARD;
+    if (!highNoonCard) {
+        throw new Error(`未找到稳定枪手卡 ${HIGH_NOON_CARD_ID}，无法构造 4 人 High Noon 场景`);
+    }
+
+    next.core.activePlayerId = '0';
+    next.sys.phase = 'main1';
+    next.sys.flowHalted = false;
+    next.core.pendingAttack = null;
+    next.core.selectedAbilityId = undefined;
+    next.core.rollConfirmed = false;
+    next.core.pendingBonusDiceSettlement = null;
+    next.core.players['0'].hand = [{ ...structuredClone(highNoonCard) }];
+    next.core.players['0'].resources.cp = Math.max(next.core.players['0'].resources.cp ?? 0, 5);
+
+    for (const pid of ['1', '2', '3']) {
+        next.core.players[pid].tokens = {
+            ...(next.core.players[pid].tokens ?? {}),
+            [TOKEN_IDS.BOUNTY]: 0,
+        };
+        next.core.players[pid].statusEffects = {
+            ...(next.core.players[pid].statusEffects ?? {}),
+            knockdown: 0,
+        };
+    }
+
+    return next;
+};
+
+const buildFourPlayerSamuraiAshamedState = (state: any) => {
+    const next = buildFourPlayerNoResponseState(state);
+    const ashamedCard = SAMURAI_ASHAMED_CARD;
+    if (!ashamedCard) {
+        throw new Error(`未找到稳定武士卡 ${SAMURAI_ASHAMED_CARD_ID}，无法构造 4 人耻辱牌场景`);
+    }
+
+    next.core.activePlayerId = '0';
+    next.sys.phase = 'main1';
+    next.sys.flowHalted = false;
+    next.core.pendingAttack = null;
+    next.core.selectedAbilityId = undefined;
+    next.core.rollConfirmed = false;
+    next.core.players['0'].hand = [{ ...structuredClone(ashamedCard) }];
+    next.core.players['0'].resources.cp = Math.max(next.core.players['0'].resources.cp ?? 0, 5);
+    next.core.players['1'].tokens = {
+        ...(next.core.players['1'].tokens ?? {}),
+        [TOKEN_IDS.SHAME]: 0,
+    };
+    next.core.players['2'].tokens = {
+        ...(next.core.players['2'].tokens ?? {}),
+        [TOKEN_IDS.SHAME]: 0,
+    };
+    next.core.players['3'].tokens = {
+        ...(next.core.players['3'].tokens ?? {}),
+        [TOKEN_IDS.SHAME]: 0,
+    };
 
     return next;
 };
@@ -1138,6 +1274,383 @@ test.describe('DiceThrone Simple Start', () => {
         expect(enemyCaptainState.core.players['3'].tokens[TOKEN_IDS.BOUNTY] ?? 0).toBe(1);
         expect(enemyCaptainState.core.players['3'].statusEffects.knockdown ?? 0).toBe(1);
 
+        await cleanupDTMatch(setup);
+    });
+
+    test('Online 4-player Wanted: real hand play only offers enemies in 2v2 and grants Bounty to selected enemy', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const setup = await setupDTOnlineMatchWithPlayers(browser, baseURL, {
+            numPlayers: 4,
+            gameServerBaseURL: getGameServerBaseURL(),
+        });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或四人房间创建失败');
+            return;
+        }
+
+        const { hostPage, matchId, players } = setup;
+        const enemyCaptainPage = players[3].page;
+
+        await selectCharacter(players[0].page, 'gunslinger');
+        await selectCharacter(players[1].page, 'barbarian');
+        await selectCharacter(players[2].page, 'samurai');
+        await selectCharacter(players[3].page, 'paladin');
+        await readyMultiplePlayersAndStartGame(hostPage, players.slice(1).map((player) => player.page));
+
+        await waitForGameBoard(hostPage);
+        await waitForHarnessPages(players.map((player) => player.page));
+
+        await applyOnlineMatchState(matchId, hostPage, buildFourPlayerWantedState);
+        await waitForPhase(hostPage, 'main1');
+
+        const wantedCard = hostPage.locator(`[data-card-id="${WANTED_CARD_ID}"]`).first();
+        const confirmButton = hostPage.getByRole('button', { name: /^(Confirm|确认)(?:\s*\(\d+\))?$/i }).last();
+        const enemyOne = hostPage.getByTestId('dt-player-target-1');
+        const allyTarget = hostPage.getByTestId('dt-player-target-2');
+        const enemyTwo = hostPage.getByTestId('dt-player-target-3');
+
+        await expect(wantedCard).toBeVisible({ timeout: 5000 });
+        await wantedCard.click({ force: true });
+
+        await expect.poll(async () => hostPage.evaluate(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const current = state?.sys?.interaction?.current?.data;
+            return {
+                sourceCardId: current?.sourceCardId ?? null,
+                resolveCustomActionId: current?.resolveCustomActionId ?? null,
+                targetPlayerIds: current?.targetPlayerIds ?? [],
+            };
+        }), { timeout: 15000, intervals: [200, 400, 800] }).toEqual({
+            sourceCardId: 'card-wanted',
+            resolveCustomActionId: 'gunslinger-card-wanted-resolve',
+            targetPlayerIds: ['1', '3'],
+        });
+
+        await expect(enemyOne).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(enemyTwo).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(allyTarget).toHaveCount(0);
+        await expect(confirmButton).toBeDisabled();
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await saveEvidenceScreenshot(hostPage, testInfo, '12-four-player-wanted-enemy-only-selection');
+
+        await enemyTwo.click();
+        await expect(confirmButton).toBeEnabled();
+        await confirmButton.click();
+
+        await hostPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['1']?.tokens?.bounty ?? 0) === 0
+                && (state?.core?.players?.['2']?.tokens?.bounty ?? 0) === 0
+                && (state?.core?.players?.['3']?.tokens?.bounty ?? 0) === 1;
+        }, undefined, { timeout: 10000, polling: 200 });
+        await enemyCaptainPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return (state?.core?.players?.['3']?.tokens?.bounty ?? 0) === 1;
+        }, undefined, { timeout: 10000, polling: 200 });
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '13-four-player-wanted-resolved-on-selected-enemy');
+        await cleanupDTMatch(setup);
+    });
+
+    test('Online 4-player Samurai Shame card: real hand play only offers enemies in 2v2 and applies Shame to selected enemy', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const setup = await setupDTOnlineMatchWithPlayers(browser, baseURL, {
+            numPlayers: 4,
+            gameServerBaseURL: getGameServerBaseURL(),
+        });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或四人房间创建失败');
+            return;
+        }
+
+        const { hostPage, matchId, players } = setup;
+        const enemyCaptainPage = players[3].page;
+
+        await selectCharacter(players[0].page, 'samurai');
+        await selectCharacter(players[1].page, 'barbarian');
+        await selectCharacter(players[2].page, 'gunslinger');
+        await selectCharacter(players[3].page, 'paladin');
+        await readyMultiplePlayersAndStartGame(hostPage, players.slice(1).map((player) => player.page));
+
+        await waitForGameBoard(hostPage);
+        await waitForHarnessPages(players.map((player) => player.page));
+
+        await applyOnlineMatchState(matchId, hostPage, buildFourPlayerSamuraiAshamedState);
+        await waitForPhase(hostPage, 'main1');
+
+        const ashamedCard = hostPage.locator(`[data-card-id="${SAMURAI_ASHAMED_CARD_ID}"]`).first();
+        const confirmButton = hostPage.getByRole('button', { name: /^(Confirm|确认)(?:\s*\(\d+\))?$/i }).last();
+        const enemyOne = hostPage.getByTestId('dt-player-target-1');
+        const allyTarget = hostPage.getByTestId('dt-player-target-2');
+        const enemyTwo = hostPage.getByTestId('dt-player-target-3');
+
+        await expect(ashamedCard).toBeVisible({ timeout: 5000 });
+        await ashamedCard.click({ force: true });
+
+        await hostPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const current = state?.sys?.interaction?.current?.data;
+            const targetPlayerIds = current?.targetPlayerIds ?? [];
+            return current?.sourceCardId === 'card-you-should-be-ashamed'
+                && current?.resolveCustomActionId === 'samurai-card-you-should-be-ashamed-resolve'
+                && targetPlayerIds.length === 2
+                && targetPlayerIds.includes('1')
+                && targetPlayerIds.includes('3')
+                && !targetPlayerIds.includes('2');
+        }, undefined, { timeout: 10000, polling: 200 });
+
+        await expect(enemyOne).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(enemyTwo).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(allyTarget).toHaveCount(0);
+        await expect(confirmButton).toBeDisabled();
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await saveEvidenceScreenshot(hostPage, testInfo, '14-four-player-samurai-shame-enemy-only-selection');
+
+        await enemyOne.click();
+        await expect(confirmButton).toBeEnabled();
+        await confirmButton.click();
+
+        await hostPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['1']?.tokens?.shame ?? 0) === 2
+                && (state?.core?.players?.['2']?.tokens?.shame ?? 0) === 0
+                && (state?.core?.players?.['3']?.tokens?.shame ?? 0) === 0;
+        }, undefined, { timeout: 10000, polling: 200 });
+        await enemyCaptainPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return (state?.core?.players?.['3']?.tokens?.shame ?? 0) === 0;
+        }, undefined, { timeout: 10000, polling: 200 });
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '15-four-player-samurai-shame-resolved-on-selected-enemy');
+        await cleanupDTMatch(setup);
+    });
+
+    test('Online 4-player Pistol Whip: real hand play only offers enemies in 2v2 and applies knockdown plus undefendable damage to selected enemy', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const setup = await setupDTOnlineMatchWithPlayers(browser, baseURL, {
+            numPlayers: 4,
+            gameServerBaseURL: getGameServerBaseURL(),
+        });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或四人房间创建失败');
+            return;
+        }
+
+        const { hostPage, matchId, players } = setup;
+        const enemyCaptainPage = players[3].page;
+
+        await selectCharacter(players[0].page, 'gunslinger');
+        await selectCharacter(players[1].page, 'barbarian');
+        await selectCharacter(players[2].page, 'samurai');
+        await selectCharacter(players[3].page, 'paladin');
+        await readyMultiplePlayersAndStartGame(hostPage, players.slice(1).map((player) => player.page));
+
+        await waitForGameBoard(hostPage);
+        await waitForHarnessPages(players.map((player) => player.page));
+
+        await applyOnlineMatchState(matchId, hostPage, buildFourPlayerPistolWhipState);
+        await waitForPhase(hostPage, 'main1');
+
+        const pistolWhipCard = hostPage.locator(`[data-card-id="${PISTOL_WHIP_CARD_ID}"]`).first();
+        const confirmButton = hostPage.getByRole('button', { name: /^(Confirm|确认)(?:\s*\(\d+\))?$/i }).last();
+        const enemyOne = hostPage.getByTestId('dt-player-target-1');
+        const allyTarget = hostPage.getByTestId('dt-player-target-2');
+        const enemyTwo = hostPage.getByTestId('dt-player-target-3');
+
+        const beforeState = await readHarnessState<any>(hostPage);
+        const enemyHpBefore = beforeState.core.players['3'].resources[RESOURCE_IDS.HP] ?? 0;
+
+        await expect(pistolWhipCard).toBeVisible({ timeout: 5000 });
+        await pistolWhipCard.click({ force: true });
+
+        await expect.poll(async () => hostPage.evaluate(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const current = state?.sys?.interaction?.current?.data;
+            return {
+                sourceCardId: current?.sourceCardId ?? null,
+                resolveCustomActionId: current?.resolveCustomActionId ?? null,
+                targetPlayerIds: current?.targetPlayerIds ?? [],
+                hand: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            };
+        }), { timeout: 15000, intervals: [200, 400, 800] }).toEqual({
+            sourceCardId: 'card-pistol-whip',
+            resolveCustomActionId: 'gunslinger-card-pistol-whip-resolve',
+            targetPlayerIds: ['1', '3'],
+            hand: [],
+        });
+
+        await expect(enemyOne).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(enemyTwo).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(allyTarget).toHaveCount(0);
+        await expect(confirmButton).toBeDisabled();
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await saveEvidenceScreenshot(hostPage, testInfo, '18-four-player-pistol-whip-enemy-only-selection');
+
+        await enemyTwo.click();
+        await expect(confirmButton).toBeEnabled();
+        await confirmButton.click();
+
+        await hostPage.waitForFunction((baselineHp) => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['0']?.tokens?.evasive ?? 0) === 1
+                && (state?.core?.players?.['1']?.statusEffects?.knockdown ?? 0) === 0
+                && (state?.core?.players?.['2']?.statusEffects?.knockdown ?? 0) === 0
+                && (state?.core?.players?.['3']?.statusEffects?.knockdown ?? 0) === 1
+                && baselineHp - (state?.core?.players?.['3']?.resources?.hp ?? 0) === 1;
+        }, enemyHpBefore, { timeout: 10000, polling: 200 });
+
+        await enemyCaptainPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return (state?.core?.players?.['3']?.statusEffects?.knockdown ?? 0) === 1;
+        }, undefined, { timeout: 10000, polling: 200 });
+
+        const stateAfter = await readHarnessState<any>(hostPage);
+        expect(stateAfter.core.players['0'].tokens[TOKEN_IDS.EVASIVE] ?? 0).toBe(1);
+        expect(stateAfter.core.players['1'].statusEffects.knockdown ?? 0).toBe(0);
+        expect(stateAfter.core.players['2'].statusEffects.knockdown ?? 0).toBe(0);
+        expect(stateAfter.core.players['3'].statusEffects.knockdown ?? 0).toBe(1);
+        expect(enemyHpBefore - (stateAfter.core.players['3'].resources[RESOURCE_IDS.HP] ?? 0)).toBe(1);
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '19-four-player-pistol-whip-resolved-on-selected-enemy');
+        await cleanupDTMatch(setup);
+    });
+
+    test('Online 4-player High Noon: real hand play only offers enemies in 2v2 and resolves the rolled branch on selected enemy', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const setup = await setupDTOnlineMatchWithPlayers(browser, baseURL, {
+            numPlayers: 4,
+            gameServerBaseURL: getGameServerBaseURL(),
+        });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或四人房间创建失败');
+            return;
+        }
+
+        const { hostPage, matchId, players } = setup;
+        const enemyCaptainPage = players[3].page;
+
+        await selectCharacter(players[0].page, 'gunslinger');
+        await selectCharacter(players[1].page, 'barbarian');
+        await selectCharacter(players[2].page, 'samurai');
+        await selectCharacter(players[3].page, 'paladin');
+        await readyMultiplePlayersAndStartGame(hostPage, players.slice(1).map((player) => player.page));
+
+        await waitForGameBoard(hostPage);
+        await waitForHarnessPages(players.map((player) => player.page));
+
+        await applyOnlineMatchState(matchId, hostPage, buildFourPlayerHighNoonState);
+        await waitForPhase(hostPage, 'main1');
+
+        const highNoonCard = hostPage.locator(`[data-card-id="${HIGH_NOON_CARD_ID}"]`).first();
+        const confirmButton = hostPage.getByRole('button', { name: /^(Confirm|确认)(?:\s*\(\d+\))?$/i }).last();
+        const enemyOne = hostPage.getByTestId('dt-player-target-1');
+        const allyTarget = hostPage.getByTestId('dt-player-target-2');
+        const enemyTwo = hostPage.getByTestId('dt-player-target-3');
+
+        const beforeState = await readHarnessState<any>(hostPage);
+        const enemyHpBefore = beforeState.core.players['3'].resources[RESOURCE_IDS.HP] ?? 0;
+
+        await expect(highNoonCard).toBeVisible({ timeout: 5000 });
+        await highNoonCard.click({ force: true });
+
+        await expect.poll(async () => hostPage.evaluate(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const current = state?.sys?.interaction?.current?.data;
+            return {
+                sourceCardId: current?.sourceCardId ?? null,
+                resolveCustomActionId: current?.resolveCustomActionId ?? null,
+                targetPlayerIds: current?.targetPlayerIds ?? [],
+                hand: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+            };
+        }), { timeout: 15000, intervals: [200, 400, 800] }).toEqual({
+            sourceCardId: 'card-high-noon',
+            resolveCustomActionId: 'gunslinger-card-high-noon-resolve',
+            targetPlayerIds: ['1', '3'],
+            hand: [],
+        });
+
+        await expect(enemyOne).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(enemyTwo).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(allyTarget).toHaveCount(0);
+        await expect(confirmButton).toBeDisabled();
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await saveEvidenceScreenshot(hostPage, testInfo, '16-four-player-high-noon-enemy-only-selection');
+
+        await enemyTwo.click();
+        await expect(confirmButton).toBeEnabled();
+        await confirmButton.click();
+
+        await expect.poll(async () => hostPage.evaluate(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const latestBonusDieEvent = [...entries].reverse().find((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED');
+            return latestBonusDieEvent?.event?.payload?.effectKey ?? '';
+        }), { timeout: 15000, intervals: [200, 400, 800] }).toMatch(
+            /^bonusDie\.effect\.gunslingerHighNoon(Bullet|Dash|Bullseye)$/
+        );
+
+        await expect.poll(async () => enemyCaptainPage.evaluate(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const latestBonusDieEvent = [...entries].reverse().find((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED');
+            return latestBonusDieEvent?.event?.payload?.effectKey ?? '';
+        }), { timeout: 15000, intervals: [200, 400, 800] }).toMatch(
+            /^bonusDie\.effect\.gunslingerHighNoon(Bullet|Dash|Bullseye)$/
+        );
+
+        const stateAfter = await hostPage.evaluate((baselineHp) => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const latestBonusDieEvent = [...entries].reverse().find((entry: any) => entry.event?.type === 'BONUS_DIE_ROLLED');
+            return {
+                effectKey: latestBonusDieEvent?.event?.payload?.effectKey ?? null,
+                enemyOneBounty: state?.core?.players?.['1']?.tokens?.bounty ?? 0,
+                allyBounty: state?.core?.players?.['2']?.tokens?.bounty ?? 0,
+                enemyTwoBounty: state?.core?.players?.['3']?.tokens?.bounty ?? 0,
+                enemyOneKnockdown: state?.core?.players?.['1']?.statusEffects?.knockdown ?? 0,
+                allyKnockdown: state?.core?.players?.['2']?.statusEffects?.knockdown ?? 0,
+                enemyTwoKnockdown: state?.core?.players?.['3']?.statusEffects?.knockdown ?? 0,
+                enemyTwoHp: state?.core?.players?.['3']?.resources?.hp ?? 0,
+                enemyTwoDamage: baselineHp - (state?.core?.players?.['3']?.resources?.hp ?? 0),
+            };
+        }, enemyHpBefore);
+
+        expect(stateAfter.enemyOneBounty).toBe(0);
+        expect(stateAfter.allyBounty).toBe(0);
+        expect(stateAfter.enemyOneKnockdown).toBe(0);
+        expect(stateAfter.allyKnockdown).toBe(0);
+
+        if (stateAfter.effectKey === 'bonusDie.effect.gunslingerHighNoonBullet') {
+            expect(stateAfter.enemyTwoDamage).toBe(2);
+            expect(stateAfter.enemyTwoBounty).toBe(0);
+            expect(stateAfter.enemyTwoKnockdown).toBe(0);
+        } else if (stateAfter.effectKey === 'bonusDie.effect.gunslingerHighNoonDash') {
+            expect(stateAfter.enemyTwoDamage).toBe(0);
+            expect(stateAfter.enemyTwoBounty).toBe(0);
+            expect(stateAfter.enemyTwoKnockdown).toBe(1);
+        } else {
+            expect(stateAfter.effectKey).toBe('bonusDie.effect.gunslingerHighNoonBullseye');
+            expect(stateAfter.enemyTwoDamage).toBe(0);
+            expect(stateAfter.enemyTwoBounty).toBe(1);
+            expect(stateAfter.enemyTwoKnockdown).toBe(0);
+        }
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '17-four-player-high-noon-resolved-on-selected-enemy');
         await cleanupDTMatch(setup);
     });
 

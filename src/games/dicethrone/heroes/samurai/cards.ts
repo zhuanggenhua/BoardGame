@@ -184,7 +184,11 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-you-should-be-ashamed', 'description'),
         previewRef: cropPreview('slot-28.webp'),
-        effects: [grantToken('opponent', TOKEN_IDS.SHAME, 2, '对手获得 2 层耻辱。')],
+        effects: [{
+            description: '选择 1 位敌方玩家，使其获得 2 层耻辱。',
+            action: { type: 'custom', target: 'self', customActionId: 'samurai-card-you-should-be-ashamed' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-no-retreat',

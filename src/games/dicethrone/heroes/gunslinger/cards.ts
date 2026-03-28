@@ -3,7 +3,7 @@ import type { CardPreviewRef } from '../../../../core';
 import type { AbilityCard } from '../../types';
 import type { AbilityDef, AbilityEffect } from '../../domain/combat';
 import { COMMON_CARDS } from '../../domain/commonCards';
-import { STATUS_IDS, TOKEN_IDS } from '../../domain/ids';
+import { TOKEN_IDS } from '../../domain/ids';
 import {
     BOUNTY_HUNTER_2,
     DEADEYE_2,
@@ -44,16 +44,6 @@ const grantToken = (
 ): AbilityEffect => ({
     description,
     action: { type: 'grantToken', target, tokenId, value },
-    timing: 'immediate',
-});
-
-const grantStatus = (
-    statusId: string,
-    value: number,
-    description: string,
-): AbilityEffect => ({
-    description,
-    action: { type: 'grantStatus', target: 'opponent', statusId, value },
     timing: 'immediate',
 });
 
@@ -152,12 +142,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         previewRef: cropPreview('pistol-whip.webp'),
         effects: [
             grantToken('self', TOKEN_IDS.EVASIVE, 1, '获得 1 个闪避。'),
-            grantStatus(STATUS_IDS.KNOCKDOWN, 1, '对手获得击倒。'),
-            {
-                description: '造成 1 点伤害。',
-                action: { type: 'damage', target: 'opponent', value: 1, unblockable: true },
-                timing: 'immediate',
-            },
+            custom('gunslinger-card-pistol-whip', '选择 1 位敌方玩家，使其获得击倒并受到 1 点伤害。'),
         ],
     },
     {
@@ -180,7 +165,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         previewRef: cropPreview('mark-the-target.webp'),
         effects: [
             grantToken('self', TOKEN_IDS.EVASIVE, 2, '获得 2 个闪避。'),
-            grantToken('opponent', TOKEN_IDS.BOUNTY, 1, '对手获得 1 个赏金。'),
+            custom('gunslinger-card-mark-the-target', '选择 1 位敌方玩家，使其获得 1 个赏金。'),
         ],
     },
     {
@@ -235,7 +220,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('card-wanted', 'description'),
         previewRef: cropPreview('slot-27.webp'),
         effects: [
-            grantToken('opponent', TOKEN_IDS.BOUNTY, 1, '对手获得 1 个赏金。'),
+            custom('gunslinger-card-wanted', '选择 1 位敌方玩家，使其获得 1 个赏金。'),
         ],
     },
     {
@@ -259,20 +244,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('card-high-noon', 'description'),
         previewRef: cropPreview('slot-29.webp'),
         effects: [
-            {
-                description: '掷 1 颗骰子并按结果结算。',
-                action: {
-                    type: 'rollDie',
-                    target: 'opponent',
-                    diceCount: 1,
-                    conditionalEffects: [
-                        { face: 'bullet', bonusDamage: 2, effectKey: 'bonusDie.effect.gunslingerHighNoonBullet' },
-                        { face: 'dash', grantStatus: { statusId: STATUS_IDS.KNOCKDOWN, value: 1, target: 'opponent' }, effectKey: 'bonusDie.effect.gunslingerHighNoonDash' },
-                        { face: 'bullseye', grantToken: { tokenId: TOKEN_IDS.BOUNTY, value: 1, target: 'opponent' }, effectKey: 'bonusDie.effect.gunslingerHighNoonBullseye' },
-                    ],
-                },
-                timing: 'immediate',
-            },
+            custom('gunslinger-card-high-noon', '选择 1 位敌方玩家，掷 1 颗骰子并按结果结算。'),
         ],
     },
     {

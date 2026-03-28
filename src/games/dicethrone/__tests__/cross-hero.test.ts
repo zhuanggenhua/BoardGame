@@ -631,6 +631,204 @@ describe('cross hero battles', () => {
             expect(finalState.core.players['2'].statusEffects.knockdown ?? 0).toBe(0);
         });
 
+        it('wanted should only target enemies in 4-player team mode', () => {
+            const wantedCard = GUNSLINGER_CARDS.find(card => card.id === 'card-wanted');
+            expect(wantedCard).toBeDefined();
+
+            const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+
+            let state = createInitializedStateWithCharacters(
+                playerIds,
+                fixedRandom,
+                { '0': 'gunslinger', '1': 'monk', '2': 'samurai', '3': 'paladin' }
+            );
+            state.core.players['0'].resources.cp = 2;
+            state.core.players['0'].hand = [{ ...wantedCard! }];
+            state.core.players['0'].deck = [];
+
+            const playResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'PLAY_CARD',
+                    playerId: '0',
+                    payload: { cardId: 'card-wanted' },
+                    timestamp: 1,
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds
+            );
+            expect(playResult.success).toBe(true);
+            if (!playResult.success) {
+                return;
+            }
+
+            state = playResult.state as MatchState<DiceThroneCore>;
+            const interaction = state.sys.interaction.current as {
+                data?: { targetPlayerIds?: PlayerId[]; resolveCustomActionId?: string };
+            } | undefined;
+            expect(interaction?.data?.targetPlayerIds).toEqual(['1', '3']);
+            expect(interaction?.data?.resolveCustomActionId).toBe('gunslinger-card-wanted-resolve');
+
+            const resolveResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'RESOLVE_INTERACTION',
+                    playerId: '0',
+                    payload: { selectedPlayerIds: ['3'] },
+                    timestamp: 2,
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds
+            );
+            expect(resolveResult.success).toBe(true);
+            if (!resolveResult.success) {
+                return;
+            }
+
+            const finalState = resolveResult.state as MatchState<DiceThroneCore>;
+            expect(finalState.core.players['3'].tokens.bounty).toBe(1);
+            expect(finalState.core.players['1'].tokens.bounty ?? 0).toBe(0);
+            expect(finalState.core.players['2'].tokens.bounty ?? 0).toBe(0);
+        });
+
+        it('high noon should resolve its die result on the selected enemy in 4-player team mode', () => {
+            const highNoonCard = GUNSLINGER_CARDS.find(card => card.id === 'card-high-noon');
+            expect(highNoonCard).toBeDefined();
+
+            const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+
+            let state = createInitializedStateWithCharacters(
+                playerIds,
+                fixedRandom,
+                { '0': 'gunslinger', '1': 'monk', '2': 'samurai', '3': 'paladin' }
+            );
+            state.core.players['0'].resources.cp = 1;
+            state.core.players['0'].hand = [{ ...highNoonCard! }];
+            state.core.players['0'].deck = [];
+
+            const playResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'PLAY_CARD',
+                    playerId: '0',
+                    payload: { cardId: 'card-high-noon' },
+                    timestamp: 1,
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds
+            );
+            expect(playResult.success).toBe(true);
+            if (!playResult.success) {
+                return;
+            }
+
+            state = playResult.state as MatchState<DiceThroneCore>;
+            const interaction = state.sys.interaction.current as {
+                data?: { targetPlayerIds?: PlayerId[]; resolveCustomActionId?: string };
+            } | undefined;
+            expect(interaction?.data?.targetPlayerIds).toEqual(['1', '3']);
+            expect(interaction?.data?.resolveCustomActionId).toBe('gunslinger-card-high-noon-resolve');
+
+            const resolveResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'RESOLVE_INTERACTION',
+                    playerId: '0',
+                    payload: { selectedPlayerIds: ['3'] },
+                    timestamp: 2,
+                } as DiceThroneCommand,
+                createQueuedRandom([6]),
+                playerIds
+            );
+            expect(resolveResult.success).toBe(true);
+            if (!resolveResult.success) {
+                return;
+            }
+
+            const finalState = resolveResult.state as MatchState<DiceThroneCore>;
+            expect(finalState.core.players['3'].tokens.bounty).toBe(1);
+            expect(finalState.core.players['1'].tokens.bounty ?? 0).toBe(0);
+            expect(finalState.core.players['2'].tokens.bounty ?? 0).toBe(0);
+        });
+
+        it('you should be ashamed should only target enemies in 4-player team mode', () => {
+            const ashamedCard = SAMURAI_CARDS.find(card => card.id === 'card-you-should-be-ashamed');
+            expect(ashamedCard).toBeDefined();
+
+            const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+
+            let state = createInitializedStateWithCharacters(
+                playerIds,
+                fixedRandom,
+                { '0': 'samurai', '1': 'monk', '2': 'gunslinger', '3': 'paladin' }
+            );
+            state.core.players['0'].resources.cp = 1;
+            state.core.players['0'].hand = [{ ...ashamedCard! }];
+            state.core.players['0'].deck = [];
+
+            const playResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'PLAY_CARD',
+                    playerId: '0',
+                    payload: { cardId: 'card-you-should-be-ashamed' },
+                    timestamp: 1,
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds
+            );
+            expect(playResult.success).toBe(true);
+            if (!playResult.success) {
+                return;
+            }
+
+            state = playResult.state as MatchState<DiceThroneCore>;
+            const interaction = state.sys.interaction.current as {
+                data?: { targetPlayerIds?: PlayerId[]; resolveCustomActionId?: string };
+            } | undefined;
+            expect(interaction?.data?.targetPlayerIds).toEqual(['1', '3']);
+            expect(interaction?.data?.resolveCustomActionId).toBe('samurai-card-you-should-be-ashamed-resolve');
+
+            const resolveResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'RESOLVE_INTERACTION',
+                    playerId: '0',
+                    payload: { selectedPlayerIds: ['1'] },
+                    timestamp: 2,
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds
+            );
+            expect(resolveResult.success).toBe(true);
+            if (!resolveResult.success) {
+                return;
+            }
+
+            const finalState = resolveResult.state as MatchState<DiceThroneCore>;
+            expect(finalState.core.players['1'].tokens.shame).toBe(2);
+            expect(finalState.core.players['3'].tokens.shame ?? 0).toBe(0);
+            expect(finalState.core.players['2'].tokens.shame ?? 0).toBe(0);
+        });
+
         it('pistol whip undefendable damage should not trigger protect', () => {
             const pistolWhipCard = GUNSLINGER_CARDS.find(card => card.id === 'card-pistol-whip');
             expect(pistolWhipCard).toBeDefined();

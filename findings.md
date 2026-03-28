@@ -602,3 +602,76 @@
   - 回归：既有 `1v1 / 3` 人 `The Law` 真实点击链路重新跑通，说明这次修正没有把旧多人场景一起带坏。
 - 因此，当前关于 `The Law` 的阶段性结论应更新为：
   - `1v1` 直结算、`3` 人多人多目标、`4` 人 `2v2` 敌我过滤与真实点击结算，三条链都已闭环。
+
+## Addendum（2026-03-28）：枪手 / 武士剩余四人目标牌裁决
+
+- 继续往下审计后，不能再把“枪手 / 武士已经全量审计完毕”直接说满。
+- 新发现的真实缺口不在 `The Law`，而在同一类“主阶段打牌、正文写对手、4 人 `2v2` 下却仍走默认 opponent 推断”的剩余牌：
+  - 枪手：`Wanted`、`High Noon`、`Mark the Target`、`Pistol Whip`
+  - 武士：`You Should Be Ashamed`
+- 这类牌的正确收口不是继续在 UI 上硬过滤显示名，而是把“先选敌方，再执行牌效果”变成领域层正式路径：
+  - `selectPlayer` 交互新增 `resolveCustomActionId`
+  - `RESOLVE_INTERACTION` 在目标确认后继续调用对应 custom action handler
+  - 角色卡牌声明改为显式 custom action，而不再依赖 `target: 'opponent'` 的默认对手推断
+- 已被新验证确认通过的链路：
+  - `Wanted`：4 人 `2v2` 下只暴露敌方，确认后仅选中敌方获得 `Bounty`
+  - `High Noon`：4 人 `2v2` 下只暴露敌方，确认后掷骰结果仅落到选中敌方
+  - `You Should Be Ashamed`：4 人 `2v2` 下只暴露敌方，确认后仅选中敌方获得 `2 Shame`
+  - 上述结论同时有领域回归和联机真实点击支撑
+- `Pistol Whip` 之前暴露出的真实问题也已裁定完成：
+  - 根因不是卡牌声明，也不是选敌链本身，而是 custom action 后处理阶段把不可防御伤害当成普通 `DAMAGE_DEALT`，错误继续送进了防御方 token response 流程。
+  - 现在 `DamageDealtEvent` 已显式携带 `unblockable` 语义，`effects.ts` 在 custom action 后处理里也会跳过这类伤害的 token-response 改写。
+  - 定向回归 `pistol whip undefendable damage should not trigger protect`、`high noon bullet branch deals 2 undefendable damage without protect` 与 4 人目标牌回归已一并跑通，说明这不是单卡特判，而是通用语义门修正。
+- 所以此刻最准确的说法是：
+  - `The Law` 与本轮继续扫出的剩余四人目标牌缺口已经补到实现、领域回归、部分真实点击 E2E 三层闭环；
+  - 但这仍不等于“枪手 / 武士整两个角色所有牌、所有技能、所有多人分支都已穷尽式审计完成”。
+
+## Addendum（2026-03-28）：High Noon 真实入口与审计白名单补齐
+
+- 这轮沿着“整角色验收口径”继续推进后，枪手又补上了一条更有代表性的真实入口：
+  - `e2e/dicethrone-simple-start.e2e.ts` 新增 `Online 4-player High Noon: real hand play only offers enemies in 2v2 and resolves the rolled branch on selected enemy`
+  - 它不只验证“只出现敌方目标”，还验证了 `High Noon` 的 bonus-die 结果只会落到被选中的敌方：
+    - `Bullet` → `2` 点不可防御伤害
+    - `Dash` → `1 Knockdown`
+    - `Bullseye` → `1 Bounty`
+- 这条 E2E 的意义高于再补一条纯 token/纯目标牌：
+  - 它同时覆盖了“从手牌点击打出 -> 4 人选敌 -> custom action resolve -> 骰子分支结算 -> 状态同步”整条枪手高风险路径。
+- 同一轮还暴露了一个“审计工具本身没跟上实现模式”的问题：
+  - `ability-customaction-audit.test.ts` 之前只认识声明式 `customActionId`，不认识 `resolveCustomActionId` 这类交互确认后的间接引用。
+  - 因此 `gunslinger-card-high-noon-resolve`、`gunslinger-card-pistol-whip-resolve`、`gunslinger-card-wanted-resolve`、`gunslinger-card-mark-the-target-resolve`、`samurai-card-you-should-be-ashamed-resolve` 被误判为孤儿 handler。
+  - 这不是运行时 bug，而是审计白名单缺口；现已补齐，并复跑 `ability-customaction-audit.test.ts` 至 `30 passed`。
+- 阶段性裁决应更新为：
+  - 枪手当前已有 `The Law`、`Wanted`、`High Noon` 三条真实入口证据，分别代表“多目标”“单目标授 token”“单目标 bonus-die 分支结算”；
+  - 武士当前已有 `You Should Be Ashamed`、`Righteousness`、`Zanshin`、`Honor`、`Back Strike` 的真实入口或真实点击证据；
+  - 但仍不能把这写成“两个角色所有交互家族全部穷尽覆盖”。
+
+## Addendum（2026-03-28）：Pistol Whip 真实入口补齐后的角色级裁决
+
+- `Pistol Whip` 现在已经不只是领域回归通过：
+  - `e2e/dicethrone-simple-start.e2e.ts` 新增的四人联机真实点击用例已通过，覆盖“从手牌点击 -> 只出现敌方 -> 选中敌方 -> 不可防御伤害 + Knockdown 落地 -> 自身获得 Evasive”。
+  - 同时复跑 `Online 4-player (Wanted|Pistol Whip|High Noon|Samurai Shame card)`，组合结果为 `4 passed`，说明这组四人目标牌当前不是单条偶发通过。
+- 因此，枪手当前的代表性交互家族证据已经可以按下面的口径归类：
+  - 已有真实入口 E2E：
+    - `The Law`：手牌打出、多目标、4 人 `2v2` 敌我过滤
+    - `Wanted`：单目标授 `Bounty`
+    - `Pistol Whip`：单目标不可防御伤害 + `Knockdown`
+    - `High Noon`：单目标 bonus-die 分支结算
+  - 已有领域回归但尚无独立真实入口：
+    - `Mark the Target`
+  - 由上述真实入口已经代表覆盖的高风险共享路径：
+    - 四人 `2v2` 敌方选择
+    - `resolveCustomActionId` 交互确认后继续走 custom action
+    - custom action 产出的不可防御伤害不误入 token response
+    - `Bounty / Evasive / Knockdown` 的目标归属正确
+- 武士当前的角色级裁决也可以同步收敛：
+  - 已有真实入口或真实点击 E2E：
+    - `You Should Be Ashamed`
+    - `Righteousness`
+    - `Zanshin`
+    - `Honor`
+    - `Back Strike`
+  - 已有领域回归但尚无独立真实入口：
+    - `Masamune` 系 bonus-die / 升级分支
+- 所以当前最准确的结论是：
+  - 按新建的 `dicethrone-hero-release-readiness` OpenSpec 口径，枪手与武士都已经达到“角色级当前验收范围”的最低要求。
+  - 但 residual scope 仍然存在，尤其是 `Mark the Target` 的独立四人真实入口，以及武士 `Masamune` 系与其余未被本轮命中的骰技 / 升级分支；因此不能把当前状态外推成“两个角色所有内容都已穷尽式审计完成”。

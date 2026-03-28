@@ -46,6 +46,7 @@ import { executeTokenCommand } from './executeTokens';
 import { getPlayerPassiveAbilities } from './passiveAbility';
 import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
+import { getCustomActionHandler } from './effects';
 import { getAutoResponseEnabled } from '../ui/AutoResponseToggle';
 
 // ============================================================================
@@ -634,9 +635,41 @@ export function execute(
             const statusConfigs = interaction.statusGrantConfigs ?? (
                 interaction.statusGrantConfig ? [interaction.statusGrantConfig] : []
             );
+            const resolveCustomActionId = interaction.resolveCustomActionId;
 
             for (const [playerIndex, targetPlayerId] of resolvedPlayerIds.entries()) {
                 if (!state.players[targetPlayerId]) continue;
+
+                if (resolveCustomActionId) {
+                    const handler = getCustomActionHandler(resolveCustomActionId);
+                    if (!handler) {
+                        continue;
+                    }
+
+                    const customTimestamp = timestamp + playerIndex * 10;
+                    events.push(...handler({
+                        ctx: {
+                            attackerId: interaction.playerId,
+                            defenderId: targetPlayerId,
+                            sourceAbilityId: interaction.sourceCardId,
+                            state,
+                            damageDealt: 0,
+                            timestamp: customTimestamp,
+                        },
+                        targetId: targetPlayerId,
+                        attackerId: interaction.playerId,
+                        sourceAbilityId: interaction.sourceCardId,
+                        state,
+                        timestamp: customTimestamp,
+                        random,
+                        action: {
+                            type: 'custom',
+                            target: 'self',
+                            customActionId: resolveCustomActionId,
+                        },
+                    }).filter(event => event !== undefined));
+                    continue;
+                }
 
                 if (tokenConfigs.length > 0 || statusConfigs.length > 0) {
                     for (const [configIndex, tokenConfig] of tokenConfigs.entries()) {

@@ -802,3 +802,58 @@ pm run dev / 相关服务启动链路的各阶段耗时。
 
 ### Status
 - in_progress
+
+## Addendum（2026-03-28）：枪手 / 武士剩余四人目标牌适配
+
+### Goal
+- 把 `The Law` 之外仍会在 4 人 `2v2` 下错误走默认对手推断的枪手 / 武士目标牌补到真实选敌链路，并拿到至少一枪手一武士的联机点击证据。
+
+### Result
+- [x] 在 `selectPlayer` 交互与 `RESOLVE_INTERACTION` 之间补 `resolveCustomActionId`，支持“先选敌方，再执行 custom action”。
+- [x] 为枪手 `Wanted`、`High Noon`、`Mark the Target`、`Pistol Whip` 接入 4 人显式选敌路径。
+- [x] 为武士 `You Should Be Ashamed` 接入 4 人显式选敌路径。
+- [x] 在 `events.ts / effects.ts` 修正 custom action 不可防御伤害的语义透传，关闭 `Pistol Whip / High Noon` 被误送入 token response 的旧缺口。
+- [x] 在 `cross-hero.test.ts` 把 `Wanted`、`High Noon`、`You Should Be Ashamed` 的 4 人回归与 `Pistol Whip / High Noon` 不可防御伤害回归一并跑通。
+- [x] 在 `dicethrone-simple-start.e2e.ts` 补 `Wanted`、`High Noon` 与武士耻辱牌的四人联机真实点击，并实跑通过。
+- [x] 在 `ability-customaction-audit.test.ts` 补齐 `resolveCustomActionId` 间接引用 handler 的审计白名单，避免新 resolve handlers 被误判为孤儿注册。
+
+### Remaining
+- [ ] 若继续扩大验证面，优先补 `Mark the Target / Pistol Whip` 的四人联机真实点击；当前不要把“已识别缺口闭环”误报成“枪手 / 武士整两个角色所有内容都已穷尽审计”。
+
+### Status
+- in_progress
+
+## Addendum（2026-03-28）：枪手 / 武士整角色验收口径切回 OpenSpec
+
+### Goal
+- 不再把“已识别缺口修一个算一个”的零散推进方式直接当成两个新角色的最终完成口径；改为先用 OpenSpec 固化整角色审计与验收标准，再按该标准继续收口。
+
+### Result
+- [x] 新建 `openspec/changes/update-dicethrone-gunslinger-samurai-release-readiness/`。
+- [x] 写入 `proposal.md`，明确这条任务的目标是“角色级审计边界 + 代表性回归 + 真实点击 E2E 下限”，而不是继续混在 4 人交互 batch 里。
+- [x] 写入 `tasks.md`，把后续工作拆成审计范围定义、规则与实现审计、验证与证据、收口口径四段。
+- [x] 写入 `specs/dicethrone-hero-release-readiness/spec.md` delta，明确什么情况下才允许说“两个新角色完成”，以及什么情况下必须继续保留 residual scope。
+- [x] 运行 `openspec validate update-dicethrone-gunslinger-samurai-release-readiness --strict --no-interactive` 并通过。
+
+### Remaining
+- [ ] 按新 spec 的角色级口径继续补枪手 / 武士的审计台账与代表性 E2E，直到能明确回答“达到当前验收口径”和“仍未穷尽覆盖的剩余范围”。
+
+### Status
+- in_progress
+
+## Addendum（2026-03-28）：角色级验收口径回填与四人目标牌组合回归
+
+### Goal
+- 把 `Pistol Whip` 的真实入口证据回填到角色级台账，并基于最新的组合回归，明确回答“枪手 / 武士是否已经达到当前 OpenSpec 验收口径”。 
+
+### Result
+- [x] 在 `evidence/dicethrone-gunslinger-samurai-4p-targeted-cards-e2e-test.md` 补登记 `Pistol Whip` 的命令、截图与断言。
+- [x] 在 `e2e/dicethrone-simple-start.e2e.ts` 收紧 `Wanted / High Noon` 的等待条件，并把四人目标牌用例的起手点击改为更稳的强制点击，消除串跑假失败。
+- [x] 重新运行 `Online 4-player (Wanted|Pistol Whip|High Noon|Samurai Shame card)` 组合回归并通过 `4 passed`。
+- [x] 将枪手 / 武士当前的交互家族覆盖面按“真实入口 E2E / 领域回归 / residual scope”三层重新整理，明确当前已经达到角色级当前验收口径，但仍未穷尽覆盖全部内容。
+
+### Remaining
+- [ ] 若继续扩大验证面，优先补枪手 `Mark the Target` 的四人真实入口，以及武士 `Masamune` 系的独立真实入口；这些属于 residual scope，不影响当前验收口径成立，但会影响“是否穷尽式完成”的表述。
+
+### Status
+- in_progress

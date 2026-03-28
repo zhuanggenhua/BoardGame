@@ -620,3 +620,67 @@
 
 ### Open Items
 - 当前最实锤的 `The Law` 四人适配缺口已关闭；若继续扩四人面，应优先审计其他仍可能错误包含队友/敌方的多目标牌或技能。
+
+## Session: 2026-03-28 Dice Throne 枪手 / 武士剩余四人目标牌适配
+
+- **Status:** in_progress
+- Actions taken:
+  - 在 `src/games/dicethrone/domain/core-types.ts` 与 `src/games/dicethrone/domain/execute.ts` 为 `selectPlayer` 交互补 `resolveCustomActionId` 收口点，让“先选敌方、再执行卡牌效果”的路径可以复用既有 custom action handler。
+  - 在 `src/games/dicethrone/domain/customActions/gunslinger.ts` 为 `Wanted`、`High Noon`、`Mark the Target`、`Pistol Whip` 补齐 4 人 `2v2` 下的敌方选择路径；多人局先显式选敌，`1v1` 继续按唯一对手直结算。
+  - 在 `src/games/dicethrone/domain/customActions/samurai.ts` 为 `You Should Be Ashamed` 补齐同样的敌方选择路径。
+  - 在 `src/games/dicethrone/domain/events.ts` 与 `src/games/dicethrone/domain/effects.ts` 补齐 custom action 产出的不可防御伤害语义透传，避免 `Pistol Whip / High Noon` 的 `DAMAGE_DEALT` 被后处理误改写成防御方 token 响应窗口。
+  - 在 `src/games/dicethrone/heroes/gunslinger/cards.ts` 与 `src/games/dicethrone/heroes/samurai/cards.ts` 把上述卡牌从通用 `target: 'opponent'` 声明切到角色内 custom action，避免 4 人局继续走默认对手推断。
+  - 在 `src/games/dicethrone/__tests__/cross-hero.test.ts` 把 4 人目标牌与不可防御伤害相关回归一起补齐并复跑，覆盖 `The Law`、`Wanted`、`High Noon`、`You Should Be Ashamed`、`Mark the Target`、`Pistol Whip`。
+  - 在 `e2e/dicethrone-simple-start.e2e.ts` 新增三条四人联机真实点击：`Wanted`、`High Noon` 与武士耻辱牌，从手牌打出后只暴露敌方目标卡；其中 `High Noon` 还补到了 bonus-die 分支只落到选中敌方。
+  - 在 `src/games/dicethrone/__tests__/ability-customaction-audit.test.ts` 更新 custom-action 审计白名单，使 `resolveCustomActionId` 间接引用的 `*-resolve` handlers 不再被误判为孤儿注册。
+
+### Verification
+| Check | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| 4 人目标牌 + 不可防御伤害语义回归 | `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/cross-hero.test.ts -t "pistol whip undefendable damage should not trigger protect|mark the target grants 2 evasive and 1 bounty|wanted applies 1 bounty to the target|high noon dash branch inflicts knockdown without damage|high noon bullet branch deals 2 undefendable damage without protect|high noon bullseye branch applies bounty|the law should only target enemies in 4-player team mode|wanted should only target enemies in 4-player team mode|high noon should resolve its die result on the selected enemy in 4-player team mode|you should be ashamed should only target enemies in 4-player team mode" --configLoader native` | 4 人选敌链路与 `Pistol Whip / High Noon` 的不可防御伤害语义一并通过 | `10 passed` | ✅ |
+| 枪手 Wanted 四人 E2E | `npm run test:e2e:ci:file -- dicethrone-simple-start.e2e.ts "Online 4-player Wanted: real hand play only offers enemies in 2v2 and grants Bounty to selected enemy"` | 只显示敌方并仅给选中敌方 `Bounty` | `1 passed` | ✅ |
+| 枪手 High Noon 四人 E2E | `npm run test:e2e:ci:file -- dicethrone-simple-start.e2e.ts "Online 4-player High Noon: real hand play only offers enemies in 2v2 and resolves the rolled branch on selected enemy"` | 只显示敌方，并将 bonus-die 分支只结算到选中敌方 | `1 passed` | ✅ |
+| 武士耻辱牌四人 E2E | `npm run test:e2e:ci:file -- dicethrone-simple-start.e2e.ts "Online 4-player Samurai Shame card: real hand play only offers enemies in 2v2 and applies Shame to selected enemy"` | 只显示敌方并仅给选中敌方 `Shame` | `1 passed` | ✅ |
+| custom action 审计 | `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/ability-customaction-audit.test.ts --config vitest.config.audit.ts --configLoader native` | `resolveCustomActionId` 间接引用的 handlers 不再被误判为孤儿 | `30 passed` | ✅ |
+
+### Open Items
+- 当前已识别的枪手 / 武士四人目标牌 correctness 缺口已关闭，`Pistol Whip` 也不再是挂着的单独阻塞项；若继续扩大验证面，优先补 `Mark the Target / Pistol Whip` 的四人联机真实点击，而不是误报为“整两个角色所有牌与所有技能都已穷尽审计”。
+
+## Session: 2026-03-28 Dice Throne 枪手 / 武士整角色验收口径切回 OpenSpec
+
+- **Status:** in_progress
+- Actions taken:
+  - 新建 `openspec/changes/update-dicethrone-gunslinger-samurai-release-readiness/`，把这条任务从“继续补零散缺口”切回“整角色审计与验收口径”。
+  - 在 proposal / tasks / spec delta 中明确三层完成条件：规则与实现审计、代表性领域回归、代表性真实点击 E2E。
+  - 运行 `openspec validate update-dicethrone-gunslinger-samurai-release-readiness --strict --no-interactive` 并通过。
+  - 开始按 spec 的第一步盘点两名角色的交互家族，当前已确认的高风险族群包括：
+    - 枪手：主阶段目标牌、不可防御伤害、Loaded / Bounty / Evasive、多人选敌 custom action、对决类 bonus-die。
+    - 武士：主阶段目标牌、Honor / Shame / Back Strike、攻击修正牌、Masamune 系 bonus-die、不可防御伤害与羞辱联动。
+
+### Verification
+| Check | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| OpenSpec 变更校验 | `openspec validate update-dicethrone-gunslinger-samurai-release-readiness --strict --no-interactive` | 新 change 合法 | `Change 'update-dicethrone-gunslinger-samurai-release-readiness' is valid` | ✅ |
+
+### Open Items
+- 下一步不再只按“哪里炸了修哪里”的方式推进，而是要沿着新 spec 继续把枪手 / 武士的审计台账按交互家族补全，再决定哪些还需要新增真实点击 E2E 才能达到当前验收口径。
+
+## Session: 2026-03-28 Dice Throne 角色级验收台账回填与四人目标牌组合回归
+
+- **Status:** completed
+- Actions taken:
+  - 将 `Pistol Whip` 四人真实入口补进 `evidence/dicethrone-gunslinger-samurai-4p-targeted-cards-e2e-test.md`，把枪手剩余四人目标牌的证据面更新为 `Wanted / Pistol Whip / High Noon` 三条真实入口。
+  - 在 `e2e/dicethrone-simple-start.e2e.ts` 收紧 `Wanted / High Noon` 的等待条件，并把 `Wanted / Pistol Whip / High Noon / 武士耻辱牌` 四条 4 人目标牌用例的起手点击统一为更稳的强制点击，消除串跑中的假失败。
+  - 重新执行四条四人目标牌组合回归，确认这组代表性真实入口可以在单 worker 串跑下稳定通过，而不是只靠单条偶发绿灯。
+  - 按 OpenSpec 新 change 的口径回填角色级结论：当前枪手与武士都已经达到“审计 + 代表性领域回归 + 代表性真实点击 E2E”三层同时成立的验收下限，但仍保留 residual scope，不对外扩写成“全内容穷尽完成”。
+
+### Verification
+| Check | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| 四人目标牌组合 E2E | `npm run test:e2e:ci:file -- dicethrone-simple-start.e2e.ts "Online 4-player (Wanted|Pistol Whip|High Noon|Samurai Shame card)"` | `Wanted / Pistol Whip / High Noon / You Should Be Ashamed` 串跑稳定通过 | `4 passed` | ✅ |
+
+### Open Items
+- 当前角色级验收口径已经能成立，但 residual scope 仍需显式保留：
+  - 枪手 `Mark the Target` 目前有领域回归，但还没有单独的四人真实入口 E2E。
+  - 武士 `Masamune` 系、其余未被本轮命中的骰技 / 升级分支还没有按“全家族穷尽式”做完真实入口覆盖。
+  - 因此可以说“达到当前验收口径”，不能说“两个角色所有牌、所有技能、所有多人分支都已全部审计完毕”。

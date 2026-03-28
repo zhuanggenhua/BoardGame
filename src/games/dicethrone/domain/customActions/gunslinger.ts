@@ -1,4 +1,4 @@
-import { createBonusDiceWithReroll, createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { createBonusDiceWithReroll, createDisplayOnlySettlement, registerCustomActionHandler, resolveEffectsToEvents, type CustomActionContext } from '../effects';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { GUNSLINGER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';
 import { getOpponents, getPlayerDieFace, getTokenStackLimit } from '../rules';
@@ -9,6 +9,7 @@ import type {
     BonusDamageAddedEvent,
     ChoiceRequestedEvent,
     CpChangedEvent,
+    DamageDealtEvent,
     DamageShieldGrantedEvent,
     DiceThroneEvent,
     InteractionRequestedEvent,
@@ -301,6 +302,208 @@ function createKnockdownEvent(
     } as StatusAppliedEvent;
 }
 
+function createBountyEvent(
+    state: CustomActionContext['state'],
+    targetId: string,
+    sourceAbilityId: string,
+    timestamp: number,
+): DiceThroneEvent {
+    const currentBounty = state.players[targetId]?.tokens[TOKEN_IDS.BOUNTY] ?? 0;
+    const newBountyTotal = Math.min(currentBounty + 1, getTokenStackLimit(state, targetId, TOKEN_IDS.BOUNTY));
+    return {
+        type: 'TOKEN_GRANTED',
+        payload: {
+            targetId,
+            tokenId: TOKEN_IDS.BOUNTY,
+            amount: Math.max(0, newBountyTotal - currentBounty),
+            newTotal: newBountyTotal,
+            sourceAbilityId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as DiceThroneEvent;
+}
+
+function createSingleOpponentInteraction(
+    state: CustomActionContext['state'],
+    attackerId: string,
+    sourceAbilityId: string,
+    timestamp: number,
+    resolveCustomActionId: string,
+): InteractionRequestedEvent | null {
+    const opponentIds = getOpponents(state, attackerId);
+    if (opponentIds.length <= 1) {
+        return null;
+    }
+
+    const interaction: PendingInteraction = {
+        id: `${sourceAbilityId}-${timestamp}`,
+        playerId: attackerId,
+        sourceCardId: sourceAbilityId,
+        type: 'selectPlayer',
+        titleKey: 'interaction.selectPlayer',
+        selectCount: 1,
+        selected: [],
+        targetPlayerIds: opponentIds,
+        resolveCustomActionId,
+    };
+
+    return {
+        type: 'INTERACTION_REQUESTED',
+        payload: { interaction },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as InteractionRequestedEvent;
+}
+
+function createUnblockableDamageEvent(
+    state: CustomActionContext['state'],
+    targetId: string,
+    amount: number,
+    sourceAbilityId: string,
+    timestamp: number,
+): DamageDealtEvent {
+    const hp = state.players[targetId]?.resources[RESOURCE_IDS.HP] ?? 0;
+    return {
+        type: 'DAMAGE_DEALT',
+        payload: {
+            targetId,
+            amount,
+            actualDamage: Math.min(amount, hp),
+            sourceAbilityId,
+            unblockable: true,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as DamageDealtEvent;
+}
+
+function resolveSingleOpponentCard(
+    ctx: CustomActionContext,
+    resolveCustomActionId: string,
+    resolveDirect: (targetId: string, context: CustomActionContext) => DiceThroneEvent[],
+): DiceThroneEvent[] {
+    const interactionEvent = createSingleOpponentInteraction(
+        ctx.state,
+        ctx.attackerId,
+        ctx.sourceAbilityId,
+        ctx.timestamp,
+        resolveCustomActionId,
+    );
+    if (interactionEvent) {
+        return [interactionEvent];
+    }
+
+    const targetId = getOpponents(ctx.state, ctx.attackerId)[0];
+    if (!targetId) {
+        return [];
+    }
+    return resolveDirect(targetId, ctx);
+}
+
+function handleMarkTheTarget(ctx: CustomActionContext): DiceThroneEvent[] {
+    return resolveSingleOpponentCard(ctx, 'gunslinger-card-mark-the-target-resolve', (targetId, { state, sourceAbilityId, timestamp }) => ([
+        createBountyEvent(state, targetId, sourceAbilityId, timestamp),
+    ]));
+}
+
+function handleMarkTheTargetResolve({ targetId, state, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+    return [createBountyEvent(state, targetId, sourceAbilityId, timestamp)];
+}
+
+function handleWanted(ctx: CustomActionContext): DiceThroneEvent[] {
+    return resolveSingleOpponentCard(ctx, 'gunslinger-card-wanted-resolve', (targetId, { state, sourceAbilityId, timestamp }) => ([
+        createBountyEvent(state, targetId, sourceAbilityId, timestamp),
+    ]));
+}
+
+function handleWantedResolve({ targetId, state, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+    return [createBountyEvent(state, targetId, sourceAbilityId, timestamp)];
+}
+
+function handlePistolWhip(ctx: CustomActionContext): DiceThroneEvent[] {
+    return resolveSingleOpponentCard(ctx, 'gunslinger-card-pistol-whip-resolve', (targetId, context) => (
+        handlePistolWhipResolve({ ...context, targetId, ctx: { ...context.ctx, defenderId: targetId } })
+    ));
+}
+
+function handlePistolWhipResolve({ attackerId, targetId, state, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+    return resolveEffectsToEvents([
+        {
+            description: '对手获得击倒。',
+            action: { type: 'grantStatus', target: 'opponent', statusId: STATUS_IDS.KNOCKDOWN, value: 1 },
+            timing: 'immediate',
+        },
+        {
+            description: '造成 1 点不可防御伤害。',
+            action: { type: 'damage', target: 'opponent', value: 1, unblockable: true },
+            timing: 'immediate',
+        },
+    ], 'immediate', {
+        attackerId,
+        defenderId: targetId,
+        sourceAbilityId,
+        state,
+        damageDealt: 0,
+        timestamp,
+    });
+}
+
+function handleHighNoon(ctx: CustomActionContext): DiceThroneEvent[] {
+    return resolveSingleOpponentCard(ctx, 'gunslinger-card-high-noon-resolve', (targetId, context) => (
+        handleHighNoonResolve({ ...context, targetId, ctx: { ...context.ctx, defenderId: targetId } })
+    ));
+}
+
+function handleHighNoonResolve({ attackerId, targetId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
+    if (!random) {
+        return [];
+    }
+
+    const value = random.d(6);
+    const face = getPlayerDieFace(state, attackerId, value) ?? GUNSLINGER_DICE_FACE_IDS.BULLET;
+    const effectKeyMap: Record<string, string> = {
+        [GUNSLINGER_DICE_FACE_IDS.BULLET]: 'bonusDie.effect.gunslingerHighNoonBullet',
+        [GUNSLINGER_DICE_FACE_IDS.DASH]: 'bonusDie.effect.gunslingerHighNoonDash',
+        [GUNSLINGER_DICE_FACE_IDS.BULLSEYE]: 'bonusDie.effect.gunslingerHighNoonBullseye',
+    };
+    const effectKey = effectKeyMap[face] ?? 'bonusDie.effect.default';
+
+    const events: DiceThroneEvent[] = [{
+        type: 'BONUS_DIE_ROLLED',
+        payload: {
+            value,
+            face,
+            playerId: targetId,
+            targetPlayerId: targetId,
+            effectKey,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as DiceThroneEvent];
+
+    events.push(createDisplayOnlySettlement(
+        sourceAbilityId,
+        targetId,
+        targetId,
+        [{ index: 0, value, face, effectKey }],
+        timestamp + 1,
+    ));
+
+    if (face === GUNSLINGER_DICE_FACE_IDS.BULLET) {
+        events.push(createUnblockableDamageEvent(state, targetId, 2, sourceAbilityId, timestamp + 2));
+        return events;
+    }
+
+    if (face === GUNSLINGER_DICE_FACE_IDS.DASH) {
+        events.push(createKnockdownEvent(state, targetId, sourceAbilityId, timestamp + 2));
+        return events;
+    }
+
+    events.push(createBountyEvent(state, targetId, sourceAbilityId, timestamp + 2));
+    return events;
+}
+
 function handleTheLaw({ attackerId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
     const opponentIds = getOpponents(state, attackerId);
 
@@ -367,6 +570,34 @@ export function registerGunslingerCustomActions(): void {
     });
     registerCustomActionHandler('gunslinger-card-eat-my-lead', handleEatMyLead, {
         categories: ['card', 'dice', 'status'],
+    });
+    registerCustomActionHandler('gunslinger-card-pistol-whip', handlePistolWhip, {
+        categories: ['card', 'status', 'damage'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('gunslinger-card-pistol-whip-resolve', handlePistolWhipResolve, {
+        categories: ['card', 'status', 'damage'],
+    });
+    registerCustomActionHandler('gunslinger-card-mark-the-target', handleMarkTheTarget, {
+        categories: ['card', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('gunslinger-card-mark-the-target-resolve', handleMarkTheTargetResolve, {
+        categories: ['card', 'token'],
+    });
+    registerCustomActionHandler('gunslinger-card-wanted', handleWanted, {
+        categories: ['card', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('gunslinger-card-wanted-resolve', handleWantedResolve, {
+        categories: ['card', 'token'],
+    });
+    registerCustomActionHandler('gunslinger-card-high-noon', handleHighNoon, {
+        categories: ['card', 'token', 'status', 'damage', 'dice'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('gunslinger-card-high-noon-resolve', handleHighNoonResolve, {
+        categories: ['card', 'token', 'status', 'damage', 'dice'],
     });
     registerCustomActionHandler('gunslinger-card-the-law', handleTheLaw, {
         categories: ['card', 'token', 'status'],

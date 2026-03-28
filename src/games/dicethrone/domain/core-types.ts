@@ -250,6 +250,8 @@ export interface InteractionDescriptor {
         statusId: string;
         amount: number;
     }>;
+    /** 选定玩家后继续执行的 custom action（用于 2v2 下的定向卡牌效果） */
+    resolveCustomActionId?: string;
     targetOpponentDice?: boolean;
     /** 为 true 时，UI 只允许选择已有状态效果/token 的玩家（如"移除所有状态"） */
     requiresTargetWithStatus?: boolean;

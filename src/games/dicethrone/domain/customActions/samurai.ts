@@ -4,11 +4,13 @@ import type {
     BonusDieRolledEvent,
     DamageShieldGrantedEvent,
     DiceThroneEvent,
+    InteractionRequestedEvent,
     TokenGrantedEvent,
 } from '../events';
 import { SAMURAI_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
-import { getActiveDice, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { getActiveDice, getFaceCounts, getOpponents, getPlayerDieFace, getTokenStackLimit } from '../rules';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import type { PendingInteraction } from '../core-types';
 
 const FACE = SAMURAI_DICE_FACE_IDS;
 
@@ -40,6 +42,38 @@ function createGrantTokenEvent(
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     } as TokenGrantedEvent;
+}
+
+function createSingleOpponentInteraction(
+    state: CustomActionContext['state'],
+    attackerId: string,
+    sourceAbilityId: string,
+    timestamp: number,
+    resolveCustomActionId: string,
+): InteractionRequestedEvent | null {
+    const opponentIds = getOpponents(state, attackerId);
+    if (opponentIds.length <= 1) {
+        return null;
+    }
+
+    const interaction: PendingInteraction = {
+        id: `${sourceAbilityId}-${timestamp}`,
+        playerId: attackerId,
+        sourceCardId: sourceAbilityId,
+        type: 'selectPlayer',
+        titleKey: 'interaction.selectPlayer',
+        selectCount: 1,
+        selected: [],
+        targetPlayerIds: opponentIds,
+        resolveCustomActionId,
+    };
+
+    return {
+        type: 'INTERACTION_REQUESTED',
+        payload: { interaction },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as InteractionRequestedEvent;
 }
 
 function getMaxDuplicateValueCount(state: CustomActionContext['state']): number {
@@ -293,6 +327,31 @@ function handleRighteousness({ attackerId, ctx, sourceAbilityId, state, timestam
     return events;
 }
 
+function handleYouShouldBeAshamed(ctx: CustomActionContext): DiceThroneEvent[] {
+    const interactionEvent = createSingleOpponentInteraction(
+        ctx.state,
+        ctx.attackerId,
+        ctx.sourceAbilityId,
+        ctx.timestamp,
+        'samurai-card-you-should-be-ashamed-resolve',
+    );
+    if (interactionEvent) {
+        return [interactionEvent];
+    }
+
+    const targetId = getOpponents(ctx.state, ctx.attackerId)[0];
+    if (!targetId) {
+        return [];
+    }
+    const shameEvent = createGrantTokenEvent(ctx.state, targetId, TOKEN_IDS.SHAME, 2, ctx.sourceAbilityId, ctx.timestamp);
+    return shameEvent ? [shameEvent] : [];
+}
+
+function handleYouShouldBeAshamedResolve({ targetId, state, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
+    const shameEvent = createGrantTokenEvent(state, targetId, TOKEN_IDS.SHAME, 2, sourceAbilityId, timestamp);
+    return shameEvent ? [shameEvent] : [];
+}
+
 export function registerSamuraiCustomActions(): void {
     registerCustomActionHandler('samurai-back-strike-use', handleBackStrikeUse, {
         categories: ['token', 'damage', 'dice', 'defense'],
@@ -316,5 +375,12 @@ export function registerSamuraiCustomActions(): void {
     });
     registerCustomActionHandler('samurai-card-righteousness', handleRighteousness, {
         categories: ['card', 'dice', 'token', 'status'],
+    });
+    registerCustomActionHandler('samurai-card-you-should-be-ashamed', handleYouShouldBeAshamed, {
+        categories: ['card', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('samurai-card-you-should-be-ashamed-resolve', handleYouShouldBeAshamedResolve, {
+        categories: ['card', 'token'],
     });
 }

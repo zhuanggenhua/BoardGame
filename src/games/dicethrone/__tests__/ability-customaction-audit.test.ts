@@ -235,6 +235,12 @@ describe('CustomAction 覆盖完整性审计', () => {
         'shadow_thief-cornucopia-discard', // 聚宝盆旧版 handler（向后兼容）
         // 僧侣（通用状态移除，由卡牌系统直接调用）
         'remove-status-self',
+        // 通过 selectPlayer interaction 的 resolveCustomActionId 间接进入
+        'gunslinger-card-pistol-whip-resolve',
+        'gunslinger-card-mark-the-target-resolve',
+        'gunslinger-card-wanted-resolve',
+        'gunslinger-card-high-noon-resolve',
+        'samurai-card-you-should-be-ashamed-resolve',
     ]);
 
     it('所有注册的 customAction 都被声明式引用或在已知非声明式列表中', () => {
