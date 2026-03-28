@@ -63,7 +63,7 @@ export default defineConfig({
             '**/.{idea,git,cache,output,temp}/**',
         ],
         testTimeout: 180000,
-        hookTimeout: 60000, // 60 秒 hook 超时（MongoDB 内存服务器启动可能较慢）
+        hookTimeout: 180000, // 首次拉起 mongodb-memory-server 可能需要下载/解压二进制，60 秒不够稳定。
         setupFiles: [rootSetupFile, apiSetupFile],
     },
 });

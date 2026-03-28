@@ -45,7 +45,7 @@ export default defineConfig({
             '**/.{idea,git,cache,output,temp}/**',
         ],
         testTimeout: 180000,
-        hookTimeout: 60000,
+        hookTimeout: 180000,
         setupFiles: [rootSetupFile, apiSetupFile],
     },
 });

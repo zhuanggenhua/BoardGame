@@ -1,9 +1,10 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect, vi } from 'vitest';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import type { MatchMetadata, StoredMatchState, CreateMatchData } from '../../../engine/transport/storage';
 import { mongoStorage } from '../MongoStorage';
 import { HybridStorage } from '../HybridStorage';
+import { MONGO_TEST_HOOK_TIMEOUT_MS, createSharedMongoMemoryServer } from '../../testUtils/mongoMemory';
+import type { MongoMemoryServer } from 'mongodb-memory-server';
 
 const buildState = (setupData: Record<string, unknown>): StoredMatchState => ({
     G: { __setupData: setupData },
@@ -43,10 +44,10 @@ describe('HybridStorage 行为', () => {
     let hybrid: HybridStorage;
 
     beforeAll(async () => {
-        mongo = await MongoMemoryServer.create();
+        mongo = await createSharedMongoMemoryServer();
         await mongoose.connect(mongo.getUri(), { dbName: 'boardgame-test' });
         await mongoStorage.connect();
-    }, 60000); // 60 秒超时（MongoDB 内存服务器启动可能较慢）
+    }, MONGO_TEST_HOOK_TIMEOUT_MS);
 
     beforeEach(async () => {
         await mongoose.connection.db!.dropDatabase();
