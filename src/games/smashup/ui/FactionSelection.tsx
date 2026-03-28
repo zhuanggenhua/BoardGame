@@ -122,9 +122,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                 </div>
             </motion.div>
 
-            {/* FACTION GRID - 增加垂直空间 */}
-            <div className="flex-1 w-full max-w-7xl overflow-y-auto px-6 py-4 relative z-10 custom-scrollbar">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pb-28">
+            {/* FACTION GRID - 移动端压紧间距，避免横屏手机下卡牌过疏 */}
+            <div className="flex-1 w-full max-w-7xl overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-4 relative z-10 custom-scrollbar">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 pb-24 sm:pb-28">
                     {visibleFactions.map((faction, idx) => {
                         const isTaken = takenFactions.has(faction.id);
                         const isSelectedByMe = mySelections.includes(faction.id);
@@ -148,7 +148,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                 `}
                             >
                                 {/* Card Stack Visual */}
-                                <div className="relative w-40 h-56 md:w-48 md:h-64 mb-4">
+                                <div className="relative w-32 h-44 sm:w-36 sm:h-52 md:w-48 md:h-64 mb-3 sm:mb-4">
                                     {/* Main Cover Card */}
                                     <div className={`
                                         absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_12px_rgba(0,0,0,0.4)] border-[0.4vw] transition-all
@@ -364,8 +364,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
             </AnimatePresence>
 
             {/* FOOTER: Status Bar - Floating Score Sheet style */}
-            <div className="absolute bottom-6 inset-x-0 z-40 pointer-events-none">
-                <div className="max-w-7xl mx-auto flex items-end justify-center gap-8 px-6">
+            <div className="absolute bottom-3 sm:bottom-6 inset-x-0 z-40 pointer-events-none">
+                <div className="max-w-7xl mx-auto flex items-end justify-center gap-3 sm:gap-5 md:gap-8 px-3 sm:px-4 md:px-6">
                     {core.turnOrder.map((pid, pidx) => {
                         const selections = selectionState.playerSelections[pid] || [];
                         const isCurrent = pid === currentPlayerId;
@@ -377,22 +377,22 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.5 + pidx * 0.1 }}
                                 className={`
-                                    flex flex-col items-center gap-2 px-6 py-3 rounded-sm border-2 pointer-events-auto transition-all
+                                    flex flex-col items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-3 rounded-sm border-2 pointer-events-auto transition-all
                                     ${isCurrent
-                                        ? 'bg-[#fef3c7] border-amber-500 shadow-[0_10px_25px_rgba(0,0,0,0.5)] -rotate-1 z-10 scale-110'
+                                        ? 'bg-[#fef3c7] border-amber-500 shadow-[0_10px_25px_rgba(0,0,0,0.5)] -rotate-1 z-10 scale-105 md:scale-110'
                                         : 'bg-white/90 border-slate-200 shadow-lg rotate-1 grayscale-[0.3]'}
                                 `}
                             >
                                 {/* Player Avatar Circle */}
                                 <div className={`
-                                    w-12 h-12 rounded-full flex items-center justify-center font-black text-lg text-white shadow-inner border-4 border-white
+                                    w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black text-sm sm:text-base md:text-lg text-white shadow-inner border-4 border-white
                                     ${pid === '0' ? 'bg-red-500' : pidx === 1 ? 'bg-blue-500' : 'bg-green-500'}
                                 `}>
                                     {t('ui.player_short', { id: pid })}
                                 </div>
 
                                 {/* Selections */}
-                                <div className="flex gap-2">
+                                <div className="flex gap-1.5 sm:gap-2">
                                     {[0, 1].map(i => {
                                         const fid = selections[i];
                                         const meta = fid ? FACTION_METADATA.find(f => f.id === fid) : null;
@@ -401,18 +401,18 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                             <div
                                                 key={i}
                                                 className={`
-                                                    w-12 h-12 rounded-sm border-2 bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm transition-all
+                                                    w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-sm border-2 bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm transition-all
                                                     ${!fid ? 'border-dashed border-slate-300 opacity-40' : 'border-slate-800 rotate-[-4deg]'}
                                                 `}
                                                 title={meta ? t(meta.nameKey) : undefined}
                                                 style={{ transform: fid ? `rotate(${(i * 10) - 5}deg)` : 'none' }}
                                             >
                                                 {meta?.icon ? (
-                                                    <div className="text-slate-900">
+                                                    <div className="text-slate-900 scale-90 sm:scale-100">
                                                         <meta.icon size={28} strokeWidth={2.5} />
                                                     </div>
                                                 ) : (
-                                                    <span className="text-xs text-slate-400 font-black">?</span>
+                                                    <span className="text-[10px] sm:text-xs text-slate-400 font-black">?</span>
                                                 )}
                                             </div>
                                         );
@@ -420,11 +420,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                 </div>
 
                                 <div className="flex flex-col items-center">
-                                    <span className={`text-[11px] font-black uppercase tracking-tighter leading-none ${isCurrent ? 'text-amber-800' : 'text-slate-50'}`}>
+                                    <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-tight sm:tracking-tighter leading-none ${isCurrent ? 'text-amber-800' : 'text-slate-50'}`}>
                                         {t('ui.player_short', { id: pid })}
                                     </span>
                                     {isCurrent && (
-                                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-1 animate-pulse">
+                                        <span className="text-[9px] sm:text-[10px] font-black text-amber-600 uppercase tracking-[0.12em] sm:tracking-widest mt-0.5 sm:mt-1 animate-pulse">
                                             {t('ui.thinking')}
                                         </span>
                                     )}
