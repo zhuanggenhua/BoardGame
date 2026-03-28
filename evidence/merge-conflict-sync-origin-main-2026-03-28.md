@@ -75,8 +75,8 @@
 - `npm run test:e2e:ci:file -- dicethrone-simple-start.e2e.ts "Online 4-player (Wanted|Pistol Whip|High Noon|Samurai Shame card)"`
   - 结果：`4 passed`
 - `npm run merge:audit:strict -- HEAD`
-  - 结果：待 merge commit 后执行
+  - 结果：`混合结果 4`，`完全等于父1/父2 = 0`
 
 ## 7. 结果
-- 提交：待生成 merge commit
-- 推送：待执行
+- 提交：`c204265a` (`合并主分支并收口枪手武士角色级验收`)
+- 推送：`origin/feat/dicethrone-gunslinger-samurai`
