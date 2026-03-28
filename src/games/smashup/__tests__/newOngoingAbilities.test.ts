@@ -369,10 +369,11 @@ describe('bear_cavalry_cub_scout 触发', () => {
 });
 
 describe('bear_cavalry_high_ground 触发', () => {
-    it('有己方随从时消灭移入的对手随从', () => {
+    it('有己方随从时消灭移入的对手随从，并记录消灭者', () => {
         const myMinion = makeMinion('my', 'test_minion', '0', 3, { powerModifier: 0 });
         const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
         const destBase = makeBase({
+            defId: 'base_the_field_of_honor',
             minions: [myMinion],
             ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '0' }],
         });
@@ -384,7 +385,9 @@ describe('bear_cavalry_high_ground 触发', () => {
             triggerMinionUid: 'moved', triggerMinionDefId: 'test_minion',
             random: dummyRandom, now: 0,
         });
-        expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        const destroyEvent = events.find(e => e.type === SU_EVENTS.MINION_DESTROYED) as any;
+        expect(destroyEvent).toBeDefined();
+        expect(destroyEvent.payload.destroyerId).toBe('0');
     });
 
     it('POD 版高地也会消灭移入的对手随从', () => {

@@ -600,7 +600,7 @@ function bearCavalryHighGroundTrigger(ctx: TriggerContext): SmashUpEvent[] {
                 movedMinion.defId,
                 destBaseIndex,
                 movedMinion.owner,
-                undefined,
+                ongoing.ownerId,
                 'bear_cavalry_high_ground',
                 ctx.now,
             ),

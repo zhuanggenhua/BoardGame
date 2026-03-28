@@ -855,6 +855,7 @@ export function isOperationRestricted(
             // 条件限制：extraPlayMinionPowerMax（额外出牌时力量 > limit 的随从被禁止）
             if (r.condition.extraPlayMinionPowerMax !== undefined && restrictionType === 'play_minion') {
                 const basePower = extra?.basePower as number | undefined;
+                const isExtraMinionPlay = extra?.isExtraMinionPlayAttempt as boolean | undefined;
                 const usingBaseLimitedQuota = (extra?.usesBaseLimitedMinionQuota as boolean | undefined)
                     ?? mustUseBaseLimitedMinionQuota(
                         state,
@@ -863,7 +864,7 @@ export function isOperationRestricted(
                         extra?.minionDefId as string | undefined,
                         basePower,
                     );
-                if (usingBaseLimitedQuota && basePower !== undefined && basePower > r.condition.extraPlayMinionPowerMax) {
+                if ((isExtraMinionPlay || usingBaseLimitedQuota) && basePower !== undefined && basePower > r.condition.extraPlayMinionPowerMax) {
                     return true;
                 }
             }

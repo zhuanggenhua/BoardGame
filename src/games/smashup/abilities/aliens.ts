@@ -399,7 +399,7 @@ function alienProbe(ctx: AbilityContext): AbilityResult {
             `alien_probe_${ctx.now}`, ctx.playerId,
             '选择对手手牌中的一张随从，让其弃掉',
             allHandOptions,
-            { sourceId: 'alien_probe', targetType: 'generic' },
+            { sourceId: 'alien_probe', targetType: 'generic', autoResolveIfSingle: false },
         );
 
         // 添加自定义 optionsGenerator，确保刷新时检查对手的手牌而不是当前玩家的手牌
